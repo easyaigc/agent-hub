@@ -181,7 +181,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer pnpm test:ios
 - Linux：安装锁定依赖并运行 `pnpm check`。
 - macOS：使用共享 Scheme 编译 iOS Simulator 应用，不要求账户签名。
 
-公开源码仓库为 [easyaigc/agent-hub](https://github.com/easyaigc/agent-hub)，默认分支为 `main`。上述工作流使用 GitHub Actions；本地检查通过不代表远程 CI 已执行，远程结果以 Actions 的实际运行记录为准。当前未配置发布任务。首次公开版本采用独立源码快照，不包含内部开发历史或本地私有验收资料。
+公开源码仓库为 [easyaigc/agent-hub](https://github.com/easyaigc/agent-hub)，默认分支为 `main`。上述工作流使用 GitHub Actions；完整工作区检查包含 macOS 桌面边界 fixture 与 Swift/KMP 契约，因此在 macOS runner 执行。iOS 模拟器编译单列任务，两项均不宣称 Android 或 Windows 原生验收通过。本地检查通过不代表远程 CI 已执行，远程结果以 Actions 的实际运行记录为准。当前未配置发布任务。首次公开版本采用独立源码快照，不包含内部开发历史或本地私有验收资料。
 
 ## 后续集成约定
 

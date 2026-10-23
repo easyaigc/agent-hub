@@ -13,10 +13,10 @@
 - **跨 Agent 协作**：通过 Host 协议分派任务、交换进度与交付物；已有 Codex 跨电脑协调工具，其他 Agent 可接入同一协作流程。
 
 <p align="center">
-  <img src="docs/assets/readme/agent-hub-demo.gif" alt="Agent Hub 真机演示：多客户端切换、真实项目与对话、任务进度和计划模式" width="420">
+  <img src="docs/assets/readme/agent-hub-demo.gif" alt="Agent Hub 横版真机演示：客户端、真实项目与对话、计划模式三个界面并排展示" width="1168">
 </p>
 
-<p align="center">iPhone 15 Pro Max 真机截图剪辑：多客户端切换 · 真实项目与对话 · 任务进度 · 计划模式</p>
+<p align="center">iPhone 15 Pro Max 真机截图：多客户端切换 · 真实项目与对话 · 计划模式</p>
 
 ## 支持的客户端与扩展方式
 

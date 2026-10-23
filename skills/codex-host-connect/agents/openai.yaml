@@ -1,0 +1,4 @@
+interface:
+  display_name: '接入 Codex 电脑'
+  short_description: '安装 Mac/Windows Host／Bridge，按运行时就绪开放正式功能与自启'
+  default_prompt: '使用 $codex-host-connect 和随包程序接入这台电脑的原 Codex 桌面，默认配置当前全部适用功能和 Host 登录自启，保留既有身份、权限及明确的验证专用配置，按实际运行时就绪开放正式新建与主动打开；交付实际连接参数，真实 DEV 验收逐项执行并单列结果，不把报告作为独立桥接安装门禁。'

@@ -1,0 +1,98 @@
+{
+  "phase": "A4",
+  "phaseStatus": "in-progress",
+  "scope": "Auxiliary full-target command HTTP validation, shared contracts, encrypted intent journal and runtime decoding; no native execution UI or real model/owner proof.",
+  "status": "passed-auxiliary",
+  "baseCommit": "ac15749b00cf16f05a03887da3e3b8e3043af369",
+  "verifiedAt": "2026-10-12T09:21:51.522Z",
+  "android": [
+    {
+      "api": 37,
+      "osBuild": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+      "status": "passed",
+      "failures": 0,
+      "skips": 0,
+      "sourceSha256": "2c98bed19ab3e9e43ae49d71f291ff1da2116903359f589513483593b5026d75",
+      "apkSha256": "51cba1d9be66b8a90549fccfb480d2e8f0bea698baef2c897b795da24e033b1b",
+      "testApkSha256": "012166cc59e23c68fa8343bd93ef636d1a3025631f381609d9330477e5362aea",
+      "toolSha256": "b89a52f9cd7f0da924532fcec1d0d83ff273b2e3dcc354eb5d9d617d1c56b24f",
+      "executions": 18,
+      "reportSha256": "c88f45be18bfa3a3ac3ea82d20c16cd2f053b05cc4b15cff16bc1f920d416f25",
+      "instrumentationSha256": "67467ce1047dc501e8d20a4d3529643aa3e4fe39cc24a508e43e6d8a4bf06992"
+    },
+    {
+      "api": 26,
+      "osBuild": "google/sdk_gphone_arm64/generic_arm64:8.0.0/OSR1.180418.028.A3/10734686:userdebug/dev-keys",
+      "status": "passed",
+      "failures": 0,
+      "skips": 0,
+      "sourceSha256": "2c98bed19ab3e9e43ae49d71f291ff1da2116903359f589513483593b5026d75",
+      "apkSha256": "51cba1d9be66b8a90549fccfb480d2e8f0bea698baef2c897b795da24e033b1b",
+      "testApkSha256": "012166cc59e23c68fa8343bd93ef636d1a3025631f381609d9330477e5362aea",
+      "toolSha256": "b89a52f9cd7f0da924532fcec1d0d83ff273b2e3dcc354eb5d9d617d1c56b24f",
+      "executions": 18,
+      "reportSha256": "0e20a602c2c07814578505c239a1cbaca3b20a655658f80e3e8469e5b234a20c",
+      "instrumentationSha256": "0f49a9839c81f261cb7b0fff46b1bfaba19d0bba3d2c217a74dfd39bc5c58c0c"
+    }
+  ],
+  "core": {
+    "phase": "A4",
+    "status": "passed",
+    "sourceSha256": "2463ae80f2033ad4fc9ef2e0e8be72dc3aaa323cac8c55412a280f74263be211",
+    "suites": [
+      {
+        "runtime": "jvm",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "ab06a0f66af1b6193159646b5c71428b04b2edd05520e78a7184cfc1408b292a"
+      },
+      {
+        "runtime": "iosSimulatorArm64",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "9d637bce5bf546556f2db143eec23c7bd77e64ac717f78603afceeecd3ddcee6"
+      },
+      {
+        "runtime": "jvm",
+        "tests": 11,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "fd0063d632ec1f9a5673b173c3919cd8a3d872ad5a487ebebf248658c7fd2c0e"
+      },
+      {
+        "runtime": "iosSimulatorArm64",
+        "tests": 11,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "d23ceefdd0c747784e386f9b197e173c8e9518a268f626fa7df6b22dc77bead2"
+      }
+    ],
+    "boundary": "Swift/Kotlin Simulator boundary passed: 19 identity, 26 composer, 5 content vectors\nSwift/Kotlin Codex discovery boundary passed: 12 cases\nSwift/Kotlin tool presentation passed: 25 cases\nSwift/Kotlin state boundary passed: 18 policies, 9 projections, 25 contracts\nSwift/Kotlin Codex HTTP boundary passed: 25 cases\nSwift/Kotlin async boundary passed: one delivery, MainActor, ARC release, cancellation, late reply and typed error",
+    "vectorsSha256": "7bbcc59768c84ebe3a5e1b0c5130753af0dba518922a986e155d127e4a2a1408",
+    "stateVectorsSha256": "e0c82ddde92f90a74e6984f9aefe56e9ced5c633f69eeba5d16a296ebfa2a2f3",
+    "frameworks": ["iosArm64", "iosSimulatorArm64", "iosX64"],
+    "physicalDeviceVerified": false,
+    "reportSha256": "f4ea00ebaed593b9f22e042cd888b60b7b16f784eb029205a4de47e9671d311e"
+  },
+  "remaining": [
+    "Integrate native execution UI and target-isolated state",
+    "Native Codex creation/open/reply/attachment/settings/control/plan/approval/unknown recovery scenarios",
+    "Affected iOS and complete Android native regression with screenshot review",
+    "Real Electron, Android, model and independent owner verification including archived chat and Host restart",
+    "Phase completion, push and remote SHA verification"
+  ],
+  "host": {
+    "status": "passed-auxiliary",
+    "capability": "commands:target-bound:v1",
+    "checks": [
+      "wrong Agent, Host, workspace, runtime and account rejected without creating threads",
+      "malformed target rejected",
+      "matching target accepted",
+      "legacy requests remain compatible"
+    ],
+    "workspaceCheck": "passed",
+    "realModelExecution": false
+  }
+}

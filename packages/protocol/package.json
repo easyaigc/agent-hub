@@ -1,0 +1,27 @@
+{
+  "name": "@codex-manage/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/agent-management-v1.schema.json": "./schemas/agent-management-v1.schema.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "contract-manifest.json"
+  ],
+  "scripts": {
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@codex-manage/tsconfig": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

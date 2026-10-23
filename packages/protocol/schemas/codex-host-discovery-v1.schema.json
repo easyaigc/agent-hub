@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codex-manage.example/contracts/codex-host-discovery/v1",
+  "title": "Codex Host Discovery v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "agentId", "name", "target", "fingerprint", "endpoints"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "agentId": {
+      "const": "codex"
+    },
+    "connectionMode": {
+      "const": "automatic"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "target": {
+      "$ref": "#/definitions/target"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "endpoints": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "maxLength": 512
+      }
+    },
+    "endpointHints": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["endpoint", "networkKind"],
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 512
+          },
+          "networkKind": {
+            "enum": ["lan", "vpn", "unknown"]
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agentId", "hostId", "workspaceId", "runtimeId"],
+      "properties": {
+        "agentId": {
+          "const": "codex"
+        },
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "account": {
+          "$ref": "#/definitions/account"
+        }
+      }
+    },
+    "account": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "subject"],
+      "properties": {
+        "authority": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "privateClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "target", "publicKey"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "publicKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      }
+    },
+    "privateReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "target", "publicKey", "ephemeralPublicKey", "nonce", "ciphertext"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "publicKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "ephemeralPublicKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{16}$"
+        },
+        "ciphertext": {
+          "type": "string",
+          "minLength": 23,
+          "maxLength": 1366,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      }
+    },
+    "vpnPeer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "addresses"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "addresses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "vpnSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "target", "peers"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "peers": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/definitions/vpnPeer"
+          }
+        }
+      }
+    }
+  }
+}

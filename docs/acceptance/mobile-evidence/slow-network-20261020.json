@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "windows-cellular-reliability-20261020",
+  "baseCommit": "37e47a1a8e55de58a65e4227933ad59963e9aaea",
+  "features": ["F02", "F05", "F12", "F17", "F18", "F46", "F68"],
+  "sourceSha256": {
+    "apps/ios/Sources/SessionStore.swift": "c37ee548fc5773cf92c9d76dccfb656949ecc221b6caf324b95be65c94e89323",
+    "apps/ios/Sources/CodexDiscovery.swift": "0b35d9a3ac759057db85077eff395315c23a1b211e4d61c258132b8f38d49248",
+    "apps/ios/Tests/CodexManageUITests.swift": "ec58af4c7bd769a2284f515754eaf964e0770cd9e4175a4ddfacb6537fc2adc2",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "7a571a646504d313a65a1f1f561675942d955471f937831d51833a6e955d9da4",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "f6a9d228a7aae716663aeb829c787fc0f3a4ca9a8c3e96342c9d3bbae282eccb",
+    "packages/codex-adapter/src/runtime-session.ts": "1998c5e982b1d69b24634218fc036d7af41f79f92fc88c858bf6bc2511777b47",
+    "scripts/slow-network-ios-fixture.mjs": "fadcd76396f87bba516f8f3fb5851170cf5d35b50fdbd53568fc234f64b53839",
+    "scripts/large-conversation-sync-smoke.mjs": "f8489c259c25f96397ca365c37874de1d3f1e555698b271c46134254471623d7",
+    "scripts/mobile/codex-discovery-scheduling.mjs": "f4f6a51516a8a772dd7a28e1f2f5308ce315b216802a89b4dd5079b7efd58236",
+    "scripts/mobile/fixtures/codex-discovery-scheduling.swift": "649370e9474d2d623c3498e9af678d7fae2f96fb389688cf88adfedf30a0414f",
+    "apps/ios/Sources/SharedMobileRules.swift": "b24cc5effad06e1d71cf67ba96e611516c4fa4be3307bfa60cc792e5a3e1a497",
+    "scripts/history-error-native-smoke.mjs": "7274efd3c068e07f6581949630672efeaac69c3109bb0de9c6f064852c57b712"
+  },
+  "evidenceKind": "auxiliary-native-and-synthetic; not real Windows or cellular acceptance",
+  "profile": {
+    "perResponseBandwidthKbps": 128,
+    "rttMS": 600,
+    "catalogPages": 10,
+    "catalogServerDelayMS": 1200,
+    "excludes": [
+      "TLS handshake",
+      "radio wake-up",
+      "real Tailscale relay",
+      "random packet-level loss"
+    ]
+  },
+  "initialHistoryRequest": {
+    "baselineMS": 19973,
+    "candidateMS": 3717,
+    "baselinePerformanceAssertion": "expected-failure",
+    "candidatePerformanceAssertion": "passed",
+    "samplesPerCandidate": 1
+  },
+  "nativeUITests": {
+    "passed": 2,
+    "failed": 0,
+    "maxConcurrentHistoryReads": 1,
+    "stalledNativeRequests": 1,
+    "severedResponses": 1,
+    "allChannelOutageAndRecovery": true,
+    "draftPreserved": true,
+    "remoteWrites": 0
+  },
+  "nativeSharedErrorDelivery": {
+    "passed": 13
+  },
+  "nativeDiscoveryScheduler": {
+    "passed": 3
+  },
+  "largeDesktopBoundary": {
+    "status": "passed",
+    "syntheticSnapshotMiB": 70,
+    "passiveReadWaitMS": 1011,
+    "commandDiscoveryBudgetMS": 15000
+  },
+  "physicalAcceptance": {
+    "iphone": "not-verified: CoreDevice tunnel timeout",
+    "installedIphoneBuild": "unknown; no successful app inventory",
+    "windows": "not-verified",
+    "cellular": "not-verified",
+    "deployment": "not-performed"
+  },
+  "android": {
+    "sharedHost": "passive read budget applies",
+    "nativeScheduling": "pending",
+    "acceptance": "not-verified-for-this-change",
+    "A6": "human-paused"
+  },
+  "knownBaselineCheckFailure": {
+    "command": "pnpm check:ios:localization",
+    "failure": "Missing translation in unchanged RootView.swift: submit-original-content Chinese key",
+    "changedTimeoutStrings": "Chinese and English resources pass plutil syntax checks"
+  }
+}

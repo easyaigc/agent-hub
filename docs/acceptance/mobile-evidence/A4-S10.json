@@ -1,0 +1,215 @@
+{
+  "phase": "A4",
+  "scenario": "S10",
+  "date": "2026-10-14",
+  "status": "passed",
+  "scope": "Real original-desktop failed Turn and exact submitted-operation receipt; native notice/history/dismissal and encrypted draft restoration; explicit same-thread real-model recovery; independent owner and no duplicate native input. Dedicated localhost fault and fixed official upstream only.",
+  "authority": "User explicitly approved the prepared provider/proxy plan and required existing local Codex execution to remain unaffected and original configuration to be restored.",
+  "desktopVersion": "26.1007.30912",
+  "completedTests": 3,
+  "failures": 0,
+  "skips": 0,
+  "reviewedScreenshots": 12,
+  "originalTurns": 6,
+  "explicitNativeInputs": 6,
+  "sourceFiles": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLiveRuntimeFailureTest.kt": "994b826fe6789e3d545820efffcdfa77755ab60aeb0d3ba1cfe13f7bf3a3102b",
+    "scripts/mobile/android-runtime-failure-live.mjs": "37be38d393b3852559a2bc39514c5cccd7c65877c82d013f46ee41fce9526c39",
+    "scripts/mobile/runtime-failure-proxy.mjs": "355f0c99f152c16ff5c5001c76f496292f0e8990039ec904ef039c3a6ecb1339"
+  },
+  "cases": [
+    {
+      "environment": "Android API26",
+      "status": "passed",
+      "completedTests": 1,
+      "failures": 0,
+      "skips": 0,
+      "reviewedScreenshots": 4,
+      "privateReport": ".local/android-development/a4/s10-selected/api26/report.json",
+      "reportSha256": "41dfbf27628f3faf01ec9ee7a6364e7d79d90a3a9f9a4658d337bf90a01fbd4f",
+      "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+      "testApkSha256": "98126ac6538928b58b7fcd1cbce49b55c3f7d65c1aea1434ffd7be760af63868",
+      "suiteSha256": "994b826fe6789e3d545820efffcdfa77755ab60aeb0d3ba1cfe13f7bf3a3102b",
+      "adapterSha256": "ea7d75565dc0f5a4b61f197d5aacd2aabc8aed3a76cb549b41e1d1f15380d234",
+      "examinerSha256": "7fcc88fb81086a172b601b1f4a2df72af2de67f494b367cabfd00cc1c948a11d",
+      "proxySha256": "355f0c99f152c16ff5c5001c76f496292f0e8990039ec904ef039c3a6ecb1339",
+      "originalNewTurns": 2,
+      "nativeInputs": 2,
+      "originalTurnStates": ["failed", "completed"],
+      "actualFailedTurn": true,
+      "actualRecoveryCompleted": true,
+      "noAutomaticReplay": true,
+      "dismissedRestored": true,
+      "draftRestored": true,
+      "historicalFailurePreserved": true,
+      "providerRemoved": true,
+      "configRestoredExactly": true,
+      "proxyStopped": true,
+      "unrelatedCurrentChatUnchanged": true,
+      "existingDesktopProcessesRemain": true,
+      "proxyCounters": {
+        "droppedConnections": 1,
+        "forwardedRequests": 1
+      },
+      "screenshots": [
+        {
+          "name": "actual-dismissed-failure-restored-draft.png",
+          "sha256": "5bfe3879cbbf35af0d01c2844caf3f0dc739dc070f8a06c10b0868a64f6825d3",
+          "reviewed": true
+        },
+        {
+          "name": "actual-historical-failure-after-recovery.png",
+          "sha256": "7b6d60eef78b2a13afddc322081a4cc9a784c50375cf8c09e6ca071ffdfa8ec0",
+          "reviewed": true
+        },
+        {
+          "name": "actual-runtime-failed-turn.png",
+          "sha256": "9c7efdf294c96fb791d26551e002ec72c1afb024631113150a35392f7692e0b8",
+          "reviewed": true
+        },
+        {
+          "name": "actual-runtime-recovered-reply.png",
+          "sha256": "7b6d60eef78b2a13afddc322081a4cc9a784c50375cf8c09e6ca071ffdfa8ec0",
+          "reviewed": true
+        }
+      ]
+    },
+    {
+      "environment": "Android API37",
+      "status": "passed",
+      "completedTests": 1,
+      "failures": 0,
+      "skips": 0,
+      "reviewedScreenshots": 4,
+      "privateReport": ".local/android-development/a4/s10-selected/api37/report.json",
+      "reportSha256": "20a6d5fcd0f5a169f4c9f8eea36c5266412410c4d9401cd4782039747195f645",
+      "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+      "testApkSha256": "98126ac6538928b58b7fcd1cbce49b55c3f7d65c1aea1434ffd7be760af63868",
+      "suiteSha256": "994b826fe6789e3d545820efffcdfa77755ab60aeb0d3ba1cfe13f7bf3a3102b",
+      "adapterSha256": "ea7d75565dc0f5a4b61f197d5aacd2aabc8aed3a76cb549b41e1d1f15380d234",
+      "examinerSha256": "7fcc88fb81086a172b601b1f4a2df72af2de67f494b367cabfd00cc1c948a11d",
+      "proxySha256": "355f0c99f152c16ff5c5001c76f496292f0e8990039ec904ef039c3a6ecb1339",
+      "originalNewTurns": 2,
+      "nativeInputs": 2,
+      "originalTurnStates": ["failed", "completed"],
+      "actualFailedTurn": true,
+      "actualRecoveryCompleted": true,
+      "noAutomaticReplay": true,
+      "dismissedRestored": true,
+      "draftRestored": true,
+      "historicalFailurePreserved": true,
+      "providerRemoved": true,
+      "configRestoredExactly": true,
+      "proxyStopped": true,
+      "unrelatedCurrentChatUnchanged": true,
+      "existingDesktopProcessesRemain": true,
+      "proxyCounters": {
+        "droppedConnections": 1,
+        "forwardedRequests": 1
+      },
+      "screenshots": [
+        {
+          "name": "actual-dismissed-failure-restored-draft.png",
+          "sha256": "d18793a5eac3e26c1a9aa8e2f7adb2b46736f3689c68b0664cc681ed62851609",
+          "reviewed": true
+        },
+        {
+          "name": "actual-historical-failure-after-recovery.png",
+          "sha256": "dc15fc97bec1b28705f72b202a0db3dce0d8179cf1f8633f38a0cb8e0acca267",
+          "reviewed": true
+        },
+        {
+          "name": "actual-runtime-failed-turn.png",
+          "sha256": "42592fba33d5f7a5d4f1e51007846bd055da49ddf462dd5af1f8b18c4dd7f527",
+          "reviewed": true
+        },
+        {
+          "name": "actual-runtime-recovered-reply.png",
+          "sha256": "dc15fc97bec1b28705f72b202a0db3dce0d8179cf1f8633f38a0cb8e0acca267",
+          "reviewed": true
+        }
+      ]
+    },
+    {
+      "environment": "Xiaomi API34",
+      "status": "passed",
+      "completedTests": 1,
+      "failures": 0,
+      "skips": 0,
+      "reviewedScreenshots": 4,
+      "privateReport": ".local/android-development/a4/s10-selected/physical/report.json",
+      "reportSha256": "987f91c63a16278c0b8b4cb4f47119c9963dbccb1272cc7c54505cb6075b3548",
+      "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+      "testApkSha256": "98126ac6538928b58b7fcd1cbce49b55c3f7d65c1aea1434ffd7be760af63868",
+      "suiteSha256": "994b826fe6789e3d545820efffcdfa77755ab60aeb0d3ba1cfe13f7bf3a3102b",
+      "adapterSha256": "ea7d75565dc0f5a4b61f197d5aacd2aabc8aed3a76cb549b41e1d1f15380d234",
+      "examinerSha256": "bbb4e9c7b51749d94ccb02ca613c8b5c1c458f6cc3810bb44a470c03552421ee",
+      "proxySha256": "355f0c99f152c16ff5c5001c76f496292f0e8990039ec904ef039c3a6ecb1339",
+      "originalNewTurns": 2,
+      "nativeInputs": 2,
+      "originalTurnStates": ["failed", "completed"],
+      "actualFailedTurn": true,
+      "actualRecoveryCompleted": true,
+      "noAutomaticReplay": true,
+      "dismissedRestored": true,
+      "draftRestored": true,
+      "historicalFailurePreserved": true,
+      "providerRemoved": true,
+      "configRestoredExactly": true,
+      "proxyStopped": true,
+      "unrelatedCurrentChatUnchanged": true,
+      "existingDesktopProcessesRemain": true,
+      "proxyCounters": {
+        "droppedConnections": 1,
+        "forwardedRequests": 1
+      },
+      "screenshots": [
+        {
+          "name": "actual-dismissed-failure-restored-draft.png",
+          "sha256": "853d527926e23436c228250d4087e700307a5b53b30ab936a6e6d6c124b64c30",
+          "reviewed": true
+        },
+        {
+          "name": "actual-historical-failure-after-recovery.png",
+          "sha256": "3d55be80ee3d3fcb5867224c883b8e3b303c7e85b86faabb549cbf72e181ff80",
+          "reviewed": true
+        },
+        {
+          "name": "actual-runtime-failed-turn.png",
+          "sha256": "f9afb48301ce21c1d59f8bea58efaf4c28cc59a6b09eb66bdaf5d08a225ebc08",
+          "reviewed": true
+        },
+        {
+          "name": "actual-runtime-recovered-reply.png",
+          "sha256": "d1a67e895483e6ac0d090bac762014c649c275a451e988e831133386c86cbafc",
+          "reviewed": true
+        }
+      ]
+    }
+  ],
+  "inputReuse": "Production APK, native class, test APK and proxy bytes match across selected cases. Final simulator runner differs only by a later lint comment. Phone runner predates stricter cleanup assertions and main-application-only process selection; its retained report independently satisfies those stricter assertions (including all originally observed processes remaining). Request, provider, target and execution paths are unchanged. Archive-specific fingerprints are retained; no claim that all whole runner byte digests match.",
+  "historicalAttempts": [
+    {
+      "privateReport": ".local/mobile-acceptance/A4/runtime-failure-emulator-5554-1791939452380/report.json",
+      "status": "failed",
+      "actualFailedTurns": 2,
+      "scope": "Initial task genuinely failed; recovery transport omitted existing network proxy. Owned instrumentation was explicitly stopped after two terminal failed Turns. Configuration was restored exactly and the private proxy stopped; not a spontaneous production crash."
+    },
+    {
+      "privateReport": ".local/mobile-acceptance/A4/runtime-failure-emulator-5554-1791939917063/report.json",
+      "status": "failed-restoration-examiner",
+      "scope": "All native failure/recovery assertions passed, configuration restored exactly, parent chat unchanged. Overbroad process census included transient SDK readers that exited normally; runner fixed to verify original desktop main application and actual current owner. Failure retained, final simulator rerun passed."
+    }
+  ],
+  "notCovered": [
+    "EasyWork task failure/recovery belongs to A5",
+    "iOS current-product actual failed Turn remains independently recorded",
+    "Physical system/notification acceptance belongs to later phases"
+  ],
+  "finalCleanup": {
+    "ownAcceptanceChatsArchived": 7,
+    "originalChatViewRestored": true,
+    "userConfigRestoredExactly": true,
+    "privateRecord": ".local/android-development/a4/s10-cleanup.json"
+  }
+}

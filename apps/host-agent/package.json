@@ -1,0 +1,27 @@
+{
+  "name": "@codex-manage/host-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@codex-manage/codex-adapter": "workspace:*",
+    "@codex-manage/notification-runtime": "workspace:*",
+    "@codex-manage/protocol": "workspace:*",
+    "@codex-manage/service-runtime": "workspace:*",
+    "bonjour-service": "1.4.4",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@codex-manage/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/qrcode": "1.5.6",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

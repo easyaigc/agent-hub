@@ -1,0 +1,1118 @@
+{
+  "version": 1,
+  "phase": "A1",
+  "status": "passed",
+  "implementation": "Android native and KMP sync identity/composer in both native applications; later product functionality remains planned",
+  "toolchain": {
+    "jdk": "17.0.20.1",
+    "gradle": "9.5",
+    "gradleDistributionSha256": "553c78f50dafcd54d65b9a444649057857469edf836431389695608536d6b746",
+    "agp": "9.3.1",
+    "kotlin": "2.4.21",
+    "composeCompiler": "2.4.21",
+    "composeBom": "2026.09.00",
+    "activityCompose": "1.13.0",
+    "androidSdk": {
+      "min": 26,
+      "compile": 37,
+      "target": 37
+    },
+    "kotlinOfficialXcodeCompatibility": "26.4; Xcode 27 verified locally for this input only"
+  },
+  "core": {
+    "phase": "A1",
+    "status": "passed",
+    "sourceSha256": "1ca629d19a8b70a0c174c043c505e30c785a62522bde9eba0a03e3b579976a28",
+    "suites": [
+      {
+        "runtime": "jvm",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "b4308040d79ce36e8fcf9be1417d3e815d2d0cb2032f160c617fc7773fccf7f0"
+      },
+      {
+        "runtime": "iosSimulatorArm64",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "735ca9232d158f670438d6d7a79a35e137c3017a68b1a0e07aaf40c4cb8319f7"
+      }
+    ],
+    "boundary": "Swift/Kotlin Simulator boundary passed: 19 identity, 26 composer, 5 content vectors",
+    "vectorsSha256": "7bbcc59768c84ebe3a5e1b0c5130753af0dba518922a986e155d127e4a2a1408",
+    "frameworks": ["iosArm64", "iosSimulatorArm64", "iosX64"],
+    "physicalDeviceVerified": false,
+    "reportSha256": "4e40ad467119c31e1168f4f268c938dcf312b618bb27435c5540bba08720a9b5"
+  },
+  "android": {
+    "status": "passed",
+    "sourceSha256": "52b8ed8fe83f84def108f03a05ad3a03e88b59a086d0aad7315277add6593b2b",
+    "api": "37",
+    "abi": "arm64-v8a",
+    "build": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+    "apkSha256": "ec247d32f5171b090aeec7f6eb0877f451afcaa78e1b24b38030ec85b732a014",
+    "testApkSha256": "a042547cc07ddc7a8cfd0655dbd6a7ac237ef33db87c5b5c5a1b4a6148bb015b",
+    "tests": 5,
+    "failures": 0,
+    "skips": 0,
+    "scope": "A1 foundation only",
+    "visual": {
+      "status": "reviewed-foundation-scope",
+      "sourceSha256": "52b8ed8fe83f84def108f03a05ad3a03e88b59a086d0aad7315277add6593b2b",
+      "images": [
+        {
+          "file": "demo-completed-light.png",
+          "width": 1080,
+          "height": 2424,
+          "sha256": "f7008b848d306e9cba23108d2012f4037050dd1aaddbced280bae1eca08e6d0e"
+        },
+        {
+          "file": "demo-draft-dark.png",
+          "width": 1080,
+          "height": 2424,
+          "sha256": "e9545cd4eb866a9063d67ec9ead2c04fbcc539e8c9ffc4f9583e9b14931d8215"
+        },
+        {
+          "file": "demo-interrupted.png",
+          "width": 1080,
+          "height": 2424,
+          "sha256": "456a61202c191abf4eafdbfbedbc704d63894c2fbe74527d8df84f9b5f5ba3a7"
+        },
+        {
+          "file": "demo-running.png",
+          "width": 1080,
+          "height": 2424,
+          "sha256": "becffe4059fe3cfe8b9f0f243ab925f7fa08b560ba3313c24d66d9e955cabdb8"
+        },
+        {
+          "file": "onboarding-light.png",
+          "width": 1080,
+          "height": 2424,
+          "sha256": "f86f824f0d72075ab4cd8f4b8507c4bac9b37f4eb4051748e48614f11c2fcb79"
+        },
+        {
+          "file": "sidebar-dark.png",
+          "width": 1080,
+          "height": 2424,
+          "sha256": "809953593745b0b4dcecccae8f6b3296c389a0ba4ab0312a43825f5617c39036"
+        }
+      ],
+      "notes": [
+        "六帧已逐张复核：启动入口、本地示例浅深色、Activity重建草稿保留、空输入禁用、停止/恢复、深色侧栏；系统键盘和状态栏可见。仅基础工程，完整UI与附件语音在后续阶段。"
+      ]
+    },
+    "environments": [
+      {
+        "status": "passed",
+        "sourceSha256": "52b8ed8fe83f84def108f03a05ad3a03e88b59a086d0aad7315277add6593b2b",
+        "api": "37",
+        "abi": "arm64-v8a",
+        "build": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+        "apkSha256": "ec247d32f5171b090aeec7f6eb0877f451afcaa78e1b24b38030ec85b732a014",
+        "testApkSha256": "a042547cc07ddc7a8cfd0655dbd6a7ac237ef33db87c5b5c5a1b4a6148bb015b",
+        "tests": 5,
+        "failures": 0,
+        "skips": 0,
+        "scope": "A1 foundation only",
+        "visual": {
+          "status": "reviewed-foundation-scope",
+          "sourceSha256": "52b8ed8fe83f84def108f03a05ad3a03e88b59a086d0aad7315277add6593b2b",
+          "images": [
+            {
+              "file": "demo-completed-light.png",
+              "width": 1080,
+              "height": 2424,
+              "sha256": "f7008b848d306e9cba23108d2012f4037050dd1aaddbced280bae1eca08e6d0e"
+            },
+            {
+              "file": "demo-draft-dark.png",
+              "width": 1080,
+              "height": 2424,
+              "sha256": "e9545cd4eb866a9063d67ec9ead2c04fbcc539e8c9ffc4f9583e9b14931d8215"
+            },
+            {
+              "file": "demo-interrupted.png",
+              "width": 1080,
+              "height": 2424,
+              "sha256": "456a61202c191abf4eafdbfbedbc704d63894c2fbe74527d8df84f9b5f5ba3a7"
+            },
+            {
+              "file": "demo-running.png",
+              "width": 1080,
+              "height": 2424,
+              "sha256": "becffe4059fe3cfe8b9f0f243ab925f7fa08b560ba3313c24d66d9e955cabdb8"
+            },
+            {
+              "file": "onboarding-light.png",
+              "width": 1080,
+              "height": 2424,
+              "sha256": "f86f824f0d72075ab4cd8f4b8507c4bac9b37f4eb4051748e48614f11c2fcb79"
+            },
+            {
+              "file": "sidebar-dark.png",
+              "width": 1080,
+              "height": 2424,
+              "sha256": "809953593745b0b4dcecccae8f6b3296c389a0ba4ab0312a43825f5617c39036"
+            }
+          ],
+          "notes": [
+            "六帧已逐张复核：启动入口、本地示例浅深色、Activity重建草稿保留、空输入禁用、停止/恢复、深色侧栏；系统键盘和状态栏可见。仅基础工程，完整UI与附件语音在后续阶段。"
+          ]
+        }
+      },
+      {
+        "status": "passed",
+        "sourceSha256": "52b8ed8fe83f84def108f03a05ad3a03e88b59a086d0aad7315277add6593b2b",
+        "api": "26",
+        "abi": "arm64-v8a",
+        "build": "google/sdk_gphone_arm64/generic_arm64:8.0.0/OSR1.180418.028.A3/10734686:userdebug/dev-keys",
+        "apkSha256": "ec247d32f5171b090aeec7f6eb0877f451afcaa78e1b24b38030ec85b732a014",
+        "testApkSha256": "a042547cc07ddc7a8cfd0655dbd6a7ac237ef33db87c5b5c5a1b4a6148bb015b",
+        "tests": 5,
+        "failures": 0,
+        "skips": 0,
+        "scope": "A1 foundation only",
+        "visual": {
+          "status": "reviewed-foundation-scope",
+          "sourceSha256": "52b8ed8fe83f84def108f03a05ad3a03e88b59a086d0aad7315277add6593b2b",
+          "images": [
+            {
+              "file": "demo-completed-light.png",
+              "width": 1080,
+              "height": 1920,
+              "sha256": "606a6d86b2c7e3386309781ae2dd5149453ada96452a755a9cc2e797d331bf2b"
+            },
+            {
+              "file": "demo-draft-dark.png",
+              "width": 1080,
+              "height": 1920,
+              "sha256": "ae8c037aa827ba8ca121a338ba24616b5d227f580acec34c6a422d03fd9d6ba8"
+            },
+            {
+              "file": "demo-interrupted.png",
+              "width": 1080,
+              "height": 1920,
+              "sha256": "c93ac976a61a8ade61b4dbeee1cf1f481bfe87470c965f99acc1b0af463afa03"
+            },
+            {
+              "file": "demo-running.png",
+              "width": 1080,
+              "height": 1920,
+              "sha256": "f5db4fa672ef70c4ee49fa688a710aa5c00a6025e98344cf104643e9e3d4f097"
+            },
+            {
+              "file": "onboarding-light.png",
+              "width": 1080,
+              "height": 1920,
+              "sha256": "163ce6244c682614f709ec3ccf06bbf71e3e55438ac4bd7a953cdda689a31ef1"
+            },
+            {
+              "file": "sidebar-dark.png",
+              "width": 1080,
+              "height": 1920,
+              "sha256": "6fb7aa88f8729bf58cb765a94b5539e3d5f15b20566573b812c7500798210013"
+            }
+          ],
+          "notes": [
+            "六帧已逐张复核：基础浅深色、空输入禁用/草稿启用、停止/恢复及示例侧栏；API26系统键盘与三键导航有平台差异。键盘显示时输入框下缘部分被覆盖，列为 A3 原生 UI／A6 inset 的待修复视觉缺口，当前只证明 A1 共享规则和基础工程，不认定完整 UI 一致。"
+          ]
+        }
+      }
+    ],
+    "packagingObservation": {
+      "status": "payload-identical-archive-differs",
+      "oldApkSha256": "42335f2f65e99dd0d7193eeff5704e308ef6adc9be6086aca9cf9beb5ecfa61e",
+      "newApkSha256": "ec247d32f5171b090aeec7f6eb0877f451afcaa78e1b24b38030ec85b732a014",
+      "payloadSha256": "3b7d5b6d0bf4d1e19465bd2f703f09053685a566c3ac8af82ebffdad962e9772",
+      "entries": 119,
+      "metadataDifferenceCount": 4
+    }
+  },
+  "ios": {
+    "status": "passed",
+    "sourceSha256": "718e35e92d13053162291da68c8a8c4bce9f048e42bacd727b5f9c99037b2b21",
+    "scope": "Full native regression after KMP sync-rule adoption; matching-inputs aggregate",
+    "groups": [
+      {
+        "group": "native",
+        "executions": 20,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed",
+        "caseEvidence": [
+          {
+            "test": "testCloseDemoReturnsToOnboardingAndPersists",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testUnifiedComposerStopResumeAndRestart",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationCancelFinishAndSend",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationSwitchAndBackgroundKeepOriginalTarget",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationDeniedAndDarkAppearance",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationDisabledRetainsDraftAndAllowsRetry",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testSidebarSearchAndProjectSelection",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testSidebarSwipeOpenCloseKeepsDraft",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testSidebarSwipeDirectionAndVerticalScrolling",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testSidebarContinuousDragAndReversal",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testSidebarRecentAndProjectExpansion",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testClientSwitchKeepsDraftOnOriginalTarget",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testNewConversationCreatedOnFirstSend",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testOfflineClientKeepsEditableDraftAndDisablesSend",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testUnsentNewDraftSurvivesClientSwitchAndRelaunch",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testSystemAttachmentPickers",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testFloatingChatControlsAndExpandingDraft",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testFloatingJumpToLatestClearsComposer",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testDarkAppearance",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testTaskNotificationPreferencesAndPermissionDenied",
+            "evidenceStatus": "passed"
+          }
+        ]
+      },
+      {
+        "group": "clients",
+        "executions": 2,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "composer",
+        "executions": 2,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "generation",
+        "executions": 1,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "plan",
+        "executions": 2,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "receipts",
+        "executions": 1,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "compaction",
+        "executions": 1,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "creation",
+        "executions": 1,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "recovery",
+        "executions": 3,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "reading",
+        "executions": 2,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "unread",
+        "executions": 1,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "badge",
+        "executions": 1,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "history",
+        "executions": 3,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "sidebar",
+        "executions": 8,
+        "failures": 0,
+        "skips": 0,
+        "evidenceStatus": "reused-matching"
+      }
+    ],
+    "executions": 48,
+    "distinctTests": 43,
+    "failures": 0,
+    "skips": 0,
+    "runtimeWarnings": [
+      {
+        "group": "native",
+        "count": 4,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "clients",
+        "count": 2,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "composer",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "generation",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "plan",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "receipts",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "compaction",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "creation",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "recovery",
+        "count": 5,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "reading",
+        "count": 3,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "unread",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "badge",
+        "count": 1,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "history",
+        "count": 4,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      },
+      {
+        "group": "sidebar",
+        "count": 7,
+        "scope": "Warnings retained in raw xcresult; pre-existing SwiftUI publishing/layout diagnostics remain observable"
+      }
+    ],
+    "aggregateReportSha256": "e3e5525a49e5e7ed463634e489e34867e2a58edba56cd1a49dc77d31c79bec22",
+    "closureToolSha256": "6d05b8736a4be3d6c10755733ce78c53ac7c3822a9f4f86c4d629d2b86e09ab4",
+    "visual": [
+      {
+        "group": "native",
+        "status": "reviewed-exact-matching-case-images",
+        "images": [
+          {
+            "label": "settings-demo-disabled_0_691DE9A5-5640-40C9-B497-13699D1A1014.png",
+            "sha256": "334fa1535b76b8e83caccc6d22bcccdec2fc44b4ab369cb1767e4fca2e4545ea"
+          },
+          {
+            "label": "demo-closed-onboarding_0_08CE6DD8-E45F-4A69-AF27-FBB5EE264D57.png",
+            "sha256": "64df87b4a7f851b04c892ebd121849919c1ac0720a60a0fc8addccd8fe0554f1"
+          },
+          {
+            "label": "settings-demo-enabled_0_88BED471-3A52-466D-BF9E-68D25D16B3A9.png",
+            "sha256": "b7e26b64ef2145499b0389ce8d14904905af7667d41e3b010569ec36236e7520"
+          },
+          {
+            "label": "demo-main-without-test-controls_0_FB7A00A7-1081-406B-B72F-3F38206507D9.png",
+            "sha256": "7357e686d6efb48728b28848e732786c8d4f22c177175c370c3c8aaa2373cb26"
+          },
+          {
+            "label": "settings-demo-disabled_0_E84F0667-FF17-4E4A-A5A7-40BF23845CBC.png",
+            "sha256": "334fa1535b76b8e83caccc6d22bcccdec2fc44b4ab369cb1767e4fca2e4545ea"
+          },
+          {
+            "label": "composer-resume_0_CC42B83C-5424-462A-A400-FB7B13226785.png",
+            "sha256": "98563a0164307ff508733535dc96969166065fc84b9b283ea56faf78650760dc"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_2677EB0C-D753-462F-B6D3-E3954B235A2F.png",
+            "sha256": "75007eccfdffaefd462456c4a22302cd447d7e2cb0f08892de484b2e20a4aead"
+          },
+          {
+            "label": "dictation-listening-light_0_3F69AD88-A39F-49CD-8A6E-55D7E1C9F009.png",
+            "sha256": "223142b64f0f34009122b6471276d72fda259219229f4d28ad92d7c0223df5d7"
+          },
+          {
+            "label": "dictation-listening-dark_0_14E15B7F-F5CC-41C6-9D9D-676F1603EB3E.png",
+            "sha256": "074a31c819192fe95bd1736b6c74750911785a6ccd382509ddf0dc08955c938f"
+          },
+          {
+            "label": "dictation-disabled-recovered_0_D803B819-B0EB-4A1D-B8C6-A3E686AE47B1.png",
+            "sha256": "f43c31f6a8f803f0608ffc2e2641982956889d8f218988403a10623ecd37b97a"
+          },
+          {
+            "label": "compact-main_0_15B7C966-5567-4573-A810-4DE446D33BBE.png",
+            "sha256": "5c53e3573444e505765af31c297be136078b75494dc09f6d97e2dbeba9ff9f9e"
+          },
+          {
+            "label": "compact-sidebar_0_8138E0E7-CF04-4A17-8AEE-C47DD904D2E5.png",
+            "sha256": "6d810b7c8df03e179e4f6a049913ea9d182777d75916b075e40fa7380309480c"
+          },
+          {
+            "label": "sidebar-swipe-open_0_3C1294B8-1B2B-4CBC-B0B0-A0AEE4284D4F.png",
+            "sha256": "c2a29a92bb9b9ecd11500f825a1b714c1cd4b3b5f09d9c8b486e8634cd828bf5"
+          },
+          {
+            "label": "sidebar-swipe-closed_0_54680CFA-B9F5-48C0-BF0A-C0F8DB6BA338.png",
+            "sha256": "593bc93117131cb11fdade55e1b3b6f3a3f6ff46604d8523f83520feabe30d40"
+          },
+          {
+            "label": "sidebar-search-swipe-closed_0_B84DB6C3-EC8D-4CAA-94F9-08580C48B447.png",
+            "sha256": "593bc93117131cb11fdade55e1b3b6f3a3f6ff46604d8523f83520feabe30d40"
+          },
+          {
+            "label": "sidebar-continuous-drag-closed_0_71272375-3D02-45FB-9B4D-06CEE8068AA5.png",
+            "sha256": "e1b8f172f2ac542a757227823e010ef63372e6a731f795fc85a1417120dc3f73"
+          },
+          {
+            "label": "sidebar-five-recent-and-project_0_1F54AEA2-AC66-4579-BDE5-60865B11BD7F.png",
+            "sha256": "a907462562f1edbb574b88ca7a013c66182b763890864c45b2df70e458b6bef7"
+          },
+          {
+            "label": "client-draft-isolation_0_51EE3DFC-11CE-4ADC-B633-F159A5F52264.png",
+            "sha256": "a1d39a018e635ba653d896427f79532e7ba0da852afdf7ad65a5f184cff34782"
+          },
+          {
+            "label": "first-send-new-thread_0_6E7FF0B7-BC9E-422D-8906-FD9DD5EA2763.png",
+            "sha256": "27d61d8a3376810cd756fc1959c51a92c69cba5a1871fa6408ce66a544479ede"
+          },
+          {
+            "label": "offline-draft_0_69D4B974-99F2-4E97-9EFC-17E5FD155DDC.png",
+            "sha256": "6bb69725e9516426c8ed9d55144e905137e260c6fea6b3cdd190d69514b45d01"
+          },
+          {
+            "label": "system-file-picker_0_A001FDC6-C81F-4700-8F19-3C09A307A888.png",
+            "sha256": "23527fb8130396b5e1e24368a57ebda840cbaab0735dbb0382deabc175f18584"
+          },
+          {
+            "label": "system-photo-picker_0_9B165589-C26E-4C0E-A764-0F7BE76C38F2.png",
+            "sha256": "d9e55439a3a414b23248f8b13e2c37e906ce1f3cfbc2b1ac90c8398d27c37339"
+          },
+          {
+            "label": "floating-chat-light_0_FA41AB25-4313-48FF-8472-3C4FC344B278.png",
+            "sha256": "bdc3566ed437fa4141a4da9bc4f02ce99cbfcdcef710f2c22db86ce59a5fc598"
+          },
+          {
+            "label": "floating-chat-keyboard-multiline_0_305C7064-1354-4ED4-98BE-E305095043A0.png",
+            "sha256": "d16373860424ed7b0b2b49149165aa8d3210dcefc02d43e5e99ba71ee24dfb79"
+          },
+          {
+            "label": "floating-chat-landscape_0_8B640ECC-68AE-4FC6-981C-698C08EB39D1.png",
+            "sha256": "c46a991f95a66d9a13177e77af5277e88ebe0f02c48c1dbb4a9e93cd3b35fe12"
+          },
+          {
+            "label": "floating-chat-dark_0_476C68DF-DF2D-4CEC-AE6D-67230586E141.png",
+            "sha256": "4df3d4346057755454ea499e7018f8f8ec6b2315756231acf19f1ad71b1cac7e"
+          },
+          {
+            "label": "floating-chat-dark-latest_0_C22233E4-780E-4E2B-8376-B54F2AEA5E3E.png",
+            "sha256": "c63c7748fa268b909b28070b12ff45b2da9e2d49837702cd7c654adfffee9aec"
+          },
+          {
+            "label": "floating-chat-jump-latest_0_BEE12C38-F355-44D5-A9BC-333C5EBCF337.png",
+            "sha256": "7fc5ef507f9849fea6e125eeabde7b14de1b0d914e348c5040a480023420c515"
+          },
+          {
+            "label": "compact-dark_0_394FCC9B-78C6-4FCC-88B0-1E5020ED7E25.png",
+            "sha256": "986d2b9dba263e8b55772e1b8cd06fc6b39fad75ad2fff6fea0f3747cee6838e"
+          },
+          {
+            "label": "notifications-denied-and-defaults_0_8A494F3B-B998-4465-98E0-6888FF00D9DD.png",
+            "sha256": "e75e9d21bf0fd7ed1e126a3f297c4f19847a3ee84e5b82bafa4d341cf8f06822"
+          },
+          {
+            "label": "notifications-preferences-restored_0_9B360A74-3C21-4E44-9EBA-2B8C8D22FEF8.png",
+            "sha256": "38426a159df690b5c7cae337db6cce30cb3b3f4ca954aed6aba418b3cbfede37"
+          }
+        ],
+        "notes": [
+          "工作室Mac的独立会话截图显示studio-draft草稿及启用send；原客户端草稿恢复和两个目标分别保留文本由测试断言验证。",
+          "五张示例设置/引导/普通聊天截图已核对；示例开关与客户端数量变化正确，关闭后恢复引导，普通页面没有测试输入控件。",
+          "已复核深色背景、蓝色用户消息、白色正文、浮动目标栏及空输入发送禁用状态。",
+          "浅色语音草稿截图已核对原文本与合成识别结果保留，结束/取消/发送由原生断言验证；模拟器合成识别不证明真实麦克风。",
+          "深色语音监听截图已核对草稿、取消/结束/发送和波形；拒绝权限保留文本由原生用例验证，识别输入为合成。",
+          "恢复后的普通输入截图显示disabled-dictation-draft原草稿保留、send启用；语音禁用/恢复与允许重试由原生断言验证，未证明真实识别。",
+          "无显式图片；切换/后台后只写原目标草稿由原生断言验证，未证明物理语音。",
+          "已逐张复核五帧：浅色默认与四行键盘输入、横屏保留四行草稿、深色草稿与发送后最新位置。横屏按 PNG 原方向与 EXIF 核对；浮动工具栏和输入框可见，演示回复明确属于本地体验。",
+          "已复核末尾 2385–2399 历史及清空输入框；重置/读取输入性能和复制中文为测试启动参数注入的诊断控件，不属于普通产品 UI。",
+          "侧栏截图已核对首发创建的native-first-message行在Recent与Agent Hub项目下均出现并选中，原有会话保留；首次发送创建由原生断言验证。",
+          "离线截图核对灰色连接状态、offline-draft文本保留、离线草稿提示与send禁用；本地附件入口和语音入口保留。可编辑性由原生断言验证。",
+          "连续拖动反向后的普通聊天界面已核对，空输入禁send且抽屉关闭。手势位置、反向与恢复由原生断言验证。",
+          "五条Recent/项目对话截图已核对展开入口、选中行和长标题截断，连续创建与展开/折叠由同一测试验证。",
+          "紧凑主界面和侧栏两张图已核对原生层级与项目列表；搜索/选择由原生断言验证，普通页面无诊断控件。",
+          "无显式截图；纵向滚动、错误方向/短距离不打开抽屉、设置页手势隔离及新对话抽屉由原生断言验证。",
+          "三张手势截图已核对输入swipe-keeps-draft在开关/半遮挡抽屉后保留；展开抽屉与恢复输入界面符合基线。手势中间帧只作交互证据。",
+          "系统Files最近项目空页和Photos有限访问选择页已核对，照片为模拟器标准样本；原生入口/关闭由用例验证，不作为产品自绘UI要求。",
+          "已复核系统通知关闭提示及原生设置入口、各通知类型默认选项，以及重启后任务完成、连接异常、主动停止、声音和横幅选项恢复；不构成真实后台推送到达证据。",
+          "两张截图核对停止后的恢复按钮和完成后的空send禁用；合成任务恢复文本及重启规则由同项原生断言验证。",
+          "无显式截图；未提交新对话草稿跨客户端切换/重启后恢复由原生断言验证。"
+        ]
+      },
+      {
+        "group": "clients",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "client-list-edit-entry_0_1D0844BA-CB05-4A51-970E-05B8EA1523AC.png",
+            "sha256": "a3146ac4a723ade5eef18bd1f48e595fcf2d486a6d2e367da480f1e2db2fab49"
+          },
+          {
+            "label": "client-edit-saved_0_32522D49-7384-4FDC-97F8-474DCEF94C89.png",
+            "sha256": "8f47abb402716eba921bfd4938c2b11506df0611deeeff2f957950941de6ac2c"
+          }
+        ],
+        "notes": [
+          "两帧客户端列表已复核：只读本机目标保留勾选及历史内容，连接编辑后昵称更新为 Connected Edited Mac；编辑入口与列表布局稳定，背景灰色为系统 sheet 遮罩。取消、地址身份拒绝与持久恢复以该组原生断言和 fixture 请求记录核对。"
+        ]
+      },
+      {
+        "group": "composer",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "composer-host-completed_0_C1AAC8DE-DB41-43A1-8DA0-0723136DB275.png",
+            "sha256": "f14c8cb2786c3c532eca080efc770a086fcc94e6408eacc514369f013aabf263"
+          },
+          {
+            "label": "composer-host-interrupted_0_BCD6BD71-01EF-4DBA-BBF7-52BA56646747.png",
+            "sha256": "22490539331644f97faa8a56162ea3b522e23666f2c43a27b274a94010925bd4"
+          },
+          {
+            "label": "composer-host-failed_0_364BDC1C-A6EF-4F33-9BAE-BDC501C9AF51.png",
+            "sha256": "d6d7d5a0c67f39d38fe0f1ee09d92b9192f4b66142650cf16225b0ac791f8d06"
+          },
+          {
+            "label": "composer-host-paused_0_53F60B7A-8319-4C48-B20A-D0D37355DA0D.png",
+            "sha256": "d4d9fbf822bca69d61fc22aa0b98c1d94f998cc25779695ba2a8d09fc2c8edc1"
+          },
+          {
+            "label": "composer-host-completed-with-old-interruption_0_C489BA1B-09F1-4BDD-A9A4-6EE24965132B.png",
+            "sha256": "9c3571b85379e9e04527c61732fb8007c2b8fa3c8be7d1f7ad50af88be87cea4"
+          },
+          {
+            "label": "composer-host-unknown_0_086B4513-0ADD-43C1-B128-AD2E9CD174BF.png",
+            "sha256": "bff537bc3d37eecd7422e9beb8da37ab07b8dc79e063af5d9d0e54693ab175a5"
+          },
+          {
+            "label": "composer-numbered-queue-above-input_0_0C0DBF53-14E5-4FF4-B1C1-DD8887BFC884.png",
+            "sha256": "5330bb36c5759eebc2cac80c96d8c0b338b6b17519600e90a615bdb0e901eae4"
+          },
+          {
+            "label": "composer-host-resumed_0_41D06E11-BD02-46FD-A584-9E9EE223BA92.png",
+            "sha256": "b3b320a6de6a43f86bc8dabad23711e91c542549f4bce8ed37672ff7fca2e419"
+          },
+          {
+            "label": "composer-resume_0_13D2822C-3D80-4604-B108-0555DF2CCB9F.png",
+            "sha256": "4b14bfd84f212a3675276c66b4397334ff0a97e325c248cd58b1523298564834"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_653A0E7D-4003-423B-B7EB-C23036BF21AB.png",
+            "sha256": "2001f249a10470f04672a94034080b57a70f0fdf4b1edfdfa2ec2ef411839f4e"
+          }
+        ],
+        "notes": [
+          "已复核十帧：completed 与 unknown 空输入为禁用发送；interrupted、failed、paused 为恢复播放按钮；已完成回复优先于旧中断工具；running 显示停止按钮及输入框上方编号队列，取消第二项后剩余编号连续；本地恢复完成后返回禁用发送。合成服务与本地演示分别注明，不代表真实模型结果。"
+        ]
+      },
+      {
+        "group": "generation",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "mobile-generation-settings_0_7CCDED53-0139-4012-850E-9024F231F1A8.png",
+            "sha256": "333b25e4c16c758f6d6695efd08119c5a9bc83652c3e7ef2943cb708bb9350d4"
+          },
+          {
+            "label": "mobile-generation-composer-compact_0_F501AC32-CFEC-451C-81B8-021B273940F0.png",
+            "sha256": "c4ca71d1e618ff81fe63368822de4bc340b89a6e72448db591ce2c48d8452228"
+          },
+          {
+            "label": "mobile-generation-composer-wide_0_A635A0C4-F496-4CDF-A695-053E7F9168E5.png",
+            "sha256": "1992a9f0dcc954706cdbd37d373d0d6b083d8d1524b2db297dd5fa2ed564d774"
+          }
+        ],
+        "notes": [
+          "三帧已复核：设置页低强度、快速模式启用及完全访问勾选；紧凑/横屏输入栏保留计划、权限和模型速度摘要。紧凑截图仍有读取历史转瞬状态，作为状态覆盖，不作为稳定空白布局参考；横屏按 EXIF 转向核对。提交设置及重启继承由该组断言和请求记录核对。"
+        ]
+      },
+      {
+        "group": "plan",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "mobile-plan-review_0_DCE0B884-B400-4745-9FEA-5CBF0998A9B6.png",
+            "sha256": "a0019c4ccd13e9793a76b5d64236da6e154fb5d4d01490f0dbcb0fc9546f461f"
+          },
+          {
+            "label": "mobile-composer-plan-mode_0_A0E482A2-C04D-4817-A6FA-A30C29C7FAF0.png",
+            "sha256": "5b148cef0aa524b416d39020eee5a66750b675ef24298d59f738facdc5ba1f6e"
+          },
+          {
+            "label": "mobile-plan-readonly_0_8AF95A4A-100A-4DF0-917C-03E1012CD57B.png",
+            "sha256": "97557e8b34b6cc50ff0bc0645d1dcf9bf3d2537a1a2a8be27bf77f5f625881df"
+          },
+          {
+            "label": "composer-resume_0_1A9C32E2-BFF7-42BF-8343-A9FD5D0CCC15.png",
+            "sha256": "2b8a622890d0cecfbb91033b1ffd50cdcbf0595986567cfa57f668bdd7f1b110"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_6C08E10E-07C8-4BD4-80E9-A5FCFE90A016.png",
+            "sha256": "1337eb6bbb3849f39efee8db4cfc3b47490b06eca528346c32bc4f9940aae128"
+          }
+        ],
+        "notes": [
+          "五帧已逐张复核：展开计划标题/正文/复制与实施/调整动作、计划模式编辑带键盘、只读计划折叠且两个动作禁用并提示草稿保留；本地恢复前为播放按钮，完成后为空输入禁用发送。计划请求去重及参数由实际原生断言与 fixture 记录核对。"
+        ]
+      },
+      {
+        "group": "receipts",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "approval-dark-disabled_0_174324EF-8B79-4CD4-AF30-4A5CB3472E71.png",
+            "sha256": "6d8addbc051c980a72820210d56b788211abd8ac2578596729168e1efc21654b"
+          },
+          {
+            "label": "approval-dark-enabled-custom_0_77A96BD5-E3A0-447A-9C0E-61799A637E54.png",
+            "sha256": "0124c3d534302c000575d93424977b6fba2f634dea510228f80ccd769ba8d0f5"
+          },
+          {
+            "label": "approval-light-enabled-custom_0_AB551FAE-F2B0-4FA6-8294-B0A46435D1FA.png",
+            "sha256": "6957aa34a8ba5066d3011100b646dce3ceb97ae7c04749d2981fbb1d53d146f2"
+          }
+        ],
+        "notes": [
+          "三帧问题卡片已复核：深色无选择时提交禁用，选择简洁版并填写补充说明后启用；浅色为相同选择与文字，使用黑色提交按钮。深色补充输入帧下缘存在键盘收起过渡，未作为稳定布局参考。失败回执及重启恢复由原生断言和请求记录核对，不能等同真实审批。"
+        ]
+      },
+      {
+        "group": "compaction",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "context-compaction-running_0_ABEFF32E-B0F4-4CB3-973C-0962A3717298.png",
+            "sha256": "f17f154e5ce0966fccd67af2f1ac7a771e4e99f3f8e4ef012133545e2f8ea42c"
+          },
+          {
+            "label": "context-compaction-completed_0_DE961C0B-D8B1-4C43-971E-4A9BBF6CA4E1.png",
+            "sha256": "3a148db138d425b3f6765b987762b7e6bc60013abb11af6d69eebc8912f7d168"
+          }
+        ],
+        "notes": [
+          "两帧已复核：原回复和折叠工具组保持，压缩中为独立说明及旋转指示/停止按钮，完成后独立已压缩行、回复操作与空输入禁用发送；未将压缩过程拼进回复内容。真实压缩执行仍在后续真实 DEV 验收。"
+        ]
+      },
+      {
+        "group": "creation",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "desktop-fixture-pending-before-restart_0_5A634C71-3176-4F01-BD7F-5983BAA47C46.png",
+            "sha256": "28db53f12a473f809801b87d7e1f48966994099796e7bea3f4aa979e2e166b68"
+          },
+          {
+            "label": "desktop-fixture-confirmed-without-second-send_0_61AE5B77-0BE6-4CCF-B4A9-C0A093DCF6AD.png",
+            "sha256": "98d40a9b0a19e7484d4faa1530a809590fcb578f9c42da1406f7dbfa82b0fcd3"
+          }
+        ],
+        "notes": [
+          "两帧已复核：重启前首条创建保持不可变输入、查询状态/结束等待入口及忙碌按钮；确认后同一首条显示并出现最终回复，输入清空且发送禁用。fixture 计数为创建提交 1 次、普通 replies 0 次；该结果仅证明合成边界，不代表真实桌面创建。"
+        ]
+      },
+      {
+        "group": "recovery",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "creation-send-disabled-empty_0_6A024981-274E-4B61-BE09-F9C289A8ECC1.png",
+            "sha256": "97f1f9b35027256b9223fef0a774f74a57f99b6fd9b6724f851d5115aa5dede1"
+          },
+          {
+            "label": "creation-send-enabled-draft_0_F9550793-4B03-494F-9367-E27328567046.png",
+            "sha256": "d96bfdb50edb4c167237bf1c1451c9ef242b207f0c170d6fc45822d457f16aba"
+          },
+          {
+            "label": "creation-message-sending_0_7B696E36-11C4-4493-98B6-D15C7BF82A06.png",
+            "sha256": "4af897392a32b25709fc9aa1e2fa91d702c9b688f4032e825d88bcd9322a19ee"
+          },
+          {
+            "label": "creation-message-sending-dark_0_F5066B21-ED1E-4BF7-8572-DCEB54C40C82.png",
+            "sha256": "1d82aafc20357f17e6a3e516e402817383e5ed60b8299438f1e46f951f099424"
+          },
+          {
+            "label": "creation-send-enabled-dark_0_44E41153-5282-4E7F-BF21-787B97C65F93.png",
+            "sha256": "897c014b0fa837208bbe68b6a43c80c07517178e775a777df70f3f5517ad77fa"
+          },
+          {
+            "label": "creation-unknown-draft-restart-late-receipt_0_DF3D9CA1-2408-45CE-A82E-5A4A74910AC1.png",
+            "sha256": "30ec4b278fca12ef58a0c0fdc9b7f0c3fd51b176cba11c9e32367927991bb2c6"
+          }
+        ],
+        "notes": [
+          "六帧已复核：新对话空发送禁用、输入草稿启用、浅色及深色创建等待保持原提交气泡与查询/结束等待；等待期间深色输入可编辑但忙碌。脱离后新草稿独立启用发送并保留旧结果待确认查询提示，重启及晚到回执后显示新操作的确认内容且输入清空。请求记录已核对每个旧操作最多提交一次，replyCount 为零。"
+        ]
+      },
+      {
+        "group": "reading",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "read-lifecycle-real-failure-preserves-draft_0_77FEA027-99F9-4D45-9269-ED0082056405.png",
+            "sha256": "24a822d5764a4e6c4a9eb9706e24ea95d8c9b92439910b3e0764edd8799154ef"
+          },
+          {
+            "label": "read-lifecycle-client-restored_0_55D8165E-8F95-4D90-BBC2-0B7E9E21968A.png",
+            "sha256": "0467d3babd82b5cc696064edfd0bbb9b9ab9765f864b8311d607860e7b7c821e"
+          }
+        ],
+        "notes": [
+          "两帧已复核：取消/读取失败后历史仍可见、原草稿 keep-read-lifecycle-draft 保留；客户端切回后显示对应目标历史与只读禁用发送提示。后台取消、能力变化、晚到响应隔离以两项原生断言核对；fixture 最终记录 desktopOpens/queries/replies 均为零。"
+        ]
+      },
+      {
+        "group": "unread",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "mobile-reading-cleared_0_6E437AB5-7D11-476B-9EA2-3C95F2E04783.png",
+            "sha256": "898e5741e562b44004fcd0a4837fe4b304e7ae000214f64395fa1c8b8cea2700"
+          },
+          {
+            "label": "mobile-reading-restored_0_739EA803-8AAF-4300-8E93-D6E075ACA34F.png",
+            "sha256": "ef112c7b7b681cc3686ff4d1ce2c9f3524bad1039f6ae0409abf9d931c6d2c83"
+          }
+        ],
+        "notes": [
+          "两帧侧栏已复核：Reading target 在最近和项目中均保留选中，实际阅读后未读标记清除；重启恢复仍无旧标记。新内容/刷新冲突、桌面已读独立性由完整原生用例断言和手机账本记录核对，不代表安卓角标实现。"
+        ]
+      },
+      {
+        "group": "badge",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "multi-computer-system-unread-badge_0_364BBBFA-FD0F-41CC-85DA-22FFC375E099.png",
+            "sha256": "320b4a1359637a53feaef76f29614a284c6491ecd863466b4bfc9c4a66da44d9"
+          },
+          {
+            "label": "approval-read-unread-cleared-action-retained_0_EE2D4123-287E-4F5E-8F8B-0113C9952D11.png",
+            "sha256": "9b85676dea134dbbd24da24dac5dbd28c530394c51ceab08b678a819bb8ad8a4"
+          }
+        ],
+        "notes": [
+          "两帧已复核：专用模拟器 Home 的 Agent Hub 实际系统角标为 1（该帧为系统证据，非产品页面基线）；已读清除后待审批卡片及允许一次/拒绝动作仍保留，阅读不等于审批。跨电脑相同 thread ID、偏好切换和迟到版本去重由完整用例断言核对。"
+        ]
+      },
+      {
+        "group": "history",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "history-paging-compact-local_0_885757CA-66BD-4DFC-8FEC-075C306A6D72.png",
+            "sha256": "5f1db724742694e0edf8bdc923f25d057b72f74e386169245d5b3037cc1a2e98"
+          },
+          {
+            "label": "history-paging-local-exhausted_0_A8FF8CFB-2488-40E5-A304-BCB91FCF8DD3.png",
+            "sha256": "9ab2ab420417b7b2f213abf7a4d2ec0887e2be01bc8ae53783b832cbbdcec0ea"
+          },
+          {
+            "label": "history-paging-remote-exhausted_0_F6E4719D-FD36-4828-A2F3-FA453468C8AD.png",
+            "sha256": "5e70e1f74118a961703a839224ab8f816f2c1a36877d637b2b9b26a020ee6e8f"
+          },
+          {
+            "label": "history-paging-switch-isolated_0_4365A113-3343-453B-A157-C1D449B7172C.png",
+            "sha256": "28d57da4ed4395465a82fd8388287e0f9cf0b4ba09fed5598a47c84892dce507"
+          }
+        ],
+        "notes": [
+          "四帧已逐张复核：本地窗口显示更多消息、扩展后从 HISTORY_PAGING_000 起；远端耗尽明确显示已显示全部消息；切换后仅 OTHER_THREAD_HISTORY，旧页未混入。只读提示与禁用发送保持，浮动回到底部按钮可见。加载失败重试、游标去重及响应隔离由三项原生断言和分页请求记录核对。"
+        ]
+      },
+      {
+        "group": "sidebar",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "sidebar-history-updated-without-events_0_F36AF884-E07B-4AAA-9BBC-EC856402A712.png",
+            "sha256": "3de47472c00e87184df7ad6ef20aa42da8a2737d7b8e32757a819fd871feb080"
+          },
+          {
+            "label": "sidebar-completed-unread-light_0_B1C7AC6C-0F8C-405C-BE62-D3694EB2644A.png",
+            "sha256": "8a8d505b936ba405912747aa383cb9f53d8c663a430ca522ee83f7500f946ea3"
+          },
+          {
+            "label": "sidebar-completed-unread-dark_0_D41F8929-AB31-4151-BB28-EDC0321382F9.png",
+            "sha256": "1507a37f162e8d14875b9b7a8e50fc4df7e30b45c5f953935e25a30965cbf20c"
+          },
+          {
+            "label": "compact-main_0_6E5BB289-9292-43B2-87FD-008DC9547AF4.png",
+            "sha256": "4390093b4925d1718e029e2eeddd4811cf5d171bca09478ad17c7a8f42af8402"
+          },
+          {
+            "label": "compact-sidebar_0_5B8FAF4B-592F-41B9-9A26-4A7BBA865C8E.png",
+            "sha256": "024927a38a61540f9abc12032108706b12b8be72e25f1fb1df502be1488b3a28"
+          },
+          {
+            "label": "sidebar-five-recent-and-project_0_7B1BCE49-C30E-4351-AB13-7A6C9E95E37A.png",
+            "sha256": "e6bfbe66bc7ebb4b4d28824d63e2319c1b3245439217ba8e62e3cd1b098304dd"
+          },
+          {
+            "label": "settings-demo-disabled_0_19883CB6-ABCF-4095-BAA9-7F59F94863C1.png",
+            "sha256": "cbe5ca4f4ebc4cb9137d6de723a5e424d833e750bc466d11816ea4575a273eac"
+          },
+          {
+            "label": "demo-closed-onboarding_0_ABF08A07-A599-4497-A177-E36A840A2D18.png",
+            "sha256": "666553d3148ee1f15091f113689b8837a6cc19f9927356325d9324e94d31cc8a"
+          },
+          {
+            "label": "settings-demo-enabled_0_A43B8CE1-4C5E-4CB4-B56C-21D666F1F7AB.png",
+            "sha256": "ca83a43defeec54549a7519b6cf372e54cd1a6a692b80ae8838a56ad5b6b495c"
+          },
+          {
+            "label": "demo-main-without-test-controls_0_610D4B92-A394-42A4-9860-DF4042686DC8.png",
+            "sha256": "eec34207c55784c27ab8a906367a4607a72145b3e22ca376b5b6c73291e675e6"
+          },
+          {
+            "label": "settings-demo-disabled_0_7A197110-06BB-4E95-A735-6D47D6C79CF2.png",
+            "sha256": "cbe5ca4f4ebc4cb9137d6de723a5e424d833e750bc466d11816ea4575a273eac"
+          },
+          {
+            "label": "settings-demo-disabled_0_6900C674-D14E-47F1-B22C-9A1919B2525A.png",
+            "sha256": "a334162fb602b928d11aad8e90cd995d41357f5923f9b542a2bf5845666db4c8"
+          },
+          {
+            "label": "settings-demo-enabled_0_3DBC78EB-CA41-4B97-9BA0-94EFD35059C9.png",
+            "sha256": "8f590bd59cac76dca0f833be641bef5199e462e1093a24fab34d19119ed8033f"
+          },
+          {
+            "label": "settings-demo-disabled_0_E1C4A688-4B68-4941-A137-37E96FEF5C4B.png",
+            "sha256": "a334162fb602b928d11aad8e90cd995d41357f5923f9b542a2bf5845666db4c8"
+          },
+          {
+            "label": "demo-closed-connected-client-retained_0_B6DBBBD1-45CF-4D4F-8540-C596F6263BF5.png",
+            "sha256": "5caea48f025b25575fa7e2d432f2bf81c60c87a9a9bd10156e9b90f2ec9990d3"
+          },
+          {
+            "label": "success-1-loading.png",
+            "sha256": "600da87e2cd24d6aa70e6610da3193c82fec45282b57d322d2b979097ef946a2"
+          },
+          {
+            "label": "error-2-loading.png",
+            "sha256": "5c0545c01070b65722f97805e59f983be1bbaa041d7ce31e0c751fcdf15d616d"
+          },
+          {
+            "label": "error-3-loading.png",
+            "sha256": "c84e4b81c0bedce8e4bed8a8c0bb5342ecd0a22a5639045b795d2cbb79a95db9"
+          },
+          {
+            "label": "error-4-loading.png",
+            "sha256": "1228203925d180643e5f12bc7faf8adfc06cd3d30a2883d5acc10cb8b0d36b96"
+          },
+          {
+            "label": "error-5-loading.png",
+            "sha256": "af01f5fa5c04d2d88ac412f5381ef4df77be7cb11c722fe6bc497c5aef9da6a3"
+          }
+        ],
+        "notes": [
+          "十五张原生截图已核对：无事件历史执行中指示、浅/深手机未读、紧凑主/侧栏、五条Recent和项目行、示例关闭/恢复设置与普通主界面、原连接和草稿保留。长标题截断沿用基线；普通页面无诊断控件。另五张实际请求截图已核对成功/失败加载、错误弹窗和缓存保留，系统动态岛不作为产品设计token。"
+        ]
+      }
+    ],
+    "previousAttempts": [
+      {
+        "status": "interrupted-failed",
+        "sidebarPassed": 5,
+        "sidebarFailed": 1,
+        "reason": "Repeated XCTest animation notification waits; original attempt retained"
+      },
+      {
+        "status": "interrupted-failed",
+        "sidebarPassed": 5,
+        "sidebarFailed": 1,
+        "reason": "Dedicated Simulator reboot alone did not resolve the waits; retained"
+      },
+      {
+        "status": "failed",
+        "sidebarPassed": 2,
+        "sidebarFailed": 1,
+        "reason": "First per-case run exposed contradictory fixture workspace/runtime state; fixed fixture publication ordering, same assertion"
+      },
+      {
+        "status": "interrupted-failed",
+        "sidebarPassed": 5,
+        "sidebarFailed": 1,
+        "reason": "Consistent fixture did not remove repeated animation waits beyond 700s; hidden drawer rotation corrected in App, preceding 40 passes excluded after source change"
+      },
+      {
+        "status": "failed",
+        "nativePassed": 18,
+        "nativeFailed": 2,
+        "skips": 0,
+        "reason": "Floating composer and sidebar search exceeded 180s amid animation-notification waits; retained. Fresh-OS individual cases then passed; current native/sidebar runner resets dedicated OS per case without disabling animations or assertions."
+      },
+      {
+        "status": "failed",
+        "planPassed": 1,
+        "planFailed": 1,
+        "skips": 0,
+        "reason": "Combined Plan fixture waited for animation completion before selecting plan mode; failed badge assertion retained. Plan now uses same fresh-OS case helper and unchanged service/assertions."
+      },
+      {
+        "status": "failed",
+        "planPassed": 0,
+        "planFailed": 1,
+        "skips": 0,
+        "reason": "Fresh-OS Plan case exceeded180s in native Menu animation waits. Fixture now follows Host long-poll contract: changed cursor immediately, idle up to5s instead of250ms empty events; original assertions unchanged."
+      },
+      {
+        "status": "failed",
+        "precedingPassed": 40,
+        "sidebarPassed": 1,
+        "sidebarFailed": 1,
+        "reason": "System password offer remained after default Not Now tap and blocked main readiness. Test helper now center-taps the named button and asserts dismissal; previous40passes excluded after test-source change."
+      },
+      {
+        "status": "failed",
+        "sidebarPassed": 3,
+        "sidebarFailed": 1,
+        "reason": "System Save Password offer remained after one center tap. Stable button geometry and bounded named dismissal required; previous source excluded."
+      },
+      {
+        "status": "failed",
+        "sidebarPassed": 8,
+        "nativePassed": 11,
+        "nativeFailed": 1,
+        "skips": 0,
+        "reason": "Client-switch case exceeded 180s amid animation notification waits. Eleven independently passed cases reused only after exact source/common-input/Simulator/OS matching; remaining nine cases passed first recovery attempt. Original failed group retained."
+      }
+    ],
+    "singleCaseDiagnostics": "Standalone creation, history and stable-system-dismissal priority cases passed; excluded from complete-gate execution count"
+  },
+  "metrics": "A1-metrics.json",
+  "physicalDeviceTest": "Paused by user; no installation performed",
+  "remaining": [],
+  "completedAt": "2026-10-11T22:51:33.076Z",
+  "inputPerformance": {
+    "status": "passed",
+    "sourceSha256": "718e35e92d13053162291da68c8a8c4bce9f048e42bacd727b5f9c99037b2b21",
+    "tests": 6,
+    "failures": 0,
+    "skips": 0,
+    "typingMetrics": {
+      "chatRenders": 8,
+      "edits": 242,
+      "mainThreadWrites": 0,
+      "maxMS": 0.2857916406355798,
+      "p95MS": 0.04104166873730719,
+      "writes": 2
+    },
+    "reportSha256": "86a8b4be50d5e9db0c47342df7485849796902ead43837c82a5cceb464848735",
+    "scope": "Native Simulator; synthetic large history and dictation inputs; real speech not verified"
+  },
+  "limitations": [
+    "A1 foundation only; full native UI and remote product features remain A3–A7 work.",
+    "Activity recreation tested; actual rotation, process death and physical device behavior remain A6.",
+    "API26 keyboard screenshot partially covers the composer lower edge; explicit A3 UI/A6 inset gap, not complete UI parity.",
+    "No real Host/Electron/model, physical push, release signing or cloud CI verified by this stage.",
+    "Xcode 27 tested locally; official Kotlin compatibility table listed Xcode 26.4 at version selection.",
+    "Only synchronous shared rules adopted; actual asynchronous cancellation/thread/reference/error verification belongs to A2."
+  ]
+}

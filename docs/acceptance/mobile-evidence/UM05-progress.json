@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "step": "UM05",
+  "status": "applicable-acceptance-closed-product-published-main",
+  "baseCommit": "7105ddfea9b4f939dcaca6eeeced10dd5c8169d3",
+  "stageClosed": true,
+  "published": true,
+  "A6": "user-paused",
+  "checks": {
+    "builds": "Android and iOS passed",
+    "commonJVM": {
+      "passed": 43
+    },
+    "crossLanguage": {
+      "consent": 12,
+      "receipts": 19,
+      "manifests": 19,
+      "status": "passed after retained schema/verifier corrections"
+    }
+  },
+  "currentAndroid": {
+    "productionApkSha256": "acd5cfa169d73b34cb9c7a5bd330be4545e71afd87bfaa2d4992c8ed0c84ed0d",
+    "API37": {
+      "nativeSharingVoicePassed": 19,
+      "executionForkRegressionPassed": 81,
+      "replyRecoveryUI": 6,
+      "currentWaveformNativeCasePassed": 1
+    },
+    "API26": {
+      "nativeSharingVoiceApplicablePassed": 18,
+      "executionForkRegressionPassed": 81,
+      "microphone": "Audio HAL input initialization unavailable; explicit failure path separate",
+      "replyRecoveryUI": 6,
+      "currentUnavailableMicrophone": "Current APK native negative test passed1.423s; original draft retained and zero upload. HAL input remains unavailable, not a microphone capture pass."
+    },
+    "Xiaomi": {
+      "nativeSharingVoicePassed": 19,
+      "currentWaveformNativeCasePassed": 1
+    },
+    "fiveMinuteBoundary": "9,600,044 byte synthetic PCM, Keystore seal/restore passed on all three; API26 353ms. Not five-minute microphone evidence.",
+    "scope": "Current UI APK; capture/storage/controller/transport business implementation unchanged from source-reviewed acoustic APK58da4b2f. Three Android production rendering files changed after independent frozen654; no repeated ASR/model.",
+    "privateFixtureIsolation": "Sharing/voice native tests now use a generic foreground Activity and fresh encrypted private namespace. NPE in one test restore pointer retained; same mic assertion passed after pointing at the actual private storage. Existing18 matching boundary cases reused; latest waveform mic case passes separately.",
+    "UI": "Consent18sp semibold headers/17sp body-blue actions,24dp cards and separators; dotted44dp waveform and circular48dp controls visually reviewed in API37 light/Xiaomi dark; API26 failure/rerecord retains draft. iOS uses44pt native target; Android48dp platform difference retained."
+  },
+  "realTranscription": {
+    "earlierAndroid": {
+      "actualMicrophone": true,
+      "actualBackend": true,
+      "AppAndHostProcessRestarts": true,
+      "originalOperationAndCredential": true,
+      "audioPosts": 1,
+      "claimPosts": 0,
+      "chatPosts": 0,
+      "newDesktopTurns": 0,
+      "scope": "Earlier APK; original postprocessor ENOENT failure separated and read-only source review passed"
+    },
+    "currentAndroid": {
+      "status": "source-reviewed-pass",
+      "productionApkSha256": "58da4b2f8aac3f79b956260a98ef27a6ee87388f04bba36f1d18f9317658f5e3",
+      "actualMicrophone": true,
+      "fixtureAudio": false,
+      "fixtureTranscript": false,
+      "AppAndHostProcessRestarts": true,
+      "originalOperationManifestAndAudioHash": true,
+      "audioPosts": 1,
+      "claimPosts": 0,
+      "chatPosts": 0,
+      "newDesktopTurns": 0,
+      "matchingCalibration": true,
+      "originalFailure": "Prior current-version completed empty upstream text/calibration failure remains separate; same failed operation was not replayed."
+    },
+    "currentIOS": {
+      "microphone": "Current same production input actual microphone acoustic transcription passed:16kHz mono PCM16,13,329ms430,628bytes, exact one audio upload SHA/size matches durable manifest; real Green/Blue/sixteen calibration returned only unsent original draft. Same original credential and owner six completed Turns, zero new claim/chat/Turn. Historical unavailable-driver timeout remains separate.",
+      "fileInputRealBackend": "Original operation completed with matching Green Mountain calibration; App restart/original-recording retry completed. Original examiner used stale violet-lantern/copper-bridge assertions, retained failure. Read-only exact unsent draft native verification passed using original signing config, authenticated workspace/current original owner six Turns unchanged, no new claim/audio/model.",
+      "readOnlySigningFailure": "First read-only helper used different default signing entitlements and saw401; only cached draft UI passed. Original isolated signing restored, native UI plus authenticated requests passed.",
+      "newDesktopTurns": 0,
+      "actualMicrophoneCurrent": {
+        "status": "source-reviewed-pass",
+        "nativePassed": 1,
+        "durationMs": 13329,
+        "sizeBytes": 430628,
+        "audioPosts": 1,
+        "claimPosts": 0,
+        "chatPosts": 0,
+        "newDesktopTurns": 0,
+        "fixtureAudio": false,
+        "fixtureTranscript": false,
+        "voiceFullResponsesVerified": 7,
+        "HTTPrequests": 145,
+        "completedHTTP": 141,
+        "unfinishedReadObservations": 4,
+        "restartScope": "Actual microphone direct path; earlier same-source file-input App/original operation restart and Android actual App/Host restart separately scoped."
+      }
+    },
+    "independentIOS": {
+      "actualMicrophone": true,
+      "fixtureAudio": false,
+      "originalOperationId": "a4e1f9ef-1c36-41f4-bfe6-77e512b28e8c",
+      "durationMs": 13685,
+      "sizeBytes": 442016,
+      "sha256": "a9aa09ea6d856d9d4dc4d53af1b05ff828dabed48daabb9191c156ce6b3affee",
+      "manifestPosts": 1,
+      "audioPosts": 1,
+      "actualASR": 1,
+      "HTTPobservations": 519,
+      "sourceVerifiedFullHttpByteFiles": 15,
+      "newModelTurns": 0,
+      "originalOwnerThreeTurnsUnchanged": true,
+      "exactUnsentDraftNativeSupplementPassed": 1,
+      "sameCredentialAuthenticatedAfterHostRestart": true,
+      "completedReceiptAfterHostRestart": "local admin GET; phone HTTPS workspace/history/model requests prove same credential separately",
+      "calibrationPassed": false,
+      "originalNativeFailed": 1,
+      "backendReturnedText": "nonempty; exact returned text preserved only in private unsent draft evidence",
+      "multipartProof": "original WAV plus frozen adapter envelope reconstruct exact observed request length/SHA; upstream raw body not retained",
+      "remainingUnverified": [
+        "upload after both App and Host restart in that order",
+        "real ASR late response while another new draft is edited"
+      ],
+      "scope": "Original calibration/native and metadata-readiness failures remain; postcompletion read-only supplement does not replace them. No second ASR/file input/reupload."
+    }
+  },
+  "sourceIOSBaseline": {
+    "status": "original-baseline-source-reviewed",
+    "groups": 15,
+    "passed": 56,
+    "screenshots": 154,
+    "scope": "Original source fingerprint retained; actual microphone preparation fix after baseline start is separate. Original fixture preparation branch reconstructed and SHA matched actual original harness, byte identical to current. Current independent full baseline still required."
+  },
+  "independentIOS": {
+    "host": "Mac Mini M4 Pro 24G",
+    "status": "accepted-applicable-composite56; original55/1 preserved",
+    "taskId": "agent-hub-upstream-9bb43e2-mobile-migration-20261015-UM05-ios",
+    "operationId": "first-bbe02b1a-2086-4c60-9dca-1009c344dfa5",
+    "threadId": "01a14977-5f49-7e83-82e9-b09e2f6ffdd7",
+    "actualTurnId": "01a14977-707d-7da1-92ec-4836fd20892f",
+    "model": "gpt-6.1-sol",
+    "effort": "xhigh",
+    "frozenFiles": 654,
+    "aggregateSha256": "04c9bafe984bc8dd57037418874edf632666161e65699719da476ea522fa6e46",
+    "projection": "All frozen iOS/KMP/Protocol/Host/Adapter and iOS examiner source bytes still identical. Current655 includes Android-only rendering/private test changes and progress docs, not the same complete input.",
+    "queuedScopeNotice": "9dfb4873-d54b-4e58-890c-b2536f783f04 completed in same actual Turn as ba378484; not another execution",
+    "firstOperationState": "interrupted",
+    "resumeOperationId": "72acc993-e0ee-4049-a861-4d2aee556729",
+    "resumeActualTurnId": "01a149e6-c444-79c1-9a35-f9fe738ef770",
+    "resumeState": "completed",
+    "followupOperationId": "ba378484-b4b8-4dd5-bf3e-336edbbccd6d",
+    "followupActualTurnId": "01a14a0a-b020-7681-87d5-9701d3bb7c2f",
+    "followupState": "completed",
+    "originalBaseline": {
+      "groups": 15,
+      "passed": 55,
+      "failed": 1,
+      "skipped": 0,
+      "sourceReadActualXcresults": 15,
+      "sourceVerifiedSidebarPartition": "six before interruption plus three completed after, original effective examiner preserved; extra incomplete case excluded",
+      "singleUninterruptedRound": false
+    },
+    "originalPayloadFilesVerified": 5253,
+    "frozenSourceFilesVerified": 654,
+    "screenshots": {
+      "originalsHashVerified": 174,
+      "sourceViewedContactSheets": 15,
+      "sourceViewedFullOriginals": "seven selected plus previous original failure; not every image full resolution"
+    },
+    "sourceVerifiedConsentSupplement": {
+      "passed": 1,
+      "scope": "strict navigation private examiner, complete original consent assertions; original navigation failure retained; not in original56"
+    },
+    "sourceVerifiedStrictRecovery": {
+      "passed": 2,
+      "failed": 1,
+      "scope": "private stricter navigation examiner, not mixed with original56"
+    },
+    "sourceVerifiedOriginalRecoveryFollowup": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 1,
+      "groupGatePassed": false,
+      "driverExitCode": 1,
+      "targetCase": "testDesktopCreationUnknownDraftCanBeClearedAndDetached",
+      "causeBoundary": "fixture observer disconnected-response hash defect independently reproduced; target skipped before reset; no claim all original failures explained",
+      "payloadFilesVerified": 658
+    },
+    "observerCorrection": {
+      "scope": "two guards in private observation tool only; no production/UI/assertion/wait changes",
+      "sourceStandaloneRedGreen": "original HASH_FINALIZED then HEADERS_SENT; corrected/control no errors",
+      "sha256": "08f6dd39f827b515d8a96213cc428bd9b3c63dabc91e984d172f115e4e0508d8",
+      "packageSha256": "14102d5ab4b5c77bbc9ed6e0daa50076b0aad93cbd024c5cbbc6d35e0a6a7e7e",
+      "transferState": "completed; one original native group now source-verified3pass0fail0skip"
+    },
+    "deliveryAttempt": "e7320184-89c9-4a00-9bd7-ff7e95750f97 and99e259eb-cb74-4bd9-902c-76ca1cfd8455 both failed/turnId null with desktop-busy guard despite idle history. Named exact-chat open d9cc2fe0-eef4-4d66-bd7d-92d4e64f3c77 opened; no reacceptance started, no blind replay.",
+    "currentOriginalRecovery": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "oneAttempt": true,
+      "groupGatePassed": true,
+      "driverAndGroupExit": 0,
+      "finalCountersReached": true,
+      "payloadFilesVerified": 927,
+      "indexSHA256": "005efe3a7513fc84ebf45bc68b75053d029cf0b2273404162911ede841a55104",
+      "zipSHA256": "c9005935eccf4d8d0da94a00fdc2f854cae87474a2569fff214f7172a88649da",
+      "fullSummary": "UM05-ios-independent.json"
+    },
+    "applicableCombination": {
+      "matchedReused": 53,
+      "current": 3,
+      "total": 56,
+      "singleWholeRun": false
+    },
+    "entryRecovery": "Original not archived; old actual null-ID text row preserved. New samehost/project receiving chat carried only original necessary recovery3. Original guard/lifecycle issue not fixed or ignored."
+  },
+  "retainedFailures": [
+    "Schema null representation and new Swift verifier compile failure, corrected with matching checks",
+    "API26 maximum Base64 seal OOM, corrected binary chunk seal",
+    "Synthetic approval/stop fixture lacked required ok response; corrected fixture, production permission unchanged",
+    "Original actual iOS microphone entry/AudioQueue stalls, no successful audio operation",
+    "Current Android upstream empty transcript/calibration failure; not converted to passed",
+    "First recovery UI wrapper source/test-APK drift retained despite six native passes; stable reruns now passed all six per emulator with unchanged input.",
+    "Private sharing fixture Activity conversion exposed one test restore namespace NPE on API37/Xiaomi; corrected test pointer, original product assertion then passed.",
+    "Initial ordinary-repository backup helper used UTF8 binary adapter; original encrypted directories retained until valid binary backups independently verified.",
+    "Independent original56 recovery connection prerequisite failed; no recovery assertions reached.",
+    "Independent stricter recovery diagnosis reached enabled draft but no creation POST, later assertions not reached.",
+    "Independent calibrated ASR phrase mismatch; one actual microphone native failure retained alongside exact returned draft read-only pass.",
+    "Original coupled recovery supplement target skipped after private observer HASH_FINALIZED/secondary HEADERS_SENT crash;2pass1skip is not group gate pass."
+  ],
+  "closureGate": "Applicable acceptance source-verified; product normally pushedmain and independently read back006dfe6. UM06 may now begin; A6 remains user-paused.",
+  "sourceIOSSharing": {
+    "passed": 1,
+    "scope": "Native consent/draft/Keychain/HTTP synthetic Host: decline, allow without replay, process restore, one explicit send, revoke/restart and separate voice permission without voice request",
+    "syntheticReplyPosts": 1,
+    "voiceRequests": 0,
+    "retainedExaminerFailures": "First declined row was below lazy viewport; second exact standalone model query differed from native combined AX label. Same complete product assertions retained; current bounded native scroll and exact equivalent AX field forms passed."
+  },
+  "updatedAtUTC": "2026-10-17T13:56:38.946201+00:00",
+  "phoneDataProtection": {
+    "status": "ordinary repository restored and exact metadata verified after all current private tests",
+    "scope": "Only known fixture ordinary mobile namespace replaced from validated original encrypted backup; same installation Keystore, original EasyWork client and zero drafts verified. Independent actual voice namespace11 files byte-identical to valid binary backup. Two owned temporary copies removed file-by-file after byte/SHA backup verification.",
+    "retainedFailure": "Initial Node backup adapter decoded binary tar as UTF8. No original data removed at that point; valid raw prior binary backup and fresh binary capture separately verified; old bad tar not used as raw proof.",
+    "credentialsExported": false
+  },
+  "sourceIOSCurrentDeviceRetry": {
+    "nativePassed": 1,
+    "actualStartsAndCancels": 2,
+    "voicePosts": 0,
+    "newTurns": 0,
+    "sameDraft": true,
+    "productionChanges": false,
+    "retainedFailures": "First private VFS slicing compile failure, expected-unavailable native mismatch when hardware recovered, and cached same-path VFS test artifact retained. Final distinct immutable overlay used actual state; recorder started/canceled twice, no device-stall cause inferred."
+  },
+  "applicableAcceptancePassed": true,
+  "independentSummary": "docs/acceptance/mobile-evidence/UM05-ios-independent.json",
+  "productCommit": "006dfe604f17bc520431eb46c8d0f176c41da1bb",
+  "independentRemoteReadback": "006dfe604f17bc520431eb46c8d0f176c41da1bb",
+  "UM06Started": false
+}

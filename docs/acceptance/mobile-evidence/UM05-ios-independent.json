@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "recordId": "UM05-independent-ios-20261017",
+  "date": "2026-10-17",
+  "status": "accepted-all-applicable-independent-ios-gates",
+  "scope": "F64/UI06/UI21/S04/S11/S17/S18 applicable consent, original-operation recording/transcription and unchanged native baseline. A5 wholeApp unclosed; A6 remains user-paused.",
+  "source": {
+    "candidateGitFiles": 654,
+    "aggregateSHA256": "04c9bafe984bc8dd57037418874edf632666161e65699719da476ea522fa6e46",
+    "sourceFileSetSizesModesVerified": true,
+    "effectiveExaminerFilesSourceVerified": 38,
+    "unchangedIOSKmpProtocolHostAdapterAndExaminers": 360,
+    "laterAndroidRenderingAndDocumentationChangesSeparate": true,
+    "toolingSourceSHA256": "3b5986388c32506bb1f1524f7d642b6799e7fac3046e24107a85f6bc1d81bfe3"
+  },
+  "functional": {
+    "groups": 15,
+    "scenarios": 56,
+    "applicablePassed": 56,
+    "matchedReusedOtherGroups": 53,
+    "currentOriginalRecoveryPassed": 3,
+    "singleWholeRun": false,
+    "original55pass1failPreserved": true,
+    "strict2pass1failSeparate": true,
+    "originalFollowup2pass1skipPreserved": true,
+    "currentGroupSeconds": 315.802,
+    "currentCaseSeconds": [89.670198, 75.663287, 127.36434],
+    "newGroupAttempts": 1,
+    "driverAndGroupExitCodes": 0,
+    "originalFinalDriverCountersReached": true,
+    "sameOriginalAssertionsFixtureHelperFourVFSWrapperWaitsAnimations": true,
+    "onlyPassiveObserverTwoGuardsChanged": true,
+    "noWholeGroup180Flags": true
+  },
+  "currentHTTP": {
+    "records": 400,
+    "completeByteFilesSourceHashed": 405,
+    "readOnlyCounterPolls": 315,
+    "allOriginalFinalPostCountersIndependentlyMatch": true,
+    "replyPostsPerScenario": [0, 0, 0],
+    "prepareCounts": [1, 1, 2],
+    "submitCounts": [0, 1, 2],
+    "detachCounts": [1, 0, 1],
+    "abortedUndeliveredEvents": 2,
+    "observerExceptions": 0,
+    "scope": "Native simulator synthetic HTTP fixture; not real desktop execution proof. Private control discovery bodies deliberately omitted; only /results control bodies retained."
+  },
+  "consent": {
+    "strictNavigationNativeSupplementPassed": 1,
+    "originalNavigationFailurePreserved": true,
+    "scope": "Complete original business assertions, separate from original56; no production consent weakening."
+  },
+  "realVoice": {
+    "actualMicrophone": true,
+    "durationMs": 13685,
+    "sizeBytes": 442016,
+    "originalAudioSHA256": "a9aa09ea6d856d9d4dc4d53af1b05ff828dabed48daabb9191c156ce6b3affee",
+    "manifestPosts": 1,
+    "audioPosts": 1,
+    "actualASR": 1,
+    "exactOriginalUnsentDraftNativePassed": 1,
+    "originalThreeTurnsUnchanged": true,
+    "sameCredentialAfterActualIsolatedHostRestart": true,
+    "newClaimOrChatTurns": 0,
+    "calibrationPassed": false,
+    "originalCalibrationNativeFailurePreserved": true,
+    "HTTPObservations": 519,
+    "completeWireFilesSourceVerified": 15,
+    "limits": [
+      "App restart preceded upload; Host restart followed completion; upload after both restarts not verified.",
+      "Real ASR arriving while another new draft is edited not exercised; shared and fixture fencing checks separate.",
+      "Upstream original multipart body was not stored; reconstructed from original WAV and frozen adapter, matched observed length/SHA.",
+      "Actual nonempty ASR/draft/operation recovery verified; calibration phrase recognition accuracy is not marked passed."
+    ]
+  },
+  "visual": {
+    "originalPNGsHashVerified": 174,
+    "originalContactSheetsViewed": 15,
+    "currentPNGsHashVerified": 9,
+    "currentContactSheetViewed": true,
+    "currentVideoFramesViewedSeconds": [256, 258, 260, 262, 265, 270],
+    "runtimeLayoutWarningsRetained": 3,
+    "partialKeyboardScreenshotRetained": true,
+    "scope": "Keyboard covers part of composer in one capture; later frames after keyboard dismissal show draft/action. Not a claim of keyboard-open layout acceptance. Unchanged broad UI baseline reused; no product UI overlay changes in current3."
+  },
+  "environment": {
+    "Xcode": "27.0 (27A266a)",
+    "SDK": "27.0",
+    "simulatorOS": "26.0 (23A343)",
+    "staticExecutableSDKRuntimeFingerprintsMatch": true,
+    "dynamicSimulatorMetadataChanges": 2,
+    "wholeAppBinaryEqualityNotClaimed": true,
+    "effectiveProductionDebugDylibMatchesOriginal": true
+  },
+  "protection": {
+    "formalHostAndOrdinaryCodexNotRestarted": true,
+    "mainHeadAndGitStatusPreserved": true,
+    "fiveStaticPrivateFilesPreserved": true,
+    "serviceOwnedRuntimeJSONChangedWithoutTaskWrite": true,
+    "originalNullIDRecordAndChatPreserved": true,
+    "originalEntryControlBugNotDeclaredFixed": true,
+    "noAdditionalRealVoiceOrModelAcceptance": true,
+    "targetV2RetainCheckPassed": true
+  },
+  "privateEvidence": {
+    "originalAttachmentsVerified": 41,
+    "originalPayloadFilesVerified": 5253,
+    "priorFollowupPayloadFilesVerified": 658,
+    "currentIndexId": "30c0256e-000b-4195-a3a5-b1a7f8abcfb0",
+    "currentIndexBytes": 21632,
+    "currentIndexSHA256": "005efe3a7513fc84ebf45bc68b75053d029cf0b2273404162911ede841a55104",
+    "currentPartsVerified": 9,
+    "currentZIPBytes": 145738810,
+    "currentZIPSHA256": "c9005935eccf4d8d0da94a00fdc2f854cae87474a2569fff214f7172a88649da",
+    "currentPayloadFilesVerified": 927,
+    "sourcePrimaryReviewSHA256": "162c570626dc7d78359b3ecef1ce331c7b1cf33fea30afba34aa5563c8e38d10",
+    "location": "Task-owned private archives outside development worktrees. No raw conversation/audio/credentials committed."
+  },
+  "publication": {
+    "productCommit": "006dfe604f17bc520431eb46c8d0f176c41da1bb",
+    "normalMainPush": true,
+    "independentRemoteReadback": "006dfe604f17bc520431eb46c8d0f176c41da1bb",
+    "UM06Started": false
+  }
+}

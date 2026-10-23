@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-20",
+  "status": "real-cellular-acceptance-pending",
+  "device": "paired physical iPhone 15 Pro Max",
+  "installedFormalVersion": "0.1.0 (88)",
+  "candidateVersion": "0.1.0 (89)",
+  "candidateBundle": "existing independent acceptance application",
+  "wirelessDebugging": {
+    "originalFailure": "The negotiated device tunnel was sent through the Mac HTTP CONNECT proxy and stalled.",
+    "recovery": "Added an exception for the exact paired device address; CoreDevice connected and read installed applications and lock state.",
+    "hotspot": "Mac joined the human-enabled hotspot once. A temporary discovery hint failed native pairing verification (kNotFoundErr); the hint was removed. Human confirmed the same iPhone and completed official Device Hub wireless re-pairing. CoreDevice now connects to the exact physical device; no stale discovery hint remains.",
+    "explicitUnpairOrPairCommandInvoked": false,
+    "hotspotDeviceIdentity": "Confirmed by the human: same paired iPhone 15 Pro Max.",
+    "current": "Official pairing and DDI recovery allowed app backup, candidate install and launch. XCTest runner bootstrapping failed twice while the phone was unlocked. Native full reboot requested for debug-service recovery; first unlock and hotspot reopening pending."
+  },
+  "auxiliaryValidation": {
+    "physicalAppAndRunnerBuild": "passed with Xcode 27.0 and rebuilt with Xcode 27.1",
+    "physicalAppAndRunnerSignatures": "passed",
+    "realDeviceTestsExecuted": 0,
+    "fullCheck": "passed; initial timing failure and separate successful recheck retained without weakening assertions",
+    "realDeviceRunnerAttempts": 2,
+    "realDeviceRunnerResult": "failed before test method entry: IDE channel refused and runner exited 74"
+  },
+  "realAcceptance": {
+    "phoneCellularPath": "not-verified",
+    "windowsFirstConnectionTiming": "not-run",
+    "historyReadTimeout": "not-run",
+    "allChannelLossAndRecovery": "not-run",
+    "independentWindowsRuntimeReadback": "not-run"
+  },
+  "deployment": {
+    "formalAppUpdated": false,
+    "windowsHostUpdated": false,
+    "requires": "Verify the exact phone and actual cellular route, then complete real Windows connection and timeout/recovery acceptance before updating the active application."
+  },
+  "limits": "Earlier paced native simulator results remain auxiliary evidence. Compilation, cache visibility, Tailscale online status and hotspot association do not establish a real-cellular pass.",
+  "toolchainChange": {
+    "before": "Xcode 27.0 / 27A266a; CoreDevice 642.16",
+    "after": "Xcode 27.1 / 27A9275; CoreDevice 651.13.5",
+    "current": "Official re-pairing completed; new DDI compatible and usable; Xcode 27.1 physical build-for-testing passed."
+  }
+}

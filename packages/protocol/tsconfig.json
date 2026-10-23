@@ -1,0 +1,5 @@
+{
+  "extends": "@codex-manage/tsconfig/library.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "include": ["src/**/*.ts"]
+}

@@ -1,0 +1,4 @@
+"NSCameraUsageDescription" = "扫描电脑的配对二维码。";
+"NSLocalNetworkUsageDescription" = "发现并连接局域网任务主服务及你添加的电脑，管理项目、任务和 Agent 对话并传输附件。";
+"NSMicrophoneUsageDescription" = "录制语音，由所选电脑或手机系统转写，文字返回消息草稿。";
+"NSSpeechRecognitionUsageDescription" = "使用手机系统将语音转成文字草稿；选择本地转写或电脑端转写不可用时启用。";

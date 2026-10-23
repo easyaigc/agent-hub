@@ -1,0 +1,4 @@
+"NSCameraUsageDescription" = "Scan a computer's pairing QR code.";
+"NSLocalNetworkUsageDescription" = "Discover and connect to your local task service and computers to manage projects, tasks, Agent conversations, and attachments.";
+"NSMicrophoneUsageDescription" = "Record audio for transcription on your selected computer or phone, then return the text to your message draft.";
+"NSSpeechRecognitionUsageDescription" = "Turn speech into draft text using system recognition when local transcription is selected or computer transcription is unavailable.";

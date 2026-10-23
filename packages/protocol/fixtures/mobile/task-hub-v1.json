@@ -1,0 +1,305 @@
+{
+  "version": 1,
+  "cursors": [
+    {
+      "value": "",
+      "valid": true
+    },
+    {
+      "value": "0",
+      "valid": true
+    },
+    {
+      "value": "00001",
+      "valid": true
+    },
+    {
+      "value": "9007199254740991",
+      "valid": true
+    },
+    {
+      "value": "9007199254740992",
+      "valid": false
+    },
+    {
+      "value": "00000000000000000",
+      "valid": false
+    },
+    {
+      "value": "-1",
+      "valid": false
+    },
+    {
+      "value": "1.0",
+      "valid": false
+    },
+    {
+      "value": "１",
+      "valid": false
+    },
+    {
+      "value": "1\n",
+      "valid": false
+    },
+    {
+      "value": " 1",
+      "valid": false
+    },
+    {
+      "value": "1e2",
+      "valid": false
+    }
+  ],
+  "phases": [
+    {
+      "current": "pending",
+      "next": "pending",
+      "accept": true
+    },
+    {
+      "current": "pending",
+      "next": "unknown",
+      "accept": true
+    },
+    {
+      "current": "pending",
+      "next": "confirmed",
+      "accept": true
+    },
+    {
+      "current": "pending",
+      "next": "rejected",
+      "accept": true
+    },
+    {
+      "current": "pending",
+      "next": "bad",
+      "accept": false
+    },
+    {
+      "current": "unknown",
+      "next": "pending",
+      "accept": true
+    },
+    {
+      "current": "unknown",
+      "next": "unknown",
+      "accept": true
+    },
+    {
+      "current": "unknown",
+      "next": "confirmed",
+      "accept": true
+    },
+    {
+      "current": "unknown",
+      "next": "rejected",
+      "accept": true
+    },
+    {
+      "current": "unknown",
+      "next": "bad",
+      "accept": false
+    },
+    {
+      "current": "confirmed",
+      "next": "pending",
+      "accept": false
+    },
+    {
+      "current": "confirmed",
+      "next": "unknown",
+      "accept": false
+    },
+    {
+      "current": "confirmed",
+      "next": "confirmed",
+      "accept": true
+    },
+    {
+      "current": "confirmed",
+      "next": "rejected",
+      "accept": false
+    },
+    {
+      "current": "confirmed",
+      "next": "bad",
+      "accept": false
+    },
+    {
+      "current": "rejected",
+      "next": "pending",
+      "accept": false
+    },
+    {
+      "current": "rejected",
+      "next": "unknown",
+      "accept": false
+    },
+    {
+      "current": "rejected",
+      "next": "confirmed",
+      "accept": true
+    },
+    {
+      "current": "rejected",
+      "next": "rejected",
+      "accept": true
+    },
+    {
+      "current": "rejected",
+      "next": "bad",
+      "accept": false
+    },
+    {
+      "current": "bad",
+      "next": "pending",
+      "accept": false
+    },
+    {
+      "current": "bad",
+      "next": "unknown",
+      "accept": false
+    },
+    {
+      "current": "bad",
+      "next": "confirmed",
+      "accept": false
+    },
+    {
+      "current": "bad",
+      "next": "rejected",
+      "accept": false
+    },
+    {
+      "current": "bad",
+      "next": "bad",
+      "accept": false
+    }
+  ],
+  "contracts": [
+    {
+      "name": "registered service v1",
+      "definition": "service",
+      "value": {
+        "version": 1,
+        "contractVersion": "1",
+        "deploymentId": "dev-one",
+        "serverInstanceId": "instance-one",
+        "primaryHostId": "primary-one",
+        "name": "Task Hub",
+        "capabilities": ["mobile-human-auth", "business-operation-receipts"]
+      },
+      "valid": true
+    },
+    {
+      "name": "numeric contract version rejected",
+      "definition": "service",
+      "value": {
+        "version": 1,
+        "contractVersion": 1,
+        "deploymentId": "dev-one",
+        "serverInstanceId": "instance-one",
+        "primaryHostId": "primary-one",
+        "name": "Task Hub",
+        "capabilities": ["mobile-human-auth", "business-operation-receipts"]
+      },
+      "valid": false
+    },
+    {
+      "name": "missing primary ID",
+      "definition": "service",
+      "value": {
+        "version": 1,
+        "contractVersion": "1",
+        "deploymentId": "dev-one",
+        "serverInstanceId": "instance-one",
+        "name": "Task Hub",
+        "capabilities": ["mobile-human-auth", "business-operation-receipts"]
+      },
+      "valid": false
+    },
+    {
+      "name": "empty deployment rejected",
+      "definition": "service",
+      "value": {
+        "version": 1,
+        "contractVersion": "1",
+        "deploymentId": "",
+        "serverInstanceId": "instance-one",
+        "primaryHostId": "primary-one",
+        "name": "Task Hub",
+        "capabilities": ["mobile-human-auth", "business-operation-receipts"]
+      },
+      "valid": false
+    },
+    {
+      "name": "new capability preserves v1",
+      "definition": "service",
+      "value": {
+        "version": 1,
+        "contractVersion": "1",
+        "deploymentId": "dev-one",
+        "serverInstanceId": "instance-one",
+        "primaryHostId": "primary-one",
+        "name": "Task Hub",
+        "capabilities": ["mobile-human-auth", "business-operation-receipts", "future-extension"]
+      },
+      "valid": true
+    },
+    {
+      "name": "event positive revision",
+      "definition": "event",
+      "value": {
+        "taskId": "00000000-0000-4000-8000-000000000011",
+        "revision": 7
+      },
+      "valid": true
+    },
+    {
+      "name": "event invalid UUID",
+      "definition": "event",
+      "value": {
+        "taskId": "other",
+        "revision": 7
+      },
+      "valid": false
+    },
+    {
+      "name": "event zero revision",
+      "definition": "event",
+      "value": {
+        "taskId": "00000000-0000-4000-8000-000000000011",
+        "revision": 0
+      },
+      "valid": false
+    },
+    {
+      "name": "event unsafe integer",
+      "definition": "event",
+      "value": {
+        "taskId": "00000000-0000-4000-8000-000000000011",
+        "revision": 9007199254740992
+      },
+      "valid": false
+    },
+    {
+      "name": "unknown receipt original ID",
+      "definition": "receipt",
+      "value": {
+        "operationId": "00000000-0000-4000-8000-000000000011",
+        "phase": "unknown"
+      },
+      "valid": true
+    },
+    {
+      "name": "unrecognized receipt phase",
+      "definition": "receipt",
+      "value": {
+        "operationId": "00000000-0000-4000-8000-000000000011",
+        "phase": "retry"
+      },
+      "valid": false
+    }
+  ]
+}

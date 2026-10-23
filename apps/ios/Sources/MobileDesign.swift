@@ -1,0 +1,79 @@
+// Generated from design/mobile/tokens.json. Edit tokens, then pnpm generate:mobile-design.
+import UIKit
+
+enum MobileDesignGeometry {
+  static let floatingRadius: CGFloat = 24
+  static let floatingStrokeWidth: CGFloat = 0.5
+  static let floatingStrokeAlpha: Double = 0.08
+  static let floatingShadowRadius: CGFloat = 8
+  static let floatingShadowYOffset: CGFloat = 2
+  static let floatingShadowAlpha: Double = 0.08
+  static let sidebarMaxWidth: CGFloat = 350
+  static let sidebarOutsideMinWidth: CGFloat = 44
+  static let sidebarBackdropAlpha: Double = 0.22
+  static let composerRadius: CGFloat = 27
+  static let composerHorizontalInset: CGFloat = 12
+  static let composerVerticalInset: CGFloat = 4
+  static let composerRowSpacing: CGFloat = 6
+  static let composerInnerInset: CGFloat = 4
+  static let composerDetailRadius: CGFloat = 16
+  static let composerSettingsHeight: CGFloat = 44
+  static let composerVisibleLinesMin: CGFloat = 1
+  static let composerVisibleLinesMax: CGFloat = 6
+  static let iosIconTouchSize: CGFloat = 44
+  static let androidIconTouchSize: CGFloat = 48
+  static let headerHorizontalInset: CGFloat = 12
+  static let headerTopInset: CGFloat = 1
+  static let headerBottomInset: CGFloat = 9
+  static let clientHeaderMaxWidth: CGFloat = 145
+  static let chatHorizontalInset: CGFloat = 16
+  static let chatTopInset: CGFloat = 10
+  static let chatBottomInset: CGFloat = 12
+  static let userBubbleRadius: CGFloat = 20
+  static let userBubbleHorizontalInset: CGFloat = 14
+  static let userBubbleVerticalInset: CGFloat = 10
+  static let userBubbleAttachmentSpacing: CGFloat = 6
+  static let sidebarHorizontalInset: CGFloat = 10
+  static let sidebarRowInset: CGFloat = 9
+  static let sidebarRowHeight: CGFloat = 44
+  static let sidebarSelectionRadius: CGFloat = 10
+  static let sidebarProjectThreadIndent: CGFloat = 24
+  static let sidebarSearchRadius: CGFloat = 12
+  static let toolDetailRadius: CGFloat = 12
+  static let toolDetailInset: CGFloat = 12
+  static let toolDetailSpacing: CGFloat = 8
+  static let toolOutputMaxHeight: CGFloat = 180
+  static let toolDetailStrokeWidth: CGFloat = 1
+  static let toolDetailStrokeAlpha: Double = 0.1
+  static let markdownBlockSpacing: CGFloat = 8
+  static let codeBlockInset: CGFloat = 12
+  static let codeBlockRadius: CGFloat = 12
+  static let runtimePlanInset: CGFloat = 10
+  static let runtimePlanRadius: CGFloat = 12
+  static let planMessageInset: CGFloat = 12
+  static let planMessageRadius: CGFloat = 16
+  static let planReviewInset: CGFloat = 14
+  static let planReviewRadius: CGFloat = 18
+  static let planReviewSpacing: CGFloat = 12
+  static let approvalInset: CGFloat = 12
+  static let approvalRadius: CGFloat = 12
+  static let approvalSpacing: CGFloat = 8
+  static let approvalFillAlpha: Double = 0.08
+  static let approvalStrokeAlpha: Double = 0.2
+  static let questionInputInset: CGFloat = 10
+  static let questionInputRadius: CGFloat = 10
+  static let asyncQuestionSheetCompactHeight: CGFloat = 380
+  static let asyncQuestionSheetRadius: CGFloat = 24
+  static let receiptInset: CGFloat = 10
+  static let receiptRadius: CGFloat = 10
+  static let queuedReplyRowHeight: CGFloat = 48
+  static let queuedReplyMaxHeight: CGFloat = 144
+}
+enum MobileDesignColors {
+  static let userBubbleLight: [CGFloat] = [0.91, 0.96, 1]
+  static let userBubbleDark: [CGFloat] = [0.12, 0.24, 0.34]
+  static let userBubbleTextLight: [CGFloat] = [0.14, 0.36, 0.57]
+  static let userBubbleTextDark: [CGFloat] = [0.8, 0.9, 1]
+  static let toolDetailLight: CGFloat = 0.95
+  static let toolDetailDark: CGFloat = 0.12
+}

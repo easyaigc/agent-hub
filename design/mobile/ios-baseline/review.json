@@ -1,0 +1,504 @@
+{
+  "version": 1,
+  "sourceSha256": "d64b46449e0f916da44f2c40b5d8334ce5e6a1b7c6b0e5ac72253b4139c252ae",
+  "status": "reviewed-collected-states",
+  "reviewedAt": "2026-10-11T18:36:59.396Z",
+  "scope": "89 collected synthetic captures; not all future Android UI states",
+  "pending": [
+    "All enlarged-font states; additional full Markdown/table/link/Diff states (A3).",
+    "EasyWork pairing/OIDC/LAN/relay, discovery/VPN, nonblocking questions and complete model catalog loading/failure (A3/A5).",
+    "Settled readonly attachment menu and settled dark custom-question keyboard dismissal (A3); current raw transition capture preserved.",
+    "Backup/migration, downloaded-resource preview and physical speech/push delivery (A6/A7)."
+  ],
+  "groups": [
+    {
+      "group": "native",
+      "notes": [
+        "31 explicit images reviewed using six contact sheets; full dark final-output and landscape images inspected.",
+        "Product layout, light/dark hierarchy, default-font composer, sidebar and system picker entry were inspected.",
+        "floating-chat-jump-latest contains DEBUG test controls and is diagnostic-only.",
+        "System file picker capture is in compact sheet presentation; it is not a cross-platform product-layout reference.",
+        "Large font, full Markdown tables/links/Diff, EasyWork flows, discovery and async questions still need later-stage visual evidence."
+      ],
+      "images": [
+        {
+          "file": "native--testClientSwitchKeepsDraftOnOriginalTarget--client-draft-isolation--1.png",
+          "sha256": "a2aea62d39cd5926c2990bfc8f80496d4db1bcf3d9db333f2a0f435b23a00ba2"
+        },
+        {
+          "file": "native--testCloseDemoReturnsToOnboardingAndPersists--settings-demo-disabled--1.png",
+          "sha256": "e730813b4bf3e2983543f2920ebe5b7791cabbebb9e75f69fb633fd4a466043a"
+        },
+        {
+          "file": "native--testCloseDemoReturnsToOnboardingAndPersists--demo-closed-onboarding--1.png",
+          "sha256": "6b308c440caefb4e8b675e617c6f32606bc0951d8a9afae70c1ebe63dd5a51e5"
+        },
+        {
+          "file": "native--testCloseDemoReturnsToOnboardingAndPersists--settings-demo-enabled--1.png",
+          "sha256": "86e759dc0e4acad723ad321b8a74f2548f8820199f63ab1a94e41b090a44848d"
+        },
+        {
+          "file": "native--testCloseDemoReturnsToOnboardingAndPersists--demo-main-without-test-controls--1.png",
+          "sha256": "ebd5c7baa752eb0772d90fcd23c344659df67dfa9ff1585507b9510324a0c43c"
+        },
+        {
+          "file": "native--testCloseDemoReturnsToOnboardingAndPersists--settings-demo-disabled--2.png",
+          "sha256": "22b3f732c1f1157b9ca7eb23598a833bedc3ec884476819f297edd282830175c"
+        },
+        {
+          "file": "native--testDarkAppearance--compact-dark--1.png",
+          "sha256": "fd7cbf37d7584a41e24642dfb03ef2d937f6cff41f0434de2401cdcf75fd64ed"
+        },
+        {
+          "file": "native--testDictationCancelFinishAndSend--dictation-listening-light--1.png",
+          "sha256": "9bbe5dc5e48cdd839c3c25d10b25ba0347e5bdf9d9ad11c64dd901723e132de1"
+        },
+        {
+          "file": "native--testDictationDeniedAndDarkAppearance--dictation-listening-dark--1.png",
+          "sha256": "6196e87b3aa39ba683e6f7dcd826d93ce368afa4643baa519c05dec84f01d769"
+        },
+        {
+          "file": "native--testDictationDisabledRetainsDraftAndAllowsRetry--dictation-disabled-recovered--1.png",
+          "sha256": "473c9e7042084cfa3157f2d0b6f40de075691d86afd7ff0df33a2ab6490ec49d"
+        },
+        {
+          "file": "native--testFloatingChatControlsAndExpandingDraft--floating-chat-light--1.png",
+          "sha256": "63b7dc851862f3ef7399eb920b08db1bd7b87a4e3908b458d5b30500dbbcb6e2"
+        },
+        {
+          "file": "native--testFloatingChatControlsAndExpandingDraft--floating-chat-keyboard-multiline--1.png",
+          "sha256": "b40199ebd55d666297245d5303b477289cef95245ac801ccc98a708f2f210e81"
+        },
+        {
+          "file": "native--testFloatingChatControlsAndExpandingDraft--floating-chat-landscape--1.png",
+          "sha256": "c46a991f95a66d9a13177e77af5277e88ebe0f02c48c1dbb4a9e93cd3b35fe12"
+        },
+        {
+          "file": "native--testFloatingChatControlsAndExpandingDraft--floating-chat-dark--1.png",
+          "sha256": "c2a292e2261db5cd89a5f369d9241831c03540b278ef8355f08b2ea7a7d589f4"
+        },
+        {
+          "file": "native--testFloatingChatControlsAndExpandingDraft--floating-chat-dark-latest--1.png",
+          "sha256": "cded8866217ba281ed3003fe59e63472e37a230f32aa5a1432beaa6e26a5ba0b"
+        },
+        {
+          "file": "native--testFloatingJumpToLatestClearsComposer--floating-chat-jump-latest--1.png",
+          "sha256": "d9532d01988add4f4a58c527006f3462cbed742d7194f4500c2ba878be22bc7c"
+        },
+        {
+          "file": "native--testNewConversationCreatedOnFirstSend--first-send-new-thread--1.png",
+          "sha256": "530d9411a172bba2834ec5492ac762a8ebf0d3fbb7ea04cde969f9f217bd77fb"
+        },
+        {
+          "file": "native--testOfflineClientKeepsEditableDraftAndDisablesSend--offline-draft--1.png",
+          "sha256": "1de822b59cf7f8a5ce8966fb679be2c67112ae6782fbbf5c3c03654204b8b73e"
+        },
+        {
+          "file": "native--testSidebarContinuousDragAndReversal--sidebar-continuous-drag-closed--1.png",
+          "sha256": "c0b89977b6fa082f8d430dc98d60cb333678904d959e0d598c8b0e2faa7f6326"
+        },
+        {
+          "file": "native--testSidebarRecentAndProjectExpansion--sidebar-five-recent-and-project--1.png",
+          "sha256": "95e1e06fbee97672720f2a2c1b6ad604bc31426f460428eedfd1f32ab8e5cc1e"
+        },
+        {
+          "file": "native--testSidebarSearchAndProjectSelection--compact-main--1.png",
+          "sha256": "1302b31504bafb677b6952830e78109b86b5676ce25453029cae0b56ece5a9d7"
+        },
+        {
+          "file": "native--testSidebarSearchAndProjectSelection--compact-sidebar--1.png",
+          "sha256": "b20ca576cbc4ade0c9815fe368f664786c06cc205eaad471c7efbd54b8b97324"
+        },
+        {
+          "file": "native--testSidebarSwipeOpenCloseKeepsDraft--sidebar-swipe-open--1.png",
+          "sha256": "b7c64ce22a8197ad2296ee1652131b65e6006b7f1ab8eab6e20f1e67b49eb76e"
+        },
+        {
+          "file": "native--testSidebarSwipeOpenCloseKeepsDraft--sidebar-swipe-closed--1.png",
+          "sha256": "a2b0a3d2bcdc640c5d8db5d4231dc252e6a0042fb4b8ca4089c8c7a2fee34d43"
+        },
+        {
+          "file": "native--testSidebarSwipeOpenCloseKeepsDraft--sidebar-search-swipe-closed--1.png",
+          "sha256": "a2b0a3d2bcdc640c5d8db5d4231dc252e6a0042fb4b8ca4089c8c7a2fee34d43"
+        },
+        {
+          "file": "native--testSystemAttachmentPickers--system-file-picker--1.png",
+          "sha256": "e46f7dd66e374e90a7d110b0487595f45ed5a63fff31782335b52474871e4d4a"
+        },
+        {
+          "file": "native--testSystemAttachmentPickers--system-photo-picker--1.png",
+          "sha256": "8d089934974d40c0d9ae8ef6e10e75c1b1e6940aea6d092b524622ea5d8bf0f4"
+        },
+        {
+          "file": "native--testTaskNotificationPreferencesAndPermissionDenied--notifications-denied-and-defaults--1.png",
+          "sha256": "4bd90f3f3f57ad79730167ea47ae5dff7522084de4e51add3e2202be55f81f2c"
+        },
+        {
+          "file": "native--testTaskNotificationPreferencesAndPermissionDenied--notifications-preferences-restored--1.png",
+          "sha256": "c295cdf6b7ddafab38aee3b8243aca079afcf9be2e5b4c3ccb3a5d40711f7901"
+        },
+        {
+          "file": "native--testUnifiedComposerStopResumeAndRestart--composer-resume--1.png",
+          "sha256": "25cd976a7507a4a16d31697ba652ed1e32a4de678d8b0b3de6f2731e664dd6a4"
+        },
+        {
+          "file": "native--testUnifiedComposerStopResumeAndRestart--composer-completed-disabled-send--1.png",
+          "sha256": "07cd842905c9bbd4b67852375eeaceff50ddeb498f84439361345c9f4596b237"
+        }
+      ]
+    },
+    {
+      "group": "clients",
+      "notes": [
+        "Both explicit client-list images reviewed. Current selection, edit action and saved nickname are visible.",
+        "Half-sheet list requires scrolling for lower rows; full connection-form and discovery screenshots remain for A3."
+      ],
+      "images": [
+        {
+          "file": "clients--testClientEditCancelAndNicknamePreserveSelectionAndDraft--client-list-edit-entry--1.png",
+          "sha256": "7818b962309d96a5c75b61cd541971d971db47f041ffffadf89e99f640ee7e6f"
+        },
+        {
+          "file": "clients--testClientEditConnectionValidationAndPersistence--client-edit-saved--1.png",
+          "sha256": "b09215b9329dfd4cbfef06936915ef7ca2b4eaebebe919943f8d5156f48f106b"
+        }
+      ]
+    },
+    {
+      "group": "composer",
+      "notes": [
+        "Ten explicit composer-state images reviewed. Resume appears for interrupted/failed/paused states; completed/latest completed response and unknown state retain disabled empty send.",
+        "Three-item queue and renumbered queue after removal preserve separate rows above composer; running indicator and stop button remain present."
+      ],
+      "images": [
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-host-completed--1.png",
+          "sha256": "186deaec98123fb8bbfadbd095c13bb08bfe5d55bc0f6b9bd8159d956df6c7c6"
+        },
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-host-interrupted--1.png",
+          "sha256": "d0fedf5da0d15cb991f2c5f5d0a1e1fb96c5e34708427b6d49fce82648106032"
+        },
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-host-failed--1.png",
+          "sha256": "cb959fbde2a8586293840a420c52c12b43b6244e7009301c68c9ef4a4a903bb5"
+        },
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-host-paused--1.png",
+          "sha256": "1cb15cf904576fc266eb5b0dbafcdb6848c9c708968290661c92b2eb5856f35d"
+        },
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-host-completed-with-old-interruption--1.png",
+          "sha256": "5bdbc40d2117775fed00de6f2f8c583217d5a8142cb1bb7f5941e5a14fabfb06"
+        },
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-host-unknown--1.png",
+          "sha256": "eefcc03c8aa42e951ba82a7e141949521c6d994f77cda0b98e2fe68a9767970f"
+        },
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-numbered-queue-above-input--1.png",
+          "sha256": "e6e1df7fec5579b1e8d34bcb2ba97e33391de65c7ce2399d5f82eabeca362cd3"
+        },
+        {
+          "file": "composer--testComposerRecoveryFromHostStates--composer-host-resumed--1.png",
+          "sha256": "adbdc48b8532d98d8b612bf71cbb47fc739eefdbf481d87958fde62a7a94dfc9"
+        },
+        {
+          "file": "composer--testUnifiedComposerStopResumeAndRestart--composer-resume--1.png",
+          "sha256": "391010c9614bf4b13b9a9b4acbf561a54ddeaa139b1580747c149bd7855c5346"
+        },
+        {
+          "file": "composer--testUnifiedComposerStopResumeAndRestart--composer-completed-disabled-send--1.png",
+          "sha256": "7cec700cf4d370e0e8ff43bccab6ce095cc0dcc0d21729e83c642f4fdda40467"
+        }
+      ]
+    },
+    {
+      "group": "generation",
+      "notes": [
+        "Three explicit generation images reviewed: scrolled settings, portrait and landscape composer.",
+        "Portrait compact screenshot also includes a transient history loading indicator; use its composer region for layout reference, not an idle-history reference.",
+        "Model-catalog full/default/failure pages remain for later-stage visual coverage."
+      ],
+      "images": [
+        {
+          "file": "generation--testMobileGenerationSettings--mobile-generation-settings--1.png",
+          "sha256": "f3d983ca527dfe650e1dce536d0d37783f51339339c62fea75750d78eb272e89"
+        },
+        {
+          "file": "generation--testMobileGenerationSettings--mobile-generation-composer-compact--1.png",
+          "sha256": "690a2cc41cfc439ef57afbb8384cad84329d4f43b43fc2252bdb398c9b64d928"
+        },
+        {
+          "file": "generation--testMobileGenerationSettings--mobile-generation-composer-wide--1.png",
+          "sha256": "1992a9f0dcc954706cdbd37d373d0d6b083d8d1524b2db297dd5fa2ed564d774"
+        }
+      ]
+    },
+    {
+      "group": "plan",
+      "notes": [
+        "Five explicit images reviewed. Expanded plan, separate implement/adjust card, plan-mode composer, readonly disabled actions and stopped/completed composer states are visible.",
+        "Readonly attachment-menu behavior was asserted by UI actions; this final run has no explicit screenshot of the open readonly menu."
+      ],
+      "images": [
+        {
+          "file": "plan--testMobilePlanModeAndPlanActions--mobile-plan-review--1.png",
+          "sha256": "3eb227137a2efa7f6ed932bd8719d2025add50d7fd165b7c89d35db592f5bf33"
+        },
+        {
+          "file": "plan--testMobilePlanModeAndPlanActions--mobile-composer-plan-mode--1.png",
+          "sha256": "f22331888564c5190d870c2bab95646a01f08a84c025e3f77ec1023b5ed86fcc"
+        },
+        {
+          "file": "plan--testMobilePlanModeAndPlanActions--mobile-plan-readonly--1.png",
+          "sha256": "76f4328d0fc5a512245fde9fdd37457a504dd6f3c98470bfff4c2401d41c2d7e"
+        },
+        {
+          "file": "plan--testUnifiedComposerStopResumeAndRestart--composer-resume--1.png",
+          "sha256": "68770819ab30c60854f0b34b24ac257569846d9e8d73ed7ec77143c48aee4b77"
+        },
+        {
+          "file": "plan--testUnifiedComposerStopResumeAndRestart--composer-completed-disabled-send--1.png",
+          "sha256": "5a5d805128b25cfc51da210788299efcf8dbbf590fdf1d1fbc3a62ae56d5a5a0"
+        }
+      ]
+    },
+    {
+      "group": "receipts",
+      "notes": [
+        "Three explicit question-card images reviewed: dark disabled, dark enabled with custom text, light enabled with custom text. Historical screenshot labels use approval, but the displayed state is a synchronous question.",
+        "The dark custom-input capture retains a rounded edge at the screen bottom during interactive keyboard dismissal. Keep the raw image and annotate this capture; use existing stable composer states as layout references and recapture the fully settled question/keyboard state in A3."
+      ],
+      "images": [
+        {
+          "file": "receipts--testReceiptNoticesAndQuestionAppearance--approval-dark-disabled--1.png",
+          "sha256": "a32821b13d4e887be13a30453182f67e54fe9adf43b12516a45150b70b4c9822"
+        },
+        {
+          "file": "receipts--testReceiptNoticesAndQuestionAppearance--approval-dark-enabled-custom--1.png",
+          "sha256": "7ede13b0a449bb7043e54c92c51da3f207b306b5ce98813a1bed3135fe1cfd8d"
+        },
+        {
+          "file": "receipts--testReceiptNoticesAndQuestionAppearance--approval-light-enabled-custom--1.png",
+          "sha256": "87fba905176cd9f3e56f3ef3c4b27d66301c2def84860fb514572ac4dcbf4749"
+        }
+      ]
+    },
+    {
+      "group": "compaction",
+      "notes": [
+        "Two explicit compaction states reviewed: running progress and completed row remain separate from tools; no card/composer occlusion.",
+        "This is fixture state projection evidence, not a real model compaction event."
+      ],
+      "images": [
+        {
+          "file": "compaction--testContextCompactionLifecycleAndClientIsolation--context-compaction-running--1.png",
+          "sha256": "548a20956dc63e010763b5eb85ec04683286b2a5a46e03c0448674c49959a18a"
+        },
+        {
+          "file": "compaction--testContextCompactionLifecycleAndClientIsolation--context-compaction-completed--1.png",
+          "sha256": "b9bd3dcc4cf10318e4962af804a3089bf29db5818720275fbb32f44e9363528e"
+        }
+      ]
+    },
+    {
+      "group": "creation",
+      "notes": [
+        "Two explicit creation images reviewed: pending immutable input with query/end-wait controls and confirmed response with cleared empty composer.",
+        "Long synthetic marker wraps in the pending composer; exact text and single submission are asserted independently.",
+        "Fixture confirmation is auxiliary evidence, not a real desktop create."
+      ],
+      "images": [
+        {
+          "file": "creation--testDesktopCreationPendingSurvivesRestartWithoutReplay--desktop-fixture-pending-before-restart--1.png",
+          "sha256": "110876392cba3f768b1469fa81502a88daa46e670adfd170c73cc99c5f5b2549"
+        },
+        {
+          "file": "creation--testDesktopCreationPendingSurvivesRestartWithoutReplay--desktop-fixture-confirmed-without-second-send--1.png",
+          "sha256": "44e7e22ad743fc3a68828145559191de8139add0204341d7f8dfddd6d1e71ff3"
+        }
+      ]
+    },
+    {
+      "group": "recovery",
+      "notes": [
+        "Six explicit creation/recovery images reviewed across light/dark and keyboard states.",
+        "Pending submitted text remains separately visible while local draft is edited; detached new draft can be sent, late old result does not overwrite it.",
+        "No input controls or status chips overlap each other at default font size; marker text wrapping is expected."
+      ],
+      "images": [
+        {
+          "file": "recovery--testDesktopCreationUnknownDraftCanBeClearedAndDetached--creation-send-disabled-empty--1.png",
+          "sha256": "bfee1a62678111853c328c4e461c2b0bec0d28984e24797e2ed3e5a570e6508e"
+        },
+        {
+          "file": "recovery--testDesktopCreationUnknownDraftCanBeClearedAndDetached--creation-send-enabled-draft--1.png",
+          "sha256": "daa08af71bdea41660419e31eb3167b334f2d8e6ed08f746b5314e852a2286a2"
+        },
+        {
+          "file": "recovery--testDesktopCreationUnknownDraftCanBeClearedAndDetached--creation-message-sending--1.png",
+          "sha256": "19c0bd4ce621585d19f44d122461c16f5f38704f270c32fafe9c4a59c8439c19"
+        },
+        {
+          "file": "recovery--testDesktopCreationUnknownDraftCanBeClearedAndDetached--creation-message-sending-dark--1.png",
+          "sha256": "ee73623eca13b5e8f54a76fa4352119584b2835559af3612cc87b5e8b5219812"
+        },
+        {
+          "file": "recovery--testDesktopCreationUnknownDraftCanBeClearedAndDetached--creation-send-enabled-dark--1.png",
+          "sha256": "f6f8d515fdd0fcf8e123e64704dbee12a03774745585f7b6c2db8b994af0b4a7"
+        },
+        {
+          "file": "recovery--testDesktopCreationUnknownDraftCanBeClearedAndDetached--creation-unknown-draft-restart-late-receipt--1.png",
+          "sha256": "637848d4f57e05099faf36fd4292ee6b4c1d965e5f22640a11f9c0c3b8eed7c2"
+        }
+      ]
+    },
+    {
+      "group": "reading",
+      "notes": [
+        "Two explicit reading-lifecycle images reviewed: preserved editable draft during readonly state and restored client view.",
+        "The real-failure label refers to an actual fixture HTTP failure, not a real Codex runtime/model."
+      ],
+      "images": [
+        {
+          "file": "reading--testReadCancellationOnBackgroundAndRealFailure--read-lifecycle-real-failure-preserves-draft--1.png",
+          "sha256": "78a9652aaf8d783085c7932d71e3f44714a95c662104e6a298ca66c52c093e23"
+        },
+        {
+          "file": "reading--testReadCancellationOnCapabilityChangeAndClientSwitch--read-lifecycle-client-restored--1.png",
+          "sha256": "9dd1bc4638f18676bf02eb5c15634eb9dfa25001d39a42e86f469f8c41a3dccd"
+        }
+      ]
+    },
+    {
+      "group": "unread",
+      "notes": [
+        "Two explicit sidebar images reviewed after reading and after relaunch; recent/project rows preserve selection and have no unread dot.",
+        "Test assertions additionally cover long-history reading and visibility/overlay guards."
+      ],
+      "images": [
+        {
+          "file": "unread--testMobileReadingClearsAndSurvivesRefresh--mobile-reading-cleared--1.png",
+          "sha256": "79fa6f8af8ea7f3ea0153e7e73eedf59b9ebef8c09797373088ca46e586dbc65"
+        },
+        {
+          "file": "unread--testMobileReadingClearsAndSurvivesRefresh--mobile-reading-restored--1.png",
+          "sha256": "61e31d3480430e1b618a5734a1748c135d28195a3c0c1aca1087745a72f11e7d"
+        }
+      ]
+    },
+    {
+      "group": "badge",
+      "notes": [
+        "Approval card and composer have no occlusion at default font size.",
+        "Home screen shows Agent Hub badge 1; this is local simulator badge evidence, not APNs delivery."
+      ],
+      "images": [
+        {
+          "file": "badge--testMobileUnreadBadgeAggregatesEveryComputer--multi-computer-system-unread-badge--1.png",
+          "sha256": "b5ccc3969bd38d9126cb3070fb68694186067d8b89195af03a4a7407adbf036b"
+        },
+        {
+          "file": "badge--testMobileUnreadBadgeAggregatesEveryComputer--approval-read-unread-cleared-action-retained--1.png",
+          "sha256": "0a9d34230a38f8813cfee089ab38fd5d0357381c291018ee8003d962f4556816"
+        }
+      ]
+    },
+    {
+      "group": "history",
+      "notes": [
+        "Four explicit paging images reviewed: local more, local exhausted, remote exhausted and isolated other thread.",
+        "Floating header/composer and readonly notice overlay the scrollable history by current iOS design; they remain readable and page controls preserve their state."
+      ],
+      "images": [
+        {
+          "file": "history--testHistoryPagingLocalWindow--history-paging-compact-local--1.png",
+          "sha256": "ab6ca42661618ac98f02a0d3fae06eb97fd141f5e671c34891f2220caee5ae94"
+        },
+        {
+          "file": "history--testHistoryPagingLocalWindow--history-paging-local-exhausted--1.png",
+          "sha256": "5db7edc78a45246ac0ca06f5944ce4680acfb85456845422d50a7d61d57fd439"
+        },
+        {
+          "file": "history--testHistoryPagingPullFailureRetryAndExhaustion--history-paging-remote-exhausted--1.png",
+          "sha256": "9de19b155a2eb0f3cc2d0e4be279ba2f8da91bb1195fc849dc699ee615dd79a1"
+        },
+        {
+          "file": "history--testHistoryPagingThreadSwitchDiscardsLatePage--history-paging-switch-isolated--1.png",
+          "sha256": "e5b4a71d98e4d85eede019511c38720a775e605f8aad55e372065dc624997cd5"
+        }
+      ]
+    },
+    {
+      "group": "sidebar",
+      "notes": [
+        "All 15 explicit images inspected, including full raw Settings images where contact sheets appeared cropped; raw images are intact.",
+        "Phone unread remains distinct from desktop read. Light/dark sidebar, five-row folding, demo on/off, retained connected-client draft and history-only cached list confirmed.",
+        "Manual pull spinner additionally inspected in error-3-loading.png; refresh error remains until reset, so background reads cannot consume it."
+      ],
+      "images": [
+        {
+          "file": "sidebar--testCloseDemoPreservesConnectedClientAndDraft--settings-demo-disabled--1.png",
+          "sha256": "7554e136c175cade1b713722563794df09f96e8cd069bb28101e07b2b42f4c33"
+        },
+        {
+          "file": "sidebar--testCloseDemoPreservesConnectedClientAndDraft--settings-demo-enabled--1.png",
+          "sha256": "762167b85f3113b4c72efce290c6b57d3fbc960008ba9cef5420d346554fa2a2"
+        },
+        {
+          "file": "sidebar--testCloseDemoPreservesConnectedClientAndDraft--settings-demo-disabled--2.png",
+          "sha256": "7554e136c175cade1b713722563794df09f96e8cd069bb28101e07b2b42f4c33"
+        },
+        {
+          "file": "sidebar--testCloseDemoPreservesConnectedClientAndDraft--demo-closed-connected-client-retained--1.png",
+          "sha256": "961d660d8ec42d545f7df5592e8c7371b2ee947a33928963459e1a104392afda"
+        },
+        {
+          "file": "sidebar--testCloseDemoReturnsToOnboardingAndPersists--settings-demo-disabled--1.png",
+          "sha256": "e961bdf5e58c3425fc5576119a71fad9c96e566d1eac8ca226a29a31fbbec247"
+        },
+        {
+          "file": "sidebar--testCloseDemoReturnsToOnboardingAndPersists--demo-closed-onboarding--1.png",
+          "sha256": "115fd7020c69f58f206d60b7d6d8df5f93cc40f3765e2d4eca35106d96de075d"
+        },
+        {
+          "file": "sidebar--testCloseDemoReturnsToOnboardingAndPersists--settings-demo-enabled--1.png",
+          "sha256": "1b75eef585b830f12dc37b1784766bc7c83522f64404341b501be1c2c000ec2f"
+        },
+        {
+          "file": "sidebar--testCloseDemoReturnsToOnboardingAndPersists--demo-main-without-test-controls--1.png",
+          "sha256": "7e78ca9c85e79c3a4e59c06652a384d22f6a551262ec66438bb4610e46304068"
+        },
+        {
+          "file": "sidebar--testCloseDemoReturnsToOnboardingAndPersists--settings-demo-disabled--2.png",
+          "sha256": "e961bdf5e58c3425fc5576119a71fad9c96e566d1eac8ca226a29a31fbbec247"
+        },
+        {
+          "file": "sidebar--testSidebarHistoryUpdatesStateBeforeEvents--sidebar-history-updated-without-events--1.png",
+          "sha256": "ef885c20437db56a381b95400990f25e75e9be06a6cf4a070055fa310c8b3849"
+        },
+        {
+          "file": "sidebar--testSidebarRecentAndProjectExpansion--sidebar-five-recent-and-project--1.png",
+          "sha256": "3f47bc121028e94dea7876f6c4879af4570fca40db46295b04dbe4c58bd93907"
+        },
+        {
+          "file": "sidebar--testSidebarSearchAndProjectSelection--compact-main--1.png",
+          "sha256": "cb98a1629c947718ba9e8249f2e07ab698f80401f12340aca254808f8e0d44f2"
+        },
+        {
+          "file": "sidebar--testSidebarSearchAndProjectSelection--compact-sidebar--1.png",
+          "sha256": "ee9ab7099e886b59500eafc4107a4f09a1e734eb74e076cee4330d04d979c93a"
+        },
+        {
+          "file": "sidebar--testSidebarStatePriorityPreservesPhoneUnread--sidebar-completed-unread-light--1.png",
+          "sha256": "e9d2b8fe3e7e9b193e0ea18424e65b1fe78cb09d045eca0f2688334477debc68"
+        },
+        {
+          "file": "sidebar--testSidebarStatePriorityPreservesPhoneUnread--sidebar-completed-unread-dark--1.png",
+          "sha256": "002fceb64bf06b9d6864a3b5aff359d15745fb0361464a1f37745ad547d3e080"
+        }
+      ]
+    }
+  ]
+}

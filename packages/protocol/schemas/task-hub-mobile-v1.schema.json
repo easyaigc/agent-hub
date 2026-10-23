@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "task-hub-mobile-v1",
+  "description": "Task Hub business HTTP boundary, independent of Codex wire and EasyWork pairing.",
+  "definitions": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$"
+    },
+    "service": {
+      "type": "object",
+      "required": [
+        "version",
+        "contractVersion",
+        "deploymentId",
+        "serverInstanceId",
+        "primaryHostId",
+        "name",
+        "capabilities"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "contractVersion": {
+          "const": "1"
+        },
+        "deploymentId": {
+          "$ref": "#/definitions/id"
+        },
+        "serverInstanceId": {
+          "$ref": "#/definitions/id"
+        },
+        "primaryHostId": {
+          "$ref": "#/definitions/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "required": ["id", "name", "kind", "role"],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "kind": {
+          "enum": ["human", "agent", "system"]
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "login": {
+      "type": "object",
+      "required": ["actor", "token", "expiresAt"],
+      "properties": {
+        "actor": {
+          "$ref": "#/definitions/actor"
+        },
+        "token": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "expiresAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "required": ["operationId", "phase"],
+      "properties": {
+        "operationId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "phase": {
+          "enum": ["pending", "unknown", "confirmed", "rejected"]
+        }
+      }
+    },
+    "readSnapshot": {
+      "type": "object",
+      "required": ["token", "taskId", "projectId", "revision", "syncCursor", "expiresAt"],
+      "properties": {
+        "token": {
+          "$ref": "#/definitions/id"
+        },
+        "taskId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "projectId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "syncCursor": {
+          "type": "string",
+          "pattern": "^[0-9]{1,16}$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["taskId", "revision"],
+      "properties": {
+        "taskId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "taskHeader": {
+      "type": "object",
+      "required": ["id", "projectId", "currentRound", "revision"],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/uuid"
+        },
+        "projectId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "currentRound": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    }
+  }
+}

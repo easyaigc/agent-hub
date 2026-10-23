@@ -1,0 +1,61 @@
+{
+  "credential": {
+    "binding": {
+      "bindingId": "binding-vector",
+      "account": {
+        "authority": "https://acceptance.example",
+        "subject": "synthetic-user"
+      },
+      "desktopDeviceId": "desktop-vector",
+      "mobileDeviceId": "mobile-vector",
+      "desktopPublicKey": "3p7bfXt9wbTTW2HC7OQ1Nz-DQ8hbeGdNrfx-FG-IK08",
+      "mobilePublicKey": "hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo",
+      "target": {
+        "account": {
+          "authority": "https://acceptance.example",
+          "subject": "synthetic-user"
+        },
+        "desktopDeviceId": "desktop-vector",
+        "workspaceId": "workspace-vector",
+        "runtimeId": "runtime-vector"
+      },
+      "status": "active"
+    },
+    "privateKey": "dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo"
+  },
+  "confirmation": "9pgwgzi5wNuZOITDaif4nA",
+  "payload": {
+    "kind": "protocol",
+    "proof": "中文🙂 / 反斜杠\\与换行\n",
+    "envelope": {
+      "protocolVersion": 2,
+      "kind": "response",
+      "requestId": "vector",
+      "ok": true,
+      "result": {
+        "verified": true
+      }
+    }
+  },
+  "frame": {
+    "version": 1,
+    "bindingId": "binding-vector",
+    "senderDeviceId": "desktop-vector",
+    "senderSessionId": "desktop-session-vector",
+    "recipientDeviceId": "mobile-vector",
+    "sequence": 42,
+    "sentAt": "2026-10-14T00:00:00.000Z",
+    "nonce": "AAECAwQFBgcICQoL",
+    "ciphertext": "_16bJcPWG9RqSnIevd7zxt2_j5rNOuhQVu729la9L3lfco26kdXOiHxQdcKEmX0YA0ERrMVPH3W4AFEjeSGlZ498r3m22KZqL_4wHebeFR7IvnUK1sTD0FSxSPw7dqOoz-dz5BVCUHJBMzK9JfR4wTGt5IF7psPpgtzftvyvpoUQnckzxp1cFxJIEB_NzLXelGLWYvKxQeN2A600x2tZR5Mw3p3jT42FiIRfmH2tXOy4oK9__NmukYXuHFl5EQ"
+  },
+  "legacy": {
+    "version": 1,
+    "bindingId": "binding-vector",
+    "senderDeviceId": "desktop-vector",
+    "recipientDeviceId": "mobile-vector",
+    "sequence": 42,
+    "sentAt": "2026-10-14T00:00:00.000Z",
+    "nonce": "AAECAwQFBgcICQoL",
+    "ciphertext": "_16bJcPWG9RqSnIevd7zxt2_j5rNOuhQVu729la9L3lfco26kdXOiHxQdcKEmX0YA0ERrMVPH3W4AFEjeSGlZ498r3m22KZqL_4wHebeFR7IvnUK1sTD0FSxSPw7dqOoz-dz5BVCUHJBMzK9JfR4wTGt5IF7psPpgtzftvyvpoUQnckzxp1cFxJIEB_NzLXelGLWYvKxQeN2A600x2tZR5Mw3p3jT42FiIRfmH2tAX01o2mbXZiApfBj4qnAXQ"
+  }
+}

@@ -1,0 +1,51 @@
+package com.agenthub.android
+
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.UUID
+
+/** A small atomic index publishes complete encrypted fragments; readers never mix snapshot generations. */
+internal class NativeHistoryCache(private val storage: NativeSessionStorage) {
+    fun save(key: String,client: MobileClient,thread: String,page: MobileHistory,messages: List<MobileMessage>) = storage.snapshotTransaction {
+        val name="history:$key"
+        val previous=if(storage.storedBytes(name)<=1024*1024) storage.read(name)?.let(::JSONObject) else null
+        val generation=UUID.randomUUID().toString();val parts=mutableListOf<String>()
+        var published=false
+        try {
+        messages.chunked(32).forEachIndexed { index,chunk ->
+            val part="$name:part:$generation:$index";parts.add(part)
+            storage.write(part,JSONArray(chunk.map(::encodeMessage)).toString())
+        }
+        val header=JSONObject(page.wire).put("messages",JSONArray()).put("nextCursor",page.nextCursor ?: JSONObject.NULL)
+        val envelope=JSONObject().put("version",2).put("targetKey",key).put("hostId",client.id).put("threadId",thread)
+            .put("history",header).put("generation",generation).put("messageCount",messages.size).put("parts",JSONArray(parts))
+        storage.write(name,envelope.toString())
+        published=true
+        // Delete only the obsolete generation after the complete new index is durable.
+        if(previous?.optInt("version")==2) previous.getJSONArray("parts").strings().forEach { part ->
+            if(part.startsWith("$name:part:${previous.getString("generation")}:")) storage.remove(part)
+        }
+        } finally {
+            // A failed generation never replaces or removes the old published index.
+            if(!published) parts.forEach { runCatching { storage.remove(it) } }
+        }
+    }
+    fun read(key: String): MobileHistory? = storage.snapshotTransaction {
+        val name="history:$key";val envelope=storage.read(name)?.let(::JSONObject) ?: return@snapshotTransaction null
+        require(envelope.getString("targetKey")==key)
+        val header=envelope.getJSONObject("history")
+        if(envelope.getInt("version")==1) return@snapshotTransaction MobileSnapshotCodec.history(header.toString())
+        require(envelope.getInt("version")==2)
+        val page=MobileSnapshotCodec.history(header.toString());require(page.hostId==envelope.getString("hostId")&&page.threadId==envelope.getString("threadId"))
+        val generation=envelope.getString("generation");require(runCatching { UUID.fromString(generation) }.isSuccess)
+        val parts=envelope.getJSONArray("parts").strings();require(parts.size<=10_000&&parts.distinct().size==parts.size)
+        val messages=parts.flatMapIndexed { index,part ->
+            require(part=="$name:part:$generation:$index") { "缓存分片目标不匹配" }
+            val content=try { storage.read(part) } catch(failure: Exception) { throw IllegalStateException("缓存分片 $index 读取失败（${storage.storedBytes(part)} bytes）",failure) }
+            val array=JSONArray(content ?: error("缓存分片缺失，原文件已保留"));require(array.length() in 1..32)
+            MobileSnapshotCodec.history(JSONObject(header.toString()).put("messages",array).toString()).messages
+        }
+        require(messages.size==envelope.getInt("messageCount")&&messages.map { it.id }.distinct().size==messages.size)
+        page.copy(messages=messages)
+    }
+}

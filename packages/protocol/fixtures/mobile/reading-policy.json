@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "functions": [
+    {
+      "name": "nextRevision",
+      "returns": "integer",
+      "parameters": {
+        "previousRevision": "integer",
+        "sameVersion": "boolean"
+      },
+      "expression": ["if", "sameVersion", "previousRevision", ["+", "previousRevision", 1]]
+    },
+    {
+      "name": "reconciledUnread",
+      "returns": "boolean",
+      "parameters": {
+        "previousUnread": "boolean",
+        "hadLatest": "boolean",
+        "latestAccepted": "boolean",
+        "latestChanged": "boolean",
+        "sourceUnread": "boolean",
+        "readSettles": "boolean"
+      },
+      "expression": [
+        "if",
+        "readSettles",
+        false,
+        [
+          "if",
+          "latestAccepted",
+          [
+            "if",
+            "hadLatest",
+            ["or", "latestChanged", "previousUnread"],
+            ["or", "previousUnread", "sourceUnread"]
+          ],
+          "previousUnread"
+        ]
+      ]
+    },
+    {
+      "name": "newPushUnread",
+      "returns": "boolean",
+      "parameters": {
+        "readSame": "boolean",
+        "readRevision": "integer",
+        "latestRevision": "integer"
+      },
+      "expression": ["and", ["not", "readSame"], ["<", "readRevision", "latestRevision"]]
+    },
+    {
+      "name": "preserveHistoryPrefix",
+      "returns": "boolean",
+      "parameters": {
+        "windowed": "boolean",
+        "hasPaged": "boolean",
+        "sameGeneration": "boolean",
+        "sameRevision": "boolean"
+      },
+      "expression": [
+        "and",
+        ["and", "windowed", "hasPaged"],
+        ["and", "sameGeneration", "sameRevision"]
+      ]
+    }
+  ]
+}

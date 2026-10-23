@@ -1,0 +1,2026 @@
+{
+  "phase": "A3",
+  "status": "passed",
+  "completedAt": "2026-10-12T08:18:18.001Z",
+  "baseCommit": "e3a9e6275f3a476a0952cf60da28c4cdfd075c57",
+  "upstreamCommit": "7d1e62f868399acced21464ca9e8c4e7d6eb8b39",
+  "mergeCommit": "f5d0d96",
+  "scope": "Native UI, target-isolated workspace/history reads, cache, discovery and Codex pairing. Execution, EasyWork, system recovery, notifications and file transfers remain their assigned stages.",
+  "ios": {
+    "status": "passed",
+    "sourceSha256": "b73b9c7c5fb9e337e543c5013998fe5c2e1774af008d689746452ef9cc8fb1b3",
+    "environment": "Dedicated iPhone17Pro iOS27 Simulator",
+    "executions": 55,
+    "failures": 0,
+    "skips": 0,
+    "aggregateReportSha256": "82cf881264997dd3460dec8ec89ba9ac4262a2bd6df5f908989d191aa75a2870",
+    "closureToolSha256": "5d72fce4a9cbff66ef8f893ef087272b23dd8d85e3b030ecb03dde8f67dadbd9",
+    "groups": [
+      {
+        "group": "native",
+        "executions": 20,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Modifying state during view update, this will cause undefined behavior."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          }
+        ]
+      },
+      {
+        "group": "clients",
+        "executions": 2,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "composer",
+        "executions": 2,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "generation",
+        "executions": 1,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "plan",
+        "executions": 2,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "receipts",
+        "executions": 1,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "compaction",
+        "executions": 1,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "creation",
+        "executions": 1,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "recovery",
+        "executions": 3,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          }
+        ]
+      },
+      {
+        "group": "reading",
+        "executions": 2,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          }
+        ]
+      },
+      {
+        "group": "unread",
+        "executions": 3,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "badge",
+        "executions": 2,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      },
+      {
+        "group": "history",
+        "executions": 5,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          }
+        ]
+      },
+      {
+        "group": "sidebar",
+        "executions": 8,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Modifying state during view update, this will cause undefined behavior."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Publishing changes from within view updates is not allowed, this will cause undefined behavior."
+          }
+        ]
+      },
+      {
+        "group": "readUI",
+        "executions": 2,
+        "evidenceStatus": "passed",
+        "runtimeWarnings": [
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          },
+          {
+            "issueType": "Runtime Warning",
+            "message": "Invalid frame dimension (negative or non-finite)."
+          }
+        ]
+      }
+    ],
+    "visual": [
+      {
+        "group": "native",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "settings-demo-disabled_0_57D81BCE-BD38-4A8E-8891-E1ACA574906B.png",
+            "sha256": "19eb50e109f61d151818c442235ffc21f4e7956cc46ee7f4d05f3354498f45f7"
+          },
+          {
+            "label": "demo-closed-onboarding_0_931ED542-5119-4BE6-8E06-7EB949F9C61C.png",
+            "sha256": "d90cdc9f447de47b6f635b6f730ffb1c5457c3da1f90ae4ecaacf68e20de30f6"
+          },
+          {
+            "label": "settings-demo-enabled_0_51DA706A-8AD4-4D27-BA03-6203DA435686.png",
+            "sha256": "eb25392b3806cdcea3db9c54ed12706d7ba2f87ebf4e72bd7e1abd79cf451579"
+          },
+          {
+            "label": "demo-main-without-test-controls_0_C68EF9F3-B444-43B1-9861-2273C405ED1E.png",
+            "sha256": "885fa6bdb46785576ac281d33e44aa164ab40b1dfd2ab36c781782923558681f"
+          },
+          {
+            "label": "settings-demo-disabled_0_862A2C0D-FE8F-4BD6-A6D4-88DF3DB25F25.png",
+            "sha256": "8c1c7d219d8214d6a76b1e2ab2d97318390e67584a8acb5909a5caa6d92bccfe"
+          },
+          {
+            "label": "composer-resume_0_1DA30541-C326-424B-9D49-8C753F03969D.png",
+            "sha256": "d17cf9d327b54a3c363f660d97e633ba88232830ba4f3af389f1a4a0173d448e"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_5D18DA72-3A95-4835-BFF4-67EAFF1AD833.png",
+            "sha256": "cdf2df16b27ebae45cf43c233cfc08cd5e1f3033810f73e03c04d9818ec72363"
+          },
+          {
+            "label": "dictation-listening-light_0_59556137-54E5-4A8A-89AC-4911239A91BA.png",
+            "sha256": "55cd7c4587292f8393f8a514b045d5a8fe1fc0c0f6a8584d264128e759497aea"
+          },
+          {
+            "label": "dictation-listening-dark_0_9CF1BF98-68AE-4A3C-B786-AB9C4865FE56.png",
+            "sha256": "3ded84725316b1ab331082ddcd1d27fcc15feb9f9fcaa3dc03986b8e0fd76773"
+          },
+          {
+            "label": "dictation-disabled-recovered_0_F7DFC06D-4FF1-4B65-A83D-E8E202E9FFDD.png",
+            "sha256": "914891fb347dea5796e141e44f86148ac575097eb12f929cfbb6f66ed55761c9"
+          },
+          {
+            "label": "compact-main_0_A27B3C54-C9D5-4198-8FC1-95E25581EB4F.png",
+            "sha256": "9e30707cc20b74ca9ab3538745206208d1247ee3b20e0813c5dbdb03b5bd837d"
+          },
+          {
+            "label": "compact-sidebar_0_8953E86F-002A-4026-92FE-7E84472BD924.png",
+            "sha256": "74654e3a36c5d29bb0fe0b45bf4a10f770ad85eabec5635ba565b22237c99679"
+          },
+          {
+            "label": "sidebar-swipe-open_0_C04A3F32-29C9-49E0-B2EA-3EF7D229690B.png",
+            "sha256": "26a96ce9b1521f18065e6735975d44ef392667653906754d77af5027521ee553"
+          },
+          {
+            "label": "sidebar-swipe-closed_0_8D7BD98B-F92D-4ACE-86D5-156482977CBC.png",
+            "sha256": "48205b55d961ad77b99854dda70d19004d1ecacd8ff9dff9eac20feee42aef6a"
+          },
+          {
+            "label": "sidebar-search-swipe-closed_0_1C6175DB-5824-4195-80A0-5C196DBAF2BF.png",
+            "sha256": "48205b55d961ad77b99854dda70d19004d1ecacd8ff9dff9eac20feee42aef6a"
+          },
+          {
+            "label": "sidebar-continuous-drag-closed_0_97E27D70-EC0C-4FF2-B273-CE9DBB37AAF9.png",
+            "sha256": "910ade3188ee47daa36b2349e5b433d0009a196da7eb26418a590a2e17b852e2"
+          },
+          {
+            "label": "sidebar-five-recent-and-project_0_D2B365B3-009A-432E-A169-9CA4DF3F126B.png",
+            "sha256": "5dc5263ace28280552c2617bb803c689d71724c2e18041ebd77d61b382c93017"
+          },
+          {
+            "label": "client-draft-isolation_0_9DD81CAD-ECBD-4FEF-8EAD-A4090EF5BBE6.png",
+            "sha256": "ab698cd11de3b971ded515a066d2a5f9c8fef42e0e36c793902440a25cf0bf20"
+          },
+          {
+            "label": "first-send-new-thread_0_1DB35EC8-D899-4B3A-BF1E-40D5F6B2D300.png",
+            "sha256": "330acb5e3556d2ccb39233fe470b94ff6e4afaef77c0ffede59e92ca90c72ec9"
+          },
+          {
+            "label": "offline-draft_0_728A42A0-1E22-4606-9CBB-C52D8380F75F.png",
+            "sha256": "5a02522744f6aec8109f9a579912d15e90a4a7ba8d3035cf5f3560bc2019c57f"
+          },
+          {
+            "label": "system-file-picker_0_E1605AE7-A618-40C3-AAE4-C513FB616FA6.png",
+            "sha256": "a3f2f7c66b60556af4c1cf8ba591558a6eed8f9deda0d7d44082e53c0cd1b407"
+          },
+          {
+            "label": "system-photo-picker_0_346AE50A-553F-4C9C-9131-B315B633E21F.png",
+            "sha256": "4fdac18e9f3585aca1037fc22db5066fcd46c10b68ba230f56bbdbb71e7e6ef6"
+          },
+          {
+            "label": "floating-chat-light_0_B3041335-09E0-40CE-9799-0F5A369E4E1F.png",
+            "sha256": "20569b579e5be915a6ae1fe214fb66eb79c7b0c93cd589cc64feeda6134444f3"
+          },
+          {
+            "label": "floating-chat-keyboard-multiline_0_71D0E430-2158-4E31-8FDE-D7B36A77B29D.png",
+            "sha256": "c7c30b4007335145cc19c8d02fdd79d7b71bf30127fa388ab5a8290b754f8bb0"
+          },
+          {
+            "label": "floating-chat-landscape_0_457D5F4B-EDD7-46F1-80DC-45E1FFEFDA35.png",
+            "sha256": "c46a991f95a66d9a13177e77af5277e88ebe0f02c48c1dbb4a9e93cd3b35fe12"
+          },
+          {
+            "label": "floating-chat-dark_0_131FCD8B-A011-4C92-8DF0-6A8163E778D2.png",
+            "sha256": "7fdc21b2d653d61add72b592dd8f7f289351248b6b68018e3546257c088af7f9"
+          },
+          {
+            "label": "floating-chat-dark-latest_0_5BCCA19B-BE99-48C7-AE3B-24312A890823.png",
+            "sha256": "8028ce67eb27988b0e034f9dc5e3e95dec827cbdc4b2efeb5f4942fd0289a667"
+          },
+          {
+            "label": "floating-chat-jump-latest_0_9579CC1A-D331-46ED-B619-805BC403B420.png",
+            "sha256": "6ea9c94307f419e6560029559816c30f700e2ee4d4721d3cd2562debb96d258c"
+          },
+          {
+            "label": "compact-dark_0_480EBFC9-47D3-4000-94D5-E72285FCC1B7.png",
+            "sha256": "460ff1894d005aad66810be663aa4051fbddff9d6adb2e30793e8beab956de0e"
+          },
+          {
+            "label": "notifications-denied-and-defaults_0_B638298E-56B7-4A89-BC50-CC4ADF78648D.png",
+            "sha256": "0185d3e3ff759becb08b502c430574100dc661c1b60c7cc309cf3f51bdad9359"
+          },
+          {
+            "label": "notifications-preferences-restored_0_6D5E98D9-81D4-4C33-9FCC-A39EE25B0BBC.png",
+            "sha256": "ae908aa901b22fcbefa231c859bb41e63bf3806de7e99de99b94c9b48fbaf5bd"
+          }
+        ],
+        "notes": [
+          "31 张原生界面截图及横屏原图逐张核对：浅深色、输入和键盘、侧栏手势、草稿隔离、原生选择器和通知设置；横屏文字位于浮层后是滚动区域，四行草稿及操作按钮未裁切。识别和通知为模拟器基线，不代表真机服务验收。"
+        ]
+      },
+      {
+        "group": "clients",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_D5850779-DBD8-4333-BB8B-8B52F195286D.png",
+            "sha256": "0f0c5a1b4df346d10b4188923175a22d2a114af9fe11aaf7ea93d8474fe6b6f5"
+          },
+          {
+            "label": "client-list-edit-entry_0_834813FF-F6F5-4F69-AEED-741D81AC962C.png",
+            "sha256": "a108d98fffe596720cf2474b45a66f3c574a79a0d06c5bab87a0b0fe6096ff5b"
+          },
+          {
+            "label": "codex-manual-connection-form_0_E01C2A43-B12E-4B3E-8C84-AF4512FC1D98.png",
+            "sha256": "8afbc5033a8a6bc8b34342cfc70e7fa1e19434448c182b97492256d52e26357b"
+          },
+          {
+            "label": "client-edit-saved_0_E2D7E949-FF82-4D23-B61F-283A6BF32B5B.png",
+            "sha256": "0f8ee6c2627b4cd71f9a6ea442614045629e54ce658726636d1878d7a12b18ec"
+          }
+        ],
+        "notes": ["4 张逐张查看，手动连接表单、客户端编辑保存与当前选择正确。"]
+      },
+      {
+        "group": "composer",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_1C4BD429-A143-4024-9D4A-CD5194D45383.png",
+            "sha256": "1f87187feb67328478426a6f8af3daf8bacf30d10cc4e76ef5cddd07227ca440"
+          },
+          {
+            "label": "composer-host-completed_0_BF681EAB-C056-4FDB-A0F7-2E7106C18ED2.png",
+            "sha256": "5305ac3aed19143b7cfc34fceda896cd8955e0ff803c57a4ddf83bba9423aac7"
+          },
+          {
+            "label": "composer-host-interrupted_0_6BFAA888-2CDD-4854-88DF-9644EE7E1F69.png",
+            "sha256": "ef61b8a33868b5cf9d122d8571fa1865871f71d63564271010280ac5484b7f9c"
+          },
+          {
+            "label": "composer-host-failed_0_562167AB-0313-4364-8863-1C2BC224BACA.png",
+            "sha256": "bc89482ada844209d3fa5c3910328177e32c12a1af79b8192b01d85dddfcfb54"
+          },
+          {
+            "label": "composer-host-paused_0_68CB892B-B819-4739-BC11-E228615A4DB1.png",
+            "sha256": "41900857ffeac1915656f6ea5112461ccb7af472f645e7385d6e02147d379ee5"
+          },
+          {
+            "label": "composer-host-completed-with-old-interruption_0_574C61BB-EC10-4198-859A-2ADE8C391484.png",
+            "sha256": "d009aa00677dc0f81207612243293fb9ed3f9275ff8fcd035e6678083c3b05ee"
+          },
+          {
+            "label": "composer-host-unknown_0_C2638E1E-52AF-4EF4-98A5-E49159691FB2.png",
+            "sha256": "37a280d163065712428a8ce63128dc80a2c6e28867dd0416951a802ce40cec7e"
+          },
+          {
+            "label": "composer-numbered-queue-above-input_0_07AC0F08-0424-45C7-B5F9-DF70F950DE18.png",
+            "sha256": "83c9d883458a67d9d6a44f6db1d5f8e17f221ea0ef0e547823f271ff308db16c"
+          },
+          {
+            "label": "composer-host-resumed_0_67EAA120-571A-4A69-A1A1-47BB438BEA01.png",
+            "sha256": "1332d3f55d7b516cd2fd4bfef1a6e1cbd44506a4ba97b9d58b9c99b160b70065"
+          },
+          {
+            "label": "composer-resume_0_E3A2AC50-AFAE-4803-954C-62C486BE9424.png",
+            "sha256": "a45ba189d82103a7830c61ed3bb6b79c149dd716c243bc958cc425287d98f636"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_3EC4190C-495D-4C96-9972-947B1317FD5A.png",
+            "sha256": "5f69662870bdc66cb171c1b43b4f775b38b2f627896ea3a9c4ab6a49b177d475"
+          }
+        ],
+        "notes": [
+          "11 张逐张查看：完成、运行、停止、失败、暂停、未知状态的输入操作与编号排队卡片正确，旧停止状态未污染后续完成状态。"
+        ]
+      },
+      {
+        "group": "generation",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_0F52E9AD-F3F4-4C88-885E-D3653118CEC7.png",
+            "sha256": "3da0e17e3710d4a4af91d09c77ede2e69482bed625b583376678f92acbb3a090"
+          },
+          {
+            "label": "mobile-generation-settings_0_ED1CAD38-9A59-4EDB-B1B8-A0235B48F2ED.png",
+            "sha256": "b6ccbb3893697171b33c1e47b30f185b00ec6b56ce0b49f8f462c9a5681a2f1c"
+          },
+          {
+            "label": "mobile-generation-composer-compact_0_38B2D4CD-BEFC-4607-B89C-8CA53B723072.png",
+            "sha256": "7e4dfb9bfb8ccaa4ffb5df6c75271fce667d5643929726e242c6eb0e4ee3b395"
+          },
+          {
+            "label": "mobile-generation-composer-wide_0_FF845A86-8059-4FDA-B22F-C2BCB35AEC52.png",
+            "sha256": "1992a9f0dcc954706cdbd37d373d0d6b083d8d1524b2db297dd5fa2ed564d774"
+          }
+        ],
+        "notes": ["4 张逐张查看：模型设置和权限表单，紧凑及横屏工具胶囊布局，无遮盖输入按钮。"]
+      },
+      {
+        "group": "plan",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_D0C10F85-9A8A-4B29-9D36-96E978D48DB4.png",
+            "sha256": "211316e3548911a6dcaa216a8fe804bf68a95cddf2785cd8913741f596309c8d"
+          },
+          {
+            "label": "mobile-plan-review_0_58E6BC05-4D10-45B3-8D5E-BA1E9681B63A.png",
+            "sha256": "98a5ec2e048f50a9093e4dadbc741760eade64928c9b9d3868c5b5f78c09ef13"
+          },
+          {
+            "label": "mobile-composer-plan-mode_0_B6FEF9AD-F010-4B0E-A886-115B34E582B7.png",
+            "sha256": "f7cda18d4b076d9764639ceadb0c853b5548068cad1f1d9c8c47f15313bf12bd"
+          },
+          {
+            "label": "mobile-plan-readonly_0_C0D6AEE7-8C12-40F4-B2CA-A9F10FCBB3BA.png",
+            "sha256": "19a1e30f00b3415fd8d2b7ad0b60c7b7d05e4a4f3a01aca27dc180ea7cb7238d"
+          },
+          {
+            "label": "composer-resume_0_BDBE7B73-DBA9-4472-8482-89A03C4BB7BD.png",
+            "sha256": "3e6dc17a0bfe8e95c4ab7b447a46a3990f90ac9d0805136afb191c2fdf1348a3"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_51B75313-C67B-442D-B49F-A58D834768C4.png",
+            "sha256": "087a9813f60d2d5bdf16fdbc290e52205c8ffe0dd06cbb3f406cf2c8870be51e"
+          }
+        ],
+        "notes": ["6 张逐张查看：计划呈现及只读禁止执行状态、计划输入胶囊、继续任务状态正确。"]
+      },
+      {
+        "group": "receipts",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_BF8D522C-9CDF-4F5D-B569-482C28A433CE.png",
+            "sha256": "09c4fe2d2ad1a049ddfbb3053b927ad4be506c5af4f09a35d440f5c68f2ba3a0"
+          },
+          {
+            "label": "approval-dark-disabled_0_986B4D6A-BB6F-48E5-A2CE-40E5E3D7F0B3.png",
+            "sha256": "a7af6212b880f5e42aae0cf81bf78063368944dd562cda77dadb9263dd4c9530"
+          },
+          {
+            "label": "approval-dark-enabled-custom_0_081E9110-2CFB-4FF7-A608-7CC675DD9117.png",
+            "sha256": "9ced740cff62ec5db02dda970e6fde01ae0d76dcfad74bc02caecc687e3c3bb2"
+          },
+          {
+            "label": "approval-light-enabled-custom_0_43B5BBCF-D00E-4F8B-BBFC-00C07490D51D.png",
+            "sha256": "1a14c4268e808b90ac13693afc5468166ef70e340659f59f9e8d3fcccb3d774a"
+          }
+        ],
+        "notes": ["4 张逐张查看：浅深色问题卡、选项和自由输入、禁用和启用按钮均可辨识。"]
+      },
+      {
+        "group": "compaction",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_C2AEC91A-9C24-4196-BF25-012CB8BD859D.png",
+            "sha256": "dda95fbba3bc8132a0b8ed7d7e2abcd143c22c8143f8afca665113cf64a5b5e9"
+          },
+          {
+            "label": "context-compaction-running_0_5CD0A6C2-6CA8-46B2-9944-030E8ED337F3.png",
+            "sha256": "e848a4d6b3c339f47d86332b234d13c035d8c4b19e8c4e5c7ae83870b9681d79"
+          },
+          {
+            "label": "context-compaction-completed_0_C9B8B54E-38B0-4843-9917-66045F850F51.png",
+            "sha256": "9d8b4517f8a7f29aa4f435ade15713b53eea4661fc155ddd07fea48f01dc3f43"
+          }
+        ],
+        "notes": ["3 张逐张查看：进行中与已压缩状态、工具折叠行和底部输入可辨识。"]
+      },
+      {
+        "group": "creation",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_89FD15AC-CAF2-4412-A37C-CD33DD45EC4B.png",
+            "sha256": "426bae43bc57f31996de910ca5f2a6ba2feaaf51910a3597e257b03fa5fcd831"
+          },
+          {
+            "label": "desktop-fixture-pending-before-restart_0_216F9A40-C0C2-4F3C-8845-77BC2FD19C05.png",
+            "sha256": "ae87f4c6e216bf68f097d3b1591fb24c74892e1ba6a69fe75af5a28d3567fcd9"
+          },
+          {
+            "label": "desktop-fixture-confirmed-without-second-send_0_8DC2B879-EEC9-4ABD-906D-24ACE4C9A835.png",
+            "sha256": "8cce7f6c2cae37ff82a7d2638d0c5dc209ce99cbc6e1e123d1316bf8357b86db"
+          }
+        ],
+        "notes": [
+          "已核对全部 3 张实际创建状态截图；创建结果仅为 fixture UI 边界，不宣称真实 owner 新建。"
+        ]
+      },
+      {
+        "group": "recovery",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_D9AB3788-AC87-43D5-9BFF-F5ECA8A4BB66.png",
+            "sha256": "a16790e17479cea7c05f42d5ae0c9eca4ccb6fcb238ce4ceda2657a5b2b69e25"
+          },
+          {
+            "label": "codex-manual-connection-form_0_A4F4E9C2-CCB5-4837-BB55-BF679D370728.png",
+            "sha256": "bfae5868d802a7215245d59f43a9ad08147d8c2a02caa5fd9b8dbe9d3c9daea7"
+          },
+          {
+            "label": "codex-manual-connection-form_0_D014C936-6625-450A-BBF5-3A7917DDBAD2.png",
+            "sha256": "972af96119659521a57f8e03724b340d207251c0baa2300274e7447f2ded4602"
+          },
+          {
+            "label": "creation-send-disabled-empty_0_889C53D3-65FC-424E-A597-F27BB3034BE8.png",
+            "sha256": "2ddb15407417eea7cc9d5990b5113a2be30df42cc71aff0041e34eaf8d7a1506"
+          },
+          {
+            "label": "creation-send-enabled-draft_0_66E7A338-E991-448C-81EB-B59199CAF9F2.png",
+            "sha256": "25a9af19d9648cf53f3c9f8f8aa12bb7ab5892146bdf1f5dfdea7afe40ec6594"
+          },
+          {
+            "label": "creation-message-sending_0_C14FD49A-E4A3-4712-8D32-67DA100AC995.png",
+            "sha256": "aae5630fe018a63f6a7ff457529739ccdf6642923e7d37e1fd6bef9b22b2bcdb"
+          },
+          {
+            "label": "creation-message-sending-dark_0_18C32DF1-736F-4256-8093-56B42B997DC1.png",
+            "sha256": "3f7efe3d4fb1f33729ac585d5a2c8d96d70bc9934529d9ec76afff3ce73a4e2d"
+          },
+          {
+            "label": "creation-send-enabled-dark_0_C84681E7-A82C-44F4-BAD5-E97F8669A21A.png",
+            "sha256": "a247996d5b492f28607c19d461d72d47a0e74d51bc53d012c3ebc1ceb08ef9dc"
+          },
+          {
+            "label": "creation-unknown-draft-restart-late-receipt_0_735A9D51-2216-480D-B168-A963D5ED4D2A.png",
+            "sha256": "3aa64295251a415e6c6853a3f7a52754d1c11a7f4c9c6c4a3a2bd27de7e278b4"
+          }
+        ],
+        "notes": [
+          "已逐张核对全部 9 张恢复／未知提交截图，浅深色草稿、等待、编辑和晚到结果保留；断言检查无重复提交。"
+        ]
+      },
+      {
+        "group": "reading",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_6EE8F3E7-B3A4-4FFD-A27F-2122D0F29C8E.png",
+            "sha256": "e9b69610709c63619503a1f7a60e8522e33e88a3d4908ac2626bcdc55cc0067f"
+          },
+          {
+            "label": "read-lifecycle-real-failure-preserves-draft_0_66E93C93-2811-4B5E-BD56-8F2C5208EA43.png",
+            "sha256": "ddf7e292dae0e3d2a5f5adce3f613d29ebdaf8457d2a211da560f834f8548d8c"
+          },
+          {
+            "label": "codex-manual-connection-form_0_9AEA8AA4-0237-41D1-AD85-237FB0E61F09.png",
+            "sha256": "ba2ee97a64b8d02bac9ae28bda5b5e1be0a8ae678f66ec1d0fcf26b278c13e61"
+          },
+          {
+            "label": "read-lifecycle-client-restored_0_8CB1FB90-EFD9-4DB6-A9FF-DD3062DBF618.png",
+            "sha256": "53901f5e17ed25ffc02fcb27f7dcb80b1aa4eb134bc08adec8b5c1b748ffabf8"
+          }
+        ],
+        "notes": ["已核对全部 4 张原生表单、故障后草稿与客户端恢复截图。"]
+      },
+      {
+        "group": "unread",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_0A309E03-EBDC-4516-B1B5-9399D3FBEFB4.png",
+            "sha256": "d29b210dc8ccddf3ba6f78d5c9b254f0d16ccb7cb71a32c42a79cf92fc57b84b"
+          },
+          {
+            "label": "mobile-reading-cleared_0_34290B0F-88AF-4A82-BC6C-889CA5E83AF9.png",
+            "sha256": "9d3addaf3212eb1fd5cb8f05635daabff76c344f8ca3320c50dfc0418a2488e2"
+          },
+          {
+            "label": "mobile-reading-restored_0_F047ED47-32FB-412B-88AB-486A868880C0.png",
+            "sha256": "21d3538b3fb560dbc1de8560a439ce3db4c0eb0e4a25df9f77bdeaf4a1c650d8"
+          },
+          {
+            "label": "codex-manual-connection-form_0_5784B7FA-D286-40A7-9DC6-0013EC9F84D2.png",
+            "sha256": "d60bb380be5a43b1899ee3d1db096f2f25fa6afe3c0d884cd5a91d01007af8af"
+          },
+          {
+            "label": "mobile-legacy-connection-read-dot-cleared_0_FC1B423F-2AF3-4861-BF94-15C84D7D4F1F.png",
+            "sha256": "bf5296647f4d7436489e24a97cd83e9d9dd44ec927d31f65f9164491ce3e3c24"
+          },
+          {
+            "label": "codex-manual-connection-form_0_A96EF443-4558-43D2-B22C-B937702FD4AB.png",
+            "sha256": "ac049806258e3bf1d6e109a76a0563184b16d906510d4eba1a869d22d8ecae4a"
+          },
+          {
+            "label": "mobile-short-reply-body-catches-up-read_0_BE4F74FE-99E1-4089-ACE9-0739D6B0098F.png",
+            "sha256": "e9286cd055f84125cabdefac5f174a581d9e6e54770996777ab21e1361beb852"
+          }
+        ],
+        "notes": ["已核对全部 7 张已读账本清除／恢复／旧连接兼容及短回复正文追赶截图。"]
+      },
+      {
+        "group": "badge",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "client-codex-qr-menu_0_1F29C15B-EF09-4905-990E-965CA0B1825A.png",
+            "sha256": "76ea0538fd147d4d581821fbfb4fc84615f9ec7b79ac01c443d4476a515e5065"
+          },
+          {
+            "label": "client-codex-manual-menu_0_F23C6C05-1115-4909-BC32-8976BA0086BA.png",
+            "sha256": "4a7683370cd2f30ce94606da88c2b54c2de9605bd52197bb8f7d73fe9e8b467e"
+          },
+          {
+            "label": "client-easywork-qr-menu_0_87DE9AC1-59B4-4E22-862C-D03690C0CF1C.png",
+            "sha256": "489ae9ae29b4d4cd13483c4b68f3e2dcbc8838ca11ed8194299f7681b109bf51"
+          },
+          {
+            "label": "client-easywork-relay-menu_0_E5093343-3739-4CC4-B170-6D7B8B531F5B.png",
+            "sha256": "14205c7b1a1831d2cfc2e06eb0a3ab1345af6661715173ea33c5493619e495e8"
+          },
+          {
+            "label": "codex-manual-connection-form_0_20BC6041-4249-42CD-A1E4-232F6A489D97.png",
+            "sha256": "d73b0b6a47c996f7ba07c0369ad1c6432685f183c7c55e341f05c001ce6f5c6a"
+          },
+          {
+            "label": "codex-manual-connection-form_0_BEA51D4E-E9C3-4DB2-A997-CDAD2A5B5C03.png",
+            "sha256": "386c97d0685387e1dfc93c7d3b066022df36c5b63893fb25044305ea24dff70c"
+          },
+          {
+            "label": "client-unread-counts-1-1_0_FCB2B475-BB56-4341-8D99-F1B5CAD138E6.png",
+            "sha256": "aadf574c0bd0bbb3cc48f8dcc567ebc1c2c5a1f7912de11709fe5b5885395cea"
+          },
+          {
+            "label": "client-unread-counts-1-1_0_A9F3C1F5-8335-4912-837D-BA9DCC476850.png",
+            "sha256": "b49cf484db35995fb853d3aff721de75935a056b6b5a0ac2e0692e957d70fc2b"
+          },
+          {
+            "label": "client-cold-launch-reconnecting-no-alert_0_EEA2878B-E8A7-4416-B63E-F3244A7E5C1C.png",
+            "sha256": "2be59f3d7a14289c55c25276e98764c42a1a5fc6d83325044b41ab25fa39578d"
+          },
+          {
+            "label": "client-discovery-merges-saved-connected-hosts_0_DE3AA9EF-C4F5-4D84-96F5-70DC1AD5FEF6.png",
+            "sha256": "77aeb1c0edaeeb118be2c24292bb283df307a51b0a2066bd608c75d329fc2ef0"
+          },
+          {
+            "label": "client-unread-counts-0-1_0_FB488A12-3779-44FF-906A-9BB41C6ED128.png",
+            "sha256": "498a1348406fc18000df32fe02d0aeb152fe70d5a084b0c890b35ef4dbbb7869"
+          },
+          {
+            "label": "client-unread-counts-0-0_0_CD864F86-927D-4C52-A797-66600436CCEA.png",
+            "sha256": "900a4b64a5f4b26f83aa9202fa58d7e08dd501f31760da61162db92c548cb5b8"
+          },
+          {
+            "label": "multi-computer-system-unread-badge_0_D35AB668-13C1-43AC-BAAB-760B1E552395.png",
+            "sha256": "a261b99cde969aab7e3232c287e18eddca794d32f2901f1df01b1e75a5e19cd0"
+          },
+          {
+            "label": "approval-read-unread-cleared-action-retained_0_E0DA7687-DFDD-4BB8-A187-BBA49532CF13.png",
+            "sha256": "018f6f16a12d486712db490ea01110e3d2b8a155fcca8ce8bf91e52dc4adaa18"
+          }
+        ],
+        "notes": [
+          "已核对全部 14 张连接方式、多电脑未读、冷启动重连、系统角标和已读后仍待审批截图；发现列表包含实际 LAN 广播，仅私有保存。"
+        ]
+      },
+      {
+        "group": "history",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_C0DD0906-885A-4639-B4D7-F815DC9EAD01.png",
+            "sha256": "8240eff45f4416fccc0357017457fb5e2924be79fe33d8907d23c3a616948f7f"
+          },
+          {
+            "label": "history-paging-before-local-pull_0_68DA8EB5-A73E-47C1-8CA3-FF6C95C97891.png",
+            "sha256": "df448949b7a195bc54b2d8e2311b8fc7c0a6e417280af1af66756a2970efe89b"
+          },
+          {
+            "label": "history-paging-after-local-pull_0_C447673C-080A-4C8C-928C-36E9CCCC8E40.png",
+            "sha256": "af4bf4a1d85bc82f09d722e6aff6e62473d35d0c47246d802e319e539a9de86a"
+          },
+          {
+            "label": "codex-manual-connection-form_0_B2CD64A8-AB99-47B6-B761-4E7BD0F147D9.png",
+            "sha256": "35c0163cfc2ab3623e0ea14adad302d87bcf5421a0e8adc52117fc12dd038bf5"
+          },
+          {
+            "label": "history-paging-compact-local_0_6D7829CB-42B9-431A-B8E4-BF4ED98A573C.png",
+            "sha256": "c1e504633920251f74795842ce23d173bff49f37772ed151bcbfd7f876b0e101"
+          },
+          {
+            "label": "history-paging-local-exhausted_0_7DFE0B48-9AB0-430A-97B3-D56DB56FC7E7.png",
+            "sha256": "80041dbfa6ec34492089d1e9df1cf1df1652593334fb630834961c5404ac2411"
+          },
+          {
+            "label": "codex-manual-connection-form_0_AEDE8E31-1603-4491-9651-A5232EB006A8.png",
+            "sha256": "dc341c3e24d331f8cd520287ae9c1466196a0fbf628e77da239dc50fc9efd589"
+          },
+          {
+            "label": "history-paging-remote-exhausted_0_2AC301FE-6A21-461B-90AE-CEDB2C91BCD7.png",
+            "sha256": "857d3e286fb42283a2597c2397e1e63564c864fa09550134e0c3c805aeb9f341"
+          },
+          {
+            "label": "codex-manual-connection-form_0_CB5FEC54-09E8-43EA-8815-010FB52BDD87.png",
+            "sha256": "dc341c3e24d331f8cd520287ae9c1466196a0fbf628e77da239dc50fc9efd589"
+          },
+          {
+            "label": "codex-manual-connection-form_0_6482F6D8-60B3-4C97-937A-95CC57844D8E.png",
+            "sha256": "6058a677ed0c77f1ecc398f139dbd921db50816f4b06a0497a2be40ac2c83054"
+          },
+          {
+            "label": "history-paging-switch-isolated_0_9A610499-9E18-4AE1-B521-00FE1893ED0A.png",
+            "sha256": "ad9d6d6aceb847aab7e31e222c82703d8aae36cdfddd9dd95b2bcd74550640ff"
+          }
+        ],
+        "notes": [
+          "已核对全部 11 张实际分页与目标切换截图；after-local-pull 采集在第二次大下拉之后，前次边界保留由中间原生断言证明。缓存扩展不请求，远端耗尽和其他线程隔离通过。"
+        ]
+      },
+      {
+        "group": "sidebar",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_0F8C2955-9A17-4A10-91CE-B05F55112BE2.png",
+            "sha256": "ea7d3197ea6f71aa6edaa093167081359169e6b8e4c4809e07a4e11e58e76666"
+          },
+          {
+            "label": "codex-manual-connection-form_0_E4E19B81-8EFE-47CC-BB8A-FD318C55FA94.png",
+            "sha256": "37e99033e73cec01550eccd822a4f93fd53b62e2063809e657b16d54f720bade"
+          },
+          {
+            "label": "sidebar-refresh-error-feedback_0_AC6C7D19-4A87-4880-91B6-66A9CCF32D4C.png",
+            "sha256": "0c0498a8ee3c90ccfe2fc2a58d1f98ce8698ae5cc4c2156e29f5c606d488f4bc"
+          },
+          {
+            "label": "sidebar-refresh-error-cache-retained_0_B10A62E1-869D-4F48-863F-734B65706344.png",
+            "sha256": "f337e281ffdc36579663b44695f65f37884e8412113fa53979721f7245f2f184"
+          },
+          {
+            "label": "codex-manual-connection-form_0_179861AD-CD76-4DFB-BA92-64382612057F.png",
+            "sha256": "3cc135a84bb0bbecc530451269ea03d79d8b06799ac5c23c9ff7235e61b29766"
+          },
+          {
+            "label": "sidebar-history-updated-without-events_0_6B34C9D1-51CC-4495-B8ED-7F3B875B053F.png",
+            "sha256": "84acd6f9e78c37742b2148fd2426aa912d4c1dcdc4ac728ed83a027b731e0997"
+          },
+          {
+            "label": "codex-manual-connection-form_0_0A5C5D91-2E8C-4F2F-8C89-D13418386912.png",
+            "sha256": "05cd6c03b7376c7206b425368b79438911593281bc58867556c2d62934f534cc"
+          },
+          {
+            "label": "sidebar-completed-unread-light_0_04147F70-7A39-4DF3-B5AC-2DA6C953A9EF.png",
+            "sha256": "519f5894de78a7f52e3538c2a7c64f104f4b7aba1d4958d478b6cff83d634382"
+          },
+          {
+            "label": "sidebar-completed-unread-dark_0_7002EC18-1A4B-4A53-8762-51741F179A19.png",
+            "sha256": "d2a8b1132a3dd9649a7ed2b9dc918488acc4961bbd979763ea3799783cc2a85b"
+          },
+          {
+            "label": "compact-main_0_6C842552-5313-4F10-976A-F3176867EAC0.png",
+            "sha256": "b448e6eef1ae26670c1887b446377e339f1452696c27d0f91dfde1e38a8063d9"
+          },
+          {
+            "label": "compact-sidebar_0_F58A10C1-A93E-4731-B684-855E4600E074.png",
+            "sha256": "9fcb4905b581e0ffddb249fbeb61fcaf1b932f672c937cb0352ee314dbb932f5"
+          },
+          {
+            "label": "sidebar-five-recent-and-project_0_13E89F5B-52D7-4516-B33C-F4D013864E81.png",
+            "sha256": "dbb43ff22c8b4e5cd94bc57bc2158d639aa26141e0559bd59cc68bca9c466884"
+          },
+          {
+            "label": "settings-demo-disabled_0_3012BC11-C62A-4842-A7F8-3327D6DB40FA.png",
+            "sha256": "abb80a6bbd691bb0a5d62778712a74075164a978d1c494e2595db8c4dc20f523"
+          },
+          {
+            "label": "demo-closed-onboarding_0_0C90870D-2958-44E7-8468-EB8DB6210923.png",
+            "sha256": "31a078faf8d2e7c9f1676cfb6f12586932585a0a02c915ce05fc408a438a083c"
+          },
+          {
+            "label": "settings-demo-enabled_0_61F18451-B2DD-4AB6-A8C5-D45FCC888026.png",
+            "sha256": "3f715ff7b25324395bd29d48801e690d6387cf0a15140fe418ff5e413244ea5f"
+          },
+          {
+            "label": "demo-main-without-test-controls_0_1F0AE8CC-D0DF-464E-80D1-15B301217087.png",
+            "sha256": "ac0f7fdf028cb80272227f3ba935edcdca4873f5c6cb60684bc5914b0a36841b"
+          },
+          {
+            "label": "settings-demo-disabled_0_B97230A6-AB54-4F26-905A-723F04E1F1A6.png",
+            "sha256": "abb80a6bbd691bb0a5d62778712a74075164a978d1c494e2595db8c4dc20f523"
+          },
+          {
+            "label": "codex-manual-connection-form_0_1E59A82A-397D-4B9B-82F5-3186228B1EEA.png",
+            "sha256": "1e98dc3b54268a25360ee015308a126a6244dd17178919291fd3f73d975501cb"
+          },
+          {
+            "label": "settings-demo-disabled_0_BBDDF75D-7743-4DFC-9E3C-9935AB2923C3.png",
+            "sha256": "609a7c29cec86ce9b9f34b2da97284e0a569a4ec336675a911dfbaa161eeef8e"
+          },
+          {
+            "label": "settings-demo-enabled_0_004FFFA7-B86C-462F-9C79-D14B7F10F3B7.png",
+            "sha256": "cf6729e3105689c6c4edba8639c276042b205bb1192fb2cd674c01d170199813"
+          },
+          {
+            "label": "settings-demo-disabled_0_96BEE7C2-7528-47E5-A9E1-87F650037858.png",
+            "sha256": "645a10a36fb4944248263c04e2cb73ed483f4f23c41d6fe63629f6ebfaecce2c"
+          },
+          {
+            "label": "demo-closed-connected-client-retained_0_EE9F5E81-60E8-41EC-9592-729EAE129B2A.png",
+            "sha256": "ee926374c07d2467a1d1d1c55a9aaac38dae5a1fa71798fb57ec599ec77525d4"
+          }
+        ],
+        "notes": [
+          "实际检查 22 张截图：原生刷新失败弹窗及关闭后缓存保留、历史运行状态、浅深色未读点、搜索与五条折叠、示例关闭／恢复以及真实合成连接草稿保留均已核对。刷新加载画面另见请求绑定截图。搜索用例包含重复 XCTest 动画等待，时长不作为 App 性能测量。"
+        ]
+      },
+      {
+        "group": "readUI",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "codex-manual-connection-form_0_D6649729-C5B0-4448-A0DB-F3A4AAF94282.png",
+            "sha256": "398a96c833f4a69cf6833a93c45b9169e2a3d17b758bf7820726b6c31413fc34"
+          },
+          {
+            "label": "native-read-large-font-dark-portrait_0_FBED00B8-6605-476F-8587-96DFD279C067.png",
+            "sha256": "2270521c6df9c44d64e15640bd4c0fb4e8b92ecbdd54a3fba0d1b250c8edad62"
+          },
+          {
+            "label": "native-read-large-font-dark-landscape_0_8B0BC4D3-818C-43C9-9EA1-506D845E1C2F.png",
+            "sha256": "9eb11aadf867455431152ff1688531f6e51908bfa91b901b161699bd038d8b36"
+          },
+          {
+            "label": "native-read-large-font-dark-drawer_0_0F43891F-E7CB-48E7-804A-515EF603D224.png",
+            "sha256": "db7d49297ad8d347fd169aef8fa2ed3490aeb16a52e6a6ddc3b83e4e29d46ff3"
+          },
+          {
+            "label": "codex-manual-connection-form_0_328620C5-764C-4175-97C5-D1DEA18C6402.png",
+            "sha256": "bb7e1a4a52e5bd6a8610cb027ea3d17cf780b09aecbc9206bbed023d8eb4e941"
+          },
+          {
+            "label": "native-read-command-light_0_10CE4049-3F29-43E1-9593-C6EF482D9E31.png",
+            "sha256": "4f43410e1572af14e0b6e83273329972c304a6fbab11cc9decbc349f59c9ff57"
+          },
+          {
+            "label": "native-read-diff-light_0_E47050B7-EA7D-4BA5-B51B-1DE27B178F05.png",
+            "sha256": "3ab1c47f6eb9dae3f3716f95d4ed87de8b49ff02c5c3ae675953aec43c52dced"
+          },
+          {
+            "label": "native-read-markdown-table-light_0_4144FB38-E7A7-485F-8518-2F95601A7A9E.png",
+            "sha256": "b84a2dcfe733351565025354d2c798fad648ca6519de7cd973c0076ce228ff59"
+          },
+          {
+            "label": "native-read-markdown-code-light_0_BE4EB584-C5DB-48D0-9937-DB41179FFCAA.png",
+            "sha256": "6c90b5a5a616f47dcc4607d3ab2f4548ef81c31ad38ea42a71054804fa274b40"
+          }
+        ],
+        "notes": [
+          "已核对全部 9 张实际 Markdown、表格、代码、工具、Diff、深色大字体及横屏截图，并查看横屏原图；顶部浮层和横向滚动按 iOS 原生设计保留。"
+        ]
+      }
+    ]
+  },
+  "android": [
+    {
+      "api": 26,
+      "abi": "arm64-v8a",
+      "osBuild": "google/sdk_gphone_arm64/generic_arm64:8.0.0/OSR1.180418.028.A3/10734686:userdebug/dev-keys",
+      "fontScale": 1,
+      "status": "passed",
+      "sourceSha256": "ec5ff395b3697f2624e6335cf5fd38958720ba89529f001098261249c776ecd6",
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "testApkSha256": "8d9a42bd0b0161621ca704580cc9d277ff8b15accb10ae013dd658702f856602",
+      "executions": 44,
+      "failures": 0,
+      "skips": 0,
+      "reportSha256": "8d5fd611befc816d6894bf9b6b736726d116f6c72a31523c6e63fd9edd7b0888",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "appearance-dark-native.png",
+            "sha256": "43d550bacfc508d07cbbdbbf162441a8e66a88ec0ea1b1dbc0dbaf2c4a5b0f0d"
+          },
+          {
+            "file": "clients-connected.png",
+            "sha256": "0e78ecc84823d8ab999978a5354ac7111926871aed5c6691f3cf43e320cb7f0a"
+          },
+          {
+            "file": "clients-remove-confirmation.png",
+            "sha256": "843dd0358ef095243444df4656264956fc7c58a4f08b4f9fb71c051d9dcfd023"
+          },
+          {
+            "file": "connection-default-discovery.png",
+            "sha256": "0104ce875354b9c44b8f45feb822ebd1658fffadcfbdbe0573819601369717b8"
+          },
+          {
+            "file": "connection-discovery-saved-client.png",
+            "sha256": "011f2105a7e2fa11f4602fc02d4e03aa9c0fd13dacd7d637ab5ccea9ed8ac3dd"
+          },
+          {
+            "file": "connection-selected-qr.png",
+            "sha256": "f5201d4088d9d58a3942c78ef5fa491476302ebc59a113681e4151439001d0d6"
+          },
+          {
+            "file": "dark-landscape-drawer.png",
+            "sha256": "9d9af4742f27e90000613ef4318b9ba9b14ef9020ac1237228a443223d3280ff"
+          },
+          {
+            "file": "dark-landscape-keyboard.png",
+            "sha256": "00c2cd1794839c093fd8f19c562cf80ef8d7048e7058c163328571d449f65f61"
+          },
+          {
+            "file": "demo-completed-light.png",
+            "sha256": "39af2242930ce63065c82fd5bfc626bf00bb740a1ae7ed5a79d40afee4d73ccc"
+          },
+          {
+            "file": "demo-draft-dark.png",
+            "sha256": "88ccf3af7adacf75ba43df10de9c6cd7dd9f0182a8589caab8c9e8819dfe77d8"
+          },
+          {
+            "file": "demo-interrupted.png",
+            "sha256": "e7ad7593635c1b61237e4ee4c8f4480cffc25a3f1bf02263c08cbd84be8010d4"
+          },
+          {
+            "file": "demo-running.png",
+            "sha256": "91f9cb80983d3c9e00eeb9b36c676c2de284ab19a0db26529ed29a76b394d791"
+          },
+          {
+            "file": "diff-expanded-light.png",
+            "sha256": "2d473d0202b9e69ffcc3bad61be3e37e0fae683cb99c1ca6681dc5960d7b503d"
+          },
+          {
+            "file": "drawer-after-edge-swipe.png",
+            "sha256": "3478e6435c58230c6dedd10274b87eeb0fd93e62b363da33b918f5534ac164a3"
+          },
+          {
+            "file": "drawer-before-system-back.png",
+            "sha256": "3478e6435c58230c6dedd10274b87eeb0fd93e62b363da33b918f5534ac164a3"
+          },
+          {
+            "file": "drawer-client-state-restored.png",
+            "sha256": "aa9c862c1d3fe93e272adba9d7383c79222c3ba7eec2bc23e88c8d855968012b"
+          },
+          {
+            "file": "drawer-empty-search-dark.png",
+            "sha256": "faa4ac67dda6623a984b45a336ed60d27e914953301e9cdcb633737896bfe802"
+          },
+          {
+            "file": "drawer-five-light.png",
+            "sha256": "7120dccff5388a62d3618871802300b53e7eb74ca6970f0078adb5f1fd296bab"
+          },
+          {
+            "file": "drawer-project-expanded.png",
+            "sha256": "1320d9e80a585dfda20855fd3c43433905d08819a125cd8223eeccb5154d4cbd"
+          },
+          {
+            "file": "drawer-search-light.png",
+            "sha256": "637f7a20887f011692610906b5be075f960728bba69caf8dbc4b42098af7e1a6"
+          },
+          {
+            "file": "history-pull-after-anchor.png",
+            "sha256": "274b497a5130e7616319c0eb099093fccea1ae904b64ce9393674b2b656a6310"
+          },
+          {
+            "file": "history-pull-before.png",
+            "sha256": "641a658213e40eafa9054729e8b72a9c4a54b68745d90027c969b79fde36818e"
+          },
+          {
+            "file": "history-pull-network-retry.png",
+            "sha256": "3e51e4690f2dd290b029941a4263b9d9562e55de339ace0544c9e606297d7f3d"
+          },
+          {
+            "file": "keyboard-multiline-visible.png",
+            "sha256": "39dc28d5fc1b5971cd4cbca1bbc5497712388e3df6dc5a8592e181297aa5eb01"
+          },
+          {
+            "file": "markdown-code-copy-light.png",
+            "sha256": "00a946d83672338c7f12f6b4887513d1ea36e526c3d7d4fbeaebc6e5a200af9d"
+          },
+          {
+            "file": "markdown-table-light.png",
+            "sha256": "3d7b2d2b02aa6ac43d032e36e1f598edb3f76b32ebf7a4c7943aa1285ac235e2"
+          },
+          {
+            "file": "nsd-unpaired-requires-qr.png",
+            "sha256": "39051d9d29d994b3ee1c30557ddcfde8416a8386e86bba42247afb1cb7b9f105"
+          },
+          {
+            "file": "offline-cache-error.png",
+            "sha256": "8380c4fc68431bd984b2932305e86c9664d78509f500e32c23c9a100bfb56e64"
+          },
+          {
+            "file": "onboarding-light.png",
+            "sha256": "405b7d978c383561305cb8e0ed682cc456357a4fa286a78812753deee7816b14"
+          },
+          {
+            "file": "pairing-native-read-history.png",
+            "sha256": "f5cf7e3b727a5fd4685b6c86b3f7e3de1bfbc33e13191fcda30bc3fab5ca1247"
+          },
+          {
+            "file": "pairing-wrong-certificate-rejected.png",
+            "sha256": "21e34d324d74b8ba2575aa0b6f052574fe4128b868b0e063fe2cc880952041e2"
+          },
+          {
+            "file": "qr-camera-denied.png",
+            "sha256": "daebef3904b41f450684ce7d909e5e9531476192edca272a26098e5d1e9bef2c"
+          },
+          {
+            "file": "qr-camera-system-prompt.png",
+            "sha256": "bc755d9241821e910b44505fcfdc1f529a947756fc1b973b91cbb5a9cf21ce9d"
+          },
+          {
+            "file": "readonly-anchor-after-page.png",
+            "sha256": "055549b30f141954c1a5286ba7c32b491e7f3c8a09ab84172351b077c84a7e72"
+          },
+          {
+            "file": "readonly-earlier-history.png",
+            "sha256": "055549b30f141954c1a5286ba7c32b491e7f3c8a09ab84172351b077c84a7e72"
+          },
+          {
+            "file": "readonly-sidebar-page.png",
+            "sha256": "5db595ad55b992965896ba470d27193a998917c5f79da1922678061eec0da06c"
+          },
+          {
+            "file": "settings-dark-native.png",
+            "sha256": "5e3cd9694a846ef1df876a499aa4d8f8ce3cc37573ca4aedeb9223259988ac23"
+          },
+          {
+            "file": "sidebar-dark.png",
+            "sha256": "73c5ba9ebc286752a956a6f7456ce80bdf1310383c418fe19a550fb9f34dc29e"
+          },
+          {
+            "file": "tool-detail-light.png",
+            "sha256": "c1443b8dac62c2ff36f0f3a45c0f9a369520184b84e96797439bd0de183bdeb4"
+          },
+          {
+            "file": "workspace-transient-manual-error.png",
+            "sha256": "24c3664d2e4e642b07529a12815ce198fa4a0e1811f28e8e53b6f61b5f35b7dd"
+          }
+        ],
+        "notes": [
+          "40 张逐张查看：浅深色、侧栏搜索折叠及状态标记、原生连接与相机权限、历史锚点、Markdown工具详情、503重试错误、键盘多行输入均可辨识。横屏捕获时IME已隐藏，仅证明草稿和布局，键盘避让以竖屏截图及几何断言验证。"
+        ]
+      },
+      "readonlyRequests": 43,
+      "pairingRequests": 20,
+      "nonGetRequests": 0
+    },
+    {
+      "api": 37,
+      "abi": "arm64-v8a",
+      "osBuild": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+      "fontScale": 1,
+      "status": "passed",
+      "sourceSha256": "ec5ff395b3697f2624e6335cf5fd38958720ba89529f001098261249c776ecd6",
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "testApkSha256": "8d9a42bd0b0161621ca704580cc9d277ff8b15accb10ae013dd658702f856602",
+      "executions": 44,
+      "failures": 0,
+      "skips": 0,
+      "reportSha256": "968203305c0b02d2d17e55c356668016975d593db9bd356d7bbc8b6a3b30d7e6",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "appearance-dark-native.png",
+            "sha256": "fd33ec6fd836b864ed9679223e9ee2910053250c1fbe4f3b1d8aa6f882a14922"
+          },
+          {
+            "file": "clients-connected.png",
+            "sha256": "027b87c0180902b699fcfbea990cc0de738ccb48e5387bfaa8fa41079bde2984"
+          },
+          {
+            "file": "clients-remove-confirmation.png",
+            "sha256": "51b930971283d9422a6d961ddd2870b8c78ec6458f7138f6f3006f5a824feb10"
+          },
+          {
+            "file": "connection-default-discovery.png",
+            "sha256": "cb457fe163553a24bc4acc50c6be91c237bdd7b9804ca1ad77a0ecfa4292ef37"
+          },
+          {
+            "file": "connection-discovery-saved-client.png",
+            "sha256": "e25d845c6a90be9e2a0c4755ae40102106dd399d62970572f66b5cb2471675f5"
+          },
+          {
+            "file": "connection-selected-qr.png",
+            "sha256": "87e6da0707bf361fd36b7d7bb748cdfa7e6f7c9b96a3edd75166aa1a7455cb65"
+          },
+          {
+            "file": "dark-landscape-drawer.png",
+            "sha256": "e02f4841897b9bf8c7587d99ae0450b470c338f69bbcd1694635ba9b5edb5159"
+          },
+          {
+            "file": "dark-landscape-keyboard.png",
+            "sha256": "96f52c3771897525c3cabcd46137c0c10c76e61f4d3f9ec762c40df04190f6d0"
+          },
+          {
+            "file": "demo-completed-light.png",
+            "sha256": "967c9ed985ef7d90b7193872eb05225ae7c76e931d3e6f8b173f7a5163f8c3ea"
+          },
+          {
+            "file": "demo-draft-dark.png",
+            "sha256": "3d8836b65e931a0caaa274b68c27f63adab61745f42bb19fe74cf4ebfda71dc4"
+          },
+          {
+            "file": "demo-interrupted.png",
+            "sha256": "1bb05bffa882f088a0eb0c76efe3f436b45f69d37bd4d81205d4fe6a53d92563"
+          },
+          {
+            "file": "demo-running.png",
+            "sha256": "e76bef21b4419f6958e81dc27dbe89f0d508dcd640a87d777a1b94f420837e0a"
+          },
+          {
+            "file": "diff-expanded-light.png",
+            "sha256": "dedb8e04ad59131af973db2e86469a84cc6e4499c0c6e320045ae1687ceb3fe2"
+          },
+          {
+            "file": "drawer-after-edge-swipe.png",
+            "sha256": "8e0786e0b1745aca70189c3e8beefdc6e2b25edf787422cc311d30f1e7968649"
+          },
+          {
+            "file": "drawer-before-system-back.png",
+            "sha256": "8e0786e0b1745aca70189c3e8beefdc6e2b25edf787422cc311d30f1e7968649"
+          },
+          {
+            "file": "drawer-client-state-restored.png",
+            "sha256": "26b52bb92897b60a7c976dc528a51c83331255dc5e236a6de2c1a5787bb234f2"
+          },
+          {
+            "file": "drawer-empty-search-dark.png",
+            "sha256": "e3c3906b842d496e7e78506babb72eb628bf3a91c2d0bb75e1adbb40a5ffd89d"
+          },
+          {
+            "file": "drawer-five-light.png",
+            "sha256": "8bb9d548493627dc5b2a5b9dc9366daf686ad4f9504b8240a3ef7f6cd8060185"
+          },
+          {
+            "file": "drawer-project-expanded.png",
+            "sha256": "723e07650ff0058fb83147ce355ed2d045cdc1ece51b3c836af168c1047140ca"
+          },
+          {
+            "file": "drawer-search-light.png",
+            "sha256": "bf82ba16ceb460e6085d7dd8cacfad4f7b6bd5c65f44c63b8ffc2f1fb2b7df81"
+          },
+          {
+            "file": "history-pull-after-anchor.png",
+            "sha256": "279985f106444342ab85c6be77be26bfb947fc2079e5ef8209068b6838b5f5da"
+          },
+          {
+            "file": "history-pull-before.png",
+            "sha256": "d0b9acda7d40072ad38abcc4a30f64da2da4ee0f6fece029e6eeff74d595caa4"
+          },
+          {
+            "file": "history-pull-network-retry.png",
+            "sha256": "0033f73436a68a84f56504ecb094c9251a5dca1688dc33306e8b15964555944b"
+          },
+          {
+            "file": "keyboard-multiline-visible.png",
+            "sha256": "f2fbb5aa73af3968d7a7cef351c8a95dcea72aea5b32eea95292c2b3850b2b70"
+          },
+          {
+            "file": "markdown-code-copy-light.png",
+            "sha256": "2e9cf2b3220d85e375d2f2fd64329b182b25aabc09e10e5367f2a8c77adece02"
+          },
+          {
+            "file": "markdown-table-light.png",
+            "sha256": "cbed70c2ddf1ae7708646ac84f810359e6732f9761a9f732a80f49f3b4814dbf"
+          },
+          {
+            "file": "nsd-unpaired-requires-qr.png",
+            "sha256": "87e6da0707bf361fd36b7d7bb748cdfa7e6f7c9b96a3edd75166aa1a7455cb65"
+          },
+          {
+            "file": "offline-cache-error.png",
+            "sha256": "35832e5b0094901659780c49153d192b649d0cd8146afd41aa5097ed0cb91802"
+          },
+          {
+            "file": "onboarding-light.png",
+            "sha256": "fd70f6f27a8a527f7d2c30339e005dcbc80c39a39ea134e80753d64629fb5352"
+          },
+          {
+            "file": "pairing-native-read-history.png",
+            "sha256": "be7f2fa08ea3a7cbb03440b19ca4ed8893ce3034e967a5d1819b78342e36034f"
+          },
+          {
+            "file": "pairing-wrong-certificate-rejected.png",
+            "sha256": "9054df45f6516b040541fe3efe37562422236870c11cefa423c8e542bf2c4750"
+          },
+          {
+            "file": "qr-camera-denied.png",
+            "sha256": "4bffef76c677893e21f0e2284bc8e47e9fde33e609dc27ec42bf3a72409c8bd8"
+          },
+          {
+            "file": "qr-camera-system-prompt.png",
+            "sha256": "fc54dc2395ea8f61df2c5b295e5eb0727bc9464e680a6e0c5db60b05561cc4d3"
+          },
+          {
+            "file": "readonly-anchor-after-page.png",
+            "sha256": "283188b7d9d3e9995a9e6dedf47472140fb8fe25ea6945193b8ffb74cc606c91"
+          },
+          {
+            "file": "readonly-earlier-history.png",
+            "sha256": "283188b7d9d3e9995a9e6dedf47472140fb8fe25ea6945193b8ffb74cc606c91"
+          },
+          {
+            "file": "readonly-sidebar-page.png",
+            "sha256": "e4d40649c4c1b1dcc194598ed030af0f73454af7a49140f04fbf15f90778261f"
+          },
+          {
+            "file": "settings-dark-native.png",
+            "sha256": "145f24ed30e7c721e4bef8e14e82b37a8dab7e6896762a7b07d4ebb82d5fb27b"
+          },
+          {
+            "file": "sidebar-dark.png",
+            "sha256": "32ce08d6a730c836f9c0707f333ab3f4a6da3558f54063b669e72bc9791015d4"
+          },
+          {
+            "file": "tool-detail-light.png",
+            "sha256": "73ae866cf30f20cb0d4d08143ef88c02d314db2bf67cc0d62a7c04ff2897c6df"
+          },
+          {
+            "file": "workspace-transient-manual-error.png",
+            "sha256": "6a4c6a1f15858b832913fd1c63e372b0b80ade5a1f37784aa3da186bd7329e8a"
+          }
+        ],
+        "notes": [
+          "40 张逐张查看：浅深色、目标与草稿保留、手动错误弹窗、历史和Markdown、相机权限及NSD配对界面。部分截图含系统复制悬浮条和AndroidWifi无互联网提示，是实际系统层状态；横屏IME隐藏，避让以竖屏多行和几何检查验证。"
+        ]
+      },
+      "readonlyRequests": 43,
+      "pairingRequests": 18,
+      "nonGetRequests": 0
+    },
+    {
+      "api": 26,
+      "abi": "arm64-v8a",
+      "osBuild": "google/sdk_gphone_arm64/generic_arm64:8.0.0/OSR1.180418.028.A3/10734686:userdebug/dev-keys",
+      "fontScale": 1.3,
+      "status": "passed",
+      "sourceSha256": "ec5ff395b3697f2624e6335cf5fd38958720ba89529f001098261249c776ecd6",
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "testApkSha256": "8d9a42bd0b0161621ca704580cc9d277ff8b15accb10ae013dd658702f856602",
+      "executions": 44,
+      "failures": 0,
+      "skips": 0,
+      "reportSha256": "1636c898842a3406677b406079ca425cb42a4ffcd5a19b8b2b8bef17d0a0277f",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "appearance-dark-native.png",
+            "sha256": "7fb6cd91512107e2bca7a08b6c1c5622f504f79155a349cd2a398fa19af42383"
+          },
+          {
+            "file": "clients-connected.png",
+            "sha256": "617674fe6fdf3e891488faeeb3fe36b7278ac8187d2fc9af7eaf4e6cc6b9178a"
+          },
+          {
+            "file": "clients-remove-confirmation.png",
+            "sha256": "15124a2acd50e8255fc3349eeb1d35f636b49a3eadd19f0c3eea7dae830124b3"
+          },
+          {
+            "file": "connection-default-discovery.png",
+            "sha256": "fc39f061db1faf1e0f4b8a999e8e09ddc9a7d50202cfd0c20eceecc95ab9a879"
+          },
+          {
+            "file": "connection-discovery-saved-client.png",
+            "sha256": "b7e49dd3ae4b89618a10225655c8cfb9268f07007ca6b8049095ee077c8a6e82"
+          },
+          {
+            "file": "connection-selected-qr.png",
+            "sha256": "37c2be660da0d208d3c9f918837e1dffe6e58a0a99347aabe837ed8ce5a763eb"
+          },
+          {
+            "file": "dark-landscape-drawer.png",
+            "sha256": "e7045a8be5d16fbb9e2e5e288edf227046b071dfb7d45f8a1819ef02064ee9fa"
+          },
+          {
+            "file": "dark-landscape-keyboard.png",
+            "sha256": "e5bfb09e56e2a839aeb4a61c1e16cc0f3705f832604762b757a746c92ccc0794"
+          },
+          {
+            "file": "demo-completed-light.png",
+            "sha256": "ea0933e681f2ad553a2681c88122c8d399ecb6f221148caaf158dbfc3dc8a62b"
+          },
+          {
+            "file": "demo-draft-dark.png",
+            "sha256": "7391b55c48dc33d6219553131f2867ae534252f8edb6df13ae1199411a74833c"
+          },
+          {
+            "file": "demo-interrupted.png",
+            "sha256": "36db5074ef1a31b082072dd4fee3314eb76ecc5e0e323b21c347fa5607d5dbf6"
+          },
+          {
+            "file": "demo-running.png",
+            "sha256": "2096064238783e868b9eb0965ea4ccc384d681cf07b3de06ad46b6787e84d132"
+          },
+          {
+            "file": "diff-expanded-light.png",
+            "sha256": "0bd86aa4ed4e1052ae65fc6eba8eb9e58acacdc6a910d6446ff3853a8d0b67e0"
+          },
+          {
+            "file": "drawer-after-edge-swipe.png",
+            "sha256": "d13bdd81f44142baf7a46a169d1fd82a535edfd753d10a06deb2d117b9b056b0"
+          },
+          {
+            "file": "drawer-before-system-back.png",
+            "sha256": "d13bdd81f44142baf7a46a169d1fd82a535edfd753d10a06deb2d117b9b056b0"
+          },
+          {
+            "file": "drawer-client-state-restored.png",
+            "sha256": "8719a7adea2ea718d42be6bb01b7a5785ba2df779d5e198720757eeae0dccf46"
+          },
+          {
+            "file": "drawer-empty-search-dark.png",
+            "sha256": "8c37ad36719194467099e66443f998a8ecf8481d817063b3afaf6e186d8bb54c"
+          },
+          {
+            "file": "drawer-five-light.png",
+            "sha256": "065be0d01e315b37326047d45c98cb43261fa6863be9ccda6cdbf358483bb4a5"
+          },
+          {
+            "file": "drawer-project-expanded.png",
+            "sha256": "aafd7a2dc8af4984eb0446f3012b101341992b2cc9f94fad3b3ebedf7af99551"
+          },
+          {
+            "file": "drawer-search-light.png",
+            "sha256": "fd740398ddd61538bab6f9b7d45786513eaa5557e6ecf5519bc0beafef28a4c5"
+          },
+          {
+            "file": "history-pull-after-anchor.png",
+            "sha256": "ba906769641378e8e6b0bc04a0ebaff0b10af01ba93d512c4c2db51339c5e235"
+          },
+          {
+            "file": "history-pull-before.png",
+            "sha256": "d8817567c9e2b35409dd4520b017e0f149dc5bf9ba6592b5ca9f020f9259d431"
+          },
+          {
+            "file": "history-pull-network-retry.png",
+            "sha256": "600abaaefe6bbf106761244e8a2a621ad02ed033a753f0f8a1ed90198ffe9dbc"
+          },
+          {
+            "file": "keyboard-multiline-visible.png",
+            "sha256": "5ae3a2e1e4b97740f3e233630a90f3786d2cb73db8ea68fca060ab5e61ec7050"
+          },
+          {
+            "file": "markdown-code-copy-light.png",
+            "sha256": "a5e83910512fead963d2a44205ed9faff112f37b8a9a463e411daa4a17e1b925"
+          },
+          {
+            "file": "markdown-table-light.png",
+            "sha256": "140fddd62cf85f256ce56632c3d0b514ee05777c1ec82bc1d0cb0764129a0092"
+          },
+          {
+            "file": "nsd-unpaired-requires-qr.png",
+            "sha256": "37c2be660da0d208d3c9f918837e1dffe6e58a0a99347aabe837ed8ce5a763eb"
+          },
+          {
+            "file": "offline-cache-error.png",
+            "sha256": "20b8daada33009b55f39a7dd0437457564240ca2911d28882bb744601770ebc2"
+          },
+          {
+            "file": "onboarding-light.png",
+            "sha256": "5fcb5a1abbcb2049d3fa0713b946dd31c391b9a0780ac9bfdbdf9f8543a4c61e"
+          },
+          {
+            "file": "pairing-native-read-history.png",
+            "sha256": "29a58ee8da0135d60ced8f0d8b175b38200d4ce3a00e3da383b7f68a71853088"
+          },
+          {
+            "file": "pairing-wrong-certificate-rejected.png",
+            "sha256": "e66e54bcb03db4d8d1f2a7a11d9655b2821b1d49cdae32d6cfff586a95597454"
+          },
+          {
+            "file": "qr-camera-denied.png",
+            "sha256": "7db3c28c6473d83007dfb249046cb83a87a1e17e5e4bff4083d419d9edd74c4a"
+          },
+          {
+            "file": "qr-camera-system-prompt.png",
+            "sha256": "31a4cfb84e91c4fc87dcf53d8a9bcc76d1cf48384e5cb839add21cc0a7e06a0e"
+          },
+          {
+            "file": "readonly-anchor-after-page.png",
+            "sha256": "6f7b13b50ca5a5ee9869fd2cd3e90a7c59d5fa6a6c7213611a22c908c0a94c82"
+          },
+          {
+            "file": "readonly-earlier-history.png",
+            "sha256": "6f7b13b50ca5a5ee9869fd2cd3e90a7c59d5fa6a6c7213611a22c908c0a94c82"
+          },
+          {
+            "file": "readonly-sidebar-page.png",
+            "sha256": "eceeb58c379f68b41c5fd0b91d6fcd145a0081f883939569f2b964a83d410cbb"
+          },
+          {
+            "file": "settings-dark-native.png",
+            "sha256": "3ae8aeae2582020a4a1b50aad3d96f47e4b13da4e410e5bb68611036a290653f"
+          },
+          {
+            "file": "sidebar-dark.png",
+            "sha256": "d3b15b6c577b56bfc81bb0b2bce116a2811d7c6fd1750e92807432c2ae555f8e"
+          },
+          {
+            "file": "tool-detail-light.png",
+            "sha256": "cb7313adf761bc48b453c6dfbc0af27b3b442430d4ee085078cb387fbf5603c1"
+          },
+          {
+            "file": "workspace-transient-manual-error.png",
+            "sha256": "733fa245ca88337c5436a6ef5aa316adbae580d0a2d1c16f0edfd9eb6baa942c"
+          }
+        ],
+        "notes": [
+          "40 张大字体逐张查看：长文本换行、表格及代码水平滚动、错误弹窗和草稿保留、侧栏底栏及搜索键盘可用；API26大字体横屏截图含真实IME，输入栏按钮位于IME上方。"
+        ]
+      },
+      "readonlyRequests": 43,
+      "pairingRequests": 20,
+      "nonGetRequests": 0
+    },
+    {
+      "api": 37,
+      "abi": "arm64-v8a",
+      "osBuild": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+      "fontScale": 1.3,
+      "status": "passed",
+      "sourceSha256": "ec5ff395b3697f2624e6335cf5fd38958720ba89529f001098261249c776ecd6",
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "testApkSha256": "8d9a42bd0b0161621ca704580cc9d277ff8b15accb10ae013dd658702f856602",
+      "executions": 44,
+      "failures": 0,
+      "skips": 0,
+      "reportSha256": "0c727f96bbf2a2a41566e628eb62729d57db58efaed0f8c404fb0aa5a3a17545",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "appearance-dark-native.png",
+            "sha256": "4289fffecde31da78a91568a2271fda794b8160ef3b4e69e7e4036182f176fb2"
+          },
+          {
+            "file": "clients-connected.png",
+            "sha256": "90ecd4fc630b9178ff0ef481a7ddf0ff0be64784df8042b9967440f99dd87bb1"
+          },
+          {
+            "file": "clients-remove-confirmation.png",
+            "sha256": "1b006d2b18685cb75df6b67d89401c2203b84d5aaf8d24cebfadca4f7cab43f6"
+          },
+          {
+            "file": "connection-default-discovery.png",
+            "sha256": "90eb1f76b771c7fa755716c15d2f67e54eafe31ea3960b4b280c81f39a8f39f6"
+          },
+          {
+            "file": "connection-discovery-saved-client.png",
+            "sha256": "f211ceb718d37679e2fc820d95251ac90f8a0b432e9ba7e847cde99ed6b5a924"
+          },
+          {
+            "file": "connection-selected-qr.png",
+            "sha256": "b699bc370f26030f0da6263496bfb1dd817ff8851198e45d2ca4d94fdd88e2d5"
+          },
+          {
+            "file": "dark-landscape-drawer.png",
+            "sha256": "61724ce19571aaf82440ed56731e5b3711562486b9e33c731c78836a9a9f6c6c"
+          },
+          {
+            "file": "dark-landscape-keyboard.png",
+            "sha256": "216973109b5438ee7e6e84eaa8b96e8e8297364502982e95336919e585c5b3e8"
+          },
+          {
+            "file": "demo-completed-light.png",
+            "sha256": "fd41530e6fb89daa6bc246639104384d126b3a74a729f95fde27abb4b5d2cb19"
+          },
+          {
+            "file": "demo-draft-dark.png",
+            "sha256": "99e821a5281d6a2ba48f264e7ded14890e0d1e1261108670e07e4685fecea62c"
+          },
+          {
+            "file": "demo-interrupted.png",
+            "sha256": "43654e9ca922fbc1182ac7bc0ba1b385449467bd397474b3a40ba419afa2406c"
+          },
+          {
+            "file": "demo-running.png",
+            "sha256": "acbec201d25dd7fc4f4bdb0b0ac14228bc91c93e9408483a2dceddb5a6bdc3f2"
+          },
+          {
+            "file": "diff-expanded-light.png",
+            "sha256": "94d5b06cf0940bce3f8034be7c2707c2e12e80263e8192283397f6ba6f3c96cf"
+          },
+          {
+            "file": "drawer-after-edge-swipe.png",
+            "sha256": "499507b34d996a9ec234a2ba0ad983eba08adcb31c83822373040c0fa189dfad"
+          },
+          {
+            "file": "drawer-before-system-back.png",
+            "sha256": "499507b34d996a9ec234a2ba0ad983eba08adcb31c83822373040c0fa189dfad"
+          },
+          {
+            "file": "drawer-client-state-restored.png",
+            "sha256": "db3c0e562eb09b6535ca3d8e486d38a892313b7c141a4d4bc2cfbad8b3253208"
+          },
+          {
+            "file": "drawer-empty-search-dark.png",
+            "sha256": "2c0206dbc5ec53daa97af080eee3415ef49ae8404d2a4b075fd24922b32bfe44"
+          },
+          {
+            "file": "drawer-five-light.png",
+            "sha256": "7acd1cc927f9e63b7589db1d374fdebb616bd83d6708fef12a19d92d8c4cbcb6"
+          },
+          {
+            "file": "drawer-project-expanded.png",
+            "sha256": "a6b22b501ad2a6ad98e2e4b4eeae6d9258a4ce0ce80397b5f69f1db4219b6f86"
+          },
+          {
+            "file": "drawer-search-light.png",
+            "sha256": "fcd84012f43821a079fa36767f18c6ded3c0fdcf9e0434128f0ac0bebb00db7a"
+          },
+          {
+            "file": "history-pull-after-anchor.png",
+            "sha256": "dcbc9db7de1df3b925abf830c9363ea5105645c5bdc6b0287faa3978ff9ce0c8"
+          },
+          {
+            "file": "history-pull-before.png",
+            "sha256": "3e0d1b0d51b540268660840cf7fcb79ec27228de1655baaa05b3e2e5fd104dae"
+          },
+          {
+            "file": "history-pull-network-retry.png",
+            "sha256": "4609861fe71d090ace78ee8533b17e73ad6450bb2d42169d6b57833010484020"
+          },
+          {
+            "file": "keyboard-multiline-visible.png",
+            "sha256": "7d991cc3ae25f941eb541425d6427aac8886823442d45a3b2e0aa6df22167bc4"
+          },
+          {
+            "file": "markdown-code-copy-light.png",
+            "sha256": "c6bc7b6e2205d89a1994dfdd2015b65ab9857a523e0740dab8b8f6f4e83b7e89"
+          },
+          {
+            "file": "markdown-table-light.png",
+            "sha256": "1687c3e3f0f383310689f830d3791fcfcde9902a7de846b713666070bf862e3e"
+          },
+          {
+            "file": "nsd-unpaired-requires-qr.png",
+            "sha256": "0ecfa8093deab51ce7347817e6916d3666301ea11c2fe34cf459a5e373507afa"
+          },
+          {
+            "file": "offline-cache-error.png",
+            "sha256": "3cc42869967882916e187deb79a1f790b7fb1db21a5e6f363c16d4aa30d828a3"
+          },
+          {
+            "file": "onboarding-light.png",
+            "sha256": "8473961cc01fcc5972406d694b77e8711fd1be73f68bee43782d6830e58ec364"
+          },
+          {
+            "file": "pairing-native-read-history.png",
+            "sha256": "cec668076da8876270991b20d3c0256d508ef8dc597463f8ad5ce6be8b2fe7e3"
+          },
+          {
+            "file": "pairing-wrong-certificate-rejected.png",
+            "sha256": "c3c053a47fd306934ac5c9389ead49d480610ba69d9d0237ad7245d61efb5c14"
+          },
+          {
+            "file": "qr-camera-denied.png",
+            "sha256": "da8265708085e600b3c5468418ad51a39b1eb4b30bf2c318037fbfc236ae3f82"
+          },
+          {
+            "file": "qr-camera-system-prompt.png",
+            "sha256": "10741e1c9e584e05e6b5e617468cb9517ccd883889325ae81a968391905d0f60"
+          },
+          {
+            "file": "readonly-anchor-after-page.png",
+            "sha256": "792745c8f103d776407b1217c6f9296fa4f54e854c612c6e333043ef1c82f580"
+          },
+          {
+            "file": "readonly-earlier-history.png",
+            "sha256": "792745c8f103d776407b1217c6f9296fa4f54e854c612c6e333043ef1c82f580"
+          },
+          {
+            "file": "readonly-sidebar-page.png",
+            "sha256": "1741fbd44038d76db6c2729f2f9a15612bdfe283c106a74598e60234edf0cdff"
+          },
+          {
+            "file": "settings-dark-native.png",
+            "sha256": "25cbec1830694ed8d2fe9b9945a67c9d03021cd23083cc7b021a4a4838120225"
+          },
+          {
+            "file": "sidebar-dark.png",
+            "sha256": "3cd2a11fed791a77c60d2350a01db0d050cd7b2243cd87113da3cc8f562515c2"
+          },
+          {
+            "file": "tool-detail-light.png",
+            "sha256": "099c46c8b9e22ee5f8588579453c9712e401105e0c484033b7be9e91e5f347b6"
+          },
+          {
+            "file": "workspace-transient-manual-error.png",
+            "sha256": "ad7ce0cb9f57ca9f96af44853c4a8b1eaeb66ac0a78263cd94e7e3c9cd9cc605"
+          }
+        ],
+        "notes": [
+          "40 张大字体逐张查看：长文案正常换行、列表可滚动、表格和代码水平滚动、错误文字与确认按钮无遮挡；多行输入及搜索底栏随竖屏IME避让，横屏IME在截图时已隐藏。系统复制悬浮条按实际记录。"
+        ]
+      },
+      "readonlyRequests": 43,
+      "pairingRequests": 20,
+      "nonGetRequests": 0
+    }
+  ],
+  "cameras": [
+    {
+      "kind": "valid-pairing",
+      "api": 37,
+      "osBuild": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+      "status": "passed",
+      "cases": 1,
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "toolSha256": "064cc805c1e7dabd69148be212be0442f23d01a3b152f3a921075c1aac18efeb",
+      "cameraImageSha256": "d37f9a24f1e81e2ea86ae2053379501ecc7da0f44c6aaf007c4e8df6ef7210b2",
+      "actualCameraFrames": true,
+      "injectedDecoderResult": false,
+      "cameraReleased": true,
+      "reportSha256": "32750124230c414333d60da6d26f4e15560ed29c46b6f8035344d7b7024d1fe1",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "camera-paired-and-read-history.png",
+            "sha256": "fecaae586860bd2431aa4bccfc5e890a482844e101338cf44eded0d1c56d0199"
+          },
+          {
+            "file": "camera-paired-client.png",
+            "sha256": "a2aefd7ee735e2a2be38dadee12a4e017a521a384bc6dab3f49b491dc8405df7"
+          },
+          {
+            "file": "camera-system-prompt.png",
+            "sha256": "222b9c12b83551276479291c00a1432e4e0d787d068f38545b2befa1540e1026"
+          }
+        ],
+        "notes": [
+          "3 张逐张查看：系统相机授权、实际扫码后新客户端已选中、GET读取合成历史正确；原生相机释放由工具独立核对，系统绿色隐私指示在释放后存在短暂退出帧。"
+        ]
+      }
+    },
+    {
+      "kind": "foreign",
+      "api": 37,
+      "osBuild": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+      "status": "passed",
+      "cases": 1,
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "toolSha256": "064cc805c1e7dabd69148be212be0442f23d01a3b152f3a921075c1aac18efeb",
+      "cameraImageSha256": "f8af2659cb70b212927af5067e328ac46d83f1325ad5da9257a8cf6e8200dc6d",
+      "actualCameraFrames": true,
+      "injectedDecoderResult": false,
+      "cameraReleased": true,
+      "reportSha256": "b2831d42c6c91b4e19001dc407bf53174936fddea9e149dca82c4f8f782958bf",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "camera-cancel-restores-form.png",
+            "sha256": "3a40327536afbae82f3a7faa3e5d1e2329e9800350f3f025b6029ae31f369e14"
+          },
+          {
+            "file": "camera-rejects-foreign-qr.png",
+            "sha256": "efd552243891a7d6ddeca2ef9315d6cd00f35f02443aee9dd1f5bcdb94848095"
+          },
+          {
+            "file": "camera-system-prompt.png",
+            "sha256": "73bd9a51d3d5c16f3ea2955e9e271fcaed28b028831ed14f8784b2b4d81a6da1"
+          }
+        ],
+        "notes": [
+          "3 张逐张查看：真实相机中的外来二维码被拒绝，红色提示可辨识，取消恢复配对表单，系统授权正确。"
+        ]
+      }
+    },
+    {
+      "kind": "invalid-codex",
+      "api": 37,
+      "osBuild": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+      "status": "passed",
+      "cases": 1,
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "toolSha256": "064cc805c1e7dabd69148be212be0442f23d01a3b152f3a921075c1aac18efeb",
+      "cameraImageSha256": "b05ec3f3260f0f6a27a15cf01640222ade54a3a560ab6e8e76c3edafa09f7f56",
+      "actualCameraFrames": true,
+      "injectedDecoderResult": false,
+      "cameraReleased": true,
+      "reportSha256": "3ae1134e0c0b1514e3a5e2fe0a3bb73e7fb70d9c6f7e632fb67c3718fedad306",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "camera-read-reaches-descriptor-validation.png",
+            "sha256": "4c819d6da6d8d1ca46f02088b433865c821c2ee8544cfae14e5ed954432f6322"
+          },
+          {
+            "file": "camera-system-prompt.png",
+            "sha256": "89e90d3c081f599dd69e407838d103690602987d68fb88a5d1ae49e31fb02504"
+          }
+        ],
+        "notes": [
+          "2 张逐张查看：实际摄像头读取非法Codex描述，关闭扫描后表单保留原输入并提示格式无效；系统相机授权正确。"
+        ]
+      }
+    }
+  ],
+  "cameraPairingNetwork": {
+    "reportSha256": "bf51a91a5a2472eb618ee8dde76a1a99ebeab5938e1714e6485ff07e6671927e",
+    "requests": 4,
+    "nonGetRequests": 0,
+    "freshModelExecution": false
+  },
+  "nativeWorkspaceUI": [
+    {
+      "status": "passed",
+      "api": 26,
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "cases": 4,
+      "actualNativeButton": true,
+      "actualNativePull": true,
+      "actualNativeError": true,
+      "actualNativeRetry": true,
+      "errorKeyboardDismissed": true,
+      "injectedSessionCalls": false,
+      "formKeyboardDismissed": true,
+      "readonlyRequests": 6,
+      "nonGetRequests": 0,
+      "toolSha256": "b5a2144821ab7fe3709b1260f173143032fa100d5ab65fccff886d455a34abea",
+      "fixtureSha256": "e6f726a247af51a0f34473833130050b5a62209938c85fea1eb6ca6ffd9ce660",
+      "reportSha256": "de91f5af332f75229adc08ba981cb2f27093ac6be6525824e9171cf498155d2d",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "workspace-native-error-cache-retained.png",
+            "sha256": "9834d6ba66fae28e53456aeca508fb824eba59069916a778eb0e056cf553dda3"
+          },
+          {
+            "file": "workspace-native-initial.png",
+            "sha256": "8a604809dc1dbb4278ff3918b6d40a21ae89951c7a1a4c8afc4d9a48424a1708"
+          },
+          {
+            "file": "workspace-native-paged.png",
+            "sha256": "78e2f686001404cc4a52eb0ee16da31b62a4d018daa97130cad922d578e0588d"
+          },
+          {
+            "file": "workspace-native-pull-error.png",
+            "sha256": "2f880728b70d779d216fe043eb368b66f1005fc0a56e343421213d36c100a5f6"
+          },
+          {
+            "file": "workspace-native-pull-refreshed.png",
+            "sha256": "781776ddae78394f83ea0fc5d9db0aec1b1c48abd4ad64f37583b14af595c823"
+          },
+          {
+            "file": "workspace-native-pull-retried.png",
+            "sha256": "ba45394ffa091621c560c757c2acb014c5c6c2e04e1d7821c65e6c4ac6bada77"
+          }
+        ],
+        "notes": [
+          "6 张逐张查看：原生分页及下拉刷新恢复、实际503弹窗文案和确认按钮、关闭后列表保留且IME已收起、实际重试成功；旋转行图标属于执行中会话。"
+        ]
+      }
+    },
+    {
+      "status": "passed",
+      "api": 37,
+      "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+      "cases": 4,
+      "actualNativeButton": true,
+      "actualNativePull": true,
+      "actualNativeError": true,
+      "actualNativeRetry": true,
+      "errorKeyboardDismissed": true,
+      "injectedSessionCalls": false,
+      "readonlyRequests": 7,
+      "nonGetRequests": 0,
+      "toolSha256": "b5a2144821ab7fe3709b1260f173143032fa100d5ab65fccff886d455a34abea",
+      "fixtureSha256": "e6f726a247af51a0f34473833130050b5a62209938c85fea1eb6ca6ffd9ce660",
+      "reportSha256": "4a8e97e9daf0cc38861a6bbad94864c9d896c94b5301b3646277a99d18a44196",
+      "visual": {
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "workspace-native-error-cache-retained.png",
+            "sha256": "2fb479a92fc8c5707eee8963766b1b31631b54e2f20daa882783961daa73e18b"
+          },
+          {
+            "file": "workspace-native-initial.png",
+            "sha256": "cefd9263ec43021b81db2ae4b0b4db446c1562901d80fecc5c1e14d39e8caa50"
+          },
+          {
+            "file": "workspace-native-paged.png",
+            "sha256": "f4fa58bd1d3f34989b631c8638b2927fb96d6d3b66fa1880f82e5ac48bd0e4a5"
+          },
+          {
+            "file": "workspace-native-pull-error.png",
+            "sha256": "a398f4c9e2ec03942d0d47fde8832d0a8b8c7bdd7e2bb7cded2c25c3c33321b2"
+          },
+          {
+            "file": "workspace-native-pull-refreshed.png",
+            "sha256": "528962ddb79c040c79bfe5f6f826f678fe7652d71a46fe756458a693764e5d57"
+          },
+          {
+            "file": "workspace-native-pull-retried.png",
+            "sha256": "b4dbc3af18bbaf2602fadc9eb4a744b88e8f4644246389dbd6744e2febfec5b4"
+          }
+        ],
+        "notes": [
+          "6 张逐张查看：原生分页、实际503反馈、缓存保留及重试成功，IME已收起。关闭错误后的截图保留了下拉指示器退出帧，业务loading标签已消失，重试后指示器已退出。"
+        ]
+      }
+    }
+  ],
+  "realHistory": {
+    "status": "passed",
+    "api": 37,
+    "apkSha256": "0f21bc35fb1e417d6a45a97e68c546f0370078586bd553da1c70e0f245878387",
+    "sourceSha256": "ec5ff395b3697f2624e6335cf5fd38958720ba89529f001098261249c776ecd6",
+    "executions": 1,
+    "replySha256": "41d31e2cd6657902837ad90901c6737549f7699547eaef5e83cb381ff125bf24",
+    "readonlyRequests": 3,
+    "nonGetRequests": 0,
+    "independentDesktopSource": "Codex app read_thread",
+    "independentDesktopState": "notLoaded",
+    "independentDesktopReadAt": "2026-10-12T07:42:10.643Z",
+    "freshModelExecution": false,
+    "hostSourceSha256": "29ef79714357205a2b5ef6f6b02d22a81a00295c516b3fc7420f3d0aa76fc62d",
+    "hostEntrySha256": "55d666029bfae5d3fc698a13e000b6179989fd5801ce245b96ae39038c4e178d",
+    "hostServerSha256": "5fd21daacfa0124aed2a127c5a837392f0bdcdc4e38b04d948f822be9f65a8a3",
+    "descriptorRouteAvailable": false,
+    "reportSha256": "a97c26a58785976923f9c62b49d9788fdc0e7f69b3926618608add25205647e6"
+  },
+  "core": {
+    "phase": "A3",
+    "status": "passed",
+    "sourceSha256": "866e9da3d8ff62117fb217d4afbfe2536f7fbf63b30ab8205f31d51b91557800",
+    "suites": [
+      {
+        "runtime": "jvm",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "21762cbfb204a2d545e160f2465a5e62912c4c386c71574087b5c89951f3afe5"
+      },
+      {
+        "runtime": "iosSimulatorArm64",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "d85d8741a1e4f0e1d4e9fd831cfcb925e0597efa924827fcbb8fd5d758d7805a"
+      },
+      {
+        "runtime": "jvm",
+        "tests": 11,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "b857bce63c3d3d63a13b87901135b826ae2d00a24e84cceb6e27384f22ccb023"
+      },
+      {
+        "runtime": "iosSimulatorArm64",
+        "tests": 11,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "361e0cdcc9b58dfb17b720a7b6a07a02990f9a132b94f1a2a9c05d1e51a7a108"
+      }
+    ],
+    "boundary": "Swift/Kotlin Simulator boundary passed: 19 identity, 26 composer, 5 content vectors\nSwift/Kotlin Codex discovery boundary passed: 12 cases\nSwift/Kotlin tool presentation passed: 25 cases\nSwift/Kotlin state boundary passed: 18 policies, 9 projections, 25 contracts\nSwift/Kotlin Codex HTTP boundary passed: 10 cases\nSwift/Kotlin async boundary passed: one delivery, MainActor, ARC release, cancellation, late reply and typed error",
+    "vectorsSha256": "7bbcc59768c84ebe3a5e1b0c5130753af0dba518922a986e155d127e4a2a1408",
+    "stateVectorsSha256": "78aab997dc6338c7e85a8b085153b66cca17ad5ad41bbb9622503b1be67ee6ee",
+    "frameworks": ["iosArm64", "iosSimulatorArm64", "iosX64"],
+    "physicalDeviceVerified": false,
+    "evidenceStatus": "reused-matching",
+    "currentInputsVerifiedAt": "2026-10-12T06:54:29.053Z",
+    "reportSha256": "7ad62bab61651fa428f32c0ca7a3cea68cd996cb0053fffc20a9912ea28f38c8"
+  },
+  "checks": {
+    "verifiedAt": "2026-10-12T08:18:17.833Z",
+    "checks": {
+      "final-workspace-current-check.log": {
+        "status": "passed",
+        "sha256": "c730b9f238d9c2e6ce58329863351bf94b43a1fc306e9e693dfb43e05226a72c"
+      },
+      "ios-build-final-feedback.log": {
+        "status": "passed",
+        "sha256": "b7f86f1dfc9e3bceccd863eddd4a7fa5f406b55260fda58311b9aca8a0258119"
+      },
+      "final-sealed-workspace-check.log": {
+        "status": "passed",
+        "sha256": "0ee6fcaa1ca86d424040ade2083db93178732736f8d0c5bf8edf0e1b321df226"
+      }
+    },
+    "inputs": {
+      "iosSourceSha256": "b73b9c7c5fb9e337e543c5013998fe5c2e1774af008d689746452ef9cc8fb1b3",
+      "androidSourceSha256": "ec5ff395b3697f2624e6335cf5fd38958720ba89529f001098261249c776ecd6",
+      "coreSourceSha256": "866e9da3d8ff62117fb217d4afbfe2536f7fbf63b30ab8205f31d51b91557800"
+    }
+  },
+  "limitations": [
+    "A3 verifies reads from actual persisted desktop history; the selected desktop owner was not loaded. This is not runtime-connected or fresh-model evidence.",
+    "Android phone-specific reading ledger and per-host unread counts remain A7; server history flags are not asserted as phone-ledger delivery.",
+    "UI13 independent computer file transfers remain A6 on Android. iOS upstream implementation is retained but physical transfer delivery is not claimed by this gate.",
+    "Synthetic recognition, notifications, providers, release signing, real execution, OIDC/public relay and physical devices are not verified by this gate. Xiaomi physical tests remain paused.",
+    "Captured landscape frames with hidden IME prove retained drafts and layout; actual IME avoidance has separate portrait screenshots and geometry checks. API26 at font1.3 also captured landscape IME. System clipboard and AndroidWifi overlays remain recorded as actual OS states.",
+    "The iOS sidebar search case passed after repeated 60-second XCTest animation notification waits. This test duration does not measure app interaction latency. Existing SwiftUI/toolchain warnings and prior failed/superseded attempts remain in private evidence."
+  ],
+  "remaining": [],
+  "delivery": {
+    "phaseCommit": "0ff3fcf2abdd44cb520c038a58b43610583850e7",
+    "branch": "codex/android-native",
+    "remoteSha": "0ff3fcf2abdd44cb520c038a58b43610583850e7",
+    "status": "pushed-verified",
+    "verifiedAt": "2026-10-12T08:21:36.379Z"
+  }
+}

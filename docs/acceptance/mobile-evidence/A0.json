@@ -1,0 +1,562 @@
+{
+  "version": 1,
+  "phase": "A0",
+  "status": "passed",
+  "sourceSha256": "d64b46449e0f916da44f2c40b5d8334ce5e6a1b7c6b0e5ac72253b4139c252ae",
+  "createdAt": "2026-10-11T18:36:12.508Z",
+  "closureToolSha256": "3ee30d629cb9b694f43f4271dbad265f1222b8670ad6904c57ebb34e3f7c3857",
+  "environment": {
+    "device": "iPhone 17 Pro",
+    "os": "iOS 27",
+    "osBuild": "24A434",
+    "xcode": "27A266a",
+    "fontScale": "default"
+  },
+  "scope": "Native UI and synthetic HTTP boundaries; real runtime/device/provider evidence remains separate",
+  "testExecutions": 48,
+  "distinctTests": 43,
+  "failures": 0,
+  "skips": 0,
+  "expectedFailures": 0,
+  "groups": [
+    {
+      "group": "native",
+      "executions": 20,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "2caf527028e7310c3f25107dc85b585246c16d1c3499b48eddeb8bad49b16d6b",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        }
+      ]
+    },
+    {
+      "group": "clients",
+      "executions": 2,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "178993df09d6ab08ae50a7abf1eb9afbfcbe3d3b4e11916281a63ec6a53ddc15",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/client-edit-ios-fixture.mjs",
+          "sha256": "0517060c634482cc8de360422571a8cdf5b1f58b8232379220449968679c77e7"
+        }
+      ]
+    },
+    {
+      "group": "composer",
+      "executions": 2,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "ee5e1a0d46fe5ffa44af1c05460f1fa07a86bffc48bdc76c7ef3a156ade41ce8",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/composer-state-ios-fixture.mjs",
+          "sha256": "ee17e2cede164a4736087ea905782717542ffa82b3927eb5ebfde3cc4e13f796"
+        }
+      ]
+    },
+    {
+      "group": "generation",
+      "executions": 1,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "8a873a8832fa891a6f6a3b1d1500647f053da4f8ad848bb7c48429c5c5dbaace",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/generation-settings-ios-fixture.mjs",
+          "sha256": "5a847ae455a6be489715d20b22d97f7e5d424b7b098f7bd8b573361b14ed35a2"
+        }
+      ]
+    },
+    {
+      "group": "plan",
+      "executions": 2,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "6de4ac402450e69e5974973c92a55c3d1d8f16b4cac05d039237ebbebb26d691",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/plan-mode-ios-fixture.mjs",
+          "sha256": "a0c5a3d76112e34931334370eb0904f67f1e8e344ccbdd736308be6cffa1b776"
+        }
+      ]
+    },
+    {
+      "group": "receipts",
+      "executions": 1,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "7f7c19875cf409755bd652d3dc32a5917e941e2e3fd73a4bfad737544190df17",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/receipt-notices-ios-fixture.mjs",
+          "sha256": "49e49c9588bd74265b486021dcd789b16178137d4c8989b0073f11888f14d538"
+        }
+      ]
+    },
+    {
+      "group": "compaction",
+      "executions": 1,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "01fd415e236a25b9ca1efd2664f7df264a8239d8f55ba91e202d4fd44dc38d68",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/context-compaction-ios-fixture.mjs",
+          "sha256": "f9d0b422cbc747f79196cafbe332a6b071a8a9592930994da402ed3d26640c3d"
+        }
+      ]
+    },
+    {
+      "group": "creation",
+      "executions": 1,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "49568dfe123e27e3d9edeaeda4fb4183554e35613b5109145fb8c52b7625bfc5",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/desktop-creation-ios-fixture.mjs",
+          "sha256": "bd9dc1a55143370c2bc05dd5cbb330bbaff20ded10e55c58ec7355944c67bf2f"
+        }
+      ]
+    },
+    {
+      "group": "recovery",
+      "executions": 3,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "bd37aefa6ef2d5dff463785a41ce0f5d9467400476cef83020c6a4e167e94abb",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/desktop-creation-recovery-ios-fixture.mjs",
+          "sha256": "4ecc9ec9701bd78b4bbf44721d07b2a282c8e993598866a2c4de22bde90a8c39"
+        }
+      ]
+    },
+    {
+      "group": "reading",
+      "executions": 2,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "6e818e6bd371ba1078a70e4ece3658604e1cff2113692b3f402abc03c144e6da",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/read-cancellation-ios-fixture.mjs",
+          "sha256": "90bc7158e45c52e90f2ab68c028a3f1b21cfe71bfa4f2bbc67d201b180f84649"
+        }
+      ]
+    },
+    {
+      "group": "unread",
+      "executions": 1,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "1af544253850771bdb335eb7e3f5e410b09d712c8c230830bb76af40764ffc52",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/unread-state-ios-fixture.mjs",
+          "sha256": "4f94fcfbea441862d6393eb064dc5197a74fd18b1ed8a8634017bffdf5b91942"
+        }
+      ]
+    },
+    {
+      "group": "badge",
+      "executions": 1,
+      "evidenceStatus": "passed",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740568485",
+      "logSha256": "c2a412e5c191e46ffe4fb41111ea9473e36dc2cdb24f93e25370d1968825f3d3",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/mobile-unread-badge-ios-fixture.mjs",
+          "sha256": "5ce8803e7799956a7c94f677606e9dd1b9d3fff2973dc3496fe79cba1c8b9c7d"
+        }
+      ]
+    },
+    {
+      "group": "history",
+      "executions": 3,
+      "evidenceStatus": "reused-matching",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791740759238",
+      "logSha256": "16cff71e761e567a87aaa275c894682ff76333e3175d9264e0fd341bb1ba8a3a",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/history-pagination-ios-fixture.mjs",
+          "sha256": "3f3c83eb8ddc8b8be3b0003b46584c7009637874240b83bd61d790196d89d420"
+        }
+      ]
+    },
+    {
+      "group": "sidebar",
+      "executions": 8,
+      "evidenceStatus": "passed",
+      "exitCode": 0,
+      "result": "Passed",
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "sourceRun": "1791743373508",
+      "logSha256": "e6da3e604b83bfcd950d93fcf27e8edd218f73dd32d9d1296ca47ab16ab33cf9",
+      "inputs": [
+        {
+          "file": "scripts/mobile/ios-baseline.mjs",
+          "sha256": "4d62c45adbc9e1babc320cce392b6d0d6cf083690019a359bfd45a2c4b45ec40"
+        },
+        {
+          "file": "scripts/mobile/export-ios-baseline.mjs",
+          "sha256": "381e80b86b18819ad4677f13e23ff15ac2dc20692ac1a4331aff641abc5ac969"
+        },
+        {
+          "file": "package.json",
+          "sha256": "cb342920ed5c0adeeaf16aa3fb0637970472c2c7fc844be7f4e5958fafa13a0f"
+        },
+        {
+          "file": "pnpm-lock.yaml",
+          "sha256": "5aaf625c93eaa91e45698c8ce80ff3b513e5c937ca174d26e2a59c6bc6fcfc59"
+        },
+        {
+          "file": "design/mobile/tokens.json",
+          "sha256": "29504be893116831e7e06e61d9e2b7719a4f0271b5e114a6ce0ba75c23a19237"
+        },
+        {
+          "file": "scripts/sidebar-refresh-ios-fixture.mjs",
+          "sha256": "f2ef10007d77b109541b0d8f9181fbb0c00526fa3818c8b8b6767e2e3bbfb4cd"
+        }
+      ]
+    }
+  ],
+  "visual": {
+    "index": "../../../design/mobile/ios-baseline/index.json",
+    "review": "../../../design/mobile/ios-baseline/review.json",
+    "images": 89
+  },
+  "knownPending": [
+    "All enlarged-font states; additional full Markdown/table/link/Diff states (A3).",
+    "EasyWork pairing/OIDC/LAN/relay, discovery/VPN, nonblocking questions and complete model catalog loading/failure (A3/A5).",
+    "Settled readonly attachment menu and settled dark custom-question keyboard dismissal (A3); current raw transition capture preserved.",
+    "Backup/migration, downloaded-resource preview and physical speech/push delivery (A6/A7)."
+  ]
+}

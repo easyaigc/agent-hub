@@ -1,0 +1,21 @@
+{
+  "statePath": "/var/lib/codex-notifications/private/push-state.json",
+  "topic": "<existing-iOS-bundle-identifier>",
+  "teamId": "<Apple-team-id>",
+  "keys": {
+    "development": {
+      "keyId": "<sandbox-APNs-key-id>",
+      "keyPath": "/etc/codex-notifications/private/APNs-sandbox.p8"
+    },
+    "production": {
+      "keyId": "<production-APNs-key-id>",
+      "keyPath": "/etc/codex-notifications/private/APNs-production.p8"
+    }
+  },
+  "hosts": [
+    {
+      "hostId": "<specific-host-id>",
+      "token": "<unique-random-publisher-token-at-least-32-characters>"
+    }
+  ]
+}

@@ -1,0 +1,1041 @@
+{
+  "version": 2,
+  "scope": "Host v2 ordered reply payload and strict successor-writer negative proof; synthetic values only",
+  "nowEpochMillis": 1792108800000,
+  "fingerprints": [
+    {
+      "name": "unicode",
+      "target": {
+        "runtimeId": "runtime",
+        "workspaceId": "workspace",
+        "hostId": "host",
+        "agentId": "codex"
+      },
+      "reply": {
+        "mode": "next-turn",
+        "attachmentIds": [],
+        "text": "  中文 😀 é\n引号\"\\与/分隔 ",
+        "clientMessageId": "operation",
+        "threadId": "thread",
+        "hostId": "host"
+      },
+      "payload": "{\"version\":2,\"target\":{\"agentId\":\"codex\",\"hostId\":\"host\",\"workspaceId\":\"workspace\",\"runtimeId\":\"runtime\"},\"reply\":{\"hostId\":\"host\",\"threadId\":\"thread\",\"clientMessageId\":\"operation\",\"text\":\"  中文 😀 é\\n引号\\\"\\\\与/分隔 \",\"attachmentIds\":[],\"mode\":\"next-turn\"}}",
+      "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d"
+    },
+    {
+      "name": "captured-legacy-account",
+      "target": {
+        "runtimeId": "runtime",
+        "workspaceId": "workspace",
+        "hostId": "host",
+        "agentId": "codex",
+        "account": {
+          "subject": "old-subject",
+          "authority": "issuer"
+        }
+      },
+      "reply": {
+        "mode": "next-turn",
+        "attachmentIds": [],
+        "text": "  中文 😀 é\n引号\"\\与/分隔 ",
+        "clientMessageId": "operation",
+        "threadId": "thread",
+        "hostId": "host"
+      },
+      "payload": "{\"version\":2,\"target\":{\"agentId\":\"codex\",\"hostId\":\"host\",\"workspaceId\":\"workspace\",\"runtimeId\":\"runtime\",\"account\":{\"authority\":\"issuer\",\"subject\":\"old-subject\"}},\"reply\":{\"hostId\":\"host\",\"threadId\":\"thread\",\"clientMessageId\":\"operation\",\"text\":\"  中文 😀 é\\n引号\\\"\\\\与/分隔 \",\"attachmentIds\":[],\"mode\":\"next-turn\"}}",
+      "fingerprint": "7e9b42ee0f9b3f51f3d41c74d30827bd8be91f5c8978b1aa67c09a570da4390d"
+    },
+    {
+      "name": "all-settings",
+      "target": {
+        "runtimeId": "runtime",
+        "workspaceId": "workspace",
+        "hostId": "host",
+        "agentId": "codex"
+      },
+      "reply": {
+        "mode": "queue",
+        "attachmentIds": ["file-b", "file-a"],
+        "text": "  中文 😀 é\n引号\"\\与/分隔 ",
+        "clientMessageId": "operation",
+        "threadId": "thread",
+        "hostId": "host",
+        "expectedTurnId": "turn",
+        "model": "model",
+        "effort": "xhigh",
+        "permissionMode": "guardian-approvals",
+        "speed": "fast",
+        "collaborationMode": "plan",
+        "expectedPlanId": "plan"
+      },
+      "payload": "{\"version\":2,\"target\":{\"agentId\":\"codex\",\"hostId\":\"host\",\"workspaceId\":\"workspace\",\"runtimeId\":\"runtime\"},\"reply\":{\"hostId\":\"host\",\"threadId\":\"thread\",\"clientMessageId\":\"operation\",\"text\":\"  中文 😀 é\\n引号\\\"\\\\与/分隔 \",\"attachmentIds\":[\"file-b\",\"file-a\"],\"mode\":\"queue\",\"expectedTurnId\":\"turn\",\"model\":\"model\",\"effort\":\"xhigh\",\"permissionMode\":\"guardian-approvals\",\"speed\":\"fast\",\"collaborationMode\":\"plan\",\"expectedPlanId\":\"plan\"}}",
+      "fingerprint": "6eba4b22ca3ce5f5935af70d1ec40e7d9c6276b49dd96bf63551dc11e306dddc"
+    },
+    {
+      "name": "empty-attachment-message",
+      "target": {
+        "runtimeId": "runtime",
+        "workspaceId": "workspace",
+        "hostId": "host",
+        "agentId": "codex"
+      },
+      "reply": {
+        "mode": "steer",
+        "attachmentIds": ["file"],
+        "text": "",
+        "clientMessageId": "operation",
+        "threadId": "thread",
+        "hostId": "host"
+      },
+      "payload": "{\"version\":2,\"target\":{\"agentId\":\"codex\",\"hostId\":\"host\",\"workspaceId\":\"workspace\",\"runtimeId\":\"runtime\"},\"reply\":{\"hostId\":\"host\",\"threadId\":\"thread\",\"clientMessageId\":\"operation\",\"text\":\"\",\"attachmentIds\":[\"file\"],\"mode\":\"steer\"}}",
+      "fingerprint": "63476a4a809baa705b26b4773875970fab7d65d473d2a048fe81cf634e916904"
+    }
+  ],
+  "proofs": [
+    {
+      "name": "valid",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": true
+    },
+    {
+      "name": "wrong-host",
+      "value": {
+        "version": 2,
+        "hostId": "other",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "wrong-thread",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "other",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "wrong-operation",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "other",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "wrong-current-target",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "other",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "wrong-captured-target",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "other",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "account-is-payload-not-machine-identity",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex",
+          "account": {
+            "authority": "issuer",
+            "subject": "new"
+          }
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "version-one",
+      "value": {
+        "version": 1,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "status-unavailable",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "unavailable",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "status-confirming",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "confirming",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "missing-evidence",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": null,
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "weak-evidence",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "receipt-missing",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "same-process",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 100,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "zero-process",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 0,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "fingerprint-mismatch",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "evidence-fingerprint-mismatch",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "invalid-fence-hash",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "x",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "invalid-ledger-id",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "not-uuid"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "missing-receipt-field",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d"
+      },
+      "expected": false
+    },
+    {
+      "name": "accepted-receipt-cannot-be-negative",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": {
+          "hostId": "host",
+          "threadId": "thread",
+          "clientMessageId": "operation",
+          "state": "received",
+          "turnId": null,
+          "error": null
+        }
+      },
+      "expected": false
+    },
+    {
+      "name": "expired-proof",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-15T23:58:59.999Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "future-proof",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:01:00.001Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "exact-60-second-boundary",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-15T23:59:00Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": true
+    },
+    {
+      "name": "invalid-date",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "invalid",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null
+      },
+      "expected": false
+    },
+    {
+      "name": "actual-http-read-target-envelope",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null,
+        "readTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        }
+      },
+      "expected": true
+    },
+    {
+      "name": "invalid-http-read-target-envelope",
+      "value": {
+        "version": 2,
+        "hostId": "host",
+        "target": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "threadId": "thread",
+        "clientMessageId": "operation",
+        "status": "not-accepted",
+        "observedAt": "2026-10-16T00:00:00.000Z",
+        "evidence": {
+          "kind": "operator-fenced-checkpoint-v2",
+          "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+          "oldPid": 100,
+          "newPid": 200,
+          "ledgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "fenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "ledgerId": "a1234567-1234-1234-1234-123456789abc"
+        },
+        "capturedTarget": {
+          "runtimeId": "runtime",
+          "workspaceId": "workspace",
+          "hostId": "host",
+          "agentId": "codex"
+        },
+        "fingerprintVersion": 2,
+        "fingerprint": "c5d68a883e383304cc4ee573d9ea629a5bd9045e33d46d2943ebce7768435b9d",
+        "receipt": null,
+        "readTarget": "invalid"
+      },
+      "expected": false
+    }
+  ]
+}

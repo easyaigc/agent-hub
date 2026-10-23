@@ -1,0 +1,8 @@
+{
+  "name": "@codex-manage/ios",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build:ios": "xcodebuild -project CodexManage.xcodeproj -scheme CodexManage -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ../../.build/ios CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build"
+  }
+}

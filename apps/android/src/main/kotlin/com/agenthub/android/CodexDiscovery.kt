@@ -1,0 +1,290 @@
+package com.agenthub.android
+
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkRequest
+import android.net.nsd.NsdManager
+import android.net.nsd.NsdServiceInfo
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.util.Base64
+import androidx.compose.runtime.*
+import com.agenthub.core.DomainContract
+import com.agenthub.core.CodexDiscoveryContract
+import com.agenthub.core.TargetScope
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.InetAddress
+import java.net.URI
+import java.security.MessageDigest
+import java.security.cert.X509Certificate
+import java.util.UUID
+import javax.net.ssl.*
+
+data class CodexRoute(val endpoint: String, val networkKind: String = "unknown")
+data class PairedCodexConnection(val target: TargetScope, val fingerprint: String, val routes: List<CodexRoute>) {
+    override fun equals(other: Any?) = other is PairedCodexConnection && sameScope(target, other.target) && fingerprint == other.fingerprint && routes == other.routes
+    override fun hashCode() = com.agenthub.core.MobileRules.cacheKey("", target, "", "").hashCode() * 31 + fingerprint.hashCode() * 17 + routes.hashCode()
+}
+data class CodexDescriptor(val name: String, val target: TargetScope, val fingerprint: String,
+    val routes: List<CodexRoute>, val token: String? = null, val connectionMode: String? = null) {
+    companion object {
+        fun parsePairing(text: String): CodexDescriptor {
+            require(text.length <= 24_000) { "连接二维码内容过大" }
+            val uri = URI(text.trim())
+            require(uri.scheme == "codex-host" && uri.host == "pair" && uri.rawPath.isNullOrEmpty() && uri.rawFragment == null && uri.rawUserInfo == null) { "请使用电脑提供的 Codex 连接二维码" }
+            val query = uri.rawQuery.orEmpty()
+            require(query.startsWith("descriptor=") && !query.contains('&')) { "连接二维码格式无效" }
+            val encoded = query.removePrefix("descriptor=")
+            require(encoded.matches(Regex("[A-Za-z0-9_-]+={0,2}"))) { "连接二维码格式无效" }
+            val bytes = Base64.decode(encoded, Base64.URL_SAFE or Base64.NO_WRAP)
+            require(bytes.size <= 16_384) { "连接二维码内容过大" }
+            val wire = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
+            val result = decode(wire, allowToken = true)
+            require(result.token != null && result.token.length in 32..512 && result.token.none { it.isWhitespace() }) { "连接二维码缺少有效客户端密钥" }
+            return result
+        }
+        fun decode(wire: String, allowToken: Boolean = false): CodexDescriptor {
+            val json = JSONObject(wire)
+            val descriptor = JSONObject(wire).apply { if(allowToken) remove("token") }
+            require(CodexDiscoveryContract.validate(descriptor.toString()) == null) { "电脑连接信息格式无效" }
+            val name = json.get("name") as? String ?: throw HostReadError("电脑名称无效")
+            val targetJSON = json.getJSONObject("target")
+            require(DomainContract.validate(targetJSON.toString(), "target") == null && targetJSON.getString("agentId") == "codex") { "电脑运行时身份无效" }
+            val target = HostReadCodec.target(targetJSON)!!
+            val fingerprint = (json.get("fingerprint") as? String).orEmpty().lowercase()
+            require(name.isNotEmpty() && name.codePointCount(0, name.length) <= 256 && fingerprint.matches(Regex("[a-f0-9]{64}"))) { "电脑连接信息无效" }
+            val endpoints = json.getJSONArray("endpoints")
+            require(endpoints.length() in 1..32) { "电脑连接地址无效" }
+            val raw = endpoints.strings()
+            require(raw.distinct().size == raw.size && raw.all { it.length <= 512 }) { "电脑连接地址无效" }
+            val hints = json.optJSONArray("endpointHints") ?: JSONArray()
+            require(hints.length() <= 32) { "电脑连接地址过多" }
+            val kinds = hints.objects().associate { hint ->
+                require(hint.keys().asSequence().toSet() == setOf("endpoint", "networkKind")) { "网络路径信息无效" }
+                val kind = hint.getString("networkKind")
+                require(kind in listOf("lan", "vpn", "unknown")) { "网络路径信息无效" }
+                CodexEndpoints.local(hint.getString("endpoint")) to kind
+            }
+            val routes = raw.map { address ->
+                val endpoint = CodexEndpoints.local(address)
+                val host = URI(endpoint).host.lowercase()
+                CodexRoute(endpoint, kinds[endpoint] ?: if (host.endsWith(".ts.net") || host.startsWith("100.") || host.contains("fd7a:115c:a1e0:")) "vpn" else "unknown")
+            }.distinctBy { it.endpoint }
+            val token = if (json.has("token")) json.get("token") as? String ?: throw HostReadError("客户端密钥无效") else null
+            return CodexDescriptor(name, target, fingerprint, routes, token, json.optional("connectionMode"))
+        }
+    }
+}
+
+/** Address validation never resolves a DNS name to decide whether it is private. */
+object CodexEndpoints {
+    private fun private4(bytes: ByteArray): Boolean {
+        if (bytes.size != 4) return false
+        val a = bytes[0].toInt() and 255; val b = bytes[1].toInt() and 255
+        return a == 10 || a == 127 || a == 100 && b in 64..127 || a == 172 && b in 16..31 || a == 192 && b == 168 || a == 169 && b == 254
+    }
+    fun local(value: String): String {
+        require(value.length <= 512) { "电脑地址过长" }
+        val base = NativeHostReads.baseAddress(if (value.contains("://")) value else "https://$value")
+        require(base.scheme == "https" && (base.port == -1 || base.port in 1..65535)) { "请使用局域网或 VPN 电脑的 HTTPS 地址" }
+        val host = base.host.lowercase().removeSurrounding("[", "]").trimEnd('.')
+        var canonical = host
+        val private = if (':' in host) {
+            val literal = host.substringBefore('%')
+            require(literal.matches(Regex("[a-f0-9:.]+"))) { "电脑地址无效" }
+            val address = InetAddress.getByName(literal)
+            canonical = address.hostAddress!!.substringBefore('%') + if ('%' in host) "%" + host.substringAfter('%') else ""
+            val bytes = address.address
+            private4(bytes) || address.isLoopbackAddress || bytes.size == 16 && ((bytes[0].toInt() and 0xfe) == 0xfc || (bytes[0].toInt() and 255) == 0xfe && (bytes[1].toInt() and 0xc0) == 0x80)
+        } else {
+            val parts = host.split('.')
+            val octets = parts.mapNotNull { it.toIntOrNull()?.takeIf { n -> n in 0..255 } }
+            parts.size == 4 && octets.size == 4 && private4(octets.map { it.toByte() }.toByteArray()) || host == "localhost" || host.endsWith(".local") || host.endsWith(".ts.net")
+        }
+        require(private) { "请填写局域网或 VPN 电脑地址" }
+        val authority = if (':' in canonical) "[$canonical]" else canonical
+        return "https://$authority" + if (base.port == -1 || base.port == 443) "" else ":${base.port}"
+    }
+}
+
+/** Trust is scoped to one explicit pairing, endpoint and exact leaf DER hash. */
+internal object PairedCodexTLS {
+    fun configure(connection: HttpsURLConnection, endpoint: String, fingerprint: String) {
+        val expectedHost = URI(endpoint).host
+        val expected = fingerprint.lowercase()
+        require(expected.matches(Regex("[a-f0-9]{64}")))
+        val manager = object : X509TrustManager {
+            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) { throw java.security.cert.CertificateException("Client TLS is unsupported") }
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+                val leaf = chain?.firstOrNull() ?: throw java.security.cert.CertificateException("Missing peer certificate")
+                leaf.checkValidity()
+                val actual = MessageDigest.getInstance("SHA-256").digest(leaf.encoded).joinToString("") { "%02x".format(it.toInt() and 255) }
+                if (!MessageDigest.isEqual(actual.toByteArray(), expected.toByteArray())) throw java.security.cert.CertificateException("Paired certificate changed")
+            }
+        }
+        val ssl = SSLContext.getInstance("TLS"); ssl.init(null, arrayOf(manager), java.security.SecureRandom())
+        connection.sslSocketFactory = ssl.socketFactory
+        connection.hostnameVerifier = HostnameVerifier { host, _ -> host.removeSurrounding("[", "]").equals(expectedHost.removeSurrounding("[", "]"), ignoreCase = true) }
+    }
+}
+
+data class DiscoveredCodexHost(val id: String, val name: String, val endpoint: String, val known: Boolean, val reachable: Boolean, val networkKind: String? = null, val target: TargetScope? = null, val fingerprint: String? = null)
+
+/** Foreground NSD and saved VPN routes; TXT data is only a discovery hint. */
+class CodexHostDiscovery(context: Context, private val session: MobileSession, storage: NativeSessionStorage? = null) {
+    companion object { const val LOCAL_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK" }
+    private val context = context.applicationContext
+    private val nsd = context.getSystemService(NsdManager::class.java)
+    private val network = context.getSystemService(ConnectivityManager::class.java)
+    private val main = Handler(Looper.getMainLooper())
+    private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val budget = Semaphore(4)
+    private var revision = UUID.randomUUID()
+    private var active = false
+    private var networkRevision = UUID.randomUUID()
+    private val publicDiscovery = CodexPublicDiscovery(storage)
+    private var publicHosts = emptyList<DiscoveredCodexHost>()
+    private var listener: NsdManager.DiscoveryListener? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var scanning: Job? = null
+    private val advertised = mutableMapOf<String, DiscoveredCodexHost>()
+    private val pending = java.util.ArrayDeque<NsdServiceInfo>()
+    private var resolving: NsdManager.ResolveListener? = null
+    private var resolutionTimeout: Runnable? = null
+    var hosts by mutableStateOf<List<DiscoveredCodexHost>>(emptyList())
+        private set
+    var needsPermission by mutableStateOf(false)
+        private set
+    var detail by mutableStateOf<String?>(null)
+        private set
+    /** A discovery provider supplies a private address hint; this never authorizes or saves a client. */
+    internal fun offerHint(endpoint: String, hostId: String, name: String) {
+        if (!active || !permitted()) return
+        require(hostId.isNotBlank() && hostId.length <= 256 && name.isNotBlank() && name.length <= 256)
+        val address=CodexEndpoints.local(endpoint);val key="$hostId@$address"
+        if(advertised.containsKey(key)||advertised.size<32) advertised[key]=DiscoveredCodexHost(hostId,name,address,false,false)
+        rebuild();scan()
+    }
+    fun permitted() = Build.VERSION.SDK_INT < 37 || context.checkSelfPermission(LOCAL_PERMISSION) == PackageManager.PERMISSION_GRANTED
+    fun start() {
+        stop(); active = true; revision = UUID.randomUUID()
+        needsPermission = !permitted()
+        if (needsPermission) { detail = "允许本地网络访问后可发现局域网与 VPN 电脑"; rebuild(); return }
+        detail = null
+        val generation = revision
+        val discovery = object : NsdManager.DiscoveryListener {
+            override fun onDiscoveryStarted(type: String) {}
+            override fun onDiscoveryStopped(type: String) {}
+            override fun onStartDiscoveryFailed(type: String, code: Int) { post(generation) { detail = "暂时无法发现局域网电脑，可使用连接二维码或已保存地址" } }
+            override fun onStopDiscoveryFailed(type: String, code: Int) {}
+            override fun onServiceFound(info: NsdServiceInfo) { post(generation) { if (pending.size < 32) { pending.add(info); resolveNext(generation) } } }
+            override fun onServiceLost(info: NsdServiceInfo) { post(generation) { advertised.remove(info.serviceName); rebuild() } }
+        }
+        listener = discovery
+        try { nsd.discoverServices("_codex-host._tcp.", NsdManager.PROTOCOL_DNS_SD, discovery) }
+        catch (_: Exception) { detail = "局域网发现暂不可用" }
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(n: Network) { post(generation) { networkChanged() } }
+            override fun onLost(n: Network) { post(generation) { networkChanged() } }
+            override fun onLinkPropertiesChanged(n: Network, properties: android.net.LinkProperties) { post(generation) { networkChanged() } }
+        }
+        networkCallback = callback
+        try { network.registerNetworkCallback(NetworkRequest.Builder().build(), callback) } catch (_: Exception) { networkCallback = null }
+        tasks.launch { while (active && revision == generation) { scan(); delay(10_000) } }
+    }
+    private fun networkChanged() {
+        networkRevision=UUID.randomUUID();scanning?.cancel();scanning=null
+        publicHosts=emptyList();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild();scan()
+    }
+    fun stop() {
+        active = false; revision = UUID.randomUUID(); tasks.coroutineContext.cancelChildren(); scanning = null
+        listener?.let { try { nsd.stopServiceDiscovery(it) } catch (_: Exception) {} }; listener = null
+        networkCallback?.let { try { network.unregisterNetworkCallback(it) } catch (_: Exception) {} }; networkCallback = null
+        pending.clear(); advertised.clear();publicHosts=emptyList();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild()
+        resolutionTimeout?.let(main::removeCallbacks); resolutionTimeout = null
+        // Old Android releases cannot cancel resolution. Keep its slot occupied
+        // until its callback arrives, including across foreground generations.
+        if(Build.VERSION.SDK_INT>=34) resolving?.let { try { nsd.stopServiceResolution(it) } catch (_: Exception) {} }
+    }
+    private fun post(generation: UUID, body: () -> Unit) { main.post { if (active && revision == generation) body() } }
+    @Suppress("DEPRECATION") private fun resolveNext(generation: UUID) {
+        if (resolving!=null || pending.isEmpty() || revision != generation) return
+        val info = pending.removeFirst()
+        var expired = false
+        val resolve = object : NsdManager.ResolveListener {
+            private fun complete(body: () -> Unit = {}) { main.post {
+                if(resolving!==this) return@post
+                resolutionTimeout?.let(main::removeCallbacks); resolutionTimeout=null; resolving=null
+                if(active && revision==generation && !expired) body()
+                if(active) resolveNext(revision)
+            } }
+            override fun onResolveFailed(service: NsdServiceInfo, code: Int) = complete()
+            override fun onResolutionStopped(service: NsdServiceInfo) = complete()
+            override fun onStopResolutionFailed(service: NsdServiceInfo, code: Int) { /* Await the original terminal callback. */ }
+            override fun onServiceResolved(service: NsdServiceInfo) = complete {
+                try {
+                    val idBytes = service.attributes["hostId"]
+                    val id = idBytes?.let { Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(it)).toString() }.orEmpty()
+                    val host = service.host?.hostAddress ?: throw HostReadError("Missing discovered host")
+                    require(id.isNotBlank() && id.length <= 256 && service.port in 1..65535)
+                    val endpoint = CodexEndpoints.local("https://" + if (':' in host) "[$host]:${service.port}" else "$host:${service.port}")
+                    if(advertised.containsKey(service.serviceName)||advertised.size<32) advertised[service.serviceName] = DiscoveredCodexHost(id, service.serviceName.take(256), endpoint, false, false)
+                    rebuild(); scan()
+                } catch (_: Exception) {}
+            }
+        }
+        resolving=resolve
+        val timeout = Runnable {
+            if(resolving===resolve) {
+                expired=true
+                if(Build.VERSION.SDK_INT>=34) try { nsd.stopServiceResolution(resolve) } catch (_: Exception) {}
+            }
+        }
+        resolutionTimeout=timeout; main.postDelayed(timeout,6_000)
+        try { nsd.resolveService(info, resolve) } catch (_: Exception) { main.removeCallbacks(timeout); resolutionTimeout=null; resolving=null; resolveNext(generation) }
+    }
+    private fun rebuild() {
+        val known = session.clients.filter { !it.isDemo && it.scope?.agentId == "codex" }
+        hosts = known.map { client ->
+            val found=publicHosts.firstOrNull { it.id==client.id && sameScope(it.target,client.scope) && it.fingerprint==client.codexDirect?.fingerprint }
+            found?.copy(name=client.name,known=true) ?: hosts.firstOrNull { it.id==client.id && it.known } ?: DiscoveredCodexHost(client.id,client.name,client.endpoint.orEmpty(),true,false)
+        } + (publicHosts + advertised.values).distinctBy { it.id }.sortedBy { it.name }.filter { row -> known.none { it.id == row.id } }
+    }
+    fun scan() {
+        if (!active || !permitted() || scanning?.isActive == true) return
+        val generation = revision; val path=networkRevision; rebuild()
+        val clients = session.clients.filter { !it.isDemo && it.scope?.agentId == "codex" }
+        scanning = tasks.launch {
+            val public = publicDiscovery.scan(advertised.values.toList(), session.clients.toList(), session::storedCredential) { active && revision==generation && networkRevision==path }
+            if(!active||revision!=generation||networkRevision!=path)return@launch
+            publicHosts=public.codex;session.easyWorkDiscovery?.offerVPN(public.easywork);rebuild()
+            clients.map { client -> async {
+                val routes = (listOfNotNull(client.endpoint) + client.codexDirect?.routes.orEmpty().map { it.endpoint } + if (client.codexDirect != null) (publicHosts+advertised.values).filter { it.id == client.id && (it.fingerprint==null||it.fingerprint==client.codexDirect.fingerprint) }.map { it.endpoint } else emptyList()).distinct().take(64)
+                val results = routes.map { endpoint -> async { budget.withPermit {
+                    try {
+                        if (client.codexDirect == null && !endpoint.startsWith("https://")) return@withPermit null
+                        val probe = client.copy(endpoint = endpoint, codexDirect = client.codexDirect?.copy(routes = client.codexDirect.routes + CodexRoute(endpoint)))
+                        endpoint to NativeHostReads { if (probe.codexDirect == null) session.storedCredential(client.id) else "" }.descriptor(probe)
+                    } catch (cancel: CancellationException) { throw cancel } catch (_: Exception) { null }
+                } } }.awaitAll().filterNotNull()
+                if (revision != generation || networkRevision!=path || !active) return@async
+                val result = results.firstOrNull { it.first == client.endpoint } ?: results.firstOrNull()
+                if (result != null && session.updateCodexRoute(client, result.first, result.second)) {
+                    hosts = hosts.map { if (it.id == client.id && it.known) it.copy(endpoint = result.first, reachable = true) else it }
+                } else hosts = hosts.map { if (it.id == client.id && it.known) it.copy(reachable = false) else it }
+            } }.awaitAll()
+        }
+    }
+}
+
+internal fun encodeCodexDirect(value: PairedCodexConnection) = JSONObject().put("target", encodeTarget(value.target)).put("fingerprint", value.fingerprint).put("routes", JSONArray(value.routes.map { JSONObject().put("endpoint", it.endpoint).put("networkKind", it.networkKind) }))
+internal fun decodeCodexDirect(json: JSONObject) = PairedCodexConnection(HostReadCodec.target(json.getJSONObject("target"))!!, json.getString("fingerprint"), json.getJSONArray("routes").objects().map { CodexRoute(CodexEndpoints.local(it.getString("endpoint")), it.getString("networkKind")) }).also { require(it.fingerprint.matches(Regex("[a-f0-9]{64}")) && it.routes.size in 1..32) }
+internal fun encodeTarget(s: TargetScope) = JSONObject().put("agentId", s.agentId).put("hostId", s.hostId).put("workspaceId", s.workspaceId).put("runtimeId", s.runtimeId).apply { if (s.accountAuthority != null) put("account", JSONObject().put("authority", s.accountAuthority).put("subject", s.accountSubject)) }

@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "protocol": "EWDAP/1",
+  "baseCommit": "94d84bd4f4a5ada39214e48dba9bde2225480974",
+  "preexistingInputPatchSha256": "cb65316daccc39a2c4f31e13009d7483a03070feed0575ee88da6dcf070d1ccf",
+  "patchSha256": "ce725b11ca21369e34b7266fba0caf14833f6f135fc17026a2783dd00bd129ef",
+  "files": [
+    {
+      "path": "apps/desktop/src/main/acceptance/codex-plus-real-dev.ts",
+      "beforeSha256": "25cbb5883d3a425555fe21b9aab4e5c4a279906edda91f5462741421d2c76b21",
+      "afterSha256": "208684ab1e233f1ec9b71985f27de44a978dc804a486661650ed9ff1b044782e"
+    },
+    {
+      "path": "apps/desktop/src/main/index.ts",
+      "beforeSha256": "cb1021cbb57ea8503333b7a9b2322ca0371bee8896cd3707981b8c34f5101a3f",
+      "afterSha256": "b3d140b6ee4f43008167503d048b7f70a15ec71f7cb9efe7c0ab9f6c498c748d"
+    },
+    {
+      "path": "apps/desktop/src/main/ipc/remote-access/handlers.ts",
+      "beforeSha256": "46061e24f53db20c5b795011dcc1f78b5d8e9f5173c6495eedc508bdc2f7faf5",
+      "afterSha256": "e025226d67419e7c287b9bd3c6d764e54666b6b6bfc5fce0d68e15137b70690a"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-device-authorization.ts",
+      "beforeSha256": null,
+      "afterSha256": "441946e61ab6a80e69551b7a182ace8386ae3b114e950815d41c61aba70511cf"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-encrypted-host.ts",
+      "beforeSha256": "d18fd7e61f5472fec1d602ac8f50224b4e8b788125385714fdcfb88a03670ff0",
+      "afterSha256": "e27582f22afb11d129614ec5d00d07d6eab0b21fd90c83968b414ff16c755ba2"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-legacy-pairing.ts",
+      "beforeSha256": null,
+      "afterSha256": "d2030c6cf2128781b2ee6c6e71a43b82fa0e39c7625714ffc0cd713f2c2cb728"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-remote-access-controller.ts",
+      "beforeSha256": "8c564d2357c4705181e2982c245e181b9af499c5c2625e39d79d1892cabdd28c",
+      "afterSha256": "be56df253d6f8c5c9b5fe585cabaaecb84e7629ef70992a9a4cb8af485c762bb"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-remote-access-options.ts",
+      "beforeSha256": null,
+      "afterSha256": "ed669ae468b1e7a3983ff1914411aca6d25f43f6f4265e161881ad5f6626548f"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-remote-access-snapshot.ts",
+      "beforeSha256": "b0608766ff5f427e19bc6e9157b810e40dfff917e7f410fdd87d294853bf5c42",
+      "afterSha256": "a15509c108ebb1c1bc67d802705ce87063ff2c7bda75a23b4ab49e2d24d3b0f1"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-remote-request-journal.ts",
+      "beforeSha256": null,
+      "afterSha256": "9fdfdca233f5bb5b3888a6023192f44b154b71342ed04088f15aee3098295a08"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/embedded-host-runtime.ts",
+      "beforeSha256": "d80969342f37a64789e599eaaac362063ee40d9d011e4c4b2dde7ba9c62e7bac",
+      "afterSha256": "789deb27037bbeeb68190872bd21cbb5677aeb145fbf1ece8fdb1f5f70b79fd0"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/embedded-host-sessions.ts",
+      "beforeSha256": "f85ff9e935e9c45c7daaad0dd57157a34d3f8afe02a6f7d3395e0c9abdbff247",
+      "afterSha256": "dbdd9829c8fc325ef38c9f1ad7772d4f919d88dcef24eaa2d2832e273f76f273"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/embedded-lan-host.ts",
+      "beforeSha256": "d77d2204d47c0cb79edee073fea62f32d9d07bb420efbc7e74106fbf6d2ed6de",
+      "afterSha256": "93bb8d1ebecffd3f31c9cb632830858cddb9809cefa94fcb99498f133fa500b5"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/remote-runtime-bridge.ts",
+      "beforeSha256": "3a85d6d2b6801c3d7a3a1eb3ea441887556dd6528f91668b6079b044faa500e0",
+      "afterSha256": "a45d0598ea35e07bab56305507840e12ec2b12073e0b5d101d13be1bb3b8a616"
+    },
+    {
+      "path": "apps/desktop/src/preload/api/remote-access.ts",
+      "beforeSha256": "9ccc6a04a9bfffd0ce8455d6ace9877e6b470b434a3a7a6b9fd2298c6c7130b5",
+      "afterSha256": "eca4bf870df777a37dadeb1a89d8bfb00cd88c771ae938b91c194ca46c1a3265"
+    },
+    {
+      "path": "apps/desktop/src/renderer/src/features/settings/RemoteAccessSettingsSection.tsx",
+      "beforeSha256": "26009c1f3026fed057381d55c78f04dd748c5ea1afa20799f520d7826718eee0",
+      "afterSha256": "27737039afeb3a1fd99b3cbf4a336fabd8c25fa0234155f0b9de3a8565eb2dfa"
+    },
+    {
+      "path": "apps/desktop/src/renderer/src/features/settings/RemoteDeviceAuthorizationCard.tsx",
+      "beforeSha256": null,
+      "afterSha256": "e10acb8c8d372d7c237e45581d1e91b3db2ce4f8a0f5777f17782ea3c99417ce"
+    },
+    {
+      "path": "apps/desktop/test/main/remote-access/desktop-device-authorization.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "77bd1f246f42980ee6427b02dd65047106091e80e64189a4c1c3762b553c3e09"
+    },
+    {
+      "path": "apps/desktop/test/main/remote-access/embedded-host-sessions.test.ts",
+      "beforeSha256": "10a6cfb4184fe7d71ff45e8498cf0079b82ab6a8e5204583f19e93459370ace2",
+      "afterSha256": "407200bf51e77e2377b3b1f0ecd63a3b9c8161c0d6959f3346f6ba847e27188c"
+    },
+    {
+      "path": "apps/desktop/test/renderer/settings/settings-device-authorization.dom.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "7ce19265e14a8c91857505dad49fac02304f3c336128fb1b37862bc9a9c7a1b7"
+    },
+    {
+      "path": "apps/desktop/test/renderer/support/preload/stub.ts",
+      "beforeSha256": "8e0d0b4e29f98116c7820d104eb9664668db6388563785f041f7665c82f8d474",
+      "afterSha256": "e09c28fb19b760a42707462b9d17e1551af649680bbfcfc2f2465737cac28752"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/body.ts",
+      "beforeSha256": null,
+      "afterSha256": "0b07a5edc30bdaff9f8165519487766d86f88481eff142215f833fc5f37f3708"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/crypto.ts",
+      "beforeSha256": null,
+      "afterSha256": "591cdf50c7935377d67856c644cb819e2d3596521ae8460f90a8ed858c0fca27"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/http-app.ts",
+      "beforeSha256": null,
+      "afterSha256": "8a660b658eaa4acf4065e6841ac4b5b83be7291dba16507dc5a1a8324005f1ad"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/records.ts",
+      "beforeSha256": null,
+      "afterSha256": "583fd808ce15bfc60e3edc2654e0f68554a625548dd80169644218bf19d54513"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/repository.ts",
+      "beforeSha256": null,
+      "afterSha256": "6cc0703c2ea478af9577c8eda1635ce02748f38917235c4df0ae3fe292ec50a7"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/service.ts",
+      "beforeSha256": null,
+      "afterSha256": "3adcaa30e1e50fa317dbb7102e9f61c06806610f9dacf31987d882705fa86eeb"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/store.ts",
+      "beforeSha256": null,
+      "afterSha256": "f18fe9fddc7816b177305bacd84cff288d655ba9f80ba9b8d59264fb8568db5e"
+    },
+    {
+      "path": "apps/remote-access-service/src/device-authorization/websocket.ts",
+      "beforeSha256": null,
+      "afterSha256": "f8f5ae10f087eb0cafe46cb87cc38435c4235fa65cd6889833cd7e07d549bde1"
+    },
+    {
+      "path": "apps/remote-access-service/src/http-app.ts",
+      "beforeSha256": "fd4d207477202b2035e34ad46433df610da6a440bfdd5fa4d835b167566b37fc",
+      "afterSha256": "01bedf2fb236489417d7bbc17fd4b6ec71e239b0a20d557e644b4c88717e67f4"
+    },
+    {
+      "path": "apps/remote-access-service/src/postgres-repository.ts",
+      "beforeSha256": "df9e1499f446d5b0f224b2a7663b0f1aa3eac8ab205850586a9b726a4ff270e4",
+      "afterSha256": "b0c29dfb6dd02cb17010c305901d53a8c8b74ba998962d77fda266ab11cc3dbf"
+    },
+    {
+      "path": "apps/remote-access-service/src/server.ts",
+      "beforeSha256": "d3fbf6703ec5d3c95002fa20743a30cb15a3a9dac73cb1f940290852562399c5",
+      "afterSha256": "338d96104b9d29a4cdca1c73fe9c934a4718aed170904b3db0cb0447418cd297"
+    },
+    {
+      "path": "apps/remote-access-service/test/device-authorization-http.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "d46021421ac0dc4ca6ea0483e99a9e0c3d1c22c478deb298a43890cf1a3ba22c"
+    },
+    {
+      "path": "apps/remote-access-service/test/support/device-authorization-fixture.ts",
+      "beforeSha256": null,
+      "afterSha256": "b3f8490a5d3eef8a4c718ca20f470aa550087bca08b2a6b8551a215c9968a03b"
+    },
+    {
+      "path": "apps/remote-access-service/test/support/device-authorization-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "d23d42c6be8559eb51725f58017dac0f005fc36526e600f01971de20e6791650"
+    },
+    {
+      "path": "packages/remote-access/src/contracts.ts",
+      "beforeSha256": "e2e13209f3b27a39a686b6236789039c85b1c3dcc775b213ef341166a778b561",
+      "afterSha256": "dceb320f70e6330ffe45f1a6663bc965f20abd9d32338470673b03938fbe944e"
+    },
+    {
+      "path": "packages/remote-access/src/device-authorization-contracts.ts",
+      "beforeSha256": null,
+      "afterSha256": "f10641f1130f439c84881c0a88da108480d5a197b474ecb3a1584420a53fa395"
+    },
+    {
+      "path": "packages/remote-access/src/device-authorization-json.ts",
+      "beforeSha256": null,
+      "afterSha256": "c730e97fd24f1c31b23fc535b0cf11f02c480d71ed12911f6f940c4105ff4220"
+    },
+    {
+      "path": "packages/remote-access/src/device-authorization-jwe.ts",
+      "beforeSha256": null,
+      "afterSha256": "ea12de0797d8b56a8115fd29eac8cf78b7d1d074d86d77b396592f6c4518b09c"
+    },
+    {
+      "path": "packages/remote-access/src/index.ts",
+      "beforeSha256": "711e24abd282ba504515d0f5a6e726cc94638e18569af25bbaa5fc0a6b983686",
+      "afterSha256": "540d816458c7eb66a33c097bdb9bf7e46d3b0a0a575e2c78b4d633a196802af1"
+    },
+    {
+      "path": "packages/shared/src/ipc/remote-access.ts",
+      "beforeSha256": "b57b56064f44d4400ec38b376ff152c29f2a7dff60976c0e5b8eb64d36120ad4",
+      "afterSha256": "966f305243788fb115d1bf4d11f607a7c7e384962f2953defffd5107692564a8"
+    },
+    {
+      "path": "test/validation-extra-inputs.json",
+      "beforeSha256": "0cfd51674e9b6841c6ab763331f298a0a4e661b9aa7ee3855c985d25fe4f45d9",
+      "afterSha256": "025ff4e939b97c1f5acc6679f17ff177a6505a407c9be9479fbe87db4a4a92f3"
+    }
+  ],
+  "deployment": "not deployed; reviewed dependency changes from the isolated original DEV source"
+}

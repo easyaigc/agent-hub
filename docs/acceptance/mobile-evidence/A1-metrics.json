@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "phase": "A1",
+  "status": "measured",
+  "method": "One local sample; Debug universal Simulator bundle including extensions; fresh Xcode DerivedData with prepared dependencies/framework; no concurrent build/test. Android timing is App-clean with shared/dependency caches prepared.",
+  "ios": {
+    "before": {
+      "bytes": 42006247,
+      "files": 22,
+      "sha256": "54fb59962990e42a7d73b696bfeae0c394b5cfdf8f20f367058dfbb2fb0fbf44",
+      "architectures": "x86_64 arm64"
+    },
+    "after": {
+      "bytes": 44836279,
+      "files": 22,
+      "sha256": "ae06102a141b4cf632ed6e1890bd41594dfe456a7967a4676c07398fa0499bf4",
+      "architectures": "x86_64 arm64"
+    },
+    "deltaBytes": 2830032,
+    "buildBefore": {
+      "configuration": "Debug; generic Simulator; arm64+x86_64; signing ad-hoc",
+      "runs": [
+        {
+          "kind": "cold",
+          "elapsedMs": 16482,
+          "exitCode": 0
+        },
+        {
+          "kind": "warm",
+          "elapsedMs": 1668,
+          "exitCode": 0
+        }
+      ]
+    },
+    "buildAfter": {
+      "configuration": "Debug universal Simulator; clean DerivedData, prepared framework and dependency caches; no concurrent build/test; single sample",
+      "runs": [
+        {
+          "kind": "cold",
+          "elapsedMs": 21456,
+          "exitCode": 0
+        },
+        {
+          "kind": "warm",
+          "elapsedMs": 2435,
+          "exitCode": 0
+        }
+      ]
+    },
+    "beforeSourceSha256": "d64b46449e0f916da44f2c40b5d8334ce5e6a1b7c6b0e5ac72253b4139c252ae",
+    "sourceSha256": "718e35e92d13053162291da68c8a8c4bce9f048e42bacd727b5f9c99037b2b21"
+  },
+  "android": {
+    "apkBytes": 12558141,
+    "apkSha256": "ec247d32f5171b090aeec7f6eb0877f451afcaa78e1b24b38030ec85b732a014",
+    "sourceSha256": "52b8ed8fe83f84def108f03a05ad3a03e88b59a086d0aad7315277add6593b2b",
+    "build": {
+      "configuration": "Debug APK; App-clean, shared/dependency caches prepared; no concurrent build/test; single sample",
+      "runs": [
+        {
+          "kind": "cold",
+          "elapsedMs": 2903,
+          "exitCode": 0
+        },
+        {
+          "kind": "warm",
+          "elapsedMs": 414,
+          "exitCode": 0
+        }
+      ]
+    },
+    "testedApkMatches": true
+  },
+  "limitations": [
+    "Debug bundle size is not App Store download size or signed release size.",
+    "Build times are a single local sample, not a sustained performance benchmark.",
+    "x86_64 was compiled, not executed on this ARM64 host."
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "recordId": "UM02-independent-ios-correction-20261016",
+  "date": "2026-10-16",
+  "candidate": "ef447c545607bde6788408979c343f654a1d295f",
+  "status": "accepted-applicable-scope",
+  "features": ["F61"],
+  "ui": ["UI03", "UI10"],
+  "environment": {
+    "machine": "Mac Mini M4 Pro 24G",
+    "macOS": "27.0 26A428",
+    "xcode": "27.0 27A266a",
+    "runtime": "iOS 26.0 23A343",
+    "buildSDK": "iOS Simulator 27.0",
+    "desktop": "26.1007.30912 build20156"
+  },
+  "source": {
+    "candidateGitFiles": 603,
+    "candidateGitFilesSha256": "056630d7826e3b749214fae2f1a42db40931dd8d38642335fa399a8853bda293",
+    "iosProductionSelectionFiles": 155,
+    "iosProductionSelectionSha256": "ad408b11b7a6817ef07b5f81c113a58af107be98ac72c677572f932c612e8fcf",
+    "loadedAdapterSha256": "c0b7bcb0b09c1165bb4e9187eca21d2e9b44458a8ad4fcf6dc99db1a85cd5128"
+  },
+  "baseline": {
+    "groups": 15,
+    "passed": 56,
+    "failed": 0,
+    "skipped": 0,
+    "rawNativeCasesReviewed": 20,
+    "rawFixtureGroupSummariesReviewed": 14,
+    "retainedOriginalAssertionLines": 1836,
+    "testSourceSha256": "16b45ea5772b5335ab1e5dfd82c1eaa734b995a7b1581f19c476cd512557473e",
+    "namedImages": 154,
+    "allContactSheetsActuallyViewed": 20,
+    "allOriginalImagesIndividuallyViewed": false,
+    "keyOriginalImagesViewedAdditionally": true,
+    "reusedWithoutRerunInReplyContinuation": true
+  },
+  "auxiliary": {
+    "actualURLSessionVectorsPassed": 26,
+    "iosStateScopeAndCreationBoundariesPassed": 9,
+    "pnpmCheck": "passed",
+    "productionBuildArchitectures": ["arm64", "x86_64"]
+  },
+  "realFirst": {
+    "ownerInputsBeforeExplicitContinue": 0,
+    "queriesRestartAndNotificationReadRemainZero": true,
+    "preparePOSTs": 1,
+    "submitPOSTAttempts": 2,
+    "actualModelDispatches": 1,
+    "newOwnerTurns": 1,
+    "sameOriginalCanonicalIntent": true,
+    "naturalApnsDeliveryProven": false
+  },
+  "realReply": {
+    "nativeTestPassed": 1,
+    "nativeTestFailed": 0,
+    "nativeTestSkipped": 0,
+    "appPOSTAttempts": 2,
+    "actualForwards": 1,
+    "newOwnerInputs": 1,
+    "newOwnerTurns": 1,
+    "finalOwnerInputs": 2,
+    "finalOwnerTurns": 2,
+    "wireModelOmitted": true,
+    "capturedGrantModel": "gpt-6.1-sol",
+    "sameCanonicalFingerprintBothAttempts": "d8be5da5e1e3f5e56bdae355f870bccde28a9e2face320707d87bc4c61ca5f3f",
+    "sameDecodedFieldsAndTarget": true,
+    "sameJsonBytes": false,
+    "jsonBytesDifference": "Object key order only; production canonical fingerprint independently recomputed",
+    "proofKind": "operator-fenced-checkpoint-v2",
+    "oldWriterExitAndAuditReviewed": true,
+    "fullAccessNeverToolAndOutsideProjectFileVerified": true,
+    "fileSha256": "639f93f65216dd33c2cbe1451ca7c4e8caab9fe40ea65519dfe6391516c5be72",
+    "retryConsumedAfterReopen": true,
+    "newDraftPreserved": true,
+    "outboxEmptyAfterReopen": true,
+    "thirdPOSTOrExtraTurn": false,
+    "originalNativeImagesIndividuallyViewed": 7,
+    "negativeCases": [
+      "Current actual unavailable remains query-only",
+      "Isolated actual ordinary404 HTTP cannot enable retry",
+      "Isolated oldHost-style404 HTTP cannot enable retry"
+    ]
+  },
+  "evidence": {
+    "originalMainAttachments": 15,
+    "originalMainPayloadFiles": 1128,
+    "diagnosticAttachments": 5,
+    "diagnosticPayloadFiles": 65,
+    "archiveClarificationAttachments": 2,
+    "replyCompletionAttachments": 5,
+    "replyCompletionPayloadFiles": 88,
+    "shaAndSizeVerified": true,
+    "zipCrcAndSafePathsVerified": true,
+    "mainReportSha256": "5c0a0253a42754c4a35d9912cac8a0aee6869152a17c24d062d98d23f39d2b7f",
+    "replyReportSha256": "0e2ecbea4397ae5501afc59fab12e10558e06bfdeb6e635586b50978f38fb86e",
+    "replyZipSha256": "f7bc4296acfa881dce94871383adca1e01085ebf283e7a72e337040ef9ce6983",
+    "replyManifestSha256": "339c466a4350b133866d2994132ad99da53b18f1abcb204d988275042e9109bf",
+    "primaryBaselineReviewSha256": "33944f2f2a7a847c0c56808a4136a341c66522a3701d5a55874ea8e20935e3f0",
+    "primaryFirstVisualReviewSha256": "65e1f3de841233c27a72e6cd655c87649746d30fd4b016e01c8cfec17abf198a",
+    "primaryReplyReviewSha256": "b559cbe65d9061f4b195812b70aa9dff5ff3600b1484c0a8cfb84554d8d77a87",
+    "privateEvidenceVerifiedOutsideWorktree": true
+  },
+  "preservation": {
+    "normalConfigurationHashesMatchAtAcceptance": true,
+    "originalNormalProcessIdentitiesRetained": true,
+    "sixProtectedFilesReportedMatchingOriginalSnapshot": true,
+    "rawPrivateBaselineHashesWithheld": true,
+    "priorEvidenceAndUnknownOperationsRetained": true,
+    "twoPreviouslyConcurrentAppStoreMetadataChangesRetained": true,
+    "wholeWipUnchangedClaim": false,
+    "ownedTemporaryHostsExited": true,
+    "temporarySimulatorsShutdown": true,
+    "worktreesRetainedFor": "Source-host closure/UM03; target raw/private evidence and old unknown operation dependencies"
+  },
+  "limitations": [
+    "Human-authorized primer unarchive restored acceptance site only; no lifecycle-repair proof.",
+    "Network discovery suppressed3background+1Bonjourform+8explicitform calls; proves form UI only.",
+    "OldHost negative injects actual HTTP envelope on isolated proxy; no old binary deployment proof.",
+    "Earlier long-draft0POST failures and CE7NO-GO retained; exact old click failure cause unproven.",
+    "Diagnostic-only callback1pass not added to full56 or counted as production real reply.",
+    "Final reopen image shows transient loading; durable state, draft and no extraPOST checked separately.",
+    "Runtime invalid-frame warnings retained; floating-header overlap in scrolled captures not claimed visually flawless.",
+    "Private evidence remains private; only scrubbed counts and hashes committed.",
+    "A5 unclosed, A6 user-paused; no complete migration/product/public-cloud/OIDC/APNs claim."
+  ],
+  "closure": {
+    "productionCandidateAlreadyNormalPushedAndReadBack": true,
+    "documentationCheckpoint": "This closure documentation commit requires normal main push and independent remote SHA read before UM03",
+    "um03Started": false
+  }
+}

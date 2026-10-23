@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "purpose": "synthetic public cross-platform v1 test vector, never a production credential",
+  "identity": {
+    "deviceId": "fixture-mobile",
+    "privateKey": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+    "publicKey": "B6N8vBQgk8i3VdwbEOhstCY3StFqqFPtC9_AsrhtHHw"
+  },
+  "target": {
+    "agentId": "codex",
+    "hostId": "fixture-private-host",
+    "workspaceId": "fixture-workspace",
+    "runtimeId": "fixture-runtime",
+    "account": {
+      "authority": "fixture😀",
+      "subject": "owner"
+    }
+  },
+  "contextUTF8Hex": "33373a6167656e742d6875622d636f6465782d707269766174652d636f6e6e656374696f6e2d7631353a636f64657832303a666978747572652d707269766174652d686f737431373a666978747572652d776f726b737061636531353a666978747572652d72756e74696d65393a66697874757265f09f9880353a6f776e657234333a42364e38764251676b38693356647762454f687374435933537446717146507443395f4173726874484877",
+  "reply": {
+    "version": 1,
+    "target": {
+      "agentId": "codex",
+      "hostId": "fixture-private-host",
+      "workspaceId": "fixture-workspace",
+      "runtimeId": "fixture-runtime",
+      "account": {
+        "authority": "fixture😀",
+        "subject": "owner"
+      }
+    },
+    "publicKey": "B6N8vBQgk8i3VdwbEOhstCY3StFqqFPtC9_AsrhtHHw",
+    "ephemeralPublicKey": "WGmv9FBUlzLLqu1eXfmzCm2jHLDldCutWtShp2jxpns",
+    "nonce": "PD0-P0BBQkNERUZH",
+    "ciphertext": "dxUzYzF_fJGGXUwAsCdpLeap_s5INJZvrfv4GedrR92ZJI68cUcFAvNfN4ZW6DT4rvd88mel2bMacwA"
+  },
+  "expectedToken": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk"
+}

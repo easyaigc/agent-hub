@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "id": "controlled-weak-network-windows-20261021",
+  "features": ["F02", "F05", "F17", "F18", "F46", "F59", "F65", "F68"],
+  "sourceSha256": {
+    "apps/ios/Tests/CodexManageUITests.swift": "837d99d9b7a62e416d887e0152a53b751cdfcf73427843eca443daf04c60f6f6",
+    "scripts/weak-network-read-proxy.mjs": "5795b8d09e2d31c60a9b0f5c4ea91bf338ea31ce70139e744d778b1944e68e3d",
+    "scripts/weak-network-read-proxy.test.mjs": "9ec3b37a4e0bbec94d86d575c379cd82ffcabb46fa84e14d25000f1c21126f66",
+    "scripts/windows-host-task.ps1": "88d8d88593d7df12097ef0e23229a09d0f33d49789bb98d7e8a935b01d669802",
+    "scripts/windows-host-task-fixture.ps1": "df83dee8304ec06b89e5aa972afdc688c3ac9d84678ec2572ff02cdf469a43a2",
+    "scripts/windows-host-owner-native.ps1": "ba14a9a10828d442a499e0f77c6a3f74cf5739b498795231dea42721f1339e69",
+    "scripts/windows-control-smoke.mjs": "017f7121be0638a53df50390ccf0d3c0a24f27030650a3585dc5f5f3e17710fa",
+    "apps/ios/Sources/HostService.swift": "1b5d473f6b98f689ff0f4fdba9657e7885de99c063b7c4ff091bd29fb89c8750",
+    "apps/ios/Sources/SessionStore.swift": "e984c5f5755142e97a35b00e8f686432f44b257c5169304afa0d79d188afca37",
+    "apps/ios/Sources/Sheets.swift": "f3832154803c34a87b654e8a98c31dcb8f66093f88e721dba4f708a64cc35f06",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9ae0c776f37ccc35d953f7de59ee3d16c67cf1c0e447af02370612af4dca49e6"
+  },
+  "method": "Real authorized Windows Host over verified HTTPS behind a loopback-only read-only impairment proxy; dedicated native iOS test environment",
+  "profiles": {
+    "normal": {
+      "aggregateKbps": 1024,
+      "rttMS": 120,
+      "jitterMS": 30
+    },
+    "constrained": {
+      "aggregateKbps": 128,
+      "rttMS": 600,
+      "jitterMS": 150
+    },
+    "severe": {
+      "aggregateKbps": 64,
+      "rttMS": 1000,
+      "jitterMS": 250
+    }
+  },
+  "boundaries": {
+    "upstreamWrites": 0,
+    "exactHostAndThread": true,
+    "wireCompression": "Forward actual Accept-Encoding; validate bounded decoded JSON identity and pace unchanged upstream-encoded bytes",
+    "faults": [
+      "one history read held beyond native deadline",
+      "actual truncated HTTP body",
+      "all-channel 503 outage and recovery"
+    ],
+    "excludes": [
+      "physical cellular radio",
+      "packet-level loss and retransmission",
+      "TLS handshake impairment"
+    ]
+  },
+  "auxiliary": {
+    "proxyBoundaryTestsPassed": 5,
+    "physicalRunner": "Physical XCTest runner failed before method entry; CoreDevice wireless install/activate/capture and physical DeviceHub interaction work; manual native results separately recorded",
+    "nativeUIInitialAttempt": "failed in test driver: multi-line desktop title submitted sidebar search and lost focus; failed result preserved; driver corrected",
+    "fullWorkspaceCheck": "pnpm check95 and final96 passed with pinned native compiler/task-owned Gradle cache; final source hash and formatting checks recorded separately",
+    "nativeIOSBuild": "pnpm build:ios96, final physical96 and formal96 builds, native simulator build-for-testing and2-case test-without-building all passed"
+  },
+  "realWindowsDeployment": {
+    "status": "passed on original Windows; source098e6c5",
+    "packageSHA256": "2178c85b8dbbe536dc5e3e05f968ebaaa175154c2fbd9b414b925f6bc1735ea1",
+    "stopMS": 34299,
+    "metadataQueries": 9,
+    "ownerChecks": 13,
+    "workspaceMS": 1215,
+    "historyMS": 2399,
+    "eventsMS": 1123,
+    "autostartEnabled": true,
+    "twoRecoveryPeriodsStable": true,
+    "desktopIdentityAndPrivateConfigPreserved": true,
+    "noBusinessInput": true
+  },
+  "nativeScenarioResults": {
+    "source098FirstHistory": "passed on native iOS simulator with real Windows upstream and constrained aggregate128kbps/600ms±150ms",
+    "scope": "Full real catalog reordered to select exact scoped chat first; no removed entries. Only catalog re-encoded; history/events preserve upstream gzip bytes. No upstream writes.",
+    "source098RecoveryAttempts": "failed driver assumptions: concurrent fresh snapshot supersedes history error; coalesced refresh delays consumption of stall; original failures retained",
+    "source93": "pending native checks after same-chat read-generation coalescing and discovery resilience fix",
+    "source94": "2 native UI cases passed: real Windows full catalog/current history, 35.144s real native deadline, actual truncation, all-channel outage recovery, exact draft retained, max1 history, zero writes",
+    "source95": "First-history passed; recovery failed at draft comparison. Source96 isolated that bulk XCTest typing had reordered a shifted character before any fault; test now verifies pre-fault input and settles each key separately.",
+    "source96": "2 native XCTest UI cases passed, xcodebuild exit0 with xcresult: real full catalog/current history,35.033sec deadline, response truncation, all-channel recovery, original exact draft retained, max1 history, zero upstream writes. Bulk keyboard driver failure retained; each key now settles with pre-fault exact assertion."
+  },
+  "formalPhoneUpdated": true,
+  "android": "No production changes or Android native pass; A6 remains human-paused",
+  "physicalEnvironment": {
+    "wireless": "CoreDevice screenshot, launch and DeviceHub physical interaction work; XCTest runner fails before method entry",
+    "tailscale": "Initially disconnected; restored existing tailnet connection and actual Windows discovery appeared",
+    "conditioner": "System3G ON during real-phone probes;780kbps down/330up,100ms each direction,0%loss; underlyingWiFi+Tailscale; notactualcellular",
+    "phoneApp": "Formal original bundle upgraded in place92→96 after physical gate; independent96 retained, original DEV bundles19 preserved",
+    "formalCandidate": "Integrated signed96 installed and activated; original encrypted persistent state byte-for-byte identical immediately after install; original18 attachment/transfer files present, task database present; original selected client online in ordinary app",
+    "actualDiscovery": "Native91/92 probes: repeated NSURLErrorDomain -1001 at about2sec followed by successful response. Windows independently reproduced one shared HTTP/TLS stall >4sec. Specific server blocking stack not obtained.",
+    "cold95": {
+      "status": "passed on actual iPhone15ProMax",
+      "restorationToFreshDataMS": 10629.927875,
+      "cachedContentCounts": false,
+      "clock": "native monotonic session-start to history-applying; not OS launch or pixel timing",
+      "previewDuringInterval": false
+    },
+    "priorFirstConnection93": {
+      "authenticatedWorkspaceMS": 10727.6828,
+      "firstFreshDataMS": 24374.4893,
+      "finding": "repeated serial workspace read, fixed in94"
+    },
+    "priorFirstConnection94": {
+      "authenticatedWorkspaceMS": 14107,
+      "firstFreshDataMS": 27789,
+      "finding": "parallel large history and event snapshots share bandwidth; changed95 initial schedule to events first, independent history fallback after8sec"
+    },
+    "physicalOutageAttempts": "Direct VPN-off variations could rediscover LAN and therefore are excluded from full-outage pass. Manual legacy variation changed initial selection before96 fix. Final physical fault acceptance uses authenticated scoped proxy so no route escapes faults.",
+    "cold96": {
+      "status": "passed on actual physical iPhone15ProMax",
+      "restorationToFreshDataMS": 9538.7625,
+      "scope": "existing connection cold restoration, normal original routes, no proxy; system3G ON; preview OFF; cached body excluded",
+      "excludes": "first-ever pairing, OS-launch clock and pixel-render timing"
+    },
+    "physical96Faults": {
+      "status": "passed on actual physical iPhone15ProMax96",
+      "nativeDeadlineMS": 35096,
+      "liveEventResponsesDuringStall": 3,
+      "stalls": 1,
+      "truncatedResponses": 1,
+      "allChannel503OfflineObserved": true,
+      "automaticRecovery": true,
+      "sameThreadAndOriginalDraftRetained": true,
+      "emptyOutbox": true,
+      "maxHistoryInFlight": 1,
+      "upstreamWrites": 0,
+      "method": "actual native app existing credential verified by real Windows; temporary trusted tailnet HTTPS Serve to exact-target GET-only proxy; authentic Windows history/events; real auxiliary read-only metadata, system3G shaping; no business sends",
+      "firstProxyAttempt": "auxiliary GETs too narrow caused test-proxy rejection popup; corrected only harness allowlist, preserved failed attempt; production app unchanged",
+      "privateHarnessSHA256": "b516185a87821a9bc6e1d8257bbb9cb4555f2f23a68ece7eb2bc771db19dd0a9",
+      "notCellular": true
+    },
+    "restoration": "System conditioner restored OFF with original WiFi profile selected; original independent connection routes restored without keychain writes; original tailnet Serve443 config exactly restored after temporary18897 listener closed; both task proxies stopped"
+  },
+  "windowsStopBlocker": {
+    "state": "resolved and formally deployed as098",
+    "basePackageSHA256": "3e2f704225059f36150ea468b0403bef895fe786fe50edc74dde9d1c051323d7",
+    "canonicalOverlaySHA256": "80e841e27d66382fc5c01bbfbda3b28899ddec3461842c682b21cd835f6e30c4",
+    "localPolicyCheck": "passed; PowerShell not installed on Mac, actual Windows native and lifecycle checks required",
+    "invariant": "same retained handle + PID/start/executable/command/current-user checks; 45 second total budget; query failure rejects stop",
+    "communication": "Earlier ambiguous/failed followups retained; dedicated recovery owner confirmed. Final098 unified package deployed and verified on original Windows; last same-task followup only read delivery parameter paths, no further service mutation.",
+    "nativeWindows": {
+      "reads": 100,
+      "readsMS": 2,
+      "invalidHandleRejected": true,
+      "handleLeakCheckPassed": true,
+      "lifecycleFixturesPassed": true,
+      "formalCutover": "passed; actual34299ms,45s budget preserved"
+    },
+    "secondStop": "native SID path passed, but 15 metadata round trips/11 owners still exceeded 45 seconds; management files safely rolled back and autostart restored",
+    "batching": {
+      "identityBatchLimit": 16,
+      "handlesRetainedBeforeFreshQuery": true,
+      "identityChecksPreserved": true,
+      "localPowerShellFixtures": "all passed on macOS with mocked Windows calls; official portable PowerShell 7.5.4 digest verified",
+      "wideTreeVirtual": {
+        "owners": 16,
+        "queries": 10,
+        "elapsedMS": 25122,
+        "handlesDisposed": true
+      },
+      "slowProviderVirtual": {
+        "queries": 10,
+        "owners": 4,
+        "elapsedMS": 32118
+      },
+      "realWindowsResult": "passed with9metadataqueries13owners; no duplicate launcher across two scheduled recovery periods"
+    }
+  },
+  "integration": {
+    "upstream": "591126b1899fde863f247d3004c18c9104312f50",
+    "preserved": "UM06 foundations, friendly errors, voice readiness and lifecycle status; original reliability fixes retained",
+    "build": "96 final signed version installed on original physical phone; Windows program remains verified098 because final changes affect iOS/test tooling only",
+    "supersededCandidate": "Earlier b3-only signed build91 was not installed; integrated candidates are rebuilt from merged source",
+    "nativeTiming": "Explicit opt-in for independent physical bundle only; <=256 metadata rows, monotonic clock, no screen streaming during timed interval; history-applying is data application rather than a pixel-render assertion"
+  },
+  "nativeDiscoveryChange": "Background probes remain2sec, explicit point selection8sec. Publish successful VPN discovery immediately; cache recently verified addresses about1minute with pruning on scans, without an online claim. Same-chat reopening coalesces reads and still persists selected chat/project. First data prefers event snapshot with independent history fallback after8sec. Android native scheduling not migrated; A6 paused.",
+  "scopeLimits": [
+    "Actual cellular radio was superseded by user request for another weak-network method; no cellular pass claimed",
+    "9.54sec is existing-connection cold restoration to fresh data, not first-ever pairing or pixel timing",
+    "Physical XCTest runner did not execute tests; physical native actions used CoreDevice and DeviceHub, separately from native simulator XCTest",
+    "Windows occasional shared HTTP/TLS pause>4sec observed; exact blocking stack was not obtained, so complete elimination of that pause is not claimed",
+    "No fresh business model input, real reboot/logout recovery, or full functional suite was replayed in this reliability upgrade; original Trace configuration preserved without fresh Trace acceptance",
+    "Android scheduling not migrated or newly verified; A6 remains paused"
+  ],
+  "finalSourceSha256": {
+    "apps/ios/Sources/CodexDiscovery.swift": "f1d91efee68ff89817158df4517476a88c8f9f08c5f1bd52064566598b231986",
+    "apps/ios/Sources/HostService.swift": "8fbb45553b5188d610c56c91380c841dd5032bdab60ff3415e249abd8369439b",
+    "apps/ios/Sources/SessionStore.swift": "d2f4b2476c1fb3b5f4338f4ba3f733a9488d3dbfb154c374c866d5eadf0a43bf",
+    "apps/ios/Sources/Sheets.swift": "8bc01196fbc9ed02f274081987aefedd71446b46c2a3321dea217f7b03067088",
+    "apps/ios/Tests/CodexManageUITests.swift": "25642e98bc298bb55829aa80a56d2a08f5a62a15a744fa7981e43762f8bb9c2f",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "e2c4889197974c20c58b4d173db5e071fe23318250cdddc3f2390b7efd10cb3d",
+    "scripts/weak-network-read-proxy.mjs": "a7193f9a6d01ef01ffa4522d9ae4b7bc394d8f55543b536b91c02ba72cc51acb",
+    "scripts/weak-network-read-proxy.test.mjs": "f91af0486811b0e17eff86cd2cd0108f34a45f2cdb40546f9fa6079f26bb6de9"
+  }
+}

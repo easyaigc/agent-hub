@@ -1,0 +1,358 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codex-manage.invalid/contracts/task-notifications-v1",
+  "oneOf": [
+    { "$ref": "#/definitions/Registration" },
+    { "$ref": "#/definitions/Event" },
+    { "$ref": "#/definitions/Command" }
+  ],
+  "definitions": {
+    "Target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agentId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "account": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "authority": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\u0000-\\u001f]+$"
+            },
+            "subject": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[^\\u0000-\\u001f]+$"
+            }
+          },
+          "required": ["authority", "subject"]
+        }
+      },
+      "required": ["agentId", "hostId", "workspaceId", "runtimeId"]
+    },
+    "Preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "generation": { "type": "integer", "minimum": 0 },
+        "enabled": { "type": "boolean" },
+        "kinds": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 10,
+          "items": {
+            "enum": [
+              "approval",
+              "question",
+              "plan",
+              "paused",
+              "interrupted",
+              "failed",
+              "uncertain",
+              "completed",
+              "connection",
+              "stopped"
+            ]
+          }
+        },
+        "excludedHosts": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000-\\u001f]+$"
+          }
+        },
+        "foregroundBanner": { "type": "boolean" },
+        "soundEnabled": { "type": "boolean" },
+        "badgeEnabled": { "type": "boolean" },
+        "showThreadTitle": { "type": "boolean" },
+        "timeSensitive": { "type": "boolean" },
+        "sound": { "type": "string", "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$" },
+        "categorySounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "approval": {
+              "type": "string",
+              "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$"
+            },
+            "question": {
+              "type": "string",
+              "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$"
+            },
+            "plan": { "type": "string", "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$" },
+            "paused": { "type": "string", "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$" },
+            "interrupted": {
+              "type": "string",
+              "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$"
+            },
+            "failed": { "type": "string", "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$" },
+            "uncertain": {
+              "type": "string",
+              "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$"
+            },
+            "completed": {
+              "type": "string",
+              "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$"
+            },
+            "connection": {
+              "type": "string",
+              "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$"
+            },
+            "stopped": { "type": "string", "pattern": "^(default|none|[a-zA-Z0-9_-]{1,72}\\.caf)$" }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "version",
+        "revision",
+        "generation",
+        "enabled",
+        "kinds",
+        "excludedHosts",
+        "foregroundBanner",
+        "soundEnabled",
+        "badgeEnabled",
+        "showThreadTitle",
+        "timeSensitive",
+        "sound",
+        "categorySounds"
+      ]
+    },
+    "Registration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "deviceId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "not": { "enum": ["__proto__", "constructor", "prototype"] }
+        },
+        "target": { "$ref": "#/definitions/Target" },
+        "publicKey": { "type": "string", "pattern": "^[A-Za-z0-9+/]{43}=$" },
+        "deviceToken": { "type": "string", "pattern": "^[a-f0-9]{64,256}$" },
+        "environment": { "enum": ["development", "production"] },
+        "preferences": { "$ref": "#/definitions/Preferences" }
+      },
+      "required": ["version", "deviceId", "target", "publicKey", "preferences"],
+      "dependencies": { "deviceToken": ["environment"], "environment": ["deviceToken"] }
+    },
+    "Event": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "target": { "$ref": "#/definitions/Target" },
+        "kind": {
+          "enum": [
+            "approval",
+            "question",
+            "plan",
+            "paused",
+            "interrupted",
+            "failed",
+            "uncertain",
+            "completed",
+            "connection",
+            "stopped"
+          ]
+        },
+        "occurredAt": { "type": "string", "format": "date-time" },
+        "threadId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "operationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f]+$"
+        },
+        "threadTitle": { "type": "string", "maxLength": 100 },
+        "readTarget": { "$ref": "#/definitions/Target" },
+        "readPosition": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "revision": { "type": "integer", "minimum": 1 },
+            "messageId": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "contentVersion": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          },
+          "required": ["revision", "messageId", "contentVersion"]
+        },
+        "taskSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^(?! )(?!.* $)(?!.* {2})(?!.*[^\\S ])(?!.*[\\u0000-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u180e\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u206f\\ufeff])[\\s\\S]{1,160}$",
+          "$comment": "At most 160 UTF-16 code units, matching Swift String.utf16.count."
+        }
+      },
+      "required": ["version", "id", "target", "kind", "occurredAt"]
+    },
+    "Command": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": { "const": 1 },
+            "method": { "const": "notification/register" },
+            "target": { "$ref": "#/definitions/Target" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": { "registration": { "$ref": "#/definitions/Registration" } },
+              "required": ["registration"]
+            }
+          },
+          "required": ["version", "method", "target", "params"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": { "const": 1 },
+            "method": { "const": "notification/preferences" },
+            "target": { "$ref": "#/definitions/Target" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "deviceId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._-]{1,128}$",
+                  "not": { "enum": ["__proto__", "constructor", "prototype"] }
+                },
+                "preferences": { "$ref": "#/definitions/Preferences" }
+              },
+              "required": ["deviceId", "preferences"]
+            }
+          },
+          "required": ["version", "method", "target", "params"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": { "const": 1 },
+            "method": { "const": "notification/unregister" },
+            "target": { "$ref": "#/definitions/Target" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "deviceId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._-]{1,128}$",
+                  "not": { "enum": ["__proto__", "constructor", "prototype"] }
+                }
+              },
+              "required": ["deviceId"]
+            }
+          },
+          "required": ["version", "method", "target", "params"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": { "const": 1 },
+            "method": { "const": "notification/status" },
+            "target": { "$ref": "#/definitions/Target" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "deviceId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._-]{1,128}$",
+                  "not": { "enum": ["__proto__", "constructor", "prototype"] }
+                }
+              },
+              "required": ["deviceId"]
+            }
+          },
+          "required": ["version", "method", "target", "params"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": { "const": 1 },
+            "method": { "const": "notification/events" },
+            "target": { "$ref": "#/definitions/Target" },
+            "params": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "deviceId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9._-]{1,128}$",
+                  "not": { "enum": ["__proto__", "constructor", "prototype"] }
+                },
+                "after": { "type": "string", "maxLength": 64 }
+              },
+              "required": ["deviceId"]
+            }
+          },
+          "required": ["version", "method", "target", "params"]
+        }
+      ]
+    }
+  }
+}

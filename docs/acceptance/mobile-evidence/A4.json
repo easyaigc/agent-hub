@@ -1,0 +1,192 @@
+{
+  "phase": "A4",
+  "date": "2026-10-14",
+  "status": "passed",
+  "completionPercent": 100,
+  "allowsNextStage": true,
+  "scope": "Codex execution closure: planned A4 Codex scenarios including task controls, plan/approval/questions, mixed attachments/output, archive and isolated Host restart creation, durable unknown-operation handling, complete history, and genuine failed/recovered Turns. Auxiliary and actual evidence remain separate.",
+  "progressEvidence": "docs/acceptance/mobile-evidence/A4-execution-progress.json",
+  "realFailureEvidence": "docs/acceptance/mobile-evidence/A4-S10.json",
+  "productionApkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+  "androidMatrix": {
+    "apis": [26, 37],
+    "fontScales": [1, 1.3],
+    "completedTests": 256,
+    "failures": 0,
+    "skips": 0,
+    "reviewedScreenshots": 284,
+    "privateReports": [
+      ".local/mobile-acceptance/A3/android-emulator-5554-1791822993327/report.json",
+      ".local/mobile-acceptance/A3/android-emulator-5556-1791822994482/report.json",
+      ".local/mobile-acceptance/A3/android-emulator-5554-1791823116114/report.json",
+      ".local/mobile-acceptance/A3/android-emulator-5556-1791823113171/report.json",
+      ".local/mobile-acceptance/A4/execution-emulator-5554-1791823057264/report.json",
+      ".local/mobile-acceptance/A4/execution-emulator-5556-1791823054570/report.json",
+      ".local/mobile-acceptance/A4/execution-emulator-5554-1791823177150/report.json",
+      ".local/mobile-acceptance/A4/execution-emulator-5556-1791823171670/report.json",
+      ".local/mobile-acceptance/A4/receipts-emulator-5554-1791823440981/report.json",
+      ".local/mobile-acceptance/A4/receipts-emulator-5556-1791823441772/report.json",
+      ".local/mobile-acceptance/A4/receipts-emulator-5554-1791823434294/report.json",
+      ".local/mobile-acceptance/A4/receipts-emulator-5556-1791823434290/report.json"
+    ],
+    "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+    "scopeReuse": "Same production APK throughout selected final runs. Only receipt scroll examiner and actual-history modal-close examiner changed after foundation/execution; their class sources and runner inputs are unchanged. Report-specific full source/test APK fingerprints are retained; no claim that differing complete input digests match."
+  },
+  "nativeBoundaries": {
+    "completedTests": 62,
+    "failures": 0,
+    "skips": 0,
+    "privateReports": [
+      ".local/mobile-acceptance/A4/commands-emulator-5554-1791823447889/report.json",
+      ".local/mobile-acceptance/A4/commands-emulator-5556-1791823449194/report.json"
+    ]
+  },
+  "currentIdentityAndHistory": {
+    "status": "passed-scoped-subsets",
+    "actualIdentityRecovery": {
+      "reports": [
+        {
+          "api": 37,
+          "sourceSha256": "bf21c8c19296164b50d0c80dad14d32f07619498d1ae9d1e3fd7be5902d2b2a7",
+          "toolSha256": "cc4d64c0815c16df2516e8e98320c066339fd2b528d93fd39bce21f193f78b5c",
+          "adapterSha256": "ea7d75565dc0f5a4b61f197d5aacd2aabc8aed3a76cb549b41e1d1f15380d234",
+          "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+          "testApkSha256": "c287517f791e0d41996f2cf02ae5e20aea0fe28c45af9db2a963b862b0de83e4",
+          "status": "passed",
+          "completedTests": 1,
+          "failures": 0,
+          "skips": 0,
+          "privateReport": ".local/mobile-acceptance/A4/history-identity-live-emulator-5554-1791855804920/report.json",
+          "reportSha256": "63a650fb329259818321917e2d7dff0e0253be0ccce37f81652a5fd1798ab8ce",
+          "reviewedScreenshots": 2
+        },
+        {
+          "api": 26,
+          "sourceSha256": "bf21c8c19296164b50d0c80dad14d32f07619498d1ae9d1e3fd7be5902d2b2a7",
+          "toolSha256": "cc4d64c0815c16df2516e8e98320c066339fd2b528d93fd39bce21f193f78b5c",
+          "adapterSha256": "ea7d75565dc0f5a4b61f197d5aacd2aabc8aed3a76cb549b41e1d1f15380d234",
+          "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+          "testApkSha256": "c287517f791e0d41996f2cf02ae5e20aea0fe28c45af9db2a963b862b0de83e4",
+          "status": "passed",
+          "completedTests": 1,
+          "failures": 0,
+          "skips": 0,
+          "privateReport": ".local/mobile-acceptance/A4/history-identity-live-emulator-5556-1791855804920/report.json",
+          "reportSha256": "a39c6ff595ac88c6ec8b204a9a92c970271a2f9b50e72e22b50e748f07e83b0a",
+          "reviewedScreenshots": 2
+        }
+      ],
+      "completedTests": 2,
+      "failures": 0,
+      "skips": 0,
+      "reviewedScreenshots": 4,
+      "originalModelTurnsPerApi": 2,
+      "originalUserInputsPerApi": 2,
+      "nativeRepliesPerApi": 2,
+      "faultInputExecutedPerApi": 0,
+      "baselineUsersPerApi": 1,
+      "baselineBodiesPerApi": 1,
+      "directoryRestoredEachApi": true,
+      "unknownOriginalIdAndIntentRetained": true,
+      "sameIdQueryWithoutReplay": true,
+      "localDetachDoesNotCancelRemote": true,
+      "explicitNewInputRecoveryCompleted": true,
+      "encryptedReplacementSessionRestoredUnknown": true,
+      "actualFailedTurnProven": false
+    },
+    "actualLongHistory": {
+      "reports": [
+        {
+          "api": 37,
+          "sourceSha256": "bf21c8c19296164b50d0c80dad14d32f07619498d1ae9d1e3fd7be5902d2b2a7",
+          "toolSha256": "0e72d1fbea6f442095d08e75060753dfa33c209b0841e9ae06bb0d49a4848c47",
+          "adapterSha256": "ea7d75565dc0f5a4b61f197d5aacd2aabc8aed3a76cb549b41e1d1f15380d234",
+          "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+          "testApkSha256": "c287517f791e0d41996f2cf02ae5e20aea0fe28c45af9db2a963b862b0de83e4",
+          "status": "passed",
+          "completedTests": 1,
+          "failures": 0,
+          "skips": 0,
+          "privateReport": ".local/mobile-acceptance/A4/history-live-emulator-5554-1791855905176/report.json",
+          "reportSha256": "43a407a90a460fb15114a10e7b97ce4de951388d737eaee6b5c0edcb3b7d92ee",
+          "reviewedScreenshots": 1
+        },
+        {
+          "api": 26,
+          "sourceSha256": "bf21c8c19296164b50d0c80dad14d32f07619498d1ae9d1e3fd7be5902d2b2a7",
+          "toolSha256": "0e72d1fbea6f442095d08e75060753dfa33c209b0841e9ae06bb0d49a4848c47",
+          "adapterSha256": "ea7d75565dc0f5a4b61f197d5aacd2aabc8aed3a76cb549b41e1d1f15380d234",
+          "apkSha256": "9b1ea905afdacd1eeea4185ccee04ce56df80b01e1946eb2200205a0f41ef7eb",
+          "testApkSha256": "c287517f791e0d41996f2cf02ae5e20aea0fe28c45af9db2a963b862b0de83e4",
+          "status": "passed",
+          "completedTests": 1,
+          "failures": 0,
+          "skips": 0,
+          "privateReport": ".local/mobile-acceptance/A4/history-live-emulator-5556-1791855905176/report.json",
+          "reportSha256": "094a5666e42c7cff84feaaf4c5342811e75ed33e43d2f757dbd909a671095666",
+          "reviewedScreenshots": 1
+        }
+      ],
+      "completedTests": 2,
+      "failures": 0,
+      "skips": 0,
+      "messagesPerApi": 8056,
+      "completeEncryptedCacheMessagesPerApi": 8056,
+      "reviewedScreenshots": 2,
+      "remoteWriteRequests": 0,
+      "originalOwnerVerifiedBeforeAndAfter": true,
+      "originalTurnUnchanged": true,
+      "completedCompactionVisible": true
+    },
+    "reuseScope": "Prior Android four-environment 256-test/284-PNG fixture matrix uses the identical production APK. iOS native source and its 55-test/142-PNG fixture inputs are unchanged. Earlier real controls/plan/async/attachments/lifecycle proofs retain their own Host fingerprints; these are not claimed as whole current-Host acceptance. This checkpoint adds actual current-Host identity, unknown-operation recovery and full historical-read proofs on both APIs."
+  },
+  "physicalNormalTask": {
+    "status": "passed-scoped-subsets",
+    "reference": "docs/acceptance/mobile-evidence/A4-execution-progress.json#xiaomiCheckpoint",
+    "scope": "Selected physical normal native UI/model task proofs keep their own runner/source fingerprints; S10 physical proof is separate."
+  },
+  "s10": {
+    "completedTests": 3,
+    "failures": 0,
+    "skips": 0,
+    "reviewedScreenshots": 12,
+    "originalTurns": 6,
+    "explicitNativeInputs": 6,
+    "environmentApis": [26, 37, 34],
+    "actualFailedTurn": true,
+    "actualRecoveryCompleted": true
+  },
+  "ios": {
+    "completedTests": 55,
+    "failures": 0,
+    "skips": 0,
+    "reviewedScreenshots": 142,
+    "status": "matched-reuse",
+    "sourceSha256": "62171c2c27e3874df932383ae4594773a7495ca74d86bfa6903bdc3c69f25dae",
+    "privateReport": ".local/mobile-acceptance/A4/complete-1791811067193/report.json"
+  },
+  "reuseScope": "A4 closes by applicable scenario-specific proofs, with unchanged production Android APK and iOS source. Source/test APK/adapter-specific histories are preserved; prior controls/mixed-content reports are not relabeled as whole current-source runs.",
+  "checks": {
+    "workspace": "passed",
+    "nativeAndroidBuild": "passed",
+    "nativeIOSBuild": "reused-matching",
+    "workspacePrivateLog": ".local/android-development/a4/runtime-failure-final-workspace-check-retry.log"
+  },
+  "remaining": [],
+  "push": {
+    "status": "pushed-and-independently-verified",
+    "codeCommit": "b0e02b515593112573f6bd51cd3834f5d0cacca2",
+    "remoteShaAtIndependentRead": "b0e02b515593112573f6bd51cd3834f5d0cacca2",
+    "remoteMain": "7d1e62f868399acced21464ca9e8c4e7d6eb8b39",
+    "branch": "codex/android-native",
+    "credentialStore": "GCM-memory-cache-explicit-helper",
+    "keychainFallbackEnabled": false,
+    "independentlyVerified": true
+  },
+  "finalCleanup": {
+    "ownAcceptanceChatsArchived": 7,
+    "originalChatViewRestored": true,
+    "userConfigRestoredExactly": true,
+    "privateRecord": ".local/android-development/a4/s10-cleanup.json"
+  }
+}

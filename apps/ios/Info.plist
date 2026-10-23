@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>Agent Hub</string>
+  <key>UIBackgroundModes</key><array><string>remote-notification</string></array>
+  <key>UIFileSharingEnabled</key><true/>
+  <key>LSSupportsOpeningDocumentsInPlace</key><true/>
+  <key>NSBonjourServices</key><array><string>_easywork-host._tcp</string><string>_codex-host._tcp</string><string>_agenthub-task._tcp</string></array>
+  <key>CFBundleURLTypes</key><array><dict><key>CFBundleURLSchemes</key><array><string>com.easyai.codexmanage</string><string>com.easyai.remote</string><string>easywork-host</string><string>easywork</string><string>codex-host</string></array></dict></array>
+  <key>NSCameraUsageDescription</key><string>扫描电脑的配对二维码。</string>
+  <key>NSLocalNetworkUsageDescription</key><string>发现并连接局域网任务主服务及你添加的电脑，管理项目、任务和 Agent 对话并传输附件。</string>
+  <key>NSMicrophoneUsageDescription</key><string>录制语音，由所选电脑或手机系统转写，文字返回消息草稿。</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>使用手机系统将语音转成文字草稿；选择本地转写或电脑端转写不可用时启用。</string>
+  <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+<key>NotificationAppGroup</key><string>group.$(NOTIFICATION_APP_BUNDLE_ID).notifications</string>
+<key>NotificationKeychainGroup</key><string>$(AppIdentifierPrefix)$(NOTIFICATION_APP_BUNDLE_ID).notifications</string>
+<key>NotificationEnvironment</key><string>$(APS_ENVIRONMENT)</string>
+</dict></plist>

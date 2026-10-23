@@ -1,0 +1,1469 @@
+{
+  "composer": [
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "empty-completed"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "任务"
+      },
+      "name": "draft-send"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "任务"
+      },
+      "name": "draft-readonly"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 1,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "attachment-send"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "failed",
+        "sending": false,
+        "stopping": false,
+        "text": "​ \t\n"
+      },
+      "name": "foundation-whitespace"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "﻿"
+      },
+      "name": "bom-content"
+    },
+    {
+      "expected": {
+        "action": "busy",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": true,
+        "stopping": true,
+        "text": "任务"
+      },
+      "name": "stopping-precedes-all"
+    },
+    {
+      "expected": {
+        "action": "stop",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "running-no-input"
+    },
+    {
+      "expected": {
+        "action": "stop",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "running-readonly"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "追加"
+      },
+      "name": "running-queue"
+    },
+    {
+      "expected": {
+        "action": "busy",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": true,
+        "stopping": false,
+        "text": "已提交"
+      },
+      "name": "sending"
+    },
+    {
+      "expected": {
+        "action": "busy",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": true,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "已提交"
+      },
+      "name": "creation-unknown"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "interrupted",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "runtime-interrupted"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "failed",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "runtime-failed"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "paused",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "runtime-paused"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "cancelled",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "runtime-cancelled"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": false,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "unknown",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "unknown-disables-resume"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": false,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "no-previous-user"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": "interrupted",
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "tool",
+            "status": "interrupted"
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "completed-over-old-tool"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "interrupted"
+          },
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "old-turn-does-not-resume"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          },
+          {
+            "role": "tool",
+            "status": "interrupted"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "latest-tool-interrupted"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "paused"
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "assistant-paused"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": "interrupted",
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "receipt-interrupted"
+    },
+    {
+      "expected": {
+        "action": "resume",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": "failed",
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          }
+        ],
+        "running": false,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "receipt-failed"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "failed",
+        "sending": false,
+        "stopping": false,
+        "text": "新任务"
+      },
+      "name": "input-precedes-resume"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": false,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": false,
+        "runtimeState": "failed",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "cannot-run-again"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "保留原草稿"
+      },
+      "name": "v9-running-text-send-disabled"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 1,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "v9-running-attachment-send-disabled"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "本地草稿"
+      },
+      "name": "v9-running-text-readonly"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": true,
+        "stopping": false,
+        "text": "新草稿"
+      },
+      "name": "v9-running-draft-awaiting-receipt"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": true,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "新草稿"
+      },
+      "name": "v9-running-draft-creation-pending"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 1,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "v9-running-attachment-send-enabled"
+    },
+    {
+      "expected": {
+        "action": "stop",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "​ \t\n"
+      },
+      "name": "v9-running-whitespace-is-empty"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 1,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "​\t\n"
+      },
+      "name": "v9-running-whitespace-with-attachment"
+    },
+    {
+      "expected": {
+        "action": "send",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": "﻿"
+      },
+      "name": "v9-running-bom-is-content"
+    },
+    {
+      "expected": {
+        "action": "stop",
+        "enabled": true
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": true,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "v9-running-empty-stale-canSend"
+    },
+    {
+      "expected": {
+        "action": "busy",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 1,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": true,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": true,
+        "text": "原草稿"
+      },
+      "name": "v9-stopping-still-precedes-running-draft"
+    },
+    {
+      "expected": {
+        "action": "stop",
+        "enabled": false
+      },
+      "input": {
+        "attachmentCount": 0,
+        "canRunAgain": true,
+        "canSend": false,
+        "canStop": false,
+        "creationPending": false,
+        "lastReceiptState": null,
+        "messages": [
+          {
+            "role": "user",
+            "status": null
+          },
+          {
+            "role": "assistant",
+            "status": "completed"
+          }
+        ],
+        "running": true,
+        "runtimeState": "idle",
+        "sending": false,
+        "stopping": false,
+        "text": ""
+      },
+      "name": "v9-running-empty-readonly"
+    }
+  ],
+  "content": [
+    {
+      "count": 0,
+      "expected": false,
+      "text": ""
+    },
+    {
+      "count": 0,
+      "expected": false,
+      "text": " \n\t​  "
+    },
+    {
+      "count": 0,
+      "expected": true,
+      "text": "﻿"
+    },
+    {
+      "count": 0,
+      "expected": true,
+      "text": "任务🙂"
+    },
+    {
+      "count": 1,
+      "expected": true,
+      "text": ""
+    }
+  ],
+  "data": "Synthetic inputs; identity expected bytes captured from the A0 Foundation tuple codec",
+  "identities": [
+    {
+      "expected": "client-A:thread-A",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": null,
+        "threadId": "thread-A"
+      },
+      "name": "legacy-thread"
+    },
+    {
+      "expected": "client-A:new:project-A",
+      "input": {
+        "clientId": "client-A",
+        "projectId": "project-A",
+        "target": null,
+        "threadId": null
+      },
+      "name": "legacy-new-project"
+    },
+    {
+      "expected": "client-A:new:none",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": null,
+        "threadId": null
+      },
+      "name": "legacy-new-none"
+    },
+    {
+      "expected": "client-B:thread-A",
+      "input": {
+        "clientId": "client-B",
+        "projectId": null,
+        "target": null,
+        "threadId": "thread-A"
+      },
+      "name": "legacy-second-client"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BIiwidGhyZWFkIiwidGhyZWFkLUEiXQ==",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "complete-thread"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BIiwiZHJhZnQiLCJwcm9qZWN0LUEiXQ==",
+      "input": {
+        "clientId": "client-A",
+        "projectId": "project-A",
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": null
+      },
+      "name": "complete-draft"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BIiwiZHJhZnQiLG51bGxd",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": null
+      },
+      "name": "complete-empty-draft"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BIiwidGhyZWFkIiwidGhyZWFkLUEiXQ==",
+      "input": {
+        "clientId": "client-A",
+        "projectId": "other-project",
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "project-ignored-for-thread"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yay1kaWZmZXJlbnQiLCJodHRwczpcL1wvYWNjb3VudHMuZXhhbXBsZS5pbnZhbGlkIiwic3ludGhldGljLWFjY291bnQiLCJob3N0LUEiLCJ3b3Jrc3BhY2UtQSIsInJ1bnRpbWUtQSIsInRocmVhZCIsInRocmVhZC1BIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork-different",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "isolate-agentId"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQtZGlmZmVyZW50Iiwic3ludGhldGljLWFjY291bnQiLCJob3N0LUEiLCJ3b3Jrc3BhY2UtQSIsInJ1bnRpbWUtQSIsInRocmVhZCIsInRocmVhZC1BIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid-different",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "isolate-accountAuthority"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudC1kaWZmZXJlbnQiLCJob3N0LUEiLCJ3b3Jrc3BhY2UtQSIsInJ1bnRpbWUtQSIsInRocmVhZCIsInRocmVhZC1BIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account-different",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "isolate-accountSubject"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQS1kaWZmZXJlbnQiLCJ3b3Jrc3BhY2UtQSIsInJ1bnRpbWUtQSIsInRocmVhZCIsInRocmVhZC1BIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A-different",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "isolate-hostId"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZS1BLWRpZmZlcmVudCIsInJ1bnRpbWUtQSIsInRocmVhZCIsInRocmVhZC1BIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A-different"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "isolate-workspaceId"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BLWRpZmZlcmVudCIsInRocmVhZCIsInRocmVhZC1BIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A-different",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "isolate-runtimeId"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsbnVsbCxudWxsLCJob3N0LUEiLCJ3b3Jrc3BhY2UtQSIsInJ1bnRpbWUtQSIsInRocmVhZCIsInRocmVhZC1BIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": null,
+          "accountSubject": null,
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "account-absent"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsIiIsIiIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BIiwidGhyZWFkIiwidGhyZWFkLUEiXQ==",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "",
+          "accountSubject": "",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "thread-A"
+      },
+      "name": "empty-not-null"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZTpBIiwicnVudGltZTpBIiwidGhyZWFkIiwibmV3OnByb2plY3QtQSJd",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime:A",
+          "workspaceId": "workspace:A"
+        },
+        "threadId": "new:project-A"
+      },
+      "name": "framed-delimiters"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCJzeW50aGV0aWMtYWNjb3VudCIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BIiwiZHJhZnQiLCJ0aHJlYWQtQSJd",
+      "input": {
+        "clientId": "client-A",
+        "projectId": "thread-A",
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "synthetic-account",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": null
+      },
+      "name": "draft-not-thread"
+    },
+    {
+      "expected": "agent-v1:WyJlYXN5d29yayIsImh0dHBzOlwvXC9hY2NvdW50cy5leGFtcGxlLmludmFsaWQiLCLotKbmiLfwn5mCXC9cXFwiXG5cdFx1MDAwMSIsImhvc3QtQSIsIndvcmtzcGFjZS1BIiwicnVudGltZS1BIiwidGhyZWFkIiwi5Lya6K+dXC/wn5mC4oCo4oCpIl0=",
+      "input": {
+        "clientId": "client-A",
+        "projectId": null,
+        "target": {
+          "accountAuthority": "https://accounts.example.invalid",
+          "accountSubject": "账户🙂/\\\"\n\t\u0001",
+          "agentId": "easywork",
+          "hostId": "host-A",
+          "runtimeId": "runtime-A",
+          "workspaceId": "workspace-A"
+        },
+        "threadId": "会话/🙂  "
+      },
+      "name": "unicode-escaping"
+    }
+  ],
+  "version": 1
+}

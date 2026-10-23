@@ -1,0 +1,2340 @@
+{
+  "version": 1,
+  "policy": [
+    {
+      "name": "available-idle",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "persisted-history-is-not-control",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": false,
+        "capabilities": ["reply"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": false,
+        "compose": false,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "offline-keeps-draft",
+      "access": {
+        "demo": false,
+        "online": false,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "owner-required-read-only",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "runtime:control-required"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": false,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": false,
+        "compose": false,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "open-then-reply",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": [
+          "reply",
+          "runtime:control-required",
+          "desktop:open",
+          "generation-settings",
+          "plan-mode"
+        ],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": false,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": false,
+        "compose": true,
+        "submit": true,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "new-desktop-thread",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": [
+          "runtime:control-required",
+          "desktop:creations",
+          "generation-settings",
+          "plan-mode"
+        ],
+        "threadSelected": false,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "no-project-context",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": false,
+        "hasProject": false,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": false,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "projectless-context",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": false,
+        "hasProject": false,
+        "projectlessDraft": true,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "historyLoading",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": true,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "stopping",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": true,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "importing",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": true,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "sending",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": true,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "replyPending",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": true,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "creationPending",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": true,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "running-queue",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "running-steer",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "steer"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": false,
+        "plan": false,
+        "mode": "steer"
+      }
+    },
+    {
+      "name": "v9-selected-steer-capability-removed",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "steer"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "steer"
+      }
+    },
+    {
+      "name": "no-running-mode",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "v9-selected-queue-capability-removed",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "v9-selected-queue-all-running-modes-removed",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "v9-selected-steer-all-running-modes-removed",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "steer"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": false,
+        "configure": false,
+        "plan": false,
+        "mode": "steer"
+      }
+    },
+    {
+      "name": "v9-selected-queue-capability-restored",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "queue", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "queue"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": true,
+        "plan": true,
+        "mode": "queue"
+      }
+    },
+    {
+      "name": "v9-selected-steer-capability-restored",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "steer", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": true,
+        "preferredReplyMode": "steer"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": false,
+        "plan": false,
+        "mode": "steer"
+      }
+    },
+    {
+      "name": "v9-idle-next-turn-needs-no-running-mode",
+      "access": {
+        "demo": false,
+        "online": true,
+        "runtimeConnected": true,
+        "capabilities": ["reply", "generation-settings", "plan-mode"],
+        "threadSelected": true,
+        "hasProject": true,
+        "projectlessDraft": false,
+        "canControl": true,
+        "testing": false
+      },
+      "state": {
+        "historyLoading": false,
+        "sending": false,
+        "stopping": false,
+        "replyPending": false,
+        "creationPending": false,
+        "importing": false,
+        "running": false,
+        "preferredReplyMode": "steer"
+      },
+      "text": "中文 😀",
+      "attachmentCount": 0,
+      "expected": {
+        "writable": true,
+        "compose": true,
+        "submit": true,
+        "configure": true,
+        "plan": true,
+        "mode": "steer"
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "name": "legacy-final",
+      "messages": [
+        {
+          "id": "u",
+          "role": "user",
+          "text": "question",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "a",
+          "role": "assistant",
+          "text": "answer",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "limit": 60,
+      "activeRunId": null,
+      "running": false,
+      "expected": {
+        "rows": [
+          {
+            "kind": "message",
+            "id": "u",
+            "indices": [0],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a",
+            "indices": [1],
+            "text": null
+          },
+          {
+            "kind": "replyActions",
+            "id": "a",
+            "indices": [],
+            "text": "answer"
+          }
+        ],
+        "hasEarlierMessages": false
+      }
+    },
+    {
+      "name": "tool-window-keeps-group",
+      "messages": [
+        {
+          "id": "u",
+          "role": "user",
+          "text": "q",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "t1",
+          "role": "tool",
+          "text": "x",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "t2",
+          "role": "tool",
+          "text": "y",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "a",
+          "role": "assistant",
+          "text": "a",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "limit": 2,
+      "activeRunId": null,
+      "running": false,
+      "expected": {
+        "rows": [
+          {
+            "kind": "tools",
+            "id": "t1",
+            "indices": [1, 2],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a",
+            "indices": [3],
+            "text": null
+          },
+          {
+            "kind": "replyActions",
+            "id": "a",
+            "indices": [],
+            "text": "a"
+          }
+        ],
+        "hasEarlierMessages": true
+      }
+    },
+    {
+      "name": "same-run-steering",
+      "messages": [
+        {
+          "id": "u",
+          "role": "user",
+          "text": "q",
+          "kind": null,
+          "status": "completed",
+          "runId": "r",
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "text": "one",
+          "kind": null,
+          "status": "completed",
+          "runId": "r",
+          "replyPhase": "final_answer",
+          "replyMessageId": null
+        },
+        {
+          "id": "u2",
+          "role": "user",
+          "text": "adjust",
+          "kind": null,
+          "status": "completed",
+          "runId": "r",
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "a2",
+          "role": "assistant",
+          "text": "two",
+          "kind": null,
+          "status": "completed",
+          "runId": "r",
+          "replyPhase": "final_answer",
+          "replyMessageId": null
+        }
+      ],
+      "limit": 60,
+      "activeRunId": "r",
+      "running": false,
+      "expected": {
+        "rows": [
+          {
+            "kind": "message",
+            "id": "u",
+            "indices": [0],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a1",
+            "indices": [1],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "u2",
+            "indices": [2],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a2",
+            "indices": [3],
+            "text": null
+          },
+          {
+            "kind": "replyActions",
+            "id": "a2",
+            "indices": [],
+            "text": "one\n\ntwo"
+          }
+        ],
+        "hasEarlierMessages": false
+      }
+    },
+    {
+      "name": "running-old-reply-visible",
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "text": "q",
+          "kind": null,
+          "status": "completed",
+          "runId": "old",
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "text": "old",
+          "kind": null,
+          "status": "completed",
+          "runId": "old",
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "u2",
+          "role": "user",
+          "text": "new",
+          "kind": null,
+          "status": "completed",
+          "runId": "new",
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "a2",
+          "role": "assistant",
+          "text": "partial",
+          "kind": null,
+          "status": "streaming",
+          "runId": "new",
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "limit": 60,
+      "activeRunId": "new",
+      "running": true,
+      "expected": {
+        "rows": [
+          {
+            "kind": "message",
+            "id": "u1",
+            "indices": [0],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a1",
+            "indices": [1],
+            "text": null
+          },
+          {
+            "kind": "replyActions",
+            "id": "a1",
+            "indices": [],
+            "text": "old"
+          },
+          {
+            "kind": "message",
+            "id": "u2",
+            "indices": [2],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a2",
+            "indices": [3],
+            "text": null
+          }
+        ],
+        "hasEarlierMessages": false
+      }
+    },
+    {
+      "name": "commentary-and-blank",
+      "messages": [
+        {
+          "id": "c",
+          "role": "assistant",
+          "text": "thinking",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": "commentary",
+          "replyMessageId": null
+        },
+        {
+          "id": "a",
+          "role": "assistant",
+          "text": "​",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "limit": 60,
+      "activeRunId": null,
+      "running": false,
+      "expected": {
+        "rows": [
+          {
+            "kind": "message",
+            "id": "c",
+            "indices": [0],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a",
+            "indices": [1],
+            "text": null
+          }
+        ],
+        "hasEarlierMessages": false
+      }
+    },
+    {
+      "name": "fragmented-message",
+      "messages": [
+        {
+          "id": "a1",
+          "role": "assistant",
+          "text": "one",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": "source"
+        },
+        {
+          "id": "a2",
+          "role": "assistant",
+          "text": "two",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": "source"
+        }
+      ],
+      "limit": 60,
+      "activeRunId": null,
+      "running": false,
+      "expected": {
+        "rows": [
+          {
+            "kind": "message",
+            "id": "a1",
+            "indices": [0],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a2",
+            "indices": [1],
+            "text": null
+          },
+          {
+            "kind": "replyActions",
+            "id": "a2",
+            "indices": [],
+            "text": "one\n\ntwo"
+          }
+        ],
+        "hasEarlierMessages": false
+      }
+    },
+    {
+      "name": "errors-compaction-tools",
+      "messages": [
+        {
+          "id": "e1",
+          "role": "tool",
+          "text": "bad",
+          "kind": "error",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "e2",
+          "role": "tool",
+          "text": "bad2",
+          "kind": "error",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "c",
+          "role": "tool",
+          "text": "compressed",
+          "kind": "contextCompaction",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "t",
+          "role": "tool",
+          "text": "done",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "limit": 60,
+      "activeRunId": null,
+      "running": false,
+      "expected": {
+        "rows": [
+          {
+            "kind": "errors",
+            "id": "e1",
+            "indices": [0, 1],
+            "text": null
+          },
+          {
+            "kind": "compaction",
+            "id": "c",
+            "indices": [2],
+            "text": null
+          },
+          {
+            "kind": "tools",
+            "id": "t",
+            "indices": [3],
+            "text": null
+          }
+        ],
+        "hasEarlierMessages": false
+      }
+    },
+    {
+      "name": "empty",
+      "messages": [],
+      "limit": 0,
+      "activeRunId": null,
+      "running": false,
+      "expected": {
+        "rows": [],
+        "hasEarlierMessages": false
+      }
+    },
+    {
+      "name": "active-legacy",
+      "messages": [
+        {
+          "id": "u",
+          "role": "user",
+          "text": "q",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "a",
+          "role": "assistant",
+          "text": "finished",
+          "kind": null,
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "limit": 60,
+      "activeRunId": "unknown-run",
+      "running": true,
+      "expected": {
+        "rows": [
+          {
+            "kind": "message",
+            "id": "u",
+            "indices": [0],
+            "text": null
+          },
+          {
+            "kind": "message",
+            "id": "a",
+            "indices": [1],
+            "text": null
+          }
+        ],
+        "hasEarlierMessages": false
+      }
+    }
+  ],
+  "receipts": [
+    {
+      "name": "uncertain-survives-new-completion",
+      "receipts": [
+        {
+          "id": "old",
+          "state": "uncertain",
+          "supersededByTurnId": null
+        },
+        {
+          "id": "failed",
+          "state": "failed",
+          "supersededByTurnId": null
+        },
+        {
+          "id": "new",
+          "state": "completed",
+          "supersededByTurnId": null
+        }
+      ],
+      "dismissed": [],
+      "pendingId": null,
+      "expected": [0]
+    },
+    {
+      "name": "pending-failure-and-dismissal",
+      "receipts": [
+        {
+          "id": "pending",
+          "state": "failed",
+          "supersededByTurnId": "turn"
+        },
+        {
+          "id": "dismissed",
+          "state": "failed",
+          "supersededByTurnId": null
+        },
+        {
+          "id": "fresh",
+          "state": "failed",
+          "supersededByTurnId": null
+        }
+      ],
+      "dismissed": ["dismissed"],
+      "pendingId": "pending",
+      "expected": [0, 2]
+    }
+  ],
+  "contracts": [
+    {
+      "name": "valid-connection",
+      "definition": "connection",
+      "json": "{\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"candidates\":[{\"id\":\"lan\",\"transportId\":\"lan-wss\",\"endpoint\":\"https://computer.example:4319\",\"peerFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}],\"preference\":\"automatic\",\"credentialRef\":\"synthetic-reference\"}",
+      "valid": true
+    },
+    {
+      "name": "missing-account",
+      "definition": "target",
+      "json": "{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\"}",
+      "valid": true
+    },
+    {
+      "name": "null-account",
+      "definition": "target",
+      "json": "{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":null}",
+      "valid": false
+    },
+    {
+      "name": "unknown-target-field",
+      "definition": "target",
+      "json": "{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"},\"endpoint\":\"https://route.example\"}",
+      "valid": false
+    },
+    {
+      "name": "missing-runtime",
+      "definition": "target",
+      "json": "{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}}",
+      "valid": false
+    },
+    {
+      "name": "empty-runtime",
+      "definition": "target",
+      "json": "{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}}",
+      "valid": false
+    },
+    {
+      "name": "unknown-preference",
+      "definition": "connection",
+      "json": "{\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"candidates\":[{\"id\":\"lan\",\"transportId\":\"lan-wss\",\"endpoint\":\"https://computer.example:4319\",\"peerFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}],\"preference\":\"public\",\"credentialRef\":\"synthetic-reference\"}",
+      "valid": false
+    },
+    {
+      "name": "relative-uri",
+      "definition": "connection",
+      "json": "{\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"candidates\":[{\"id\":\"lan\",\"transportId\":\"lan-wss\",\"endpoint\":\"relative\",\"peerFingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}],\"preference\":\"automatic\",\"credentialRef\":\"synthetic-reference\"}",
+      "valid": false
+    },
+    {
+      "name": "nullable-is-not-absent",
+      "definition": "receipt",
+      "json": "{\"operationId\":\"op\",\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"state\":\"completed\",\"threadId\":null}",
+      "valid": false
+    },
+    {
+      "name": "missing-optional",
+      "definition": "receipt",
+      "json": "{\"operationId\":\"op\",\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"state\":\"completed\"}",
+      "valid": true
+    },
+    {
+      "name": "unknown-enum",
+      "definition": "receipt",
+      "json": "{\"operationId\":\"op\",\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"state\":\"done\"}",
+      "valid": false
+    },
+    {
+      "name": "safe-sequence",
+      "definition": "cursor",
+      "json": "{\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"threadId\":\"thread\",\"epoch\":\"epoch\",\"sequence\":9007199254740991}",
+      "valid": true
+    },
+    {
+      "name": "unsafe-sequence",
+      "definition": "cursor",
+      "json": "{\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"threadId\":\"thread\",\"epoch\":\"epoch\",\"sequence\":9007199254740992}",
+      "valid": false
+    },
+    {
+      "name": "fractional-sequence",
+      "definition": "cursor",
+      "json": "{\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"threadId\":\"thread\",\"epoch\":\"epoch\",\"sequence\":1.5}",
+      "valid": false
+    },
+    {
+      "name": "unicode-text",
+      "definition": "part",
+      "json": "{\"type\":\"text\",\"text\":\"﻿中文 😀\\n​\"}",
+      "valid": true
+    },
+    {
+      "name": "unknown-part",
+      "definition": "part",
+      "json": "{\"type\":\"image\",\"text\":\"x\"}",
+      "valid": false
+    },
+    {
+      "name": "text-extra-field",
+      "definition": "part",
+      "json": "{\"type\":\"text\",\"text\":\"x\",\"shell\":\"x\"}",
+      "valid": false
+    },
+    {
+      "name": "opaque-extension",
+      "definition": "part",
+      "json": "{\"type\":\"extension\",\"namespace\":\"example.test\",\"data\":{\"nested\":[true,null,\"9007199254740993\"]}}",
+      "valid": true
+    },
+    {
+      "name": "named-command",
+      "definition": "command",
+      "json": "{\"version\":1,\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"operationId\":\"op\",\"command\":{\"operation\":\"question.answer\",\"threadId\":\"thread\",\"approvalId\":\"approval\",\"answers\":{\"answer\":[\"choice\"]}}}",
+      "valid": true
+    },
+    {
+      "name": "invalid-answer-shape",
+      "definition": "command",
+      "json": "{\"version\":1,\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"operationId\":\"op\",\"command\":{\"operation\":\"question.answer\",\"threadId\":\"thread\",\"approvalId\":\"approval\",\"answers\":{\"answer\":[1]}}}",
+      "valid": false
+    },
+    {
+      "name": "arbitrary-method",
+      "definition": "command",
+      "json": "{\"version\":1,\"target\":{\"agentId\":\"easywork\",\"hostId\":\"host-example\",\"workspaceId\":\"workspace-example\",\"runtimeId\":\"local\",\"account\":{\"authority\":\"https://account.example\",\"subject\":\"owner-example\"}},\"operationId\":\"op\",\"command\":{\"operation\":\"shell.run\",\"method\":\"x\"}}",
+      "valid": false
+    },
+    {
+      "name": "malformed-json",
+      "definition": "target",
+      "json": "{\"hostId\":",
+      "valid": false
+    },
+    {
+      "name": "boolean-capability",
+      "definition": "capability",
+      "json": "{\"id\":\"reply\",\"version\":1,\"available\":true}",
+      "valid": true
+    },
+    {
+      "name": "string-is-not-boolean",
+      "definition": "capability",
+      "json": "{\"id\":\"reply\",\"version\":1,\"available\":\"true\"}",
+      "valid": false
+    },
+    {
+      "name": "null-is-not-boolean",
+      "definition": "capability",
+      "json": "{\"id\":\"reply\",\"version\":1,\"available\":null}",
+      "valid": false
+    }
+  ],
+  "reading": [
+    {
+      "name": "ascii",
+      "target": {
+        "agentId": "codex",
+        "accountAuthority": null,
+        "accountSubject": null,
+        "hostId": "host",
+        "workspaceId": "workspace",
+        "runtimeId": "desktop-runtime"
+      },
+      "threadId": "thread/1",
+      "messageId": "message:ascii",
+      "text": "complete",
+      "status": "completed",
+      "preimage": "13:message:ascii8:complete9:completed",
+      "key": "WyJtb2JpbGUtcmVhZGluZy12MSIsImNvZGV4IixudWxsLG51bGwsImhvc3QiLCJ3b3Jrc3BhY2UiLCJkZXNrdG9wLXJ1bnRpbWUiLCJ0aHJlYWRcLzEiXQ==",
+      "sha256": "68832778a7bcc2b4953d0e40dd65858c8b77bec782dca6d630c681cd57041653"
+    },
+    {
+      "name": "utf8",
+      "target": {
+        "agentId": "codex",
+        "accountAuthority": null,
+        "accountSubject": null,
+        "hostId": "host",
+        "workspaceId": "workspace",
+        "runtimeId": "desktop-runtime"
+      },
+      "threadId": "thread/1",
+      "messageId": "message:utf8",
+      "text": "﻿中文 😀",
+      "status": "completed",
+      "preimage": "12:message:utf814:﻿中文 😀9:completed",
+      "key": "WyJtb2JpbGUtcmVhZGluZy12MSIsImNvZGV4IixudWxsLG51bGwsImhvc3QiLCJ3b3Jrc3BhY2UiLCJkZXNrdG9wLXJ1bnRpbWUiLCJ0aHJlYWRcLzEiXQ==",
+      "sha256": "88e7985e6fd560fa0c93a71327a47e767f2852b3c23bda6221fb2d3911eff6af"
+    },
+    {
+      "name": "composed",
+      "target": {
+        "agentId": "codex",
+        "accountAuthority": null,
+        "accountSubject": null,
+        "hostId": "host",
+        "workspaceId": "workspace",
+        "runtimeId": "desktop-runtime"
+      },
+      "threadId": "thread/1",
+      "messageId": "message:composed",
+      "text": "é",
+      "status": "completed",
+      "preimage": "16:message:composed2:é9:completed",
+      "key": "WyJtb2JpbGUtcmVhZGluZy12MSIsImNvZGV4IixudWxsLG51bGwsImhvc3QiLCJ3b3Jrc3BhY2UiLCJkZXNrdG9wLXJ1bnRpbWUiLCJ0aHJlYWRcLzEiXQ==",
+      "sha256": "1b12504d7a9f81b99e8d7bb7812d8f9ae7e46acf5bd3a6f345a3473ff6a79d79"
+    },
+    {
+      "name": "decomposed",
+      "target": {
+        "agentId": "codex",
+        "accountAuthority": null,
+        "accountSubject": null,
+        "hostId": "host",
+        "workspaceId": "workspace",
+        "runtimeId": "desktop-runtime"
+      },
+      "threadId": "thread/1",
+      "messageId": "message:decomposed",
+      "text": "é",
+      "status": "completed",
+      "preimage": "18:message:decomposed3:é9:completed",
+      "key": "WyJtb2JpbGUtcmVhZGluZy12MSIsImNvZGV4IixudWxsLG51bGwsImhvc3QiLCJ3b3Jrc3BhY2UiLCJkZXNrdG9wLXJ1bnRpbWUiLCJ0aHJlYWRcLzEiXQ==",
+      "sha256": "f0a55511d2ca71291a23120f2971691c2cd4ac2e70bcd96e578021b2cddd09a8"
+    },
+    {
+      "name": "empty-account",
+      "target": {
+        "agentId": "codex",
+        "accountAuthority": "",
+        "accountSubject": "",
+        "hostId": "host",
+        "workspaceId": "workspace",
+        "runtimeId": "desktop-runtime"
+      },
+      "threadId": "thread/1",
+      "messageId": "message:empty-account",
+      "text": "",
+      "status": "completed",
+      "preimage": "21:message:empty-account0:9:completed",
+      "key": "WyJtb2JpbGUtcmVhZGluZy12MSIsImNvZGV4IiwiIiwiIiwiaG9zdCIsIndvcmtzcGFjZSIsImRlc2t0b3AtcnVudGltZSIsInRocmVhZFwvMSJd",
+      "sha256": "1d308ee5a122c0af248d03dc6983a6b9a13ec10ef1864a2944c5bf2533823860"
+    }
+  ],
+  "http": [
+    {
+      "name": "minimal-history",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[{\"id\":\"m\",\"role\":\"assistant\",\"text\":\"﻿中文 😀\"}]}",
+      "valid": true
+    },
+    {
+      "name": "extensible-provider-fields",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[{\"id\":\"m\",\"role\":\"assistant\",\"text\":\"﻿中文 😀\"}],\"newProviderField\":{\"future\":true}}",
+      "valid": true
+    },
+    {
+      "name": "missing-text",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[{\"id\":\"m\",\"role\":\"assistant\"}]}",
+      "valid": false
+    },
+    {
+      "name": "null-messages",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":null}",
+      "valid": false
+    },
+    {
+      "name": "numeric-message-id",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[{\"id\":1,\"role\":\"assistant\",\"text\":\"x\"}]}",
+      "valid": false
+    },
+    {
+      "name": "events",
+      "definition": "events",
+      "json": "{\"hostId\":\"host-example\",\"epoch\":\"epoch\",\"cursor\":1,\"reset\":false,\"events\":[{\"threadId\":\"thread-example\",\"snapshot\":{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[{\"id\":\"m\",\"role\":\"assistant\",\"text\":\"﻿中文 😀\"}]}}]}",
+      "valid": true
+    },
+    {
+      "name": "negative-cursor",
+      "definition": "events",
+      "json": "{\"hostId\":\"host-example\",\"epoch\":\"epoch\",\"cursor\":-1,\"reset\":false,\"events\":[{\"threadId\":\"thread-example\",\"snapshot\":{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[{\"id\":\"m\",\"role\":\"assistant\",\"text\":\"﻿中文 😀\"}]}}]}",
+      "valid": false
+    },
+    {
+      "name": "unsafe-cursor",
+      "definition": "events",
+      "json": "{\"hostId\":\"host-example\",\"epoch\":\"epoch\",\"cursor\":9007199254740992,\"reset\":false,\"events\":[{\"threadId\":\"thread-example\",\"snapshot\":{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[{\"id\":\"m\",\"role\":\"assistant\",\"text\":\"﻿中文 😀\"}]}}]}",
+      "valid": false
+    },
+    {
+      "name": "minimal-workspace",
+      "definition": "workspace",
+      "json": "{\"hostId\":\"host-example\",\"name\":\"Fixture\",\"connectionMode\":\"desktop-runtime\",\"projects\":[],\"threads\":[]}",
+      "valid": true
+    },
+    {
+      "name": "wrong-project-roots",
+      "definition": "workspace",
+      "json": "{\"hostId\":\"host-example\",\"name\":\"Fixture\",\"connectionMode\":\"desktop-runtime\",\"projects\":[{\"id\":\"project\",\"hostId\":\"host-example\",\"name\":\"Fixture\",\"roots\":\"not-an-array\"}],\"threads\":[]}",
+      "valid": false
+    },
+    {
+      "name": "receipt-null-turn",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"h\",\"threadId\":\"t\",\"clientMessageId\":\"op\",\"state\":\"uncertain\",\"turnId\":null,\"error\":null}",
+      "valid": true
+    },
+    {
+      "name": "receipt-wrong-type",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"h\",\"threadId\":4,\"clientMessageId\":\"op\",\"state\":\"uncertain\",\"turnId\":null,\"error\":null}",
+      "valid": false
+    },
+    {
+      "name": "reply-preserves-whitespace",
+      "definition": "replyRequest",
+      "json": "{\"hostId\":\"h\",\"threadId\":\"t\",\"clientMessageId\":\"op\",\"text\":\"  中文 😀\\n\",\"attachmentIds\":[],\"mode\":\"next-turn\"}",
+      "valid": true
+    },
+    {
+      "name": "reply-arbitrary-method-refused",
+      "definition": "replyRequest",
+      "json": "{\"hostId\":\"h\",\"threadId\":\"t\",\"clientMessageId\":\"op\",\"text\":\"  中文 😀\\n\",\"attachmentIds\":[],\"mode\":\"next-turn\",\"method\":\"shell.execute\"}",
+      "valid": false
+    },
+    {
+      "name": "reply-invalid-mode",
+      "definition": "replyRequest",
+      "json": "{\"hostId\":\"h\",\"threadId\":\"t\",\"clientMessageId\":\"op\",\"text\":\"  中文 😀\\n\",\"attachmentIds\":[],\"mode\":\"run\"}",
+      "valid": false
+    },
+    {
+      "name": "creation-null-project",
+      "definition": "creationRequest",
+      "json": "{\"hostId\":\"h\",\"clientOperationId\":\"op\",\"projectId\":null,\"text\":\"x\",\"attachments\":[]}",
+      "valid": true
+    },
+    {
+      "name": "creation-file-invalid-hash",
+      "definition": "creationFile",
+      "json": "{\"id\":\"f\",\"name\":\"x\",\"mediaType\":\"text/plain\",\"sizeBytes\":2,\"sha256\":\"broken\"}",
+      "valid": false
+    },
+    {
+      "name": "detach-explicit-uncertainty",
+      "definition": "detachCreationRequest",
+      "json": "{\"hostId\":\"h\",\"clientOperationId\":\"op\",\"acknowledgeUncertain\":true}",
+      "valid": true
+    },
+    {
+      "name": "detach-missing-acknowledgement",
+      "definition": "detachCreationRequest",
+      "json": "{\"hostId\":\"h\",\"clientOperationId\":\"op\"}",
+      "valid": false
+    },
+    {
+      "name": "question-option-and-freeform",
+      "definition": "approvalRequest",
+      "json": "{\"hostId\":\"h\",\"threadId\":\"t\",\"turnId\":\"run\",\"approvalId\":\"a\",\"decision\":\"accept\",\"answers\":{\"q\":[\"A\",\"自由回复\"]}}",
+      "valid": true
+    },
+    {
+      "name": "question-secret-not-array",
+      "definition": "approvalRequest",
+      "json": "{\"hostId\":\"h\",\"threadId\":\"t\",\"turnId\":\"run\",\"approvalId\":\"a\",\"decision\":\"accept\",\"answers\":{\"q\":\"x\"}}",
+      "valid": false
+    },
+    {
+      "name": "creation-unknown-phase",
+      "definition": "desktopCreation",
+      "json": "{\"hostId\":\"h\",\"clientOperationId\":\"op\",\"projectId\":null,\"phase\":\"unknown-retry\",\"threadId\":null,\"error\":null,\"uploaded\":[]}",
+      "valid": false
+    },
+    {
+      "name": "runtime-no-cached-control",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"canControl\":false}",
+      "valid": true
+    },
+    {
+      "name": "runtime-string-control-refused",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"canControl\":\"true\"}",
+      "valid": false
+    },
+    {
+      "name": "runtime-receipt-wrong-thread-type",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[{\"hostId\":\"h\",\"threadId\":3,\"clientMessageId\":\"op\",\"state\":\"received\",\"turnId\":null,\"error\":null}],\"canControl\":false}",
+      "valid": false
+    },
+    {
+      "name": "workspace rejects string runtimeConnected",
+      "definition": "workspace",
+      "json": "{\"hostId\":\"host-example\",\"name\":\"Fixture\",\"connectionMode\":\"desktop-runtime\",\"projects\":[],\"threads\":[],\"agentConnectionState\":{\"runtimeConnected\":\"true\"}}",
+      "valid": false
+    },
+    {
+      "name": "fork request exactly named fields",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\"}",
+      "valid": true
+    },
+    {
+      "name": "fork options with explicit nullable reasons",
+      "definition": "threadForkOptions",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"sameDirectoryAvailable\":true,\"worktreeAvailable\":false,\"reason\":null,\"worktreeReason\":\"No Git\"}",
+      "valid": true
+    },
+    {
+      "name": "fork confirmed operation",
+      "definition": "threadForkOperation",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\",\"phase\":\"confirmed\",\"forkedThreadId\":\"test-fork\",\"projectId\":null,\"error\":null}",
+      "valid": true
+    },
+    {
+      "name": "fork worktree request",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"worktree\"}",
+      "valid": true
+    },
+    {
+      "name": "fork phase submitted",
+      "definition": "threadForkOperation",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\",\"phase\":\"submitted\",\"forkedThreadId\":null,\"projectId\":null,\"error\":null}",
+      "valid": true
+    },
+    {
+      "name": "fork phase outcome-unknown",
+      "definition": "threadForkOperation",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\",\"phase\":\"outcome-unknown\",\"forkedThreadId\":null,\"projectId\":null,\"error\":null}",
+      "valid": true
+    },
+    {
+      "name": "fork phase rejected",
+      "definition": "threadForkOperation",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\",\"phase\":\"rejected\",\"forkedThreadId\":null,\"projectId\":null,\"error\":null}",
+      "valid": true
+    },
+    {
+      "name": "fork missing hostId",
+      "definition": "threadForkRequest",
+      "json": "{\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\"}",
+      "valid": false
+    },
+    {
+      "name": "fork missing threadId",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\"}",
+      "valid": false
+    },
+    {
+      "name": "fork missing turnId",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\"}",
+      "valid": false
+    },
+    {
+      "name": "fork missing clientOperationId",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"environment\":\"same-directory\"}",
+      "valid": false
+    },
+    {
+      "name": "fork missing environment",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\"}",
+      "valid": false
+    },
+    {
+      "name": "fork rejects extra target",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\",\"target\":{}}",
+      "valid": false
+    },
+    {
+      "name": "fork invalid environment",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"clone\"}",
+      "valid": false
+    },
+    {
+      "name": "fork rejects prototype ID",
+      "definition": "threadForkRequest",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"__proto__\",\"environment\":\"same-directory\"}",
+      "valid": false
+    },
+    {
+      "name": "fork unknown phase",
+      "definition": "threadForkOperation",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\",\"phase\":\"done\",\"forkedThreadId\":\"test-fork\",\"projectId\":null,\"error\":null}",
+      "valid": false
+    },
+    {
+      "name": "fork missing nullable outcome",
+      "definition": "threadForkOperation",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"turnId\":\"test-turn\",\"clientOperationId\":\"fork-test-001\",\"environment\":\"same-directory\",\"phase\":\"confirmed\",\"projectId\":null,\"error\":null}",
+      "valid": false
+    },
+    {
+      "name": "fork options wrong bool",
+      "definition": "threadForkOptions",
+      "json": "{\"hostId\":\"test-host\",\"threadId\":\"test-source\",\"sameDirectoryAvailable\":true,\"worktreeAvailable\":1,\"reason\":null,\"worktreeReason\":\"No Git\"}",
+      "valid": false
+    },
+    {
+      "name": "history-window-bool-true",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyWindow\":true}",
+      "valid": true
+    },
+    {
+      "name": "history-window-bool-false",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyWindow\":false}",
+      "valid": true
+    },
+    {
+      "name": "history-window-versioned-latest",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyWindow\":{\"version\":1,\"kind\":\"latest\"}}",
+      "valid": true
+    },
+    {
+      "name": "history-window-versioned-earlier",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyWindow\":{\"version\":1,\"kind\":\"earlier\"}}",
+      "valid": true
+    },
+    {
+      "name": "history-window-unsupported-version",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyWindow\":{\"version\":2,\"kind\":\"latest\"}}",
+      "valid": false
+    },
+    {
+      "name": "history-window-unsupported-kind",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyWindow\":{\"version\":1,\"kind\":\"other\"}}",
+      "valid": false
+    },
+    {
+      "name": "history-window-undeclared-field",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyWindow\":{\"version\":1,\"kind\":\"latest\",\"extra\":true}}",
+      "valid": false
+    },
+    {
+      "name": "history-synchronization-and-revision",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"synchronization\":{\"state\":\"live-window\",\"checkedAt\":\"2026-10-19T00:00:00Z\"},\"historyRevision\":0}",
+      "valid": true
+    },
+    {
+      "name": "history-synchronization-unknown-state",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"synchronization\":{\"state\":\"other\"}}",
+      "valid": false
+    },
+    {
+      "name": "history-negative-revision",
+      "definition": "history",
+      "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyRevision\":-1}",
+      "valid": false
+    }
+  ],
+  "toolPresentation": [
+    {
+      "operation": "summary",
+      "expected": "已编辑文件、运行命令",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "",
+          "kind": "commandExecution",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "",
+          "kind": "fileChange",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "summary",
+      "expected": "正在运行多个命令",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "",
+          "kind": "commandExecution",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "",
+          "kind": "commandExecution",
+          "status": "inProgress",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "summary",
+      "expected": "已使用 Node、浏览器、搜索网页",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "Node · 查询",
+          "kind": "mcpToolCall",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "Node · 第二次查询",
+          "kind": "dynamicToolCall",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "浏览器 · 获取",
+          "kind": "mcpToolCall",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "",
+          "kind": "webSearch",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "summary",
+      "expected": "已使用多个工具",
+      "messages": [],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "title",
+      "expected": "已运行命令",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "pnpm check",
+          "kind": "commandExecution",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": true
+    },
+    {
+      "operation": "title",
+      "expected": "编辑文件失败",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "demo.txt",
+          "kind": "fileChange",
+          "status": "failed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": true
+    },
+    {
+      "operation": "title",
+      "expected": "查询 · 结果",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "Node · 查询 · 结果",
+          "kind": "dynamicToolCall",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "title",
+      "expected": "正在搜索 查文档",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "查文档",
+          "kind": "webSearch",
+          "status": "inProgress",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "title",
+      "expected": "运行 pnpm check已停止",
+      "messages": [
+        {
+          "id": "tool",
+          "role": "tool",
+          "text": "pnpm check",
+          "kind": "commandExecution",
+          "status": "interrupted",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "compaction",
+      "expected": "正在压缩上下文 · 可能需要几分钟",
+      "messages": [],
+      "value": "inProgress",
+      "flag": true
+    },
+    {
+      "operation": "compaction",
+      "expected": "上下文压缩状态待同步",
+      "messages": [],
+      "value": "inProgress",
+      "flag": false
+    },
+    {
+      "operation": "compaction",
+      "expected": "已压缩上下文",
+      "messages": [],
+      "value": "completed",
+      "flag": false
+    },
+    {
+      "operation": "compaction",
+      "expected": "上下文压缩已停止",
+      "messages": [],
+      "value": "cancelled",
+      "flag": false
+    },
+    {
+      "operation": "compaction",
+      "expected": "上下文压缩失败",
+      "messages": [],
+      "value": "failed",
+      "flag": false
+    },
+    {
+      "operation": "compaction",
+      "expected": "上下文压缩状态待同步",
+      "messages": [],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "style",
+      "expected": "命令|运行|Shell",
+      "messages": [],
+      "value": "commandExecution",
+      "flag": false
+    },
+    {
+      "operation": "style",
+      "expected": "文件|编辑|Diff",
+      "messages": [],
+      "value": "fileChange",
+      "flag": false
+    },
+    {
+      "operation": "style",
+      "expected": "网页|搜索|搜索结果",
+      "messages": [],
+      "value": "webSearch",
+      "flag": false
+    },
+    {
+      "operation": "style",
+      "expected": "思考|进行|思考",
+      "messages": [],
+      "value": "reasoning",
+      "flag": false
+    },
+    {
+      "operation": "style",
+      "expected": "工具|使用|工具输出",
+      "messages": [],
+      "value": null,
+      "flag": false
+    },
+    {
+      "operation": "status",
+      "expected": "进行中",
+      "messages": [],
+      "value": "inProgress",
+      "flag": false
+    },
+    {
+      "operation": "status",
+      "expected": "成功",
+      "messages": [],
+      "value": "completed",
+      "flag": false
+    },
+    {
+      "operation": "status",
+      "expected": "失败",
+      "messages": [],
+      "value": "failed",
+      "flag": false
+    },
+    {
+      "operation": "status",
+      "expected": "已停止",
+      "messages": [],
+      "value": "interrupted",
+      "flag": false
+    },
+    {
+      "operation": "status",
+      "expected": "状态未知",
+      "messages": [],
+      "value": null,
+      "flag": false
+    }
+  ],
+  "discovery": [
+    {
+      "name": "valid-descriptor",
+      "valid": true,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "valid-account",
+      "valid": true,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\",\"account\":{\"authority\":\"synthetic-authority\",\"subject\":\"synthetic-user\"}},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "wrong-version",
+      "valid": false,
+      "json": "{\"version\":2,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "wrong-agent",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"other\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "wrong-target-agent",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"other\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "empty-host",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "overlong-unicode-name",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "wrong-fingerprint",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"invalid\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "duplicate-endpoint",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\",\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}]}"
+    },
+    {
+      "name": "unknown-field",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}],\"extra\":true}"
+    },
+    {
+      "name": "token-in-public-descriptor",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"lan\"}],\"token\":\"synthetic-token\"}"
+    },
+    {
+      "name": "invalid-network-kind",
+      "valid": false,
+      "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"public\"}]}"
+    }
+  ]
+}

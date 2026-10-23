@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>aps-environment</key><string>$(APS_ENVIRONMENT)</string>
+<key>com.apple.security.application-groups</key><array><string>group.$(NOTIFICATION_APP_BUNDLE_ID).notifications</string></array>
+<key>keychain-access-groups</key><array><string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string><string>$(AppIdentifierPrefix)$(NOTIFICATION_APP_BUNDLE_ID).notifications</string></array>
+<key>com.apple.developer.usernotifications.time-sensitive</key><true/>
+</dict></plist>

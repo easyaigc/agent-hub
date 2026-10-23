@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+node_modules
+dist
+.turbo
+.build
+.local
+apps/ios/CodexManage.xcodeproj
+apps/ios/Sources

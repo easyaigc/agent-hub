@@ -1,0 +1,33 @@
+{
+  "name": "Agent Hub",
+  "subtitle": "多电脑 Agent 任务与对话管理",
+  "primaryLanguage": "en-US",
+  "version": "0.1.0",
+  "bundleId": "com.easyai.agenthub",
+  "sku": "agent-hub-ios",
+  "appleId": "6821946521",
+  "primaryCategory": "效率",
+  "secondaryCategory": "软件开发工具",
+  "description": "Agent Hub 是一款通用的 Agent 管理工具，让你在 iPhone 上连接已授权的电脑，集中查看和管理不同 Agent 客户端中的项目、对话与任务。目前支持 Codex 与 EasyWork。\n\n主要功能\n• 在多台已授权电脑与 Agent 客户端之间切换。\n• 浏览项目和对话，查看任务进度、工具执行信息与结果。\n• 发起新对话、继续已有任务，处理审批与问题。\n• 发送文字、图片与文件，使用手机系统或电脑端语音转写编辑消息草稿。\n• 在已配置的电脑和推送服务上接收任务提醒。\n• 连接已配置的 Task Hub 主服务，管理项目、任务、反馈、候选产物和验收材料。\n• 保存草稿、阅读状态与未确认操作，恢复连接后继续核对。\n• 支持简体中文与英文；默认跟随系统，也可在设置中切换。\n\n使用条件\n请在你拥有或获授权的 Mac 或 Windows 电脑上配置受支持的 Agent 桌面应用及 Host 连接服务。局域网直连无需注册 Agent Hub 账号；跨网络访问需要另行配置可信网络。Task Hub 需独立配置主服务并使用其成员账号；可选 EasyAI 中继使用独立登录。不同连接的可用功能取决于电脑端能力和运行状态。\n\n任务在所选电脑上执行。已发送的消息、附件及选择电脑端转写时提交的录音可能由电脑配置的第三方 AI 服务处理；相关账号、费用、数据保留和处理方式以相应服务为准。手机系统转写按系统服务的可用方式处理。发送前请确认数据共享说明及目标服务。\n\nAgent Hub 是独立产品，并非 OpenAI 或 Apple 的官方应用。\n帮助与支持：https://51easyai.com/agent-hub/support.html\n隐私政策：https://51easyai.com/agent-hub/privacy.html",
+  "keywords": "Agent,AI,电脑,远程,任务,项目,对话,Codex,EasyWork,开发,编程,效率",
+  "supportUrl": "https://51easyai.com/agent-hub/support.html",
+  "privacyPolicyUrl": "https://51easyai.com/agent-hub/privacy.html",
+  "privacyChoicesUrl": "https://51easyai.com/agent-hub/support.html",
+  "copyright": "2026 合肥博璀人工智能科技有限公司",
+  "reviewContactEmail": "admin@51easyai.com",
+  "price": {
+    "baseTerritory": "CHN",
+    "baseCurrency": "CNY",
+    "amount": "0.00"
+  },
+  "appIcpNumber": "皖ICP备2024030146号-7A",
+  "releaseMode": "manual",
+  "releaseBuild": "52",
+  "supportedLanguages": ["en", "zh-Hans"],
+  "availabilityPolicy": {
+    "selection": "all_available_storefronts_except",
+    "excludedTerritories": ["CHN"],
+    "saveStatus": "verified_App_Store_Connect_174_selected_China_mainland_not_available",
+    "selectedTerritoryCount": 174
+  }
+}

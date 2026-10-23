@@ -1,0 +1,864 @@
+{
+  "phase": "A2",
+  "status": "passed",
+  "completedAt": "2026-10-12T00:48:50.847Z",
+  "baseCommit": "595deca",
+  "scope": "Shared capability/draft/receipt/creation/event/projection/read policies, strict contracts, production Swift adoption and native asynchronous boundary. Full Android product pages remain later stages.",
+  "core": {
+    "phase": "A2",
+    "status": "passed",
+    "sourceSha256": "e644bfd0490df859acdb19b2e598b8c40a2da5f482601cb6a6f915ffff995dd2",
+    "suites": [
+      {
+        "runtime": "jvm",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "f533253ef11aa3dd5d9dec4b219e4b9b4b71e02ad55dd72b35468ced54e403fd"
+      },
+      {
+        "runtime": "iosSimulatorArm64",
+        "tests": 3,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "148796f89e3537cdc53bddce7b5ca89d6c5fd5eb702547903dbfb3ca8500358b"
+      },
+      {
+        "runtime": "jvm",
+        "tests": 11,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "66f61c2bd130d584a4c14be095015ab8940b8e85ea1d3b24a09f419721a1e7bb"
+      },
+      {
+        "runtime": "iosSimulatorArm64",
+        "tests": 11,
+        "failures": 0,
+        "skips": 0,
+        "xmlSha256": "aed74abfb7721057f27b302014d04bc15ca3761988886ab37bb469f4a8dd7a26"
+      }
+    ],
+    "boundary": "Swift/Kotlin Simulator boundary passed: 19 identity, 26 composer, 5 content vectors\nSwift/Kotlin state boundary passed: 18 policies, 9 projections, 25 contracts\nSwift/Kotlin Codex HTTP boundary passed: 10 cases\nSwift/Kotlin async boundary passed: one delivery, MainActor, ARC release, cancellation, late reply and typed error",
+    "vectorsSha256": "7bbcc59768c84ebe3a5e1b0c5130753af0dba518922a986e155d127e4a2a1408",
+    "stateVectorsSha256": "78a42446a19a9614a7c6106478fc084a256abc00596d1c5d662b3ca9f92ebb4a",
+    "frameworks": ["iosArm64", "iosSimulatorArm64", "iosX64"],
+    "physicalDeviceVerified": false,
+    "reportSha256": "9e768146cb2ceaddcedc6345d1e6df8650724c2617dd5a133e4b9443b89c214a"
+  },
+  "state": {
+    "phase": "A2",
+    "status": "passed",
+    "sourceSha256": "4cd618a56b79f18b06791a2b21d4a757fbc8247f4251bf32d78c565d9a736295",
+    "referenceCommit": "595deca",
+    "referenceSha256": "52efea018a29492ce825e6a3e947d0c1351006fea83c1810dbc3c0b1da51a8ac",
+    "generatedSourceSha256": "438a1ea1ed554d7cbf6f03f0c861e6cab3925b5294d03eaf3fb2163aa683d50d",
+    "result": "2000 projection comparisons; 9 migration checks; 5 UTF-8/identity checks passed",
+    "evidenceKind": "native-simulator-boundary; UI regression recorded separately",
+    "reportSha256": "1d1362fb9166dd1201d78e4b7ec06b35d88a750ef28e510f3af191283884ae5f"
+  },
+  "ios": {
+    "status": "passed",
+    "sourceSha256": "5d7184a8a35352d8da0f084aab1643e85679a6fc804c78b9c7cc97e1654e7788",
+    "environment": "Dedicated iPhone17Pro iOS27 Simulator",
+    "executions": 48,
+    "distinctTests": 43,
+    "failures": 0,
+    "skips": 0,
+    "aggregateReportSha256": "b98bc8fa3e89cd7920f693d8ae9f9566f3e7309ff9b5b2cb65e8630e11021325",
+    "closureToolSha256": "6d05b8736a4be3d6c10755733ce78c53ac7c3822a9f4f86c4d629d2b86e09ab4",
+    "groups": [
+      {
+        "group": "native",
+        "executions": 20,
+        "evidenceStatus": "passed",
+        "caseEvidence": [
+          {
+            "test": "testCloseDemoReturnsToOnboardingAndPersists",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testUnifiedComposerStopResumeAndRestart",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationCancelFinishAndSend",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationSwitchAndBackgroundKeepOriginalTarget",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationDeniedAndDarkAppearance",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testDictationDisabledRetainsDraftAndAllowsRetry",
+            "evidenceStatus": "reused-matching"
+          },
+          {
+            "test": "testSidebarSearchAndProjectSelection",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testSidebarSwipeOpenCloseKeepsDraft",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testSidebarSwipeDirectionAndVerticalScrolling",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testSidebarContinuousDragAndReversal",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testSidebarRecentAndProjectExpansion",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testClientSwitchKeepsDraftOnOriginalTarget",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testNewConversationCreatedOnFirstSend",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testOfflineClientKeepsEditableDraftAndDisablesSend",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testUnsentNewDraftSurvivesClientSwitchAndRelaunch",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testSystemAttachmentPickers",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testFloatingChatControlsAndExpandingDraft",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testFloatingJumpToLatestClearsComposer",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testDarkAppearance",
+            "evidenceStatus": "passed"
+          },
+          {
+            "test": "testTaskNotificationPreferencesAndPermissionDenied",
+            "evidenceStatus": "passed"
+          }
+        ]
+      },
+      {
+        "group": "clients",
+        "executions": 2,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "composer",
+        "executions": 2,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "generation",
+        "executions": 1,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "plan",
+        "executions": 2,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "receipts",
+        "executions": 1,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "compaction",
+        "executions": 1,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "creation",
+        "executions": 1,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "recovery",
+        "executions": 3,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "reading",
+        "executions": 2,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "unread",
+        "executions": 1,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "badge",
+        "executions": 1,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "history",
+        "executions": 3,
+        "evidenceStatus": "passed"
+      },
+      {
+        "group": "sidebar",
+        "executions": 8,
+        "evidenceStatus": "reused-matching"
+      }
+    ],
+    "visual": [
+      {
+        "group": "native",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "settings-demo-disabled_0_4036FF3D-BF4E-46AF-8973-66EA84B9202F.png",
+            "sha256": "aac43beeef51118833ea4f7305da545dbfdb5b293793f35d75c2d52ebe86a588"
+          },
+          {
+            "label": "demo-closed-onboarding_0_2468052B-F66D-4BA9-A564-68644FC89329.png",
+            "sha256": "1dd12acc4b2337466e054b0e0a3c49521654ab0f4e75444487d085e0717abf49"
+          },
+          {
+            "label": "settings-demo-enabled_0_BB109E03-9C64-4BB5-90D2-175CA9EB9DC8.png",
+            "sha256": "0345271804f6f1cbdf02ee6e12b689045c189868b4a3d5af9eb53bb1dd12e7a9"
+          },
+          {
+            "label": "demo-main-without-test-controls_0_77F210C6-C395-4916-BDAC-8F6AEBA76F5F.png",
+            "sha256": "db6841c1559fdd5af66a04603c60582d965d3ad78957c448a41bd75cffaac642"
+          },
+          {
+            "label": "settings-demo-disabled_0_2521B12B-34FE-43F2-B12B-49C4C3641401.png",
+            "sha256": "7f2aaaa2c9f0c0f5367e618ed50494a0fff324c118b2dd6b3b1d37fc47aedc01"
+          },
+          {
+            "label": "composer-resume_0_2685CF60-9CBF-4BFE-B011-B8759E3D07E9.png",
+            "sha256": "fc8f98f8e5bea945a771003a450cb825a3cc6b1df75d0d549faca293843cdec3"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_661266D6-2810-40B8-BCC6-DB423507EF0D.png",
+            "sha256": "ad21b4e2633d2ae201c4fbc50bcc356db8515dc6289d6bf8b963c5b12b920054"
+          },
+          {
+            "label": "dictation-listening-light_0_BB5251BC-4E46-4D26-9B07-0224620BE366.png",
+            "sha256": "29aeca2fdc4e3041d7b7efcb30f6a5eb48be21346d4f446fc569daa4e64e0b94"
+          },
+          {
+            "label": "dictation-listening-dark_0_89AE59E1-ABE4-4DF3-9B4A-DACCFB01C87A.png",
+            "sha256": "8fc2eafe004bc9ebe159dc027e5946196ac90da54358588b9acc0b92759986f6"
+          },
+          {
+            "label": "dictation-disabled-recovered_0_B9B726CE-2EA0-45FA-8FE2-85BAC1113F6F.png",
+            "sha256": "30ea39d0e5ef6f418f2ef842a4c598044580c160c80933fa5626f8fdef7bbbc9"
+          },
+          {
+            "label": "compact-main_0_3359796C-A5D6-4146-A820-22EF1D11F286.png",
+            "sha256": "3e09f02bf4b7510d6b0f8d15f54eeeb5beb9667a2eabff58ec8bf3f47fadfe1e"
+          },
+          {
+            "label": "compact-sidebar_0_8CD58353-C310-44B9-85C9-BE196E046147.png",
+            "sha256": "bad1d45c82c3d456afe5697bdd0f66540c92e635417c0b5195306243aa22ea8c"
+          },
+          {
+            "label": "sidebar-swipe-open_0_8959EC0C-AC15-41CB-B481-15D2C543B77D.png",
+            "sha256": "f91423d071d3bba624417de13dcce687faf982ff15b471f840c181d8b64d3c99"
+          },
+          {
+            "label": "sidebar-swipe-closed_0_1CD1F0F3-CDC3-493D-A54B-DFD614B7EAD5.png",
+            "sha256": "7bb411f15f2c890118c6730b3623d07f0ab1dbd2a22c2c0694de6a85b1c8c164"
+          },
+          {
+            "label": "sidebar-search-swipe-closed_0_3FB84077-58A3-40E2-84B5-0DE3E78E328D.png",
+            "sha256": "e478f6a868209733bfe545495db4c4d5d6b99a95cadc563a043dc4741ab260c6"
+          },
+          {
+            "label": "sidebar-continuous-drag-closed_0_EC2233C1-6710-4949-BD7C-45FDC21E1379.png",
+            "sha256": "b1675f59c766b1e56f44a4bff55579bf55383a46fc5369b33effd2626b3f4296"
+          },
+          {
+            "label": "sidebar-five-recent-and-project_0_14E6BD44-F6DA-4E99-9501-A54D912B8247.png",
+            "sha256": "290c58aed084f246b120117329174a701a3468a1d8ee1903a638dd259fa6192c"
+          },
+          {
+            "label": "client-draft-isolation_0_8592C430-5FD7-44A3-AE87-2E3ECA880901.png",
+            "sha256": "eccefdc0ee70f260a7bf54ab5f2d2358a2b7ebac890dac5d9308d62e756cf9f8"
+          },
+          {
+            "label": "first-send-new-thread_0_6E0C360B-81F0-4C9E-96BB-F64E1A7D55CE.png",
+            "sha256": "93ca71a1a720e327e0afe78dc87c193179ec239283dd4b1698a842e6459f4fa8"
+          },
+          {
+            "label": "offline-draft_0_5BB614C9-03F9-484D-A9B2-029B42A75FC1.png",
+            "sha256": "526ea11035b3a0d6c6dfefe0930bc4bcdf2d1c42214db07755c5e985e688dbab"
+          },
+          {
+            "label": "system-file-picker_0_CF96F661-10B5-463A-A763-31BD6FDA3BF8.png",
+            "sha256": "e3bd29a52d2c1fe1ecbe3b95c091bdfb8ec22d53e90d5c88e08b1dee726caeb9"
+          },
+          {
+            "label": "system-photo-picker_0_F4AF744F-06D9-4BEE-903A-949DE7E10DF0.png",
+            "sha256": "c46caafe94ee855644b593570070fb55c7478878f475a063ce8698628ca86afb"
+          },
+          {
+            "label": "floating-chat-light_0_0EBB8DD4-5F51-4F64-9DE9-2AE19BD17F47.png",
+            "sha256": "d0f92e55e3d9f4b16e2f227b16d1c17086d2091835547cf166717e8b2c84a907"
+          },
+          {
+            "label": "floating-chat-keyboard-multiline_0_D7523995-EC1E-4011-9FB7-5BA3A6FC06A7.png",
+            "sha256": "9cdfa0a392e3463a8698e8d251cf8b5a3ac5679bba21fdac2225827d0872f0bc"
+          },
+          {
+            "label": "floating-chat-landscape_0_A58408EE-6421-4DAD-9A7C-6FF4B534B509.png",
+            "sha256": "c46a991f95a66d9a13177e77af5277e88ebe0f02c48c1dbb4a9e93cd3b35fe12"
+          },
+          {
+            "label": "floating-chat-dark_0_E5823EAC-A7F4-40C6-ADA3-3DB2DCB22D01.png",
+            "sha256": "4996cfad6194975d9ad7a4099a20d170d1df6698e0e098fc1f8b695185450216"
+          },
+          {
+            "label": "floating-chat-dark-latest_0_971FC652-0FDA-4B9B-9D12-2B912500EAF2.png",
+            "sha256": "89f55173f11c230961a12c4539483b05d9af6097fd7533107afcaea4b08b154e"
+          },
+          {
+            "label": "floating-chat-jump-latest_0_B716C078-F2BA-49F1-B50C-05B03BFABF3E.png",
+            "sha256": "1335c9f78cb5be5390f858d1e07b78889e0232cee0a87e7c2bf8e8fe15c3f2c4"
+          },
+          {
+            "label": "compact-dark_0_9C4C2A46-4ABF-44B1-8ADA-901D8F58D843.png",
+            "sha256": "46363ba6db1677d69003b7a832dc391103d42c500033e3e65c8a833ea5070dbf"
+          },
+          {
+            "label": "notifications-denied-and-defaults_0_30C3A62D-9E95-400E-BEB0-78EC77B226F4.png",
+            "sha256": "5587f89435d44c174bca4d696a52483cea59c671d97c01bb3f29e714b0a5ebae"
+          },
+          {
+            "label": "notifications-preferences-restored_0_42C67B26-6174-4D0E-BA7C-AA2491D88095.png",
+            "sha256": "5496e4dc4121d0337a6ac5077a2ec1572053537e85b6c77b99e700bb35e6b5ce"
+          }
+        ],
+        "notes": [
+          "Workroom Mac/web-studio target and studio-draft screenshot inspected; native cross-client isolation assertions passed.",
+          "Current native-group five screenshots inspected separately: demo settings, onboarding and retained draft; no layout regression.",
+          "Compact dark chat screenshot inspected: text, bubble, floating header/settings, empty disabled composer and system bar contrast.",
+          "Synthetic listening screen inspected: original draft, appended transcript, cancel/finish/send controls; no actual microphone claim.",
+          "Dark synthetic listening screen and controls inspected; permission rejection assertions passed.",
+          "Recovered disabled-dictation draft, enabled send and native input controls inspected.",
+          "Five images inspected, landscape also opened separately at full size with EXIF rotation: multiline, keyboard, landscape, dark and latest states. Floating overlays match established baseline.",
+          "Latest synthetic 2400-line history screenshot inspected: cleared composer, floating header/settings; diagnostic controls are test-only.",
+          "First local demo send creates exactly one selected row in recent/project lists; screenshot inspected, no remote owner/model claim.",
+          "Offline target, retained offline-draft, offline notice and disabled send screenshot inspected.",
+          "Closed chat layout after continuous reversal inspected; drawer absent and composer retained.",
+          "Current native recovery five-recent/project screenshot inspected separately; rows, expand affordance and footer consistent.",
+          "Recovery attempt compact-main and compact-sidebar screenshots inspected separately; current layout consistent with baseline.",
+          "Three screenshots inspected: drawer open/closed and search swipe closed; original draft retained.",
+          "Native file and seeded Simulator photo pickers inspected; actual system sheets and cancel/selection affordances present.",
+          "Permission denied/default categories and restored preferences/sound sections inspected; this proves native preferences, not physical push delivery.",
+          "Resume and completed-disabled-send screenshots inspected; shared priority maps to native controls, stopped/completed history remains readable."
+        ]
+      },
+      {
+        "group": "clients",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "client-list-edit-entry_0_F7805400-1B10-495F-98E7-925DFBD43DD8.png",
+            "sha256": "ba134c8df2e53049ce698ce663cecefbb785c9ef7ed50234153229e166ad12c4"
+          },
+          {
+            "label": "client-edit-saved_0_A7753848-8CA2-4907-80B0-F66E61E3C51D.png",
+            "sha256": "3ee0cd629f17994fc30cfcb4fdb74500a2a551ab3f2c9f8ad04cb18fa8abc142"
+          }
+        ],
+        "notes": [
+          "Two collected client-list sheets inspected: selected read-only Codex client and edited display name; system sheet rows and edit affordance remain consistent."
+        ]
+      },
+      {
+        "group": "composer",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "composer-host-completed_0_CB5859CC-B7D9-4452-A500-4C37503722EF.png",
+            "sha256": "ed8c38f3b08362144dfc8abdf45498917dee1ddba14a6df544ec4d0feeabad7c"
+          },
+          {
+            "label": "composer-host-interrupted_0_3248B3E5-6186-48F4-BD3F-7C60D4BB5143.png",
+            "sha256": "223b54951c89411937be8b514ee7eecffdf914a6504d8ea8507e68098c5c6dc1"
+          },
+          {
+            "label": "composer-host-failed_0_D7265A05-B470-47AC-900A-98D56359617F.png",
+            "sha256": "85633ad91ea25ff702df3e1adf8c14084410630bdde96e8003ee7ec6acf3d0ef"
+          },
+          {
+            "label": "composer-host-paused_0_171B716F-B113-486F-BD32-9FACFFDAD49E.png",
+            "sha256": "5cef06700fd3d78434a955edf4e1d917f0a648dc08552c0fd1eb973e687bb688"
+          },
+          {
+            "label": "composer-host-completed-with-old-interruption_0_AD96EC4D-B7A0-4F4A-B71D-CC3196DCB8D9.png",
+            "sha256": "ab40a32cb43fa89c081ea0449d62260af9a598d6bdc543c33df705e182de8352"
+          },
+          {
+            "label": "composer-host-unknown_0_DC10E2EF-8B5F-4ADA-ACC8-14A0E0D358FE.png",
+            "sha256": "13ca8e490773d9ac97a63a81918f78c33562bbd9e426bb67a6eacbd8290d14a8"
+          },
+          {
+            "label": "composer-numbered-queue-above-input_0_0BA91F03-9F71-439B-8586-4481FCA1B129.png",
+            "sha256": "a59b3ebeb41f6d85883a34fc45ef71a770cd361dfe8acc05997e47ce78b3cd92"
+          },
+          {
+            "label": "composer-host-resumed_0_CAB3F7DC-B7B0-40C9-86A3-83DFE92812BB.png",
+            "sha256": "bd14d7af2d7b693a41c832c99d9f3d0428577e129a1ef332d3d54c6609e8de24"
+          },
+          {
+            "label": "composer-resume_0_AAD955C0-E6B9-44C4-A998-1D2357283BFD.png",
+            "sha256": "5211cfda34dcffd4d2ed29862c16a464853580dc95d33c0f35cafe80eb31c2f8"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_B1003160-8E76-4209-BFBC-91F1BE75194D.png",
+            "sha256": "1689b9d2cde06a51ea205a5f1b92fbe5ffde8c9764a5b934115daca5f09f4bc6"
+          }
+        ],
+        "notes": [
+          "Ten actual screenshots inspected: completed, interrupted, failed, paused, old interruption ignored, unknown, numbered queue/cancel, resumed and local completion. Shared policies preserve button priorities and queue placement."
+        ]
+      },
+      {
+        "group": "generation",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "mobile-generation-settings_0_B8F832B4-2731-4E5B-98D1-75AE0B24085D.png",
+            "sha256": "b6ad5910522a324851f1ddc716f5c5b8d5318680bad0e44f4cab4549e8757859"
+          },
+          {
+            "label": "mobile-generation-composer-compact_0_76900900-BB80-45FF-962E-D28CD6F140FD.png",
+            "sha256": "8b9e84dfa73d6742b413568bdb9f0fc104c0ec4c0160a73d0d3eba1d99fd56f6"
+          },
+          {
+            "label": "mobile-generation-composer-wide_0_B8429481-EC93-4659-8D49-C8C47747FC72.png",
+            "sha256": "1992a9f0dcc954706cdbd37d373d0d6b083d8d1524b2db297dd5fa2ed564d774"
+          }
+        ],
+        "notes": [
+          "Three images inspected, landscape opened separately: native settings selection, fast/effort/permission and plan composer badges; compact truncation and wide labels match baseline."
+        ]
+      },
+      {
+        "group": "plan",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "mobile-plan-review_0_DFDE0941-7D88-4410-B5DF-C489FB305BB6.png",
+            "sha256": "0227234966004bc9b43d0737abd56123fe3885e14353fb55b5f33b1e33bafafc"
+          },
+          {
+            "label": "mobile-composer-plan-mode_0_405A001A-96DE-4AAA-B466-5FC3F77C9FC1.png",
+            "sha256": "f8ddaa7cefa72239c1b786bc3f5f1446eba9578a5b427ff1ba55cf52db6cf3c1"
+          },
+          {
+            "label": "mobile-plan-readonly_0_D2005B93-B95A-4575-82CB-8009036E0B61.png",
+            "sha256": "03de49b79b0ee53940fc758d78c3d60127e5731ef1d415dba478d51a00f197b8"
+          },
+          {
+            "label": "composer-resume_0_9C172F84-4698-4E28-AEFC-44D3B17ED66C.png",
+            "sha256": "dcc68e418f93fbdbf438a68bc2be7639a4f6be85ef5ecb32900009f69c460a0d"
+          },
+          {
+            "label": "composer-completed-disabled-send_0_5D6D4CC4-7943-4AF2-A77E-AEA551F75243.png",
+            "sha256": "936da8120deda3463e5e5b57967081657791b2135a52574a24b93f958d745806"
+          }
+        ],
+        "notes": [
+          "Three plan screenshots inspected: expanded review/execute-adjust controls, plan draft with keyboard, collapsed read-only plan with disabled actions.",
+          "Two fresh plan-group input recovery screenshots inspected independently; resume/completed priorities remain consistent."
+        ]
+      },
+      {
+        "group": "receipts",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "approval-dark-disabled_0_56A2FA02-056B-486D-BFA2-C608329C2C2D.png",
+            "sha256": "0dae1ae50778caf7a4394800d5d4669830ffe3ec0c3c2996bd99e818dc618896"
+          },
+          {
+            "label": "approval-dark-enabled-custom_0_BDBFE73C-154D-4904-A018-4BF7C4958A2D.png",
+            "sha256": "825495e75c3da915ea601277b0ede90b6f302d7ef0ff84525a4ae26289f22545"
+          },
+          {
+            "label": "approval-light-enabled-custom_0_EFB02B54-6849-439F-BEC2-7F8A85665064.png",
+            "sha256": "162b2c10ec5c1ed83601e2edb251568ab2110f1939eca8cc08777f6f740ca1e9"
+          }
+        ],
+        "notes": [
+          "Three question-card screenshots inspected: disabled/enabled selection plus freeform in light/dark. Dark enabled capture retains keyboard-close transition at lower edge; not a stable viewport reference. Receipt isolation/persistence proved by native assertions separately."
+        ]
+      },
+      {
+        "group": "compaction",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "context-compaction-running_0_5A1CCAFE-4534-45AF-9F14-8DC7C97DF118.png",
+            "sha256": "fba4cd8bda1331cc9ac1c060f7af6e807ea2eb85dc17d5d2ed67e43da16490b4"
+          },
+          {
+            "label": "context-compaction-completed_0_929BF988-ACD2-4BBE-AA3E-9C307648E700.png",
+            "sha256": "711b4ba943b36700c67f43eef07068b9286e80b52eb0d0b2acf3d3f3931cfe03"
+          }
+        ],
+        "notes": [
+          "Running/completed native compaction row screenshots inspected: grouped command disclosure, spinner, completed marker and reply controls remain preserved."
+        ]
+      },
+      {
+        "group": "creation",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "desktop-fixture-pending-before-restart_0_80A36082-6AAB-459F-AE29-8A4F9002BCE5.png",
+            "sha256": "392e527f9ec1a046a9a84ad4aaac8b84345b9a52a9c46f072b7f835cf3cfe1d8"
+          },
+          {
+            "label": "desktop-fixture-confirmed-without-second-send_0_8D8E9B19-4002-460A-B79B-D9A83171FE37.png",
+            "sha256": "c8c46ee4e77fbba2c24791bfc0910633bc3d3c9ccbe0e2463e2d9c281b1de653"
+          }
+        ],
+        "notes": [
+          "Pending before restart and confirmed without second send screenshots inspected; synthetic request assertions prove one immutable creation submit and no normal reply replay."
+        ]
+      },
+      {
+        "group": "recovery",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "creation-send-disabled-empty_0_415E8B2C-94EC-4993-9385-B09B073E60F5.png",
+            "sha256": "45c06adfd1b3817091fd0aba915d48840e6640780b18940833cc339abc4292d5"
+          },
+          {
+            "label": "creation-send-enabled-draft_0_FB4F89C1-B7C9-4DC7-9B85-0A1EBE1223F1.png",
+            "sha256": "c1ea6d0caa38963baaaccb4002a89c031c2c905ad56f990e0ce0c9d418c9aad4"
+          },
+          {
+            "label": "creation-message-sending_0_69FAC681-A967-4358-9403-3DC1AC0C95C2.png",
+            "sha256": "dbaf261752f7f41c53594c1877a662dd45dad8603e092d118ffacb546ba9aa0a"
+          },
+          {
+            "label": "creation-message-sending-dark_0_8815B34C-8D45-4028-AE6C-F0D4FC6D0330.png",
+            "sha256": "9f09a5c63ae90d3f3347f731fc7b9ba67062e77794302490e108b56530131889"
+          },
+          {
+            "label": "creation-send-enabled-dark_0_38403BBA-91A0-482F-B23F-9986A7AEE32C.png",
+            "sha256": "223ddf982e90137a114a5f6f26e747e3548f76d66817fe23a687634987fe5514"
+          },
+          {
+            "label": "creation-unknown-draft-restart-late-receipt_0_85331A70-B9E8-4A0F-AA95-85B8E90597C1.png",
+            "sha256": "5119dd3b5c857caf5405b2fcb06360d2f2340c82e89e2fdcac95a14d2577f12b"
+          }
+        ],
+        "notes": [
+          "Six creation recovery screenshots inspected: empty/ready draft, light/dark submitted unknown, edited local draft while immutable submit retained, detached new draft and restart/late-receipt confirmation. No duplicate-input claim beyond actual synthetic request counters."
+        ]
+      },
+      {
+        "group": "reading",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "read-lifecycle-real-failure-preserves-draft_0_E07E4C9B-64B0-4324-8DF7-BC377AAC35DE.png",
+            "sha256": "1db325856d18ae2ac762aea7c646adf39c1000e347924595ab6d0a669d4a6712"
+          },
+          {
+            "label": "read-lifecycle-client-restored_0_B4469A84-5646-4BAD-99E8-1C320E0CE68C.png",
+            "sha256": "f03b68e9b2927c7c8a117aef07abe43dc4a1da48ea03aa1fb96d7d6afa45c20d"
+          }
+        ],
+        "notes": [
+          "Failure-retained editable draft with keyboard and restored read-only client screenshots inspected. HTTP fixture error/cancellation counters and native assertions are separate from real Codex runtime proof."
+        ]
+      },
+      {
+        "group": "unread",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "mobile-reading-cleared_0_0941D668-7BA0-46E8-8E7C-4DB96A1448AF.png",
+            "sha256": "e3c24a36ecf985bb5032ad781a2c23261979b20ada89ac9e28784633f364e930"
+          },
+          {
+            "label": "mobile-reading-restored_0_3C550681-618C-4EBE-83AB-BC3761249B82.png",
+            "sha256": "f848bd4495a356b2e9ea5e836c91b3c20f94cd8890972dd27bbb1501b75b255a"
+          }
+        ],
+        "notes": [
+          "Cleared and restored native mobile reading screenshots inspected: selected target has no unread dots in recent/project after reading and relaunch; desktop read state does not substitute phone ledger."
+        ]
+      },
+      {
+        "group": "badge",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "multi-computer-system-unread-badge_0_C59AB5E1-0C44-4FE1-B618-179DC39C042E.png",
+            "sha256": "f93ad16d70275e6cba7fe1180688ae40b878b5b1225910f6aae8d76e91564360"
+          },
+          {
+            "label": "approval-read-unread-cleared-action-retained_0_DC142EF8-C7D6-4641-AB7E-41992666715C.png",
+            "sha256": "21cdd70ea6125db3ed22119855b93a6b3e5aefeef694329f06566adf305a3aa5"
+          }
+        ],
+        "notes": [
+          "System Simulator badge=1 and approval action retained after read/unread clearing inspected. Multi-target aggregation assertions passed; no APNs/FCM/vendor delivery claim."
+        ]
+      },
+      {
+        "group": "history",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "history-paging-compact-local_0_4661309B-1D8E-41A6-B737-B22573EBA815.png",
+            "sha256": "c97ed62bd6ec4c0f9875df543a791effa4e344e59edc129964cd8fb891f2d95b"
+          },
+          {
+            "label": "history-paging-local-exhausted_0_F1D9895E-BB49-4069-914F-23127D0F4295.png",
+            "sha256": "eb8583aa8a70e2d999238b9d62bf613f5042db2f57f3fa25788b8a2ccd36140c"
+          },
+          {
+            "label": "history-paging-remote-exhausted_0_D06D5B5F-8E83-4782-A932-2313E6A2460E.png",
+            "sha256": "d5bc4ec8cf802ff3fce724b3f968cc093d520cb8cf1adf4b12ced46cc078470d"
+          },
+          {
+            "label": "history-paging-switch-isolated_0_72074D92-AC53-4EED-BCC7-FDE1E818F3F6.png",
+            "sha256": "050e6bf0bc9ba47be91e2e11062d7d023f94f33d8c49785fefe167ddb7970479"
+          }
+        ],
+        "notes": [
+          "Four native paging screenshots inspected: compact local window, local/remote exhaustion and isolated switched thread. Existing floating controls stay readable; late page/cancel behavior proved by native fixture assertions."
+        ]
+      },
+      {
+        "group": "sidebar",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "label": "sidebar-history-updated-without-events_0_91A1DC03-132C-43E0-8382-D516AFFB5013.png",
+            "sha256": "1b46f62c8e38e3bf8cf8c9dad1fe06e6d0862200af990e4a5ff6f34e96603634"
+          },
+          {
+            "label": "sidebar-completed-unread-light_0_936A0710-7A9B-4B4A-A486-D8DC868FB648.png",
+            "sha256": "d1987b51da449fca7d7ea064469df0cfe800ceae52e748eaffdc72d84fe006f5"
+          },
+          {
+            "label": "sidebar-completed-unread-dark_0_3345998B-78CE-44EA-81F9-9EC155C3F2A1.png",
+            "sha256": "f8850964ed18068d4e828eaf6b20ed90b0a323673d24922bfe3dd1e410b64deb"
+          },
+          {
+            "label": "compact-main_0_BEB9F005-EA9D-4F41-BF3A-F5463D1D9BB5.png",
+            "sha256": "0c0301f8baf5c37100c724b1430f676a7e553d39c02cac9f1ed1f17144933024"
+          },
+          {
+            "label": "compact-sidebar_0_79CE3D07-0BD3-4721-BAC6-30525091B554.png",
+            "sha256": "eb98046876ef2b8677ce40f932289be7c55a246bd654bc511df557094771154b"
+          },
+          {
+            "label": "sidebar-five-recent-and-project_0_63E9E33C-B20F-4462-9C62-427B2A2700D1.png",
+            "sha256": "42c063835b806b1ce61374f990e03896d7c571d2b50dd4b9774e0e11c7ac5f10"
+          },
+          {
+            "label": "settings-demo-disabled_0_C95F4DB4-6730-45F9-804A-477A3A7CF7B5.png",
+            "sha256": "d5bc7db931db09dc0f60bdc855a8833dce0220934ac698de3ea0ddfbc90ba314"
+          },
+          {
+            "label": "demo-closed-onboarding_0_43E260AA-6A96-4268-9474-2CF189ABA9B6.png",
+            "sha256": "703048f1d00083b3da84e0663a57238dd363e2534890d6594c5221748a17a2cd"
+          },
+          {
+            "label": "settings-demo-enabled_0_C62DE830-A335-4015-8F4A-7CDEB7D058D6.png",
+            "sha256": "b16c53cb6904037f00d41b274cce4571126889ec107be97646f74585833b43ee"
+          },
+          {
+            "label": "demo-main-without-test-controls_0_0A31FBF7-9914-4BCB-940A-0C606A2DA04B.png",
+            "sha256": "ff48a7fd5cd3175d6ff7fc6cad39c91870eb6463449dfed4125aa9526113db79"
+          },
+          {
+            "label": "settings-demo-disabled_0_9D126ACC-D5E2-4278-A638-60D498D3AEF5.png",
+            "sha256": "ed29b7efa9070fa68137ca789b3ef4daaf7eaf4737bf851494ac77f264493dc1"
+          },
+          {
+            "label": "settings-demo-disabled_0_E5E821A0-46A3-4AC6-95E9-8BA82C912FA6.png",
+            "sha256": "2617fe8480db68bbd4fa5337370c2e0c5e56391ef116afe93628e6108a58991c"
+          },
+          {
+            "label": "settings-demo-enabled_0_F0DD73AD-D76C-4213-B73B-2BD3A6275DCA.png",
+            "sha256": "7d83e3deb026ef773fb245e6f99e1319d3e6001e27007254d055affd037f8cd3"
+          },
+          {
+            "label": "settings-demo-disabled_0_9B37C88E-D96A-4273-8670-808A2069E452.png",
+            "sha256": "2617fe8480db68bbd4fa5337370c2e0c5e56391ef116afe93628e6108a58991c"
+          },
+          {
+            "label": "demo-closed-connected-client-retained_0_CC1E6EE9-E948-4B45-8E12-332482282E03.png",
+            "sha256": "f104cebb0dbba13b93011ce7811cd85952844490f0a128b9881387c395513c79"
+          },
+          {
+            "label": "request-success-1-loading.png",
+            "sha256": "708d7250bd0826c23b6e8623ad99e8e69d88e42e5aafc71a4132796d86c459bd"
+          },
+          {
+            "label": "request-error-2-loading.png",
+            "sha256": "a1730210469816b56057e3305198661ac8a05f8ea92f4f53ff84d28eb5a42fcf"
+          },
+          {
+            "label": "request-error-3-loading.png",
+            "sha256": "0dcfe948c9c6cc26c4ef09e1c621d20abca2519d9ff70a0b8599f252c7254e4b"
+          },
+          {
+            "label": "request-error-4-loading.png",
+            "sha256": "8be21409d60dd4f955a23d7795374fc269d7b3c3f42c605b1bc375f0784a316b"
+          },
+          {
+            "label": "request-error-5-loading.png",
+            "sha256": "8be21409d60dd4f955a23d7795374fc269d7b3c3f42c605b1bc375f0784a316b"
+          }
+        ],
+        "notes": [
+          "Four screenshots inspected: toggles retain connected client, read-only history and connected-client-draft; no demo reset overwrites connected target.",
+          "Five screenshots inspected: settings demo off/on, onboarding, main draft before close and persisted off state. Native settings content remains scrollable.",
+          "Read-only history updates runtime capability and running indicator before events; screenshot inspected.",
+          "Five recent rows, expand label, project rows and bottom account area inspected; long labels remain truncated as baseline.",
+          "Compact chat and drawer inspected: search, recent/projects, selected row, native composer and settings remain consistent with baseline.",
+          "Light/dark completed phone unread dots, selected reading anchor and runtime capability subtitle inspected; phone ledger stays independent.",
+          "All five request-bound screenshots inspected separately: success capture pre-indicator; error-2 transitional, error-3 visible native pull refresh spinner; error-4/5 failure alert with cached list. Request captures are supplemental to passing native assertions."
+        ]
+      }
+    ]
+  },
+  "android": [
+    {
+      "api": 37,
+      "abi": "arm64-v8a",
+      "osBuild": "google/sdk_gphone64_arm64/emu64a:17/CE2A.260420.019/15611780:userdebug/dev-keys",
+      "sourceSha256": "2e0d51d181754397813382b64a236082c96a455d0ac09ab7335d6c00d41b6dce",
+      "status": "passed",
+      "tests": 15,
+      "apkSha256": "ba62c2f8b28487ba20db2f2fb533342cca4db1aac362e5ecb08d26db50d40043",
+      "testApkSha256": "fe26c26f15ca859f22ca7596d61cca646a303d84d5dbd968bce13cc15a309de0",
+      "reportSha256": "c66534d867002f58bb48b3051bd525fc3e4896453c6a01715468961180d3a81c",
+      "visual": {
+        "sourceSha256": "2e0d51d181754397813382b64a236082c96a455d0ac09ab7335d6c00d41b6dce",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "demo-completed-light.png",
+            "sha256": "e57d3333920b9c849e8412b60a23998821a852a1e050e4e58e505fb3fd4ebd9c"
+          },
+          {
+            "file": "demo-draft-dark.png",
+            "sha256": "9f6e1ce16f8aa287acf1b16bb360f357d75a9e9726c683f2fb7ca5223f483908"
+          },
+          {
+            "file": "demo-interrupted.png",
+            "sha256": "7c18fa06071948d809f2ae4ed11940b7af61e1506ec7642b1e9741e222884b86"
+          },
+          {
+            "file": "demo-running.png",
+            "sha256": "3f86e0d1b7313af4563e714a6ee8aa3c4672bbe919fa887842e0c986b14d1772"
+          },
+          {
+            "file": "onboarding-light.png",
+            "sha256": "48b72d76d8f92b9e487dbe275b9974712a8174e198b8285f1f4c199ca070025c"
+          },
+          {
+            "file": "sidebar-dark.png",
+            "sha256": "bf036afb2676405f35ada56baba58515d094e8b4b188c5c28962a7a673818e4f"
+          }
+        ],
+        "notes": [
+          "Actual six foundation screenshots inspected after 15 native tests: send/stop/resume, draft, dark drawer and onboarding. Full Android page parity remains A3–A7."
+        ]
+      }
+    },
+    {
+      "api": 26,
+      "abi": "arm64-v8a",
+      "osBuild": "google/sdk_gphone_arm64/generic_arm64:8.0.0/OSR1.180418.028.A3/10734686:userdebug/dev-keys",
+      "sourceSha256": "2e0d51d181754397813382b64a236082c96a455d0ac09ab7335d6c00d41b6dce",
+      "status": "passed",
+      "tests": 15,
+      "apkSha256": "ba62c2f8b28487ba20db2f2fb533342cca4db1aac362e5ecb08d26db50d40043",
+      "testApkSha256": "fe26c26f15ca859f22ca7596d61cca646a303d84d5dbd968bce13cc15a309de0",
+      "reportSha256": "65ba1b634bafe090878bb5c16e87fb0a79c0613572d96ec039ee37d0c30eea18",
+      "visual": {
+        "sourceSha256": "2e0d51d181754397813382b64a236082c96a455d0ac09ab7335d6c00d41b6dce",
+        "status": "reviewed-collected-states",
+        "images": [
+          {
+            "file": "demo-completed-light.png",
+            "sha256": "acc7f892f56c5ee1ed5b496236d73eebc9fb07a2d86064edd36d53e2a56f6178"
+          },
+          {
+            "file": "demo-draft-dark.png",
+            "sha256": "eecee64d31bbfcd933d1c46028f5e8b426dcfaafd6c5f939c82f814f2da92ecd"
+          },
+          {
+            "file": "demo-interrupted.png",
+            "sha256": "1e164110fd10f8ec14e5714836c6d8b08111b3bf6724fd64aed49e579a83936a"
+          },
+          {
+            "file": "demo-running.png",
+            "sha256": "66b6f1b810cfd5629d37c5be55276b19be9ea1519760d5999307b618870cefc4"
+          },
+          {
+            "file": "onboarding-light.png",
+            "sha256": "1ee310b060f1785ad6ea9afb3198a4eb13c8c4d3d5745dac95d7badc783a96e8"
+          },
+          {
+            "file": "sidebar-dark.png",
+            "sha256": "38c41e24195eb65444bf5eac3ab1f997632f14126110189c80c05fef9b503002"
+          }
+        ],
+        "notes": [
+          "Six actual API26 foundation screenshots inspected after 15 tests: shared state and Android native lifecycle checks passed.",
+          "Keyboard covers composer lower edge and resized chat header is outside viewport; retained blocking UI gap for A3/A6, not accepted as full UI parity."
+        ]
+      }
+    }
+  ],
+  "inputPerformance": {
+    "status": "passed",
+    "tests": 6,
+    "sourceSha256": "5d7184a8a35352d8da0f084aab1643e85679a6fc804c78b9c7cc97e1654e7788",
+    "typingMetrics": {
+      "chatRenders": 8,
+      "edits": 242,
+      "mainThreadWrites": 0,
+      "maxMS": 0.3040000156033784,
+      "p95MS": 0.04187499871477485,
+      "writes": 2
+    },
+    "reportSha256": "6432f6703bae4313a64d9fec56aca6dcf0fe3007658c06afb1e2c229276fe800",
+    "scope": "Native Simulator synthetic large history and speech input, not actual microphone/model acceptance."
+  },
+  "limitations": [
+    "Android product UI, real remote integration and system functions remain A3–A7.",
+    "API26 keyboard overlaps lower composer and resized chat header leaves viewport; A3 UI/A6 inset blocker retained.",
+    "No physical speech/push, real Electron/model/owner, OIDC/public relay, release signing or cloud CI verified in A2.",
+    "Existing SwiftUI/toolchain warnings and superseded failed/incomplete attempts retained in private evidence."
+  ],
+  "remaining": []
+}

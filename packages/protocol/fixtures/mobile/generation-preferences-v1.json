@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "permission keeps remembered model effort speed",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "guardian-approvals",
+        "speed": "standard"
+      },
+      "edit": "permission",
+      "expected": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "guardian-approvals",
+        "speed": "fast"
+      }
+    },
+    {
+      "name": "speed keeps independently remembered settings",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "guardian-approvals",
+        "speed": "standard"
+      },
+      "edit": "speed",
+      "expected": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "standard"
+      }
+    },
+    {
+      "name": "effort keeps independently remembered settings",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "guardian-approvals",
+        "speed": "standard"
+      },
+      "edit": "effort",
+      "expected": {
+        "model": "remembered-model",
+        "effort": "low",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      }
+    },
+    {
+      "name": "model also remembers its reconciled effort speed",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "guardian-approvals",
+        "speed": "standard"
+      },
+      "edit": "model",
+      "expected": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "full-access",
+        "speed": "standard"
+      }
+    },
+    {
+      "name": "explicit permission default clears only its preference",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": null,
+        "speed": "standard"
+      },
+      "edit": "permission",
+      "expected": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": null,
+        "speed": "fast"
+      }
+    },
+    {
+      "name": "explicit speed default clears only its preference",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "guardian-approvals",
+        "speed": null
+      },
+      "edit": "speed",
+      "expected": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": null
+      }
+    },
+    {
+      "name": "explicit effort default clears only its preference",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": null,
+        "permissionMode": "guardian-approvals",
+        "speed": "standard"
+      },
+      "edit": "effort",
+      "expected": {
+        "model": "remembered-model",
+        "effort": null,
+        "permissionMode": "full-access",
+        "speed": "fast"
+      }
+    },
+    {
+      "name": "explicit model default clears dependent fields only",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": null,
+        "effort": null,
+        "permissionMode": "guardian-approvals",
+        "speed": null
+      },
+      "edit": "model",
+      "expected": {
+        "model": null,
+        "effort": null,
+        "permissionMode": "full-access",
+        "speed": null
+      }
+    },
+    {
+      "name": "explicit whole configuration replaces all four fields",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "guardian-approvals",
+        "speed": "standard"
+      },
+      "edit": "all",
+      "expected": {
+        "model": "old-model",
+        "effort": "low",
+        "permissionMode": "guardian-approvals",
+        "speed": "standard"
+      }
+    },
+    {
+      "name": "whole default clears all four fields",
+      "previous": {
+        "model": "remembered-model",
+        "effort": "high",
+        "permissionMode": "full-access",
+        "speed": "fast"
+      },
+      "current": {
+        "model": null,
+        "effort": null,
+        "permissionMode": null,
+        "speed": null
+      },
+      "edit": "all",
+      "expected": {
+        "model": null,
+        "effort": null,
+        "permissionMode": null,
+        "speed": null
+      }
+    }
+  ]
+}

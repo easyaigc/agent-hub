@@ -31,7 +31,9 @@ data class CreationIntent(val hostId: String, val operationId: String, val proje
         .put("projectId",projectId ?: JSONObject.NULL).put("text",text).put("attachments",JSONArray(files.map { it.body() })))
 }
 data class DeliveryReceipt(val hostId: String, val threadId: String, val operationId: String, val state: String,
-    val turnId: String?, val error: String?, val supersededByTurnId: String?, val text: String?, val attachmentIds: List<String>)
+    val turnId: String?, val error: String?, val supersededByTurnId: String?, val text: String?, val attachmentIds: List<String>,
+    val noticeContext: String? = null, val queueSource: String? = null, val queuePresent: Boolean? = null,
+    val canExecuteNow: Boolean? = null, val queueDisposition: String? = null, val queueSyncError: String? = null, val laterTurnId: String? = null)
 data class DesktopCreation(val hostId: String, val operationId: String, val projectId: String?, val phase: String,
     val threadId: String?, val error: String?, val uploaded: List<String>, val thread: MobileThread?, val detached: Boolean,
     val preparation: CreationPreparation? = null) {
@@ -61,8 +63,10 @@ object CodexCommandCodec {
     fun decode(wire: String, definition: String) = validate(JSONObject(wire),definition)
     fun receipt(body: JSONObject): DeliveryReceipt {
         val v=validate(body,"deliveryReceipt")
+        val context=v.opt("noticeContext").takeUnless { it==JSONObject.NULL }
+        require(context==null || context is String) { "消息回执上下文格式无效" }
         return DeliveryReceipt(v.getString("hostId"),v.getString("threadId"),v.getString("clientMessageId"),v.getString("state"),
-            v.optional("turnId"),v.optional("error"),v.optional("supersededByTurnId"),v.optional("text"),v.optJSONArray("attachmentIds")?.strings().orEmpty())
+            v.optional("turnId"),v.optional("error"),v.optional("supersededByTurnId"),v.optional("text"),v.optJSONArray("attachmentIds")?.strings().orEmpty(),context as String?,v.optional("queueSource"),v.booleanOrNull("queuePresent"),v.booleanOrNull("canExecuteNow"),v.optional("queueDisposition"),v.optional("queueSyncError"),v.optional("laterTurnId"))
     }
     fun creation(body: JSONObject): DesktopCreation {
         val v=validate(body,"desktopCreation")
@@ -94,6 +98,10 @@ object CodexCommandCodec {
 
 /** Commands have specific names and immutable target arguments; no arbitrary route or method API. */
 interface AgentCommands {
+    suspend fun archiveWorkspace(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt = error("此客户端尚未支持批量归档")
+    suspend fun workspaceArchiveStatus(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt = error("此客户端尚未支持批量归档")
+    suspend fun chatAction(client: MobileClient,request: ChatActionRequest): ChatActionReceipt = error("此客户端尚未支持聊天管理")
+    suspend fun chatActionStatus(client: MobileClient,threadId: String,operationId: String): ChatActionReceipt = error("此客户端尚未支持聊天管理")
     suspend fun voiceReadiness(client: MobileClient): VoiceReadiness = error("此电脑尚未支持录音转写，请更新电脑连接程序。")
     suspend fun voiceStatus(client: MobileClient,request: VoiceManifest): VoiceReceipt = error("此电脑尚未支持录音转写")
     suspend fun prepareVoice(client: MobileClient,request: VoiceManifest): VoiceReceipt = error("此电脑尚未支持录音转写")
@@ -119,6 +127,7 @@ interface AgentCommands {
     suspend fun detachCreation(client: MobileClient, operationId: String): DesktopCreation
     suspend fun open(client: MobileClient, threadId: String, operationId: String, queryOnly: Boolean = false): DesktopOpen
     suspend fun stop(client: MobileClient, threadId: String, turnId: String)
+    suspend fun executeQueue(client: MobileClient, threadId: String, operationId: String, expectedTurnId: String?): Unit = error("此客户端未开放立即执行队列")
     suspend fun cancelQueue(client: MobileClient, threadId: String, operationId: String)
     suspend fun answer(client: MobileClient, threadId: String, turnId: String, approvalId: String, decision: String, answers: Map<String,List<String>>)
     suspend fun upload(client: MobileClient, threadId: String, file: CreationFile, bytes: ByteArray): MobileFile

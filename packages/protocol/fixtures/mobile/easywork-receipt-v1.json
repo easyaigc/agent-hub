@@ -1,0 +1,387 @@
+{
+  "version": 1,
+  "routing": {
+    "clientMessageId": "captured-operation",
+    "hostId": "captured-host",
+    "threadId": "captured-thread"
+  },
+  "cases": [
+    {
+      "name": "queued-native-evidence",
+      "raw": {
+        "state": "queued",
+        "runId": "native-run",
+        "turnId": "older-turn",
+        "queueSource": "native",
+        "queuePresent": true,
+        "canExecuteNow": false,
+        "queueDisposition": "future-opaque",
+        "queueSyncError": "sync issue",
+        "noticeContext": "historical",
+        "laterTurnId": "later-run",
+        "text": "original input",
+        "attachmentIds": ["original-file"]
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "queued",
+        "turnId": "native-run",
+        "queueSource": "native",
+        "queuePresent": true,
+        "canExecuteNow": false,
+        "queueDisposition": "future-opaque",
+        "queueSyncError": "sync issue",
+        "noticeContext": "historical",
+        "laterTurnId": "later-run",
+        "text": "original input",
+        "attachmentIds": ["original-file"]
+      }
+    },
+    {
+      "name": "accepted-still-has-sync-evidence",
+      "raw": {
+        "state": "submitted",
+        "runId": "native-run",
+        "queueSource": "native",
+        "queuePresent": false,
+        "queueSyncError": "sync issue"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "submitted",
+        "turnId": "native-run",
+        "queueSource": "native",
+        "queuePresent": false,
+        "queueSyncError": "sync issue"
+      }
+    },
+    {
+      "name": "raw-failure-beats-outer-completed",
+      "raw": {
+        "state": "failed",
+        "runId": "failed-run",
+        "error": "native error"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": null,
+      "fallbackError": "outer error",
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "turnId": "failed-run",
+        "error": "native error"
+      }
+    },
+    {
+      "name": "raw-cancelled-is-not-submitted",
+      "raw": {
+        "state": "cancelled"
+      },
+      "defaultState": "submitted",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "cancelled",
+        "turnId": null
+      }
+    },
+    {
+      "name": "query-absence-never-borrows-current-turn",
+      "raw": {},
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "uncertain",
+        "turnId": null,
+        "error": null
+      }
+    },
+    {
+      "name": "send-only-expected-turn-fallback",
+      "raw": {},
+      "defaultState": "submitted",
+      "fallbackTurnId": "expected-original-turn",
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "submitted",
+        "turnId": "expected-original-turn"
+      }
+    },
+    {
+      "name": "turn-id-only-query",
+      "raw": {
+        "turnId": "exact-turn"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "uncertain",
+        "turnId": "exact-turn"
+      }
+    },
+    {
+      "name": "run-id-precedes-turn-id",
+      "raw": {
+        "runId": "native-run",
+        "turnId": "other-turn"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "uncertain",
+        "turnId": "native-run"
+      }
+    },
+    {
+      "name": "explicit-null-error-does-not-borrow-outer-error",
+      "raw": {
+        "state": "failed",
+        "error": null
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": "outer error",
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "error": null
+      }
+    },
+    {
+      "name": "absent-error-uses-original-command-error",
+      "raw": {
+        "state": "failed"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": "outer error",
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "failed",
+        "error": "outer error"
+      }
+    },
+    {
+      "name": "captured-routing-is-authoritative",
+      "raw": {
+        "clientMessageId": "other-operation",
+        "hostId": "other-host",
+        "threadId": "other-thread"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "uncertain",
+        "turnId": null
+      }
+    },
+    {
+      "name": "non-string-state-and-run-use-protocol-fallback",
+      "raw": {
+        "state": 3,
+        "runId": false,
+        "turnId": 7
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "uncertain",
+        "turnId": null
+      }
+    },
+    {
+      "name": "explicit-null-optionals",
+      "raw": {
+        "queueSource": null,
+        "queuePresent": null,
+        "canExecuteNow": null,
+        "queueDisposition": null,
+        "queueSyncError": null,
+        "laterTurnId": null
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "uncertain",
+        "queueSource": null,
+        "queuePresent": null,
+        "canExecuteNow": null,
+        "queueDisposition": null,
+        "queueSyncError": null,
+        "laterTurnId": null
+      }
+    },
+    {
+      "name": "future-evidence-not-reinterpreted",
+      "raw": {
+        "state": "queued",
+        "queueSource": "future-owner",
+        "queueDisposition": "future-disposition",
+        "futureEvidence": {
+          "version": 2
+        }
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": true,
+      "expected": {
+        "clientMessageId": "captured-operation",
+        "hostId": "captured-host",
+        "threadId": "captured-thread",
+        "state": "queued",
+        "queueSource": "future-owner",
+        "queueDisposition": "future-disposition"
+      }
+    },
+    {
+      "name": "reject-queuePresent",
+      "raw": {
+        "queuePresent": "false"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-canExecuteNow",
+      "raw": {
+        "canExecuteNow": 0
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-queueSource",
+      "raw": {
+        "queueSource": true
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-queueDisposition",
+      "raw": {
+        "queueDisposition": {}
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-queueSyncError",
+      "raw": {
+        "queueSyncError": []
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-laterTurnId",
+      "raw": {
+        "laterTurnId": false
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-text",
+      "raw": {
+        "text": 3
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-error",
+      "raw": {
+        "error": {}
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    },
+    {
+      "name": "reject-attachmentIds",
+      "raw": {
+        "attachmentIds": "file"
+      },
+      "defaultState": "uncertain",
+      "fallbackTurnId": null,
+      "fallbackError": null,
+      "valid": false
+    }
+  ]
+}

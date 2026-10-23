@@ -419,6 +419,23 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertTrue(app.staticTexts["LONG_MESSAGE_" + fixture.nonce].waitForExistence(timeout: 60))
     XCTAssertEqual(toggle.label, "展开", "History defaults to a compact preview after relaunch")
   }
+  @MainActor func testWorkspaceArchiveOnlyDemoSharedRules() {
+    openWorkspaceManagement()
+    app.segmentedControls["management-kind"].buttons["对话"].tap()
+    let first = app.buttons["management-item-query"], second = app.buttons["management-item-spacing"]
+    XCTAssertTrue(first.waitForExistence(timeout: 10)); first.tap(); second.tap()
+    XCTAssertTrue(app.buttons["management-submit"].label.contains("2")); shot("archive-shared-two-selected")
+    app.buttons["management-submit"].tap(); app.alerts.buttons["取消"].firstMatch.tap()
+    XCTAssertTrue(first.exists); XCTAssertTrue(second.exists)
+    app.buttons["management-submit"].tap(); shot("archive-shared-confirmation")
+    app.alerts.buttons["归档对话"].firstMatch.tap()
+    XCTAssertTrue(first.waitForNonExistence(timeout: 10)); XCTAssertTrue(second.waitForNonExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["management-item-navigation"].exists); shot("archive-shared-confirmed-results")
+    app.terminate(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest()
+    openWorkspaceManagement(); app.segmentedControls["management-kind"].buttons["对话"].tap()
+    XCTAssertTrue(first.waitForNonExistence(timeout: 10)); XCTAssertTrue(second.waitForNonExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["management-item-navigation"].exists); shot("archive-shared-restart-no-replay")
+  }
   @MainActor func testWorkspaceManagementBatchDemo() {
     openWorkspaceManagement()
     app.buttons["management-item-api"].tap(); app.buttons["management-item-design"].tap()
@@ -5765,7 +5782,20 @@ final class CodexManageUITests: XCTestCase {
     for _ in 0..<4 where !more.isHittable { app.scrollViews["sidebar-list"].swipeUp() }
     XCTAssertTrue(more.isHittable)
     more.tap()
-    XCTAssertEqual(projectThreads.count, 8)
+    // LazyVStack can release the first two rows when expanding from the bottom.
+    // Collect actual accessible IDs across both scroll directions instead of
+    // mistaking one viewport's materialization count for the complete list.
+    var expandedProjectIds = Set(projectThreads.allElementsBoundByIndex.map(\.identifier))
+    for _ in 0..<4 where expandedProjectIds.count < 8 {
+      app.scrollViews["sidebar-list"].swipeUp()
+      expandedProjectIds.formUnion(projectThreads.allElementsBoundByIndex.map(\.identifier))
+    }
+    for _ in 0..<4 where expandedProjectIds.count < 8 {
+      app.scrollViews["sidebar-list"].swipeDown()
+      expandedProjectIds.formUnion(projectThreads.allElementsBoundByIndex.map(\.identifier))
+    }
+    XCTAssertEqual(expandedProjectIds.count, 8, app.debugDescription)
+    XCTAssertTrue(expandedProjectIds.contains("thread-navigation") && expandedProjectIds.contains("thread-pairing"), app.debugDescription)
     for _ in 0..<4 where !more.isHittable { app.scrollViews["sidebar-list"].swipeUp() }
     more.tap()
     XCTAssertEqual(projectThreads.count, 5)
@@ -6311,7 +6341,7 @@ final class CodexManageUITests: XCTestCase {
   }
 
   @MainActor func testMobileGenerationSettings() async throws {
-    guard let result = try? await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8797")!),
+    guard let result = try? await URLSession.shared.data(from: URL(string: ProcessInfo.processInfo.environment["GENERATION_FIXTURE_ENDPOINT"] ?? "http://127.0.0.1:8797")!),
       let fixture = try? JSONDecoder().decode(LiveFixture.self, from: result.0)
     else { throw XCTSkip("Run the generation settings iOS fixture harness") }
     connectLive(fixture, supportsCreation: false)
@@ -11053,20 +11083,237 @@ extension CodexManageUITests {
 }
 
 extension CodexManageUITests {
+  @MainActor func testOriginalQueueActionsPreserveDraftAndRequireExplicitConsentFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    func actions() async throws -> [[String: Any]] {
+      let (bytes, _) = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/queue-controls/stats"))
+      return (try XCTUnwrap(JSONSerialization.jsonObject(with: bytes) as? [String: Any]))["actions"] as? [[String: Any]] ?? []
+    }
+    func count(_ expected: Int) async throws {
+      for _ in 0..<100 { if try await actions().count == expected { return }; try await Task.sleep(for: .milliseconds(50)) }
+      XCTFail("Expected exact original queue action count \(expected)")
+    }
+    let execute = app.buttons["execute-queued-native-original"], cancel = app.buttons["cancel-queued-native-original"]
+    XCTAssertTrue(execute.waitForExistence(timeout: 15)); XCTAssertTrue(execute.isEnabled, app.debugDescription)
+    XCTAssertTrue(app.staticTexts["queued-text-file-only"].exists)
+    focusLiveComposer(); composer.typeText("independent queue draft")
+    if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+    shot("compact-queue-idle-original-order")
+    execute.tap(); XCTAssertTrue(allowTestAISharingIfNeeded()); try await count(0)
+    XCTAssertTrue(execute.isEnabled); execute.tap(); try await count(1)
+    XCTAssertFalse(execute.isEnabled); XCTAssertFalse(cancel.isEnabled)
+    let other = app.buttons["cancel-queued-old-compatible"]
+    XCTAssertTrue(other.isEnabled); other.tap(); try await count(2)
+    XCTAssertTrue(other.waitForNonExistence(timeout: 10))
+    focusLiveComposer()
+    composer.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: 0.98)).tap()
+    composer.typeText(" edited while original pending")
+    if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+    XCTAssertEqual(composer.value as? String, "independent queue draft edited while original pending")
+    shot("compact-queue-independent-pending-and-draft")
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/queue-controls/release"))
+    XCTAssertTrue(execute.waitForNonExistence(timeout: 15))
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/queue-controls/running"))
+    app.buttons["chat-menu"].tap(); app.buttons["刷新历史"].tap()
+    let append = app.buttons["execute-queued-file-only"]
+    XCTAssertTrue(append.waitForExistence(timeout: 15))
+    let progress = app.staticTexts.matching(identifier: "runtime-progress").firstMatch
+    XCTAssertTrue(progress.waitForExistence(timeout: 15), app.debugDescription)
+    XCTAssertTrue(progress.label.contains("正在执行"), app.debugDescription)
+    shot("compact-queue-running-attachment-append")
+    XCTAssertTrue(append.isEnabled); append.tap(); try await count(3)
+    XCTAssertTrue(append.waitForNonExistence(timeout: 15))
+    XCTAssertEqual(composer.value as? String, "independent queue draft edited while original pending")
+  }
+
+  @MainActor func testOriginalClientQueueMetadataFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    let first = app.buttons["cancel-queued-native-original"]
+    XCTAssertTrue(first.waitForExistence(timeout: 15), app.debugDescription)
+    XCTAssertTrue(app.buttons["cancel-queued-old-compatible"].exists)
+    for id in ["legacy-host", "legacy-disposition", "removed-native"] { XCTAssertFalse(app.buttons["cancel-queued-" + id].exists) }
+    focusLiveComposer(); composer.typeText("independent current unsent draft")
+    if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+    XCTAssertTrue(app.staticTexts["accepted original client sync failure"].waitForExistence(timeout: 15), app.debugDescription)
+    shot("queue-native-present-only-and-accepted-sync-error")
+    let dismiss = app.buttons["dismiss-receipt-failed-sync"]
+    XCTAssertTrue(dismiss.waitForExistence(timeout: 10)); dismiss.tap()
+    XCTAssertTrue(app.staticTexts["failed original client sync failure"].exists)
+    XCTAssertEqual(composer.value as? String, "independent current unsent draft")
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/queue-clear"))
+    app.buttons["chat-menu"].tap(); app.buttons["刷新历史"].tap()
+    XCTAssertTrue(app.staticTexts["QUEUE_PHASE_CLEAR"].waitForExistence(timeout: 15), app.debugDescription)
+    XCTAssertTrue(app.staticTexts["accepted original client sync failure"].waitForNonExistence(timeout: 10))
+    XCTAssertFalse(app.staticTexts["failed original client sync failure"].exists)
+    XCTAssertTrue(first.exists); XCTAssertTrue(app.buttons["cancel-queued-old-compatible"].exists)
+    XCTAssertEqual(composer.value as? String, "independent current unsent draft")
+    shot("queue-source-clear-keeps-original-draft")
+  }
+
+  @MainActor func testEveryOriginalBatchRecordRemainsReachableFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    openWorkspaceManagement(); app.segmentedControls["management-kind"].buttons["对话"].tap()
+    func stats() async throws -> [String: Any] {
+      let (bytes, _) = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/conflict-stats"))
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+    }
+    var oldest: String?
+    let search = app.searchFields.firstMatch
+    XCTAssertTrue(search.waitForExistence(timeout: 10))
+    for index in 0..<11 {
+      let suffix = String(format: "%02d", index)
+      let clear = search.buttons["清除文本"].firstMatch
+      if clear.exists { clear.tap() }
+      let blank = search.value as? String ?? ""
+      XCTAssertTrue(blank.isEmpty || blank == (search.placeholderValue ?? ""), app.debugDescription)
+      search.tap()
+      let queryText = "BATCH_RECORD_" + suffix + "_" + fixture.nonce
+      search.typeText(queryText + "\n")
+      print("BATCH_RECORD_SEARCH", index, search.value ?? "nil")
+      XCTAssertEqual(search.value as? String, queryText, app.debugDescription)
+      let row = app.buttons["management-item-batch-record-" + suffix]
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND isEnabled == true"), object: row)
+      XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed, app.debugDescription)
+      row.tap(); app.buttons["management-submit"].tap(); app.alerts.buttons["归档对话"].firstMatch.tap()
+      var originals: [[String: Any]] = []
+      for _ in 0..<100 {
+        originals = (try await stats())["batches"] as? [[String: Any]] ?? []
+        if originals.count == index + 1 { break }; try await Task.sleep(for: .milliseconds(50))
+      }
+      XCTAssertEqual(originals.count, index + 1)
+      if index == 0 { oldest = originals.first?["clientOperationId"] as? String }
+      else { XCTAssertTrue(row.waitForNonExistence(timeout: 15)) }
+    }
+    let original = try XCTUnwrap(oldest)
+    let query = app.buttons["management-check-" + original]
+    let list = app.collectionViews.firstMatch
+    for _ in 0..<18 {
+      if query.exists && query.isHittable { break }
+      if list.exists { list.swipeUp() } else { app.swipeUp() }
+    }
+    XCTAssertTrue(query.exists && query.isHittable, "The oldest unresolved original must remain reachable after ten later terminal records")
+    shot("oldest-original-after-eleven-batches-before-query")
+    query.tap()
+    var observed: [String] = []
+    for _ in 0..<100 {
+      observed = (try await stats())["batchQueries"] as? [String] ?? []
+      if observed.filter({ $0 == original }).count >= 2 { break }; try await Task.sleep(for: .milliseconds(50))
+    }
+    XCTAssertTrue(observed.count >= 2 && observed.allSatisfy { $0 == original })
+    let final = try await stats()
+    XCTAssertEqual((final["batches"] as? [[String: Any]])?.count, 11)
+    shot("oldest-original-query-keeps-eleven-immutable-batches")
+  }
+
+  @MainActor func testChatManagementBatchConflictFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    func stats() async throws -> [String: Any] {
+      let (bytes, _) = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/conflict-stats"))
+      return try XCTUnwrap(JSONSerialization.jsonObject(with: bytes) as? [String: Any])
+    }
+    app.buttons["chat-menu"].tap()
+    let pin = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "chat-pin", "置顶")).firstMatch
+    XCTAssertTrue(pin.waitForExistence(timeout: 10)); pin.tap()
+    var posted = false
+    for _ in 0..<100 {
+      if ((try await stats())["single"] as? [[String: Any]])?.count == 1 { posted = true; break }
+      try await Task.sleep(for: .milliseconds(50))
+    }
+    XCTAssertTrue(posted)
+    openWorkspaceManagement()
+    app.segmentedControls["management-kind"].buttons["对话"].tap()
+    let first = app.buttons["management-item-" + fixture.threadId]
+    XCTAssertTrue(first.waitForExistence(timeout: 10))
+    XCTAssertFalse(first.isEnabled, "Original single operation still unknown: zero new batch must be selectable")
+    XCTAssertFalse(app.buttons["management-submit"].isEnabled)
+    let beforeBatch = try await stats()
+    XCTAssertEqual((beforeBatch["batches"] as? [[String: Any]])?.count, 0)
+    shot("single-original-pending-blocks-batch-selection")
+    let other = app.buttons["management-item-search-second-thread"]
+    XCTAssertTrue(other.isEnabled); other.tap(); app.buttons["management-submit"].tap()
+    app.alerts.buttons["归档对话"].firstMatch.tap()
+    var batchId: String?
+    for _ in 0..<100 {
+      batchId = ((try await stats())["batches"] as? [[String: Any]])?.first?["clientOperationId"] as? String
+      if batchId != nil { break }; try await Task.sleep(for: .milliseconds(50))
+    }
+    let original = try XCTUnwrap(batchId)
+    let originalQuery = app.buttons["management-check-" + original]
+    let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND isEnabled == true"), object: originalQuery)
+    XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 15), .completed)
+    let cleared = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == false AND label CONTAINS %@", "0"), object: app.buttons["management-submit"])
+    XCTAssertEqual(XCTWaiter.wait(for: [cleared], timeout: 10), .completed)
+    XCTAssertTrue(app.staticTexts["management-selected-count"].label.contains("0"))
+    XCTAssertFalse(other.isEnabled); shot("batch-original-pending-retains-query-and-blocks-selection")
+    app.navigationBars.buttons.element(boundBy: 0).tap(); app.buttons["完成"].tap()
+    app.buttons["open-sidebar"].tap()
+    if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
+    let second = app.buttons["recent-thread-search-second-thread"]
+    XCTAssertTrue(second.waitForExistence(timeout: 10)); second.tap()
+    XCTAssertTrue(app.staticTexts["SECOND_TARGET_ONLY"].waitForExistence(timeout: 15))
+    app.buttons["chat-menu"].tap()
+    for (id, label) in [("chat-pin", "置顶"), ("chat-archive", "归档"), ("chat-delete", "删除")] {
+      let item = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", id, label)).firstMatch
+      XCTAssertTrue(item.waitForExistence(timeout: 10)); XCTAssertFalse(item.isEnabled, "Unknown batch must block conflicting single write")
+    }
+    shot("batch-original-pending-blocks-single-management")
+    let final = try await stats()
+    XCTAssertEqual((final["single"] as? [[String: Any]])?.count, 1)
+    XCTAssertEqual((final["batches"] as? [[String: Any]])?.count, 1)
+    XCTAssertEqual(((final["batches"] as? [[String: Any]])?.first?["clientOperationId"] as? String), original)
+  }
+
+  @MainActor func testClientRunningCountsFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    for (state, expected) in [("running", "1"), ("waiting-for-approval", "1"), ("idle", "0")] {
+      _ = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/menu-state").appending(queryItems: [URLQueryItem(name: "state", value: state)]))
+      app.buttons["chat-menu"].tap(); app.buttons["刷新历史"].tap()
+      let menu = app.buttons["chat-menu"]
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == nil OR value != %@", "正在更新…"), object: menu)
+      XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed)
+      app.buttons["client-switch"].tap()
+      let count = app.staticTexts["client-running-" + fixture.hostId]
+      XCTAssertTrue(count.waitForExistence(timeout: 10))
+      let updated = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "进行中 " + expected), object: count)
+      XCTAssertEqual(XCTWaiter.wait(for: [updated], timeout: 15), .completed)
+      shot("client-running-count-" + state)
+      app.buttons["完成"].tap()
+    }
+  }
+
   @MainActor func testChatMenuRunningPinFixture() async throws {
     let base = URL(string: "http://127.0.0.1:8820")!
     let (data, _) = try await URLSession.shared.data(from: base)
     let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
     connectLive(fixture, supportsCreation: false)
     openDesktopTestConversation(fixture)
+    func action(_ id: String, labels: [String]) -> XCUIElement {
+      let predicate = NSPredicate(format: "identifier == %@ OR label IN %@", id, labels)
+      return app.buttons.matching(predicate).firstMatch
+    }
     func menu() {
       let button = app.buttons["chat-menu"]
       let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND (value == nil OR value != %@)", "正在更新…"), object: button)
       XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed)
-      button.tap(); XCTAssertTrue(app.buttons["chat-search"].waitForExistence(timeout: 10))
+      button.tap(); XCTAssertTrue(action("chat-search", labels: ["在聊天中查找"]).waitForExistence(timeout: 10))
     }
     func archiveLabel(_ label: String) {
-      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", label), object: app.buttons["chat-archive"])
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", label), object: action("chat-archive", labels: ["归档", "恢复对话"]))
       XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed)
     }
     func deleteConfirmation() {
@@ -11074,8 +11321,8 @@ extension CodexManageUITests {
       // after a prior receipt can consume the first native menu selection.
       for _ in 0..<2 {
         if app.buttons["chat-delete-confirm"].exists || app.staticTexts["删除此对话？"].exists { break }
-        if app.buttons["chat-delete"].exists {
-          app.buttons["chat-delete"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        if action("chat-delete", labels: ["删除"]).exists {
+          action("chat-delete", labels: ["删除"]).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
         if app.staticTexts["删除此对话？"].waitForExistence(timeout: 3) { break }
       }
@@ -11094,38 +11341,46 @@ extension CodexManageUITests {
       XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 20), .completed)
       menu()
       shot("chat-menu-" + state)
-      XCTAssertTrue(app.buttons["chat-pin"].isEnabled)
-      XCTAssertTrue(app.buttons["chat-archive"].isEnabled)
-      XCTAssertTrue(app.buttons["chat-delete"].isEnabled)
+      XCTAssertTrue(action("chat-pin", labels: ["置顶", "取消置顶"]).isEnabled)
+      XCTAssertTrue(action("chat-archive", labels: ["归档", "恢复对话"]).isEnabled)
+      XCTAssertTrue(action("chat-delete", labels: ["删除"]).isEnabled)
       XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "未归档 · 任务状态：" + status)).firstMatch.exists)
       XCTAssertFalse(app.staticTexts[fixture.threadTitle!].exists, "The menu must not repeat the current conversation title")
       if active {
-        app.buttons["chat-pin"].tap(); menu()
-        let pinned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", "取消置顶"), object: app.buttons["chat-pin"])
+        action("chat-pin", labels: ["置顶", "取消置顶"]).tap(); menu()
+        let pinned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", "取消置顶"), object: action("chat-pin", labels: ["置顶", "取消置顶"]))
         XCTAssertEqual(XCTWaiter.wait(for: [pinned], timeout: 20), .completed)
-        app.buttons["chat-pin"].tap(); menu()
-        XCTAssertEqual(app.buttons["chat-pin"].label, "置顶")
+        action("chat-pin", labels: ["置顶", "取消置顶"]).tap(); menu()
+        XCTAssertEqual(action("chat-pin", labels: ["置顶", "取消置顶"]).label, "置顶")
       }
       deleteConfirmation()
       XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "未归档 · 任务状态：" + status)).firstMatch.exists)
       if app.buttons["取消"].exists { app.buttons["取消"].firstMatch.tap() }
       else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.25)).tap() }
       XCTAssertTrue(app.staticTexts["删除此对话？"].waitForNonExistence(timeout: 10))
-      menu(); app.buttons["chat-archive"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      menu(); action("chat-archive", labels: ["归档", "恢复对话"]).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
       menu(); archiveLabel("恢复对话")
       XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "已归档 · 任务状态：" + status)).firstMatch.exists, "Archiving must not manufacture a stopped task")
-      app.buttons["archived-chats"].tap()
       let row = app.buttons["archived-chat-" + fixture.threadId]
+      // Only presentation navigation may be repeated: a catalog-triggered
+      // native Menu rebuild can consume the first selection. Never repeat
+      // archive/restore/model commands when their outcome is unknown.
+      for _ in 0..<2 {
+        if row.exists { break }
+        let entry = action("archived-chats", labels: ["已归档对话"])
+        if entry.exists { entry.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+        if row.waitForExistence(timeout: 3) { break }
+      }
       XCTAssertTrue(row.waitForExistence(timeout: 15))
       XCTAssertTrue(row.label.contains("已归档")); shot("archived-chat-status-" + state)
       row.tap()
-      menu(); archiveLabel("恢复对话"); app.buttons["chat-archive"].tap()
+      menu(); archiveLabel("恢复对话"); action("chat-archive", labels: ["归档", "恢复对话"]).tap()
       menu(); archiveLabel("归档")
       XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "未归档 · 任务状态：" + status)).firstMatch.exists)
       app.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.65)).tap()
     }
     _ = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/reject-lifecycle"))
-    menu(); app.buttons["chat-archive"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    menu(); action("chat-archive", labels: ["归档", "恢复对话"]).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 15))
     XCTAssertTrue(app.alerts.staticTexts["电脑端拒绝了此次操作：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。"].exists)
     XCTAssertFalse(app.alerts.staticTexts["操作结果待确认，请在对话选项中查询原记录。"].exists)
@@ -11141,13 +11396,94 @@ extension CodexManageUITests {
     shot("chat-lifecycle-deleted")
   }
 
+  @MainActor func testChatRefreshDuringCatalogFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    func control(_ path: String) async throws -> [String: Any] {
+      let (data, _) = try await URLSession.shared.data(from: base.appendingPathComponent(path))
+      return (try JSONSerialization.jsonObject(with: data)) as! [String: Any]
+    }
+    func refreshFromMenu() {
+      app.buttons["chat-menu"].tap()
+      XCTAssertTrue(app.buttons["刷新历史"].waitForExistence(timeout: 10))
+      app.buttons["刷新历史"].tap()
+    }
+    _ = try await control("fixture/hold-catalog-all")
+    refreshFromMenu()
+    var held = false
+    for _ in 0..<100 {
+      held = (try await control("fixture/catalog-state"))["held"] as? Bool == true
+      if held { break }; try await Task.sleep(nanoseconds: 50_000_000)
+    }
+    XCTAssertTrue(held)
+    let occupied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "正在更新…"), object: app.buttons["chat-menu"])
+    XCTAssertEqual(XCTWaiter.wait(for: [occupied], timeout: 10), .completed)
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/menu-state").appending(queryItems: [URLQueryItem(name: "state", value: "running")]))
+    refreshFromMenu()
+    _ = try await control("fixture/release-catalog")
+    var followedUp = false
+    for _ in 0..<100 {
+      followedUp = ((try await control("fixture/catalog-state"))["historyReadsAfterRelease"] as? Int ?? 0) >= 2
+      if followedUp { break }; try await Task.sleep(nanoseconds: 50_000_000)
+    }
+    XCTAssertTrue(followedUp, "The old read completing must not erase the newer explicit refresh")
+    XCTAssertTrue(app.buttons["stop-turn"].waitForExistence(timeout: 15))
+    shot("manual-refresh-after-occupied-catalog")
+  }
+  @MainActor func testChatCatalogManagementFenceFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    func control(_ path: String) async throws -> [String: Any] {
+      let (data, _) = try await URLSession.shared.data(from: base.appendingPathComponent(path))
+      return (try JSONSerialization.jsonObject(with: data)) as! [String: Any]
+    }
+    func menu() {
+      app.buttons["chat-menu"].tap()
+      XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "chat-search", "在聊天中查找")).firstMatch.waitForExistence(timeout: 10))
+    }
+    let archive = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label IN %@", "chat-archive", ["归档", "恢复对话"])).firstMatch
+    _ = try await control("fixture/hold-catalog")
+    menu(); app.buttons["刷新历史"].tap()
+    var held = false
+    for _ in 0..<100 {
+      held = (try await control("fixture/catalog-state"))["held"] as? Bool == true
+      if held { break }; try await Task.sleep(nanoseconds: 50_000_000)
+    }
+    XCTAssertTrue(held)
+    menu(); archive.tap()
+    var fresh = false
+    for _ in 0..<100 {
+      let state = try await control("fixture/catalog-state")
+      fresh = state["held"] as? Bool == true && (state["freshCatalogReadsWhileHeld"] as? Int ?? 0) > 0
+      if fresh { break }; try await Task.sleep(nanoseconds: 50_000_000)
+    }
+    XCTAssertTrue(fresh, "Confirmed management must retire the occupied catalog slot")
+    menu()
+    let restored = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", "恢复对话"), object: archive)
+    XCTAssertEqual(XCTWaiter.wait(for: [restored], timeout: 10), .completed)
+    shot("confirmed-archive-fresh-catalog-before-old-release")
+    app.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.65)).tap()
+    _ = try await control("fixture/release-catalog")
+    try await Task.sleep(nanoseconds: 200_000_000)
+    menu(); XCTAssertEqual(archive.label, "恢复对话")
+    shot("old-catalog-cannot-restore-unarchived-row")
+  }
   @MainActor func testChatSearchPagedHistoryFixture() async throws {
     let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8820")!)
     let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
     connectLive(fixture, supportsCreation: false)
     openDesktopTestConversation(fixture)
     func openSearch() {
-      app.buttons["chat-menu"].tap(); app.buttons["chat-search"].tap()
+      app.buttons["chat-menu"].tap()
+      // Native Menu snapshots can preserve the localized label while omitting the identifier.
+      let named = app.buttons["chat-search"]
+      let entry = named.exists ? named : app.buttons["在聊天中查找"]
+      XCTAssertTrue(entry.waitForExistence(timeout: 5)); XCTAssertTrue(entry.isHittable)
+      entry.tap()
       XCTAssertTrue(app.textFields["chat-search-query"].waitForExistence(timeout: 10))
     }
     openSearch()
@@ -11181,6 +11517,9 @@ extension CodexManageUITests {
     shot("search-original-compaction-message")
     openSearch(); search.tap(); search.typeText("NO_SUCH_CONTENT_" + fixture.nonce)
     XCTAssertTrue(app.staticTexts["没有匹配结果"].waitForExistence(timeout: 15))
+    app.buttons["清除搜索"].tap(); search.tap(); search.typeText("   ")
+    XCTAssertEqual(search.value as? String, "   ")
+    XCTAssertFalse(app.staticTexts["没有匹配结果"].exists, "Whitespace is an empty normalized query")
     closeSearch()
     _ = try await URLSession.shared.data(from: URL(string: fixture.endpoint + "/fixture/fail")!)
     openSearch(); search.tap(); search.typeText("Latest readable message 99")
@@ -11606,5 +11945,73 @@ extension CodexManageUITests {
     XCTAssertFalse(app.buttons["stop-turn"].exists)
     XCTAssertEqual(composer.value as? String, "PHONE_DRAFT_" + fixture.connection.nonce)
     shot("physical-completion-notice-opened-exact-original-chat")
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testChatPendingRecordsMenuFixture() async throws {
+    let base = URL(string: "http://127.0.0.1:8820")!
+    let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    connectLive(fixture, supportsCreation: false); openDesktopTestConversation(fixture)
+    if app.buttons["close-sidebar"].exists { app.buttons["recent-thread-" + fixture.threadId].tap() }
+    XCTAssertTrue(app.buttons["close-sidebar"].waitForNonExistence(timeout: 10))
+    func menu() {
+      let button = app.buttons["chat-menu"]
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND (value == nil OR value != %@)", "正在更新…"), object: button)
+      XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed)
+      button.tap(); XCTAssertTrue(app.buttons["archived-chats"].waitForExistence(timeout: 10))
+    }
+    func waitPosts(_ count: Int) async throws {
+      for _ in 0..<50 {
+        let (statsData, _) = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/record-stats"))
+        let stats = try JSONSerialization.jsonObject(with: statsData) as! [String: Any]
+        if (stats["posts"] as? [[String: Any]])?.count == count { return }
+        try await Task.sleep(for: .milliseconds(200))
+      }
+      XCTFail("Expected exact named action count without any retry")
+    }
+    menu(); app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "chat-pin", "置顶")).firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    try await waitPosts(1)
+    app.buttons["open-sidebar"].tap()
+    if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
+    let other = app.buttons["recent-thread-search-second-thread"]
+    XCTAssertTrue(other.waitForExistence(timeout: 10)); other.tap()
+    if app.buttons["close-sidebar"].waitForNonExistence(timeout: 2) == false { other.tap() }
+    XCTAssertTrue(app.staticTexts["SECOND_TARGET_ONLY"].waitForExistence(timeout: 15))
+    menu(); app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "chat-archive", "归档")).firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    try await waitPosts(2)
+    for _ in 0..<30 {
+      let (statsData, _) = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/record-stats"))
+      let stats = try JSONSerialization.jsonObject(with: statsData) as! [String: Any]
+      if (stats["posts"] as? [[String: Any]])?.count == 2 { break }
+      try await Task.sleep(for: .milliseconds(200))
+    }
+    menu()
+    let queryPredicate = NSPredicate(format: "identifier == %@ OR label CONTAINS %@", "chat-action-query", "查询聊天操作记录")
+    let queries = app.buttons.matching(queryPredicate)
+    XCTAssertEqual(queries.count, 2)
+    XCTAssertTrue(queries.matching(NSPredicate(format: "label CONTAINS %@", "置顶")).firstMatch.exists)
+    XCTAssertTrue(queries.matching(NSPredicate(format: "label CONTAINS %@", "归档")).firstMatch.exists)
+    let original = queries.matching(NSPredicate(format: "label CONTAINS %@", "Chat Search Fixture")).firstMatch
+    XCTAssertTrue(original.exists)
+    let (recordData, _) = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/record-stats"))
+    let recordStats = try JSONSerialization.jsonObject(with: recordData) as! [String: Any]
+    let operations = try XCTUnwrap(recordStats["posts"] as? [[String: Any]])
+    let expected = try XCTUnwrap(operations.first { $0["threadId"] as? String == fixture.threadId })
+    let expectedId = try XCTUnwrap(expected["clientOperationId"] as? String)
+    XCTAssertTrue(original.label.contains(String(expectedId.prefix(8)))); shot("pending-record-actions-targets-identifiable")
+    original.tap()
+    for _ in 0..<30 {
+      let (statsData, _) = try await URLSession.shared.data(from: base.appendingPathComponent("fixture/record-stats"))
+      let stats = try JSONSerialization.jsonObject(with: statsData) as! [String: Any]
+      if let checks = stats["queries"] as? [[String: Any]], let check = checks.last {
+        XCTAssertEqual(check["threadId"] as? String, fixture.threadId)
+        XCTAssertEqual(check["id"] as? String, expectedId); break
+      }
+      try await Task.sleep(for: .milliseconds(200))
+    }
+    menu(); shot("pending-record-original-query-keeps-other-target")
+    XCTAssertEqual(app.buttons.matching(queryPredicate).count, 2)
   }
 }

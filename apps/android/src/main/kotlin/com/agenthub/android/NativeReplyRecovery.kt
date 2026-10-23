@@ -10,9 +10,11 @@ data class NativeReplyRecovery(val capturedTarget: String,val trust: String,val 
     val phase: String="not-written",val consumed: Boolean=false,val inspection: String?=null) {
     fun body()=JSONObject().put("capturedTarget",JSONObject(capturedTarget)).put("trust",trust).put("fingerprint",fingerprint)
         .put("phase",phase).put("consumed",consumed).put("inspection",inspection?.let(::JSONObject) ?: JSONObject.NULL)
-    fun matches(client: MobileClient,record: SavedOperation): Boolean = runCatching {
+    fun matches(client: MobileClient,record: SavedOperation): Boolean = !record.detached && matchesObservation(client,record)
+    /** Ending a local wait removes write authority, not the captured read-only identity. */
+    fun matchesObservation(client: MobileClient,record: SavedOperation): Boolean = runCatching {
         val target=HostReadCodec.target(JSONObject(capturedTarget))!!
-        record.kind=="reply" && !record.detached && client.codexDirect!=null && target.agentId=="codex" &&
+        record.kind=="reply" && client.codexDirect!=null && target.agentId=="codex" &&
             trust=="codex:"+client.codexDirect.fingerprint.lowercase() && RuntimeIdentity.matches(client.scope,target) && RuntimeIdentity.matches(client.codexDirect.target,target) &&
             record.target in client.operationTargets(JSONObject(record.intent).getString("threadId")) &&
             fingerprint(record.intent,capturedTarget)==fingerprint
@@ -25,6 +27,10 @@ data class NativeReplyRecovery(val capturedTarget: String,val trust: String,val 
         ReplyRecoveryRules.mayRetry(phase,consumed,matches(client,record) && record.result==null,strong(record,now))
     fun capturedClient(client: MobileClient,record: SavedOperation): MobileClient {
         require(matches(client,record)) { "原消息的运行目标、证书或不可变内容已变化，只能查询原回执" }
+        return client.copy(scope=HostReadCodec.target(JSONObject(capturedTarget)))
+    }
+    fun capturedObservationClient(client: MobileClient,record: SavedOperation): MobileClient {
+        require(matchesObservation(client,record)) { "原消息的运行目标、证书或不可变内容已变化，未查询其他目标" }
         return client.copy(scope=HostReadCodec.target(JSONObject(capturedTarget)))
     }
     companion object {

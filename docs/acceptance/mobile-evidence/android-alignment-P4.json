@@ -1,0 +1,1462 @@
+{
+  "schemaVersion": 1,
+  "phase": "P4",
+  "date": "2026-10-23",
+  "branch": "codex/android-alignment-20261022",
+  "sourceBase": "c538c698d6b5894ff8debf3d7f290134229f750c",
+  "status": "in-progress; local recovery protection checkpoint implemented and native auxiliary checked; whole P4/realDEV open",
+  "sourceNodeCount": 27,
+  "featureCount": 20,
+  "humanScope": "Cellular/VPN and manual unloaded-owner archive deferred; continue local P3/P4. Task Hub/new project management deferred. A6/P7 unread remains paused.",
+  "localRecoveryCheckpoint": {
+    "features": ["F25", "F43", "F44", "F45"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "84fce55150ed3bf1945703f2abd147168ed191f09c64ddf072b684d6bc019ba9",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "429fd8e3cef0abd6816f2cd16c2c153da795bba134a2a556454a23b6e8b0416a",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "b8a52101fbe2306d4f53608aad3f283d8ec98d60c63498fd7ca44dd980c8fa97",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalRecoveryTest.kt": "1117036da1672a2a03a347f574169c0c6697f0665897ff5519aca202118da7c0",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalRecoveryUiTest.kt": "1ed15276c926328f4143451421667686048819c50602cd8b0006dbefe5f44f22",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePrivateConnectionTest.kt": "5ff35ee37f3e409ad1513b7233bf33dbc4e0cc7afb1275a18021136dc903dadd",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "72001d505c3dbc5ec5f8a00ff38ffd08f36a71c88b53958c5e789404dc4445e5",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileNavigationPersistenceTest.kt": "bdd8ff8e4fb8334dc033cedba337e8a0c5ed5fe3490847362481329b560ecaa2"
+    },
+    "implementation": [
+      "Directory-scoped write/delete fence begins synchronously before initial/retry decode; failure preserves encrypted original.",
+      "Decode every metadata field and merge authoritative private connection records into detached local state before publication.",
+      "Only complete successful decode/publish grants writes; stale same-directory normal/coalesced queued snapshots cannot overwrite recovered state.",
+      "Recovery screen replaces normal product controls, with storage-warning/title/preservation copy/retry/busy state; native Android copy does not instruct repeated unlock.",
+      "Restore original selected target, independent draft and preferences on retry success; keep existing absent ordinary metadata/private-vault compatibility."
+    ],
+    "iosImpact": "Existing SessionPersistence/SessionStore/RootView recovery boundary inspected; Swift and KMP unchanged, no new iOS build/native/physical acceptance claimed. Android storage/Keystore remain native narrow interfaces.",
+    "oldNativeCounterexample": {
+      "status": "reproduced actual preservation failure",
+      "environments": [26, 33, 37],
+      "testsPerEnvironment": 1,
+      "failure": "After real encrypted malformed JSON initial read failure, changeAppearance overwrote original58-byte ciphertext with327-byte empty/default state. Only unique owned fixture namespace/key alias was used.",
+      "appSha256": "4972f89555d8cb7b2306ac63f2ca655831f7920cd3858a603ea954b2183fa294"
+    },
+    "nativeAuxiliary": {
+      "status": "passed",
+      "cohort": "green-v8",
+      "tests": 141,
+      "groups": 9,
+      "sourceStable": true,
+      "files": 8,
+      "runs": [
+        {
+          "api": 26,
+          "group": "recoveryUi",
+          "tests": 1,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "af89375547fd1faa5edfcb73f2a07e3ecf0886d76b5343e9df813a5bf054926b"
+        },
+        {
+          "api": 26,
+          "group": "regression",
+          "tests": 41,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "042ec3d3ea9b455e9b1b757d9d5c36dd6af6f43d5d936d15aa7b0bd870c8bd9b"
+        },
+        {
+          "api": 26,
+          "group": "storage",
+          "tests": 5,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "03b5e39feffd86b961a9d508e9a0429ff35c83d1b89689bd072ede8f29d04720"
+        },
+        {
+          "api": 33,
+          "group": "recoveryUi",
+          "tests": 1,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "84cf3bc083c69a344fe2b04716cfd7abb1d1a3520abcb07d6164697d0e9cf917"
+        },
+        {
+          "api": 33,
+          "group": "regression",
+          "tests": 41,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "0ee14c11fce84b3c0ba306731e0936390765005da34580d946410ce8896d3897"
+        },
+        {
+          "api": 33,
+          "group": "storage",
+          "tests": 5,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "06c16be0040c50ffdb1a9b7007ab9083506b43cb84efe8fdb4511a3f9bed2dc7"
+        },
+        {
+          "api": 37,
+          "group": "recoveryUi",
+          "tests": 1,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "0e4159ec231930374657a6ee26fc42c8442c52a3cbc9b461b273aeda5158e0f9"
+        },
+        {
+          "api": 37,
+          "group": "regression",
+          "tests": 41,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "9b1a1bcc0d8007e0d92bbf24076b1a5adc03681ce1f920cca82532b48edbabc3"
+        },
+        {
+          "api": 37,
+          "group": "storage",
+          "tests": 5,
+          "status": "passed",
+          "binaries": {
+            "app": "42f462ee95a0c6c4325520fe39d522bab6429d3817683fc96820216865a46e78",
+            "test": "7630a91e2743d67e42169c3f2c0853c676bc0074a131ba38638bcf869b1c1a8b"
+          },
+          "outputSha256": "7d06166b70b8cb702cd38510f784f9602fee5b183842d713202e01ce48118aa6"
+        }
+      ]
+    },
+    "workspaceCheck": {
+      "command": "pnpm check",
+      "status": "passed",
+      "rootCommandCount": 59,
+      "sourceStable": true,
+      "frozenFiles": 7,
+      "elapsedSeconds": 354.45,
+      "scope": "green-v7 unchanged final production. Later only2 native test FIFO helper names changed; final app bytes identical. Current native examiner plus manifest/format checks are separately rerun."
+    },
+    "rawFailuresRetained": [
+      "green-v2 JUnit initialization rejected a coroutine test returning Throwable instead of Unit; examiner corrected.",
+      "green-v3 examiner used nonexistent Instrumentation.arguments property; compiler receipt retained, Registry API used.",
+      "green-v4 preservation examiner threw AssertionError from a worker after the intentionally protected barrier was rejected; read-only proof waits without worker throw.",
+      "green-v4 private connection regression omitted explicit isolated TLS/control fixture arguments;18 initialization failures per environment not passes.",
+      "green-v5 old route regression expected no send after a background GET; old c538 and new app same method fail on all3. Examiner now explicitly selects fresh-authority fallback rather than confirmed snapshot reuse.",
+      "green-v7 API26 combined navigation metadata assertion failed once; exact standalone retry passed. Source audit found fixed coalesced drain name can overtake queued ordinary saves. Every new drain now unique; final current matrix rerun, original failure retained.",
+      "Initial pnpm check stopped at stale feature manifest guard; not a full pass."
+    ],
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "visualReview": {
+      "status": "reused-matching",
+      "reviewedOriginals": 6,
+      "cohort": "green-v7",
+      "scope": "Same exact app bytes and unchanged UI examiner; reviewed recovery and restored original draft on each API. green-v8 screenshots retained separately; no complete iOS visual/system touch acceptance claimed."
+    }
+  },
+  "remaining": [
+    "P4-2 original client queue metadata, controls, errors and native UI.",
+    "P4-3 composer/generation/first/file-only/source-node deltas.",
+    "P4-4 plan/approval/questions/original input lifecycle and all UI states.",
+    "P4-5 current physical Android/original Electron real DEV; never replay historical13 inputs.",
+    "Full P3 continuous native gestures/IME/selection, same-data visual matrix and realDEV remain open.",
+    "Cellular/VPN, manual archive, physical popup/systemBack and API26 first-cache geometry remain individually recorded; no success added."
+  ],
+  "queueMetadataCheckpoint": {
+    "sourceBase": "7b27217aa941cc5e11adcbfbca66222c3a46788b",
+    "features": ["F25", "F37", "F38", "F43", "F44", "F48"],
+    "implementation": "2026-10-23 P4-2a：原生回执补齐五个可选队列字段，HTTP、加密历史、原记录编码和EasyWork归一化完整保留。Schema只为已存在字段补充nullable严格类型，保留未来字段兼容。KMP统一原客户端队列归属、存在性及同步错误判断，Host/legacy-review与已移除项不列活动队列，不建立本地FIFO、不迁移或重发。已接受后的同步错误不被后续成功或普通失败关闭抹掉；源端清除才消失，独立草稿保留。iOS改调同一规则并限定准确host/thread；立即执行/取消门禁和行样式仍留P4-2b。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileQueueMetadataTest.kt": "340167b551c1e1d5727164b0a16f60348ea99155ba2c2506a444197871de7428",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileQueueMetadataUiTest.kt": "2b3ae3572459ee8ea3addae58e47d18bf85382397242c60b40b19c7debfe6b92",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "234186fa2ffaab0dcfc65388be05515d64e51aa11638d790c515d9da0cd100c9",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "bcad2cc76f2dfece811bcb8e191f7930674dacb3e53befdc92fb1202208a5353",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "3c9f9c3e01b866f8c8e1bca09a7409e919837e5e55b27fab83e65a5b60954129",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "362945b7bd7785c2f0a29682a8b93e73be8da7d2df519c61f912a43945c3dadd",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "2db7d852fb97aa400c6e0c3ef44d4b5544251f07633c0790d90440e74f46ea83",
+      "apps/ios/Sources/Models.swift": "53f2792abe2a66ae9b6011b0d993c40997d31ae8d2fdacbbcbb73242020afa12",
+      "apps/ios/Sources/SessionStore.swift": "f61590e341769a32648a5900017d756698df0e5ec1939a5d209d62f1eedd0991",
+      "apps/ios/Sources/SharedMobileRules.swift": "e82b2361c874f1f4aaf33435408f46369435d915da1c0b8340620f416acc4b41",
+      "apps/ios/Tests/CodexManageUITests.swift": "4bffd5191119f45aaa9129e3f6d1ad733e03fc29fd2e010860ba85b0bb336a46",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt": "01898c62c6fd56f869bf058ce7aa5d5089dfe2876257046c1290dd427a343ef3",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt": "2a6d9f117f2ac8035dae07769f0bc9a2e46c26e97130231a30fa7c5468779f36",
+      "packages/protocol/fixtures/mobile/state-v1.json": "360e815deb0225d6bfe00eb67957f7bb8a4a84c632359c0419892f4c16799c13",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "7cefe57ddce5df2ab8927059579035a8ade6b1520914f9b18673b755d467a405",
+      "scripts/chat-search-ios-fixture.mjs": "9bda58c69f5e29c42b0c8504997ffa3f02b64df2703bc4baa8a5aba7d6ba1fbc",
+      "scripts/mobile/check-core.mjs": "fec08e991712e08905f9f1e1e6def774c31809b4b170af7a20d43115bfb34a99",
+      "scripts/mobile/verify-ios-state.swift": "6fe1f191a533af8e42a703ab899fdc64e75d393bf68fc90ca8c5921d2fb7b0d9"
+    },
+    "oldNativeCounterexample": {
+      "apis": [26, 33, 37],
+      "testsPerEnvironment": 1,
+      "status": "failed expected preservation assertion",
+      "scope": "Actual HTTP/encrypted reopen/DTO re-encode loses original queueSource; old schema additionalProperties:true did accept metadata."
+    },
+    "nativeAuxiliary": {
+      "status": "passed",
+      "cohort": "green-v2",
+      "tests": 54,
+      "groups": 9,
+      "runs": [
+        {
+          "api": 26,
+          "group": "recoveryUi",
+          "selection": "com.agenthub.android.MobileQueueMetadataUiTest",
+          "tests": 1,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "07e9569e9b073ecadf9b3eeab2faacec3f99538ad4b1af880b786f4be57b1cf7"
+        },
+        {
+          "api": 26,
+          "group": "regression",
+          "selection": "com.agenthub.android.MobileWorkspaceMetadataTest,com.agenthub.android.MobileReceiptNoticeTest,com.agenthub.android.MobileLocalRecoveryTest",
+          "tests": 14,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "a99a83e509d0c5fe1871e685ee8fe3854f81db2f135acb228f7aa10a2fe8368b"
+        },
+        {
+          "api": 26,
+          "group": "storage",
+          "selection": "com.agenthub.android.MobileQueueMetadataTest",
+          "tests": 3,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "6bd217463d80cc0676b258b0b1a4a58d9970d606a0be34ca5afe3fc22b082a29"
+        },
+        {
+          "api": 33,
+          "group": "recoveryUi",
+          "selection": "com.agenthub.android.MobileQueueMetadataUiTest",
+          "tests": 1,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "5bc9332de7c23db1c231741f5fc5fc1ccc52588535433c9bf45dcf2a8a6ee78e"
+        },
+        {
+          "api": 33,
+          "group": "regression",
+          "selection": "com.agenthub.android.MobileWorkspaceMetadataTest,com.agenthub.android.MobileReceiptNoticeTest,com.agenthub.android.MobileLocalRecoveryTest",
+          "tests": 14,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "8c4e7ecc0af5fb9d6b8425819e11b9e747af03c087cf8d702e843f5e71c3630b"
+        },
+        {
+          "api": 33,
+          "group": "storage",
+          "selection": "com.agenthub.android.MobileQueueMetadataTest",
+          "tests": 3,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "95222ec8f5bc77a4a303c9dfd00d258df86ecffe69f0247f85c13931470bf6ad"
+        },
+        {
+          "api": 37,
+          "group": "recoveryUi",
+          "selection": "com.agenthub.android.MobileQueueMetadataUiTest",
+          "tests": 1,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "60cd5d6ca7de839c776567cbea4e259b005802345b5675114a49f36208e91d37"
+        },
+        {
+          "api": 37,
+          "group": "regression",
+          "selection": "com.agenthub.android.MobileWorkspaceMetadataTest,com.agenthub.android.MobileReceiptNoticeTest,com.agenthub.android.MobileLocalRecoveryTest",
+          "tests": 14,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "05d9fb23cd8f07a5debef9f7ccd686ed55d28f1ac21e5220a256e044053183c0"
+        },
+        {
+          "api": 37,
+          "group": "storage",
+          "selection": "com.agenthub.android.MobileQueueMetadataTest",
+          "tests": 3,
+          "status": "passed",
+          "binaries": {
+            "app": "97c905a319c3a2d3403d43f18462bb0768ed6e381c34680064d808da43c32910",
+            "test": "4c0448f5605b4feef4fb6dce8fbc5bbe53531c0d13f7b3251462a419cb5c739e"
+          },
+          "outputSha256": "e26cf0a0672837c1f025484d922eb9dd1694195546f7e27023394e9ffb9c3c38"
+        }
+      ],
+      "scope": "Same Android product/runner, unchanged Android/shared/schema source. Later iOS-only fixture preparation fix does not change this binary; original18-source snapshot and platform scope retained."
+    },
+    "sharedCore": {
+      "status": "passed",
+      "jvm": {
+        "methods": 70,
+        "suites": 14
+      },
+      "iosSimulatorArm64": {
+        "methods": 70,
+        "suites": 14
+      },
+      "swiftVectors": {
+        "queueOwnership": 8,
+        "receiptNotices": 7,
+        "httpContract": 83
+      }
+    },
+    "iosBuild": {
+      "status": "passed",
+      "cohort": "build-v3",
+      "scope": "Current Models DTO after deleting unused isLegacyHostQueue; actual queue policy remains only in shared QueueRules."
+    },
+    "iosNative": {
+      "status": "passed",
+      "cohort": "native-v3",
+      "tests": 1,
+      "rawRequests": 17,
+      "nonGetRequests": 0,
+      "sourceStable": true,
+      "requestSha256": "725952b80264a6b72dd3efb7072379293fd78a0861f4b92babb204e18fb8f6eb",
+      "scope": "Current product XCTest verifies native/compatible queue only, legacy/removed exclusion, accepted sync errors surviving dismissal then clearing at source, independent unsent draft. No controls/model submission."
+    },
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "remaining": [
+      "P4-2b named execute/cancel with exact original IDs and expectedTurn/Run, busy/late fences/AI sharing and native compact row UI.",
+      "Full EWDAP and current realDEV remain separate."
+    ],
+    "visualReview": {
+      "status": "partial-reviewed",
+      "originals": 8,
+      "android": 6,
+      "ios": 2,
+      "limitations": "Android large per-message cards vs iOS compact rows; queue height/action row and notice placement differ, retained for P4-2b/P4-4 and whole visual. No complete visual parity/system touch proof."
+    },
+    "workspaceCheck": {
+      "status": "passed",
+      "command": "pnpm check",
+      "exitCode": 0,
+      "rootCommandCount": 59,
+      "sourceStable": true,
+      "sourceFiles": 18,
+      "elapsedSeconds": 370.71
+    },
+    "priorFailuresRetained": [
+      "Native-v1 connection preparation failed: fixture supplied incomplete Swift AgentConnectionState; complete synthetic state fixed, no product workaround.",
+      "Workspace-check-v1 failed at standalone Swift receipt decoder because an unused DTO computed helper depended on QueueRules. The dead helper was removed; real queue policy path remains shared; current build/native rerun.",
+      "Initial docs script rejected its Unicode stdin; no file updates executed; manifest guard correctly rejected missing change record. Retried with explicit ASCII-escaped script; original tool failure retained."
+    ]
+  },
+  "providerReceiptCheckpoint": {
+    "sourceBase": "ff1ad1aac3045ad62bfc5af74de493c9ccf7e6bf",
+    "features": ["F25", "F37", "F38", "F43", "F44", "F48"],
+    "implementation": "2026-10-23 P4-2a.1：继续逐路径复核后补齐EasyWork发送返回、command/status与queue/status转换；此前P4-2a封闭的是历史/加密重开/回执编解码及归属提示子边界。原状态和原错误优先于外层RPC完成；runId优先turnId，只有发送可用原expectedTurn回退，原查询不借当前Run。已接受但仍带queueSource的结果也只回查原queue/status；原ID/Host/thread保持捕获范围。五队列字段、noticeContext及laterTurnId完整保留，已知字段错型拒绝。会话解析改用窄EasyWorkChannels接口，默认真实会话/凭据/传输不变；实际原生适配器与加密会话经独立Peer夹具验证，没有新增执行控件、HostFIFO、重放或真实模型。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkQueueReceiptTest.kt": "70cf890d85606f15d212837dbe7484f0e2444b227b515832c443c97a9423716e",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolPeer.kt": "e0ff3dbad25a2e333b3b802717b1063b1dc6f83b017157a4fc80b501e902f95b",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt": "9f8987f68589a04527d88fb7a344d6ff2a0b017b8f57d28b506f7a4ea8c8ffe2",
+      "packages/protocol/fixtures/mobile/easywork-receipt-v1.json": "f950f5f8cab9dfead71937d829cc1a31fa5e1c271b4f9b83f9162f33106d9494",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReceiveTest.kt": "0a786e5f881417a115367c09d7f9ac800e321dc2a357b3b287dcac42dd579aba",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "9ff1184339a9d7ac5eaba98b486b71cafeca01cc84a224a75a5abb3f3c862e5e",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "93f5a607284061b86ce014318990a808cfad851133d711af5bbc8d039a736fbb",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "8d45b2e53d54ef288552cfeae05df53cc11df67632fc1663bf3c13a7a4a13c50",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "7c231255942184d2eb6073e0ef5ab568d9b3394715a7789e39fe2ae795cc44a8",
+      "packages/protocol/fixtures/mobile/state-v1.json": "cf7cffdb3a96e89751bb53ff0f031d58046655a3e4e1b4a0eddf8c63f4844c23",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "dd1e0d30ee40f078dd31b94ed552667a9862bb05b20e314af61a2e3793ca6c3f",
+      "scripts/easywork-receipt-normalization.test.mjs": "1b142615f3df53e26f389723d7e44dd314971ea12e8ed3a362fa7ea0f88e1ed5"
+    },
+    "oldNativeCounterexample": {
+      "status": "actual send loses queueSource in all3native environments",
+      "apis": [26, 33, 37],
+      "testsPerEnvironment": 1,
+      "scope": "Old conversion bodies with narrow resolver interface preparation; native encrypted Peer and actual adapter. Not byte-identical ff1 APK; source/binary snapshots retained."
+    },
+    "nativeAuxiliary": {
+      "status": "passed",
+      "cohort": "green-v1",
+      "tests": 69,
+      "groups": 9,
+      "sourceStable": true,
+      "runs": [
+        {
+          "api": 26,
+          "group": "recoveryUi",
+          "selection": "com.agenthub.android.MobileQueueMetadataUiTest",
+          "status": "passed",
+          "tests": 1,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "9601d52f3f43bd1575c93b82a7587279987080ee000ae1df87932aadadf6e798"
+        },
+        {
+          "api": 26,
+          "group": "regression",
+          "selection": "com.agenthub.android.MobileReceiveTest,com.agenthub.android.MobileQueueMetadataTest,com.agenthub.android.MobileLocalRecoveryTest",
+          "status": "passed",
+          "tests": 18,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "1b2c7603357e1d2c7589ee1e08f3dcbbfa4480314aba79beb7c70b344d58c647"
+        },
+        {
+          "api": 26,
+          "group": "storage",
+          "selection": "com.agenthub.android.MobileEasyWorkQueueReceiptTest",
+          "status": "passed",
+          "tests": 4,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "af3a53b1babb504f322ddb85fb460d43711f2a8f821fe29c0538af188ab749ca"
+        },
+        {
+          "api": 33,
+          "group": "recoveryUi",
+          "selection": "com.agenthub.android.MobileQueueMetadataUiTest",
+          "status": "passed",
+          "tests": 1,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "d4f50c075f76104641cb8209fb7a2fa1398438536fb6897e065e881592039bdf"
+        },
+        {
+          "api": 33,
+          "group": "regression",
+          "selection": "com.agenthub.android.MobileReceiveTest,com.agenthub.android.MobileQueueMetadataTest,com.agenthub.android.MobileLocalRecoveryTest",
+          "status": "passed",
+          "tests": 18,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "2ac9103197e1afa3f0e0cbb437a85186835c23184f033a80e423aa5f140c7e4a"
+        },
+        {
+          "api": 33,
+          "group": "storage",
+          "selection": "com.agenthub.android.MobileEasyWorkQueueReceiptTest",
+          "status": "passed",
+          "tests": 4,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "c01c08b395f7e3c2d3ff33a6904dbff561d2d906169f9b63fcfa94aada8cb742"
+        },
+        {
+          "api": 37,
+          "group": "recoveryUi",
+          "selection": "com.agenthub.android.MobileQueueMetadataUiTest",
+          "status": "passed",
+          "tests": 1,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "a9fde781489934a528bbd7b390b53add534d2247b1589037e38af486882f6d54"
+        },
+        {
+          "api": 37,
+          "group": "regression",
+          "selection": "com.agenthub.android.MobileReceiveTest,com.agenthub.android.MobileQueueMetadataTest,com.agenthub.android.MobileLocalRecoveryTest",
+          "status": "passed",
+          "tests": 18,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "066e2d44e0aa55a07eb89e69f63deed34e64ddc476bc642ca401f49ad2505fb4"
+        },
+        {
+          "api": 37,
+          "group": "storage",
+          "selection": "com.agenthub.android.MobileEasyWorkQueueReceiptTest",
+          "status": "passed",
+          "tests": 4,
+          "binaries": {
+            "app": "47cd9e98822d658c79a994bb894eac4d1f94f0786fcca86c19653c429d1f545c",
+            "test": "029daa42216c79c203e49d84845bfeddc79c61f9c4bbe53f70bd3106241e0a2e"
+          },
+          "outputSha256": "3dccc7b2c2e1273c17e73c52fa4005162fa84181a74269eac1f81735bd23bfad"
+        }
+      ]
+    },
+    "crossLanguageVectors": {
+      "version": 1,
+      "fixture": "packages/protocol/fixtures/mobile/easywork-receipt-v1.json",
+      "cases": 23,
+      "android": "production decoder via native method plus actual encrypted send/query cases",
+      "swift": "actual production declaration and DTO offline Foundation compiler;49checks =26existing+23vectors"
+    },
+    "sharedCore": {
+      "status": "passed",
+      "cohort": "core-green-v1",
+      "jvm": {
+        "methods": 70,
+        "suites": 14
+      },
+      "iosSimulatorArm64": {
+        "methods": 70,
+        "suites": 14
+      },
+      "swiftHttpCases": 86
+    },
+    "iosBuild": {
+      "status": "passed",
+      "cohort": "build-v1"
+    },
+    "iosProductionImpact": "Existing Swift mapper and UI unchanged; current build and real decoder/vector proof. No new UIKit/physical/realDEV pass.",
+    "workspaceCheck": {
+      "status": "passed",
+      "command": "pnpm check",
+      "rootCommandCount": 59,
+      "elapsedSeconds": 351.7,
+      "sourceStable": true,
+      "sourceFiles": 12
+    },
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "remaining": [
+      "P4-2b named execute/cancel, exact callback target and pending/late fences; compact queue rows and notice placement.",
+      "Actual WSS/HTTP/device authorization/original Desktop/model results separate from in-process encrypted fixture."
+    ]
+  },
+  "queueCommandCheckpoint": {
+    "sourceBase": "9894eaa85214988d23171c2671b36e4c4d79982e",
+    "implementation": "2026-10-23 P4-2b.1：Android新增具名executeQueue，经AgentRegistry分别调用固定HTTP v1/queue/execute或EasyWork queue/execute；保留原消息ID，当前任务只映射expectedTurnId/expectedRunId，空闲时省略，不发正文/设置/附件或自建FIFO。HTTP完整运行目标仍绑定URL查询，严格请求Schema拒绝正文target、重发正文与null/空白任务ID。EasyWork只把submitted/completed视为执行确认，取消只接受真实Boolean true。队列执行加入内部写白名单，沿用未知写先查原command/status并核对操作ID/方法/目标/指纹、绝不重放。会话/UI尚未接入立即执行按钮，原取消门禁与大卡片差异保留P4-2b.2；iOS既有具名调用不改，共享HTTP契约新增跨语言向量，独立验收。",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "e6ce787c73162e0a416e884032aed6aa96b926550a1ca48f5091040b2c1ef72b",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "36ea308d408eafecd017da7c6673c1f5b91665ad07624a76c4132499fac5879e",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "d1f5051b0d99ac4c3cf103b361ea8c57f4d87f0c49dd20ba92e48fe632f77482",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "c4eddb2f0f7d5d4cfc1f09d3931e459d70dca1cd95198234f5edd285f53609ed",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "5c7e4117ad4dd329b278979cc046846a7dae15b3ebc528a2e9bf0f758c83e043",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileQueueCommandTest.kt": "601c6fe5428889aaea86608667bf84240df89efb32d361c48bbc278d576a87d5",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "66eef86ae3620bcfa081882a99de74a8539947bc4e3212e6a0dcc8d0f39ac952",
+      "packages/protocol/fixtures/mobile/state-v1.json": "02385c4fa3fa83e429f19dfba98d62464e56fcfb8f459ba89ba3a5f29e3228ca"
+    },
+    "coverage": ["O083", "O090", "O091"],
+    "acceptance": "Android117methods/6groups across physical/API26/API37, same app/runner; core each70methods/14suites and Swift94HTTP vectors, iOS build passed; full pnpm check59 root commands passed, 364.58s, 8 source files stable; no new UI/realDEV pass",
+    "status": "bounded auxiliary checkpoint passed; whole feature open",
+    "native": {
+      "status": "passed",
+      "methods": 117,
+      "groups": 6,
+      "environments": ["physical API33", "API26", "API37"],
+      "sameAppAndRunner": true,
+      "perEnvironment": {
+        "queueCommands": 7,
+        "providerAndReceiveAndHttpRegression": 32
+      },
+      "counterexamples": "No old-product run for this checkpoint; current integration boundaries only. Build-v1 examiner incorrectly used TargetScope.copy, corrected to explicit scope construction before current native matrix."
+    },
+    "core": {
+      "status": "passed",
+      "jvm": {
+        "methods": 70,
+        "suites": 14
+      },
+      "iosSimulatorArm64": {
+        "methods": 70,
+        "suites": 14
+      },
+      "swiftHttpCases": 94
+    },
+    "workspaceCheck": {
+      "status": "passed",
+      "command": "pnpm check",
+      "exitCode": 0,
+      "rootCommandCount": 59,
+      "sourceStable": true,
+      "sourceFiles": 8,
+      "elapsedSeconds": 364.58
+    },
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "remaining": [
+      "P4-2b.2 original queue membership/captured callback target/per-record pending and late fences; native compact row UI and original desktop/model acceptance.",
+      "Full P3/P4, physical network path and iOS full product gates remain open."
+    ],
+    "transportScope": "Actual native HTTP loopback and native encrypted adapter/session with independent in-process peer; no actual WSS/desktop/model proof.",
+    "iosProductionImpact": "Swift queue mapping and UI unchanged; current shared schema vectors run on iOSSimulator core and Swift bridge, no new UIKit or physical pass.",
+    "iosBuild": {
+      "status": "passed",
+      "cohort": "build-v2"
+    }
+  },
+  "queueControlsCheckpoint": {
+    "sourceBase": "845ec7dc894c19daa6dddf077cc14a4e672926e9",
+    "implementation": "2026-10-23 P4-2b.2：KMP统一原客户端队列动作的归属/存在性、在线可写、逐项等待及执行capability/canExecuteNow判断；双端只对捕获完整目标与当前原队列成员操作，执行再核对捕获Turn/Run。等待按完整目标/原消息/owner隔离，不锁整份草稿；导航/连接代次、端点和错误代次隔离晚到结果及错误，未知只刷新原历史不重放。共享许可确认不自动续发。Android改为原顺序紧凑行、编号、两行摘要/附件指令、44dp动作、立即执行/追加、逐项等待和180dp有界滚动；使用项目表面色。iOS原生场景暴露旧HTTP队列调用缺少完整target查询，已由捕获readingClient与具名队列query补齐；HostService只增加显式可选query，其他调用不变。提示位置留P4-4，队列外容器、主题/键盘及完整视觉/真实DEV仍开放。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "6be3c22752d6cae6b341f6195fc3dc81b20acb79bc0dd7b6522bf773584d0df3",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileQueueActionUiTest.kt": "1703a1f2709e839cddae98f1cae8d1c3ac5e889126f86f0111eaccd4f9ce2c73",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "68ed112f8c913695dbe5cd99ea42a271e99c85489fd49efa6f97c1997e4acde8",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "8182e48a8055b3f84348f9010cfac6968b2c224cafacc3d7ed891b78ec16eebe",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "55407932040fdaf1fa5f4aa13f347eb451ae9065ccd3e6bb81d3f30cd5ed6707",
+      "apps/ios/Sources/AgentClient.swift": "5d8ca922e031da7dc431ef2ebf2b8c0cf59e86d374cae7725633a8d3f4ddae44",
+      "apps/ios/Sources/HostService.swift": "b538b1bf53201faf5b983ab9aebee292e35cfb185f3dd1a9edf7942078ca87df",
+      "apps/ios/Sources/RootView.swift": "30b573eda4a5428b9294c04016af55c7fd97aff46a50480e4cf3aa441ca12bc5",
+      "apps/ios/Sources/SessionStore.swift": "d68fab4309ebe2ad3ba93d23eaf2abff6049cd8947bc9aba7a12f8c8c04c6cbe",
+      "apps/ios/Tests/CodexManageUITests.swift": "4b8d033f4d324f74050fff522277e4b3066f881c81a315546a990af15d3d31f3",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt": "be6feaa0a0fb8b249a10763c65ff7795c83c2f9226398d5ffd0b54efbd6ed461",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt": "58590f1ec2fd727e4cbad83a7662f2493da9b187510592696f29adb3a8bbe975",
+      "packages/protocol/fixtures/mobile/state-v1.json": "49b0aa4484f1c359ffb94d1477285ee2a0a0a94091ba55d65ecdb32f5249683f",
+      "scripts/chat-search-ios-fixture.mjs": "77abe7a5d7a95abe08dcd57672d8f9b626188512bd484c5015854e14823d08a6",
+      "scripts/mobile/check-core.mjs": "ac2084a400e26d3f63ecb4852c31cf9a5d999b67a87e323ebdb979929569278e",
+      "scripts/mobile/verify-ios-state.swift": "608ccc3f82de89fce6a2df5f649890ce2a424b6d936ae45dc6d44d3e56776557"
+    },
+    "coverage": ["O083", "O090", "O091"],
+    "acceptance": "Android final v5 same app/runner96methods/6groups across physical/API26/API37 passed; core71methods/14suites each runtime and16 shared action vectors matching-source reuse; iOS build-v2/native-v4 one complete scene passed,28requests/3original queuePOSTs/0new model inputs;9Android+3currentiOS originals reviewed; full59 passed stable16/361.22s before one examiner-only AX query correction, current native plus final document checks cover correction. Whole visual/realDEV open.",
+    "status": "bounded auxiliary checkpoint passed; whole feature open",
+    "native": {
+      "status": "passed current v5",
+      "methods": 96,
+      "groups": 6,
+      "sameAppAndRunner": true,
+      "perEnvironment": {
+        "queueActionUi": 6,
+        "regression": 26
+      },
+      "realModelInputs": 0
+    },
+    "core": {
+      "status": "passed matching source reuse after Android-only color/test-fixture and Swift-HTTP target correction",
+      "jvm": {
+        "methods": 71,
+        "suites": 14
+      },
+      "iosSimulatorArm64": {
+        "methods": 71,
+        "suites": 14
+      },
+      "swiftQueueActionVectors": 16,
+      "swiftHttpCases": 94
+    },
+    "ios": {
+      "status": "passed native-v4 one full scene; build-v2 passed",
+      "nativeMethods": 1,
+      "requests": 28,
+      "gets": 25,
+      "queuePosts": 3,
+      "originalIds": ["native-original", "old-compatible", "file-only"],
+      "lastExpectedTurnId": "queue-original-run",
+      "originalTargetQuery": "strict peer equality asserted for each queue POST",
+      "realModelInputs": 0,
+      "sourceStable": true,
+      "limits": "Specific iOS ABA/newer-error race matrix and physical iPhone not newly verified; no real Desktop/model pass."
+    },
+    "workspaceCheck": {
+      "status": "passed",
+      "command": "pnpm check",
+      "exitCode": 0,
+      "rootCommandCount": 59,
+      "sourceStable": true,
+      "sourceFiles": 16,
+      "elapsedSeconds": 361.22,
+      "postCheckChange": "Only the iOS native examiner AX query changed;15 product/tool sources unchanged. Current native-v4 and final parity/format validate the correction, not a second full59 run."
+    },
+    "failuresPreserved": [
+      "Native-v2 synthetic target fixture precondition rejected5/6 cases in each environment; fixture host now explicitly contains fixture, guard unchanged, full v3 then final v5 runs retained.",
+      "v3 purple Material queue surface observed in9 originals; changed to existing project surface color, not accepted as final UI.",
+      "iOS native-v1 actual HTTP target query absent; strict peer assertion rejected attempt. App/runner process exited, no current pass; capture target query added for both named queue commands.",
+      "iOS native-v2 passed actual first execute/cancel scope and pending controls, then exact draft assertion failed because native focus tapped middle caret. Examiner now taps known end coordinate before append; original exact text assertion retained. No full v2 pass.",
+      "iOS native-v3 retained exact edited draft and two scoped actions; last assertion queried child StaticText hidden by explicit button AX label. Examiner now requires actual running feedback and retains current screenshot and expectedTurn RPC proof; no product change and no full v3 pass."
+    ],
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "remaining": [
+      "P4-4 receipt notice placement and plans/approval/questions/input records.",
+      "Full queue outer container/theme/keyboard/accessibility/visual matrix, API26 capture variation and real original desktop/model results remain open.",
+      "iOS navigation round-trip/newer-error fences present in code, specific native race matrix and physical iPhone not newly verified.",
+      "P3/P4 complete feature gates; cellular/VPN and manual archive deferred; task/project CRUD deferred and A6/P7 paused."
+    ],
+    "visualReview": {
+      "androidOriginalsReviewed": 9,
+      "scope": "idle/last original scroll/running append across3 environments, existing project surface color confirmed",
+      "remaining": "API26 idle shows black top/navigation overlap capture variation; later frames differ. No root-cause/fix/full-window pass claim. Outer composer container, full dark/keyboard/a11y and notice placement gates remain.",
+      "iosCurrentOriginalsReviewed": 3
+    }
+  },
+  "replyWaitCheckpoint": {
+    "sourceBase": "f4e7f4d79502e979854ca03f49f6de41301902b7",
+    "implementation": "2026-10-23 P4-3a：共享ReplyRecoveryRules区分原客户端接受、等待释放与终态保护；received/未知/旧Host或已移除queued不作为接受证据。Android准确核对原回执Host/thread/ID/完整目标后，只释放同一原操作当前持有的等待，不清新草稿、不释放新操作；原HTTP未返回也可由已接受/终态回执解除本次等待。received保留原草稿，显式结束等待保留原意图；失败回执保留正文。Native加密journal及iOS分离记录共同保护终态不被晚到非终态确认/超时回退，iOS删除对应旧字面规则，改调同一KMP判断。原生夹具的v2 accepted检查补齐既有canonical可空字段；新增可选树外输出目录。404重试/有界退避、整组输入记录UI、生成设置/真实权限/冷恢复/真DEV仍开放。补充保护已接受的queued/submitted不被晚到received/未知/超时降级；相同v2产品APK的新持久化反例三环境各1项失败后，原journal/双端共享合并规则补齐，原密文重开、正文和指纹保持。本地传输phase与最近远端回执分别保存；received后HTTP结果未知是合法组合，不以状态相等作为目标身份校验，Host/thread/ID及完整目标检查保留。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCommandBoundaryTest.kt": "ca2655363b8ff6d7b66c41abb8a997c19ed62d30f3c258b46e82453f80e89ae0",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "011ecd78b1efdc0d73696357f6e68b097d1ab710357c51a47ab0e4c3f0668b02",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "02e7cda836fde883cd0f0ce28ae674bea00ff4dee01968c405c2baa76deff262",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "6876af265958ef0505cf3dd7c1516065bfe99205b6685c8620622873bf1fcc41",
+      "apps/ios/Sources/SessionStore.swift": "54bec67f891cb94dd3af353c42ef26f68c69a7b8070ada0c4d5e38f30e56e956",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ReplyRecovery.kt": "28d16f12fa101e123d5ce053e59cde81d25ed4fe915f876cd460de90f1148e8a",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ReplyRecoveryTest.kt": "7d10a6480912f6b88dc79900494e3cae2acfd271818b2c2701a03890b7ca78c4",
+      "packages/protocol/fixtures/mobile/reply-recovery-v2.json": "699d2e597f68d206ba399b284e69cd7d6b19eb3a3286f79bb10d3695e785367d",
+      "scripts/mobile/check-core.mjs": "a8921dbdf0624f9c0aefcaf068a3f6e7ace2abd0bc63786aa45bd21c85c8f398",
+      "scripts/mobile/verify-ios-recovery.swift": "81fbd571ebf2224ddcce3c5f08b628510c355a4a5d8b925833effcd874ba6eea",
+      "scripts/reply-wait-ios-fixture.mjs": "9f1acb5c3b15dff60ea496c639901429a7463235c9a9f1669d79d8c796ae2c9a"
+    },
+    "coverage": ["O036", "O048", "O083"],
+    "acceptance": "Final Android-v4 same app/runner162methods/8groups passed (phone/API26 each4+50; API37 4+31+6+13 after incomplete combined50 timeout). Core72/14 each and15wait/12evidence-merge vectors, iOS native-v3 complete held-history scene and final full-arch iOS build passed. Full59 passed stable11/372.29s before2 Android-only local-phase corrections, current162 plus scoped agent/contract/parity/format cover correction;9other shared/iOS/tool inputs unchanged. No whole feature/realDEV closure.",
+    "status": "bounded auxiliary checkpoint passed; whole feature open",
+    "oldProductCounterexample": {
+      "status": "actual failed",
+      "environments": 3,
+      "methods": 9,
+      "sameOldAppBytesAsCommittedProduct": true,
+      "scope": "received cleared original draft; accepted or failed receipt kept original HTTP wait locked",
+      "realModelInputs": 0
+    },
+    "native": {
+      "status": "passed final-v4",
+      "methods": 162,
+      "groups": 8,
+      "sameAppAndRunner": true,
+      "perEnvironment": {
+        "physical API33": "4current+50regression",
+        "API26": "4current+50regression",
+        "API37": "4current+31boundary+6queueUI+13flowUI"
+      },
+      "realModelInputs": 0,
+      "excludedIncomplete": "API37 combined50 reached180s; partial own runner log retained. Split same assertions and fixed per-case waits, cause not isolated; no performance acceptance."
+    },
+    "core": {
+      "status": "passed core-v3; matching unchanged core source after final Android-only correction",
+      "jvm": {
+        "methods": 72,
+        "suites": 14
+      },
+      "iosSimulatorArm64": {
+        "methods": 72,
+        "suites": 14
+      },
+      "swiftWaitVectors": 15,
+      "swiftMergeVectors": 12
+    },
+    "ios": {
+      "status": "passed native-v3 one full existing scene; matching unchanged iOS/core/tool input after final Android-only correction",
+      "syntheticSends": 3,
+      "primaryReceiptGets": 10,
+      "canonicalStatusGets": 4,
+      "queriesWhileHistoryHeld": 7,
+      "releasedOriginalResponses": [0, 1],
+      "realModelInputs": 0,
+      "scope": "current managed-runtime synthetic HTTP; independent normal/fallback accepted original receipt, late original response/new input isolation, unknown explicit detach and restart; not real Desktop/model or physical iPhone",
+      "originalsReviewed": 1
+    },
+    "workspaceCheck": {
+      "status": "passed",
+      "rootCommandCount": 59,
+      "elapsedSeconds": 372.29,
+      "sourceStable": true,
+      "sourceFiles": 11,
+      "postCheckChange": "Only Android MobileSession local-phase comparison and its native examiner changed;9 shared/core/iOS/tool files unchanged. Final native-v4 plus scoped contract/parity/format validate; no second59 run claim."
+    },
+    "failuresPreserved": [
+      "Green-v1 API37 exposed failed terminal receipt overwritten by late submitted acknowledgement; API26/33 timing pass is not final product proof. Journal and shared terminal guard added; identical current countercase examiner retained.",
+      "iOS-v1 held history produced real primary/fallback GETs but fixture omitted4 required nullable replyInspection fields; product schema rejected. Canonical fixture fixed, original12s wait/assertions retained; no iOS-v1 pass.",
+      "Same v2 product APK plus expanded journal examiner failed3/3 environments: submitted original became received. Shared accepted-evidence merge guard extended to queued/submitted as well as terminals; same examiner retained. Previous v2 native159/iOS pass remains intermediate.",
+      "After full59, expanded Native counterexample on same v3 app failed3/3: valid received receipt plus local transport uncertainty was rejected as target mismatch by new state-equality assertion. Removed only that equality; target/ID guards retained. Final Native v4 rechecks entire selected matrix; unrelated iOS/core/JS inputs unchanged.",
+      "Final v4 API37 combined50 instrumentation reached180s orchestration ceiling, partial output recovered from exact owned TestRunner PID. No complete count; unchanged app/runner/assertions in31+6+13 separate groups passed. Single-case wait budgets unchanged; timeout root cause not isolated."
+    ],
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "remaining": [
+      "404 observer recovery and bounded backoff; full input-record controls and iOS terminal/received-specific native matrix.",
+      "Current real Android/original Desktop/model proof and complete lifecycle, generation/permissions/first/file-only/cold recovery gates.",
+      "All27source nodes/20functions retained; P3/P4 complete and visual gates open; external human defer and A6/P7 pause unchanged."
+    ],
+    "iosBuild": {
+      "status": "passed current final full architecture build",
+      "command": "pnpm build:ios"
+    }
+  },
+  "replyObservationCheckpoint": {
+    "sourceBase": "9149e809ea5e16e19c3494f654bff0e2c464da16",
+    "implementation": "2026-10-23 P4-3b/O048：Android原回复观察独立于历史与事件，暂缺404继续只读查询；共享KMP定义2/4/8/16/30秒上限退避，iOS删除对应字面计算并调用同一规则。原canonical accepted证据允许在先前uncertain回执或重试额度已消耗时读取，仍核对捕获目标/信任/原ID；负证据取得重试权限的原限制不变，既有回执或已消耗额度不获得再次写权限。没有自动发送、重放或更换原输入。分离记录的canonical回查、整组输入记录UI、生成设置/真实权限、冷恢复及完整真实DEV继续开放。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "74c7572ddd2edbe8ca408e5261171c3902aecc3d36fecad2fbbc8a5ea8292188",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReplyRecoveryTest.kt": "e420148ccf7125647e3d542eaad121e52ee9cd3446072964c55ecf7f6f9f65c8",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "29c5f03850a2d83b5d5efdc52ed3010a28ca8f79eb65fcd095bb4fa100b64ef9",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "73d5c4d5748b1a0bf287ff85a58e52bbdda5731d7d10154879bcf3dd5db358b7",
+      "apps/ios/Sources/SessionStore.swift": "4716279f1e37fb76368f0e97ae8da32c11909e755c2a17652da32d294d52c461",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ReplyRecovery.kt": "1f4054afe59d731c1f402e9346446956830135311dba842d4aa4598ec4716359",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ReplyRecoveryTest.kt": "bfd468dde75f3432ba56a73ce51ead1bc52aad6be865d4336be36faf573120fe",
+      "packages/protocol/fixtures/mobile/reply-recovery-v2.json": "9a121e94658c519a9ed7cbd33b4366dae58489f54861f6595d5cab5043ed89ff",
+      "scripts/mobile/check-core.mjs": "b99b78f97307caa87c77c173922630507d1e73c0736387bbf89fad0eab6f98e8",
+      "scripts/mobile/verify-ios-recovery.swift": "a0a9d223e71ebe604e76ef27148e9b701464b30f8a9eb247973a9fa79435b088"
+    },
+    "coverage": ["O048"],
+    "acceptance": "Android同一App/runner三环境204方法/12组通过（每环境4新增＋41边界＋6队列UI＋17执行UI）；旧9149同字节产品6失败/3负权限对照通过。共享核心两运行时各73方法/14套件，Swift10退避/15等待/12合并/94HTTP向量通过。iOS原生当前一完整停滞历史场景通过，3合成发送/10原回执GET/5canonicalGET，历史挂起期间6次独立查询；当前原图1张核对及全架构build通过。完整pnpm check59根命令通过，366.98秒，10份源码稳定；零新增真实模型，整功能/真实DEV未关闭。",
+    "status": "bounded implementation and current native/core/iOS/workspace auxiliary checks passed; whole feature and realDEV open",
+    "oldProductCounterexample": {
+      "sourceBase": "9149e809ea5e16e19c3494f654bff0e2c464da16",
+      "sameAppBytes": true,
+      "failed": 6,
+      "negativeAuthorityControlsPassed": 3,
+      "consumedCaseNotRunAgainstOldProduct": true
+    },
+    "native": {
+      "status": "passed",
+      "methods": 204,
+      "groups": 12,
+      "apis": [26, 33, 37],
+      "candidate": "green-v2",
+      "sameAppAndRunner": true,
+      "realModelInputs": 0
+    },
+    "core": {
+      "status": "passed",
+      "methodsPerRuntime": 73,
+      "suitesPerRuntime": 14,
+      "queryBackoffVectors": 10,
+      "replyWaitVectors": 15,
+      "receiptMergeVectors": 12
+    },
+    "ios": {
+      "sourceStable": true,
+      "sceneMethods": 1,
+      "syntheticSends": 3,
+      "primaryQueries": 10,
+      "canonicalQueries": 5,
+      "queriesWhileHistoryHeld": 6,
+      "realModelInputs": 0,
+      "realRuntimeVerified": false,
+      "currentOriginalScreenshotReviewed": "reply-receipt-auto-recovered-after-restart",
+      "iosBuildSucceeded": true,
+      "status": "passed"
+    },
+    "workspaceCheck": {
+      "exitCode": 0,
+      "seconds": 366.98,
+      "rootCommands": 59,
+      "sourceFiles": 10,
+      "sourceStable": true,
+      "status": "passed"
+    },
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "remaining": [
+      "Detached canonical observation and grouped input records UI",
+      "Generation settings, actual permission, first/file-only and cold recovery gates",
+      "Full P3/P4 visual and real Android/original Electron/model DEV",
+      "Cellular/VPN and manual archive deferred; A6/P7/P9 and business Task/project CRUD remain paused"
+    ]
+  },
+  "detachedReplyObservationCheckpoint": {
+    "sourceBase": "10a9ebcc738b1d36ff04947a5bf0c1c1591e122c",
+    "implementation": "2026-10-23 P4-3c/O036/O048：Android把原回复只读观察的捕获目标/证书/不可变意图校验与重试写权限分开；结束本机等待后，仍可具名查询原canonical accepted回执并保留detached状态。负证据与原内容恢复/重试继续使用未分离的原写授权校验，分离、额度已消耗或已有回执均不能新增重试权限。目标、证书或原意图改变仍拒绝备用查询，不迁移原记录、不恢复等待、不重放。iOS既有分离记录查询与KMP规则未改，源码指纹匹配复用前项辅助结果。发送记录列表入口与正文/附件展示仍待下一检查点，完整真实DEV未关闭。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReplyRecoveryTest.kt": "261a73a44ff4a0b8d51e11e37a4903777623c50824c17fbfc9171efcde33aad1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "b519a7d7157ec265c4f02a821ed6bef776ec6d2324dc68870fccbdead6b30983",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeReplyRecovery.kt": "287937a0c40952aca2730ae88de852f91f4761dcd0040e188918f63bea0594fb"
+    },
+    "coverage": ["O036", "O048"],
+    "acceptance": "最终同一App/runner三环境213方法/13完整分组通过：手机/API26各16恢复+31边界+6队列UI+18执行UI；API37为16+31+6+1独立404+17执行UI。API37组合18触及180秒编排上限，完整失败/自有TestRunner日志保留，部分结果不累计；同断言/单例时限/产物分1+17通过，未隔离组合超时根因，不宣称性能通过。零真实模型输入。当前agent-contract/parity/format/diff通过；P4-3b共享核心73/14各运行时、iOS原生/全架构build与59根检查仅按未改组件源码指纹复用，没有本项重跑之说。",
+    "status": "bounded native auxiliary checkpoint passed; whole feature and realDEV open",
+    "oldProductCounterexample": {
+      "sameAppBytes": true,
+      "methods": 6,
+      "failures": 6,
+      "sourceBase": "10a9ebcc738b1d36ff04947a5bf0c1c1591e122c"
+    },
+    "native": {
+      "status": "passed",
+      "methods": 213,
+      "groups": 13,
+      "sameAppAndRunner": true,
+      "apis": [26, 33, 37],
+      "api37IncompleteGroupExcluded": 18,
+      "api37Split": [1, 17],
+      "realModelInputs": 0
+    },
+    "reused": {
+      "core": "73methods/14suites per runtime and current Swift vectors: unchanged shared/iOS/tool inputs from P4-3b",
+      "ios": "P4-3b native one complete fixture scene and full architecture build, unchanged sources; no new iOS run",
+      "workspace": "P4-3b full59 root commands/366.98s retained for unchanged JS/workspace/tool sources; current manifest/parity/format/diff checks required separately"
+    },
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "failuresPreserved": [
+      "Two examiner compile failures: nonexistent client argument and TargetScope.copy; corrected with exact constructors, no product relaxation",
+      "Initial native16 per environment passed, runner expected4 and marked aggregate failed; corrected runner count then complete current groups rerun",
+      "API37 combined18 orchestration180s timeout; partial TestRunner finishes not counted, same source/bytes/assertions split1+17 passed; root cause unresolved",
+      "Initial outside split runner omitted new group allowlist; no instrumentation started; corrected and rerun"
+    ],
+    "remaining": [
+      "Full send-records UI/body/attachment display and original desktop/model DEV",
+      "Generation/permissions/first/file-only/cold restoration and complete P3/P4 gates",
+      "Cellular/VPN/manual archive deferred; A6/P7/P9 and business Task/project CRUD remain paused"
+    ]
+  },
+  "replyRecordsUiCheckpoint": {
+    "sourceBase": "ed62ba1683bdc0c33128006830060b66a073c93f",
+    "implementation": "2026-10-23 P4-4a（P4-3续接）：Android对话菜单新增与iOS对应的“发送记录”，按完整目标显示全部已结束等待的原回复，倒序可滚动且不截断。展示可选取的原文、原附件名/类型、原回执状态及错误；旧附件元数据缺失明确说明原记录保留。仅查询准确原ID，逐记录等待/错误与去重，不锁当前草稿、不提供重试/重发。导航、连接、端点、证书及owner隔离晚到错误；目标改变关闭旧列表。只读快照核对加密原记录、来源目标/草稿版本及规范化原正文/设置，不读取或上传附件字节、不为旧记录补造重试授权。原内容编辑复用快照校验，仍先取得强未接受及未分离授权并复核原字节。iOS现有发送记录列表/查询路径保持，KMP规则未变；全视觉/多语言/真实桌面模型DEV及其余P4继续开放。 补齐原回执七种状态的原生对照：有关联Turn的失败显示“任务执行失败”，无Turn显示“消息提交失败”；状态取准确原回执，不借当前任务。原生加密快照同时证明强未接受时原内容编辑可恢复、原附件字节变化拒绝编辑，分离记录仍可只读展示原附件名称且不授予写权限。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "de1f83f6d259d741725dbae32e369a1adf653315eac45cd2f8ea6c209dddc3bf",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReplyRecoveryTest.kt": "a1eaa4ab0380f288b6ca0464faf613d3c175212779857eba20c10f4247725c39",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "180c137d04ec78b7e497594099b843b7958e693879d21aded8d018a8ff1562a4",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "6d98d1905efdb9029670543e155a71d7b0edb138d48c7f7b6e8a94a2df845b95",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "362d72b8f868601c7006fb9903d849ccfa5f38eba2b044fb634be7f215a1d3b1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "47c714843d0dfba2cb58c666fe7b6c97d91ec13b82eeb80bfff1a872c75a0bdf",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "73cf2ff1b93cc4ce1e0613cbaf415565591a6857e6b7291f306a5cd36817d771",
+      "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt": "f352191203163008159a7884a5d51e0168f20cba40907435c9b1a342bf00191d"
+    },
+    "coverage": ["O036", "O048"],
+    "acceptance": "最终v6同一App/runner三环境各76方法/6组，共228方法/18完整分组通过（恢复17+边界31+队列UI6+执行UI17+独立404读1+记录UI4）。4记录场景分别验证原文/附件及逐项只读查询、记录内与晚到错误、13条后最早原ID可查，以及7个独立原输入的7状态/Turn标题；原生加密快照验证可编辑原字节及错误正文/目标/字节拒绝。当前15张原图逐张查看，0新真实模型。完整59根检查于原稳定8源码/353.39s通过，之后3份Android-only展示/验收修正由最终228及当前contract/parity/format覆盖，其余5份产品/界面文件及全部iOS/KMP/JS输入不变，按组件匹配复用而非宣称二次全量。",
+    "status": "bounded implementation and final native auxiliary checkpoint passed; whole feature/realDEV open",
+    "native": {
+      "status": "passed",
+      "candidate": "v6",
+      "methods": 228,
+      "groups": 18,
+      "methodsPerDevice": 76,
+      "groupsPerDevice": 6,
+      "recordScenesPerDevice": 4,
+      "recordStateAssertionsPerDevice": 7,
+      "stateAssertionsUseDistinctOriginalIds": true,
+      "sameAppAndRunner": true,
+      "apis": [26, 33, 37],
+      "originalImagesReviewed": 15,
+      "realModelInputs": 0,
+      "fullVisualAcceptance": false
+    },
+    "workspaceCheck": {
+      "exitCode": 0,
+      "seconds": 353.39,
+      "rootCommands": 59,
+      "sourceFiles": 8,
+      "sourceStable": true,
+      "status": "passed before three Android-only native corrections",
+      "laterNativeCorrections": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReplyRecoveryTest.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt"
+      ],
+      "unchangedOfOriginalSources": 5
+    },
+    "reused": {
+      "core": "P4-3b 73methods/14suites each runtime, unchanged shared/tool/Swift source",
+      "ios": "Existing P4-3b native held-history scene/build unchanged; no current iOS UI or physical run claimed"
+    },
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "failuresPreserved": [
+      "Initial examiner screenshot helper used nonexistent Instrumentation.arguments; fixed to documented InstrumentationRegistry.getArguments; no assertion/product relaxation",
+      "Full workspace59 passed stable8/353.39s before2 native examiner extensions and1 native status-label correction; final native/current scoped checks required",
+      "Same pre-correction product APK and new status examiner failed once per device: failed original with Turn displayed message submission failure instead of task execution failure; all3 failures retained",
+      "v5 status examiner attempted different terminal outcomes on one originalID; all3 environments correctly retained terminal state and the examiner timed out. v6 uses7 distinct immutable originals for7 state/Turn assertions; product terminal guards and APK bytes unchanged."
+    ],
+    "remaining": [
+      "Complete UI theme/locale/AX and original Android/Electron/model DEV",
+      "Other composer/generation/actual permissions/first/file-only/cold recovery nodes",
+      "Cellular/VPN/manual archive deferred; business Task/project CRUD and A6/P7/P9 unchanged",
+      "Legacy/missing local attachment snapshot fallback native UI remains to verify; implemented unavailable copy not claimed current-native passed"
+    ],
+    "scopedChecks": {
+      "agentContract": "passed after final production change; later examiner-only terminal isolation did not change contract code",
+      "mobileParity": "passed after final v6 source and result registration",
+      "format": "passed after final v6 result registration",
+      "diff": "passed after final v6 result registration"
+    }
+  },
+  "runningComposerCheckpoint": {
+    "sourceBase": "b03ba34ed33fa22b291cdda8e11d2cd96bd59d7f",
+    "implementation": "2026-10-23 P4-3d/O083/O090/O091/O092/O093：Android运行中输入栏改为与iOS同义的“排队执行／立即追加”分段选择，排队选项保留且能力缺失时禁用；原选择为queue但客户端队列不可用时显示同文说明，保留草稿，不自动改为steer或发送。继续调用同一KMP showsReplyMode及实际session.text/attachments计数；空白、纯附件、移除附件、空闲或无有效Turn逐项核对。能力变化不重写已存偏好，用户显式选择后才允许发送；模式回调携带完整目标，跨目标旧回调拒绝。提交/原回复或首条等待时禁用模式编辑，原请求/Turn/模式不可变；原记录只读查询不锁草稿。iOS既有segmented Picker/queue不可用提示与KMP提交门禁未改，代码匹配参考，不宣称新增iOS原生或真实DEV通过。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "88c88839093eeb037aabc2ec004879f454255ee348c1ab350bae5a29bf75a588",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "2b66b6dceba2e6239da568cdf9ce79ee6e7d4aacaef204233986202084d2db55",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "70f46048afe26b394c07d0f3afd0fcaa6eb84c51d7e4d8f8d4cbab36c6b9f1b6"
+    },
+    "coverage": ["O083", "O090", "O091", "O092", "O093"],
+    "acceptance": "最终同一App/runner三环境各80方法/7组，共240方法/21完整分组通过（新增composer4+恢复17+边界31+队列6+执行17+独立404读1+记录4）。18张新原图逐张查看，原选择/原请求/Turn及未提交草稿保持；零新真实模型。当前agent-contract/parity/format/diff在稳定3份源码期间通过，iOS/KMP/JS/工作空间工具源码未改，原core73/14各运行时、iOS构建及此前59根检查只按未变组件复用，不宣称本项重跑。API26文本图出现既有黑顶/导航重叠变化，原图保留，完整P2/P6/主题/语言/AX/真实DEV门槛继续开放。",
+    "status": "bounded implementation and current native/scoped auxiliary checkpoint passed; whole feature/realDEV open",
+    "oldProductCounterexample": {
+      "sourceBase": "b03ba34ed33fa22b291cdda8e11d2cd96bd59d7f",
+      "sameAppBytes": true,
+      "textAttachmentVisibilityControlsPassed": 3,
+      "missingQueueHintFailures": 3,
+      "newStaleTargetPendingScenariosNotRunAgainstOldProduct": true
+    },
+    "native": {
+      "status": "passed",
+      "methods": 240,
+      "groups": 21,
+      "methodsPerDevice": 80,
+      "groupsPerDevice": 7,
+      "newComposerScenariosPerDevice": 4,
+      "sameAppAndRunner": true,
+      "apis": [26, 33, 37],
+      "imagesReviewed": 18,
+      "fullVisualAcceptance": false,
+      "realModelInputs": 0
+    },
+    "reused": {
+      "iosAndCore": "Unchanged Swift/KMP/tool component hashes: prior core73/14 per runtime, iOS build/held-history fixture remain component reuse; no new iOS native run",
+      "workspace": "Current Android-only3 source files: unchanged JS/workspace/tooling full59 from P4-4a353.39s retained; current native/agent-contract/parity/format/diff required"
+    },
+    "realModelInputs": 0,
+    "wholeFeatureVerified": false,
+    "failuresPreserved": [
+      "Initial producer compile missing ui.draw.clip import, fixed before any current validation",
+      "Examiner POST receipt now distinguishes queue from steer consistently with its preexisting history response; no production transport/receipt relaxation",
+      "Current API26 text-mode screenshot reproduces previously retained black-top/navigation overlap variation; no new cause isolation or whole-window pass claimed"
+    ],
+    "remaining": [
+      "Full theme/localization/AX/visual and original Android/Electron/model DEV",
+      "Generation preferences and actual owner permissions; first/file-only/cold restoration",
+      "Remaining plan/approval/question/notice and missing snapshot UI states",
+      "Cellular/VPN/manual archive deferred; business Task/project CRUD and A6/P7/P9 unchanged"
+    ],
+    "scopedChecks": {
+      "checks": [
+        {
+          "name": "agent-contract",
+          "exitCode": 0,
+          "seconds": 5.79
+        },
+        {
+          "name": "parity",
+          "exitCode": 0,
+          "seconds": 2.14
+        },
+        {
+          "name": "format",
+          "exitCode": 0,
+          "seconds": 7.58
+        },
+        {
+          "name": "diff",
+          "exitCode": 0,
+          "seconds": 0.03
+        }
+      ],
+      "sourceStable": true,
+      "status": "passed"
+    }
+  },
+  "runningComposerLiveExaminerCheckpoint": {
+    "sourceBase": "cf54e2046f1b1fc6e3f4b35d75d63b8150d3ea7a",
+    "implementation": "2026-10-23 P4-3d.1：真实DEV控制验收器同步运行中输入规则。先用原生字段输入并等值核对正文，再选择已声明且可编辑的分段模式，选择后再次核对原文；原reply-mode仅检查显示，直接点reply-mode-queue/steer并核对enabled/selected。保留原提示、nonce、操作数及45秒/240秒等待，不执行旧真实模型场景。本项仅Android验收器修改，产品APK与cf54逐字节相同；iOS/KMP/Host及其他生产源码不变。编译与独立fixture控制边界辅助验证，真实原桌面/模型场景仍待P4真实DEV阶段。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLiveControlsTest.kt": "5cf2001f83fd04a71e8aef2aabb3011f964376f5ffd0b0ccc6d819b74d937bc5"
+    },
+    "coverage": ["O091", "O092", "O093"],
+    "status": "examiner compiled and fixture boundary auxiliary passed; actual live scene not executed",
+    "onlyExaminerChanged": true,
+    "sameProductApkBytes": true,
+    "realModelInputs": 0,
+    "actualLiveScenarioExecuted": false,
+    "wholeFeatureVerified": false,
+    "acceptance": "当前验收器编译通过，产品APK逐字节匹配cf54；同一产品/新runner三环境各4独立fixture控制场景，共12方法/3组通过，核选中/禁用、正文/附件显隐、能力与目标变化及等待中原模式不变。此执行未调用MobileLiveControlsTest真实场景；原桌面/模型结果仍未验收。当前iOS/KMP/JS/生产源码不变，原240/21与18图按组件匹配复用；0新增真实模型。",
+    "native": {
+      "status": "passed",
+      "methods": 12,
+      "groups": 3,
+      "apis": [26, 33, 37],
+      "actualLiveScenarioExecuted": false,
+      "realModelInputs": 0
+    }
+  },
+  "generationPreferencesCheckpoint": {
+    "sourceBase": "f7cd7eedb555a2374cf224863a44a970bef99458",
+    "implementation": "2026-10-23 P4-3e：KMP统一客户端生成偏好的显式字段合并，模型动作联动模型/强度/速度，独立权限保留；强度/权限/速度仅更新相应字段，null明确清除。Android旧草稿单项编辑不再覆盖其他已记住默认；即使当前草稿值未变，显式默认动作仍持久更新客户端偏好。保留捕获完整目标、可编辑及目录能力校验；已提交输入不修改。iOS删除原字段合并闭包，调用同一KMP规则，保留其模型归并与原生持久流程。新增版本化10向量及Swift实际调用；iOS夹具支持独立端口和树外证据，原精确交互/参数断言保持。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileGenerationCallbackTest.kt": "e3048be812bd1e0939444b2ab598c7122242e988c46a9df6d0a7235754286bd2",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "2fdc3f5e488de51befbe065e8d72b9aed95521bcc575b23cf43de84aace28ff3",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "72aed2dade315d8cc7338e2fa90b7cd83c4367d2531aff4e0b74b36974795e33",
+      "apps/ios/Sources/SessionStore.swift": "d48749f2d0a3a50edabf3f31bbe4cae3ca9d9cc8a609795ee37cf200890d05c5",
+      "apps/ios/Tests/CodexManageUITests.swift": "242b337927c45280cd895aab65dace337f34ad8553392732a82b745b5c61ffee",
+      "packages/mobile-core/build.gradle.kts": "e838474847b00751933fe70fbbd0875adfac45623667ac340f3c9428616b5707",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/GenerationPreferenceRules.kt": "146f2a7ffec3714c25b838bd76f99de7a65aa96f7210666729e441f3c8035ef8",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/GenerationPreferenceRulesTest.kt": "dd66ebc3c9644e2d6d39a0f1ebf20d17f4c2500792eb01461cb58b14dfae5b74",
+      "packages/protocol/fixtures/mobile/generation-preferences-v1.json": "a0a2db4dc06e88134df161cc144bd539235577fafd435390fe9bbfe6cb059b83",
+      "scripts/generation-settings-ios-fixture.mjs": "aded0a553b95ad0582ca01a01fa64a0a61f11735d284afa896a566f915ba705f",
+      "scripts/mobile/check-core.mjs": "fca8dcf93f7a6d6550940a4eb8582b092f103fad4a74b1b42d4fd25ce4b07748",
+      "scripts/mobile/verify-ios-generation-preferences.swift": "c2f89eafb797415f6987fc38a8576cca9d6a49290773e743d42d469f06442ba3"
+    },
+    "coverage": ["B002", "B013", "O016"],
+    "status": "bounded generation preference auxiliary checkpoint passed; whole P4 and actual owner authority open",
+    "wholeFeatureVerified": false,
+    "realModelInputs": 0,
+    "remaining": "生成设置选中语义（跟随默认与实际生效项双勾）、标准/快速开关与多档菜单、模型默认的双端联动差异仍需逐项处理；实际owner权限、首条/纯附件/冷恢复及原桌面/模型真实DEV继续开放。27来源节点与20功能整体均未关闭；业务任务/项目暂缓、A6/P7暂停、蜂窝/VPN及人工归档待验收保持。",
+    "acceptance": "同一旧产品APK字节匹配，新增三项偏好反例在三环境共9失败，原12项回调对照通过；红v1缺少既有desktop创建能力的前置失败不作产品反例。最终同一App/runner三环境各87方法、8组，共261方法/24组通过，含生成设置7项、原回复/命令/队列/输入/记录回归80项；0新增真实模型输入。共享JVM/iOSSimulator各74方法/15套件、Swift10新偏好向量及原94 HTTP向量通过，iOS完整构建成功。当前iOS原生一完整场景、3合成输入通过：模型/强度/速度/权限、旧聊天隔离、重启恢复、新聊天继承及准确请求参数；6张当前iOS截图和3张Android代表图已查看，Android其余当前回归图留存，完整视觉/双语/AX未关闭。iOS首次启动因另一验收占用8797未执行场景，新增独立端口后v2通过，不停止其他任务。首次全量check在功能变更登记缺失处停止，补齐登记后重跑，失败保留。 完整pnpm check连续59条根命令通过，424.73秒，12份源码指纹稳定；其后只补验收文档，最终parity/format/diff单独核对。Windows原生跳过不记通过。P4-3e仅关闭显式偏好字段合并辅助子边界，27来源节点/20功能、实际owner权限、首条/纯附件/冷恢复、设置页交互与完整真实DEV继续开放。按阶段先提交推送、独立核对远端、恢复包与台账，再继续下一项；主线未合并。",
+    "native": {
+      "status": "passed",
+      "methods": 261,
+      "groups": 24,
+      "apis": [26, 33, 37],
+      "sameAppAndRunner": true,
+      "realModelInputs": 0
+    },
+    "core": {
+      "status": "passed",
+      "methodsPerRuntime": 74,
+      "suitesPerRuntime": 15,
+      "newSwiftVectors": 10
+    },
+    "iosNative": {
+      "status": "passed",
+      "scenes": 1,
+      "syntheticInputs": 3,
+      "physicalDeviceVerified": false,
+      "realModelInputs": 0
+    },
+    "workspaceCheck": {
+      "exitCode": 0,
+      "seconds": 424.73,
+      "rootCommands": 59,
+      "sourceFiles": 12,
+      "sourceStable": true
+    }
+  },
+  "generationPresentationCheckpoint": {
+    "sourceBase": "c7ac1e27a0f8038b0c0f7bb0a9055be22d656ecb",
+    "implementation": "2026-10-23 P4-3f：Android模型和推理强度改为原生菜单，按iOS绑定的实际生效值单项选中，删除默认与生效项双勾；保留强度滑块和显式跟随电脑。速度目录含ultrafast时使用多档菜单，否则为整行快速开关，未声明fast时禁用；重置速度保持独立字段。模型跟随电脑调用已有KMP changeModel，与iOS同样清模型/强度并将已有不支持速度归并standard，保留独立权限。全部动作仍捕获完整目标、复核当前目录/能力和编辑门禁，旧回调不能改新目标。菜单按目标重置；使用蓝色值/上下箭头、48dp触控、16sp行文案、绿色快速开关及项目中性色，移除Material默认紫色。共享核心/iOS/Host/传输不改。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileGenerationCallbackTest.kt": "ad622de47457745ee3261ed2aac762877cf1a671831ffbd3a61c580c045fed1d",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "0c30ff388a7322af83d3618d81cfee6fcc461680900bbd42cbfa02d48ae74969",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "3d8ef85b558b55ddc68aa377401bf49118c9f6001a65be1c6a9588f14779317c"
+    },
+    "coverage": ["B013", "O016"],
+    "status": "bounded generation presentation auxiliary passed; full owner authority, source nodes and visual gates open",
+    "wholeFeatureVerified": false,
+    "realModelInputs": 0,
+    "acceptance": "旧c7ac产品APK字节匹配，在三环境各4项失败（缺模型/强度菜单、速度开关/多档菜单、精确默认速度联动），原7项保护各自通过，共12失败/21对照通过。中间v1同App/runner三环境273方法/24组通过，15截图逐张查看发现默认紫色，保留中间结果；修订v2中性色后最终同一App/runner三环境各91方法、8组，共273方法/24组全部通过，含11项生成设置和80项原回复/命令/队列/记录/输入回归；15张当前设置图逐张核对，中性色修正通过，其他回归图留存不冒充完整视觉通过。0新增真实模型输入。KMP/iOS/JS及其10份输入逐一匹配c7ac，复用各74方法/15套件、Swift10偏好向量、iOS原生1场景/3合成输入及59根命令424.73秒结果，不冒充本项重新全量执行。 当前3份Android源码指纹稳定，agent-contract、mobile-parity、format及diff检查通过。仅组件匹配复用上一阶段共享/iOS/JS与59根检查，不宣称新的全量/iPhone/真实模型结果。当前检查点提交推送、独立远端/恢复包/台账核对后才继续P4-3权限与首条/纯附件/冷恢复，主线不合并。",
+    "remaining": "本项只关闭设置页菜单/开关/默认联动辅助切片；原生滑块与iOS系统控件形状、菜单弹出定位/材质、表单分隔与权限图标/布局仍逐项保留P6视觉门禁，双语/深色/大字体/AX未完整验收。实际owner权限及O028/O029、首条/纯附件/冷恢复、完整原桌面/模型DEV继续开放；27来源节点/20功能整体不关闭。业务任务/项目暂缓、A6/P7暂停、蜂窝/VPN和人工归档待验收保持。",
+    "native": {
+      "status": "passed",
+      "methods": 273,
+      "groups": 24,
+      "apis": [26, 33, 37],
+      "sameAppAndRunner": true,
+      "realModelInputs": 0,
+      "generationImagesViewed": 15
+    },
+    "scopedChecks": {
+      "sourceStable": true,
+      "sourceFiles": 3,
+      "checks": [
+        {
+          "name": "check:agent-contract",
+          "exitCode": 0,
+          "seconds": 5.91
+        },
+        {
+          "name": "check:mobile-parity",
+          "exitCode": 0,
+          "seconds": 2.34
+        },
+        {
+          "name": "format:check",
+          "exitCode": 0,
+          "seconds": 8.17
+        }
+      ]
+    }
+  },
+  "generationLiveSelectorCheckpoint": {
+    "sourceBase": "a70962901dbd47509644c8911f774d6c15285a89",
+    "implementation": "2026-10-23 P4-3f.1：三组真实控制、计划/审批、异步问题验收器改用同一原生生成设置选择入口；明确打开模型/强度菜单，速度走已声明的多档菜单或快速开关，再选择原权限。运行时速度已相同而草稿字段为空时，仅本地切换离开再回到请求值，保证原验收提交明确speed；不把生效显示冒充显式设置。保留原模型/参数、提示/nonce、操作数和所有原超时，未执行三组真实模型场景。仅Android验收器修改，产品APK与a709逐字节相同，iOS/KMP/Host/JS/全部生产源码不变。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileGenerationCallbackTest.kt": "134126195123f5fc018d359b2a7f9b2e06f4c95c44b3669057c5589ad8bf2f46",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLiveControlsTest.kt": "92b42cba7883db6d2463955bff9b3804d26a0e4f036fb967fbfa131e573baadc",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLivePlanApprovalTest.kt": "dfbc3b7441c29c1c2162daf114f917303d951f8a36db5fc5a33e549e8161c1e0",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLiveQuestionsTest.kt": "6f04c1ec3704ce6308defea4b16a8e9d6ba5ea1f428703a40717ee2c5d60e665",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeGenerationSelection.kt": "3d3b2034d07ea38eeeff3f12651be492591105634a2a88ba3d99daae143cc2bf"
+    },
+    "coverage": ["B013"],
+    "onlyExaminerChanged": true,
+    "sameProductApkBytes": true,
+    "actualLiveScenariosExecuted": false,
+    "wholeFeatureVerified": false,
+    "realModelInputs": 0,
+    "status": "test-only native selector auxiliary passed; actual live scenarios unexecuted",
+    "acceptance": "新夹具v1在API26/手机各13方法有1项运行时fast前置失败，其余各12通过；原因是旧夹具使用settings而正式解析generationSettings，失败发生在新选择动作之前，产品和期望不改。API37合并13方法的单组触及180秒编排限，部分结果不计通过；根因未隔离，无性能通过。正确字段修订后，同一组断言/单例时限分为原11项和新2项，最终同一产品/runner三环境共39方法/6组通过。核对运行时fast与空草稿的区别，显式fast/standard与多档ultrafast均得到准确草稿字段，保留模型/强度/权限；三组真实场景未执行。0新真实模型输入，历史13输入不重放。 编译通过，产品包逐字节匹配a709，全部生产源码不变；原273/24和15张当前产品设置图按组件匹配复用，新runner截图保留不新增完整视觉通过。只新增验收器辅助结果，0新真实模型输入。 当前5份验收器源码指纹稳定，agent-contract、mobile-parity、format/diff检查通过；先提交推送/独立远端/恢复包/台账核对，再继续真实权限及首条/纯附件/冷恢复。",
+    "remaining": "原桌面/模型权限与控制/计划/审批/问题真实DEV均未由本项通过。仅standard且未声明fast的目录，其快速开关按产品规则禁用；此旧显式speed验收入口准确拒绝，不能改用隐藏配置或默认为已选择，需独立跟随默认场景核对。业务任务/项目、A6/P7、蜂窝/VPN、人工归档及完整P3/P4/视觉门禁保持。",
+    "native": {
+      "status": "passed",
+      "methods": 39,
+      "groups": 6,
+      "apis": [26, 33, 37],
+      "actualLiveScenariosExecuted": false,
+      "realModelInputs": 0
+    },
+    "scopedChecks": {
+      "sourceStable": true,
+      "sourceFiles": 5,
+      "checks": [
+        {
+          "name": "check:agent-contract",
+          "exitCode": 0,
+          "seconds": 5.71
+        },
+        {
+          "name": "check:mobile-parity",
+          "exitCode": 0,
+          "seconds": 2.35
+        },
+        {
+          "name": "format:check",
+          "exitCode": 0,
+          "seconds": 6.68
+        }
+      ]
+    }
+  },
+  "actualPermissionsCheckpoint": {
+    "sourceBase": "80392d2c08781a225a9013b4d1db2c67e62223dd",
+    "implementation": "2026-10-23 P4-3g：新增独立Android真机权限验收器，固定4个新输入场景：电脑默认、显式只读、显式完全访问、进程冷启动保留原记录/未发送只读草稿后改跟随默认。模型和xhigh/fast由真实本机目录核对；手机使用实际菜单/输入/发送，具名Host独立状态和端口，另一只读原owner核对准确client ID/Turn、模型/强度/serviceTier、沙盒/审批策略、真实工具退出结果及工作区外专用探针文件。界面选项和模型自述均不替代权限效果。每场景单次发送租约、原正文/指纹、完整目标与原ID固定，拒绝/重复POST须保留为验收失败；未知停止后续场景，保留原查询所需ID/状态，不重放历史13输入。独立工具输出/日志留在树外私有目录，Token脱敏，使用Host公开close释放自己的目录reader/定时器。USB loopback仅为本机功能链路，不声称LAN/TLS/VPN新通过。生产App/iOS/KMP/Host源码未改，产品APK匹配a709。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePermissionLiveTest.kt": "af873bec3d9c920fe3fb62fb2688d5489ee555e479d25eff877903bbcc2b1702",
+      "scripts/mobile/android-permissions-live.mjs": "cd7c081330ac6b8782f544455cd7450b4778cae7bc06dbc2fcd5317770f2504e",
+      "scripts/mobile/android-permissions-readonly.mjs": "f518e726d007a0a5b4fc5c51f3efd86c788d21b50053a904d9a38468eec59155"
+    },
+    "coverage": ["B013", "O028", "O029"],
+    "status": "four scoped native/owner cases passed; original overall examiner failure preserved; zero-input exact-original recovery passed",
+    "onlyExaminerChanged": true,
+    "sameProductApkBytes": true,
+    "plannedNewRealModelInputs": 4,
+    "newRealModelInputsConfirmed": 5,
+    "actualOwnerPermissionsVerified": true,
+    "actualProcessColdRestoreVerified": true,
+    "wholeFeatureVerified": false,
+    "remaining": "仅关闭上述四项Android本机权限/进程恢复子边界及准确原记录只读续验；guardian/子运行作用域、EasyWork/Windows、纯附件/首条混合文件、其他计划/审批/问题/通知/控制和完整P3/P4/双语/AX/视觉仍逐项开放。全部27来源节点与20功能整体不关闭。业务任务/项目暂缓、A6/P7暂停，蜂窝/VPN和人工归档单列待验收；本次USB loopback不当作网络链路新通过。",
+    "preparatoryEvidence": "只读预检确认本机默认full/never及真实模型xhigh/fast；早期零输入预检依次拒绝误用桌面管理工具项目ID、误认Host原始能力为原生派生cap、异步stdin未结束超时，均在模型发送前停止。按Host目录准确根/ID核对，正确原始能力及限时完整写入修订；v4原生1场景零POST通过，遗漏目录reader的清理由公开close补齐，已准确停止本任务reader并核对退出；v5原生1场景零POST通过且进程正常退出。当前v6进一步核对拒绝POST记录/失败门禁与完整缓冲响应，生产/Native源码不变。 当前v6真机1完整零输入场景通过、零业务POST、零拒绝POST，验收器及自己的reader正常退出；仅准备门禁通过，实际owner权限/冷恢复仍未执行。",
+    "nativePreflight": {
+      "status": "passed-zero-input-native-preflight",
+      "nativeCases": 1,
+      "newRealModelInputsConfirmed": 0,
+      "actualOwnerPermissionsVerified": false,
+      "actualProcessColdRestoreVerified": false,
+      "runnerExitedNormally": true,
+      "reportSha256": "3715c8fd578df03d4342685bf1f33dbbaa35987316354691c30fa80863844d8b"
+    },
+    "fullCheckBeforeExaminerCorrections": {
+      "exitCode": 0,
+      "seconds": 355.48,
+      "rootCommands": 59,
+      "sourceStable": true,
+      "sourceFiles": 2
+    },
+    "actualV1": {
+      "status": "failed-native-examiner-sharing-step-missing",
+      "newRealModelInputsConfirmed": 0,
+      "businessPosts": 0,
+      "rejectedPosts": 0,
+      "unresolvedOriginalCases": 0,
+      "historicalInputsReplayed": false
+    },
+    "actualV2": {
+      "status": "failed-native-examiner-read-route-missing",
+      "newRealModelInputsConfirmed": 1,
+      "nativeScenesPassed": 0,
+      "actualOriginalToolVerified": true,
+      "fullCanonicalInputCount": 1,
+      "remainingCasesNotSent": 3,
+      "originalNeverReplayed": true
+    },
+    "nativeSharingPreflight": {
+      "nativeCases": 1,
+      "newRealModelInputs": 0,
+      "businessPosts": 0,
+      "screenshotsViewed": 3,
+      "runnerExitedNormally": true
+    },
+    "actualV3": {
+      "status": "failed-overall-examiner-fork-read-gate",
+      "nativeScenesPassed": 4,
+      "actualOwnerScenariosPassed": 4,
+      "newInputs": 4,
+      "rejectedBusinessPosts": 0,
+      "rejectedReads": 4,
+      "onlyRejectedRead": "GET /v1/threads/fork-options",
+      "warmOriginalCount": 3,
+      "readOnlyRecoveryPending": false
+    },
+    "result": "本次默认、显式只读、显式完全访问、不同进程冷恢复后跟随默认四项，均完成原生手机及原Electron owner核对：实际模型/xhigh/priority、准确原client ID/Turn、沙盒/审批策略、真实工具退出与专用探针效果。只读为实际非零权限拒绝且文件保持，另三项实际写入成功；冷启动保留未发送只读草稿及三条原记录的ID/完整目标/来源/意图指纹。本轮新增真实输入共5条：v2独立核对完成1条但手机场景失败，v3四场景4条；历史13条和本轮已提交输入均未重放。v3四个原生/owner场景通过，但整体因代理拦截4次分支选项GET保持失败。修正只读白名单后，以同一原Host身份/状态、原聊天和原四输入执行零输入恢复：原生1项通过，分支选项GET 200、业务POST 0、运行期间错误0，独立owner再次核对总计4条及原参数；3条warm记录指纹和第4条原意图逐一匹配。关闭自有服务时1条未完成事件读取记录为cleanup cancellation，非运行期错误。原四场景Native方法与辅助代码还原后逐字节匹配实际运行版本，生产APK与a709逐字节相同。v3八张与恢复一张原图均查看，不扩展为全视觉通过。",
+    "failures": "保留v1缺共享确认导致零业务POST的180秒失败；补齐实际确认页，确认后草稿不变且不自动发送，v7零输入原生通过。v2遗漏creation-receipts只读接口导致手机待确认，准确原输入已独立核对仅执行一次并真实成功，未重发。v3四场景已通过但整体代理读门禁失败，不覆盖该失败报告。首次零输入恢复误把已接受后清空的草稿设置当作显式参数，改为核对空草稿和原运行时实际值；v2恢复通过，没有新增模型输入。登记检查首次alias类型及新脚本unused变量失败已修正，未改产品断言。",
+    "readOnlyRecovery": {
+      "status": "passed",
+      "nativeCases": 1,
+      "newRealModelInputs": 0,
+      "businessPosts": 0,
+      "runtimeErrors": 0,
+      "forkOptionsHttpStatus": 200,
+      "originalCanonicalInputCount": 4,
+      "warmOriginalCount": 3,
+      "sameProductApkBytes": true,
+      "originalNativeCaseBodyMatches": true,
+      "originalReportUnmodified": true,
+      "cleanupCancelledReads": 1,
+      "reportSha256": "115b815701b9c5dca986a0b6846d46aaac098e08c24e41aec6f51df17598123a",
+      "currentSourceRechecked": true,
+      "runnerExitedNormally": true
+    },
+    "realScenarios": [
+      {
+        "index": 0,
+        "sandboxPolicy": {
+          "type": "dangerFullAccess"
+        },
+        "approvalPolicy": "never",
+        "actualToolVerified": true,
+        "exactInputCount": 1
+      },
+      {
+        "index": 1,
+        "sandboxPolicy": {
+          "type": "readOnly"
+        },
+        "approvalPolicy": "on-request",
+        "actualToolVerified": true,
+        "exactInputCount": 1
+      },
+      {
+        "index": 2,
+        "sandboxPolicy": {
+          "type": "dangerFullAccess"
+        },
+        "approvalPolicy": "never",
+        "actualToolVerified": true,
+        "exactInputCount": 1
+      },
+      {
+        "index": 3,
+        "sandboxPolicy": {
+          "type": "dangerFullAccess"
+        },
+        "approvalPolicy": "never",
+        "actualToolVerified": true,
+        "exactInputCount": 1
+      }
+    ],
+    "sourceFiles": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePermissionLiveTest.kt": "af873bec3d9c920fe3fb62fb2688d5489ee555e479d25eff877903bbcc2b1702",
+      "scripts/mobile/android-permissions-live.mjs": "cd7c081330ac6b8782f544455cd7450b4778cae7bc06dbc2fcd5317770f2504e",
+      "scripts/mobile/android-permissions-readonly.mjs": "f518e726d007a0a5b4fc5c51f3efd86c788d21b50053a904d9a38468eec59155"
+    },
+    "selectedFourCaseOverallRunStatus": "failed",
+    "sourceStable": true,
+    "currentFullCheck": {
+      "exitCode": 0,
+      "seconds": 348.92,
+      "rootCommands": 59,
+      "sourceStable": true,
+      "sourceFiles": 3,
+      "afterCheckOnlyChange": "完整pnpm check连续59根命令通过，348.92秒，三份源码指纹稳定。之后只把验收器私有密钥等值断言改为固定不匹配提示，避免失败时打印两侧值；对应差异逐字节核对，其他源码未改。当前静态检查及零输入原记录恢复再验通过：原生1项、原四输入仍各一次、分支GET 200、业务POST 0、运行期错误0，正常退出；另一次关闭阶段事件读取取消单独记录。累计仍5新输入，历史13和本轮5均不重放。这是匹配组件的59检查与当前小修复专项组合，不宣称小修复后再次执行59。"
+    },
+    "finalChecks": "完整pnpm check连续59根命令通过，348.92秒，三份源码指纹稳定。之后只把验收器私有密钥等值断言改为固定不匹配提示，避免失败时打印两侧值；对应差异逐字节核对，其他源码未改。当前静态检查及零输入原记录恢复再验通过：原生1项、原四输入仍各一次、分支GET 200、业务POST 0、运行期错误0，正常退出；另一次关闭阶段事件读取取消单独记录。累计仍5新输入，历史13和本轮5均不重放。这是匹配组件的59检查与当前小修复专项组合，不宣称小修复后再次执行59。"
+  },
+  "flushContractReadCheckpoint": {
+    "sourceBase": "b1f950746303df3826ca2a40efb3ec30372fb82c",
+    "implementation": "2026-10-23 P4-3h：逐条对照O096/O097原补丁；file-only在O097指仅文件flush的Host持久化合同，与纯附件输入分别保留。Android新增三项加密journal/HTTP辅助边界：重建journal后unavailable保持原意图/ID/目标和本地原指纹、撤销旧强未接受授权、禁止任何重试写入；unavailable即使夹带完成回执也不能制造接受或重试；原运行时不可用时，准确accepted回执仍能独立只读恢复并再次读盘保留，禁止重放且无workspace/history读取。Host unavailable的evidence/capturedTarget/fingerprintVersion/fingerprint/receipt保持原null，不把本机已捕获原指纹与Host缺失证明混为一谈。只改Android验收器，生产App/iOS/KMP/Host/JS未改。",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReplyRecoveryTest.kt": "32e0202505bc48fb74d784f8e784996140b8fb2e544c67f41d4039f243b117f7"
+    },
+    "coverage": ["O096", "O097"],
+    "status": "native auxiliary passed; whole O096/O097 and full DEV open",
+    "wholeFeatureVerified": false,
+    "onlyExaminerChanged": true,
+    "sameProductApkBytes": true,
+    "newRealModelInputs": 0,
+    "remaining": "这是实际Android加密存储重新实例化与原生HTTP fixture辅助证据，不是Windows真实file-flush-only/目录flush故障、原桌面运行时离线或Android不同进程的新增证明。匹配复用P4-3g的实际进程恢复和5条新模型输入，不重放历史13或本轮5输入；本项新增模型0。纯附件/首条混合内容另项、O096/O097整节点、全部27节点/20功能和完整P3/P4仍开放。业务任务/项目暂缓、A6/P7暂停、蜂窝/VPN和人工归档待验收保持。",
+    "failures": "新增验收器先因nullable receiver、再因缺progress参数编译失败；第二次失败后编排误复制上轮runner，三环境原17项各通过，新增组均执行0项，数量门禁使整轮失败，不计新增通过。修正编译并先核成功构建及新runner摘要后再执行。",
+    "nativeMatrix": {
+      "status": "passed",
+      "nativeMethods": 60,
+      "completeGroups": 6,
+      "sameProductAndRunner": true,
+      "newRealModelInputs": 0,
+      "environments": [
+        {
+          "api": 26,
+          "tests": 20,
+          "groups": 2,
+          "appSha256": "b732623b39580173496a9385f204b8c17939392f052cedd7ea07fd65584f1d84",
+          "testSha256": "0886d274921f1fca79ad724d6b5ffd5c966daf4abd6783d22a22af1f49a7af0b",
+          "reportSha256": "22f33c1d37178ab9954dd8d22fbbaf31c50903d9a5132570e8579d5d02ac8593"
+        },
+        {
+          "api": 33,
+          "tests": 20,
+          "groups": 2,
+          "appSha256": "b732623b39580173496a9385f204b8c17939392f052cedd7ea07fd65584f1d84",
+          "testSha256": "0886d274921f1fca79ad724d6b5ffd5c966daf4abd6783d22a22af1f49a7af0b",
+          "reportSha256": "0dd92aad1badb12750ef8615958e2affa58d2f94eac1aac37ad7f114ae279e71"
+        },
+        {
+          "api": 37,
+          "tests": 20,
+          "groups": 2,
+          "appSha256": "b732623b39580173496a9385f204b8c17939392f052cedd7ea07fd65584f1d84",
+          "testSha256": "0886d274921f1fca79ad724d6b5ffd5c966daf4abd6783d22a22af1f49a7af0b",
+          "reportSha256": "b57eabcb7bd441ba418757111739b8a4c401955057702b17b2cab3a18f187bc6"
+        }
+      ]
+    },
+    "result": "最终同一App/runner三环境各20方法、2组，共60方法/6完整分组通过（原17+新3）；产品APK与P4-3g相同，新增源码仅一份Android验收器。新增模型输入0，本轮累计仍5、历史13不重放。没有UI变化或新增截图。新对象重新读实际Android加密文件只作辅助恢复，不能称不同进程或Windows实际flush通过。",
+    "currentScopedChecks": {
+      "checks": [
+        {
+          "command": ["pnpm", "check:mobile-parity"],
+          "exitCode": 0,
+          "seconds": 1.61
+        },
+        {
+          "command": ["pnpm", "format:check"],
+          "exitCode": 0,
+          "seconds": 5.55
+        },
+        {
+          "command": ["git", "diff", "--check"],
+          "exitCode": 0,
+          "seconds": 0.03
+        }
+      ],
+      "sourceStable": true,
+      "sourceFiles": 1
+    }
+  }
+}

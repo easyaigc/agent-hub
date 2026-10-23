@@ -33,8 +33,10 @@ internal object CodexDiscoveryAPI {
     private val executor = Executors.newFixedThreadPool(4)
     private data class Response(val wire: String, val certificate: String?)
     private suspend fun request(endpoint: String, path: String, fingerprint: String? = null,
-        body: JSONObject? = null, token: String = "", maximum: Int = 65_536, discover: Boolean = false, queryHost: String? = null): Response = suspendCancellableCoroutine { c ->
+        body: JSONObject? = null, token: String = "", maximum: Int = 65_536, discover: Boolean = false, queryHost: String? = null,
+        connectionBudget: CodexConnectionReadBudget? = null): Response = suspendCancellableCoroutine { c ->
         require(path in listOf("host", "discovery/peers", "connection/claim", "v1/workspace", "v1/discovery/peers"))
+        require(connectionBudget==null || body==null && path in listOf("host","discovery/peers","v1/discovery/peers"))
         val base = if (discover || fingerprint != null) URI(CodexEndpoints.local(endpoint)) else NativeHostReads.baseAddress(endpoint)
         val active = AtomicReference<HttpURLConnection?>()
         val job = executor.submit {
@@ -64,8 +66,8 @@ internal object CodexDiscoveryAPI {
                     connection.hostnameVerifier = HostnameVerifier { host, _ -> host.removeSurrounding("[", "]").equals(base.host.removeSurrounding("[", "]"), true) }
                 }
                 connection.instanceFollowRedirects = false
-                connection.connectTimeout = if (body == null) 2_000 else 15_000
-                connection.readTimeout = if (body == null) 6_000 else 15_000
+                connection.connectTimeout = connectionBudget?.millis ?: if (body == null) 2_000 else 15_000
+                connection.readTimeout = connectionBudget?.millis ?: if (body == null) 6_000 else 15_000
                 connection.useCaches = false
                 connection.requestMethod = if (body == null) "GET" else "POST"
                 connection.setRequestProperty("Accept", "application/json")
@@ -86,21 +88,25 @@ internal object CodexDiscoveryAPI {
         }
         c.invokeOnCancellation { active.getAndSet(null)?.disconnect(); job.cancel(true) }
     }
-    suspend fun discover(endpoint: String, expected: CodexPublicSource? = null): CodexDescriptor {
-        val response = request(endpoint, "host", expected?.fingerprint, discover = expected == null)
+    suspend fun discover(endpoint: String, expected: CodexPublicSource? = null): CodexDescriptor =
+        readDescriptor(endpoint,expected,CodexConnectionReadBudget.BACKGROUND_DISCOVERY)
+    suspend fun discoverForConnection(endpoint: String, expected: CodexPublicSource? = null): CodexDescriptor =
+        readDescriptor(endpoint,expected,CodexConnectionReadBudget.EXPLICIT_CONNECTION)
+    private suspend fun readDescriptor(endpoint: String,expected: CodexPublicSource?,budget: CodexConnectionReadBudget): CodexDescriptor=codexConnectionRead(budget) {
+        val response = request(endpoint, "host", expected?.fingerprint, discover = expected == null,connectionBudget=budget)
         val descriptor = CodexDescriptor.decode(response.wire)
         require(if (expected == null) descriptor.fingerprint == response.certificate else descriptor.fingerprint == expected.fingerprint && sameScope(descriptor.target, expected.target)) { "电脑证书或运行时身份不匹配，未保存连接" }
-        return descriptor
+        descriptor
     }
-    suspend fun peers(source: CodexPublicSource, endpoint: String): List<Pair<String, List<String>>> {
-        val response = request(endpoint, "discovery/peers", source.fingerprint, maximum = 32_768, queryHost = source.target.hostId)
-        return decodePeers(response.wire, source.target)
+    suspend fun peers(source: CodexPublicSource, endpoint: String): List<Pair<String, List<String>>> =codexConnectionRead(CodexConnectionReadBudget.PEER_DIRECTORY) {
+        val response = request(endpoint, "discovery/peers", source.fingerprint, maximum = 32_768, queryHost = source.target.hostId,connectionBudget=CodexConnectionReadBudget.PEER_DIRECTORY)
+        decodePeers(response.wire, source.target)
     }
-    suspend fun legacyPeers(client: MobileClient, token: String): List<Pair<String, List<String>>> {
+    suspend fun legacyPeers(client: MobileClient, token: String): List<Pair<String, List<String>>> =codexConnectionRead(CodexConnectionReadBudget.PEER_DIRECTORY) {
         require(token.isNotEmpty() && client.scope?.agentId == "codex")
         // This authenticated compatibility read is limited to the already saved target and route.
-        val response = request(client.endpoint ?: error("缺少地址"), "v1/discovery/peers", client.codexDirect?.fingerprint, token = token, maximum = 32_768, queryHost = client.id)
-        return decodePeers(response.wire, client.scope!!)
+        val response = request(client.endpoint ?: error("缺少地址"), "v1/discovery/peers", client.codexDirect?.fingerprint, token = token, maximum = 32_768, queryHost = client.id,connectionBudget=CodexConnectionReadBudget.PEER_DIRECTORY)
+        decodePeers(response.wire, client.scope!!)
     }
     private fun decodePeers(wire: String, expected: TargetScope): List<Pair<String, List<String>>> {
         require(CodexDiscoveryContract.validateNamed(wire, "vpnSnapshot") == null) { "电脑发现目录格式无效" }
@@ -114,7 +120,7 @@ internal object CodexDiscoveryAPI {
     }
     suspend fun authorize(host: DiscoveredCodexHost, identity: EasyWorkIdentity, storage: NativeSessionStorage, accept: (CodexDescriptor)->Unit = {}): CodexPrivateAuthorization {
         val endpoint = CodexEndpoints.local(host.endpoint)
-        val descriptor = discover(endpoint)
+        val descriptor = discoverForConnection(endpoint)
         require(descriptor.target.hostId == host.id && (host.target == null || sameScope(host.target, descriptor.target)) && (host.fingerprint == null || host.fingerprint == descriptor.fingerprint)) { "电脑身份已变化，请重新查找；原连接已保留" }
         require(descriptor.connectionMode == "automatic") { "请更新这台电脑的 Host 后使用直接连接" }
         accept(descriptor)

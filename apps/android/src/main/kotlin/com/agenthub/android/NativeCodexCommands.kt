@@ -84,6 +84,20 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
             continuation.invokeOnCancellation { active.getAndSet(null)?.disconnect(); future.cancel(true) }
         }
     }
+    override suspend fun archiveWorkspace(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt {
+        require(request.hostId==client.id&&sameScope(request.target,client.scope))
+        return WorkspaceArchiveCodec.receipt(this.request(client,"v1/workspace-management",body=request.body(),definition="workspaceManagementRequest"))
+    }
+    override suspend fun workspaceArchiveStatus(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt {
+        require(request.hostId==client.id&&sameScope(request.target,client.scope))
+        return WorkspaceArchiveCodec.receipt(this.request(client,"v1/workspace-management",mapOf("id" to request.operationId)))
+    }
+    override suspend fun chatAction(client: MobileClient,request: ChatActionRequest): ChatActionReceipt {
+        require(request.hostId==client.id&&sameScope(request.target,client.scope)) { "聊天操作目标不匹配" }
+        return ChatActionCodec.receipt(request(client,"v1/threads/actions",body=request.body(),definition="chatActionRequest"))
+    }
+    override suspend fun chatActionStatus(client: MobileClient,threadId: String,operationId: String): ChatActionReceipt =
+        ChatActionCodec.receipt(request(client,"v1/threads/actions",mapOf("threadId" to threadId,"id" to operationId)))
     private fun scoped(client: MobileClient,threadId: String) = JSONObject().put("hostId",client.id).put("threadId",threadId).also { require(threadId.isNotBlank()) }
     override suspend fun voiceReadiness(client: MobileClient)=VoiceCodec.readiness(request(client,"v1/voice/readiness")).also { require(it.hostId==client.id) }
     override suspend fun voiceStatus(client: MobileClient,request: VoiceManifest): VoiceReceipt {
@@ -119,7 +133,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     override suspend fun models(client: MobileClient) = CodexCommandCodec.models(request(client,"v1/models"))
     override suspend fun events(client: MobileClient,threadId: String,epoch: String,cursor: Long): EventBatch {
         require(threadId.isNotBlank() && cursor in 0..9007199254740991L)
-        val batch=exchange(client,"v1/events",mapOf("threadId" to threadId,"epoch" to epoch,"after" to cursor.toString())+(client.readerId?.let { mapOf("readerId" to nativeReaderId(it)) } ?: emptyMap()),decode=NativeHistoryWire::events)
+        val batch=exchange(client,"v1/events",mapOf("threadId" to threadId,"window" to "latest-v1","epoch" to epoch,"after" to cursor.toString())+(client.readerId?.let { mapOf("readerId" to nativeReaderId(it)) } ?: emptyMap()),decode=NativeHistoryWire::events)
         require(batch.hostId==client.id && batch.snapshots.all { it.threadId==threadId && (!client.requiresReadTarget || it.scope!=null) && (it.scope==null || sameScope(it.scope,client.scope)) }) { "事件运行时或聊天身份不匹配" }
         return batch
     }
@@ -161,6 +175,11 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         require(CodexCommandCodec.validate(request(client,path,body=body,definition=definition),"commandResult").getBoolean("ok")) { "电脑没有完成此操作" }
     }
     override suspend fun stop(client: MobileClient,threadId: String,turnId: String) = command(client,"v1/stop",scoped(client,threadId).put("turnId",turnId),"stopRequest")
+    override suspend fun executeQueue(client: MobileClient,threadId: String,operationId: String,expectedTurnId: String?) {
+        require(threadId.isNotBlank() && operationId.isNotBlank() && (expectedTurnId==null || expectedTurnId.isNotBlank()))
+        command(client,"v1/queue/execute",scoped(client,threadId).put("clientMessageId",operationId)
+            .apply { expectedTurnId?.let { put("expectedTurnId",it) } },"executeQueueRequest")
+    }
     override suspend fun cancelQueue(client: MobileClient,threadId: String,operationId: String) = command(client,"v1/queue/cancel",scoped(client,threadId).put("clientMessageId",operationId),"cancelQueueRequest")
     override suspend fun answer(client: MobileClient,threadId: String,turnId: String,approvalId: String,decision: String,answers: Map<String,List<String>>) = command(client,"v1/approvals",
         scoped(client,threadId).put("turnId",turnId).put("approvalId",approvalId).put("decision",decision).put("answers",JSONObject(answers.mapValues { JSONArray(it.value) })),"approvalRequest")
@@ -180,5 +199,5 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     }
 }
 private fun hash(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-private val POST_ROUTES=setOf("v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
+private val POST_ROUTES=setOf("v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
 private val ROUTES=POST_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")

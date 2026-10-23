@@ -10,7 +10,9 @@ import { createInterface } from 'node:readline';
 // Native regression with real HTTP responses deliberately held across two sends.
 // Synthetic snapshots are auxiliary evidence, never a real desktop/model proof.
 assert(process.env.IOS_SIMULATOR_ID, 'Select a dedicated simulator');
-const directory = resolve('.local/reply-wait-fixture/' + randomUUID());
+const directory = resolve(
+  process.env.REPLY_WAIT_ACCEPTANCE_OUTPUT ?? '.local/reply-wait-fixture/' + randomUUID(),
+);
 await mkdir(directory, { recursive: true, mode: 0o700 });
 const hostId = 'reply-wait-fixture',
   threadId = 'reply-wait-thread';
@@ -224,6 +226,10 @@ const server = createServer(async (request, response) => {
         clientMessageId: id,
         target: JSON.parse(url.searchParams.get('target')),
         status: index === 0 && confirmed.has(0) ? 'accepted' : 'unavailable',
+        capturedTarget: JSON.parse(url.searchParams.get('target')),
+        evidence: null,
+        fingerprintVersion: null,
+        fingerprint: null,
         observedAt: new Date().toISOString(),
         receipt: index === 0 && confirmed.has(0) ? receipts[index] : null,
       });

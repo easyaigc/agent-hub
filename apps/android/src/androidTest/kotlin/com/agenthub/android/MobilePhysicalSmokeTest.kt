@@ -64,13 +64,26 @@ class MobilePhysicalSmokeTest {
             ui.onNodeWithTag("settings-done").performClick(); waitTag("message-input")
             ui.onNodeWithTag("send-message").assertIsNotEnabled()
             ui.onNodeWithTag("message-input").performTextReplacement("真机原生任务🙂")
+            ui.onNodeWithTag("composer-dismiss-keyboard").performClick()
+            ui.waitUntil(15_000) { ui.onAllNodesWithTag("composer-dismiss-keyboard").fetchSemanticsNodes().isEmpty() }
             ui.onNodeWithTag("send-message").assertIsEnabled().performClick()
             waitTag("stop-turn"); ui.onNodeWithTag("stop-turn").assertIsEnabled()
             shot("physical-running-demo")
             ui.onNodeWithTag("stop-turn").performClick(); waitTag("resume-task")
             ui.onNodeWithTag("resume-task").assertIsEnabled(); shot("physical-interrupted-demo")
+            val continuation="继续完成上一个任务。"
+            val previousCount=ui.runOnIdle { main.session.messages.count { it.role=="user" && it.text==continuation } }
             ui.onNodeWithTag("resume-task").performClick(); waitTag("stop-turn")
-            ui.onNodeWithText("继续完成上一个任务。").assertExists()
+            ui.runOnIdle {
+                assertEquals("Resume must add exactly one original continuation",previousCount+1,
+                    main.session.messages.count { it.role=="user" && it.text==continuation })
+                assertTrue(main.session.running)
+            }
+            // The stop control can compose before LazyColumn places the newly
+            // appended row on a taller OEM screen. Locate the real row, then
+            // require it to be visibly rendered, rather than accepting data only.
+            ui.onNodeWithTag("message-list").performScrollToNode(hasText(continuation))
+            ui.onNodeWithText(continuation).assertIsDisplayed()
             assertTrue(main.session.selectedClient.isDemo)
             shot("physical-resumed-demo")
         } finally {

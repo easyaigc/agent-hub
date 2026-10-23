@@ -62,6 +62,18 @@
         ["and", "windowed", "hasPaged"],
         ["and", "sameGeneration", "sameRevision"]
       ]
+    },
+    {
+      "name": "initialMessageLimit",
+      "returns": "integer",
+      "parameters": {},
+      "expression": 20
+    },
+    {
+      "name": "earlierMessageIncrement",
+      "returns": "integer",
+      "parameters": {},
+      "expression": 60
     }
   ]
 }

@@ -19,12 +19,12 @@ val generateContracts by tasks.registering {
     outputs.dir(generatedContracts)
     doLast {
         val encoded = JavaBase64.getEncoder().encodeToString(schema.readBytes())
-        val httpEncoded = JavaBase64.getEncoder().encodeToString(httpSchema.readBytes())
+        val httpChunks = JavaBase64.getEncoder().encodeToString(httpSchema.readBytes()).chunked(8192).joinToString(",") { "\"$it\"" }
         val discoveryEncoded = JavaBase64.getEncoder().encodeToString(discoverySchema.readBytes())
         val taskHubEncoded = JavaBase64.getEncoder().encodeToString(taskHubSchema.readBytes())
         generatedContracts.get().file("ManagementSchema.kt").asFile.apply {
             parentFile.mkdirs()
-            writeText("package com.agenthub.core\ninternal const val managementSchemaBase64 = \"$encoded\"\ninternal const val codexHttpSchemaBase64 = \"$httpEncoded\"\ninternal const val codexDiscoverySchemaBase64 = \"$discoveryEncoded\"\n")
+            writeText("package com.agenthub.core\ninternal const val managementSchemaBase64 = \"$encoded\"\ninternal val codexHttpSchemaBase64 = listOf($httpChunks).joinToString(\"\")\ninternal const val codexDiscoverySchemaBase64 = \"$discoveryEncoded\"\n")
             appendText("internal const val taskHubSchemaBase64 = \"$taskHubEncoded\"\n")
         }
     }
@@ -33,6 +33,8 @@ val generateTestVectors by tasks.registering {
     val vectors = rootProject.file("packages/protocol/fixtures/mobile/core-v1.json")
     val stateVectors = rootProject.file("packages/protocol/fixtures/mobile/state-v1.json")
     val replyVectors = rootProject.file("packages/protocol/fixtures/mobile/reply-recovery-v2.json")
+    val generationVectors = rootProject.file("packages/protocol/fixtures/mobile/generation-preferences-v1.json")
+    inputs.file(generationVectors)
     inputs.file(vectors)
     inputs.file(stateVectors)
     inputs.file(replyVectors)
@@ -62,6 +64,11 @@ val generateTestVectors by tasks.registering {
             val chunks = JavaBase64.getEncoder().encodeToString(stateVectors.readBytes()).chunked(8192).joinToString(",") { "\"$it\"" }
             // JVM constants have a 64 KiB modified UTF-8 limit. Do not fold the expanded fixture into one constant.
             writeText("package com.agenthub.core\ninternal val stateVectorBase64 = listOf($chunks).joinToString(\"\")\n")
+        }
+        generatedTests.get().file("GenerationPreferenceTestVectors.kt").asFile.apply {
+            parentFile.mkdirs()
+            val chunks = JavaBase64.getEncoder().encodeToString(generationVectors.readBytes()).chunked(8192).joinToString(",") { "\"$it\"" }
+            writeText("package com.agenthub.core\ninternal val generationPreferenceVectorBase64 = listOf($chunks).joinToString(\"\")\n")
         }
         generatedTests.get().file("ReplyRecoveryTestVectors.kt").asFile.apply {
             parentFile.mkdirs()

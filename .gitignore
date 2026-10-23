@@ -34,6 +34,7 @@ packages/mobile-core/build/
 
 # Public mobile specifications and sanitized evidence remain versioned.
 !/docs/acceptance/android-stages.md
+!/docs/acceptance/android-environment-20261021.md
 !/docs/acceptance/mobile-parity.md
 !/docs/acceptance/mobile-evidence/
 !/docs/acceptance/mobile-evidence/*.json

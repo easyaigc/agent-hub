@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
+import { dirname, resolve } from 'node:path';
 
 const run = promisify(execFile);
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -20,9 +21,28 @@ export async function installAndroidApkIfNeeded({
     'Physical installation requires an explicitly selected authorized device',
   );
   assert(
-    ['com.easyai.agenthub.android.debug', 'com.easyai.agenthub.android.debug.test'].includes(
-      packageName,
-    ),
+    [
+      'com.easyai.agenthub.android.debug',
+      'com.easyai.agenthub.android.debug.test',
+      'com.easyai.agenthub.android.acceptance',
+      'com.easyai.agenthub.android.acceptance.test',
+    ].includes(packageName),
+  );
+  // The selected package must describe the actual APK before any install can
+  // replace data. This repository targets SDK 37 with Build Tools 37.0.0.
+  const aapt = resolve(
+    dirname(adb),
+    '../build-tools/37.0.0',
+    process.platform === 'win32' ? 'aapt.exe' : 'aapt',
+  );
+  const metadata = await run(aapt, ['dump', 'badging', apk], {
+    timeout: 30_000,
+    encoding: 'utf8',
+  });
+  assert.equal(
+    metadata.stdout.match(/^package: name='([^']+)'/m)?.[1],
+    packageName,
+    'Embedded APK package must match the explicitly selected install identity',
   );
   const call = async (...args) =>
     run(adb, ['-s', serial, ...args], {

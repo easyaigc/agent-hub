@@ -29,7 +29,12 @@ data class MobileClient(val id: String, val name: String, val scope: TargetScope
 }
 data class PendingAgentLink(val presentation: String=UUID.randomUUID().toString(),val payload: String)
 data class DraftDestination(val key: String,val selection: Long)
-data class SidebarDisplayState(val recentExpanded: Boolean=false,val projectsExpanded: Boolean=true,val expandedLists: Set<String> = emptySet())
+data class SidebarDisplayState(val recentExpanded: Boolean=false,val projectsExpanded: Boolean=true,val expandedLists: Set<String> = emptySet(),
+    val pinnedSectionExpanded: Boolean=true,val recentSectionExpanded: Boolean=true)
+data class ChatManagementContext(val key: String,val client: MobileClient,val thread: MobileThread,val selection: Long,val revision: Long)
+data class MobileChatSearchContext(val key: String,val client: MobileClient,val threadId: String,val selection: Long,val revision: Long)
+data class MobileChatSearchSelection(val context: MobileChatSearchContext,val message: MobileMessage,val query: String,
+    val history: List<MobileMessage>,val complete: Boolean,val token: String=UUID.randomUUID().toString())
 
 /** Main-thread native state; public rules and projection come from the shared core. */
 @Stable
@@ -94,7 +99,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var providers=registry(reader,commandProvider)
     private var reads: HostReads = providers
     private var commands: CodexCommands = providers
-    private var execution = storage?.let { NativeCodexFlow(it,reads,commands) }
+    private var execution = storage?.let { NativeCodexFlow(it,reads,commands).apply { confirmedReplyReads=::confirmedReplyReads } }
     private val freshWorkspaces=mutableStateMapOf<String,Boolean>()
     private val freshHistories=mutableStateMapOf<String,Boolean>()
     private val draftVersions=mutableStateMapOf<String,String>()
@@ -110,6 +115,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val busyTargets=mutableStateMapOf<String,String>()
     private val busyOwners=mutableMapOf<String,String>()
     private val busyCommands=mutableMapOf<String,String>()
+    private val queueActionOwners=mutableStateMapOf<String,String>()
+    private val replyRecordQueryOwners=mutableStateMapOf<Pair<String,String>,String>()
+    private val replyRecordQueryErrors=mutableStateMapOf<Pair<String,String>,String>()
     private val stoppingTargets=mutableStateMapOf<String,Boolean>()
     private val answeringTargets=mutableStateMapOf<String,Boolean>()
     private data class ForkNavigation(val id: String,val selection: Long,val draft: String)
@@ -120,7 +128,39 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val forkRequests=mutableStateMapOf<String,String>()
     private val modelsByClient=mutableStateMapOf<String,List<CodexModel>>()
     private val observingOperations=mutableMapOf<String,Job>()
+    private val connectionSuccesses=mutableMapOf<String,Long>()
+    private val conversationSyncIssues=mutableStateMapOf<String,ConversationSyncIssue>()
+    private val conversationSnapshotRevisions=mutableMapOf<String,Long>()
+    private val usefulConversationProgress=ConversationUsefulProgress()
+    private fun conversationProgressKey(key: String,client: MobileClient)="$key:$selectionRevision:${revisions[client.id] ?: 0}"
+    internal val conversationSyncIssue: ConversationSyncIssue? get()=conversationSyncIssues[targetKey].takeUnless { selectedClient.isDemo || selectedThread.isEmpty() }
+    private fun receivedConversationSnapshot(key: String,client: MobileClient,page: MobileHistory,proofIsFresh: Boolean=true) {
+        val state=page.synchronization?.state
+        val historyFresh=state in listOf("history","live-window") && page.synchronization?.checkedAt!=null
+        val unavailable=state=="unavailable" || client.mode=="desktop-runtime" && page.runtime?.canControl==false && page.runtime.state=="unknown"
+        if(proofIsFresh && (historyFresh || !unavailable))conversationSnapshotRevisions[key]=(conversationSnapshotRevisions[key] ?: 0)+1
+        usefulConversationProgress.accepted(conversationProgressKey(key,client),state in listOf("history","live-window"),page.synchronization?.checkedAt,unavailable,proofIsFresh)
+        when {
+            historyFresh->{
+                val liveWindow=state=="live-window"
+                conversationSyncIssues[key]=ConversationSyncIssue(if(liveWindow)
+                    "当前进度正从电脑实时同步；完整桌面状态暂不可用，较早历史按需加载。"
+                    else "已从电脑同步最新历史进度，正在重试实时连接。",true,liveWindow)
+            }
+            unavailable->{
+                if(conversationSyncIssues[key]==null || conversationSyncIssues[key]?.historyFresh==true)
+                    conversationSyncIssues[key]=ConversationSyncIssue("未能取得此对话的最新进度，当前显示缓存。正在自动重试。")
+            }
+            else->conversationSyncIssues.remove(key)
+        }
+    }
     private var eventJob: Job?=null
+    private var eventReadOwner: Any?=null
+    private var networkRecoveryJob: Job?=null
+    private var networkReadPath: String?=null
+    private var historyRecoveryJob: Job?=null
+    private var historyRecoveryIdentity: Triple<String,Long,Long>?=null
+    private var readyHistorySelection: Triple<String,Long,Long>?=null
     private var foreground=true
     var importing by mutableStateOf(false)
         private set
@@ -133,18 +173,29 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val selectedThreads = mutableStateMapOf<String, String>()
     var selectedThread: String
         get() = selectedThreads[clientKey] ?: if (selectedClient.isDemo) "demo-chat" else ""
-        set(value) { selectedThreads[clientKey] = value; persistMetadata() }
+        set(value) { updateReadingSelection(value); persistMetadata() }
+    private fun updateReadingSelection(thread: String) { selectedThreads[clientKey]=thread; synchronizeReadingPresentation() }
     var appearance by mutableStateOf("system")
     var search by mutableStateOf("")
+    private var errorRevision=0L
     private var errorMessage by mutableStateOf<String?>(null)
+    var errorTitle by mutableStateOf(FailureCopy.defaultTitle)
+        private set
     private var readErrorActive=false
     var error: String?
         get()=errorMessage
-        set(value) { errorMessage=value;readErrorActive=false }
-    private fun readError(message: String,userInitiated: Boolean=false) {
-        if(error==null || readErrorActive || userInitiated) { error=message;readErrorActive=true }
+        set(value) { errorRevision++;errorMessage=value;errorTitle=FailureCopy.defaultTitle;readErrorActive=false }
+    private fun readError(failure: Exception,prefix: String="",userInitiated: Boolean=false,fallback: String="读取失败") {
+        if(error==null || readErrorActive || userInitiated) {
+            val display=NativeOperationFailure.describe(failure,fallback)
+            error=(if(display.kind==null) prefix else "")+display.message;errorTitle=display.title;readErrorActive=true
+        }
     }
     private fun clearReadError(userInitiated: Boolean) { if(userInitiated || readErrorActive) error=null }
+    var localRecoveryRequired by mutableStateOf(false)
+        private set
+    private val localReady get()=!restoring&&!localRecoveryRequired
+    private var restoreJob: Job?=null
     var restoring by mutableStateOf(storage != null)
         private set
     private val drafts = mutableStateMapOf<String, String>()
@@ -156,12 +207,16 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val loadedHistorySelections = mutableMapOf<String, Pair<Long, Long>>()
     private val runs = mutableStateMapOf<String, String>()
     private val workspaces = mutableStateMapOf<String, MobileWorkspace>()
-    private val loadingTargets = mutableStateMapOf<String, Boolean>()
-    private val historyTargets = mutableStateMapOf<String, Boolean>()
+    private class WorkspaceReadOwner(val navigation: Long,val connectionRevision: Long,val managementRevision: Long)
+    private val workspaceManagementRevisions=mutableStateMapOf<String,Long>()
+    private val loadingTargets = mutableStateMapOf<String,WorkspaceReadOwner>()
+    private class HistoryReadOwner(val selection: Long,val connectionRevision: Long)
+    private val historyTargets = mutableStateMapOf<String,HistoryReadOwner>()
     private val expandedProjects = mutableStateMapOf<String, Set<String>>()
     private val sidebarStates = mutableStateMapOf<String, SidebarDisplayState>()
     private val revisions = mutableMapOf<String, Long>()
     private var selectionRevision = 0L
+    private var clientNavigationRevision = 0L
     private var historyJob: Job? = null
     private var workspaceJob: Job? = null
     private var foregroundJob: Job? = null
@@ -169,7 +224,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         tasks.launch { easyWorkLogin?.foreground() }
         foreground=true; freshWorkspaces.clear(); freshHistories.clear()
         realClients.toList().forEach { replaceClient(it.copy(online=false,connectionPhase=ConnectionPhase.CONNECTING)) }
-        if(!restoring) { refresh(); loadHistory() }
+        if(localReady) { refresh(); loadHistory() }
         foregroundJob?.cancel()
         foregroundJob=tasks.launch {
             while(isActive) {
@@ -178,22 +233,279 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             }
         }
     }
-    fun leaveForeground() { voice?.suspendRecording();easyWorkLogin?.background();foreground=false; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
-    var visibleMessageLimit by mutableStateOf(60)
+    internal fun observeNetworkReadPath(signature: String,baseline: Boolean=false) {
+        require(signature.isNotEmpty()&&signature.length<=512)
+        val previous=networkReadPath;networkReadPath=signature
+        if(!baseline&&previous!=null&&previous!=signature)recoverNetworkReads()
+    }
+    internal fun recoverNetworkReads() {
+        if(!foreground||!hasClient||selectedClient.isDemo||incomingEasyWorkLink!=null||networkRecoveryJob?.isActive==true)return
+        val client=selectedClient;val key=clientKey;val navigation=clientNavigationRevision;val revision=revisions[client.id] ?: 0
+        networkRecoveryJob=tasks.launch {
+            // Coalesce one platform path-update burst. Never cancel the parent
+            // scope or a command/POST; original intent and operation ID survive.
+            delay(200)
+            if(!foreground||incomingEasyWorkLink!=null||clientKey!=key||clientNavigationRevision!=navigation||(revisions[client.id] ?: 0)!=revision)return@launch
+            workspaceJob?.cancel();loadingTargets.remove(key)
+            historyJob?.cancel();historyTargets.remove(targetKey)
+            eventReadOwner=null;eventJob?.cancel();eventJob=null
+            historyRecoveryJob?.cancel();historyRecoveryJob=null
+            val progressKey=conversationProgressKey(targetKey,selectedClient)
+            usefulConversationProgress.invalidateUsefulClock(progressKey)
+            restartOperationReadObservers()
+            refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
+        }
+    }
+    fun leaveForeground() { voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
         private set
+    // SwiftUI resets this presentation only when the complete target changes,
+    // independently of a new network navigation or connection revision.
+    private var presentationTargetKey=targetKey
+    private fun synchronizeReadingPresentation() {
+        val key=targetKey
+        if(presentationTargetKey!=key) { presentationTargetKey=key;visibleMessageLimit=ReadingPolicy.initialMessageLimit().toInt();revealedEarlier=false }
+    }
     private val clientKey get() = selectedClient.cacheKey(null)
     val sidebarDisplay get() = sidebarStates[clientKey] ?: SidebarDisplayState()
     fun toggleSidebarRecent() { sidebarStates[clientKey]=sidebarDisplay.copy(recentExpanded=!sidebarDisplay.recentExpanded); persistMetadata() }
     fun toggleSidebarProjects() { sidebarStates[clientKey]=sidebarDisplay.copy(projectsExpanded=!sidebarDisplay.projectsExpanded); persistMetadata() }
+    fun toggleSidebarPinnedSection() { sidebarStates[clientKey]=sidebarDisplay.copy(pinnedSectionExpanded=!sidebarDisplay.pinnedSectionExpanded);persistMetadata() }
+    fun toggleSidebarRecentSection() { sidebarStates[clientKey]=sidebarDisplay.copy(recentSectionExpanded=!sidebarDisplay.recentSectionExpanded);persistMetadata() }
     fun toggleSidebarList(project: String) { val lists=sidebarDisplay.expandedLists; sidebarStates[clientKey]=sidebarDisplay.copy(expandedLists=if(project in lists) lists-project else lists+project); persistMetadata() }
     val targetKey: String get() = selectedClient.cacheKey(selectedThread.takeIf { it.isNotEmpty() }, if(selectedThread.isEmpty()) newProjects[clientKey] else null)
+    private var locatedChatSearch by mutableStateOf<MobileChatSearchSelection?>(null)
+    private var pendingChatSearch by mutableStateOf<MobileChatSearchSelection?>(null)
+    val chatSearchJump get()=locatedChatSearch?.takeIf { chatSearchCurrent(it.context) }
+    val pendingChatSearchToken get()=pendingChatSearch?.token
+    val canSearchHistory get()=hasClient&&selectedThread.isNotEmpty()&&!selectedThread.startsWith("draft-")
+    fun captureChatSearch(): MobileChatSearchContext? = if(!canSearchHistory)null else
+        MobileChatSearchContext(targetKey,selectedClient,selectedThread,selectionRevision,revisions[selectedClient.id] ?: 0)
+    fun chatSearchCurrent(context: MobileChatSearchContext): Boolean = targetKey==context.key&&selectionRevision==context.selection&&
+        (revisions[context.client.id] ?: 0)==context.revision&&selectedClient.endpoint==context.client.endpoint&&
+        (selectedClient.scope==null&&context.client.scope==null||sameScope(selectedClient.scope,context.client.scope))
+    suspend fun completeChatSearchHistory(context: MobileChatSearchContext): List<MobileMessage> {
+        if(!chatSearchCurrent(context))throw CancellationException()
+        if(context.client.isDemo)return messages
+        var cursor: String?=null
+        var seen=emptyList<String>()
+        var collected=emptyList<MobileMessage>()
+        do {
+            currentCoroutineContext().ensureActive()
+            val page=reads.searchHistory(context.client,context.threadId,cursor)
+            if(!chatSearchCurrent(context))throw CancellationException()
+            require(page.hostId==context.client.id&&page.threadId==context.threadId&&
+                (!context.client.requiresReadTarget||page.scope!=null)&&
+                (context.client.scope==null||page.scope==null||sameScope(context.client.scope,page.scope))) { "电脑或对话身份不匹配" }
+            val order=ChatSearchRules.page(collected.map { it.id },page.messages.map { it.id },page.nextCursor,seen)
+            require(order.valid) { "电脑返回的历史分页无效" }
+            val values=(page.messages+collected).distinctBy { it.id }.associateBy { it.id }
+            collected=order.messageIds.map(values::getValue);seen=order.seenCursors;cursor=page.nextCursor
+        } while(cursor!=null)
+        return collected
+    }
+    fun prepareChatSearchSelection(context: MobileChatSearchContext,message: MobileMessage,query: String,
+        history: List<MobileMessage>,complete: Boolean) {
+        if(chatSearchCurrent(context)&&history.any { it.id==message.id }&&ChatSearchRules.query(query).isNotEmpty())
+            pendingChatSearch=MobileChatSearchSelection(context,message,ChatSearchRules.query(query),history.toList(),complete)
+    }
+    /** Apply after native sheet dismissal. Search data never adopts execution/runtime state. */
+    fun applyPendingChatSearch() {
+        val selection=pendingChatSearch ?: return
+        pendingChatSearch=null
+        if(!chatSearchCurrent(selection.context))return
+        val context=selection.context;val ids=selection.history.map { it.id }.toSet()
+        val merged=selection.history+messages.filter { it.id !in ids }
+        histories[context.key]=merged
+        val page=historyPages[context.key] ?: run {
+            val wire=JSONObject().put("hostId",context.client.id).put("threadId",context.threadId).put("messages",JSONArray())
+            context.client.scope?.let { wire.put("readTarget",CodexCommandCodec.target(it)) }
+            MobileHistory(context.client.id,context.threadId,emptyList(),null,context.client.scope,"unknown",null,wire.toString())
+        }
+        val stored=if(selection.complete)page.copy(nextCursor=null,wire=JSONObject(page.wire).put("nextCursor",JSONObject.NULL).toString()) else page
+        historyPages[context.key]=stored
+        persistHistory(context.key,context.client,context.threadId,stored,merged)
+        pagedSelections[context.key]=context.selection
+        loadedHistorySelections[context.key]=context.selection to context.revision
+        val index=merged.indexOfFirst { it.id==selection.message.id }
+        if(index>=0)visibleMessageLimit=maxOf(visibleMessageLimit,merged.size-index)
+        revealedEarlier=true;locatedChatSearch=selection
+    }
+    data class WorkspaceArchiveContext(val client: MobileClient,val key: String,val navigation: Long,val revision: Long)
+    private val workspaceArchiveBusy=mutableStateMapOf<String,String>()
+    val archiveBatchRecords get()=operationRecords.filter { it.kind=="workspace-archive" }.reversed()
+    val archiveBatchBusy get()=workspaceArchiveBusy.containsKey(clientKey)
+    val supportsBatchArchive get()=!selectedClient.isDemo&&"threads:archive:unloaded" in workspace?.capabilities.orEmpty()
+    val workspaceArchivePendingIds get()=workspaceArchivePending()
+    private fun workspaceArchivePending(excluding: String? = null)=archiveBatchRecords.filter { it.id!=excluding }.flatMap { record ->
+        val request=WorkspaceArchiveCodec.request(JSONObject(record.intent))
+        if(record.result==null) { if(record.phase in listOf("ready","submitting","uncertain","outcome-unknown"))request.ids else emptyList() }
+        else WorkspaceArchiveCodec.receipt(JSONObject(record.result)).items.filter { com.agenthub.core.WorkspaceArchiveRules.pending(it.state) }.map { it.id }
+    }.toSet()
+    fun captureWorkspaceArchive()=WorkspaceArchiveContext(selectedClient,clientKey,clientNavigationRevision,revisions[selectedClient.id] ?: 0)
+    private fun archiveContextCurrent(context: WorkspaceArchiveContext)=foreground&&clientKey==context.key&&clientNavigationRevision==context.navigation&&
+        (revisions[selectedClient.id] ?: 0)==context.revision&&selectedClient.endpoint==context.client.endpoint&&sameScope(selectedClient.scope,context.client.scope)
+    fun canBatchArchive(thread: MobileThread)=localReady&&WorkspaceArchiveRules.eligible(
+        thread.hostId==selectedClient.id&&threads.any { it.id==thread.id&&it.hostId==thread.hostId },thread.archived==true,
+        chatActionBusy.containsKey(selectedClient.cacheKey(thread.id)),pendingChatActions(thread.id).isNotEmpty(),thread.id in workspaceArchivePendingIds)
+    fun archiveWorkspace(context: WorkspaceArchiveContext,ids: List<String>): Job? {
+        val flow=execution ?: return null
+        if(!archiveContextCurrent(context)||!selectedClient.online||!supportsBatchArchive||archiveBatchBusy||ids.isEmpty()||ids.size>100||ids.distinct().size!=ids.size||
+            ids.any { id->threads.none { it.id==id&&canBatchArchive(it) } })return null
+        val client=context.client;val request=WorkspaceArchiveRequest(client.id,client.scope ?: return null,UUID.randomUUID().toString(),ids.toList())
+        val labels=threads.filter { it.id in ids }.associate { it.id to it.title };workspaceArchiveBusy[context.key]=request.operationId
+        return tasks.launch {
+            try {
+                val result=NativeWorkspaceArchiveFlow(flow.journal,commands).submit(client,request,labels) {
+                    archiveContextCurrent(context)&&selectedClient.online&&supportsBatchArchive&&ids.all { id->threads.any { it.id==id&&it.archived!=true } }&&
+                        ids.none { it in workspaceArchivePending(request.operationId)||pendingChatActions(it).isNotEmpty()||chatActionBusy.containsKey(selectedClient.cacheKey(it)) }
+                }
+                acceptWorkspaceArchive(client,result.record)
+            } catch(cancel: CancellationException) { throw cancel }
+            catch(failure: Exception) { if(archiveContextCurrent(context))error=failure.message ?: "批量归档结果待核对" }
+            finally { if(workspaceArchiveBusy[context.key]==request.operationId)workspaceArchiveBusy.remove(context.key);loadOperations() }
+        }
+    }
+    fun queryWorkspaceArchive(record: SavedOperation): Job? {
+        val flow=execution ?: return null;val context=captureWorkspaceArchive();val client=context.client
+        if(record.kind!="workspace-archive"||archiveBatchBusy||archiveBatchRecords.none { it.id==record.id&&it.target==record.target })return null
+        workspaceArchiveBusy[context.key]=record.id
+        return tasks.launch {
+            try { acceptWorkspaceArchive(client,NativeWorkspaceArchiveFlow(flow.journal,commands).query(client,record).record) }
+            catch(cancel: CancellationException) { throw cancel }
+            catch(failure: Exception) { if(archiveContextCurrent(context))error=failure.message ?: "批量归档结果仍未确认" }
+            finally { if(workspaceArchiveBusy[context.key]==record.id)workspaceArchiveBusy.remove(context.key);loadOperations() }
+        }
+    }
+    private suspend fun acceptWorkspaceArchive(client: MobileClient,record: SavedOperation) {
+        val flow=execution ?: return;operations[record.target]=flow.journal.records(record.target)
+        if(selectedClient.id!=client.id||selectedClient.endpoint!=client.endpoint||!sameScope(selectedClient.scope,client.scope))return
+        val receipt=record.result?.let { WorkspaceArchiveCodec.receipt(JSONObject(it)) }
+        val completed=receipt?.items.orEmpty().filter { it.state=="completed" }.map { it.id }.toSet()
+        if(completed.isNotEmpty()) {
+            workspaceManagementRevisions[clientKey]=(workspaceManagementRevisions[clientKey] ?: 0)+1
+            workspaces[clientKey]?.let { prior ->
+                val changed=prior.copy(threads=prior.threads.map { if(it.id in completed)it.copy(archived=true)else it },pinnedThreadIds=prior.pinnedThreadIds?.filterNot { it in completed })
+                workspaces[clientKey]=changed.copy(wire=encodeWorkspace(changed).toString())
+            }
+            if(selectedThread in completed) { selectionRevision++;selectedThread="";eventReadOwner=null;eventJob?.cancel();eventJob=null }
+            persistMetadata();refresh()
+        }
+    }
+    private val chatActionBusy=mutableStateMapOf<String,String>()
+    val supportsChatManagement get()=!selectedClient.isDemo&&"threads:manage" in workspace?.capabilities.orEmpty()
+    val currentChat get()=threads.firstOrNull { it.id==selectedThread&&it.hostId==selectedClient.id }
+    val currentChatPinned get()=selectedThread in workspace?.pinnedThreadIds.orEmpty()
+    val chatActionRecords get()=operationRecords.filter { it.kind=="chat-action" }
+    fun chatActionRecordDescription(record: SavedOperation): String {
+        val request=ChatActionCodec.request(JSONObject(record.intent))
+        return "查询聊天操作记录，"+chatActionRecordLabel(record)+"，对话 "+request.threadId+"，操作 "+request.operationId
+    }
+    fun chatActionRecordLabel(record: SavedOperation): String {
+        val request=ChatActionCodec.request(JSONObject(record.intent))
+        val action=when(request.action) { "pin"->"置顶";"unpin"->"取消置顶";"archive"->"归档";"unarchive"->"恢复对话";else->"删除" }
+        val title=threads.firstOrNull { it.hostId==request.hostId&&it.id==request.threadId }?.title ?: request.threadId
+        return action+" · "+request.operationId.take(8)+" · "+title
+    }
+    fun pendingChatActions(threadId: String? = null)=chatActionRecords.filter {
+        ChatManagementRules.pending(it.phase)&&(threadId==null||JSONObject(it.intent).getString("threadId")==threadId)
+    }
+    private fun managementAllowed(thread: MobileThread,ownId: String? = null): Boolean {
+        val key=selectedClient.cacheKey(thread.id)
+        return localReady&&execution!=null&&selectedClient.scope!=null&&ChatManagementRules.canManage(selectedClient.isDemo,selectedClient.online,
+            supportsChatManagement,thread.hostId==selectedClient.id&&threads.any { it.id==thread.id&&it.hostId==thread.hostId },
+            archiveBatchBusy||chatActionBusy[key]?.let { it!=ownId }==true,pendingChatActions(thread.id).any { it.id!=ownId }||workspaceArchivePendingIds.contains(thread.id))
+    }
+    fun canManageChat(thread: MobileThread?)=thread!=null&&managementAllowed(thread)
+    fun captureChatManagement(): ChatManagementContext? {
+        val thread=currentChat ?: return null
+        if(!canManageChat(thread))return null
+        return ChatManagementContext(targetKey,selectedClient,thread,selectionRevision,revisions[selectedClient.id] ?: 0)
+    }
+    private fun managementCurrent(context: ChatManagementContext)=targetKey==context.key&&selectionRevision==context.selection&&
+        (revisions[context.client.id] ?: 0)==context.revision&&selectedClient.endpoint==context.client.endpoint&&
+        sameScope(selectedClient.scope,context.client.scope)
+    fun chatTaskStatus(thread: MobileThread): String {
+        val selected=thread.hostId==selectedClient.id&&thread.id==selectedThread
+        val state=if(selected)runtime?.state ?: thread.state else thread.state
+        val unconfirmed=selected&&(loadedHistorySelections[targetKey]!=(selectionRevision to (revisions[selectedClient.id] ?: 0))||conversationSyncIssue!=null)
+        val status=ChatManagementRules.taskStatus(state,thread.lastTurnStatus,thread.archived==true,selectedClient.online,unconfirmed)
+        val text=when(status.code) { "running"->"执行中";"approval"->"等待审批";"failed"->"执行失败";"stopped"->"已停止";"completed"->"已完成";"idle"->"空闲";else->"状态未确认" }
+        return if(status.lastKnown)"上次状态：$text" else text
+    }
+    fun chatLifecycleStatus(thread: MobileThread)="${if(thread.archived==true)"已归档" else "未归档"} · 任务状态：${chatTaskStatus(thread)}"
+    fun manageChat(action: String,context: ChatManagementContext? = captureChatManagement()) {
+        val captured=context ?: return;val flow=execution ?: return
+        if(!managementCurrent(captured)||!managementAllowed(captured.thread)||action !in listOf("pin","unpin","archive","unarchive","delete")||
+            action in listOf("pin","unpin")&&currentChat?.archived==true)return
+        val id=UUID.randomUUID().toString();chatActionBusy[captured.key]=id
+        tasks.launch {
+            try {
+                val request=ChatActionRequest(captured.client.id,captured.client.scope!!,captured.thread.id,id,action)
+                val result=NativeChatActionFlow(flow.journal,commands).submit(captured.client,request,captured.key,captured.selection.toString()) {
+                    foreground&&managementCurrent(captured)&&managementAllowed(captured.thread,id)
+                }
+                acceptChatAction(captured.client,result.record,captured)
+            } catch(cancel: CancellationException) { throw cancel }
+            catch(failure: Exception) { if(managementCurrent(captured))error=failure.message ?: "操作结果待确认，请查询原记录" }
+            finally { if(chatActionBusy[captured.key]==id)chatActionBusy.remove(captured.key);loadOperations() }
+        }
+    }
+    fun queryChatAction(record: SavedOperation): kotlinx.coroutines.Job? {
+        val flow=execution ?: return null;val client=selectedClient
+        if(record.kind!="chat-action"||chatActionRecords.none { it.id==record.id&&it.target==record.target })return null
+        val request=ChatActionCodec.request(JSONObject(record.intent));val key=client.cacheKey(request.threadId)
+        val observer=currentChat?.let { ChatManagementContext(targetKey,client,it,selectionRevision,revisions[client.id] ?: 0) }
+        if(chatActionBusy.containsKey(key))return null
+        chatActionBusy[key]=record.id
+        return tasks.launch {
+            try { acceptChatAction(client,NativeChatActionFlow(flow.journal,commands).query(client,record).record,observer) }
+            catch(cancel: CancellationException) { throw cancel }
+            catch(failure: Exception) { if(observer!=null&&managementCurrent(observer)&&targetKey==record.sourceKey)error=failure.message ?: "原操作结果仍未确认" }
+            finally { if(chatActionBusy[key]==record.id)chatActionBusy.remove(key);loadOperations() }
+        }
+    }
+    fun endChatActionWaiting(record: SavedOperation) {
+        val flow=execution ?: return
+        if(record.kind!="chat-action"||chatActionRecords.none { it.id==record.id&&it.target==record.target })return
+        tasks.launch { try {
+            flow.journal.detach(record.target,record.id)
+            operations[record.target]=flow.journal.records(record.target)
+        } catch(failure: Exception) { if(targetKey==record.sourceKey)error=failure.message ?: "未能保存结束等待，原记录保留" } }
+    }
+    private suspend fun acceptChatAction(client: MobileClient,record: SavedOperation,observer: ChatManagementContext?=null) {
+        val flow=execution ?: return
+        operations[record.target]=flow.journal.records(record.target)
+        val request=ChatActionCodec.request(JSONObject(record.intent))
+        if(selectedClient.id!=client.id||selectedClient.endpoint!=client.endpoint||!sameScope(selectedClient.scope,request.target))return
+        if(record.phase=="confirmed") {
+            workspaceManagementRevisions[clientKey]=(workspaceManagementRevisions[clientKey] ?: 0)+1
+            workspaces[clientKey]?.let { prior ->
+                val threads=if(request.action=="delete")prior.threads.filterNot { it.id==request.threadId } else prior.threads.map {
+                    if(it.id==request.threadId&&request.action in listOf("archive","unarchive"))it.copy(archived=request.action=="archive") else it
+                }
+                val changed=prior.copy(threads=threads)
+                workspaces[clientKey]=changed.copy(wire=encodeWorkspace(changed).toString())
+            }
+            if(request.action=="delete"&&selectedThread==request.threadId&&targetKey==record.sourceKey) {
+                selectionRevision++;selectedThread="";eventReadOwner=null;eventJob?.cancel();eventJob=null
+            }
+            persistMetadata();refresh()
+        } else if(record.error!=null&&observer!=null&&managementCurrent(observer)&&targetKey==record.sourceKey)error=record.error
+    }
+    fun runningConversationCount(client: MobileClient): Int? {
+        val snapshot=workspaces[client.cacheKey(null)]
+        val conversations=if(client.isDemo && demo) DemoMobileData.threads else snapshot?.threads.orEmpty()
+        return WorkspaceSidebarRules.runningCount(client.id,client.online,client.isDemo,snapshot!=null,snapshot?.mode,
+            conversations.map { ConversationActivity(it.id,it.hostId,it.state) })
+    }
     val workspace get() = workspaces[clientKey]
     val projects get() = if (selectedClient.isDemo && demo) DemoMobileData.projects.filter { it.hostId == selectedClient.id } else workspace?.projects.orEmpty()
     val threads get() = if (selectedClient.isDemo && demo) DemoMobileData.threads.filter { it.hostId == selectedClient.id } else workspace?.threads.orEmpty()
-    val loading get() = loadingTargets[clientKey] == true
-    val historyLoading get() = historyTargets[targetKey] == true
+    val loading get() = loadingTargets[clientKey]?.let { it.navigation==clientNavigationRevision && it.connectionRevision==(revisions[selectedClient.id] ?: 0)&&it.managementRevision==(workspaceManagementRevisions[clientKey] ?: 0) }==true
+    val historyLoading get() = historyTargets[targetKey]?.let { it.selection==selectionRevision && it.connectionRevision==(revisions[selectedClient.id] ?: 0) }==true
     val historyCursor get() = historyPages[targetKey]?.nextCursor
     val sourceLabel get() = if (selectedClient.isDemo) "界面体验 · 本地示例" else when (selectedClient.mode) {
         "desktop-runtime" -> "原桌面连接"; "easywork-runtime" -> "EasyWork 连接"; "managed-runtime" -> "托管连接"; "shared-runtime" -> "共享连接"; else -> "历史连接"
@@ -227,10 +539,40 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val replyMode get() = preferredModes[targetKey] ?: "queue"
     val transferStatus get() = busyTargets[targetKey]
     val operationRecords get() = (selectedClient.operationTargets(selectedThread.takeIf { it.isNotEmpty() }) + selectedClient.operationTargets(null)).distinct().flatMap { operations[it].orEmpty() }.distinctBy { it.target to it.id }
-    val activeOperationRecords get() = operationRecords.filter { it.kind!="fork" && !it.detached && it.sourceKey==targetKey && it.phase !in listOf("completed","cancelled","interrupted","confirmed","opened","queued","submitted") && !(it.kind=="reply" && it.phase=="failed" && it.result!=null) }
+    val activeOperationRecords get() = operationRecords.filter { it.kind !in listOf("fork","chat-action","workspace-archive") && !it.detached && it.sourceKey==targetKey && it.phase !in listOf("completed","cancelled","interrupted","confirmed","opened","queued","submitted") && !(it.kind=="reply" && it.phase=="failed" && it.result!=null) }
+    val detachedReplies get() = operationRecords.filter { it.kind=="reply" && it.detached && it.sourceKey==targetKey }
+    private fun replyRecordKey(record: SavedOperation)=record.target to record.id
+    private fun currentDetachedReply(record: SavedOperation,expectedTarget: String)=expectedTarget==targetKey && record.sourceKey==expectedTarget &&
+        detachedReplies.any { it.target==record.target && it.id==record.id && it.intentSha256==record.intentSha256 }
+    fun replyRecordQuerying(record: SavedOperation)=replyRecordQueryOwners.containsKey(replyRecordKey(record))
+    fun replyRecordQueryError(record: SavedOperation)=replyRecordQueryErrors[replyRecordKey(record)]
+    fun canQueryReplyRecord(record: SavedOperation,expectedTarget: String)=localReady && selectedClient.online &&
+        currentDetachedReply(record,expectedTarget) && !replyRecordQuerying(record)
+    suspend fun replyRecordContent(record: SavedOperation,expectedTarget: String): CodexContent {
+        require(currentDetachedReply(record,expectedTarget)) { "原发送记录已离开当前目标" }
+        return (execution ?: error("原记录暂不可读")).replyRecordContent(selectedClient,record)
+    }
+    fun queryReplyRecord(record: SavedOperation,expectedTarget: String) {
+        val flow=execution ?: return
+        if(!canQueryReplyRecord(record,expectedTarget))return
+        val client=selectedClient;val selection=selectionRevision;val navigation=clientNavigationRevision
+        val revision=revisions[client.id] ?: 0;val recordKey=replyRecordKey(record);val owner=UUID.randomUUID().toString()
+        replyRecordQueryOwners[recordKey]=owner;replyRecordQueryErrors.remove(recordKey)
+        fun current()=currentDetachedReply(record,expectedTarget) && selectionRevision==selection && clientNavigationRevision==navigation &&
+            (revisions[client.id] ?: 0)==revision && sameScope(selectedClient.scope,client.scope) &&
+            selectedClient.endpoint==client.endpoint && selectedClient.codexDirect?.fingerprint==client.codexDirect?.fingerprint
+        tasks.launch {
+            try { if(current() && replyRecordQueryOwners[recordKey]==owner)acceptFlow(client,flow.query(client,record)) }
+            catch(cancel: CancellationException) { throw cancel }
+            catch(failure: Exception) { if(current() && replyRecordQueryOwners[recordKey]==owner)
+                replyRecordQueryErrors[recordKey]=failure.message ?: "查询未完成，原记录已保留" }
+            finally { if(replyRecordQueryOwners[recordKey]==owner)replyRecordQueryOwners.remove(recordKey) }
+        }
+    }
     val detachedCreations get() = operationRecords.filter { it.kind=="creation" && it.detached && it.sourceKey==targetKey }.takeLast(3)
-    private val pendingRecords get() = operationRecords.filter { it.kind!="fork" && !it.detached && it.sourceKey==targetKey && it.phase in listOf("ready","preparing","prepared","submitting","received","uncertain","outcome-unknown","opening","submitted") && (it.kind!="reply" || it.phase !in listOf("submitted")) }
+    private val pendingRecords get() = operationRecords.filter { it.kind !in listOf("fork","chat-action","workspace-archive") && !it.detached && it.sourceKey==targetKey && it.phase in listOf("ready","preparing","prepared","submitting","received","uncertain","outcome-unknown","opening","submitted") && (it.kind!="reply" || it.phase !in listOf("submitted")) }
     private val access: SessionAccess get() {
+        if(!localReady) return SessionAccess(false,false,false,emptyList(),false,false,false,false,false)
         val local=demo && selectedClient.isDemo
         val fresh=freshWorkspaces[clientKey]==true && foreground && execution!=null && "commands:target-bound:v1" in workspace?.capabilities.orEmpty()
         return SessionAccess(local,local || selectedClient.online && fresh,
@@ -240,9 +582,21 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             selectedThread.isEmpty() && newProjects.containsKey(clientKey) && newProjects[clientKey]==null,
             local || freshHistories[targetKey]==true && runtime?.canControl==true,false)
     }
-    private val submission: SubmissionState get() = SubmissionState(historyLoading,busyTargets.containsKey(targetKey),stoppingTargets[targetKey]==true,
+    // Presentation readiness belongs to this navigation and connection revision;
+    // a later catch-up, paging or explicit refresh must not disable a ready composer.
+    private val initialHistoryLoading get()=historyLoading&&readyHistorySelection!=Triple(targetKey,selectionRevision,revisions[selectedClient.id] ?: 0)
+    private fun confirmedReplyReads(client: MobileClient,thread: String): Pair<MobileWorkspace,MobileHistory>? {
+        if(!foreground||client.id!=selectedClient.id||thread!=selectedThread||client.endpoint!=selectedClient.endpoint||
+            !sameScope(client.scope,selectedClient.scope)||freshWorkspaces[clientKey]!=true||freshHistories[targetKey]!=true||
+            readyHistorySelection!=Triple(targetKey,selectionRevision,revisions[client.id] ?: 0)||!isWritable)return null
+        val currentWorkspace=workspace ?: return null
+        val currentHistory=historyPages[targetKey] ?: return null
+        if(currentWorkspace.runtimeConnected!=true||currentHistory.runtime?.canControl!=true)return null
+        return currentWorkspace to currentHistory
+    }
+    private val submission: SubmissionState get() = SubmissionState(initialHistoryLoading,busyTargets.containsKey(targetKey),stoppingTargets[targetKey]==true,
         pendingRecords.any { it.kind in listOf("reply","open") },pendingRecords.any { it.kind in listOf("creation","thread-create") },importing,running,replyMode)
-    private fun submitAllowed(text: String, count: Int) = codexStorageConflictMessage == null && SessionPolicies.submit(access,submission,text,count)
+    private fun submitAllowed(text: String, count: Int) = currentChat?.archived!=true && codexStorageConflictMessage == null && SessionPolicies.submit(access,submission,text,count)
     private val storageRootAmbiguous get() = selectedClient.storageIdentity?.ambiguous(selectedClient,null,null) == true
     private val storageSelectionThread get() = if(storageRootAmbiguous) null else selectedThread.takeIf { it.isNotEmpty() }
     private val storageSelectionProject get() = if(storageRootAmbiguous || selectedThread.isNotEmpty()) null else newProjects[clientKey]
@@ -270,24 +624,29 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val chosen=client.copy(storageIdentity=identity.selecting(client,storageSelectionThread,storageSelectionProject,key))
         replaceClient(chosen);select(chosen);persistMetadata()
     }
-    val canCompose get() = codexStorageConflictMessage == null && SessionPolicies.compose(access)
+    val isWritable get() = currentChat?.archived!=true && SessionPolicies.writable(access)
+    val canCompose get() = currentChat?.archived!=true && codexStorageConflictMessage == null && SessionPolicies.compose(access)
     val canCreateThread get() = codexStorageConflictMessage == null && SessionPolicies.createThread(access) && access.online
     val canCreateProjectless get() = codexStorageConflictMessage == null && SessionPolicies.createProjectless(access) && access.online
-    val canCreateProject get()=codexStorageConflictMessage == null && access.online&&"projects:create" in workspace?.capabilities.orEmpty()
-    val canConfigureGeneration get() = SessionPolicies.configureGeneration(access,submission)
-    val canSelectPlan get() = SessionPolicies.selectPlan(access,submission)
+    val canCreateProject get()=localReady&&codexStorageConflictMessage == null && access.online&&"projects:create" in workspace?.capabilities.orEmpty()
+    val canConfigureGeneration get() = canCompose && SessionPolicies.configureGeneration(access,submission)
+    val canSelectPlan get() = canCompose && SessionPolicies.selectPlan(access,submission)
+    val canSelectReplyMode get() = canCompose && !submission.sending && !submission.replyPending && !submission.creationPending
     val replyModes get() = SessionPolicies.replyModes(access)
-    val queuedReplies get() = runtime?.receipts?.filter { it.state=="queued" }.orEmpty()
-    val receiptNotices get() = runtime?.receipts.orEmpty().let { list -> SessionPolicies.noticeIndices(list.map { ReceiptState(it.operationId,it.state,it.supersededByTurnId) },dismissedReceiptFailures[targetKey].orEmpty().toList(),pendingRecords.firstOrNull()?.id).map { list[it] } }
-    val timeline get() = MessageProjection.project(messages.map {
-        TimelineMessage(it.id, it.role, it.text, it.kind, it.status, it.runId, it.replyPhase, it.replyMessageId)
-    }, visibleMessageLimit, historyPages[targetKey]?.turnId, running || runtimeState == "paused")
+    val queuedReplies get() = runtime?.receipts?.filter { it.hostId==selectedClient.id&&it.threadId==selectedThread&&
+        QueueRules.active(it.state,it.queueSource,it.queuePresent,it.queueDisposition) }.orEmpty()
+    val receiptNotices get() = runtime?.receipts.orEmpty().let { list -> SessionPolicies.noticeIndices(list.map { ReceiptState(it.operationId,it.state,it.supersededByTurnId,it.queueSyncError) },dismissedReceiptFailures[targetKey].orEmpty().toList(),pendingRecords.firstOrNull()?.id).map { list[it] } }
+    val timeline get(): TimelineProjection {
+        val values=messages.map { TimelineMessage(it.id,it.role,it.text,it.kind,it.status,it.runId,it.replyPhase,it.replyMessageId) }
+        return MessageProjection.focus(MessageProjection.project(values,visibleMessageLimit,historyPages[targetKey]?.turnId,
+            running||runtimeState=="paused"),values,chatSearchJump?.message?.id)
+    }
     val canRunAgain get() = SessionPolicies.recoveryPrerequisites(selectedThread.isNotEmpty(),running,runtimeState,runtime!=null) &&
         messages.any { it.role=="user" } && submitAllowed(MobileRules.runAgainText(false),0)
     fun runAgain(restart: Boolean) { if(canRunAgain) send(CodexContent(MobileRules.runAgainText(restart),emptyList(),GenerationSettings())) }
     val decision: ComposerDecision get() {
         val input = ComposerInput(submission.stopping,running,submission.sending,submission.creationPending,text,attachments.size,
-            submitAllowed(text,attachments.size),SessionPolicies.stop(running,SessionPolicies.writable(access),access.online,submission.stopping),
+            submitAllowed(text,attachments.size),SessionPolicies.stop(running,isWritable,access.online,submission.stopping),
             (selectedClient.isDemo && demo && !running || SessionPolicies.recoveryPrerequisites(selectedThread.isNotEmpty(),running,runtimeState,runtime!=null)) &&
                 messages.any { it.role=="user" } && submitAllowed(MobileRules.runAgainText(false),0),runtimeState,runtime?.receipts?.lastOrNull()?.state,emptyList())
         return MobileRules.composer(if (MobileRules.needsRecoveryHistory(input)) input.withMessages(messages.map { ComposerMessage(it.role, it.status) }) else input)
@@ -300,19 +659,41 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if (!hasClient) select(if (value) DemoMobileData.clients.first() else realClients.firstOrNull() ?: DemoMobileData.clients.first())
         persistMetadata()
     }
-    fun select(client: MobileClient) {
+    fun select(client: MobileClient)=selectClient(client,refreshAutomatically=true)
+    private fun selectClient(client: MobileClient,refreshAutomatically: Boolean) {
         voice?.suspendRecording();aiSharingRequest=null
-        selectionRevision++; workspaceJob?.cancel(); historyJob?.cancel(); eventJob?.cancel()
-        selectedClient = realClients.firstOrNull { it.id==client.id && sameScope(it.scope,client.scope) } ?: client; search = ""; error = null; visibleMessageLimit = 60; revealedEarlier = false
+        clientNavigationRevision++;selectionRevision++;networkRecoveryJob?.cancel();networkRecoveryJob=null; workspaceJob?.cancel(); historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
+        selectedClient = realClients.firstOrNull { it.id==client.id && sameScope(it.scope,client.scope) } ?: client; search = ""; error = null; synchronizeReadingPresentation()
         persistMetadata()
-        if (!client.isDemo) { refresh(); loadCachedHistory(); loadHistory(); loadOperations() }
+        if (!client.isDemo) { if(refreshAutomatically)refresh(); loadCachedHistory(); if(refreshAutomatically)loadHistory(); loadOperations() }
+    }
+    private fun selectVerifiedClient(client: MobileClient) {
+        val key=client.cacheKey(null);val verified=workspaces[key] ?: error("连接快照尚未就绪")
+        require(verified.hostId==client.id && (!client.requiresReadTarget || verified.scope!=null) &&
+            (client.scope==null || verified.scope==null || sameScope(client.scope,verified.scope))) { "电脑运行目标不匹配" }
+        freshWorkspaces[key]=true;recordConnectionSuccess(client)
+        selectClient(client,refreshAutomatically=false)
+        freshHistories[targetKey]=false
+        val events=selectedThread.isNotEmpty() && verified.capabilities.containsAll(listOf("events","commands:target-bound:v1"))
+        if(events)startEvents(initialReadGraceMillis=8_000) else loadHistory()
+        loadModels()
     }
     fun selectThread(thread: MobileThread) {
         voice?.suspendRecording();aiSharingRequest=null
         require(thread.hostId == selectedClient.id && threads.any { it.id == thread.id })
-        selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); selectedThread = thread.id
-        error = null; visibleMessageLimit = 60; revealedEarlier = false
+        if(selectedThread==thread.id) {
+            // Reopening the current chat is presentation navigation. Keep its
+            // read generation, in-flight GET and expanded reading window.
+            error=null
+            if(!selectedClient.isDemo) { loadHistory(); loadOperations() }
+            return
+        }
+        selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel(); updateReadingSelection(thread.id)
+        error = null
         if (!selectedClient.isDemo) { loadCachedHistory(); loadHistory(); loadOperations() }
+        // Start navigation reads before serializing the local metadata snapshot.
+        // Draft edits and durable-before-send intents keep their own save paths.
+        persistMetadata()
     }
     fun performAction() {
         val action = decision
@@ -338,61 +719,78 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         voice?.suspendRecording();aiSharingRequest=null
         if(!selectedClient.isDemo) {
             if(!canCreateThread || projectId==null && !canCreateProjectless || projectId!=null && projects.none { it.id==projectId }) return
-            selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); selectedThread=""; newProjects[clientKey]=projectId
-            error=null; visibleMessageLimit=60; revealedEarlier=false; inheritGeneration(); persistMetadata(); loadOperations(); loadModels(); return
+            selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel(); selectedThread=""; newProjects[clientKey]=projectId
+            error=null; synchronizeReadingPresentation(); inheritGeneration(); persistMetadata(); loadOperations(); loadModels(); return
         }
         if (!demo) return
-        selectionRevision++; historyJob?.cancel(); eventJob?.cancel()
+        selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
         selectedThread = "draft-${UUID.randomUUID()}"; histories[targetKey] = emptyList(); runtimeState = "idle"
-        visibleMessageLimit = 60; revealedEarlier = false
+        synchronizeReadingPresentation()
     }
     fun refresh(more: Boolean = false, userInitiated: Boolean = false) {
         val client = selectedClient
-        if (client.isDemo || !hasClient || loading || incomingEasyWorkLink!=null) return
+        if (!localReady || client.isDemo || !hasClient || loading || incomingEasyWorkLink!=null) return
         val key = clientKey; val revision = revisions[client.id] ?: 0
         val old = workspace
+        val owner=WorkspaceReadOwner(clientNavigationRevision,revision,workspaceManagementRevisions[key] ?: 0)
         workspaceJob = tasks.launch {
-            loadingTargets[key] = true
+            val successAtStart=connectionSuccesses[key] ?: 0
+            loadingTargets[key] = owner
             try {
                 val result = reads.workspace(client, if (more) old?.nextProjectCursor else null, if (more) old?.nextThreadCursor else null)
-                if (!currentWorkspace(client, key, revision)) return@launch
+                if (!currentWorkspace(client, key, owner)) return@launch
                 require(result.hostId == client.id && (!client.requiresReadTarget || result.scope != null) && (client.scope == null || result.scope == null || sameScope(client.scope, result.scope))) { "电脑身份不匹配" }
                 // Each page is merged only with that same scope; refresh replaces removed entries.
-                var merged = if (more && old != null) result.copy(
-                    projects = (old.projects + result.projects).distinctBy { it.id },
-                    threads = (old.threads + result.threads).distinctBy { it.id }) else result
+                var merged = if (more && old != null) MobileWorkspaceMetadata.mergePage(old,result) else result
                 merged = merged.copy(wire=encodeWorkspace(merged).toString())
                 workspaces[key] = merged
                 freshWorkspaces[key]=true
+                recordConnectionSuccess(client)
                 replaceClient(selectedClient.copy(online = true, mode = result.mode))
                 clearReadError(userInitiated)
                 persistMetadata(); startEvents(); loadModels()
             } catch (cancel: CancellationException) { throw cancel }
-            catch (failure: Exception) { if (currentWorkspace(client, key, revision)) { recordConnectionFailure(client,failure); if(userInitiated) readError("刷新失败，请重试。\n"+(failure.message ?: "读取失败"),true); persistMetadata() } }
-            finally { loadingTargets[key] = false }
+            catch (failure: Exception) { if (currentWorkspace(client, key, owner)) { recordConnectionFailure(client,failure,successAtStart); if(userInitiated) readError(failure,"刷新失败，请重试。\n",true); persistMetadata() } }
+            finally { if(loadingTargets[key]===owner)loadingTargets.remove(key) }
         }
     }
-    // Workspace freshness belongs to the connection; selecting one of its threads does not invalidate it.
-    private fun currentWorkspace(client: MobileClient, key: String, revision: Long) = selectedClient.id == client.id && clientKey == key && (revisions[client.id] ?: 0) == revision && sameScope(selectedClient.scope,client.scope)
-    private fun recordConnectionFailure(client: MobileClient,failure: Exception) {
-        freshWorkspaces[client.cacheKey(null)]=false
+    // A client navigation/connection owns its catalog. Selecting only one of
+    // its threads keeps that owner and its valid connection proof intact.
+    private fun currentWorkspace(client: MobileClient,key: String,owner: WorkspaceReadOwner) =
+        selectedClient.id==client.id && clientKey==key && clientNavigationRevision==owner.navigation &&
+        (revisions[client.id] ?: 0)==owner.connectionRevision && (workspaceManagementRevisions[key] ?: 0)==owner.managementRevision && loadingTargets[key]===owner && sameScope(selectedClient.scope,client.scope)
+    private fun recordConnectionSuccess(client: MobileClient) {
+        val key=client.cacheKey(null)
+        connectionSuccesses.keys.retainAll(realClients.map { it.cacheKey(null) }.toSet()+key)
+        connectionSuccesses[key]=(connectionSuccesses[key] ?: 0)+1
+    }
+    private fun recordConnectionFailure(client: MobileClient,failure: Exception,successAtStart: Long? = null,displayError: Boolean=true) {
         val transient=(failure as? HostReadError)?.transient==true
+        // A newer validated response disproves this older transport inference.
+        // Authentication, identity and protocol failures always fail closed.
+        if(transient && successAtStart!=null && (connectionSuccesses[client.cacheKey(null)] ?: 0)>successAtStart)return
+        freshWorkspaces[client.cacheKey(null)]=false
         val latest=realClients.firstOrNull { it.id==client.id&&sameScope(it.scope,client.scope) }?:client
         replaceClient(latest.copy(online=false,connectionPhase=if(transient) ConnectionPhase.WAITING else ConnectionPhase.FAILED))
-        if(!transient) readError(failure.message ?: "读取失败，保留缓存")
+        if(!transient&&displayError) readError(failure,fallback="读取失败，保留缓存")
     }
     fun loadHistory(more: Boolean = false, userInitiated: Boolean = false): Job? {
+        val acceptanceTiming=NativeReadAcceptanceTiming.capture()
         val client = selectedClient; val thread = selectedThread; val key = targetKey
         if (client.isDemo || incomingEasyWorkLink!=null || thread.isEmpty() || thread.startsWith("draft-") || historyLoading) return null
         if(!more && userInitiated) { pagedSelections.remove(key); loadedHistorySelections.remove(key) }
         val selection = selectionRevision; val revision = revisions[client.id] ?: 0
         val cursor = if (more) historyCursor ?: return null else null
+        val owner=HistoryReadOwner(selection,revision)
         historyJob = tasks.launch {
-            historyTargets[key] = true
+            val successAtStart=connectionSuccesses[client.cacheKey(null)] ?: 0
+            val snapshotAtStart=conversationSnapshotRevisions[key] ?: 0
+            historyTargets[key] = owner
             try {
                 val result = reads.history(client, thread, cursor)
-                if (targetKey != key || selectionRevision != selection || (revisions[client.id] ?: 0) != revision) return@launch
+                if (targetKey != key || selectionRevision != selection || (revisions[client.id] ?: 0) != revision || historyTargets[key]!==owner) return@launch
                 require(result.hostId == client.id && result.threadId == thread && (!client.requiresReadTarget || result.scope != null) && (client.scope == null || result.scope == null || sameScope(client.scope, result.scope))) { "电脑或对话身份不匹配" }
+                acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.HISTORY_APPLYING,result.hostId,result.threadId)
                 val previous = histories[key].orEmpty()
                 val previousPage=historyPages[key]
                 val sameReadGeneration=loadedHistorySelections[key]==(selection to revision)
@@ -400,7 +798,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 val compatiblePrefix=MobileHistoryWindowPolicy.compatiblePrefix(previousPage,result,previous,sameReadGeneration)
                 val paged = com.agenthub.core.ReadingPolicy.preserveHistoryPrefix(!result.runtimePresent||result.windowed,
                     pagedSelections.containsKey(key),pagedSelections[key]==selection && (!result.windowed || sameReadGeneration),
-                    !result.windowed || compatiblePrefix)
+                    !result.windowed || compatiblePrefix) || result.windowed&&chatSearchJump?.context?.key==key
                 val incomingIds=result.messages.map { it.id }.toSet()
                 val merged = when {
                     more && (!result.runtimePresent || result.windowed) -> (result.messages + previous).distinctBy { it.id }
@@ -419,16 +817,21 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 loadedHistorySelections[key]=selection to revision
                 clearReadError(userInitiated)
                 freshHistories[key]=true
+                if(!more) {
+                    readyHistorySelection=Triple(key,selection,revision)
+                    receivedConversationSnapshot(key,client,result)
+                }
+                recordConnectionSuccess(client)
                 replaceClient(selectedClient.copy(online=true))
                 persistHistory(key, client, thread, page, merged)
                 startEvents()
             } catch (cancel: CancellationException) { throw cancel }
-            catch (failure: Exception) { if (targetKey == key && selectionRevision == selection && (revisions[client.id] ?: 0)==revision) { recordConnectionFailure(client,failure); if(more) readError("加载更早消息失败，请重试。\n"+(failure.message ?: "读取失败"),true) else if(userInitiated) readError("加载历史失败，请重试。\n"+(failure.message ?: "读取失败"),true) } }
-            finally { historyTargets[key] = false }
+            catch (failure: Exception) { if (targetKey == key && selectionRevision == selection && (revisions[client.id] ?: 0)==revision && historyTargets[key]===owner) { recordConnectionFailure(client,failure,successAtStart); if(more) readError(failure,"加载更早消息失败，请重试。\n",true) else { if((failure as? HostReadError)?.transient!=true || userInitiated || (conversationSnapshotRevisions[key] ?: 0)==snapshotAtStart)conversationSyncIssues[key]=ConversationSyncIssue(conversationReadFailure(failure));if(userInitiated) readError(failure,"加载历史失败，请重试。\n",true) } } }
+            finally { if(historyTargets[key]===owner)historyTargets.remove(key) }
         }
         return historyJob
     }
-    fun earlierMessages(): Job? { if (timeline.hasEarlierMessages) { visibleMessageLimit += 60; revealedEarlier = true; return null } else return loadHistory(more = true) }
+    fun earlierMessages(): Job? { if (timeline.hasEarlierMessages) { visibleMessageLimit += ReadingPolicy.earlierMessageIncrement().toInt(); revealedEarlier = true; return null } else return loadHistory(more = true) }
     private fun version(key: String)=draftVersions[key] ?: UUID.randomUUID().toString().also { draftVersions[key]=it }
     private fun loadOperations() {
         val flow=execution ?: return; val client=selectedClient
@@ -441,8 +844,18 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     private suspend fun acceptFlow(client: MobileClient,result: CodexFlowResult) {
         val record=result.record; val flow=execution ?: return
+        if(record.kind=="workspace-archive") { acceptWorkspaceArchive(client,record);return }
+        if(record.kind=="chat-action") { acceptChatAction(client,record);return }
         operations[record.target]=flow.journal.records(record.target)
         val origin=record.sourceKey
+        val receipt=if(record.kind=="reply" && record.result!=null) CodexCommandCodec.receipt(JSONObject(record.result)).also {
+            val intent=JSONObject(record.intent)
+            require(it.hostId==client.id && it.threadId==intent.getString("threadId") && it.operationId==record.id &&
+                record.target in client.operationTargets(it.threadId)) { "原消息回执目标不匹配" }
+        } else null
+        val accepted=receipt?.let { ReplyRecoveryRules.acceptedReceipt(it.state,it.queueSource,it.queuePresent,it.queueDisposition) }==true
+        if(origin!=null && receipt?.let { ReplyRecoveryRules.releasesReplyWait(it.state,it.queueSource,it.queuePresent,it.queueDisposition) }==true && busyCommands[origin]==record.id)
+            busyOwners[origin]?.let { endBusy(origin,it) }
         val unchanged=if(record.kind=="fork") origin!=null && !record.detached && forkNavigation[origin]?.let {
             it.id==record.id && it.selection==selectionRevision && it.draft==version(origin)
         }==true else !record.detached && origin!=null && draftVersions[origin]==record.sourceVersion
@@ -455,12 +868,25 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 selectedThread=thread.id; selectionRevision++; newProjects.remove(clientCache)
             }
         }
-        if(unchanged && (record.kind=="reply" && record.phase in listOf("received","queued","submitted","completed") || record.kind=="creation" && record.phase=="confirmed")) {
+        if(unchanged && (record.kind=="reply" && accepted || record.kind=="creation" && record.phase=="confirmed")) {
             drafts.remove(origin); draftFiles.remove(origin); draftVersions[origin!!]=UUID.randomUUID().toString()
             generation.remove(origin); scrollToLatestRevision++
         }
         persistMetadata()
         if(selectedClient.id==client.id && sameScope(selectedClient.scope,client.scope)) { loadOperations(); refresh(); loadHistory() }
+    }
+    private fun restartOperationReadObservers() {
+        val active=observingOperations.filterValues { it.isActive }.keys
+        val records=operations.values.flatten().filter { it.target+":"+it.id in active }.distinctBy { it.target to it.id }
+        observingOperations.values.forEach { it.cancel() };observingOperations.clear()
+        records.forEach { record ->
+            val intent=JSONObject(record.intent)
+            val thread=if(record.kind in listOf("reply","open","fork"))intent.getString("threadId") else null
+            // Reuse only a still-configured exact original target, including a
+            // background chat. Querying its original ID never resubmits intent.
+            realClients.firstOrNull { it.id==intent.getString("hostId")&&record.target in it.operationTargets(thread) }
+                ?.let { observeOperation(it,record) }
+        }
     }
     private fun observeOperation(client: MobileClient,record: SavedOperation) {
         val flow=execution ?: return; val operationKey=record.target+":"+record.id
@@ -468,8 +894,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             record.kind=="reply" && record.phase=="submitted" || observingOperations[operationKey]?.isActive==true) return
         observingOperations[operationKey]=tasks.launch {
             var current=record
+            val reply=record.kind=="reply";var queryDelay=0L
             while(isActive && foreground && !current.detached && current.phase in listOf("submitting","received","uncertain","outcome-unknown","submitted","opening","preparing")) {
-                delay(1500)
+                if(reply)queryDelay=ReplyRecoveryRules.nextReplyQueryDelayMillis(queryDelay)
+                delay(if(reply)queryDelay else 1500)
                 try {
                     val latest=flow.journal.records(current.target).first { it.id==current.id }
                     if(latest.detached) break
@@ -478,8 +906,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     if(current.kind=="reply" && current.phase in listOf("queued","submitted","completed")) break
                 } catch(cancel: CancellationException) { throw cancel }
                 catch(failure: Exception) {
-                    if(failure is IllegalArgumentException || failure is org.json.JSONException || failure is CodexCommandError && failure.status in listOf(400,401,403,404,409,413)) break
-                    delay(2000)
+                    if(failure is IllegalArgumentException || failure is org.json.JSONException || failure is CodexCommandError &&
+                        (failure.status in listOf(400,401,403,409,413) || !reply && failure.status==404)) break
+                    if(!reply)delay(2000)
                 }
             }
         }
@@ -637,11 +1066,28 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             flow.detach(client,detached); operations[record.target]=flow.journal.records(record.target)
         } catch(failure: Exception) { if(selectedClient.id==client.id) error=failure.message ?: "结束等待未完成" } }
     }
-    fun setReplyMode(mode: String) { if(mode in replyModes && !submission.sending) { preferredModes[targetKey]=mode; persistMetadata() } }
+    fun setReplyMode(mode: String,expectedTarget: String=targetKey) { if(expectedTarget==targetKey && mode in replyModes && canSelectReplyMode) { preferredModes[targetKey]=mode; persistMetadata() } }
+    /** UI callbacks carry their target, then edit only the current form value without suspension. */
+    internal fun updateGeneration(expectedTarget: String,edit: GenerationPreferenceEdit,change: (GenerationSettings)->GenerationSettings?) {
+        if(expectedTarget!=targetKey || !canConfigureGeneration) return
+        val current=generationSettings
+        val updated=change(current) ?: return
+        val preferenceChanged=rememberGeneration(updated,edit)
+        if(updated!=current) { generation[targetKey]=updated;draftVersions[targetKey]=UUID.randomUUID().toString() }
+        if(updated!=current || preferenceChanged)persistMetadata()
+    }
+    private fun rememberGeneration(settings: GenerationSettings,edit: GenerationPreferenceEdit): Boolean {
+        fun values(value: GenerationSettings)=GenerationPreferenceValues(value.model,value.effort,value.permissionMode,value.speed)
+        val previous=generationPreferences[clientKey]
+        val next=GenerationPreferenceRules.remember(values(previous ?: GenerationSettings()),values(settings),edit)
+        val saved=GenerationSettings(next.model,next.effort,next.permissionMode,next.speed)
+        generationPreferences[clientKey]=saved
+        return previous!=saved
+    }
     fun configure(settings: GenerationSettings) {
         if(!canConfigureGeneration) return
         generation[targetKey]=settings
-        generationPreferences[clientKey]=settings.copy(collaborationMode=null)
+        rememberGeneration(settings,GenerationPreferenceEdit.ALL)
         draftVersions[targetKey]=UUID.randomUUID().toString(); persistMetadata()
     }
     fun setPlanMode(enabled: Boolean) {
@@ -649,7 +1095,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         generation[targetKey]=generationSettings.copy(collaborationMode=if(enabled) "plan" else "default")
         draftVersions[targetKey]=UUID.randomUUID().toString(); persistMetadata()
     }
-    fun canRespondToPlan(plan: MobileProposedPlan)=freshHistories[targetKey]==true && SessionPolicies.writable(access) && SessionPolicies.respondToPlan(runtime?.proposedPlan?.id,plan.id,running,SessionPolicies.supports(access,"plan-mode"),selectedThread.isNotEmpty(),submitAllowed("实施此计划。",0))
+    fun canRespondToPlan(plan: MobileProposedPlan)=freshHistories[targetKey]==true && isWritable && SessionPolicies.respondToPlan(runtime?.proposedPlan?.id,plan.id,running,SessionPolicies.supports(access,"plan-mode"),selectedThread.isNotEmpty(),submitAllowed("实施此计划。",0))
     fun implementPlan(plan: MobileProposedPlan) { if(canRespondToPlan(plan)) send(CodexContent("PLEASE IMPLEMENT THIS PLAN:\n"+plan.text,emptyList(),generationSettings.copy(collaborationMode="default")),plan.id) }
     fun revisePlan(plan: MobileProposedPlan,feedback: String) { if(canRespondToPlan(plan) && feedback.isNotBlank()) send(CodexContent(feedback,emptyList(),generationSettings.copy(collaborationMode="plan")),plan.id) }
     private fun inheritGeneration() {
@@ -674,22 +1120,59 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     private fun stop() {
         val client=selectedClient; val thread=selectedThread; val turn=runtime?.turnId ?: return; val key=targetKey
-        if(!SessionPolicies.stop(running,SessionPolicies.writable(access),access.online,submission.stopping)) return
+        if(!SessionPolicies.stop(running,isWritable,access.online,submission.stopping)) return
         stoppingTargets[key]=true
         tasks.launch { try { commands.stop(client,thread,turn); if(targetKey==key) loadHistory() }
             catch(failure: Exception) { if(targetKey==key) error=failure.message ?: "停止未确认，请刷新任务" }
             finally { stoppingTargets.remove(key) } }
     }
-    fun cancelQueue(receipt: DeliveryReceipt) {
-        val client=selectedClient; val key=targetKey
-        if(!access.online || !SessionPolicies.writable(access) || queuedReplies.none { it.operationId==receipt.operationId && it.threadId==selectedThread } || busyTargets.containsKey(key)) return
-        val owner=beginBusy(key,receipt.operationId,"取消排队…")
-        tasks.launch { try { commands.cancelQueue(client,receipt.threadId,receipt.operationId); if(targetKey==key) loadHistory() }
-            catch(failure: Exception) { if(targetKey==key) error=failure.message ?: "取消未确认，请刷新队列" }
-            finally { endBusy(key,owner) } }
+    val supportsQueueExecution get()=SessionPolicies.supports(access,"queue:execute")
+    private fun currentQueueReceipt(receipt: DeliveryReceipt): DeliveryReceipt? {
+        if(receipt.hostId!=selectedClient.id || receipt.threadId!=selectedThread || receipt.operationId.isBlank() ||
+            !QueueRules.active(receipt.state,receipt.queueSource,receipt.queuePresent,receipt.queueDisposition)) return null
+        return queuedReplies.firstOrNull { it.operationId==receipt.operationId }
+    }
+    fun queueActionPending(receipt: DeliveryReceipt)=queueActionOwners.containsKey("$targetKey:${receipt.operationId}")
+    private fun queueActionAllowed(receipt: DeliveryReceipt,expectedTarget: String,execute: Boolean,expectedTurnId: String?,pending: Boolean): Boolean {
+        if(expectedTarget!=targetKey || loadedHistorySelections[targetKey]!=(selectionRevision to (revisions[selectedClient.id] ?: 0)) ||
+            execute && runtime?.turnId!=expectedTurnId) return false
+        val current=currentQueueReceipt(receipt) ?: return false
+        return QueueRules.actionAllowed(current.state,current.queueSource,current.queuePresent,current.queueDisposition,
+            access.online,isWritable,pending,execute,supportsQueueExecution,current.canExecuteNow)
+    }
+    fun canExecuteQueue(receipt: DeliveryReceipt,expectedTarget: String,expectedTurnId: String?)=
+        queueActionAllowed(receipt,expectedTarget,true,expectedTurnId,queueActionPending(receipt))
+    fun canCancelQueue(receipt: DeliveryReceipt,expectedTarget: String)=
+        queueActionAllowed(receipt,expectedTarget,false,null,queueActionPending(receipt))
+    fun executeQueue(receipt: DeliveryReceipt,expectedTarget: String,expectedTurnId: String?)=queueAction(receipt,expectedTarget,true,expectedTurnId)
+    fun cancelQueue(receipt: DeliveryReceipt,expectedTarget: String)=queueAction(receipt,expectedTarget,false,null)
+    private fun queueAction(receipt: DeliveryReceipt,expectedTarget: String,execute: Boolean,expectedTurnId: String?) {
+        if(!queueActionAllowed(receipt,expectedTarget,execute,expectedTurnId,queueActionPending(receipt))) return
+        val sharing=if(execute) requireSharing(runtime?.settings?.model) ?: return else null
+        val client=selectedClient;val key=targetKey;val selection=selectionRevision;val navigation=clientNavigationRevision
+        val revision=revisions[client.id] ?: 0;val errorAtStart=errorRevision
+        val pending="$key:${receipt.operationId}";val owner=UUID.randomUUID().toString()
+        queueActionOwners[pending]=owner
+        fun current()=targetKey==key && selectionRevision==selection && clientNavigationRevision==navigation &&
+            (revisions[client.id] ?: 0)==revision && sameScope(selectedClient.scope,client.scope) &&
+            selectedClient.endpoint==client.endpoint && selectedClient.codexDirect?.fingerprint==client.codexDirect?.fingerprint
+        tasks.launch {
+            try {
+                if(!current() || queueActionOwners[pending]!=owner || !queueActionAllowed(receipt,key,execute,expectedTurnId,false) ||
+                    sharing!=null && !aiSharing.permits(sharing)) return@launch
+                if(execute) commands.executeQueue(client,receipt.threadId,receipt.operationId,expectedTurnId)
+                else commands.cancelQueue(client,receipt.threadId,receipt.operationId)
+                if(current()) loadHistory()
+            } catch(cancel: CancellationException) { throw cancel }
+            catch(failure: Exception) { if(current()) {
+                if(errorRevision==errorAtStart) error=failure.message ?: "队列操作结果待核对，请刷新原任务"
+                loadHistory()
+            } }
+            finally { if(queueActionOwners[pending]==owner)queueActionOwners.remove(pending) }
+        }
     }
     fun isAnswering(approval: MobileApproval)=answeringTargets["$targetKey:${approval.id}"]==true
-    fun canAnswer(approval: MobileApproval)=freshHistories[targetKey]==true && access.online && SessionPolicies.writable(access) && SessionPolicies.supports(access,"approvals") && !isAnswering(approval) && runtime?.approvals?.any { it.id==approval.id && it.turnId==approval.turnId }==true
+    fun canAnswer(approval: MobileApproval)=freshHistories[targetKey]==true && access.online && isWritable && SessionPolicies.supports(access,"approvals") && !isAnswering(approval) && runtime?.approvals?.any { it.id==approval.id && it.turnId==approval.turnId }==true
     fun answer(approval: MobileApproval,decision: String,answers: Map<String,List<String>>,expectedTarget: String) {
         if(expectedTarget!=targetKey || !canAnswer(approval)) return
         if(approval.kind=="question") {
@@ -721,15 +1204,42 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         require(client.scope!=null&&file.hostId==client.id&&file.threadId==selectedThread&&messages.any { file in it.attachments }) { "文件不属于当前电脑和对话" }
         return commands.downloadResource(client,file,cache)
     }
-    private fun startEvents() {
-        if(!foreground || incomingEasyWorkLink!=null || selectedClient.isDemo || selectedThread.isEmpty() || "events" !in workspace?.capabilities.orEmpty() || "commands:target-bound:v1" !in workspace?.capabilities.orEmpty() || eventJob?.isActive==true) return
+    private fun startEvents(initialReadGraceMillis: Long=0) {
+        if(!foreground || incomingEasyWorkLink!=null || selectedClient.isDemo || selectedThread.isEmpty() || "events" !in workspace?.capabilities.orEmpty() || "commands:target-bound:v1" !in workspace?.capabilities.orEmpty()) return
         val client=selectedClient; val thread=selectedThread; val key=targetKey; val selection=selectionRevision; val revision=revisions[client.id] ?: 0
+        val recoveryIdentity=Triple(key,selection,revision)
+        if(historyRecoveryJob?.isActive!=true || historyRecoveryIdentity!=recoveryIdentity) {
+            historyRecoveryJob?.cancel();historyRecoveryIdentity=recoveryIdentity
+            val progressKey=conversationProgressKey(key,client)
+            val graceUntil=android.os.SystemClock.elapsedRealtime()+initialReadGraceMillis
+            historyRecoveryJob=tasks.launch {
+                // Independent of long polls and receipt observers. Repeated cached
+                // checkedAt values cannot postpone recovery, and unsuccessful reads
+                // remain bounded to the active/idle attempt interval too.
+                var attemptedAt=if(initialReadGraceMillis>0)null else android.os.SystemClock.elapsedRealtime()
+                while(isActive && foreground && incomingEasyWorkLink==null && targetKey==key && selectionRevision==selection && (revisions[client.id] ?: 0)==revision) {
+                    val active=runtime?.state=="running" || pendingRecords.isNotEmpty() || conversationSyncIssues[key]!=null
+                    val interval=if(active)2_000L else 10_000L
+                    val now=android.os.SystemClock.elapsedRealtime()
+                    if(!historyLoading && usefulConversationProgress.shouldCatchUp(progressKey,active,graceUntil) && (attemptedAt==null || now-attemptedAt>=interval)) {
+                        attemptedAt=now
+                        loadHistory()?.join()
+                    }
+                    delay(1_000)
+                }
+            }
+        }
+        if(eventJob?.isActive==true)return
+        val stream=Any();eventReadOwner=stream
         eventJob=tasks.launch {
             var epoch=historyPages[key]?.epoch.orEmpty(); var cursor=historyPages[key]?.cursor ?: 0
-            while(isActive && foreground && targetKey==key && selectionRevision==selection && (revisions[client.id] ?: 0)==revision) {
+            var retryDelay=1_000L
+            while(isActive && foreground && eventReadOwner===stream && targetKey==key && selectionRevision==selection && (revisions[client.id] ?: 0)==revision) {
+                val successAtStart=connectionSuccesses[client.cacheKey(null)] ?: 0
+                val snapshotAtStart=conversationSnapshotRevisions[key] ?: 0
                 try {
                     val batch=commands.events(client,thread,epoch,cursor)
-                    if(!foreground || targetKey!=key || selectionRevision!=selection || (revisions[client.id] ?: 0)!=revision) break
+                    if(!foreground || eventReadOwner!==stream || targetKey!=key || selectionRevision!=selection || (revisions[client.id] ?: 0)!=revision) break
                     require(batch.hostId==client.id&&batch.snapshots.all { page -> page.hostId==client.id&&page.threadId==thread&&(!client.requiresReadTarget||page.scope!=null)&&sameScope(page.scope,client.scope) }) { "事件快照不属于当前电脑、对话和完整目标" }
                     val decision=OperationPolicies.event(epoch,cursor,batch.epoch,batch.cursor,batch.reset,batch.ready!=false,batch.snapshots.size)
                     if(batch.ready==false) { freshHistories[key]=false; freshWorkspaces[clientKey]=false }
@@ -741,7 +1251,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                             val sameReadGeneration=loadedHistorySelections[key]==(selection to revision)
                             val compatiblePrefix=MobileHistoryWindowPolicy.compatiblePrefix(prior,page,histories[key].orEmpty(),sameReadGeneration)
                             val retain=com.agenthub.core.ReadingPolicy.preserveHistoryPrefix(page.windowed,pagedSelections.containsKey(key),
-                                pagedSelections[key]==selection && sameReadGeneration,compatiblePrefix)
+                                pagedSelections[key]==selection && sameReadGeneration,compatiblePrefix) || page.windowed&&chatSearchJump?.context?.key==key
                             val incoming=page.messages.map { it.id }.toSet()
                             val merged=if(retain)histories[key].orEmpty().takeWhile { it.id !in incoming }+page.messages else page.messages
                             val stored=if(retain)page.copy(nextCursor=prior?.nextCursor,wire=JSONObject(page.wire).put("nextCursor",prior?.nextCursor).toString()) else page
@@ -749,24 +1259,36 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                             historyPages[key]=stored; histories[key]=merged; runs.remove(key)
                             loadedHistorySelections[key]=selection to revision
                             freshHistories[key]=batch.ready!=false
+                            if(batch.ready!=false)readyHistorySelection=Triple(key,selection,revision)
+                            receivedConversationSnapshot(key,client,page,batch.ready!=false)
                             persistHistory(key,client,thread,stored,merged)
                             operations[NativeOperationJournal.target(client,thread)].orEmpty().filter { it.kind=="reply" }.forEach { saved ->
                                 page.runtime?.receipts?.firstOrNull { it.operationId==saved.id }?.let { receipt -> execution?.journal?.observed(saved.target,saved.id,receipt.state,encodeReceipt(receipt),receipt.error) }
                             }
                         }
                     }
-                    if(decision.reload) { freshHistories[key]=false; refresh(); loadHistory() }
+                    if(decision.reload && batch.snapshots.isEmpty()) { freshHistories[key]=false; refresh(); loadHistory() }
                     if(batch.ready==true&&batch.snapshots.isNotEmpty()) {
+                        recordConnectionSuccess(client)
                         replaceClient(selectedClient.copy(online=true))
                         if(freshWorkspaces[clientKey]!=true)refresh()
                     }
+                    retryDelay=1_000L
                     loadOperations(); delay(if(batch.snapshots.isEmpty()) 300 else 50)
                 } catch(cancel: CancellationException) { throw cancel }
-                catch(failure: Exception) { if(foreground&&targetKey==key&&selectionRevision==selection&&(revisions[client.id]?:0)==revision) { freshHistories[key]=false; recordConnectionFailure(client,HostReadError("正在重新连接电脑",failure,true)) }; delay(2000) }
+                catch(failure: Exception) {
+                    val classified=eventReadFailure(failure)
+                    if(foreground&&eventReadOwner===stream&&targetKey==key&&selectionRevision==selection&&(revisions[client.id]?:0)==revision) {
+                        if(!classified.transient||(conversationSnapshotRevisions[key] ?: 0)<=snapshotAtStart)freshHistories[key]=false
+                        recordConnectionFailure(client,classified,successAtStart,displayError=false)
+                    }
+                    delay(retryDelay);retryDelay=minOf(retryDelay*2,15_000L)
+                }
             }
         }
     }
     suspend fun connect(name: String, address: String, secret: String, editing: MobileClient? = null): MobileClient {
+        val acceptanceTiming=NativeReadAcceptanceTiming.capture();val startedAt=android.os.SystemClock.elapsedRealtimeNanos()
         require(name.trim().isNotEmpty() && name.length <= 256) { "请输入客户端名称" }
         NativeHostReads.baseAddress(address)
         require(secret.isEmpty() || secret.length in 32..512 && secret.none { it.isWhitespace() }) { "客户端密钥格式无效" }
@@ -783,14 +1305,14 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         withContext(Dispatchers.IO) { storage?.setToken(client.id, secret) }
         revisions[client.id] = (revisions[client.id] ?: 0) + 1
         val remembered = replaceClient(client); workspaces[remembered.cacheKey(null)] = result
-        select(remembered); return remembered
+        selectVerifiedClient(remembered);acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CONNECTION_SUCCESS,remembered.id,startedAtNanos=startedAt); return remembered
     }
     private fun replaceClient(client: MobileClient): MobileClient {
         val index = realClients.indexOfFirst { it.id == client.id }
         val prior=realClients.getOrNull(index)
         val remembered=if(client.storageIdentity==null && prior?.storageIdentity!=null && sameScope(client.scope,prior.scope)) client.copy(storageIdentity=prior.storageIdentity) else client
         if (index < 0) realClients.add(remembered) else realClients[index] = remembered
-        if (selectedClient.id == client.id) selectedClient = remembered
+        if (selectedClient.id == client.id) { selectedClient = remembered;synchronizeReadingPresentation() }
         return remembered
     }
     suspend fun credential(id: String): String = withContext(Dispatchers.IO) { storage?.token(id).orEmpty() }
@@ -927,7 +1449,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun dismissIncomingLink(presentation: String?) { if(presentation!=null&&incomingEasyWorkLink?.presentation==presentation) { incomingEasyWorkLink=null;if(hasClient) { refresh();loadHistory() } } }
     fun receiveLink(uri: android.net.Uri) {
-        if(uri.scheme in listOf("easywork-host","easywork")&&uri.host=="pair") { incomingEasyWorkLink=PendingAgentLink(payload=uri.toString());selectionRevision++;workspaceJob?.cancel();historyJob?.cancel();eventJob?.cancel();return }
+        if(uri.scheme in listOf("easywork-host","easywork")&&uri.host=="pair") { incomingEasyWorkLink=PendingAgentLink(payload=uri.toString());selectionRevision++;workspaceJob?.cancel();historyJob?.cancel();eventJob?.cancel();historyRecoveryJob?.cancel();return }
         if(uri.scheme=="com.easyai.remote"&&uri.host=="oauth")tasks.launch { try { easyWorkLogin?.callback(uri) } catch(failure: Exception) { error=failure.message?:"登录未完成" } }
     }
     internal fun storedCredential(id: String): String = storage?.token(id).orEmpty()
@@ -936,7 +1458,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val selection = selectionRevision; val sourceKey = targetKey; val sourceVersion = version(sourceKey)
         if (host.reachable && client.codexDirect != null) {
             val direct = client.codexDirect!!
-            val descriptor = CodexDiscoveryAPI.discover(host.endpoint, CodexPublicSource(direct.target, direct.fingerprint, direct.routes.map { it.endpoint }))
+            val descriptor = CodexDiscoveryAPI.discoverForConnection(host.endpoint, CodexPublicSource(direct.target, direct.fingerprint, direct.routes.map { it.endpoint }))
             require(updateCodexRoute(client, host.endpoint, descriptor)) { "连接已变化，原连接已保留" }
             client = realClients.first { it.id == host.id }
         }
@@ -945,7 +1467,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         require(selectionRevision == selection && targetKey == sourceKey && version(sourceKey) == sourceVersion && (revisions[host.id] ?: 0) == revision && realClients.any { it == client }) { "所选目标或连接已改变" }
         val connected = replaceClient(client.copy(online = true))
         workspaces[connected.cacheKey(null)] = snapshot
-        select(connected)
+        selectVerifiedClient(connected)
     }
     suspend fun connectCodexDiscovered(host: DiscoveredCodexHost): MobileClient {
         val store = storage ?: error("本地安全存储不可用")
@@ -971,7 +1493,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         revisions[host.id] = revision + 1
         val remembered = replaceClient(client)
         workspaces[remembered.cacheKey(null)] = authorized.workspace
-        select(remembered); discovery?.scan()
+        selectVerifiedClient(remembered); discovery?.scan()
         return remembered
     }
     suspend fun connectCodexQR(text: String, name: String): MobileClient {
@@ -985,7 +1507,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             try {
                 val direct = PairedCodexConnection(offer.target, offer.fingerprint, offer.routes)
                 var client = MobileClient(offer.target.hostId, name.trim().ifEmpty { offer.name }, offer.target, route.endpoint, false, "desktop-runtime", false, prior?.readerId ?: UUID.randomUUID().toString(), true, direct)
-                val descriptor = NativeHostReads { "" }.descriptor(client)
+                val descriptor = NativeHostReads { "" }.connectionDescriptor(client)
                 val merged = (listOf(route) + descriptor.routes + offer.routes).distinctBy { it.endpoint }.take(32)
                 client = client.copy(codexDirect = direct.copy(routes = merged))
                 val snapshot = NativeHostReads { offer.token!! }.workspace(client)
@@ -995,7 +1517,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 client = client.copy(online = true)
                 revisions[client.id] = revision + 1; client = replaceClient(client)
                 workspaces[client.cacheKey(null)] = snapshot
-                select(client); discovery?.scan(); return client
+                selectVerifiedClient(client); discovery?.scan(); return client
             } catch(cancel: CancellationException) { throw cancel }
             catch(failure: Exception) { last = failure }
         }
@@ -1019,7 +1541,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(transportChanged && selectedClient.id==current.id) {
             workspaceJob?.cancel();historyJob?.cancel();eventJob?.cancel();eventJob=null
             freshWorkspaces[clientKey]=false;freshHistories[targetKey]=false
-            loadingTargets[clientKey]=false;historyTargets[targetKey]=false
+            loadingTargets.remove(clientKey);historyTargets.remove(targetKey)
             refresh();loadHistory()
         }
         return true
@@ -1029,6 +1551,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         // A removed private client must not be recovered from its atomic credential record after a crash.
         if(removed.agentConnection==null) try { storage?.setToken(id,"") } catch(_: Exception) { storageFailure();return }
         revisions[id] = (revisions[id] ?: 0) + 1
+        connectionSuccesses.remove(removed.cacheKey(null))
         realClients.removeAll { it.id == id }
         if (selectedClient.id == id) select(realClients.firstOrNull() ?: DemoMobileData.clients.first())
         tasks.launch(Dispatchers.IO) {
@@ -1040,7 +1563,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     private fun storageFailure() { tasks.launch { error = "本地保存失败，请保留当前内容并检查手机存储" } }
     private fun persistMetadata() {
-        if (storage == null || restoring) return
+        if (storage == null || !localReady) return
         val json = JSONObject().put("version", 1).put("appearance", appearance).put("demo", demo).put("selected", selectedClient.id)
             .put("clients", JSONArray(realClients.map(::encodeClient)))
             .put("drafts", JSONObject(drafts.toMap())).put("selectedThreads", JSONObject(selectedThreads.toMap()))
@@ -1050,7 +1573,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             .put("generationPreferences",JSONObject(generationPreferences.mapValues { it.value.append(JSONObject()) }))
             .put("dismissedReceiptFailures",JSONObject(dismissedReceiptFailures.mapValues { JSONArray(it.value.toList()) }))
             .put("expanded", JSONObject(expandedProjects.mapValues { JSONArray(it.value.toList()) }))
-            .put("sidebar", JSONObject(sidebarStates.mapValues { (_,state) -> JSONObject().put("recent",state.recentExpanded).put("projects",state.projectsExpanded).put("lists",JSONArray(state.expandedLists.toList())) }))
+            .put("sidebar", JSONObject(sidebarStates.mapValues { (_,state) -> JSONObject().put("recent",state.recentExpanded).put("projects",state.projectsExpanded).put("lists",JSONArray(state.expandedLists.toList()))
+                .put("pinnedSection",state.pinnedSectionExpanded).put("recentSection",state.recentSectionExpanded) }))
             .put("workspaces", JSONObject(workspaces.mapValues { JSONObject(it.value.wire) }))
         storage.enqueue("metadata", json.toString()) { storageFailure() }
     }
@@ -1061,77 +1585,124 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
 
     private fun loadCachedHistory() {
+        val acceptanceTiming=NativeReadAcceptanceTiming.capture()
         val storage = storage ?: return; val key = targetKey; val selection = selectionRevision
         if (histories.containsKey(key) || selectedThread.isEmpty()) return
         tasks.launch {
             try {
                 val page = withContext(Dispatchers.IO) { NativeHistoryCache(storage).read(key) } ?: return@launch
-                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) { histories[key] = page.messages; historyPages[key] = page }
+                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) { acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CACHE_APPLYING,page.hostId,page.threadId); histories[key] = page.messages; historyPages[key] = page }
             } catch (_: Exception) { if (targetKey == key) error = "本地缓存无法读取，原缓存已保留" }
             catch (_: OutOfMemoryError) { if(targetKey == key) error = "本地缓存内存不足，原缓存已保留" }
         }
     }
+    fun retryLocalRecovery() { if(localRecoveryRequired&&!restoring) restore() }
     fun restore() {
-        if (storage == null) return
-        tasks.launch {
+        val storage=storage ?: return
+        if(restoreJob?.isActive==true) return
+        restoring=true
+        val generation=storage.beginRestore()
+        restoreJob=tasks.launch {
             try {
                 aiSharing.restore()
-                val (json, privateClients) = withContext(Dispatchers.IO) { storage.metadata() to CodexConnectionVault(storage).clients() }
-                if (json != null) {
-                    require(json.getInt("version") == 1)
-                    val storageKeys=listOf("drafts","draftVersions","draftFiles","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces").flatMap { field -> json.optJSONObject(field)?.keys()?.asSequence()?.toList().orEmpty() }.distinct()
-                    realClients.clear(); realClients.addAll(json.getJSONArray("clients").objects().map(::decodeClient).map { it.copy(online = false, storageIdentity=it.storageIdentity?.withKeys(storageKeys)) })
-                    appearance = json.getString("appearance"); demo = json.getBoolean("demo")
-                    json.getJSONObject("drafts").let { v -> v.keys().forEach { drafts[it] = v.getString(it) } }
-                    json.optJSONObject("draftVersions")?.let { v -> v.keys().forEach { draftVersions[it]=v.getString(it) } }
-                    json.optJSONObject("newProjects")?.let { v -> v.keys().forEach { newProjects[it]=v.optional(it) } }
-                    json.optJSONObject("draftFiles")?.let { v -> v.keys().forEach { key -> draftFiles[key]=v.getJSONArray(key).objects().map { f -> LocalDraftFile(CreationFile(f.getString("id"),f.getString("name"),f.getString("mediaType"),f.getLong("sizeBytes"),f.getString("sha256"))) } } }
-                    json.optJSONObject("generation")?.let { v -> v.keys().forEach { key -> val s=v.getJSONObject(key); generation[key]=GenerationSettings(s.optional("model"),s.optional("effort"),s.optional("permissionMode"),s.optional("speed"),s.optional("collaborationMode")) } }
-                    json.optJSONObject("generationPreferences")?.let { v -> v.keys().forEach { key -> val g=v.getJSONObject(key); generationPreferences[key]=GenerationSettings(g.optional("model"),g.optional("effort"),g.optional("permissionMode"),g.optional("speed")) } }
-                    json.optJSONObject("dismissedReceiptFailures")?.let { v -> v.keys().forEach { key -> dismissedReceiptFailures[key]=v.getJSONArray(key).strings().toSet() } }
-                    json.optJSONObject("replyModes")?.let { v -> v.keys().forEach { preferredModes[it]=v.getString(it) } }
-                    json.getJSONObject("selectedThreads").let { v -> v.keys().forEach { selectedThreads[it] = v.getString(it) } }
-                    json.getJSONObject("expanded").let { v -> v.keys().forEach { expandedProjects[it] = v.getJSONArray(it).strings().toSet() } }
-                    json.optJSONObject("sidebar")?.let { v -> v.keys().forEach { key -> val state=v.getJSONObject(key); sidebarStates[key]=SidebarDisplayState(state.getBoolean("recent"),state.getBoolean("projects"),state.getJSONArray("lists").strings().toSet()) } }
-                    json.getJSONObject("workspaces").let { v -> v.keys().forEach { workspaces[it] = MobileSnapshotCodec.workspace(v.getJSONObject(it).toString()) } }
-                    selectedClient = clients.firstOrNull { it.id == json.getString("selected") } ?: clients.firstOrNull() ?: DemoMobileData.clients.first()
-                }
-                // The credential and verified client survive even if the later ordinary metadata write never ran.
-                privateClients.forEach { verified ->
-                    val index=realClients.indexOfFirst { it.id==verified.id }
-                    if(index<0) realClients.add(verified.copy(online=false)) else {
-                        val prior=realClients[index]
-                        require(sameScope(prior.scope,verified.scope) && (prior.codexDirect==null || prior.codexDirect.fingerprint==verified.codexDirect?.fingerprint))
-                        // Connection+credential are authoritative together; newer UI name/storage choices remain ordinary metadata.
-                        realClients[index]=prior.copy(scope=verified.scope,endpoint=verified.endpoint,codexDirect=verified.codexDirect,
-                            mode=verified.mode,isDemo=false,online=false,requiresReadTarget=true,readerId=prior.readerId ?: verified.readerId)
+                val applyState=withContext(Dispatchers.IO) {
+                    val json=storage.metadata()
+                    val privateClients=CodexConnectionVault(storage).clients()
+                    val realClients=mutableListOf<MobileClient>()
+                    var appearance="system";var demo=false
+                    var selectedClient=DemoMobileData.clients.first()
+                    val drafts=this@MobileSession.drafts.toMutableMap().apply { clear() }
+                    val draftVersions=this@MobileSession.draftVersions.toMutableMap().apply { clear() }
+                    val newProjects=this@MobileSession.newProjects.toMutableMap().apply { clear() }
+                    val draftFiles=this@MobileSession.draftFiles.toMutableMap().apply { clear() }
+                    val generation=this@MobileSession.generation.toMutableMap().apply { clear() }
+                    val generationPreferences=this@MobileSession.generationPreferences.toMutableMap().apply { clear() }
+                    val dismissedReceiptFailures=this@MobileSession.dismissedReceiptFailures.toMutableMap().apply { clear() }
+                    val preferredModes=this@MobileSession.preferredModes.toMutableMap().apply { clear() }
+                    val selectedThreads=this@MobileSession.selectedThreads.toMutableMap().apply { clear() }
+                    val expandedProjects=this@MobileSession.expandedProjects.toMutableMap().apply { clear() }
+                    val sidebarStates=this@MobileSession.sidebarStates.toMutableMap().apply { clear() }
+                    val workspaces=this@MobileSession.workspaces.toMutableMap().apply { clear() }
+                    if (json != null) {
+                        require(json.getInt("version") == 1)
+                        val storageKeys=listOf("drafts","draftVersions","draftFiles","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces").flatMap { field -> json.optJSONObject(field)?.keys()?.asSequence()?.toList().orEmpty() }.distinct()
+                        realClients.clear(); realClients.addAll(json.getJSONArray("clients").objects().map(::decodeClient).map { it.copy(online = false, storageIdentity=it.storageIdentity?.withKeys(storageKeys)) })
+                        appearance = json.getString("appearance"); demo = json.getBoolean("demo")
+                        json.getJSONObject("drafts").let { v -> v.keys().forEach { drafts[it] = v.getString(it) } }
+                        json.optJSONObject("draftVersions")?.let { v -> v.keys().forEach { draftVersions[it]=v.getString(it) } }
+                        json.optJSONObject("newProjects")?.let { v -> v.keys().forEach { newProjects[it]=v.optional(it) } }
+                        json.optJSONObject("draftFiles")?.let { v -> v.keys().forEach { key -> draftFiles[key]=v.getJSONArray(key).objects().map { f -> LocalDraftFile(CreationFile(f.getString("id"),f.getString("name"),f.getString("mediaType"),f.getLong("sizeBytes"),f.getString("sha256"))) } } }
+                        json.optJSONObject("generation")?.let { v -> v.keys().forEach { key -> val s=v.getJSONObject(key); generation[key]=GenerationSettings(s.optional("model"),s.optional("effort"),s.optional("permissionMode"),s.optional("speed"),s.optional("collaborationMode")) } }
+                        json.optJSONObject("generationPreferences")?.let { v -> v.keys().forEach { key -> val g=v.getJSONObject(key); generationPreferences[key]=GenerationSettings(g.optional("model"),g.optional("effort"),g.optional("permissionMode"),g.optional("speed")) } }
+                        json.optJSONObject("dismissedReceiptFailures")?.let { v -> v.keys().forEach { key -> dismissedReceiptFailures[key]=v.getJSONArray(key).strings().toSet() } }
+                        json.optJSONObject("replyModes")?.let { v -> v.keys().forEach { preferredModes[it]=v.getString(it) } }
+                        json.getJSONObject("selectedThreads").let { v -> v.keys().forEach { selectedThreads[it] = v.getString(it) } }
+                        json.getJSONObject("expanded").let { v -> v.keys().forEach { expandedProjects[it] = v.getJSONArray(it).strings().toSet() } }
+                        json.optJSONObject("sidebar")?.let { v -> v.keys().forEach { key -> val state=v.getJSONObject(key); sidebarStates[key]=SidebarDisplayState(state.getBoolean("recent"),state.getBoolean("projects"),state.getJSONArray("lists").strings().toSet(),
+                            state.optBoolean("pinnedSection",true),state.optBoolean("recentSection",true)) } }
+                        json.getJSONObject("workspaces").let { v -> v.keys().forEach { workspaces[it] = MobileSnapshotCodec.workspace(v.getJSONObject(it).toString()) } }
+                        selectedClient = (realClients+if(demo) DemoMobileData.clients else emptyList()).firstOrNull { it.id == json.getString("selected") } ?: (realClients+if(demo) DemoMobileData.clients else emptyList()).firstOrNull() ?: DemoMobileData.clients.first()
                     }
+                    // The credential and verified client survive even if the later ordinary metadata write never ran.
+                    privateClients.forEach { verified ->
+                        val index=realClients.indexOfFirst { it.id==verified.id }
+                        if(index<0) realClients.add(verified.copy(online=false)) else {
+                            val prior=realClients[index]
+                            require(sameScope(prior.scope,verified.scope) && (prior.codexDirect==null || prior.codexDirect.fingerprint==verified.codexDirect?.fingerprint))
+                            // Connection+credential are authoritative together; newer UI name/storage choices remain ordinary metadata.
+                            realClients[index]=prior.copy(scope=verified.scope,endpoint=verified.endpoint,codexDirect=verified.codexDirect,
+                                mode=verified.mode,isDemo=false,online=false,requiresReadTarget=true,readerId=prior.readerId ?: verified.readerId)
+                        }
+                    }
+                    if (json == null && privateClients.isNotEmpty()) selectedClient = realClients.first()
+                    else realClients.firstOrNull { it.id==selectedClient.id }?.let { selectedClient=it }
+
+                    val publish: ()->Unit = {
+                        this@MobileSession.realClients.apply { clear();addAll(realClients) }
+                        this@MobileSession.appearance=appearance;this@MobileSession.demo=demo
+                        this@MobileSession.drafts.apply { clear();putAll(drafts) }
+                        this@MobileSession.draftVersions.apply { clear();putAll(draftVersions) }
+                        this@MobileSession.newProjects.apply { clear();putAll(newProjects) }
+                        this@MobileSession.draftFiles.apply { clear();putAll(draftFiles) }
+                        this@MobileSession.generation.apply { clear();putAll(generation) }
+                        this@MobileSession.generationPreferences.apply { clear();putAll(generationPreferences) }
+                        this@MobileSession.dismissedReceiptFailures.apply { clear();putAll(dismissedReceiptFailures) }
+                        this@MobileSession.preferredModes.apply { clear();putAll(preferredModes) }
+                        this@MobileSession.selectedThreads.apply { clear();putAll(selectedThreads) }
+                        this@MobileSession.expandedProjects.apply { clear();putAll(expandedProjects) }
+                        this@MobileSession.sidebarStates.apply { clear();putAll(sidebarStates) }
+                        this@MobileSession.workspaces.apply { clear();putAll(workspaces) }
+                        this@MobileSession.selectedClient=selectedClient
+                    }
+                    publish
                 }
-                if (json == null && privateClients.isNotEmpty()) selectedClient = realClients.first()
-                else realClients.firstOrNull { it.id==selectedClient.id }?.let { selectedClient=it }
-            } catch (cancel: CancellationException) { throw cancel }
-            catch (_: Exception) { error = "本地连接与缓存无法读取，原文件已保留" }
-            finally { restoring = false }
-            if (hasClient && !selectedClient.isDemo) { loadCachedHistory(); refresh(); loadHistory(); loadOperations() }
+                // Publication and write authorization happen only after the complete snapshot and vault decode.
+                storage.finishRestore(generation,applyState)
+                localRecoveryRequired=false;error=null
+            } catch (cancel: CancellationException) { localRecoveryRequired=true;throw cancel }
+            catch (_: Exception) { localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留" }
+            finally { restoring=false;synchronizeReadingPresentation() }
+            if (localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
         }
     }
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
+        workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
         aiSharing.clearAcceptance();aiSharingRequest=null
-        tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
-        selectedClient = DemoMobileData.clients.first(); selectionRevision++; visibleMessageLimit = 60; revealedEarlier = false
-        demo = false; appearance = "system"; restoring = false; error = null; providers=registry(reader,commandProvider); reads=providers
-        busyOwners.clear(); busyCommands.clear(); freshWorkspaces.clear(); freshHistories.clear(); draftVersions.clear(); draftFiles.clear(); generation.clear(); generationPreferences.clear(); dismissedReceiptFailures.clear(); modelErrors.clear(); preferredModes.clear(); newProjects.clear(); operations.clear(); busyTargets.clear(); stoppingTargets.clear(); answeringTargets.clear(); modelsByClient.clear(); foreground=true; importing=false
-        commands=providers; execution=storage?.let { NativeCodexFlow(it,reads,commands) }; eventJob=null
-        observingOperations.clear()
-        forkNavigation.clear();forkOptions.clear();forkOptionErrors.clear();forkOptionsLoading.clear();forkRequests.clear()
+        clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
+        selectedClient = DemoMobileData.clients.first(); selectionRevision++; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false
+        demo = false; appearance = "system"; restoring = false; localRecoveryRequired=false; error = null; providers=registry(reader,commandProvider); reads=providers
+        queueActionOwners.clear();replyRecordQueryOwners.clear();replyRecordQueryErrors.clear();busyOwners.clear(); busyCommands.clear(); freshWorkspaces.clear(); freshHistories.clear(); draftVersions.clear(); draftFiles.clear(); generation.clear(); generationPreferences.clear(); dismissedReceiptFailures.clear(); modelErrors.clear(); preferredModes.clear(); newProjects.clear(); operations.clear(); busyTargets.clear(); stoppingTargets.clear(); answeringTargets.clear(); modelsByClient.clear(); foreground=true; importing=false
+        commands=providers; execution=storage?.let { NativeCodexFlow(it,reads,commands).apply { confirmedReplyReads=::confirmedReplyReads } }; eventJob=null;eventReadOwner=null;historyRecoveryJob=null;networkRecoveryJob=null;networkReadPath=null
+        observingOperations.clear();connectionSuccesses.clear();conversationSyncIssues.clear();conversationSnapshotRevisions.clear();usefulConversationProgress.clear();historyRecoveryIdentity=null;readyHistorySelection=null;loadedHistorySelections.clear()
+        forkNavigation.clear();forkOptions.clear();forkOptionErrors.clear();forkOptionsLoading.clear();forkRequests.clear();presentationTargetKey=targetKey
     }
-    internal fun installAcceptanceHistory(messages: List<MobileMessage>, cursor: String? = null) { histories[targetKey] = messages; visibleMessageLimit = 60; revealedEarlier = false }
+    internal fun installAcceptanceHistory(messages: List<MobileMessage>, cursor: String? = null) { histories[targetKey] = messages; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false;presentationTargetKey=targetKey }
 }
 
 internal fun encodeClient(client: MobileClient) = JSONObject().put("id", client.id).put("name", client.name).put("endpoint", client.endpoint).put("requiresReadTarget", client.requiresReadTarget).put("codexDirect", client.codexDirect?.let(::encodeCodexDirect)).put("agentConnection",client.agentConnection?.json())
     .put("storageIdentity",client.storageIdentity?.json() ?: JSONObject.NULL).put("mode", client.mode).put("readerId", client.readerId).put("scope", client.scope?.let { s -> JSONObject().put("agentId", s.agentId).put("hostId", s.hostId).put("workspaceId", s.workspaceId).put("runtimeId", s.runtimeId).apply { if (s.accountAuthority != null) put("account", JSONObject().put("authority", s.accountAuthority).put("subject", s.accountSubject)) } })
 internal fun decodeClient(json: JSONObject) = MobileClient(json.getString("id"), json.getString("name"), HostReadCodec.target(json.optJSONObject("scope")), json.getString("endpoint"), false, json.getString("mode"), false, json.optional("readerId"), json.optBoolean("requiresReadTarget"), json.optJSONObject("codexDirect")?.let(::decodeCodexDirect),agentConnection=json.optJSONObject("agentConnection")?.let(AgentConnection::decode),storageIdentity=json.optJSONObject("storageIdentity")?.let(MobileStorageIdentity::decode) ?: if(json.has("storageIdentity")) null else HostReadCodec.target(json.optJSONObject("scope"))?.takeIf { it.agentId=="codex" }?.let { MobileStorageIdentity(it,emptyList()) }).also { require(it.codexDirect == null || sameScope(it.scope, it.codexDirect.target));require(it.agentConnection==null||sameScope(it.scope,it.agentConnection.target)) }
-internal fun encodeWorkspace(w: MobileWorkspace) = JSONObject(w.wire).put("projects",JSONArray(w.projects.map { JSONObject().put("id",it.id).put("hostId",it.hostId).put("name",it.name).put("roots",JSONArray(it.roots)) })).put("threads",JSONArray(w.threads.map { JSONObject().put("id",it.id).put("hostId",it.hostId).put("title",it.title).put("state",it.state).put("projectId",it.projectId).put("projectIds",JSONArray(it.projectIds)).put("hasUnreadTurn",it.unread) }))
+internal fun encodeWorkspace(w: MobileWorkspace) = MobileWorkspaceMetadata.encode(w)
 internal fun encodeMessage(m: MobileMessage) = JSONObject().put("id", m.id).put("role", m.role).put("text", m.text).put("status", m.status).put("kind", m.kind).put("detail", m.detail).put("runId", m.runId).put("replyPhase", m.replyPhase).put("replyMessageId", m.replyMessageId).put("files", JSONArray(m.files)).put("blocks", m.blocks?.let(::JSONArray)).put("attachments", JSONArray(m.attachments.map { f -> JSONObject().put("id", f.id).put("name", f.name).put("mediaType", f.mediaType).put("sizeBytes", f.sizeBytes).put("hostId", f.hostId).put("threadId", f.threadId).put("sha256", f.sha256) }))
 
 object DemoMobileData {

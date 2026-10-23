@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv';
-import { parseVoiceTranscriptionRequest } from '../../packages/protocol/dist/index.js';
+import {
+  parseVoiceTranscriptionRequest,
+  parseChatActionRequest,
+  parseWorkspaceManagementRequest,
+} from '../../packages/protocol/dist/index.js';
 
 const schema = JSON.parse(
   await readFile('packages/protocol/schemas/agent-management-v1.schema.json', 'utf8'),
@@ -17,6 +21,7 @@ const keywords = new Set([
   'properties',
   'additionalProperties',
   'required',
+  'uniqueItems',
   'minLength',
   'maxLength',
   'format',
@@ -82,6 +87,19 @@ const httpSchema = JSON.parse(
 checkSupported(httpSchema);
 ajv.addSchema(httpSchema);
 for (const test of fixtures.http) {
+  if (test.definition === 'chatActionRequest' || test.definition === 'workspaceManagementRequest') {
+    let accepted = false;
+    try {
+      (test.definition === 'chatActionRequest'
+        ? parseChatActionRequest
+        : parseWorkspaceManagementRequest)(JSON.parse(test.json));
+      accepted = true;
+    } catch {
+      // A rejected named request is compared with the negative fixture below.
+    }
+    assert.equal(accepted, test.valid, test.name + ': Node named action boundary');
+  }
+
   assert.equal(
     ajv.getSchema(httpSchema.$id + '#/definitions/' + test.definition)(JSON.parse(test.json)),
     test.valid,

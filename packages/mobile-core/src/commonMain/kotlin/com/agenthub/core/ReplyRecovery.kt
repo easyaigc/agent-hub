@@ -12,6 +12,24 @@ object ReplyRecoveryRules {
     private val digest = Regex("^[a-f0-9]{64}$")
     private val uuid = Regex("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
 
+    /** Receipt transport acknowledgement is not original-client acceptance. */
+    fun acceptedReceipt(state: String, source: String?, present: Boolean?, disposition: String?): Boolean =
+        state in listOf("submitted","completed","interrupted") || QueueRules.active(state,source,present,disposition)
+    fun releasesReplyWait(state: String, source: String?, present: Boolean?, disposition: String?): Boolean =
+        acceptedReceipt(state,source,present,disposition) || state in listOf("failed","cancelled")
+
+    fun preservesTerminalReceipt(previous: String, incoming: String): Boolean =
+        previous in listOf("completed","failed","cancelled","interrupted") &&
+            incoming !in listOf("completed","failed","cancelled","interrupted")
+
+    fun preservesReceiptEvidence(previous: String, source: String?, present: Boolean?, disposition: String?, incoming: String): Boolean =
+        preservesTerminalReceipt(previous,incoming) || acceptedReceipt(previous,source,present,disposition) &&
+            incoming in listOf("received","uncertain","outcome-unknown","submitting")
+
+    /** Observation only: this schedule never authorizes a command or replay. */
+    fun nextReplyQueryDelayMillis(previousMillis: Long): Long =
+        if(previousMillis<2000)2000 else minOf(previousMillis,15000)*2
+
     /** Exact ordered v2 JSON consumed by Host SHA-256; hashing stays in platform crypto. */
     fun canonicalPayload(targetJson: String, replyJson: String): String? = runCatching {
         require(targetJson.length <= 16_384 && replyJson.length <= 1_000_000)

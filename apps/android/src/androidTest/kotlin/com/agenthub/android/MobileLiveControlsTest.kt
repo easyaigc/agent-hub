@@ -47,7 +47,7 @@ class MobileLiveControlsTest {
         val folder=File(i.targetContext.getExternalFilesDir(null),"acceptance/A4-controls-live").apply { mkdirs() };val image=i.uiAutomation.takeScreenshot()
         try { File(folder,"$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG,100,it) } } finally { image.recycle() }
     }
-    private fun input(text: String) {
+    private fun input(text: String,mode: String?=null) {
         ui.waitUntil(45_000) {
             !session.historyLoading && session.canCompose &&
                 ui.onAllNodesWithTag("message-input").fetchSemanticsNodes().singleOrNull()?.config?.contains(SemanticsProperties.Disabled)==false
@@ -56,6 +56,10 @@ class MobileLiveControlsTest {
         ui.onNodeWithTag("message-input").assertIsFocused()
         ui.onNodeWithTag("message-input").performTextReplacement(text)
         ui.runOnIdle { assertEquals("Native field must retain the entered draft before sending",text,session.text) }
+        if(mode!=null) {
+            chooseMode(mode)
+            ui.runOnIdle { assertEquals("Mode selection must preserve the exact unsent draft",text,session.text) }
+        }
         try { ui.waitUntil(15_000) { session.decision.action=="send" && session.decision.enabled } }
         catch(failure: ComposeTimeoutException) {
             shot("failure-input")
@@ -81,13 +85,14 @@ class MobileLiveControlsTest {
     private fun receipts()=session.runtime?.receipts.orEmpty()
     private fun chooseMode(mode: String) {
         hideKeyboard()
-        try { ui.waitUntil(45_000) { session.running && session.canCompose && session.transferStatus==null && mode in session.replyModes && ui.onAllNodesWithTag("reply-mode").fetchSemanticsNodes().isNotEmpty() } }
+        try { ui.waitUntil(45_000) { session.running && session.canCompose && session.canSelectReplyMode && session.transferStatus==null && mode in session.replyModes && ui.onAllNodesWithTag("reply-mode").fetchSemanticsNodes().isNotEmpty() } }
         catch(failure: ComposeTimeoutException) { shot("failure-mode");throw AssertionError("Native mode unavailable: running=${session.running}, canCompose=${session.canCompose}, online=${session.selectedClient.online}, state=${session.runtimeState}, error=${session.error}",failure) }
-        ui.onNodeWithTag("reply-mode").assertIsDisplayed().performClick()
-        ui.onNodeWithTag("reply-mode-$mode").performClick();assertEquals(mode,session.replyMode)
+        ui.onNodeWithTag("reply-mode").assertIsDisplayed()
+        ui.onNodeWithTag("reply-mode-$mode").assertIsDisplayed().assertIsEnabled().performClick();assertEquals(mode,session.replyMode)
+        ui.onNodeWithTag("reply-mode-$mode").assertIsSelected()
     }
     private fun queue(index: Int) {
-        chooseMode("queue");input("仅原样回复 ${marker("QUEUE_$index")}，不加格式，不调用工具。")
+        input("仅原样回复 ${marker("QUEUE_$index")}，不加格式，不调用工具。",mode="queue")
         ui.waitUntil(30_000) { session.queuedReplies.size==index && session.transferStatus==null }
     }
     @Test fun originalOwnerQueueSteerCancelStopResumeAndExplicitRestart() {
@@ -97,10 +102,7 @@ class MobileLiveControlsTest {
         ui.runOnIdle { session.selectThread(session.threads.single { it.id==fixture.getString("threadId") }) }
         ui.waitUntil(45_000) { !session.historyLoading && session.runtime!=null && session.models.isNotEmpty() }
         ui.onNodeWithTag("generation-settings").performClick()
-        ui.onNodeWithTag("model-${fixture.getString("model")}").performScrollTo().performClick()
-        ui.onNodeWithTag("effort-${fixture.getString("effort")}").performScrollTo().performClick()
-        ui.onNodeWithTag("speed-${fixture.getString("speed")}").performScrollTo().performClick()
-        ui.onNodeWithTag("permission-full-access").performScrollTo().performClick();ui.onNodeWithTag("sheet-done").performClick()
+        ui.selectNativeGeneration(fixture.getString("model"),fixture.getString("effort"),fixture.getString("speed"),"full-access");ui.onNodeWithTag("sheet-done").performClick()
         input("专用安卓原生输入框验收。调用 exec_command 执行 sleep 120，yield_time_ms=1000，不读写文件。允许用 write_stdin 等待这一个命令自然结束，然后最终仅回复 ${marker("ORIGIN")}。期间收到追加指令时采纳它，但仍等待原命令自然结束。")
         ui.waitUntil(45_000) { session.running && session.runtime?.turnId!=null && session.transferStatus==null }
         val originalTurn=session.runtime!!.turnId
@@ -111,8 +113,7 @@ class MobileLiveControlsTest {
         ui.onNodeWithTag("cancel-queued-${queued[1].operationId}").performScrollTo().assertIsEnabled().performClick()
         ui.waitUntil(30_000) { session.queuedReplies.size==2 && receipts().any { it.operationId==queued[1].operationId && it.state=="cancelled" } }
         ui.onNodeWithTag("queued-number-${queued[2].operationId}").performScrollTo().assertTextEquals("2");shot("02-middle-cancel-renumbered")
-        chooseMode("steer")
-        input("追加指令：本轮最后的回复改为 ${marker("STEER")}。允许继续用 write_stdin 等待当前 sleep 命令自然结束；完成后仅回复指定字符串。不停止命令，不执行其他命令。")
+        input("追加指令：本轮最后的回复改为 ${marker("STEER")}。允许继续用 write_stdin 等待当前 sleep 命令自然结束；完成后仅回复指定字符串。不停止命令，不执行其他命令。",mode="steer")
         ui.waitUntil(30_000) { receipts().any { it.text?.contains(marker("STEER"))==true && it.turnId==originalTurn && it.state in listOf("submitted","completed") } }
         shot("03-same-turn-native-steer")
         answer(marker("QUEUE_3"));control("queue-done")

@@ -10,6 +10,21 @@ class TimelineProjection(val rows: List<TimelineRow>, val hasEarlierMessages: Bo
 
 /** Projects indices without altering source messages, runtime identity or protocol content. */
 object MessageProjection {
+    fun focus(projection: TimelineProjection,messages: List<TimelineMessage>,messageId: String?): TimelineProjection {
+        if(messageId==null)return projection
+        val rows=projection.rows.flatMap { row ->
+            val position=row.indices.indexOfFirst { messages[it].id==messageId }
+            if(position<0||row.kind !in listOf("tools","errors","compaction"))listOf(row)
+            else if(row.kind=="compaction")listOf(TimelineRow("message",messageId,row.indices,null))
+            else {
+                fun group(indices: List<Int>)=if(indices.isEmpty())emptyList() else
+                    listOf(TimelineRow(row.kind,messages[indices.first()].id,indices,null))
+                group(row.indices.take(position))+listOf(TimelineRow("message",messageId,listOf(row.indices[position]),null))+
+                    group(row.indices.drop(position+1))
+            }
+        }
+        return TimelineProjection(rows,projection.hasEarlierMessages)
+    }
     fun project(messages: List<TimelineMessage>, messageLimit: Int, activeRunId: String?, running: Boolean): TimelineProjection {
         val groups = linkedMapOf<String, MutableList<Int>>()
         var key = "legacy-start"

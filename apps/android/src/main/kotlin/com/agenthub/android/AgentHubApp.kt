@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -45,6 +47,18 @@ import com.agenthub.core.*
     val colors = if (dark) darkColorScheme(background=Color.Black, surface=Color(0xFF1C1C1E), primary=Color.White, secondary=Color(0xFF98989D), onSurfaceVariant=Color(0xFF98989D))
         else lightColorScheme(background=Color.White,surface=Color(0xFFF2F2F7),primary=Color.Black,secondary=Color(0xFF8A8A8E),onSurfaceVariant=Color(0xFF8A8A8E))
     MaterialTheme(colorScheme=colors) {
+        if(session.localRecoveryRequired) {
+            Surface(Modifier.fillMaxSize().safeDrawingPadding().testTag("local-recovery-required"),color=colors.background) {
+                Column(Modifier.fillMaxSize().padding(32.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally) {
+                    ProductIcon("storage-warning",Modifier.size(32.dp).padding(bottom=4.dp).testTag("local-recovery-icon"))
+                    Spacer(Modifier.height(16.dp))
+                    Text("本地数据暂时无法读取",fontSize=20.sp,fontWeight=FontWeight.SemiBold)
+                    Text("原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。",Modifier.padding(vertical=20.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center,color=colors.onSurfaceVariant)
+                    Button(onClick=session::retryLocalRecovery,enabled=!session.restoring,modifier=Modifier.testTag("retry-local-recovery")) { Text(if(session.restoring) "正在读取…" else "重试读取") }
+                }
+            }
+            return@MaterialTheme
+        }
         var sidebar by remember { mutableStateOf(false) }
         var sheet by remember { mutableStateOf<String?>(null) }
         var editing by remember { mutableStateOf<MobileClient?>(null) }
@@ -55,7 +69,20 @@ import com.agenthub.core.*
         val keyboard = LocalSoftwareKeyboardController.current
         val view = LocalView.current
         val nativeKeyboard = remember(view) { androidx.core.view.SoftwareKeyboardControllerCompat(view) }
+        val mainPaneFocus=remember { FocusRequester() }
+        var previousSidebar by remember { mutableStateOf(false) }
+        LaunchedEffect(sidebar,effectiveSheet,session.error) {
+            val closing=previousSidebar&&!sidebar
+            previousSidebar=sidebar
+            if(closing&&effectiveSheet==null&&session.error==null) {
+                withFrameNanos { }
+                mainPaneFocus.requestFocus();keyboard?.hide();nativeKeyboard.hide()
+            }
+        }
         val openSheet: (String) -> Unit = { focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
+        LaunchedEffect(effectiveSheet,session.pendingChatSearchToken) {
+            if(effectiveSheet==null&&session.pendingChatSearchToken!=null) { withFrameNanos { };session.applyPendingChatSearch() }
+        }
         LaunchedEffect(sheet,session.error) {
             if(sheet==null || session.error!=null) {
                 // A Dialog can restore focus in the Activity as its window leaves.
@@ -66,7 +93,7 @@ import com.agenthub.core.*
         }
         LaunchedEffect(session.incomingEasyWorkLink) { if(session.incomingEasyWorkLink!=null) { editing=null;openSheet("add") } }
         BackHandler(sidebar && sheet == null && session.error == null) { sidebar=false; focus.clearFocus() }
-        Surface(Modifier.fillMaxSize(), color=colors.background) {
+        Surface(Modifier.fillMaxSize().focusRequester(mainPaneFocus).focusable(enabled=!sidebar&&effectiveSheet==null&&session.error==null), color=colors.background) {
             // Consume system/IME insets once for the entire product surface. The fixed header
             // stays in the resized viewport on API 26 as well as edge-to-edge API 37.
             BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().clipToBounds().testTag("product-surface")) {
@@ -81,15 +108,17 @@ import com.agenthub.core.*
                     var allowed=false
                     detectHorizontalDragGestures(onDragStart={ start -> allowed=sidebar || start.x < with(density) { 24.dp.toPx() }; if(allowed) { focus.clearFocus(); keyboard?.hide(); drag=if(sidebar) 0f else -widthPx } },onHorizontalDrag={ change,amount -> if(allowed) { change.consume(); drag=((drag ?: settled)+amount).coerceIn(-widthPx,0f) } },onDragEnd={ if(allowed) sidebar=(drag ?: settled)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
-                    ChatHeader(session, openSidebar={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
+                    ChatHeader(session, openSidebar={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
                     if (session.restoring) Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
                     else if (!session.hasClient) Onboarding { openSheet("add") }
                     else {
                         if (!session.selectedClient.isDemo && !session.selectedClient.online) Text(session.selectedClient.connectionLabel,Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp).testTag("offline-cache"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                        ConversationSyncBanner(session)
                         if (session.selectedThread.isEmpty()) Column(Modifier.weight(1f).fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) { Text("开始一段新对话",fontSize=22.sp,fontWeight=FontWeight.SemiBold); Text("从侧栏选择项目或继续对话。",Modifier.padding(top=10.dp),color=colors.onSurfaceVariant,fontSize=14.sp) }
                         else ChatMessages(session,dark,Modifier.weight(1f))
-                        if (!session.selectedClient.isDemo && !session.canCompose) Text(if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。",Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                        if (!session.selectedClient.isDemo && !session.canCompose) Text(if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。",Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
                         if(!session.selectedClient.isDemo) { ExecutionPanels(session,executionMaxHeight,autoPresentQuestions=effectiveSheet==null && !sidebar && session.error==null); GenerationControls(session) { openSheet("generation") } }
+                        QueuedCommands(session,interactive=!sidebar && effectiveSheet==null && session.error==null)
                         StorageIdentityNotice(session)
                         Composer(session,interactive=!sidebar && effectiveSheet==null && session.error==null) { composerFocused=it }
                     }
@@ -99,14 +128,14 @@ import com.agenthub.core.*
                 Box(Modifier.width(width).fillMaxHeight().offset { IntOffset(offset.toInt(),0) }.semantics { if(!sidebar && drag==null) hideFromAccessibility() }.pointerInput(widthPx) {
                     detectHorizontalDragGestures(onDragStart={ focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
-                    Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") })
+                    Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },active=sidebar&&effectiveSheet==null&&session.error==null)
                 }
                 if (effectiveSheet != null) NativeSheetHost(effectiveSheet, session, editing, close={ if(effectiveSheet=="ai-sharing") session.dismissAISharing() else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> editing=client; sheet="add" })
                 session.error?.let { failure ->
-                    androidx.compose.ui.window.Dialog(onDismissRequest={ session.error=null }) {
+                    androidx.compose.ui.window.Dialog(onDismissRequest={ session.error=null },properties=androidx.compose.ui.window.DialogProperties(dismissOnClickOutside=false)) {
                         Surface(shape=RoundedCornerShape(28.dp),color=colors.surface,modifier=Modifier.widthIn(max=320.dp)) {
                             Column(Modifier.padding(16.dp)) {
-                                Text("无法完成操作",fontSize=17.sp,fontWeight=FontWeight.SemiBold)
+                                Text(session.errorTitle,fontSize=17.sp,fontWeight=FontWeight.SemiBold)
                                 Text(failure,Modifier.padding(top=8.dp,bottom=16.dp).testTag("session-error"),fontSize=14.sp,lineHeight=18.sp,color=colors.onSurfaceVariant)
                                 TextButton(onClick={ session.error=null },modifier=Modifier.fillMaxWidth().height(44.dp).testTag("dismiss-error"),shape=RoundedCornerShape(22.dp),colors=ButtonDefaults.textButtonColors(containerColor=colors.onSurface.copy(alpha=.08f))) { Text("好",fontSize=17.sp,color=colors.onSurface) }
                             }
@@ -139,10 +168,12 @@ import com.agenthub.core.*
     }
         .clip(shape).background(fill).border(MobileDesign.floatingStrokeWidth.dp,colors.onSurface.copy(alpha=MobileDesign.floatingStrokeAlpha),shape)
 }
-@Composable private fun ChatHeader(session: MobileSession,openSidebar: () -> Unit,openClients: () -> Unit,newChat: () -> Unit,settings: () -> Unit,generation: () -> Unit,composerFocused: Boolean,dismissKeyboard: () -> Unit) {
+@Composable private fun ChatHeader(session: MobileSession,openSidebar: () -> Unit,openClients: () -> Unit,newChat: () -> Unit,settings: () -> Unit,generation: () -> Unit,search: ()->Unit,archived: ()->Unit,replyRecords: ()->Unit,composerFocused: Boolean,dismissKeyboard: () -> Unit) {
     val colors=MaterialTheme.colorScheme
     var menu by remember { mutableStateOf(false) }
-    LaunchedEffect(session.targetKey) { menu=false }
+    var deleteTarget by remember { mutableStateOf<ChatManagementContext?>(null) }
+    var endWaiting by remember { mutableStateOf<SavedOperation?>(null) }
+    LaunchedEffect(session.targetKey) { menu=false;deleteTarget=null;endWaiting=null }
     Row(Modifier.fillMaxWidth().padding(horizontal=MobileDesign.headerHorizontalInset.dp).padding(top=MobileDesign.headerTopInset.dp,bottom=MobileDesign.headerBottomInset.dp).testTag("chat-header"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         Box(Modifier.floatingProduct()) { IconAction("menu","打开侧栏","open-sidebar",onClick=openSidebar) }
         Box(Modifier.weight(1f),contentAlignment=Alignment.Center) {
@@ -164,8 +195,35 @@ import com.agenthub.core.*
                 IconAction("more","对话选项","chat-menu") { menu=true }
             }
             DropdownMenu(expanded=menu,onDismissRequest={ menu=false }) {
+                session.currentChat?.let { thread ->
+                    Text(session.chatLifecycleStatus(thread),Modifier.padding(horizontal=16.dp,vertical=8.dp).widthIn(max=300.dp).testTag("chat-lifecycle-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                    if(session.supportsChatManagement) {
+                        DropdownMenuItem(text={ Text(if(session.currentChatPinned)"取消置顶" else "置顶") },enabled=session.canManageChat(thread)&&thread.archived!=true,
+                            leadingIcon={ ProductIcon(if(session.currentChatPinned)"unpin" else "pin",Modifier.testTag("chat-pin-icon"),if(session.canManageChat(thread)&&thread.archived!=true)colors.onSurface else colors.onSurface.copy(alpha=.38f)) },
+                            onClick={ menu=false;session.manageChat(if(session.currentChatPinned)"unpin" else "pin") },modifier=Modifier.testTag("chat-pin"))
+                    }
+                    if(session.canSearchHistory)DropdownMenuItem(text={ Text("在聊天中查找") },leadingIcon={ ProductIcon("search",Modifier.testTag("chat-search-icon")) },onClick={ menu=false;search() },modifier=Modifier.testTag("chat-search-open"))
+                    if(session.supportsChatManagement) {
+                        DropdownMenuItem(text={ Text(if(thread.archived==true)"恢复对话" else "归档") },enabled=session.canManageChat(thread),
+                            leadingIcon={ ProductIcon("archive",Modifier.testTag("chat-archive-icon"),if(session.canManageChat(thread))colors.onSurface else colors.onSurface.copy(alpha=.38f)) },
+                            onClick={ menu=false;session.manageChat(if(thread.archived==true)"unarchive" else "archive") },modifier=Modifier.testTag("chat-archive"))
+                        DropdownMenuItem(text={ Text("删除",color=if(session.canManageChat(thread))colors.error else Color.Unspecified) },enabled=session.canManageChat(thread),
+                            leadingIcon={ ProductIcon("trash",Modifier.testTag("chat-delete-icon"),if(session.canManageChat(thread))colors.error else colors.onSurface.copy(alpha=.38f)) },
+                            onClick={ menu=false;dismissKeyboard();deleteTarget=session.captureChatManagement() },modifier=Modifier.testTag("chat-delete"))
+                    }
+                }
+                if(session.hasClient) DropdownMenuItem(text={ Text("已归档对话") },leadingIcon={ ProductIcon("archive") },onClick={ menu=false;archived() },modifier=Modifier.testTag("archived-chats"))
+                session.pendingChatActions().forEach { record -> key(record.target,record.id) {
+                    DropdownMenuItem(text={ Column { Text(session.chatActionRecordLabel(record));Text("查询聊天操作记录",fontSize=12.sp,color=colors.onSurfaceVariant) } },leadingIcon={ ProductIcon("refresh") },
+                        onClick={ val original=record;session.queryChatAction(original);menu=false },
+                        modifier=Modifier.testTag("chat-action-query-${record.id}").semantics { contentDescription=session.chatActionRecordDescription(record) })
+                    if(com.agenthub.core.ChatManagementRules.pending(record.phase)&&!record.detached)
+                        DropdownMenuItem(text={ Text("结束等待 · "+session.chatActionRecordLabel(record)) },onClick={ val original=record;menu=false;dismissKeyboard();endWaiting=original },modifier=Modifier.testTag("chat-action-end-${record.id}"))
+                } }
                 if(session.hasClient && !session.selectedClient.isDemo) DropdownMenuItem(text={ Text("刷新历史") },onClick={ menu=false; session.refresh(userInitiated=true); session.loadHistory(userInitiated=true) },modifier=Modifier.testTag("refresh-history"))
                 if(session.supportsGeneration) DropdownMenuItem(text={ Text("模型、推理与权限") },onClick={ menu=false; generation() },modifier=Modifier.testTag("menu-generation"))
+                if(session.detachedReplies.isNotEmpty()) DropdownMenuItem(text={ Text("发送记录") },leadingIcon={ ProductIcon("history") },
+                    onClick={ menu=false;replyRecords() },modifier=Modifier.testTag("reply-delivery-records"))
                 session.detachedCreations.forEach { record ->
                     DropdownMenuItem(text={ Text("查询记录 · "+when(record.phase) { "confirmed"->"已确认"; "rejected"->"未提交"; else->"待确认" }) },enabled=session.transferStatus==null,onClick={ menu=false; session.queryOperation(record) },modifier=Modifier.testTag("query-detached-${record.id}"))
                 }
@@ -173,6 +231,19 @@ import com.agenthub.core.*
             }
         }
     }
+    deleteTarget?.let { context ->
+        AlertDialog(onDismissRequest={ deleteTarget=null },title={ Text("删除此对话？") },text={
+            Column { Text(context.thread.title);Text(session.chatLifecycleStatus(session.currentChat?.takeIf { it.id==context.thread.id } ?: context.thread));
+                Text("将同步删除电脑端的原始聊天及其子对话，无法恢复。仅想保留历史时请选择归档。") }
+        },confirmButton={ TextButton(onClick={ deleteTarget=null;session.manageChat("delete",context) },modifier=Modifier.testTag("chat-delete-confirm")) { Text("删除",color=colors.error) } },
+            dismissButton={ TextButton(onClick={ deleteTarget=null },modifier=Modifier.testTag("chat-delete-cancel")) { Text("取消") } })
+    }
+    endWaiting?.let { record ->
+        AlertDialog(onDismissRequest={ endWaiting=null },title={ Text("结束等待？") },text={ Text("仅解除本机等待，原操作仍可查询，不会取消电脑端操作或重新提交。") },
+            confirmButton={ TextButton(onClick={ endWaiting=null;session.endChatActionWaiting(record) },modifier=Modifier.testTag("chat-action-end-confirm")) { Text("结束等待") } },
+            dismissButton={ TextButton(onClick={ endWaiting=null }) { Text("取消") } })
+    }
+
 }
 @Composable private fun Onboarding(add: () -> Unit) {
     val colors=MaterialTheme.colorScheme
@@ -235,10 +306,29 @@ import com.agenthub.core.*
     }
     }
 }
+@Composable private fun ConversationSyncBanner(session: MobileSession) {
+    val issue=session.conversationSyncIssue ?: return
+    val colors=MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().background(colors.surface).padding(10.dp).testTag("conversation-sync-banner"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.Top) {
+        ProductIcon("conversation-sync",Modifier.padding(top=2.dp).size(16.dp),colors.onSurfaceVariant)
+        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) {
+            Text(issue.title,Modifier.testTag("conversation-sync-failure"),fontSize=12.sp,fontWeight=FontWeight.SemiBold)
+            Text(issue.message,fontSize=12.sp,color=colors.onSurfaceVariant,maxLines=3,overflow=TextOverflow.Ellipsis)
+        }
+        val enabled=!session.historyLoading
+        Box(Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("conversation-sync-retry").clickable(
+            interactionSource=remember { androidx.compose.foundation.interaction.MutableInteractionSource() },indication=null,enabled=enabled,role=androidx.compose.ui.semantics.Role.Button,
+            onClick={ session.loadHistory() }).padding(horizontal=8.dp),contentAlignment=Alignment.Center) {
+            Text("重试",fontSize=12.sp,color=if(enabled)colors.onSurface else colors.onSurfaceVariant.copy(alpha=.5f))
+        }
+    }
+}
+
 @Composable private fun ChatMessages(session: MobileSession,dark: Boolean,modifier: Modifier) {
     val list=rememberLazyListState(); val scope=rememberCoroutineScope()
     val timeline=session.timeline; val messages=session.messages
     var initiallyLoaded by remember(session.targetKey) { mutableStateOf(false) }
+    var appliedSearchToken by remember(session.targetKey) { mutableStateOf<String?>(null) }
     var paging by remember(session.targetKey) { mutableStateOf(false) }
     fun loadEarlier() {
         if(paging || session.historyLoading || !(session.timeline.hasEarlierMessages || session.historyCursor!=null)) return
@@ -269,16 +359,26 @@ import com.agenthub.core.*
     LaunchedEffect(session.scrollToLatestRevision) {
         if(session.scrollToLatestRevision>0 && timeline.rows.isNotEmpty()) {
             withFrameNanos { }
-            val historyControl=if(timeline.hasEarlierMessages || session.historyCursor!=null || session.historyLoading || session.revealedEarlier) 1 else 0
+            val historyControl=if(timeline.hasEarlierMessages || session.historyCursor!=null || paging || session.revealedEarlier) 1 else 0
             list.requestScrollToItem(timeline.rows.lastIndex+historyControl)
         }
     }
     LaunchedEffect(session.targetKey,messages.size,messages.lastOrNull()?.text) {
-        if(!paging && timeline.rows.isNotEmpty() && (!initiallyLoaded || !list.canScrollForward)) {
+        if(!paging && timeline.rows.isNotEmpty() && (session.chatSearchJump==null||session.chatSearchJump?.token==appliedSearchToken) && (!initiallyLoaded || !list.canScrollForward)) {
             // BoxWithConstraints may subcompose this effect during measurement.
             // Request the next layout instead of forcing a nested measure pass.
-            list.requestScrollToItem(timeline.rows.lastIndex+if(timeline.hasEarlierMessages || session.historyCursor!=null || session.historyLoading || session.revealedEarlier) 1 else 0)
+            list.requestScrollToItem(timeline.rows.lastIndex+if(timeline.hasEarlierMessages || session.historyCursor!=null || paging || session.revealedEarlier) 1 else 0)
             initiallyLoaded=true
+        }
+    }
+    LaunchedEffect(session.targetKey,session.chatSearchJump?.token) {
+        val jump=session.chatSearchJump ?: return@LaunchedEffect
+        withFrameNanos { }
+        if(session.chatSearchJump?.token!=jump.token)return@LaunchedEffect
+        val index=session.timeline.rows.indexOfFirst { it.id==jump.message.id&&it.kind=="message" }
+        if(index>=0) {
+            val historyControl=if(session.timeline.hasEarlierMessages||session.historyCursor!=null||paging||session.revealedEarlier)1 else 0
+            list.requestScrollToItem(index+historyControl);initiallyLoaded=true;appliedSearchToken=jump.token
         }
     }
     val atBottom by remember { derivedStateOf { !list.canScrollForward } }
@@ -305,23 +405,25 @@ import com.agenthub.core.*
                 if(!change.pressed && single && startedAtTop && !list.canScrollBackward && delta.y>=with(density) { 60.dp.toPx() } && delta.y>kotlin.math.abs(delta.x)) earlierAction()
             }
         },state=list,contentPadding=PaddingValues(start=16.dp,end=16.dp,top=10.dp,bottom=12.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-            if(timeline.hasEarlierMessages || session.historyCursor != null || session.historyLoading) item(key="history-more") { TextButton(onClick=::loadEarlier,enabled=!session.historyLoading && !paging,modifier=Modifier.fillMaxWidth().testTag(if(timeline.hasEarlierMessages) "history-local-more" else "history-more")) { if(session.historyLoading) { CircularProgressIndicator(Modifier.size(12.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(6.dp)) }; Text(if(session.historyLoading) "正在加载更早消息…" else "显示更早消息",fontSize=12.sp) } }
+            if(timeline.hasEarlierMessages || session.historyCursor != null || paging) item(key="history-more") { TextButton(onClick=::loadEarlier,enabled=!session.historyLoading && !paging,modifier=Modifier.fillMaxWidth().testTag(if(timeline.hasEarlierMessages) "history-local-more" else "history-more")) { if(paging) { CircularProgressIndicator(Modifier.size(12.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(6.dp)) }; Text(if(paging) "正在加载更早消息…" else "显示更早消息",fontSize=12.sp) } }
             else if(session.revealedEarlier) item { Text("已显示全部消息",Modifier.fillMaxWidth().testTag("history-start"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) }
-            items(timeline.rows,key={ session.targetKey+":"+it.kind+":"+it.id }) { row -> when(row.kind) {
+            items(timeline.rows,key={ session.targetKey+":"+it.kind+":"+it.id }) { row ->
+                val located=session.chatSearchJump?.takeIf { it.message.id==row.id&&row.kind=="message" }
+                if(located!=null)LocatedChatMessage(located) else when(row.kind) {
                 "replyActions" -> ReplyActions(session,row.id,row.text.orEmpty(),row.runId)
                 "tools" -> ToolGroup(row.id,row.indices.map { messages[it] })
                 "errors" -> Column { row.indices.forEach { Text(messages[it].text,color=MaterialTheme.colorScheme.error,fontSize=14.sp) } }
                 "compaction" -> Text(ToolPresentation.compaction(messages[row.indices.first()].status, session.running),Modifier.fillMaxWidth().testTag("compaction-${row.id}"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                else -> row.indices.forEach { MessageContent(messages[it],dark) }
+                else -> row.indices.forEach { MessageContent(messages[it],dark,session.targetKey) }
             } }
         }
         if(!atBottom && maxHeight>=72.dp) Surface(shape=CircleShape,color=MaterialTheme.colorScheme.surface,shadowElevation=2.dp,modifier=Modifier.align(Alignment.BottomEnd).padding(12.dp)) { IconAction("down","回到最新","scroll-latest") { scope.launch { list.animateScrollToItem(list.layoutInfo.totalItemsCount-1) } } }
     }
 }
-@Composable private fun MessageContent(message: MobileMessage,dark: Boolean) {
+@Composable private fun MessageContent(message: MobileMessage,dark: Boolean,targetKey: String) {
     val colors=MaterialTheme.colorScheme
     if(message.role=="user") Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End) {
-        Column(Modifier.widthIn(max=330.dp).clip(RoundedCornerShape(20.dp)).background(MobileDesign.userBubble(dark)).padding(horizontal=14.dp,vertical=10.dp).testTag("message-${message.id}")) { Text(message.text,fontSize=17.sp,lineHeight=24.sp,color=MobileDesign.userBubbleText(dark)); AttachmentNames(message) }
+        UserMessageBubble(message,targetKey,dark) { AttachmentNames(message) }
     } else Column(Modifier.fillMaxWidth().testTag("message-${message.id}")) {
         if(message.kind=="turnFailure") Column(Modifier.testTag("task-failure-history-${message.id}"),verticalArrangement=Arrangement.spacedBy(4.dp)) {
             Text("任务失败记录",fontSize=12.sp,color=colors.onSurfaceVariant)

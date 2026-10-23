@@ -1593,3 +1593,7 @@
 "提交原内容" = "Submit original content";
 "聊天历史已变化，请刷新后重试。" = "Chat history has changed. Refresh and try again.";
 "加载历史失败，请重试。\n" = "Could not load history. Try again.\n";
+
+"未发送操作：目标已变化。" = "Operation not sent: the target changed.";
+
+"未查到原聊天操作记录，结果仍未确认；不会重新提交。" = "The original chat operation record was not found. Its result remains unconfirmed; it will not be submitted again.";

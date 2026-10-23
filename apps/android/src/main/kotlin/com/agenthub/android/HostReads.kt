@@ -20,7 +20,9 @@ internal fun JSONArray.strings(): List<String> = (0 until length()).map { getStr
 
 data class MobileProject(val id: String, val hostId: String, val name: String, val roots: List<String>)
 data class MobileThread(val id: String, val hostId: String, val title: String, val state: String,
-    val projectId: String? = null, val projectIds: List<String> = emptyList(), val unread: Boolean = false) {
+    val projectId: String? = null, val projectIds: List<String> = emptyList(), val unread: Boolean = false,
+    val archived: Boolean? = null, val lastTurnStatus: String? = null,
+    val pendingAsyncQuestionCount: Int? = null, val archiveUnavailableReason: String? = null) {
     fun belongs(project: MobileProject) = hostId == project.hostId && (projectId == project.id || project.id in projectIds)
     val showsUnread get() = unread && state !in listOf("running", "waiting-for-approval")
 }
@@ -29,7 +31,8 @@ data class MobileFile(val id: String, val name: String, val mediaType: String, v
 data class MobileWorkspace(val hostId: String, val name: String, val mode: String,
     val projects: List<MobileProject>, val threads: List<MobileThread>,
     val nextProjectCursor: String?, val nextThreadCursor: String?, val scope: TargetScope?,
-    val capabilities: List<String>, val wire: String, val runtimeConnected: Boolean? = null)
+    val capabilities: List<String>, val wire: String, val runtimeConnected: Boolean? = null,
+    val pinnedThreadIds: List<String>? = null, val sidebar: MobileWorkspaceSidebar? = null)
 data class MobileHistory(val hostId: String, val threadId: String, val messages: List<MobileMessage>,
     val nextCursor: String?, val scope: TargetScope?, val state: String, val turnId: String?, val wire: String,
     val runtimePresent: Boolean = false, val runtime: MobileRuntime? = null, val epoch: String? = null, val cursor: Long? = null,
@@ -68,7 +71,9 @@ object HostReadCodec {
     }
     fun thread(it: JSONObject) = MobileThread(it.getString("id"), it.getString("hostId"),
         it.getString("title"), it.getString("state"), it.optional("projectId"),
-        it.optJSONArray("projectIds")?.strings().orEmpty(), it.optBoolean("hasUnreadTurn"))
+        it.optJSONArray("projectIds")?.strings().orEmpty(), it.optBoolean("hasUnreadTurn"),
+        MobileWorkspaceMetadata.boolean(it,"archived"), MobileWorkspaceMetadata.text(it,"lastTurnStatus"),
+        MobileWorkspaceMetadata.count(it,"pendingAsyncQuestionCount"), MobileWorkspaceMetadata.text(it,"archiveUnavailableReason"))
     fun message(it: JSONObject): MobileMessage = MobileMessage(it.getString("id"), it.getString("role"),
         NativeHistoryStrings.share(it.getString("text")), it.optional("status"), it.optional("kind"), it.optional("detail")?.let(NativeHistoryStrings::share),
         it.optional("runId"), it.optional("replyPhase"), it.optional("replyMessageId"),
@@ -91,7 +96,8 @@ object HostReadCodec {
             (scope == null || scope.hostId == host)) { "电脑身份不匹配" }
         return MobileWorkspace(host, it.getString("name"), it.getString("connectionMode"), projects,
             threads, it.optional("nextProjectCursor"), it.optional("nextThreadCursor"), scope,
-            SessionPolicies.codexCapabilities(it.optJSONArray("capabilities")?.strings().orEmpty(),it.getString("connectionMode")),wire,it.optJSONObject("agentConnectionState")?.booleanOrNull("runtimeConnected"))
+            SessionPolicies.codexCapabilities(it.optJSONArray("capabilities")?.strings().orEmpty(),it.getString("connectionMode")),wire,it.optJSONObject("agentConnectionState")?.booleanOrNull("runtimeConnected"),
+            MobileWorkspaceMetadata.strings(it,"pinnedThreadIds"), MobileWorkspaceMetadata.sidebar(it))
     }
     fun history(wire: String): MobileHistory {
         val it = validated(wire, "history")
@@ -118,6 +124,7 @@ object HostReadCodec {
 interface AgentReads {
     suspend fun workspace(client: MobileClient, projectCursor: String? = null, threadCursor: String? = null): MobileWorkspace
     suspend fun history(client: MobileClient, threadId: String, cursor: String? = null): MobileHistory
+    suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String? = null): MobileHistory = history(client,threadId,cursor)
 }
 typealias HostReads = AgentReads
 
@@ -132,15 +139,15 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
             return uri
         }
         fun url(endpoint: String, path: String, query: Map<String, String>): URI {
-            require(path in listOf("v1/workspace", "v1/history", "host"))
+            require(path in listOf("v1/workspace", "v1/history", "v1/threads/search-history", "host"))
             val base = baseAddress(endpoint).toString().trimEnd('/')
             val encoded = query.entries.joinToString("&") { (k, v) -> URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") }
             return URI("$base/$path" + if (encoded.isEmpty()) "" else "?$encoded")
         }
     }
-    private suspend fun read(client: MobileClient, path: String, query: Map<String, String>): String =
-        readResponse(client,path,query) { input,active -> NativeWireReader.read(input,if(path=="host") 65_536 else 64*1024*1024,active) }
-    private suspend fun <T> readResponse(client: MobileClient, path: String, query: Map<String, String>,decode: (java.io.InputStream,()->Boolean)->T): T = suspendCancellableCoroutine { continuation ->
+    private suspend fun read(client: MobileClient, path: String, query: Map<String, String>,descriptorBudget: CodexConnectionReadBudget=CodexConnectionReadBudget.BACKGROUND_DISCOVERY): String =
+        readResponse(client,path,query,descriptorBudget) { input,active -> NativeWireReader.read(input,if(path=="host") 65_536 else 64*1024*1024,active) }
+    private suspend fun <T> readResponse(client: MobileClient, path: String, query: Map<String, String>,descriptorBudget: CodexConnectionReadBudget=CodexConnectionReadBudget.BACKGROUND_DISCOVERY,decode: (java.io.InputStream,()->Boolean)->T): T = suspendCancellableCoroutine { continuation ->
         val active = AtomicReference<HttpURLConnection?>()
         val future = executor.submit {
             var connection: HttpURLConnection? = null
@@ -155,8 +162,8 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
                     PairedCodexTLS.configure(connection as javax.net.ssl.HttpsURLConnection, endpoint, paired.fingerprint)
                 }
                 connection.instanceFollowRedirects = false
-                connection.connectTimeout = if(path == "host") 2_000 else 10_000
-                connection.readTimeout = if(path == "host") 2_000 else 35_000
+                connection.connectTimeout = if(path == "host") descriptorBudget.millis else 10_000
+                connection.readTimeout = if(path == "host") descriptorBudget.millis else 35_000
                 connection.useCaches = false; connection.requestMethod = "GET"
                 token(client.id).takeIf { it.isNotEmpty() }?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
                 connection.setRequestProperty("Accept", "application/json")
@@ -185,16 +192,27 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
         if (client.requiresReadTarget && result.scope == null || client.scope != null && result.scope != null && !sameScope(client.scope, result.scope)) throw HostReadError("电脑运行时身份已改变，请重新连接")
         return result
     }
-    suspend fun descriptor(client: MobileClient): CodexDescriptor {
-        val descriptor = CodexDescriptor.decode(read(client, "host", emptyMap()))
+    suspend fun descriptor(client: MobileClient): CodexDescriptor=readDescriptor(client,CodexConnectionReadBudget.BACKGROUND_DISCOVERY)
+    internal suspend fun connectionDescriptor(client: MobileClient): CodexDescriptor=readDescriptor(client,CodexConnectionReadBudget.EXPLICIT_CONNECTION)
+    private suspend fun readDescriptor(client: MobileClient,budget: CodexConnectionReadBudget): CodexDescriptor=codexConnectionRead(budget) {
+        val descriptor = CodexDescriptor.decode(read(client, "host", emptyMap(),budget))
         require(descriptor.target.hostId == client.id && sameScope(descriptor.target, client.scope)) { "电脑运行时身份不匹配" }
         client.codexDirect?.let { require(descriptor.fingerprint == it.fingerprint) { "已配对电脑证书发生变化，请重新配对" } }
-        return descriptor
+        descriptor
     }
     override suspend fun history(client: MobileClient, threadId: String, cursor: String?): MobileHistory {
-        val query = buildMap { put("hostId", client.id); put("threadId", threadId); cursor?.let { put("cursor", it) }; client.readerId?.let { put("readerId", nativeReaderId(it)) } }
-        val result = readResponse(client, "v1/history", query,NativeHistoryWire::history)
+        val acceptanceTiming=NativeReadAcceptanceTiming.capture();val startedAt=android.os.SystemClock.elapsedRealtimeNanos()
+        val query = buildMap { put("hostId", client.id); put("threadId", threadId); put("window", "latest-v1"); cursor?.let { put("cursor", it) }; client.readerId?.let { put("readerId", nativeReaderId(it)) } }
+        val result = readResponse(client, "v1/history", query,decode=NativeHistoryWire::history)
         if (result.hostId != client.id || result.threadId != threadId || client.requiresReadTarget && result.scope == null || client.scope != null && result.scope != null && !sameScope(client.scope, result.scope)) throw HostReadError("电脑或对话身份不匹配")
+        acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.HISTORY_RESPONSE,result.hostId,threadId,startedAt)
+        return result
+    }
+    override suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String?): MobileHistory {
+        val query=buildMap { put("threadId",threadId);cursor?.let { put("cursor",it) };client.readerId?.let { put("readerId",nativeReaderId(it)) } }
+        val result=readResponse(client,"v1/threads/search-history",query,decode=NativeHistoryWire::history)
+        if(result.hostId!=client.id||result.threadId!=threadId||client.requiresReadTarget&&result.scope==null||
+            client.scope!=null&&result.scope!=null&&!sameScope(client.scope,result.scope))throw HostReadError("电脑或对话身份不匹配")
         return result
     }
     private fun <T> decode(block: ()->T): T = try { block() } catch(_: OutOfMemoryError) {

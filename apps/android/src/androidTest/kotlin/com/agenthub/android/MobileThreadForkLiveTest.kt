@@ -18,7 +18,8 @@ import java.net.URI
 @RunWith(AndroidJUnit4::class)
 class MobileThreadForkLiveTest {
     @get:Rule val limit=org.junit.rules.Timeout.seconds(900)
-    @get:Rule val ui=createAndroidComposeRule<MainActivity>()
+    @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
+    @get:Rule(order=1) val ui=createAndroidComposeRule<MainActivity>()
     private val session get()=ui.activity.session
     private val fixture by lazy { JSONObject(File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir,"thread-fork-live.json").readText()) }
     private fun main(block: suspend ()->Unit)=runBlocking { withContext(Dispatchers.Main) { block() } }
@@ -39,13 +40,26 @@ class MobileThreadForkLiveTest {
         ui.runOnIdle { session.selectThread(session.threads.first { it.id==fixture.getString("threadId") }) }
         ui.waitUntil(45_000) { !session.historyLoading && session.messages.any { it.runId==fixture.getString("turnId") && it.replyPhase=="final_answer" } }
     }
-    private fun menu(environment: String) {
+    private fun allowOwnedTestSharing(): Boolean {
+        val request=session.aiSharingRequest ?: return false
+        assertEquals(fixture.getString("hostId"),session.selectedClient.id)
+        assertEquals(fixture.getString("hostId"),request.scope.target.hostId)
+        val draft=session.text;val prior=session.operationRecords.map { Triple(it.target,it.id,it.intentSha256) }
+        shot("native-sharing-before-explicit-action")
+        ui.onNodeWithTag("ai-sharing-allow").performScrollTo().performClick()
+        ui.waitUntil(10_000) { session.aiSharingRequest==null && !session.aiSharing.busy }
+        assertEquals(draft,session.text)
+        assertEquals(prior,session.operationRecords.map { Triple(it.target,it.id,it.intentSha256) })
+        return true
+    }
+    private fun menu(environment: String,afterPermission: Boolean=false) {
         val reply=session.messages.first { it.role=="assistant" && it.runId==fixture.getString("turnId") && it.replyPhase=="final_answer" }
         // Smaller devices keep the earlier reply outside the composed viewport.
         ui.onNodeWithTag("message-list").performScrollToNode(hasTestTag("reply-actions-${reply.id}"))
         ui.onNodeWithTag("reply-actions-${reply.id}").onChildren().filter(hasTestTag("fork-reply")).onFirst().performClick()
         ui.waitUntil(20_000) { session.forkReason(fixture.getString("turnId"),environment)==null }
         ui.onNodeWithTag("fork-$environment").assertIsEnabled().performClick()
+        if(allowOwnedTestSharing()) { check(!afterPermission);menu(environment,true) }
     }
     @Test fun exactOriginalOwnerForksAndRestartNeverReplays() {
         ui.runOnIdle { session.resetAcceptance() }
@@ -73,6 +87,7 @@ class MobileThreadForkLiveTest {
             ui.runOnIdle { session.configure(GenerationSettings(effort="xhigh")) }
             ui.waitUntil(30_000) { session.canCompose && session.transferStatus==null }
             ui.onNodeWithTag("message-input").performTextReplacement(text);ui.onNodeWithTag("send-message").performClick()
+            if(allowOwnedTestSharing()) ui.onNodeWithTag("send-message").assertIsEnabled().performClick()
             ui.waitUntil(180_000) { !session.running && session.transferStatus==null && session.messages.any { it.role=="assistant" && it.replyPhase=="final_answer" && it.text.contains(marker) && it.text.contains(fixture.getString("firstMarker")) } }
             shot("real-$environment-original-owner-response")
             source();assertEquals(if(environment=="same-directory") "new draft after uncertain fork" else draft,session.text)

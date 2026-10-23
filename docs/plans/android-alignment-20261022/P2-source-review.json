@@ -1,0 +1,1018 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22",
+  "sourceBase": "a484928dddb404b55db4fee2579502d69857ae0a",
+  "phase": "P2",
+  "sourceNodeCount": 35,
+  "featureCount": 19,
+  "status": "all source nodes retained and reviewed for implementation boundary/current scoped evidence/remaining phase; P2 not fully verified",
+  "notes": [
+    "Raw desktop wire remains behind adapter; Android does not reimplement owner revision counters.",
+    "General history provider is Session-owned; desktop suggestion reader/parallel prefetch remains P5, avoiding a false whole-O038 completion.",
+    "Same shared SessionPolicies.running(turnId,state) used by Android and iOS; valid-turn source behavior inherited, not a missing native duplicate.",
+    "Windows timing/pipe/SID source-specific assertions retained as shared/tooling boundaries and actual Windows pending; no cross-host work authorized.",
+    "Physical pinned LAN/Wi-Fi and MainActivity default-store matrix evidence remain separate from VPN/cellular/first-render/performance and full product claims.",
+    "Current-owner reply proof checkpoint updates current native source hashes; prior live acceptance remains bound to its own product fingerprint and is not a current-product blanket pass.",
+    "New physical current-product original-owner held-history single send/readOnly completion and custom-namespace cold proof are scoped; auxiliary gateway named-route rejection remains partial and no old input replay is authorized.",
+    "Current-product default MainActivity warm/cold named-route/menu6 native phases retain API26 gray capture/API37 intermediate disabled composer and earlier LAN timeouts. Canonical turnId4-record additive reconciliation does not rewrite historical inputs/policy failures.",
+    "Stronger unchanged-budget recovered send-ready native assertions passed3 environments; current API26 initial-cache black/crop capture remains a visual residual after frame callbacks/idle, not a production fix."
+  ],
+  "nodes": [
+    {
+      "recordId": "B002",
+      "sha": "e3a9e6275f3a476a0952cf60da28c4cdfd075c57",
+      "title": "feat(mobile): share native state and contracts with verified A2 gates",
+      "behavior": "A2 加入领域/HTTP 契约、能力策略、消息投影、创建/回执、阅读与事件隔离。",
+      "implementationBoundary": "inherited shared domain/capability/target/operation rules; no duplicate Codex wire in UI",
+      "currentCodePaths": [
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/HistoryGateway.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt"
+      ],
+      "evidenceKeys": [
+        "nativeReadTimingCheckpoint",
+        "networkReadRecoveryCheckpoint",
+        "confirmedOwnerReplyCheckpoint",
+        "confirmedOwnerLiveSendCheckpoint",
+        "readonlyNamedRoutesCurrentProductCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P1/P4/P8/P10",
+          "assertion": "Complete target/provider/control matrix remains in original scope; shared/native auxiliary do not replace actual execution or other Agent environments."
+        }
+      ],
+      "currentFilesSha256": {
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt": "91bc96851863a36ad10e252d38edf690745f19bc6cef522c48d37f2b55a93e41",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt": "3b20e11eba9a24cc7c1d5956e1fbd1159c8fb14c50aa4ecbf11a3f97aaf32e4e",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/HistoryGateway.kt": "26602b924a53b5527771366c19435c257c7ccee77a3201cb5a52dffe45b4e270",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "21da90a68b7dcc42ee6cdfad4ff45ec1bea79e1a92fa02f3eadfbf2111ca5f86",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "cb951b0c5b01fed41369fd4f0252f9a7a23b1c7b04ad534ccbe7a0b5d65ceb67"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B003",
+      "sha": "7ce8fe2111682a9ab4e355a5f168b32b029e4b6d",
+      "title": "feat(android): add native read UI and preserve A3 acceptance checkpoint",
+      "behavior": "A3 原生抽屉、客户端/项目目录、发现/二维码、Markdown/工具/Diff、缓存与只读 Host。",
+      "implementationBoundary": "inherited Android read UI and codecs plus current native reading refinements",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "earlierLoadingAndLargeOwnerCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityColdCacheCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint",
+        "readonlyNamedRoutesCurrentProductCheckpoint",
+        "readonlyRecoveryInputReadyCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P3/P6/P8/P10",
+          "assertion": "Full sidebar/search/scanner/IME/theme/gesture/Markdown/tool/Diff matrix; retain original physical reading failures and API26 capture appearance."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt": "1f52dde09ef010b55aa6e384ebabf8cd6570721816e4e741d9ccdef772f653c5",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B004",
+      "sha": "7d1e62f868399acced21464ca9e8c4e7d6eb8b39",
+      "title": "feat: 增加文件互传并完善 iOS 连接与已读体验",
+      "behavior": "iOS 文件互传、连接方式、手机独立阅读与未读、分页及 Windows Host 生命周期更新。",
+      "implementationBoundary": "shared Host/file/read foundations; ordinary project navigation distinct from deferred Task/Project business",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "networkReadRecoveryCheckpoint",
+        "productionMainActivityColdCacheCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P1/P3/P6/P7/P8",
+          "assertion": "Mixed attachment original proof remains P1; full resources/system preview/independent unread and actual multi-transport matrix retained; A6/P7 paused."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "21da90a68b7dcc42ee6cdfad4ff45ec1bea79e1a92fa02f3eadfbf2111ca5f86",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B005",
+      "sha": "f5d0d96a730a1334c85bd63f3ef943248bbc6f88",
+      "title": "Merge remote-tracking branch 'origin/main' into codex/android-native",
+      "behavior": "合入当时上游 iOS/Host，保留 Android/KMP 开发来源；非所有新 UI 自动落到 Android。",
+      "implementationBoundary": "merge integration provenance retained; do not infer native UI adoption from merged iOS/Host",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"
+      ],
+      "evidenceKeys": [
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P3/P4/P5/P6/P8/P10",
+          "assertion": "Preserve original parent/diff audit and all cross-phase product assertions; merge presence is not verification."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "21da90a68b7dcc42ee6cdfad4ff45ec1bea79e1a92fa02f3eadfbf2111ca5f86",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B006",
+      "sha": "6c2ed5d8840f579d8b2a32895aefd5bff3b80fb5",
+      "title": "Align A3 native UI and validate Android read paths",
+      "behavior": "A3 修复弹层/IME/系统栏，边缘抽屉、连接表单、真实扫码，分页防重复及阅读锚点。",
+      "implementationBoundary": "inherited Android read UI and codecs plus current native reading refinements",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "earlierLoadingAndLargeOwnerCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityColdCacheCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P3/P6/P8/P10",
+          "assertion": "Full sidebar/search/scanner/IME/theme/gesture/Markdown/tool/Diff matrix; retain original physical reading failures and API26 capture appearance."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt": "1f52dde09ef010b55aa6e384ebabf8cd6570721816e4e741d9ccdef772f653c5",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B007",
+      "sha": "cb8e93f8bf2e140087daa11e47600af1a5fb49bb",
+      "title": "Preserve iOS reading position after history pulls",
+      "behavior": "iOS 下拉历史等待布局帧及原生回弹结束再恢复锚点。",
+      "implementationBoundary": "iOS layout/scroll termination behavior; native earlier action and scoped anchor remain separate",
+      "currentCodePaths": ["apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"],
+      "evidenceKeys": [
+        "initialReadingWindowCheckpoint",
+        "earlierLoadingAndLargeOwnerCheckpoint",
+        "physicalLanAndRadioReadCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P6/P10",
+          "assertion": "Latest refresh anchor0 verified in actual original owner; full pull gesture, banner insertion/removal pixel anchor and original phone gestures not closed."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B008",
+      "sha": "0ac7c2f953003c28b1b6f46eced878c6e95ba3a5",
+      "title": "Keep explicit refresh failures visible during reconnect",
+      "behavior": "iOS 显式刷新/更早消息失败保持可见，后台重连安静，草稿与缓存保留。",
+      "implementationBoundary": "native explicit user-facing errors versus quiet read failure and retained cache/draft",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"
+      ],
+      "evidenceKeys": [
+        "friendlyReadingFailureCheckpoint",
+        "currentSynchronizationTouchCheckpoint",
+        "physicalLanAndRadioReadCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P4/P6",
+          "assertion": "Global non-reading error flows and all native visual combinations retained; original outside-touch denial not retried."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt": "014d7d3f98cfe08a535242c2f2ec5dd739e2724e781a2f24fb19480b547710ef",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B009",
+      "sha": "0ff3fcf2abdd44cb520c038a58b43610583850e7",
+      "title": "Complete A3 native UI and read acceptance across both platforms",
+      "behavior": "完成 A3 双端 UI/读取：Android userInitiated 刷新与分页错误提示、离线缓存和原生状态。",
+      "implementationBoundary": "inherited Android read UI and codecs plus current native reading refinements",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "earlierLoadingAndLargeOwnerCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityColdCacheCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P3/P6/P8/P10",
+          "assertion": "Full sidebar/search/scanner/IME/theme/gesture/Markdown/tool/Diff matrix; retain original physical reading failures and API26 capture appearance."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt": "1f52dde09ef010b55aa6e384ebabf8cd6570721816e4e741d9ccdef772f653c5",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B021",
+      "sha": "0909abfcc79ea6580d0d1280da55b9e8e7f76542",
+      "title": "fix(android): preserve complete live history and receipt semantics",
+      "behavior": "完整历史和 receipt 语义；严格 UTF-8 有界读、分片加密缓存、原子索引及低内存保护。",
+      "implementationBoundary": "native bounded strict UTF8 and authenticated chunked history cache",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeWireReader.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryWire.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt"
+      ],
+      "evidenceKeys": [
+        "boundedReadRequestCheckpoint",
+        "earlierLoadingAndLargeOwnerCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P6/P10",
+          "assertion": "Full oversized/malformed/low-memory/unknown-content combinations and performance remain; actual bounded window/cold cache does not prove every limit."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeWireReader.kt": "1997e46c1ee36e2bc6d49d75b6034781722d0ea66caff6b687b1e057ca0b603c",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryWire.kt": "82e1f4a408f3e92bc86b8ab874c9d709bf533e6b1ad3aedc1a9ec6f7ccb66e1b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt": "1f52dde09ef010b55aa6e384ebabf8cd6570721816e4e741d9ccdef772f653c5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "7850a61440821bcf61c31fa0a2beec81db27aeda9a6382fe50b6ce0b994e4daa"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B022",
+      "sha": "88de643bd65558855eec6ba3b88c46443523ebea",
+      "title": "docs(android): record verified history and receipt checkpoint",
+      "behavior": "保存完整历史/回执检查点及证据摘要。",
+      "implementationBoundary": "historical checkpoint documentation, not a new product implementation",
+      "currentCodePaths": [],
+      "evidenceKeys": ["productionMainActivityEmulatorColdCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P10",
+          "assertion": "Original historical evidence stays immutable; current results and failed wrappers/reconciliation remain distinct."
+        }
+      ],
+      "currentFilesSha256": {},
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B023",
+      "sha": "bf45f765a3673c516671634e2e207c48f91d7c99",
+      "title": "fix: reconcile provisional desktop history identities",
+      "behavior": "Host 修正临时桌面历史身份，Android 新增真实 provisional→权威身份核对。",
+      "implementationBoundary": "shared adapter provisional-to-authoritative identity; native target matching remains strict",
+      "currentCodePaths": [
+        "packages/codex-adapter/src/desktop-ipc.ts",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": ["freshnessCheckpoint", "workspaceContextCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P1/P2/P10",
+          "assertion": "Retain original provisional identity tests and current full machine/runtime isolation; no persisted read treated as loaded owner control."
+        }
+      ],
+      "currentFilesSha256": {
+        "packages/codex-adapter/src/desktop-ipc.ts": "6f326062b529fa64c841a828ba40825a78bdec073bbdb12d5293243682dc1bbd",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B033",
+      "sha": "90ff45c0c86419354494269073bdf914796fcf8d",
+      "title": "perf: 优化慢网下 Codex 与 EasyWork 消息接收",
+      "behavior": "iOS/Host gzip 和 EasyWork head/append 增量、缓存校验、Relay批量 ACK 优化。",
+      "implementationBoundary": "shared Host/EasyWork receive and native provider path; platform receive transport is not business rule",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/HistoryGateway.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt"
+      ],
+      "evidenceKeys": ["boundedReadRequestCheckpoint", "networkReadRecoveryCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P8/P10",
+          "assertion": "EasyWork head/append/cache/digest/ACK and LAN/Relay real identities/transports remain in A5 seven groups; Codex current evidence does not replace them."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "21da90a68b7dcc42ee6cdfad4ff45ec1bea79e1a92fa02f3eadfbf2111ca5f86",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/HistoryGateway.kt": "26602b924a53b5527771366c19435c257c7ccee77a3201cb5a52dffe45b4e270",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt": "3b20e11eba9a24cc7c1d5956e1fbd1159c8fb14c50aa4ecbf11a3f97aaf32e4e"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B034",
+      "sha": "cde9b76e2b07e9da08293ad06f17ce35d5fe535d",
+      "title": "feat(mobile): merge receive optimization with Android and iOS parity",
+      "behavior": "Android/KMP EasyWork 增量消费者、会话缓存和 Relay ACK 实现，与 iOS 对照。",
+      "implementationBoundary": "shared Host/EasyWork receive and native provider path; platform receive transport is not business rule",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/HistoryGateway.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt"
+      ],
+      "evidenceKeys": ["boundedReadRequestCheckpoint", "networkReadRecoveryCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P8/P10",
+          "assertion": "EasyWork head/append/cache/digest/ACK and LAN/Relay real identities/transports remain in A5 seven groups; Codex current evidence does not replace them."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "21da90a68b7dcc42ee6cdfad4ff45ec1bea79e1a92fa02f3eadfbf2111ca5f86",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/HistoryGateway.kt": "26602b924a53b5527771366c19435c257c7ccee77a3201cb5a52dffe45b4e270",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/OperationPolicies.kt": "3b20e11eba9a24cc7c1d5956e1fbd1159c8fb14c50aa4ecbf11a3f97aaf32e4e"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B035",
+      "sha": "9990b96adc6ac13143e210de73e1c73f3d4e1d3c",
+      "title": "perf: 优化 Codex 与 EasyWork 慢网消息接收 (#1)",
+      "behavior": "上游 receive 合并节点，保留 90ff45c 与原主线双父关系。",
+      "implementationBoundary": "merge integration provenance retained; do not infer native UI adoption from merged iOS/Host",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"
+      ],
+      "evidenceKeys": [
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P3/P4/P5/P6/P8/P10",
+          "assertion": "Preserve original parent/diff audit and all cross-phase product assertions; merge presence is not verification."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "21da90a68b7dcc42ee6cdfad4ff45ec1bea79e1a92fa02f3eadfbf2111ca5f86",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B039",
+      "sha": "ea3d46feb36e8085a5fefc09b3b155a033b7cb77",
+      "title": "test(ios): stabilize read cancellation gates and close UM01 acceptance",
+      "behavior": "iOS 读取取消验收器限定故障与在途边界，关闭 UM01。",
+      "implementationBoundary": "iOS acceptance-only cancellation harness; native cancellation has its own instrumentation",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt"
+      ],
+      "evidenceKeys": ["readBoundaryCheckpoint", "networkReadRecoveryCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P2/P10",
+          "assertion": "Keep platform-specific original failures and request-owner assertions; iOS closure is not Android acceptance."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "B047",
+      "sha": "f54be8195177901b17d53dcbe994a0c46c9dcde7",
+      "title": "feat(android): align private host discovery and device credentials",
+      "behavior": "UM04 Android 私有发现、VPN提示、独立X25519手机凭据及点选后绑定，修复同客户端刷新调度。",
+      "implementationBoundary": "native private discovery and scoped device credentials inherited from UM04",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexPrivateConnection.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexConnectionVault.kt"
+      ],
+      "evidenceKeys": [
+        "discoveryCheckpoint",
+        "savedRouteCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "readonlyNamedRoutesCurrentProductCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P8/P10",
+          "assertion": "Actual independent-device credential/revoke/DPoP and VPN paths remain separate from compatibility QR/pinned LAN proof; no Tailscale client present on current phone."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt": "0735017328e27fbd14b1235ded3044eae46ff872ce38b3db753423e9d62c6121",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexPrivateConnection.kt": "de5f44307b74fb0bf25c86f0108172a4033f141c3929f096c419c58de5c86f3b",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexConnectionVault.kt": "7a200d4958fe19aca06e5a66bd3eb312cf559791bb3a5c9166c3684b3fa9e23c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O008",
+      "sha": "33b63b7339e8f540611577275579f1fc73387bf4",
+      "title": "fix(discovery): 优先 VPN 地址并补全已保存电脑的发现入口",
+      "behavior": "发现候选按VPN IP、私有DNS等优先；每源最多32地址/四并发；已有连接作为独立目录入口，空目录继续其他来源。",
+      "implementationBoundary": "native ordered candidate discovery, budgets and incremental row publication",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscoveryReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexConnectionBudget.kt"
+      ],
+      "evidenceKeys": [
+        "discoveryCheckpoint",
+        "savedRouteCheckpoint",
+        "physicalLanAndRadioReadCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P8/P10",
+          "assertion": "LAN pinned read passed; complete discovery/camera/VPN/current-route/source fallback real matrix remains."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt": "0735017328e27fbd14b1235ded3044eae46ff872ce38b3db753423e9d62c6121",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscoveryReads.kt": "9d1f2665c9509a491018034678b2bf78897c93345208adec604dd4c504f12a33",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexConnectionBudget.kt": "9b0e403c34b7d284836df3a126ba47488598c8fcedcb589bb32a850339a38ec6"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O010",
+      "sha": "a59699a94e1cd788e35a391f553f240bccb8912e",
+      "title": "fix(network): 切网后轮换读取连接并补读停滞会话",
+      "behavior": "切网仅取消/轮换历史事件GET；提交POST保持原连接结果；2秒活动/10秒空闲无快照时独立补拉，最新页请求原owner刷新。",
+      "implementationBoundary": "native read-only path rotation and useful-progress clocks; immutable commands remain outside read retry",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadNetworkMonitor.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "networkReadRecoveryCheckpoint",
+        "silentCatchUpCheckpoint",
+        "nativeWeakReadRealCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "confirmedOwnerLiveSendCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P4/P10",
+          "assertion": "Physical Wi-Fi GET recovery passed; VPN/cellular/longer loss and write-in-flight full matrix retained; original two inputs exactly once but original warm/policy failures remain."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadNetworkMonitor.kt": "f24b9115dba2a62fcfea103bc4877514ef2b79d7dc475445d82d63376950a72f",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O016",
+      "sha": "82f0120eb943412934988956c1fdb70dabe05227",
+      "title": "chore: preserve current development inputs before branch consolidation",
+      "behavior": "大快照纳入正文文件/网页链接、后台历史不锁输入、直接已就绪回复、原生队列与立即执行、分段添加连接、六行用户气泡折叠、通知事项摘要和批量管理，以及未绑定建议观察。",
+      "implementationBoundary": "multi-phase commit; reading/composer/long bubble subsets separated",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/UserMessageBubble.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"
+      ],
+      "evidenceKeys": [
+        "userBubbleCheckpoint",
+        "receiptAndGenerationFormCheckpoint",
+        "nativeWeakReadRealCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P3/P4/P5/P6/P7/P9",
+          "assertion": "Links/queue/direct-ready reply/suggestions/management/notification subsets stay in their phases; Task business deferred and A6/P7 paused."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/UserMessageBubble.kt": "ec9165a90500d84f2bf2ed07237df7a2de7721b5fd65f6394435cff887717c6b",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O036",
+      "sha": "284246667b6a919ee50bb4cbe065c723787cf8b1",
+      "title": "fix: integrate suggestion recovery and composer wait handling",
+      "behavior": "建议漏通知有界Trace补读；清空草稿恢复有效建议；回复结束等待移发送记录且原HTTP未返也能释放本次锁；运行状态须有效Turn；运行中pin可用。",
+      "implementationBoundary": "valid-turn running already shared on both platforms; reply wait/suggestion UI belongs to later phases",
+      "currentCodePaths": [
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "evidenceKeys": ["receiptAndGenerationFormCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P3/P4/P5",
+          "assertion": "Bounded suggestion recovery, clearing draft, wait-record UI and pin interaction remain; original physical execution19 failures retained."
+        }
+      ],
+      "currentFilesSha256": {
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/SessionPolicies.kt": "91bc96851863a36ad10e252d38edf690745f19bc6cef522c48d37f2b55a93e41",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/ios/Sources/SessionStore.swift": "3200ef93fa9f800f4d7c558a4aa3e12cacb4890bacbdfe6bb8179a11e20d00cb"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O038",
+      "sha": "b0711df4e44b342f9d7f549d1949da40cd5fb251",
+      "title": "perf(ios): overlap suggestion reads and fence stale view tasks",
+      "behavior": "建议与历史并行预读但须新历史确认scope；会话持有reader避布局延迟；首次渲染60→20且保工具组边界；导航保存让位请求。",
+      "implementationBoundary": "native initial20/+60 and read-before-navigation-save adopted; suggestion ownership/read-ahead not duplicated",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ReadingPolicy.kt"
+      ],
+      "evidenceKeys": ["initialReadingWindowCheckpoint", "navigationReadPersistenceCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P5/P6/P10",
+          "assertion": "Session-owned suggestion reader/fresh history scope/parallel prefetch and full navigation visual/performance retained."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ReadingPolicy.kt": "501fe494435a8d7a78c8c7d2f3306d5981e760e3b0d2a678784628ce2ec484f6"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O042",
+      "sha": "d7484b64c336dfcb6668b1e2aa2d327d2c74e64a",
+      "title": "fix: recover desktop streams after revision counters restart",
+      "behavior": "按输入ID/准确末轮连续性接纳同owner修订号重置，隔离退出流和迟到高revision；无连续性仍拒绝。",
+      "implementationBoundary": "raw desktop owner revision reset lives in shared adapter, native sees versioned domain epoch/sequence",
+      "currentCodePaths": [
+        "packages/codex-adapter/src/desktop-ipc.ts",
+        "scripts/desktop-stream-generation.test.mjs",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt"
+      ],
+      "evidenceKeys": ["weakNetworkProxyTargetCheckpoint", "networkReadRecoveryCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P2/P10",
+          "assertion": "Adapter source and generation test bytes match full59 checkpoint1168970; actual reset/retired stream full matrix is not inferred from normal original-owner reads."
+        }
+      ],
+      "currentFilesSha256": {
+        "packages/codex-adapter/src/desktop-ipc.ts": "6f326062b529fa64c841a828ba40825a78bdec073bbdb12d5293243682dc1bbd",
+        "scripts/desktop-stream-generation.test.mjs": "4d466ec1760016230e8f55fcc3aa9d6cd217f9f78cb481b290755f95e6bd78a7",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "ada6021c4684612009ec7f09ccecc57593e73dbdb34befaa01a0cf6cd05b09fc"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O070",
+      "sha": "6e1bb10dd7d10cae2d5c6684b2c27c86e2bbb873",
+      "title": "fix: retain verified desktop live synchronization in unified release",
+      "behavior": "Adapter线性256MiB帧解码、有界latest-v1/history/live-window、准确消息ID/Turn绑定、控制资格与可读新鲜度分开、旧回执/队列来源标记。",
+      "implementationBoundary": "shared bounded framing/Host window plus native negotiation/synchronization/history-receipt projection",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryWire.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSnapshotCodec.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "boundedReadRequestCheckpoint",
+        "currentSynchronizationTouchCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "receiptAndGenerationFormCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P4/P6/P10",
+          "assertion": "Whole oversized frame/runtime/control/queue/detached unknown/render performance matrix retained; actual100+earlier/compaction/cache subsets passed."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryWire.kt": "82e1f4a408f3e92bc86b8ab874c9d709bf533e6b1ad3aedc1a9ec6f7ccb66e1b",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSnapshotCodec.kt": "f22204d67697c270c53802d2c44400ba639316c416c35b55b2acbb4f631861ff",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O074",
+      "sha": "f94072334f8e04aa3654b593010b683f2461eaf3",
+      "title": "test: verify desktop ownership boundaries across Windows pipes and live windows",
+      "behavior": "跨Windows管道和live-window验证实际owner边界、流generation与真实限帧/最近页；fixture endpoint跨平台。",
+      "implementationBoundary": "shared Windows-pipe/live-window fixtures, no independent Android wire implementation",
+      "currentCodePaths": [
+        "scripts/desktop-ipc-smoke.mjs",
+        "scripts/desktop-stream-generation.test.mjs",
+        "scripts/large-conversation-sync-smoke.mjs"
+      ],
+      "evidenceKeys": ["weakNetworkProxyTargetCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P8/P10",
+          "assertion": "Current local full59 fixture coverage only; actual Windows owner/control verification requires separately authorized target evidence."
+        }
+      ],
+      "currentFilesSha256": {
+        "scripts/desktop-ipc-smoke.mjs": "8de0ae8a1fc7b82a3d80b8d412ada5d83010a3244946eaf06eaac5468eaf0103",
+        "scripts/desktop-stream-generation.test.mjs": "4d466ec1760016230e8f55fcc3aa9d6cd217f9f78cb481b290755f95e6bd78a7",
+        "scripts/large-conversation-sync-smoke.mjs": "f8489c259c25f96397ca365c37874de1d3f1e555698b271c46134254471623d7"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O076",
+      "sha": "894f39aa361ad25862f8f2f9d8bd4de7ddfcff84",
+      "title": "tools: add bounded Windows timing diagnostics and native development checks",
+      "behavior": "新增隔离DEV有界分段计时器及check:windows-native串行范围，保全仓原失败条件，不在正式目录重建。",
+      "implementationBoundary": "Windows-only bounded timing importer/tooling; native debug recorder independent",
+      "currentCodePaths": [
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadAcceptanceTiming.kt"
+      ],
+      "evidenceKeys": ["nativeReadTimingCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P5/P10",
+          "assertion": "Original Windows source/test fingerprints preserved; native applying events are not rendered/input-ready timestamps, cross-platform timing matrix remains."
+        }
+      ],
+      "currentFilesSha256": {
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs": "66bd329c11390c61a4d89ae71c78356600b2b97a8eb45b4790d6ca5ea9b9bbc3",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadAcceptanceTiming.kt": "135d2dcbcfa465f9d95ea6f4cbb98c7ee1260a602389ccacf62957693b29dbb3"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O084",
+      "sha": "05b57ebb707b8ccd0c62917d7ec8b21d2cbd2c48",
+      "title": "Improve bounded Windows suggestion diagnostics without changing runtime behavior",
+      "behavior": "Windows计时导入要求共享5b+创建gate，补Worker传递与Promise身份保真、关闭后停止记录；不改运行行为。",
+      "implementationBoundary": "Windows-only bounded timing importer/tooling; native debug recorder independent",
+      "currentCodePaths": [
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadAcceptanceTiming.kt"
+      ],
+      "evidenceKeys": ["nativeReadTimingCheckpoint"],
+      "remaining": [
+        {
+          "phase": "P5/P10",
+          "assertion": "Original Windows source/test fingerprints preserved; native applying events are not rendered/input-ready timestamps, cross-platform timing matrix remains."
+        }
+      ],
+      "currentFilesSha256": {
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs": "66bd329c11390c61a4d89ae71c78356600b2b97a8eb45b4790d6ca5ea9b9bbc3",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadAcceptanceTiming.kt": "135d2dcbcfa465f9d95ea6f4cbb98c7ee1260a602389ccacf62957693b29dbb3"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O088",
+      "sha": "a8db32c5d911c67785961a2b0a5e35155a6815e3",
+      "title": "fix(sync): restore live progress for large desktop conversations",
+      "behavior": "Host增加latest-v1有界最新/更早窗口、live-window观察与同步状态；iOS显示同步失败/实时窗口/历史已同步横幅、重试、历史未知结果回执折叠；超大帧与准确输入正证据恢复。",
+      "implementationBoundary": "shared bounded framing/Host window plus native negotiation/synchronization/history-receipt projection",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryWire.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSnapshotCodec.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "boundedReadRequestCheckpoint",
+        "currentSynchronizationTouchCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "receiptAndGenerationFormCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P4/P6/P10",
+          "assertion": "Whole oversized frame/runtime/control/queue/detached unknown/render performance matrix retained; actual100+earlier/compaction/cache subsets passed."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryWire.kt": "82e1f4a408f3e92bc86b8ab874c9d709bf533e6b1ad3aedc1a9ec6f7ccb66e1b",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSnapshotCodec.kt": "f22204d67697c270c53802d2c44400ba639316c416c35b55b2acbb4f631861ff",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O143",
+      "sha": "0c2d50fc3eb4715ddbc309282d36e6bb98207958",
+      "title": "fix: reduce slow-network startup and preserve native history errors",
+      "behavior": "iOS先展示workspace首屏/选中历史、限制单workspace与同导航history在途、先events、reset已含快照不重复GET；新成功否定旧超时离线推断；发现优先当前路由；原生error保真；Host已知聊天windowed只读owner等待最多1秒。",
+      "implementationBoundary": "verified workspace/event-first/history catchup and scoped late-failure guards",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt"
+      ],
+      "evidenceKeys": [
+        "verifiedStartupCheckpoint",
+        "conversationSyncCheckpoint",
+        "connectionBudgetCheckpoint",
+        "nativeWeakReadReadonlyCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "confirmedOwnerReplyCheckpoint",
+        "confirmedOwnerLiveSendCheckpoint",
+        "readonlyNamedRoutesCurrentProductCheckpoint",
+        "readonlyRecoveryInputReadyCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P1/P2/P10",
+          "assertion": "Human-deferred unloaded owner still pending; full read latency/route/error matrix remains, do not make a persisted read into execution proof."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt": "0735017328e27fbd14b1235ded3044eae46ff872ce38b3db753423e9d62c6121",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt": "014d7d3f98cfe08a535242c2f2ec5dd739e2724e781a2f24fb19480b547710ef",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "cb951b0c5b01fed41369fd4f0252f9a7a23b1c7b04ad534ccbe7a0b5d65ceb67"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O144",
+      "sha": "b3d2ca73a64bdb68fc3b9b37bcfa39452435220b",
+      "title": "Merge Windows reliability fixes and prepare build 89 physical cellular acceptance",
+      "behavior": "合并fd6b627与0c2d50f，将移动foundation/Windows可靠性和弱网读合并到build89，代码combined diff无独有双父净冲突。",
+      "implementationBoundary": "merge reconciliation; retain audited parent assertions instead of duplicating merged program paths",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "packages/codex-adapter/src/desktop-ipc.ts"
+      ],
+      "evidenceKeys": [
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P4/P5/P8/P10",
+          "assertion": "Original combined-parent/diff records retained; Windows/native execution/preflight and later phase UI individually verified, not inherited as pass."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "packages/codex-adapter/src/desktop-ipc.ts": "6f326062b529fa64c841a828ba40825a78bdec073bbdb12d5293243682dc1bbd"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O145",
+      "sha": "85784db5e9f99ed3b9a7c2d974dbe62bd38c838a",
+      "title": "Bound Windows stop identity checks to retained handles and add real weak-network acceptance",
+      "behavior": "新增真实上游只读GET弱网代理，聚合1024/128/64Kbit/s+RTT/抖动、gzip实收字节、单history挂起/截断/全503；Windows停服SID改保留句柄TOKEN_QUERY，45秒预算不变。",
+      "implementationBoundary": "GET-only HTTP shaping/trace shared with native; Windows SID stop remains platform-specific",
+      "currentCodePaths": [
+        "scripts/weak-network-read-proxy.mjs",
+        "scripts/weak-network-read-proxy.test.mjs"
+      ],
+      "evidenceKeys": [
+        "weakNetworkProxyTargetCheckpoint",
+        "nativeWeakReadRealCheckpoint",
+        "nativeWeakReadReadonlyCheckpoint",
+        "confirmedOwnerLiveSendCheckpoint",
+        "readonlyNamedRoutesCurrentProductCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P4/P10",
+          "assertion": "Actual normal/constrained/severe/truncation/503 read subsets and original input counters retained; policy/combined-warm failure and Windows actual stop proof not replaced."
+        }
+      ],
+      "currentFilesSha256": {
+        "scripts/weak-network-read-proxy.mjs": "572527081a26990b52fa1104522dd4cd7b4f2584c9b8a95a8d755573a25ab208",
+        "scripts/weak-network-read-proxy.test.mjs": "c3829a286c78ce8fafda302b1a7743ebb9aa5c0aee06d15cfb91bda3b36d6d3b"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O146",
+      "sha": "0b18da8ec6611a4cb242eef5e08c9b6cdc567345",
+      "title": "fix(ios): show friendly connection failure guidance",
+      "behavior": "iOS OperationFailure把TLS/证书/无网/超时/DNS/连接中断映射标题与可行动文案，覆盖连接、历史、fork、提交、回执、审批和导入，原传输错误保留且不自动重试。",
+      "implementationBoundary": "shared copy generated to Swift/KMP and native typed read presentation; no transport/error rewriting",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"
+      ],
+      "evidenceKeys": [
+        "friendlyReadingFailureCheckpoint",
+        "nativeTransportRefusalCheckpoint",
+        "currentSynchronizationTouchCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P1/P2/P4/P6",
+          "assertion": "Connection forms/fork/submit/original receipt/approval/import global copy and whole native UI scenarios remain; original outside-touch refusal preserved."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt": "014d7d3f98cfe08a535242c2f2ec5dd739e2724e781a2f24fb19480b547710ef",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O148",
+      "sha": "daa11597f3c448fa860c131d1395032ef2ecc70d",
+      "title": "merge: reconcile local iOS fixes with current mobile foundations",
+      "behavior": "合并b3d2ca7与880ba1c；净冲突将最新history失败展示改userFacingDescription并保留userInitiated错误，友好错误与预检一并保留。",
+      "implementationBoundary": "shared copy generated to Swift/KMP and native typed read presentation; no transport/error rewriting",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"
+      ],
+      "evidenceKeys": [
+        "friendlyReadingFailureCheckpoint",
+        "nativeTransportRefusalCheckpoint",
+        "currentSynchronizationTouchCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P1/P2/P4/P6",
+          "assertion": "Connection forms/fork/submit/original receipt/approval/import global copy and whole native UI scenarios remain; original outside-touch refusal preserved."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationFailure.kt": "014d7d3f98cfe08a535242c2f2ec5dd739e2724e781a2f24fb19480b547710ef",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4f4562e85d1723827c50691d3f5893e027d556d2a9879d3f6e56a6376185549c"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O156",
+      "sha": "28fc9b188386c5defb56e7313dbcf92862007d3e",
+      "title": "Merge current mobile foundations while preserving Windows reliability and owner checks",
+      "behavior": "合并85784db与591126b，收纳UM06底层、iOS友好错误/预检和chat policy，同时保留Windows恢复/owner校验；combined生产diff无独有新逻辑。",
+      "implementationBoundary": "merge reconciliation; retain audited parent assertions instead of duplicating merged program paths",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "packages/codex-adapter/src/desktop-ipc.ts"
+      ],
+      "evidenceKeys": [
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P4/P5/P8/P10",
+          "assertion": "Original combined-parent/diff records retained; Windows/native execution/preflight and later phase UI individually verified, not inherited as pass."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "packages/codex-adapter/src/desktop-ipc.ts": "6f326062b529fa64c841a828ba40825a78bdec073bbdb12d5293243682dc1bbd"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O157",
+      "sha": "faf203e1c4b7dce64e9364643128c29b35bdc97c",
+      "title": "Prepare integrated build 91 and record opt-in physical read timings",
+      "behavior": "build91加入仅DEBUG独立验收bundle且显式env启用的有界native读计时，记录连接、history响应/应用，不采URL/header/body/token。",
+      "implementationBoundary": "DEBUG/exact package/explicit opt-in bounded native timing",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadAcceptanceTiming.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "evidenceKeys": [
+        "nativeReadTimingCheckpoint",
+        "nativeWeakReadRealCheckpoint",
+        "nativeWeakReadReadonlyCheckpoint",
+        "physicalLanAndRadioReadCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P10",
+          "assertion": "First cached/new rendered content, input ready/terminal and discovery timing matrix remains; current applying points and test-observed visibility are not first-pixel timings."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadAcceptanceTiming.kt": "135d2dcbcfa465f9d95ea6f4cbb98c7ee1260a602389ccacf62957693b29dbb3",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "e5da6c10ba07065d0e0febb327f6a8535e025f33424b5b43a75cf697fdc015b1",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "507a1941d5bcda0bde00689d08ee189649c070799757d6b7feb3a676fb66da88",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    },
+    {
+      "recordId": "O159",
+      "sha": "a57a50fed4a798bf3ceb0bfd56bdb17537501503",
+      "title": "Improve native weak-network startup and verify Windows recovery on iPhone",
+      "behavior": "iOS显式连接descriptor8秒而背景2秒；VPN成功即发布、已见地址保留60秒/15秒仅可达提示；复用已验证workspace，事件先行8秒catch-up grace；重选当前聊天不换代次，恢复timeout保草稿文案。",
+      "implementationBoundary": "native verified discovery/startup/read ownership and production default-store recovery",
+      "currentCodePaths": [
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadNetworkMonitor.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt"
+      ],
+      "evidenceKeys": [
+        "discoveryCheckpoint",
+        "savedRouteCheckpoint",
+        "workspaceContextCheckpoint",
+        "physicalLanAndRadioReadCheckpoint",
+        "productionMainActivityColdCacheCheckpoint",
+        "productionMainActivityEmulatorColdCheckpoint",
+        "pairedCertificateDefaultCacheCheckpoint",
+        "pairedCertificateStableUiMatrixCheckpoint",
+        "productionAutomaticRouteCheckpoint",
+        "productionPersistedAlternateColdCheckpoint",
+        "productionReadObservationTimingCheckpoint",
+        "productionPhysicalLongRadioCheckpoint",
+        "confirmedOwnerReplyCheckpoint",
+        "confirmedOwnerLiveSendCheckpoint",
+        "readonlyNamedRoutesCurrentProductCheckpoint",
+        "readonlyRecoveryInputReadyCheckpoint"
+      ],
+      "remaining": [
+        {
+          "phase": "P2/P8/P10",
+          "assertion": "Selected pairing/cache/foreground route/persisted alternate/current scripted observations plus history-only35s hold/healthy events/independent history200 and one actual physical30s Wi-Fi loss/default-store recovery now passed. Repeated/longer losses, physical VPN/cellular, complete route/scroll/performance and physical-first-frame/release startup/live model-terminal latency remain; current native observations include runner/step overhead."
+        }
+      ],
+      "currentFilesSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1d3dd9af5769bd90dbea1a5a59b2b0a9953d83cb27cf088d155259aa27121edf",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt": "0735017328e27fbd14b1235ded3044eae46ff872ce38b3db753423e9d62c6121",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeReadNetworkMonitor.kt": "f24b9115dba2a62fcfea103bc4877514ef2b79d7dc475445d82d63376950a72f",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "e5da6c10ba07065d0e0febb327f6a8535e025f33424b5b43a75cf697fdc015b1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "cb951b0c5b01fed41369fd4f0252f9a7a23b1c7b04ad534ccbe7a0b5d65ceb67"
+      },
+      "status": "reviewed source boundary and scoped evidence; full source node not declared closed"
+    }
+  ]
+}

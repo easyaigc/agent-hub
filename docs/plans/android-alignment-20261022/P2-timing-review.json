@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "phase": "P2",
+  "baseCommit": "da3d9db74614c68516775ab11914e8495d39315f",
+  "currentProductSha256": "2c7ac8c3c8cf12446eb8b5047a92bc1946311331ba09ca3cbd9521f6abc5436e",
+  "historicalTimingAudit": {
+    "status": "historical scoped timing audited; no current full-timing pass",
+    "currentProductSha256": "2c7ac8c3c8cf12446eb8b5047a92bc1946311331ba09ca3cbd9521f6abc5436e",
+    "cases": [
+      {
+        "phase": "readonly",
+        "productSha256": "57af3d91ac0b7ce02f8b12c3c1101e138ca94e53023bd4e235d9c5d9f1fff3fe",
+        "proofSha256": "a608a7748b82a770580b708613356a140111b6181b1f59170b79da51dd62043d",
+        "traceSha256": "3f06607c8c38a058c8c8bba303b3a8228adfbfc416b4e87abb207c9d25abcf75",
+        "eventCounts": {
+          "session-start": 1,
+          "cache-applying": 1,
+          "history-response": 6,
+          "history-applying": 6
+        },
+        "observedMomentsMS": [
+          {
+            "event": "native-session-created",
+            "msFromNativeSessionCreated": 0.0
+          },
+          {
+            "event": "original-second-final-visible-without-new-input",
+            "msFromNativeSessionCreated": 1188.526
+          },
+          {
+            "event": "readonly-normal-history-complete",
+            "msFromNativeSessionCreated": 1762.472
+          },
+          {
+            "event": "readonly-constrained-history-complete",
+            "msFromNativeSessionCreated": 2544.585
+          },
+          {
+            "event": "readonly-severe-history-complete",
+            "msFromNativeSessionCreated": 4273.524
+          },
+          {
+            "event": "actual-truncation-retains-native-read",
+            "msFromNativeSessionCreated": 5211.577
+          },
+          {
+            "event": "all-read503-preserves-context",
+            "msFromNativeSessionCreated": 6043.563
+          }
+        ],
+        "scope": "independent custom native Session/storage/Compose fixture, not default MainActivity/process startup. UI moment is positive native assertion observation, not first physical pixel. Original completed final, not model-completion lag. Different product fingerprint from current; historical only."
+      },
+      {
+        "phase": "cold",
+        "productSha256": "57af3d91ac0b7ce02f8b12c3c1101e138ca94e53023bd4e235d9c5d9f1fff3fe",
+        "proofSha256": "89340ef7f8a6815a2979097c6b95047ec15ed98829a5fd5715f58e30ef9bc588",
+        "traceSha256": "f6bacc44f6554f75e3e3bdd3907fd2a79aba0dca873122d9767ff4bd1490d288",
+        "eventCounts": {
+          "session-start": 1,
+          "cache-applying": 1,
+          "history-response": 2,
+          "history-applying": 2
+        },
+        "observedMomentsMS": [
+          {
+            "event": "native-session-created",
+            "msFromNativeSessionCreated": 0.0
+          },
+          {
+            "event": "native-cached-final-visible-with-reads-blocked",
+            "msFromNativeSessionCreated": 626.946
+          }
+        ],
+        "scope": "independent custom native Session/storage/Compose fixture, not default MainActivity/process startup. UI moment is positive native assertion observation, not first physical pixel. Original completed final, not model-completion lag. Different product fingerprint from current; historical only."
+      }
+    ],
+    "newModelInputs": 0
+  },
+  "currentObservationUpperBounds": [
+    {
+      "api": 33,
+      "observerToCachedBodyMS": 2207,
+      "observerToCachedInputEditMS": 3338,
+      "observerToPendingHistoryInputMS": 17665,
+      "observerToNewContentMS": 18200,
+      "observerToFreshReadMS": 52627,
+      "processStartToCacheObservedMS": 3109,
+      "sourceClock": "android.os.SystemClock.uptimeMillis",
+      "scope": "positive native assertion observation upper bounds, includes instrumentation/bootstrap, step order and explicit scroll/edit; not first physical pixels, release startup/SLA, transport response latency or model completion lag",
+      "momentsRelativeObserverMS": [
+        {
+          "event": "process-start-metadata",
+          "ms": -902
+        },
+        {
+          "event": "native-observer-ready",
+          "ms": 0
+        },
+        {
+          "event": "native-test-body-ready",
+          "ms": 1946
+        },
+        {
+          "event": "original-cache-state-observed",
+          "ms": 1948
+        },
+        {
+          "event": "cached-body-and-draft-ui-observed",
+          "ms": 2207
+        },
+        {
+          "event": "cached-input-edit-ui-observed",
+          "ms": 3338
+        },
+        {
+          "event": "input-during-pending-history-ui-observed",
+          "ms": 17665
+        },
+        {
+          "event": "new-original-content-ui-observed",
+          "ms": 18200
+        },
+        {
+          "event": "fresh-original-read-ui-observed",
+          "ms": 52627
+        }
+      ],
+      "privateNativeArchiveWithMomentsSha256": "7d94732100c79a0cf0ad96ce2100389bf7e88172820f15eb43c264b586fcc31f"
+    },
+    {
+      "api": 26,
+      "observerToCachedBodyMS": 1192,
+      "observerToCachedInputEditMS": 2055,
+      "observerToPendingHistoryInputMS": 16890,
+      "observerToNewContentMS": 17308,
+      "observerToFreshReadMS": 87574,
+      "processStartToCacheObservedMS": 1584,
+      "sourceClock": "android.os.SystemClock.uptimeMillis",
+      "scope": "positive native assertion observation upper bounds, includes instrumentation/bootstrap, step order and explicit scroll/edit; not first physical pixels, release startup/SLA, transport response latency or model completion lag",
+      "momentsRelativeObserverMS": [
+        {
+          "event": "process-start-metadata",
+          "ms": -392
+        },
+        {
+          "event": "native-observer-ready",
+          "ms": 0
+        },
+        {
+          "event": "native-test-body-ready",
+          "ms": 1024
+        },
+        {
+          "event": "original-cache-state-observed",
+          "ms": 1092
+        },
+        {
+          "event": "cached-body-and-draft-ui-observed",
+          "ms": 1192
+        },
+        {
+          "event": "cached-input-edit-ui-observed",
+          "ms": 2055
+        },
+        {
+          "event": "input-during-pending-history-ui-observed",
+          "ms": 16890
+        },
+        {
+          "event": "new-original-content-ui-observed",
+          "ms": 17308
+        },
+        {
+          "event": "fresh-original-read-ui-observed",
+          "ms": 87574
+        }
+      ],
+      "privateNativeArchiveWithMomentsSha256": "23d4f061b43e21beddc1ff6e5c5c6f19b638e7efcc6766cfc26db0002f8e4032"
+    },
+    {
+      "api": 37,
+      "observerToCachedBodyMS": 2038,
+      "observerToCachedInputEditMS": 3139,
+      "observerToPendingHistoryInputMS": 17456,
+      "observerToNewContentMS": 17482,
+      "observerToFreshReadMS": 52908,
+      "processStartToCacheObservedMS": 2566,
+      "sourceClock": "android.os.SystemClock.uptimeMillis",
+      "scope": "positive native assertion observation upper bounds, includes instrumentation/bootstrap, step order and explicit scroll/edit; not first physical pixels, release startup/SLA, transport response latency or model completion lag",
+      "momentsRelativeObserverMS": [
+        {
+          "event": "process-start-metadata",
+          "ms": -528
+        },
+        {
+          "event": "native-observer-ready",
+          "ms": 0
+        },
+        {
+          "event": "native-test-body-ready",
+          "ms": 1869
+        },
+        {
+          "event": "original-cache-state-observed",
+          "ms": 1870
+        },
+        {
+          "event": "cached-body-and-draft-ui-observed",
+          "ms": 2038
+        },
+        {
+          "event": "cached-input-edit-ui-observed",
+          "ms": 3139
+        },
+        {
+          "event": "input-during-pending-history-ui-observed",
+          "ms": 17456
+        },
+        {
+          "event": "new-original-content-ui-observed",
+          "ms": 17482
+        },
+        {
+          "event": "fresh-original-read-ui-observed",
+          "ms": 52908
+        }
+      ],
+      "privateNativeArchiveWithMomentsSha256": "c9974e443d376d5d2e898d1e293f8cdc5d3974a0cc5a9a4a417945a8f76c788b"
+    }
+  ],
+  "scope": "historical old-product custom Session observations kept separate from new current-product default MainActivity positive UI assertion observations. No release first-physical-frame, model-completion latency or full P2 performance pass."
+}

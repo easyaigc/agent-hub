@@ -66,7 +66,9 @@ class MobilePrivateConnectionTest {
                 override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?): MobileWorkspace {
                     if(block) { entered.complete(Unit);gate.await() }
                     return auth.workspace.copy(threads=listOf(MobileThread("hint-thread",original.id,"hint test","idle")),
-                        capabilities=listOf("reply","commands:target-bound:v1"),runtimeConnected=true)
+                        // Exercise the fresh-authority fallback, not a later background directory GET.
+                        // A fully confirmed runtime snapshot legitimately skips that GET.
+                        capabilities=listOf("reply","commands:target-bound:v1"),runtimeConnected=null)
                 }
                 override suspend fun history(client: MobileClient,threadId: String,cursor: String?)=MobileHistory(original.id,threadId,emptyList(),null,original.scope,"idle",null,"{}",true,
                     MobileRuntime("idle",null,emptyList(),null,emptyList(),emptyList(),true,null,null,GenerationSettings()))
@@ -81,6 +83,7 @@ class MobilePrivateConnectionTest {
                 withTimeout(10_000) { while(withContext(Dispatchers.Main) { session.restoring || session.loading || session.threads.isEmpty() })delay(20) }
                 withContext(Dispatchers.Main) { session.selectThread(session.threads.first()) }
                 withTimeout(10_000) { while(withContext(Dispatchers.Main) { session.historyLoading || !session.canCompose })delay(20) }
+                withContext(Dispatchers.Main) { allowSyntheticRegressionSharing(session) }
                 withContext(Dispatchers.Main) { session.text="one guarded auxiliary reply";block=true;session.performAction() }
                 withTimeout(10_000) { entered.await() }
                 withContext(Dispatchers.Main) {

@@ -17,7 +17,6 @@ import com.agenthub.core.CodexDiscoveryContract
 import com.agenthub.core.TargetScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.InetAddress
@@ -150,11 +149,13 @@ class CodexHostDiscovery(context: Context, private val session: MobileSession, s
     private var revision = UUID.randomUUID()
     private var active = false
     private var networkRevision = UUID.randomUUID()
-    private val publicDiscovery = CodexPublicDiscovery(storage)
+    private val publicDiscovery = CodexPublicDiscovery(storage,budget=budget)
+    private val savedDiscovery=CodexSavedRouteDiscovery(budget=budget)
     private var publicHosts = emptyList<DiscoveredCodexHost>()
     private var listener: NsdManager.DiscoveryListener? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var scanning: Job? = null
+    private var rescanRequested=false
     private val advertised = mutableMapOf<String, DiscoveredCodexHost>()
     private val pending = java.util.ArrayDeque<NsdServiceInfo>()
     private var resolving: NsdManager.ResolveListener? = null
@@ -202,10 +203,11 @@ class CodexHostDiscovery(context: Context, private val session: MobileSession, s
     }
     private fun networkChanged() {
         networkRevision=UUID.randomUUID();scanning?.cancel();scanning=null
-        publicHosts=emptyList();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild();scan()
+        publicHosts=publicDiscovery.currentHints();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild();scan()
     }
     fun stop() {
-        active = false; revision = UUID.randomUUID(); tasks.coroutineContext.cancelChildren(); scanning = null
+        active = false; revision = UUID.randomUUID(); tasks.coroutineContext.cancelChildren(); scanning = null;rescanRequested=false
+        publicDiscovery.clearVerifiedHints()
         listener?.let { try { nsd.stopServiceDiscovery(it) } catch (_: Exception) {} }; listener = null
         networkCallback?.let { try { network.unregisterNetworkCallback(it) } catch (_: Exception) {} }; networkCallback = null
         pending.clear(); advertised.clear();publicHosts=emptyList();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild()
@@ -253,34 +255,56 @@ class CodexHostDiscovery(context: Context, private val session: MobileSession, s
     }
     private fun rebuild() {
         val known = session.clients.filter { !it.isDemo && it.scope?.agentId == "codex" }
-        hosts = known.map { client ->
-            val found=publicHosts.firstOrNull { it.id==client.id && sameScope(it.target,client.scope) && it.fingerprint==client.codexDirect?.fingerprint }
-            found?.copy(name=client.name,known=true) ?: hosts.firstOrNull { it.id==client.id && it.known } ?: DiscoveredCodexHost(client.id,client.name,client.endpoint.orEmpty(),true,false)
-        } + (publicHosts + advertised.values).distinctBy { it.id }.sortedBy { it.name }.filter { row -> known.none { it.id == row.id } }
+        hosts = known.map { client -> savedDiscoveryRow(client,publicHosts,hosts) } + (publicHosts + advertised.values).distinctBy { it.id }.sortedBy { it.name }.filter { row -> known.none { it.id == row.id } }
     }
     fun scan() {
-        if (!active || !permitted() || scanning?.isActive == true) return
-        val generation = revision; val path=networkRevision; rebuild()
-        val clients = session.clients.filter { !it.isDemo && it.scope?.agentId == "codex" }
+        if (!active || !permitted()) return
+        publicHosts=publicDiscovery.currentHints();rebuild()
+        if(scanning?.isActive==true) { rescanRequested=true;return }
+        val generation = revision; val path=networkRevision
+        val clients = session.clients.filter { !it.isDemo && it.scope?.agentId == "codex" }.sortedByDescending { it.id==session.selectedClient.id }
         scanning = tasks.launch {
-            val public = publicDiscovery.scan(advertised.values.toList(), session.clients.toList(), session::storedCredential) { active && revision==generation && networkRevision==path }
-            if(!active||revision!=generation||networkRevision!=path)return@launch
-            publicHosts=public.codex;session.easyWorkDiscovery?.offerVPN(public.easywork);rebuild()
-            clients.map { client -> async {
-                val routes = (listOfNotNull(client.endpoint) + client.codexDirect?.routes.orEmpty().map { it.endpoint } + if (client.codexDirect != null) (publicHosts+advertised.values).filter { it.id == client.id && (it.fingerprint==null||it.fingerprint==client.codexDirect.fingerprint) }.map { it.endpoint } else emptyList()).distinct().take(64)
-                val results = routes.map { endpoint -> async { budget.withPermit {
-                    try {
-                        if (client.codexDirect == null && !endpoint.startsWith("https://")) return@withPermit null
-                        val probe = client.copy(endpoint = endpoint, codexDirect = client.codexDirect?.copy(routes = client.codexDirect.routes + CodexRoute(endpoint)))
-                        endpoint to NativeHostReads { if (probe.codexDirect == null) session.storedCredential(client.id) else "" }.descriptor(probe)
-                    } catch (cancel: CancellationException) { throw cancel } catch (_: Exception) { null }
-                } } }.awaitAll().filterNotNull()
-                if (revision != generation || networkRevision!=path || !active) return@async
-                val result = results.firstOrNull { it.first == client.endpoint } ?: results.firstOrNull()
-                if (result != null && session.updateCodexRoute(client, result.first, result.second)) {
-                    hosts = hosts.map { if (it.id == client.id && it.known) it.copy(endpoint = result.first, reachable = true) else it }
-                } else hosts = hosts.map { if (it.id == client.id && it.known) it.copy(reachable = false) else it }
-            } }.awaitAll()
+          try {
+            val current={ active && revision==generation && networkRevision==path }
+            kotlinx.coroutines.coroutineScope {
+              launch {
+                savedDiscovery.scan(clients,(publicHosts+advertised.values).toList(),session::storedCredential,current,accept@ { route->
+                    if(!current())return@accept false
+                    val now=session.clients.firstOrNull { it.id==route.client.id } ?: return@accept false
+                    if(!sameDiscoveryConnection(route.client,now))return@accept false
+                    // A newer healthy current route defeats an older offline scan's alternate.
+                    if(!route.client.online&&now.online&&route.endpoint!=now.endpoint)return@accept false
+                    val accepted=session.updateCodexRoute(route.client,route.endpoint,route.descriptor)
+                    if(accepted) { hosts=hosts.map { if(it.id==route.client.id&&it.known)it.copy(endpoint=route.endpoint,reachable=true) else it };rebuild() }
+                    accepted
+                },{ original->
+                    val now=session.clients.firstOrNull { it.id==original.id }
+                    if(current()&&now!=null&&!now.online&&sameDiscoveryConnection(original,now))
+                        hosts=hosts.map { if(it.id==original.id&&it.known)it.copy(reachable=false) else it }
+                })
+              }
+              launch {
+                val public=publicDiscovery.scan(advertised.values.toList(),session.clients.toList(),session::storedCredential,{ update->
+                    if(current()) {
+                        publicHosts=update.codex
+                        // Only this newly completed descriptor, never a retained row,
+                        // can supply an offline saved client's first authenticated route.
+                        update.verified?.let { verified->
+                            val client=publicDiscoveryOriginalClient(verified,clients,session.clients)
+                            if(client!=null)session.updateCodexRoute(client,verified.row.endpoint,verified.descriptor)
+                        }
+                        session.easyWorkDiscovery?.offerVPN(update.easywork);rebuild()
+                    }
+                },current)
+                if(current()) { publicHosts=public.codex;session.easyWorkDiscovery?.offerVPN(public.easywork);rebuild() }
+              }
+            }
+          } finally {
+            if(active&&revision==generation&&networkRevision==path) {
+                scanning=null
+                if(rescanRequested) { rescanRequested=false;scan() }
+            }
+          }
         }
     }
 }

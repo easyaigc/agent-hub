@@ -53,17 +53,60 @@ enum SharedMobileRules {
 
   static func runAgainText(restart: Bool) -> String { MobileRules.shared.runAgainText(restart: restart) }
 
-  static func timeline(_ messages: [ChatMessage], limit: Int, activeRunId: String?, running: Bool) -> TimelineProjection {
-    MessageProjection.shared.project(messages: messages.map {
+  static func timeline(_ messages: [ChatMessage], limit: Int, activeRunId: String?, running: Bool,
+    focusedMessageId: String? = nil) -> TimelineProjection {
+    let values = messages.map {
       TimelineMessage(id: $0.id, role: $0.role, text: $0.text, kind: $0.kind, status: $0.status,
         runId: $0.runId, replyPhase: $0.replyPhase, replyMessageId: $0.replyMessageId)
-    }, messageLimit: Int32(limit), activeRunId: activeRunId, running: running)
+    }
+    return MessageProjection.shared.focus(projection: MessageProjection.shared.project(messages: values,
+      messageLimit: Int32(limit), activeRunId: activeRunId, running: running), messages: values, messageId: focusedMessageId)
   }
 
   static func noticeIndices(_ receipts: [DeliveryReceipt], dismissed: Set<String>, pendingId: String?) -> [Int] {
     SessionPolicies.shared.noticeIndices(receipts: receipts.map {
-      ReceiptState(id: $0.id, state: $0.state, supersededByTurnId: $0.supersededByTurnId)
+      ReceiptState(id: $0.id, state: $0.state, supersededByTurnId: $0.supersededByTurnId, queueSyncError: $0.queueSyncError)
     }, dismissed: Array(dismissed), pendingId: pendingId).map { $0.intValue }
+  }
+}
+
+struct SidebarDisplayOrder {
+  let pinned: [WorkspaceSidebar.Item]
+  let recentThreadIds: [String]
+  let projectIds: [String]
+  let projectThreadIds: [String: [String]]
+}
+
+extension SharedMobileRules {
+  static func sidebarOrder(hostId: String, threads: [Conversation], projects: [Project],
+    pinnedThreadIds: [String], sidebar: WorkspaceSidebar?) -> SidebarDisplayOrder {
+    let source = sidebar.map { value in
+      SidebarSource(version: Int32(clamping: value.version), pinned: value.pinned.map {
+        SidebarPinnedItem(kind: $0.kind, id: $0.id)
+      }, recentThreadIds: value.recentThreadIds, projectIds: value.projectIds,
+        projectThreads: value.projectThreadIds.map { SidebarProjectThreads(projectId: $0.key, threadIds: $0.value) })
+    }
+    let result = WorkspaceSidebarRules.shared.order(hostId: hostId, threads: threads.map {
+      SidebarThreadState(id: $0.id, hostId: $0.hostId, projectId: $0.projectId,
+        projectIds: $0.projectIds ?? [], archived: $0.archived == true)
+    }, projects: projects.map { SidebarProjectState(id: $0.id, hostId: $0.hostId) },
+      pinnedThreadIds: pinnedThreadIds, source: source)
+    return SidebarDisplayOrder(pinned: result.pinned.map { WorkspaceSidebar.Item(kind: $0.kind, id: $0.id) },
+      recentThreadIds: result.recentThreadIds, projectIds: result.projectIds,
+      projectThreadIds: Dictionary(result.projectThreads.map { ($0.projectId, $0.threadIds) }, uniquingKeysWith: { first, _ in first }))
+  }
+  static func runningConversationCount(hostId: String, online: Bool, demo: Bool,
+    workspaceAvailable: Bool, connectionMode: String?, conversations: [Conversation]) -> Int? {
+    WorkspaceSidebarRules.shared.runningCount(hostId: hostId, online: online, demo: demo,
+      workspaceAvailable: workspaceAvailable, connectionMode: connectionMode, conversations: conversations.map {
+        ConversationActivity(id: $0.id, hostId: $0.hostId, state: $0.state)
+      })?.intValue
+  }
+  static func sidebarExpanded(preference: Bool, searching: Bool) -> Bool {
+    WorkspaceSidebarRules.shared.expanded(preference: preference, searching: searching)
+  }
+  static func sidebarVisibleIds(_ ids: [String], expanded: Bool, searching: Bool) -> [String] {
+    WorkspaceSidebarRules.shared.visibleIds(ids: ids, expanded: expanded, searching: searching)
   }
 }
 
@@ -210,5 +253,84 @@ extension SharedMobileRules {
     }
     saved.mobileCacheVersion = 2
     return dirty
+  }
+}
+
+
+extension SharedMobileRules {
+  static func searchDocument(text: String, detail: String?, files: [String], attachments: [String], parts: [String]) -> String {
+    ChatSearchRules.shared.document(text: text, detail: detail, files: files, attachments: attachments, parts: parts)
+  }
+  static func chatTaskStatus(state: String, lastTurnStatus: String?, archived: Bool, online: Bool, unconfirmed: Bool) -> ChatTaskStatus {
+    ChatManagementRules.shared.taskStatus(state: state, lastTurnStatus: lastTurnStatus, archived: archived, online: online, unconfirmed: unconfirmed)
+  }
+  static func chatCanManage(demo: Bool, online: Bool, supported: Bool, knownTarget: Bool, busy: Bool, pending: Bool) -> Bool {
+    ChatManagementRules.shared.canManage(demo: demo, online: online, supported: supported, knownTarget: knownTarget, busy: busy, pending: pending)
+  }
+  static func workspaceArchiveEligible(knownTarget: Bool, archived: Bool, singleBusy: Bool, singlePending: Bool, batchPending: Bool) -> Bool {
+    WorkspaceArchiveRules.shared.eligible(knownTarget: knownTarget, archived: archived,
+      singleBusy: singleBusy, singlePending: singlePending, batchPending: batchPending)
+  }
+  static func workspaceArchiveSelect(current: [String], eligible: [String], all: Bool) -> [String] {
+    WorkspaceArchiveRules.shared.select(current: current, eligible: eligible, allSelected: all)
+  }
+  static func workspaceArchiveRequestValid(_ request: WorkspaceManagementRequest) -> Bool {
+    guard let data = try? JSONEncoder().encode(request), let wire = String(data: data, encoding: .utf8) else { return false }
+    return WorkspaceArchiveRules.shared.requestValid(wire: wire)
+  }
+  static func workspaceArchivePending(_ state: String) -> Bool { WorkspaceArchiveRules.shared.pending(state: state) }
+  static func workspaceArchiveMerged(_ incoming: WorkspaceManagementOperation, original: WorkspaceManagementOperation, previous: WorkspaceManagementOperation) -> WorkspaceManagementOperation? {
+    func wire(_ operation: WorkspaceManagementOperation) -> String? {
+      guard let data = try? JSONEncoder().encode(operation), var value = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+      value.removeValue(forKey: "labels")
+      guard let items = value["items"] as? [[String: Any]] else { return nil }
+      value["items"] = items.map { item in var row = item; if row["error"] == nil { row["error"] = NSNull() }; return row }
+      guard let output = try? JSONSerialization.data(withJSONObject: value) else { return nil }
+      return String(data: output, encoding: .utf8)
+    }
+    guard let request = try? JSONEncoder().encode(original.request), let text = String(data: request, encoding: .utf8),
+      let before = wire(previous), let next = wire(incoming),
+      let merged = WorkspaceArchiveRules.shared.merge(original: text, previous: before, incoming: next),
+      let decoded = try? JSONDecoder().decode(WorkspaceManagementOperation.self, from: Data(merged.utf8)) else { return nil }
+    var result = original
+    result.items = decoded.items
+    return result
+  }
+  static func chatActionPending(_ phase: String) -> Bool { ChatManagementRules.shared.pending(phase: phase) }
+  static func chatActionMatches(_ receipt: ChatActionReceipt, original: ChatActionReceipt) -> Bool {
+    guard let request = try? JSONEncoder().encode(original.request), let outcome = try? JSONEncoder().encode(receipt),
+      let requestText = String(data: request, encoding: .utf8) else { return false }
+    // waitingEnded belongs only to local waiting state, not the HTTP receipt.
+    guard var value = try? JSONSerialization.jsonObject(with: outcome) as? [String: Any] else { return false }
+    value.removeValue(forKey: "waitingEnded")
+    // Codable omits nil optionals; the strict transport contract names null error.
+    if value["error"] == nil { value["error"] = NSNull() }
+    guard let wire = try? JSONSerialization.data(withJSONObject: value), let text = String(data: wire, encoding: .utf8) else { return false }
+    return ChatManagementRules.shared.outcomeMatches(original: requestText, outcome: text)
+  }
+  static func chatActionMayAccept(previous: String, next: String) -> Bool {
+    ChatManagementRules.shared.mayAcceptOutcome(previousPhase: previous, phase: next)
+  }
+  static func searchQuery(_ value: String) -> String { ChatSearchRules.shared.query(value: value) }
+  static func searchMatches(_ text: String, query: String) -> Bool {
+    ChatSearchRules.shared.matches(text: text, value: query, native: NativeChatSearchText.shared)
+  }
+  static func searchSnippet(_ text: String, query: String) -> String {
+    ChatSearchRules.shared.snippet(text: text, value: query, native: NativeChatSearchText.shared).text
+  }
+  static func longSearchMessage(_ text: String) -> Bool {
+    ChatSearchRules.shared.longMessage(text: text, native: NativeChatSearchText.shared)
+  }
+  static func searchRanges(_ text: String, query: String) -> [Range<String.Index>] {
+    ChatSearchRules.shared.ranges(text: text, value: query, native: NativeChatSearchText.shared).map {
+      String.Index(utf16Offset: Int($0.start), in: text)..<String.Index(utf16Offset: Int($0.end), in: text)
+    }
+  }
+  static func searchResultsCurrent(_ resultQuery: String, query: String, resultVersion: UUID?, version: UUID) -> Bool {
+    ChatSearchRules.shared.resultsCurrent(resultQuery: resultQuery, value: query,
+      resultSourceVersion: resultVersion?.uuidString ?? "", sourceVersion: version.uuidString)
+  }
+  static func searchPage(previous: [String], incoming: [String], nextCursor: String?, seen: [String]) -> ChatSearchPageOrder {
+    ChatSearchRules.shared.page(previous: previous, incoming: incoming, nextCursor: nextCursor, seenCursors: seen)
   }
 }

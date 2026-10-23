@@ -30,7 +30,7 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
     companion object {
         fun target(client: MobileClient,threadId: String?)=client.cacheKey(threadId)
         private val definitions=mapOf("reply" to "replyRequest","creation" to "creationRequest",
-            "fork" to "threadForkRequest","thread-create" to "createThreadRequest","open" to "openRequest","project-create" to "native-project-intent-v1")
+            "workspace-archive" to "workspaceManagementRequest","chat-action" to "chatActionRequest","fork" to "threadForkRequest","thread-create" to "createThreadRequest","open" to "openRequest","project-create" to "native-project-intent-v1")
         private fun sha(value: String)=MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
     }
     private fun decode(value: JSONObject): SavedOperation {
@@ -113,20 +113,36 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         require(phase in setOf("received","queued","submitted","completed","cancelled","interrupted","failed","uncertain","prepared","confirmed","outcome-unknown","rejected","opening","opened")) { "未知回执状态" }
         require(result!=null) { "缺少可核对的远端回执" }
         verifyResult(it,result)
-        val receivedPhase=when(it.kind) { "reply"->result.getString("state"); "creation","open","fork"->result.getString("phase"); else->"confirmed" }
+        if(it.kind=="workspace-archive") {
+            val merged=com.agenthub.core.WorkspaceArchiveRules.merge(it.intent,it.result,result.toString()) ?: error("批量归档回执原意图不匹配")
+            val receipt=WorkspaceArchiveCodec.receipt(JSONObject(merged))
+            return@change it.copy(phase=if(receipt.pending)"outcome-unknown" else "completed",result=merged,error=null)
+        }
+        val receivedPhase=when(it.kind) { "reply"->result.getString("state"); "creation","open","fork","chat-action"->result.getString("phase"); else->"confirmed" }
         require(phase==receivedPhase) { "回执状态不匹配" }
+        if(it.kind=="chat-action") require(com.agenthub.core.ChatManagementRules.mayAcceptOutcome(it.phase,phase)) { "终态聊天操作回执不能回退" }
         if(it.kind=="fork") {
             val prior=it.result?.let { value->ThreadForkCodec.operation(JSONObject(value)) }
             val next=ThreadForkCodec.operation(result)
             require(com.agenthub.core.ThreadForkRules.mayAcceptOutcome(it.phase,prior?.forkedThreadId,prior?.projectId,next.phase,next.forkedThreadId,next.projectId)) { "终态分支回执不能回退或改写" }
         }
-        if(it.phase in listOf("confirmed","opened","completed","cancelled","interrupted") && it.phase!=phase) it
+        if(preservesReplyReceipt(it,phase) || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted") && it.phase!=phase) it
         else it.copy(phase=phase,result=result.toString(),error=error)
     }
-    suspend fun uncertain(target: String,id: String,error: String?): SavedOperation = change(target,id) { if(it.kind=="fork" && it.phase=="rejected" || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted")) it else it.copy(phase="uncertain",error=error) }
+    suspend fun uncertain(target: String,id: String,error: String?): SavedOperation = change(target,id) { if(preservesReplyReceipt(it,"uncertain") || it.kind in listOf("fork","chat-action") && it.phase=="rejected" || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted")) it else it.copy(phase="uncertain",error=error) }
     suspend fun replyNotSubmitted(target: String,id: String,error: String?): SavedOperation = change(target,id) {
         require(it.kind=="reply" && !it.submissionAttempted && it.phase=="ready") { "仅首个回复提交前的本地失败可确认未提交" }
         it.copy(phase="failed",error=error)
+    }
+    suspend fun workspaceArchiveNotSubmitted(target: String,id: String): SavedOperation = change(target,id) {
+        require(it.kind=="workspace-archive"&&it.phase in listOf("ready","submitting")&&it.result==null)
+        val request=WorkspaceArchiveCodec.request(JSONObject(it.intent))
+        val result=WorkspaceArchiveReceipt(request,request.ids.map { id->WorkspaceArchiveItem(id,"rejected","管理目标已变化，未提交") })
+        it.copy(phase="completed",result=result.body().toString(),error=null)
+    }
+    suspend fun chatActionNotSubmitted(target: String,id: String,error: String?): SavedOperation = change(target,id) {
+        require(it.kind=="chat-action"&&it.phase in listOf("ready","submitting")&&it.result==null)
+        it.copy(phase="rejected",error=error)
     }
     suspend fun forkNotSubmitted(target: String,id: String,error: String?): SavedOperation = change(target,id) {
         require(it.kind=="fork" && !it.submissionAttempted && it.phase=="ready");it.copy(phase="rejected",error=error)
@@ -138,9 +154,13 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         require(it.kind=="fork" && it.phase=="confirmed");it.copy(detached=false)
     }
     suspend fun detach(target: String,id: String): SavedOperation = change(target,id) { it.copy(detached=true) }
+    private fun preservesReplyReceipt(record: SavedOperation,incoming: String): Boolean = record.kind=="reply" &&
+        record.result?.let { CodexCommandCodec.receipt(JSONObject(it)) }?.let { ReplyRecoveryRules.preservesReceiptEvidence(it.state,it.queueSource,it.queuePresent,it.queueDisposition,incoming) }==true
     private fun verifyResult(record: SavedOperation,result: JSONObject) {
         val intent=JSONObject(record.intent); val host=intent.getString("hostId")
         when(record.kind) {
+            "workspace-archive" -> require(com.agenthub.core.WorkspaceArchiveRules.merge(record.intent,null,result.toString())!=null) { "批量归档回执原意图不匹配" }
+            "chat-action" -> require(com.agenthub.core.ChatManagementRules.outcomeMatches(record.intent,result.toString())) { "聊天操作回执不匹配原意图" }
             "project-create" -> { require(result.keys().asSequence().toSet()==setOf("id","hostId","name","roots")&&result.getString("hostId")==host&&result.getString("id").isNotBlank()&&result.getString("name")==intent.getString("name"));result.getJSONArray("roots").strings() }
             "reply" -> CodexCommandCodec.receipt(result).also { require(it.hostId==host && it.threadId==intent.getString("threadId") && it.operationId==record.id) { "保存回执目标不匹配" } }
             "creation" -> CodexCommandCodec.creation(result).also {
@@ -173,6 +193,7 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         }
     }
     private fun validateIntent(value: JSONObject,definition: String) {
+        if(definition=="workspaceManagementRequest") { WorkspaceArchiveCodec.request(value);return }
         if(definition!="native-project-intent-v1") { CodexCommandCodec.validate(value,definition);return }
         require(value.keys().asSequence().toSet()==setOf("version","hostId","clientOperationId","name","directory")&&value.getInt("version")==1)
         require(listOf("hostId","clientOperationId","name","directory").all { value.getString(it).isNotBlank() })

@@ -87,10 +87,7 @@ class MobileLiveQuestionsTest {
         ui.waitUntil(45_000) { !session.historyLoading && session.runtime!=null && session.models.isNotEmpty() }
         assertFalse("Persisted metadata must not imply a loaded owner",session.runtime!!.canControl==true)
         ui.onNodeWithTag("generation-settings").assertIsEnabled().performClick()
-        ui.onNodeWithTag("model-${fixture.getString("model")}").performScrollTo().performClick()
-        ui.onNodeWithTag("effort-${fixture.getString("effort")}").performScrollTo().performClick()
-        ui.onNodeWithTag("speed-${fixture.getString("speed")}").performScrollTo().performClick()
-        ui.onNodeWithTag("permission-full-access").performScrollTo().performClick();shot("01-native-generation")
+        ui.selectNativeGeneration(fixture.getString("model"),fixture.getString("effort"),fixture.getString("speed"),"full-access");shot("01-native-generation")
         ui.onNodeWithTag("sheet-done").performClick()
         input("安卓原生设置和主动打开验收：仅原样回复 SETTINGS_$nonce。不要调用工具、更改文件或其他聊天。")
         answer("SETTINGS_$nonce");assertTrue(session.runtime!!.canControl==true);control("settings");shot("02-unloaded-owner-opened")

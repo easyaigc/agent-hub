@@ -24,6 +24,7 @@ class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", pr
     // AtomicFile's older reader may restore its backup while another instance
     // is writing. Coordinate all instances for this directory in this process.
     private val ioLock = IO_LOCKS.computeIfAbsent(root.canonicalPath) { ReentrantLock(true) }
+    private val recovery = RECOVERY.computeIfAbsent(root.canonicalPath) { RecoveryFence() }
     private val writes = Executors.newSingleThreadExecutor()
     private val snapshotLock=Any()
     private val snapshots=mutableMapOf<String,Pair<()->Unit,(Exception)->Unit>>()
@@ -37,7 +38,18 @@ class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", pr
             }.generateKey()
         }
     }
-    companion object { private val KEY_LOCK = Any(); private val SNAPSHOT_IO_LOCK=Any(); private val IO_LOCKS=ConcurrentHashMap<String,ReentrantLock>() }
+    private class RecoveryFence(var blocked: Boolean=false,@Volatile var generation: Long=0) { val queuedGeneration=ThreadLocal<Long>() }
+    internal fun beginRestore(): Long = ioLock.withLock { recovery.blocked=true;++recovery.generation }
+    internal fun finishRestore(generation: Long,publish: ()->Unit) = ioLock.withLock {
+        check(recovery.generation==generation) { "本地读取已被新的恢复替代" }
+        publish()
+        recovery.blocked=false
+    }
+    private fun requireWritable() {
+        check(!recovery.blocked) { "本地数据恢复前不能保存，原文件已保留" }
+        check(recovery.queuedGeneration.get()?.let { it==recovery.generation }!=false) { "旧的保存已被本地恢复替代" }
+    }
+    companion object { private val RECOVERY=ConcurrentHashMap<String,RecoveryFence>(); private val KEY_LOCK = Any(); private val SNAPSHOT_IO_LOCK=Any(); private val IO_LOCKS=ConcurrentHashMap<String,ReentrantLock>() }
     private fun file(name: String): AtomicFile {
         val hash = MessageDigest.getInstance("SHA-256").digest(name.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
         return AtomicFile(File(root, "$hash.bin"))
@@ -51,6 +63,7 @@ class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", pr
         Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(crypt(cipher,bytes,13))).toString()
     }
     fun write(name: String, text: String) = ioLock.withLock {
+        requireWritable()
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, key); updateAAD(name.toByteArray(Charsets.UTF_8)) }
         val encrypted = byteArrayOf(1) + cipher.iv + crypt(cipher,text.toByteArray(Charsets.UTF_8))
         val atomic = file(name); val stream = atomic.startWrite()
@@ -60,6 +73,7 @@ class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", pr
     // Audio stays binary and bounded in memory. Each chunk authenticates its name,
     // total length and position, so truncation/reordering cannot publish plaintext.
     internal fun writeBinary(name: String, source: File, maximumBytes: Int=12*1024*1024) = ioLock.withLock {
+        requireWritable()
         require(maximumBytes in 1..21*1024*1024)
         val size=source.length();require(size in 1..maximumBytes.toLong())
         val atomic=file(name);val stream=atomic.startWrite()
@@ -102,12 +116,23 @@ class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", pr
         out.write(cipher.doFinal());return out.toByteArray()
     }
     // Immutable snapshots are queued in order. Callers receive storage failures on Main, never silently discard drafts.
-    fun enqueue(name: String, text: String, failed: (Exception) -> Unit) { writes.execute { try { write(name, text) } catch (error: Exception) { failed(error) } catch(_: OutOfMemoryError) { failed(IllegalStateException("本地存储内存不足，原文件已保留")) } } }
+    fun enqueue(name: String, text: String, failed: (Exception) -> Unit) {
+        val generation=recovery.generation
+        writes.execute { try { ioLock.withLock {
+            check(generation==recovery.generation) { "旧的保存已被本地恢复替代" };write(name,text)
+        } } catch (error: Exception) { failed(error) } catch(_: OutOfMemoryError) { failed(IllegalStateException("本地存储内存不足，原文件已保留")) } } }
     // History reads may arrive faster than disk encryption. Keep the newest
     // immutable snapshot per target and serialize on the storage worker.
     // Submission intent persistence continues to use the synchronous write.
     fun enqueueSnapshot(name: String, save: ()->Unit, failed: (Exception)->Unit) {
-        val schedule=synchronized(snapshotLock) { snapshots[name]=save to failed; scheduledSnapshots.add(name) }
+        val generation=recovery.generation
+        val guardedSave: ()->Unit = {
+            val previous=recovery.queuedGeneration.get()
+            recovery.queuedGeneration.set(generation)
+            try { ioLock.withLock { requireWritable() };save() }
+            finally { if(previous==null) recovery.queuedGeneration.remove() else recovery.queuedGeneration.set(previous) }
+        }
+        val schedule=synchronized(snapshotLock) { snapshots[name]=guardedSave to failed; scheduledSnapshots.add(name) }
         if(!schedule) return
         writes.execute {
             while(true) {
@@ -120,7 +145,7 @@ class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", pr
     // A retry fence must be consumed atomically across journal instances too.
     internal fun <T> operationTransaction(block: ()->T): T = ioLock.withLock(block)
     internal fun storedBytes(name: String): Long = ioLock.withLock { file(name).baseFile.length() }
-    fun remove(name: String) = ioLock.withLock { file(name).delete() }
+    fun remove(name: String) = ioLock.withLock { requireWritable();file(name).delete() }
     fun token(id: String) = CodexConnectionVault(this).token(id) ?: read("token:$id").orEmpty()
     fun setToken(id: String, value: String) = operationTransaction {
         if (value.isEmpty()) remove("token:$id") else write("token:$id", value)

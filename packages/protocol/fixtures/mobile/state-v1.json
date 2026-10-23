@@ -1388,6 +1388,76 @@
       "dismissed": ["dismissed"],
       "pendingId": "pending",
       "expected": [0, 2]
+    },
+    {
+      "name": "queue-sync-submitted-2",
+      "receipts": [
+        {
+          "id": "original",
+          "state": "submitted",
+          "supersededByTurnId": "later",
+          "queueSyncError": "native sync failure"
+        }
+      ],
+      "dismissed": ["original"],
+      "pendingId": null,
+      "expected": [0]
+    },
+    {
+      "name": "queue-sync-completed-3",
+      "receipts": [
+        {
+          "id": "original",
+          "state": "completed",
+          "supersededByTurnId": "later",
+          "queueSyncError": "native sync failure"
+        }
+      ],
+      "dismissed": ["original"],
+      "pendingId": null,
+      "expected": [0]
+    },
+    {
+      "name": "queue-sync-failed-4",
+      "receipts": [
+        {
+          "id": "original",
+          "state": "failed",
+          "supersededByTurnId": "later",
+          "queueSyncError": "native sync failure"
+        }
+      ],
+      "dismissed": ["original"],
+      "pendingId": null,
+      "expected": [0]
+    },
+    {
+      "name": "queue-sync-submitted-5",
+      "receipts": [
+        {
+          "id": "original",
+          "state": "submitted",
+          "supersededByTurnId": "later",
+          "queueSyncError": ""
+        }
+      ],
+      "dismissed": ["original"],
+      "pendingId": null,
+      "expected": []
+    },
+    {
+      "name": "queue-sync-submitted-6",
+      "receipts": [
+        {
+          "id": "original",
+          "state": "submitted",
+          "supersededByTurnId": "later",
+          "queueSyncError": null
+        }
+      ],
+      "dismissed": ["original"],
+      "pendingId": null,
+      "expected": []
     }
   ],
   "contracts": [
@@ -1958,6 +2028,246 @@
       "definition": "history",
       "json": "{\"hostId\":\"host-example\",\"threadId\":\"thread-example\",\"messages\":[],\"historyRevision\":-1}",
       "valid": false
+    },
+    {
+      "name": "action-request",
+      "definition": "chatActionRequest",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\"}",
+      "valid": true
+    },
+    {
+      "name": "action-receipt",
+      "definition": "chatActionReceipt",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\",\"phase\":\"confirmed\",\"error\":null}",
+      "valid": true
+    },
+    {
+      "name": "action-not-arbitrary-method",
+      "definition": "chatActionRequest",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"shell\"}",
+      "valid": false
+    },
+    {
+      "name": "action-extra-field",
+      "definition": "chatActionRequest",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\",\"method\":\"arbitrary\"}",
+      "valid": false
+    },
+    {
+      "name": "action-short-id",
+      "definition": "chatActionRequest",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"short\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\"}",
+      "valid": false
+    },
+    {
+      "name": "action-missing-runtime",
+      "definition": "chatActionRequest",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\"}",
+      "valid": false
+    },
+    {
+      "name": "receipt-unknown-phase",
+      "definition": "chatActionReceipt",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\",\"phase\":\"opened\",\"error\":null}",
+      "valid": false
+    },
+    {
+      "name": "receipt-missing-error",
+      "definition": "chatActionReceipt",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\",\"phase\":\"confirmed\"}",
+      "valid": false
+    },
+    {
+      "name": "action-account-metadata",
+      "definition": "chatActionRequest",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\",\"account\":{\"authority\":\"historical\",\"subject\":\"metadata\"}},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\"}",
+      "valid": true
+    },
+    {
+      "name": "receipt-rejected",
+      "definition": "chatActionReceipt",
+      "json": "{\"hostId\":\"host-actions-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-actions-01\",\"workspaceId\":\"workspace-actions\",\"runtimeId\":\"runtime-actions\"},\"threadId\":\"thread-actions-01\",\"clientOperationId\":\"operation-actions-01\",\"action\":\"archive\",\"phase\":\"rejected\",\"error\":\"authoritative refusal\"}",
+      "valid": true
+    },
+    {
+      "name": "archive-request",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"chat-one\",\"chat-two\"]}",
+      "valid": true
+    },
+    {
+      "name": "archive-receipt",
+      "definition": "workspaceManagementOperation",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"chat-one\",\"chat-two\"],\"items\":[{\"id\":\"chat-one\",\"state\":\"completed\",\"error\":null},{\"id\":\"chat-two\",\"state\":\"outcome-unknown\",\"error\":null}]}",
+      "valid": true
+    },
+    {
+      "name": "empty-batch",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[]}",
+      "valid": false
+    },
+    {
+      "name": "over100",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"chat-0\",\"chat-1\",\"chat-2\",\"chat-3\",\"chat-4\",\"chat-5\",\"chat-6\",\"chat-7\",\"chat-8\",\"chat-9\",\"chat-10\",\"chat-11\",\"chat-12\",\"chat-13\",\"chat-14\",\"chat-15\",\"chat-16\",\"chat-17\",\"chat-18\",\"chat-19\",\"chat-20\",\"chat-21\",\"chat-22\",\"chat-23\",\"chat-24\",\"chat-25\",\"chat-26\",\"chat-27\",\"chat-28\",\"chat-29\",\"chat-30\",\"chat-31\",\"chat-32\",\"chat-33\",\"chat-34\",\"chat-35\",\"chat-36\",\"chat-37\",\"chat-38\",\"chat-39\",\"chat-40\",\"chat-41\",\"chat-42\",\"chat-43\",\"chat-44\",\"chat-45\",\"chat-46\",\"chat-47\",\"chat-48\",\"chat-49\",\"chat-50\",\"chat-51\",\"chat-52\",\"chat-53\",\"chat-54\",\"chat-55\",\"chat-56\",\"chat-57\",\"chat-58\",\"chat-59\",\"chat-60\",\"chat-61\",\"chat-62\",\"chat-63\",\"chat-64\",\"chat-65\",\"chat-66\",\"chat-67\",\"chat-68\",\"chat-69\",\"chat-70\",\"chat-71\",\"chat-72\",\"chat-73\",\"chat-74\",\"chat-75\",\"chat-76\",\"chat-77\",\"chat-78\",\"chat-79\",\"chat-80\",\"chat-81\",\"chat-82\",\"chat-83\",\"chat-84\",\"chat-85\",\"chat-86\",\"chat-87\",\"chat-88\",\"chat-89\",\"chat-90\",\"chat-91\",\"chat-92\",\"chat-93\",\"chat-94\",\"chat-95\",\"chat-96\",\"chat-97\",\"chat-98\",\"chat-99\",\"chat-100\"]}",
+      "valid": false
+    },
+    {
+      "name": "duplicate-ids",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"same\",\"same\"]}",
+      "valid": false
+    },
+    {
+      "name": "blank-id",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\" \"]}",
+      "valid": false
+    },
+    {
+      "name": "long-id",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]}",
+      "valid": false
+    },
+    {
+      "name": "bad-action",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"delete\",\"ids\":[\"chat-one\",\"chat-two\"]}",
+      "valid": false
+    },
+    {
+      "name": "reserved-operation",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"constructor\",\"action\":\"threads:archive\",\"ids\":[\"chat-one\",\"chat-two\"]}",
+      "valid": false
+    },
+    {
+      "name": "blank-host",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\" \",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"chat-one\",\"chat-two\"]}",
+      "valid": false
+    },
+    {
+      "name": "archive-exact100",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"chat-0\",\"chat-1\",\"chat-2\",\"chat-3\",\"chat-4\",\"chat-5\",\"chat-6\",\"chat-7\",\"chat-8\",\"chat-9\",\"chat-10\",\"chat-11\",\"chat-12\",\"chat-13\",\"chat-14\",\"chat-15\",\"chat-16\",\"chat-17\",\"chat-18\",\"chat-19\",\"chat-20\",\"chat-21\",\"chat-22\",\"chat-23\",\"chat-24\",\"chat-25\",\"chat-26\",\"chat-27\",\"chat-28\",\"chat-29\",\"chat-30\",\"chat-31\",\"chat-32\",\"chat-33\",\"chat-34\",\"chat-35\",\"chat-36\",\"chat-37\",\"chat-38\",\"chat-39\",\"chat-40\",\"chat-41\",\"chat-42\",\"chat-43\",\"chat-44\",\"chat-45\",\"chat-46\",\"chat-47\",\"chat-48\",\"chat-49\",\"chat-50\",\"chat-51\",\"chat-52\",\"chat-53\",\"chat-54\",\"chat-55\",\"chat-56\",\"chat-57\",\"chat-58\",\"chat-59\",\"chat-60\",\"chat-61\",\"chat-62\",\"chat-63\",\"chat-64\",\"chat-65\",\"chat-66\",\"chat-67\",\"chat-68\",\"chat-69\",\"chat-70\",\"chat-71\",\"chat-72\",\"chat-73\",\"chat-74\",\"chat-75\",\"chat-76\",\"chat-77\",\"chat-78\",\"chat-79\",\"chat-80\",\"chat-81\",\"chat-82\",\"chat-83\",\"chat-84\",\"chat-85\",\"chat-86\",\"chat-87\",\"chat-88\",\"chat-89\",\"chat-90\",\"chat-91\",\"chat-92\",\"chat-93\",\"chat-94\",\"chat-95\",\"chat-96\",\"chat-97\",\"chat-98\",\"chat-99\"]}",
+      "valid": true
+    },
+    {
+      "name": "archive-extra-request",
+      "definition": "workspaceManagementRequest",
+      "json": "{\"hostId\":\"host-archive-01\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"host-archive-01\",\"workspaceId\":\"workspace-archive\",\"runtimeId\":\"runtime-archive\",\"account\":{\"authority\":\"old\",\"subject\":\"historical\"}},\"clientOperationId\":\"operation-archive-01\",\"action\":\"threads:archive\",\"ids\":[\"chat-one\",\"chat-two\"],\"unexpected\":true}",
+      "valid": false
+    },
+    {
+      "name": "queue-metadata-all-five",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"queue-thread\",\"clientMessageId\":\"original\",\"state\":\"queued\",\"turnId\":null,\"error\":null,\"queueSource\":\"native\",\"queuePresent\":true,\"canExecuteNow\":false,\"queueDisposition\":null,\"queueSyncError\":\"client error\"}",
+      "valid": true
+    },
+    {
+      "name": "queue-metadata-reject-queueSource",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"queue-thread\",\"clientMessageId\":\"original\",\"state\":\"queued\",\"turnId\":null,\"error\":null,\"queueSource\":3,\"queuePresent\":true,\"canExecuteNow\":false,\"queueDisposition\":null,\"queueSyncError\":\"client error\"}",
+      "valid": false
+    },
+    {
+      "name": "queue-metadata-reject-queueDisposition",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"queue-thread\",\"clientMessageId\":\"original\",\"state\":\"queued\",\"turnId\":null,\"error\":null,\"queueSource\":\"native\",\"queuePresent\":true,\"canExecuteNow\":false,\"queueDisposition\":false,\"queueSyncError\":\"client error\"}",
+      "valid": false
+    },
+    {
+      "name": "queue-metadata-reject-queueSyncError",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"queue-thread\",\"clientMessageId\":\"original\",\"state\":\"queued\",\"turnId\":null,\"error\":null,\"queueSource\":\"native\",\"queuePresent\":true,\"canExecuteNow\":false,\"queueDisposition\":null,\"queueSyncError\":{}}",
+      "valid": false
+    },
+    {
+      "name": "queue-metadata-reject-queuePresent",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"queue-thread\",\"clientMessageId\":\"original\",\"state\":\"queued\",\"turnId\":null,\"error\":null,\"queueSource\":\"native\",\"queuePresent\":\"false\",\"canExecuteNow\":false,\"queueDisposition\":null,\"queueSyncError\":\"client error\"}",
+      "valid": false
+    },
+    {
+      "name": "queue-metadata-reject-canExecuteNow",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"queue-thread\",\"clientMessageId\":\"original\",\"state\":\"queued\",\"turnId\":null,\"error\":null,\"queueSource\":\"native\",\"queuePresent\":true,\"canExecuteNow\":1,\"queueDisposition\":null,\"queueSyncError\":\"client error\"}",
+      "valid": false
+    },
+    {
+      "name": "queue-metadata-explicit-null",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"queue-thread\",\"clientMessageId\":\"original\",\"state\":\"queued\",\"turnId\":null,\"error\":null,\"queueSource\":null,\"queuePresent\":null,\"canExecuteNow\":null,\"queueDisposition\":null,\"queueSyncError\":null}",
+      "valid": true
+    },
+    {
+      "name": "receipt-later-turn-value",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"receipt-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original\",\"state\":\"failed\",\"turnId\":null,\"error\":null,\"laterTurnId\":\"later-confirmed-turn\"}",
+      "valid": true
+    },
+    {
+      "name": "receipt-later-turn-null",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"receipt-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original\",\"state\":\"failed\",\"turnId\":null,\"error\":null,\"laterTurnId\":null}",
+      "valid": true
+    },
+    {
+      "name": "receipt-later-turn-bad",
+      "definition": "deliveryReceipt",
+      "json": "{\"hostId\":\"receipt-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original\",\"state\":\"failed\",\"turnId\":null,\"error\":null,\"laterTurnId\":false}",
+      "valid": false
+    },
+    {
+      "name": "queue-execute-idle",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original-message\"}",
+      "valid": true
+    },
+    {
+      "name": "queue-execute-running",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original-message\",\"expectedTurnId\":\"original-turn\"}",
+      "valid": true
+    },
+    {
+      "name": "queue-execute-null-run",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original-message\",\"expectedTurnId\":null}",
+      "valid": false
+    },
+    {
+      "name": "queue-execute-blank-run",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original-message\",\"expectedTurnId\":\"  \"}",
+      "valid": false
+    },
+    {
+      "name": "queue-execute-wrong-run",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original-message\",\"expectedTurnId\":true}",
+      "valid": false
+    },
+    {
+      "name": "queue-execute-no-body-target",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original-message\",\"target\":{}}",
+      "valid": false
+    },
+    {
+      "name": "queue-execute-no-new-text",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"original-message\",\"text\":\"resend\"}",
+      "valid": false
+    },
+    {
+      "name": "queue-execute-empty-original-id",
+      "definition": "executeQueueRequest",
+      "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"\"}",
+      "valid": false
     }
   ],
   "toolPresentation": [
@@ -2335,6 +2645,2940 @@
       "name": "invalid-network-kind",
       "valid": false,
       "json": "{\"version\":1,\"agentId\":\"codex\",\"name\":\"合成电脑\",\"target\":{\"agentId\":\"codex\",\"hostId\":\"synthetic-host\",\"workspaceId\":\"synthetic-workspace\",\"runtimeId\":\"synthetic-runtime\"},\"fingerprint\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"endpoints\":[\"https://computer.local:8788\"],\"endpointHints\":[{\"endpoint\":\"https://computer.local:8788\",\"networkKind\":\"public\"}]}"
+    }
+  ],
+  "sidebar": [
+    {
+      "name": "legacy-pins-preserve-project-membership",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "a",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "b",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "c",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["p1", "p2"],
+            "archived": false
+          },
+          {
+            "id": "old",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": ["b", "missing", "b", "old"],
+        "source": null
+      },
+      "expected": {
+        "pinned": [
+          {
+            "kind": "thread",
+            "id": "b"
+          }
+        ],
+        "recentThreadIds": ["a", "c"],
+        "projectIds": ["p1", "p2"],
+        "projectThreadIds": {
+          "p1": ["a", "b", "c"],
+          "p2": ["c"]
+        }
+      }
+    },
+    {
+      "name": "desktop-mixed-pins-precise-order-and-dedup",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "a",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "b",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "c",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["p1", "p2"],
+            "archived": false
+          },
+          {
+            "id": "old",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": ["b", "missing", "b", "old"],
+        "source": {
+          "version": 1,
+          "pinned": [
+            {
+              "kind": "project",
+              "id": "p2"
+            },
+            {
+              "kind": "thread",
+              "id": "b"
+            },
+            {
+              "kind": "thread",
+              "id": "b"
+            },
+            {
+              "kind": "future",
+              "id": "a"
+            },
+            {
+              "kind": "thread",
+              "id": "missing"
+            }
+          ],
+          "recentThreadIds": ["c", "a", "b", "a", "old", "missing"],
+          "projectIds": ["p2", "p1", "p1", "missing"],
+          "projectThreadIds": {
+            "p1": ["c", "b", "a", "c", "old", "missing"],
+            "p2": ["b", "c"]
+          }
+        }
+      },
+      "expected": {
+        "pinned": [
+          {
+            "kind": "project",
+            "id": "p2"
+          },
+          {
+            "kind": "thread",
+            "id": "b"
+          }
+        ],
+        "recentThreadIds": ["c", "a"],
+        "projectIds": ["p1"],
+        "projectThreadIds": {
+          "p1": ["c", "a"],
+          "p2": ["c"]
+        }
+      }
+    },
+    {
+      "name": "future-version-uses-legacy-order",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "a",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "b",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "c",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["p1", "p2"],
+            "archived": false
+          },
+          {
+            "id": "old",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": ["b", "missing", "b", "old"],
+        "source": {
+          "version": 2,
+          "future": ["opaque"]
+        }
+      },
+      "expected": {
+        "pinned": [
+          {
+            "kind": "thread",
+            "id": "b"
+          }
+        ],
+        "recentThreadIds": ["a", "c"],
+        "projectIds": ["p1", "p2"],
+        "projectThreadIds": {
+          "p1": ["a", "b", "c"],
+          "p2": ["c"]
+        }
+      }
+    },
+    {
+      "name": "explicit-empty-pins-and-reversed-folder-order",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "a",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "b",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "c",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["p1", "p2"],
+            "archived": false
+          },
+          {
+            "id": "old",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": [],
+        "source": {
+          "version": 1,
+          "pinned": [],
+          "recentThreadIds": ["b", "a", "c"],
+          "projectIds": ["p2", "p1"],
+          "projectThreadIds": {
+            "p1": ["b", "a", "c"],
+            "p2": ["c"]
+          }
+        }
+      },
+      "expected": {
+        "pinned": [],
+        "recentThreadIds": ["b", "a", "c"],
+        "projectIds": ["p2", "p1"],
+        "projectThreadIds": {
+          "p1": ["b", "a", "c"],
+          "p2": ["c"]
+        }
+      }
+    },
+    {
+      "name": "empty-snapshot-never-materializes-projection-ids",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [],
+        "projects": [],
+        "pinnedThreadIds": ["b", "missing", "b", "old"],
+        "source": {
+          "version": 1,
+          "pinned": [
+            {
+              "kind": "thread",
+              "id": "a"
+            },
+            {
+              "kind": "project",
+              "id": "p1"
+            }
+          ],
+          "recentThreadIds": ["a"],
+          "projectIds": ["p1"],
+          "projectThreadIds": {
+            "p1": ["a"]
+          }
+        }
+      },
+      "expected": {
+        "pinned": [],
+        "recentThreadIds": [],
+        "projectIds": [],
+        "projectThreadIds": {}
+      }
+    },
+    {
+      "name": "foreign-host-rows-never-become-visible",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "a",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "b",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "c",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["p1", "p2"],
+            "archived": false
+          },
+          {
+            "id": "old",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          },
+          {
+            "id": "foreign",
+            "hostId": "other-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "foreign-folder",
+            "hostId": "other-host"
+          }
+        ],
+        "pinnedThreadIds": ["b", "missing", "b", "old"],
+        "source": {
+          "version": 1,
+          "pinned": [
+            {
+              "kind": "project",
+              "id": "foreign-folder"
+            },
+            {
+              "kind": "thread",
+              "id": "foreign"
+            }
+          ],
+          "recentThreadIds": ["foreign", "a"],
+          "projectIds": ["foreign-folder", "p1"],
+          "projectThreadIds": {
+            "p1": ["foreign", "a"]
+          }
+        }
+      },
+      "expected": {
+        "pinned": [],
+        "recentThreadIds": ["a"],
+        "projectIds": ["p1"],
+        "projectThreadIds": {
+          "p1": ["a"],
+          "p2": []
+        }
+      }
+    },
+    {
+      "name": "first-archived-duplicate-cannot-be-revived",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "same",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          },
+          {
+            "id": "same",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "live",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "live",
+            "hostId": "sidebar-host",
+            "projectId": "p2",
+            "projectIds": [],
+            "archived": false
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": ["same"],
+        "source": null
+      },
+      "expected": {
+        "pinned": [],
+        "recentThreadIds": ["live"],
+        "projectIds": ["p1", "p2"],
+        "projectThreadIds": {
+          "p1": ["live"],
+          "p2": []
+        }
+      }
+    },
+    {
+      "name": "opaque-project-ids-keep-case-and-multiple-membership",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "shared",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["Project-A", "project-a"],
+            "archived": false
+          }
+        ],
+        "projects": [
+          {
+            "id": "Project-A",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "project-a",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "Project-A",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": [],
+        "source": null
+      },
+      "expected": {
+        "pinned": [],
+        "recentThreadIds": ["shared"],
+        "projectIds": ["Project-A", "project-a"],
+        "projectThreadIds": {
+          "Project-A": ["shared"],
+          "project-a": ["shared"]
+        }
+      }
+    },
+    {
+      "name": "desktop-does-not-invent-missing-pin-entry",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "a",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "b",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "c",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["p1", "p2"],
+            "archived": false
+          },
+          {
+            "id": "old",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": ["b", "missing", "b", "old"],
+        "source": {
+          "version": 1,
+          "pinned": [],
+          "recentThreadIds": ["b", "a"],
+          "projectIds": ["p1"],
+          "projectThreadIds": {
+            "p1": ["b", "a"]
+          }
+        }
+      },
+      "expected": {
+        "pinned": [],
+        "recentThreadIds": ["a"],
+        "projectIds": ["p1"],
+        "projectThreadIds": {
+          "p1": ["a"],
+          "p2": []
+        }
+      }
+    },
+    {
+      "name": "authoritative-empty-desktop-groups-stay-empty",
+      "input": {
+        "hostId": "sidebar-host",
+        "threads": [
+          {
+            "id": "a",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "b",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": false
+          },
+          {
+            "id": "c",
+            "hostId": "sidebar-host",
+            "projectId": null,
+            "projectIds": ["p1", "p2"],
+            "archived": false
+          },
+          {
+            "id": "old",
+            "hostId": "sidebar-host",
+            "projectId": "p1",
+            "projectIds": [],
+            "archived": true
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "hostId": "sidebar-host"
+          },
+          {
+            "id": "p2",
+            "hostId": "sidebar-host"
+          }
+        ],
+        "pinnedThreadIds": ["b", "missing", "b", "old"],
+        "source": {
+          "version": 1,
+          "pinned": [],
+          "recentThreadIds": [],
+          "projectIds": [],
+          "projectThreadIds": {}
+        }
+      },
+      "expected": {
+        "pinned": [],
+        "recentThreadIds": [],
+        "projectIds": [],
+        "projectThreadIds": {
+          "p1": [],
+          "p2": []
+        }
+      }
+    }
+  ],
+  "sidebarVisibility": [
+    {
+      "name": "five-only",
+      "ids": ["a", "b", "c", "d", "e", "f", "g"],
+      "expanded": false,
+      "searching": false,
+      "expectedExpanded": false,
+      "expected": ["a", "b", "c", "d", "e"]
+    },
+    {
+      "name": "list-expanded",
+      "ids": ["a", "b", "c", "d", "e", "f", "g"],
+      "expanded": true,
+      "searching": false,
+      "expectedExpanded": true,
+      "expected": ["a", "b", "c", "d", "e", "f", "g"]
+    },
+    {
+      "name": "search-temporarily-expands",
+      "ids": ["a", "b", "c", "d", "e", "f", "g"],
+      "expanded": false,
+      "searching": true,
+      "expectedExpanded": true,
+      "expected": ["a", "b", "c", "d", "e", "f", "g"]
+    },
+    {
+      "name": "empty-list",
+      "ids": [],
+      "expanded": false,
+      "searching": false,
+      "expectedExpanded": false,
+      "expected": []
+    }
+  ],
+  "chatSearch": [
+    {
+      "name": "case-and-trim",
+      "text": "alpha NEEDLE beta needle",
+      "query": " needle ",
+      "expectedRanges": [
+        [6, 12],
+        [18, 24]
+      ],
+      "expectedSnippet": "alpha NEEDLE beta needle",
+      "expectedSnippetRanges": [
+        [6, 12],
+        [18, 24]
+      ],
+      "nativeOnly": false
+    },
+    {
+      "name": "accent-case",
+      "text": "Un café, puis CAFÉ.",
+      "query": "cafe",
+      "expectedRanges": [
+        [3, 7],
+        [14, 18]
+      ],
+      "expectedSnippet": "Un café, puis CAFÉ.",
+      "expectedSnippetRanges": [
+        [3, 7],
+        [14, 18]
+      ],
+      "nativeOnly": true
+    },
+    {
+      "name": "canonical-combining",
+      "text": "Café then cafe",
+      "query": "cafe",
+      "expectedRanges": [
+        [0, 5],
+        [11, 15]
+      ],
+      "expectedSnippet": "Café then cafe",
+      "expectedSnippetRanges": [
+        [0, 5],
+        [11, 15]
+      ],
+      "nativeOnly": true
+    },
+    {
+      "name": "expanding-casefold",
+      "text": "Die Straße, STRASSE",
+      "query": "strasse",
+      "expectedRanges": [
+        [4, 10],
+        [12, 19]
+      ],
+      "expectedSnippet": "Die Straße, STRASSE",
+      "expectedSnippetRanges": [
+        [4, 10],
+        [12, 19]
+      ],
+      "nativeOnly": true
+    },
+    {
+      "name": "width-is-significant",
+      "text": "ＦＯＯ bar",
+      "query": "foo",
+      "expectedRanges": [],
+      "expectedSnippet": "ＦＯＯ bar",
+      "expectedSnippetRanges": [],
+      "nativeOnly": false
+    },
+    {
+      "name": "punctuation-is-significant",
+      "text": "co-operate",
+      "query": "cooperate",
+      "expectedRanges": [],
+      "expectedSnippet": "co-operate",
+      "expectedSnippetRanges": [],
+      "nativeOnly": false
+    },
+    {
+      "name": "emoji-utf16-offsets",
+      "text": "A🚀B🚀",
+      "query": "🚀",
+      "expectedRanges": [
+        [1, 3],
+        [4, 6]
+      ],
+      "expectedSnippet": "A🚀B🚀",
+      "expectedSnippetRanges": [
+        [1, 3],
+        [4, 6]
+      ],
+      "nativeOnly": false
+    },
+    {
+      "name": "chinese-offsets",
+      "text": "甲中文乙中文",
+      "query": "中文",
+      "expectedRanges": [
+        [1, 3],
+        [4, 6]
+      ],
+      "expectedSnippet": "甲中文乙中文",
+      "expectedSnippetRanges": [
+        [1, 3],
+        [4, 6]
+      ],
+      "nativeOnly": false
+    },
+    {
+      "name": "empty-trimmed-query",
+      "text": "cached original",
+      "query": " \n ",
+      "expectedRanges": [],
+      "expectedSnippet": "cached original",
+      "expectedSnippetRanges": [],
+      "nativeOnly": false
+    },
+    {
+      "name": "long-context",
+      "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaNEEDLEbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "query": "needle",
+      "expectedRanges": [[90, 96]],
+      "expectedSnippet": "…aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaNEEDLEbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb…",
+      "expectedSnippetRanges": [[61, 67]],
+      "nativeOnly": false
+    },
+    {
+      "name": "fallback-context",
+      "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "query": "absent",
+      "expectedRanges": [],
+      "expectedSnippet": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…",
+      "expectedSnippetRanges": [],
+      "nativeOnly": false
+    },
+    {
+      "name": "casefold-ligature",
+      "text": "ﬁle text",
+      "query": "file",
+      "expectedRanges": [[0, 3]],
+      "expectedSnippet": "ﬁle text",
+      "expectedSnippetRanges": [[0, 3]],
+      "nativeOnly": true
+    },
+    {
+      "name": "turkish-dotted",
+      "text": "İSTANBUL",
+      "query": "istanbul",
+      "expectedRanges": [[0, 8]],
+      "expectedSnippet": "İSTANBUL",
+      "expectedSnippetRanges": [[0, 8]],
+      "nativeOnly": true
+    },
+    {
+      "name": "only-ignorable-query",
+      "text": "plain",
+      "query": "́",
+      "expectedRanges": [],
+      "expectedSnippet": "plain",
+      "expectedSnippetRanges": [],
+      "nativeOnly": true
+    },
+    {
+      "name": "width-rejected-first-keeps-later",
+      "text": "ＦＯＯ foo",
+      "query": "foo",
+      "expectedRanges": [[4, 7]],
+      "expectedSnippet": "ＦＯＯ foo",
+      "expectedSnippetRanges": [[4, 7]],
+      "nativeOnly": false
+    },
+    {
+      "name": "partial-casefold-expansion-rejected",
+      "text": "ß",
+      "query": "s",
+      "expectedRanges": [],
+      "expectedSnippet": "ß",
+      "expectedSnippetRanges": [],
+      "nativeOnly": true
+    },
+    {
+      "name": "partial-ligature-expansion-rejected",
+      "text": "ﬁ",
+      "query": "f",
+      "expectedRanges": [],
+      "expectedSnippet": "ﬁ",
+      "expectedSnippetRanges": [],
+      "nativeOnly": true
+    }
+  ],
+  "chatLifecycle": [
+    {
+      "name": "running-live",
+      "state": "running",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "running",
+      "lastKnown": false
+    },
+    {
+      "name": "archived-does-not-stop-running",
+      "state": "running",
+      "lastTurnStatus": null,
+      "archived": true,
+      "online": true,
+      "unconfirmed": false,
+      "code": "running",
+      "lastKnown": false
+    },
+    {
+      "name": "archived-does-not-answer-approval",
+      "state": "waiting-for-approval",
+      "lastTurnStatus": null,
+      "archived": true,
+      "online": true,
+      "unconfirmed": false,
+      "code": "approval",
+      "lastKnown": false
+    },
+    {
+      "name": "live-unknown-does-not-invent-completion",
+      "state": "unknown",
+      "lastTurnStatus": "completed",
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "unknown",
+      "lastKnown": false
+    },
+    {
+      "name": "archived-confirmed-completed",
+      "state": "unknown",
+      "lastTurnStatus": "completed",
+      "archived": true,
+      "online": true,
+      "unconfirmed": false,
+      "code": "completed",
+      "lastKnown": false
+    },
+    {
+      "name": "archived-confirmed-failed",
+      "state": "unknown",
+      "lastTurnStatus": "failed",
+      "archived": true,
+      "online": true,
+      "unconfirmed": false,
+      "code": "failed",
+      "lastKnown": false
+    },
+    {
+      "name": "archived-confirmed-stopped",
+      "state": "unknown",
+      "lastTurnStatus": "interrupted",
+      "archived": true,
+      "online": true,
+      "unconfirmed": false,
+      "code": "stopped",
+      "lastKnown": false
+    },
+    {
+      "name": "idle-is-not-completion",
+      "state": "idle",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "idle",
+      "lastKnown": false
+    },
+    {
+      "name": "idle-latest-completed",
+      "state": "idle",
+      "lastTurnStatus": "completed",
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "completed",
+      "lastKnown": false
+    },
+    {
+      "name": "idle-legacy-failed-keeps-idle",
+      "state": "idle",
+      "lastTurnStatus": "failed",
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "idle",
+      "lastKnown": false
+    },
+    {
+      "name": "actual-failed",
+      "state": "failed",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "failed",
+      "lastKnown": false
+    },
+    {
+      "name": "cancelled",
+      "state": "cancelled",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "stopped",
+      "lastKnown": false
+    },
+    {
+      "name": "interrupted",
+      "state": "interrupted",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": true,
+      "unconfirmed": false,
+      "code": "stopped",
+      "lastKnown": false
+    },
+    {
+      "name": "offline-completed-is-last-state",
+      "state": "completed",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": false,
+      "unconfirmed": false,
+      "code": "completed",
+      "lastKnown": true
+    },
+    {
+      "name": "unconfirmed-running-is-last-state",
+      "state": "running",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": true,
+      "unconfirmed": true,
+      "code": "running",
+      "lastKnown": true
+    },
+    {
+      "name": "archived-unknown-proven-terminal-qualifier-preserved",
+      "state": "unknown",
+      "lastTurnStatus": "completed",
+      "archived": true,
+      "online": false,
+      "unconfirmed": true,
+      "code": "completed",
+      "lastKnown": false
+    },
+    {
+      "name": "future-state-unconfirmed",
+      "state": "future",
+      "lastTurnStatus": null,
+      "archived": false,
+      "online": true,
+      "unconfirmed": true,
+      "code": "unknown",
+      "lastKnown": true
+    }
+  ],
+  "chatManagementAvailability": [
+    {
+      "name": "known-online-advertised",
+      "demo": false,
+      "online": true,
+      "supported": true,
+      "knownTarget": true,
+      "busy": false,
+      "pending": false,
+      "expected": true
+    },
+    {
+      "name": "gate-demo",
+      "demo": true,
+      "online": true,
+      "supported": true,
+      "knownTarget": true,
+      "busy": false,
+      "pending": false,
+      "expected": false
+    },
+    {
+      "name": "gate-online",
+      "demo": false,
+      "online": false,
+      "supported": true,
+      "knownTarget": true,
+      "busy": false,
+      "pending": false,
+      "expected": false
+    },
+    {
+      "name": "gate-supported",
+      "demo": false,
+      "online": true,
+      "supported": false,
+      "knownTarget": true,
+      "busy": false,
+      "pending": false,
+      "expected": false
+    },
+    {
+      "name": "gate-knownTarget",
+      "demo": false,
+      "online": true,
+      "supported": true,
+      "knownTarget": false,
+      "busy": false,
+      "pending": false,
+      "expected": false
+    },
+    {
+      "name": "gate-busy",
+      "demo": false,
+      "online": true,
+      "supported": true,
+      "knownTarget": true,
+      "busy": true,
+      "pending": false,
+      "expected": false
+    },
+    {
+      "name": "gate-pending",
+      "demo": false,
+      "online": true,
+      "supported": true,
+      "knownTarget": true,
+      "busy": false,
+      "pending": true,
+      "expected": false
+    }
+  ],
+  "workspaceArchive": [
+    {
+      "name": "mixed-progress",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "terminal-preserved-other-item-advances",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "rejected",
+            "error": "stale opposite terminal"
+          },
+          {
+            "id": "chat-two",
+            "state": "rejected",
+            "error": "desktop loaded"
+          }
+        ]
+      },
+      "expected": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "rejected",
+            "error": "desktop loaded"
+          }
+        ]
+      }
+    },
+    {
+      "name": "codex-metadata-not-gate",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "new",
+            "subject": "metadata"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "new",
+            "subject": "metadata"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "runtime-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "wrong-runtime",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "workspace-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "wrong-workspace",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "item-order-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          },
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "request-order-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-two", "chat-one"],
+        "items": [
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          },
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "operation-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "other-operation-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "action-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "projects:delete",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "duplicate-item-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "unknown-item-state-rejected",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "codex",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "confirmed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "other-agent-account-bound",
+      "original": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "other",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "historical"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"]
+      },
+      "previous": null,
+      "incoming": {
+        "hostId": "host-archive-01",
+        "target": {
+          "agentId": "other",
+          "hostId": "host-archive-01",
+          "workspaceId": "workspace-archive",
+          "runtimeId": "runtime-archive",
+          "account": {
+            "authority": "old",
+            "subject": "other"
+          }
+        },
+        "clientOperationId": "operation-archive-01",
+        "action": "threads:archive",
+        "ids": ["chat-one", "chat-two"],
+        "items": [
+          {
+            "id": "chat-one",
+            "state": "completed",
+            "error": null
+          },
+          {
+            "id": "chat-two",
+            "state": "outcome-unknown",
+            "error": null
+          }
+        ]
+      },
+      "expected": null
+    }
+  ],
+  "runningCounts": [
+    {
+      "name": "distinct-active-only-including-archived",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": "desktop-runtime",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": 3
+    },
+    {
+      "name": "offline-not-zero",
+      "input": {
+        "hostId": "host-count",
+        "online": false,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": "desktop-runtime",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "missing-workspace-not-zero",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": false,
+        "connectionMode": "desktop-runtime",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "history-only-not-zero",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": "history-only",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "demo-needs-no-workspace",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": true,
+        "workspaceAvailable": false,
+        "connectionMode": null,
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": 3
+    },
+    {
+      "name": "offline-demo-stays-unknown",
+      "input": {
+        "hostId": "host-count",
+        "online": false,
+        "demo": true,
+        "workspaceAvailable": true,
+        "connectionMode": "desktop-runtime",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "name": "empty-connected-is-zero",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": "desktop-runtime",
+        "conversations": []
+      },
+      "expected": 0
+    },
+    {
+      "name": "other-host-has-own-count",
+      "input": {
+        "hostId": "host-other",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": "desktop-runtime",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": 1
+    },
+    {
+      "name": "future-mode-retains-ios-rule",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": null,
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": 3
+    },
+    {
+      "name": "managed-runtime",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": "managed-runtime",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": 3
+    },
+    {
+      "name": "shared-runtime",
+      "input": {
+        "hostId": "host-count",
+        "online": true,
+        "demo": false,
+        "workspaceAvailable": true,
+        "connectionMode": "shared-runtime",
+        "conversations": [
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "running"
+          },
+          {
+            "id": "same",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "archived-active",
+            "hostId": "host-count",
+            "state": "running",
+            "archived": true
+          },
+          {
+            "id": "approval",
+            "hostId": "host-count",
+            "state": "waiting-for-approval"
+          },
+          {
+            "id": "other-host",
+            "hostId": "host-other",
+            "state": "running"
+          },
+          {
+            "id": "idle",
+            "hostId": "host-count",
+            "state": "idle"
+          },
+          {
+            "id": "unloaded",
+            "hostId": "host-count",
+            "state": "unloaded"
+          },
+          {
+            "id": "failed",
+            "hostId": "host-count",
+            "state": "failed"
+          },
+          {
+            "id": "completed",
+            "hostId": "host-count",
+            "state": "completed"
+          },
+          {
+            "id": "interrupted",
+            "hostId": "host-count",
+            "state": "interrupted"
+          },
+          {
+            "id": "unknown",
+            "hostId": "host-count",
+            "state": "unknown"
+          }
+        ]
+      },
+      "expected": 3
+    }
+  ],
+  "workspaceArchiveEligibility": [
+    {
+      "name": "known-idle-unresolved-none",
+      "input": {
+        "knownTarget": true,
+        "archived": false,
+        "singleBusy": false,
+        "singlePending": false,
+        "batchPending": false
+      },
+      "expected": true
+    },
+    {
+      "name": "blocks-knownTarget",
+      "input": {
+        "knownTarget": false,
+        "archived": false,
+        "singleBusy": false,
+        "singlePending": false,
+        "batchPending": false
+      },
+      "expected": false
+    },
+    {
+      "name": "blocks-archived",
+      "input": {
+        "knownTarget": true,
+        "archived": true,
+        "singleBusy": false,
+        "singlePending": false,
+        "batchPending": false
+      },
+      "expected": false
+    },
+    {
+      "name": "blocks-singleBusy",
+      "input": {
+        "knownTarget": true,
+        "archived": false,
+        "singleBusy": true,
+        "singlePending": false,
+        "batchPending": false
+      },
+      "expected": false
+    },
+    {
+      "name": "blocks-singlePending",
+      "input": {
+        "knownTarget": true,
+        "archived": false,
+        "singleBusy": false,
+        "singlePending": true,
+        "batchPending": false
+      },
+      "expected": false
+    },
+    {
+      "name": "blocks-batchPending",
+      "input": {
+        "knownTarget": true,
+        "archived": false,
+        "singleBusy": false,
+        "singlePending": false,
+        "batchPending": true
+      },
+      "expected": false
+    },
+    {
+      "name": "multiple-original-conflicts",
+      "input": {
+        "knownTarget": true,
+        "archived": false,
+        "singleBusy": true,
+        "singlePending": true,
+        "batchPending": true
+      },
+      "expected": false
+    }
+  ],
+  "queueOwnership": [
+    {
+      "name": "legacy-missing-metadata",
+      "state": "queued",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "active": true,
+      "legacy": false
+    },
+    {
+      "name": "native-present",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "active": true,
+      "legacy": false
+    },
+    {
+      "name": "native-removed",
+      "state": "queued",
+      "source": "native",
+      "present": false,
+      "disposition": null,
+      "active": false,
+      "legacy": false
+    },
+    {
+      "name": "host-not-migrated",
+      "state": "queued",
+      "source": "host",
+      "present": true,
+      "disposition": null,
+      "active": false,
+      "legacy": true
+    },
+    {
+      "name": "legacy-disposition",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": "legacy-review",
+      "active": false,
+      "legacy": true
+    },
+    {
+      "name": "accepted-not-pending",
+      "state": "submitted",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "active": false,
+      "legacy": false
+    },
+    {
+      "name": "failed-host-not-pending",
+      "state": "failed",
+      "source": "host",
+      "present": true,
+      "disposition": "legacy-review",
+      "active": false,
+      "legacy": false
+    },
+    {
+      "name": "future-source-opaque",
+      "state": "queued",
+      "source": "future",
+      "present": null,
+      "disposition": null,
+      "active": true,
+      "legacy": false
+    }
+  ],
+  "queueActions": [
+    {
+      "name": "execute-original",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": true
+    },
+    {
+      "name": "cancel-without-execute-capability",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": false,
+      "supportsExecute": false,
+      "canExecuteNow": true,
+      "allowed": true
+    },
+    {
+      "name": "cancel-blocked-execute-item",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": false,
+      "supportsExecute": true,
+      "canExecuteNow": false,
+      "allowed": true
+    },
+    {
+      "name": "execute-capability-withdrawn",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": false,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "execute-currently-blocked",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": false,
+      "allowed": false
+    },
+    {
+      "name": "same-original-pending",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": true,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "offline",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": false,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "read-only",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": false,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "host-original-never-execute",
+      "state": "queued",
+      "source": "host",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "legacy-review-never-execute",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": "legacy-review",
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "removed-original",
+      "state": "queued",
+      "source": "native",
+      "present": false,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "already-accepted-original",
+      "state": "submitted",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "future-opaque-native-source",
+      "state": "queued",
+      "source": "future-native-client",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": true
+    },
+    {
+      "name": "old-compatible-metadata",
+      "state": "queued",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": true,
+      "supportsExecute": true,
+      "canExecuteNow": null,
+      "allowed": true
+    },
+    {
+      "name": "cancel-removed-original",
+      "state": "queued",
+      "source": "native",
+      "present": false,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": false,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
+    },
+    {
+      "name": "cancel-host-original",
+      "state": "queued",
+      "source": "host",
+      "present": true,
+      "disposition": null,
+      "online": true,
+      "writable": true,
+      "pending": false,
+      "execute": false,
+      "supportsExecute": true,
+      "canExecuteNow": true,
+      "allowed": false
     }
   ]
 }

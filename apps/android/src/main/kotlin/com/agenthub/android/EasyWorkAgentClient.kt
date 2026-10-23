@@ -8,7 +8,7 @@ import java.io.File
 import java.util.UUID
 
 /** Only this adapter knows EasyWork protocol v2 method names and provider content parts. */
-class EasyWorkAgentClient(private val sessions: EasyWorkSessions): AgentReads,AgentCommands {
+class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,AgentCommands {
     private val resolvedResources=object: LinkedHashMap<String,MobileFile>(64,.75f,true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String,MobileFile>?)=size>256
     }
@@ -142,8 +142,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkSessions): AgentReads,Ag
         latest?.optJSONObject("settings")?.let { p->p.keys().forEach { preferences.put(it,p.get(it)) } }
         val model=preferences.optJSONObject("modelRef");val settings=JSONObject().put("model",model?.let { it.getString("providerId")+"/"+it.getString("modelId") }).put("effort",preferences.optJSONObject("reasoning")?.optional("effort")).put("permissionMode",preferences.optional("permissionMode"))
         val receipts=snapshot.optJSONArray("queueReceipts")?.objects()?.map { q->
-            require(q.getString("threadId")==threadId)
-            encodeReceipt(DeliveryReceipt(client.id,threadId,q.getString("clientMessageId"),q.getString("state"),q.optional("turnId"),q.optional("error"),q.optional("supersededByTurnId"),q.optional("text"),q.optJSONArray("attachmentIds")?.strings().orEmpty()))
+            encodeReceipt(easyWorkQueueReceipt(client.id,threadId,q))
         }?.toMutableList()?:mutableListOf()
         if(active==null&&latest?.optString("status") in listOf("failed","cancelled","interrupted")) receipts.add(encodeReceipt(DeliveryReceipt(client.id,threadId,latest!!.getString("id"),latest.getString("status"),latest.getString("id"),latest.optional("error"),null,null,emptyList())))
         val runtime=if(cursor!=null)null else JSONObject().put("state",state).put("turnId",active?.optional("runId")?:active?.optional("id")?:control?.optional("runId")?.takeIf { control.optString("phase") in listOf("paused","pausing","resuming") }).put("plan",JSONArray(plan?.optJSONArray("steps")?.objects()?.map { JSONObject().put("step",it.optString("title")).put("status",if(it.optString("status")=="in_progress")"inProgress" else it.optString("status","pending")) }.orEmpty())).put("error",if(active==null)latest?.optional("error") else null).put("approvals",approvals).put("receipts",JSONArray(receipts)).put("canControl",true).put("collaborationMode",if((active?.optional("agentRunMode")?:preferences.optional("agentRunMode"))=="plan")"plan" else "default").put("generationSettings",settings).apply {
@@ -183,17 +182,32 @@ class EasyWorkAgentClient(private val sessions: EasyWorkSessions): AgentReads,Ag
             } else { method="turn/start";params.put("parts",parts).put("mode",intent.mode).put("settings",settings) }
         }
         val result=c.request(method,params,intent.operationId)
-        return DeliveryReceipt(client.id,intent.threadId,intent.operationId,result.optString("state","submitted"),result.optional("runId")?:result.optional("turnId")?:intent.expectedTurnId,null,null,intent.text,intent.attachmentIds)
+        return EasyWorkReceiptNormalization.decode(result,intent.operationId,client.id,intent.threadId,"submitted",intent.expectedTurnId)
     }
     override suspend fun receipt(client: MobileClient,threadId: String,operationId: String): DeliveryReceipt {
         val c=channel(client);val v=c.request("command/status",JSONObject().put("commandId",operationId));require(v.has("state")) { "Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留" }
         val response=v.optJSONObject("response");var result=response?.optJSONObject("result")
-        if(result?.optString("state")=="queued") { require(result.getString("threadId")==threadId);result=c.request("queue/status",JSONObject().put("threadId",threadId).put("messageId",operationId));return DeliveryReceipt(client.id,threadId,operationId,result.optString("state","uncertain"),result.optional("turnId"),result.optional("error"),result.optional("supersededByTurnId"),null,emptyList()) }
-        require(result?.optional("threadId").let { it==null||it==threadId })
-        return DeliveryReceipt(client.id,threadId,operationId,if(v.optString("state")=="completed")"submitted" else v.getString("state"),result?.optional("runId"),response?.optJSONObject("error")?.optional("message"),null,null,emptyList())
+        require(result?.opt("threadId").let { it==null||it==JSONObject.NULL||it==threadId })
+        if(result?.opt("state")=="queued" || result?.opt("queueSource") is String) {
+            require(result?.opt("threadId")==threadId)
+            result=c.request("queue/status",JSONObject().put("threadId",threadId).put("messageId",operationId))
+            return EasyWorkReceiptNormalization.decode(result,operationId,client.id,threadId,"uncertain")
+        }
+        return EasyWorkReceiptNormalization.decode(result ?: JSONObject(),operationId,client.id,threadId,
+            if(v.opt("state")=="completed")"submitted" else v.opt("state") as? String ?: "uncertain",
+            fallbackError=response?.optJSONObject("error")?.opt("message") as? String)
     }
     override suspend fun stop(client: MobileClient,threadId: String,turnId: String) { require(channel(client).request("turn/cancel",JSONObject().put("threadId",threadId).put("turnId",turnId)).getBoolean("cancelled")) }
-    override suspend fun cancelQueue(client: MobileClient,threadId: String,operationId: String) { require(channel(client).request("queue/cancel",JSONObject().put("threadId",threadId).put("messageId",operationId)).getBoolean("cancelled")) }
+    override suspend fun executeQueue(client: MobileClient,threadId: String,operationId: String,expectedTurnId: String?) {
+        require(threadId.isNotBlank() && operationId.isNotBlank() && (expectedTurnId==null || expectedTurnId.isNotBlank()))
+        val result=channel(client).request("queue/execute",JSONObject().put("threadId",threadId).put("messageId",operationId)
+            .apply { expectedTurnId?.let { put("expectedRunId",it) } })
+        require(result.opt("state") in listOf("submitted","completed"))
+    }
+    override suspend fun cancelQueue(client: MobileClient,threadId: String,operationId: String) {
+        require(threadId.isNotBlank() && operationId.isNotBlank())
+        require(channel(client).request("queue/cancel",JSONObject().put("threadId",threadId).put("messageId",operationId)).opt("cancelled")==true)
+    }
     override suspend fun answer(client: MobileClient,threadId: String,turnId: String,approvalId: String,decision: String,answers: Map<String,List<String>>) {
         val c=channel(client);val result: JSONObject
         if(approvalId.startsWith("question.")) {
@@ -239,3 +253,10 @@ class EasyWorkAgentClient(private val sessions: EasyWorkSessions): AgentReads,Ag
     override suspend fun uploadCreation(client: MobileClient,operationId: String,file: CreationFile,bytes: ByteArray): Unit=error("此电脑不使用分阶段桌面创建")
 }
 private object UriReference { fun decode(value: String): String=android.net.Uri.decode(value) }
+
+/** Provider host identity is local; the original client message/thread and queue evidence stay exact. */
+internal fun easyWorkQueueReceipt(hostId: String,threadId: String,value: JSONObject): DeliveryReceipt {
+    require(value.getString("threadId")==threadId) { "队列回执目标不匹配" }
+    return CodexCommandCodec.receipt(JSONObject(value.toString()).put("hostId",hostId)
+        .put("turnId",value.optional("turnId") ?: JSONObject.NULL).put("error",value.optional("error") ?: JSONObject.NULL))
+}

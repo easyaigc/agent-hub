@@ -74,7 +74,7 @@
     "proof:desktop:prepared": "node scripts/desktop-prepared-proof.mjs",
     "check:codex-discovery": "pnpm build && HOST_AGENT_DISCOVERY_BONJOUR=0 node scripts/codex-discovery-smoke.mjs && node scripts/codex-discovery-native-smoke.mjs && node scripts/mobile/codex-discovery-scheduling.mjs",
     "generate:mobile-parity": "node scripts/mobile/parity.mjs --write",
-    "check:mobile-parity": "node scripts/mobile/parity.mjs && node --test scripts/mobile/parity.test.mjs && node scripts/mobile/generate-reading-policy.mjs && node scripts/mobile/check-contract.mjs && node scripts/mobile/private-connection-vectors.mjs && node scripts/mobile/generate-design-tokens.mjs",
+    "check:mobile-parity": "node scripts/mobile/parity.mjs && node --test scripts/mobile/parity.test.mjs && node scripts/mobile/generate-reading-policy.mjs && node scripts/mobile/check-contract.mjs && node scripts/mobile/private-connection-vectors.mjs && node scripts/mobile/generate-design-tokens.mjs && node scripts/mobile/generate-failure-copy.mjs",
     "check:ios-state": "node scripts/mobile/check-ios-state.mjs",
     "generate:mobile-design": "node scripts/mobile/generate-design-tokens.mjs --write",
     "check:file-transfers": "pnpm build && node scripts/file-transfers-smoke.mjs",
@@ -95,7 +95,8 @@
     "task-hub:recover-bundle": "node scripts/task-hub-recover-bundle.mjs",
     "test:task-hub:android-session": "node scripts/mobile/task-hub-session-acceptance.mjs",
     "check:weak-network-proxy": "node --test scripts/weak-network-read-proxy.test.mjs",
-    "dev:weak-network-read-proxy": "node scripts/weak-network-read-proxy.mjs"
+    "dev:weak-network-read-proxy": "node scripts/weak-network-read-proxy.mjs",
+    "generate:mobile-failure-copy": "node scripts/mobile/generate-failure-copy.mjs --write"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

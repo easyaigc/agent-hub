@@ -198,16 +198,18 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     }
     companion object {
         private val READ_METHODS=setOf("runtime/context","runtime/summary","project/list","thread/list","thread/search","thread/read","thread/history","thread/sync","thread/subscribe","thread/unsubscribe","model/list","queue/list","queue/status","filesystem/access-status","filesystem/roots","filesystem/list-directories","filesystem/list-entries","voice/readiness","resource/read","resource/download","resource/resolve","resource/transfer-list","resource/upload-status","command/status")
-        private val WRITE_METHODS=setOf("filesystem/request-access","project/create","thread/create","turn/start","turn/cancel","turn/steer","queue/cancel","plan/action","approval/respond","serverRequest/resolve","resource/upload","resource/upload-chunk","resource/upload-complete","resource/download-complete")
+        private val WRITE_METHODS=setOf("filesystem/request-access","project/create","thread/create","turn/start","turn/cancel","turn/steer","queue/cancel","queue/execute","plan/action","approval/respond","serverRequest/resolve","resource/upload","resource/upload-chunk","resource/upload-complete","resource/download-complete")
     }
 }
 class EasyWorkRejection(message: String): Exception(message)
 
-class EasyWorkSessions(private val storage: NativeSessionStorage,private val login: EasyWorkLogin) {
+fun interface EasyWorkChannels { suspend fun session(client: MobileClient): EasyWorkRemoteSession }
+
+class EasyWorkSessions(private val storage: NativeSessionStorage,private val login: EasyWorkLogin): EasyWorkChannels {
     private val deviceAuthorization=EasyWorkDeviceAuthorization(storage)
     private val lock=Mutex()
     private val sessions=mutableMapOf<String,Pair<String,EasyWorkRemoteSession>>()
-    suspend fun session(client: MobileClient): EasyWorkRemoteSession = lock.withLock {
+    override suspend fun session(client: MobileClient): EasyWorkRemoteSession = lock.withLock {
         val connection=client.agentConnection?:error("缺少电脑连接")
         val credential=withContext(Dispatchers.IO) { EasyWorkCredential.decode(JSONObject(storage.read("easywork-credential:${connection.credentialRef}")?:error("配对授权已失效"))) }
         val signature=easyCanonical(connection.json().put("candidates",org.json.JSONArray()).put("credentialRevision",easyHash(credential.json().toString().toByteArray())))

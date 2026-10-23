@@ -152,3 +152,101 @@ test('wrong upstream runtime fails closed; outage and actual truncated body reco
     await proxy.close();
   }
 });
+
+test('native event target is preserved and historical account metadata does not change the machine', async () => {
+  const original = { hostId: target.hostId, threadId, events: [] };
+  const paths = [];
+  const { proxy, get } = await start(
+    async (route) => {
+      paths.push(route);
+      return { status: 200, body: JSON.stringify(original) };
+    },
+    { profile: 'normal' },
+  );
+  try {
+    for (const scoped of [
+      target,
+      { ...target, account: { authority: 'historical', subject: 'changed-account' } },
+    ]) {
+      const route =
+        '/v1/events?' +
+        new URLSearchParams({
+          hostId: target.hostId,
+          threadId,
+          window: 'latest-v1',
+          epoch: 'synthetic-epoch',
+          after: '7',
+          target: JSON.stringify(scoped),
+        });
+      const response = await get(route);
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), original);
+      assert.equal(paths.at(-1), route);
+    }
+    assert.equal(proxy.metrics().upstreamWrites, 0);
+  } finally {
+    await proxy.close();
+  }
+});
+
+test('event target guards reject malformed or different machines before any upstream read', async () => {
+  let calls = 0;
+  const { proxy, get } = await start(
+    async () => {
+      calls++;
+      throw Error('must not forward');
+    },
+    { profile: 'normal' },
+  );
+  try {
+    const bad = [
+      '{',
+      'null',
+      '[]',
+      ...['agentId', 'hostId', 'workspaceId', 'runtimeId'].map((key) =>
+        JSON.stringify({ ...target, [key]: 'wrong' }),
+      ),
+      JSON.stringify({ ...target, unknown: 'forbidden' }),
+      JSON.stringify({ ...target, account: { authority: '', subject: 'invalid' } }),
+    ];
+    for (const value of bad) {
+      const route =
+        '/v1/events?' +
+        new URLSearchParams({
+          hostId: target.hostId,
+          threadId,
+          window: 'latest-v1',
+          epoch: 'synthetic-epoch',
+          after: '7',
+          target: value,
+        });
+      assert.equal((await get(route)).status, 403);
+    }
+    assert.equal(calls, 0);
+  } finally {
+    await proxy.close();
+  }
+});
+
+test('workspace account metadata is shape-checked but never becomes a Codex machine gate', async () => {
+  let readTarget = { ...target, account: { authority: 'new-provider', subject: 'new-account' } };
+  const { proxy, get } = await start(
+    async () => ({ status: 200, body: JSON.stringify({ hostId: target.hostId, readTarget }) }),
+    {
+      target: { ...target, account: { authority: 'historical', subject: 'old-account' } },
+      profile: 'normal',
+    },
+  );
+  try {
+    assert.equal((await get('/v1/workspace')).status, 200);
+    readTarget = { ...target };
+    assert.equal((await get('/v1/workspace')).status, 200);
+    readTarget = { ...target, account: { authority: '', subject: 'bad' } };
+    assert.equal((await get('/v1/workspace')).status, 503);
+    readTarget = { ...target, workspaceId: 'other-machine-workspace' };
+    assert.equal((await get('/v1/workspace')).status, 503);
+    assert.equal(proxy.metrics().upstreamWrites, 0);
+  } finally {
+    await proxy.close();
+  }
+});

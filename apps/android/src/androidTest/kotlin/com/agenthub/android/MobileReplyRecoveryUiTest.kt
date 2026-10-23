@@ -23,7 +23,7 @@ class MobileReplyRecoveryUiTest {
         override fun before() {
             if(InstrumentationRegistry.getArguments().getString("recoveryForeground")=="1") {
                 val descriptor=InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(
-                    "am start -W -n com.easyai.agenthub.android.debug/androidx.activity.ComponentActivity")
+                    "am start -W -n ${InstrumentationRegistry.getInstrumentation().targetContext.packageName}/androidx.activity.ComponentActivity")
                 val result=android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use { it.readText() }
                 assertTrue("Foreground only the dedicated test Activity before each MIUI launch",result.contains("Status: ok"))
             }

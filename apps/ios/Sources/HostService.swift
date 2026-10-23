@@ -239,14 +239,14 @@ struct HostService {
     NativeReadAcceptanceTiming.record("history-response", hostId: client.id, threadId: threadId, startedAt: startedAt)
     return result
   }
-  static func post<T: Decodable>(_ client: Client, _ path: String, _ payload: [String: Any])
+  static func post<T: Decodable>(_ client: Client, _ path: String, _ payload: [String: Any], query: [String: String] = [:])
     async throws -> T
   {
     let data = try JSONSerialization.data(
       withJSONObject: ["hostId": client.id].merging(payload) { _, rhs in rhs })
     return try await load(
       request(
-        try url(client, path), token: CredentialVault.token(client.id), method: "POST",
+        try url(client, path, query), token: CredentialVault.token(client.id), method: "POST",
         body: data))
   }
   static func send(_ client: Client, _ reply: PendingReply, target: AgentRuntimeTarget? = nil) async throws -> DeliveryReceipt {

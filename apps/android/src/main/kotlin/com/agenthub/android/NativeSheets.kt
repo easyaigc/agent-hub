@@ -16,6 +16,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
@@ -57,9 +58,9 @@ import androidx.compose.foundation.text.KeyboardOptions
         LaunchedEffect(page) { focus.clearFocus(force=true); keyboard?.hide() }
         Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).testTag("sheet-$page")) {
             Box(Modifier.fillMaxWidth().heightIn(min=48.dp).padding(horizontal=12.dp)) {
-                Text(when(page) { "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; else->"外观" },Modifier.align(Alignment.Center),fontSize=17.sp,fontWeight=FontWeight.SemiBold)
+                Text(when(page) { "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; else->"外观" },Modifier.align(Alignment.Center),fontSize=17.sp,fontWeight=FontWeight.SemiBold)
                 if(page in listOf("appearance","ai-sharing-settings")) TextButton(onClick={ navigate("settings") },modifier=Modifier.align(Alignment.CenterStart).testTag("appearance-back")) { ProductIcon("chevron",Modifier.size(14.dp).rotate(180f)); Text("设置") }
-                TextButton(onClick=if(page=="add") { { navigate("clients") } } else close,enabled=(page!="ai-sharing"||!session.aiSharing.busy)&&(page!="add"||!session.connectionBusy)&&(page!="add-project"||!session.projectBusy),modifier=Modifier.align(if(page=="ai-sharing") Alignment.CenterStart else Alignment.CenterEnd).testTag(if(page=="settings") "settings-done" else if(page=="add") "cancel-client-form" else "sheet-done")) { Text(if(page=="ai-sharing" || page=="add" && editing==null) "取消" else "完成") }
+                TextButton(onClick=if(page=="add") { { navigate("clients") } } else close,enabled=(page!="ai-sharing"||!session.aiSharing.busy)&&(page!="add"||!session.connectionBusy)&&(page!="add-project"||!session.projectBusy),modifier=Modifier.align(if(page=="ai-sharing") Alignment.CenterStart else Alignment.CenterEnd).testTag(if(page=="settings") "settings-done" else if(page=="add") "cancel-client-form" else if(page=="chat-search") "chat-search-close" else "sheet-done")) { Text(if(page=="ai-sharing" || page=="add" && editing==null) "取消" else "完成") }
             }
             HorizontalDivider(color=colors.onSurface.copy(alpha=.06f))
             when(page) {
@@ -72,6 +73,10 @@ import androidx.compose.foundation.text.KeyboardOptions
                 "add-project" -> AddProjectPage(session,close)
                 "appearance" -> AppearancePage(session)
                 "generation" -> GenerationPage(session)
+                "reply-records" -> ReplyDeliveryRecordsPage(session,close)
+                "chat-search" -> ChatHistorySearchPage(session,close)
+                "archived-chats" -> ArchivedChatsPage(session,close,navigate)
+                "workspace-archive" -> WorkspaceArchivePage(session)
             }
         }
     }
@@ -124,7 +129,10 @@ import androidx.compose.foundation.text.KeyboardOptions
         GroupCard {
             session.clients.forEach { client ->
                 Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically) {
-                    Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("client-${client.id}").clickable { session.select(client); close() },verticalAlignment=Alignment.CenterVertically) { ProductIcon("laptop"); Column(Modifier.weight(1f).padding(horizontal=12.dp)) { Text(client.name,fontSize=16.sp); Text(if(client.isDemo) "界面体验 · 本地示例" else if(client.mode in listOf("history", "history-only")) "历史连接" else "原桌面连接",fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant); Text(client.connectionLabel,fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) }; if(client.isConnecting) CircularProgressIndicator(Modifier.size(16.dp),strokeWidth=2.dp); if(session.hasClient && session.selectedClient.id==client.id) ProductIcon("check",Modifier.size(16.dp)) }
+                    Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("client-${client.id}").clickable { session.select(client); close() },verticalAlignment=Alignment.CenterVertically) { ProductIcon("laptop"); Column(Modifier.weight(1f).padding(horizontal=12.dp)) { Text(client.name,fontSize=16.sp); Text(if(client.isDemo) "界面体验 · 本地示例" else if(client.mode in listOf("history", "history-only")) "历史连接" else "原桌面连接",fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant); val running=session.runningConversationCount(client)
+                        Text("${client.connectionLabel} · 进行中 ${running ?: "—"}",Modifier.testTag("client-running-${client.id}").semantics {
+                            contentDescription="${client.connectionLabel}，${running?.let { "${it}个会话进行中" } ?: "进行中数量未知"}"
+                        },fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,style=LocalTextStyle.current.copy(fontFeatureSettings="tnum")) }; if(client.isConnecting) CircularProgressIndicator(Modifier.size(16.dp),strokeWidth=2.dp); if(session.hasClient && session.selectedClient.id==client.id) ProductIcon("check",Modifier.size(16.dp)) }
                     if(!client.isDemo) Column { TextButton(onClick={ edit(client) },modifier=Modifier.testTag("edit-client-${client.id}")) { Text("编辑") }; TextButton(onClick={ removing=client },modifier=Modifier.testTag("remove-client-${client.id}")) { Text("移除",color=MaterialTheme.colorScheme.error) } }
                 }
             }

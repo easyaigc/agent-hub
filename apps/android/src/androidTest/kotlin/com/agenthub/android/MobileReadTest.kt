@@ -25,7 +25,9 @@ import kotlin.coroutines.coroutineContext
 
 @RunWith(AndroidJUnit4::class)
 class MobileReadTest {
-    @get:Rule val ui=createAndroidComposeRule<MainActivity>()
+    @get:Rule(order=0) val diagnostics: org.junit.rules.TestRule=NativeTestDiagnostics()
+    @get:Rule(order=1) val foreground: org.junit.rules.TestRule=NativeTestForeground()
+    @get:Rule(order=2) val ui=createAndroidComposeRule<MainActivity>()
     private val arguments get()=InstrumentationRegistry.getArguments()
     private val endpoint get()=arguments.getString("readFixture") ?: error("A3 read fixture is required")
     private val activity: MainActivity get() {
@@ -249,38 +251,48 @@ class MobileReadTest {
         assertTrue(session.timeline.hasEarlierMessages)
         ui.onNodeWithTag("message-list").performScrollToNode(hasTestTag("history-local-more"))
         ui.onNodeWithTag("history-local-more").performClick(); assertEquals(125,session.messages.size)
-        assertTrue(session.visibleMessageLimit==120)
+        assertTrue(session.visibleMessageLimit==80)
         ui.onNodeWithTag("message-list").performScrollToNode(hasTestTag("history-local-more"))
         ui.onNodeWithTag("history-local-more").performClick(); assertFalse(session.timeline.hasEarlierMessages)
         assertEquals(messages,session.messages)
     }
     @Test fun historyPullRequiresTopThresholdAndRelease() {
         demo()
+        // This case does not recreate or rotate the Activity. Reuse its verified
+        // session for gesture-state assertions, without re-entering the platform
+        // idle wait while Compose settles injected motion.
+        val session=this.session
         val original=(0 until 125).map { MobileMessage("pull-$it",if(it%2==0) "user" else "assistant","第 $it 条合成消息","completed",runId="pull-run-${it/2}") }
         ui.runOnIdle { session.installAcceptanceHistory(original) }
         val list=ui.onNodeWithTag("message-list")
-        list.performScrollToNode(hasTestTag("message-pull-90"))
+        list.performScrollToNode(hasTestTag("message-pull-115"))
         list.performTouchInput { swipe(Offset(width*.5f,height*.25f),Offset(width*.5f,height*.7f),400) }
-        assertEquals(60,session.visibleMessageLimit)
+        assertEquals(20,session.visibleMessageLimit)
         list.performScrollToIndex(0)
         list.assert(SemanticsMatcher("History is at the actual top") { it.config[androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange].value()==0f })
         list.performTouchInput { swipe(Offset(width*.5f,10f),Offset(width*.5f,35f),400) }
-        assertEquals(60,session.visibleMessageLimit)
+        assertEquals(20,session.visibleMessageLimit)
         shot("history-pull-before")
         list.performTouchInput { down(Offset(width*.5f,80f)); moveBy(Offset(0f,height*.1f),16); moveBy(Offset(0f,height*.3f),180) }
-        assertEquals("Holding a pull must not load",60,session.visibleMessageLimit)
+        assertEquals("Holding a pull must not load",20,session.visibleMessageLimit)
         list.performTouchInput { up() }
-        ui.waitUntil(10_000) { session.visibleMessageLimit==120 }
+        ui.waitUntil(10_000) { session.visibleMessageLimit==80 }
         assertEquals(original,session.messages)
-        ui.onNodeWithTag("message-pull-65").assertIsDisplayed()
+        ui.onNodeWithTag("message-pull-105").assertIsDisplayed()
         shot("history-pull-after-anchor")
     }
-    @Test fun latestReadPreservesEarlierPrefixAndExhaustedCursorUntilReselection() {
+    @Test fun latestReadPreservesEarlierPrefixAndExhaustedCursorUntilDifferentTarget() {
         connect(); openThread()
         main { session.loadHistory(more=true)?.join() }
         assertEquals("older-user",session.messages.first().id); assertNull(session.historyCursor)
         main { session.loadHistory()?.join() }
         assertEquals("older-user",session.messages.first().id); assertEquals(7,session.messages.size); assertNull(session.historyCursor)
+        ui.runOnIdle { session.selectThread(session.threads.first()) }
+        ui.waitUntil(10_000) { !session.historyLoading }
+        assertEquals("Same-chat navigation keeps earlier pages", "older-user",session.messages.first().id)
+        assertNull(session.historyCursor)
+        ui.runOnIdle { session.selectThread(session.threads[1]) }
+        ui.waitUntil(10_000) { !session.historyLoading }
         ui.runOnIdle { session.selectThread(session.threads.first()) }
         ui.waitUntil(10_000) { !session.historyLoading }
         assertEquals("read-user",session.messages.first().id); assertEquals("earlier-page",session.historyCursor)
@@ -305,9 +317,11 @@ class MobileReadTest {
     }
     @Test fun transientReconnectIsQuietButEarlierReadOffersRetry() {
         var fail=false; var holding=false
+        val workspaceRequests=java.util.concurrent.atomic.AtomicInteger()
         val started=CompletableDeferred<Unit>(); val release=CompletableDeferred<Unit>()
         val reader=object: HostReads {
             override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?): MobileWorkspace {
+                workspaceRequests.incrementAndGet()
                 if(holding) { started.complete(Unit); release.await() }
                 if(fail) throw HostReadError("合成网络中断",transient=true)
                 return fixtureWorkspace()
@@ -325,8 +339,9 @@ class MobileReadTest {
         ui.onNodeWithTag("client-connecting").assertExists()
         ui.onNodeWithTag("message-input").performClick().performTextInput("refresh-keeps-this-draft")
         ui.onNodeWithTag("open-sidebar").performClick()
+        val beforeManualRefresh=workspaceRequests.get()
         ui.onNodeWithTag("sidebar-refresh").performTouchInput { swipeDown(durationMillis=450) }
-        ui.waitUntil { !session.loading && session.error!=null }
+        ui.waitUntil(10_000) { workspaceRequests.get()>beforeManualRefresh && !session.loading && session.error!=null }
         ui.onNodeWithTag("session-error").assertTextContains("刷新失败，请重试。",substring=true)
         assertEquals("refresh-keeps-this-draft",session.text); assertEquals(cached,session.messages)
         shot("workspace-transient-manual-error")
@@ -440,6 +455,7 @@ class MobileReadTest {
             override suspend fun history(client: MobileClient,threadId: String,cursor: String?)=fixtureHistory(threadId)
         }
         ui.runOnIdle { session.resetAcceptance(reader) }; main { session.connect("旧连接","https://fixture.invalid","") }
+        ui.runOnIdle { session.refresh() }
         runBlocking { started.await() }
         val old=session.selectedClient
         main { session.connect("新连接","https://fixture.invalid","",old) }

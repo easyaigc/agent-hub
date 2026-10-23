@@ -10,16 +10,20 @@ import androidx.compose.runtime.*
 
 class MainActivity : ComponentActivity() {
     private var systemBarsDark: Boolean? = null
+    internal lateinit var readNetworkMonitor: NativeReadNetworkMonitor
+        private set
     // Activity-owned native state is retained on rotation. Durable repository
     // and process restoration are introduced at A6 with explicit migration.
     internal lateinit var session: MobileSession
         private set
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NativeReadAcceptanceTiming.configure(applicationContext,intent)
         @Suppress("DEPRECATION")
         val retained = lastCustomNonConfigurationInstance as? MobileSession
         val storage=NativeSessionStorage(applicationContext)
         session = retained ?: MobileSession(storage)
+        readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
         session.configureVoice(applicationContext)
         session.discovery = CodexHostDiscovery(applicationContext, session, storage)
         session.easyWorkDiscovery=EasyWorkDiscovery(applicationContext,session,storage)
@@ -41,8 +45,8 @@ class MainActivity : ComponentActivity() {
         }
     }
     override fun onNewIntent(intent: android.content.Intent) { super.onNewIntent(intent);setIntent(intent);intent.data?.let(session::receiveLink) }
-    override fun onStart() { super.onStart(); session.enterForeground(); session.discovery?.start();session.easyWorkDiscovery?.start() }
-    override fun onStop() { session.discovery?.stop();session.easyWorkDiscovery?.stop(); session.leaveForeground(); super.onStop() }
+    override fun onStart() { super.onStart(); session.enterForeground();readNetworkMonitor.start(); session.discovery?.start();session.easyWorkDiscovery?.start() }
+    override fun onStop() { readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop(); session.leaveForeground(); super.onStop() }
     @Deprecated("Native retained state until the repository-backed ViewModel is introduced")
     override fun onRetainCustomNonConfigurationInstance(): Any = session
 }

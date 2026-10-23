@@ -85,24 +85,14 @@ struct ChatTimeline {
   let hasEarlierMessages: Bool
 
   init(messages: [ChatMessage], messageLimit: Int, activeRunId: String? = nil, isRunning: Bool = false, focusedMessageId: String? = nil) {
-    let projection = SharedMobileRules.timeline(messages, limit: messageLimit, activeRunId: activeRunId, running: isRunning)
+    let projection = SharedMobileRules.timeline(messages, limit: messageLimit, activeRunId: activeRunId, running: isRunning, focusedMessageId: focusedMessageId)
     hasEarlierMessages = projection.hasEarlierMessages
     items = projection.rows.flatMap { row -> [Item] in
       let values = row.indices.map { messages[$0.intValue] }
-      if ["tools", "errors"].contains(row.kind), let focusedMessageId,
-        let focus = values.firstIndex(where: { $0.id == focusedMessageId }) {
-        // Do not recompute grouping or final actions. Only expose the exact search
-        // hit as a normal row so the native scroll/highlight can address its ID.
-        func group(_ slice: ArraySlice<ChatMessage>) -> [Item] {
-          guard let first = slice.first else { return [] }
-          return [row.kind == "tools" ? .tools(id: first.id, messages: Array(slice)) : .errors(id: first.id, messages: Array(slice))]
-        }
-        return group(values[..<focus]) + [.message(values[focus])] + group(values[(focus + 1)...])
-      }
       switch row.kind {
       case "tools": return [.tools(id: row.id, messages: values)]
       case "errors": return [.errors(id: row.id, messages: values)]
-      case "compaction": return [values[0].id == focusedMessageId ? .message(values[0]) : .compaction(values[0])]
+      case "compaction": return [.compaction(values[0])]
       case "replyActions": return [.replyActions(id: row.id, text: row.text ?? "", turnId: row.runId)]
       default: return [.message(values[0])]
       }
@@ -299,7 +289,7 @@ struct WorkspaceManagementOperation: Codable, Identifiable {
   var labels: [String: String]? = nil
   var id: String { clientOperationId }
   var request: WorkspaceManagementRequest { WorkspaceManagementRequest(hostId: hostId, target: target, clientOperationId: id, action: action, ids: ids) }
-  var needsCheck: Bool { items.contains { ["pending", "submitting", "outcome-unknown"].contains($0.state) } }
+  var needsCheck: Bool { items.contains { SharedMobileRules.workspaceArchivePending($0.state) } }
 }
 
 struct WorkspaceSidebar: Codable {
@@ -454,9 +444,6 @@ struct DeliveryReceipt: Identifiable, Codable {
   var canExecuteNow: Bool? = nil
   var queueDisposition: String? = nil
   var queueSyncError: String? = nil
-  var isLegacyHostQueue: Bool {
-    state == "queued" && (queueDisposition == "legacy-review" || queueSource == "host")
-  }
   var noticeContext: String? = nil
   var laterTurnId: String? = nil
   var failureTitle: String {
@@ -811,6 +798,13 @@ struct AgentPermissionOption: Identifiable {
 
 enum ChatAction: String, Codable, Sendable {
   case pin, unpin, archive, unarchive, delete
+  var title: String { switch self {
+    case .pin: L10n.tr("置顶")
+    case .unpin: L10n.tr("取消置顶")
+    case .archive: L10n.tr("归档")
+    case .unarchive: L10n.tr("恢复对话")
+    case .delete: L10n.tr("删除")
+  } }
   static func errorDescription(_ message: String) -> String {
     switch message {
     case "电脑端拒绝了此次操作：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。":
@@ -839,7 +833,7 @@ struct ChatActionReceipt: Codable, Equatable, Identifiable, Sendable {
   var waitingEnded: Bool? = nil
   var id: String { clientOperationId }
   var request: ChatActionRequest { ChatActionRequest(hostId: hostId, target: target, threadId: threadId, clientOperationId: clientOperationId, action: action) }
-  var pending: Bool { ["submitted", "outcome-unknown"].contains(phase) }
+  var pending: Bool { SharedMobileRules.chatActionPending(phase) }
 }
 struct ChatSearchJump: Equatable {
   let targetKey: String
@@ -858,6 +852,6 @@ extension ChatMessage {
       case .extensionData: return []
       }
     }
-    return ([text, detail ?? ""] + files + (attachments ?? []).map(\.name) + parts).filter { !$0.isEmpty }.joined(separator: "\n")
+    return SharedMobileRules.searchDocument(text: text, detail: detail, files: files, attachments: (attachments ?? []).map(\.name), parts: parts)
   }
 }

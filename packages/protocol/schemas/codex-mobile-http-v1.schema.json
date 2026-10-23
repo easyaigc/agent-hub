@@ -629,6 +629,66 @@
               "const": null
             }
           ]
+        },
+        "queueSource": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "queueDisposition": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "queueSyncError": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "queuePresent": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "canExecuteNow": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "laterTurnId": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "const": null
+            }
+          ]
         }
       }
     },
@@ -1937,6 +1997,208 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 300000
+        }
+      }
+    },
+    "chatActionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostId", "target", "threadId", "clientOperationId", "action"],
+      "properties": {
+        "hostId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "threadId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+        },
+        "clientOperationId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+        },
+        "action": {
+          "enum": ["pin", "unpin", "archive", "unarchive", "delete"]
+        }
+      }
+    },
+    "chatActionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostId", "target", "threadId", "clientOperationId", "action", "phase", "error"],
+      "properties": {
+        "hostId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "threadId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+        },
+        "clientOperationId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_-]{8,100}$"
+        },
+        "action": {
+          "enum": ["pin", "unpin", "archive", "unarchive", "delete"]
+        },
+        "phase": {
+          "enum": ["submitted", "confirmed", "rejected", "outcome-unknown"]
+        },
+        "error": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "const": null
+            }
+          ]
+        }
+      }
+    },
+    "workspaceManagementRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostId", "target", "clientOperationId", "action", "ids"],
+      "properties": {
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "clientOperationId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^(?!(?:__proto__|constructor|prototype)$)[a-zA-Z0-9_-]{8,100}$"
+        },
+        "action": {
+          "enum": ["projects:delete", "threads:archive"]
+        },
+        "ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          }
+        }
+      }
+    },
+    "workspaceManagementOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostId", "target", "clientOperationId", "action", "ids", "items"],
+      "properties": {
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "clientOperationId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 100,
+          "pattern": "^(?!(?:__proto__|constructor|prototype)$)[a-zA-Z0-9_-]{8,100}$"
+        },
+        "action": {
+          "enum": ["projects:delete", "threads:archive"]
+        },
+        "ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "\\S"
+          }
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "state", "error"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "pattern": "\\S"
+              },
+              "state": {
+                "enum": ["pending", "submitting", "completed", "rejected", "outcome-unknown"]
+              },
+              "error": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "const": null
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "executeQueueRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostId", "threadId", "clientMessageId"],
+      "properties": {
+        "hostId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "threadId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clientMessageId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedTurnId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
         }
       }
     }

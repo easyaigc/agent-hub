@@ -108,3 +108,9 @@ stateDiagram-v2
 ## UM03 分支严格HTTP契约（已实现并通过适用验收）
 
 共同Schema新增 threadForkRequest、threadForkOptions、threadForkOperation。请求仅hostId、threadId、turnId、clientOperationId、environment；完整本地目标不额外写入严格POST正文。具名GET选项和原ID状态不产生输入，confirmed必须返回不同的准确新Thread ID，所有原请求字段均绑定；终态不得回退或改写。Android和iOS使用同一Schema及KMP判定，编译／向量与实际原owner和Git验收分别记录。
+
+### 2026-10-23 原生聊天管理严格契约
+
+移动 HTTP Schema 新增 `chatActionRequest` / `chatActionReceipt`，只允许 `pin`、`unpin`、`archive`、`unarchive`、`delete`；严格校验字段、操作 ID、Host/线程与完整机器目标。具名 POST 和同一路径 GET 查询接入 Android，原 Host 接口实现不因 Schema 扩充而新增能力。终态不能被晚到的提交中/未知回执降级，已保存的目标、正文与操作 ID 不随查询重写。查询404表示未找到电脑端原记录，不能据此自动重放或推断原动作已拒绝。新增10个 HTTP 向量与17个任务状态、7个管理可用性向量，既有向量保留；完整真实DEV结果单列。
+
+P3-5b 已实现：workspaceManagementRequest/Operation 严格有序ID、1..100去重和逐项pending/submitting/completed/rejected/outcome-unknown契约；Android命令只接受threads:archive，目标/请求/项顺序匹配后共享规则保留原终态和错误。未知结果与404保留原ID，GET不执行；POST前持久标记，跨通道不新增意图。不新增任意方法或项目删除功能。

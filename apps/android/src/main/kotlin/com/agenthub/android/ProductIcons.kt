@@ -36,9 +36,21 @@ import androidx.compose.ui.unit.dp
             "plus" -> { line(5f,12f,19f,12f); line(12f,5f,12f,19f) }
             "close" -> { line(6f,6f,18f,18f); line(18f,6f,6f,18f) }
             "chevron" -> path(8f,5f,15f,12f,8f,19f)
+            "picker" -> { path(7f,9f,12f,4f,17f,9f);path(7f,15f,12f,20f,17f,15f) }
             "down" -> path(6f,9f,12f,15f,18f,9f)
             "up" -> path(6f,15f,12f,9f,18f,15f)
             "check" -> path(4f,12f,9f,17f,20f,6f)
+            "pin","unpin" -> {
+                path(8f,3f,16f,3f,15f,10f,19f,14f,5f,14f,9f,10f,8f,3f);line(12f,14f,12f,22f)
+                if(name=="unpin")line(3f,3f,21f,21f)
+            }
+            "storage-warning" -> {
+                path(3f,12f,6f,3f,18f,3f,21f,12f);drawRoundRect(color,Offset(3f*u,12f*u),Size(18f*u,9f*u),androidx.compose.ui.geometry.CornerRadius(2f*u),style=stroke)
+                line(7f,17f,10f,17f);drawCircle(color,4f*u,Offset(19f*u,6f*u),style=stroke)
+                line(19f,4f,19f,6f);drawCircle(color,.6f*u,Offset(19f*u,8f*u))
+            }
+            "archive" -> { path(4f,7f,4f,21f,20f,21f,20f,7f);path(2f,3f,22f,3f,22f,7f,2f,7f,2f,3f);line(9f,12f,15f,12f) }
+            "trash" -> { path(5f,6f,6f,22f,18f,22f,19f,6f);line(3f,6f,21f,6f);path(8f,6f,8f,2f,16f,2f,16f,6f);line(10f,10f,10f,18f);line(14f,10f,14f,18f) }
             "search" -> { drawCircle(color,7f*u,Offset(10f*u,10f*u),style=stroke); line(15f,15f,21f,21f) }
             "desktop" -> { drawRoundRect(color,Offset(2f*u,3f*u),Size(20f*u,14f*u),androidx.compose.ui.geometry.CornerRadius(2f*u),style=stroke); line(12f,17f,12f,21f); line(7f,21f,17f,21f) }
             "laptop" -> { drawRoundRect(color,Offset(4f*u,4f*u),Size(16f*u,13f*u),style=stroke); path(2f,20f,22f,20f) }
@@ -52,7 +64,11 @@ import androidx.compose.ui.unit.dp
             "fork" -> { line(7f,20f,7f,5f); path(7f,14f,17f,9f,17f,4f); drawCircle(color,2f*u,Offset(7f*u,3f*u),style=stroke); drawCircle(color,2f*u,Offset(17f*u,2f*u),style=stroke); drawCircle(color,2f*u,Offset(7f*u,22f*u),style=stroke) }
             "copy" -> { drawRoundRect(color,Offset(7f*u,7f*u),Size(13f*u,14f*u),style=stroke); path(15f,3f,3f,3f,3f,16f) }
             "share" -> { path(5f,10f,5f,21f,19f,21f,19f,10f); line(12f,15f,12f,2f); path(7f,7f,12f,2f,17f,7f) }
+            "history" -> { drawArc(color,-90f,285f,false,Offset(3f*u,3f*u),Size(18f*u,18f*u),style=stroke);path(2f,10f,3f,15f,8f,14f);path(12f,6f,12f,12f,16f,14f) }
+            "document" -> { path(5f,2f,14f,2f,19f,7f,19f,22f,5f,22f,5f,2f);path(14f,2f,14f,7f,19f,7f) }
+            "image" -> { drawRoundRect(color,Offset(2f*u,4f*u),Size(20f*u,16f*u),style=stroke);drawCircle(color,2f*u,Offset(8f*u,9f*u),style=stroke);path(3f,19f,10f,12f,14f,16f,17f,13f,21f,17f) }
             "refresh" -> { drawArc(color,35f,285f,false,Offset(3f*u,3f*u),Size(18f*u,18f*u),style=stroke); path(20f,3f,20f,9f,14f,9f) }
+            "conversation-sync" -> { drawArc(color,35f,130f,false,Offset(3f*u,3f*u),Size(18f*u,18f*u),style=stroke);drawArc(color,215f,130f,false,Offset(3f*u,3f*u),Size(18f*u,18f*u),style=stroke);path(20f,3f,20f,9f,15f,9f);path(4f,21f,4f,15f,9f,15f);line(12f,7f,12f,12f);drawCircle(color,.9f*u,Offset(12f*u,16f*u)) }
             "person" -> { drawCircle(color,4f*u,Offset(12f*u,6f*u),style=stroke); path(3f,22f,4f,17f,8f,13f,16f,13f,20f,17f,21f,22f) }
             else -> for (x in listOf(5f,12f,19f)) drawCircle(color,1.5f*u,Offset(x*u,12f*u))
         }

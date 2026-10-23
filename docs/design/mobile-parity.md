@@ -1,5 +1,23 @@
 # 双端 UI 一致性规格
 
+2026-10-22 Android 执行基线：保留全部页面和状态，UI14–UI19 业务管理暂缓；A6 系统/阅读/新增语音仍暂停。以下子项归入既有功能，实施与验收分别记录，见[分步进度](../plans/android-alignment-20261022/progress.md)。
+
+P1 原打开回执观察关联 F28/F43/F44、UI04/UI10：前台等待与后台记录复用同一已确认原回执；打开中、未知、错误与结束等待状态保留，不新增按钮或导航。原意图不匹配时保留既有记录并显示“原打开意图不匹配，只能查询原记录”。不同目标/原操作的观察独立，取消等待不表示取消电脑操作。iOS 沿用 `connectForReply` 的既有观察路径，本次不修改其界面或宣称新增通过；Android 全量视觉/语言状态仍归 P6。
+
+P2 UI04/UI05/UI10：首屏复用已验证目录/缓存；同聊天阅读窗口保留。新增与 iOS 同文案的“对话同步失败／实时状态暂不可用／实时进度已同步”，解释最多三行，按完整目标/聊天独立；“重试”仅补读历史，在途禁用，保留草稿/窗口。10dp 内边距、横向8dp/正文3dp间距、12sp标题/说明；iOS regularMaterial/系统符号对应 Android 既有中性色原生表面、自有警示循环向量及透明按钮，OEM字体/系统栏保持。当前同一产物三环境各10项同步、18项读取、19项执行辅助通过；核对15张所选准确窗口/全屏图，保存30张原图，初始API26过渡图仍保留，完整P6/双语/视觉未据此通过。未知回复回执不进入新建继续入口。
+
+| 审计子项           | 既有功能                        | 页面与状态补充                                              | 工作包                    |
+| ------------------ | ------------------------------- | ----------------------------------------------------------- | ------------------------- |
+| X01 语言与设置     | F56                             | 系统/中文/英文立即切换、支持/隐私入口、动态及读屏文案       | P6                        |
+| X02 双语音路线     | F33/F64                         | 默认路线、前台预检、录音前回退、原 ID 未知隔离              | P4局部保护；完整P7/A6暂停 |
+| X03 正文与受控链接 | F19/F24                         | 长用户正文展开、预览、电话邮件、电脑路径及 loopback 提示    | P6；系统预览深度 P7       |
+| X04 全文查找       | F13/F17/F70                     | 聊天内检索、高亮、准确定位与分页/滚动锚点                   | P3                        |
+| X05 聊天管理       | F12/F14/F70                     | 置顶/桌面顺序、归档列表/恢复/删除确认/批量聊天归档、双状态  | P3；新增项目管理暂缓      |
+| X06 本地读取失败   | F04/F25/F47                     | 失败阻断/重试，不以空状态覆盖原资料                         | P4局部保护；完整P7/A6暂停 |
+| X07 桌面建议       | F69                             | 原生版本/租期、灰字/详情、采用/追加/替换确认/撤销与组合状态 | P5                        |
+| X08 弱网调度       | F02/F05/F12/F17/F18/F46/F57/F68 | 首缓存、独立历史、同聊天重选、同步失败保持输入可用          | P2                        |
+| X09 计数与侧栏     | F02/F11/F14/F49/F50             | 每电脑运行数、搜索显隐、置顶/最近折叠；独立未读账本单列     | P3；未读 P7 暂停          |
+
 2026-10-21 本次限定范围验收闭环：原应用正常重开后仅一个ChatGPT实例，正式Host保持原身份与desktop-runtime；本机共享服务和官方云端连接分离。恢复对话保留原草稿，仅新增一次真实xhigh跟进，删除按原回执确认；最新执行指纹的项目新建一次输入/回复通过。最终修复包完成归档列表及逐条选中菜单的完成/停止状态验收，两条操作前实际已加载且完成的对话经侧栏批量归档、卸载与App重开成功记录核对通过。此前六项生命周期、附件、队列、停止、审批及内置工具的真实结果按原环境单列保留，本次补验不伪装为整套重跑。完整检查和iOS构建通过；原始失败、只读回执核对与包指纹留在私有验收记录。正在执行中直接归档/删除、Android、Windows、实体手机、手机建议展示及跨网络本次不新增通过，F70完整跨端状态保持原标记。
 
 2026-10-21 正常重开后已确认单个原应用、本机stdio共享服务与官方云端WebSocket分离；准确local owner恢复，保留草稿的跟进只提交一次，真实GPT-6.1-Sol/xhigh完成第二轮，删除原操作回执与完整官方目录核对通过。最新包项目内新建仅一次输入/回复通过。归档对话失去owner后仍保留已确认的终态，Host仅投影归档且已有completed/interrupted/failed的记录；活动、未完成及无终态记录保持unknown，执行控制不恢复。iOS归档列表与选中对话依据同一终态显示，原生辅助保留未知草稿、复用正式连接并只重查异步删除结果。归档状态修复、批量及最终交付另记；Android共享Host字段，原生F70实现及验收未新增通过，Windows和实体手机本次未验收。
@@ -155,3 +173,173 @@ F69 在 UI07 输入区显示已校验的原桌面建议灰字，可预览全文�
 本轮增加受控验收工具并修复首次同步调度，保持现有页面和设计 token。沿用对话读取超时保留已有内容/草稿、Host 仍成功时维持连接，以及确实全通道失败后的重连状态；测试对照现有 UI，不向用户暴露代理、限速或实现参数。iOS原生、真实Windows、Android和实体手机结果分别登记，工具通过不推定其他端界面通过。
 
 2026-10-21 真机弱网续修（UI01/UI02/UI03/UI05）：已发现的 VPN 电脑立即出现，短暂探测失败不立刻删除条目，保留约一分钟并在扫描时清理；条目是可尝试连接的地址，不代表已连接。后台探测仍2秒；用户点选时描述读取采用8秒并保持证书和目标校验，历史35秒截止不变。重选当前对话保留阅读代次、已有页和在途读取，仍保存最近对话及项目供重启恢复；并行真实快照已更新时不强留过期的超时提示。iOS已实现，Android对应调度和原生画面待迁移。
+
+2026-10-22 P2 / F17–F18/F24/F68：当前聊天的重复点选仅完成导航收起，不取消已有历史读取、不折叠已展开早期消息；真实切换到其他聊天仍隔离旧响应。Android 已补同目标路径并通过三环境所选原生辅助，iOS 既有路径不变；UI04 阅读锚点、同步横幅和真实弱网完整矩阵继续验收。
+
+2026-10-22 Android P2（UI01/UI03）：描述读取采用后台2秒、显式连接8秒整次预算；发现目录独立保留原端6秒。超时显示“连接电脑超时。请确认电脑已开机并联网，且连接服务正在运行，然后重试。”；现有连接表单与重试入口不变，不能将超时显示为鉴权成功或自动重放申请。证书/目标/鉴权拒绝单列，父取消不显示为连接超时。预算、分段响应、私有连接原生辅助分别登记，真实弱网与发现条目生命周期仍未关闭；iOS既有实现不变。
+
+2026-10-22 Android P2（UI03）：已验证发现条目在成功后立即进入现有列表，保持原文案/设计 token；短暂探测失败保留地址提示最多60秒，15秒后仅取消可达提示，均不能显示为已鉴权或控制就绪。前后台清理与代次校验独立于持久已配对连接；网络变化后仍可尝试保留地址，实际连接重新核证书/完整目标。当前三环境调度辅助与iOS构建单列，已保存电脑自动切路、完整真实弱网/视觉矩阵未关闭。
+
+2026-10-22 Android P2（UI01/UI03）：已保存电脑采用本轮核验地址后，列表使用当前实际地址和用户名称，旧保留提示不得写回旧地址；健康当前地址保持优先。离线首个证书/完整目标核验只更新读取路由，仍需独立工作区/运行时证明，不能呈现为控制就绪。编辑、移除、重接入后的迟到结果按原快照隔离；账号历史元数据和名称不作为机器拒绝条件。当前三环境原生辅助与真实弱网/完整视觉矩阵分别记录。
+
+2026-10-22 Android P2（UI01/UI03/UI05）：后台事件鉴权/证书/目标/协议错误显示“连接未完成 · 查看缓存”，明确瞬时传输中断显示“正在重新连接…”，均保留已有正文与草稿且不弹全局错误框；显式刷新/更早历史的错误展示保持。三环境两状态原生断言和六张窗口原图已复核，12张配对原图保留；OEM字体/系统栏及P6全量矩阵另列。读取退避不重放模型输入，静默补拉与真实弱网仍待验收；iOS现有行为未改。
+
+2026-10-22 Android P2（UI04/UI05/UI07）：独立静默历史补读沿用现有同步提示，按有效新进度调度，不新增打断式控件。只有本次导航首次读取可限制提交；后续后台补读、分页及显式刷新保留已就绪输入，切换/连接更新仍受新证明、runtime/control、待处理操作和导入等约束。三环境后台/显式/首次读取的原生按钮断言通过；真实弱网发送预检另验，不把按钮可用当模型输入已确认。iOS既有相同行为未改；完整视觉矩阵仍在P6。
+
+2026-10-22 Android P2（UI03/UI05/UI07）：同完整目标重选客户端/核验重连时，已展开正文窗口与草稿保持；新的网络读取代次仍需自己的运行时证明，不沿用旧分页前缀或耗尽游标。改变完整目标重新取该目标草稿并重置展示，取消的旧GET不继续占用新读取的忙碌状态，旧完成也不能解除新读取忙碌。三环境原生会话/窗口状态及现有界面断言已覆盖；完整滚动锚点、首屏20条优化和P6视觉仍单列，iOS既有行为未改。
+
+2026-10-22 Android P2（UI02/UI03/UI05）：同客户端重选/验证重连后的目录读取不会被已取消旧请求的加载标记挡住；旧完成也不能解除新读取的忙碌或覆盖新目录。仅切换聊天时继续复用同连接目录读取，列表和草稿保持。三环境目录/读取/同步/输入与原执行原生辅助覆盖，界面结构/文案未新增；前后台/切路、真实弱网和完整P6视觉另验，iOS现有行为未改。
+
+2026-10-22 Android P2（UI02/UI03/UI05/UI07/UI10）：路径变化只触发既有读取与原回执恢复，不新增打断式控件，不清草稿或窗口；原POST按原连接/ID确认，未知回执仍只查询。首个/相同平台路径不重复连接，前后台/新客户端导航隔离恢复；精确旧读取/事件owner不覆盖新内容/错误状态。后台聊天原回执观察也保留准确来源，不能只恢复可见聊天。当前315项原生辅助分组覆盖，物理网络切换、真实模型及P6完整滚动/视觉另验；iOS现有行为和写入传输未改。
+
+2026-10-22 Android P2（UI05/UI07）：首屏最近20条、早期每次+60，与iOS既有行为统一引用共享定义；工具组跨起点时完整显示，不删源消息。实际原生按钮/下拉继续保留阅读锚点和草稿，同目标重选保留展开，不同目标从20重新展示。126项分组辅助含两个runner版本，原手机/API37手势等待和新结果分别留证；当前仅覆盖所列原生场景，完整P6字体/主题/横竖屏/键盘/无障碍矩阵和真实弱网继续，未新增iPhone运行验收。
+
+2026-10-22 Android P2（UI05/UI07/UI08）：历史未知结果以iOS同文折叠行展示，明确展开原文/说明，错误独立可选；完整目标/原ID/历史模式隔离，44dp触达，不新增重发动作。设置页模型/强度/速度/权限按原完整目标修改当前字段，晚到回调不带旧整份设置或覆盖其他选择，支持范围按当前目录复核。74项分组原生辅助使用同一产品、两个明确runner，模拟器各31项、手机12项；手机综合19项失败另行保留。新增控件通过原生语义动作和滚动校验状态，既有许可与执行用例保留触摸；原失败与新结果分开，菜单单次查找原因及P6完整双语/字体/主题/键盘/无障碍仍开，iOS产品未改。
+
+2026-10-22 Android P2（UI05/F19/O016）：长用户正文默认六行，原文保留并可选择，显式“展开／收起”与箭头方向及已展开/已折叠语义；附件独立保留，完整目标/消息ID隔离展示。共用预览行数、既有气泡圆角/内边距/附件间距token；iOS原六行行为不变。Android披露行触达48dp，iOS既有44pt，为平台触达差异；不据辅助状态断言宣称系统选区、完整触达、主题/字体/键盘/无障碍通过。23项原生辅助及当前截图结果另列；原手机综合执行失败、长会话/弱网及P6整体门槛继续。
+
+UI05后续明确保留：iOS既有0.2秒/减弱动态过渡、附件回形针及样式、完整系统选择菜单/触达和字体主题矩阵仍在P6；本次用户正文预览子集不关闭这些差异。
+
+UI05最终候选预览末行使用原生省略号、保留空白原文，三环境六张当前根窗口图已复核；新23项辅助和中间手机阅读4项失败/旧包300秒等待分别绑定产物，原结果不改为通过。
+
+2026-10-22 Android P2（UI03/UI05）：读取传输错误标题为“暂时无法连接电脑”，六类TLS/证书/无网/超时/无法到达/已中断的行动文案共用v1定义；非传输错误保持原文和“无法完成操作”，后续本地错误重置标题。原异常与传输/权限判断、缓存和草稿保留，不新增重试写入。iOS原分类、本地化及界面行为保持，Android当前扩展验收进行中；多语/字体/主题/完整布局/触达、非读取表单及全局操作仍留P3/P4/P6。
+
+UI03/UI05错误弹窗禁止外部触摸意外关闭；两模拟器实际系统触摸反例/修正通过，明确确认按钮和Android系统Back仍可关闭。手机系统触摸INJECT_EVENTS被拒绝，即使静态shell权限显示授予也不代表实际可用；不改权限、不换注入器，当前手机同步重试触摸组失败，完整P6保留。162项辅助按同产品/两个runner/明确分组记录；超时横幅三环境当前窗口已复核，手机截图不替代其失败组。
+
+2026-10-22 Android P2（UI05/O088）：历史最新/更早与事件均请求既有latest-v1窗口，界面和权限不新增；原分页游标、reader及目标隔离保持。123项所选辅助覆盖真实本机HTTP字段和窗口上下文，真实桌面有界/性能/弱网及完整P6仍待验，原失败不由当前分组替代。iOS原请求行为未改。
+
+2026-10-22 Android P2（O157）：无新增产品界面；仅独立DEBUG验收App新Activity显式启用固定字段读计时。102项原生辅助覆盖隐私/失败隔离/真实本机HTTP及原读取上下文；history/cache-applying均是应用前观测点，不能替代首屏、输入就绪和完整P6验收。iOS原计时实现未改。
+
+2026-10-22 Android P2首次真实弱网组合用例失败保留：首条原生正文/历史挂起而事件成功及输入可用已到达；第二原桌面输入完成，但验收器回执断言过早，未到第二正文可见断言。失败截图实际显示电脑默认“完全访问”，不把原只读前提当成通过；聊天设置继承/默认按P4继续与iOS对照，不据此擅改权限规则。独立命名空间的原生UI/Session不等于正式MainActivity冷启动，全弱网/缓存/视觉矩阵仍待验。
+
+2026-10-22 Android P2真实只读补验：原第二最终正文在恢复界面实际可见，命名数据GET503时保留正文/草稿并显示原同步失败与刷新modal，另一个Native进程在成功数据读0时展示磁盘正文/草稿；3张实际图已逐一复核。Native独立存储与进程重启不是正式MainActivity冷启动；系统字体、全语言/键盘/可访问性及完整P6仍待一致性验收。原组合和权限失败不由这些只读场景替代。
+
+2026-10-22 Android P2更早加载：按钮、转圈、“正在加载更早消息…”和对应滚动行偏移由实际更早动作控制；背景最新GET仍禁用更早操作，但不伪造更早忙碌文案/短历史按钮，与iOS既有状态一致。原生所选3项旧各2失败/新通过，81项辅助按16组记录。实际原桌面大历史三环境各1项Native读/完整ID/压缩/锚点/草稿/磁盘缓存通过，实际更早响应在Native返回处仅记录元数据，后台事件正常。物理已完成压缩行原图亲自复核，字体/系统控件/完整P6矩阵及原手机交互失败仍待验；不把历史响应应用时间作为绘制完成时间。
+
+2026-10-22 Android P2/O038导航调度：点选既有聊天先启动读取，再于选择函数返回前保存导航快照；界面目标、窗口、草稿及命令可靠落盘规则不改，iOS既有顺序保持。当前同包102项原生辅助与三环境各1项实际大聊天读取通过；这是读取/存储顺序和所选窗口/锚点/草稿结果，不代替全视觉或渲染性能。桌面建议reader/预读仍由P5落实。
+
+2026-10-22 Android P2实际网络边界：真实NativeHostReads DNS/TCP连接拒绝与未受信任RSA证书握手拒绝在三环境各3项通过，实际原异常链映射共同不可达/证书标题和正文。未改UI或信任规则；该9项不是Compose弹窗/缓存恢复、配对证书变化或完整P6可见性证据，既有未验收项保留。
+
+2026-10-22 Android P2同步当前指纹：三个环境各5+5共30项Native UI辅助通过，含原生重试touch/状态/忙碌/窗口草稿与隔离；未改原方法或提权，未重试系统外部触摸。该轮仅按实际语义/GET断言记录，未读取已被拒绝访问的外部图片，未新增完整视觉通过；旧包手机失败和旧超时保留、根因未隔离。
+
+2026-10-22 Android P2实际物理路径：LAN固定证书TLS原生读取及真实Wi-Fi断开/恢复后，原文/草稿/展开ID与窗口保持，离线同步失败/缓存与在线恢复原图已亲自复核；最终三环境同runner各1实际读取通过。此前更早按钮可用状态被最新GET异步改变的验收失败保留，仍使用原15秒预算与原生touch，仅未接受动作可再等待；实际更早错误/重复响应不放宽。该结果不证明同步banner变化时像素锚点、正式MainActivity冷启或全P6；iOS既有布局/读取未改。
+
+2026-10-22 Android P2生产MainActivity真机：实际默认存储新进程在命名数据GET4次503/成功0时，原聊天正文与草稿可见，恢复后目标/pin/草稿保持且自动新history成功；两张实际缓存/恢复图亲自复核。使用既有原生前台和Activity夹具，不向冷态注入Session/reader/cache；初始验收启动/消息类型筛选失败保留。该范围不包括正式发布包、首次像素时刻、全部字体主题/全P6或API26/API37冷启，后续逐格执行。
+
+2026-10-22 Android P2默认MainActivity矩阵：同二进制三环境暖/新进程冷累计6个底层Native方法，默认缓存原文/草稿在各4次命名503/成功0时可见，随后自动新history恢复。API26包装工具失败保留并只读对账，未重跑或换动作。两模拟器缓存图已复核；API26当前全局灰化/letterbox保留待查，不宣称完整视觉一致或首像素时刻；正式P6、其他生命周期/路由继续。
+
+- 2026-10-22 Android P2 certificate refusal: actual physical default MainActivity/store retains original cache/draft and shows shared certificate copy after isolated leaf change; original leaf plus explicit native retry recovers. Immediate confirmation screenshot still contains a gray dialog layer although native error-clear/cache assertions passed; stable dismissal frame/cause remains pending. Recovered online/body/draft image personally reviewed; this is no full font/theme/modal-animation or P6 pass. See `pairedCertificateDefaultCacheCheckpoint` in `docs/acceptance/mobile-evidence/android-alignment-P2.json`. iOS design unchanged.
+
+- 2026-10-22 follow-up `pairedCertificateStableUiMatrixCheckpoint`: six new physical/API26/API37 native warm/certificate phases use the same examiner/production APK. After added bounded native settling, six cache/recovered images personally reviewed with the error dialog absent and original body/draft visible, then online restored. Prior immediate gray image remains original; exact individual timing cause not isolated and production code unchanged. This closes stable confirmation/cache framing only for these cases, not the old API26 cold gray image or full P6.
+
+- 2026-10-22 production automatic route: physical/API26/API37 original-data native3 cases retain the same visible assistant anchor (0dp measured), original draft and expanded80 window after foreground discovery automatically changes to the already advertised same-target/pin alternate. Six before/after frames personally reviewed; toolbar/IME/theme/font, repeated switch and other visual/performance cases remain open. See `productionAutomaticRouteCheckpoint`; iOS code/design unchanged.
+
+- 2026-10-22 persisted-alternate cold: six actual native route/cold phases across physical/API26/API37 separately verify native20-to80 expansion/0dp route anchor, then new-process initial20/default-cache original body/draft under data503 before successful data and automatic alternate recovery. Six cold cache/recovered frames reviewed; no absolute pixel anchor across banner or first-render timing claim. A first examiner wait lacked scrolling to an existing offscreen LazyColumn control; failed archive/source and subsequent readonly native inspection retained, native-scroll correction keeps original15s/exact80 assertions, production unchanged. See `productionPersistedAlternateColdCheckpoint`; full P6 and A6/P7 pause remain.
+
+- 2026-10-22 current native read observation:6 phases across physical/API26/API37 separately verify original default-cache/input under503, editable draft during real35s pending history with healthy events, new actual original-owner progress text and independent fresh history200 receipt. Six cache/new-content frames reviewed. Clock values are scripted positive-assertion upper bounds including runner/scroll/edit work, not first physical frame or full IME/overlay/theme/terminal timing. First API26 parent history gate failure and injected extra held retry retained; no production UI/code changed. See `productionReadObservationTimingCheckpoint` and `P2-timing-review.json`; full P6 remains open.
+
+- 2026-10-22 actual MainActivity physical30s Wi-Fi loss:2 native phases first pass, three online/offline/recovered original-data frames reviewed. Native116 offline invariant samples preserve original draft/body/window80; before/after recovery visible anchor0dp after independent history200. Shared unreachable banner visible during actual radio loss; no during-banner absolute anchor/full IME/font/theme claim. Original Wi-Fi enabled restored, production unchanged; one cycle is no repeated/VPN/cellular or A6/P7 lifecycle completion. See `productionPhysicalLongRadioCheckpoint`.
+
+- 2026-10-22 confirmed-owner reply: an already-ready native composer sends while background reads wait; a new navigation keeps initial-send disabled. No layout/token/copy change. Own-app native UI/HTTP/Keystore assertions are auxiliary, with no new screenshots or real model completion claim; current target/owner changes remain authoritative. See `confirmedOwnerReplyCheckpoint`; iOS existing behavior unchanged.
+
+- 2026-10-22 actual confirmed-owner single send:6 physical native frames reviewed (healthy-events history timeout, explicit refresh503 modal/cache/draft, recovered final/draft, separate-process before-data cache/banner/input disabled and cold recovery). Two own original model final bodies verified,0 cold POST; custom Session/store and selected states only. Auxiliary gateway read rejection retained; no default MainActivity/physical-first-frame/full P6 claim. See `confirmedOwnerLiveSendCheckpoint`; no product layout/token/iOS change.
+
+- 2026-10-22 default-store named routes:15 actual frames reviewed across physical/API26/API37 warm/cold6 native phases; original final/draft and fork-choice menu verified without execution. API26 cold before-data gray/letterbox capture retained; API37 intermediate recovery body frame still disabled composer and later menu frame enabled. Individual frame cause/timing/full UI remains open; no product layout/token/iOS change. See `readonlyNamedRoutesCurrentProductCheckpoint`.
+
+- 2026-10-22 recovered input ready/capture:6 new native phases verify recovered send enabled within original wait budget,0 input;15 frames reviewed after2 native frame callbacks/accessibility idle. API37 recovered send visibly enabled. API26 before-data capture still black top/bottom crop, older gray/letterbox retained; no full-window/root-cause/product-fix claim. Remains P2/P6 visual work. See `readonlyRecoveryInputReadyCheckpoint`.
+
+2026-10-23 Android P3-1 数据准备（F12/F14/F15/F46/F70，UI01/UI02/UI03）：原生目录开始保留 sidebar v1 的混合置顶、最近、项目与子聊天顺序，以及可选归档状态、上次任务状态和待答计数。归档状态与任务状态不互相推断；未知 sidebar 版本保留原数据且不采用为 v1 顺序，元数据不提供执行资格。分页/缓存编码同步最新游标，旧 Host 缺字段仍兼容。本检查点尚未接入新的侧栏/管理画面，不新增视觉一致性通过；iOS 既有 DTO 与分页逻辑未改，API26 首缓存捕获几何问题及完整 P3 界面仍待后续子项。
+
+2026-10-23 P3-2（UI02，F02/F11–F15，关联F26/F70）：双端通过共同展示策略采用桌面v1混合置顶/最近/项目/子聊天精确顺序；排除归档、缺失、外Host与重复项，旧Host保持原收到顺序。Android置顶/最近分区折叠与列表“展开显示”分开持久，搜索只临时展开；已有项目末尾增加同iOS的新聊天入口。搜索IME动作/滚动将焦点交给结果列表，关闭抽屉交给主内容，隐藏搜索禁用；重开保留查询，聊天草稿独立。控件沿用设计token和48dp原生触达，完整触达/无障碍矩阵仍待验收。三环境24项辅助、21张原图已查看；新手机自定义字体、原生ripple及滚动位置差异保留，iOS示例数据不同，不声明同数据视觉全通过。运行数、全文查找、聊天管理、全主题/字体/语言/手势及旧API26首缓存几何问题仍未关闭，独立未读继续暂停。
+
+2026-10-23 P3-3（F13，UI02/UI05/UI06）：聊天菜单“在聊天中查找”进入唯一原生sheet；独立完整历史加载/失败缓存提示/重试、查询清除/空白无结果列表、片段高亮，选择后关闭再定位原消息。工具组准确拆出命中工具，压缩消息显露原文，长消息保留可选完整消息展开；草稿不作为查询。查询/数据版本或完整目标失效时旧结果不展示/点击。共同规则负责文档、原UTF16范围、前60/后180字符片段、无匹配240及长文300阈值；Unicode字符服务保持平台原生。30张安卓与6张iOS当前合成图已查看：iOS保留原生大标题/List/DisclosureGroup，Android沿用统一sheet居中标题/LazyColumn/原生展开按钮，键盘及系统字体各自原生；这些差异明确登记，不能据此关闭同数据全视觉矩阵。真机系统Back待验收，Dialog原生回调辅助结果分开。
+
+### 2026-10-23 P3-4 聊天管理实现与待验收
+
+UI01/UI03/UI10：菜单分别呈现归档与任务状态；执行中、等待审批不自动禁用管理，实际能力、在线状态与本目标待确认记录决定可用性。危险项可用时使用删除色，禁用时继承原生禁用色。删除确认包括当前聊天、状态及原始/子对话不可恢复说明，打开时清除本页面焦点/输入法，取消不提交。结束等待明确只解除本机等待；查询404显示原结果未确认，不能显示管理成功或诱导重试。
+
+Android 最终三环境90项及iOS当前源码4场景辅助通过，完整一致性未通过。多条未知操作目前仍沿用相同查询标题，动作/目标辨识列入 P3-6 双端交互优化；完整手势、相同数据视觉矩阵及真机系统返回继续待验收。
+
+本轮截图还登记了 P3-6 的菜单条目顺序/图标及多记录辨识差异：iOS 当前顺序为置顶、查找、归档、删除，Android 当前顺序与图标呈现仍需逐项对齐；原生系统菜单样式差异单列。功能辅助通过不关闭这些 UI 一致性事项。
+
+UI03/UI10：2026-10-23 P3-5a：Android 对话菜单加入已归档对话入口、原目标只读打开、生命周期与最后任务状态、空态、刷新/分页及失败保留/重试；恢复仍复用具名聊天操作并保留独立草稿。列表读取不依赖管理 capability，不新发模型输入。iOS 本子项源码未改；Android 显式分页/离线刷新入口及原生页面样式差异登记至 P3-6，未宣称双端完整视觉或真实 DEV。批量归档仍留 P3-5b，项目管理/任务中心暂缓，A6/P7 暂停。 三环境归档列表/只读提示/恢复空态/旧页/新runtime截图单列；Android原生sheet、显式刷新与加载更多、手机自定义字体及iOS归档List样式不视为完整视觉对齐。
+
+P3-5a 补充只读边界：合成原生反例分别复现归档且运行时仍可控时的设置/停止门禁差异。Android按iOS既有门禁约束执行、队列取消、审批/问题及设置；保留真实任务运行状态和独立恢复操作。原API26合成HTTP服务关闭竞争另作验收工具失败登记，未当成产品失败或通过。最终产物与分组结果另列，P3-5b及P3-6全矩阵仍开。
+
+UI03/UI10/X05：2026-10-23 P3-5b：Android新增仅聊天的批量归档页面：按当前客户端/项目及聊天搜索、选择/取消全选、最多100条、确认/取消、加载更多和逐项成功/拒绝/待确认及原ID查询。根目标加密journal在具名POST前保存不可变原意图/标签和提交标记，未知及404不重放；逐项终态保留，部分进度不覆盖其他项目，切换/重启保留草稿与原回执。KMP统一精确请求/目标/有序ID、逐项终态合并和限定选择，Swift归档路径迁移至共享规则；管理提交后的目标复核和旧目录owner隔离同步。项目删除/新项目管理及Task Hub保持暂缓，A6/P7继续暂停。 安卓归档sheet下进入批量归档，iOS保留设置管理入口；搜索/选择仅本客户端，100条禁用、确认/取消、成功/失败/待确认与记录原ID可见；系统原生Sheet/Dialog及原型/图标、iOS10条记录折叠的差异留P3-6，未宣称全视觉通过。
+
+UI03/UI10/X05：2026-10-23 P3-6a 菜单与原记录辨识：Android按iOS顺序显示置顶、聊天查找、归档/恢复、删除，再归档列表和待核对记录；使用既有Canvas向量系统补pin/unpin/archive/trash图标，保留禁用/删除颜色、准确目标和警告。双端每条待核对聊天操作显示动作、原ID片段和准确聊天标题/无目录时原threadId，查询及结束等待保持原完整ID；Android语义说明含完整对话/操作ID，iOS保留原稳定标识并补标签/值。没有提交/恢复协议、模型输入、未读账本或任务/项目管理改动。 SF Symbol与Android自有线条向量分别保留；短ID帮助同名记录辨识，完整原ID用于语义或查询。长菜单触摸、IME和全状态视觉继续单列，未据语义控件存在关闭整体验收。
+
+P3-6a 查询辨识补验：六条记录先结束本机等待仍保留查询入口，再逐条原ID核对。后台自动GET与手动菜单GET分开计数。真机原生窗口注入被INJECT_EVENTS拒绝，App内语义结果与物理长菜单触摸待验收分开；不改权限或换全局注入器。
+
+2026-10-23 P3-6b：Android客户端列表新增进行中数量与未知占位及语义说明；KMP统一在线/快照/history-only资格、准确Host、运行中及等待审批的ID去重，归档生命周期独立。Swift原独立计数路径迁移至共享规则，保留demo合并来源、未来模式与归档仍运行的现有行为。未读账本/数量与A6/P7仍暂停；任务/项目管理暂缓。 UI01/UI03：数量使用进行中X/未知—，随快照更新；数字采用等宽数字特性，空间不足自然换行，语义说明区分未知与0；未读数量不在本项恢复。
+
+2026-10-23 P3-6c：共享准确目录目标/归档/单条发送中及待核对/批量待核对的归档选择资格。iOS补齐单条与批量原操作互斥，并在持久化后发送前复核原目标、当前目录和冲突；Android保留既有互斥并迁移选择规则到KMP。查询保留原ID，其他聊天和独立草稿不受未知结果影响；项目管理与未读暂停范围不变。 UI03/UI10：单条及批量相互禁用仅针对冲突原聊天，待核对记录及原查询保持可达；未知不冒充终态或取消。
+
+2026-10-23 P3-6d：iOS归档选择按全部仍合资格的原ID清理，搜索隐藏但仍有效的选择保留；底部提交即时核对每个所选ID，不等待清理effect。批量原记录取消固定10条截断，显示完整不可变ID并保留每条原查询。Android生产路径已有相同行为，本项仅新增原生验收，最终产品APK字节与a95检查点完全相同。项目动作、任务中心及未读暂停范围不变。 UI10：未知选择清理为0并灰化提交，原记录/原查询保留。ID完整显示以辨识同名记录；iOS与Android搜索位置/系统圈选/颜色差异仍待完整矩阵。
+
+2026-10-23 P4-1：Android本地初始读取/恢复先锁定同目录全部写入和删除；完整解码普通元数据与私有连接合并后才发布状态并解锁。失败保持加密原件，后续外观/草稿变化不覆盖；跨实例及旧异步保存代次受同一保护。恢复前不授予编辑/发送/管理能力，显示存储警告、原数据保留说明和重试，重复重试合并；成功后恢复原目标、草稿、设置与正常保存。iOS既有恢复保护未改，Android不提示用户反复解锁。没有自动清空、迁移原输入、重放或取消远端。 X06本地恢复子项接入P4：恢复页包含存储警告图标、标题、保留原数据说明和唯一重试；读取中禁用按钮并显示“正在读取…”，失败留在恢复页，成功回原界面。Android采用应用Canvas矢量和原生Button，iOS保留SF Symbol/SwiftUI与其现有受保护数据自动重试；不把本子项视作完整视觉一致或恢复A6/P7。
+
+2026-10-23 P4-2a：原生回执补齐五个可选队列字段，HTTP、加密历史、原记录编码和EasyWork归一化完整保留。Schema只为已存在字段补充nullable严格类型，保留未来字段兼容。KMP统一原客户端队列归属、存在性及同步错误判断，Host/legacy-review与已移除项不列活动队列，不建立本地FIFO、不迁移或重发。已接受后的同步错误不被后续成功或普通失败关闭抹掉；源端清除才消失，独立草稿保留。iOS改调同一规则并限定准确host/thread；立即执行/取消门禁和行样式仍留P4-2b。 Android card/cancel style and iOS compact rows remain separately recorded for P4-2b; no complete visual parity claimed.
+
+2026-10-23 P4-2a.1：继续逐路径复核后补齐EasyWork发送返回、command/status与queue/status转换；此前P4-2a封闭的是历史/加密重开/回执编解码及归属提示子边界。原状态和原错误优先于外层RPC完成；runId优先turnId，只有发送可用原expectedTurn回退，原查询不借当前Run。已接受但仍带queueSource的结果也只回查原queue/status；原ID/Host/thread保持捕获范围。五队列字段、noticeContext及laterTurnId完整保留，已知字段错型拒绝。会话解析改用窄EasyWorkChannels接口，默认真实会话/凭据/传输不变；实际原生适配器与加密会话经独立Peer夹具验证，没有新增执行控件、HostFIFO、重放或真实模型。 This is receipt evidence preservation, not a compact row/execute UI completion; prior row/notice placement differences remain open.
+
+2026-10-23 P4-2b.1：Android新增具名executeQueue，经AgentRegistry分别调用固定HTTP v1/queue/execute或EasyWork queue/execute；保留原消息ID，当前任务只映射expectedTurnId/expectedRunId，空闲时省略，不发正文/设置/附件或自建FIFO。HTTP完整运行目标仍绑定URL查询，严格请求Schema拒绝正文target、重发正文与null/空白任务ID。EasyWork只把submitted/completed视为执行确认，取消只接受真实Boolean true。队列执行加入内部写白名单，沿用未知写先查原command/status并核对操作ID/方法/目标/指纹、绝不重放。会话/UI尚未接入立即执行按钮，原取消门禁与大卡片差异保留P4-2b.2；iOS既有具名调用不改，共享HTTP契约新增跨语言向量，独立验收。
+
+2026-10-23 P4-2b.2：KMP统一原客户端队列动作的归属/存在性、在线可写、逐项等待及执行capability/canExecuteNow判断；双端只对捕获完整目标与当前原队列成员操作，执行再核对捕获Turn/Run。等待按完整目标/原消息/owner隔离，不锁整份草稿；导航/连接代次、端点和错误代次隔离晚到结果及错误，未知只刷新原历史不重放。共享许可确认不自动续发。Android改为原顺序紧凑行、编号、两行摘要/附件指令、44dp动作、立即执行/追加、逐项等待和180dp有界滚动；使用项目表面色。iOS原生场景暴露旧HTTP队列调用缺少完整target查询，已由捕获readingClient与具名队列query补齐；HostService只增加显式可选query，其他调用不变。提示位置留P4-4，队列外容器、主题/键盘及完整视觉/真实DEV仍开放。
+
+2026-10-23 P4-3a：共享ReplyRecoveryRules区分原客户端接受、等待释放与终态保护；received/未知/旧Host或已移除queued不作为接受证据。Android准确核对原回执Host/thread/ID/完整目标后，只释放同一原操作当前持有的等待，不清新草稿、不释放新操作；原HTTP未返回也可由已接受/终态回执解除本次等待。received保留原草稿，显式结束等待保留原意图；失败回执保留正文。Native加密journal及iOS分离记录共同保护终态不被晚到非终态确认/超时回退，iOS删除对应旧字面规则，改调同一KMP判断。原生夹具的v2 accepted检查补齐既有canonical可空字段；新增可选树外输出目录。404重试/有界退避、整组输入记录UI、生成设置/真实权限/冷恢复/真DEV仍开放。
+
+补充保护已接受的queued/submitted不被晚到received/未知/超时降级；相同v2产品APK的新持久化反例三环境各1项失败后，原journal/双端共享合并规则补齐，原密文重开、正文和指纹保持。
+
+本地传输phase与最近远端回执分别保存；received后HTTP结果未知是合法组合，不以状态相等作为目标身份校验，Host/thread/ID及完整目标检查保留。
+
+2026-10-23 P4-3b/O048：Android原回复观察独立于历史与事件，暂缺404继续只读查询；共享KMP定义2/4/8/16/30秒上限退避，iOS删除对应字面计算并调用同一规则。原canonical accepted证据允许在先前uncertain回执或重试额度已消耗时读取，仍核对捕获目标/信任/原ID；负证据取得重试权限的原限制不变，既有回执或已消耗额度不获得再次写权限。没有自动发送、重放或更换原输入。分离记录的canonical回查、整组输入记录UI、生成设置/真实权限、冷恢复及完整真实DEV继续开放。
+
+2026-10-23 P4-3c/O036/O048：Android把原回复只读观察的捕获目标/证书/不可变意图校验与重试写权限分开；结束本机等待后，仍可具名查询原canonical accepted回执并保留detached状态。负证据与原内容恢复/重试继续使用未分离的原写授权校验，分离、额度已消耗或已有回执均不能新增重试权限。目标、证书或原意图改变仍拒绝备用查询，不迁移原记录、不恢复等待、不重放。iOS既有分离记录查询与KMP规则未改，源码指纹匹配复用前项辅助结果。发送记录列表入口与正文/附件展示仍待下一检查点，完整真实DEV未关闭。
+
+2026-10-23 P4-4a（P4-3续接）：Android对话菜单新增与iOS对应的“发送记录”，按完整目标显示全部已结束等待的原回复，倒序可滚动且不截断。展示可选取的原文、原附件名/类型、原回执状态及错误；旧附件元数据缺失明确说明原记录保留。仅查询准确原ID，逐记录等待/错误与去重，不锁当前草稿、不提供重试/重发。导航、连接、端点、证书及owner隔离晚到错误；目标改变关闭旧列表。只读快照核对加密原记录、来源目标/草稿版本及规范化原正文/设置，不读取或上传附件字节、不为旧记录补造重试授权。原内容编辑复用快照校验，仍先取得强未接受及未分离授权并复核原字节。iOS现有发送记录列表/查询路径保持，KMP规则未变；全视觉/多语言/真实桌面模型DEV及其余P4继续开放。
+
+UI04/UI10 发送记录子页：菜单仅在当前完整目标有已分离原回复时出现，标题“发送记录”、原生“完成”；原文可选取，图像/文档自有向量及原文件名，状态文案为消息提交失败/任务执行失败/已停止/已完成/已提交/已排队/已结束等待·结果待确认。单条“查询原回执”具备本行等待、禁用及本行错误，其余行可读，退出不取消远端。Android沿用现有90%高原生Sheet/分组表面与LazyColumn，iOS既有NavigationStack/List；平台容器差异明确登记，不据此关闭整页视觉/深色/双语/AX门槛。
+
+补齐原回执七种状态的原生对照：有关联Turn的失败显示“任务执行失败”，无Turn显示“消息提交失败”；状态取准确原回执，不借当前任务。原生加密快照同时证明强未接受时原内容编辑可恢复、原附件字节变化拒绝编辑，分离记录仍可只读展示原附件名称且不授予写权限。
+
+2026-10-23 P4-3d/O083/O090/O091/O092/O093：Android运行中输入栏改为与iOS同义的“排队执行／立即追加”分段选择，排队选项保留且能力缺失时禁用；原选择为queue但客户端队列不可用时显示同文说明，保留草稿，不自动改为steer或发送。继续调用同一KMP showsReplyMode及实际session.text/attachments计数；空白、纯附件、移除附件、空闲或无有效Turn逐项核对。能力变化不重写已存偏好，用户显式选择后才允许发送；模式回调携带完整目标，跨目标旧回调拒绝。提交/原回复或首条等待时禁用模式编辑，原请求/Turn/模式不可变；原记录只读查询不锁草稿。iOS既有segmented Picker/queue不可用提示与KMP提交门禁未改，代码匹配参考，不宣称新增iOS原生或真实DEV通过。
+
+UI04/UI07 运行中输入参数：Android原生选择组/RadioButton语义、selected与disabled状态，排队项始终保留、steer项仅在声明能力时出现；与iOS Picker对应。横向16dp、组内3dp、轨道8dp/选中6dp圆角、每项最少44dp触控、12sp文案、4dp说明间距；中性色8%轨道、浅色白/深色#636366选中面及38%禁用字色，不沿用Material紫色。Android触控高度与iOS系统Picker平台差异明确保留，深色/双语/全AX及完整像素验收仍开放。
+
+2026-10-23 P4-3e：KMP统一客户端生成偏好的显式字段合并，模型动作联动模型/强度/速度，独立权限保留；强度/权限/速度仅更新相应字段，null明确清除。Android旧草稿单项编辑不再覆盖其他已记住默认；即使当前草稿值未变，显式默认动作仍持久更新客户端偏好。保留捕获完整目标、可编辑及目录能力校验；已提交输入不修改。iOS删除原字段合并闭包，调用同一KMP规则，保留其模型归并与原生持久流程。新增版本化10向量及Swift实际调用；iOS夹具支持独立端口和树外证据，原精确交互/参数断言保持。
+
+生成设置选中语义（跟随默认与实际生效项双勾）、标准/快速开关与多档菜单、模型默认的双端联动差异仍需逐项处理；实际owner权限、首条/纯附件/冷恢复及原桌面/模型真实DEV继续开放。27来源节点与20功能整体均未关闭；业务任务/项目暂缓、A6/P7暂停、蜂窝/VPN及人工归档待验收保持。
+
+2026-10-23 P4-3f：Android模型和推理强度改为原生菜单，按iOS绑定的实际生效值单项选中，删除默认与生效项双勾；保留强度滑块和显式跟随电脑。速度目录含ultrafast时使用多档菜单，否则为整行快速开关，未声明fast时禁用；重置速度保持独立字段。模型跟随电脑调用已有KMP changeModel，与iOS同样清模型/强度并将已有不支持速度归并standard，保留独立权限。全部动作仍捕获完整目标、复核当前目录/能力和编辑门禁，旧回调不能改新目标。菜单按目标重置；使用蓝色值/上下箭头、48dp触控、16sp行文案、绿色快速开关及项目中性色，移除Material默认紫色。共享核心/iOS/Host/传输不改。
+
+本项只关闭设置页菜单/开关/默认联动辅助切片；原生滑块与iOS系统控件形状、菜单弹出定位/材质、表单分隔与权限图标/布局仍逐项保留P6视觉门禁，双语/深色/大字体/AX未完整验收。实际owner权限及O028/O029、首条/纯附件/冷恢复、完整原桌面/模型DEV继续开放；27来源节点/20功能整体不关闭。业务任务/项目暂缓、A6/P7暂停、蜂窝/VPN和人工归档待验收保持。
+
+2026-10-23 P4-3f.1：三组真实控制、计划/审批、异步问题验收器改用同一原生生成设置选择入口；明确打开模型/强度菜单，速度走已声明的多档菜单或快速开关，再选择原权限。运行时速度已相同而草稿字段为空时，仅本地切换离开再回到请求值，保证原验收提交明确speed；不把生效显示冒充显式设置。保留原模型/参数、提示/nonce、操作数和所有原超时，未执行三组真实模型场景。仅Android验收器修改，产品APK与a709逐字节相同，iOS/KMP/Host/JS/全部生产源码不变。
+
+原桌面/模型权限与控制/计划/审批/问题真实DEV均未由本项通过。仅standard且未声明fast的目录，其快速开关按产品规则禁用；此旧显式speed验收入口准确拒绝，不能改用隐藏配置或默认为已选择，需独立跟随默认场景核对。业务任务/项目、A6/P7、蜂窝/VPN、人工归档及完整P3/P4/视觉门禁保持。
+
+2026-10-23 P4-3g：新增独立Android真机权限验收器，固定4个新输入场景：电脑默认、显式只读、显式完全访问、进程冷启动保留原记录/未发送只读草稿后改跟随默认。模型和xhigh/fast由真实本机目录核对；手机使用实际菜单/输入/发送，具名Host独立状态和端口，另一只读原owner核对准确client ID/Turn、模型/强度/serviceTier、沙盒/审批策略、真实工具退出结果及工作区外专用探针文件。界面选项和模型自述均不替代权限效果。每场景单次发送租约、原正文/指纹、完整目标与原ID固定，拒绝/重复POST须保留为验收失败；未知停止后续场景，保留原查询所需ID/状态，不重放历史13输入。独立工具输出/日志留在树外私有目录，Token脱敏，使用Host公开close释放自己的目录reader/定时器。USB loopback仅为本机功能链路，不声称LAN/TLS/VPN新通过。生产App/iOS/KMP/Host源码未改，产品APK匹配a709。
+
+仅关闭上述四项Android本机权限/进程恢复子边界及准确原记录只读续验；guardian/子运行作用域、EasyWork/Windows、纯附件/首条混合文件、其他计划/审批/问题/通知/控制和完整P3/P4/双语/AX/视觉仍逐项开放。全部27来源节点与20功能整体不关闭。业务任务/项目暂缓、A6/P7暂停，蜂窝/VPN和人工归档单列待验收；本次USB loopback不当作网络链路新通过。
+
+2026-10-23 P4-3g 本次结果：本次默认、显式只读、显式完全访问、不同进程冷恢复后跟随默认四项，均完成原生手机及原Electron owner核对：实际模型/xhigh/priority、准确原client ID/Turn、沙盒/审批策略、真实工具退出与专用探针效果。只读为实际非零权限拒绝且文件保持，另三项实际写入成功；冷启动保留未发送只读草稿及三条原记录的ID/完整目标/来源/意图指纹。本轮新增真实输入共5条：v2独立核对完成1条但手机场景失败，v3四场景4条；历史13条和本轮已提交输入均未重放。v3四个原生/owner场景通过，但整体因代理拦截4次分支选项GET保持失败。修正只读白名单后，以同一原Host身份/状态、原聊天和原四输入执行零输入恢复：原生1项通过，分支选项GET 200、业务POST 0、运行期间错误0，独立owner再次核对总计4条及原参数；3条warm记录指纹和第4条原意图逐一匹配。关闭自有服务时1条未完成事件读取记录为cleanup cancellation，非运行期错误。原四场景Native方法与辅助代码还原后逐字节匹配实际运行版本，生产APK与a709逐字节相同。v3八张与恢复一张原图均查看，不扩展为全视觉通过。
+
+保留v1缺共享确认导致零业务POST的180秒失败；补齐实际确认页，确认后草稿不变且不自动发送，v7零输入原生通过。v2遗漏creation-receipts只读接口导致手机待确认，准确原输入已独立核对仅执行一次并真实成功，未重发。v3四场景已通过但整体代理读门禁失败，不覆盖该失败报告。首次零输入恢复误把已接受后清空的草稿设置当作显式参数，改为核对空草稿和原运行时实际值；v2恢复通过，没有新增模型输入。登记检查首次alias类型及新脚本unused变量失败已修正，未改产品断言。
+
+仅关闭上述四项Android本机权限/进程恢复子边界及准确原记录只读续验；guardian/子运行作用域、EasyWork/Windows、纯附件/首条混合文件、其他计划/审批/问题/通知/控制和完整P3/P4/双语/AX/视觉仍逐项开放。全部27来源节点与20功能整体不关闭。业务任务/项目暂缓、A6/P7暂停，蜂窝/VPN和人工归档单列待验收；本次USB loopback不当作网络链路新通过。
+
+当前检查点先完成检查、提交推送、独立远端核对、树外恢复包和台账，再继续下一项。
+
+完整pnpm check连续59根命令通过，348.92秒，三份源码指纹稳定。之后只把验收器私有密钥等值断言改为固定不匹配提示，避免失败时打印两侧值；对应差异逐字节核对，其他源码未改。当前静态检查及零输入原记录恢复再验通过：原生1项、原四输入仍各一次、分支GET 200、业务POST 0、运行期错误0，正常退出；另一次关闭阶段事件读取取消单独记录。累计仍5新输入，历史13和本轮5均不重放。这是匹配组件的59检查与当前小修复专项组合，不宣称小修复后再次执行59。
+
+2026-10-23 P4-3h：逐条对照O096/O097原补丁；file-only在O097指仅文件flush的Host持久化合同，与纯附件输入分别保留。Android新增三项加密journal/HTTP辅助边界：重建journal后unavailable保持原意图/ID/目标和本地原指纹、撤销旧强未接受授权、禁止任何重试写入；unavailable即使夹带完成回执也不能制造接受或重试；原运行时不可用时，准确accepted回执仍能独立只读恢复并再次读盘保留，禁止重放且无workspace/history读取。Host unavailable的evidence/capturedTarget/fingerprintVersion/fingerprint/receipt保持原null，不把本机已捕获原指纹与Host缺失证明混为一谈。只改Android验收器，生产App/iOS/KMP/Host/JS未改。
+
+新增验收器先因nullable receiver、再因缺progress参数编译失败；第二次失败后编排误复制上轮runner，三环境原17项各通过，新增组均执行0项，数量门禁使整轮失败，不计新增通过。修正编译并先核成功构建及新runner摘要后再执行。
+
+这是实际Android加密存储重新实例化与原生HTTP fixture辅助证据，不是Windows真实file-flush-only/目录flush故障、原桌面运行时离线或Android不同进程的新增证明。匹配复用P4-3g的实际进程恢复和5条新模型输入，不重放历史13或本轮5输入；本项新增模型0。纯附件/首条混合内容另项、O096/O097整节点、全部27节点/20功能和完整P3/P4仍开放。业务任务/项目暂缓、A6/P7暂停、蜂窝/VPN和人工归档待验收保持。
+
+最终同一App/runner三环境各20方法、2组，共60方法/6完整分组通过（原17+新3）；产品APK与P4-3g相同，新增源码仅一份Android验收器。新增模型输入0，本轮累计仍5、历史13不重放。没有UI变化或新增截图。新对象重新读实际Android加密文件只作辅助恢复，不能称不同进程或Windows实际flush通过。 先登记检查点并提交推送、远端/恢复包/台账核对，再继续纯附件及其余P4。
+
+当前单份Android验收器源码指纹稳定，编译及60/6原生分组通过；mobile-parity/format/diff检查通过。所有生产、KMP、iOS和JS源码及产品APK未改，上一检查点59根命令348.92秒与小修复专项仅按组件匹配复用，没有本项重新全量/iPhone/真实Windows之说。

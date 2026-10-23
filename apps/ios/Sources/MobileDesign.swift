@@ -29,6 +29,7 @@ enum MobileDesignGeometry {
   static let chatHorizontalInset: CGFloat = 16
   static let chatTopInset: CGFloat = 10
   static let chatBottomInset: CGFloat = 12
+  static let userBubblePreviewLines: CGFloat = 6
   static let userBubbleRadius: CGFloat = 20
   static let userBubbleHorizontalInset: CGFloat = 14
   static let userBubbleVerticalInset: CGFloat = 10

@@ -1037,5 +1037,282 @@
       },
       "expected": false
     }
+  ],
+  "waitReceipts": [
+    {
+      "name": "original-received",
+      "state": "received",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": false
+    },
+    {
+      "name": "original-uncertain",
+      "state": "uncertain",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": false
+    },
+    {
+      "name": "original-submitting",
+      "state": "submitting",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": false
+    },
+    {
+      "name": "original-outcome-unknown",
+      "state": "outcome-unknown",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": false
+    },
+    {
+      "name": "original-queued",
+      "state": "queued",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": true,
+      "releases": true
+    },
+    {
+      "name": "original-submitted",
+      "state": "submitted",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": true,
+      "releases": true
+    },
+    {
+      "name": "original-completed",
+      "state": "completed",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": true,
+      "releases": true
+    },
+    {
+      "name": "original-interrupted",
+      "state": "interrupted",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": true,
+      "releases": true
+    },
+    {
+      "name": "original-failed",
+      "state": "failed",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": true
+    },
+    {
+      "name": "original-cancelled",
+      "state": "cancelled",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": true
+    },
+    {
+      "name": "original-future-state",
+      "state": "future-state",
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": false
+    },
+    {
+      "name": "queue-native-present",
+      "state": "queued",
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "accepted": true,
+      "releases": true
+    },
+    {
+      "name": "queue-old-host",
+      "state": "queued",
+      "source": "host",
+      "present": null,
+      "disposition": null,
+      "accepted": false,
+      "releases": false
+    },
+    {
+      "name": "queue-legacy-review",
+      "state": "queued",
+      "source": "native",
+      "present": null,
+      "disposition": "legacy-review",
+      "accepted": false,
+      "releases": false
+    },
+    {
+      "name": "queue-removed-native",
+      "state": "queued",
+      "source": "native",
+      "present": false,
+      "disposition": null,
+      "accepted": false,
+      "releases": false
+    }
+  ],
+  "receiptMerges": [
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "failed",
+      "incoming": "submitted",
+      "preserve": true
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "failed",
+      "incoming": "received",
+      "preserve": true
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "failed",
+      "incoming": "uncertain",
+      "preserve": true
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "completed",
+      "incoming": "queued",
+      "preserve": true
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "cancelled",
+      "incoming": "submitted",
+      "preserve": true
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "interrupted",
+      "incoming": "received",
+      "preserve": true
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "received",
+      "incoming": "submitted",
+      "preserve": false
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "failed",
+      "incoming": "completed",
+      "preserve": false
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "submitted",
+      "incoming": "received",
+      "preserve": true
+    },
+    {
+      "source": null,
+      "present": null,
+      "disposition": null,
+      "previous": "submitted",
+      "incoming": "uncertain",
+      "preserve": true
+    },
+    {
+      "source": "native",
+      "present": true,
+      "disposition": null,
+      "previous": "queued",
+      "incoming": "uncertain",
+      "preserve": true
+    },
+    {
+      "source": "host",
+      "present": null,
+      "disposition": null,
+      "previous": "queued",
+      "incoming": "uncertain",
+      "preserve": false
+    }
+  ],
+  "queryBackoff": [
+    {
+      "previousMillis": 0,
+      "nextMillis": 2000
+    },
+    {
+      "previousMillis": 1,
+      "nextMillis": 2000
+    },
+    {
+      "previousMillis": 1000,
+      "nextMillis": 2000
+    },
+    {
+      "previousMillis": 2000,
+      "nextMillis": 4000
+    },
+    {
+      "previousMillis": 4000,
+      "nextMillis": 8000
+    },
+    {
+      "previousMillis": 8000,
+      "nextMillis": 16000
+    },
+    {
+      "previousMillis": 16000,
+      "nextMillis": 30000
+    },
+    {
+      "previousMillis": 30000,
+      "nextMillis": 30000
+    },
+    {
+      "previousMillis": -1,
+      "nextMillis": 2000
+    },
+    {
+      "previousMillis": 9007199254740991,
+      "nextMillis": 30000
+    }
   ]
 }

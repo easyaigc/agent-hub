@@ -1,0 +1,343 @@
+{
+  "schemaVersion": 1,
+  "phase": "P1",
+  "date": "2026-10-22",
+  "branch": "codex/android-alignment-20261022",
+  "phaseGateCommit": "e1ecef6bf9f796ad07eb60986c3b32664fe60437",
+  "status": "checkpoint-committed; named unloaded-owner scenario deferred by human; continue P2 without claiming full P1 verification",
+  "scopeLedger": "../../plans/android-alignment-20261022/P1-scope.json",
+  "scopeFeatures": 19,
+  "sourceNodesRetained": 32,
+  "applicationId": "com.easyai.agenthub.android.acceptance",
+  "auxiliary": {
+    "totalSelectedTests": 366,
+    "perDeviceSelectedTests": 122,
+    "realModelInputs": 0,
+    "runs": [
+      {
+        "device": "owned-emulator-API37",
+        "api": 37,
+        "status": "matched-reuse-selected-group",
+        "tests": 89,
+        "realModelInputs": 0,
+        "classes": [
+          "MobileOpenObservationTest",
+          "MobileCommandBoundaryTest",
+          "MobileMachineIdentityTest",
+          "MobileMachineIdentityUiTest",
+          "MobileReplyRecoveryTest",
+          "MobileReplyRecoveryUiTest",
+          "MobileThreadForkTest",
+          "MobileThreadForkUiTest",
+          "MobilePrivateConnectionTest",
+          "MobilePrivateConnectionUiTest"
+        ],
+        "binaries": {
+          "app": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+          "test": "8b153f275d69d3901fb8015e2228f6ed9e9f6893276e322435e0d62e630b22ae"
+        },
+        "instrumentationSha256": "f7dd9bc8b4c4ffadebe0f6a3aab0cfd16d54186a8f97e427d5e2f710f395941d",
+        "privateReportSha256": "871999767953b865f1c3d933f4d51dde19db118fef63c3b7c1cb81c597506a66"
+      },
+      {
+        "device": "physical-Xiaomi-API33",
+        "api": 33,
+        "status": "matched-reuse-selected-group",
+        "tests": 89,
+        "realModelInputs": 0,
+        "classes": [
+          "MobileOpenObservationTest",
+          "MobileCommandBoundaryTest",
+          "MobileMachineIdentityTest",
+          "MobileMachineIdentityUiTest",
+          "MobileReplyRecoveryTest",
+          "MobileReplyRecoveryUiTest",
+          "MobileThreadForkTest",
+          "MobileThreadForkUiTest",
+          "MobilePrivateConnectionTest",
+          "MobilePrivateConnectionUiTest"
+        ],
+        "binaries": {
+          "app": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+          "test": "8b153f275d69d3901fb8015e2228f6ed9e9f6893276e322435e0d62e630b22ae"
+        },
+        "instrumentationSha256": "00a0fd4dff8eaa05cf8c5f8c6f784a6d12d04e0cc0736e06c0b031d5a125069d",
+        "privateReportSha256": "58577246937d90a461c5cd57572379fcda0fffccaa578f3bf8cb8a2167b5a23f"
+      },
+      {
+        "device": "owned-emulator-API26",
+        "api": 26,
+        "status": "matched-reuse-selected-group",
+        "tests": 89,
+        "realModelInputs": 0,
+        "classes": [
+          "MobileOpenObservationTest",
+          "MobileCommandBoundaryTest",
+          "MobileMachineIdentityTest",
+          "MobileMachineIdentityUiTest",
+          "MobileReplyRecoveryTest",
+          "MobileReplyRecoveryUiTest",
+          "MobileThreadForkTest",
+          "MobileThreadForkUiTest",
+          "MobilePrivateConnectionTest",
+          "MobilePrivateConnectionUiTest"
+        ],
+        "binaries": {
+          "app": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+          "test": "8b153f275d69d3901fb8015e2228f6ed9e9f6893276e322435e0d62e630b22ae"
+        },
+        "instrumentationSha256": "1f5869795d6fcc7dedec489174fbf15cd6ac50e892c8f9a2e15074358ceccd8d",
+        "privateReportSha256": "0cfabe4d92ec99491185c96a7c7efe218e43772a322e37a4306e7851410d045d"
+      },
+      {
+        "device": "owned-emulator-API37",
+        "api": 37,
+        "status": "passed-selected-group",
+        "tests": 33,
+        "realModelInputs": 0,
+        "classes": ["MobileExecutionTest", "MobileStateTest", "MobileEasyWorkBoundaryTest"],
+        "binaries": {
+          "app": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+          "test": "2c42f2edc644ff0e79319f3996724cc3c5e9742f45f8e25cbfd3192db710e08e"
+        },
+        "instrumentationSha256": "a8f9659be19176507b42e6fef2b572bc63aa90fbe7d7ff2ded8e2f6fe8f85bd9",
+        "privateReportSha256": "092da62ab2e104d0a6ceb941e37e6334462da5eb15632e3614c01a5d351515e7"
+      },
+      {
+        "device": "owned-emulator-API26",
+        "api": 26,
+        "status": "passed-selected-group",
+        "tests": 33,
+        "realModelInputs": 0,
+        "classes": ["MobileExecutionTest", "MobileStateTest", "MobileEasyWorkBoundaryTest"],
+        "binaries": {
+          "app": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+          "test": "2c42f2edc644ff0e79319f3996724cc3c5e9742f45f8e25cbfd3192db710e08e"
+        },
+        "instrumentationSha256": "eddab1e87775696f359e64b0944cde58270c47cdc492b9aadb6ee6338b4d83cb",
+        "privateReportSha256": "82c7a1292983ce090a5988d6096bfb1622a6f2bd135a34ef1e94285ed7c8b8be"
+      },
+      {
+        "device": "physical-Xiaomi-API33",
+        "api": 33,
+        "status": "passed-selected-group",
+        "tests": 33,
+        "realModelInputs": 0,
+        "classes": ["MobileExecutionTest", "MobileStateTest", "MobileEasyWorkBoundaryTest"],
+        "binaries": {
+          "app": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+          "test": "2c42f2edc644ff0e79319f3996724cc3c5e9742f45f8e25cbfd3192db710e08e"
+        },
+        "instrumentationSha256": "bbebc297109cac76fbed714dbb75a4ef47241f143c00ef1eaf2c8d4a6a243887",
+        "privateReportSha256": "62d646d7cf808bc310bddf63e08e9f97da88fb7242e836a5ce7e5583f06b4218"
+      }
+    ],
+    "reuseBasis": {
+      "sameProductApkAcrossAllCandidates": true,
+      "onlyChangedInputsSince89Group": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReplyRecoveryLiveTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileStateTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileThreadForkLiveTest.kt"
+      ],
+      "explanation": "89 selected classes and common production/assets/helpers matched the P1 checkpoint exactly; only four unselected examiner files changed. Additional 33 selected tests ran with second runner; live-only updates leave those selected classes unchanged. These are distinct groups, not one uninterrupted 122-test run. P2 later changes MobileSession; this historical evidence is not a blanket pass for the newer P2 APK.",
+      "selected89ClassesAndCommonInputsMatchP1CheckpointSource": true
+    }
+  },
+  "regressionProof": {
+    "baseline": "unmodified P0 production open flow with new HTTP regression",
+    "result": "expected one GET, actual eight; failed",
+    "candidate": "same original operation concurrent observers pass; unrelated operations independent; durable terminal reuse; cancellation releases gate; forged receipt and changed target refused",
+    "privateLogSha256": "a31882d199d3dd91c5da81b38f553f4dae4d3b95f453a2aead76d0808fe52ca4"
+  },
+  "workspaceCheck": {
+    "status": "passed-59-command-sequence-uninterrupted",
+    "privateLogSha256": "eba9b1778110975f677b27e87a429a3aba32ba552e98287fdf736027d8c65d39",
+    "coverageLimit": "later Android examiner-only changes compiled and exercised in named native runs; final parity/format checked separately; no new Windows/iOS or full product pass",
+    "finalMobileParity": "passed",
+    "finalFormat": "passed",
+    "finalMobileParityLogSha256": "0e1ce2a5db6f1aa7277c4e48d69091b08e759c3dc2eeeeb0e487700d33cf0a0f",
+    "finalFormatLogSha256": "1d66faad74f5e8709353f7288592866bd3a9095da1174a916e7aa632949971e2"
+  },
+  "realDev": [
+    {
+      "variant": "projectless",
+      "device": "physical-Xiaomi-API33",
+      "status": "native-and-independent-owner-passed; aggregate-failed-proxy-whitelist",
+      "nativeTests": 1,
+      "realModelTasks": 2,
+      "models": ["gpt-6.1-sol"],
+      "efforts": ["xhigh"],
+      "policies": [
+        {
+          "type": "readOnly"
+        },
+        {
+          "type": "dangerFullAccess"
+        }
+      ],
+      "approvals": ["on-request", "never"],
+      "assertions": [
+        "zero-input original preflight checkpoint; explicit continue same original ID and intent",
+        "non-forwarded reply; authoritative fenced not-accepted; explicit original retry",
+        "native AI-sharing permission; approval alone creates no operation",
+        "exactly one original owner user input per completed model turn",
+        "new editable draft survives both recovery paths",
+        "generation permission locked while original reply pending; actual applied policy independently checked"
+      ],
+      "appSha256": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+      "testApkSha256": "e21ad0d085701f9c35634d6f2d078db816ad075e8ead1bfc86517ab3806ad738",
+      "sourceSha256": "195191a0be0f5958854ffe3f8d6514ccd0c63cc58e71508b403ea272c78e6947",
+      "adapterSha256": "74daff9902e97f6b8c55719dbfdcc38172f44dcac59f91083a536662ffa05589",
+      "privateExaminerSha256": "a800f2e8564a138f45a1cb17576a7cc23f4df5f6ef76a446615f98e9b08e6fed",
+      "privateHostExaminerSha256": "e0f28681a10f895e64b3bcea45b528712bf1e6947a09a1de7aa515c06566a9d2",
+      "privateReportSha256": "3b0b827f481d3e86857876e6fa7025cc56b81539054c4742d31133686d2c0241",
+      "nativeInstrumentationSha256": "b107449959458d51615d4e728823dacf22a0f6cce1511fa982e84caed77cb00c",
+      "originalDesktopPreserved": true,
+      "noCompletedInputReplay": true
+    },
+    {
+      "variant": "registered-project",
+      "device": "physical-Xiaomi-API33",
+      "status": "passed",
+      "nativeTests": 1,
+      "realModelTasks": 2,
+      "models": ["gpt-6.1-sol"],
+      "efforts": ["xhigh"],
+      "policies": [
+        {
+          "type": "readOnly"
+        },
+        {
+          "type": "dangerFullAccess"
+        }
+      ],
+      "approvals": ["on-request", "never"],
+      "assertions": [
+        "zero-input original preflight checkpoint; explicit continue same original ID and intent",
+        "non-forwarded reply; authoritative fenced not-accepted; explicit original retry",
+        "native AI-sharing permission; approval alone creates no operation",
+        "exactly one original owner user input per completed model turn",
+        "new editable draft survives both recovery paths",
+        "generation permission locked while original reply pending; actual applied policy independently checked"
+      ],
+      "appSha256": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+      "testApkSha256": "e21ad0d085701f9c35634d6f2d078db816ad075e8ead1bfc86517ab3806ad738",
+      "sourceSha256": "195191a0be0f5958854ffe3f8d6514ccd0c63cc58e71508b403ea272c78e6947",
+      "adapterSha256": "74daff9902e97f6b8c55719dbfdcc38172f44dcac59f91083a536662ffa05589",
+      "privateExaminerSha256": "b278f28f6bcfb79da9cb1d876bcc475475ef1cf6f361d8ca5afdc19a2c5742c2",
+      "privateHostExaminerSha256": "e0f28681a10f895e64b3bcea45b528712bf1e6947a09a1de7aa515c06566a9d2",
+      "privateReportSha256": "5365d6a115c055ace8d237aa34bb4f496c654a2ba2d5ca0f585d6b9e67b4fe2e",
+      "nativeInstrumentationSha256": "15baebe384e9adb080e49257d3d9a2db42312f773b6ac5248a4ba36527f415e4",
+      "originalDesktopPreserved": true,
+      "noCompletedInputReplay": true
+    },
+    {
+      "variant": "same-directory-and-worktree-fork",
+      "device": "physical-Xiaomi-API33",
+      "status": "native-passed-and-original-owner-read-only-reconciled; original-aggregate-failure-retained",
+      "nativeTests": 1,
+      "realModelTasks": 4,
+      "seedModelTasks": 2,
+      "nativeForkModelTasks": 2,
+      "models": ["gpt-6.1-sol"],
+      "efforts": ["xhigh"],
+      "sourceSha256": "dbd1d8ec8f81b536716f9b04c407cdeb30be695de06a1458a922346bbca9aa61",
+      "adapterSha256": "74daff9902e97f6b8c55719dbfdcc38172f44dcac59f91083a536662ffa05589",
+      "privateExaminerSha256": "97997276a77622a3b2b25c9bc4c389b4ba6e15bdb49d8e02abf2a1f2798b8ca2",
+      "privateReportSha256": "eddf0ffe66950b0391d67a30590ef2a1e1d4ad85e55ab1bbac8f6c141ef75739",
+      "readOnlyReconciliationSha256": "4d5ecd4b84c183ad50bb841dc070097c1f2f9cdc69accfdaa610c813db006e2b",
+      "nativeInstrumentationSha256": "561401a935ce7c0f85209309a4d740bcd0e2b8e39c1730ccfbb5870b13bff131",
+      "assertions": [
+        "native AI-sharing allow preserves original draft and creates no operation; explicit fork follows",
+        "exact selected terminal Turn inherited once; later source Turn excluded",
+        "one source fork POST per environment, each native follow-up creates one model Turn",
+        "lost same-directory fork response, detach, owned Host restart, original receipt query and explicit open; newer source draft preserved",
+        "worktree copied staged/unstaged/untracked bytes; source branch HEAD index and files unchanged",
+        "preparation process exited before original owner control; original owner params verify actual model and xhigh"
+      ],
+      "aggregateFailure": "Examiner incorrectly read model/effort from turn root; actual settings live in turn.params or params.collaborationMode.settings. Both completed native fork inputs preserved, zero extra model inputs in reconciliation.",
+      "readInterruptions": "Four GET /v1/events fetch failures recorded across owned Host restart; native recovery and exact receipts passed; no write rejection or replay inferred from them.",
+      "temporaryWorktree": {
+        "status": "recovery-bundle-and-file-snapshot-verified; normal-git-worktree-remove-complete",
+        "cleanupReceiptSha256": "b06bfe64e6651453701ef42a76427256fe17c2f52d72d85075f0e682d2b16875",
+        "newDetachedSnapshotStoredInBundle": true,
+        "ownedIdleRuntimeChildrenStopped": 8,
+        "sourceFixtureIndexUnchanged": true
+      },
+      "configurationPreserved": true,
+      "noCompletedInputReplay": true
+    },
+    {
+      "variant": "projectless-first-mixed-attachments",
+      "device": "physical-Xiaomi-API33",
+      "status": "passed",
+      "nativeTests": 1,
+      "realModelTasks": 1,
+      "models": ["gpt-6.1-sol"],
+      "efforts": ["xhigh"],
+      "policy": "readOnly",
+      "appSha256": "97654fa2a41af537020a824265ff44852d4c6f89acd9ead8c5d5199768c29dc6",
+      "testApkSha256": "c00b9fc94b24b04aa784fb81f3945b7d02ff59aa718f26ddd91ce593913a2fdb",
+      "sourceSha256": "0f381ab9b7399cf1163c886b3ea3011ea5f7a367f744ae2906829c2a29cc575f",
+      "adapterSha256": "74daff9902e97f6b8c55719dbfdcc38172f44dcac59f91083a536662ffa05589",
+      "privateExaminerSha256": "6b31200532ebac2e5129ef18f06363936f56ea2cd09fb0c9237920e613345c89",
+      "privateReportSha256": "f7ffae45fd7fdabdd178a45b4d17e1cea0214c71ad4a791f87fa0cdc4fbc7d93",
+      "nativeInstrumentationSha256": "656d95155557ff904ec8027bbd0a12d22a6549f204ad69f50ebe556986fa32b6",
+      "testedSourceSnapshotSha256": "410eaf085b2e74538ec3fb321e31fd3eb45d988ffa295cf5542089497819dbac",
+      "sourceInventorySha256": "4782e1f8a60dac5df26dd88e7f9d9a299688d57e7ac6a4e8b75ab16df7841ffd",
+      "assertions": [
+        "native explicit projectless new-chat choice; actual original owner workspaceKind projectless and null project receipt",
+        "native-generated TXT and PNG random codes absent from prompt; real model returns exact content of both",
+        "two uploaded attachment files match stored byte count and SHA256",
+        "one original owner completed Turn and one user input for original first-operation ID",
+        "AI-sharing permission preserves text/attachment SHA list and causes no operation until explicit send",
+        "new editable draft does not mutate submitted immutable intent or fingerprint"
+      ],
+      "configurationPreserved": true,
+      "noCompletedInputReplay": true,
+      "scopeLimit": "Native draft attachment producer used; Android system picker and full visual matrix remain P6. Later native examiner adds an opt-in unloaded-only path; passed branch/common helper source snapshot preserved, no blanket current full-suite pass."
+    }
+  ],
+  "failuresPreserved": [
+    "initial compile TargetScope constructor mismatch; wrong artifact directory and stale test runner",
+    "native fixture suite missing explicit TLS configuration; later synthetic privacy permission precondition fixed",
+    "physical ActivityScenario foreground wait; test-only exact acceptance activity foreground precondition added",
+    "physical shell wakeup denied INJECT_EVENTS; actual awake state verified, unnecessary injection removed",
+    "metadata-only project creation was absent from desktop project catalog; user registered exact owned directory and read-only match confirmed",
+    "projectless actual two model turns/native assertions passed but aggregate proxy whitelist rejected an unclassified read; original failed report retained, completed inputs not replayed; current named open-status/fork-options reads match implemented client and project case passed",
+    "fork examiner initial preparation/first-page catalog produced history 404 before any model input; adapting private examiner, no product boundary weakening",
+    "Fork native 1/1 passed; final proxy-independent model-settings assertion incorrectly used turn.effort instead of turn.params; original aggregate remains failed. Separate read-only original-owner reconciliation passes both forks, source/index and exact model settings with zero new inputs.",
+    "New lifecycle examiner initially referenced LocalDraftFile fields directly; corrected to manifest fields and rebuilt. Metadata archive of exact loaded owned source was explicitly rejected before new model input: current metadata connection cannot manage a desktop active writer; original state unchanged. Human desktop archive requested; no alternate IPC or UI bypass."
+  ],
+  "notYetVerified": [
+    "entire P1 feature/UI matrix, all 32 source-node gates",
+    "actual unloaded original owner opening, attachment immutable recovery and remaining scoped cases",
+    "other computers, Windows, iOS, cross-network and complete visual parity"
+  ],
+  "deferred": [
+    "Task Hub business tasks/projects/notifications and new project-record management",
+    "A6/P7 paused; P9 depends on paused/system/provider work"
+  ],
+  "nextGate": "Continue P2 per latest human instruction, retain all pending P1 assertions and original failures; no owner boundary bypass.",
+  "checkpointCommit": "41e5369d92de786dab7991c2730a3b8ebe4eab7d",
+  "checkpointRemoteVerified": true,
+  "forkProgressCommit": "d1fc697110deb3f9f02d57eeed8d48cff0ad11c3",
+  "forkProgressRemoteVerified": true,
+  "targetExaminerCheck": {
+    "acceptanceBuild": "passed; 82 tasks, product APK unchanged; later unloaded-only native path compiled, not executed pending human preparation",
+    "buildLogSha256": "18b733252f2f142535804d09c4f21317de0a070cfb8135c2e49950c5c440924b",
+    "mobileParity": "passed",
+    "mobileParityLogSha256": "899e5370369bbcf88237855b3c0e2ed79d58540bb40c92c71bfe8dbc2a5f7cef",
+    "format": "passed",
+    "formatLogSha256": "1d66faad74f5e8709353f7288592866bd3a9095da1174a916e7aa632949971e2",
+    "unloadedOnlyCandidate": "frozen separately from passed projectless candidate; does not rerun completed case"
+  },
+  "deferredAcceptance": {
+    "scope": "archive only exact owned completed same-directory acceptance fork in original desktop, then verify absent owner and restore metadata before native unloaded-owner test",
+    "reason": "Current product API rejects loaded-owner archive; desktop CUA tool policy prohibits operating this app",
+    "dependency": "kept as pending P1 acceptance; human explicitly permits P2 to proceed",
+    "result": "human explicitly deferred this acceptance scenario and requested continuation; no further archive action requested",
+    "noHumanActionCurrentlyRequested": true
+  }
+}

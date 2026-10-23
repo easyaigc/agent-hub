@@ -64,7 +64,7 @@ flowchart LR
 
 ## 平台与连接
 
-- **手机端**：原生 iOS／SwiftUI；Android／Compose 与 KMP 共享核心正在按[开发计划](docs/plans/android-native.md)持续对齐。
+- **手机端**：原生 iOS／SwiftUI 与 Android／Kotlin／Jetpack Compose。Android 源码和 KMP 共享核心均已包含在本仓库，已有 Codex 执行、EasyWork 接入及聊天管理等实现；完整双端对齐与各场景验收继续按[当前计划](docs/plans/android-alignment-20261022.md)推进。
 - **电脑端**：Codex Host 支持 macOS 与实验性 Windows 接入；EasyWork 使用桌面内置 Host。Linux Host 尚未实现。
 - **网络**：优先局域网直连，跨网络按客户端接入方式配置 Tailscale／VPN 或已支持的远程通道。
 - **语言**：简体中文与 English，可跟随系统或在 App 内切换。
@@ -82,6 +82,7 @@ pnpm build
 
 - **接入 Codex 电脑**：按 [codex-host-connect Skill](skills/codex-host-connect/SKILL.md) 安装和配置 Host Agent；完整接入包可运行 `pnpm package:connect` 生成。
 - **接入 EasyWork**：查看 [EasyWork 接入协议](docs/integrations/easywork-ewdap-1/README.md)。
+- **编译 Android App**：按 [Android 工程说明](apps/android/README.md) 配置 JDK 17 和 Android SDK，运行 `pnpm build:android`；开发 APK 输出到 `.build/native/android/outputs/apk/debug/`。
 - **运行手机 App**：用 Xcode 打开 `apps/ios/CodexManage.xcodeproj`，选择 `CodexManage` Scheme 和模拟器运行；真机需要自己的签名配置。
 - **检查源码**：运行 `pnpm check`；编译 iOS 使用 `pnpm build:ios`。
 
@@ -92,7 +93,7 @@ Host 的正式连接、能力配置与故障排查见[运行指南](docs/runtime
 ```text
 apps/
   ios/                SwiftUI 原生 iOS App
-  android/            Compose 原生 Android App（开发中）
+  android/            Compose 原生 Android App
   host-agent/         电脑端 Host Agent
   relay/              中继与通知服务
 packages/

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import Ajv from 'ajv';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { request as httpsRequest } from 'node:https';
@@ -8,6 +9,20 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { gunzipSync, gzipSync } from 'node:zlib';
+
+const targetSchema = JSON.parse(
+  await readFile(
+    new URL('../packages/protocol/schemas/codex-mobile-http-v1.schema.json', import.meta.url),
+    'utf8',
+  ),
+);
+const targetAjv = new Ajv({ allErrors: true, strictKeywords: true });
+targetAjv.addSchema(targetSchema);
+const validateTarget = targetAjv.getSchema(targetSchema.$id + '#/definitions/target');
+// Account fields are validated historical metadata, never Codex machine identity.
+const sameMachineTarget = (actual, expected) =>
+  validateTarget(actual) &&
+  ['agentId', 'hostId', 'workspaceId', 'runtimeId'].every((key) => actual[key] === expected[key]);
 
 // Acceptance-only adapter: real upstream JSON, bounded GETs, no upstream writes.
 // This shapes aggregate HTTP response bytes, not radio/TCP packet loss or TLS.
@@ -24,7 +39,9 @@ export function createWeakNetworkReadProxy({
   profile = 'constrained',
   selectThreadFirst = false,
 }) {
-  assert(target?.agentId === 'codex' && target.runtimeId === 'desktop-runtime');
+  assert(
+    validateTarget(target) && target.agentId === 'codex' && target.runtimeId === 'desktop-runtime',
+  );
   assert(target.hostId && target.workspaceId && threadId && weakNetworkProfiles[profile]);
   const token = randomBytes(32).toString('base64url');
   const state = {
@@ -80,10 +97,22 @@ export function createWeakNetworkReadProxy({
       '/healthz': [],
       '/v1/workspace': ['projectCursor', 'threadCursor', 'readerId'],
       '/v1/history': ['hostId', 'threadId', 'window', 'cursor', 'readerId'],
-      '/v1/events': ['hostId', 'threadId', 'window', 'epoch', 'after', 'readerId'],
+      '/v1/events': ['hostId', 'threadId', 'window', 'epoch', 'after', 'readerId', 'target'],
     };
     const keys = [...url.searchParams.keys()];
+    let requestedTargetMatches = true;
+    if (url.searchParams.has('target')) {
+      try {
+        requestedTargetMatches = sameMachineTarget(
+          JSON.parse(url.searchParams.get('target')),
+          target,
+        );
+      } catch {
+        requestedTargetMatches = false;
+      }
+    }
     if (
+      !requestedTargetMatches ||
       !Object.hasOwn(allowed, url.pathname) ||
       new Set(keys).size !== keys.length ||
       keys.some((key) => !allowed[url.pathname].includes(key)) ||
@@ -151,10 +180,7 @@ export function createWeakNetworkReadProxy({
         if (value.threadId !== undefined)
           assert(value.threadId === threadId, 'Upstream thread changed');
         if (url.pathname === '/v1/workspace')
-          assert(
-            Object.entries(target).every(([k, v]) => value.readTarget?.[k] === v),
-            'Upstream runtime changed',
-          );
+          assert(sameMachineTarget(value.readTarget, target), 'Upstream runtime changed');
       }
       if (url.pathname === '/v1/workspace' && selectThreadFirst) {
         // Keep the complete real catalog. Only its initial selection order is

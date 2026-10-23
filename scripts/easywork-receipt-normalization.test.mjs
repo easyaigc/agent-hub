@@ -39,6 +39,12 @@ test(
     await mkdir(join(repository, '.local'), { recursive: true, mode: 0o700 });
     const directory = await mkdtemp(join(repository, '.local/easywork-receipt-offline-'));
     t.after(() => rm(directory, { recursive: true, force: true }));
+    const vectorFile = join(
+      repository,
+      'packages/protocol/fixtures/mobile/easywork-receipt-v1.json',
+    );
+    const vectorCases = JSON.parse(await readFile(vectorFile, 'utf8'));
+    assert.equal(vectorCases.version, 1);
     const swift = join(directory, 'ReceiptFixture.swift'),
       binary = join(directory, 'receipt-fixture');
     const program = `import Foundation
@@ -77,6 +83,24 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
     var rejected = false
     do { _ = try decode(["queuePresent": "invalid-type"]) } catch is DecodingError { rejected = true }
     try expect(rejected, "malformed queue metadata still rejected")
+    let vectorRoot = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))) as! [String: Any]
+    precondition(vectorRoot["version"] as? Int == 1)
+    let routing = vectorRoot["routing"] as! [String: String]
+    for row in vectorRoot["cases"] as! [[String: Any]] {
+      let name = row["name"] as! String, valid = row["valid"] as! Bool
+      var value: DeliveryReceipt?, failure: Error?
+      do {
+        value = try EasyWorkReceiptNormalization.decode(row["raw"] as! [String: Any], clientMessageId: routing["clientMessageId"]!, hostId: routing["hostId"]!, threadId: routing["threadId"]!, defaultState: row["defaultState"] as! String, fallbackTurnId: row["fallbackTurnId"] as? String, fallbackError: row["fallbackError"] as? String)
+      } catch { failure = error }
+      if !valid { try expect(failure != nil, name); continue }
+      guard let value else { throw failure ?? NSError(domain: "ReceiptVectors", code: 1) }
+      let actual = try JSONSerialization.jsonObject(with: encoder.encode(value)) as! [String: Any]
+      for (key, expected) in row["expected"] as! [String: Any] {
+        let lhs = try easyWorkJSON(["value": actual[key] ?? NSNull()]), rhs = try easyWorkJSON(["value": expected])
+        guard lhs == rhs else { throw NSError(domain: name + ":" + key, code: 2) }
+      }
+      try expect(true, name)
+    }
     print("{\\"passed\\":true,\\"checks\\":\\(checks)}")
   }
 }
@@ -99,7 +123,7 @@ ${declaration(source, 'enum EasyWorkReceiptNormalization {')}
       ],
       { env, timeout: 30000 },
     );
-    const result = JSON.parse((await run(binary, [], { env, timeout: 5000 })).stdout);
-    assert.deepEqual(result, { passed: true, checks: 26 });
+    const result = JSON.parse((await run(binary, [vectorFile], { env, timeout: 5000 })).stdout);
+    assert.deepEqual(result, { passed: true, checks: 26 + vectorCases.cases.length });
   },
 );

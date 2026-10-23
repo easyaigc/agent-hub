@@ -4,4 +4,6 @@ enum SharedReadingPolicy {
   static func reconciledUnread(previousUnread: Bool, hadLatest: Bool, latestAccepted: Bool, latestChanged: Bool, sourceUnread: Bool, readSettles: Bool) -> Bool { (readSettles ? false : (latestAccepted ? (hadLatest ? (latestChanged || previousUnread) : (previousUnread || sourceUnread)) : previousUnread)) }
   static func newPushUnread(readSame: Bool, readRevision: Int64, latestRevision: Int64) -> Bool { ((!readSame) && (readRevision < latestRevision)) }
   static func preserveHistoryPrefix(windowed: Bool, hasPaged: Bool, sameGeneration: Bool, sameRevision: Bool) -> Bool { ((windowed && hasPaged) && (sameGeneration && sameRevision)) }
+  static func initialMessageLimit() -> Int64 { 20 }
+  static func earlierMessageIncrement() -> Int64 { 60 }
 }

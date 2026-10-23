@@ -1,7 +1,14 @@
 package com.agenthub.android
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,10 +32,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.focus.onFocusChanged
+import com.agenthub.core.GenerationPreferenceEdit
 import com.agenthub.core.SessionPolicies
 
 @Composable
@@ -47,6 +56,36 @@ fun StorageIdentityNotice(session: MobileSession) {
                 }
             }
         }
+    }
+}
+/** Original client order and original IDs; trimming is presentation-only. */
+@Composable internal fun QueuedCommands(session: MobileSession,interactive: Boolean) {
+    val rows=session.queuedReplies
+    if(rows.isEmpty()) return
+    val target=session.targetKey;val turn=session.runtime?.turnId
+    Column(Modifier.fillMaxWidth().padding(horizontal=16.dp).height(minOf(rows.size*68,180).dp)
+        .testTag("queued-commands").verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        rows.forEachIndexed { index,receipt -> key(target,receipt.operationId) {
+            Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface,RoundedCornerShape(10.dp))
+                .padding(start=10.dp).testTag("queued-${receipt.operationId}"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("${index+1}",Modifier.width(18.dp).testTag("queued-number-${receipt.operationId}"),fontSize=12.sp,
+                    fontFamily=androidx.compose.ui.text.font.FontFamily.Monospace,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(receipt.text?.trim()?.takeIf(String::isNotEmpty) ?: "附件指令",Modifier.weight(1f).testTag("queued-text-${receipt.operationId}"),fontSize=12.sp,maxLines=2,overflow=TextOverflow.Ellipsis)
+                if(session.supportsQueueExecution) TextButton(onClick={ session.executeQueue(receipt,target,turn) },
+                    enabled=interactive&&session.canExecuteQueue(receipt,target,turn),contentPadding=PaddingValues(horizontal=6.dp),
+                    modifier=Modifier.defaultMinSize(minWidth=44.dp,minHeight=44.dp).testTag("execute-queued-${receipt.operationId}")
+                        .semantics { contentDescription="立即执行第 ${index+1} 条排队指令" }) {
+                    if(session.queueActionPending(receipt)) CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp)
+                    else Text(if(session.running) "立即追加" else "立即执行",fontSize=12.sp)
+                }
+                val enabled=interactive&&session.canCancelQueue(receipt,target)
+                Box(Modifier.size(44.dp).testTag("cancel-queued-${receipt.operationId}")
+                    .semantics { contentDescription="取消第 ${index+1} 条排队指令";role=Role.Button }
+                    .clickable(enabled=enabled) { session.cancelQueue(receipt,target) },contentAlignment=Alignment.Center) {
+                    ProductIcon("close",Modifier.size(14.dp),MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(enabled)1f else .3f))
+                }
+            }
+        } }
     }
 }
 @Composable internal fun ExecutionPanels(session: MobileSession,maxHeight: androidx.compose.ui.unit.Dp=320.dp,autoPresentQuestions: Boolean=true) {
@@ -75,11 +114,7 @@ fun StorageIdentityNotice(session: MobileSession) {
         val async=approvals.filter { it.kind=="question" && it.interactionMode=="async" }
         if(async.isNotEmpty()) key(key) { AsyncQuestionDeck(session,async,key,autoPresentQuestions) }
         approvals.filterNot { it.kind=="question" && it.interactionMode=="async" }.forEach { approval -> key(key,approval.id,approval.turnId) { ApprovalPanel(session,approval,key) } }
-        session.queuedReplies.forEachIndexed { index,receipt -> ExecutionCard("排队中的消息","queued-${receipt.operationId}") {
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) { Text("${index+1}",modifier=Modifier.testTag("queued-number-${receipt.operationId}"),fontSize=12.sp); Text(receipt.text?.takeIf { it.isNotBlank() } ?: "附件指令",fontSize=13.sp,maxLines=2,overflow=TextOverflow.Ellipsis) }
-            TextButton(onClick={ session.cancelQueue(receipt) },enabled=session.canCompose,modifier=Modifier.testTag("cancel-queued-${receipt.operationId}")) { Text("取消排队") }
-        } }
-        session.receiptNotices.forEach { receipt -> ExecutionCard(if(receipt.state=="uncertain") "消息执行结果待确认" else if(receipt.turnId.isNullOrEmpty()) "消息提交失败" else "任务执行失败","receipt-${receipt.operationId}") { Text(receipt.error ?: "请查询电脑上的原记录，内容已保留。",fontSize=13.sp); if(receipt.state=="failed") TextButton(onClick={ session.dismissReceiptFailure(receipt,key) },modifier=Modifier.testTag("dismiss-receipt-${receipt.operationId}")) { Text("关闭提示") } } }
+        session.receiptNotices.forEach { receipt -> ReceiptNotice(receipt,key) { session.dismissReceiptFailure(receipt,key) } }
         session.forkRecords.forEach { ThreadForkReceipt(session,it) }
         session.activeOperationRecords.takeLast(12).forEach { record ->
             val notSubmitted=record.kind=="reply" && record.phase=="failed" && !record.submissionAttempted
@@ -100,6 +135,30 @@ fun StorageIdentityNotice(session: MobileSession) {
             }
         }
         session.runtime?.error?.let { Text(it,color=MaterialTheme.colorScheme.error,fontSize=13.sp,modifier=Modifier.testTag("runtime-error")) }
+    }
+}
+
+/** Presentation only. A historical unknown never creates a current operation or retry action. */
+@Composable private fun ReceiptNotice(receipt: DeliveryReceipt,targetKey: String,dismiss: ()->Unit) {
+    val queueError=receipt.queueSyncError?.takeIf { it.isNotEmpty() }
+    val historical=queueError==null && receipt.state=="uncertain" && receipt.noticeContext=="historical"
+    var expanded by remember(targetKey,receipt.operationId,historical) { mutableStateOf(false) }
+    val title=if(queueError!=null) "客户端队列同步失败" else if(historical) "" else if(receipt.state=="uncertain") "消息执行结果待确认" else if(receipt.turnId.isNullOrEmpty()) "消息提交失败" else "任务执行失败"
+    ExecutionCard(title,"receipt-${receipt.operationId}") {
+        queueError?.let { SelectionContainer { Text(it,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } }
+        if(historical) {
+            Row(Modifier.fillMaxWidth().heightIn(min=44.dp).clickable(role=Role.Button) { expanded=!expanded }
+                .testTag("historical-receipt-toggle-${receipt.operationId}").semantics(mergeDescendants=true) { stateDescription=if(expanded) "已展开" else "已折叠" },verticalAlignment=Alignment.CenterVertically) {
+                Text("历史消息结果待核对",Modifier.weight(1f),fontSize=12.sp)
+                ProductIcon(if(expanded) "down" else "chevron",Modifier.size(12.dp),MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if(expanded) {
+                Text("电脑已继续后续任务。这条旧消息是否执行仍缺少确认，不代表当前任务在等待；不会自动重发。",fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                receipt.text?.takeIf { it.isNotEmpty() }?.let { SelectionContainer { Text(it,fontSize=12.sp) } }
+            }
+        }
+        receipt.error?.takeIf { it.isNotEmpty() }?.let { SelectionContainer { Text(it,fontSize=13.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } }
+        if(receipt.state=="failed") TextButton(onClick=dismiss,modifier=Modifier.testTag("dismiss-receipt-${receipt.operationId}")) { Text("关闭提示") }
     }
 }
 
@@ -241,7 +300,6 @@ internal fun permissionLabel(value: String?)=when(value) { "read-only"->"请求�
 
 @Composable internal fun GenerationControls(session: MobileSession,onSettings: ()->Unit) {
     val colors=MaterialTheme.colorScheme
-    var replyMenu by remember { mutableStateOf(false) }
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal=16.dp)) {
         val compact=maxWidth<370.dp
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -254,10 +312,26 @@ internal fun permissionLabel(value: String?)=when(value) { "read-only"->"请求�
             }
         }
     }
-    if(com.agenthub.core.MobileRules.showsReplyMode(session.running, session.canCompose, session.replyModes.isNotEmpty(), session.text, session.attachments.size)) Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),horizontalArrangement=Arrangement.End) { Box {
-        TextButton(onClick={ replyMenu=true },modifier=Modifier.testTag("reply-mode")) { Text(if(session.replyMode=="steer") "引导当前任务" else "排队",fontSize=12.sp) }
-        DropdownMenu(replyMenu,{ replyMenu=false }) { session.replyModes.forEach { mode -> DropdownMenuItem(text={ Text(if(mode=="steer") "引导当前任务" else "排队") },onClick={ session.setReplyMode(mode); replyMenu=false },modifier=Modifier.testTag("reply-mode-$mode")) } }
-    } }
+    if(com.agenthub.core.MobileRules.showsReplyMode(session.running, session.canCompose, session.replyModes.isNotEmpty(), session.text, session.attachments.size)) {
+        val target=session.targetKey;val modes=session.replyModes
+        Column(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth().background(colors.onSurface.copy(alpha=.08f),RoundedCornerShape(8.dp)).padding(3.dp)
+                .selectableGroup().testTag("reply-mode")) {
+                ReplyModeSegment("排队执行","queue",session.replyMode=="queue",session.canSelectReplyMode&&"queue" in modes) { session.setReplyMode("queue",target) }
+                if("steer" in modes)ReplyModeSegment("立即追加","steer",session.replyMode=="steer",session.canSelectReplyMode) { session.setReplyMode("steer",target) }
+            }
+            if(session.replyMode=="queue"&&"queue" !in modes)Text("客户端队列不可用，消息未提交。可保留草稿，或自行选择立即追加。",
+                fontSize=12.sp,color=colors.onSurfaceVariant,modifier=Modifier.testTag("client-queue-unavailable"))
+        }
+    }
+}
+@Composable private fun RowScope.ReplyModeSegment(label: String,mode: String,selected: Boolean,enabled: Boolean,choose: ()->Unit) {
+    val colors=MaterialTheme.colorScheme
+    val fill=if(selected) { if(colors.background==Color.Black)Color(0xFF636366) else Color.White } else Color.Transparent
+    Box(Modifier.weight(1f).heightIn(min=44.dp).clip(RoundedCornerShape(6.dp)).background(fill)
+        .selectable(selected=selected,enabled=enabled,role=Role.RadioButton,onClick=choose).testTag("reply-mode-$mode").padding(horizontal=8.dp,vertical=8.dp),contentAlignment=Alignment.Center) {
+        Text(label,fontSize=12.sp,maxLines=1,color=colors.onSurface.copy(alpha=if(enabled)1f else .38f))
+    }
 }
 @Composable private fun ToolbarChip(label: String,tag: String,enabled: Boolean,icon: String,color: Color=MaterialTheme.colorScheme.onSurfaceVariant,click: ()->Unit) {
     Box(Modifier.heightIn(min=44.dp).testTag(tag).semantics { contentDescription=label; role=Role.Button }.clickable(enabled=enabled,onClick=click),contentAlignment=Alignment.Center) {
@@ -271,36 +345,60 @@ internal fun permissionLabel(value: String?)=when(value) { "read-only"->"请求�
 
 @Composable internal fun GenerationPage(session: MobileSession) {
     val settings=session.generationSettings
+    val target=session.targetKey
     val blue=Color(0xFF007AFF)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        fun changeModel(id: String?) {
+            session.updateGeneration(target,GenerationPreferenceEdit.MODEL) { current ->
+                val latest=if(id==null) null else session.models.firstOrNull { it.id==id } ?: return@updateGeneration null
+                val next=SessionPolicies.changeModel(session.selectedEffort,current.speed,latest?.supportedEfforts.orEmpty(),latest?.defaultEffort,latest?.supportedSpeeds.orEmpty())
+                current.copy(model=id,effort=next.effort,speed=next.speed)
+            }
+        }
         GenerationSection("选择模型") {
-            GenerationChoice("跟随电脑",settings.model==null,"model-default",session.canConfigureGeneration) { session.configure(settings.copy(model=null,effort=null,speed=null)) }
-            session.models.forEach { model -> GenerationChoice(model.name+if(model.isDefault) " · 推荐" else "",session.selectedModel?.id==model.id,"model-${model.id}",session.canConfigureGeneration) {
-                val next=SessionPolicies.changeModel(session.selectedEffort,settings.speed,model.supportedEfforts,model.defaultEffort,model.supportedSpeeds)
-                session.configure(settings.copy(model=model.id,effort=next.effort,speed=next.speed))
-            } }
+            val selected=settings.model ?: session.runtime?.settings?.model ?: session.selectedModel?.id ?: ""
+            GenerationMenu("模型",session.modelLabel,"model-picker",target,selected,session.canConfigureGeneration,
+                listOf(GenerationMenuChoice("","跟随电脑","model-default"))+session.models.map { GenerationMenuChoice(it.id,it.name+if(it.isDefault) " · 推荐" else "","model-${it.id}") }) { changeModel(it.takeIf(String::isNotEmpty)) }
             if(session.models.isEmpty()) Text(session.modelError ?: "正在读取电脑的模型列表…",Modifier.padding(16.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
             if(session.modelError!=null) TextButton(onClick={ session.retryModels() },modifier=Modifier.testTag("retry-models")) { Text("重试") }
         }
         GenerationSection("推理强度") {
             Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
                 ProductIcon("bolt",color=blue); Text(effortLabel(session.selectedEffort),Modifier.weight(1f).padding(start=8.dp),fontSize=20.sp,fontWeight=FontWeight.SemiBold,color=blue)
-                IconAction("refresh","跟随电脑","reset-effort",session.canConfigureGeneration) { session.configure(settings.copy(effort=null)) }
+                IconAction("refresh","跟随电脑","reset-effort",session.canConfigureGeneration) { session.updateGeneration(target,GenerationPreferenceEdit.EFFORT) { it.copy(effort=null) } }
             }
             val efforts=session.selectedModel?.supportedEfforts.orEmpty()
-            if(efforts.size>1) Slider(value=(efforts.indexOf(session.selectedEffort).coerceAtLeast(0)).toFloat(),onValueChange={ session.configure(settings.copy(effort=efforts[it.toInt().coerceIn(efforts.indices)])) },valueRange=0f..(efforts.size-1).toFloat(),steps=(efforts.size-2).coerceAtLeast(0),enabled=session.canConfigureGeneration,colors=SliderDefaults.colors(thumbColor=blue,activeTrackColor=blue),modifier=Modifier.padding(horizontal=16.dp).testTag("effort-slider"))
-            GenerationChoice("跟随电脑",settings.effort==null,"effort-default",session.canConfigureGeneration) { session.configure(settings.copy(effort=null)) }
-            efforts.forEach { effort -> GenerationChoice(effortLabel(effort),session.selectedEffort==effort,"effort-$effort",session.canConfigureGeneration) { session.configure(settings.copy(effort=effort)) } }
+            if(efforts.size>1) Slider(value=(efforts.indexOf(session.selectedEffort).coerceAtLeast(0)).toFloat(),onValueChange={ val chosen=efforts[it.toInt().coerceIn(efforts.indices)];session.updateGeneration(target,GenerationPreferenceEdit.EFFORT) { current -> if(chosen in session.selectedModel?.supportedEfforts.orEmpty()) current.copy(effort=chosen) else null } },valueRange=0f..(efforts.size-1).toFloat(),steps=(efforts.size-2).coerceAtLeast(0),enabled=session.canConfigureGeneration,colors=SliderDefaults.colors(thumbColor=blue,activeTrackColor=blue,inactiveTrackColor=MaterialTheme.colorScheme.onSurface.copy(alpha=.12f),activeTickColor=blue,inactiveTickColor=MaterialTheme.colorScheme.onSurface.copy(alpha=.12f)),modifier=Modifier.padding(horizontal=16.dp).testTag("effort-slider"))
+            GenerationMenu("强度",effortLabel(session.selectedEffort),"effort-picker",target,session.selectedEffort ?: "",session.canConfigureGeneration,
+                listOf(GenerationMenuChoice("","跟随电脑","effort-default"))+efforts.map { GenerationMenuChoice(it,effortLabel(it),"effort-$it") }) { choice ->
+                session.updateGeneration(target,GenerationPreferenceEdit.EFFORT) { current -> if(choice.isEmpty() || choice in session.selectedModel?.supportedEfforts.orEmpty()) current.copy(effort=choice.takeIf(String::isNotEmpty)) else null }
+            }
         }
         if(session.supportsGenerationSpeed) GenerationSection("速度") {
-            GenerationChoice("跟随电脑速度",settings.speed==null,"reset-speed",session.canConfigureGeneration) { session.configure(settings.copy(speed=null)) }
-            session.selectedModel?.supportedSpeeds.orEmpty().forEach { speed -> GenerationChoice(speedLabel(speed),session.selectedSpeed==speed,"speed-$speed",session.canConfigureGeneration) { session.configure(settings.copy(speed=speed)) } }
-            Text(if("fast" in session.selectedModel?.supportedSpeeds.orEmpty()) "加快模型响应，增加用量消耗。" else "当前模型未提供加速模式。",Modifier.padding(16.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            val speeds=session.selectedModel?.supportedSpeeds.orEmpty()
+            if("ultrafast" in speeds) {
+                GenerationMenu("速度模式",speedLabel(session.selectedSpeed),"speed-picker",target,session.selectedSpeed ?: "",session.canConfigureGeneration,
+                    listOf(GenerationMenuChoice("","跟随电脑","reset-speed-choice"))+speeds.map { GenerationMenuChoice(it,speedLabel(it),"speed-$it") }) { choice ->
+                    session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { current -> if(session.supportsGenerationSpeed && (choice.isEmpty() || choice in session.selectedModel?.supportedSpeeds.orEmpty())) current.copy(speed=choice.takeIf(String::isNotEmpty)) else null }
+                }
+            } else {
+                val enabled=session.canConfigureGeneration && "fast" in speeds
+                Row(Modifier.fillMaxWidth().heightIn(min=48.dp).testTag("fast-mode-toggle").semantics(mergeDescendants=true) {}
+                    .toggleable(session.selectedSpeed=="fast",enabled=enabled,role=Role.Switch) { on ->
+                        session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { current -> if(session.supportsGenerationSpeed && "fast" in session.selectedModel?.supportedSpeeds.orEmpty()) current.copy(speed=if(on) "fast" else "standard") else null }
+                    }.padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
+                    Text("快速模式",Modifier.weight(1f),fontSize=16.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(enabled) 1f else .5f))
+                    Switch(session.selectedSpeed=="fast",onCheckedChange=null,enabled=enabled,modifier=Modifier.clearAndSetSemantics {},
+                        colors=SwitchDefaults.colors(checkedTrackColor=Color(0xFF34C759),checkedThumbColor=Color.White,uncheckedTrackColor=MaterialTheme.colorScheme.onSurface.copy(alpha=.12f),uncheckedThumbColor=Color.White,uncheckedBorderColor=Color.Transparent,disabledUncheckedTrackColor=MaterialTheme.colorScheme.onSurface.copy(alpha=.06f),disabledUncheckedThumbColor=Color.White,disabledUncheckedBorderColor=Color.Transparent))
+                }
+            }
+            TextButton(onClick={ session.updateGeneration(target,GenerationPreferenceEdit.SPEED) { if(session.supportsGenerationSpeed) it.copy(speed=null) else null } },enabled=session.canConfigureGeneration,colors=ButtonDefaults.textButtonColors(contentColor=blue),modifier=Modifier.testTag("reset-speed")) { Text("跟随电脑速度") }
+            Text(if("fast" in speeds) "加快模型响应，增加用量消耗。" else "当前模型未提供加速模式。",Modifier.padding(16.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
         GenerationSection("应如何批准操作？") {
-            GenerationChoice("跟随电脑权限",session.selectedPermission==null,"permission-default",session.canConfigureGeneration) { session.configure(settings.copy(permissionMode=null)) }
+            GenerationChoice("跟随电脑权限",session.selectedPermission==null,"permission-default",session.canConfigureGeneration) { session.updateGeneration(target,GenerationPreferenceEdit.PERMISSION) { it.copy(permissionMode=null) } }
             session.permissionOptions.forEach { option ->
-                GenerationChoice(option.title,session.selectedPermission==option.id,"permission-${option.id}",session.canConfigureGeneration,option.detail,option.highPrivilege) { session.configure(settings.copy(permissionMode=option.id)) }
+                GenerationChoice(option.title,session.selectedPermission==option.id,"permission-${option.id}",session.canConfigureGeneration,option.detail,option.highPrivilege) { session.updateGeneration(target,GenerationPreferenceEdit.PERMISSION) { current -> if(session.permissionOptions.any { it.id==option.id }) current.copy(permissionMode=option.id) else null } }
             }
         }
         Text("选择会记住，供此客户端的新对话使用。设置随下一条消息或排队消息提交，补充指令沿用当前任务设置。",Modifier.padding(24.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
@@ -316,5 +414,26 @@ internal fun permissionLabel(value: String?)=when(value) { "read-only"->"请求�
     Row(Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).semantics { this.selected=selected; role=Role.Button }.clickable(enabled=enabled,onClick=click).padding(horizontal=16.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) { Text(label,fontSize=16.sp,color=color.copy(alpha=if(enabled) 1f else .5f)); detail?.let { Text(it,Modifier.padding(top=4.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } }
         if(selected) ProductIcon("check",Modifier.size(18.dp),Color(0xFF007AFF))
+    }
+}
+
+private data class GenerationMenuChoice(val id: String,val title: String,val tag: String)
+@Composable private fun GenerationMenu(label: String,value: String,tag: String,target: String,selected: String,enabled: Boolean,
+    choices: List<GenerationMenuChoice>,choose: (String)->Unit) {
+    var expanded by remember(target) { mutableStateOf(false) }
+    val blue=Color(0xFF007AFF)
+    Box {
+        Row(Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).semantics { role=Role.Button }
+            .clickable(enabled=enabled) { expanded=true }.padding(horizontal=16.dp,vertical=14.dp),verticalAlignment=Alignment.CenterVertically) {
+            Text(label,fontSize=16.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(enabled) 1f else .5f))
+            Spacer(Modifier.weight(1f))
+            Text(value,Modifier.weight(1f,fill=false).padding(start=12.dp,end=6.dp),fontSize=16.sp,color=blue.copy(alpha=if(enabled) 1f else .5f),maxLines=1,overflow=TextOverflow.Ellipsis)
+            ProductIcon("picker",Modifier.size(16.dp),blue.copy(alpha=if(enabled) 1f else .5f))
+        }
+        DropdownMenu(expanded=expanded&&enabled,onDismissRequest={ expanded=false },containerColor=MaterialTheme.colorScheme.surface,tonalElevation=0.dp) {
+            choices.forEach { choice -> DropdownMenuItem(text={ Text(choice.title) },onClick={ expanded=false;choose(choice.id) },enabled=enabled,
+                leadingIcon={ if(selected==choice.id) ProductIcon("check",Modifier.size(18.dp),blue) else Spacer(Modifier.size(18.dp)) },
+                modifier=Modifier.testTag(choice.tag).semantics { this.selected=selected==choice.id;role=Role.RadioButton }) }
+        }
     }
 }

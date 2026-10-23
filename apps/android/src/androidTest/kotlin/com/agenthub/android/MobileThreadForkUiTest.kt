@@ -15,7 +15,8 @@ import java.io.File
 /** Native Compose UI/HTTP/persistence with a synthetic Host; real desktop is a separate gate. */
 @RunWith(AndroidJUnit4::class)
 class MobileThreadForkUiTest {
-    @get:Rule val ui=createAndroidComposeRule<MainActivity>()
+    @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
+    @get:Rule(order=1) val ui=createAndroidComposeRule<MainActivity>()
     private val session get()=ui.activity.session
     @Before fun reset()=ui.runOnIdle { session.resetAcceptance() }
     private fun connect(f: ForkFixture) {

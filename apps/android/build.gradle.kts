@@ -3,6 +3,12 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Opt-in separate install identity for acceptance, preserving DEV/release data.
+val acceptanceBuild = providers.gradleProperty("agentHubAcceptance").map {
+    require(it == "true" || it == "false") { "agentHubAcceptance must be true or false" }
+    it.toBoolean()
+}.getOrElse(false)
+
 android {
     namespace = "com.agenthub.android"
     compileSdk = 37
@@ -15,7 +21,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        debug { applicationIdSuffix = ".debug"; versionNameSuffix = "-dev" }
+        debug {
+            applicationIdSuffix = if (acceptanceBuild) ".acceptance" else ".debug"
+            versionNameSuffix = if (acceptanceBuild) "-acceptance" else "-dev"
+        }
         release { isMinifyEnabled = false }
     }
     compileOptions {

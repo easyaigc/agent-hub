@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "phase": "P0",
+  "date": "2026-10-22",
+  "sourceBase": "6d81284e9c352e977140c09197526296d57b9669",
+  "branch": "codex/android-alignment-20261022",
+  "status": "passed-applicable-P0-gates",
+  "applicationId": "com.easyai.agenthub.android.acceptance",
+  "runner": "com.easyai.agenthub.android.acceptance.test/androidx.test.runner.AndroidJUnitRunner",
+  "productModelInputs": 0,
+  "artifacts": [
+    {
+      "kind": "app",
+      "sha256": "458637ba33366b2e430cae133844df16c97fa36cfcd14f94d052ed0af0f9a79b"
+    },
+    {
+      "kind": "test",
+      "sha256": "2dd9142be62ba876dc53366290c3fc965e7f3125c75d828f33704a0676eb8909"
+    }
+  ],
+  "nativeInputInventorySha256": "0cefacf1dba266b37e0af515d5bb65a01138871564c8a13257c1725271238bc2",
+  "signingCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1",
+  "defaultDevIdentity": "verified-com.easyai.agenthub.android.debug",
+  "checks": {
+    "acceptanceBuild": "passed; 82 tasks",
+    "defaultDebugBuild": "passed; 49 tasks",
+    "mobileParity": "passed",
+    "workspaceCheck": {
+      "status": "passed-in-segments",
+      "commandCount": 59,
+      "initialRun": "owned cold-cache Gradle download cancelled; existing exact compiler/cache configured; no source compiler failure",
+      "resume": "exact original command sequence from check:agent-contract to end; all status 0",
+      "nativeWindows": "not-executed; platform-specific fixtures skip on macOS; no Windows acceptance claim",
+      "finalNativeExaminer": "Changed after workspace checks; exact final Android examiner covered by physical 1/1, API26 5/5, API37 5/5 and final parity check; no JS/Host/iOS production inputs changed"
+    },
+    "api26NativeRunner": {
+      "status": "passed",
+      "tests": 5,
+      "failures": 0,
+      "syntheticOnly": true,
+      "instrumentationSha256": "96d0a003fc292d677a9a53f057186d3ad707bf26106a30217c0b27596ba6fae5",
+      "candidate": "final examiner v3"
+    },
+    "api37NativeRunner": {
+      "status": "passed",
+      "tests": 5,
+      "failures": 0,
+      "syntheticOnly": true,
+      "memoryMiB": 4096,
+      "memoryRequirementSource": "https://developer.android.google.cn/studio/releases/emulator?hl=en",
+      "instrumentationSha256": "d3d4fe66819ec7ef39cc0b541ca0d8dc46850188eaa65ef7073770bb6c848782",
+      "candidate": "final examiner v3",
+      "readiness": "independent owned AVD booted after human-authorized normal shutdown of old emulator; old disk retained and config SHA unchanged; exact emulator internal cause not isolated"
+    },
+    "physicalNativeRunner": {
+      "status": "passed",
+      "model": "Xiaomi M2007J1SC",
+      "api": 33,
+      "tests": 1,
+      "failures": 0,
+      "class": "MobilePhysicalSmokeTest#foregroundNativeControls",
+      "scope": "native synthetic controls; zero model inputs",
+      "instrumentationSha256": "e315ce394fac80699e74a6c1c25b065267a96a1753f6a8c495f0e841aa6aaeab",
+      "resumedCaptureSha256": "2c511e5ba99335d87a822b2c115f09a68ffc8a45270de5da1153e576f7775d96"
+    },
+    "visualParity": "not-verified; final physical resumed row visually reviewed; full visual matrix and OEM font/keyboard states remain P6",
+    "realDesktopModel": "not-executed; P0 environment stage only"
+  },
+  "oldWip": {
+    "trackedAndUntrackedFiles": 73,
+    "identicalToMain": 25,
+    "namedBusinessFilesDeferred": 22,
+    "otherDifferencesAssignedToStages": 26,
+    "adoption": "no wholesale copy; P1 open-observation candidate identified; old history-window regression excluded"
+  },
+  "nextGate": "commit and verify remote P0 closure; then implement P1 target/capability/original-intent/recovery scope; Task Hub deferred and A6 paused",
+  "failuresPreserved": [
+    "initial OEM install rejection; successful retry after human allowance",
+    "original physical smoke failed to locate continuation row; examiner now verifies exactly one original message and visible row after scrolling",
+    "v2 logical pass capture occluded by OEM keyboard account dialog; v3 clicks App dismiss-keyboard control before capture",
+    "API37 owned cold boots hang and emulator exits 139; short path, matched hardware, normal inventory, read-only, independent public image copy, 4096 MiB did not establish readiness"
+  ],
+  "sourceCandidateCommit": "8a3fa9f3ce78fa6e82625653f16e83fba0c0b866"
+}

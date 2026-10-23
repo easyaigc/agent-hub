@@ -898,7 +898,7 @@ struct RootView: View {
   @State private var voiceDEVPairingApplied = false
   @State private var followsLatest = true
   @State private var latestMessageVisibility: ChatBottomVisibility?
-  @State private var visibleMessageLimit = 20
+  @State private var visibleMessageLimit = Int(SharedReadingPolicy.initialMessageLimit())
   @State private var readySearchJump: UUID?
   @State private var deleteChatTarget: Conversation?
   @State private var endChatActionTarget: ChatActionReceipt?
@@ -1107,7 +1107,7 @@ struct RootView: View {
       endChatActionTarget = nil
       showsReplyRecords = false
       latestMessageVisibility = nil
-      visibleMessageLimit = 20
+      visibleMessageLimit = Int(SharedReadingPolicy.initialMessageLimit())
       earlierHistoryRequest = nil
       earlierHistoryPosition.cancel()
       revealedEarlierHistory = false
@@ -1186,10 +1186,19 @@ struct RootView: View {
             Button(L10n.tr("已归档对话"), systemImage: "archivebox") { store.sheet = .archivedChats }.accessibilityIdentifier("archived-chats")
           }
           ForEach(store.pendingChatActions()) { receipt in
-            Button(L10n.tr("查询聊天操作记录"), systemImage: "arrow.clockwise") { store.queryChatAction(receipt) }
+            Button { store.queryChatAction(receipt) } label: {
+              Label {
+                VStack(alignment: .leading) {
+                  Text(store.chatActionRecordLabel(receipt))
+                  Text(L10n.tr("查询聊天操作记录")).font(.caption)
+                }
+              } icon: { Image(systemName: "arrow.clockwise") }
+            }
               .accessibilityIdentifier("chat-action-query")
+              .accessibilityLabel(L10n.tr("查询聊天操作记录") + "，" + store.chatActionRecordLabel(receipt))
+              .accessibilityValue(receipt.threadId + " · " + receipt.id)
             if receipt.waitingEnded != true {
-              Button(L10n.tr("结束等待")) { endChatActionTarget = receipt }
+              Button(L10n.tr("结束等待") + " · " + store.chatActionRecordLabel(receipt)) { endChatActionTarget = receipt }
             }
           }
           if store.client?.isDemo == false {
@@ -1221,7 +1230,7 @@ struct RootView: View {
         }
         .id(store.targetKey)
         .accessibilityLabel(L10n.tr("对话选项")).accessibilityIdentifier("chat-menu")
-        .accessibilityValue(store.chatActionBusy.contains(store.selectedThreadId ?? "") ? L10n.tr("正在更新…") : "")
+        .accessibilityValue(store.currentChatActionBusy || store.loading ? L10n.tr("正在更新…") : "")
       }.floatingSurface()
         .sheet(isPresented: $showsReplyRecords) { ReplyDeliveryRecordsView(store: store, target: store.targetKey) }
   }
@@ -1531,7 +1540,7 @@ struct RootView: View {
     defer { if earlierHistoryRequest == request { earlierHistoryRequest = nil } }
     if timeline.hasEarlierMessages {
       earlierHistoryPosition.prepareForPrepend()
-      visibleMessageLimit += 60
+      visibleMessageLimit += Int(SharedReadingPolicy.earlierMessageIncrement())
     } else {
       let previousIds = Set(store.messages.map(\.id))
       guard await store.loadHistory(more: true), !Task.isCancelled,
@@ -1559,7 +1568,11 @@ struct RootView: View {
   }
 
   private var sidebar: some View {
-    VStack(spacing: 0) {
+    let order = sidebarOrder
+    let pinnedItems = sidebarPinnedItems(order)
+    let recentThreads = sidebarRecentThreads(order)
+    let filteredProjects = sidebarFilteredProjects(order)
+    return VStack(spacing: 0) {
       HStack(spacing: 0) {
         Button {
           sidebarSearchFocused = false
@@ -1655,7 +1668,7 @@ struct RootView: View {
                 if item.kind == "thread", let thread = store.threads.first(where: { $0.id == item.id }) {
                   threadRow(thread, idPrefix: "pinned-thread")
                 } else if item.kind == "project", let project = store.projects.first(where: { $0.id == item.id }) {
-                  sidebarProject(project)
+                  sidebarProject(project, order: order)
                 }
               }
             }
@@ -1717,7 +1730,7 @@ struct RootView: View {
               }
             }.padding(.leading, 9).padding(.top, 12)
             if projectsSectionExpanded {
-              ForEach(filteredProjects) { project in sidebarProject(project) }
+              ForEach(filteredProjects) { project in sidebarProject(project, order: order) }
             }
           }
           if filteredProjects.isEmpty && recentThreads.isEmpty && pinnedItems.isEmpty {
@@ -1781,82 +1794,62 @@ struct RootView: View {
     latestMessageVisibility?.targetKey == store.targetKey && latestMessageVisibility?.isVisible == true
   }
   private var projectsSectionExpanded: Bool {
-    !collapsedProjectSections.contains(sidebarClientKey) || !store.search.isEmpty
+    SharedMobileRules.sidebarExpanded(preference: !collapsedProjectSections.contains(sidebarClientKey), searching: !store.search.isEmpty)
   }
   private var collapsedRecentSections: Set<String> {
     Set((try? JSONDecoder().decode([String].self, from: Data(collapsedRecentClients.utf8))) ?? [])
   }
   private var recentSectionExpanded: Bool {
-    !collapsedRecentSections.contains(sidebarClientKey) || !store.search.isEmpty
+    SharedMobileRules.sidebarExpanded(preference: !collapsedRecentSections.contains(sidebarClientKey), searching: !store.search.isEmpty)
   }
   private var collapsedPinnedSections: Set<String> {
     Set((try? JSONDecoder().decode([String].self, from: Data(collapsedPinnedClients.utf8))) ?? [])
   }
   private var pinnedSectionExpanded: Bool {
-    !collapsedPinnedSections.contains(sidebarClientKey) || !store.search.isEmpty
+    SharedMobileRules.sidebarExpanded(preference: !collapsedPinnedSections.contains(sidebarClientKey), searching: !store.search.isEmpty)
   }
   private var pinnedThreadIds: [String] {
     store.client.flatMap { store.saved.workspaces[$0.id]?.pinnedThreadIds } ?? []
   }
-  private var desktopSidebar: WorkspaceSidebar? {
-    guard let client = store.client, let sidebar = store.saved.workspaces[client.id]?.sidebar,
-      sidebar.version == 1 else { return nil }
-    return sidebar
+  private var sidebarOrder: SidebarDisplayOrder {
+    SharedMobileRules.sidebarOrder(hostId: store.client?.id ?? "", threads: store.threads,
+      projects: store.projects, pinnedThreadIds: pinnedThreadIds,
+      sidebar: store.client.flatMap { store.saved.workspaces[$0.id]?.sidebar })
   }
+  // Mapping only: mobile-core has already selected and ordered valid IDs.
   private func orderedThreads(_ ids: [String]) -> [Conversation] {
-    let threads = Dictionary(store.threads.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-    var seen: Set<String> = []
-    return ids.compactMap { id in
-      guard seen.insert(id).inserted, let thread = threads[id], thread.hostId == store.client?.id,
-        thread.archived != true else { return nil }
-      return thread
-    }
+    let threads = Dictionary(store.threads.filter { $0.hostId == store.client?.id }.map { ($0.id, $0) },
+      uniquingKeysWith: { first, _ in first })
+    return ids.compactMap { threads[$0] }
   }
-  private var pinnedItems: [WorkspaceSidebar.Item] {
-    guard let sidebar = desktopSidebar else {
-      return pinnedThreads.map { WorkspaceSidebar.Item(kind: "thread", id: $0.id) }
-    }
-    let threads = Set(pinnedThreads.map(\.id))
-    var seen: Set<String> = []
-    return sidebar.pinned.filter { item in
-      guard seen.insert(item.key).inserted else { return false }
+  private func sidebarPinnedItems(_ order: SidebarDisplayOrder) -> [WorkspaceSidebar.Item] {
+    let threads = Set(orderedThreads(order.pinned.filter { $0.kind == "thread" }.map(\.id)).filter { matches($0.title) }.map(\.id))
+    return order.pinned.filter { item in
       if item.kind == "thread" { return threads.contains(item.id) }
-      return item.kind == "project" && store.projects.contains { project in
-        project.id == item.id && (matches(project.name) || projectThreads(project).contains { matches($0.title) })
+      return store.projects.contains { project in
+        project.id == item.id && (matches(project.name) || projectThreads(project, order: order).contains { matches($0.title) })
       }
     }
   }
-  private var pinnedThreads: [Conversation] {
-    let threads = Dictionary(store.threads.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-    var seen: Set<String> = []
-    return pinnedThreadIds.compactMap { id in
-      guard seen.insert(id).inserted, let thread = threads[id], thread.archived != true, matches(thread.title) else { return nil }
-      return thread
-    }
+  private func sidebarRecentThreads(_ order: SidebarDisplayOrder) -> [Conversation] {
+    orderedThreads(order.recentThreadIds).filter { matches($0.title) }
   }
-  private var recentThreads: [Conversation] {
-    let pinned = Set(pinnedThreadIds)
-    if let sidebar = desktopSidebar {
-      return orderedThreads(sidebar.recentThreadIds).filter { !pinned.contains($0.id) && matches($0.title) }
-    }
-    return store.threads.filter { $0.archived != true && !pinned.contains($0.id) && matches($0.title) }
-  }
-  private func projectThreads(_ project: Project) -> [Conversation] {
-    let pinned = Set(pinnedThreadIds)
-    let threads = desktopSidebar.map { orderedThreads($0.projectThreadIds[project.id] ?? []) }
-      ?? store.threads.filter { $0.belongs(to: project) }
-    return threads.filter { $0.archived != true && (desktopSidebar == nil || !pinned.contains($0.id)) }
+  private func projectThreads(_ project: Project, order: SidebarDisplayOrder) -> [Conversation] {
+    orderedThreads(order.projectThreadIds[project.id] ?? [])
   }
   private func limitedThreads(_ threads: [Conversation], expanded: Bool) -> [Conversation] {
-    expanded || !store.search.isEmpty ? threads : Array(threads.prefix(5))
+    let byId = Dictionary(threads.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    return SharedMobileRules.sidebarVisibleIds(threads.map(\.id), expanded: expanded,
+      searching: !store.search.isEmpty).compactMap { byId[$0] }
   }
   private func toggleSidebarSet(_ values: inout Set<String>, key: String) {
     if values.contains(key) { values.remove(key) } else { values.insert(key) }
   }
-  private func sidebarProject(_ project: Project) -> some View {
-    let expanded = store.saved.expanded[project.hostId]?.contains(project.id) == true
-      || !store.search.isEmpty
-    let children = expanded ? projectThreads(project).filter {
+  private func sidebarProject(_ project: Project, order: SidebarDisplayOrder) -> some View {
+    let expanded = SharedMobileRules.sidebarExpanded(
+      preference: store.saved.expanded[project.hostId]?.contains(project.id) == true,
+      searching: !store.search.isEmpty)
+    let children = expanded ? projectThreads(project, order: order).filter {
       matches($0.title) || matches(project.name)
     } : []
     let listKey = project.hostId + ":" + project.id
@@ -1906,14 +1899,11 @@ struct RootView: View {
     }.padding(.bottom, 6)
   }
 
-  private var filteredProjects: [Project] {
-    let projects = desktopSidebar.map { sidebar in
-      let byId = Dictionary(store.projects.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-      return sidebar.projectIds.compactMap { byId[$0] }
-    } ?? store.projects
-    return projects.filter { project in
-      matches(project.name)
-        || projectThreads(project).contains { matches($0.title) }
+  private func sidebarFilteredProjects(_ order: SidebarDisplayOrder) -> [Project] {
+    let byId = Dictionary(store.projects.filter { $0.hostId == store.client?.id }.map { ($0.id, $0) },
+      uniquingKeysWith: { first, _ in first })
+    return order.projectIds.compactMap { byId[$0] }.filter { project in
+      matches(project.name) || projectThreads(project, order: order).contains { matches($0.title) }
     }
   }
   private func matches(_ value: String) -> Bool {
@@ -1988,7 +1978,7 @@ private struct UserMessageBubble: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isExpanded = false
   @State private var hasOverflow = false
-  private let previewLines = 6
+  private let previewLines = Int(MobileDesignGeometry.userBubblePreviewLines)
   let id: String
   let text: String
   let files: [String]
@@ -3786,7 +3776,8 @@ private struct ComposerView: View {
   }
 
   private var queuedCommands: some View {
-    ScrollView {
+    let target = store.targetKey, turn = store.runtime?.turnId
+    return ScrollView {
       VStack(spacing: 4) {
         ForEach(Array(store.queuedReplies.enumerated()), id: \.element.id) { index, receipt in
           let text = (receipt.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -3804,20 +3795,20 @@ private struct ComposerView: View {
                 .accessibilityIdentifier("queued-text-\(receipt.id)")
             }
             if store.supportsQueueExecution {
-              Button { store.executeQueue(receipt) } label: {
+              Button { store.executeQueue(receipt, expectedTargetKey: target, expectedTurnId: turn) } label: {
                 Group {
                   if store.queueActionPending(receipt) { ProgressView().controlSize(.mini) }
                   else { Text(store.isRunning ? L10n.tr("立即追加") : L10n.tr("立即执行")).font(.caption) }
                 }.padding(.horizontal, 6).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
               }.buttonStyle(.plain)
-                .disabled(!store.canExecuteQueue(receipt))
+                .disabled(!store.canExecuteQueue(receipt, expectedTargetKey: target, expectedTurnId: turn))
                 .accessibilityLabel(L10n.tr("立即执行第 \(index + 1) 条排队指令"))
                 .accessibilityIdentifier("execute-queued-\(receipt.id)")
             }
-            Button { store.cancelQueue(receipt) } label: {
+            Button { store.cancelQueue(receipt, expectedTargetKey: target) } label: {
               Image(systemName: "xmark").font(.caption).frame(width: 44, height: 44)
             }.buttonStyle(.plain).foregroundStyle(Palette.secondary)
-              .disabled(store.client?.online != true || !store.isWritable || store.queueActionPending(receipt))
+              .disabled(!store.canCancelQueue(receipt, expectedTargetKey: target))
               .accessibilityLabel(L10n.tr("取消第 \(index + 1) 条排队指令"))
               .accessibilityIdentifier("cancel-queued-\(receipt.id)")
           }.padding(.leading, 10).background(Palette.sidebar, in: RoundedRectangle(cornerRadius: 10))
@@ -3906,6 +3897,12 @@ private struct ChatHistorySearchView: View {
   @State private var failure: String?
   @State private var reload = UUID()
   @State private var results: [ChatMessage] = []
+  @State private var resultQuery = ""
+  @State private var resultVersion: UUID?
+  private var hasQuery: Bool { !SharedMobileRules.searchQuery(query).isEmpty }
+  private var resultsCurrent: Bool {
+    SharedMobileRules.searchResultsCurrent(resultQuery, query: query, resultVersion: resultVersion, version: historyVersion)
+  }
   var body: some View {
     NavigationStack {
       VStack(spacing: 0) {
@@ -3925,10 +3922,12 @@ private struct ChatHistorySearchView: View {
           Text(failure).foregroundStyle(.secondary)
           Button(L10n.tr("重试")) { reload = UUID() }.accessibilityIdentifier("chat-search-retry")
         }
-        if !loading && failure == nil && !query.isEmpty && results.isEmpty { Text(L10n.tr("没有匹配结果")) }
-        ForEach(results) { message in
+        if !resultsCurrent && hasQuery { ProgressView() }
+        if !loading && failure == nil && resultsCurrent && hasQuery && results.isEmpty { Text(L10n.tr("没有匹配结果")) }
+        ForEach(resultsCurrent ? results : []) { message in
           Button {
-            store.locateSearchMessage(message, query: query.trimmingCharacters(in: .whitespacesAndNewlines), targetKey: targetKey, history: history, complete: failure == nil && !loading)
+            guard resultsCurrent else { return }
+            store.locateSearchMessage(message, query: resultQuery, targetKey: targetKey, history: history, complete: failure == nil && !loading)
             dismiss()
           } label: {
             VStack(alignment: .leading, spacing: 4) {
@@ -3961,32 +3960,33 @@ private struct ChatHistorySearchView: View {
         }
       }
       .task(id: query + ":" + historyVersion.uuidString) {
-        let text = query.trimmingCharacters(in: .whitespacesAndNewlines), source = history
-        guard !text.isEmpty else { results = []; return }
-        let matches = await Task.detached(priority: .userInitiated) {
-          source.filter { $0.searchableText.range(of: text, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
-        }.value
-        guard !Task.isCancelled else { return }; results = matches
+        let text = SharedMobileRules.searchQuery(query), source = history, version = historyVersion
+        guard !text.isEmpty else { results = []; resultQuery = text; resultVersion = version; return }
+        let work = Task.detached(priority: .userInitiated) {
+          var matches: [ChatMessage] = []
+          for message in source {
+            if Task.isCancelled { return [ChatMessage]() }
+            if SharedMobileRules.searchMatches(message.searchableText, query: text) { matches.append(message) }
+          }
+          return matches
+        }
+        let matches = await withTaskCancellationHandler { await work.value } onCancel: { work.cancel() }
+        guard !Task.isCancelled else { return }
+        results = matches; resultQuery = text; resultVersion = version
       }
     }
   }
 }
 private func searchSnippet(_ text: String, query: String) -> String {
-  guard let match = text.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) else { return String(text.prefix(240)) }
-  let start = text.index(match.lowerBound, offsetBy: -60, limitedBy: text.startIndex) ?? text.startIndex
-  let end = text.index(match.upperBound, offsetBy: 180, limitedBy: text.endIndex) ?? text.endIndex
-  return (start == text.startIndex ? "" : "…") + String(text[start..<end]) + (end == text.endIndex ? "" : "…")
+  SharedMobileRules.searchSnippet(text, query: query)
 }
 private func highlightedSearchText(_ text: String, query: String) -> AttributedString {
   var result = AttributedString(text)
-  guard !query.isEmpty else { return result }
-  var position = text.startIndex
-  while position < text.endIndex, let match = text.range(of: query, options: [.caseInsensitive, .diacriticInsensitive], range: position..<text.endIndex) {
+  for match in SharedMobileRules.searchRanges(text, query: query) {
     if let start = AttributedString.Index(match.lowerBound, within: result), let end = AttributedString.Index(match.upperBound, within: result) {
       result[start..<end].backgroundColor = .yellow.opacity(0.45)
       result[start..<end].foregroundColor = .primary
     }
-    position = match.upperBound
   }
   return result
 }
@@ -3997,7 +3997,7 @@ private struct LocatedChatMessageView: View {
     VStack(alignment: .leading, spacing: 8) {
       Label(L10n.tr("搜索匹配"), systemImage: "magnifyingglass").font(.caption).foregroundStyle(.secondary)
       Text(highlightedSearchText(searchSnippet(message.searchableText, query: query), query: query)).textSelection(.enabled)
-      if message.searchableText.count > 300 {
+      if SharedMobileRules.longSearchMessage(message.searchableText) {
         DisclosureGroup(L10n.tr("完整消息")) {
           Text(highlightedSearchText(message.searchableText, query: query)).textSelection(.enabled)
         }

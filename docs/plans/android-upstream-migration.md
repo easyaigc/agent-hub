@@ -1,5 +1,7 @@
 # iOS／Host bridge 上游逐提交合并与 Android 迁移计划
 
+**2026-10-22 调度更新：**当前统一执行入口为 [Android 后续开发与验收计划](android-alignment-20261022.md)及其 217 条逐提交附录。本文件保留 UM01–UM05 迁移/验收历史；UM06 部分底层虽已合入主线，后续业务项目、任务、页面和业务通知按最新用户要求暂缓，不能沿用下面旧顺序自动进入 UM06–UM08。A6 暂停不解除，本轮没有产品开发。
+
 状态：2026-10-17，UM01–UM05已正常发布，累计5/8。UM05产品`006dfe604f17bc520431eb46c8d0f176c41da1bb`非强推main并独立读回一致；独立56为53匹配复用＋原恢复组3当前，许可与唯一实际录音／原ID恢复另列，所有原失败保留，详见[独立摘要](../acceptance/mobile-evidence/UM05-ios-independent.json)。收尾1e0acfa亦已推main并独立读回；UM06已开始输入与领域边界盘点，见[UM06计划](android-upstream-UM06.md)；A5整体未封存，A6用户暂停。
 
 用户最新执行要求优先于早期交付节奏：**每个 UM 步骤完成适用的本机 iOS Simulator、Android API26／37 和小米验收，同时由 Mac Mini M4 Pro 24G 对冻结候选独立验收 iOS → 回收并核实独立结果 → 更新进度 → 正常提交、非强制推送远程 `main` → 独立读取远程 SHA → 再继续下一步。** 本机负责 Android，Mac Mini 24G 负责独立 iOS 验收；保留两地 WIP、正式服务和本地 Codex 配置。上游 `9bb43e2` 本来已在 main，本轮将 Android/KMP/A5 有效差异及每步迁移纳入其后续历史，未完成步骤准确登记，不宣称整个来源提交已双端通过。

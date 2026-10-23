@@ -82,10 +82,7 @@ class MobileLivePlanApprovalTest {
     private fun settings(permission: String) {
         ui.waitUntil(45_000) { session.canConfigureGeneration }
         ui.onNodeWithTag("generation-settings").performClick()
-        ui.onNodeWithTag("model-${fixture.getString("model")}").performScrollTo().performClick()
-        ui.onNodeWithTag("effort-${fixture.getString("effort")}").performScrollTo().performClick()
-        ui.onNodeWithTag("speed-${fixture.getString("speed")}").performScrollTo().performClick()
-        ui.onNodeWithTag("permission-$permission").performScrollTo().performClick();ui.onNodeWithTag("sheet-done").performClick()
+        ui.selectNativeGeneration(fixture.getString("model"),fixture.getString("effort"),fixture.getString("speed"),permission);ui.onNodeWithTag("sheet-done").performClick()
     }
     private fun approvals()=session.runtime?.approvals.orEmpty().filter { it.kind!="question" }
     private fun approve(allowed: Boolean) {

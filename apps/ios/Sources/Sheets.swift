@@ -456,6 +456,10 @@ struct WorkspaceManagementView: View {
   private var filteredRows: [Row] { rows.filter { search.isEmpty || $0.title.localizedCaseInsensitiveContains(search) || $0.detail.localizedCaseInsensitiveContains(search) } }
   private var eligibleIds: Set<String> { Set(filteredRows.filter(\.enabled).map(\.id)) }
   private var allSelected: Bool { !eligibleIds.isEmpty && eligibleIds.isSubset(of: selected) }
+  private var archiveEligibleIds: Set<String> { Set(rows.filter(\.enabled).map(\.id)) }
+  private var validSelection: Bool {
+    !selected.isEmpty && (action != .archiveThreads || selected.isSubset(of: archiveEligibleIds))
+  }
   private var available: Bool { store.canManageWorkspace(action) && store.client?.online == true }
   private var actionLabel: String {
     action == .deleteProjects ? L10n.tr("删除 \(selected.count) 个项目") : L10n.tr("归档 \(selected.count) 个对话")
@@ -480,12 +484,14 @@ struct WorkspaceManagementView: View {
       Section {
         HStack {
           Button(allSelected ? L10n.tr("取消全选") : L10n.tr("全选")) {
-            if allSelected { selected.subtract(eligibleIds) }
+            if action == .archiveThreads {
+              selected = Set(SharedMobileRules.workspaceArchiveSelect(current: Array(selected), eligible: filteredRows.filter(\.enabled).map(\.id), all: allSelected))
+            } else if allSelected { selected.subtract(eligibleIds) }
             else { selected.formUnion(filteredRows.filter { $0.enabled && !selected.contains($0.id) }.prefix(max(0, 100 - selected.count)).map(\.id)) }
           }.disabled(!available || store.managementBusy || eligibleIds.isEmpty)
             .accessibilityIdentifier("management-select-all")
           Spacer()
-          Text(L10n.tr("已选 \(selected.count) 项")).foregroundStyle(.secondary)
+          Text(L10n.tr("已选 \(selected.count) 项")).accessibilityIdentifier("management-selected-count").foregroundStyle(.secondary)
         }
         if filteredRows.isEmpty {
           Text(search.isEmpty ? L10n.tr("没有可管理的内容") : L10n.tr("没有找到相关内容")).foregroundStyle(.secondary)
@@ -517,9 +523,11 @@ struct WorkspaceManagementView: View {
         footer: { Text(L10n.tr("每批最多选择 100 项。全选仅选择当前搜索结果。")) }
       if !store.workspaceManagementOperations.isEmpty {
         Section(L10n.tr("操作记录")) {
-          ForEach(Array(store.workspaceManagementOperations.prefix(10))) { operation in
+          ForEach(store.workspaceManagementOperations) { operation in
             VStack(alignment: .leading, spacing: 8) {
               Text(operation.action.title).font(.headline)
+              Text(operation.id).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+                .textSelection(.enabled).accessibilityIdentifier("management-operation-" + operation.id)
               let completed = operation.items.filter { $0.state == "completed" }.count
               let rejected = operation.items.filter { $0.state == "rejected" }.count
               Text(L10n.tr("成功 \(completed) 项 · 失败 \(rejected) 项 · 待确认 \(operation.items.count - completed - rejected) 项"))
@@ -552,7 +560,7 @@ struct WorkspaceManagementView: View {
             Label(actionLabel, systemImage: action == .deleteProjects ? "trash" : "archivebox")
               .frame(maxWidth: .infinity, minHeight: 36)
           }.buttonStyle(.borderedProminent).tint(action == .deleteProjects ? .red : .accentColor)
-            .disabled(selected.isEmpty || !available || store.managementBusy)
+            .disabled(!validSelection || !available || store.managementBusy)
             .accessibilityIdentifier("management-submit")
         }.padding().background(.bar)
       }
@@ -565,6 +573,9 @@ struct WorkspaceManagementView: View {
         Button(L10n.tr("取消"), role: .cancel) {}
       } message: {
         Text(action == .deleteProjects ? L10n.tr("仅移除此电脑的项目记录，文件和对话历史会保留。") : L10n.tr("所选对话将从活跃列表移除，历史会保留。"))
+      }
+      .onChange(of: archiveEligibleIds) { _, ids in
+        if action == .archiveThreads { selected.formIntersection(ids) }
       }
       .onChange(of: action) { _, _ in selected = []; error = nil }
       .onChange(of: store.client?.id) { _, _ in selected = []; error = nil }

@@ -17,8 +17,9 @@ final class SessionStore: ObservableObject {
   @Published var sheet: AppSheet?
   @Published var search = ""
   @Published var chatSearchJump: ChatSearchJump?
-  @Published private(set) var chatActionBusy: Set<String> = []
-  @Published private var operationFailure: OperationFailure?
+  @Published private(set) var chatActionBusy: [String: String] = [:]
+  private var errorRevision: UInt64 = 0
+  @Published private var operationFailure: OperationFailure? { didSet { errorRevision &+= 1 } }
   var error: String? {
     get { operationFailure?.message }
     set { operationFailure = newValue.map { OperationFailure(message: $0) } }
@@ -37,7 +38,7 @@ final class SessionStore: ObservableObject {
   @Published private var imports: [String: Int] = [:]
   @Published private var detachingCreationKeys: Set<String> = []
   @Published private var answeringApprovals: Set<String> = []
-  @Published private var queueActionKeys: Set<String> = []
+  @Published private var queueActionOwners: [String: UUID] = [:]
   #if DEBUG
   @Published private var devQueueActionTrace = "none"
   @Published private(set) var devQueueBatchRunning = false
@@ -56,6 +57,8 @@ final class SessionStore: ObservableObject {
   private var eventTask: Task<Void, Never>?
   private var lastConnectionSuccess: [String: TimeInterval] = [:]
   private var workspaceRefreshGeneration: UUID?
+  private var workspaceRefreshOwner: UUID?
+  private var pendingManualHistoryRefresh: (client: UUID, history: UUID)?
   private var latestHistoryReads: [String: UUID] = [:]
   private var eventRecoveryTask: Task<Void, Never>?
   private var replyRecoveryTask: Task<Void, Never>?
@@ -647,16 +650,12 @@ final class SessionStore: ObservableObject {
     host.isDemo ? 0 : snapshot.count(for: mobileReadingTarget(host))
   }
   func runningConversationCount(for host: Client) -> Int? {
-    guard host.online else { return nil }
-    if !host.isDemo {
-      guard let workspace = saved.workspaces[host.id], workspace.connectionMode != "history-only" else { return nil }
-    }
+    let workspace = saved.workspaces[host.id]
     let conversations = host.isDemo
       ? saved.demoThreads.filter { $0.hostId == host.id } + DemoData.threads.filter { $0.hostId == host.id }
-      : saved.workspaces[host.id]?.threads ?? []
-    return Set(conversations.filter {
-      $0.hostId == host.id && ["running", "waiting-for-approval"].contains($0.state)
-    }.map(\.id)).count
+      : workspace?.threads ?? []
+    return SharedMobileRules.runningConversationCount(hostId: host.id, online: host.online, demo: host.isDemo,
+      workspaceAvailable: workspace != nil, connectionMode: workspace?.connectionMode, conversations: conversations)
   }
   func isConnecting(_ host: Client) -> Bool {
     !host.isDemo && !host.online && connectionPhases[host.id] != .failed
@@ -973,28 +972,24 @@ final class SessionStore: ObservableObject {
         supportedSpeeds: chosen?.supportedSpeeds ?? [])
       drafts.values[targetKey, default: Draft()].effort = choice.effort
       drafts.values[targetKey, default: Draft()].speed = choice.speed
-      rememberGeneration { preference in
-        preference.model = newValue.isEmpty ? nil : newValue
-        preference.effort = draft.effort
-        preference.speed = draft.speed
-      }
+      rememberGeneration(.model)
       persist()
     }
   }
   var effort: String {
     get { draft.effort ?? "" }
-    set { guard canConfigureGeneration else { return }; drafts.values[targetKey, default: Draft()].effort = newValue.isEmpty ? nil : newValue; rememberGeneration { $0.effort = draft.effort }; persist() }
+    set { guard canConfigureGeneration else { return }; drafts.values[targetKey, default: Draft()].effort = newValue.isEmpty ? nil : newValue; rememberGeneration(.effort); persist() }
   }
   var permissionMode: String {
     get { draft.permissionMode ?? "" }
-    set { guard canConfigureGeneration else { return }; drafts.values[targetKey, default: Draft()].permissionMode = newValue.isEmpty ? nil : newValue; rememberGeneration { $0.permissionMode = draft.permissionMode }; persist() }
+    set { guard canConfigureGeneration else { return }; drafts.values[targetKey, default: Draft()].permissionMode = newValue.isEmpty ? nil : newValue; rememberGeneration(.permission); persist() }
   }
   var speed: String {
     get { draft.speed ?? "" }
     set {
       guard canConfigureGeneration, supportsGenerationSpeed else { return }
       drafts.values[targetKey, default: Draft()].speed = newValue.isEmpty ? nil : newValue
-      rememberGeneration { $0.speed = draft.speed }
+      rememberGeneration(.speed)
       persist()
     }
   }
@@ -1007,12 +1002,14 @@ final class SessionStore: ObservableObject {
   private var generationPreferenceKey: String? {
     client.map { "generation:" + cacheKey($0, threadId: nil) }
   }
-  private func rememberGeneration(_ update: (inout GenerationOptions) -> Void) {
+  private func rememberGeneration(_ edit: GenerationPreferenceEdit) {
     guard let key = generationPreferenceKey else { return }
-    var preference = saved.generationPreferences?[key] ?? GenerationOptions()
-    update(&preference)
+    let preference = saved.generationPreferences?[key] ?? GenerationOptions()
+    let next = GenerationPreferenceRules.shared.remember(
+      previous: GenerationPreferenceValues(model: preference.model, effort: preference.effort, permissionMode: preference.permissionMode, speed: preference.speed),
+      current: GenerationPreferenceValues(model: draft.model, effort: draft.effort, permissionMode: draft.permissionMode, speed: draft.speed), edit: edit)
     if saved.generationPreferences == nil { saved.generationPreferences = [:] }
-    saved.generationPreferences?[key] = preference
+    saved.generationPreferences?[key] = GenerationOptions(model: next.model, effort: next.effort, permissionMode: next.permissionMode, speed: next.speed)
   }
   private func applyNewConversationDefaults() {
     guard let key = generationPreferenceKey, let preference = saved.generationPreferences?[key] else { return }
@@ -1321,14 +1318,14 @@ final class SessionStore: ObservableObject {
     guard canRespondToPlan(plan), !feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
     send(content: Draft(text: feedback, collaborationMode: "plan"), expectedPlanId: plan.id)
   }
-  var queuedReplies: [DeliveryReceipt] { runtime?.receipts.filter { $0.state == "queued" && !$0.isLegacyHostQueue && $0.queuePresent != false } ?? [] }
+  var queuedReplies: [DeliveryReceipt] { runtime?.receipts.filter { $0.hostId == client?.id && $0.threadId == selectedThreadId && QueueRules.shared.active(state: $0.state, source: $0.queueSource, present: $0.queuePresent.map { KotlinBoolean(bool: $0) }, disposition: $0.queueDisposition) } ?? [] }
   var receiptNotices: [DeliveryReceipt] {
     let receipts = runtime?.receipts.filter { $0.hostId == client?.id && $0.threadId == selectedThreadId } ?? []
     let dismissed = saved.dismissedReceiptFailures?[targetKey] ?? []
     let sharedIndices = Set(SharedMobileRules.noticeIndices(receipts, dismissed: dismissed, pendingId: pending?.clientMessageId))
     return receipts.enumerated().compactMap { index, receipt in
       // Native queue synchronization failures remain visible even after acceptance.
-      if receipt.queueSyncError?.isEmpty == false { return receipt }
+      if QueueRules.shared.hasSyncError(error: receipt.queueSyncError) { return receipt }
       if receipt.state == "uncertain",
         saved.detachedReplies?[targetKey]?.contains(where: { $0.id == receipt.id }) == true { return nil }
       return sharedIndices.contains(index) ? receipt : nil
@@ -2199,15 +2196,33 @@ final class SessionStore: ObservableObject {
     guard !sidebarInteracting else { return }
     guard pendingConnection == nil, let host = client, !host.isDemo, host.endpoint != nil || host.agentConnection != nil else { return }
     let generation = clientGeneration
-    guard workspaceRefreshGeneration != generation else { return }
+    if workspaceRefreshGeneration == generation {
+      // Coalesce an explicit latest-history refresh behind the occupied reader.
+      // Preserve its navigation; a later target must not inherit this request.
+      if userInitiated && includeHistory && !loadMore {
+        pendingManualHistoryRefresh = (generation, historyGeneration)
+      }
+      return
+    }
+    let owner = UUID()
+    workspaceRefreshOwner = owner
     workspaceRefreshGeneration = generation
     let startedAt = ProcessInfo.processInfo.systemUptime
     let managementRevision = managementRevisions[host.id]
     loading = true
     if !host.online { connectionPhases[host.id] = .connecting }
     defer {
-      if workspaceRefreshGeneration == generation { workspaceRefreshGeneration = nil }
-      if clientGeneration == generation { loading = false }
+      if workspaceRefreshOwner == owner {
+        workspaceRefreshOwner = nil; workspaceRefreshGeneration = nil
+        if clientGeneration == generation { loading = false }
+        if let pending = pendingManualHistoryRefresh {
+          pendingManualHistoryRefresh = nil
+          Task {
+            guard clientGeneration == pending.client, historyGeneration == pending.history else { return }
+            await refresh(userInitiated: true)
+          }
+        }
+      }
     }
     do {
       let previous = saved.workspaces[host.id]
@@ -2217,12 +2232,12 @@ final class SessionStore: ObservableObject {
         threadCursor: loadMore ? previous?.nextThreadCursor : nil)
       try await waitForSidebarInteraction()
       try Task.checkCancellation()
-      guard clientGeneration == generation, client?.id == host.id else { return }
+      guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
       if host.agentConnection != nil {
         let route = await (try AgentClients.resolve(host)).connectionTitle(host)
         try await waitForSidebarInteraction()
         try Task.checkCancellation()
-        guard clientGeneration == generation, client?.id == host.id else { return }
+        guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
         connectionRoutes[host.id] = route
       }
       guard result.hostId == host.id, result.projects.allSatisfy({ $0.hostId == host.id }),
@@ -2281,12 +2296,12 @@ final class SessionStore: ObservableObject {
         startEvents(initialReadGrace: initialEvents ? 8 : 0)
         if includeHistory, !initialEvents, let thread = conversation { await loadHistory(threadId: thread.id, userInitiated: userInitiated) }
         try Task.checkCancellation()
-        guard clientGeneration == generation, client?.id == host.id else { return }
+        guard clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
         startEvents()
       }
       persist()
     } catch {
-      guard !isReadCancellation(error), clientGeneration == generation, client?.id == host.id else { return }
+      guard !isReadCancellation(error), clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
       recordConnectionFailure(error, host: host, startedAt: startedAt)
       if userInitiated { self.error = "刷新失败，请重试。\n" + error.localizedDescription }
       if client?.id == host.id { startEvents() }
@@ -3272,7 +3287,7 @@ final class SessionStore: ObservableObject {
       updateDetachedReceipt(receipt, key: key, index: index)
     } else if ["failed", "cancelled"].contains(receipt.state), samePending(reply, key: key) {
       archiveReply(reply, key: key, receipt: receipt)
-    } else if ["submitted", "queued", "completed", "interrupted"].contains(receipt.state) {
+    } else if ReplyRecoveryRules.shared.acceptedReceipt(state: receipt.state, source: receipt.queueSource, present: receipt.queuePresent.map { KotlinBoolean(bool: $0) }, disposition: receipt.queueDisposition) {
       finishPending(reply, key: key)
     } else if reportUnknown, targetKey == key && samePending(reply, key: key) {
       error = receipt.error ?? L10n.tr("发送结果：\(receipt.state)，请查询发送状态。")
@@ -3300,9 +3315,8 @@ final class SessionStore: ObservableObject {
     saved.detachedReplies?[key]?.contains(where: { $0.id == reply.clientMessageId }) == true
   }
   private func updateDetachedReceipt(_ receipt: DeliveryReceipt, key: String, index: Int) {
-    let terminal = ["completed", "failed", "cancelled", "interrupted"]
     if let previous = saved.detachedReplies?[key]?[index].receipt,
-      terminal.contains(previous.state), !terminal.contains(receipt.state) { return }
+      ReplyRecoveryRules.shared.preservesReceiptEvidence(previous: previous.state, source: previous.queueSource, present: previous.queuePresent.map { KotlinBoolean(bool: $0) }, disposition: previous.queueDisposition, incoming: receipt.state) { return }
     saved.detachedReplies?[key]?[index].receipt = receipt
     saved.detachedReplies?[key]?[index].error = receipt.error
   }
@@ -3393,7 +3407,7 @@ final class SessionStore: ObservableObject {
       let now = ProcessInfo.processInfo.systemUptime
       let previous = replyRecoveryQueries[key].flatMap { $0.id == pending.clientMessageId ? $0 : nil }
       guard now >= (previous?.next ?? 0) else { return }
-      let delay = min((previous?.delay ?? 1) * 2, 30)
+      let delay = Double(ReplyRecoveryRules.shared.nextReplyQueryDelayMillis(previousMillis: Int64((previous?.delay ?? 0) * 1000))) / 1000
       replyRecoveryQueries[key] = (pending.clientMessageId, now + delay, delay)
     }
     replyRecoveryFlights[key] = flight
@@ -3521,14 +3535,28 @@ final class SessionStore: ObservableObject {
       } catch { if targetKey == key { self.presentError(error) } }
     }
   }
-  func queueActionPending(_ receipt: DeliveryReceipt) -> Bool { queueActionKeys.contains(targetKey + ":" + receipt.id) }
+  func queueActionPending(_ receipt: DeliveryReceipt) -> Bool { queueActionOwners[targetKey + ":" + receipt.id] != nil }
   var supportsQueueExecution: Bool { saved.workspaces[client?.id ?? ""]?.capabilities?.contains("queue:execute") == true }
-  func canExecuteQueue(_ receipt: DeliveryReceipt) -> Bool {
-    client?.online == true && isWritable && receipt.state == "queued" && receipt.canExecuteNow != false
-      && supportsQueueExecution && !queueActionPending(receipt)
+  private func currentQueueReceipt(_ receipt: DeliveryReceipt) -> DeliveryReceipt? {
+    guard receipt.hostId == client?.id, receipt.threadId == selectedThreadId, !receipt.clientMessageId.isEmpty,
+      QueueRules.shared.active(state: receipt.state, source: receipt.queueSource, present: receipt.queuePresent.map { KotlinBoolean(bool: $0) }, disposition: receipt.queueDisposition) else { return nil }
+    return queuedReplies.first { $0.id == receipt.id }
   }
-  func executeQueue(_ receipt: DeliveryReceipt) { queueAction(receipt, execute: true) }
-  func cancelQueue(_ receipt: DeliveryReceipt) { queueAction(receipt, execute: false) }
+  private func queueActionAllowed(_ receipt: DeliveryReceipt, target: String, execute: Bool, turn: String?, pending: Bool) -> Bool {
+    guard target == targetKey, loadedHistoryGeneration == historyGeneration,
+      !execute || runtime?.turnId == turn, let current = currentQueueReceipt(receipt) else { return false }
+    return QueueRules.shared.actionAllowed(state: current.state, source: current.queueSource, present: current.queuePresent.map { KotlinBoolean(bool: $0) }, disposition: current.queueDisposition,
+      online: client?.online == true, writable: isWritable, pending: pending, execute: execute,
+      supportsExecute: supportsQueueExecution, canExecuteNow: current.canExecuteNow.map { KotlinBoolean(bool: $0) })
+  }
+  func canExecuteQueue(_ receipt: DeliveryReceipt, expectedTargetKey: String, expectedTurnId: String?) -> Bool {
+    queueActionAllowed(receipt, target: expectedTargetKey, execute: true, turn: expectedTurnId, pending: queueActionPending(receipt))
+  }
+  func canCancelQueue(_ receipt: DeliveryReceipt, expectedTargetKey: String) -> Bool {
+    queueActionAllowed(receipt, target: expectedTargetKey, execute: false, turn: nil, pending: queueActionPending(receipt))
+  }
+  func executeQueue(_ receipt: DeliveryReceipt, expectedTargetKey: String, expectedTurnId: String?) { queueAction(receipt, target: expectedTargetKey, execute: true, turn: expectedTurnId) }
+  func cancelQueue(_ receipt: DeliveryReceipt, expectedTargetKey: String) { queueAction(receipt, target: expectedTargetKey, execute: false, turn: nil) }
   #if DEBUG
   func enqueueDEVQueueBatch() {
     let arguments = ProcessInfo.processInfo.arguments
@@ -3567,38 +3595,45 @@ final class SessionStore: ObservableObject {
     }
   }
   #endif
-  private func queueAction(_ receipt: DeliveryReceipt, execute: Bool) {
+  private func queueAction(_ receipt: DeliveryReceipt, target: String, execute: Bool, turn: String?) {
     #if DEBUG
     devQueueActionTrace = "entered:host=\(receipt.hostId == client?.id):thread=\(receipt.threadId == selectedThreadId)"
     #endif
-    guard let host = client, receipt.hostId == host.id, receipt.threadId == selectedThreadId,
-      host.online, isWritable, !queueActionPending(receipt), !execute || canExecuteQueue(receipt) else { return }
-    if execute, !requireAISharing(host, model: runtime?.generationSettings?.model) {
+    guard let host = client, queueActionAllowed(receipt, target: target, execute: execute, turn: turn, pending: queueActionPending(receipt)) else { return }
+    let sharing = execute ? aiSharingScope(host, model: runtime?.generationSettings?.model ?? selectedModel?.id) : nil
+    if let sharing, !requireAISharing(host, scope: sharing) {
       #if DEBUG
       devQueueActionTrace = "sharing"
       #endif
       return
     }
-    let target = targetKey, pending = target + ":" + receipt.id
-    let turnId = runtime?.turnId
-    queueActionKeys.insert(pending)
+    let pending = target + ":" + receipt.id, owner = UUID()
+    let connection = clientGeneration, navigation = historyGeneration, errorAtStart = errorRevision
+    let boundHost = readingClient(host)
+    queueActionOwners[pending] = owner
     #if DEBUG
     devQueueActionTrace = "dispatching"
     #endif
+    func current() -> Bool {
+      targetKey == target && clientGeneration == connection && historyGeneration == navigation
+        && client?.endpoint == host.endpoint && client?.codexDirect?.fingerprint == host.codexDirect?.fingerprint
+    }
     Task {
-      defer { queueActionKeys.remove(pending) }
+      defer { if queueActionOwners[pending] == owner { queueActionOwners.removeValue(forKey: pending) } }
       do {
-        let agent = try AgentClients.resolve(host)
+        guard current(), queueActionOwners[pending] == owner,
+          queueActionAllowed(receipt, target: target, execute: execute, turn: turn, pending: false) else { return }
+        if let sharing { try validateAISharing(host, scope: sharing) }
+        let agent = try AgentClients.resolve(boundHost)
         let result = try await (execute
-          ? agent.executeQueue(host, threadId: receipt.threadId, messageId: receipt.clientMessageId, expectedTurnId: turnId)
-          : agent.cancelQueue(host, threadId: receipt.threadId, messageId: receipt.clientMessageId))
+          ? agent.executeQueue(boundHost, threadId: receipt.threadId, messageId: receipt.clientMessageId, expectedTurnId: turn)
+          : agent.cancelQueue(boundHost, threadId: receipt.threadId, messageId: receipt.clientMessageId))
         guard result.ok else { throw HostServiceError.message(L10n.tr("队列操作结果待核对，请刷新原任务")) }
-        if targetKey == target { await loadHistory(threadId: receipt.threadId) }
+        if current() { await loadHistory(threadId: receipt.threadId) }
       } catch {
-        if targetKey == target {
-          await loadHistory(threadId: receipt.threadId)
-          self.presentError(error)
-        }
+        guard current() else { return }
+        if errorRevision == errorAtStart { self.presentError(error) }
+        await loadHistory(threadId: receipt.threadId)
       }
     }
   }
@@ -3630,8 +3665,18 @@ final class SessionStore: ObservableObject {
   func canManageWorkspace(_ action: WorkspaceManagementAction) -> Bool {
     client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains(action.capability) == true
   }
-  func canArchive(_ thread: Conversation) -> Bool {
-    thread.hostId == client?.id && thread.archived != true
+  private func workspaceArchivePendingIds(excluding operationId: String? = nil) -> Set<String> {
+    Set(workspaceManagementOperations.filter { $0.action == .archiveThreads && $0.id != operationId }.flatMap {
+      $0.items.filter { SharedMobileRules.workspaceArchivePending($0.state) }.map(\.id)
+    })
+  }
+  func canArchive(_ thread: Conversation) -> Bool { canArchiveExcluding(thread, operationId: nil) }
+  private func canArchiveExcluding(_ thread: Conversation, operationId: String?) -> Bool {
+    guard let host = client else { return false }
+    return SharedMobileRules.workspaceArchiveEligible(
+      knownTarget: thread.hostId == host.id && threads.contains { $0.id == thread.id && $0.hostId == thread.hostId },
+      archived: thread.archived == true, singleBusy: chatActionBusy[cacheKey(host, threadId: thread.id)] != nil,
+      singlePending: !pendingChatActions(thread.id).isEmpty, batchPending: workspaceArchivePendingIds(excluding: operationId).contains(thread.id))
   }
   func manageWorkspace(_ action: WorkspaceManagementAction, ids: [String], labels: [String: String]) async throws {
     guard !managementBusy, let host = client, host.online, canManageWorkspace(action), !ids.isEmpty, ids.count <= 100 else { throw HostServiceError.unavailable }
@@ -3639,12 +3684,30 @@ final class SessionStore: ObservableObject {
     guard !workspaceManagementOperations.contains(where: { operation in
       operation.action == action && operation.items.contains { ids.contains($0.id) && ["pending", "submitting", "outcome-unknown"].contains($0.state) }
     }) else { throw HostServiceError.message(L10n.tr("所选内容还有待核对的操作，请先核对结果。")) }
+    if action == .archiveThreads {
+      guard ids.count == Set(ids).count, ids.allSatisfy({ id in
+        threads.contains { $0.id == id && $0.hostId == host.id && canArchive($0) }
+      }) else { throw HostServiceError.message(L10n.tr("所选内容还有待核对的操作，请先核对结果。")) }
+    }
     managementBusy = true
     defer { managementBusy = false }
     let operation = WorkspaceManagementOperation(hostId: host.id, target: target, clientOperationId: UUID().uuidString,
       action: action, ids: ids, items: ids.map { .init(id: $0, state: "pending", error: nil) }, labels: labels)
+    if action == .archiveThreads, !SharedMobileRules.workspaceArchiveRequestValid(operation.request) { throw HostServiceError.wrongHost }
+    let archiveGeneration = clientGeneration
     saved.workspaceManagement = (saved.workspaceManagement ?? []) + [operation]
     try await persistBeforeCommand()
+    if action == .archiveThreads, !host.isDemo {
+      guard clientGeneration == archiveGeneration, let current = client, current.id == host.id,
+        current.endpoint == host.endpoint, mobileReadingTarget(current) == target, current.online, canManageWorkspace(action),
+        ids.allSatisfy({ id in threads.contains { $0.id == id && $0.hostId == host.id && canArchiveExcluding($0, operationId: operation.id) } }) else {
+        if let index = saved.workspaceManagement?.firstIndex(where: { $0.id == operation.id }) {
+          saved.workspaceManagement?[index].items = operation.items.map { .init(id: $0.id, state: "rejected", error: L10n.tr("管理目标已变化，请重新选择。")) }
+          try await persistBeforeCommand()
+        }
+        throw HostServiceError.wrongHost
+      }
+    }
     if host.isDemo {
       var result = operation
       result.items = result.items.map { .init(id: $0.id, state: "completed", error: nil) }
@@ -3673,6 +3736,12 @@ final class SessionStore: ObservableObject {
     try applyWorkspaceManagement(result, original: operation, host: host)
   }
   private func applyWorkspaceManagement(_ incoming: WorkspaceManagementOperation, original: WorkspaceManagementOperation, host: Client) throws {
+    var incoming = incoming
+    if original.action == .archiveThreads {
+      guard let previous = saved.workspaceManagement?.first(where: { $0.id == original.id }),
+        let merged = SharedMobileRules.workspaceArchiveMerged(incoming, original: original, previous: previous) else { throw HostServiceError.wrongHost }
+      incoming = merged
+    }
     guard incoming.request == original.request, incoming.target.matchesCapturedPayload(original.target), incoming.items.map(\.id) == original.ids,
       incoming.items.allSatisfy({ ["pending", "submitting", "completed", "rejected", "outcome-unknown"].contains($0.state) }),
       let index = saved.workspaceManagement?.firstIndex(where: { $0.id == original.id }) else { throw HostServiceError.wrongHost }
@@ -3680,7 +3749,12 @@ final class SessionStore: ObservableObject {
     result.labels = original.labels
     saved.workspaceManagement?[index] = result
     let ids = Set(result.items.filter { $0.state == "completed" }.map(\.id))
-    if !ids.isEmpty { managementRevisions[host.id] = UUID() }
+    if !ids.isEmpty {
+      managementRevisions[host.id] = UUID()
+      if original.action == .archiveThreads, client?.id == host.id {
+        workspaceRefreshOwner = nil; workspaceRefreshGeneration = nil; loading = false
+      }
+    }
     // Late results remain attached to their original target; a changed connection is untouched.
     guard saved.clients.first(where: { $0.id == host.id }).map({ mobileReadingTarget($0) == original.target }) == true else { persist(); return }
     if result.action == .deleteProjects {
@@ -3827,6 +3901,10 @@ extension SessionStore {
     guard let host = client, let id = selectedThreadId else { return false }
     return saved.workspaces[host.id]?.pinnedThreadIds?.contains(id) == true
   }
+  func chatActionRecordLabel(_ receipt: ChatActionReceipt) -> String {
+    let title = threads.first { $0.hostId == receipt.hostId && $0.id == receipt.threadId }?.title ?? receipt.threadId
+    return receipt.action.title + " · " + String(receipt.id.prefix(8)) + " · " + title
+  }
   func pendingChatActions(_ threadId: String? = nil) -> [ChatActionReceipt] {
     guard let host = client else { return [] }
     let target = mobileReadingTarget(host)
@@ -3835,41 +3913,36 @@ extension SessionStore {
         && (threadId == nil || receipt.threadId == threadId)
     }.sorted { $0.id < $1.id }
   }
-  func canManageChat(_ thread: Conversation?) -> Bool {
-    guard supportsChatManagement, let thread, client?.online == true,
-      thread.hostId == client?.id, threads.contains(where: { $0.id == thread.id && $0.hostId == thread.hostId }),
-      !chatActionBusy.contains(thread.id), pendingChatActions(thread.id).isEmpty else { return false }
-    return true
+  var currentChatActionBusy: Bool {
+    guard let host = client, let id = selectedThreadId else { return false }
+    return chatActionBusy[cacheKey(host, threadId: id)] != nil
+  }
+  func canManageChat(_ thread: Conversation?) -> Bool { canManageChatExcluding(thread, operationId: nil) }
+  private func canManageChatExcluding(_ thread: Conversation?, operationId: String?) -> Bool {
+    guard let host = client, let thread else { return false }
+    let busy = chatActionBusy[cacheKey(host, threadId: thread.id)].map { $0 != operationId } ?? false
+    return SharedMobileRules.chatCanManage(demo: host.isDemo, online: host.online, supported: supportsChatManagement,
+      knownTarget: thread.hostId == host.id && threads.contains { $0.id == thread.id && $0.hostId == thread.hostId },
+      busy: busy || managementBusy,
+      pending: pendingChatActions(thread.id).contains { $0.id != operationId } || workspaceArchivePendingIds().contains(thread.id))
   }
   func chatTaskStatus(_ thread: Conversation) -> String {
     let selected = thread.hostId == client?.id && thread.id == selectedThreadId
     let state = selected ? runtime?.state ?? thread.state : thread.state
-    let status: String
-    switch state {
-    case "running": status = L10n.tr("执行中")
-    case "waiting-for-approval": status = L10n.tr("等待审批")
-    case "failed": status = L10n.tr("执行失败")
-    case "interrupted", "cancelled": status = L10n.tr("已停止")
-    case "completed": status = L10n.tr("已完成")
-    case "unknown" where thread.archived == true:
-      switch thread.lastTurnStatus {
-      case "interrupted", "cancelled": status = L10n.tr("已停止")
-      case "completed": status = L10n.tr("已完成")
-      case "failed": status = L10n.tr("执行失败")
-      default: status = L10n.tr("状态未确认")
-      }
-    case "idle":
-      // Idle alone is not proof of completion or interruption. The adapter's
-      // exact latest turn outcome is independent of individual tool messages.
-      switch thread.lastTurnStatus {
-      case "interrupted", "cancelled": status = L10n.tr("已停止")
-      case "completed": status = L10n.tr("已完成")
-      default: status = L10n.tr("空闲")
-      }
-    default: status = L10n.tr("状态未确认")
+    let status = SharedMobileRules.chatTaskStatus(state: state, lastTurnStatus: thread.lastTurnStatus,
+      archived: thread.archived == true, online: client?.online == true,
+      unconfirmed: selected && (loadedHistoryGeneration != historyGeneration || conversationSyncFailure != nil))
+    let text: String
+    switch status.code {
+    case "running": text = L10n.tr("执行中")
+    case "approval": text = L10n.tr("等待审批")
+    case "failed": text = L10n.tr("执行失败")
+    case "stopped": text = L10n.tr("已停止")
+    case "completed": text = L10n.tr("已完成")
+    case "idle": text = L10n.tr("空闲")
+    default: text = L10n.tr("状态未确认")
     }
-    let unconfirmed = selected && (loadedHistoryGeneration != historyGeneration || conversationSyncFailure != nil)
-    return state != "unknown" && (client?.online != true || unconfirmed) ? L10n.tr("上次状态：\(status)") : status
+    return status.lastKnown ? L10n.tr("上次状态：\(text)") : text
   }
   func chatLifecycleStatus(_ thread: Conversation) -> String {
     let archive = thread.archived == true ? L10n.tr("已归档") : L10n.tr("未归档")
@@ -3881,19 +3954,28 @@ extension SessionStore {
       clientOperationId: UUID().uuidString, action: action, phase: "submitted")
     if saved.chatActionReceipts == nil { saved.chatActionReceipts = [:] }
     saved.chatActionReceipts?[operation.id] = operation
-    chatActionBusy.insert(thread.id)
+    let key = cacheKey(host, threadId: thread.id), generation = historyGeneration
+    chatActionBusy[key] = operation.id
     Task {
-      defer { chatActionBusy.remove(thread.id) }
+      defer { if chatActionBusy[key] == operation.id { chatActionBusy.removeValue(forKey: key) } }
       do { try await persistBeforeCommand() }
       catch {
         saved.chatActionReceipts?[operation.id]?.phase = "rejected"
         saved.chatActionReceipts?[operation.id]?.error = L10n.tr("未发送操作：无法保存本地记录。")
         persist(); return
       }
+      guard let current = client, current.id == host.id, current.endpoint == host.endpoint,
+        mobileReadingTarget(current) == operation.target, historyGeneration == generation,
+        selectedThreadId == thread.id, canManageChatExcluding(thread, operationId: operation.id) else {
+        saved.chatActionReceipts?[operation.id]?.phase = "rejected"
+        saved.chatActionReceipts?[operation.id]?.error = L10n.tr("未发送操作：目标已变化。")
+        persist(); return
+      }
       do {
         let receipt = try await AgentClients.resolve(host).chatAction(host, request: operation.request)
-        try await acceptChatAction(receipt, original: operation, host: host)
+        try await acceptChatAction(receipt, original: operation, host: host, originGeneration: generation)
       } catch {
+        if let phase = saved.chatActionReceipts?[operation.id]?.phase, ["confirmed", "rejected"].contains(phase) { return }
         saved.chatActionReceipts?[operation.id]?.phase = "outcome-unknown"
         let rejected: Bool
         if case HostServiceError.rejected(let code, _) = error, [400, 401, 403, 404, 409, 422].contains(code) { rejected = true }
@@ -3901,7 +3983,7 @@ extension SessionStore {
         if rejected { saved.chatActionReceipts?[operation.id]?.phase = "rejected" }
         saved.chatActionReceipts?[operation.id]?.error = error.userFacingDescription
         persist()
-        if client?.id == host.id && mobileReadingTarget(host) == operation.target {
+        if let current = client, current.id == host.id, current.endpoint == host.endpoint, mobileReadingTarget(current) == operation.target, historyGeneration == generation, selectedThreadId == operation.threadId {
           self.error = rejected ? ChatAction.errorDescription(error.userFacingDescription) : L10n.tr("操作结果待确认，请在对话选项中查询原记录。")
         }
       }
@@ -3917,23 +3999,37 @@ extension SessionStore {
   }
   func queryChatAction(_ operation: ChatActionReceipt) {
     guard let host = client, mobileReadingTarget(host) == operation.target else { return }
+    let generation = historyGeneration
     Task {
       do {
         let receipt = try await AgentClients.resolve(host).chatActionStatus(host, threadId: operation.threadId, operationId: operation.id)
-        try await acceptChatAction(receipt, original: operation, host: host)
-      } catch { if client?.id == host.id { self.presentError(error) } }
+        try await acceptChatAction(receipt, original: operation, host: host, originGeneration: generation)
+      } catch {
+        if let current = client, current.id == host.id, current.endpoint == host.endpoint,
+          mobileReadingTarget(current) == operation.target, historyGeneration == generation,
+          selectedThreadId == operation.threadId {
+          if case HostServiceError.rejected(let code, _) = error, code == 404 {
+            self.error = L10n.tr("未查到原聊天操作记录，结果仍未确认；不会重新提交。")
+          } else { self.presentError(error) }
+        }
+      }
     }
   }
-  private func acceptChatAction(_ receipt: ChatActionReceipt, original: ChatActionReceipt, host: Client) async throws {
-    guard receipt.request == original.request,
-      ["submitted", "confirmed", "rejected", "outcome-unknown"].contains(receipt.phase) else { throw HostServiceError.invalidResponse }
-    var accepted = receipt
+  private func acceptChatAction(_ receipt: ChatActionReceipt, original: ChatActionReceipt, host: Client, originGeneration: UUID) async throws {
+    guard SharedMobileRules.chatActionMatches(receipt, original: original),
+      SharedMobileRules.chatActionMayAccept(previous: saved.chatActionReceipts?[original.id]?.phase ?? original.phase, next: receipt.phase) else { throw HostServiceError.invalidResponse }
+    var accepted = original
+    accepted.phase = receipt.phase; accepted.error = receipt.error
     accepted.waitingEnded = saved.chatActionReceipts?[receipt.id]?.waitingEnded
     saved.chatActionReceipts?[receipt.id] = accepted
     persist()
-    guard client?.id == host.id, client?.endpoint == host.endpoint,
-      mobileReadingTarget(host) == receipt.target else { return }
+    guard let current = client, current.id == host.id, current.endpoint == host.endpoint,
+      mobileReadingTarget(current) == original.target else { return }
     if receipt.phase == "confirmed" {
+      managementRevisions[host.id] = UUID()
+      // Retire only the catalog slot. Old success/error/finally cannot consume
+      // a fresh read or restore the pre-action sidebar after confirmation.
+      workspaceRefreshOwner = nil; workspaceRefreshGeneration = nil; loading = false
       if receipt.action == .delete {
         saved.workspaces[host.id]?.threads.removeAll { $0.id == receipt.threadId }
         if selectedThreadId == receipt.threadId {
@@ -3941,23 +4037,25 @@ extension SessionStore {
         }
       }
       await refresh()
-    } else if let detail = receipt.error { error = ChatAction.errorDescription(detail) }
+    } else if historyGeneration == originGeneration, selectedThreadId == original.threadId,
+      let detail = receipt.error { error = ChatAction.errorDescription(detail) }
   }
   func completeChatSearchHistory(targetKey: String) async throws -> [ChatMessage] {
     guard self.targetKey == targetKey, let host = client, let id = selectedThreadId else { throw CancellationError() }
     let target = mobileReadingTarget(host), generation = historyGeneration
     let provider = try AgentClients.resolve(host)
-    var cursor: String?, seen: Set<String> = [], collected: [ChatMessage] = []
+    var cursor: String?, seen: [String] = [], collected: [ChatMessage] = []
     repeat {
       try Task.checkCancellation()
       let page = try await provider.searchHistory(readingClient(host), threadId: id, cursor: cursor)
       guard self.targetKey == targetKey, historyGeneration == generation,
         client?.endpoint == host.endpoint, page.hostId == host.id, page.threadId == id,
         page.readTarget.map({ $0 == target }) ?? true else { throw CancellationError() }
-      let ids = Set(page.messages.map(\.id))
-      collected = page.messages + collected.filter { !ids.contains($0.id) }
-      cursor = page.nextCursor
-      if let cursor, !seen.insert(cursor).inserted { throw HostServiceError.invalidResponse }
+      let order = SharedMobileRules.searchPage(previous: collected.map(\.id), incoming: page.messages.map(\.id), nextCursor: page.nextCursor, seen: seen)
+      guard order.valid else { throw HostServiceError.invalidResponse }
+      let values = Dictionary((page.messages + collected).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+      collected = order.messageIds.compactMap { values[$0] }
+      seen = order.seenCursors; cursor = page.nextCursor
     } while cursor != nil
     return collected
   }

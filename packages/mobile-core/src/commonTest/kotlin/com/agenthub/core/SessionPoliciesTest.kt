@@ -64,10 +64,18 @@ class SessionPoliciesTest {
         }
     }
 
+    @Test fun originalClientQueueOwnershipAndPresenceRemainIndependentOfReceiptAcceptance() {
+        for(entry in vectors.getValue("queueOwnership").jsonArray) {
+            val r=entry.jsonObject
+            assertEquals(r.flag("legacy"),QueueRules.legacy(r.text("state")!!,r.text("source"),r.text("disposition")),r.text("name"))
+            assertEquals(r.flag("active"),QueueRules.active(r.text("state")!!,r.text("source"),r.getValue("present").jsonPrimitive.booleanOrNull,r.text("disposition")),r.text("name"))
+        }
+    }
+
     @Test fun newerRepliesCannotSettleUnknownReceipts() {
         for (entry in vectors.getValue("receipts").jsonArray) {
             val test = entry.jsonObject
-            val receipts = test.getValue("receipts").jsonArray.map { it.jsonObject.let { r -> ReceiptState(r.text("id")!!, r.text("state")!!, r.text("supersededByTurnId")) } }
+            val receipts = test.getValue("receipts").jsonArray.map { it.jsonObject.let { r -> ReceiptState(r.text("id")!!, r.text("state")!!, r.text("supersededByTurnId"),r["queueSyncError"]?.jsonPrimitive?.contentOrNull) } }
             assertEquals(test.getValue("expected").jsonArray.map { it.jsonPrimitive.int }, SessionPolicies.noticeIndices(receipts, test.strings("dismissed"), test.text("pendingId")), test.text("name"))
         }
     }
@@ -178,4 +186,13 @@ class SessionPoliciesTest {
             assertEquals(if (throws) "transport" else "wrong-target", withTimeout(5000) { result.await() }.failure?.code)
         }
     }
+    @Test fun originalQueueActionsRespectOwnershipCapabilityPresenceAndIndependentPending() {
+        for(entry in vectors.getValue("queueActions").jsonArray) {
+            val row=entry.jsonObject
+            assertEquals(row.flag("allowed"),QueueRules.actionAllowed(row.text("state")!!,row.text("source"),
+                row["present"]?.jsonPrimitive?.booleanOrNull,row.text("disposition"),row.flag("online"),row.flag("writable"),
+                row.flag("pending"),row.flag("execute"),row.flag("supportsExecute"),row["canExecuteNow"]?.jsonPrimitive?.booleanOrNull),row.text("name"))
+        }
+    }
+
 }

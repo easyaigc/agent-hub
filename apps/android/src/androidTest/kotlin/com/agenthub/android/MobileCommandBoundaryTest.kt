@@ -64,6 +64,23 @@ class MobileCommandBoundaryTest {
             assertEquals(listOf("/v1/queue/cancel","/v1/receipts"),server.requests.map { it.path })
         }
     }
+    @Test fun originalReceiptEvidenceSurvivesLateAcknowledgementAndTimeoutAcrossEncryptedReopen()=runBlocking {
+        CommandFixture { error("Journal transition must not dispatch input") }.use { server ->
+            val context=InstrumentationRegistry.getInstrumentation().targetContext;val namespace="receipt-progress-"+UUID.randomUUID()
+            val store=NativeSessionStorage(context,namespace);val journal=NativeOperationJournal(store)
+            for(state in listOf("failed","submitted","queued")) {
+                val intent=reply().copy(operationId="original-"+state+"-"+UUID.randomUUID())
+                val original=journal.prepare(client(server),intent.threadId,"reply",intent.body());journal.markSubmitting(original.target,original.id)
+                journal.observed(original.target,original.id,state,receipt(intent,state))
+                val incoming=if(state=="failed")"submitted" else "received"
+                val late=journal.observed(original.target,original.id,incoming,receipt(intent,incoming));assertEquals(state,late.phase)
+                assertEquals(state,journal.uncertain(original.target,original.id,"late lost response").phase)
+                val restored=NativeOperationJournal(NativeSessionStorage(context,namespace)).records(original.target).single { it.id==original.id }
+                assertEquals(state,restored.phase);assertEquals(state,JSONObject(restored.result!!).getString("state"));assertEquals(original.intentSha256,restored.intentSha256)
+            }
+            assertEquals(0,server.requests.size)
+        }
+    }
     @Test fun changedIntentAndRuntimeCannotReuseOriginalRecord() = runBlocking {
         CommandFixture { WireResponse() }.use { server ->
             val original=client(server); val intent=reply(); val journal=journal()
@@ -186,8 +203,9 @@ class MobileCommandBoundaryTest {
             assertTrue(server.requests.none { it.path=="/v1/desktop/creations/submit" })
         }
     }
-    private suspend fun finalReplyAuthorityRejectsChangedRunCapabilityOrPlan(change: String) {
+    private suspend fun finalReplyAuthorityRejectsChangedRunCapabilityOrPlan(change: String,confirmed: Boolean=false) {
         var workspaceReads=0;var historyReads=0;var file: CreationFile?=null
+        val proof=java.util.concurrent.atomic.AtomicReference<Pair<MobileWorkspace,MobileHistory>?>(null)
         val isPlan=change=="plan";val mode=if(isPlan) "next-turn" else if(change=="capability") "queue" else "steer"
         CommandFixture { request -> when(request.path) {
             "/v1/workspace" -> {
@@ -201,22 +219,35 @@ class MobileCommandBoundaryTest {
                 WireResponse(body=JSONObject().put("hostId","fixture-host").put("threadId","fixture-thread").put("readTarget",JSONObject(creationWorkspace(true).getJSONObject("readTarget").toString()))
                     .put("messages",JSONArray()).put("runtime",runtime).toString())
             }
-            "/v1/attachments" -> WireResponse(body=file!!.body().put("id","remote-file").put("hostId","fixture-host").put("threadId","fixture-thread").toString())
+            "/v1/attachments" -> {
+                proof.get()?.let { (workspace,history) ->
+                    proof.set(when(change) {
+                        "capability" -> workspace.copy(capabilities=workspace.capabilities.filterNot { it=="queue" }) to history
+                        "turn" -> workspace to history.copy(runtime=history.runtime!!.copy(turnId="new-turn"))
+                        else -> workspace to history.copy(runtime=history.runtime!!.copy(proposedPlan=history.runtime.proposedPlan!!.copy(id="new-plan")))
+                    })
+                }
+                WireResponse(body=file!!.body().put("id","remote-file").put("hostId","fixture-host").put("threadId","fixture-thread").toString())
+            }
             else -> WireResponse(status=500)
         } }.use { server ->
-            val flow=NativeCodexFlow(creationFlow(),NativeHostReads { "" },commands);val client=client(server)
+            val reads=NativeHostReads { "" };val flow=NativeCodexFlow(creationFlow(),reads,commands);val client=client(server)
+            if(confirmed) { proof.set(reads.workspace(client) to reads.history(client,"fixture-thread"));flow.confirmedReplyReads={_,_->proof.get()} }
             val source=flow.files.import("original.txt","text/plain","immutable original attachment".toByteArray());file=source.manifest
             val result=flow.submit(client,"fixture-thread",null,SubmissionOrigin("source","version"),CodexContent("original intent",listOf(source),GenerationSettings()),mode,
                 if(isPlan) null else "original-turn",if(isPlan) "original-plan" else null,{true},operationId="final-authority-operation")
             assertFalse(result.record.submissionAttempted);assertEquals("failed",result.record.phase);assertEquals("original intent",JSONObject(result.record.intent).getString("text"))
-            assertEquals(2,workspaceReads);assertEquals(2,historyReads)
-            assertEquals(listOf("/v1/workspace","/v1/history","/v1/attachments","/v1/workspace","/v1/history"),server.requests.map { it.path })
+            assertEquals(if(confirmed)1 else 2,workspaceReads);assertEquals(if(confirmed)1 else 2,historyReads)
+            assertEquals(if(confirmed)listOf("/v1/workspace","/v1/history","/v1/attachments") else listOf("/v1/workspace","/v1/history","/v1/attachments","/v1/workspace","/v1/history"),server.requests.map { it.path })
             assertTrue(server.requests.none { it.path=="/v1/replies" })
         }
     }
     @Test fun changedTurnAfterAttachmentUploadNeverSubmitsStaleSteer()=runBlocking { finalReplyAuthorityRejectsChangedRunCapabilityOrPlan("turn") }
     @Test fun revokedQueueAfterAttachmentUploadNeverAttemptsReply()=runBlocking { finalReplyAuthorityRejectsChangedRunCapabilityOrPlan("capability") }
     @Test fun changedPlanAfterAttachmentUploadNeverImplementsOldVersion()=runBlocking { finalReplyAuthorityRejectsChangedRunCapabilityOrPlan("plan") }
+    @Test fun currentOwnerProofRechecksChangedTurnAfterUpload()=runBlocking { finalReplyAuthorityRejectsChangedRunCapabilityOrPlan("turn",true) }
+    @Test fun currentOwnerProofRechecksRevokedQueueAfterUpload()=runBlocking { finalReplyAuthorityRejectsChangedRunCapabilityOrPlan("capability",true) }
+    @Test fun currentOwnerProofRechecksChangedPlanAfterUpload()=runBlocking { finalReplyAuthorityRejectsChangedRunCapabilityOrPlan("plan",true) }
     private suspend fun expectFailure(body: suspend ()->Unit): Exception {
         try { body() } catch(failure: Exception) { return failure }
         throw AssertionError("Expected boundary rejection")
@@ -234,7 +265,7 @@ internal class CommandFixture(private val response: (WireRequest)->WireResponse)
     init { workers.execute {
         while(!socket.isClosed) {
             val peer=try { socket.accept() } catch(_: Exception) { break }
-            workers.execute { peer.use {
+            try { workers.execute { peer.use {
                 try {
                     peer.soTimeout=5000; val input=java.io.DataInputStream(peer.getInputStream())
                     fun line(): String { val out=java.io.ByteArrayOutputStream(); while(true) { val b=input.read(); if(b<0) throw java.io.EOFException(); if(b==10) break; if(b!=13) out.write(b) }; return out.toString("UTF-8") }
@@ -248,7 +279,11 @@ internal class CommandFixture(private val response: (WireRequest)->WireResponse)
                         peer.getOutputStream().write(head.toByteArray(Charsets.UTF_8)); peer.getOutputStream().write(bytes); peer.getOutputStream().flush()
                     }
                 } catch(_: Exception) { }
-            } }
+            } } } catch(failure: java.util.concurrent.RejectedExecutionException) {
+                peer.close()
+                // close() may retire the pool after accept() has returned a peer.
+                if(!workers.isShutdown)throw failure
+            }
         }
     } }
     override fun close() { socket.close(); workers.shutdownNow() }

@@ -25,7 +25,7 @@ class MobileReplyRecoveryLiveTest {
     @get:Rule(order=0) val foreground=object: ExternalResource() {
         override fun before() {
             if(InstrumentationRegistry.getArguments().getString("recoveryForeground")=="1") {
-                val descriptor=instrumentation.uiAutomation.executeShellCommand("am start -W -n com.easyai.agenthub.android.debug/androidx.activity.ComponentActivity")
+                val descriptor=instrumentation.uiAutomation.executeShellCommand("am start -W -n ${instrumentation.targetContext.packageName}/androidx.activity.ComponentActivity")
                 val result=android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use { it.readText() }
                 assertTrue(result.contains("Status: ok"))
             }
@@ -48,6 +48,24 @@ class MobileReplyRecoveryLiveTest {
         } finally { http.disconnect() }
     }
     private fun text(value: String) { ui.onNodeWithTag("message-input").performTextReplacement(value);ui.waitForIdle() }
+    private fun sendReviewedTestContent() {
+        assertEquals(config.getString("hostId"),session.selectedClient.id)
+        val original=session.text
+        assertTrue(original==config.getString("firstText") || original==config.getString("replyText"))
+        val prior=session.operationRecords.map { Triple(it.target,it.id,it.intentSha256) }
+        ui.onNodeWithTag("send-message").assertIsEnabled().performClick()
+        ui.waitUntil(10_000) { session.aiSharingRequest!=null || session.transferStatus!=null || session.operationRecords.map { Triple(it.target,it.id,it.intentSha256) }!=prior }
+        if(session.aiSharingRequest!=null) {
+            assertEquals(config.getString("hostId"),session.aiSharingRequest!!.scope.target.hostId)
+            assertEquals(prior,session.operationRecords.map { Triple(it.target,it.id,it.intentSha256) })
+            shot("native-sharing-before-explicit-send")
+            ui.onNodeWithTag("ai-sharing-allow").performScrollTo().performClick()
+            ui.waitUntil(10_000) { session.aiSharingRequest==null && !session.aiSharing.busy }
+            assertEquals(original,session.text)
+            assertEquals(prior,session.operationRecords.map { Triple(it.target,it.id,it.intentSha256) })
+            ui.onNodeWithTag("send-message").assertIsEnabled().performClick()
+        }
+    }
     private fun dismissError() { if(ui.onAllNodesWithTag("dismiss-error").fetchSemanticsNodes().isNotEmpty())ui.onNodeWithTag("dismiss-error").performClick() }
     private fun shot(name: String) {
         if(session.error==null)runCatching { androidx.test.espresso.Espresso.closeSoftKeyboard() }
@@ -62,14 +80,28 @@ class MobileReplyRecoveryLiveTest {
         session=MobileSession(storage);ui.setContent { AgentHubApp(session) }
         ui.runOnIdle { session.resetAcceptance() }
         main { session.connectCodexQR(config.getString("pairing"),"独立恢复验收电脑") }
-        ui.waitUntil(30_000) { session.selectedClient.online && session.canCreateThread && session.projects.any { it.id==config.getString("projectId") } && session.transferStatus==null }
-        ui.runOnIdle {
-            session.newChat(config.getString("projectId"))
-            session.configure(GenerationSettings(model=config.getString("model"),effort="xhigh",permissionMode="read-only",collaborationMode="default"))
+        try { ui.waitUntil(30_000) { session.selectedClient.online && session.canCreateThread && !session.loading && session.transferStatus==null } }
+        catch(failure: Throwable) { throw AssertionError("Native creation precondition: online=${session.selectedClient.online}, create=${session.canCreateThread}, transfer=${session.transferStatus}, capabilities=${session.workspace?.capabilities}, runtime=${session.workspace?.runtimeConnected}, error=${session.error}",failure) }
+        val project=config.optional("projectId")
+        if(project!=null && session.projects.none { it.id==project }) {
+            ui.onNodeWithTag("open-sidebar").performClick()
+            var pages=0
+            while(session.projects.none { it.id==project }) {
+                val previous=session.workspace?.nextProjectCursor
+                check(previous!=null && ++pages<=100) { "The exact owned project is absent from the complete directory" }
+                ui.onNodeWithTag("sidebar-list").performScrollToNode(hasTestTag("sidebar-load-more"))
+                ui.onNodeWithTag("sidebar-load-more").assertIsEnabled().performClick()
+                ui.waitUntil(30_000) { !session.loading && session.workspace?.nextProjectCursor!=previous }
+            }
+            ui.onNodeWithTag("sidebar-backdrop").performTouchInput { click(androidx.compose.ui.geometry.Offset(width-2f,height/2f)) }
         }
-        text(config.getString("firstText"));ui.onNodeWithTag("send-message").assertIsEnabled().performClick()
+        ui.onNodeWithTag("new-chat").assertIsEnabled().performClick()
+        ui.onNodeWithTag(if(project==null) "projectless-new" else "choose-project-$project").performScrollTo().performClick()
+        ui.runOnIdle { session.configure(GenerationSettings(model=config.getString("model"),effort="xhigh",permissionMode="read-only",collaborationMode="default")) }
+        text(config.getString("firstText"));sendReviewedTestContent()
         ui.waitUntil(120_000) { session.operationRecords.any { it.kind=="creation"&&session.mayContinueCreation(it)&&it.submissionAttempted }&&session.transferStatus==null }
         val first=session.operationRecords.single { it.kind=="creation" }
+        assertEquals(project,JSONObject(first.intent).optional("projectId"))
         assertEquals("retry-original-preflight",CodexCommandCodec.creation(JSONObject(first.result!!)).diagnostic?.disposition)
         control("preflight",JSONObject().put("operationId",first.id))
         dismissError();ui.onNodeWithTag("continue-creation-${first.id}").assertIsDisplayed();shot("first-preflight-zero-input")
@@ -84,7 +116,7 @@ class MobileReplyRecoveryLiveTest {
         ui.runOnIdle { session.selectThread(session.threads.single { it.id==threadId }) }
         ui.waitUntil(30_000) { session.canCompose && !session.historyLoading && !session.running }
         ui.runOnIdle { session.configure(GenerationSettings(model=config.getString("model"),effort="xhigh",permissionMode="full-access",collaborationMode="default")) }
-        text(config.getString("replyText"));ui.onNodeWithTag("send-message").assertIsEnabled().performClick()
+        text(config.getString("replyText"));sendReviewedTestContent()
         ui.waitUntil(30_000) { session.operationRecords.any { it.kind=="reply"&&it.submissionAttempted }&&session.transferStatus==null }
         val reply=session.operationRecords.single { it.kind=="reply" }
         assertFalse(session.mayRetryReply(reply));dismissError()

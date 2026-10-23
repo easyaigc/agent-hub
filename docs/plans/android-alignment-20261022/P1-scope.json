@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "phase": "P1",
+  "sourceBase": "6d81284e9c352e977140c09197526296d57b9669",
+  "phaseGateCommit": "e1ecef6bf9f796ad07eb60986c3b32664fe60437",
+  "status": "in-progress",
+  "featureCount": 19,
+  "sourceNodeCount": 32,
+  "interpretation": "Frozen source commit review is distinct from native auxiliary and actual desktop/model acceptance. Every listed feature remains in scope; this ledger does not close entire feature verification. Business task/project management is deferred; A6 remains paused.",
+  "features": [
+    {
+      "id": "F03",
+      "assertion": "Codex 手动添加、编辑、取消、改名与移除；错误密钥／Host 身份拒绝，编辑失败保留原配置",
+      "ui": ["UI01", "UI03"],
+      "scenarios": ["S01"],
+      "sourceAliases": ["UI", "State", "Agent", "AndroidUI", "AndroidRead"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": ["MobilePrivateConnectionUiTest", "MobileMachineIdentityUiTest"]
+    },
+    {
+      "id": "F04",
+      "assertion": "凭据安全保存；连接路径不是身份；Codex按Agent／Host／workspace／runtime隔离缓存与草稿，账号仅历史元数据；其他Provider按各自账号协议隔离",
+      "ui": ["UI01", "UI03"],
+      "scenarios": ["S01", "S11"],
+      "sourceAliases": ["Agent", "State", "Persist"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": ["MobileMachineIdentityTest", "MobileMachineIdentityUiTest"]
+    },
+    {
+      "id": "F05",
+      "assertion": "区分 history-only／managed／shared／desktop；health、history、runtimeConnected、canControl 分开，按真实能力开放操作",
+      "ui": ["UI01", "UI03"],
+      "scenarios": ["S01", "S03"],
+      "sourceAliases": ["Agent", "State", "Contract", "AndroidUI", "AndroidRead", "HostCommands"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": ["MobileCommandBoundaryTest", "MobileExecutionTest", "MobileStateTest"]
+    },
+    {
+      "id": "F10",
+      "assertion": "Provider／Transport 注册扩展，UI 按领域能力工作；未知 Provider 清晰拒绝，不透传任意 shell／IPC",
+      "ui": ["UI03"],
+      "scenarios": ["S01", "S14"],
+      "sourceAliases": ["Agent", "EasyWork", "Contract", "AndroidEasyWork"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileEasyWorkBoundaryTest",
+        "MobileStateTest#unregisteredProviderNeverUsesCodexReadOrWriteTransport"
+      ]
+    },
+    {
+      "id": "F25",
+      "assertion": "文字／附件／模式／设置按完整目标保存，切换或重启恢复；可编辑草稿独立于已提交输入",
+      "ui": ["UI04", "UI07"],
+      "scenarios": ["S06", "S11"],
+      "sourceAliases": [
+        "State",
+        "Persist",
+        "AndroidUI",
+        "AndroidRead",
+        "AndroidCommands",
+        "CodexHistory"
+      ],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileExecutionTest",
+        "MobileReplyRecoveryTest",
+        "real: registered-project recovery and preserved next draft"
+      ]
+    },
+    {
+      "id": "F26",
+      "assertion": "项目内新建、零聊天项目首聊、首次发送创建；准确返回 ID 和项目，原桌面独占模型执行",
+      "ui": ["UI04"],
+      "scenarios": ["S03", "S13"],
+      "sourceAliases": ["State", "Agent", "AndroidCommands", "HostCommands"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileExecutionTest",
+        "real: registered-project original-owner first input"
+      ]
+    },
+    {
+      "id": "F27",
+      "assertion": "无项目新建显式 projectless，不沿用首个／上次项目，连续切换与首条附件一致",
+      "ui": ["UI04"],
+      "scenarios": ["S03", "S13"],
+      "sourceAliases": ["State", "Agent", "AndroidCommands", "HostCommands"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileExecutionTest",
+        "real: projectless mixed-attachment first input"
+      ]
+    },
+    {
+      "id": "F28",
+      "assertion": "未加载聊天可读；显式发送先具名打开并确认准确原 owner，再上传／提交；不由 reader resume",
+      "ui": ["UI04"],
+      "scenarios": ["S03", "S13"],
+      "sourceAliases": ["State", "Agent", "AndroidCommands", "HostCommands"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileOpenObservationTest",
+        "MobileExecutionTest",
+        "pending: real unloaded owner open before upload"
+      ]
+    },
+    {
+      "id": "F29",
+      "assertion": "文字或混合图片／文件回复，first-send 与后续发送统一输入内容；无重复首条／占位轮",
+      "ui": ["UI04"],
+      "scenarios": ["S03", "S04"],
+      "sourceAliases": ["State", "Agent", "AndroidCommands", "HostCommands", "AndroidEasyWork"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileExecutionTest",
+        "real: projectless mixed-attachment content and byte fingerprint"
+      ]
+    },
+    {
+      "id": "F43",
+      "assertion": "stable operation／message ID、不可变意图、附件与设置固定；重复同内容查询，同 ID 不同内容拒绝",
+      "ui": ["UI04", "UI10"],
+      "scenarios": ["S03", "S10", "S11"],
+      "sourceAliases": [
+        "State",
+        "Agent",
+        "Contract",
+        "AndroidCommands",
+        "HostCommands",
+        "AndroidEasyWork"
+      ],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileReplyRecoveryTest",
+        "MobileReplyRecoveryUiTest",
+        "real: first preflight zero input, same-original explicit continuation"
+      ]
+    },
+    {
+      "id": "F44",
+      "assertion": "未确认／结果未知保留并查询；仅明确未执行的拒绝可恢复／重试，不能自动重放写操作",
+      "ui": ["UI04", "UI10"],
+      "scenarios": ["S10", "S11"],
+      "sourceAliases": ["State", "Agent", "AndroidCommands", "HostCommands", "AndroidEasyWork"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileReplyRecoveryTest",
+        "MobileReplyRecoveryUiTest",
+        "real: fenced not-accepted original reply retry; new draft retained"
+      ]
+    },
+    {
+      "id": "F45",
+      "assertion": "创建阶段与查询、结束等待、原操作／附件可查询；结束等待不取消远端或删除原意图",
+      "ui": ["UI04", "UI10"],
+      "scenarios": ["S03", "S13"],
+      "sourceAliases": ["UI", "State", "Agent", "AndroidCommands"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": ["MobileExecutionTest", "MobileCommandBoundaryTest"]
+    },
+    {
+      "id": "F46",
+      "assertion": "切换、连接编辑、旧成功／错误、迟到事件／回执不覆盖新目标、草稿或新操作忙碌状态",
+      "ui": ["UI04", "UI10"],
+      "scenarios": ["S05", "S11"],
+      "sourceAliases": [
+        "State",
+        "EasyWork",
+        "AndroidUI",
+        "AndroidRead",
+        "AndroidCommands",
+        "HostCommands",
+        "CodexHistory",
+        "AndroidEasyWork"
+      ],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": ["MobileExecutionTest", "MobileCommandBoundaryTest"]
+    },
+    {
+      "id": "F47",
+      "assertion": "小状态与历史独立保存，提交前等待意图持久成功，历史更新合并；失败提示、升级与后台恢复准确",
+      "ui": ["UI10"],
+      "scenarios": ["S11", "S13", "S18"],
+      "sourceAliases": ["Persist", "State", "AndroidRead", "CodexHistory"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": ["MobileExecutionTest", "MobileReplyRecoveryTest"]
+    },
+    {
+      "id": "F48",
+      "assertion": "提交失败与执行失败区分；底部提示关闭独立保存，后续真实 Turn 可替代旧失败提示，未知不被抹掉",
+      "ui": ["UI10"],
+      "scenarios": ["S10"],
+      "sourceAliases": ["UI", "State", "Agent", "AndroidRead", "AndroidUI", "AndroidEasyWork"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": ["MobileExecutionTest", "MobileStateTest"]
+    },
+    {
+      "id": "F60",
+      "assertion": "Codex 只按机器运行目标匹配，旧账号键与原提交保持，冲突原草稿必须明确选择；其他 Provider 账号隔离不变",
+      "ui": ["UI01", "UI10"],
+      "scenarios": ["S01", "S11", "S12", "S18"],
+      "sourceAliases": ["Identity", "AndroidRead", "State"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileCommandBoundaryTest",
+        "MobileStateTest",
+        "MobileMachineIdentityTest"
+      ]
+    },
+    {
+      "id": "F61",
+      "assertion": "首条与回复的权威投递检查区分未发送与未知，仅明确操作继续，原指纹和操作不变",
+      "ui": ["UI03", "UI10"],
+      "scenarios": ["S03", "S10", "S13"],
+      "sourceAliases": ["State", "HostCommands", "AndroidCommands", "ReplyRecovery"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileReplyRecoveryTest",
+        "real: registered-project preflight/fenced reply recovery"
+      ]
+    },
+    {
+      "id": "F62",
+      "assertion": "按准确终态轮次分支到同目录或工作树，原源码与暂存区不变，未知只查原回执",
+      "ui": ["UI03", "UI20"],
+      "scenarios": ["S03", "S10", "S11", "S13"],
+      "sourceAliases": ["Forks", "State"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobileThreadForkTest",
+        "MobileThreadForkUiTest",
+        "real: both native fork environments and zero-input owner reconciliation"
+      ]
+    },
+    {
+      "id": "F63",
+      "assertion": "VPN 来源提示与独立手机凭据经明确点选和真实证书目标核验，自动发现不自动接入",
+      "ui": ["UI01", "UI02", "UI03"],
+      "scenarios": ["S01", "S11"],
+      "sourceAliases": ["PrivateCodex", "AndroidRead", "AndroidUI", "AndroidEasyWork"],
+      "implementation": "current-source-reviewed; exact native boundary and real DEV gates tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass",
+      "checkpointEvidence": [
+        "MobilePrivateConnectionTest",
+        "MobilePrivateConnectionUiTest",
+        "real: original-owner recovery over actual native TLS; complete private connection feature not closed"
+      ]
+    }
+  ],
+  "sourceNodes": [
+    {
+      "recordId": "B001",
+      "sha": "595decaffcfbd32e367314a479e1d465e947b6ff",
+      "title": "feat(mobile): add native Android foundation and shared KMP rules",
+      "behavior": "A1 建立 Compose 原生工程、KMP 目标键与输入按钮规则、双端调用和固定原生工具链。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B002",
+      "sha": "e3a9e6275f3a476a0952cf60da28c4cdfd075c57",
+      "title": "feat(mobile): share native state and contracts with verified A2 gates",
+      "behavior": "A2 加入领域/HTTP 契约、能力策略、消息投影、创建/回执、阅读与事件隔离。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B011",
+      "sha": "9ec798ce5c1f8331e021f4872344f0dbdfea1fe4",
+      "title": "Establish A4 command contracts and durable native intent boundaries",
+      "behavior": "A4 引入具名 Codex 命令、能力检查、不可变提交账本、附件和持久未知结果。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B012",
+      "sha": "ccd454ef5088df978e5bf9d375495a9f10d84a6e",
+      "title": "Bind native Codex commands to the exact Host runtime identity",
+      "behavior": "每个原生命令携带完整 agent/host/workspace/runtime target，测试核请求目标。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B013",
+      "sha": "66dee5b2915a6ecedcd9d35458251a04da78fe13",
+      "title": "feat(android): connect native Codex execution and durable recovery",
+      "behavior": "A4 连接 Codex 新建/主动打开/首条附件/流式、模型设置、计划、审批、队列/停止及重启恢复。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B017",
+      "sha": "cb154037b6747f0496b46e8fcbd6a43ef94459b1",
+      "title": "fix(android): recheck prepared creation authority before first input",
+      "behavior": "首条准备和附件上传后再次检查机器目标/项目/创建能力，撤权时不提交。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B019",
+      "sha": "53dabef3a0f27f65b2f3d60fb2720737368d577d",
+      "title": "fix(android): preserve terminal receipts and verify native controls",
+      "behavior": "终态/取消/中断回执保留；未发送与未知明确区分；按钮无障碍禁用及计划/控制验收。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B023",
+      "sha": "bf45f765a3673c516671634e2e207c48f91d7c99",
+      "title": "fix: reconcile provisional desktop history identities",
+      "behavior": "Host 修正临时桌面历史身份，Android 新增真实 provisional→权威身份核对。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B027",
+      "sha": "b0e02b515593112573f6bd51cd3834f5d0cacca2",
+      "title": "test(android): close A4 with genuine runtime failure and recovery",
+      "behavior": "A4 真实 runtime 失败和恢复，API26/37/旧小米原生输入及原桌面唯一 Turn 核对。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B031",
+      "sha": "9bb43e2a5fba13f97594e2c31f280256af9ace0e",
+      "title": "feat: 集成 Task Hub 与桌面连接扩展",
+      "behavior": "上游汇总 Task Hub、机器身份、桥接恢复、分支、发现、许可/转写及分发等 177 文件。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B032",
+      "sha": "6f5322034eb28683f0c354d0113a3f9b8daf7488",
+      "title": "feat(mobile): merge upstream and migrate Codex machine identity (UM01)",
+      "behavior": "UM01 Codex 机器身份/旧缓存草稿迁移；KMP RuntimeIdentity 和原生显式冲突选择。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B037",
+      "sha": "c7c70fddc96708c8e31dd2176c60ba7c65ae2825",
+      "title": "docs: record verified upstream publication and mobile acceptance",
+      "behavior": "UM01/receive 发布与移动验收记录。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B039",
+      "sha": "ea3d46feb36e8085a5fefc09b3b155a033b7cb77",
+      "title": "test(ios): stabilize read cancellation gates and close UM01 acceptance",
+      "behavior": "iOS 读取取消验收器限定故障与在途边界，关闭 UM01。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B040",
+      "sha": "ce7b7ebe026ae6cc081c5166377bafe35e016ed7",
+      "title": "feat(mobile): align original input recovery with Host bridge",
+      "behavior": "UM02 Android 首条/回复原操作恢复、原 scope 同意和明确“提交原内容”交互。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B042",
+      "sha": "ef447c545607bde6788408979c343f654a1d295f",
+      "title": "fix: keep UM02 recovery explicit and preserve original iOS consent",
+      "behavior": "修复 Host 查询不得继续失败前置；只有显式 submit 消费原 not-written；iOS 保留原许可作用域。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B043",
+      "sha": "b04a76e607e1fdfbe38709662b632bfa2f8000a8",
+      "title": "docs: close UM02 after independent iOS acceptance",
+      "behavior": "回收独立 iOS 原件并关闭 UM02。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "B047",
+      "sha": "f54be8195177901b17d53dcbe994a0c46c9dcde7",
+      "title": "feat(android): align private host discovery and device credentials",
+      "behavior": "UM04 Android 私有发现、VPN提示、独立X25519手机凭据及点选后绑定，修复同客户端刷新调度。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O009",
+      "sha": "8582c5f039eb2eb17237883cd1fb9dd9bb74ce07",
+      "title": "fix(creation): 隔离新建操作并持久记录后台提交拒绝",
+      "behavior": "独立创建桥接各操作隔离；共享driver互斥；后台提交前明确拒绝持久入原回执；重启观察走只读receipt。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O012",
+      "sha": "3de39ad19948f7069064c9fc7c75ff9fbcfb31a5",
+      "title": "fix(receipts): 通过原 owner 补读长对话并保留已接受证据",
+      "behavior": "未知回执通过准确原owner完整历史和revision补读；acceptedTurnId持久，尾快照不能抹去接受证据。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O028",
+      "sha": "ec4d9b2d18138554d6114418d7ad1acb499a3b4c",
+      "title": "test(permissions): 增加 Codex 与 EasyWork 接管权限验收",
+      "behavior": "Codex/EasyWork真实权限验收记录与工具：实际Turn沙盒/审批策略、父子作用域、工作区外文件效果。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O029",
+      "sha": "067855632ad911c41ce2e957fef5070b3576663e",
+      "title": "fix(acceptance): 识别原生只读执行的权限异常",
+      "behavior": "权限证据识别扩展为EPERM/EACCES等原生解释器失败，避免漏记custom exec。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O036",
+      "sha": "284246667b6a919ee50bb4cbe065c723787cf8b1",
+      "title": "fix: integrate suggestion recovery and composer wait handling",
+      "behavior": "建议漏通知有界Trace补读；清空草稿恢复有效建议；回复结束等待移发送记录且原HTTP未返也能释放本次锁；运行状态须有效Turn；运行中pin可用。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O048",
+      "sha": "9961bc5baf73b362aa397715ae774624e78717cf",
+      "title": "fix(ios): recover pending replies independently of history reads",
+      "behavior": "待回复按原ID独立于历史/事件自动退避查询，准确普通或备用accepted回执解除等待/本次锁；迟到超时不覆盖新输入。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O070",
+      "sha": "6e1bb10dd7d10cae2d5c6684b2c27c86e2bbb873",
+      "title": "fix: retain verified desktop live synchronization in unified release",
+      "behavior": "Adapter线性256MiB帧解码、有界latest-v1/history/live-window、准确消息ID/Turn绑定、控制资格与可读新鲜度分开、旧回执/队列来源标记。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O096",
+      "sha": "05b81aefe715e877e9c6e8aa4c5ad778626d1880",
+      "title": "test: target actual reply persistence flush boundaries",
+      "behavior": "runtime回执持久化测试注入实际文件/目录fsync边界，区分dispatch/write-hook前后，失败必须先于任何wire执行。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O097",
+      "sha": "a4a8f9f6299d4c84c160d1e7c091418e15912d68",
+      "title": "test: honor file-only cold reply contracts",
+      "behavior": "冷启动回执测试区分目录持久化与Windows file-only；file-only不能提供not-accepted负证据，旧queued/unknown恢复不重放，保留超过30条回执。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O137",
+      "sha": "42990ae9ec3f4ab9b615c030fbfd049c621b36f7",
+      "title": "fix(windows): launch Host and metadata helpers without consoles",
+      "behavior": "Windows新原生winexe launcher无控制台等待Node；元数据/history/语音等辅助启动windowsHide，计划任务只识别准确私有launcher+Node/worker/config，保留活实例迁移。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O138",
+      "sha": "c26bd59615fe97850ba384fe5a32f729a383c9ee",
+      "title": "test(windows): load fixture preloads through file URLs",
+      "behavior": "Windows fixture --import改fileURL，测试目录包含空格/#/%以覆盖驱动器路径和转义。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O139",
+      "sha": "56bc8afbc1bbaca24971aa5d03fddecfa879dd27",
+      "title": "fix(windows): resolve physical native helper paths for scheduled tasks",
+      "behavior": "MSIX下helper解析真实物理可执行路径并复核DACL/源码目录；仅接受本产品两个明确根，跨打包/外部Task Scheduler识别原任务。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O140",
+      "sha": "3e97f256069b41d8ec1256d3d8d4dff90a7ab33c",
+      "title": "docs(windows): clarify migration from verified physical launcher actions",
+      "behavior": "明确已有MSIX物理action需先更新管理文件再校验停止；回滚准确原XML，旧CLI不认识物理action时不重写任务。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O141",
+      "sha": "eb796a53379c164b64c04532212512c15426edea",
+      "title": "Merge Windows background launch fixes and align retired-phase assertions",
+      "behavior": "合并Trace/私有native后端与隐藏启动/MSIX修复；净冲突保留windowsHide、host-launcher winexe编译、实际helper路径，夹具改为精确private-state边界并修退役phase断言。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    },
+    {
+      "recordId": "O158",
+      "sha": "098e6c5a965297f51945e32cd6695fdf9067972c",
+      "title": "Batch fresh Windows process identity checks within the existing stop budget",
+      "behavior": "Windows先保留所有进程句柄，再最多16PID分批fresh CIM身份查询；逐条核对创建时间/路径/参数/当前用户SID，同一45秒停止预算。",
+      "sourceReview": "frozen audit retained; only effective current-source delta adopted; no mechanical cherry-pick"
+    }
+  ],
+  "evidenceCheckpoint": "../../acceptance/mobile-evidence/android-alignment-P1.json",
+  "phaseGate": "checkpoint committed; unloaded-owner acceptance explicitly deferred by human; P2 authorized without a whole P1 pass"
+}

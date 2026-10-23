@@ -1,0 +1,662 @@
+{
+  "schemaVersion": 1,
+  "phase": "P2",
+  "sourceBase": "5ba22bb9cebc2b62ac116c8f8850cdecccf90836",
+  "status": "in-progress; scheduling, verified startup and conversation synchronization checkpoints; complete source/feature matrix not closed",
+  "humanGateAdjustment": "Unloaded-owner P1 acceptance retained as pending; human explicitly requested subsequent work continue. No full P1 pass claimed.",
+  "featureCount": 19,
+  "sourceNodeCount": 35,
+  "features": [
+    {
+      "id": "F02",
+      "assertion": "顶部／侧栏切换客户端，名称、来源、在线与能力状态准确，恢复上次选择",
+      "ui": ["UI01", "UI03"],
+      "scenarios": ["S01"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F03",
+      "assertion": "Codex 手动添加、编辑、取消、改名与移除；错误密钥／Host 身份拒绝，编辑失败保留原配置",
+      "ui": ["UI01", "UI03"],
+      "scenarios": ["S01"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F05",
+      "assertion": "区分 history-only／managed／shared／desktop；health、history、runtimeConnected、canControl 分开，按真实能力开放操作",
+      "ui": ["UI01", "UI03"],
+      "scenarios": ["S01", "S03"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F12",
+      "assertion": "工作区下拉刷新／分页／去重、服务返回排序；失败保留缓存／草稿，刷新不触发桌面导航",
+      "ui": ["UI02"],
+      "scenarios": ["S02", "S11"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F13",
+      "assertion": "仅搜索当前客户端项目与聊天；搜索不受本地五条折叠限制，服务端游标仍单独处理",
+      "ui": ["UI02"],
+      "scenarios": ["S02"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F14",
+      "assertion": "最近和每项目默认五条、独立展开／收起、项目区折叠；跨客户端保存各自状态",
+      "ui": ["UI02"],
+      "scenarios": ["S02"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F15",
+      "assertion": "同目录／同名项目、明确归属、projectless、已移除目录、同聊天多个展示分组保持原目标身份",
+      "ui": ["UI02"],
+      "scenarios": ["S02", "S03"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F17",
+      "assertion": "本地窗口／服务端历史统一加载早期消息、原消息 ID 与顺序、工具／附件标记和缓存重访；触顶、重试、耗尽与旧页返回均正确；读取历史不建立执行权限",
+      "ui": ["UI05"],
+      "scenarios": ["S02", "S11"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F18",
+      "assertion": "流式事件、epoch／sequence、重复／乱序／缺口和 snapshot 恢复；切换取消不会变为任务失败",
+      "ui": ["UI05"],
+      "scenarios": ["S05", "S11"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F19",
+      "assertion": "用户浅蓝气泡、助手正文、Markdown／代码／表格／链接、文本选择和代码复制，流式到终态内容一致",
+      "ui": ["UI05"],
+      "scenarios": ["S05", "S18"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F20",
+      "assertion": "单工具无多余组头，多工具独立折叠与详情；流式追加／重访保留展开状态，Diff 与真实输出可读",
+      "ui": ["UI06"],
+      "scenarios": ["S05"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F21",
+      "assertion": "计划正文、步骤和待确认状态分开，保持独立卡片及版本，不混入工具组",
+      "ui": ["UI06", "UI09"],
+      "scenarios": ["S08"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F22",
+      "assertion": "压缩活动独立显示开始／完成／失败／中断，失联显示待同步；不虚构百分比或压缩执行接口",
+      "ui": ["UI06"],
+      "scenarios": ["S05"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F23",
+      "assertion": "每个 run 结束后的最终正文底部一组复制／分享；过程消息无按钮，实际复制不混入工具输出",
+      "ui": ["UI05"],
+      "scenarios": ["S05", "S18"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F24",
+      "assertion": "首屏最近二十条，每次展开六十条并补齐跨边界工具组；回最新、滚动保持与输入浮层不遮挡正文／控件",
+      "ui": ["UI05", "UI07"],
+      "scenarios": ["S05", "S18"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F46",
+      "assertion": "切换、连接编辑、旧成功／错误、迟到事件／回执不覆盖新目标、草稿或新操作忙碌状态",
+      "ui": ["UI04", "UI10"],
+      "scenarios": ["S05", "S11"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F57",
+      "assertion": "Codex Bonjour 自动发现与连接描述扫码／粘贴；LAN／VPN 区分、同 Host 去重、已知密钥探测、地址更新不改变身份；陌生 Host 未认证不得执行",
+      "ui": ["UI03"],
+      "scenarios": ["S01", "S11"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F63",
+      "assertion": "VPN 来源提示与独立手机凭据经明确点选和真实证书目标核验，自动发现不自动接入",
+      "ui": ["UI01", "UI02", "UI03"],
+      "scenarios": ["S01", "S11"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    },
+    {
+      "id": "F68",
+      "assertion": "Codex 已鉴权读取按协商压缩；EasyWork 按权威 head、不可重算版本及单文本 append 合并，校验 UTF-16 长度与 UTF-8 摘要；坏增量只重读历史，缓存按会话／目标隔离并有界，Relay 确认批量化、失败可恢复且不重放输入",
+      "ui": ["UI03", "UI05"],
+      "scenarios": ["S05", "S11", "S14", "S18"],
+      "sourceReview": "current Android and iOS inspected per retained source node; individual implementation and acceptance tracked separately",
+      "acceptance": "in-progress; no blanket full feature pass"
+    }
+  ],
+  "sourceNodes": [
+    {
+      "recordId": "B002",
+      "sha": "e3a9e6275f3a476a0952cf60da28c4cdfd075c57",
+      "title": "feat(mobile): share native state and contracts with verified A2 gates",
+      "behavior": "A2 加入领域/HTTP 契约、能力策略、消息投影、创建/回执、阅读与事件隔离。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B003",
+      "sha": "7ce8fe2111682a9ab4e355a5f168b32b029e4b6d",
+      "title": "feat(android): add native read UI and preserve A3 acceptance checkpoint",
+      "behavior": "A3 原生抽屉、客户端/项目目录、发现/二维码、Markdown/工具/Diff、缓存与只读 Host。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B004",
+      "sha": "7d1e62f868399acced21464ca9e8c4e7d6eb8b39",
+      "title": "feat: 增加文件互传并完善 iOS 连接与已读体验",
+      "behavior": "iOS 文件互传、连接方式、手机独立阅读与未读、分页及 Windows Host 生命周期更新。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B005",
+      "sha": "f5d0d96a730a1334c85bd63f3ef943248bbc6f88",
+      "title": "Merge remote-tracking branch 'origin/main' into codex/android-native",
+      "behavior": "合入当时上游 iOS/Host，保留 Android/KMP 开发来源；非所有新 UI 自动落到 Android。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B006",
+      "sha": "6c2ed5d8840f579d8b2a32895aefd5bff3b80fb5",
+      "title": "Align A3 native UI and validate Android read paths",
+      "behavior": "A3 修复弹层/IME/系统栏，边缘抽屉、连接表单、真实扫码，分页防重复及阅读锚点。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B007",
+      "sha": "cb8e93f8bf2e140087daa11e47600af1a5fb49bb",
+      "title": "Preserve iOS reading position after history pulls",
+      "behavior": "iOS 下拉历史等待布局帧及原生回弹结束再恢复锚点。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B008",
+      "sha": "0ac7c2f953003c28b1b6f46eced878c6e95ba3a5",
+      "title": "Keep explicit refresh failures visible during reconnect",
+      "behavior": "iOS 显式刷新/更早消息失败保持可见，后台重连安静，草稿与缓存保留。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B009",
+      "sha": "0ff3fcf2abdd44cb520c038a58b43610583850e7",
+      "title": "Complete A3 native UI and read acceptance across both platforms",
+      "behavior": "完成 A3 双端 UI/读取：Android userInitiated 刷新与分页错误提示、离线缓存和原生状态。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B021",
+      "sha": "0909abfcc79ea6580d0d1280da55b9e8e7f76542",
+      "title": "fix(android): preserve complete live history and receipt semantics",
+      "behavior": "完整历史和 receipt 语义；严格 UTF-8 有界读、分片加密缓存、原子索引及低内存保护。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B022",
+      "sha": "88de643bd65558855eec6ba3b88c46443523ebea",
+      "title": "docs(android): record verified history and receipt checkpoint",
+      "behavior": "保存完整历史/回执检查点及证据摘要。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B023",
+      "sha": "bf45f765a3673c516671634e2e207c48f91d7c99",
+      "title": "fix: reconcile provisional desktop history identities",
+      "behavior": "Host 修正临时桌面历史身份，Android 新增真实 provisional→权威身份核对。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B033",
+      "sha": "90ff45c0c86419354494269073bdf914796fcf8d",
+      "title": "perf: 优化慢网下 Codex 与 EasyWork 消息接收",
+      "behavior": "iOS/Host gzip 和 EasyWork head/append 增量、缓存校验、Relay批量 ACK 优化。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B034",
+      "sha": "cde9b76e2b07e9da08293ad06f17ce35d5fe535d",
+      "title": "feat(mobile): merge receive optimization with Android and iOS parity",
+      "behavior": "Android/KMP EasyWork 增量消费者、会话缓存和 Relay ACK 实现，与 iOS 对照。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B035",
+      "sha": "9990b96adc6ac13143e210de73e1c73f3d4e1d3c",
+      "title": "perf: 优化 Codex 与 EasyWork 慢网消息接收 (#1)",
+      "behavior": "上游 receive 合并节点，保留 90ff45c 与原主线双父关系。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B039",
+      "sha": "ea3d46feb36e8085a5fefc09b3b155a033b7cb77",
+      "title": "test(ios): stabilize read cancellation gates and close UM01 acceptance",
+      "behavior": "iOS 读取取消验收器限定故障与在途边界，关闭 UM01。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "B047",
+      "sha": "f54be8195177901b17d53dcbe994a0c46c9dcde7",
+      "title": "feat(android): align private host discovery and device credentials",
+      "behavior": "UM04 Android 私有发现、VPN提示、独立X25519手机凭据及点选后绑定，修复同客户端刷新调度。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O008",
+      "sha": "33b63b7339e8f540611577275579f1fc73387bf4",
+      "title": "fix(discovery): 优先 VPN 地址并补全已保存电脑的发现入口",
+      "behavior": "发现候选按VPN IP、私有DNS等优先；每源最多32地址/四并发；已有连接作为独立目录入口，空目录继续其他来源。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; native implementation and selected scheduling auxiliary covered, whole original source node not closed",
+        "completedSubassertions": [
+          "independent saved paired source, empty public/legacy directory continuation",
+          "32 routes/source and all 128 peer/protocol/address candidates under four concurrent reads",
+          "stable VPN IP/private DNS/LAN/local-name ordering",
+          "healthy saved then newly verified directory priority before offline sources; fresh source cannot be starved"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "real LAN/VPN/physical acceptance and complete source-node matrix"
+        ]
+      }
+    },
+    {
+      "recordId": "O010",
+      "sha": "a59699a94e1cd788e35a391f553f240bccb8912e",
+      "title": "fix(network): 切网后轮换读取连接并补读停滞会话",
+      "behavior": "切网仅取消/轮换历史事件GET；提交POST保持原连接结果；2秒活动/10秒空闲无快照时独立补拉，最新页请求原owner刷新。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; original source node not closed",
+        "completedSubassertions": [
+          "event failure fidelity, quiet native failed/waiting UI and captured request ordering; cancellation preserved",
+          "bounded read backoff implemented; runtime cadence/real network remains unverified",
+          "independent active 2s/idle 10s history catch-up with monotonic useful progress, strictly advancing parsed checkedAt, bounded attempts, same-target in-flight sharing and generation/lifecycle cancellation; eight-second initial grace retained",
+          "foreground platform path baseline/duplicate/burst handling, GET-only catalog/history/event rotation, exact obsolete read/stream fencing, greatest checkedAt retention and original receipt observer restoration including background chats; original POST unchanged under native synthetic HTTP"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "physical LAN/VPN/cellular path change and controlled real phone/Electron/model immutable-write/no-duplicate acceptance"
+        ]
+      }
+    },
+    {
+      "recordId": "O016",
+      "sha": "82f0120eb943412934988956c1fdb70dabe05227",
+      "title": "chore: preserve current development inputs before branch consolidation",
+      "behavior": "大快照纳入正文文件/网页链接、后台历史不锁输入、直接已就绪回复、原生队列与立即执行、分段添加连接、六行用户气泡折叠、通知事项摘要和批量管理，以及未绑定建议观察。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; first-read input and long-user-bubble presentation subsets; multi-phase source node remains open",
+        "completedSubassertions": [
+          "only first read of the current navigation blocks submission; background and explicit refresh preserve already-ready composer; cache/new navigation cannot borrow old readiness",
+          "shared six-line user bubble preview, original selectable source with explicit expand/collapse, original files/draft retention and full-target/message display isolation;23 selected native auxiliary, no full selection-menu/P6 claim"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "direct-ready reply actual preflight/weak-network send and original immutable receipt",
+          "other original source UI/link/queue/suggestion/management/notification subsets retained in their applicable phases; Task Hub and A6/P7 deferrals unchanged"
+        ]
+      }
+    },
+    {
+      "recordId": "O036",
+      "sha": "284246667b6a919ee50bb4cbe065c723787cf8b1",
+      "title": "fix: integrate suggestion recovery and composer wait handling",
+      "behavior": "建议漏通知有界Trace补读；清空草稿恢复有效建议；回复结束等待移发送记录且原HTTP未返也能释放本次锁；运行状态须有效Turn；运行中pin可用。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O038",
+      "sha": "b0711df4e44b342f9d7f549d1949da40cd5fb251",
+      "title": "perf(ios): overlap suggestion reads and fence stale view tasks",
+      "behavior": "建议与历史并行预读但须新历史确认scope；会话持有reader避布局延迟；首次渲染60→20且保工具组边界；导航保存让位请求。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial implementation and selected auxiliary; source node not closed",
+        "completedSubassertions": [
+          "initial twenty-message shared policy; sixty-message local earlier increment; whole intersecting tool groups, target reset/retention and actual native earlier-control anchor",
+          "actual original large-owner native UI in3 environments retains initial20/local+60, expanded IDs/draft and visible completed-compaction anchor after latest GET; selected subset only",
+          "existing-chat history/cache/original-receipt reads start before synchronous navigation metadata snapshot; native encrypted FIFO old3 each1 failure/new3 pass, durable selected target/pending-read draft edits and late-other-target guards;102 selected auxiliary and3 current-package actual original-owner reads passed,0 new model inputs"
+        ],
+        "remainingSubassertions": [
+          "desktop suggestion/history parallel prefetch with fresh history scope (P5)",
+          "desktop suggestion reader ownership independent of layout delay (P5); general history provider already Session-owned",
+          "complete native navigation visual/performance and suggestion interaction acceptance"
+        ]
+      }
+    },
+    {
+      "recordId": "O042",
+      "sha": "d7484b64c336dfcb6668b1e2aa2d327d2c74e64a",
+      "title": "fix: recover desktop streams after revision counters restart",
+      "behavior": "按输入ID/准确末轮连续性接纳同owner修订号重置，隔离退出流和迟到高revision；无连续性仍拒绝。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O070",
+      "sha": "6e1bb10dd7d10cae2d5c6684b2c27c86e2bbb873",
+      "title": "fix: retain verified desktop live synchronization in unified release",
+      "behavior": "Adapter线性256MiB帧解码、有界latest-v1/history/live-window、准确消息ID/Turn绑定、控制资格与可读新鲜度分开、旧回执/队列来源标记。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; whole original source node not closed",
+        "completedSubassertions": [
+          "UI distinguishes verified historical/live-window progress from full runtime control; unknown runtime does not become writable",
+          "three synchronized/unavailable states and scoped read-only retry"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "remaining bounded-frame/latest-v1/runtime/control cross-source matrix and actual native/desktop/model acceptance"
+        ]
+      }
+    },
+    {
+      "recordId": "O074",
+      "sha": "f94072334f8e04aa3654b593010b683f2461eaf3",
+      "title": "test: verify desktop ownership boundaries across Windows pipes and live windows",
+      "behavior": "跨Windows管道和live-window验证实际owner边界、流generation与真实限帧/最近页；fixture endpoint跨平台。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O076",
+      "sha": "894f39aa361ad25862f8f2f9d8bd4de7ddfcff84",
+      "title": "tools: add bounded Windows timing diagnostics and native development checks",
+      "behavior": "新增隔离DEV有界分段计时器及check:windows-native串行范围，保全仓原失败条件，不在正式目录重建。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O084",
+      "sha": "05b57ebb707b8ccd0c62917d7ec8b21d2cbd2c48",
+      "title": "Improve bounded Windows suggestion diagnostics without changing runtime behavior",
+      "behavior": "Windows计时导入要求共享5b+创建gate，补Worker传递与Promise身份保真、关闭后停止记录；不改运行行为。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O088",
+      "sha": "a8db32c5d911c67785961a2b0a5e35155a6815e3",
+      "title": "fix(sync): restore live progress for large desktop conversations",
+      "behavior": "Host增加latest-v1有界最新/更早窗口、live-window观察与同步状态；iOS显示同步失败/实时窗口/历史已同步横幅、重试、历史未知结果回执折叠；超大帧与准确输入正证据恢复。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; whole original source node not closed",
+        "completedSubassertions": [
+          "original three banner titles/copy, unknown desktop runtime fallback, retry/busy/error/draft/window states",
+          "latest synchronization status survives earlier-page failure; native raw/runtime/read assertions separately scoped",
+          "typed historical receipt context, collapsed original text/explanation, independent selectable error and target/ID/mode-isolated native reveal; failure-only dismissal retained",
+          "latest-v1 query negotiation for latest/earlier history and events, exact original cursor/reader/target/epoch/sequence; actual native HTTP old3 failures and current3 passes per environment;123 selected auxiliary, real desktop payload/performance still pending",
+          "actual original owner latest100 plus2 earlier100 pages, completed compaction, unique retained IDs and disk cache in3 native environments; legacy versioned optional revision absent; earlier UI busy state now follows actual earlier action; no command/model input, full large-frame/execution/performance matrix pending",
+          "current unchanged product/examiner synchronization native UI30 in explicit5+5 per environment, including original physical retry touch starts one held GET with window/draft/journal retained; old physical5 failure and API37 timeout retained, old root cause not isolated",
+          "actual physical pinned-LAN TLS original-owner latest/earlier/compaction/cache and real Wi-Fi off/on automatic native monitor/Session recovery;11 callbacks/5 path signatures, original expanded IDs/window/draft/target/pin retained,0 model/POST; final same examiner phone1 plus emulators2, earlier baseline/pre-ready failure separately preserved; MainActivity cold/lifecycle/VPN/cellular/full timing pending"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "full large-history/latest/earlier, bounded-frame and actual large desktop conversation matrix; queue-sync/detached-unknown/full execution acceptance separately retained"
+        ]
+      }
+    },
+    {
+      "recordId": "O143",
+      "sha": "0c2d50fc3eb4715ddbc309282d36e6bb98207958",
+      "title": "fix: reduce slow-network startup and preserve native history errors",
+      "behavior": "iOS先展示workspace首屏/选中历史、限制单workspace与同导航history在途、先events、reset已含快照不重复GET；新成功否定旧超时离线推断；发现优先当前路由；原生error保真；Host已知聊天windowed只读owner等待最多1秒。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; whole original source node not closed",
+        "completedSubassertions": [
+          "publish verified workspace independently without second catalog read",
+          "same-navigation in-flight read sharing and reset snapshot without duplicate history GET",
+          "newer validated connection/same-conversation snapshot fences old transient inference; explicit/non-transient errors retained",
+          "current saved route before ordered alternatives and selected client probe priority; public native list incremental callback and pending-hint rerun",
+          "independent first validated offline/current-healthy route publication before slow routes, shared four slots and unchanged original connection fences",
+          "typed event errors, cancellation, background quiet states and request-start success/snapshot ordering",
+          "independent active 2s/idle 10s history catch-up with monotonic useful progress, strictly advancing parsed checkedAt, bounded attempts, same-target in-flight sharing and generation/lifecycle cancellation; eight-second initial grace retained",
+          "history in-flight slot exact navigation/connection owner; old read cannot block new generation or clear a newer slot; same-generation coalescing retained",
+          "exact client-navigation/connection catalog owner, old cancelled request no longer blocks new selection/verified reconnect or releases new slot, chat-only navigation shares valid catalog",
+          "named GET recovery and original current/background receipt observation independent of immutable command jobs; selected native auxiliary coverage"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "real known-owner windowed read latency/weak-network acceptance",
+          "physical foreground/GET-route and controlled real-network matrix; native implementation auxiliary covered"
+        ]
+      }
+    },
+    {
+      "recordId": "O144",
+      "sha": "b3d2ca73a64bdb68fc3b9b37bcfa39452435220b",
+      "title": "Merge Windows reliability fixes and prepare build 89 physical cellular acceptance",
+      "behavior": "合并fd6b627与0c2d50f，将移动foundation/Windows可靠性和弱网读合并到build89，代码combined diff无独有双父净冲突。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O145",
+      "sha": "85784db5e9f99ed3b9a7c2d974dbe62bd38c838a",
+      "title": "Bound Windows stop identity checks to retained handles and add real weak-network acceptance",
+      "behavior": "新增真实上游只读GET弱网代理，聚合1024/128/64Kbit/s+RTT/抖动、gzip实收字节、单history挂起/截断/全503；Windows停服SID改保留句柄TOKEN_QUERY，45秒预算不变。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O146",
+      "sha": "0b18da8ec6611a4cb242eef5e08c9b6cdc567345",
+      "title": "fix(ios): show friendly connection failure guidance",
+      "behavior": "iOS OperationFailure把TLS/证书/无网/超时/DNS/连接中断映射标题与可行动文案，覆盖连接、历史、fork、提交、回执、审批和导入，原传输错误保留且不自动重试。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; quiet event distinction and shared typed native reading presentation implemented; full node not closed",
+        "completedSubassertions": [
+          "event TLS/security/auth/target/protocol/transport failure distinction and quiet native cache UI",
+          "shared v1 six-category reading guidance and title, platform-type/certificate/TLS precedence, bounded cause traversal and generic-title reset implemented; 162 scoped native auxiliary; phone retry touch failed and system outside-touch blocked; full P2/P6 open",
+          "actual NativeHostReads DNS/closed TCP/untrusted RSA TLS refusal:3 per environment/9 first-run boundary cases with original typed native cause logs and shared unreachable/certificate copy;0 TLS application HTTP/model input, full Session/UI/pair-pin/radio recovery still pending"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "global connection/history/fork/submit/receipt/approval/import friendly-copy mapping and real native scenario matrix"
+        ]
+      }
+    },
+    {
+      "recordId": "O148",
+      "sha": "daa11597f3c448fa860c131d1395032ef2ecc70d",
+      "title": "merge: reconcile local iOS fixes with current mobile foundations",
+      "behavior": "合并b3d2ca7与880ba1c；净冲突将最新history失败展示改userFacingDescription并保留userInitiated错误，友好错误与预检一并保留。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; latest/earlier shared typed reading presentation and ownership assertions auxiliary passed; full global/preflight and real-device matrix open",
+        "completedSubassertions": [
+          "shared reading failure presentation implemented without changing read policy or original error",
+          "actual NativeHostReads DNS/closed TCP/untrusted RSA TLS refusal:3 per environment/9 first-run boundary cases with original typed native cause logs and shared unreachable/certificate copy;0 TLS application HTTP/model input, full Session/UI/pair-pin/radio recovery still pending"
+        ],
+        "remainingSubassertions": [
+          "full global non-reading operation/preflight scope and real physical weak-network/Electron/model matrix retained"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json"
+      }
+    },
+    {
+      "recordId": "O156",
+      "sha": "28fc9b188386c5defb56e7313dbcf92862007d3e",
+      "title": "Merge current mobile foundations while preserving Windows reliability and owner checks",
+      "behavior": "合并85784db与591126b，收纳UM06底层、iOS友好错误/预检和chat policy，同时保留Windows恢复/owner校验；combined生产diff无独有新逻辑。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved"
+    },
+    {
+      "recordId": "O157",
+      "sha": "faf203e1c4b7dce64e9364643128c29b35bdc97c",
+      "title": "Prepare integrated build 91 and record opt-in physical read timings",
+      "behavior": "build91加入仅DEBUG独立验收bundle且显式env启用的有界native读计时，记录连接、history响应/应用，不采URL/header/body/token。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; source timing implemented, actual acceptance not closed",
+        "completedSubassertions": [
+          "explicit DEBUG independent acceptance package and new-Activity Intent opt-in; canonical Host/run; fixed metadata256 cap; asynchronous IO failure isolation and evidence/run protection",
+          "native history-response after identity validation; connection-success/start, guarded history-applying and cache-applying",
+          "102 selected native auxiliary,34 each API26/API37/physical API33; recorder7/window HTTP3/context6/read9+8+1;0 real model inputs",
+          "44 bounded metadata timing rows from3 actual large-owner native read cases archived/read back; actual UI anchor and disk outcomes separately asserted, applying timings still not render-ready"
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "actual original Electron/native weak-network and model timings; first cached/new visible content, input-ready and terminal; current applying point is not render-ready",
+          "discovery/failure diagnostics as relevant later source refinements; original physical failure and injection block scopes retained"
+        ]
+      }
+    },
+    {
+      "recordId": "O159",
+      "sha": "a57a50fed4a798bf3ceb0bfd56bdb17537501503",
+      "title": "Improve native weak-network startup and verify Windows recovery on iPhone",
+      "behavior": "iOS显式连接descriptor8秒而背景2秒；VPN成功即发布、已见地址保留60秒/15秒仅可达提示；复用已验证workspace，事件先行8秒catch-up grace；重选当前聊天不换代次，恢复timeout保草稿文案。",
+      "sourceReview": "retained; effective current source delta only; original failures and unverified UI states preserved",
+      "androidCheckpoint": {
+        "status": "partial; whole original source node not closed",
+        "completedSubassertions": [
+          "reuse verified workspace and bounded eight-second initial event grace",
+          "same-chat retap retains generation/in-flight GET/expanded window",
+          "timeout preserves messages/draft copy; fresh partial desktop-history fallback ordering",
+          "GET-only explicit descriptor eight-second/background descriptor two-second budgets; directories retain independent iOS six-second deadline; queueing/streaming/cancellation/security and slow-directory success/hard-stop native auxiliary checks verified",
+          "incremental validated native Codex discovery rows, monotonic 60-second hint/15-second reachable lifetimes with native cancellation/identity guards",
+          "fresh descriptor proof separated from retained hints; native list tracks adopted endpoint/alias; late edited/replaced connection cannot borrow current state",
+          "same-full-target expanded presentation/draft survives client reselection/verified reconnect while a new reading generation refuses old paged prefix/cursor; changed runtime draft/presentation isolation retained",
+          "same-client in-flight catalog reselection/reconnect ownership native matrix; verified workspace reuse and chat-only catalog sharing retained",
+          "acceptance-only GET proxy now forwards native event target after versioned shape and exact machine validation; valid historical account metadata changes do not reject the Codex machine; same examiner old2/new8 Node HTTP checks, actual native/desktop weak-network remains pending",
+          "physical original native/TLS/isolated Host first original task, history-only stall with successful events/input enabled, and exactly two original desktop inputs reconciled read-only; original combined warm examiner FAILED and second intended read-only policy FAILED, no replay; full live matrix not closed",
+          "two named physical native original-data read-only supplements passed: normal/constrained/severe HTTP byte/RTT/jitter shaping, truncation, named data GET503/recovery, actual original second final visible, immutable original IDs/intent hashes, separate process disk cache before any successful data read;0 new POST/model, original combined/policy failures retained",
+          "actual physical pinned-LAN TLS original-owner latest/earlier/compaction/cache and real Wi-Fi off/on automatic native monitor/Session recovery;11 callbacks/5 path signatures, original expanded IDs/window/draft/target/pin retained,0 model/POST; final same examiner phone1 plus emulators2, earlier baseline/pre-ready failure separately preserved; MainActivity cold/lifecycle/VPN/cellular/full timing pending",
+          "physical real production MainActivity/default storage warm/new-process cold original-data cache and automatic foreground recovery: PID923/2802,4 named503/0 successful data reads before original body/IDs/draft visible, fresh history200 after restore,0 new inputs; no cold Session/reader/cache injection, old examiner failures preserved",
+          "same product/examiner production MainActivity/default-store warm/cold across API26/API37/physical:6 actual original-data native methods; each cold4 named503/0 successes before visible cache/draft, automatic fresh history recovery,0 model input. API26 original post-native wrapper failures retained and readonly reconciled without rerun; API37/physical full native wrappers pass",
+          "physical production MainActivity/default store paired-certificate refusal and original-leaf explicit retry: two native phases,4 TLS handshake refusals/0 application HTTP under changed leaf, original target/pin/cache/draft retained,0 inputs. Immediate post-confirm gray dialog layer/stable disappearance frame remains visual pending.",
+          "new same-examiner physical/API26/API37 paired-certificate/default-cache warm+certificate6 native phases passed; per-env4 real TLS refusals/0 application HTTP then original-leaf explicit retry history200,0 inputs;6 stable cache/recovered frames reviewed after bounded native dismissal settling. Prior immediate partial screenshot and unrelated old visual cases retained.",
+          "production MainActivity/default-store real advertised-route automatic foreground discovery3 original-owner cases across physical/API26/API37: actual owned primary TLS listener closed, previous alternate0 successes then fresh history200, same target/pin/credential/draft/sample/window80, original anchor0dp each,0 inputs. No native injected scan/connect/retry. Cold persisted alternate and complete route matrix remain open.",
+          "new physical/API26/API37 production MainActivity/default-store route+cold6 phases: native local expansion20-to80 and route anchor0dp; exact new process/no data clear, cold persisted alternate/target/pin/credential/IDs/body/draft and initial20 restored with4 named503/0 success before cache; automatic alternate history200 after restore,0 inputs. First offscreen-control examiner failure and separate readonly inspection retained, native scrolling fixed within15s.",
+          "current default MainActivity original-data native observation/history-only pending6 phases across3 environments: initial4 named503/0 successful data cache/input, no-response history client closes~35s with healthy events48/48/49 and input edit/restore, new original progress displayed then independent history200 receipt before exit,0 inputs. Observations are scripted assertion upper bounds; original API26 event/online-vs-history parent failure and extra held retry preserved, no first-physical-frame/live-terminal pass.",
+          "actual production MainActivity/default store physical30s Wi-Fi loss2 native phases: OS off30078ms/settled0 HTTP, passive2 available/1 lost, native offline29516ms/116 invariant samples, original target/pin/credential/draft/sample/window80 and restored0dp anchor, independent fresh history200 before exit,0 inputs; original Wi-Fi enabled restored. One cycle only, full repeated/VPN/cellular/frame/terminal matrix remains."
+        ],
+        "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json",
+        "remainingSubassertions": [
+          "longer lifecycle/loss/discovery/error/certificate/VPN/cellular/first-visible timing and scroll/performance matrix; selected default MainActivity cold matrix across3 environments passed with scoped wrapper distinctions"
+        ]
+      }
+    }
+  ],
+  "additionalAndroidRegressions": [
+    {
+      "id": "current-form-field-and-target",
+      "features": ["F25", "F34", "F35", "F46"],
+      "origin": "expanded native regression before P2 closure; iOS current individual field bindings inspected",
+      "implementation": "target-bound atomic current-value field updates with current option validation; no submitted-intent changes",
+      "acceptance": "corrected exact examiner baseline4/4 failures and final4/4 passes per three environments; remaining full native execution/visual and real model gates unchanged"
+    },
+    {
+      "id": "error-modal-outside-touch",
+      "features": ["F12", "F17", "F46"],
+      "origin": "expanded read UI regression; independent native backdrop input compared to existing iOS alert",
+      "implementation": "outside touch no longer dismisses error; explicit acknowledgement/system Back preserved",
+      "acceptance": "two emulator old modal counters and new actual touch pass; physical UiAutomation INJECT_EVENTS blocked, no whole phone claim"
+    },
+    {
+      "id": "paired-certificate-default-cache-ui",
+      "features": ["F02", "F03", "F17", "F46", "F56", "F63", "F68"],
+      "status": "physical native2 phases passed; immediate dismissal image partial; API26/API37 paired-certificate UI matrix pending",
+      "evidence": "docs/acceptance/mobile-evidence/android-alignment-P2.json#pairedCertificateDefaultCacheCheckpoint"
+    },
+    {
+      "id": "paired-certificate-stable-ui-matrix",
+      "features": ["F02", "F03", "F17", "F46", "F56", "F63", "F68"],
+      "status": "6 new native phases passed,6 stable cache/recovered images reviewed; full P2 open",
+      "evidenceKey": "pairedCertificateStableUiMatrixCheckpoint"
+    },
+    {
+      "id": "production-automatic-advertised-route",
+      "features": ["F02", "F03", "F17", "F24", "F46", "F57", "F63", "F68"],
+      "status": "3 native original-data cases passed,6 images reviewed; one foreground switch only, full P2 open",
+      "evidenceKey": "productionAutomaticRouteCheckpoint"
+    },
+    {
+      "id": "persisted-alternate-cold-default-cache",
+      "features": ["F02", "F03", "F17", "F24", "F46", "F57", "F63", "F68"],
+      "status": "6 new same-examiner native phases passed;6 cold images reviewed; first examiner failure/aux inspection separate; full P2 open",
+      "evidenceKey": "productionPersistedAlternateColdCheckpoint"
+    },
+    {
+      "id": "production-read-positive-observation-history-events",
+      "features": ["F02", "F17", "F18", "F24", "F46", "F63", "F68"],
+      "status": "6 native phases passed,6 images reviewed; upper-bound observations only, first parent failure retained; full P2 open",
+      "evidenceKey": "productionReadObservationTimingCheckpoint"
+    },
+    {
+      "id": "production-mainactivity-physical-long-radio",
+      "features": ["F02", "F17", "F18", "F24", "F46", "F56", "F57", "F63", "F68"],
+      "status": "2 native phases passed,3 images reviewed; one physical30s cycle only, full P2 open",
+      "evidenceKey": "productionPhysicalLongRadioCheckpoint"
+    },
+    {
+      "id": "confirmed-owner-reply-independent-background-reads",
+      "features": ["F05", "F68"],
+      "status": "implemented;78 native auxiliary cases in12 independent groups passed; real stalled-history model/send gate remains open",
+      "evidenceKey": "confirmedOwnerReplyCheckpoint"
+    },
+    {
+      "id": "confirmed-owner-actual-held-history-single-send",
+      "features": ["F05", "F17", "F18", "F68"],
+      "status": "scoped original-owner single-send/model/read/cache gates passed;2 underlying native phases passed; whole auxiliary gateway route coverage partial and full P2 open",
+      "evidenceKey": "confirmedOwnerLiveSendCheckpoint"
+    },
+    {
+      "id": "readonly-named-routes-current-product-default-cache",
+      "features": ["F02", "F05", "F17", "F18", "F68"],
+      "status": "6 underlying native MainActivity/default-store warm/cold phases passed; named fork-option reads/menu verified without writes; selected visual residuals/full P2 retained",
+      "evidenceKey": "readonlyNamedRoutesCurrentProductCheckpoint"
+    },
+    {
+      "id": "recovery-input-ready-and-frame-capture",
+      "features": ["F05", "F17", "F18", "F68"],
+      "status": "6 new native phases passed; recovery send-ready assertions passed all3 environments; API26 initial-cache frame geometry still partial, no production-fix claim",
+      "evidenceKey": "readonlyRecoveryInputReadyCheckpoint"
+    }
+  ],
+  "sourceBoundaryReview": {
+    "reference": "P2-source-review.json",
+    "sourceBase": "a484928dddb404b55db4fee2579502d69857ae0a",
+    "sourceNodeCount": 35,
+    "featureCount": 19,
+    "status": "reviewed boundaries and scoped evidence; full P2 remains open"
+  },
+  "humanAllowedLocalP3P4": {
+    "date": "2026-10-23",
+    "instruction": "蜂窝/VPN单列待验收，继续 P3/P4 等本机开发",
+    "scope": "Subsequent local development only; no full P2/cellular/VPN pass. Existing human deferrals and A6/P7 pause retained."
+  }
+}

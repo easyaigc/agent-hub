@@ -1,5 +1,7 @@
 # 本机原生移动开发环境
 
+**当前设备更新（2026-10-21／22）：**已更换为 Xiaomi M2007J1SC、Android 13/API33。USB、已有独立样例安装/启动/KMP/实际 JDWP 调试与现有产品构建已核验，见 [新手机环境记录](acceptance/android-environment-20261021.md)。以下 M2011K2C/API34 与旧样例/产品记录保留为历史，不转记为新设备通过；当前安排见 [Android 后续开发与验收](plans/android-alignment-20261022.md)。
+
 环境准备日期：2026-10-11。本文记录开发工具与独立样例的实际检查；Android 产品工程和 KMP 生产模块仍按[开发计划](plans/android-native.md)实施。环境样例不代表双端功能一致性或真实 Host／模型验收通过。
 
 ## 工具与版本

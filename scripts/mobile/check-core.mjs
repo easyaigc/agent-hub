@@ -7,8 +7,10 @@ import { resolve } from 'node:path';
 const simulator = process.env.IOS_SIMULATOR_ID;
 assert(simulator, 'Set IOS_SIMULATOR_ID to the dedicated iOS simulator');
 const phase = process.env.MOBILE_PHASE ?? 'A1';
-assert(/^(A[0-8]|UM0[1-8])$/.test(phase));
-const output = '.local/mobile-acceptance/' + phase + '/core-' + Date.now();
+assert(/^(A[0-8]|UM0[1-8]|P(?:[0-9]|10))$/.test(phase));
+const output =
+  process.env.MOBILE_CORE_ACCEPTANCE_OUTPUT ??
+  '.local/mobile-acceptance/' + phase + '/core-' + Date.now();
 await mkdir(output, { recursive: true });
 const fingerprint = async () => {
   const paths = execFileSync(
@@ -30,11 +32,13 @@ const fingerprint = async () => {
       'scripts/mobile/verify-ios-core.swift',
       'scripts/mobile/verify-ios-state.swift',
       'scripts/mobile/verify-ios-recovery.swift',
+      'scripts/mobile/verify-ios-generation-preferences.swift',
       'scripts/mobile/verify-ios-private-connection.swift',
       'scripts/mobile/verify-ios-sharing-voice.swift',
       'scripts/mobile/verify-ios-task-hub.swift',
       'apps/ios/Sources/TaskHubClient.swift',
       'apps/ios/Sources/Localization.swift',
+      'apps/ios/Sources/NativeChatSearch.swift',
       'packages/protocol/schemas/task-hub-mobile-v1.schema.json',
       'apps/ios/Sources/CodexDiscovery.swift',
       'apps/ios/Sources/EasyWorkTransport.swift',
@@ -115,6 +119,46 @@ for (const [runtime, file] of [
 for (const [runtime, file] of [
   [
     'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.WorkspaceArchiveRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.WorkspaceArchiveRulesTest.xml',
+  ],
+  [
+    'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.WorkspaceSidebarRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.WorkspaceSidebarRulesTest.xml',
+  ],
+  [
+    'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.V9SessionRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.V9SessionRulesTest.xml',
+  ],
+  [
+    'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.ChatManagementRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.ChatManagementRulesTest.xml',
+  ],
+  [
+    'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.ChatSearchRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.ChatSearchRulesTest.xml',
+  ],
+  [
+    'jvm',
     '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.PrivateConnectionRulesTest.xml',
   ],
   [
@@ -169,25 +213,42 @@ for (const [runtime, file] of [
     'iosSimulatorArm64',
     '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.ReplyRecoveryTest.xml',
   ],
+  [
+    'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.GenerationPreferenceRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.GenerationPreferenceRulesTest.xml',
+  ],
 ]) {
   const xml = await readFile(file, 'utf8');
   const head = xml.match(/<testsuite\s[^>]+>/)?.[0];
   assert(head, 'Missing actual test suite');
   const number = (key) => Number(head.match(new RegExp(key + '="(\\d+)"'))?.[1]);
-  const expectedTests =
-    file.includes('TaskHubRulesTest') ||
-    file.includes('ThreadForkRulesTest') ||
-    file.includes('PrivateConnectionRulesTest')
-      ? 4
-      : file.includes('SessionPoliciesTest')
-        ? 12
-        : file.includes('RuntimeIdentityTest')
-          ? 4
-          : file.includes('ThreadSyncTest')
-            ? 7
-            : file.includes('ReplyRecoveryTest')
-              ? 6
-              : 3;
+  const expectedTests = file.includes('GenerationPreferenceRulesTest')
+    ? 1
+    : file.includes('WorkspaceArchiveRulesTest')
+      ? 5
+      : file.includes('TaskHubRulesTest') ||
+          file.includes('ThreadForkRulesTest') ||
+          file.includes('PrivateConnectionRulesTest')
+        ? 4
+        : file.includes('WorkspaceSidebarRulesTest')
+          ? 3
+          : file.includes('V9SessionRulesTest')
+            ? 4
+            : file.includes('ChatSearchRulesTest') || file.includes('ChatManagementRulesTest')
+              ? 5
+              : file.includes('SessionPoliciesTest')
+                ? 14
+                : file.includes('RuntimeIdentityTest')
+                  ? 4
+                  : file.includes('ThreadSyncTest')
+                    ? 7
+                    : file.includes('ReplyRecoveryTest')
+                      ? 8
+                      : 3;
   assert.equal(number('tests'), expectedTests);
   for (const key of ['failures', 'errors', 'skipped']) assert.equal(number(key), 0);
   suites.push({
@@ -218,7 +279,11 @@ await writeFile(
   source,
   (await readFile('scripts/mobile/verify-ios-core.swift', 'utf8')) +
     '\n' +
+    (await readFile('apps/ios/Sources/NativeChatSearch.swift', 'utf8')) +
+    '\n' +
     (await readFile('scripts/mobile/verify-ios-state.swift', 'utf8')) +
+    '\n' +
+    (await readFile('scripts/mobile/verify-ios-generation-preferences.swift', 'utf8')) +
     '\n' +
     (await readFile('scripts/mobile/verify-ios-recovery.swift', 'utf8')) +
     '\n' +
@@ -235,7 +300,7 @@ await writeFile(
     taskHubFramer +
     '\n' +
     (await readFile('scripts/mobile/verify-ios-task-hub.swift', 'utf8')) +
-    '\ntry verifyStateVectors(CommandLine.arguments[2])\nverifyAsyncBoundary()\ntry verifyRecoveryCoreVectors(CommandLine.arguments[3])\ntry verifyPrivateCredential(CommandLine.arguments[4])\ntry verifySharingVoiceVectors(CommandLine.arguments[5])\ntry verifyTaskHubVectors(CommandLine.arguments[6])\n',
+    '\ntry verifyStateVectors(CommandLine.arguments[2])\nverifyAsyncBoundary()\ntry verifyRecoveryCoreVectors(CommandLine.arguments[3])\ntry verifyPrivateCredential(CommandLine.arguments[4])\ntry verifySharingVoiceVectors(CommandLine.arguments[5])\ntry verifyTaskHubVectors(CommandLine.arguments[6])\ntry verifyGenerationPreferenceVectors(CommandLine.arguments[7])\n',
 );
 const sdk = execFileSync('xcrun', ['--sdk', 'iphonesimulator', '--show-sdk-path'], {
   encoding: 'utf8',
@@ -272,15 +337,48 @@ const boundary = execFileSync(
     resolve('packages/protocol/fixtures/mobile/private-connection-v1.json'),
     resolve('packages/protocol/fixtures/mobile/ai-sharing-voice-v1.json'),
     resolve('packages/protocol/fixtures/mobile/task-hub-v1.json'),
+    resolve('packages/protocol/fixtures/mobile/generation-preferences-v1.json'),
   ],
   { encoding: 'utf8' },
 );
 const vectors = async (name) =>
   JSON.parse(await readFile('packages/protocol/fixtures/mobile/' + name + '.json', 'utf8'));
+const generationVectors = await vectors('generation-preferences-v1');
+assert(
+  boundary.includes(
+    `Swift/Kotlin generation preferences passed: ${generationVectors.cases.length} cases`,
+  ),
+);
 const coreVectors = await vectors('core-v1');
 const stateVectors = await vectors('state-v1');
+assert(
+  boundary.includes(
+    `Swift/Kotlin queue ownership passed: ${stateVectors.queueOwnership.length} cases`,
+  ),
+);
+assert(
+  boundary.includes(`Swift/Kotlin receipt notices passed: ${stateVectors.receipts.length} cases`),
+);
+assert(
+  boundary.includes(`Swift/Kotlin queue actions passed: ${stateVectors.queueActions.length} cases`),
+);
 const sharingVectors = await vectors('ai-sharing-voice-v1');
 const recoveryVectors = await vectors('reply-recovery-v2');
+assert(
+  boundary.includes(
+    `Swift/Kotlin original query backoff passed: ${recoveryVectors.queryBackoff.length} cases`,
+  ),
+);
+assert(
+  boundary.includes(
+    `Swift/Kotlin original receipt wait passed: ${recoveryVectors.waitReceipts.length} cases`,
+  ),
+);
+assert(
+  boundary.includes(
+    `Swift/Kotlin receipt evidence merge passed: ${recoveryVectors.receiptMerges.length} cases`,
+  ),
+);
 const taskHubVectors = await vectors('task-hub-v1');
 assert(
   boundary.includes(
@@ -293,6 +391,26 @@ assert(
   ),
 );
 assert(boundary.includes('Swift/Kotlin async boundary passed'));
+assert(
+  boundary.includes(
+    `Swift/Kotlin archive eligibility passed: ${stateVectors.workspaceArchiveEligibility.length} cases`,
+  ),
+);
+assert(
+  boundary.includes(
+    `Swift/Kotlin running counts passed: ${stateVectors.runningCounts.length} cases`,
+  ),
+);
+assert(
+  boundary.includes(
+    `Swift/Kotlin chat search passed: ${stateVectors.chatSearch.length} native Unicode/snippet cases`,
+  ),
+);
+assert(
+  boundary.includes(
+    `Swift/Kotlin sidebar ordering passed: ${stateVectors.sidebar.length} projections, ${stateVectors.sidebarVisibility.length} visibility cases`,
+  ),
+);
 assert(
   boundary.includes(
     `Swift/Kotlin sharing/voice vectors: ${sharingVectors.consent.length} consent, ${sharingVectors.voice.length} receipts, ${sharingVectors.manifests.length} manifests`,
@@ -343,6 +461,9 @@ const report = {
     .digest('hex'),
   privateConnectionVectorsSha256: createHash('sha256')
     .update(await readFile('packages/protocol/fixtures/mobile/private-connection-v1.json'))
+    .digest('hex'),
+  generationPreferenceVectorsSha256: createHash('sha256')
+    .update(await readFile('packages/protocol/fixtures/mobile/generation-preferences-v1.json'))
     .digest('hex'),
   frameworks: ['iosArm64', 'iosSimulatorArm64', 'iosX64'],
   physicalDeviceVerified: false,

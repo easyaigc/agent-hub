@@ -401,12 +401,16 @@ struct CodexAgentClient: AgentClient {
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch { try await HostService.events(client, epoch: epoch, after: after, threadId: threadId) }
   func createThread(_ client: Client, projectId: String?, operationId: String) async throws -> Conversation { try await HostService.post(client, "v1/threads", ["projectId": projectId as Any? ?? NSNull(), "clientOperationId": operationId]) }
   func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult { try await HostService.post(client, "v1/stop", ["threadId": threadId, "turnId": turnId]) }
+  private func queueTargetQuery(_ client: Client) throws -> [String: String] {
+    guard let target = client.codexDirect?.target ?? client.readingTarget, target.hostId == client.id, target.agentId == "codex" else { throw HostServiceError.wrongHost }
+    return ["target": String(decoding: try JSONEncoder().encode(target), as: UTF8.self)]
+  }
   func executeQueue(_ client: Client, threadId: String, messageId: String, expectedTurnId: String?) async throws -> CommandResult {
     var body: [String: Any] = ["threadId": threadId, "clientMessageId": messageId]
     if let expectedTurnId { body["expectedTurnId"] = expectedTurnId }
-    return try await HostService.post(client, "v1/queue/execute", body)
+    return try await HostService.post(client, "v1/queue/execute", body, query: queueTargetQuery(client))
   }
-  func cancelQueue(_ client: Client, threadId: String, messageId: String) async throws -> CommandResult { try await HostService.post(client, "v1/queue/cancel", ["threadId": threadId, "clientMessageId": messageId]) }
+  func cancelQueue(_ client: Client, threadId: String, messageId: String) async throws -> CommandResult { try await HostService.post(client, "v1/queue/cancel", ["threadId": threadId, "clientMessageId": messageId], query: queueTargetQuery(client)) }
   func approve(_ client: Client, approval: Approval, decision: String, answers: [String: [String]]) async throws -> CommandResult { try await HostService.post(client, "v1/approvals", ["threadId": approval.threadId, "turnId": approval.turnId, "approvalId": approval.id, "decision": decision, "answers": answers]) }
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot { try await HostService.post(client, "v1/projects", ["name": name, "directory": directory, "clientOperationId": operationId]) }
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { try await HostService.upload(client, threadId: threadId, file: file, data: data) }

@@ -29,6 +29,12 @@ struct DiscoveryCase: Decodable { let name: String, json: String, valid: Bool }
 struct StateVectors: Decodable { let policy: [PolicyCase], timeline: [ProjectionCase], contracts: [ContractCase], http: [ContractCase], toolPresentation: [ToolCase], discovery: [DiscoveryCase] }
 
 func verifyStateVectors(_ path: String) throws {
+  try verifyChatManagementVectors(path)
+  try verifyChatSearchVectors(path)
+  try verifySidebarVectors(path)
+  try verifyRunningCountVectors(path)
+  try verifyArchiveEligibilityVectors(path)
+  try verifyQueueOwnershipVectors(path)
   let vectors = try JSONDecoder().decode(StateVectors.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
   for test in vectors.discovery { precondition((CodexDiscoveryContract.shared.validate(json: test.json) == nil) == test.valid, test.name) }
   print("Swift/Kotlin Codex discovery boundary passed: \(vectors.discovery.count) cases")
@@ -62,6 +68,24 @@ func verifyStateVectors(_ path: String) throws {
   for test in vectors.http { precondition((CodexHttpContract.shared.validate(json: test.json, definition: test.definition) == nil) == test.valid, test.name) }
   print("Swift/Kotlin state boundary passed: \(vectors.policy.count) policies, \(vectors.timeline.count) projections, \(vectors.contracts.count) contracts")
   print("Swift/Kotlin Codex HTTP boundary passed: \(vectors.http.count) cases")
+}
+
+private struct ChatSearchVector: Decodable {
+  let name: String, text: String, query: String, expectedSnippet: String
+  let expectedRanges: [[Int32]], expectedSnippetRanges: [[Int32]]
+}
+private struct ChatSearchVectors: Decodable { let chatSearch: [ChatSearchVector] }
+func verifyChatSearchVectors(_ path: String) throws {
+  let rows = try JSONDecoder().decode(ChatSearchVectors.self, from: Data(contentsOf: URL(fileURLWithPath: path))).chatSearch
+  func spans(_ values: [ChatSearchSpan]) -> [[Int32]] { values.map { [$0.start, $0.end] } }
+  for row in rows {
+    let native = NativeChatSearchText.shared
+    let snippet = ChatSearchRules.shared.snippet(text: row.text, value: row.query, native: native)
+    precondition(spans(ChatSearchRules.shared.ranges(text: row.text, value: row.query, native: native)) == row.expectedRanges, row.name)
+    precondition(snippet.text == row.expectedSnippet && spans(snippet.spans) == row.expectedSnippetRanges, row.name)
+    precondition(ChatSearchRules.shared.matches(text: row.text, value: row.query, native: native) == !row.expectedRanges.isEmpty, row.name)
+  }
+  print("Swift/Kotlin chat search passed: \(rows.count) native Unicode/snippet cases")
 }
 
 private final class ReplyBox: @unchecked Sendable {
@@ -136,3 +160,158 @@ func verifyAsyncBoundary() {
 precondition(SessionPolicies.shared.codexCapabilities(capabilities: ["history:read"], connectionMode: "desktop-runtime") == ["history:read", "runtime:control-required", "threads:create:staged"])
 precondition(SessionPolicies.shared.codexCapabilities(capabilities: ["reply"], connectionMode: "shared-runtime") == ["reply"])
 print("Swift/Kotlin Codex capability normalization passed")
+
+struct SidebarThreadVector: Decodable {
+  let id: String, hostId: String, projectId: String?, projectIds: [String], archived: Bool
+  var core: SidebarThreadState { SidebarThreadState(id: id, hostId: hostId, projectId: projectId, projectIds: projectIds, archived: archived) }
+}
+struct SidebarProjectVector: Decodable {
+  let id: String, hostId: String
+  var core: SidebarProjectState { SidebarProjectState(id: id, hostId: hostId) }
+}
+struct SidebarPinVector: Decodable, Equatable {
+  let kind: String, id: String
+  var core: SidebarPinnedItem { SidebarPinnedItem(kind: kind, id: id) }
+}
+struct SidebarSourceVector: Decodable {
+  let version: Int32
+  let pinned: [SidebarPinVector]?, recentThreadIds: [String]?, projectIds: [String]?, projectThreadIds: [String: [String]]?
+  var core: SidebarSource {
+    guard version == 1 else { return SidebarSource(version: version, pinned: [], recentThreadIds: [], projectIds: [], projectThreads: []) }
+    return SidebarSource(version: version, pinned: pinned!.map(\.core), recentThreadIds: recentThreadIds!, projectIds: projectIds!,
+      projectThreads: projectThreadIds!.map { SidebarProjectThreads(projectId: $0.key, threadIds: $0.value) })
+  }
+}
+struct SidebarInputVector: Decodable {
+  let hostId: String, threads: [SidebarThreadVector], projects: [SidebarProjectVector], pinnedThreadIds: [String], source: SidebarSourceVector?
+}
+struct SidebarExpectedVector: Decodable {
+  let pinned: [SidebarPinVector], recentThreadIds: [String], projectIds: [String], projectThreadIds: [String: [String]]
+}
+struct SidebarCaseVector: Decodable { let name: String, input: SidebarInputVector, expected: SidebarExpectedVector }
+struct SidebarVisibilityVector: Decodable {
+  let name: String, ids: [String], expanded: Bool, searching: Bool, expectedExpanded: Bool, expected: [String]
+}
+struct SidebarVectorFile: Decodable { let sidebar: [SidebarCaseVector], sidebarVisibility: [SidebarVisibilityVector] }
+
+func verifySidebarVectors(_ path: String) throws {
+  let file = try JSONDecoder().decode(SidebarVectorFile.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+  for test in file.sidebar {
+    let input = test.input
+    let result = WorkspaceSidebarRules.shared.order(hostId: input.hostId, threads: input.threads.map(\.core), projects: input.projects.map(\.core),
+      pinnedThreadIds: input.pinnedThreadIds, source: input.source?.core)
+    precondition(result.pinned.map { SidebarPinVector(kind: $0.kind, id: $0.id) } == test.expected.pinned, test.name)
+    precondition(result.recentThreadIds == test.expected.recentThreadIds && result.projectIds == test.expected.projectIds, test.name)
+    precondition(Dictionary(uniqueKeysWithValues: result.projectThreads.map { ($0.projectId, $0.threadIds) }) == test.expected.projectThreadIds, test.name)
+  }
+  for test in file.sidebarVisibility {
+    precondition(WorkspaceSidebarRules.shared.expanded(preference: test.expanded, searching: test.searching) == test.expectedExpanded, test.name)
+    precondition(WorkspaceSidebarRules.shared.visibleIds(ids: test.ids, expanded: test.expanded, searching: test.searching) == test.expected, test.name)
+  }
+  print("Swift/Kotlin sidebar ordering passed: \(file.sidebar.count) projections, \(file.sidebarVisibility.count) visibility cases")
+}
+
+private struct RunningCountConversation: Decodable {
+  let id: String, hostId: String, state: String
+  var core: ConversationActivity { ConversationActivity(id: id, hostId: hostId, state: state) }
+}
+private struct RunningCountInput: Decodable {
+  let hostId: String, online: Bool, demo: Bool, workspaceAvailable: Bool, connectionMode: String?
+  let conversations: [RunningCountConversation]
+}
+private struct RunningCountCase: Decodable { let name: String, input: RunningCountInput, expected: Int? }
+func verifyRunningCountVectors(_ path: String) throws {
+  struct Vectors: Decodable { let runningCounts: [RunningCountCase] }
+  let rows = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+  for row in rows.runningCounts {
+    let i = row.input
+    precondition(WorkspaceSidebarRules.shared.runningCount(hostId: i.hostId, online: i.online, demo: i.demo,
+      workspaceAvailable: i.workspaceAvailable, connectionMode: i.connectionMode, conversations: i.conversations.map(\.core))?.intValue == row.expected, row.name)
+  }
+  print("Swift/Kotlin running counts passed: \(rows.runningCounts.count) cases")
+}
+
+func verifyArchiveEligibilityVectors(_ path: String) throws {
+  struct Input: Decodable { let knownTarget: Bool, archived: Bool, singleBusy: Bool, singlePending: Bool, batchPending: Bool }
+  struct Row: Decodable { let name: String, input: Input, expected: Bool }
+  struct Vectors: Decodable { let workspaceArchiveEligibility: [Row] }
+  let rows = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+  for row in rows.workspaceArchiveEligibility {
+    let i = row.input
+    precondition(WorkspaceArchiveRules.shared.eligible(knownTarget: i.knownTarget, archived: i.archived,
+      singleBusy: i.singleBusy, singlePending: i.singlePending, batchPending: i.batchPending) == row.expected, row.name)
+  }
+  print("Swift/Kotlin archive eligibility passed: \(rows.workspaceArchiveEligibility.count) cases")
+}
+
+struct ChatLifecycleCase: Decodable {
+  let name: String, state: String, lastTurnStatus: String?, archived: Bool, online: Bool, unconfirmed: Bool, code: String, lastKnown: Bool
+}
+struct ChatAvailabilityCase: Decodable {
+  let name: String, demo: Bool, online: Bool, supported: Bool, knownTarget: Bool, busy: Bool, pending: Bool, expected: Bool
+}
+func verifyChatManagementVectors(_ path: String) throws {
+  struct Vectors: Decodable { let chatLifecycle: [ChatLifecycleCase], chatManagementAvailability: [ChatAvailabilityCase] }
+  let rows = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+  for row in rows.chatLifecycle {
+    let status = ChatManagementRules.shared.taskStatus(state: row.state, lastTurnStatus: row.lastTurnStatus, archived: row.archived, online: row.online, unconfirmed: row.unconfirmed)
+    precondition(status.code == row.code && status.lastKnown == row.lastKnown, row.name)
+  }
+  for row in rows.chatManagementAvailability {
+    precondition(ChatManagementRules.shared.canManage(demo: row.demo, online: row.online, supported: row.supported, knownTarget: row.knownTarget, busy: row.busy, pending: row.pending) == row.expected, row.name)
+  }
+  precondition(rows.chatLifecycle.count == 17 && rows.chatManagementAvailability.count == 7)
+  print("Swift/Kotlin chat management passed: 17 lifecycle and 7 availability vectors")
+}
+
+do {
+  let data = try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[2]))
+  let root = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+  let rows = root["workspaceArchive"] as! [[String: Any]]
+  func wire(_ value: Any) throws -> String { String(data: try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]), encoding: .utf8)! }
+  for row in rows {
+    let previous = row["previous"] as? [String: Any]
+    let merged = WorkspaceArchiveRules.shared.merge(original: try wire(row["original"]!), previous: try previous.map(wire), incoming: try wire(row["incoming"]!))
+    if let expected = row["expected"] as? [String: Any] {
+      precondition(merged != nil)
+      let actual = try JSONSerialization.jsonObject(with: Data(merged!.utf8)) as! NSDictionary
+      precondition(actual.isEqual(to: expected), row["name"] as! String)
+    } else { precondition(merged == nil, row["name"] as! String) }
+  }
+  precondition(rows.count == 12)
+  precondition(WorkspaceArchiveRules.shared.select(current: ["hidden"], eligible: (0..<120).map { "chat-\($0)" }, allSelected: false).count == 100)
+  print("Swift/Kotlin workspace archive passed: 12 exact receipt/terminal vectors and bounded selection")
+}
+
+private struct QueueOwnershipCase: Decodable {
+  let name: String, state: String, source: String?, present: Bool?, disposition: String?, active: Bool, legacy: Bool
+}
+private struct QueueActionCase: Decodable {
+  let name: String, state: String, source: String?, present: Bool?, disposition: String?
+  let online: Bool, writable: Bool, pending: Bool, execute: Bool, supportsExecute: Bool, canExecuteNow: Bool?, allowed: Bool
+}
+private struct NoticeReceipt: Decodable {
+  let id: String, state: String, supersededByTurnId: String?, queueSyncError: String?
+  var core: ReceiptState { ReceiptState(id: id, state: state, supersededByTurnId: supersededByTurnId, queueSyncError: queueSyncError) }
+}
+private struct NoticeCase: Decodable { let name: String, receipts: [NoticeReceipt], dismissed: [String], pendingId: String?, expected: [Int] }
+func verifyQueueOwnershipVectors(_ path: String) throws {
+  struct Vectors: Decodable { let queueOwnership: [QueueOwnershipCase], queueActions: [QueueActionCase], receipts: [NoticeCase] }
+  let rows = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+  for r in rows.queueOwnership {
+    precondition(QueueRules.shared.legacy(state: r.state, source: r.source, disposition: r.disposition) == r.legacy, r.name)
+    precondition(QueueRules.shared.active(state: r.state, source: r.source, present: r.present.map { KotlinBoolean(bool: $0) }, disposition: r.disposition) == r.active, r.name)
+  }
+  for r in rows.queueActions {
+    precondition(QueueRules.shared.actionAllowed(state: r.state, source: r.source, present: r.present.map { KotlinBoolean(bool: $0) }, disposition: r.disposition,
+      online: r.online, writable: r.writable, pending: r.pending, execute: r.execute, supportsExecute: r.supportsExecute,
+      canExecuteNow: r.canExecuteNow.map { KotlinBoolean(bool: $0) }) == r.allowed, r.name)
+  }
+  for r in rows.receipts {
+    let actual = SessionPolicies.shared.noticeIndices(receipts: r.receipts.map(\.core), dismissed: r.dismissed, pendingId: r.pendingId).map { $0.intValue }
+    precondition(actual == r.expected, r.name)
+  }
+  print("Swift/Kotlin queue ownership passed: \(rows.queueOwnership.count) cases")
+  print("Swift/Kotlin queue actions passed: \(rows.queueActions.count) cases")
+  print("Swift/Kotlin receipt notices passed: \(rows.receipts.count) cases")
+}

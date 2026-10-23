@@ -1,0 +1,625 @@
+{
+  "schemaVersion": 1,
+  "phase": "P3",
+  "sourceBase": "7041ec739c19325b81c4e291615dd8188233afcc",
+  "status": "in-progress; metadata/sidebar/search/chat-management/archive-list/batch-archive checkpoints implemented; fullP3/G4 open",
+  "featureCount": 9,
+  "sourceNodeCount": 26,
+  "prerequisites": {
+    "P1": "Unloaded-owner manual archive acceptance human-deferred; do not retry or block on that item.",
+    "P2": "Human explicitly permits P3/P4 local development while cellular/VPN remains unverified. API26 cache-capture geometry remains unresolved P2/P6; no full P2 signoff.",
+    "pendingHumanClarification": "Answered 2026-10-23; cellular/VPN does not block subsequent local development.",
+    "P7": "A6 human pause preserved, including independent phone unread ledger/counts."
+  },
+  "features": [
+    {
+      "id": "F02",
+      "assertion": "顶部／侧栏切换客户端，名称、来源、在线与能力状态准确，恢复上次选择",
+      "ui": ["UI01", "UI03"],
+      "scenarios": ["S01"],
+      "scope": "Existing client switching retained. Active counts/accessibility require comparison; independent phone unread ledger and counts stay paused with P7.",
+      "implementation": "Client running counts implemented with shared snapshot policy; unread ledger/counts remain paused",
+      "acceptance": "Current shared68/68, Android24/6 and iOS1 native auxiliary passed; complete S01/realDEV/visual remain open"
+    },
+    {
+      "id": "F11",
+      "assertion": "左侧抽屉、遮罩、点击／横滑开关；搜索键盘、输入编辑、代码横滚与列表竖滚不被抢占",
+      "ui": ["UI02"],
+      "scenarios": ["S02", "S18"],
+      "scope": "Current Android already has a search visibility toggle. Do not implement it twice. Compare pinned/recent grouping and continuous gesture/IME arbitration.",
+      "implementation": "Section/search/close focus and IME paths implemented; native continuous gestures and complete touch matrix remain P3-6",
+      "acceptance": "Current24 native auxiliary / shared core / iOS UI evidence recorded separately; no full P3 or real DEV closure"
+    },
+    {
+      "id": "F12",
+      "assertion": "工作区下拉刷新／分页／去重、服务返回排序；失败保留缓存／草稿，刷新不触发桌面导航",
+      "ui": ["UI02"],
+      "scenarios": ["S02", "S11"],
+      "scope": "Existing refresh/paging/cache/drafts retained; desktop sidebar projection/order still require mapping and native acceptance.",
+      "implementation": "Metadata paging/persistence and exact received sidebar order implemented; full feature DEV still open",
+      "acceptance": "Current24 native auxiliary / shared core / iOS UI evidence recorded separately; no full P3 or real DEV closure"
+    },
+    {
+      "id": "F13",
+      "assertion": "仅搜索当前客户端项目与聊天，不受本地五条折叠限制；聊天内完整分页查找正文／工具／Diff／附件，查询及目标隔离、失败缓存与重试，原文片段高亮且关闭弹层后准确定位",
+      "ui": ["UI02", "UI05", "UI06"],
+      "scenarios": ["S02", "S05", "S11", "S18"],
+      "scope": "Loaded sidebar search and target-bound complete history search implemented. No management input or model replay.",
+      "implementation": "Sidebar search and complete in-chat paginated search/snippet/highlight/exact jump implemented",
+      "acceptance": "39 Android auxiliary methods/9groups,17 native Unicode vectors,1 iOS synthetic UI and shared core58 per runtime; full real DEV/visual open"
+    },
+    {
+      "id": "F14",
+      "assertion": "最近和每项目默认五条、独立展开／收起、项目区折叠；跨客户端保存各自状态",
+      "ui": ["UI02"],
+      "scenarios": ["S02"],
+      "scope": "Existing five-row expansion is not separate section collapse. Compare persistent pinned/recent/project and search-temporary expansion state per client.",
+      "implementation": "Shared five-row/temporary search expansion and separate per-client section/list persistence implemented",
+      "acceptance": "Current24 native auxiliary / shared core / iOS UI evidence recorded separately; no full P3 or real DEV closure"
+    },
+    {
+      "id": "F15",
+      "assertion": "同目录／同名项目、明确归属、projectless、已移除目录、同聊天多个展示分组保持原目标身份",
+      "ui": ["UI02"],
+      "scenarios": ["S02", "S03"],
+      "scope": "Preserve duplicate names, multiple project IDs, projectless rows and authoritative desktop grouping; inherited Windows normalization is not Windows acceptance.",
+      "implementation": "Shared projection preserves opaque identity, exact host and multi-project placement; Windows normalization/native acceptance not added",
+      "acceptance": "Current24 native auxiliary / shared core / iOS UI evidence recorded separately; no full P3 or real DEV closure"
+    },
+    {
+      "id": "F16",
+      "assertion": "仅实际允许的 Provider／模式可登记授权目录内已有项目；原桌面不支持时两端一致提示",
+      "ui": ["UI02", "UI04"],
+      "scenarios": ["S02", "S14"],
+      "scope": "Maintain/regress existing project directory capability only. New project records, project management/deletion and Task Hub remain deferred.",
+      "implementation": "not started in P3; existing paths retained",
+      "acceptance": "not newly verified"
+    },
+    {
+      "id": "F62",
+      "assertion": "按准确终态轮次分支到同目录或工作树，原源码与暂存区不变，未知只查原回执",
+      "ui": ["UI03", "UI20"],
+      "scenarios": ["S03", "S10", "S11", "S13"],
+      "scope": "Preserve P1 actual forks and current read-only fork menu evidence; do not replay consumed operations or treat menu visibility as new fork execution.",
+      "implementation": "not started in P3; existing paths retained",
+      "acceptance": "not newly verified"
+    },
+    {
+      "id": "F70",
+      "assertion": "聊天归档状态与任务状态分别展示，管理不按执行状态预先拒绝；删除确认、准确目标及未知回执不重放，原桌面拒绝不能冒充成功",
+      "ui": ["UI01", "UI03", "UI10"],
+      "scenarios": ["S02", "S07", "S10", "S11"],
+      "scope": "Android DTO lacks archive/last-turn/sidebar metadata and management UI/receipts. Implement final lifecycle policy, archived read-only history, five named actions and bounded chat batch archive; project CRUD excluded.",
+      "implementation": "Metadata and archived-row exclusion implemented; named lifecycle/receipts/archived UI/batch remain P3-4/5; archive list/read-only history slice implemented, batch archive remains P3-5b; <=100 chat-only batch archive and durable per-item shared receipt rules implemented; fullDEV open; shared archive eligibility and single/batch mutual exclusion implemented, final evidence in progress",
+      "acceptance": "Current24 native auxiliary / shared core / iOS UI evidence recorded separately; no full P3 or real DEV closure"
+    }
+  ],
+  "sourceNodes": [
+    {
+      "recordId": "B003",
+      "sha": "7ce8fe2111682a9ab4e355a5f168b32b029e4b6d",
+      "title": "feat(android): add native read UI and preserve A3 acceptance checkpoint",
+      "behavior": "A3 原生抽屉、客户端/项目目录、发现/二维码、Markdown/工具/Diff、缓存与只读 Host。",
+      "retainedFrozenFirstParentPatchSha256": "1b41159630d949d83ac2711cacd7f3884dbb61a4562b4e5db80b6b155711549d",
+      "boundary": "Existing read UI baseline; compare current drawer/client/project states without recreating execution.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "B006",
+      "sha": "6c2ed5d8840f579d8b2a32895aefd5bff3b80fb5",
+      "title": "Align A3 native UI and validate Android read paths",
+      "behavior": "A3 修复弹层/IME/系统栏，边缘抽屉、连接表单、真实扫码，分页防重复及阅读锚点。",
+      "retainedFrozenFirstParentPatchSha256": "576149c7ea9ace904b4a244280891e092ef641a0ab8a6eefefaaa20237f61826",
+      "boundary": "Preserve gesture, IME, system bars and paging baseline; unresolved API26 capture geometry remains P2/P6.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "B044",
+      "sha": "5376d35b1d0911fbea240b8322d04ab626717b20",
+      "title": "feat(mobile): align native conversation forks and verify UM03",
+      "behavior": "UM03 Android 准确终态回复分支，同目录/新工作树、持久原回执与晚到导航隔离。",
+      "retainedFrozenFirstParentPatchSha256": "731cd1947b63d56b00f7653637f6592f62137de845628a5cab8cdaa647aaaa58",
+      "boundary": "Preserve exact final-turn fork, immutable receipt and detached late navigation; P1 execution and current read-only menus are distinct evidence.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "B045",
+      "sha": "04b382b3a35a854c47b6b02becfaa84d8a8926e5",
+      "title": "docs: close UM03 after verified main delivery",
+      "behavior": "UM03 main 发布和独立读回闭环。",
+      "retainedFrozenFirstParentPatchSha256": "683245efa9925e288382349bddf62b4f8ceec1073982a2a4b76d0bfbea0b8783",
+      "boundary": "Delivery-only provenance; do not count as another feature or Android execution.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O013",
+      "sha": "a66f0bf46387f167f09891bd96ae30eb35cbfb02",
+      "title": "feat(sidebar): 同步桌面置顶顺序并保存手机折叠偏好",
+      "behavior": "置顶按桌面顺序投影；置顶与最近分别折叠持久；搜索临时展开；EasyWork第一页补齐旧置顶摘要。",
+      "retainedFrozenFirstParentPatchSha256": "878a626d207796eb5505d7b038a99c07bc8a679e7ea9e3bbba2c6371c75b748d",
+      "boundary": "Desktop pin ordering and separate persistent pinned/recent section collapse; search temporarily expands sections.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O016",
+      "sha": "82f0120eb943412934988956c1fdb70dabe05227",
+      "title": "chore: preserve current development inputs before branch consolidation",
+      "behavior": "大快照纳入正文文件/网页链接、后台历史不锁输入、直接已就绪回复、原生队列与立即执行、分段添加连接、六行用户气泡折叠、通知事项摘要和批量管理，以及未绑定建议观察。",
+      "retainedFrozenFirstParentPatchSha256": "37a6d995de022ba3c9eb1d8ec66e9918d9d323e1ed4ca4615e6f243001c30e9e",
+      "boundary": "Mixed snapshot: only chat navigation/management portions enter P3; other features retain their own packages.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O017",
+      "sha": "c2152f104a6a3938edd5589460b23b92724d11a1",
+      "title": "feat: add chat pin and history search with guarded lifecycle actions",
+      "behavior": "新增具名pin/unpin/archive/unarchive/delete及完整分页聊天搜索；匹配正文/工具/Diff/附件，跳转高亮；归档历史只读，active writer限制准确提示。",
+      "retainedFrozenFirstParentPatchSha256": "dbb9df99f18334e900702ca751b66a1f2046eb18f0905e9fbe1b2089cc2b8d86",
+      "boundary": "Five named chat actions and complete paginated history search; apply later lifecycle policy instead of retaining obsolete writer pre-disabling.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed",
+      "searchCheckpoint": "Full-search applicable slice implemented/auxiliary passed; whole source-node acceptance remains open, O017 lifecycle still P3-4/5"
+    },
+    {
+      "recordId": "O018",
+      "sha": "2e938180c0ea3162bbcc65348ee41617e6cc5d71",
+      "title": "fix: route chat search through shared native presentation state",
+      "behavior": "聊天搜索纳入统一原生sheet路由，关闭后才执行消息跳转，切目标撤销旧搜索。",
+      "retainedFrozenFirstParentPatchSha256": "08d916ed727d04e82b2a9e23879fad1598f82486cc3e3b6014681443a75f500e",
+      "boundary": "Use one presentation route; dismiss search before exact message jump and discard stale target results.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed",
+      "searchCheckpoint": "Full-search applicable slice implemented/auxiliary passed; whole source-node acceptance remains open, O017 lifecycle still P3-4/5"
+    },
+    {
+      "recordId": "O019",
+      "sha": "696f7294b4641636d4cc465044198ae3b1ddf084",
+      "title": "fix: use live thread state for chat management availability",
+      "behavior": "聊天管理可用性优先当前已选聊天真实runtime state，避免目录旧running状态误禁。",
+      "retainedFrozenFirstParentPatchSha256": "50969266c164920dce88c62e00402dc842d3ccd90507f5326e60871c86ad07b6",
+      "boundary": "Historical availability change; final O150/O152 policy supersedes state-based pre-disabling.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O021",
+      "sha": "153b3f67361c16d2f0150609d86bbdf5cc7cdd76",
+      "title": "test: integrate frozen workspace changes for physical iPhone acceptance",
+      "behavior": "冻结现场纳入设置批量项目删除/聊天归档、每批100项持久逐项回执、通知标题/副标题/事项摘要及默认预览。",
+      "retainedFrozenFirstParentPatchSha256": "a15cdf9a2d990836b99acb3830f8591900795dc6baf07acad56828454065a998",
+      "boundary": "Chat batch archive up to 100 items with durable per-item receipts; project deletion and new project management remain deferred.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O022",
+      "sha": "e2e4adf0bf4135247400dbfb97f25382941ee53a",
+      "title": "fix: preserve archived history state across reads and restarts",
+      "behavior": "官方目录决定归档状态，历史/事件同时投影；重启重新注册归档reader允许项；菜单按完整目标重建并再次核选中thread。",
+      "retainedFrozenFirstParentPatchSha256": "eb3c5b7e5a68a97a8fc946c47983bdd14717b710ae30eaf6efae24fa557abec3",
+      "boundary": "Authoritative archive state in history/events and restart read registration; rebuild menu for exact selected target.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O036",
+      "sha": "284246667b6a919ee50bb4cbe065c723787cf8b1",
+      "title": "fix: integrate suggestion recovery and composer wait handling",
+      "behavior": "建议漏通知有界Trace补读；清空草稿恢复有效建议；回复结束等待移发送记录且原HTTP未返也能释放本次锁；运行状态须有效Turn；运行中pin可用。",
+      "retainedFrozenFirstParentPatchSha256": "cf7ee8e7f80edc6e446dd94839707c4262be7b2ce479425f2d24973621779ab7",
+      "boundary": "Require a valid turn for running state; pin remains available while running; composer/queue/suggestions stay separately tracked.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O043",
+      "sha": "b91fa06161d477e5de11697754cd1ca4c161677b",
+      "title": "fix: align iOS conversation lists with desktop sidebar",
+      "behavior": "sidebar v1投影混合置顶、最近、项目及子聊天精确顺序；recencyAt而非updatedAt；桌面排序/显示项目聊天偏好同步，缺失/归档排除。",
+      "retainedFrozenFirstParentPatchSha256": "feaa2a60a7e91a1f24328d74ea57a69727bfac81616740e2ef1ee9eb4c7b61b2",
+      "boundary": "Version-1 mixed pinned/recent/project projection, desktop order/preferences and recency; exclude missing/archived rows.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O058",
+      "sha": "84a9995fa01937ffae25f2f4650ba2762b951f5d",
+      "title": "fix(adapter): normalize Windows legacy project roots consistently",
+      "behavior": "Windows旧项目根目录规范化大小写与分隔/尾斜杠，同一目录匹配一致。",
+      "retainedFrozenFirstParentPatchSha256": "496ef6f6d83627f7ec0eb990294b992afffe226e87594788c8c42c699a753e70",
+      "boundary": "Inherited adapter Windows root normalization; preserve remote project IDs and do not substitute local path rules or claim Windows acceptance.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O150",
+      "sha": "8e6f9d657c60b3ce0131b6c34b4cb65e21b33528",
+      "title": "fix(mobile): align chat management policy and show lifecycle status",
+      "behavior": "iOS聊天归档状态与任务状态分离，菜单/归档列表/批量列表显示终态和上次状态；移除按running/approval/owner摘要预禁用，官方拒绝按rejected提示；删除确认含子对话；Host投影lastTurnStatus。",
+      "retainedFrozenFirstParentPatchSha256": "6f62533825673e1e3453b37d9fc8fb0a761786022f56166bf2d403c9c18a4dea",
+      "boundary": "Archive lifecycle and execution/last-turn state are separate; capability-based menu, visible rejected receipt, delete-child confirmation.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O151",
+      "sha": "a43d99b064064e99499b1aa703aaeb59431868b5",
+      "title": "merge: preserve latest main chat lifecycle fixes during snapshot recovery",
+      "behavior": "9232a3e与8e6f9d6合并，保留UM06恢复与最新聊天生命周期；生产代码combined diff无额外独有修复。",
+      "retainedFrozenFirstParentPatchSha256": "644f5f659569209b6ca7ab094fd92f5cfeeb29831aaa0f2dad228fc5f5636ac9",
+      "boundary": "Retain merge provenance; no extra independent product behavior beyond reconciled parents.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O152",
+      "sha": "d2798cd7e852fdc895c44671b02832646a1195fb",
+      "title": "fix(mobile): align chat management policy and show lifecycle status",
+      "behavior": "另一主线提交同一聊天policy/lastTurnStatus/UI变更并补parity记录，与150实质重叠，153合并归一。",
+      "retainedFrozenFirstParentPatchSha256": "ccb1205b6e68b9f453d5427bdf9fcd07b9f65260ae76a1b363a0fcf67263bf87",
+      "boundary": "Retain overlapping lifecycle source; implement one final policy, not duplicate command paths.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O153",
+      "sha": "6342f1236788a1e7e0d3423c485c07517c7c2425",
+      "title": "merge: reconcile current upstream main with preserved local changes",
+      "behavior": "合并a43d99b与d2798cd，补缺三条双语生命周期文案与manifest/设计/验收来源，不改原操作语义。",
+      "retainedFrozenFirstParentPatchSha256": "05c7f077d83279d1cc67624dd617f74c152a434de3da6206754e7ed09a800839",
+      "boundary": "Retain merge and bilingual lifecycle copy; no extra action semantics.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O160",
+      "sha": "c34d325693fd1bc9516ba8f7f723c0acffd8e14a",
+      "title": "feat(adapter): validate shared desktop runtime chat lifecycle",
+      "behavior": "shared-runtime通过原Electron启动单官方App Server，stdio与Host WebSocket连接共享执行；只固定聊天管理，活动+归档目录分页、live消息保护/旧快照不得复活停止。",
+      "retainedFrozenFirstParentPatchSha256": "96428495bfa2544165fe29cda9fcd1362c2ab6617b07086b4b7c13298f4862c4",
+      "boundary": "Inherited single original-desktop shared service and bounded chat-management channel; no second execution instance.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O161",
+      "sha": "8ac27ed08e1743c53611a4756f4dfec3b497f519",
+      "title": "feat(host): configure one original desktop for shared chat management",
+      "behavior": "正式配置原应用持有唯一服务，Host维持desktop-runtime控制，只五项chat管理连共享服务；最初持久CODEX_CLI_PATH和FORCE_CLI两环境。",
+      "retainedFrozenFirstParentPatchSha256": "116bbd6075fff23f82f45dbde77a62563fe7b7a31e3c24ca0bc0766feab46da6",
+      "boundary": "Runtime configuration/deployment boundary only; do not modify the original desktop merely to claim Android implementation.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O162",
+      "sha": "b5eaeb9a8709762e6f3b730a72341d4c3fa25cdb",
+      "title": "fix(host): preserve native collectors with the shared desktop service",
+      "behavior": "macOS建议/通知采集器支持原应用→已安装私有wrapper→原CLI链；核对manifest/hash/owner/父链，不接受任意Node孙进程。",
+      "retainedFrozenFirstParentPatchSha256": "e1fbeaacffd91413c7c46462468a0e48c991096f69f7b2a25d37d9ec7504e6af",
+      "boundary": "Inherited strict original-process/wrapper/CLI observer chain; no Android duplication and no new cross-platform proof.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O163",
+      "sha": "b2bd6932359fe82e17ee942df7035f38e7c83b64",
+      "title": "fix(adapter): retain task outcomes in archived desktop chats",
+      "behavior": "归档目录不再把执行state强制unknown，保留current运行态与lastTurnStatus。",
+      "retainedFrozenFirstParentPatchSha256": "5264427cd1c6645c8e679f26fd219a30a00bd0b3fd3446167abf4997dc497124",
+      "boundary": "Archive list retains execution state and last-turn status independently.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O164",
+      "sha": "df57e27777abbbe52702e4e13dc5fdd3cc918a28",
+      "title": "fix(adapter): share workspace archive management with the original desktop",
+      "behavior": "侧栏批量归档/项目管理使用相同共享服务独立窄连接，仅project/list/delete、thread/list/archive；移出活动目录后用窄缓存保持任务结局。",
+      "retainedFrozenFirstParentPatchSha256": "c875b3b1c2f88eda3cead6a0669ebeb290f1be49aa0117a4c1dcad8dd3317780",
+      "boundary": "Chat list/archive batch uses narrow shared connection; project list/delete management UI remains deferred; retain terminal outcome cache.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O165",
+      "sha": "7be6cb764d0d3990063c44d9d3ae336b4eca5839",
+      "title": "fix(desktop): preserve native cloud routing in shared environment",
+      "behavior": "shared环境v2仅保留本地CLI路径，移除有私有旧清单/摘要证明属于自己的FORCE_CLI，保留official durable/云端/远程路由；observer兼容v1/v2。",
+      "retainedFrozenFirstParentPatchSha256": "f374228612fd6541b7a50c83ccb302189611af7e9f9f4d771765be92eec37aa8",
+      "boundary": "Preserve official durable/cloud/remote routing; v2 local wrapper configuration is a Host boundary, not an Android workaround.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O166",
+      "sha": "e2ad838e7ccd2ba2ca3a85f0a4ec98aa4d98bd33",
+      "title": "fix(chat): retain archived task outcomes after desktop owner loss",
+      "behavior": "owner失去后归档且已确认completed/interrupted/failed仍投影终态；活动/未完成保持unknown且不恢复控制；iOS菜单与归档列表同规则。",
+      "retainedFrozenFirstParentPatchSha256": "3ecbb480b9aecd9f1dc5253fc2f1e2fb67375fa98da7ada9ad34d62e1c413391",
+      "boundary": "Only archived records with confirmed terminal outcomes retain terminal display after owner loss; active/unfinished stay unknown and never regain execution control.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    },
+    {
+      "recordId": "O167",
+      "sha": "6d81284e9c352e977140c09197526296d57b9669",
+      "title": "docs: record single-desktop archive regression acceptance",
+      "behavior": "记录最终单原桌面、本地/云路由分离、原草稿一次跟进、准确删除回执、新建一次输入、归档列表/逐条菜单终态与侧栏批量归档限定回归。",
+      "retainedFrozenFirstParentPatchSha256": "3a1889f69c347acaab4883b68d43ec019051dbc34fc9cce982ec9144a6ee7e69",
+      "boundary": "Historical single-desktop/iOS limited evidence; do not count as current Android or physical-phone acceptance.",
+      "status": "source-scope-mapped; implementation and scenario acceptance not closed"
+    }
+  ],
+  "substeps": [
+    {
+      "id": "P3-1",
+      "work": "Versioned sidebar/archive/last-turn metadata, target-bound cache decoding and shared pure display policies; no execution authority from projection.",
+      "status": "metadata read/paging/persistence implemented; shared pure sidebar display policy and UI in following checkpoint"
+    },
+    {
+      "id": "P3-2",
+      "work": "Desktop ordered pinned/recent/project rows and separate persistent section/list expansion; search, client switch, gestures and IME.",
+      "status": "implemented with24 Android auxiliary cases; full continuous gesture/identical-data visual/real DEV remain P3-6"
+    },
+    {
+      "id": "P3-3",
+      "work": "Complete target-bound paginated chat search, snippets/highlighting and exact result jump after sheet dismissal; stale/cyclic cursors rejected.",
+      "status": "implemented;39 Android auxiliary methods/9groups and1 iOS synthetic UI test passed; physical system Back and full DEV/visual remain P3-6"
+    },
+    {
+      "id": "P3-4",
+      "work": "Five named chat actions, immutable target/operation receipts, query-only unknown recovery, delete-child confirmation and authoritative rejection.",
+      "status": "implemented/auxiliary checkpoint passed; full P3 and real DEV open"
+    },
+    {
+      "id": "P3-5",
+      "work": "Archived list/read-only restore and <=100 chat batch archive with per-item durable receipts; no project management.",
+      "status": "Archive-list449bbe2 and batch archiveeb061a6 committed/pushed with checkpoint evidence; realDEV/fullvisual not closed."
+    },
+    {
+      "id": "P3-6",
+      "work": "API26/API37/new-phone native functional and visual matrix, original Electron and once-only model tasks where necessary; unsupported environments remain separate.",
+      "status": "Menu2956eb2/countsd8db39c/conflictsa95aae0 committed; pending-selection/all-record final Android30+iOS2aux passed. Whole gesture/visual/realDEV open; proceed P4 local scope per human adjustment."
+    }
+  ],
+  "zeroNewProductChanges": false,
+  "zeroNewModelInputs": true,
+  "humanGateAdjustment": {
+    "date": "2026-10-23",
+    "instruction": "蜂窝/VPN单列待验收，继续 P3/P4 等本机开发",
+    "effect": "Explicitly permits subsequent local stages; no cellular/VPN success or full P2 signoff claimed. Unloaded-owner manual archive remains human-deferred; A6/P7 and Task/Project management remain paused/deferred."
+  },
+  "metadataCheckpoint": {
+    "sourceBase": "f132d9129b5619aa16ba99af9d9b7725d4578356",
+    "features": ["F12", "F14", "F15", "F46", "F70"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "fd55d2aede7824382f1f5653df18c89200632e342fea5e2d2f6eff100250c091",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileWorkspaceMetadata.kt": "e9a3df03f5e0d60d135812750fc28c88d5dd05e667e26b3b9e3a9bb1f6ad2721",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "02ac4ac168c8b0f6027dc07d7b8bf6bb43c34dd5a30776db2b660171e0bc0dc5",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceMetadataTest.kt": "cbc2dad4a85e4c0ace59641b5d6e2e081f893097db84cd870d84c4b6ff9931f0"
+    },
+    "status": "42 native auxiliary cases in6 separate groups; no new real DEV/model claim"
+  },
+  "sidebarCheckpoint": {
+    "baseCommit": "504b506976c99544c23e94bff08d3fe1d263121c",
+    "sourceNodes": ["B003", "B006", "O013", "O043"],
+    "boundary": "Partial applicable sidebar slices only, not whole source commits; O013 EasyWork first-page pinned summary still P8. F26 existing-project shortcut is adjacent P1 impact, frozen9-feature/26-node scope retained.",
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P3.json",
+    "remaining": "P3-3 full chat search, P3-4/5 lifecycle and management, P3-6 real DEV/visual/gesture, F02 active counts; independent unread paused"
+  },
+  "chatSearchCheckpoint": {
+    "date": "2026-10-23",
+    "baseCommit": "b440392158e25981b5d9547616b0cef41ce11569",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4124d1d3d4afd2bf8dfa74faad3bcfb910ff8d4e4d708e97901455a37f465207",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "6360854fa677652fa8d871d27b6204bd204e7a7c11e3182e39073a96abe3fd6a",
+      "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "0081ff969b7d365f6821a4ef268df386d51308bf46d9d40de0522e9644843eb6",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "67d85ebe7a1306ba52b44b29f18591c51f35a833c7fe660e2fb748950aafebb1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "3e3dcd726539b2518fde9f1adb3f18ea6cb2572a32f2ab2805fcd473d4d4db07",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj": "6a194d1d5ef36247999a13adcead50e28b743bdd6ad7826724a3cffcfb832b63",
+      "apps/ios/Sources/Models.swift": "183d093cbb32447ca8c8524d766924e3a0ae06e136f45553e0a844610b95b7a6",
+      "apps/ios/Sources/RootView.swift": "a468dfe3e6f6cd55f6f222aef5656c138c8eee7637e8d7f1ad034373a998f1b8",
+      "apps/ios/Sources/SessionStore.swift": "e68e82da4bac0797e7bbb4ce920a2fc725e539ff74ed9b20166add1cb4df9090",
+      "apps/ios/Sources/SharedMobileRules.swift": "523d78764ae6ce88cc0e58cfda56a7f2cf3d0e9a6ecf207a5d2645ade0a388bc",
+      "apps/ios/Tests/CodexManageUITests.swift": "1fcd8b3da8ade9d6fc57a2e7423508337e62b0e722b75b95e8c1e2f19abe4745",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/MessageProjection.kt": "a7d33b77cdc1c7d4e116d6affb7cfe0c6fa4d8099457ca675b56567cddbc91b3",
+      "packages/protocol/fixtures/mobile/state-v1.json": "c6f914ec4e6fb1038950e92e2c47b26ac78c14f5c45727d4380f8ff1a9ced988",
+      "scripts/chat-search-ios-fixture.mjs": "e941edd35b17deabd869f7b3ed5cd59a89c6eb1c47728899fd5589a87fadc6d6",
+      "scripts/mobile/check-core.mjs": "896e20d8f08497f3947bd7f536c7a6f0cb13a6af855b543ffacdad8c449aae03",
+      "scripts/mobile/verify-ios-state.swift": "971860f5a7243634a70585a38706bd1b49bb3f6087772c904353facc72bdd0f6",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatSearchRulesTest.kt": "aacd6bc47ada542777fce24048e1fa387ffd1466ff423f368ab3a2126be33295",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatSearchSessionTest.kt": "7a289c3a097701d5776e121222fb12765f53447739beae6c0c5f908e3d88249d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatSearchUiTest.kt": "997f15e4d69b87a049e987ece98ccd02840ffac813720966d2060ff083190b89",
+      "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "b527df3cbf145683b91b238bf3dd296f8cf5aa0b1bfc69fb86f1bd2eebbd9a8d",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatSearch.kt": "21e29384d189be3fdeb7f73bd16fcf78e250953f7aa3bcb4f5fb6890ed8783bc",
+      "apps/ios/Sources/NativeChatSearch.swift": "66f42f562aec4a471328d73a43696ce9d1e19fa5b8a67e502c725daa0bed0ff8",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatSearchRules.kt": "7cfff3e3f6d5ed054116a7681850f34d7c16ecd31fbc1b4b298fdbcc4e04b8d7",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatSearchRulesTest.kt": "7888800b07477b82c379b12f053f9caa59085cbf668ebe30d4538c3883d034b7"
+    },
+    "sourceNodes": ["B003", "B006", "O017", "O018"],
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P3.json",
+    "boundary": "Applicable full-search slices only. O017 lifecycle actions remain P3-4/5; B003/B006 full gestures/UI not closed. Frozen9-primary-feature/26-node scope retained; adjacent F05/F17/F19/F20/F24/F25/F46/F47 impacts recorded in product manifest."
+  },
+  "chatManagementCheckpoint": {
+    "sourceBase": "8d759cea97af897af90123cfa9ed324153ac095c",
+    "status": "implemented/auxiliary checkpoint passed; full P3 and real DEV open",
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P3.json",
+    "features": ["F70", "F05", "F11", "F12", "F13", "F25", "F37", "F46", "F47"],
+    "boundary": "Applicable lifecycle/receipt/status slices only; frozen9-primary-feature/26-node scope retained. Full source-node acceptance remains open.",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "753bdba346e4e26d2823ba5ed3925588d0b4f0977e4033a6ee8a19f14b8ce775",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "766d5aa766f2a1828eb5781cd95b034ab387f0883d851933c71dce3faff1d9de",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "77dd5a94f79ecf7a012208c24ec42751b1d64458dc383511bae04c21d68fb053",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "80d34e2cccfb4cd12da1b5d1ca0e88eebc53cc5211471bd527bcb03d8443c82b",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "8745fd79a3e103b514c0f75f7dc52adf115737e5a2964ffdd3c3e9ba007b1561",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "c83aac7918e76ec7a57967b1572097152e6afa781796d92bc4e02d7b49877d6e",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "1128dde6f2f3c64d2a08b29b51078da8f36e52f023a979ac603546844d552c5c",
+      "apps/ios/Resources/en.lproj/Localizable.strings": "ca720fca6b15bd35f7fa42fd730c4c4241849dfbfdbd673cc2e904bd7d73c127",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "00172ea2bd3ca1027df15e4d88c8542dc5a386a6b5d4964e64c079c626539a69",
+      "apps/ios/Sources/Models.swift": "c38fd1e9e0625df479127ece3b7742bb0f8cc573614a60a586c77888703c871b",
+      "apps/ios/Sources/RootView.swift": "b921381e16b99d518f44fbb30ac70b625869bec496195c64883ae52c0bc3a57e",
+      "apps/ios/Sources/SessionStore.swift": "d1a7d9904736e2a508bd13ccc39396b9dbe7347b521896a90f86577f0ffb0e5c",
+      "apps/ios/Sources/SharedMobileRules.swift": "cf7ac87aeac394fe96e03566d221a0b537372ccef5bbc1e493c5b7658c4293c0",
+      "apps/ios/Tests/CodexManageUITests.swift": "44deaf75865e38a9968245c0746567421586df096c79e4798a280ff54e7a6bcb",
+      "packages/protocol/fixtures/mobile/state-v1.json": "4fcff5d7654403a13ae33cfe29a9e6b3c11e6d8d6e9271bd0a28f34548200155",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "d6398364df74ccc882ec8db828cc0f8f0fdbe7b9f6982e78908e42c884f6e855",
+      "scripts/chat-search-ios-fixture.mjs": "4ea879cecc67899c0eb5f192ea1386dfd47cae0b8bb777a3b2662fee2591fa19",
+      "scripts/mobile/check-contract.mjs": "64e3f85d769c23aab51fd21f2359aafa06e826ccc854effd94f0526fac5b54fb",
+      "scripts/mobile/check-core.mjs": "d4a2b7241ae58eb8ec9964efafa81fe097819d60cea7f3b8a94326d4054f0786",
+      "scripts/mobile/verify-ios-state.swift": "d489131dfef54cd12bceb3a612db7b243c5474c74610a481ade3edc6225304dd",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionFlowTest.kt": "83971fa472b6fea7ae99518dd3b761a3991e62f6605dae86a09d8ba9ea935404",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "42001a775922bba28dddc993e5f51edf23905e9016901f6a35073f21a4a0225d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionUiTest.kt": "a852384e10b4909d86b3bde2ad96bd99cbfb1190350e9a46ddbf74c5e1fe8130",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatActions.kt": "966fddc52e271e91981a2752fe2a6a59cc2f01c8775fb2bb4a291563f6464218",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt": "6fff458b4d1b45b37cb59fb3a7d53d10b43932310f0207365d6b086f2d0ce93b",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt": "da0f1e8e1ea51a9fb7f1ea2ff059c469cf9c60e18ea454bdcb24240139b57a0b"
+    },
+    "sourceNodes": [
+      "B003",
+      "B006",
+      "O017",
+      "O019",
+      "O036",
+      "O150",
+      "O151",
+      "O152",
+      "O153",
+      "O163",
+      "O166"
+    ]
+  },
+  "archiveListCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "79c5afacdbcd9327640c3df8bcb55480502632e0",
+    "status": "implemented; 54 native auxiliary methods in 12 groups passed; full P3/G4 remains open",
+    "sourceNodes": ["O022", "O166"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "1a8fbc4b3565f4de1f237fe1964750b994379137de510f84cadc505b35b6038b",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "43804fa9f0b37bf9e2a5805508a0ee456df5c14501d5b7dcdc9fefd1527bc88a",
+      "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "2c75819277990ace3d356ece47b05d3cd333584c4944aa1ca05ec7ece50d3ede",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "431fa32bc46efb3b16d5727b75396f4dbb49f3a166a504f45149261419b2e99c",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileArchivedChatsUiTest.kt": "726948c247b77638d3ce9937af8d51d6e2544e78380fb21196a51d23dddc8993",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "7fa77accab63ab0fc962603908a8178096eef0a7fd5d7e09eca2c422094f8ecb",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCommandBoundaryTest.kt": "eddcedd78586ce55d6ed132729c70bfabf5a3c0728565ec48cad504838744af5"
+    },
+    "remaining": [
+      "P3-5b: bounded <=100 chat archive selection, confirmation, durable per-item receipts and original-operation query; no project manager.",
+      "P3-6: exact whole UI/gesture matrix, menu order/icons, pending record labels, running counts and real Electron/native Android DEV.",
+      "Cellular/VPN and manual unloaded-owner archive remain human-deferred; physical system Back and API26 previous cache geometry remain unverified.",
+      "A6/P7 pause; dependent P9 remains paused."
+    ]
+  },
+  "batchArchiveCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "449bbe25715ae78bb8aa223926f38e202d8d1c0d",
+    "status": "implemented;90 Android auxiliary methods/21groups,67 actual methods per common runtime and1 iOS native demo scene passed;fullP3/G4open",
+    "sourceNodes": ["O021", "O022", "O164", "O166"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "d25015b65062af888f61430f0add03008fb19ab99cff133f7479d7a8bd426909",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "e5dea432b1aa8c037820144ef50165d246706330ef32c2fb5479323a2f7a902a",
+      "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "58e2fe2fb7c77be1fde7e50eee3f3df0d4ccc770869bcc71ce55d4ae6f125100",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "d5dff316fe6cf3d97448b9de4775ba2a7957c252602ac6ae5adfcabf0c52c726",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "30066814fb9013f5d63ca0e01a586ac5d9b5af87b76b4871c9e7dbf6a93a2c6f",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "ed5346bc3f4bceb5676a32434be141988a3ddf8376ebe85802bb53c1307ef6ff",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "072bd13c94a3d49a09c82207a1b73bf16427ffdae4b473eb96b4268bb3e19fc6",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "a52afa5e9e32088633a9bf43b194331c46698d74d8ea36e7010b96205adef808",
+      "apps/ios/Sources/Models.swift": "bdda1fb457b13268b711b64950376b8522498155bf28f69d342b6225b2b35205",
+      "apps/ios/Sources/SessionStore.swift": "e70afea5df73af6d8c78dd44dec30e976fafe2f74cedd075e0a41c70e3aba9bf",
+      "apps/ios/Sources/SharedMobileRules.swift": "387d15578f3be8f1d773244e9385ad433228cbc034ce4dd54cf3799cfcf79c64",
+      "apps/ios/Sources/Sheets.swift": "47aa81fc4ff3b19eab9471c816df1bb06c66a689e766ac37645c2764bfcf2aa3",
+      "apps/ios/Tests/CodexManageUITests.swift": "777ca8dabfbf9a0fbb0a864bb6ae4dbdb1cd6c4c3bcc7750a6b36335eb0e728c",
+      "packages/mobile-core/build.gradle.kts": "d2f5a04e367eb237bed4ec5977609d4fabc1ca9cb94bf697593b78bf397328dd",
+      "packages/protocol/fixtures/mobile/state-v1.json": "0cbe25a29abdf3150189dabf49b05c2ea3c57eef37356545a3ea14039cd73d09",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "fddf0f26737cad678e248226733bd366281ec528053d9ceda1124d97c924295d",
+      "scripts/mobile/check-contract.mjs": "ff236025377e074974f18240c716b93fe7303185ce480a21aba4c6be748e5d9b",
+      "scripts/mobile/check-core.mjs": "66e40eaeedda9215b4c8e903ad9da14fbd0e731d81fa779d291c597a3297c880",
+      "scripts/mobile/verify-ios-state.swift": "7050ea9e6c8008095c17aac3f0767f7fde97218fd0f1d413e1c623a234005873",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveFlowTest.kt": "7eb334a2bcbcc1173b9fadb63ea4d3a20ed334a5cf9a996e328bc47bf4f1b01b",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveSessionTest.kt": "2fe0561091006f852be38137e7c664338f914da8f23f5668b2634af307691374",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveUiTest.kt": "773f7855ae11d5a824f4a969213960a65480c0b3092c1f79b4b1ce018098298b",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeWorkspaceArchive.kt": "00c972305033d2a962d7a0e8aefe5ba5cf5c56fd15fe974ec6fc1ab71e7bf8be",
+      "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "a77179a6c5db341112ef184f79d40726118c42f9fd3c0986385cca476bd752b2",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt": "7f50d36011963e941193cca681598ff5aaa5df425806542ddf494ced05ea2cba",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceArchiveRulesTest.kt": "4e1f2490d1cf6a0257b6413f5ba3d465f9d9a9a92dd722a22892fcaa56c47004"
+    },
+    "remaining": [
+      "P3-6 complete menu ordering/icons/pending row labels, running counts, continuous gestures, exact native visual and real Electron/native Android DEV; no whole feature closure.",
+      "Archive-only Android entry currently goes through archived-chat sheet; iOS uses settings workspace manager. Explicit current-client caption, project/status filtering, native dialog styling and long record reachability require full UI comparison in P3-6.",
+      "iOS original manager presents at most10 records and independent single-action/batch conflict UI requires review in P3-6; do not declare full interaction parity.",
+      "Cellular/VPN, manual unloaded-owner archive, physical system Back and prior API26 cache geometry remain separate unverified gates; Windows and physical iPhone have no new result.",
+      "Task/project business management and project deletion remain deferred; A6/P7 and dependent P9 stay paused."
+    ]
+  },
+  "menuParityCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "eb061a6a823e1de7fbc78d9cd17ea7b51857c89c",
+    "status": "implemented; final native/build/workspace auxiliary checks passed; full P3-6/G4 open",
+    "sourceNodes": ["B003", "O019", "O150", "O152"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionUiTest.kt": "82f22e03ea645220798e27eee95fa8f4e27a2d96328704ce30f0633671777eb4",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "de603cfe26c70631f49b894d7f257e8b502120cd18c5d54a65d564b6bd18ff29",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "eabb28d57234960b5140443ed0cb98fa5f22169f8869a0f35bda9df819cf837b",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "02b67209df7f5b7910f534cb10b137c0912cd7afec229e69b499978ad0066921",
+      "apps/ios/Sources/Models.swift": "40482558a0421522465800d8cccc20d0f6f6199d4bbd1675ce0602b6b5477665",
+      "apps/ios/Sources/RootView.swift": "a059aaf62d961ea13c868ef252a1b89b853a81a368736eebfa94a88200cd38f3",
+      "apps/ios/Sources/SessionStore.swift": "1872a521281575f236fb77c9a609e67da322d09710b7e2f2273e03a3fc3f9dda",
+      "apps/ios/Tests/CodexManageUITests.swift": "5e868b09c2bce18f7a4a29be08520e6488a38ebe65ff17d8ef4d4f7701353b6d",
+      "scripts/chat-search-ios-fixture.mjs": "407d46c124df3e6d269541e3845aa3b3aa652168c47b0f6342bf40f8066b7e8a"
+    },
+    "remaining": [
+      "P3-6 running-conversation count, entire continuous gestures/IME/scroll selection, same-data full visual and original Electron/native Android realDEV remain open; native pointer diagnostics do not close full gesture signoff.",
+      "Batch entry, search position, checked-row/system styling, iOS10-record presentation and single-action/batch conflict handling remain recorded follow-ups.",
+      "Cellular/VPN, manual unloaded-owner archive, physical systemBack and priorAPI26cache geometry remain unverified; no new Windows or physicaliPhone pass.",
+      "TaskHub/project deletion and new project management remain deferred; independent unreadA6/P7 and dependentP9 stay paused."
+    ]
+  },
+  "runningCountCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "2956eb29596db7dd489e6f159357f0bf4a08fbce",
+    "status": "implemented; final core/native/build/workspace auxiliary checks passed; full P3-6/G4 open",
+    "sourceNodes": ["B003"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileClientCountTest.kt": "b4241552a6370e9cb80029ce6accf8606847b95c90b5df7bd597c49cf4fd1e45",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "c6bbda163f6b73ef39550c0b593a8dafd10be4e783f56251d7dac8c32a52b670",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "33767a4b09d3c132f6a24feee3a792345605a799d7a4ec91056b83df43e2c244",
+      "apps/ios/Sources/SessionStore.swift": "f10e837b31f2abc549c6647a757c3fe6d355b6b57f3d9b68d1a1135e4cb178f3",
+      "apps/ios/Sources/SharedMobileRules.swift": "a078d3d99f4693498a4a7883f851c8261da34fba11d32e937fc42c57fa259e22",
+      "apps/ios/Tests/CodexManageUITests.swift": "e015fd071c185eabfebc19a7c4bb04887e4bb9a617cd081f64a137d282704c75",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceSidebarRules.kt": "7ced65999de6b436075c7495a889814025d3fc5297d19c8e6dbfd9332f64250e",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceSidebarRulesTest.kt": "dfe0684feeacf2ea612049639c8e529240fa8e7e4f001ee6f009e3f0b4ef3aa3",
+      "packages/protocol/fixtures/mobile/state-v1.json": "168b600818ea233d44f21dd91739ba09b39c25ec33486091608e1d3f357ce5b1",
+      "scripts/chat-search-ios-fixture.mjs": "879f23a30c250f749836f2d2601dd098109faa47bc7e3d31913da8f515865b1a",
+      "scripts/mobile/check-core.mjs": "0f64e52a25543d3f83ab4b4c43b71b99baea988c967547d71a4d3d4787689231",
+      "scripts/mobile/verify-ios-state.swift": "6652f98253810c352c267d1456e9504293f02f9caf543e6eb5d97e8ad283c4bf"
+    },
+    "remaining": [
+      "Full continuous gesture/IME/selection and same-data full visual, physical long-menu touch/systemBack and original Electron/native Android realDEV remain open.",
+      "iOS10-record presentation and single-action/batch conflicts, batch entry/search/check styling remain P3-6 follow-ups.",
+      "Cellular/VPN and manual unloaded-owner archive stay deferred; physicaliPhone/Windows do not gain passes. TaskHub/project management deferred; independent unreadA6/P7 and dependentP9 paused."
+    ]
+  },
+  "managementConflictCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "d8db39c9711b610f3178460f1674e0c8b537cea8",
+    "status": "implemented; final core/native/build/workspace auxiliary checks passed; full P3-6/G4 and explicit UI follow-ups open",
+    "sourceNodes": ["B003", "O019", "O150", "O152"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveSessionTest.kt": "dbdfb7f08496557a1fdbe0c078fb1b114a23af00d15b25f007d0822a16384cc3",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "d8cbbf9a7c565248270017531175ff8da65680055d600b316bbf070c4a90f41a",
+      "apps/ios/Sources/SessionStore.swift": "f8c828e36c63244ce79ffe8142e9d1d0803ec00974e6f09af025d787f1cbb354",
+      "apps/ios/Sources/SharedMobileRules.swift": "485787dadaf4be908a0da7cf6ae9d486f0237f2149dc726d7d2e99e584a2ec00",
+      "apps/ios/Tests/CodexManageUITests.swift": "05ec0a9d0a45c5e3b67ab2f87a9639c9d6de78771d8d30e5b573c9c73f1e4fe3",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt": "1a482c4b9a072fc050bd0da11ea80d16993a18c7bff1ab3b2d358d39361a403b",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceArchiveRulesTest.kt": "c8eac7f45bef76db1af07d27ebe73cdcb01daad0bb571ead3ee6db70e144abd6",
+      "packages/protocol/fixtures/mobile/state-v1.json": "e347ebc9e5982ee346dfda9a15b2eb77f34c0767f7bb5e4f87b12c0a9a57b64d",
+      "scripts/chat-search-ios-fixture.mjs": "5d942dda6bc2c4b2c7e29b079fdd2608c34b3c30c435095a1a7ca261e2268fbb",
+      "scripts/mobile/check-core.mjs": "77dd3376710cf241f0dca37a83ee4261c544537ea3c24e4f85282ce1313cfdc7",
+      "scripts/mobile/verify-ios-state.swift": "8117ef0ea3ab069e0dff7894f02f2dc479c50fb879c8426cb3b7b2e6807a983c"
+    },
+    "remaining": [
+      "iOS pending batch row disables but retains selected count and active submit bar; Android already prunes invalid selections. Next UI slice must prune and gate submit, retain original query and show older records beyond10.",
+      "Older iOS batch records beyond10 still need reachable UI; this checkpoint does not close that gap.",
+      "Full gesture/IME/selection, same-data visual, original Electron/native Android realDEV and physical popup touch/systemBack remain open.",
+      "Cellular/VPN and human archive deferred; TaskHub/new project CRUD deferred; independent unreadA6/P7 and dependentP9 paused."
+    ]
+  },
+  "batchRecordUiCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "a95aae08c59ed6eb113cf592b7fa46b6098afbdf",
+    "status": "implemented; final native/build/workspace auxiliary checks passed; full P3-6/G4 open",
+    "sourceNodes": ["B003", "O019", "O150", "O152"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveUiTest.kt": "656434a396f2a8b2c3e694730d4a791e03af166643537fd231f586569a875072",
+      "apps/ios/Sources/Sheets.swift": "04b71d108b161e4a68c7a797eaea7da745c7b15996dbd69239996f3614e5c146",
+      "apps/ios/Tests/CodexManageUITests.swift": "0b7467c5c5ad814050dca3da1823b1c28ccfe835796838feb3cf712cedf0b0eb",
+      "scripts/chat-search-ios-fixture.mjs": "e09cfbb274f48456d67ee7e85b8800e82cc99bb7dc1f37f273049cd8aba02040"
+    },
+    "remaining": [
+      "Full continuous gesture/IME/selection and same-data complete visual, original Electron/native Android realDEV remain open.",
+      "Batch entry/search position/native checkbox/color differences remain explicit; physical popup coordinate and systemBack denied/unverified, no permission bypass.",
+      "Cellular/VPN and human unloaded-owner archive deferred. TaskHub/new project CRUD deferred; independent unreadA6/P7 and dependentP9 paused."
+    ]
+  }
+}

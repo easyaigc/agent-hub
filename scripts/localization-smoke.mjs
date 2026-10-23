@@ -16,6 +16,16 @@ for (const language of ['en', 'zh-Hans']) {
   );
 }
 assert.deepEqual(Object.keys(tables.en).sort(), Object.keys(tables['zh-Hans']).sort());
+// These keys are generated data rather than literal L10n.tr call sites.
+const failureCopy = JSON.parse(await readFile('design/mobile/connection-failures.json', 'utf8'));
+for (const key of [
+  failureCopy.defaultTitle,
+  failureCopy.connectionTitle,
+  ...Object.values(failureCopy.messages),
+]) {
+  assert.ok(Object.hasOwn(tables.en, key), 'Missing failure translation: ' + key);
+  assert.equal(tables['zh-Hans'][key], key);
+}
 const formats = (text) => [...text.matchAll(/%%|%(?:\d+\$)?@/g)].map((m) => m[0]).sort();
 for (const [key, value] of Object.entries(tables.en)) {
   assert.ok(value.length > 0, 'Empty English translation: ' + key);
@@ -63,6 +73,7 @@ execFileSync(
     '-parse-as-library',
     'apps/ios/Sources/Localization.swift',
     'apps/ios/Sources/OperationFailure.swift',
+    'apps/ios/Sources/SharedFailureCopy.swift',
     'apps/ios/Sources/ThreadReading.swift',
     'apps/ios/Sources/NotificationModels.swift',
     'apps/ios/Sources/BusinessNotificationModels.swift',

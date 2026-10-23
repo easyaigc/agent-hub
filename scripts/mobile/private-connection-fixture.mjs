@@ -62,6 +62,11 @@ export async function startPrivateConnectionFixture(directory) {
   const runs = [{ mode, requests, startedAtUTC: new Date().toISOString() }];
   const allowed = [
     'normal',
+    'slow-host',
+    'over-budget-host',
+    'slow-peers',
+    'over-budget-peers',
+    'drip-host',
     'bad-fingerprint',
     'wrong-host',
     'bad-tag',
@@ -99,9 +104,14 @@ export async function startPrivateConnectionFixture(directory) {
       path: url.pathname,
       authorizationPresent: Boolean(request.headers.authorization),
     };
+    response.on('close', () => {
+      record.closedBeforeFinish = !response.writableFinished;
+    });
     requests.push(record);
     try {
       if (request.method === 'GET' && url.pathname === '/host') {
+        if (mode === 'slow-host' || mode === 'over-budget-host')
+          await new Promise((done) => setTimeout(done, mode === 'slow-host' ? 3500 : 9000));
         if (mode.startsWith('easywork-')) {
           send(response, {
             version: 1,
@@ -119,7 +129,7 @@ export async function startPrivateConnectionFixture(directory) {
           response.end();
           return;
         }
-        send(response, {
+        const descriptor = {
           version: 1,
           agentId: 'codex',
           name: 'UM04 isolated computer',
@@ -128,10 +138,28 @@ export async function startPrivateConnectionFixture(directory) {
           endpoints: [endpoint],
           endpointHints: [{ endpoint, networkKind: 'lan' }],
           ...(mode === 'legacy-host' ? {} : { connectionMode: 'automatic' }),
-        });
+        };
+        if (mode === 'drip-host') {
+          const wire = JSON.stringify(descriptor),
+            width = Math.ceil(wire.length / 4);
+          response.writeHead(200, {
+            'content-type': 'application/json',
+            'cache-control': 'no-store',
+          });
+          for (let offset = 0; offset < wire.length; offset += width) {
+            if (response.destroyed) return;
+            response.write(wire.slice(offset, offset + width));
+            if (offset + width < wire.length) await new Promise((done) => setTimeout(done, 1700));
+          }
+          response.end();
+          return;
+        }
+        send(response, descriptor);
         return;
       }
       if (request.method === 'GET' && url.pathname === '/discovery/peers') {
+        if (mode === 'slow-peers' || mode === 'over-budget-peers')
+          await new Promise((done) => setTimeout(done, mode === 'slow-peers' ? 3500 : 7000));
         assert.equal(url.searchParams.get('hostId'), target.hostId);
         send(response, { version: 1, target, peers: [] });
         return;
@@ -241,6 +269,8 @@ export async function startPrivateConnectionFixture(directory) {
         return;
       }
       if (url.pathname === '/v1/discovery/peers') {
+        if (mode === 'slow-peers' || mode === 'over-budget-peers')
+          await new Promise((done) => setTimeout(done, mode === 'slow-peers' ? 3500 : 7000));
         send(response, { version: 1, target, peers: [] });
         return;
       }

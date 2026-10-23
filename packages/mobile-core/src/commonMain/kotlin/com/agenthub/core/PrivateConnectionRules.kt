@@ -5,9 +5,9 @@ import kotlinx.serialization.json.*
 /** Version-one bytes are immutable even when Codex's account is only metadata. */
 object PrivateConnectionRules {
     const val sourceLimit = 4
-    const val sourceEndpointLimit = 4
+    const val sourceEndpointLimit = 32
     const val peerLimit = 32
-    const val probeLimit = 64
+    const val probeLimit = 128
 
     fun context(target: TargetScope, publicKey: String): String = listOf(
         "agent-hub-codex-private-connection-v1", target.agentId, target.hostId,

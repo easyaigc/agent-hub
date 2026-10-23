@@ -31,6 +31,7 @@ internal object MobileDesign {
     const val chatHorizontalInset = 16f
     const val chatTopInset = 10f
     const val chatBottomInset = 12f
+    const val userBubblePreviewLines = 6f
     const val userBubbleRadius = 20f
     const val userBubbleHorizontalInset = 14f
     const val userBubbleVerticalInset = 10f

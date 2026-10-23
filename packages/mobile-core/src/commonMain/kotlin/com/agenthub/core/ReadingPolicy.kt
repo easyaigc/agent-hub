@@ -6,4 +6,6 @@ object ReadingPolicy {
     fun reconciledUnread(previousUnread: Boolean, hadLatest: Boolean, latestAccepted: Boolean, latestChanged: Boolean, sourceUnread: Boolean, readSettles: Boolean): Boolean = (if (readSettles) false else (if (latestAccepted) (if (hadLatest) (latestChanged || previousUnread) else (previousUnread || sourceUnread)) else previousUnread))
     fun newPushUnread(readSame: Boolean, readRevision: Long, latestRevision: Long): Boolean = ((!readSame) && (readRevision < latestRevision))
     fun preserveHistoryPrefix(windowed: Boolean, hasPaged: Boolean, sameGeneration: Boolean, sameRevision: Boolean): Boolean = ((windowed && hasPaged) && (sameGeneration && sameRevision))
+    fun initialMessageLimit(): Long = 20
+    fun earlierMessageIncrement(): Long = 60
 }

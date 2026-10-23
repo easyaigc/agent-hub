@@ -15,6 +15,17 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MobileStateTest {
+    @Test fun unregisteredProviderNeverUsesCodexReadOrWriteTransport()=kotlinx.coroutines.runBlocking {
+        CommandFixture { error("An unregistered provider must never reach HTTP") }.use { server ->
+            var credentialReads=0
+            val credential={ _: String -> credentialReads++;"synthetic-unused-token" }
+            val registry=AgentRegistry(NativeHostReads(credential),NativeCodexCommands(credential))
+            val client=MobileClient("provider-host","Codex",TargetScope("unregistered-provider",null,null,"provider-host","workspace","runtime"),server.endpoint,true,"desktop-runtime",false)
+            assertEquals("未注册此 Agent",runCatching { registry.workspace(client) }.exceptionOrNull()?.message)
+            assertEquals("未注册此 Agent",runCatching { registry.send(client,ReplyIntent(client.id,"thread","operation","original",emptyList(),"next-turn")) }.exceptionOrNull()?.message)
+            assertEquals(0,credentialReads);assertTrue(server.requests.isEmpty())
+        }
+    }
     private val vectors: JSONObject get() = JSONObject(InstrumentationRegistry.getInstrumentation().context.assets.open("state-v1.json").bufferedReader().use { it.readText() })
     private fun JSONObject.text(name: String): String? = if (isNull(name)) null else getString(name)
     private fun JSONArray.strings(): List<String> = (0 until length()).map { getString(it) }

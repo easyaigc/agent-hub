@@ -70,4 +70,28 @@ class ReplyRecoveryTest {
         for (phase in listOf("submitting", "submitted", "confirmed", "outcome-unknown", "rejected"))
             assertFalse(ReplyRecoveryRules.mayContinueCreation(phase, false, "retry-original-preflight"))
     }
+    @Test fun originalReceiptAcceptanceAndWaitReleaseNeverUseTransportAcknowledgement() {
+        for(entry in vectors.getValue("receiptMerges").jsonArray) {
+            val row=entry.jsonObject
+            assertEquals(row.getValue("preserve").jsonPrimitive.boolean,ReplyRecoveryRules.preservesReceiptEvidence(
+                row.getValue("previous").jsonPrimitive.content,row.getValue("source").jsonPrimitive.contentOrNull,
+                row.getValue("present").jsonPrimitive.booleanOrNull,row.getValue("disposition").jsonPrimitive.contentOrNull,
+                row.getValue("incoming").jsonPrimitive.content),row.toString())
+        }
+        for(entry in vectors.getValue("waitReceipts").jsonArray) {
+            val row=entry.jsonObject
+            fun text(key: String)=row.getValue(key).jsonPrimitive.contentOrNull
+            val state=text("state")!!;val source=text("source");val present=row["present"]?.jsonPrimitive?.booleanOrNull;val disposition=text("disposition")
+            assertEquals(row.getValue("accepted").jsonPrimitive.boolean,ReplyRecoveryRules.acceptedReceipt(state,source,present,disposition),text("name"))
+            assertEquals(row.getValue("releases").jsonPrimitive.boolean,ReplyRecoveryRules.releasesReplyWait(state,source,present,disposition),text("name"))
+        }
+    }
+
+    @Test fun queryObservationBackoffRemainsBoundedAcrossInvalidAndLargePreviousDelays() {
+        for(entry in vectors.getValue("queryBackoff").jsonArray) {
+            val row=entry.jsonObject
+            assertEquals(row.getValue("nextMillis").jsonPrimitive.long,ReplyRecoveryRules.nextReplyQueryDelayMillis(row.getValue("previousMillis").jsonPrimitive.long),row.toString())
+        }
+    }
+
 }

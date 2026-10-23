@@ -1,0 +1,2328 @@
+{
+  "schemaVersion": 1,
+  "phase": "P3",
+  "date": "2026-10-23",
+  "branch": "codex/android-alignment-20261022",
+  "sourceBase": "f132d9129b5619aa16ba99af9d9b7725d4578356",
+  "status": "in-progress; metadata/sidebar/chat-search/chat-management checkpoints implemented, full P3 open",
+  "sourceNodeCount": 26,
+  "featureCount": 9,
+  "humanGateAdjustment": {
+    "date": "2026-10-23",
+    "instruction": "蜂窝/VPN单列待验收，继续 P3/P4 等本机开发",
+    "effect": "Explicitly permits subsequent local stages; no cellular/VPN success or full P2 signoff claimed. Unloaded-owner manual archive remains human-deferred; A6/P7 and Task/Project management remain paused/deferred."
+  },
+  "metadataCheckpoint": {
+    "features": ["F12", "F14", "F15", "F46", "F70"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "fd55d2aede7824382f1f5653df18c89200632e342fea5e2d2f6eff100250c091",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileWorkspaceMetadata.kt": "e9a3df03f5e0d60d135812750fc28c88d5dd05e667e26b3b9e3a9bb1f6ad2721",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "02ac4ac168c8b0f6027dc07d7b8bf6bb43c34dd5a30776db2b660171e0bc0dc5",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceMetadataTest.kt": "cbc2dad4a85e4c0ace59641b5d6e2e081f893097db84cd870d84c4b6ff9931f0"
+    },
+    "binaries": {
+      "app": "f1e049f8c17dabe41c8ac57f94d23b566880151fcbb5896f9beafb2e0ed6f897",
+      "test": "4daad0c903a229656a67ebbadabc8f5b986e1031cd3e52c007c9f62df13141b1"
+    },
+    "implementation": [
+      "Optional lifecycle fields retain archive state independently of execution/last-turn status.",
+      "Optional pinned IDs and sidebar v1 preserve mixed kind and exact order; unsupported versions remain opaque.",
+      "Pagination checks host and machine scope, ignores historical account changes, preserves previous metadata when absent, accepts explicit empty collections, and never reopens an exhausted cursor.",
+      "Encoded cache includes the merged cursor/metadata values; reopened encrypted storage and restored production Session retain them.",
+      "Legacy payloads remain compatible; malformed known metadata rejects rather than inventing display state."
+    ],
+    "iosImpact": "Existing Swift DTO/version boundary and paging behavior inspected, production Swift unchanged. No new iOS/native cross-platform proof.",
+    "nativeAuxiliary": {
+      "tests": 42,
+      "groups": 6,
+      "runs": [
+        {
+          "api": 26,
+          "group": "metadata",
+          "status": "passed",
+          "tests": 7,
+          "binaries": {
+            "app": "f1e049f8c17dabe41c8ac57f94d23b566880151fcbb5896f9beafb2e0ed6f897",
+            "test": "4daad0c903a229656a67ebbadabc8f5b986e1031cd3e52c007c9f62df13141b1"
+          },
+          "outputSha256": "366cc5635b5e52460109dc84e4561af1978dfe84190cc89ece340059ee64aa6f"
+        },
+        {
+          "api": 26,
+          "group": "regression",
+          "status": "passed",
+          "tests": 7,
+          "binaries": {
+            "app": "f1e049f8c17dabe41c8ac57f94d23b566880151fcbb5896f9beafb2e0ed6f897",
+            "test": "4daad0c903a229656a67ebbadabc8f5b986e1031cd3e52c007c9f62df13141b1"
+          },
+          "outputSha256": "58fd3df7bc444da82a6436a4ba6f8110c9c30d6b8726f8f0423b16ac05c990de"
+        },
+        {
+          "api": 33,
+          "group": "metadata",
+          "status": "passed",
+          "tests": 7,
+          "binaries": {
+            "app": "f1e049f8c17dabe41c8ac57f94d23b566880151fcbb5896f9beafb2e0ed6f897",
+            "test": "4daad0c903a229656a67ebbadabc8f5b986e1031cd3e52c007c9f62df13141b1"
+          },
+          "outputSha256": "bda206b5cbc15180d480c2bc903c442d55ead24273b0625a561dccb80366babd"
+        },
+        {
+          "api": 33,
+          "group": "regression",
+          "status": "passed",
+          "tests": 7,
+          "binaries": {
+            "app": "f1e049f8c17dabe41c8ac57f94d23b566880151fcbb5896f9beafb2e0ed6f897",
+            "test": "4daad0c903a229656a67ebbadabc8f5b986e1031cd3e52c007c9f62df13141b1"
+          },
+          "outputSha256": "4d50edb5412f7f1ffe07b31adecd421a054e24a097dab5116b5618fa6eb80c22"
+        },
+        {
+          "api": 37,
+          "group": "metadata",
+          "status": "passed",
+          "tests": 7,
+          "binaries": {
+            "app": "f1e049f8c17dabe41c8ac57f94d23b566880151fcbb5896f9beafb2e0ed6f897",
+            "test": "4daad0c903a229656a67ebbadabc8f5b986e1031cd3e52c007c9f62df13141b1"
+          },
+          "outputSha256": "6a2599047fa81b99ef56ad562a948f7b36726808d39f7f529d2fb77cfd1fcb96"
+        },
+        {
+          "api": 37,
+          "group": "regression",
+          "status": "passed",
+          "tests": 7,
+          "binaries": {
+            "app": "f1e049f8c17dabe41c8ac57f94d23b566880151fcbb5896f9beafb2e0ed6f897",
+            "test": "4daad0c903a229656a67ebbadabc8f5b986e1031cd3e52c007c9f62df13141b1"
+          },
+          "outputSha256": "351347d0d2a0859dd185bba085b9142fd961b8cabcb98a66684ef7d9d29200ed"
+        }
+      ],
+      "realModelInputs": 0
+    },
+    "failuresPreserved": [
+      {
+        "stage": "first examiner compilation",
+        "reason": "TargetScope is a regular class and has no copy method; examiner construction corrected before native execution.",
+        "result": "not a product failure"
+      },
+      {
+        "api": 26,
+        "tests": 7,
+        "passed": 6,
+        "failed": 1,
+        "binaries": {
+          "app": "cddf6ba949c8b9c4f5e839f9a5fb4b4115169e8dc85f17579e552b99341384c1",
+          "test": "3f8627b7098a3c2d8e18d33c87d7c3cc94cd928be10d57f368b53d5f91763157"
+        },
+        "reason": "Merged exhausted project cursor was still present in original wire during cache encoding; same examiner passed after production encoder included merged cursor fields.",
+        "result": "original native failure preserved"
+      }
+    ],
+    "acceptanceLimits": [
+      "Native loopback, synthetic providers, encrypted store reopen and production Session restoration are auxiliary evidence, not a new original-Electron/model task or physical process-kill proof.",
+      "No new screens or visual pass claimed; full ordered sidebar/search/management and real DEV remain open.",
+      "Cellular/VPN and API26 initial-cache capture geometry remain unverified/unresolved.",
+      "Prior 13 consumed real model inputs and all failed/historical evidence are retained, never replayed."
+    ],
+    "interimNative": {
+      "binaries": {
+        "app": "2e0ddc8b0eebf4a2dd3aaae424849d6e7ebad5f88e1272c83b681bba1c8c250c",
+        "test": "3f8627b7098a3c2d8e18d33c87d7c3cc94cd928be10d57f368b53d5f91763157"
+      },
+      "tests": 42,
+      "groups": 6,
+      "runs": [
+        {
+          "api": 26,
+          "group": "metadata",
+          "tests": 7,
+          "outputSha256": "133e3e6ef0eaa121adb05a33e1571582b945c6302bd1cfc92423d3086f88f47e"
+        },
+        {
+          "api": 26,
+          "group": "regression",
+          "tests": 7,
+          "outputSha256": "8291dd0ffde0667718f16c56b611d8508e79440b4531334ae0e7b9763b33c956"
+        },
+        {
+          "api": 33,
+          "group": "metadata",
+          "tests": 7,
+          "outputSha256": "e39e6ed523d77b26c31234157fb57204084b642e010f007b832eabe9d273377b"
+        },
+        {
+          "api": 33,
+          "group": "regression",
+          "tests": 7,
+          "outputSha256": "562844b032e485f7313592b09d54eb5128023be0a35087d0825b67fbd7decb25"
+        },
+        {
+          "api": 37,
+          "group": "metadata",
+          "tests": 7,
+          "outputSha256": "f7bf95a108e544cd0775d60a50b13e6b9f886a2d42880d48b2fc7f456e5c36a1"
+        },
+        {
+          "api": 37,
+          "group": "regression",
+          "tests": 7,
+          "outputSha256": "a84af70cd453017a689436a71728f8539831c60f5a2c6c46a28769e4295e1e81"
+        }
+      ],
+      "status": "same original examiner passed after cursor production fix; later final candidate reused existing invalid-response copy and added a presentation assertion, so these are not rebound as final binary proof"
+    }
+  },
+  "remaining": [
+    "P3-5 archived read-only/list/restore and batch <=100 per-item recovery.",
+    "P3-6 running counts, whole native gesture/visual/real DEV; same-caption multiple pending records require usable action/target differentiation on both platforms.",
+    "Physical system Back, cellular/VPN and human-deferred unloaded-owner archive; earlier API26 cache geometry. A6/P7 independent unread remains paused; Task Hub/new-project management deferred.",
+    "iOS late action/query error context guards implemented; the A→B→A delayed rejection/404 scene was executed on Android, not independently claimed as an iOS native scene. Menu order/icons and pending operation caption disambiguation remain P3-6."
+  ],
+  "deferred": [
+    "Task Hub business task/project management and notifications",
+    "New project record management/deletion",
+    "A6/P7 phone-independent unread ledger/counts and dependent P9"
+  ],
+  "sidebarCheckpoint": {
+    "date": "2026-10-23",
+    "baseCommit": "504b506976c99544c23e94bff08d3fe1d263121c",
+    "features": ["F02", "F11", "F12", "F13", "F14", "F15", "F26", "F70"],
+    "files": {
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceSidebarRules.kt": "d0c21034160e92e14b831ec46d24b5991a9c7ca30ba3f140e91462124cb80b3f",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceSidebarRulesTest.kt": "737a79e8445f1451ca7fe799430c1ed4daf2a36e4fd8a45927b18771a170de06",
+      "packages/protocol/fixtures/mobile/state-v1.json": "e005a012712e34c3e55b7991f7a3d52e5d779e5919b6203d1a2be27e351835a3",
+      "scripts/mobile/check-core.mjs": "276ac6e1b4c09bdf812e2ee02531dd438827f7286394f936c8b154931794c8e4",
+      "scripts/mobile/verify-ios-state.swift": "ea6ce4f2b310716922e4fcc1f00a2a4528cc9d9c34f0cfb2b1aa180a809cc1dd",
+      "apps/ios/Sources/RootView.swift": "fd1f8f1932198ff8846ba863c006cce974c6fbe8de405dc001d6a02cf4533077",
+      "apps/ios/Sources/SharedMobileRules.swift": "07b5fd6b76a49a581c5fd4fdb9bd7374567d0c99905a6734e83dc8331df047e6",
+      "apps/ios/Tests/CodexManageUITests.swift": "8cafe0c816b54964e62e74ad68cd8db6dae4d4daeaf87ccbb072cb9e9a5a730a",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "7035b465e52e3323e81833bd37e3dc5dfb5088e335604aea6fa3845428f93ed2",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "cf84b33a199dcf2b5c88076a5ad158a7fb5989f67a46f37b0fcec9e7f9256108",
+      "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "26fb54d6c927eab36a03e3a2dcf253a8763e03b327a7b38b95290de866ddc39d",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSidebarProjection.kt": "c3420a8800e3dfc12fe8868d15869a5964a78cb9c696082c05afdaa6be25a338",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSidebarProjectionTest.kt": "f62a7d283c23e8c503dc09358ea1ca77cf821587e6250267725d9874d94eeb07",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSidebarPreferencesTest.kt": "5cbe384a0e2760da13061f9efb2bd28f76cc40b093d8c594bdebc36042b5770d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSidebarTest.kt": "19e4cae808af2783520a1f54d8871cb0488433a3f1607552366fb0e032f87017"
+    },
+    "binaries": {
+      "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+      "test": "ea1a72afd06bc890664f4983b9deac9289532b4f55f204633dc3171714f20dc6"
+    },
+    "implementation": [
+      "Shared mobile-core owns host-filtered, first-duplicate-authoritative, archived/missing-ID exclusion, v1 mixed pins/exact received order, legacy/future-version fallback, five-row limit and temporary search expansion. Android/Swift production mapping replaces corresponding independent ordering/limit/expansion paths. No runtime authority from display projection.",
+      "Android independent pinned/recent section preferences augment existing per-client project/list settings with compatible optional persisted fields. Search bypasses local collapse without writing preferences. Existing-project new-chat shortcut only prepares original target draft; no project record management or new input.",
+      "Search IME action and scrolling transfer focus to the result list before native keyboard hide; drawer close transfers to main content after a frame, disables hidden/modal-covered search, and reopening preserves query and separate chat draft. Existing native gesture routing retained; full continuous gesture matrix remains P3-6."
+    ],
+    "core": {
+      "status": "passed",
+      "nativeTestsPerRuntime": 53,
+      "runtimes": ["jvm", "iosSimulatorArm64"],
+      "nativeSuitesPerRuntime": 11,
+      "selectedOriginalReportTestsPerRuntime": 47,
+      "note": "Actual XML aggregation includes existing4 V9 and new2 Sidebar methods beyond original selected47 report.10 ordering+4visibility vectors consumed by Kotlin, Swift and Android mapping; all pre-existing fixture values deep-equal to base.",
+      "reportSha256": "1dd7d4f446cdc5534013cf04b57b13f8901d911cc6a7660ddcd9dbd976e488e9",
+      "allNativeSuitesSha256": "04abb71e8406ab9d241a7d400dece0011330c76fff67126f953e0938f9cee235",
+      "existingVectorsProofSha256": "8b1751798614bb8a356d0d01ca1b6babf4359eb86010e45babdfe862ccd309e9"
+    },
+    "nativeAuxiliary": {
+      "tests": 24,
+      "groups": 6,
+      "runs": [
+        {
+          "api": 26,
+          "group": "projection",
+          "status": "passed",
+          "tests": 3,
+          "binaries": {
+            "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+            "test": "ea1a72afd06bc890664f4983b9deac9289532b4f55f204633dc3171714f20dc6"
+          },
+          "outputSha256": "7f89771b0b0a8152a8a6298450fe152e2b92b23ebe03649399bd725a7e67dea6"
+        },
+        {
+          "api": 26,
+          "group": "ui",
+          "status": "passed",
+          "tests": 5,
+          "binaries": {
+            "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+            "test": "ea1a72afd06bc890664f4983b9deac9289532b4f55f204633dc3171714f20dc6"
+          },
+          "outputSha256": "5f7ffa1020928655b07c052166def0d9b864135eebdef1ba2bc2d9f1c1ffc3a0",
+          "screenshotArchiveSha256": "bba09614916568d9445a978f4c2d2a52b2d43e83446a3e2be52f604f669c83d0"
+        },
+        {
+          "api": 33,
+          "group": "projection",
+          "status": "passed",
+          "tests": 3,
+          "binaries": {
+            "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+            "test": "ea1a72afd06bc890664f4983b9deac9289532b4f55f204633dc3171714f20dc6"
+          },
+          "outputSha256": "2869e9fd3d47d7ba010aab863d09ae7f81d9372a13101cf7fd675f9523c4d6e1"
+        },
+        {
+          "api": 33,
+          "group": "ui",
+          "status": "passed",
+          "tests": 5,
+          "binaries": {
+            "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+            "test": "ea1a72afd06bc890664f4983b9deac9289532b4f55f204633dc3171714f20dc6"
+          },
+          "outputSha256": "f601e72cec1ba3a3da52382bf5fa94fcd4bd8a1d534901cb2843f11ec845befe",
+          "screenshotArchiveSha256": "e69cf903f74aab699513d78bb9e2b1698f4a90e13c63e03c8c48ab3fa73e65a0"
+        },
+        {
+          "api": 37,
+          "group": "projection",
+          "status": "passed",
+          "tests": 3,
+          "binaries": {
+            "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+            "test": "ea1a72afd06bc890664f4983b9deac9289532b4f55f204633dc3171714f20dc6"
+          },
+          "outputSha256": "a2a2fb625d86905a929fc99cd100c0fba9c6575480c59cb935fed97913d86827"
+        },
+        {
+          "api": 37,
+          "group": "ui",
+          "status": "passed",
+          "tests": 5,
+          "binaries": {
+            "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+            "test": "ea1a72afd06bc890664f4983b9deac9289532b4f55f204633dc3171714f20dc6"
+          },
+          "outputSha256": "68471582b67c14848928207496927b85f6e9ac44933720aba306e55742629db5",
+          "screenshotArchiveSha256": "ee2ba3f1c94c92b80b38d3cf67bfad149868b6c459598b3e638af94386cb4453"
+        }
+      ],
+      "realModelInputs": 0
+    },
+    "iosImpact": {
+      "status": "implemented; four selected native UI cases passed in three completed groups",
+      "build": "pnpm build:ios passed after final production migration",
+      "buildLogSha256": "c3fdd13c5de1ce0c597169b7be80b606560c190d5c679fda3e94c7295d53a955",
+      "nativeAuxiliary": {
+        "tests": 4,
+        "groups": 3,
+        "runs": [
+          {
+            "group": "selected-sidebar-4",
+            "status": "passed",
+            "tests": 1,
+            "cases": [
+              {
+                "name": "testSidebarRecentAndProjectExpansion()",
+                "status": "Passed",
+                "durationSeconds": 50.020331025123596
+              }
+            ],
+            "outputSha256": "637a31c9501d49abee47997e5adcc9b117c47bd6fefa95fb300c1987c46c18dc",
+            "resultJsonSha256": "ede523cbe584f4f9ab89b6ff619fa642f24b992d2f14615f7ee8b33ae8ebf948"
+          },
+          {
+            "group": "selected-sidebar-5",
+            "status": "passed",
+            "tests": 1,
+            "cases": [
+              {
+                "name": "testSidebarSwipeOpenCloseKeepsDraft()",
+                "status": "Passed",
+                "durationSeconds": 24.920135021209717
+              }
+            ],
+            "outputSha256": "00b0472702051e6fce9d1ee6d46e2647672a98c4f9451eb96cb0db8bfd5205de",
+            "resultJsonSha256": "74e9669b7f814c51e65f231b02b7e144ad28a9297d2d8824694b35eff8b59162"
+          },
+          {
+            "group": "selected-sidebar-6",
+            "status": "passed",
+            "tests": 2,
+            "cases": [
+              {
+                "name": "testClientSwitchKeepsDraftOnOriginalTarget()",
+                "status": "Passed",
+                "durationSeconds": 21.186215043067932
+              },
+              {
+                "name": "testSidebarContinuousDragAndReversal()",
+                "status": "Passed",
+                "durationSeconds": 19.871085047721863
+              }
+            ],
+            "outputSha256": "3ccc55addcfc437dd60f6ef1dbd2ea87b3d4ea307772b2a0471665aa16c7376c",
+            "resultJsonSha256": "0d3fdd51a94f9bfaeaf8241bfe4bcec0732ed74572356f4b7deda49ff59818cd"
+          }
+        ],
+        "realModelInputs": 0
+      },
+      "priorRun": "Initial3passed/1failed due one-viewport lazy row count6vs8. Examiner now scans both directions and requires8 distinct IDs including navigation/pairing; single corrected case passed. Final production now routes project expansion through common too, so four selected UI cases rerun; originals preserved.",
+      "interruption": {
+        "status": "interrupted; not a final pass",
+        "completedCasesBeforeInterruption": 2,
+        "resultBundleReadable": false,
+        "exitCode": 143,
+        "recordSha256": "d038a523b99bbd6a43c626cbb8c61326e80bb8b6f069e125df3f47bafec297d4",
+        "outputSha256": "e8e0139f54bc64f518366046c5693381876d4c418ed176cec830c9a33283a860",
+        "reason": "Repeated XCTest animation-complete notification60s waits; verified owned run SIGINT then gracefulSIGTERM. Exact same source/scenarios complete in subsequent1+1+2groups with unchanged assertions. Cause not isolated; original retained."
+      },
+      "visualReview": {
+        "frames": 7,
+        "images": [
+          {
+            "name": "sidebar-five-recent-and-project_0_AF297DB5-F9B1-4E3E-B6C2-26B74D217F6E.png",
+            "sha256": "545742417f34fb7aba76de7d1f49b06220a474012a8cc286d730e992913efce1"
+          },
+          {
+            "name": "sidebar-row-limit-diagnostic_0_DAB08B70-5DB1-4A8C-BD41-D4027D79CA23.png",
+            "sha256": "545742417f34fb7aba76de7d1f49b06220a474012a8cc286d730e992913efce1"
+          },
+          {
+            "name": "sidebar-search-swipe-closed_0_B99DD1ED-067D-44F2-ADDB-3CC722A6F651.png",
+            "sha256": "c22ab4ceb019fbed47dce166d0d50eb25e49477d11347759417369b3723cd6e7"
+          },
+          {
+            "name": "sidebar-swipe-closed_0_EEEA3ECE-BA49-4A0C-ADDE-786181C8553E.png",
+            "sha256": "c22ab4ceb019fbed47dce166d0d50eb25e49477d11347759417369b3723cd6e7"
+          },
+          {
+            "name": "sidebar-swipe-open_0_492AFFF1-7D8A-46B3-BCDD-40FCABFDD597.png",
+            "sha256": "c816a70efa4270d74b6f366148083fd03c1617e2d93362f5c08ea5661bef6df2"
+          },
+          {
+            "name": "client-draft-isolation_0_FA65285E-01C8-469C-B1FE-2543318F7F35.png",
+            "sha256": "52e905efdcb8bf30dc951bf0b859a200f3e052b274328d80f350d948069bb546"
+          },
+          {
+            "name": "sidebar-continuous-drag-closed_0_AE9C911A-5492-45C6-A76B-AE6B99ED290B.png",
+            "sha256": "cee7c431daa0adf30cad273a8f978ba24f5fc3169cb1afba2408d4dd1056cd2a"
+          }
+        ],
+        "scope": "All7 current selected-case frames viewed. Draft/client isolation, drag closed/open state and five-row/project expansion readable; demo content differs from Android, no identical-data visual parity or new Task Hub delivery."
+      },
+      "realModelInputs": 0
+    },
+    "visualReview": {
+      "frames": 21,
+      "images": [
+        {
+          "api": 26,
+          "name": "client-section-state-after-recreation.png",
+          "sha256": "04b69dc66d35d448770565b6a3ecf6cae8c0f6beab95292e0a9bb4d9c8a7b934"
+        },
+        {
+          "api": 26,
+          "name": "existing-project-shortcut-and-unsent-draft.png",
+          "sha256": "89e40d74a65fcb30933250b40b71814b8845746ca8c474b27ec452613b2f2dff"
+        },
+        {
+          "api": 26,
+          "name": "mixed-pinned-and-recent-five.png",
+          "sha256": "0abb570ace7fe0087ee9a22832f5e2968b349e3942c9d6197debd5fe2e01c9fd"
+        },
+        {
+          "api": 26,
+          "name": "ordered-folders-and-expanded-recent.png",
+          "sha256": "770073cc3cf8229aa2e95c2a04568e1dfdc802fd676660e7387bbe1ab85ca734"
+        },
+        {
+          "api": 26,
+          "name": "reopened-query-keeps-separate-chat-draft.png",
+          "sha256": "8637a952d3145f1e6c4e6e82f7e7d8b50ac63aaa6d5ead045bd876ff7b3e565d"
+        },
+        {
+          "api": 26,
+          "name": "saved-collapsed-sections-restored.png",
+          "sha256": "5bd59735ace3cf18658522fb8d00889838bfa05aa58329260090de9e5a1db704"
+        },
+        {
+          "api": 26,
+          "name": "search-temporary-expansion.png",
+          "sha256": "932550d5e1d4b8a08cd3151bad9c1b98ca630d1461ef2a4b9ad8736c2dfa836f"
+        },
+        {
+          "api": 33,
+          "name": "client-section-state-after-recreation.png",
+          "sha256": "48e8a91ca5b3271e0bca3ee9c5470d2df24cfd2577da3e0427f5c8aa1ab26edc"
+        },
+        {
+          "api": 33,
+          "name": "existing-project-shortcut-and-unsent-draft.png",
+          "sha256": "bc7122719bdb2ac13948729df8d1c194626367d0af9b2e7ddb27c197d87ff81d"
+        },
+        {
+          "api": 33,
+          "name": "mixed-pinned-and-recent-five.png",
+          "sha256": "13731f4adfdbaa5cd75e0e8c66d077aca213516fe1e8d21a4fa28a170519410a"
+        },
+        {
+          "api": 33,
+          "name": "ordered-folders-and-expanded-recent.png",
+          "sha256": "920a79443b2758981792791de6b025b4a675ce9421d5b0eb130b42082ca94beb"
+        },
+        {
+          "api": 33,
+          "name": "reopened-query-keeps-separate-chat-draft.png",
+          "sha256": "3817e54efc30e13b9a363e8151d240a902375632617459bd8f8d2b5c8bdb494c"
+        },
+        {
+          "api": 33,
+          "name": "saved-collapsed-sections-restored.png",
+          "sha256": "68ac7f913457a5682ba625605e9c63c180afc7b0fd36ca2c38e556309de79651"
+        },
+        {
+          "api": 33,
+          "name": "search-temporary-expansion.png",
+          "sha256": "e04ad9b2d7371efecf65dfb2df702fc0a5da5961973bc0290ca8073a4e85304b"
+        },
+        {
+          "api": 37,
+          "name": "client-section-state-after-recreation.png",
+          "sha256": "0575a4286ccec613d255020713ecf1db52951a86995dccec6e35e9bdf764dd14"
+        },
+        {
+          "api": 37,
+          "name": "existing-project-shortcut-and-unsent-draft.png",
+          "sha256": "2ee32b3eb7173cf0c53615ba2c64bf5766ec826bcaa3c67f567b9fce3b92a079"
+        },
+        {
+          "api": 37,
+          "name": "mixed-pinned-and-recent-five.png",
+          "sha256": "6c66ad9884ced1a76c61a35077d88e01724f0d146300bb9588de2ebc153be9dd"
+        },
+        {
+          "api": 37,
+          "name": "ordered-folders-and-expanded-recent.png",
+          "sha256": "970b5359849429adf9ed2aa22820cfbf4063c7c78a1aa0310cc9d7e1fb648bec"
+        },
+        {
+          "api": 37,
+          "name": "reopened-query-keeps-separate-chat-draft.png",
+          "sha256": "044d02e235e8b7f98b26ef9a6a5893652bfc6fda725120f8e1813d8ba20dd84c"
+        },
+        {
+          "api": 37,
+          "name": "saved-collapsed-sections-restored.png",
+          "sha256": "f0fdefa842a78625d90215cacf12280488a4adcf0ef5ac33f4e0927d39a53a92"
+        },
+        {
+          "api": 37,
+          "name": "search-temporary-expansion.png",
+          "sha256": "ae82c43ab16444a6775d051a3466966ae388a39893fb4e9e4d494e6c0b6136a5"
+        }
+      ],
+      "scope": "Android synthetic scene readability and keyboard-free screenshots reviewed individually. Native touch ripple/scroll-position differences and Xiaomi custom font recorded; no full identical-data iOS/Android visual parity."
+    },
+    "failuresPreserved": [
+      {
+        "api": 26,
+        "group": "close",
+        "status": "failed",
+        "binaries": {
+          "app": "a7a196e332162ffe955e35f8c82e0e4668993fb2bd73528895aa737608653fb2",
+          "test": "1834ad6af61d7d85f7308ab6a676ab593df09e26471b08511093d4a48badc530"
+        },
+        "outputSha256": "354b46b3682f10cf221322abad8c5bae895114ed0c42ec0e651aa30ec74ceb9e",
+        "reportSha256": "ffb4fbd57abad716746b13b405944c48446b4bc64b0807a2e1a7f57d15156f8a"
+      },
+      {
+        "api": 26,
+        "group": "search",
+        "status": "failed",
+        "binaries": {
+          "app": "3fdb48fadd8e85794d7c9e672abb2130d41038eb11c93a97d448e6eb25d481ff",
+          "test": "b92040280d1dccc71f8176323448b86d7adda0d2e9b41be7a84bdea066a40679"
+        },
+        "outputSha256": "be077f92f972267d134b485d95196f82a980201252b1750c6de852750ea714cb",
+        "reportSha256": "fe6550e15c884475aeaa35f05e8059de96c8df633797cf82536e3a596569e070"
+      },
+      {
+        "api": 26,
+        "group": "search",
+        "status": "failed",
+        "binaries": {
+          "app": "251ac39ea8024e21fc3084ea02a6f9a13170639f5581254b141d1f4f2fe6c6e9",
+          "test": "b92040280d1dccc71f8176323448b86d7adda0d2e9b41be7a84bdea066a40679"
+        },
+        "outputSha256": "dcecc968c3bd83bc3876776685c4a31ef4f6790540e8421cee8cf90d990fceed",
+        "reportSha256": "5d4e1416bf7061bfb928671f7d17fa447a809798a22421194de6c40eb9c575d5"
+      },
+      {
+        "api": 26,
+        "group": "search",
+        "status": "failed",
+        "binaries": {
+          "app": "b4b2ead32d260a9c0458e8a24ea1d090b6faf7d44b3379e4492d089c14cba799",
+          "test": "b92040280d1dccc71f8176323448b86d7adda0d2e9b41be7a84bdea066a40679"
+        },
+        "outputSha256": "02a91e9feeb5c8cb223b1636926fa6372aa549e9a5661017d55272bae24815c5",
+        "reportSha256": "5d748dbf3a2b05811e79b2daa315003d3f8eb60c1cfe8a346ba6682104928fb4"
+      },
+      {
+        "api": 26,
+        "group": "ui",
+        "status": "failed",
+        "binaries": {
+          "app": "13430ebba867452f780d0a6ffca1f3f329d35bc5e9480535c769fc21bb864ab3",
+          "test": "a5d6f2ce7f419b8aa7280ab9bade4efe1b0bcbd3e95f0f4d5cc633d2735afb9e"
+        },
+        "outputSha256": "a1898d30df244b1f71bfb1adcf69963f9bdb81bf39c74d873954e2a1f70d0139",
+        "reportSha256": "acf629ecf5b48929a95a7b7f34fec7b659dd5d5cc6778ee21b78dea6f970bfaf"
+      },
+      {
+        "api": 26,
+        "group": "ui",
+        "status": "failed",
+        "binaries": {
+          "app": "13430ebba867452f780d0a6ffca1f3f329d35bc5e9480535c769fc21bb864ab3",
+          "test": "2866540d180fc3f6537800d84d893d08166413f2011639f7b65509eff9140655"
+        },
+        "outputSha256": "4a873a8bd9c3f1a602e1cf17689c81bb9210133281289f0436a9af99b9917065",
+        "reportSha256": "5ac1f4c478c8459aa61b78371061b295e89fa46b3685da722f83032860a5b08d"
+      },
+      {
+        "api": 26,
+        "group": "ui",
+        "status": "failed",
+        "binaries": {
+          "app": "13430ebba867452f780d0a6ffca1f3f329d35bc5e9480535c769fc21bb864ab3",
+          "test": "e9029c7a888cbd74265140c922785a159e7e4a2db55f8f841de90d1b0278d283"
+        },
+        "outputSha256": "e93f4ac19a62ca755f3087366ae1f69137135a0f7168deebc31b3501d43ec225",
+        "reportSha256": "d2965ff9f93558353598e9b5210a1850991674fbc8316e1c238aedf799a81e98"
+      },
+      {
+        "api": 26,
+        "group": "ui",
+        "status": "failed",
+        "binaries": {
+          "app": "42eff631c95f685e09fea24a6099be1d185343ce6dcc997fcdf9ab234fc3abf9",
+          "test": "8b55d028dedc08d462c0d7dfc586325b2accf43ee3e6f443f538135f0edf3485"
+        },
+        "outputSha256": "d6dffc0d165d5ced8de857af274ebf6c1c4018aee49d4e1265b016ef50a4cd41",
+        "reportSha256": "41ab35405bb97c73ad921fa1debd309f33a73e373afba8e76e021f750962dafd"
+      }
+    ],
+    "failureInterpretation": [
+      "Initial examiner used Demo draft UUID as project key, and next fixture omitted target-bound capability; corrected synthetic managed fixture without weakening production capability gate.",
+      "Native Search text-focus/IME failures reproduced within original5s budget through clear/force-clear/next-frame/native-hide variants. Explicit result-list focus transfer passed both predicates; no unsupported platform root cause claimed.",
+      "New close-drawer case initially failed IME-invisible5s. Main-pane focus transfer passed that predicate; disabled text field then omitted Focused semantic key, so examiner correctly accepts absent-or-false Focused plus disabled. Reopen remains enabled with explicit no-focus and IME-invisible5s. Final24 cases use one unchanged app/runner pair; diagnostic/intermediate passes not added.",
+      "Temporary focus callback logs recorded one initial focus request and one Search callback, removed before final candidate. Original failures, sources and binaries remain private."
+    ],
+    "acceptanceLimits": [
+      "Read-only loopback GETs, synthetic providers, encrypted store reopen and Activity recreation are auxiliary evidence, not original Electron/current real-model DEV or physical process-kill proof.",
+      "Full chat search/highlight/exact pagination jump, chat lifecycle/management actions, active-count completion, original continuous gesture matrix and whole P3 remain open.",
+      "Cellular/VPN and unloaded-owner manual archive stay human-deferred. API26 original first-cache capture geometry unresolved. Independent phone unread ledger/counts and A6/P7 paused; Task Hub/new-project management deferred.",
+      "No real model input or desktop mutation added;13 earlier consumed actual inputs retain original immutable IDs and are never replayed."
+    ],
+    "checks": {
+      "androidBuild": "passed",
+      "iosBuild": "passed",
+      "mobileCore": "passed; actual53+53 native methods and10+4 new vectors",
+      "repository": {
+        "command": "pnpm check",
+        "commands": 59,
+        "status": "passed",
+        "continuous": true,
+        "receiptSha256": "f34f17ad16a2a004f125c63ab9b4f67a64ae3eed47912b4dad96a095e972b379"
+      },
+      "note": "Full repository run precedes final documentation result updates. Scoped parity/format/diff checked again afterwards. Native Windows skips are not Windows pass."
+    }
+  },
+  "chatSearchCheckpoint": {
+    "date": "2026-10-23",
+    "baseCommit": "b440392158e25981b5d9547616b0cef41ce11569",
+    "features": ["F13", "F05", "F17", "F19", "F20", "F24", "F25", "F46", "F47"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4124d1d3d4afd2bf8dfa74faad3bcfb910ff8d4e4d708e97901455a37f465207",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "6360854fa677652fa8d871d27b6204bd204e7a7c11e3182e39073a96abe3fd6a",
+      "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "0081ff969b7d365f6821a4ef268df386d51308bf46d9d40de0522e9644843eb6",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "67d85ebe7a1306ba52b44b29f18591c51f35a833c7fe660e2fb748950aafebb1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "3e3dcd726539b2518fde9f1adb3f18ea6cb2572a32f2ab2805fcd473d4d4db07",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj": "6a194d1d5ef36247999a13adcead50e28b743bdd6ad7826724a3cffcfb832b63",
+      "apps/ios/Sources/Models.swift": "183d093cbb32447ca8c8524d766924e3a0ae06e136f45553e0a844610b95b7a6",
+      "apps/ios/Sources/RootView.swift": "a468dfe3e6f6cd55f6f222aef5656c138c8eee7637e8d7f1ad034373a998f1b8",
+      "apps/ios/Sources/SessionStore.swift": "e68e82da4bac0797e7bbb4ce920a2fc725e539ff74ed9b20166add1cb4df9090",
+      "apps/ios/Sources/SharedMobileRules.swift": "523d78764ae6ce88cc0e58cfda56a7f2cf3d0e9a6ecf207a5d2645ade0a388bc",
+      "apps/ios/Tests/CodexManageUITests.swift": "1fcd8b3da8ade9d6fc57a2e7423508337e62b0e722b75b95e8c1e2f19abe4745",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/MessageProjection.kt": "a7d33b77cdc1c7d4e116d6affb7cfe0c6fa4d8099457ca675b56567cddbc91b3",
+      "packages/protocol/fixtures/mobile/state-v1.json": "c6f914ec4e6fb1038950e92e2c47b26ac78c14f5c45727d4380f8ff1a9ced988",
+      "scripts/chat-search-ios-fixture.mjs": "e941edd35b17deabd869f7b3ed5cd59a89c6eb1c47728899fd5589a87fadc6d6",
+      "scripts/mobile/check-core.mjs": "896e20d8f08497f3947bd7f536c7a6f0cb13a6af855b543ffacdad8c449aae03",
+      "scripts/mobile/verify-ios-state.swift": "971860f5a7243634a70585a38706bd1b49bb3f6087772c904353facc72bdd0f6",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatSearchRulesTest.kt": "aacd6bc47ada542777fce24048e1fa387ffd1466ff423f368ab3a2126be33295",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatSearchSessionTest.kt": "7a289c3a097701d5776e121222fb12765f53447739beae6c0c5f908e3d88249d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatSearchUiTest.kt": "997f15e4d69b87a049e987ece98ccd02840ffac813720966d2060ff083190b89",
+      "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "b527df3cbf145683b91b238bf3dd296f8cf5aa0b1bfc69fb86f1bd2eebbd9a8d",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatSearch.kt": "21e29384d189be3fdeb7f73bd16fcf78e250953f7aa3bcb4f5fb6890ed8783bc",
+      "apps/ios/Sources/NativeChatSearch.swift": "66f42f562aec4a471328d73a43696ce9d1e19fa5b8a67e502c725daa0bed0ff8",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatSearchRules.kt": "7cfff3e3f6d5ed054116a7681850f34d7c16ecd31fbc1b4b298fdbcc4e04b8d7",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatSearchRulesTest.kt": "7888800b07477b82c379b12f053f9caa59085cbf668ebe30d4538c3883d034b7"
+    },
+    "binaries": {
+      "appSha256": "ad7691641089ddeb3280691d077e197625487a86bac0a89807c4ff7061cf6892",
+      "testSha256": "01f9444e0593a53bb9d7eec03ea1641c214e90d6359aeca191ef6311543b3737"
+    },
+    "sourceNodes": ["B003", "B006", "O017", "O018"],
+    "implementation": [
+      "Kotlin common rules own normalized query, document composition, query/source result fencing, original UTF16 spans, bounded-context snippet, long-text threshold, duplicate/cyclic page policy and exact message projection focus. Swift and Android production paths use them; prior Swift independent rules removed.",
+      "Native Foundation/ICU supply Unicode matching and character boundaries. Android verifies primary-collation candidates with canonical/case/diacritic folding to preserve width/punctuation and original offsets.17 vectors cover case, accents, combining text, sharp-s/ligature expansion and partial rejection, width, punctuation, emoji, CJK, whitespace and long contexts; old fixture values preserved.",
+      "Android adds exact named read-only search-history endpoint without latest-window query. Every page remains exact Host/thread/machine scope and current navigation/connection revision; historical account metadata is not an identity gate. Complete reads are independent until explicit current result selection.",
+      "One native sheet route; apply immutable selection after sheet leaves composition, reveal exact tool/error/compaction/message row and scroll after layout. Query/history/target changes invalidate old results. Failed complete read retains cache with retry; close/back callback preserves visible history and separate draft. Imported complete history is persisted without adopting runtime/control authority, including when initial latest window is stalled."
+    ],
+    "core": {
+      "status": "passed",
+      "totals": {
+        "jvm": {
+          "tests": 58,
+          "suites": 12,
+          "failures": 0,
+          "skips": 0
+        },
+        "iosSimulatorArm64": {
+          "tests": 58,
+          "suites": 12,
+          "failures": 0,
+          "skips": 0
+        }
+      },
+      "unicodeVectors": 17,
+      "reportSha256": "50f887c7589b6de04a78186496e981873a1657e63ce7a3671377afd5a10c2d2c",
+      "existingVectorsProofSha256": "a38e73ad0ee750b692843993f1b60ee8d96a81d74f508df2d5b34fd9e3823834",
+      "scope": "JVM and iOS Simulator Arm64 actual XML; actual Swift native gateway17 vectors and Android native17 vectors, no physical iPhone or Windows proof."
+    },
+    "nativeAuxiliary": {
+      "status": "passed",
+      "tests": 39,
+      "groups": 9,
+      "runs": [
+        {
+          "api": 26,
+          "group": "rules",
+          "tests": 2,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "9f42357ebb3bedb4e0784621d7927e09e27af949f221c7cd234bfa0566fda99e",
+          "outputSha256": "3260240e145b1c9ae479692ca80dc7ba89856748d0cf6c17b46467b7a8d49aa9"
+        },
+        {
+          "api": 26,
+          "group": "session",
+          "tests": 6,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "0ebf6e4326032e031edc32e6872073bdcf86bf64cf543975b463027a0921a711",
+          "outputSha256": "e4b49b38af9cc772d5795dff190f0040d3a8bcc1147e8b4707933e330850a768"
+        },
+        {
+          "api": 26,
+          "group": "ui",
+          "tests": 5,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "ec874ddfb31d3975ca651ea570667926cbd577b1585b83b54ec56bba3f3ca5dc",
+          "outputSha256": "37847b29ffefa7b410f9479cf34ee02b88859fff51e667b77d69012cf9afe243",
+          "screenshotArchiveSha256": "200e1d20b9eee43aa9d264ea013986ad7ba5a88d8349be24088137b0ca6f8ec1"
+        },
+        {
+          "api": 33,
+          "group": "rules",
+          "tests": 2,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "3c3acf0e690a27ea46f8368d0b645fe970b8da79a38f6d5354f6c76e940ccd43",
+          "outputSha256": "6ff1b6cf8a255ce9609ec7cfa14d90b1f7afff5f50aee8a93cea0720190b3d5d"
+        },
+        {
+          "api": 33,
+          "group": "session",
+          "tests": 6,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "ce6c3057ac616a3797e629165de4fbf3b71fcc041b7e59e7401dfa1da3e85dfd",
+          "outputSha256": "b4b7c6ae7d561d06ee6516d5eb7a426d49764080f870e7e9000c7f9bae75cc15"
+        },
+        {
+          "api": 33,
+          "group": "ui",
+          "tests": 5,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "f9a7bd49d81da6d706839ae8f1fdf9dd6ac1938a437911e04b40fbf3f6461c50",
+          "outputSha256": "07e18f47e5b934c191e9bf278cf4e300d345ccd3aa38a44b3ef9d7b350ac2259",
+          "screenshotArchiveSha256": "9313ab786a2b86882300ddd517db94e3de9bf4227a0d90f90a5654a2432fe429"
+        },
+        {
+          "api": 37,
+          "group": "rules",
+          "tests": 2,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "c6ca9a8c32ce5e7d9eec1a726a0800265608acc97494dd82919b5da23bbfd860",
+          "outputSha256": "b86fd0623e617618ac120a43cdd0a3752a3d74fbbd16304512e36d2381cac96b"
+        },
+        {
+          "api": 37,
+          "group": "session",
+          "tests": 6,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "bb7ac268e716c6eb08ce0c0271cc959b2898366e900c08628b2777c49af040c5",
+          "outputSha256": "ba25f5ada611a2021868e02254cd43855333c253f1b7e6ef89c43d5e823cc3a2"
+        },
+        {
+          "api": 37,
+          "group": "ui",
+          "tests": 5,
+          "status": "passed",
+          "realModelInputs": 0,
+          "reportSha256": "63b7b9e90251b6f83c8cb0f5455beeab84eae7ea2892fde29a5300725f3b9ee7",
+          "outputSha256": "546f2b3aa06b42d46abea23457dd685b5381210bb91ead661097a45419ea6ddd",
+          "screenshotArchiveSha256": "926617a79cfa949a188be40684ab850219686474f7045a7f2fe5b527eeb699f0"
+        }
+      ],
+      "realModelInputs": 0,
+      "scope": "Per environment2 native rule+6 actual HTTP Session+5 Compose UI methods using one identical app/test pair. Includes app-owned Dialog OnBackPressedDispatcher callback, not actual physical system Back key."
+    },
+    "iosImpact": {
+      "status": "passed-native-synthetic",
+      "tests": 1,
+      "groups": 1,
+      "reportSha256": "169494d770482c3908a700ca7308c8280e37743ab4adc325dd04ced12e0a10be",
+      "summarySha256": "ddfc8f366c666ffc099b9bdc85a128d22b169102b48ad943b582a29fbe93c0f7",
+      "requestsSha256": "2634f4225abcc8235c89f51587864d64ca9c071cf3bb85fce4601c119ab5923e",
+      "scope": "Own iOS simulator/XCTest complete paginated search, grouped tool exact focus, attachment/compaction, no-hit and whitespace-only query, cached503/retry and late-target cancellation. No chat-menu action test, actual Electron or physical iPhone proof.",
+      "realModelInputs": 0
+    },
+    "visualReview": {
+      "androidFrames": 30,
+      "iosFrames": 6,
+      "images": [
+        {
+          "api": 26,
+          "name": "closed-search-new-thread-keeps-draft.png",
+          "sha256": "fddd43d6d1dc6764e98609da332ec793411338111848d0cde86cb867112042c7"
+        },
+        {
+          "api": 26,
+          "name": "complete-tool-result-before-selection.png",
+          "sha256": "c075102ea7e1cfe9a2397eb292c21be3788eb121975672e1f9dcdeb160c545fd"
+        },
+        {
+          "api": 26,
+          "name": "failure-retains-cached-result.png",
+          "sha256": "76d623b53abe1958221a54ffef7f5f77b933981b7a7927bb61666e79a7929505"
+        },
+        {
+          "api": 26,
+          "name": "located-long-user-snippet.png",
+          "sha256": "b41366510b81440e6c35554a25749299af6f44b496747abad5f1b3697cda1391"
+        },
+        {
+          "api": 26,
+          "name": "located-original-attachment-name.png",
+          "sha256": "06010a95c4bbdd95ff3953098fdd996ea1f2ce14bb0e745df0cb8ca72295f858"
+        },
+        {
+          "api": 26,
+          "name": "located-original-compaction.png",
+          "sha256": "d4b5a07b8034c9797182fa9df158f37fdfde2ce71d664f0e210d2184301ce257"
+        },
+        {
+          "api": 26,
+          "name": "located-original-diff-block.png",
+          "sha256": "79e5ec75658f5af27b920542dee31e0778ac0a46c6a35069395f48bcc71cdb1a"
+        },
+        {
+          "api": 26,
+          "name": "located-original-grouped-tool.png",
+          "sha256": "4a288700a81e333ecb7057ab0b01e44affb219e7c99c6393723d4ed49a900acd"
+        },
+        {
+          "api": 26,
+          "name": "long-original-expanded.png",
+          "sha256": "d768a99eeddaedeb7aeac59fc349e26ce679fdabd4e92e621131603a0f8e907f"
+        },
+        {
+          "api": 26,
+          "name": "native-dialog-back-callback-keeps-original-window.png",
+          "sha256": "381f5b5f5f4e6a8f32bb1c3c879ed5bdc2168ebfa7276ae66f04481c561c6922"
+        },
+        {
+          "api": 33,
+          "name": "closed-search-new-thread-keeps-draft.png",
+          "sha256": "5523ca4f7e0238f9b99e977664925cebc3dce5ba4aa87fdf2ac7c0a71db55eb6"
+        },
+        {
+          "api": 33,
+          "name": "complete-tool-result-before-selection.png",
+          "sha256": "13b5e6bd7b115301172b9889f1da0ade906adc64151573554cd9f05900e8bb98"
+        },
+        {
+          "api": 33,
+          "name": "failure-retains-cached-result.png",
+          "sha256": "0bbbcf046476682ddc9f851cd6257060664d1e632a145b950cc95ecf1b7501f9"
+        },
+        {
+          "api": 33,
+          "name": "located-long-user-snippet.png",
+          "sha256": "f0a0dd40ee58889afe62f9a8d0966b8205e6c959fd866016ae2202360516c5ff"
+        },
+        {
+          "api": 33,
+          "name": "located-original-attachment-name.png",
+          "sha256": "b760f44dedacf293bacd244ecd2ede9db8f803c3d39fbe9d61af1d4ab4bd5bf9"
+        },
+        {
+          "api": 33,
+          "name": "located-original-compaction.png",
+          "sha256": "64f8532e4e29fa49d3da1f8e57c50620497258249b3bebab8ecf4a134d8d6e91"
+        },
+        {
+          "api": 33,
+          "name": "located-original-diff-block.png",
+          "sha256": "8ca5a15094c5490def6bd46612fdfb67c5ac252a95ae34d7722f4c7e4d084f84"
+        },
+        {
+          "api": 33,
+          "name": "located-original-grouped-tool.png",
+          "sha256": "0e0cc272fb6cb662e42e4209b345024dd3fc3559ab1beb8cea908b89dab8b683"
+        },
+        {
+          "api": 33,
+          "name": "long-original-expanded.png",
+          "sha256": "e3d4070c3fb1d2008100e3839ffea262956c376405fa487bd3f138b8f33e976b"
+        },
+        {
+          "api": 33,
+          "name": "native-dialog-back-callback-keeps-original-window.png",
+          "sha256": "86bd2e1d92f6296115e9907ca55d6b800887e2e59913127b6a8119b5be29235e"
+        },
+        {
+          "api": 37,
+          "name": "closed-search-new-thread-keeps-draft.png",
+          "sha256": "b08b915d926d973d3e66a2b684b86ce019de9a3ca057f271bd04126b99c2d01a"
+        },
+        {
+          "api": 37,
+          "name": "complete-tool-result-before-selection.png",
+          "sha256": "8bf2d47e0d5ae8455b1f25e0e08fbebb7395cc09678df95ce7635c5f14ab7f87"
+        },
+        {
+          "api": 37,
+          "name": "failure-retains-cached-result.png",
+          "sha256": "1f57b4559e8b9f13a6241784d09a69e96b1e496e1e1a19f4d8d99fe15b97df76"
+        },
+        {
+          "api": 37,
+          "name": "located-long-user-snippet.png",
+          "sha256": "bcb6dd8f61d90536d883d77d80542292428da5497eb5bb80982e8e232069a32c"
+        },
+        {
+          "api": 37,
+          "name": "located-original-attachment-name.png",
+          "sha256": "b2387c933d78e726ad50dc34a9ed512fb9330c9ca23eff650dccb9b6137c2374"
+        },
+        {
+          "api": 37,
+          "name": "located-original-compaction.png",
+          "sha256": "26ef978b47ad6632f9f8cc28e73fa4582f13a325c25cb219390d5285796a0a14"
+        },
+        {
+          "api": 37,
+          "name": "located-original-diff-block.png",
+          "sha256": "495dd0970de1a63f3b666f2b3c00e199bc36c8c88bcb4b89bef873cfb714ff44"
+        },
+        {
+          "api": 37,
+          "name": "located-original-grouped-tool.png",
+          "sha256": "eccd7795d39c4a509a9af923b060e3a7ff2479576d6f6dbc189f8e0c444fb3c9"
+        },
+        {
+          "api": 37,
+          "name": "long-original-expanded.png",
+          "sha256": "f6f5d39c244ccec3b8a6a50e80f4fb3453c6c356a84b9b3fadf70d1076b34a52"
+        },
+        {
+          "api": 37,
+          "name": "native-dialog-back-callback-keeps-original-window.png",
+          "sha256": "c251b758dbdab1492764c40dba80bb99fd026f487a1f3f0c1150d28e3b84482d"
+        }
+      ],
+      "iosImages": [
+        {
+          "name": "34E68FB4-2A34-4A26-AB01-577F39E80672.png",
+          "sha256": "54c11f25db661726e71d4731d5f2935b83522a8d41d7f420dfc59893cb29b067"
+        },
+        {
+          "name": "351559F4-2906-4F88-860A-7A557F13CCF4.png",
+          "sha256": "6ac28d67eefb27bb014510336647e02d89f6265b0e4d6c21a737187696b5bbb0"
+        },
+        {
+          "name": "4C714D2B-7BD2-4257-8485-6A7CD545BC38.png",
+          "sha256": "e1a9f2f8205283351512df44eb111c92802ee1c1981ac5dad60b7984bbeda632"
+        },
+        {
+          "name": "5537B6E7-052B-401D-9A70-648F601B806D.png",
+          "sha256": "e8ed3f2fe034dd08ce63cc1d1b072efa214956d7572e7e20148bb9f69b09adec"
+        },
+        {
+          "name": "5872FF23-C7D1-4E2D-BC56-1B0DD38FB6EF.png",
+          "sha256": "9d7a12647b9dbcb2838eb645cef7da3ea9a9ca7117ed670dec436622f26bfddc"
+        },
+        {
+          "name": "CFF17296-3834-4C51-A0CF-C57CEBFC8CA1.png",
+          "sha256": "ccf65af1e5346a8156c1d47055536c0043dd76ff747d018b4f557491c7b8a680"
+        }
+      ],
+      "scope": "Current synthetic screenshots viewed individually: highlighted snippets/original fields, long text expand, cache retry and draft/target isolation. Native sheet/title/keyboard styling and physical custom font differ; touch ripples and scroll-position clipping remain scoped. Not an identical-data full visual matrix; API26 previous first-cache geometry remains open."
+    },
+    "failuresPreserved": [
+      {
+        "api": 26,
+        "group": "rules",
+        "status": "failed",
+        "reportSha256": "ee2f41f6f06f7feea6425c0ffe1c3a7abc271163c00722012f01a2783d32ee7f",
+        "appSha256": "c5c8e1bfebb7b94b593ccdf239eb00696cba68051dec7b69d6c6e670a3b4d17e",
+        "testSha256": "e70b56d011d214e915e3a66ea2cda992b6fc41924fcc0edf102a01acc4f4b70c"
+      },
+      {
+        "api": 26,
+        "group": "session",
+        "status": "failed",
+        "reportSha256": "293de86ecc10d3b73d79d3e4e68dbf64d8b80936670801105b1262413de6efae",
+        "appSha256": "95a8e639e5bc38dafa022c2f4dcec944549e66183646095a6d721b4bb1424022",
+        "testSha256": "2d653fbf4ec31ffbf315d1abe41e3636b083a0002cb64406b6270860ceffb94e"
+      },
+      {
+        "api": 26,
+        "group": "ui",
+        "status": "failed",
+        "reportSha256": "486a14033afca2f7c105cf6ecda182a900368b792d47a0209ee96ce48c332fcb",
+        "appSha256": "19de765ec9e44f6e27343cbc466512c8139f485679adf0ebe185a745a2f6e9d8",
+        "testSha256": "010620dd7d3a2771096840df55169a873ff78e46d524d9103eddb6b5a2351b72"
+      },
+      {
+        "api": 33,
+        "group": "ui",
+        "status": "failed",
+        "reportSha256": "e3aef4f1ad2610ca04f38280b4ec7a1c546c17a94c18270ca9f570f4fe0665ee",
+        "appSha256": "ad7691641089ddeb3280691d077e197625487a86bac0a89807c4ff7061cf6892",
+        "testSha256": "eb5b1fe475faf8b7cc64c1fef6f043a07aa89052f9e70f2f119195bb6b850316"
+      }
+    ],
+    "failureInterpretation": [
+      "First native Unicode2-method group had1 failure: ICU primary also matched width. Post-verification corrected this;17 final native vectors pass. Original binaries/report retained.",
+      "Second Session group had5 of6 failures from omitted exact search-history URL allowlist. Added only named read route, no arbitrary method/path access. Final six pass in all3 environments.",
+      "First UI Back scenario assumed bottom before search although baseline was not established; examiner now actually uses own scroll-latest and checks current latest before/after callback. Also fixed independent production follow-latest condition for invalidated search context. Original4/5 retained.",
+      "Prior same production with system Espresso Back passed5 UI cases on both emulators; physical UI4/5 with INJECT_EVENTS refusal. No grant, global injection or bypass; original physical system key remains pending. New39-method matrix covers app-owned native Dialog callback separately and does not close it.",
+      "First iOS test failed because native Menu exposed exact localized visible label but omitted requested chat-search accessibility ID. Examiner uses ID when available else exact hittable localized label; original result retained. v2 whole test passed; v3 current source adds whitespace-only query guard/assertion and whole test passed again, not counted twice."
+    ],
+    "acceptanceLimits": [
+      "All current HTTP scenes are native synthetic/loopback read-only auxiliary evidence; no new actual model input, desktop mutation, physical process-kill or full G4/real DEV claim. Earlier13 consumed actual inputs are never replayed.",
+      "Full P3 remains open: named lifecycle receipts/P3-4, archived read-only/batch/P3-5, running counts and whole native gesture/visual/real DEV/P3-6.",
+      "Physical system Back, cellular/VPN and unloaded-owner manual archive remain pending; prior API26 cache geometry not closed. A6/P7 independent unread remains paused; Task Hub and new project management deferred."
+    ],
+    "checks": {
+      "androidBuild": "passed current frozen product/runner; final build log retained",
+      "core": "passed58 actual methods/12suites per JVM and iOSSimulatorArm64;17 native Unicode vectors",
+      "iosUi": "passed current production/test source1 complete synthetic scene",
+      "iosBuild": "pnpm build:ios passed current source",
+      "workspace": "pnpm check passed once continuously:59 root commands exit0; platform skips retain native Windows unverified",
+      "workspaceLogSha256": "b8f234f592562486665a87f3ccf37acf5181fc46ff1b03364f9c84bcaf2cdf6c",
+      "iosBuildLogSha256": "d3d611bac59775fef181b7f3eb74e252db50d045c302fb88e33ad75f3075e391",
+      "parity": "passed final generated-table/source/contract/design checks and scoped formatting; diff clean"
+    }
+  },
+  "chatManagementCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "8d759cea97af897af90123cfa9ed324153ac095c",
+    "status": "implemented/auxiliary checkpoint passed; full P3 and real DEV open",
+    "features": ["F70", "F05", "F11", "F12", "F13", "F25", "F37", "F46", "F47"],
+    "realModelInputs": 0,
+    "implementation": [
+      "KMP lifecycle/status/management availability, immutable exact-target receipt matching and terminal monotonicity; Swift duplicate policy production paths removed.",
+      "Android five named actions and exact GET recovery; durable encrypted journal before single POST, complete target busy ownership and post-persistence guards; drafts remain independent.",
+      "Native delete/child warning, cancel without POST, exact current-chat exit after confirmation, preserved drafts, six pending original records reachable and end waiting without cancel/replay.",
+      "Confirmed actions retire only catalog ownership; pre-action success/error/finally cannot occupy a fresh read or restore old archive metadata.",
+      "Query404 remains unknown and explicitly cannot imply action rejection or trigger resubmission.",
+      "Late action/query errors are fenced by the captured selection, connection and machine context, including A→B→A return; original durable receipts still advance. iOS manual history refresh coalesces behind an occupied catalog reader for the original navigation."
+    ],
+    "remaining": [
+      "P3-5 archived read-only/list/restore and batch <=100 per-item recovery.",
+      "P3-6 running counts, whole native gesture/visual/real DEV; same-caption multiple pending records require usable action/target differentiation on both platforms.",
+      "Physical system Back, cellular/VPN and human-deferred unloaded-owner archive; earlier API26 cache geometry. A6/P7 independent unread remains paused; Task Hub/new-project management deferred.",
+      "iOS late action/query error context guards implemented; the A→B→A delayed rejection/404 scene was executed on Android, not independently claimed as an iOS native scene. Menu order/icons and pending operation caption disambiguation remain P3-6."
+    ],
+    "androidAuxiliary": {
+      "status": "passed",
+      "methods": 90,
+      "groups": 18,
+      "perEnvironmentMethods": 30,
+      "environments": [
+        "API26 owned emulator",
+        "API37 owned emulator",
+        "Android13/API33 new physical phone"
+      ],
+      "groupsPerEnvironment": {
+        "flow": 9,
+        "session": 6,
+        "ui": 6,
+        "searchRules": 2,
+        "searchSession": 6,
+        "searchTool": 1
+      },
+      "binaries": {
+        "app": "ad7437b5a40e7cb8729fc408c3cf7790a6e344508a2e79f99290e10336b383b6",
+        "test": "845a73af36b0c5a6283d281a7517d63a12a09891fba573c401c1e86c6051a475"
+      },
+      "realModelInputs": 0,
+      "scope": "Native loopback HTTP/Keystore/Session/Compose auxiliary checks; no actual Electron mutations or model inputs."
+    },
+    "coreAuxiliary": {
+      "status": "passed",
+      "actualMethodsPerRuntime": 63,
+      "suitesPerRuntime": 13,
+      "runtimes": ["jvm", "iosSimulatorArm64"],
+      "newNativeSwiftVectors": {
+        "chatLifecycle": 17,
+        "chatManagementAvailability": 7
+      },
+      "httpVectors": 64,
+      "preservedPreviousHttpPrefix": 54,
+      "sourceSha256": "094226b6f12c298fac0b19ff72761bd3cca381bcf12de698fdacc502f4ad8dab"
+    },
+    "failureInterpretation": [
+      "Initial Android examiner compilation used JSONObject.contains; corrected examiner to inspect serialized metadata. Original build log retained.",
+      "Initial native UI1/5 used a shared fake runtime with genuine previous pending records; fixtures now use unique complete targets without clearing/replaying records. Next UI4/5 referenced a non-existent composer tag; corrected to actual message-input.",
+      "Prior physical UI5/6 sampled selected chat immediately after durable receipt publication; final examiner awaits actual selection exit. A separate held-catalog old-product counterexample failed and current-source case passes all3 environments. Do not assign one unproven cause to the earlier physical observation.",
+      "Swift busy ownership Set→Map migration initially missed one Root accessibility reference; three original failed builds retained, unrelated temporary title changes reverted.",
+      "First iOS catalog native case passed but the wrapper invalidated its source fingerprint after an in-run edit; not counted as current pass. Re-run uses stable sources.",
+      "Current-source iOS menu initially failed to refresh idle status. First two refresh probes passed but did not test an additional explicit read; third probe failed because no catalog occupied the slot. Fourth held-reader probe reached the occupancy assertion and failed because the additional history read was lost; the same native scene now passes after navigation-bound coalescing. Original probes/results retained.",
+      "Visual review found disabled delete red and query404 misleadingly repeating a rejection detail; both corrected. Original images and binaries retained.",
+      "Full workspace check first stopped at empty-catch lint, then at manifest formatting; both corrected and originals retained. Final pnpm check passed once continuously:59 root commands exit0."
+    ],
+    "checks": {
+      "androidBuild": "passed final immutable product/runner candidate v10",
+      "core": "passed actual63 JVM+63 iOSSimulatorArm64 methods/13suites per runtime,24 new Swift management vectors",
+      "workspace": "pnpm check passed once continuously,59 root commands exit0; platform skips retain native Windows unverified",
+      "workspaceLogSha256": "4da08c8288fbda851b6661df4675fb327c42f90b9f6d6f1e1da906f2723241c8",
+      "iosUi": "passed four stable current-source native synthetic scenes; original invalidated and failed results retained",
+      "iosBuild": "pnpm build:ios passed final source",
+      "iosBuildLogSha256": "6227f9742bf05577bcac87daa813315e090513f27e6ef138a16cf54d06530868"
+    },
+    "visualReview": {
+      "earlierCandidate": "v8 all42 Android originals viewed individually",
+      "finalCandidate": "v10 nine representative Android originals viewed; full native UI6 per environment passed",
+      "iosCurrent": "all30 originals from4 current native synthetic scenes viewed individually",
+      "remaining": "Menu order/icons, pending action/target captions, complete gestures and identical-data full visual matrix remain P3-6; no full parity claim."
+    },
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "753bdba346e4e26d2823ba5ed3925588d0b4f0977e4033a6ee8a19f14b8ce775",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "766d5aa766f2a1828eb5781cd95b034ab387f0883d851933c71dce3faff1d9de",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "77dd5a94f79ecf7a012208c24ec42751b1d64458dc383511bae04c21d68fb053",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "80d34e2cccfb4cd12da1b5d1ca0e88eebc53cc5211471bd527bcb03d8443c82b",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "8745fd79a3e103b514c0f75f7dc52adf115737e5a2964ffdd3c3e9ba007b1561",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "c83aac7918e76ec7a57967b1572097152e6afa781796d92bc4e02d7b49877d6e",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "1128dde6f2f3c64d2a08b29b51078da8f36e52f023a979ac603546844d552c5c",
+      "apps/ios/Resources/en.lproj/Localizable.strings": "ca720fca6b15bd35f7fa42fd730c4c4241849dfbfdbd673cc2e904bd7d73c127",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "00172ea2bd3ca1027df15e4d88c8542dc5a386a6b5d4964e64c079c626539a69",
+      "apps/ios/Sources/Models.swift": "c38fd1e9e0625df479127ece3b7742bb0f8cc573614a60a586c77888703c871b",
+      "apps/ios/Sources/RootView.swift": "b921381e16b99d518f44fbb30ac70b625869bec496195c64883ae52c0bc3a57e",
+      "apps/ios/Sources/SessionStore.swift": "d1a7d9904736e2a508bd13ccc39396b9dbe7347b521896a90f86577f0ffb0e5c",
+      "apps/ios/Sources/SharedMobileRules.swift": "cf7ac87aeac394fe96e03566d221a0b537372ccef5bbc1e493c5b7658c4293c0",
+      "apps/ios/Tests/CodexManageUITests.swift": "44deaf75865e38a9968245c0746567421586df096c79e4798a280ff54e7a6bcb",
+      "packages/protocol/fixtures/mobile/state-v1.json": "4fcff5d7654403a13ae33cfe29a9e6b3c11e6d8d6e9271bd0a28f34548200155",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "d6398364df74ccc882ec8db828cc0f8f0fdbe7b9f6982e78908e42c884f6e855",
+      "scripts/chat-search-ios-fixture.mjs": "4ea879cecc67899c0eb5f192ea1386dfd47cae0b8bb777a3b2662fee2591fa19",
+      "scripts/mobile/check-contract.mjs": "64e3f85d769c23aab51fd21f2359aafa06e826ccc854effd94f0526fac5b54fb",
+      "scripts/mobile/check-core.mjs": "d4a2b7241ae58eb8ec9964efafa81fe097819d60cea7f3b8a94326d4054f0786",
+      "scripts/mobile/verify-ios-state.swift": "d489131dfef54cd12bceb3a612db7b243c5474c74610a481ade3edc6225304dd",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionFlowTest.kt": "83971fa472b6fea7ae99518dd3b761a3991e62f6605dae86a09d8ba9ea935404",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "42001a775922bba28dddc993e5f51edf23905e9016901f6a35073f21a4a0225d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionUiTest.kt": "a852384e10b4909d86b3bde2ad96bd99cbfb1190350e9a46ddbf74c5e1fe8130",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatActions.kt": "966fddc52e271e91981a2752fe2a6a59cc2f01c8775fb2bb4a291563f6464218",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ChatManagementRules.kt": "6fff458b4d1b45b37cb59fb3a7d53d10b43932310f0207365d6b086f2d0ce93b",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/ChatManagementRulesTest.kt": "da0f1e8e1ea51a9fb7f1ea2ff059c469cf9c60e18ea454bdcb24240139b57a0b"
+    },
+    "sourceNodes": [
+      "B003",
+      "B006",
+      "O017",
+      "O019",
+      "O036",
+      "O150",
+      "O151",
+      "O152",
+      "O153",
+      "O163",
+      "O166"
+    ],
+    "iosAuxiliary": {
+      "status": "passed",
+      "currentSourceScenes": 4,
+      "groups": 4,
+      "realModelInputs": 0,
+      "scenes": [
+        {
+          "scene": "refresh-final",
+          "testResult": "Test Case '-[CodexManageUITests.CodexManageUITests testChatRefreshDuringCatalogFixture]' passed (71.089 seconds)",
+          "reportSha256": "9c5c8c44044a7aef59ca2a0b2befce79e2b63a627fa3cd9aeb577efd8d564d52"
+        },
+        {
+          "scene": "catalog-final",
+          "testResult": "Test Case '-[CodexManageUITests.CodexManageUITests testChatCatalogManagementFenceFixture]' passed (78.490 seconds)",
+          "reportSha256": "9c5c8c44044a7aef59ca2a0b2befce79e2b63a627fa3cd9aeb577efd8d564d52"
+        },
+        {
+          "scene": "menu-v2-final",
+          "testResult": "Test Case '-[CodexManageUITests.CodexManageUITests testChatMenuRunningPinFixture]' passed (470.694 seconds)",
+          "reportSha256": "9c5c8c44044a7aef59ca2a0b2befce79e2b63a627fa3cd9aeb577efd8d564d52"
+        },
+        {
+          "scene": "search-final",
+          "testResult": "Test Case '-[CodexManageUITests.CodexManageUITests testChatSearchPagedHistoryFixture]' passed (145.774 seconds)",
+          "reportSha256": "9c5c8c44044a7aef59ca2a0b2befce79e2b63a627fa3cd9aeb577efd8d564d52"
+        }
+      ]
+    }
+  },
+  "archiveListCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "79c5afacdbcd9327640c3df8bcb55480502632e0",
+    "status": "implemented; 54 native auxiliary methods in 12 groups passed; full P3/G4 remains open",
+    "features": [
+      "F70",
+      "F05",
+      "F11",
+      "F12",
+      "F13",
+      "F25",
+      "F37",
+      "F46",
+      "F47",
+      "F34",
+      "F39",
+      "F40",
+      "F41",
+      "F58"
+    ],
+    "realModelInputs": 0,
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "1a8fbc4b3565f4de1f237fe1964750b994379137de510f84cadc505b35b6038b",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "43804fa9f0b37bf9e2a5805508a0ee456df5c14501d5b7dcdc9fefd1527bc88a",
+      "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "2c75819277990ace3d356ece47b05d3cd333584c4944aa1ca05ec7ece50d3ede",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "431fa32bc46efb3b16d5727b75396f4dbb49f3a166a504f45149261419b2e99c",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileArchivedChatsUiTest.kt": "726948c247b77638d3ce9937af8d51d6e2544e78380fb21196a51d23dddc8993",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "7fa77accab63ab0fc962603908a8178096eef0a7fd5d7e09eca2c422094f8ecb",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCommandBoundaryTest.kt": "eddcedd78586ce55d6ed132729c70bfabf5a3c0728565ec48cad504838744af5"
+    },
+    "sourceNodes": ["O022", "O166"],
+    "implementation": [
+      "Archive menu/list and last known terminal status use existing shared ChatManagementRules; original opaque host/thread order preserved.",
+      "Read-only selection closes the native sheet and loads only exact original history; no owner opening or model submission.",
+      "Confirmed restore reuses durable named chat action; archived compose stays disabled, independent drafts remain editable/preserved.",
+      "Known offline state does not disable explicit read-only refresh/paging retry.",
+      "Current endpoint and normalized machine cache identity fence archive-row navigation; Codex historical account metadata is not a gate.",
+      "Archived history never grants execution/configuration authority, even while runtime retains running/canControl=true; iOS original platform gate retained and Android updated. This is adjacent feature impact only, not new whole-feature signoff."
+    ],
+    "androidAuxiliary": {
+      "status": "passed",
+      "candidate": {
+        "appSha256": "51400f849ee73b6dd5f218a43771507348b9b477faac80cd3a24bb3f1bade84e",
+        "testSha256": "3f08837ba6c22f66c058f48ba6fae2f3515f1d15abbc11b577e245cf58037655",
+        "version": "v5"
+      },
+      "tests": 54,
+      "groups": 12,
+      "environments": [
+        {
+          "api": 26,
+          "physical": false,
+          "tests": 18,
+          "groups": 4
+        },
+        {
+          "api": 33,
+          "physical": true,
+          "tests": 18,
+          "groups": 4
+        },
+        {
+          "api": 37,
+          "physical": false,
+          "tests": 18,
+          "groups": 4
+        }
+      ],
+      "reports": [
+        {
+          "api": 26,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "8901758566093ff4912674b917ac3ecb0ace2d899e67d5b1a8a13489779ec168"
+        },
+        {
+          "api": 26,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "0fccfa2a8ff2c03971f0935f57b810f391c6ed2d18eebc84e785403d0eb606c6"
+        },
+        {
+          "api": 26,
+          "group": "session",
+          "tests": 6,
+          "reportSha256": "870b6c488fbd703b0b9dd0609577c235a349f9369b952dfba8d3ab86a893c98d"
+        },
+        {
+          "api": 26,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "4c3349a270a11324ed66c05ad0c00e0703c4d70f79c52a880d8d4e267c01d26c"
+        },
+        {
+          "api": 33,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "dc2062e10d479a46fb9b5d4bf9b273b7e3d94d421d9d3845f28222b72525a70d"
+        },
+        {
+          "api": 33,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "91fc913ab3a003f985ea4457c2fd7101cb751556f2b1ce78f65675df4fd31534"
+        },
+        {
+          "api": 33,
+          "group": "session",
+          "tests": 6,
+          "reportSha256": "d89a8fc0ce2d8967840bfdf0c1b3816d95ff5af19890ae16e8628f2f761df4f0"
+        },
+        {
+          "api": 33,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "bbefe9992858ef6caf934e318dc9ecea4d5ad571dae4fcd043fa8f519b894024"
+        },
+        {
+          "api": 37,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "311675e554000ed46f51520f6d41356b0f8dbad646809a1c1fed2e321576b66a"
+        },
+        {
+          "api": 37,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "ac5f19955ae7dd3b8e9d00744acb49f50cfb049a5f3a0371394be32632fc2dab"
+        },
+        {
+          "api": 37,
+          "group": "session",
+          "tests": 6,
+          "reportSha256": "a28d1cbb808f1ef4d8078adae62832a8ddd0a45fda422dc1b1ae603ba35762c1"
+        },
+        {
+          "api": 37,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "7d748e69d709c132c498963df643f23d04d216df887dc76756c072ec3870ecfa"
+        }
+      ]
+    },
+    "failureInterpretation": [
+      {
+        "candidate": "v1",
+        "result": "Each environment passed 3/4 archive UI methods, failed paging retry after a 500.",
+        "finding": "Known offline state disabled the new read-only retry button; corrected and strengthened native assertions."
+      },
+      {
+        "candidate": "v2",
+        "result": "Archive4, managementUI6 and session6 passed on each environment; search1 passed on physical/API37. API26 search failed in native foreground setup, before the body.",
+        "finding": "Subsequent independent read returned Can't find service: activity. The exact owned API26 AVD was gracefully shut down and restarted with its disk data retained. These are intermediate results; current final candidate is v5."
+      },
+      {
+        "candidate": "v3",
+        "result": "51 native methods passed before final capability-specific copy refinement; not counted as final v5."
+      },
+      {
+        "candidate": "v4",
+        "result": "All physical/API37 groups passed; API26 session runner crashed at fixture shutdown with RejectedExecutionException.",
+        "finding": "CommandFixture accepted a peer concurrently with pool shutdown; accepted peer now closes on shutdown rejection. This is auxiliary infrastructure, not a product or model execution failure."
+      },
+      {
+        "candidate": "read-only red and red-v2",
+        "result": "Both dedicated API37 native probes failed as expected against unchanged product v4: first generation setting gate, then empty-draft stop gate.",
+        "finding": "Archived history retaining canControl=true could expose execution/configuration authority unlike iOS. Current Android isWritable plus canCompose-based configuration now gates stop/queue/approval/plan and model state, while independent restore remains allowed."
+      }
+    ],
+    "iosImpact": {
+      "sourceChanged": false,
+      "evidence": "Prior iOS archived-list production source is the reference; no new iOS native pass claimed.",
+      "remaining": "Review explicit archive-list pagination/offline refresh and native sheet/navigation appearance in P3-6; task/project manager remains deferred."
+    },
+    "remaining": [
+      "P3-5b: bounded <=100 chat archive selection, confirmation, durable per-item receipts and original-operation query; no project manager.",
+      "P3-6: exact whole UI/gesture matrix, menu order/icons, pending record labels, running counts and real Electron/native Android DEV.",
+      "Cellular/VPN and manual unloaded-owner archive remain human-deferred; physical system Back and API26 previous cache geometry remain unverified.",
+      "A6/P7 pause; dependent P9 remains paused.",
+      "Archived running/queued/approval controls complete pixel and touch matrix remains P3-6; native gate probe does not close full visual parity."
+    ],
+    "visualReview": {
+      "intermediateV2OriginalsIndividuallyViewed": 15,
+      "finalV5": "Nine representative final originals individually reviewed (three per environment), plus all15 intermediate v2 originals; no full Android/iOS visual signoff.",
+      "finalOriginalsViewed": 9,
+      "finalReviewReceiptSha256": "5001ae7a1e6ec65a658fdbe040b1174fe47a5ec54ca6d5b169080bca8aac6340"
+    },
+    "checks": {
+      "androidBuild": "passed; archive-list-build-v6",
+      "workspace": {
+        "command": "pnpm check",
+        "status": "passed",
+        "rootCommands": 59,
+        "sourceStable": true,
+        "reportSha256": "8e2ede84c45059c48a680d4e16846a5391f7f4f4991d6c548aef30ca8b18bed8"
+      }
+    }
+  },
+  "batchArchiveCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "449bbe25715ae78bb8aa223926f38e202d8d1c0d",
+    "status": "implemented;90 Android auxiliary methods/21groups,67 actual methods per common runtime and1 iOS native demo scene passed;fullP3/G4open",
+    "features": [
+      "F70",
+      "F05",
+      "F11",
+      "F12",
+      "F13",
+      "F14",
+      "F25",
+      "F34",
+      "F37",
+      "F39",
+      "F40",
+      "F41",
+      "F46",
+      "F47",
+      "F58"
+    ],
+    "sourceNodes": ["O021", "O022", "O164", "O166"],
+    "realModelInputs": 0,
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "d25015b65062af888f61430f0add03008fb19ab99cff133f7479d7a8bd426909",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "e5dea432b1aa8c037820144ef50165d246706330ef32c2fb5479323a2f7a902a",
+      "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "58e2fe2fb7c77be1fde7e50eee3f3df0d4ccc770869bcc71ce55d4ae6f125100",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "d5dff316fe6cf3d97448b9de4775ba2a7957c252602ac6ae5adfcabf0c52c726",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "30066814fb9013f5d63ca0e01a586ac5d9b5af87b76b4871c9e7dbf6a93a2c6f",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "ed5346bc3f4bceb5676a32434be141988a3ddf8376ebe85802bb53c1307ef6ff",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "072bd13c94a3d49a09c82207a1b73bf16427ffdae4b473eb96b4268bb3e19fc6",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "a52afa5e9e32088633a9bf43b194331c46698d74d8ea36e7010b96205adef808",
+      "apps/ios/Sources/Models.swift": "bdda1fb457b13268b711b64950376b8522498155bf28f69d342b6225b2b35205",
+      "apps/ios/Sources/SessionStore.swift": "e70afea5df73af6d8c78dd44dec30e976fafe2f74cedd075e0a41c70e3aba9bf",
+      "apps/ios/Sources/SharedMobileRules.swift": "387d15578f3be8f1d773244e9385ad433228cbc034ce4dd54cf3799cfcf79c64",
+      "apps/ios/Sources/Sheets.swift": "47aa81fc4ff3b19eab9471c816df1bb06c66a689e766ac37645c2764bfcf2aa3",
+      "apps/ios/Tests/CodexManageUITests.swift": "777ca8dabfbf9a0fbb0a864bb6ae4dbdb1cd6c4c3bcc7750a6b36335eb0e728c",
+      "packages/mobile-core/build.gradle.kts": "d2f5a04e367eb237bed4ec5977609d4fabc1ca9cb94bf697593b78bf397328dd",
+      "packages/protocol/fixtures/mobile/state-v1.json": "0cbe25a29abdf3150189dabf49b05c2ea3c57eef37356545a3ea14039cd73d09",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "fddf0f26737cad678e248226733bd366281ec528053d9ceda1124d97c924295d",
+      "scripts/mobile/check-contract.mjs": "ff236025377e074974f18240c716b93fe7303185ce480a21aba4c6be748e5d9b",
+      "scripts/mobile/check-core.mjs": "66e40eaeedda9215b4c8e903ad9da14fbd0e731d81fa779d291c597a3297c880",
+      "scripts/mobile/verify-ios-state.swift": "7050ea9e6c8008095c17aac3f0767f7fde97218fd0f1d413e1c623a234005873",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveFlowTest.kt": "7eb334a2bcbcc1173b9fadb63ea4d3a20ed334a5cf9a996e328bc47bf4f1b01b",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveSessionTest.kt": "2fe0561091006f852be38137e7c664338f914da8f23f5668b2634af307691374",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveUiTest.kt": "773f7855ae11d5a824f4a969213960a65480c0b3092c1f79b4b1ce018098298b",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeWorkspaceArchive.kt": "00c972305033d2a962d7a0e8aefe5ba5cf5c56fd15fe974ec6fc1ab71e7bf8be",
+      "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "a77179a6c5db341112ef184f79d40726118c42f9fd3c0986385cca476bd752b2",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt": "7f50d36011963e941193cca681598ff5aaa5df425806542ddf494ced05ea2cba",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceArchiveRulesTest.kt": "4e1f2490d1cf6a0257b6413f5ba3d465f9d9a9a92dd722a22892fcaa56c47004"
+    },
+    "implementation": [
+      "Shared versioned request/receipt schema and 12 exact receipt vectors plus 12 HTTP vectors; Node actual named parser, Kotlin and Swift use the repository schema.",
+      "Android only dispatches threads:archive at the fixed workspace-management route; project deletion and new management are deferred.",
+      "Durable client/machine scoped encrypted original ID, ordered IDs and labels; stored attempted boundary precedes a single POST. Any uncertain response/404 recovers only via exact original GET.",
+      "Per-item completed/rejected state and error are immutable; a stale query may advance other pending items but cannot reverse terminal items. Duplicate, reordered, foreign or malformed receipts are rejected.",
+      "Session guards client/endpoint/navigation/connection/capability/selected IDs and busy/pending conflicts; original catalog generations cannot resurrect accepted rows. Drafts remain separate and late results do not navigate another chat.",
+      "Native page includes search by project/title/status, filtered select-all,100 limit, explicit confirmation/cancel, bounded IDs in original order, per-item record errors and original query.",
+      "iOS batch archive select-all/needsCheck/receipt merge use common rules; original target and labels preserved. Post-persistence target recheck and catalog owner retirement apply only archive.",
+      "Expanded generated HTTP schema exceeded JVM constant limit; HTTP Base64 generation uses the same existing8192-byte runtime-join pattern used for state vectors; schema contents are unchanged by chunking."
+    ],
+    "androidAuxiliary": {
+      "status": "passed",
+      "candidate": {
+        "appSha256": "9ff877196da38e7ab9609938a35a788c7a7303b03a6b3f7cb96ad203afe9378c",
+        "testSha256": "ef66c8b5d1d0e8f82d839a6ee4eaa56aa06584fce890570d5668f58eaea45ba5"
+      },
+      "expectedGroups": 21,
+      "expectedMethods": 90,
+      "methods": 90,
+      "groups": 21,
+      "environments": [
+        {
+          "api": 26,
+          "physical": false,
+          "methods": 30,
+          "groups": 7
+        },
+        {
+          "api": 33,
+          "physical": true,
+          "methods": 30,
+          "groups": 7
+        },
+        {
+          "api": 37,
+          "physical": false,
+          "methods": 30,
+          "groups": 7
+        }
+      ],
+      "reports": [
+        {
+          "api": 26,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "43005ac2e356e1631e98c567e1ffc91df2d967ee9320c2ecdad7ea07b2adc1ed"
+        },
+        {
+          "api": 26,
+          "group": "batchFlow",
+          "tests": 5,
+          "reportSha256": "69bb7c4089e14775a5a4925ada3714e08336657c92dae4f4eb3032619e5a1a10"
+        },
+        {
+          "api": 26,
+          "group": "batchSession",
+          "tests": 4,
+          "reportSha256": "2ef7b983a643f5b875527a148d5edbafeee5c08352f6323d1e451c88b335a5e1"
+        },
+        {
+          "api": 26,
+          "group": "batchUi",
+          "tests": 3,
+          "reportSha256": "2a8a8f4c0fcf24f79b0ee0505254c385fa0bdbcdb131b65517978e84d88b4d03"
+        },
+        {
+          "api": 26,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "c72ff6bf1810ffdc3ad70d267a8523efef1121892548d1152ec914cfbc21eef8"
+        },
+        {
+          "api": 26,
+          "group": "session",
+          "tests": 6,
+          "reportSha256": "a9a22572f434c27c1b9d33c26054e27803404e79c2671a307b163887c25d3d70"
+        },
+        {
+          "api": 26,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "cea08d143e5c5255463af4966746d67a485be5e986c96e0f80830e9589c0e042"
+        },
+        {
+          "api": 33,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "4cd4ac9cdb1c2f06e2bfd80db5e242bedf68ae0309607405b74476b9c2b75b91"
+        },
+        {
+          "api": 33,
+          "group": "batchFlow",
+          "tests": 5,
+          "reportSha256": "a68c1e58b7bbd4a39ac634a4f81f2b76ca7a2dcd09f448be840d3d6bab4dd9fa"
+        },
+        {
+          "api": 33,
+          "group": "batchSession",
+          "tests": 4,
+          "reportSha256": "f160e4525409a251fecf35edf3d85091b9a847888d99530ac1d543fa8b75123d"
+        },
+        {
+          "api": 33,
+          "group": "batchUi",
+          "tests": 3,
+          "reportSha256": "44c25d67946128b7526615be5b29f66aa899ea06637fe37d4e6d846aca63af12"
+        },
+        {
+          "api": 33,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "06c32a828bf3bd955da143a1c466c5f41fe9bcf8d659f9f63d9221dc12c08ad7"
+        },
+        {
+          "api": 33,
+          "group": "session",
+          "tests": 6,
+          "reportSha256": "626b4ec28220f6733c47d2853afb89c1b682f8fb22334caebb7ba932abf0301e"
+        },
+        {
+          "api": 33,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "8968375ae211d0635ae79d3bf174371428220b9dbb25c3f4a00e1d3913ca2984"
+        },
+        {
+          "api": 37,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "e88c5251e38a494a9e6b6431eef9f680b49f9469b1f8c3604a66158f7e74584d"
+        },
+        {
+          "api": 37,
+          "group": "batchFlow",
+          "tests": 5,
+          "reportSha256": "34d2d379c1550944bb0fd7d74e2afb5a2476bbe7dd01ab5ae1d122de2ead1640"
+        },
+        {
+          "api": 37,
+          "group": "batchSession",
+          "tests": 4,
+          "reportSha256": "d0b00fb2f32836669adf8589870a3b66ac266820b6d32bf786e431c7f37f3bb4"
+        },
+        {
+          "api": 37,
+          "group": "batchUi",
+          "tests": 3,
+          "reportSha256": "3dea807a88a2b9976a33c29f52ef2b29475e9139b4346c00ef6d1183153bfe11"
+        },
+        {
+          "api": 37,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "b0d8b04671fcb4bc0918d42b2dac35221d07e89095babc0cc048f8921653909e"
+        },
+        {
+          "api": 37,
+          "group": "session",
+          "tests": 6,
+          "reportSha256": "6decd86ed9d2ad711ed376907b7b9b6781908e0da94d582401682cce8b8cc27e"
+        },
+        {
+          "api": 37,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "4491386ac559f3cd45b3895b3a07266990950e547d293ba1244f7d565f46d980"
+        }
+      ]
+    },
+    "coreAuxiliary": {
+      "status": "passed",
+      "actualMethods": {
+        "jvm": 67,
+        "iosSimulatorArm64": 67
+      },
+      "actualSuitesPerRuntime": 14,
+      "reportSha256": "f28403be830414d6a2a74db7cddacfdd64b553032c5f2396ee2d10dac94b420a",
+      "sourceSha256": "b4f48028711e4e67536dd1dda50e87b8f45910cf6b69ba5713822144c6751403",
+      "swiftNativeReceiptVectors": 12,
+      "nodeAndNativeHttpVectorsAdded": 12,
+      "separateSelectionCheck": true
+    },
+    "iosAuxiliary": {
+      "status": "passed",
+      "nativeCases": 1,
+      "nativeGroups": 1,
+      "physicalDevice": false,
+      "simulator": "dedicated own iOS27 Simulator Arm64",
+      "scope": "Archive-only demo native UI verifies two-row selection, cancel, confirmation, terminal results and app restart; no project deletions/Task Hub or real model work.",
+      "reportSha256": "ba60e575169eaa499a9d3f0f5e38a2e713e904f4dc30e297ce051916e006b14e",
+      "source": {
+        "apps/ios/Sources/SharedMobileRules.swift": "387d15578f3be8f1d773244e9385ad433228cbc034ce4dd54cf3799cfcf79c64",
+        "apps/ios/Sources/Models.swift": "bdda1fb457b13268b711b64950376b8522498155bf28f69d342b6225b2b35205",
+        "apps/ios/Sources/SessionStore.swift": "e70afea5df73af6d8c78dd44dec30e976fafe2f74cedd075e0a41c70e3aba9bf",
+        "apps/ios/Sources/Sheets.swift": "47aa81fc4ff3b19eab9471c816df1bb06c66a689e766ac37645c2764bfcf2aa3",
+        "apps/ios/Tests/CodexManageUITests.swift": "777ca8dabfbf9a0fbb0a864bb6ae4dbdb1cd6c4c3bcc7750a6b36335eb0e728c",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt": "7f50d36011963e941193cca681598ff5aaa5df425806542ddf494ced05ea2cba",
+        "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "fddf0f26737cad678e248226733bd366281ec528053d9ceda1124d97c924295d",
+        "packages/protocol/fixtures/mobile/state-v1.json": "0cbe25a29abdf3150189dabf49b05c2ea3c57eef37356545a3ea14039cd73d09",
+        "scripts/mobile/check-core.mjs": "66e40eaeedda9215b4c8e903ad9da14fbd0e731d81fa779d291c597a3297c880",
+        "scripts/mobile/verify-ios-state.swift": "7050ea9e6c8008095c17aac3f0767f7fde97218fd0f1d413e1c623a234005873",
+        "packages/mobile-core/build.gradle.kts": "d2f5a04e367eb237bed4ec5977609d4fabc1ca9cb94bf697593b78bf397328dd"
+      }
+    },
+    "failureInterpretation": [
+      {
+        "stage": "initial build",
+        "finding": "Expanded schema crossed JVM constant UTF8 limit; generator now joins small chunks at runtime. Initial Kotlin dialog syntax and unavailable Android JSONObject.similar examiner API corrected before native runs; original logs retained."
+      },
+      {
+        "stage": "native v1",
+        "finding": "All three environments passed5 flow+4 session tests; UI1/3 per environment. UI two count assertions requested exact string100/0 while real caption is 已选100项; examiner changed to substring, product unchanged."
+      },
+      {
+        "stage": "core v1",
+        "finding": "JVM/iosSimulator tests compiled and ran, but Swift verification attempted a relative path inside simulator data cwd. Examiner now uses the explicit supplied state fixture argument. Failed wrapper is not counted as final pass."
+      },
+      {
+        "stage": "workspace first attempt",
+        "finding": "New sharedImplementation metadata used an unsupported key; moved text into existing scope and registered common source. First full check stopped at parity validation; only subsequent uninterrupted full check may pass."
+      },
+      {
+        "stage": "workspace second attempt",
+        "finding": "Schema keyword guard omitted uniqueItems even though shared SchemaValidator already implements it and native duplicate-ID vectors passed. Added that existing capability to the Node guard list; actual Node parser/AJV vectors pass. No schema/core/native/iOS source or binary changed."
+      }
+    ],
+    "checks": {
+      "androidBuild": "passed; current native pair from batch-archive-build-v7",
+      "workspace": {
+        "command": "pnpm check",
+        "status": "passed",
+        "rootCommands": 59,
+        "sourceStable": true,
+        "reportSha256": "fd24b1dbf3162ccda61a6a2a98933b8c9bc9e52ff6692e684266d666ae096098"
+      },
+      "iosBuild": "pnpm build:ios passed on frozen iOS/common source"
+    },
+    "remaining": [
+      "P3-6 complete menu ordering/icons/pending row labels, running counts, continuous gestures, exact native visual and real Electron/native Android DEV; no whole feature closure.",
+      "Archive-only Android entry currently goes through archived-chat sheet; iOS uses settings workspace manager. Explicit current-client caption, project/status filtering, native dialog styling and long record reachability require full UI comparison in P3-6.",
+      "iOS original manager presents at most10 records and independent single-action/batch conflict UI requires review in P3-6; do not declare full interaction parity.",
+      "Cellular/VPN, manual unloaded-owner archive, physical system Back and prior API26 cache geometry remain separate unverified gates; Windows and physical iPhone have no new result.",
+      "Task/project business management and project deletion remain deferred; A6/P7 and dependent P9 stay paused."
+    ],
+    "visualReview": {
+      "androidFinalRepresentativeOriginalsViewed": 12,
+      "androidBatchOriginalsSaved": 18,
+      "iosFinalOriginalsViewed": 4,
+      "receiptSha256": "9c35507607f0ec9120b774bf85b1d136c011a528fdd7eed8d31868dfe48ae9be",
+      "notes": [
+        "100 limit, confirmation/cancel, visible exact success/failure/pending counts, refusal copy and new-runtime empty selection are visible in representative originals.",
+        "iOS grouped inset List/bottom search/blue archive and red confirmation vs Android sheet/top outlined search/checkboxes/black archive/native confirmation remain explicit P3-6 design differences.",
+        "iOS original manager displays project switch but new test only selected/archived demo chats; no project operation or real model task.",
+        "Twelve of18 final batch-specific Android originals were individually reviewed; do not claim all18 or whole Android/iOS visual parity. Other archive/management/search frames are auxiliary regressions."
+      ]
+    }
+  },
+  "menuParityCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "eb061a6a823e1de7fbc78d9cd17ea7b51857c89c",
+    "status": "implemented; final native/build/workspace auxiliary checks passed; full P3-6/G4 open",
+    "features": ["F70", "F05", "F11", "F13", "F25", "F46", "F47"],
+    "sourceNodes": ["B003", "O019", "O150", "O152"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionUiTest.kt": "82f22e03ea645220798e27eee95fa8f4e27a2d96328704ce30f0633671777eb4",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "de603cfe26c70631f49b894d7f257e8b502120cd18c5d54a65d564b6bd18ff29",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "eabb28d57234960b5140443ed0cb98fa5f22169f8869a0f35bda9df819cf837b",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "02b67209df7f5b7910f534cb10b137c0912cd7afec229e69b499978ad0066921",
+      "apps/ios/Sources/Models.swift": "40482558a0421522465800d8cccc20d0f6f6199d4bbd1675ce0602b6b5477665",
+      "apps/ios/Sources/RootView.swift": "a059aaf62d961ea13c868ef252a1b89b853a81a368736eebfa94a88200cd38f3",
+      "apps/ios/Sources/SessionStore.swift": "1872a521281575f236fb77c9a609e67da322d09710b7e2f2273e03a3fc3f9dda",
+      "apps/ios/Tests/CodexManageUITests.swift": "5e868b09c2bce18f7a4a29be08520e6488a38ebe65ff17d8ef4d4f7701353b6d",
+      "scripts/chat-search-ios-fixture.mjs": "407d46c124df3e6d269541e3845aa3b3aa652168c47b0f6342bf40f8066b7e8a"
+    },
+    "realModelInputs": 0,
+    "implementation": [
+      "Android menu order and app-owned vector meanings match the frozen iOS action order; click capabilities/disabled/delete colors and child warning unchanged.",
+      "Every pending operation remains individually reachable; action, original operation prefix and exact scoped chat title distinguish duplicate captions. Fallback uses original threadId; original request fields are untouched.",
+      "Only original GET is issued by each query. Visible ending-wait action identifies its record; local detach does not cancel, re-submit or hide the original journal.",
+      "The iOS query label and accessibility retain the existing query identifier while adding action/target; native system Menu examiner supports exact text as well as identifier.",
+      "Each native pending row has stable target/operation composition identity; its original record is captured before presentation dismissal. Query measurement is isolated from background observers; ending local waiting preserves queryable records."
+    ],
+    "androidAuxiliary": {
+      "status": "passed",
+      "candidate": "v6",
+      "expectedMethods": 45,
+      "expectedGroups": 12,
+      "physicalOriginalQuery": "app-owned semantics; direct native popup coordinate injection remains denied/unverified; no grant or global injection retry",
+      "methods": 45,
+      "groups": 12,
+      "binaries": {
+        "app": "05c24d5e3dcdc5bad73e235c1895669f9f25976af921978ef6feab7c83aaaf77",
+        "test": "691180f015056e234c915a8269b29c232c4afeea8a8c762a4d49e5dd3d5dad29"
+      },
+      "reports": [
+        {
+          "api": 37,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "dad7c793a86ff609eae8bb29a77dbd1c4e9e849456be8f76dbab0ca5967bd459"
+        },
+        {
+          "api": 37,
+          "group": "batchUi",
+          "tests": 3,
+          "reportSha256": "b02f4408acf307c6de7644bd955a3f786f3afdccd28cf9aa312e4fae09a80f42"
+        },
+        {
+          "api": 26,
+          "group": "batchUi",
+          "tests": 3,
+          "reportSha256": "8766d12f6a770eaa236e8b7ad58fa2fd909983d5f5fa42bb8458b168481c056e"
+        },
+        {
+          "api": 26,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "b56f7978301c01dd9e07a6658e440e49a676b3ae067c29919fbe1092cebad810"
+        },
+        {
+          "api": 37,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "8b079ce1a5058c502501f9e6f30b1b0e8b13bf6406bd811f47e5f9fe16738b2e"
+        },
+        {
+          "api": 26,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "1d34c3b3255e954515d2c0ad5bd74c1863fa948ad9fa38e3f4df6fcbb4c6e11f"
+        },
+        {
+          "api": 33,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "314d2511eb0fd22729648b8da0bc2b55bcb13e93fb8babce4d6bb7f60fd3482b"
+        },
+        {
+          "api": 33,
+          "group": "batchUi",
+          "tests": 3,
+          "reportSha256": "9dea8105a6fd4c405dfdd45476b0caf1904294603198af53ea29d64666c19d4c"
+        },
+        {
+          "api": 26,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "680566a9ec300960ea4d113678d9a4af295217463fd7e76175c8b608bc8893ae"
+        },
+        {
+          "api": 33,
+          "group": "archiveUi",
+          "tests": 5,
+          "reportSha256": "bd6523cf14926cc5b3462009b99140af536cca5b783f4e50c792c89f27a0fbca"
+        },
+        {
+          "api": 37,
+          "group": "ui",
+          "tests": 6,
+          "reportSha256": "cbd3664e0dfd86ecf928ef41a2131d86f09007fc6eb648bd660af069a670820e"
+        },
+        {
+          "api": 33,
+          "group": "searchTool",
+          "tests": 1,
+          "reportSha256": "e8a263e14ff444bd8599828a9073740cf3077cc1dbea95e3f80ddc770ea2e5ac"
+        }
+      ]
+    },
+    "iosAuxiliary": {
+      "status": "passed",
+      "groups": 2,
+      "methods": 2,
+      "scope": "Own iOS27 Simulator; two-target original query and existing eight-state menu/lifecycle fixture; no physicaliPhone or real model task.",
+      "reports": [
+        {
+          "name": "records",
+          "sha256": "bd1371f2f972b654408db5374e47013a6ed5fb381c0ea3b486648cf54db4140b"
+        },
+        {
+          "name": "states",
+          "sha256": "bd1371f2f972b654408db5374e47013a6ed5fb381c0ea3b486648cf54db4140b"
+        }
+      ],
+      "pipelineReportSha256": "fd1c1de6ef25e8916e88cf6f3a85a35ee70406455bd5751862604e7435671596"
+    },
+    "coreImpact": "KMP, protocol schema and common vectors unchanged from eb061a6; prior common67+67 method result stays bound to the preceding checkpoint, no new common-runtime pass is claimed.",
+    "failureInterpretation": [
+      {
+        "candidate": "native v1",
+        "finding": "API26/API37 passed5/6 UI methods; physical4/6. Added waiting text context broke an exact old text assertion; original warning copy restored. One physical pointer selected a different pending record; original request was not rewritten or replayed."
+      },
+      {
+        "candidate": "native v2",
+        "finding": "API26 completed15 methods/4groups. Physical/API37 each UI5/6: after Compose scroll+click, expected thread01 but HTTP recorded thread05/thread03 respectively. Raw original logs/screenshots retained; no unique product cause is asserted. Candidatev3 separately checks an app-owned native popup coordinate path, bounds and exact resulting thread/operation."
+      },
+      {
+        "candidate": "iOS records v1",
+        "finding": "Native menu did not preserve chat-pin accessibility ID; failed before any named action POST. Use the established exact identifier-or-label selector, then independently verify displayed original IDs and HTTP query."
+      },
+      {
+        "candidate": "native v3",
+        "finding": "Espresso stock isPlatformPopup root matcher accepts PopupWindow.PopupDecorView and did not match observed app-owned Compose PopupLayout(type1002). No native query tap was injected by this new helper. Examiner now targets only this package's focused exact PopupLayout, validates coordinate bounds, and records own-root geometry before injecting."
+      },
+      {
+        "candidate": "native v4/v5 query interpretation",
+        "finding": "The any-GET/last-GET assertion included background original-receipt observers. Inspection of observeOperation established that each unknown record is independently queried every1500ms. The apparent wrong clicked target therefore was not a valid isolated UI counterexample. Final examiner ends local waiting for all six originals, waits for the actual GET stream to settle, then verifies exactly one new GET with the clicked immutable ID and no POST replay."
+      },
+      {
+        "candidate": "physical native v4 pointer",
+        "finding": "Exact app-owned Compose PopupLayout coordinate injection returned InjectEventSecurityException/INJECT_EVENTS. No permission or alternative global injector is used. That physical long-menu touch gate remains unverified; final physical explicit-query verification uses only app-owned semantics. API26/API37 retain the normal Compose pointer path."
+      },
+      {
+        "candidate": "iOS records v2/v3",
+        "finding": "v2 stopped at the other chat hidden by retained sidebar search; examiner now clears search and waits for actual named action count before presentation navigation. v3 native UI reached original-query selection, but fixture over-required a target query parameter absent in the existing production GET contract. Fixture now requires exact host/thread/operation and validates target if supplied; production full receipt matching is unchanged."
+      },
+      {
+        "candidate": "evidence retention",
+        "finding": "Native xcode/xcresult and source snapshots for failed attempts remain. A private outer wrapper reused its server stdout filename in attempts2/3; current v3 server error was copied to its own directory, and v4 uses unique stdout paths. Earlier overwritten outer stdout is not claimed preserved."
+      },
+      {
+        "candidate": "iOS states v4",
+        "finding": "Native regression completed running lifecycle actions and waiting-for-approval archive, then failed to find archived-list row. Exported native hierarchy showed the archived-state menu still visible with the enabled archived-chats entry; the presentation selection had not dismissed the menu. Examiner now permits one bounded repeat only of this presentation entry when the row is absent and the entry is still present; no archive/restore/model command is replayed."
+      }
+    ],
+    "checks": {
+      "androidBuild": "passed; final app/runner from menu-parity-build-v10",
+      "workspace": {
+        "status": "passed",
+        "rootCommands": 59,
+        "sourceStable": true,
+        "reportSha256": "6d878b0dd0941de43f22190f928e3c3ff41a1855dbd2f2b904a484fbf68deb02",
+        "priorAttempt": "All59 ran with exit0, but broader source guard rejected later native examiner edits; retained, not the final stable-source pass."
+      },
+      "iosBuild": "passed; current iOS v5 source guarded"
+    },
+    "remaining": [
+      "P3-6 running-conversation count, entire continuous gestures/IME/scroll selection, same-data full visual and original Electron/native Android realDEV remain open; native pointer diagnostics do not close full gesture signoff.",
+      "Batch entry, search position, checked-row/system styling, iOS10-record presentation and single-action/batch conflict handling remain recorded follow-ups.",
+      "Cellular/VPN, manual unloaded-owner archive, physical systemBack and priorAPI26cache geometry remain unverified; no new Windows or physicaliPhone pass.",
+      "TaskHub/project deletion and new project management remain deferred; independent unreadA6/P7 and dependentP9 stay paused.",
+      "Physical long-menu coordinate touch explicitly denied; owned semantics result is separate auxiliary evidence and cannot close that touch gate."
+    ],
+    "visualReview": {
+      "androidOriginals": 9,
+      "iosOriginals": 8,
+      "androidReviewSha256": "9270fef936c4eae56590591c091c2c7de79e76d2db99f2c6d59beed4ba92f98c",
+      "iosReviewSha256": "aab3b6601cf7b4027632dd8a091d79a39818270306c349e9135fd63a75864752",
+      "scope": "Representative originals only; full gestures, same-data whole-app visual and physical popup touch remain open."
+    }
+  },
+  "runningCountCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "2956eb29596db7dd489e6f159357f0bf4a08fbce",
+    "status": "implemented; final core/native/build/workspace auxiliary checks passed; full P3-6/G4 open",
+    "features": ["F02"],
+    "sourceNodes": ["B003"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileClientCountTest.kt": "b4241552a6370e9cb80029ce6accf8606847b95c90b5df7bd597c49cf4fd1e45",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "c6bbda163f6b73ef39550c0b593a8dafd10be4e783f56251d7dac8c32a52b670",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "33767a4b09d3c132f6a24feee3a792345605a799d7a4ec91056b83df43e2c244",
+      "apps/ios/Sources/SessionStore.swift": "f10e837b31f2abc549c6647a757c3fe6d355b6b57f3d9b68d1a1135e4cb178f3",
+      "apps/ios/Sources/SharedMobileRules.swift": "a078d3d99f4693498a4a7883f851c8261da34fba11d32e937fc42c57fa259e22",
+      "apps/ios/Tests/CodexManageUITests.swift": "e015fd071c185eabfebc19a7c4bb04887e4bb9a617cd081f64a137d282704c75",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceSidebarRules.kt": "7ced65999de6b436075c7495a889814025d3fc5297d19c8e6dbfd9332f64250e",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceSidebarRulesTest.kt": "dfe0684feeacf2ea612049639c8e529240fa8e7e4f001ee6f009e3f0b4ef3aa3",
+      "packages/protocol/fixtures/mobile/state-v1.json": "168b600818ea233d44f21dd91739ba09b39c25ec33486091608e1d3f357ce5b1",
+      "scripts/chat-search-ios-fixture.mjs": "879f23a30c250f749836f2d2601dd098109faa47bc7e3d31913da8f515865b1a",
+      "scripts/mobile/check-core.mjs": "0f64e52a25543d3f83ab4b4c43b71b99baea988c967547d71a4d3d4787689231",
+      "scripts/mobile/verify-ios-state.swift": "6652f98253810c352c267d1456e9504293f02f9caf543e6eb5d97e8ad283c4bf"
+    },
+    "realModelInputs": 0,
+    "implementation": [
+      "2026-10-23 P3-6b：Android客户端列表新增进行中数量与未知占位及语义说明；KMP统一在线/快照/history-only资格、准确Host、运行中及等待审批的ID去重，归档生命周期独立。Swift原独立计数路径迁移至共享规则，保留demo合并来源、未来模式与归档仍运行的现有行为。未读账本/数量与A6/P7仍暂停；任务/项目管理暂缓。",
+      "No extra network read or capability authorization is introduced by displaying counts. Android reads each client full runtime-scoped snapshot, including when another client is selected. Unknown remains distinct from confirmed zero.",
+      "Eleven additive cross-language vectors preserve all prior fixture values; active filtering precedes ID dedup, archived-active remains included, demo needs no live snapshot."
+    ],
+    "coreAuxiliary": {
+      "status": "passed",
+      "jvmActualMethods": 68,
+      "iosSimulatorArm64ActualMethods": 68,
+      "suitesPerRuntime": 14,
+      "swiftRunningCountVectors": 11,
+      "note": "First wrapper stopped because expected suite method count remained2 after a third meaningful method was added; native/JVM actual XML3 passed. Guard updated to3; current full pipeline passed.",
+      "actualSummarySha256": "03c0d636754f2908d6c7bd612f3f260fa6396756bc0825e547f2d88b153cf0e1"
+    },
+    "androidAuxiliary": {
+      "status": "passed",
+      "candidate": "v2",
+      "methods": 24,
+      "groups": 6,
+      "binaries": {
+        "app": "14c07bdac38817f8fcdf274d6f676e3f098352359ad47b0220b7061df77d4cc7",
+        "test": "cacbbe1ddf3a1914c7b9ad24bed8904e7b300b95cc590af0f457dc586ae3240e"
+      },
+      "reports": [
+        {
+          "api": 26,
+          "group": "counts",
+          "tests": 3,
+          "sha256": "77ed78a83e127095264d35490aa5b103d2a7c6d7f78e6fa2bcf83768e8bc38c9"
+        },
+        {
+          "api": 26,
+          "group": "sidebar",
+          "tests": 5,
+          "sha256": "3ae3790bc04c801815524321dd21f3ca425ce2767652c3a89fb6280aad6e44b1"
+        },
+        {
+          "api": 37,
+          "group": "counts",
+          "tests": 3,
+          "sha256": "3e1e35a4f3c75f48d9c81d492b0d4b6300013f40ffa651a2cc69abcd19a944ed"
+        },
+        {
+          "api": 37,
+          "group": "sidebar",
+          "tests": 5,
+          "sha256": "7659d92d77b2e1bcf7a42fe6bbc8aed515515c9cb6bc3e996d4b0cea9a5ff107"
+        },
+        {
+          "api": 33,
+          "group": "counts",
+          "tests": 3,
+          "sha256": "a62cd6da468e6254a4c852d906fa0e8aacfaf6abed62c51b288ba1a3efc79e43"
+        },
+        {
+          "api": 33,
+          "group": "sidebar",
+          "tests": 5,
+          "sha256": "ca7d9770a2bd5b7804299a04314d91dcfa86c1cc324785b629e17889225bfc9a"
+        }
+      ]
+    },
+    "iosAuxiliary": {
+      "status": "passed",
+      "methods": 1,
+      "groups": 1,
+      "sourceStable": true,
+      "reportSha256": "df6c1f282d98c7e886ff8819434a218751c44c54011237f591bcb57349332c9c",
+      "scope": "Own iOS27 Simulator; native real client count1/1/0. Only synthetic GET requests. No physicaliPhone/real model pass."
+    },
+    "checks": {
+      "androidBuild": "passed; final runner examiner recompiled",
+      "iosBuild": "passed",
+      "workspace": {
+        "status": "passed",
+        "rootCommands": 59,
+        "sourceStable": true,
+        "summarySha256": "a545f4617fc47d5cf19368591290055e0109c15a85694d1250491e5602d84e38",
+        "countingNote": "Raw wrapper counted13 printed shell headers including nested invocations; package check is59 chained root commands. Original report retained, full exit0/source guard unchanged."
+      }
+    },
+    "failureInterpretation": [
+      {
+        "candidate": "core v1",
+        "finding": "Actual common suites passed; wrapper expected WorkspaceSidebarRulesTest2 methods and observed3 after new meaningful golden method. Wrapper gate updated; original log/XML preserved."
+      },
+      {
+        "candidate": "native v1",
+        "finding": "Each device passed2/3; actual semantics showed correct reconnecting/unknown row. assertTextContains defaults whole-string matching and incorrectly compared a suffix. Examiner now explicitly substring-matches the count; production unchanged."
+      }
+    ],
+    "remaining": [
+      "Full continuous gesture/IME/selection and same-data full visual, physical long-menu touch/systemBack and original Electron/native Android realDEV remain open.",
+      "iOS10-record presentation and single-action/batch conflicts, batch entry/search/check styling remain P3-6 follow-ups.",
+      "Cellular/VPN and manual unloaded-owner archive stay deferred; physicaliPhone/Windows do not gain passes. TaskHub/project management deferred; independent unreadA6/P7 and dependentP9 paused."
+    ],
+    "visualReview": {
+      "androidOriginals": 9,
+      "iosOriginals": 3,
+      "sha256": "b6b5cd5e29f9297039e608380e5efdac22cbe96e82a4224659646c40ed340097",
+      "scope": "Representative current originals only; full same-data visual remains open."
+    }
+  },
+  "managementConflictCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "d8db39c9711b610f3178460f1674e0c8b537cea8",
+    "status": "implemented; final core/native/build/workspace auxiliary checks passed; full P3-6/G4 and explicit UI follow-ups open",
+    "features": ["F70", "F05", "F13", "F46", "F47"],
+    "sourceNodes": ["B003", "O019", "O150", "O152"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveSessionTest.kt": "dbdfb7f08496557a1fdbe0c078fb1b114a23af00d15b25f007d0822a16384cc3",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "d8cbbf9a7c565248270017531175ff8da65680055d600b316bbf070c4a90f41a",
+      "apps/ios/Sources/SessionStore.swift": "f8c828e36c63244ce79ffe8142e9d1d0803ec00974e6f09af025d787f1cbb354",
+      "apps/ios/Sources/SharedMobileRules.swift": "485787dadaf4be908a0da7cf6ae9d486f0237f2149dc726d7d2e99e584a2ec00",
+      "apps/ios/Tests/CodexManageUITests.swift": "05ec0a9d0a45c5e3b67ab2f87a9639c9d6de78771d8d30e5b573c9c73f1e4fe3",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/WorkspaceArchiveRules.kt": "1a482c4b9a072fc050bd0da11ea80d16993a18c7bff1ab3b2d358d39361a403b",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/WorkspaceArchiveRulesTest.kt": "c8eac7f45bef76db1af07d27ebe73cdcb01daad0bb571ead3ee6db70e144abd6",
+      "packages/protocol/fixtures/mobile/state-v1.json": "e347ebc9e5982ee346dfda9a15b2eb77f34c0767f7bb5e4f87b12c0a9a57b64d",
+      "scripts/chat-search-ios-fixture.mjs": "5d942dda6bc2c4b2c7e29b079fdd2608c34b3c30c435095a1a7ca261e2268fbb",
+      "scripts/mobile/check-core.mjs": "77dd3376710cf241f0dca37a83ee4261c544537ea3c24e4f85282ce1313cfdc7",
+      "scripts/mobile/verify-ios-state.swift": "8117ef0ea3ab069e0dff7894f02f2dc479c50fb879c8426cb3b7b2e6807a983c"
+    },
+    "realModelInputs": 0,
+    "implementation": [
+      "2026-10-23 P3-6c：共享准确目录目标/归档/单条发送中及待核对/批量待核对的归档选择资格。iOS补齐单条与批量原操作互斥，并在持久化后发送前复核原目标、当前目录和冲突；Android保留既有互斥并迁移选择规则到KMP。查询保留原ID，其他聊天和独立草稿不受未知结果影响；项目管理与未读暂停范围不变。",
+      "Single-write pending journals and batch per-item unknown states remain queryable, never become permission to resend. Own persisted batch is excluded only from its pre-wire self-conflict check; every other original still blocks.",
+      "No project-management change, no newly claimed real model/Electron/physicaliPhone/Windows acceptance. All-record visibility and complete native UI/gesture remain following slices."
+    ],
+    "coreAuxiliary": {
+      "status": "passed",
+      "jvmActualMethods": 69,
+      "iosSimulatorArm64ActualMethods": 69,
+      "suitesPerRuntime": 14,
+      "newSwiftEligibilityVectors": 7,
+      "actualSummarySha256": "fe8551f9bf3f6217efe605867cb8846eee5a78acbe75991bc1e0e332d2ffde5c"
+    },
+    "androidBaselineAuxiliary": {
+      "status": "passed",
+      "methods": 15,
+      "groups": 3,
+      "scope": "D8 product APK plus new boundary examiner:5 actual batchSession methods per device before migration; final migrated cohort separate."
+    },
+    "androidAuxiliary": {
+      "status": "passed",
+      "candidate": "v1",
+      "methods": 57,
+      "groups": 12,
+      "binaries": {
+        "app": "4972f89555d8cb7b2306ac63f2ca655831f7920cd3858a603ea954b2183fa294",
+        "test": "0379748fcbf09a40a1abb0a0c005fb8e34d53dc63c6f3c8d0a5f0f83a16e4ec1"
+      },
+      "reports": [
+        {
+          "api": 26,
+          "group": "batchFlow",
+          "tests": 5,
+          "sha256": "da8cdb415f3d5e88954debf8c6e139e11a8251e9fc239f79bd328257329ae6a5"
+        },
+        {
+          "api": 26,
+          "group": "batchSession",
+          "tests": 5,
+          "sha256": "764c396889c552810ca58523aed1c8dd8c2ae89a56c5bcc20b7f0b81f01438a3"
+        },
+        {
+          "api": 26,
+          "group": "batchUi",
+          "tests": 3,
+          "sha256": "c509c8e358f9f53ab3672381f799b0418cc8137ab4e870ea9cad72ce521b9f85"
+        },
+        {
+          "api": 26,
+          "group": "ui",
+          "tests": 6,
+          "sha256": "f53d80065fdad54529e4cdc0bdce35415a7c3ec00cf40f3258615c75f06a9929"
+        },
+        {
+          "api": 37,
+          "group": "batchFlow",
+          "tests": 5,
+          "sha256": "f64d2f0e0938b73dc3ffdec810cf56a213d8ded24663503a8857025b8a16d010"
+        },
+        {
+          "api": 37,
+          "group": "batchSession",
+          "tests": 5,
+          "sha256": "bb2351e596dd640da24dbc3c3abd6314d1cd20b9b8ea2f7a1dbe471ef2c14cac"
+        },
+        {
+          "api": 37,
+          "group": "batchUi",
+          "tests": 3,
+          "sha256": "616d25e247497e49f870988c48f710cf425f7e86da55441bff55e5295c513a4c"
+        },
+        {
+          "api": 37,
+          "group": "ui",
+          "tests": 6,
+          "sha256": "24b58cf9d26db30d0014552d071a05176a3f4ba67132c26a1d958f7d313c5386"
+        },
+        {
+          "api": 33,
+          "group": "batchFlow",
+          "tests": 5,
+          "sha256": "bcd13e964cfc41b39197bb3483e447a72231507c2c46675920552bcb5afaa56a"
+        },
+        {
+          "api": 33,
+          "group": "batchSession",
+          "tests": 5,
+          "sha256": "27bbbf31bccf53954583abbf8fa7179be2f895c453cd9df9922d2264914bf627"
+        },
+        {
+          "api": 33,
+          "group": "batchUi",
+          "tests": 3,
+          "sha256": "877c28abd927781de6b299a6dd0d76e8550b37514e8d2fe5ee5234808ffee894"
+        },
+        {
+          "api": 33,
+          "group": "ui",
+          "tests": 6,
+          "sha256": "51511c98d51eadecbaa498e177302c804a24f2696ff0da2b5b7d1a80253c54c5"
+        }
+      ]
+    },
+    "iosAuxiliary": {
+      "status": "passed",
+      "methods": 1,
+      "groups": 1,
+      "candidate": "greenv3",
+      "sourceStable": true,
+      "pipelineSha256": "103f47ff71f4bd20ed9bf12e3308aea1888ef5bcee5784f8a3859eb62a3fa1a7",
+      "originalsSha256": "fbb0a1f436bb1ab78f3ff26c8ea184395733aa6713ad6704cf710bbe36e9b54b",
+      "scope": "Own iOS27 Simulator: old failed single-pending batch row now disabled; one other exact batch POST, original-ID GET then same-chat single controls disabled. Exactly1single+1batch, no model input. Pending selection/submit-bar cleanup remains explicit UI gap."
+    },
+    "failureInterpretation": [
+      {
+        "candidate": "iOS redv1/v2",
+        "finding": "New examiner failed to compile on heterogeneous dictionary comparison and async assertion autoclosure. No product counterexample/pass claimed from compilation."
+      },
+      {
+        "candidate": "iOS redv3",
+        "finding": "Actual native old product reached first pending single record, then XCTAssertFalse failed because same-chat batch row remained enabled. Failure stopped before any batch POST. Original logs/xcresult/source hashes retained."
+      },
+      {
+        "candidate": "Android baselinev1",
+        "finding": "New examiner referenced an iOS-only currentChatActionBusy property; compiler rejected it. Wait now checks actual original journal phase; baselinev2 all15 methods passed."
+      },
+      {
+        "candidate": "iOS greenv1 build",
+        "finding": "Production bridge call used Kotlin-style isEmpty() for a Swift array Bool property. Compiler rejected before runtime. Corrected to isEmpty; Android/core compiled sources and exact final APK pair are unchanged."
+      },
+      {
+        "candidate": "iOS greenv2 native examiner",
+        "finding": "Current product passed old failed disabled-row assertion, then native alert label matched multiple wrappers for the same confirmation. Examiner now selects first exact alert match, consistent with existing lifecycle tests. Stopped before batch POST; Android/core/product code unchanged."
+      }
+    ],
+    "checks": {
+      "androidBuild": "passed; final unchanged Android/common sources from management-conflict-build-v1",
+      "iosBuild": "passed green-v2 product build, matching-source reuse with current green-v3 native examiner-only correction",
+      "workspace": {
+        "status": "passed",
+        "rootCommands": 59,
+        "sourceStable": true,
+        "reportSha256": "e57809eaea0fc68d58e510a43381b66fcd20d5bf8c1e5fe13440a88aa4e33c11"
+      }
+    },
+    "remaining": [
+      "iOS pending batch row disables but retains selected count and active submit bar; Android already prunes invalid selections. Next UI slice must prune and gate submit, retain original query and show older records beyond10.",
+      "Older iOS batch records beyond10 still need reachable UI; this checkpoint does not close that gap.",
+      "Full gesture/IME/selection, same-data visual, original Electron/native Android realDEV and physical popup touch/systemBack remain open.",
+      "Cellular/VPN and human archive deferred; TaskHub/new project CRUD deferred; independent unreadA6/P7 and dependentP9 paused."
+    ],
+    "visualReview": {
+      "androidOriginals": 3,
+      "iosOriginals": 3,
+      "sha256": "7fd87890cb3e89e2222fba4ab4b7a47bed91439ed928d4121caea1a2cf8e2fb9",
+      "scope": "Representative native originals only; current iOS stale-selected pending bar identified, not full UI signoff."
+    }
+  },
+  "batchRecordUiCheckpoint": {
+    "date": "2026-10-23",
+    "sourceBase": "a95aae08c59ed6eb113cf592b7fa46b6098afbdf",
+    "status": "implemented; final native/build/workspace auxiliary checks passed; full P3-6/G4 open",
+    "features": ["F70", "F46", "F47"],
+    "sourceNodes": ["B003", "O019", "O150", "O152"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileWorkspaceArchiveUiTest.kt": "656434a396f2a8b2c3e694730d4a791e03af166643537fd231f586569a875072",
+      "apps/ios/Sources/Sheets.swift": "04b71d108b161e4a68c7a797eaea7da745c7b15996dbd69239996f3614e5c146",
+      "apps/ios/Tests/CodexManageUITests.swift": "0b7467c5c5ad814050dca3da1823b1c28ccfe835796838feb3cf712cedf0b0eb",
+      "scripts/chat-search-ios-fixture.mjs": "e09cfbb274f48456d67ee7e85b8800e82cc99bb7dc1f37f273049cd8aba02040"
+    },
+    "realModelInputs": 0,
+    "implementation": [
+      "2026-10-23 P3-6d：iOS归档选择按全部仍合资格的原ID清理，搜索隐藏但仍有效的选择保留；底部提交即时核对每个所选ID，不等待清理effect。批量原记录取消固定10条截断，显示完整不可变ID并保留每条原查询。Android生产路径已有相同行为，本项仅新增原生验收，最终产品APK字节与a95检查点完全相同。项目动作、任务中心及未读暂停范围不变。",
+      "Each persisted original remains immutable. Pruning editable selection never rewrites confirmedIds, submitted batch labels/IDs or journals, and never replays an unknown operation.",
+      "Older pending originals remain reachable even with ten later terminal receipts; record original IDs displayed as opaque monospaced text. Native search/navigation preparation errors are not product acceptance."
+    ],
+    "androidAuxiliary": {
+      "status": "passed",
+      "methods": 30,
+      "groups": 6,
+      "appExactlyMatchesPrecedingCheckpoint": true,
+      "androidProductionChanged": false,
+      "binaries": {
+        "app": "4972f89555d8cb7b2306ac63f2ca655831f7920cd3858a603ea954b2183fa294",
+        "test": "938f89d96b16e09a12c297c48d3813ca5afdc8867daf0ee9a7678c6574af1aa0"
+      },
+      "reports": [
+        {
+          "api": 26,
+          "group": "batchUi",
+          "tests": 5,
+          "sha256": "d1a1f8f3d5755039c3338ff3e9dc45052d503845f0e7cdcda0f5a398fccc0aa4"
+        },
+        {
+          "api": 26,
+          "group": "batchSession",
+          "tests": 5,
+          "sha256": "058c0e0ba72aa2d44fa87a01f329b6e8fb7efe21c3fb9aa966f9801f6ea84518"
+        },
+        {
+          "api": 37,
+          "group": "batchUi",
+          "tests": 5,
+          "sha256": "facb8fc1944fcdb19138524d26daa97324160d5ec66b3439617bc512696e09c6"
+        },
+        {
+          "api": 37,
+          "group": "batchSession",
+          "tests": 5,
+          "sha256": "f021b0b597367d2b1ac76b565b2583946c731c27369e0ee206ab9abd12b4b43a"
+        },
+        {
+          "api": 33,
+          "group": "batchUi",
+          "tests": 5,
+          "sha256": "4d724c6cb43642fdced4139b7800e2724bc7189f39606cd68a1d6d35f2864117"
+        },
+        {
+          "api": 33,
+          "group": "batchSession",
+          "tests": 5,
+          "sha256": "59b35b262d02d9728cca731940b082f50a071e1a28e60fbbb28d76f7c4741ede"
+        }
+      ],
+      "scope": "Per API26/API37/physicalAPI33 current pair: batchUI5+batchSession5. Actual11 distinct batch originals/oldest original GET404/no extra POST, pending selection0/disabled footer/query retained."
+    },
+    "iosAuxiliary": {
+      "status": "passed",
+      "methods": 2,
+      "groups": 2,
+      "candidate": "green-v3",
+      "sourceStable": true,
+      "pipelineSha256": "77dcca1320cb0b5472d59146a4dd224dfa88402d50043e78ae7cbd118376b634",
+      "recordProofSha256": "39b945cf625f55a48f55224c75adc0dae63d7fcf156e4231456fbef38f70a370",
+      "selectionProofSha256": "6a4957f9f5c40b6008f668e5d52dcb9d5f19b9c3880bbf27909a371e0a0181dc",
+      "scope": "Own iOS27 Simulator:11distinctoriginal batches, oldest unknown after10terminals reachable,2GET only oldestID,noextraPOST. Independent selection scene clears0/disables footer after unknown while original query remains enabled and same-chat single controls disabled. No real model/physicaliPhone pass."
+    },
+    "coreImpact": "No KMP/protocol/state-vector change from a95; current69/69 result remains bound to unchanged components and preceding checkpoint, no new common-runtime pass claimed.",
+    "visualReview": {
+      "androidOriginals": 6,
+      "androidReviewSha256": "855d6715ebace7937581483324a34654a07296aff37ec8c2906b2cc6b8abe602",
+      "ios": {
+        "originals": 4,
+        "sha256": "ebed79cfe7d2b6b59b4942e371dca63cf92760aa7ef47ce1dfffa444eb23bc31"
+      },
+      "scope": "Representative originals only; complete same-data visual remains open."
+    },
+    "failureInterpretation": [
+      {
+        "candidate": "iOS redv1",
+        "finding": "Only first synthetic batch submitted; examiner could not locate second filtered row after search replacement. No old-record-cap counterexample is claimed. Actual search value assertions and view re-entry added."
+      },
+      {
+        "candidate": "iOS redv2",
+        "finding": "Only first synthetic batch submitted; native search mode hid navigation bar, so examiner failed before second batch while re-entering view. Cancel native search before back navigation. Neither failed preparation closes or disproves the record-cap feature."
+      },
+      {
+        "candidate": "old10-prefix",
+        "finding": "Fixed10 truncation confirmed directly in preceding Sheets source, not by the failed red native preparations. Current final eleven-record scene is required before claiming native reachability."
+      },
+      {
+        "candidate": "iOS green-v1 examiner",
+        "finding": "Product build passed. Native search cancel dismissed the whole management presentation; examiner then expected a navigation bar and stopped with only1batch. Actual full hierarchy showed main app. Re-entry workaround removed now that production correctly prunes pending selection; actual search text assertions remain. No all-record native pass claimed from this attempt."
+      },
+      {
+        "candidate": "iOS green-v2 examiner",
+        "finding": "Actual native search value proved caret-midfield backspace left old suffix: query01_nonce_00_nonce. Only1batch written. Hierarchy exposes an exact Clear text child; examiner now uses that owned native clear control, asserts blank/placeholder then exact query. Product unchanged."
+      }
+    ],
+    "checks": {
+      "androidBuild": "passed; new examiner runner/current unchanged product APK",
+      "iosBuild": "passed green-v1 product build, exact Sheets source unchanged; green-v3 native examiner corrected and complete2scenes reverified",
+      "workspace": {
+        "status": "passed",
+        "rootCommands": 59,
+        "sourceStable": true,
+        "sourceFiles": 4,
+        "reportSha256": "cb3d6e73049dba6646aaa9de01a87084aae9b31d99d697b79a6678964e02b460"
+      }
+    },
+    "remaining": [
+      "Full continuous gesture/IME/selection and same-data complete visual, original Electron/native Android realDEV remain open.",
+      "Batch entry/search position/native checkbox/color differences remain explicit; physical popup coordinate and systemBack denied/unverified, no permission bypass.",
+      "Cellular/VPN and human unloaded-owner archive deferred. TaskHub/new project CRUD deferred; independent unreadA6/P7 and dependentP9 paused."
+    ]
+  }
+}

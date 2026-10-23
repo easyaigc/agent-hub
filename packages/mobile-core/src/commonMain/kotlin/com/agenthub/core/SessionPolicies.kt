@@ -14,7 +14,22 @@ class SubmissionState(
     val running: Boolean, val preferredReplyMode: String,
 )
 
-class ReceiptState(val id: String, val state: String, val supersededByTurnId: String?)
+class ReceiptState(val id: String, val state: String, val supersededByTurnId: String?, val queueSyncError: String?=null)
+
+/** Queue ownership stays at the original client; old Host records never form a new FIFO. */
+object QueueRules {
+    fun legacy(state: String, source: String?, disposition: String?) =
+        state=="queued" && (source=="host" || disposition=="legacy-review")
+    fun active(state: String, source: String?, present: Boolean?, disposition: String?) =
+        state=="queued" && !legacy(state,source,disposition) && present!=false
+    fun hasSyncError(error: String?) = !error.isNullOrEmpty()
+    /** Exact target, current membership and run identity are checked by the native owner. */
+    fun actionAllowed(state: String, source: String?, present: Boolean?, disposition: String?,
+        online: Boolean, writable: Boolean, pending: Boolean, execute: Boolean,
+        supportsExecute: Boolean, canExecuteNow: Boolean?) =
+        active(state,source,present,disposition) && online && writable && !pending &&
+            (!execute || supportsExecute && canExecuteNow!=false)
+}
 class GenerationChoice(val effort: String?, val speed: String?)
 
 object SessionPolicies {
@@ -97,7 +112,7 @@ object SessionPolicies {
         val lastAccepted = receipts.indexOfLast { it.state in listOf("submitted", "completed", "interrupted") }
         return receipts.indices.filter { index ->
             val receipt = receipts[index]
-            receipt.state == "uncertain" || (receipt.state == "failed" && receipt.id !in dismissed &&
+            QueueRules.hasSyncError(receipt.queueSyncError) || receipt.state == "uncertain" || (receipt.state == "failed" && receipt.id !in dismissed &&
                 (receipt.id == pendingId || (receipt.supersededByTurnId.isNullOrEmpty() && index > lastAccepted)))
         }
     }

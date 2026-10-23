@@ -2,13 +2,15 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 
 // Exercises native settings and their HTTP intent without launching Codex.
 const hostId = 'generation-fixture';
 const threadId = 'generation-primary';
 const secondaryId = 'generation-secondary';
-const endpoint = 'http://127.0.0.1:8797';
+const port = Number(process.env.GENERATION_FIXTURE_PORT ?? 8797);
+assert(Number.isInteger(port) && port > 0 && port <= 65535);
+const endpoint = 'http://127.0.0.1:' + port;
 const token = randomBytes(32).toString('base64url');
 const capabilities = [
   'reply',
@@ -219,10 +221,12 @@ const fixture = createServer(async (req, res) => {
     json(res, { error: error.message }, 500);
   }
 });
-await mkdir('.local', { recursive: true });
+const output =
+  process.env.GENERATION_ACCEPTANCE_OUTPUT ?? '.local/generation-settings-' + Date.now();
+await mkdir(output, { recursive: true });
 await new Promise((resolve, reject) => {
   fixture.once('error', reject);
-  fixture.listen(8797, '127.0.0.1', resolve);
+  fixture.listen(port, '127.0.0.1', resolve);
 });
 const child = spawn(
   'xcodebuild',
@@ -238,7 +242,7 @@ const child = spawn(
     '-derivedDataPath',
     process.env.IOS_DERIVED_DATA_PATH ?? '.build/ios-generation',
     '-resultBundlePath',
-    `.local/generation-settings-${Date.now()}.xcresult`,
+    output + '/native.xcresult',
     '-parallel-testing-enabled',
     'NO',
     '-collect-test-diagnostics',
@@ -248,7 +252,7 @@ const child = spawn(
     '-only-testing:CodexManageUITests/CodexManageUITests/testMobileGenerationSettings',
     'test',
   ],
-  { stdio: 'inherit', env: process.env },
+  { stdio: 'inherit', env: { ...process.env, TEST_RUNNER_GENERATION_FIXTURE_ENDPOINT: endpoint } },
 );
 try {
   const code = await new Promise((resolve, reject) => {
@@ -257,14 +261,17 @@ try {
   });
   assert.equal(code, 0);
   assert.equal(replies.length, 3);
-  console.log(
-    JSON.stringify({
-      suite: 'generation-settings-ios',
-      passed: 1,
-      failed: 0,
-      realDesktopTurnVerified: false,
-    }),
-  );
+  const report = {
+    suite: 'generation-settings-ios',
+    passed: 1,
+    failed: 0,
+    realDesktopTurnVerified: false,
+    syntheticReplies: replies.length,
+    realModelInputs: 0,
+    simulator: process.env.IOS_SIMULATOR_ID ?? null,
+  };
+  await writeFile(output + '/report.json', JSON.stringify(report, null, 2) + '\n');
+  console.log(JSON.stringify(report));
 } finally {
   child.kill('SIGTERM');
   fixture.closeAllConnections();

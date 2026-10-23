@@ -17,7 +17,9 @@ import java.util.UUID
 /** Synthetic responses over actual HTTP; native dismissal and encrypted restoration are real. */
 @RunWith(AndroidJUnit4::class)
 class MobileReceiptNoticeTest {
-    @get:Rule val ui=createAndroidComposeRule<MainActivity>()
+    @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
+    @get:Rule(order=1) val diagnostics: org.junit.rules.TestRule=NativeTestDiagnostics()
+    @get:Rule(order=2) val ui=createAndroidComposeRule<MainActivity>()
     private val session get()=ui.activity.session
     private fun main(block: suspend ()->Unit)=runBlocking { withContext(Dispatchers.Main) { block() } }
     @Before fun reset() { ui.runOnIdle { session.resetAcceptance() } }
@@ -42,8 +44,18 @@ class MobileReceiptNoticeTest {
         try { File(dir,"$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) } } finally { bitmap.recycle() }
     }
     @Test fun nativeRejectedSubmissionRetainsDraftAndHasNoTurn() {
+        // No Activity replacement in this case: do not enter a platform-idle
+        // Activity lookup while the sharing sheet is settling.
+        val session=this.session
         NoticeFixture("rejected").use { f -> connect(f)
             ui.runOnIdle { session.text="被拒绝的原内容" }; ui.onNodeWithTag("send-message").performClick()
+            ui.waitUntil(5_000) { session.aiSharingRequest!=null }
+            assertEquals(0,f.server.requests.count { it.method=="POST" })
+            assertEquals("被拒绝的原内容",session.text)
+            ui.onNodeWithTag("ai-sharing-allow").performScrollTo().performClick()
+            ui.waitUntil(5_000) { session.aiSharingRequest==null }
+            assertEquals("Consent cannot submit the input",0,f.server.requests.count { it.method=="POST" })
+            ui.onNodeWithTag("send-message").performClick()
             ui.waitUntil(15_000) { session.runtime?.receipts?.singleOrNull()?.operationId==f.submittedId && session.transferStatus==null }
             ui.onNodeWithText("消息提交失败").assertIsDisplayed(); ui.onNodeWithText("任务执行失败").assertDoesNotExist()
             assertEquals("被拒绝的原内容",session.text); assertNull(session.runtime!!.receipts.single().turnId)

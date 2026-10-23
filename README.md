@@ -4,7 +4,10 @@
 
 连接电脑上的 Codex、EasyWork，随时管理项目、对话和任务。任务继续在所选电脑上执行，手机负责查看、交互与控制。
 
-**下载体验**：[Android 预览版 APK](https://github.com/easyaigc/agent-hub/releases/download/v0.1.0-android-preview.1/agent-hub-0.1.0-android-preview.1.apk)（Android 8.0+，开发签名） · [版本说明与校验值](https://github.com/easyaigc/agent-hub/releases/tag/v0.1.0-android-preview.1)
+| 平台        | 下载                                                                                                                                                                                                                                                                 | 源码与本地构建                                                      |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Android** | [下载预览版 APK](https://github.com/easyaigc/agent-hub/releases/download/v0.1.0-android-preview.1/agent-hub-0.1.0-android-preview.1.apk)（Android 8.0+，开发签名） · [版本说明与校验值](https://github.com/easyaigc/agent-hub/releases/tag/v0.1.0-android-preview.1) | [Android 源码与构建说明](apps/android/README.md)                    |
+| **iOS**     | **App Store 即将发布**                                                                                                                                                                                                                                               | [iOS 源码](apps/ios) · [本地构建与安装](#本地构建-ios)（iOS 17.0+） |
 
 ## 核心特点
 
@@ -73,7 +76,7 @@ flowchart LR
 
 ## 开始使用与开发
 
-源码开发需要 Node.js 24.x、pnpm 11.19.0；iOS 编译另需完整 Xcode 和 iOS Simulator SDK。
+源码开发需要 Node.js 24.x、pnpm 11.19.0；iOS 编译另需 macOS、完整 Xcode（含 iOS Simulator SDK）和 JDK 17。
 
 ```bash
 git clone https://github.com/easyaigc/agent-hub.git
@@ -85,10 +88,25 @@ pnpm build
 - **接入 Codex 电脑**：按 [codex-host-connect Skill](skills/codex-host-connect/SKILL.md) 安装和配置 Host Agent；完整接入包可运行 `pnpm package:connect` 生成。
 - **接入 EasyWork**：查看 [EasyWork 接入协议](docs/integrations/easywork-ewdap-1/README.md)。
 - **编译 Android App**：按 [Android 工程说明](apps/android/README.md) 配置 JDK 17 和 Android SDK，运行 `pnpm build:android`；开发 APK 输出到 `.build/native/android/outputs/apk/debug/`。
-- **运行手机 App**：用 Xcode 打开 `apps/ios/CodexManage.xcodeproj`，选择 `CodexManage` Scheme 和模拟器运行；真机需要自己的签名配置。
+- **编译与安装 iOS App**：按下方[本地构建说明](#本地构建-ios)，使用模拟器或自己的 iPhone 运行。
 - **检查源码**：运行 `pnpm check`；编译 iOS 使用 `pnpm build:ios`。
 
 Host 的正式连接、能力配置与故障排查见[运行指南](docs/runtime.md)。`pnpm dev` 启动的是开发服务，默认只监听回环地址并提供健康检查；手机直连需要另行完成 Host 配置。
+
+### 本地构建 iOS
+
+App Store 版本即将发布，当前可从源码本地构建。完成上面的依赖安装后，在仓库根目录执行：
+
+```bash
+pnpm build:ios
+open apps/ios/CodexManage.xcodeproj
+```
+
+`pnpm build:ios` 编译模拟器版本，无需配置开发团队。Xcode 构建会自动调用仓库的 Gradle Wrapper 编译 KMP 共享核心；首次构建需要下载依赖，Node.js 和 JDK 17 需对 Xcode 构建脚本可见。
+
+1. **模拟器运行**：在 Xcode 中选择 `CodexManage` Scheme 和 iPhone 模拟器，点击 Run。
+2. **真机安装**：在 Xcode 登录自己的 Apple 开发者账号，将项目 Build Settings 中 `DEVELOPMENT_TEAM` 和 `NOTIFICATION_APP_BUNDLE_ID` 的 iPhoneOS 配置改为自己的团队和唯一 Bundle ID；为主 App 与通知扩展配置匹配的签名，然后选择自己的 iPhone 运行。
+3. **连接电脑**：App 启动后，按上方 Codex／EasyWork 接入说明添加电脑，即可通过局域网或已配置的远程通道使用。
 
 ## 项目结构
 

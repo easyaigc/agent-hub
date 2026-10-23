@@ -1,7 +1,7 @@
 {
   "version": 1,
   "product": "Agent Hub mobile parity",
-  "baselineCommit": "595deca",
+  "baselineCommit": "7c05ac0a0b59cdd9540c0f690712604827bda2d1",
   "sourceAliases": {
     "UI": ["apps/ios/Sources/RootView.swift", "apps/ios/Sources/Sheets.swift"],
     "State": ["apps/ios/Sources/SessionStore.swift", "apps/ios/Sources/Models.swift"],

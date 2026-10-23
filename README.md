@@ -62,14 +62,6 @@ flowchart LR
 
 各客户端、平台及 Host 版本的能力不同，手机按实际能力开放操作。归档、恢复、删除等生命周期操作仍受上游接口与任务状态约束，逐项状态见[双端功能清单](docs/product/mobile-parity.md)与[聊天管理说明](docs/chat-actions.md)。
 
-<p align="center">
-  <img src="docs/assets/readme/clients.png" alt="多电脑客户端切换" width="250">
-  <img src="docs/assets/readme/projects.png" alt="项目与对话侧栏" width="250">
-  <img src="docs/assets/readme/plans.png" alt="真机计划模式：查看、实施或调整计划" width="250">
-</p>
-
-<p align="center">客户端切换 · 真实项目与对话 · 计划模式</p>
-
 ## 平台与连接
 
 - **手机端**：原生 iOS／SwiftUI；Android／Compose 与 KMP 共享核心正在按[开发计划](docs/plans/android-native.md)持续对齐。

@@ -4,6 +4,8 @@
 
 连接电脑上的 Codex、EasyWork，随时管理项目、对话和任务。任务继续在所选电脑上执行，手机负责查看、交互与控制。
 
+**下载体验**：[Android 预览版 APK](https://github.com/easyaigc/agent-hub/releases/download/v0.1.0-android-preview.1/agent-hub-0.1.0-android-preview.1.apk)（Android 8.0+，开发签名） · [版本说明与校验值](https://github.com/easyaigc/agent-hub/releases/tag/v0.1.0-android-preview.1)
+
 ## 核心特点
 
 - **多客户端一键切换**：在不同电脑的 Codex、EasyWork 之间快速切换，每个客户端的项目、对话和草稿独立保存。

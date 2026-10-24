@@ -55,8 +55,15 @@ class MobilePrivateConnectionTest {
         assertEquals(host.id,result.codex.single().id);assertTrue(CodexConnectionVault(store).clients().isEmpty())
         assertTrue(posts().isEmpty());assertTrue(stats().getJSONArray("requests").objects().all { !it.getBoolean("authorizationPresent") })
     }
+    @Test fun missingAndWrongHostKeyNeverPublishesConnection()=runBlocking {
+        for(key in listOf("", "wrong-host-key-".repeat(3))) {
+            try { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,key);fail("Unauthorized key accepted") } catch(_: Exception) {}
+            assertTrue(CodexConnectionVault(store).clients().isEmpty());assertTrue(store.token(host.id).isEmpty())
+        }
+        assertEquals(1,posts().size)
+    }
     @Test fun verifiedHintRefreshKeepsReplyButTransportChangeStopsBeforeSend()=runBlocking {
-        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store)
+        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3))
         for(changeTransport in listOf(false,true)) {
             val original=client(auth);CodexConnectionVault(store).save(original,auth.token)
             val gate=CompletableDeferred<Unit>();val entered=CompletableDeferred<Unit>()
@@ -100,8 +107,8 @@ class MobilePrivateConnectionTest {
         }
     }
     @Test fun explicitClaimUsesOnlyThreeFieldsAndAuthenticatesWorkspace()=runBlocking {
-        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store)
-        val post=posts().single();assertEquals(setOf("publicKey","target","version"),post.getJSONArray("fields").strings().toSet());assertFalse(post.getBoolean("authorizationPresent"))
+        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3))
+        val post=posts().single();assertEquals(setOf("publicKey","target","version"),post.getJSONArray("fields").strings().toSet());assertTrue(post.getBoolean("authorizationPresent"))
         assertTrue(stats().getJSONArray("requests").objects().filter { it.getString("path")=="/host" }.all { !it.getBoolean("authorizationPresent") })
         assertTrue(stats().getJSONArray("requests").objects().single { it.getString("path")=="/v1/workspace" }.getBoolean("authorizationPresent"))
         assertEquals(host.id,auth.workspace.hostId);assertTrue(store.token(host.id).isEmpty())
@@ -111,7 +118,7 @@ class MobilePrivateConnectionTest {
         store.setToken(host.id,"fixture-original-token-".repeat(2))
         for(value in listOf("bad-fingerprint","wrong-host","legacy-host","redirect-host")) {
             mode(value)
-            try { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store);fail(value) } catch(_: Exception) {}
+            try { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3));fail(value) } catch(_: Exception) {}
             assertTrue(posts().isEmpty());assertEquals("fixture-original-token-".repeat(2),store.token(host.id))
         }
     }
@@ -119,23 +126,23 @@ class MobilePrivateConnectionTest {
         val original="fixture-original-token-".repeat(2);store.setToken(host.id,original)
         for(value in listOf("bad-tag","wrong-reply-target","wrong-workspace","denied-claim")) {
             mode(value)
-            try { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store);fail(value) } catch(_: Exception) {}
+            try { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3));fail(value) } catch(_: Exception) {}
             assertEquals(1,posts().size);assertEquals(original,store.token(host.id));assertTrue(CodexConnectionVault(store).clients().isEmpty())
         }
     }
     @Test fun unknownClaimDoesNotReplayAndExplicitSameKeyRetryUsesExistingBinding()=runBlocking {
         val identity=EasyWorkIdentity.load(store);val before=stats().getInt("bindingCount")
         mode("drop-claim-response")
-        try { CodexDiscoveryAPI.authorize(host,identity,store);fail("Lost response accepted") } catch(_: Exception) {}
+        try { CodexDiscoveryAPI.authorize(host,identity,store,"fixture-host-key-".repeat(3));fail("Lost response accepted") } catch(_: Exception) {}
         delay(500);assertEquals(1,posts().size);assertEquals(before+1,stats().getInt("bindingCount"));assertTrue(store.token(host.id).isEmpty())
         val firstKey=posts().single().getString("publicKey");val originalRecords=encryptedRecords()
-        mode("normal");val auth=CodexDiscoveryAPI.authorize(host,identity,store)
+        mode("normal");val auth=CodexDiscoveryAPI.authorize(host,identity,store,"fixture-host-key-".repeat(3))
         assertEquals(originalRecords,encryptedRecords());assertEquals(firstKey,posts().single().getString("publicKey"));assertEquals(before+1,stats().getInt("bindingCount"))
         assertTrue(auth.token.matches(Regex("[A-Za-z0-9_-]{43}")))
     }
     @Test fun atomicCredentialAndClientSurviveMissingOrdinaryMetadataWithoutNewClaim()=runBlocking {
         val original="fixture-original-token-".repeat(2);store.setToken(host.id,original)
-        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store)
+        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3))
         val vault=CodexConnectionVault(store);vault.save(client(auth),auth.token)
         assertNull(store.metadata());assertEquals(auth.token,store.token(host.id))
         val restored=withContext(Dispatchers.Main) { MobileSession(store).also { it.restore() } }
@@ -146,7 +153,7 @@ class MobilePrivateConnectionTest {
         vault.remove(host.id);assertEquals(original,store.token(host.id))
     }
     @Test fun explicitLegacyReplacementAndRemovalSupersedeOnlyThisHost()=runBlocking {
-        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store)
+        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3))
         val vault=CodexConnectionVault(store);vault.save(client(auth),auth.token)
         store.setToken("other-host","other legacy key")
         store.setToken(host.id,"replacement manual or QR key")
@@ -155,7 +162,7 @@ class MobilePrivateConnectionTest {
         assertTrue(store.token(host.id).isEmpty());assertTrue(vault.clients().isEmpty());assertEquals("other legacy key",store.token("other-host"))
     }
     @Test fun removedPrivateConnectionCannotRecoverFromVaultAfterOrdinaryMetadataLoss()=runBlocking {
-        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store)
+        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3))
         CodexConnectionVault(store).save(client(auth),auth.token)
         val session=withContext(Dispatchers.Main) { MobileSession(store).also { it.restore() } }
         withTimeout(10_000) { while(withContext(Dispatchers.Main) { session.restoring || !session.hasClient }) delay(30) }
@@ -164,7 +171,7 @@ class MobilePrivateConnectionTest {
         withContext(Dispatchers.Main) { session.resetAcceptance() }
     }
     @Test fun atomicConnectionOverridesStaleMetadataAndRetainsLaterVerifiedRoutesAndUIState()=runBlocking {
-        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store);val verified=client(auth)
+        val auth=CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3));val verified=client(auth)
         val stale=verified.copy(name="原连接名称",readerId="original-reader",endpoint="https://127.0.0.1:1",codexDirect=verified.codexDirect!!.copy(routes=listOf(CodexRoute("https://127.0.0.1:1"))))
         val key=stale.cacheKey(null)
         val metadata=JSONObject().put("version",1).put("clients",org.json.JSONArray().put(encodeClient(stale))).put("selected",stale.id).put("appearance","light").put("demo",false)
@@ -180,13 +187,13 @@ class MobilePrivateConnectionTest {
         withContext(Dispatchers.Main) { session.resetAcceptance() }
     }
     @Test fun changedLocalTargetGuardStopsBeforeClaim()=runBlocking {
-        try { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store) { error("Target changed") };fail() } catch(_: Exception) {}
+        try { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3)) { error("Target changed") };fail() } catch(_: Exception) {}
         assertTrue(posts().isEmpty());assertTrue(CodexConnectionVault(store).clients().isEmpty())
     }
     @Test fun lateIssuedCredentialCannotReplaceNewSelectionOrDraft()=runBlocking {
         mode("hold-claim")
         val session=withContext(Dispatchers.Main) { MobileSession(store).also { it.resetAcceptance();it.text="original draft" } }
-        val result=async(Dispatchers.Main) { runCatching { session.connectCodexDiscovered(host) } }
+        val result=async(Dispatchers.Main) { runCatching { session.connectCodexDiscovered(host,"fixture-host-key-".repeat(3)) } }
         withTimeout(10_000) { while(posts().isEmpty())delay(30) }
         withContext(Dispatchers.Main) { session.newChat();session.text="newer draft" }
         assertTrue(result.await().isFailure);assertEquals(1,posts().size)
@@ -195,7 +202,7 @@ class MobilePrivateConnectionTest {
     }
     @Test fun cancelledClaimNeverPublishesOrSchedulesAnotherPost()=runBlocking {
         mode("hold-claim")
-        val result=launch { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store) }
+        val result=launch { CodexDiscoveryAPI.authorize(host,EasyWorkIdentity.load(store),store,"fixture-host-key-".repeat(3)) }
         withTimeout(10_000) { while(posts().isEmpty())delay(30) }
         result.cancelAndJoin();delay(500)
         assertEquals(1,posts().size);assertTrue(CodexConnectionVault(store).clients().isEmpty());assertTrue(store.token(host.id).isEmpty())

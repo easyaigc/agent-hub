@@ -38,6 +38,7 @@ try {
   throw new Error('Invalid private Host configuration');
 }
 const allowed = new Set([
+  'AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS',
   'CODEX_RUNTIME_MODE',
   'CODEX_DESKTOP_VERSION',
   'CODEX_EXECUTABLE',
@@ -56,6 +57,7 @@ const allowed = new Set([
   'HOST_AGENT_DISCOVERY_TLS_CERT',
   'HOST_AGENT_DISCOVERY_TLS_KEY',
   'HOST_AGENT_OPENSSL',
+  'HOST_AGENT_HTTPS_ENDPOINTS',
   'HOST_NOTIFICATION_RELAY_URL',
   'HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE',
 ]);
@@ -63,6 +65,8 @@ if (configuration.environment?.CODEX_RUNTIME_MODE !== 'desktop-runtime')
   throw new Error('Original desktop required');
 for (const [key, value] of Object.entries(configuration.environment ?? {})) {
   if (!allowed.has(key) || typeof value !== 'string') throw new Error('Invalid Host environment');
+  if (key === 'AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS' && value !== '0' && value !== '1')
+    throw new Error('Invalid Windows Trace diagnostic mode');
 }
 if (process.argv[3] === '--host-child') {
   const refreshed = refreshWindowsHostConfiguration(configurationPath);

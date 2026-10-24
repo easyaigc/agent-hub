@@ -23,6 +23,11 @@ const paths = [
   'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/RuntimeIdentity.kt',
   'packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ReplyRecovery.kt',
   'packages/protocol/fixtures/mobile/reply-recovery-v2.json',
+  'apps/ios/Sources/Localization.swift',
+  'apps/ios/Sources/SessionStore.swift',
+  'apps/ios/Sources/MobileUnreadBadge.swift',
+  'scripts/mobile/fixtures/legacy-chat-timeline.swift',
+  'apps/ios/Sources/NativeChatSearch.swift',
 ];
 const fingerprint = async () => {
   const hash = createHash('sha256');
@@ -36,12 +41,42 @@ const fingerprint = async () => {
 const sourceSha256 = await fingerprint();
 const [models, agent, notifications, reading, discovery, shared, generated, verifier] =
   await Promise.all(paths.slice(0, 8).map((p) => readFile(p, 'utf8')));
-const reference = execFileSync('git', ['show', '595deca:apps/ios/Sources/Models.swift'], {
-  encoding: 'utf8',
-});
-const legacy = reference
-  .slice(reference.indexOf('struct ChatTimeline'), reference.indexOf('\nstruct Draft:'))
-  .replace('struct ChatTimeline', 'struct LegacyChatTimeline');
+const store = await readFile('apps/ios/Sources/SessionStore.swift', 'utf8');
+const reconcileStart = store.indexOf('  private func reconcileReading(');
+const reconcileEnd = store.indexOf('  func recordVisibleRead(', reconcileStart);
+assert(
+  reconcileStart >= 0 && reconcileEnd > reconcileStart,
+  'Missing production reading coordinator',
+);
+const reconciliation = store.slice(reconcileStart, reconcileEnd);
+assert(verifier.includes('// PRODUCTION_RECONCILE_READING'));
+const selectionGetters = [
+  ['  var client: Client? {', '  struct VoiceReadinessScope:'],
+  ['  var conversation: Conversation? {', '  private func readingKey('],
+  ['  var project: Project? {', '  var targetKey: String {'],
+]
+  .map(([start, end]) => {
+    const offset = store.indexOf(start),
+      limit = store.indexOf(end, offset);
+    assert(offset >= 0 && limit > offset, 'Missing production selection getter');
+    return store.slice(offset, limit);
+  })
+  .join('\n');
+assert(verifier.includes('// PRODUCTION_SELECTION_GETTERS'));
+const contextStart = store.indexOf('  private struct ReadingKeyContext {');
+const contextEnd = store.indexOf('  private func readingClient(', contextStart);
+const projectionStart = store.indexOf('  private func mobileUnreadSnapshots()');
+const projectionEnd = store.indexOf('  func synchronizeMobileUnread()', projectionStart);
+assert(contextStart >= 0 && contextEnd > contextStart && projectionEnd > projectionStart);
+const unreadSource = await readFile('apps/ios/Sources/MobileUnreadBadge.swift', 'utf8');
+const snapshotType = unreadSource.slice(
+  unreadSource.indexOf('struct MobileUnreadSnapshot:'),
+  unreadSource.indexOf('struct MobileVisibleRead:'),
+);
+const unreadProjection =
+  store.slice(contextStart, contextEnd) + store.slice(projectionStart, projectionEnd);
+const reference = await readFile('scripts/mobile/fixtures/legacy-chat-timeline.swift', 'utf8');
+const legacy = reference.replace('struct ChatTimeline', 'struct LegacyChatTimeline');
 const facade =
   shared.slice(0, shared.indexOf('// Platform tasks')) +
   '\n' +
@@ -52,6 +87,8 @@ const facade =
   '\n' +
   shared.slice(shared.indexOf('extension SharedMobileRules {\n  // Runs once'));
 const code =
+  (await readFile('apps/ios/Sources/Localization.swift', 'utf8')) +
+  '\n' +
   (await readFile('apps/ios/Sources/HostService.swift', 'utf8')).split('// Tokens never enter')[0] +
   '\n' +
   notifications.slice(0, notifications.indexOf('enum TaskNoticeKind:')) +
@@ -71,11 +108,17 @@ const code =
   '\n' +
   models +
   '\n' +
+  (await readFile('apps/ios/Sources/NativeChatSearch.swift', 'utf8')) +
+  '\n' +
   facade +
   '\n' +
   legacy +
   '\n' +
-  verifier;
+  verifier
+    .replace('// PRODUCTION_RECONCILE_READING', reconciliation)
+    .replace('// PRODUCTION_SELECTION_GETTERS', selectionGetters)
+    .replace('// PRODUCTION_UNREAD_SNAPSHOT_TYPE', snapshotType)
+    .replace('// PRODUCTION_UNREAD_PROJECTION', unreadProjection);
 const source = output + '/main.swift',
   binary = output + '/verify-state';
 await writeFile(source, code);
@@ -122,6 +165,46 @@ assert(
 assert(
   result.includes(
     'Native recovery consent persistence and nested creation codec passed: 9 boundaries',
+  ),
+);
+assert(
+  result.includes(
+    'History projection cache passed: 500 scroll reuses and 17 invalidation boundaries',
+  ),
+);
+assert(
+  result.includes(
+    'Runtime identity key cache passed: 6000 warm reuses; full-target isolation and bounded concurrent eviction',
+  ),
+);
+assert(
+  result.includes(
+    'Reading key selection passed: 6000 canonical fast paths; live legacy precedence and target isolation',
+  ),
+);
+assert(
+  result.includes(
+    'Reading acknowledgement merge passed: 7 duplicate, pending, missing, advancing, stale, conflicting and future boundaries',
+  ),
+);
+assert(
+  result.includes(
+    'Production reading coordinator passed: 818-row full refresh, one-row snapshot, other pending retry and host isolation',
+  ),
+);
+assert(
+  result.includes(
+    'Production selection lookup passed: one observable read per lookup, project fallback and immediate metadata changes',
+  ),
+);
+assert(
+  result.includes(
+    'Production unread projection passed: one observable snapshot for 818 rows; live reads, legacy reply and target isolation',
+  ),
+);
+assert(
+  result.includes(
+    'Unread predicate passed: 10 record, baseline, legacy and content-change boundaries',
   ),
 );
 assert.equal(await fingerprint(), sourceSha256);

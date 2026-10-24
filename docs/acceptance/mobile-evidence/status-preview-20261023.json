@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "date": "2026-10-23",
+  "features": ["F17", "F19", "F32", "F68"],
+  "scope": "Local targeted regression; A6 remains paused",
+  "status": "passed-for-local-targeted-scope",
+  "beforeFix": {
+    "kind": "synthetic framed IPC using original production source",
+    "lastTurnStatus": "inProgress despite completed latest turn",
+    "attachments": 0,
+    "rawLocalLink": true
+  },
+  "auxiliary": {
+    "largeConversation": "passed",
+    "messageLinks": "passed",
+    "historyReader": "passed",
+    "desktopIPC": "passed",
+    "attachmentPerformance": "passed",
+    "fullWorkspaceCheck": "passed"
+  },
+  "native": {
+    "status": "passed",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "sourceStable": true,
+    "simulator": "iPhone 17 Pro / iOS 26.0",
+    "realOriginalElectron": true,
+    "realModelInputCount": 1,
+    "originalOwnerTurnCount": 1,
+    "actualReasoningEffort": "xhigh",
+    "completeSnapshotsDropped": 10,
+    "paths": ["文件网址", "带空格路径", "带行号路径"],
+    "unresolvedRelativePath": "Projectless cwd differs from fixture resource directory; absolute paths verified",
+    "syntheticWarningGuards": ["running", "unknown", "history-read-failure", "submitted-reply"],
+    "currentDownloadSHA256": "356057b6cdc17e3d238a6683b6cff17920f96b0015c4e77a6c8b5b42acac9ee5",
+    "adapterSHA256": "4956e8e21e12eeda3082d5d7004b10d299ef17392d93869a38ae7a93ee295fe9",
+    "hostSHA256": "5d75ddcc9b04be97b9e63d32ecfc2464f22d98ea67bfffe95a404c712b800abe",
+    "nativeSourceSHA256": "7658ad114cc1423cb98b2b98e1a266fccf1d3e449f204ee2c11b9d0b7775b69d",
+    "simulatorCleaned": true,
+    "runs": 2,
+    "additionalModelInputsOnRerun": 0
+  },
+  "sourceFiles": {
+    "packages/codex-adapter/src/history-reader.ts": "6f95ef70098fe5de6791f02b11c411372bb4cfefe428bf0261ad69bcb2795263",
+    "packages/codex-adapter/src/runtime-session.ts": "57ea0e69e89a560ad712a0d2b63135c75be32bc4bb8f3207c1ecbc6aadd01d62",
+    "apps/ios/Sources/SessionStore.swift": "e238f55db21753c44421fb3d146bcb68052703c423a89af34e392cb1a3bf31a5",
+    "apps/ios/Tests/CodexManageUITests.swift": "694a3c3edb5476a24fa083f4a0329ad04282ce18a6e6d0ea5e8e83f5a5325fc1",
+    "scripts/history-smoke.mjs": "bce6ae360b778654ee7ce616cda81e4be1306b0f8a9867d19cdc7d6e800e2a4a",
+    "scripts/large-conversation-sync-smoke.mjs": "1a99e40f722ab2aff1c7995afb76f85352fa50f6524746dc277f1b51db7d7a72",
+    "scripts/message-links-desktop-ios-acceptance.mjs": "364dbad4112f2152907478c9479a1d3fcf17522210a82fdae3f1ed7b5b6e9753",
+    "scripts/desktop-ipc-smoke.mjs": "56f12a724b98d98bb8f3c90e32d90fd2da636a73dac59926656c880de580bb91"
+  },
+  "unverified": [
+    "Reported remote Host deployment",
+    "Physical iPhone",
+    "Android native UI",
+    "Windows",
+    "Cross-network"
+  ],
+  "checks": {
+    "pnpm check": "passed",
+    "pnpm build:ios": "passed"
+  }
+}

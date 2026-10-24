@@ -1422,6 +1422,7 @@
 "删除" = "Delete";
 
 "已归档对话" = "Archived chats";
+"此对话已归档，恢复后可继续。" = "This chat is archived. Restore it to continue.";
 
 "删除此对话？" = "Delete this chat?";
 
@@ -1570,7 +1571,6 @@
 "电脑连接码" = "Computer connection code";
 "设备尚未配对，请在电脑上确认授权" = "This device is not paired yet. Approve it on your computer.";
 "录音设备准备超时，请检查麦克风后重试。原草稿已保留。" = "The recording device took too long to get ready. Check your microphone and try again. Your original draft is preserved.";
-"读取对话超时，已有消息和草稿已保留。" = "Reading this conversation timed out. Your messages and draft are preserved.";
 
 "暂时无法连接电脑" = "Unable to connect to your computer";
 "与电脑的安全连接未能建立。请确认电脑已联网、连接服务正在运行，稍后再试；若仍无法连接，请在电脑端检查连接设置。" = "A secure connection to your computer could not be established. Make sure the computer is online and its connection service is running, then try again. If the problem continues, check the connection settings on the computer.";
@@ -1579,6 +1579,11 @@
 "连接电脑超时。请确认电脑已开机并联网，且连接服务正在运行，然后重试。" = "The connection to your computer timed out. Make sure the computer is on and online and its connection service is running, then try again.";
 "暂时无法连接这台电脑。请确认电脑已开机并联网，且连接服务正在运行；如果通过 VPN 连接，也请确认 VPN 已连接。" = "Your computer is currently unreachable. Make sure it is on and online and its connection service is running. If you use a VPN to connect, make sure it is connected too.";
 "与电脑的连接已中断。请检查手机和电脑的网络，连接恢复后再试。" = "The connection to your computer was interrupted. Check the network on your phone and computer, then try again once the connection is restored.";
+
+"聊天历史已变化，请刷新后重试。" = "Chat history has changed. Refresh and try again.";
+"加载历史失败，请重试。\n" = "Could not load history. Try again.\n";
+"提交原内容" = "Submit original content";
+"读取对话超时，已有消息和草稿已保留。" = "Reading this conversation timed out. Your messages and draft are preserved.";
 
 "空闲" = "Idle";
 "执行失败" = "Failed";
@@ -1590,10 +1595,27 @@
 "电脑端拒绝了此次操作：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。" = "The desktop rejected this action: this connection cannot yet manage chats loaded on the desktop. Use the desktop app. The chat is unchanged.";
 "电脑端拒绝了此次归档：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。" = "The desktop rejected archiving: this connection cannot yet manage chats loaded on the desktop. Use the desktop app. The chat is unchanged.";
 
-"提交原内容" = "Submit original content";
-"聊天历史已变化，请刷新后重试。" = "Chat history has changed. Refresh and try again.";
-"加载历史失败，请重试。\n" = "Could not load history. Try again.\n";
 
 "未发送操作：目标已变化。" = "Operation not sent: the target changed.";
 
 "未查到原聊天操作记录，结果仍未确认；不会重新提交。" = "The original chat operation record was not found. Its result remains unconfirmed; it will not be submitted again.";
+
+"Host Key" = "Host Key";
+"请输入这台电脑的 Host Key" = "Enter the Host Key for this computer";
+"Host Key 不正确，请在电脑端核对后重试" = "Incorrect Host Key. Check it on the computer and try again.";
+"请更新这台电脑的 Host 后使用密钥授权连接" = "Update the Host on this computer to connect with key authorization.";
+"可扫描包含密钥的连接信息，或自动发现后输入 Host Key 授权。" = "Scan connection details containing the key, or discover a computer and enter its Host Key to authorize.";
+"自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。" = "Find computers on the same network. Enter the computer’s Host Key to authorize the first connection.";
+"授权并连接" = "Authorize and connect";
+"首次连接授权" = "Authorize first connection";
+"请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。" = "Read the Host Key from this computer’s private key file. After authorization, device credentials are stored securely for automatic reconnection.";
+"使用 Host Key 重新授权" = "Reauthorize with Host Key";
+
+
+"默认使用局域网与 Tailscale HTTPS 双通道，自动切换并保留同一台电脑的连接和草稿。只在局域网使用可不安装 Tailscale；需要在外远程控制，请为手机和电脑配置 Tailscale 并保持在线。" = "Use LAN and Tailscale HTTPS routes with automatic switching while keeping the same computer connection and drafts. Tailscale is optional for LAN use. For remote control away from your local network, set up Tailscale on both devices and keep them online.";
+
+"诊断编号" = "Diagnostic ID";
+
+"当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。" = "This connection does not support message file resolution. Update the computer connection service and retry.";
+
+"未取得这条消息对应的电脑或聊天，请重新打开原对话后重试。" = "The computer or chat for this message is unavailable. Reopen the original chat and retry.";

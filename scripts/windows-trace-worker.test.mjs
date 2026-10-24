@@ -482,6 +482,7 @@ test('an explicit error field always rejects and only fixed failure status codes
 
 test('a late result and heartbeat from a replaced worker cannot revive the new unavailable worker', () =>
   availabilityFixture('late', async ({ client, worker, directory }) => {
+    const retired = once(worker, 'exit');
     const late = new Promise((resolve) =>
       worker.on('message', (message) => {
         if (message.kind === 'result') resolve();
@@ -490,6 +491,11 @@ test('a late result and heartbeat from a replaced worker cannot revive the new u
     const started = performance.now();
     await assert.rejects(client.read(randomUUID(), randomUUID()), (error) => error.status === 503);
     assert(performance.now() - started < 4250, 'The 3250ms RPC deadline remains finite');
+    assert.equal(JSON.parse(fs.readFileSync(join(directory, 'availability-generation.json'))), 1);
+    await late;
+    await retired;
+    await new Promise((done) => setImmediate(done));
+    assert.equal(client.available, false, 'The retired Reader cannot renew readiness');
     const deadline = Date.now() + 1500;
     while (
       JSON.parse(fs.readFileSync(join(directory, 'availability-generation.json'))) < 2 &&
@@ -498,7 +504,6 @@ test('a late result and heartbeat from a replaced worker cannot revive the new u
       await new Promise((done) => setTimeout(done, 20));
     assert.equal(JSON.parse(fs.readFileSync(join(directory, 'availability-generation.json'))), 2);
     assert.notEqual(client.worker, worker, 'A real second Worker generation must exist');
-    await late;
     await new Promise((done) => setImmediate(done));
     assert.equal(client.available, false);
     await assert.rejects(client.read(randomUUID(), randomUUID()), (error) => error.status === 503);
@@ -1018,6 +1023,16 @@ class SnapshotFixture {
     assert.deepEqual(raw(JSON.stringify(request).replace('"id":1', '"id":2,"id":1')), {
       error: 'SYNTHETIC_REJECTED',
     });
+    const eight = structuredClone(request);
+    eight.items = Array.from({ length: 8 }, (_, index) => ({ ...request.items[index % 2], index }));
+    const eightValues = decodeTraceSnapshotBatch(raw(JSON.stringify(eight)), eight);
+    assert.deepEqual(
+      eightValues.map((item) => item.identity),
+      Array.from({ length: 8 }, (_, index) => expected[index % 2]),
+    );
+    const nine = structuredClone(eight);
+    nine.items.push({ ...nine.items[0], index: 8 });
+    assert.deepEqual(raw(JSON.stringify(nine)), { error: 'SYNTHETIC_REJECTED' });
     const junction = join(directory, 'alias');
     fs.symlinkSync(directory, junction, 'junction');
     try {
@@ -1469,3 +1484,89 @@ test('fenced duplicate prepare and duplicate commit consume or dispose only one 
     }),
   );
 });
+
+test('Reader replacement waits for actual retirement instead of the old one-second retry', async () => {
+  const directory = root();
+  const client = new DesktopSuggestionWorkerClient(
+    { directory, root: directory, traceRoot: directory, target },
+    new URL('./fixtures/windows-trace-worker-retirement.mjs', import.meta.url),
+  );
+  client.start();
+  const first = client.worker;
+  const exited = once(first, 'exit');
+  try {
+    await ready(client);
+    await assert.rejects(client.read(randomUUID(), randomUUID()), (error) => error.status === 503);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    client.start();
+    assert.notEqual(
+      first.threadId,
+      -1,
+      'The old Reader is still within its original termination grace',
+    );
+    assert.equal(JSON.parse(fs.readFileSync(join(directory, 'retirement-generations.json'))), 1);
+    assert.equal(client.available, false);
+    await exited;
+    await ready(client);
+    assert.equal(JSON.parse(fs.readFileSync(join(directory, 'retirement-generations.json'))), 2);
+  } finally {
+    await closeAvailabilityFixture(client, first, directory);
+  }
+});
+
+test('batch8 protocol retains the old byte/item bounds and rejects a genuine ninth indexed item', () => {
+  const request = {
+    schemaVersion: 1,
+    kind: 'snapshot-many',
+    id: 1,
+    items: Array.from({ length: 8 }, (_, index) => ({
+      index,
+      path: `C:\\fixture\\traces\\small-${index}`,
+      maximum: 16_384,
+    })),
+  };
+  assert(encodeTraceSnapshotBatch(request).startsWith('B\t'));
+  const overflow = structuredClone(request);
+  overflow.items.push({ ...overflow.items[0], index: 8 });
+  assert.throws(() => encodeTraceSnapshotBatch(overflow));
+  const large = structuredClone(request);
+  large.items[7].maximum = 16 * 1024 * 1024;
+  assert.throws(() => encodeTraceSnapshotBatch(large));
+  const deep = request.items.map((item) => ({
+    ...item,
+    path: 'C:\\' + 'a\\'.repeat(200) + `file-${item.index}`,
+  }));
+  assert.equal(
+    traceSnapshotBatchFits(deep),
+    false,
+    'Response chain estimate still bounds an eight-item request',
+  );
+});
+
+for (const mode of [
+  'normal',
+  'wrong-id',
+  'short',
+  'extra-item',
+  'reordered',
+  'second-failure',
+  'batch-timeout',
+  'closed',
+  'owner-close',
+  'duplicate-late',
+  'stale-while-next',
+])
+  test(`actual Worker B8 retains one 750ms operation and exact retirement: ${mode}`, async () => {
+    const result = await batchTransportFixture(mode, {}, 8);
+    assert.equal(result.allRetired, true);
+    if (mode === 'owner-close') assert.equal(result.answer, undefined);
+    else assert.equal(result.answer.passed, mode === 'normal');
+    assert.equal(result.requests, mode === 'closed' ? 0 : mode === 'stale-while-next' ? 2 : 1);
+    if (mode === 'normal') assert.equal(result.answer.identities.length, 8);
+    if (mode === 'batch-timeout') {
+      assert.equal(result.partialExecuted, true);
+      assert(result.answer.elapsed < 1000, 'Eight items share the original 750ms timer');
+    }
+    if (mode === 'duplicate-late' || mode === 'stale-while-next')
+      assert.equal(result.answer.firstPassed, true);
+  });

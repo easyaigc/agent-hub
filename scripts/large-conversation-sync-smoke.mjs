@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:net';
-import { mkdtemp, chmod, rm } from 'node:fs/promises';
+import { mkdtemp, chmod, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -89,9 +89,19 @@ const snapshot = (id, large = false) => ({
     },
   },
 });
+// The synthetic owner's payload construction is fixture setup, not part of the
+// follower's one-second read budget. Send the same complete 70 MiB frame through
+// the real socket, without blocking the shared event loop on JSON encoding after
+// the production read timer has started.
+const snapshotEncodingStarted = performance.now();
+const initialLargeBody = Buffer.from(JSON.stringify(snapshot('large', true)));
+const snapshotEncodingMS = performance.now() - snapshotEncodingStarted;
+assert(initialLargeBody.length > 70 * 1024 * 1024);
 function send(value) {
-  const body = Buffer.from(JSON.stringify(value)),
-    header = Buffer.alloc(4);
+  return sendBody(Buffer.from(JSON.stringify(value)));
+}
+function sendBody(body) {
+  const header = Buffer.alloc(4);
   header.writeUInt32LE(body.length);
   peer.write(header);
   peer.write(body);
@@ -136,8 +146,9 @@ const server = createServer((connected) => {
       else if (message.method === 'thread-stream-following-changed') {
         // The upstream desktop can silently drop an over-limit snapshot while
         // continuing to publish patches. A follower cannot invent their base.
-        if (message.params.conversationId !== 'fallback')
-          send(snapshot(message.params.conversationId, message.params.conversationId === 'large'));
+        if (message.params.conversationId === 'large') sendBody(initialLargeBody);
+        else if (message.params.conversationId !== 'fallback')
+          send(snapshot(message.params.conversationId));
       } else assert.fail('Unexpected execution method: ' + message.method);
     }
   });
@@ -179,7 +190,16 @@ try {
   };
   session.state.receipts.push(unknown);
   const unknownBefore = JSON.stringify(unknown);
+  const latestReadStarted = performance.now();
   const latest = await session.refreshHistory('large', undefined, true);
+  console.log(
+    JSON.stringify({
+      evidence: 'synthetic-large-snapshot',
+      wireBytes: initialLargeBody.length,
+      snapshotEncodingMS,
+      latestReadMS: performance.now() - latestReadStarted,
+    }),
+  );
   assert.equal(latest.synchronization.state, 'live');
   assert.equal(latest.runtime.state, 'running');
   assert.equal(latest.runtime.canControl, true);
@@ -267,6 +287,7 @@ try {
   });
   let fallbackText = '历史最新进度 A',
     failHistory = false;
+  let latestTurn;
   const acceptedOld = {
     ...unknown,
     threadId: 'fallback',
@@ -311,6 +332,7 @@ try {
       ],
       turns: [],
       historyMode: 'paginated',
+      ...(latestTurn ? { latestTurn } : {}),
     };
   };
   const beforeFallback = methods.filter((m) => m === 'thread-stream-following-changed').length;
@@ -364,6 +386,46 @@ try {
   } finally {
     Date.now = actualNow;
   }
+  const file = join(directory, '最新记录 (验收).md');
+  await writeFile(file, 'latest-file-v1');
+  fallbackText = `[完整检查记录](<${file}:12>)`;
+  latestTurn = { id: 'current-turn', status: 'completed' };
+  const completed = await session.refreshHistory('fallback', undefined, true);
+  assert.equal(completed.thread.lastTurnStatus, 'completed');
+  assert.equal(completed.runtime.state, 'unknown');
+  assert.equal(completed.runtime.canControl, false, 'A terminal history read grants no control');
+  const attachment = completed.messages.at(-1).attachments[0];
+  assert(attachment, 'New history links must be registered even without a live snapshot');
+  assert(completed.messages.at(-1).text.includes('codex-attachment://' + attachment.id));
+  assert.equal(
+    (await session.download('fallback', attachment.id)).data.toString(),
+    'latest-file-v1',
+  );
+  await writeFile(file, 'latest-file-v2');
+  const changed = await session.refreshHistory('fallback', undefined, true);
+  assert.equal(
+    changed.messages.at(-1).attachments.length,
+    1,
+    'Never retain a stale inline version',
+  );
+  const next = changed.messages.at(-1).attachments[0];
+  assert.notEqual(next.id, attachment.id);
+  assert.equal(next.resourceId, attachment.resourceId);
+  assert.equal((await session.download('fallback', next.id)).data.toString(), 'latest-file-v2');
+  latestTurn = { id: 'different-turn', status: 'completed' };
+  assert.equal(
+    (await session.refreshHistory('fallback', undefined, true)).thread.lastTurnStatus,
+    undefined,
+    'A different terminal turn cannot settle the currently displayed run',
+  );
+  await rm(file);
+  assert.equal(
+    (await session.refreshHistory('fallback', undefined, true)).messages.at(-1).attachments.length,
+    0,
+    'A missing inline resource must not inherit a stale download',
+  );
+  fallbackText = '历史最新进度 B';
+  latestTurn = undefined;
   assert.equal(
     methods.filter((m) => m === 'thread-stream-following-changed').length,
     beforeFallback + 1,
@@ -410,6 +472,28 @@ try {
   } finally {
     session.runtime.ipc.follow = originalFollow;
     session.runtime.ipc.refreshObservation = originalObservation;
+  }
+  const readHistory = session.runtime.reader.history;
+  session.runtime.reader.history = async (...args) => {
+    const page = await readHistory(...args);
+    send(snapshot('fallback'));
+    for (let index = 0; index < 100 && !session.runtime.ipc.hasOwner('fallback'); index++)
+      await delay(10);
+    assert(session.runtime.ipc.hasOwner('fallback'));
+    return page;
+  };
+  try {
+    const recovered = await session.refreshHistory('fallback', undefined, true);
+    assert.equal(recovered.synchronization.state, 'live');
+    assert.equal(
+      recovered.runtime.state,
+      'running',
+      'An in-flight fallback cannot erase a live snapshot',
+    );
+    assert.equal(recovered.runtime.turnId, 'fallback-protected-turn');
+  } finally {
+    session.runtime.reader.history = readHistory;
+    session.runtime.ipc.invalidate('fallback');
   }
   failHistory = true;
   await assert.rejects(

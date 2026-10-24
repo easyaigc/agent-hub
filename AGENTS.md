@@ -69,3 +69,14 @@
 - 公共规则计划由 KMP 复用，平台能力通过窄接口提供。迁移后删除对应旧规则的生产路径，不让对照实现重复发送；版本化 Schema、跨语言向量及双端原生验收分别执行。
 - 真实结果按 `docs/acceptance/mobile-parity.md` 记录，区分实现、辅助检查、本次通过、匹配复用、失败与未验收。现有 iOS、macOS 或 fixture 证据不能代替 Android、Windows 或真机通过。
 - JS 工作空间继续使用 pnpm；Android／KMP 使用锁定 Gradle Wrapper，根 pnpm 命令调用原生工具。Android 构建、一致性命令与 CI 尚待计划阶段建立，不把拟建命令列为当前可用。
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->

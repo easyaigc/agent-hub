@@ -70,3 +70,8 @@ export {
 
 // Local process creation guard; no executable, environment or HTTP configuration.
 export { withWindowsProcessCreation } from './windows-process.js';
+
+// Internal fixed-category telemetry; no new remote operation or model data.
+export { createWindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
+
+export { appendRuntimeDiagnostic } from './runtime-diagnostics.js';

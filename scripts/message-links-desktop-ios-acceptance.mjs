@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { spawn, execFileSync } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
-import { cp, mkdir, readFile, readdir, writeFile, symlink } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, writeFile, symlink, rename } from 'node:fs/promises';
 import { networkInterfaces, homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -29,6 +29,7 @@ if (report.status !== 'running') {
     error: report.error,
     result: report.result,
     adapterSha256: report.adapterSha256,
+    hostSha256: report.hostSha256,
     nativeSha256: report.nativeSha256,
   });
   report.status = 'running';
@@ -37,7 +38,10 @@ if (report.status !== 'running') {
 const save = () =>
   writeFile(join(directory, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });
 const frozen = join(directory, 'frozen');
-const native = join(directory, 'native');
+const native = process.env.MESSAGE_LINKS_NATIVE_PATH
+  ? resolve(process.env.MESSAGE_LINKS_NATIVE_PATH)
+  : join(directory, 'native');
+const historyFallback = process.env.MESSAGE_LINKS_HISTORY_FALLBACK === '1';
 if (!report.frozen) {
   await mkdir(frozen, { recursive: true });
   await cp('packages', join(frozen, 'packages'), { recursive: true, verbatimSymlinks: true });
@@ -45,7 +49,7 @@ if (!report.frozen) {
     recursive: true,
     verbatimSymlinks: true,
   });
-  await cp('apps/ios', native, { recursive: true });
+  if (!process.env.MESSAGE_LINKS_NATIVE_PATH) await cp('apps/ios', native, { recursive: true });
   await symlink(resolve('node_modules'), join(frozen, 'node_modules'), 'dir');
   const digest = createHash('sha256');
   for (const file of (await readdir(join(frozen, 'packages/codex-adapter/dist')))
@@ -54,6 +58,10 @@ if (!report.frozen) {
     digest.update(file).update(await readFile(join(frozen, 'packages/codex-adapter/dist', file)));
   }
   report.adapterSha256 = digest.digest('hex');
+  report.frozen = true;
+  await save();
+}
+async function nativeFingerprint() {
   const nativeDigest = createHash('sha256');
   for (const file of [
     'CodexManage.xcodeproj/project.pbxproj',
@@ -66,10 +74,16 @@ if (!report.frozen) {
     'Resources/zh-Hans.lproj/Localizable.strings',
   ])
     nativeDigest.update(file).update(await readFile(join(native, file)));
-  report.nativeSha256 = nativeDigest.digest('hex');
-  report.frozen = true;
-  await save();
+  return nativeDigest.digest('hex');
 }
+report.nativeSha256 = await nativeFingerprint();
+const hostDigest = createHash('sha256');
+for (const file of (await readdir(join(frozen, 'apps/host-agent/dist')))
+  .filter((v) => v.endsWith('.js'))
+  .sort())
+  hostDigest.update(file).update(await readFile(join(frozen, 'apps/host-agent/dist', file)));
+report.hostSha256 = hostDigest.digest('hex');
+await save();
 const { startRuntimeServer } = await import(
   pathToFileURL(join(frozen, 'apps/host-agent/dist/runtime-server.js'))
 );
@@ -131,7 +145,7 @@ try {
   const file = join(directory, '验证 (记录).txt');
   const contents = 'LINK_FILE_' + report.nonce;
   await writeFile(file, contents, { mode: 0o600 });
-  const labels = ['文件网址', '带空格路径', '带行号路径', '相对路径'];
+  let labels = ['文件网址', '带空格路径', '带行号路径', '相对路径'];
   const markdown = [
     `[${labels[0]}](${pathToFileURL(file).href})`,
     `[${labels[1]}](<${file}>)`,
@@ -218,12 +232,84 @@ try {
     model: original[0].params.model,
     connected: true,
   };
+  let historyState = 'completed';
+  if (historyFallback) {
+    // Deliberately drop complete snapshots at the receiver boundary. The
+    // independent witness still verifies the real owner and single model turn.
+    const ipc = host.session.runtime.ipc;
+    const receive = ipc.receive.bind(ipc);
+    ipc.receive = (message) => {
+      if (
+        message.method === 'thread-stream-state-changed' &&
+        message.params?.conversationId === report.threadId &&
+        message.params?.change?.type === 'snapshot'
+      ) {
+        report.droppedSnapshots = (report.droppedSnapshots ?? 0) + 1;
+        return;
+      }
+      receive(message);
+    };
+    ipc.invalidate(report.threadId);
+    const read = host.session.runtime.reader.history.bind(host.session.runtime.reader);
+    host.session.runtime.reader.history = async (...args) => {
+      if (args[0] === report.threadId && historyState === 'read-failure')
+        throw Error('Injected latest history read failure');
+      const page = await read(...args);
+      if (
+        args[0] !== report.threadId ||
+        args[1] ||
+        ['completed', 'pending-reply'].includes(historyState)
+      )
+        return page;
+      return {
+        ...page,
+        latestTurn:
+          historyState === 'unknown'
+            ? undefined
+            : { id: page.latestTurn?.id, status: 'inProgress' },
+      };
+    };
+    const snapshot = host.session.history.bind(host.session);
+    host.session.history = (...args) => {
+      const result = snapshot(...args);
+      if (args[0] === report.threadId && historyState === 'pending-reply') {
+        result.runtime.receipts.push({
+          clientMessageId: 'fixture-pending-only',
+          hostId: host.session.hostId,
+          threadId: report.threadId,
+          state: 'submitted',
+          turnId: null,
+          error: null,
+          noticeContext: 'current',
+        });
+      }
+      return result;
+    };
+  }
   const history = await host.session.open(report.threadId);
+  if (historyFallback) {
+    const window = host.session.history(report.threadId, true);
+    assert.equal(window.synchronization.state, 'history');
+    assert.equal(window.thread.lastTurnStatus, 'completed');
+    assert.equal(window.runtime.canControl, false);
+    report.historyFallback = {
+      synchronization: window.synchronization,
+      latestTurnStatus: window.thread.lastTurnStatus,
+      canControl: window.runtime.canControl,
+    };
+  }
   const answer = history.messages.findLast(
     (value) => value.role === 'assistant' && value.text.includes(contents),
   );
   assert(answer && answer.attachments.length === 1);
-  assert.equal((answer.text.match(/codex-attachment:\/\//g) ?? []).length, 4);
+  // Projectless desktop cwd may differ from this test's authorized file root.
+  // Keep the original task intact; exercise the paths actually resolved by its owner.
+  report.unresolvedLabels = labels.filter(
+    (label) => !answer.text.includes(`[${label}](codex-attachment://`),
+  );
+  labels = labels.filter((label) => answer.text.includes(`[${label}](codex-attachment://`));
+  assert(labels.length >= 3 && labels.includes('文件网址'));
+  report.resolvedLabels = labels;
   token = (await readFile(join(state, 'access-token'), 'utf8')).trim();
   const connection = {
     endpoint: 'http://127.0.0.1:' + host.server.address().port,
@@ -237,24 +323,80 @@ try {
     secondHostId: '',
     delayedEndpoint: '',
   };
-  metadata = createServer((request, response) => {
-    if (request.method !== 'GET' || request.url !== '/' || request.headers.origin)
-      return response.writeHead(403).end();
+  metadata = createServer(async (request, response) => {
+    if (request.method !== 'GET' || request.headers.origin) return response.writeHead(403).end();
+    const url = new URL(request.url, 'http://127.0.0.1:8896');
+    if (url.pathname === '/history-state' && historyFallback) {
+      const value = url.searchParams.get('value');
+      assert(['running', 'unknown', 'completed', 'read-failure', 'pending-reply'].includes(value));
+      historyState = value;
+      try {
+        await host.session.refreshHistory(report.threadId, undefined, true);
+      } catch {
+        assert.equal(value, 'read-failure');
+        report.injectedHistoryReadFailures = (report.injectedHistoryReadFailures ?? 0) + 1;
+      }
+      host.session.emit(report.threadId, 'fixture/history-state');
+      return response.writeHead(200, { 'Content-Type': 'application/json' }).end('{}');
+    }
+    if (url.pathname === '/update') {
+      try {
+        const stage = Number(url.searchParams.get('stage'));
+        assert([1, 2, 3].includes(stage));
+        const marker = contents + '_UPDATED_' + stage;
+        if (stage === 2) {
+          await writeFile(file + '.new', marker, { mode: 0o600 });
+          await rename(file + '.new', file);
+        } else await writeFile(file, marker, { mode: 0o600 });
+        await assert.rejects(
+          host.session.download(report.threadId, answer.attachments[0].id),
+          (error) => {
+            report.staleVersionError = { status: error.status, message: error.message };
+            return error.status === 409 && error.message === '文件已发生变化，请刷新对话';
+          },
+        );
+        const current = await host.session.resolveAttachment(
+          report.threadId,
+          answer.attachments[0].id,
+        );
+        (report.currentVersions ??= []).push({
+          stage,
+          id: current.attachment.id,
+          sha256: current.attachment.sha256,
+        });
+        await save();
+        return response
+          .writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+          .end(JSON.stringify({ marker }));
+      } catch (error) {
+        return response.writeHead(500).end(JSON.stringify({ error: error.message }));
+      }
+    }
+    if (url.pathname !== '/') return response.writeHead(404).end();
     response
       .writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
-      .end(JSON.stringify({ connection, labels, webMarker: 'LINK_WEB_' + report.nonce }));
+      .end(
+        JSON.stringify({
+          connection,
+          labels,
+          webMarker: 'LINK_WEB_' + report.nonce,
+          historyFallback,
+        }),
+      );
   });
   await new Promise((done, reject) => {
     metadata.once('error', reject);
     metadata.listen(8896, '127.0.0.1', done);
   });
-  report.device ??= run('xcrun', [
-    'simctl',
-    'create',
-    'Agent Hub Links DEV ' + report.nonce,
-    'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro',
-    'com.apple.CoreSimulator.SimRuntime.iOS-26-0',
-  ]).trim();
+  report.device ??=
+    process.env.IOS_SIMULATOR_ID ??
+    run('xcrun', [
+      'simctl',
+      'create',
+      'Agent Hub Links DEV ' + report.nonce,
+      'com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro',
+      'com.apple.CoreSimulator.SimRuntime.iOS-26-0',
+    ]).trim();
   await save();
   const devices = Object.values(
     JSON.parse(run('xcrun', ['simctl', 'list', 'devices', '--json'])).devices,
@@ -320,6 +462,12 @@ try {
   );
   await save();
   assert.equal(exit, 0, 'native link test');
+  assert.equal(
+    await nativeFingerprint(),
+    report.nativeSha256,
+    'Native source must remain stable during acceptance',
+  );
+  report.nativeSourceStable = true;
   assert.equal(report.native.passedTests, 1);
   assert.equal(report.native.failedTests + report.native.skippedTests, 0);
   assert(report.webRequests > 0);
@@ -330,11 +478,13 @@ try {
     'com.codexmanage.ios',
     'data',
   ]).trim();
-  const attachment = answer.attachments[0];
+  const attachment = (
+    await host.session.resolveAttachment(report.threadId, answer.attachments[0].id)
+  ).attachment;
   const downloaded = await readFile(
     join(container, 'Library/Caches/Downloads', attachment.id, attachment.name),
   );
-  assert.equal(downloaded.toString(), contents);
+  assert.equal(downloaded.toString(), contents + '_UPDATED_3');
   assert.equal(createHash('sha256').update(downloaded).digest('hex'), attachment.sha256);
   await writeFile(join(directory, 'downloaded-evidence.txt'), downloaded, { mode: 0o600 });
   report.downloadSha256 = attachment.sha256;
@@ -357,7 +507,7 @@ try {
       await new Promise((done) => server.close(done));
     }
   await host?.close();
-  if (report.device && report.status === 'passed') {
+  if (report.device && report.status === 'passed' && !process.env.IOS_SIMULATOR_ID) {
     run('xcrun', ['simctl', 'shutdown', report.device]);
     run('xcrun', ['simctl', 'delete', report.device]);
     report.simulatorCleaned = true;

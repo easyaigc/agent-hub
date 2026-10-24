@@ -406,11 +406,15 @@ export class CodexHistoryReader {
     messages: ReadMessage[];
     nextCursor: string | null;
     turns: ReadTurnEvidence[];
+    latestTurn?: { id: string; status: string };
+    directory?: string;
     historyMode?: string;
   }> {
     if (!this.knownThreads.has(threadId)) throw new Error('Thread not in this host workspace');
     const metadata = object(await this.rpc('thread/read', { threadId, includeTurns: false }));
     const thread = object(metadata.thread);
+    if (thread.id !== threadId) throw new Error('History target mismatch');
+    let latestTurn: { id: string; status: string } | undefined;
     let items: unknown[],
       turns: ReadTurnEvidence[] = [],
       nextCursor: string | null = null;
@@ -427,10 +431,32 @@ export class CodexHistoryReader {
         .reverse()
         .map((entry) => ({ ...object(object(entry).item), runId: object(entry).turnId }));
       nextCursor = cursor(result.nextCursor);
+      if (!pageCursor) {
+        try {
+          // Summary excludes tool bodies. A persisted terminal turn is useful
+          // read evidence even when this chat has no complete desktop stream.
+          const page = object(
+            await this.rpc('thread/turns/list', {
+              threadId,
+              limit: 1,
+              sortDirection: 'desc',
+              itemsView: 'notLoaded',
+            }),
+          );
+          const last = object(array(page.data)[0] ?? {});
+          if (typeof last.id === 'string' && typeof last.status === 'string')
+            latestTurn = { id: last.id, status: last.status };
+        } catch {
+          // Older readers may lack turn summaries. History remains readable;
+          // without positive evidence its runtime status remains unknown.
+        }
+      }
     } else {
       const result = object(await this.rpc('thread/read', { threadId, includeTurns: true }));
       const rawTurns = array(object(result.thread).turns);
       turns = this.turnEvidence(rawTurns);
+      const last = turns.at(-1);
+      if (!pageCursor && last) latestTurn = { id: last.id, status: last.status };
       items = rawTurns.flatMap((turn) =>
         array(object(turn).items).map((item) => ({ ...object(item), runId: object(turn).id })),
       );
@@ -471,6 +497,10 @@ export class CodexHistoryReader {
       messages,
       nextCursor,
       turns,
+      ...(latestTurn ? { latestTurn } : {}),
+      ...(typeof thread.cwd === 'string' && isAbsolute(thread.cwd)
+        ? { directory: thread.cwd }
+        : {}),
       ...(typeof thread.historyMode === 'string' ? { historyMode: thread.historyMode } : {}),
     };
   }

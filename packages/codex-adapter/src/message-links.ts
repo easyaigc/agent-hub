@@ -89,8 +89,6 @@ export function localMessagePath(reference: string): string | undefined {
     }
   } else {
     path = path.replace(/^sandbox:/i, '');
-    // Windows drive paths are paths, not URI schemes. Never reinterpret a web/custom URL as a file.
-    if (/^[a-z][a-z\d+.-]*:/i.test(path) && !/^[a-z]:[\\/]/i.test(path)) return undefined;
     if (path.startsWith('//') || path.startsWith('#') || path.startsWith('?')) return undefined;
     path = path.replace(/#L\d+(?:C\d+)?(?:-L?\d+(?:C\d+)?)?$/i, '');
     try {
@@ -98,6 +96,10 @@ export function localMessagePath(reference: string): string | undefined {
     } catch {
       // Literal percent signs are valid in a filename.
     }
+    // Decode drive separators before distinguishing paths from URI schemes.
+    // Recheck decoded prefixes so escaping cannot turn a URL into a local file.
+    if (/^[a-z][a-z\d+.-]*:/i.test(path) && !/^[a-z]:[\\/]/i.test(path)) return undefined;
+    if (path.startsWith('//')) return undefined;
   }
   path = path.replace(/:\d+(?::\d+)?$/, '');
   if (!path || Array.from(path).some((character) => character.charCodeAt(0) < 32)) return undefined;

@@ -3,6 +3,7 @@ import { MessagePort, parentPort, workerData } from 'node:worker_threads';
 import { windowsTraceNativeExecutable, type WindowsDesktopIdentity } from './desktop-platform.js';
 import { privateStateProtocol as p } from './desktop-private-state-native.js';
 import { withWindowsProcessCreation } from './windows-process.js';
+import { createWindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
 import {
   encodeTraceSnapshotBatch,
   decodeTraceSnapshotBatch,
@@ -41,7 +42,16 @@ let timer: NodeJS.Timeout | undefined;
 let batch: TraceSnapshotBatch | undefined;
 let lastBatch = 0;
 let killTimer: NodeJS.Timeout | undefined;
+let childExited = false,
+  childClosed = false,
+  streamsClosed = 0,
+  retired = false;
+const diagnostics = createWindowsTraceDiagnostics('native', 0, { operation: 'startup' });
+let startupEnd: (() => void) | undefined;
+let responseEnd: (() => void) | undefined, closeEnd: (() => void) | undefined;
 function reply(value: Buffer, failed = false): void {
+  responseEnd?.();
+  responseEnd = undefined;
   clearTimeout(timer);
   timer = undefined;
   if (!pending) return;
@@ -64,6 +74,9 @@ function reply(value: Buffer, failed = false): void {
   if (invalidBatch) close();
 }
 function gone(): void {
+  if (retired || (child && (!childExited || !childClosed || streamsClosed !== 3))) return;
+  retired = true;
+  closeEnd?.();
   clearTimeout(timer);
   clearTimeout(killTimer);
   child?.stdin.destroy();
@@ -73,11 +86,19 @@ function gone(): void {
   Atomics.notify(life, p.state);
   ownerPort.close();
   parentPort?.close();
+  diagnostics.end('ok', {
+    operation: 'retirement',
+    childExited: child === undefined || childExited,
+    stdioClosed: child === undefined || streamsClosed === 3,
+  });
 }
 function close(): void {
   if (closed) return;
   closed = true;
   reply(Buffer.alloc(0), true);
+  startupEnd?.();
+  startupEnd = undefined;
+  closeEnd = diagnostics.begin('close');
   clearTimeout(timer);
   Atomics.store(life, p.state, p.failed);
   Atomics.store(control, 0, -1);
@@ -92,7 +113,7 @@ function close(): void {
   } catch {
     child.kill();
   }
-  killTimer = setTimeout(() => child?.kill(), 250);
+  if (!childExited) killTimer = setTimeout(() => child?.kill(), 250);
 }
 parentPort?.once('close', close);
 parentPort?.on('message', close);
@@ -138,7 +159,9 @@ ownerPort.on('message', (input: unknown) => {
     return;
   }
   pending = true;
+  responseEnd = diagnostics.begin('native_response');
   timer = setTimeout(() => {
+    diagnostics.end('phase_deadline', { operation: 'read', deadlineKind: 'native_response' });
     reply(Buffer.alloc(0), true);
     close();
   }, 750);
@@ -153,29 +176,45 @@ process.once('exit', () => {
 });
 const starting = () => Atomics.load(life, p.state) === p.starting;
 try {
+  if (diagnostics.enabled) startupEnd = diagnostics.begin('native_start');
   const executable = starting() ? windowsTraceNativeExecutable(starting) : undefined;
   if (!executable || !starting()) gone();
   else {
     Atomics.store(life, p.pid, -1);
-    child = withWindowsProcessCreation(
-      p.startupMs,
-      () => {
-        if (!starting()) throw new Error('Trace owner closed');
-        return spawn(
-          executable,
-          [
-            'serve',
-            root,
-            String(identity.pid),
-            String(identity.startedAtUnixMs),
-            identity.executable,
-          ],
-          { stdio: 'pipe', windowsHide: true },
-        );
-      },
-      starting,
+    child = diagnostics.phase('gate_wait', () =>
+      withWindowsProcessCreation(
+        p.startupMs,
+        () => {
+          if (!starting()) throw new Error('Trace owner closed');
+          const create = () =>
+            spawn(
+              executable,
+              [
+                'serve',
+                root,
+                String(identity.pid),
+                String(identity.startedAtUnixMs),
+                identity.executable,
+              ],
+              { stdio: 'pipe', windowsHide: true },
+            );
+          return diagnostics.enabled ? diagnostics.phase('spawn', create) : create();
+        },
+        starting,
+      ),
     );
     Atomics.store(life, p.pid, child.pid ?? 0);
+    for (const stream of [child.stdin, child.stdout, child.stderr]) {
+      stream.once('close', () => {
+        streamsClosed++;
+        gone();
+      });
+    }
+    const closeStreams = () => {
+      child!.stdin.destroy();
+      child!.stdout.destroy();
+      child!.stderr.destroy();
+    };
     child.stdin.on('error', close);
     child.stdout.on('error', close);
     child.stdout.once('end', close);
@@ -184,11 +223,20 @@ try {
     child.once('error', () => {
       ownerPort.postMessage({ kind: 'failed' });
       close();
-      if (!child?.pid) gone();
+      if (!child?.pid) {
+        childExited = true;
+        closeStreams();
+      }
     });
     child.once('exit', () => {
+      childExited = true;
       if (!closed) ownerPort.postMessage({ kind: 'failed' });
       close();
+      clearTimeout(killTimer);
+      closeStreams();
+    });
+    child.once('close', () => {
+      childClosed = true;
       gone();
     });
     child.stdout.on('data', (chunk: Buffer) => {
@@ -225,6 +273,9 @@ try {
             return;
           }
           ready = true;
+          startupEnd?.();
+          startupEnd = undefined;
+          diagnostics.end('ok', { operation: 'startup', phase: 'native_start' });
           ownerPort.postMessage({ kind: 'ready', pid: child?.pid });
         } else {
           // One pending operation owns exactly one frame. Never publish a

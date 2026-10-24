@@ -13,7 +13,7 @@
       "const": "codex"
     },
     "connectionMode": {
-      "const": "automatic"
+      "enum": ["automatic", "host-key"]
     },
     "name": {
       "type": "string",
@@ -189,6 +189,29 @@
           "maxItems": 32,
           "items": {
             "$ref": "#/definitions/vpnPeer"
+          }
+        }
+      }
+    },
+    "connectionRoutes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "target", "httpsEndpoints"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "httpsEndpoints": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 512,
+            "format": "uri"
           }
         }
       }

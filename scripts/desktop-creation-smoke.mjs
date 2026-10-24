@@ -387,6 +387,7 @@ try {
     const session = Object.assign(Object.create(RuntimeSession.prototype), {
       runtime,
       options: { directory: join(root, 'unicode-confirm') },
+      attachmentResourceIds: new Map(),
       state: { hostId: 'host-a', threads: [], creations: {}, attachments: [] },
       desktopCreationDriver: { inputTransport: 'desktop-ipc' },
       loaded: new Set(),

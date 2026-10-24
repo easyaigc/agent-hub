@@ -10,7 +10,7 @@
 
 优先定位当前 Skill 的 `assets/codex-manage`，它就是随包交付的仓库。不要再次要求用户提供仓库地址。若用户已有运行中的安装，先保存并复用其状态、Host ID 和配置，不用随包的新目录创建重复 Host。
 
-程序包含已编译的 Host Agent、Adapter、协议和运行依赖，无需另行安装项目依赖即可运行。目标 Mac 仍需 Node.js 24.x、pnpm 11.19.0、原 Codex 桌面和 Tailscale。`bundle.json` 的 `verifiedBuilds` 只记录历史证据，`versionPolicy=metadata-only` 表示 Codex 应用版本仅作报告元数据，不做版本预检、构建清单比较或兼容性提示；实际协议检查决定可用能力。旧包仍有版本门槛时部署规范仓库的新统一包，不能仅修改包的策略字段。包不携带 Node、Codex、Tailscale、用户身份或手机 App 安装签名。
+程序包含已编译的 Host Agent、Adapter、协议和运行依赖，无需另行安装项目依赖即可运行。目标 Mac 仍需 Node.js 24.x、pnpm 11.19.0、原 Codex 桌面；Tailscale 为跨网络双通道的可选依赖，纯局域网无需安装。`bundle.json` 的 `verifiedBuilds` 只记录历史证据，`versionPolicy=metadata-only` 表示 Codex 应用版本仅作报告元数据，不做版本预检、构建清单比较或兼容性提示；实际协议检查决定可用能力。旧包仍有版本门槛时部署规范仓库的新统一包，不能仅修改包的策略字段。包不携带 Node、Codex、Tailscale、用户身份或手机 App 安装签名。
 
 在 `assets/codex-manage` 中检查：
 

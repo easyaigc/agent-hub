@@ -2,14 +2,20 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   workspace:
-    runs-on: macos-latest
+    runs-on: ${{ github.server_url == 'https://github.com' && 'macos-latest' || 'agent-hub-linux' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,7 +33,12 @@ jobs:
           packages: 'platform-tools'
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - name: Check legacy CI bootstrap boundaries
+        run: node --test scripts/ci/legacy-bootstrap.test.mjs
+      - name: Check Linux research metadata boundaries
+        run: python3 scripts/ci/research-posix-tools.test.py
+      - name: Build workspace prerequisites
+        run: pnpm build
       - run: pnpm check
       - name: Check feature changes against pull request base
         if: github.event_name == 'pull_request'

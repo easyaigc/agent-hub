@@ -62,7 +62,7 @@ struct ChatMessage: Identifiable, Codable, Equatable {
 }
 
 // Presentation only: keep the original messages and their runtime IDs intact.
-struct ChatTimeline {
+final class ChatTimeline {
   enum Item: Identifiable {
     case message(ChatMessage)
     case tools(id: String, messages: [ChatMessage])
@@ -85,6 +85,12 @@ struct ChatTimeline {
   let hasEarlierMessages: Bool
 
   init(messages: [ChatMessage], messageLimit: Int, activeRunId: String? = nil, isRunning: Bool = false, focusedMessageId: String? = nil) {
+    #if DEBUG
+    let started = ProcessInfo.processInfo.systemUptime
+    defer { if Thread.isMainThread { MainActor.assumeIsolated {
+      if HistoryScrollProbe.enabled { HistoryScrollProbe.shared.timelineMS.append((ProcessInfo.processInfo.systemUptime - started) * 1000) }
+    } } }
+    #endif
     let projection = SharedMobileRules.timeline(messages, limit: messageLimit, activeRunId: activeRunId, running: isRunning, focusedMessageId: focusedMessageId)
     hasEarlierMessages = projection.hasEarlierMessages
     items = projection.rows.flatMap { row -> [Item] in
@@ -97,6 +103,34 @@ struct ChatTimeline {
       default: return [.message(values[0])]
       }
     }
+  }
+}
+
+/// One presentation per view/target. Scrolling and unrelated store updates must
+/// not bridge the entire cached history into Kotlin again. All message fields
+/// participate so streams, tool output, attachments and final actions stay fresh.
+final class ChatTimelineCache {
+  private struct Input: Equatable {
+    let targetKey: String
+    let messages: [ChatMessage]
+    let limit: Int
+    let activeRunId: String?
+    let running: Bool
+    let focusedMessageId: String?
+  }
+  private var input: Input?
+  private var value: ChatTimeline?
+
+  func project(targetKey: String, messages: [ChatMessage], messageLimit: Int,
+    activeRunId: String?, isRunning: Bool, focusedMessageId: String?) -> ChatTimeline {
+    let next = Input(targetKey: targetKey, messages: messages, limit: messageLimit,
+      activeRunId: activeRunId, running: isRunning, focusedMessageId: focusedMessageId)
+    if input == next, let value { return value }
+    let result = ChatTimeline(messages: messages, messageLimit: messageLimit,
+      activeRunId: activeRunId, isRunning: isRunning, focusedMessageId: focusedMessageId)
+    input = next
+    value = result
+    return result
   }
 }
 
@@ -393,6 +427,8 @@ struct RemoteAttachment: Identifiable, Codable, Equatable {
   let mediaType: String
   let sizeBytes: Int
   let sha256: String
+  var resourceId: String? = nil
+  var resourceIdentity: String { resourceId ?? id }
 }
 struct PlanStep: Codable {
   let step: String

@@ -324,11 +324,13 @@ syncBuiltinESMExports();
   const relayURL = 'https://notifications.example.invalid/push?host=windows&name="fixture"';
   const tokenFile = 'missing publisher token & fixture.txt';
   const rawToken = 'fixture-raw-publisher-token-must-not-be-copied';
+  const httpsEndpoints = '["https://windows.tail.ts.net:8443"]';
   const notificationEnvironment = () => readFile(jobPath, 'utf8').then(JSON.parse);
   const configuredResult = run('restart', {
     HOST_NOTIFICATION_RELAY_URL: relayURL,
     HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE: tokenFile,
     HOST_NOTIFICATION_PUBLISHER_TOKEN: rawToken,
+    HOST_AGENT_HTTPS_ENDPOINTS: httpsEndpoints,
   });
   const configured = await notificationEnvironment();
   assert.equal(configured.environment.HOST_NOTIFICATION_RELAY_URL, relayURL);
@@ -337,6 +339,7 @@ syncBuiltinESMExports();
     join(directory, tokenFile),
   );
   assert.equal(configured.environment.HOST_NOTIFICATION_PUBLISHER_TOKEN, undefined);
+  assert.equal(configured.environment.HOST_AGENT_HTTPS_ENDPOINTS, httpsEndpoints);
   assert.ok(!JSON.stringify(configured).includes(rawToken));
   assert.ok(
     !configuredResult.stdout.includes(rawToken) && !configuredResult.stderr.includes(rawToken),
@@ -354,6 +357,7 @@ syncBuiltinESMExports();
 writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
   relayURL: process.env.HOST_NOTIFICATION_RELAY_URL,
   tokenFile: process.env.HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE,
+  httpsEndpoints: process.env.HOST_AGENT_HTTPS_ENDPOINTS,
 }));
 `,
   );
@@ -385,6 +389,7 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
   assert.deepEqual(JSON.parse(await readFile(workerSnapshot, 'utf8')), {
     relayURL,
     tokenFile: join(directory, tokenFile),
+    httpsEndpoints,
   });
   const invalidWorkerConfig = join(directory, 'invalid-worker.json');
   for (const invalid of [
@@ -392,6 +397,7 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
     { UNRELATED_SETTING: 'fixture' },
     { HOST_NOTIFICATION_RELAY_URL: 42 },
     { HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE: 42 },
+    { HOST_AGENT_HTTPS_ENDPOINTS: 42 },
   ]) {
     await rm(workerSnapshot, { force: true });
     await writeFile(
@@ -432,6 +438,7 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
   assert.deepEqual(JSON.parse(await readFile(workerSnapshot, 'utf8')), {
     relayURL: '',
     tokenFile: '',
+    httpsEndpoints,
   });
   console.log(
     'Windows notification configuration: persistence, worker forwarding and input rejection passed. Native calls and runtime entry mocked.',
@@ -471,6 +478,9 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
       'wide-tree',
       'pid-reuse',
       'stop-timeout',
+      'wait-kernel-signal',
+      'wait-kernel-timeout',
+      'wait-kernel-throw',
       'slow-queries',
       'command-budget',
       'late-child',
@@ -508,6 +518,7 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
         [
           'lifecycle',
           'stop-tree',
+          'wait-kernel-signal',
           'slow-queries',
           'wide-tree',
           'late-child',

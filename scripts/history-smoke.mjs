@@ -28,7 +28,8 @@ createInterface({input:process.stdin}).on('line', line => {
  const command={id:'cmd',type:'commandExecution',command:'printf fixture',aggregatedOutput:'fixture',exitCode:0,status:'completed'};
  const diff={id:'diff',type:'fileChange',changes:[{path:'example.swift',diff:'+fixture'}],status:'completed'};
  const tool={id:'mcp',type:'mcpToolCall',server:'fixture',tool:'inspect',status:'failed',error:{message:'fixture failure'}};
- if(r.method==='thread/read')result={thread:{id:r.params.threadId,...(r.params.threadId==='legacy'?{turns:[{items:[command,diff,tool]}]}:{historyMode:'paginated'})}};
+ if(r.method==='thread/read')result={thread:{id:r.params.threadId==='wrong-target'?'foreign-thread':r.params.threadId,...(r.params.threadId==='legacy'?{turns:[{items:[command,diff,tool]}]}:{historyMode:'paginated'})}};
+ if(r.method==='thread/turns/list') { if(r.params.limit!==1||r.params.itemsView!=='notLoaded')throw Error('Unbounded turn read'); result={data:[{id:'latest-turn',status:'completed'}],nextCursor:null}; }
  if(r.method==='thread/items/list')result={data:r.params.cursor?[{item:tool},{item:{id:'old',type:'userMessage',content:[{type:'text',text:'older'}]}}]:[{item:{id:'a',type:'agentMessage',text:'reply'}},{item:diff},{item:command},{item:{id:'u',type:'userMessage',content:[{type:'text',text:'prompt'}]}}],nextCursor:r.params.cursor?null:'older-page'};
  if(r.method==='thread/list' && r.params.sortKey==='recency_at' && existsSync(${JSON.stringify(join(directory, 'legacy-sort'))})) {
   process.stdout.write(JSON.stringify({id:r.id,error:{code:-32602,message:'Unsupported recency sort'}})+'\\n');return;
@@ -82,6 +83,8 @@ try {
     ],
   );
   await assert.rejects(reader.history('other-thread'));
+  reader.registerCatalogThread('wrong-target');
+  await assert.rejects(reader.history('wrong-target'), /History target mismatch/);
   const first = await reader.history('t');
   assert.deepEqual(
     first.messages.map((m) => m.text),
@@ -95,6 +98,7 @@ try {
   assert.equal(first.messages[1].detail, 'fixture\nExit 0');
   assert.equal(first.messages[2].detail, '+fixture');
   assert.equal(first.nextCursor, 'older-page');
+  assert.deepEqual(first.latestTurn, { id: 'latest-turn', status: 'completed' });
   const older = await reader.history('t', first.nextCursor);
   assert.deepEqual(
     older.messages.map((m) => m.text),
@@ -103,6 +107,7 @@ try {
   assert.equal(older.messages[1].status, 'failed');
   assert.equal(older.messages[1].detail, 'fixture failure');
   assert.equal(older.nextCursor, null);
+  assert.equal(older.latestTurn, undefined, 'Earlier pages do not re-read latest task state');
   const legacy = await reader.history('legacy');
   assert.deepEqual(
     legacy.messages.map((m) => m.kind),
@@ -189,6 +194,7 @@ try {
         'thread/list',
         'thread/read',
         'thread/items/list',
+        'thread/turns/list',
       ].includes(method),
     ),
   );

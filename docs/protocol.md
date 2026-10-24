@@ -1,5 +1,11 @@
 # 应用协议与领域契约
 
+## Host Key 首次授权
+
+实现、辅助检查、真实桌面与实体手机结果见[首次授权验收](codex-host-key-authorization.md)。
+
+2026-10-23：Codex 自动发现只提供候选电脑。首次点选必须输入这台电脑的 Host Key；Host 的 `/connection/claim` 只接受有效 Host Key，缺失／错误密钥及设备令牌均不能颁发新凭据。公开描述声明 `host-key`，旧 `automatic` 可读取但新版手机不走其免密授权。手机仅在加密设备凭据和同一完整工作区目标验证成功后保存连接，原 Host Key 不保存；已有设备凭据继续重连。二维码包含密钥，视为显式凭据交付；手动路径仍校验密钥。实现与真实验收分开记录，旧免密验收不证明本次策略。
+
 状态：`0.1`。默认服务仅提供健康检查；显式启用本机历史模式时额外提供以下只读接口。回复与远程授权的领域类型仍是草案。
 
 完整直接 Host 接口已单独实现，使用 [运行时 HTTP 协议](protocol-runtime.md)：真实回复、上传/下载、事件、停止、排队和审批。下文 Relay 领域对象仍是设计草案，不能混用为实际运行时端点。
@@ -114,3 +120,5 @@ stateDiagram-v2
 移动 HTTP Schema 新增 `chatActionRequest` / `chatActionReceipt`，只允许 `pin`、`unpin`、`archive`、`unarchive`、`delete`；严格校验字段、操作 ID、Host/线程与完整机器目标。具名 POST 和同一路径 GET 查询接入 Android，原 Host 接口实现不因 Schema 扩充而新增能力。终态不能被晚到的提交中/未知回执降级，已保存的目标、正文与操作 ID 不随查询重写。查询404表示未找到电脑端原记录，不能据此自动重放或推断原动作已拒绝。新增10个 HTTP 向量与17个任务状态、7个管理可用性向量，既有向量保留；完整真实DEV结果单列。
 
 P3-5b 已实现：workspaceManagementRequest/Operation 严格有序ID、1..100去重和逐项pending/submitting/completed/rejected/outcome-unknown契约；Android命令只接受threads:archive，目标/请求/项顺序匹配后共享规则保留原终态和错误。未知结果与404保留原ID，GET不执行；POST前持久标记，跨通道不新增意图。不新增任意方法或项目删除功能。
+
+升级区分历史免密设备凭据与已通过 Host Key 授权的凭据：旧免密绑定缺少 `hostKeyAuthorized` 时不再通过鉴权，用户可在原连接失败后点“使用 Host Key 重新授权”，输入一次后沿用原设备密钥与凭据，保存连接和草稿不清空。原 Host Key 手动／二维码连接及新版已授权设备照常重连。

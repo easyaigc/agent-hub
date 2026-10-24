@@ -103,6 +103,8 @@ async function sourceFiles(directory, prefix = '') {
       /\.(log|tsbuildinfo|xcuserstate)$/.test(name) ||
       relative === 'apps/ios/AppStore' ||
       relative === 'docs/acceptance' ||
+      // README demos can contain real conversations; they are not reusable source.
+      relative === 'docs/assets/readme' ||
       relative === 'skills/codex-host-connect/assets'
     )
       continue;

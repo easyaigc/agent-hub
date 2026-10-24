@@ -536,6 +536,20 @@ export class DesktopIpc {
   hasOwner(id: string): boolean {
     return this.ready && this.states.has(id) && this.owners.has(id);
   }
+  /** Refresh original desktop metadata after confirming an explicitly opened thread is unarchived.
+   * This versioned lifecycle hint neither claims ownership nor submits a model turn.
+   */
+  refreshUnarchivedThread(id: string): void {
+    if (!this.ready || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(id))
+      throw new DesktopCommandNotSubmitted('原桌面元数据同步目标不可用');
+    this.write({
+      type: 'broadcast',
+      method: 'thread-unarchived',
+      version: 1,
+      sourceClientId: this.clientId,
+      params: { hostId: 'local', conversationId: id },
+    });
+  }
   state(id: string): WireObject | undefined {
     return this.states.get(id)?.state;
   }

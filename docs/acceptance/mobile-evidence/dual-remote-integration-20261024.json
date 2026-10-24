@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "date": "2026-10-24",
+  "status": "passed-auxiliary-source-integration",
+  "scope": "Preserve current public Android alignment sources while integrating local Host Key authorization, Windows owner/Trace, iOS history/file preview fixes and the approved EasyWork README updates.",
+  "checks": {
+    "pnpm build": "passed",
+    "pnpm check": "passed",
+    "pnpm build:ios": "passed",
+    "android assembleDebug": "passed",
+    "android assembleDebugAndroidTest": "passed",
+    "mobile-core jvmTest": {
+      "tests": 77,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "production Swift state checks": "passed",
+    "iOS XCTest build-for-testing": "passed"
+  },
+  "testHarness": "The Swift state checker uses a versioned legacy timeline reference and the current native search adapter, so public checkouts do not require private Git history.",
+  "temporarySimulator": {
+    "createdForThisTask": true,
+    "deleted": true
+  },
+  "evidenceLimits": [
+    "Source integration and auxiliary checks only; no new physical iPhone or Android device acceptance.",
+    "No new Windows native execution, model inputs, service deployment or mobile installation.",
+    "Platform-specific skips in pnpm check remain skips. Earlier device/deployment proofs retain their original implementation and environment fingerprints.",
+    "A6 remains paused."
+  ],
+  "sourceFilesSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePrivateConnectionTest.kt": "2fe76328cb7b24fd3c8062c6f88f7407bd4daa1e624396440e343e5810ab8cfc",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePrivateConnectionUiTest.kt": "617bf4b73dd2e3b83b8dda9157657b83da9c546dfe717aab716fca55db67d15d",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt": "801d9693ea0bfc896c5c185b97d5f19359bf19493185922a60f3bc4e2c6376d9",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexPrivateConnection.kt": "88fcb2674b7dc35f7e803faa78c6cbab084a38c7ba928e437096730bf230f2cd",
+    "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "e10095196ccf3383204675b28caeae752a08da2374828884087e6128689ed50c",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "7695bb0183deb73914b14835d27f8d04a31c3f5c9d169b47499a621cddf7cbb3",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "1f66b1e9af6b259791aa8cdd0ac39bb0f21df40d36725d8ed69413d1d93924ec",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "2edbaa68d7a7e6bd3ec755beef5456cf8c11b7908f969c1e55df02fcdb8c8d38",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "4472f25da0bfa1914ac342d444d8a892a790b486bd552c6a822d0ce4828b618b",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "61ea95b51ccf35b94403912e45d8ac4d7a8c5b6f0c697dccb3a315ce92abdae1",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "9793471a7d05adaf8c66feb3973cf0747f201b06bedb24276db353502f7d6d21",
+    "apps/ios/Sources/AgentClient.swift": "e9b2f2a2d21e25d17f228b2c89d7d8a9203679c710a72c59fca005f014e464f9",
+    "apps/ios/Sources/HostService.swift": "eef3f4653c6acb66ae2b2507622d22070057ce0ecb34ef4f866fdbb7da453fc7",
+    "apps/ios/Sources/Models.swift": "03ce141eba079c2deb0099ce2808180ed37faaa2f615d5d174a0b7e80306b8ec",
+    "apps/ios/Sources/RootView.swift": "1940e82ad99b5ef45d19ad5fcb8aea6c89cda11fc384ef55a1a130ee931cf8e1",
+    "apps/ios/Sources/SessionStore.swift": "9352d8b439ea158e1d330854d18ec62afbedd5669e4ff40124181d61454d5e27",
+    "apps/ios/Sources/SharedMobileRules.swift": "38b16a6755251851bc747f7723bd2f342bd91248ab2b3cecfc734b22d5d857da",
+    "apps/ios/Sources/Sheets.swift": "ed0b50a6c0b24411e7becdf405cd4f5d6387f9f853e52e2ecd7fa8ac6b8c7285",
+    "apps/ios/Tests/CodexManageUITests.swift": "7f1cf98b1c6e44408b97bd65a62fe12dce4b80b964fae559b93e5272fea3fe2e",
+    "scripts/mobile/check-ios-state.mjs": "0cfa566fa8548a379251936a86d37d96d1c0b733071c400483bcdaebfb911f4f",
+    "scripts/mobile/fixtures/legacy-chat-timeline.swift": "641fada42a8257c560c87705441c71b2c9215ca1241ac036ac06a1b91a0fa634"
+  },
+  "logSha256": {
+    "pnpm-check.log": "89a10d2d6050a3196927420927df6e7ea61219992f377c9b56d2b492a1769ae6",
+    "ios-build.log": "1d710c216ddb581e5bda06551f157cfe8b0de1e60868a406b92720e10c47e80b",
+    "android-and-core-build.log": "13a8d3c146e5ceade75f454b8df0a10457da5a50c23b30a7aa883f384c2b369d",
+    "ios-state.log": "2584fb98aa2bd6110402eb880df705bec394158e0c0efea0f6ef6c3520bb31e5",
+    "ios-tests-build.log": "3e23693a0c3fe47903f708e26c339fc33bae55c3500b139bb4c11d7eacdd17a3"
+  }
+}

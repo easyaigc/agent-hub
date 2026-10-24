@@ -38,6 +38,16 @@ export async function preparedTraceFixture(run) {
   write('package.json', '{"type":"module"}');
   write('reader.mjs', compiled + '\nexport {TraceSnapshot};\n');
   write(
+    'windows-trace-diagnostics.js',
+    ts.transpileModule(
+      fs.readFileSync(
+        new URL('../../packages/codex-adapter/src/windows-trace-diagnostics.ts', import.meta.url),
+        'utf8',
+      ),
+      { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } },
+    ).outputText,
+  );
+  write(
     'path.mjs',
     "import {win32} from 'node:path';export const {dirname,isAbsolute,join,parse,relative,resolve}=win32;\n",
   );
@@ -97,7 +107,7 @@ export const protectWindowsStateDirectory=()=>{};export const protectWindowsStat
       return `1:${info.ino >> 32n}:${info.ino & 0xffffffffn}:0:0:${hash(String(info.mode) + ':' + aclEpoch)}`;
     });
     return {
-      identity: hash(chain.join('|')),
+      identity: createHash('sha256').update(chain.join('|')).digest('base64'),
       chain,
       bytes: maximum ? fs.readFileSync(local(path)).subarray(0, maximum) : Buffer.alloc(0),
     };

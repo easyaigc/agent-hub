@@ -1,17 +1,79 @@
 import Foundation
 import MobileCore
 
+/// Memoize only pure identity encoding, never alias selection, authorization,
+/// runtime readiness or an operation receipt. A workspace can use these keys
+/// thousands of times per event and per SwiftUI update.
+final class RuntimeIdentityKeyCache: @unchecked Sendable {
+  enum Kind: Hashable { case cache, reading, nativeReading }
+  private struct Key: Hashable {
+    let kind: Kind
+    let agent: String
+    let host: String
+    let workspace: String
+    let runtime: String
+    let authority: String?
+    let subject: String?
+    let thread: String?
+    let project: String?
+  }
+  private let lock = NSLock()
+  private let capacity: Int
+  private var values: [Key: String] = [:]
+  private var order: [Key] = []
+  private var oldest = 0
+
+  init(capacity: Int = 16_384) { self.capacity = max(1, capacity) }
+
+  func value(_ target: AgentRuntimeTarget, kind: Kind, threadId: String?, projectId: String? = nil,
+    encode: () -> String) -> String {
+    let key = Key(kind: kind, agent: target.agentId, host: target.hostId,
+      workspace: target.workspaceId, runtime: target.runtimeId,
+      authority: target.agentId == "codex" ? nil : target.account?.authority,
+      subject: target.agentId == "codex" ? nil : target.account?.subject,
+      thread: threadId, project: kind == .cache && threadId == nil ? projectId : nil)
+    lock.lock()
+    if let value = values[key] { lock.unlock(); return value }
+    lock.unlock()
+    // Encoding is pure. Concurrent misses may compute twice; never hold a
+    // native lock across the Kotlin bridge or an encoder callback.
+    let value = encode()
+    lock.lock()
+    defer { lock.unlock() }
+    if let existing = values[key] { return existing }
+    if order.count == capacity {
+      values.removeValue(forKey: order[oldest])
+      order[oldest] = key
+      oldest = (oldest + 1) % capacity
+    } else { order.append(key) }
+    values[key] = value
+    return value
+  }
+}
+
 // Maps platform DTOs only. The identity and composer rules live in mobile-core.
 enum SharedMobileRules {
+  private static let identityKeys = RuntimeIdentityKeyCache()
   static func scope(_ target: AgentRuntimeTarget) -> TargetScope {
     TargetScope(agentId: target.agentId, accountAuthority: target.account?.authority, accountSubject: target.account?.subject,
       hostId: target.hostId, workspaceId: target.workspaceId, runtimeId: target.runtimeId)
   }
   static func machineCacheKey(_ target: AgentRuntimeTarget, threadId: String?, projectId: String?) -> String {
-    RuntimeIdentity.shared.cacheKey(clientId: target.hostId, target: scope(target), threadId: threadId, projectId: projectId)
+    identityKeys.value(target, kind: .cache, threadId: threadId, projectId: projectId) {
+      RuntimeIdentity.shared.cacheKey(clientId: target.hostId, target: scope(target), threadId: threadId, projectId: projectId)
+    }
   }
   static func machineReadingKey(_ target: AgentRuntimeTarget, threadId: String?) -> String {
-    RuntimeIdentity.shared.readingKey(target: scope(target), threadId: threadId)
+    identityKeys.value(target, kind: .reading, threadId: threadId) {
+      RuntimeIdentity.shared.readingKey(target: scope(target), threadId: threadId)
+    }
+  }
+  static func nativeReadingKey(_ target: AgentRuntimeTarget, threadId: String?) -> String {
+    identityKeys.value(target, kind: .nativeReading, threadId: threadId) {
+      ReadingIdentity.key(agentId: target.agentId, authority: target.account?.authority,
+        subject: target.account?.subject, hostId: target.hostId,
+        workspaceId: target.workspaceId, runtimeId: target.runtimeId, threadId: threadId)
+    }
   }
   static func preferredRuntimeKey(_ canonical: String, candidates: [String], selectedLegacy: String? = nil) -> String {
     RuntimeIdentity.shared.preferredKey(canonical: canonical, candidates: candidates, selectedLegacy: selectedLegacy)
@@ -150,6 +212,10 @@ private final class NativeHistoryGateway: NSObject, MobileHistoryGateway {
         guard value.hostId == host.id, value.threadId == threadId else { throw HostServiceError.wrongHost }
         if let expected = host.agentConnection?.target ?? host.readingTarget,
           let received = value.readTarget, expected != received { throw HostServiceError.wrongHost }
+        #if DEBUG
+        let workStart = HistoryScrollProbe.workStart()
+        defer { HistoryScrollProbe.workEnd(4, workStart) }
+        #endif
         let json = String(decoding: try JSONEncoder().encode(value), as: UTF8.self)
         completion(HistoryReply(targetKey: targetKey, json: json, failure: nil))
       } catch {
@@ -189,6 +255,10 @@ extension SharedMobileRules {
               default: continuation.resume(throwing: gateway.nativeFailure ?? HostServiceError.message(failure.message))
               }
             } else if let json = reply.json {
+              #if DEBUG
+              let workStart = HistoryScrollProbe.workStart()
+              defer { HistoryScrollProbe.workEnd(5, workStart) }
+              #endif
               do { continuation.resume(returning: try JSONDecoder().decode(HistorySnapshot.self, from: Data(json.utf8))) }
               catch { continuation.resume(throwing: error) }
             } else { continuation.resume(throwing: HostServiceError.invalidResponse) }

@@ -32,6 +32,27 @@ struct MobileReadBaseline: Codable, Equatable, Sendable {
   var position: ReadPosition
   var unread: Bool
 }
+enum ReadingReconciliation {
+  static func unread(state: ThreadReadState?, legacyUnread: Bool, fallbackUnread: Bool,
+    record: MobileReadRecord?, baseline: MobileReadBaseline?) -> Bool {
+    guard let state, state.version == 1 else { return legacyUnread }
+    if let record {
+      return record.position != state.latest && record.position.revision <= state.latest.revision
+    }
+    guard let baseline else { return fallbackUnread }
+    return baseline.unread || state.latest.revision > baseline.position.revision
+      || state.latest.contentVersion != baseline.position.contentVersion
+  }
+  /// A repeated authoritative acknowledgement should not publish the same
+  /// saved record again. A pending acknowledgement still needs to be cleared.
+  static func acknowledgedChange(current: MobileReadRecord?, incoming: ReadPosition,
+    latest: ReadPosition) -> MobileReadRecord? {
+    guard incoming.revision <= latest.revision,
+      current == nil || incoming.revision > current!.position.revision || incoming == current!.position else { return nil }
+    let next = MobileReadRecord(position: incoming, pending: false)
+    return current == next ? nil : next
+  }
+}
 
 enum ReadingIdentity {
   // A typed tuple, independent of LAN/relay addresses and project display grouping.

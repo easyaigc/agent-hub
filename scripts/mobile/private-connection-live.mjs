@@ -324,6 +324,7 @@ try {
                 ? `https://10.0.2.2:${host.port}`
                 : endpoint(),
               marker: active.marker,
+              hostKey: (await readFile(join(state, 'access-token'), 'utf8')).trim(),
               model,
             });
           if (req.method === 'GET' && req.url === '/um04/stats')
@@ -510,7 +511,11 @@ try {
       assert(!r.authorizationPresent);
     const claim = claims()[0];
     assert.deepEqual(Object.keys(claim.body).sort(), ['publicKey', 'target', 'version']);
-    assert(!claim.authorizationPresent);
+    assert(claim.authorizationPresent);
+    assert.equal(
+      claim.authorizationSha256,
+      sha((await readFile(join(state, 'access-token'), 'utf8')).trim()),
+    );
     const bindingState = JSON.parse(
       await readFile(join(state, 'private-connections-v1.json'), 'utf8'),
     );

@@ -1,5 +1,6 @@
 import PhotosUI
 import QuickLook
+import QuartzCore
 import SwiftUI
 import UniformTypeIdentifiers
 import os
@@ -146,9 +147,14 @@ private final class RunningTaskSymbolView: UIImageView {
 
 private struct ChatBottomVisibility: Equatable {
   let targetKey: String
-  let bottom: CGFloat
-  let visibleBottom: CGFloat
-  var isVisible: Bool { bottom > 0 && bottom <= visibleBottom + 24 }
+  let isVisible: Bool
+  let isNearBottom: Bool
+
+  init(targetKey: String, bottom: CGFloat, visibleBottom: CGFloat) {
+    self.targetKey = targetKey
+    isVisible = bottom > 0 && bottom <= visibleBottom + 24
+    isNearBottom = bottom > 0 && bottom < visibleBottom + 120
+  }
 }
 
 private struct ChatBottomPosition: PreferenceKey {
@@ -168,10 +174,70 @@ private struct ChatScrollLayout: Equatable {
   private var sizeObservation: NSKeyValueObservation?
   private var offsetObservation: NSKeyValueObservation?
   private var releasedPull: CGPoint?
-  private var pending: (height: CGFloat, offset: CGPoint)?
+  private struct WeakAnchor { weak var view: UIView? }
+  private var anchors: [String: WeakAnchor] = [:]
+  private var pending: (height: CGFloat, offset: CGPoint, anchor: String?, viewportY: CGFloat?)?
+  private var anchorLink: CADisplayLink?
+  private var anchorDriver: HistoryAnchorFrameDriver?
+  private var settleDeadline: CFTimeInterval = 0
+  private var settleMaximum: CFTimeInterval = 0
+
+  func registerAnchor(_ key: String, view: UIView) {
+    anchors[key] = WeakAnchor(view: view)
+  }
+  func removeAnchor(_ key: String, view: UIView) {
+    if anchors[key]?.view === view { anchors.removeValue(forKey: key) }
+  }
+  func anchorDidLayout() { restore(renewDeadline: false, recordTrace: false) }
+
+  private func anchorRect(_ key: String, in scroll: UIScrollView) -> CGRect? {
+    guard let view = anchors[key]?.view, view.window != nil,
+      view.isDescendant(of: scroll), view.bounds.height > 0 else { return nil }
+    return view.convert(view.bounds, to: scroll)
+  }
+  private func stopAnchorFrames() {
+    anchorLink?.invalidate(); anchorLink = nil; anchorDriver = nil
+  }
+  func resolveAnchorFrame() {
+    guard pending != nil else { stopAnchorFrames(); return }
+    restore(renewDeadline: false, recordTrace: false)
+    if CACurrentMediaTime() >= settleDeadline {
+      pending = nil
+      stopAnchorFrames()
+      #if DEBUG
+      trace(4)
+      #endif
+    }
+  }
+  #if DEBUG
+  private var positionTrace: [[String: Double]] = []
+  func markAttempt(_ phase: Double, loading: Bool, local: Bool) {
+    trace(phase, details: ["loading": loading ? 1 : 0, "local": local ? 1 : 0])
+  }
+  func markPan(_ phase: Double, pull: CGFloat, maximum: CGFloat, movement: CGFloat,
+    startedAtTop: Bool, canLoad: Bool, busy: Bool) {
+    trace(phase, details: ["pull": Double(pull), "maximumPull": Double(maximum),
+      "movement": Double(movement), "startedAtTop": startedAtTop ? 1 : 0,
+      "canLoad": canLoad ? 1 : 0, "busy": busy ? 1 : 0])
+  }
+  private func trace(_ phase: Double, details: [String: Double] = [:]) {
+    guard ProcessInfo.processInfo.arguments.contains("-history-position-probe") else { return }
+    var row: [String: Double] = ["phase": phase, "time": ProcessInfo.processInfo.systemUptime,
+      "content": Double(scroll?.contentSize.height ?? -1),
+      "offset": Double(scroll?.contentOffset.y ?? -1), "bounds": Double(scroll?.bounds.height ?? -1),
+      "top": Double(scroll?.adjustedContentInset.top ?? -1), "bottom": Double(scroll?.adjustedContentInset.bottom ?? -1),
+      "pendingHeight": Double(pending?.height ?? -1), "pendingOffset": Double(pending?.offset.y ?? 0)]
+    row.merge(details) { _, newest in newest }
+    positionTrace.append(row)
+    let file = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("history-position-metrics.json")
+    if let data = try? JSONSerialization.data(withJSONObject: positionTrace) { try? data.write(to: file, options: .atomic) }
+  }
+  #endif
 
   func attach(to scroll: UIScrollView) {
     guard self.scroll !== scroll else { return }
+    cancel(returnToTop: false)
     self.scroll = scroll
     sizeObservation = scroll.observe(\.contentSize, options: [.new]) { [weak self] _, _ in
       MainActor.assumeIsolated { self?.restore() }
@@ -185,6 +251,9 @@ private struct ChatScrollLayout: Equatable {
     guard let scroll else { return }
     releasedPull = scroll.contentOffset
     scroll.setContentOffset(scroll.contentOffset, animated: false)
+    #if DEBUG
+    trace(0)
+    #endif
   }
 
   private func retainReleasedPull() {
@@ -193,22 +262,63 @@ private struct ChatScrollLayout: Equatable {
     scroll.setContentOffset(releasedPull, animated: false)
   }
 
-  func prepareForPrepend() {
-    guard let scroll else { return }
+  func prepareForPrepend() -> CGFloat {
+    guard let scroll else { return 0 }
     scroll.layoutIfNeeded()
     // Retain the actual released pull position. The new prefix fills the space
     // above it instead of first snapping the old content back to the top.
-    pending = (scroll.contentSize.height, scroll.contentOffset)
+    let trailingRoom = max(0, scroll.contentOffset.y + scroll.bounds.height
+      - scroll.adjustedContentInset.bottom - scroll.contentSize.height)
+    // Retain the visible empty room below a short list so UIKit can represent
+    // the restored offset. This room is below the reading anchor: include it in
+    // the baseline rather than compensating for it as if it were a new prefix.
+    anchors = anchors.filter { $0.value.view != nil }
+    let top = scroll.contentOffset.y + scroll.adjustedContentInset.top
+    let bottom = scroll.contentOffset.y + scroll.bounds.height - scroll.adjustedContentInset.bottom
+    let rows = anchors.keys.compactMap { key -> (String, CGRect)? in
+      anchorRect(key, in: scroll).map { (key, $0) }
+    }
+    let visible = rows.filter { $0.1.maxY > top && $0.1.minY < bottom }
+    let anchor = visible.min { $0.1.minY < $1.1.minY }
+      ?? rows.min { abs($0.1.minY - top) < abs($1.1.minY - top) }
+    pending = (scroll.contentSize.height + trailingRoom, scroll.contentOffset,
+      anchor?.0, anchor.map { $0.1.minY - scroll.contentOffset.y })
     releasedPull = nil
+    stopAnchorFrames()
+    settleDeadline = CACurrentMediaTime() + 0.2
+    settleMaximum = CACurrentMediaTime() + 0.8
+    let driver = HistoryAnchorFrameDriver(self)
+    anchorDriver = driver
+    let link = CADisplayLink(target: driver, selector: #selector(HistoryAnchorFrameDriver.frame(_:)))
+    anchorLink = link
+    link.add(to: .main, forMode: .common)
+    #if DEBUG
+    trace(1)
+    #endif
+    return trailingRoom
   }
 
-  private func restore() {
+  private func restore(renewDeadline: Bool = true, recordTrace: Bool = true) {
     guard let scroll, let pending else { return }
-    self.pending = nil
-    // Compensate in the layout pass that adds the prefix, before it is drawn.
-    // This includes the compact history control's final-page height change.
-    scroll.setContentOffset(CGPoint(x: pending.offset.x,
-      y: pending.offset.y + scroll.contentSize.height - pending.height), animated: false)
+    if renewDeadline { settleDeadline = min(settleMaximum, CACurrentMediaTime() + 0.2) }
+    #if DEBUG
+    if recordTrace { trace(2, details: ["anchor": pending.anchor == nil ? 0 : 1]) }
+    #endif
+    // Follow an existing row through every layout pass. Total content height
+    // also includes rows below the viewport and is only a fallback.
+    let y: CGFloat
+    if let key = pending.anchor, let viewportY = pending.viewportY,
+      let rect = anchorRect(key, in: scroll) {
+      y = rect.minY - viewportY
+    } else {
+      y = pending.offset.y + scroll.contentSize.height - pending.height
+    }
+    if abs(scroll.contentOffset.y - y) > 0.25 {
+      scroll.setContentOffset(CGPoint(x: pending.offset.x, y: y), animated: false)
+    }
+    #if DEBUG
+    if recordTrace { trace(3) }
+    #endif
   }
 
   func finishPull() {
@@ -221,8 +331,45 @@ private struct ChatScrollLayout: Equatable {
 
   func cancel(returnToTop: Bool = true) {
     pending = nil
+    stopAnchorFrames()
     if returnToTop { finishPull() } else { releasedPull = nil }
   }
+}
+
+@MainActor private final class HistoryAnchorFrameDriver: NSObject {
+  private weak var position: EarlierHistoryPosition?
+  init(_ position: EarlierHistoryPosition) { self.position = position }
+  @objc func frame(_ link: CADisplayLink) {
+    guard let position else { link.invalidate(); return }
+    position.resolveAnchorFrame()
+  }
+}
+
+private struct HistoryRowAnchor: UIViewRepresentable {
+  let key: String
+  let position: EarlierHistoryPosition
+  func makeUIView(context: Context) -> HistoryRowAnchorView { HistoryRowAnchorView() }
+  func updateUIView(_ view: HistoryRowAnchorView, context: Context) {
+    if let previous = view.rowKey, previous != key { view.position?.removeAnchor(previous, view: view) }
+    view.rowKey = key; view.position = position
+    position.registerAnchor(key, view: view)
+  }
+  static func dismantleUIView(_ view: HistoryRowAnchorView, coordinator: ()) {
+    if let key = view.rowKey { view.position?.removeAnchor(key, view: view) }
+  }
+}
+
+private final class HistoryRowAnchorView: UIView {
+  var rowKey: String?
+  weak var position: EarlierHistoryPosition?
+  init() {
+    super.init(frame: .zero)
+    isHidden = true; isUserInteractionEnabled = false; isAccessibilityElement = false
+  }
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+  override var frame: CGRect { didSet { position?.anchorDidLayout() } }
+  override var bounds: CGRect { didSet { position?.anchorDidLayout() } }
+  override func layoutSubviews() { super.layoutSubviews(); position?.anchorDidLayout() }
 }
 
 private struct EarlierHistoryPullControl: UIViewRepresentable {
@@ -328,6 +475,9 @@ private final class EarlierHistoryPullView: UIView {
 
   @objc private func didPan(_ pan: UIPanGestureRecognizer) {
     guard let scroll else { return }
+    #if DEBUG
+    if pan.state == .began { HistoryScrollProbe.shared.begin(scroll) }
+    #endif
     // adjustedContentInset includes the floating toolbar and system safe area.
     // Measure actual overscroll, not finger travel or movement within history.
     let pull = -(scroll.contentOffset.y + scroll.adjustedContentInset.top)
@@ -337,10 +487,18 @@ private final class EarlierHistoryPullView: UIView {
       startedAtTop = pull >= -1
       maximumPull = max(0, pull)
       requestedThisPull = false
+      #if DEBUG
+      position?.markPan(-10, pull: pull, maximum: maximumPull, movement: pan.translation(in: scroll).y,
+        startedAtTop: startedAtTop, canLoad: canLoad, busy: requestTask != nil)
+      #endif
     case .changed:
       maximumPull = max(maximumPull, pull)
     case .ended:
       let movement = pan.translation(in: scroll)
+      #if DEBUG
+      position?.markPan(-11, pull: pull, maximum: maximumPull, movement: movement.y,
+        startedAtTop: startedAtTop, canLoad: canLoad, busy: requestTask != nil)
+      #endif
       if startedAtTop, max(maximumPull, pull) >= 60,
         movement.y > abs(movement.x) {
         requestEarlier()
@@ -373,6 +531,104 @@ private final class EarlierHistoryPullView: UIView {
 }
 
 #if DEBUG
+/// Opt-in frame and CPU-work evidence, without conversation text or identities.
+@MainActor final class HistoryScrollProbe: NSObject, ObservableObject {
+  static let shared = HistoryScrollProbe()
+  static let enabled = ProcessInfo.processInfo.arguments.contains("-history-scroll-probe")
+  static let workEnabled = ProcessInfo.processInfo.arguments.contains("-history-work-probe")
+  private static let expectedTarget: (host: String?, thread: String?) = {
+    let env = ProcessInfo.processInfo.environment
+    return (env["HISTORY_SCROLL_EXPECTED_HOST"], env["HISTORY_SCROLL_EXPECTED_THREAD"])
+  }()
+  static func matches(host: String?, thread: String?) -> Bool {
+    guard let expectedHost = expectedTarget.host, let expectedThread = expectedTarget.thread else { return false }
+    return expectedHost == host && expectedThread == thread
+  }
+  @Published private(set) var evidence = "{}"
+  var timelineMS: [Double] = []
+  var markdownBodies = 0
+  private var link: CADisplayLink?
+  private weak var scroll: UIScrollView?
+  private var previousTimestamp: Double?
+  private var previousOffset: CGFloat = 0
+  private var frameMS: [Double] = []
+  private var gestures = 0
+  private var work: [[String: Double]] = []
+  private var slowFrames: [[String: Double]] = []
+
+  static func workStart() -> Double? {
+    guard workEnabled, shared.link != nil else { return nil }
+    return CACurrentMediaTime()
+  }
+  static func workEnd(_ phase: Double, _ start: Double?) {
+    guard let start else { return }
+    let end = CACurrentMediaTime(), duration = (end - start) * 1000
+    guard duration >= 1 else { return }
+    shared.work.append(["phase": phase, "start": start, "end": end, "ms": duration])
+    if shared.work.count > 256 { shared.work.removeFirst(128) }
+  }
+
+  func begin(_ scroll: UIScrollView) {
+    guard Self.enabled else { return }
+    gestures += 1
+    self.scroll = scroll
+    previousTimestamp = nil
+    previousOffset = scroll.contentOffset.y
+    if link == nil {
+      let link = CADisplayLink(target: self, selector: #selector(frame))
+      link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
+      link.add(to: .main, forMode: .common)
+      self.link = link
+    }
+  }
+
+  @objc private func frame(_ link: CADisplayLink) {
+    guard let scroll else { finish(); return }
+    if let previousTimestamp, abs(scroll.contentOffset.y - previousOffset) > 0.5 {
+      let interval = (link.timestamp - previousTimestamp) * 1000
+      frameMS.append(interval)
+      if Self.workEnabled, interval > 40 {
+        slowFrames.append(["start": previousTimestamp, "end": link.timestamp, "ms": interval])
+      }
+    }
+    previousTimestamp = link.timestamp
+    previousOffset = scroll.contentOffset.y
+    if !scroll.isTracking && !scroll.isDragging && !scroll.isDecelerating { finish() }
+  }
+
+  private func finish() {
+    link?.invalidate(); link = nil; previousTimestamp = nil
+    let sorted = frameMS.sorted()
+    let values: [String: Double] = ["gestures": Double(gestures), "movingFrames": Double(sorted.count),
+      "p95FrameMS": sorted.isEmpty ? 0 : sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.95))],
+      "maxFrameMS": sorted.last ?? 0, "framesOver50MS": Double(sorted.filter { $0 > 50 }.count),
+      "timelineBuilds": Double(timelineMS.count), "maxTimelineMS": timelineMS.max() ?? 0,
+      "totalTimelineMS": timelineMS.reduce(0, +), "markdownBodies": Double(markdownBodies)]
+    let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("history-scroll-metrics.json")
+    if let data = try? JSONSerialization.data(withJSONObject: values, options: [.sortedKeys]) {
+      evidence = String(decoding: data, as: UTF8.self)
+      try? data.write(to: url, options: .atomic)
+    }
+    if Self.workEnabled,
+      let data = try? JSONSerialization.data(withJSONObject: ["work": work, "slowFrames": slowFrames]) {
+      try? data.write(to: url.deletingLastPathComponent().appendingPathComponent("history-work-metrics.json"), options: .atomic)
+    }
+  }
+}
+
+private struct HistoryScrollEvidenceView: View {
+  @ObservedObject private var probe = HistoryScrollProbe.shared
+  let availableMessages: Int
+  let messageLimit: Int
+  let targetMatches: Bool
+  var body: some View {
+    Text(probe.evidence).font(.system(size: 1)).frame(width: 1, height: 1).clipped()
+      .accessibilityIdentifier("history-scroll-evidence").allowsHitTesting(false)
+      .accessibilityValue("{\"messages\":\(availableMessages),\"window\":\(messageLimit),\"target\":\(targetMatches ? 1 : 0)}")
+  }
+}
+
 /// Opt-in DEV evidence only; no message content or identities are recorded.
 @MainActor private enum SidebarGestureProbe {
   static let enabled = ProcessInfo.processInfo.arguments.contains("-sidebar-performance-fixture")
@@ -411,6 +667,101 @@ private final class EarlierHistoryPullView: UIView {
   }
 }
 #endif
+
+private struct SidebarPullRefresh: UIViewRepresentable {
+  let targetKey: String
+  let action: @MainActor () async -> Void
+  func makeUIView(context: Context) -> SidebarPullRefreshView { SidebarPullRefreshView() }
+  func updateUIView(_ view: SidebarPullRefreshView, context: Context) {
+    if view.targetKey != targetKey { view.cancel(); view.targetKey = targetKey }
+    view.action = action
+    view.attach()
+  }
+  static func dismantleUIView(_ view: SidebarPullRefreshView, coordinator: ()) {
+    // A hosting update can replace this observer while the logical read is
+    // pending. The request survives that view lifetime, just as drawer closure does.
+    view.detach()
+  }
+}
+
+#if DEBUG
+private struct SidebarRefreshEvidence: ViewModifier {
+  let refreshing: Bool
+  func body(content: Content) -> some View {
+    if ProcessInfo.processInfo.arguments.contains("-sidebar-refresh-hold-fixture") {
+      content.accessibilityValue(refreshing ? "refreshing" : "idle")
+    } else {
+      content
+    }
+  }
+}
+#endif
+
+/// Observe the list's native pan without adding a refresh inset. SwiftUI's
+/// refreshable inset can move this hosted sidebar's pixels without its hit regions.
+private final class SidebarPullRefreshView: UIView {
+  var targetKey = ""
+  var action: (@MainActor () async -> Void)?
+  private weak var scroll: UIScrollView?
+  private var startedAtTop = false
+  private var maximumPull: CGFloat = 0
+  private var request: Task<Void, Never>?
+  private var requestToken: UUID?
+  init() {
+    super.init(frame: .zero)
+    isUserInteractionEnabled = false
+    isAccessibilityElement = false
+  }
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+  override func didMoveToWindow() {
+    super.didMoveToWindow()
+    if window == nil { detach() } else { attach() }
+  }
+  override func layoutSubviews() { super.layoutSubviews(); attach() }
+  func attach() {
+    guard window != nil else { return }
+    var parent = superview
+    while let view = parent {
+      if let candidate = view as? UIScrollView {
+        guard scroll !== candidate else { return }
+        detach()
+        scroll = candidate
+        candidate.panGestureRecognizer.addTarget(self, action: #selector(panned(_:)))
+        return
+      }
+      parent = view.superview
+    }
+  }
+  func detach() {
+    scroll?.panGestureRecognizer.removeTarget(self, action: #selector(panned(_:)))
+    scroll = nil
+    startedAtTop = false
+  }
+  func cancel() { request?.cancel(); request = nil; requestToken = nil }
+  @objc private func panned(_ pan: UIPanGestureRecognizer) {
+    guard let scroll else { return }
+    let pull = max(0, -scroll.adjustedContentInset.top - scroll.contentOffset.y)
+    switch pan.state {
+    case .began:
+      startedAtTop = scroll.contentOffset.y <= -scroll.adjustedContentInset.top + 1
+      maximumPull = pull
+    case .changed:
+      maximumPull = max(maximumPull, pull)
+    case .ended:
+      let movement = pan.translation(in: scroll)
+      guard startedAtTop, max(maximumPull, pull) >= 60,
+        movement.y > abs(movement.x), request == nil, let action else { return }
+      let token = UUID()
+      requestToken = token
+      request = Task { @MainActor [weak self] in
+        defer { if self?.requestToken == token { self?.request = nil; self?.requestToken = nil } }
+        guard !Task.isCancelled else { return }
+        await action()
+      }
+    default: break
+    }
+  }
+}
 
 private final class SidebarPanGestureView: UIView, UIGestureRecognizerDelegate {
   var onBegin: (() -> Void)?
@@ -881,6 +1232,12 @@ private final class SidebarDrawerController: UIViewController {
 #endif
 
 struct RootView: View {
+  private static var initialHistoryWindow: Int {
+    #if DEBUG
+    if ProcessInfo.processInfo.arguments.contains("-history-short-paging-fixture") { return 4 }
+    #endif
+    return 20
+  }
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @AppStorage(VoiceTranscriptionPreference.storageKey) private var voicePreference = VoiceTranscriptionPreference.desktop
   @StateObject private var store = SessionStore()
@@ -898,17 +1255,23 @@ struct RootView: View {
   @State private var voiceDEVPairingApplied = false
   @State private var followsLatest = true
   @State private var latestMessageVisibility: ChatBottomVisibility?
-  @State private var visibleMessageLimit = Int(SharedReadingPolicy.initialMessageLimit())
+  @State private var visibleMessageLimit = RootView.initialHistoryWindow
+  @State private var timelineCache = ChatTimelineCache()
   @State private var readySearchJump: UUID?
   @State private var deleteChatTarget: Conversation?
   @State private var endChatActionTarget: ChatActionReceipt?
   @State private var showsReplyRecords = false
   @State private var earlierHistoryRequest: UUID?
   @State private var earlierHistoryPosition = EarlierHistoryPosition()
+  @State private var earlierHistoryBottomSlack: CGFloat = 0
+  #if DEBUG
+  @State private var earlierLayoutFixtureSlack: CGFloat = 0
+  #endif
   @State private var revealedEarlierHistory = false
   @State private var composerHeight: CGFloat = 104
   @State private var userScrolling = false
   @State private var sidebarSearchVisible = false
+  @State private var sidebarRefreshRequest: UUID?
   @State private var expandedRecentClients: Set<String> = []
   @State private var expandedProjectLists: Set<String> = []
   @State private var collapsedProjectSections: Set<String> = []
@@ -972,6 +1335,11 @@ struct RootView: View {
     .task {
       TaskNotificationController.shared.attach(store)
       #if DEBUG
+      if !voiceDEVPairingApplied, ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+        ProcessInfo.processInfo.arguments.contains("-voice-open-settings") {
+        voiceDEVPairingApplied = true
+        UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
+      }
       if !voiceDEVPairingApplied, ProcessInfo.processInfo.arguments.contains("-ui-testing"),
         ProcessInfo.processInfo.arguments.contains("-voice-pairing-fixture"),
         let payload = ProcessInfo.processInfo.environment["VOICE_PAIRING_URI"],
@@ -1107,15 +1475,17 @@ struct RootView: View {
       endChatActionTarget = nil
       showsReplyRecords = false
       latestMessageVisibility = nil
-      visibleMessageLimit = Int(SharedReadingPolicy.initialMessageLimit())
+      visibleMessageLimit = RootView.initialHistoryWindow
       earlierHistoryRequest = nil
       earlierHistoryPosition.cancel()
+      earlierHistoryBottomSlack = 0
       revealedEarlierHistory = false
       followsLatest = true
       userScrolling = false
     }
     .task(id: store.modelLoadingKey) { if store.modelLoadingKey != nil { await store.loadModels() } }
     .onChange(of: store.drawerOpen) { _, open in if open { voice.cancel() } }
+    .onChange(of: sidebarClientKey) { _, _ in sidebarRefreshRequest = nil }
     .onChange(of: store.sheet) { _, sheet in if sheet != nil { voice.cancel() } }
     .onChange(of: voice.error) { _, error in if let error { store.error = error } }
     .onChange(of: voice.isActive && scenePhase == .active, initial: true) { _, keepAwake in
@@ -1295,7 +1665,8 @@ struct RootView: View {
     } else {
       ScrollViewReader { proxy in
         GeometryReader { viewport in
-          let timeline = ChatTimeline(messages: store.messages, messageLimit: visibleMessageLimit,
+          let target = store.targetKey
+          let timeline = timelineCache.project(targetKey: target, messages: store.messages, messageLimit: visibleMessageLimit,
             activeRunId: store.runtime?.turnId, isRunning: store.isRunning || store.runtime?.state == "paused", focusedMessageId: store.chatSearchJump?.message.id)
           ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -1306,7 +1677,7 @@ struct RootView: View {
                   switch item {
                   case .message(let message):
                     if store.chatSearchJump?.targetKey == store.targetKey, store.chatSearchJump?.message.id == message.id {
-                      LocatedChatMessageView(message: store.chatSearchJump!.message, query: store.chatSearchJump!.query)
+                      LocatedChatMessageView(message: store.chatSearchJump!.message, query: store.chatSearchJump!.query, client: store.client, threadId: store.selectedThreadId)
                     } else if message.kind == "turnFailure" {
                       VStack(alignment: .leading, spacing: 4) {
                         Label(L10n.tr("任务失败记录"), systemImage: "exclamationmark.circle")
@@ -1316,7 +1687,7 @@ struct RootView: View {
                     } else if message.kind == "plan" {
                       ProposedPlanMessageView(message: message)
                     } else {
-                      MessageView(message: message, client: store.client).equatable()
+                      MessageView(message: message, client: store.client, threadId: store.selectedThreadId).equatable()
                     }
                   case .tools(let id, let messages):
                     ToolCallGroupView(id: id, messages: messages, client: store.client)
@@ -1337,6 +1708,13 @@ struct RootView: View {
                       .accessibilityIdentifier("runtime-error-group-\(id)")
                   }
                   }.id(item.id)
+                    .background {
+                      switch item {
+                      case .message, .compaction:
+                        HistoryRowAnchor(key: item.id, position: earlierHistoryPosition)
+                      default: EmptyView()
+                      }
+                    }
                 }
                 if let creation = store.pendingDesktopCreation {
                   PendingCreationMessageView(creation: creation)
@@ -1359,16 +1737,20 @@ struct RootView: View {
                   GeometryReader { position in
                     Color.clear.preference(
                       key: ChatBottomPosition.self,
-                      value: ChatBottomVisibility(targetKey: store.targetKey,
+                      value: ChatBottomVisibility(targetKey: target,
                         bottom: position.frame(in: .named("chat-scroll")).maxY,
                         visibleBottom: max(0, viewport.size.height - composerHeight)))
                   }
                 }
               }
+              if earlierHistoryBottomSlack > 0 { Color.clear.frame(height: earlierHistoryBottomSlack) }
+              #if DEBUG
+              if earlierLayoutFixtureSlack > 0 { Color.clear.frame(height: earlierLayoutFixtureSlack) }
+              #endif
             }.padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 12)
               .background {
                 EarlierHistoryPullControl(
-                  canLoad: earlierHistoryRequest == nil && !store.historyLoading
+                  canLoad: earlierHistoryRequest == nil
                     && (timeline.hasEarlierMessages || store.historyCursor != nil),
                   position: earlierHistoryPosition,
                   action: { await loadEarlierHistory(timeline: timeline) })
@@ -1379,6 +1761,12 @@ struct RootView: View {
             .safeAreaInset(edge: .top, spacing: 0) {
               VStack(spacing: 0) {
                 Color.clear.frame(height: 54).allowsHitTesting(false)
+                if store.conversation?.archived == true {
+                  Label(L10n.tr("此对话已归档，恢复后可继续。"), systemImage: "archivebox")
+                    .font(.caption).frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10).background(.regularMaterial)
+                    .accessibilityIdentifier("archived-conversation-notice")
+                }
                 if let failure = store.conversationSyncFailure {
                   HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
@@ -1411,7 +1799,7 @@ struct RootView: View {
                 latestMessageVisibility = visibility
               }
               if userScrolling {
-                let follows = visibility.bottom > 0 && visibility.bottom < visibility.visibleBottom + 120
+                let follows = visibility.isNearBottom
                 if followsLatest != follows { followsLatest = follows }
               }
             }
@@ -1475,6 +1863,9 @@ struct RootView: View {
               if focused { earlierHistoryPosition.cancel() }
               if focused { withAnimation { proxy.scrollTo("bottom", anchor: .bottom) } }
             }
+            .onChange(of: followsLatest) { _, follows in
+              if follows { earlierHistoryBottomSlack = 0 }
+            }
             .task(id: ChatScrollLayout(viewportHeight: viewport.size.height, composerHeight: composerHeight)) {
               // Wait for the new keyboard/expanded-input layout before resolving
               // the bottom anchor. Switching chats cancels this view's task.
@@ -1494,6 +1885,14 @@ struct RootView: View {
                   .padding(.bottom, composerHeight + 8)
               }
             }
+            #if DEBUG
+            .overlay(alignment: .topLeading) {
+              if HistoryScrollProbe.enabled {
+                HistoryScrollEvidenceView(availableMessages: store.messages.count, messageLimit: visibleMessageLimit,
+                  targetMatches: HistoryScrollProbe.matches(host: store.client?.id, thread: store.selectedThreadId))
+              }
+            }
+            #endif
         }
       }.id(store.targetKey)
     }
@@ -1502,6 +1901,9 @@ struct RootView: View {
   @ViewBuilder private func earlierHistoryControl(timeline: ChatTimeline) -> some View {
     if timeline.hasEarlierMessages || store.historyCursor != nil || earlierHistoryRequest != nil {
       Button {
+        #if DEBUG
+        earlierHistoryPosition.markAttempt(-1, loading: store.historyLoading, local: timeline.hasEarlierMessages)
+        #endif
         Task { await loadEarlierHistory(timeline: timeline) }
       } label: {
         HStack(spacing: 6) {
@@ -1515,7 +1917,7 @@ struct RootView: View {
         }.foregroundStyle(Palette.secondary)
           .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
       }.buttonStyle(.plain)
-        .disabled(earlierHistoryRequest != nil || store.historyLoading)
+        .disabled(earlierHistoryRequest != nil)
         .accessibilityHint(L10n.tr("也可以在列表顶部下拉加载"))
         .accessibilityIdentifier(timeline.hasEarlierMessages ? "history-local-more" : "history-more")
         .accessibilityValue(earlierHistoryRequest != nil ? L10n.tr("正在加载") : "")
@@ -1531,7 +1933,10 @@ struct RootView: View {
   }
 
   @MainActor private func loadEarlierHistory(timeline: ChatTimeline) async {
-    guard !Task.isCancelled, earlierHistoryRequest == nil, !store.historyLoading,
+    #if DEBUG
+    earlierHistoryPosition.markAttempt(-2, loading: store.historyLoading, local: timeline.hasEarlierMessages)
+    #endif
+    guard !Task.isCancelled, earlierHistoryRequest == nil,
       timeline.hasEarlierMessages || store.historyCursor != nil else { return }
     let target = store.targetKey
     let request = UUID()
@@ -1539,14 +1944,28 @@ struct RootView: View {
     followsLatest = false
     defer { if earlierHistoryRequest == request { earlierHistoryRequest = nil } }
     if timeline.hasEarlierMessages {
-      earlierHistoryPosition.prepareForPrepend()
+      earlierHistoryBottomSlack += earlierHistoryPosition.prepareForPrepend()
       visibleMessageLimit += Int(SharedReadingPolicy.earlierMessageIncrement())
     } else {
-      let previousIds = Set(store.messages.map(\.id))
-      guard await store.loadHistory(more: true), !Task.isCancelled,
+      // Capture the old layout and expand the local window in the same main
+      // actor transaction that publishes the prefix. Awaiting the read first
+      // allowed SwiftUI to lay out a truncated new page before this anchor.
+      guard await store.loadHistory(more: true, beforePrepend: { added in
+        guard store.targetKey == target, earlierHistoryRequest == request else { return }
+        earlierHistoryBottomSlack += earlierHistoryPosition.prepareForPrepend()
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-history-prepend-layout-fixture") {
+          earlierLayoutFixtureSlack = 112
+          Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard store.targetKey == target else { return }
+            earlierLayoutFixtureSlack = 56
+          }
+        }
+        #endif
+        visibleMessageLimit += added
+      }), !Task.isCancelled,
         store.targetKey == target, earlierHistoryRequest == request else { return }
-      earlierHistoryPosition.prepareForPrepend()
-      visibleMessageLimit += store.messages.filter { !previousIds.contains($0.id) }.count
     }
     revealedEarlierHistory = true
   }
@@ -1746,12 +2165,22 @@ struct RootView: View {
               .accessibilityIdentifier("sidebar-load-more")
           }
         }
+        .background {
+          SidebarPullRefresh(targetKey: sidebarClientKey) { await refreshSidebar() }
+            .frame(width: 0, height: 0)
+        }
       }
-      .refreshable {
-        // Keep the request alive while the refresh control updates its view hierarchy.
-        let refresh = Task { await store.refresh(includeHistory: false, userInitiated: true) }
-        await refresh.value
+      .overlay(alignment: .top) {
+        if sidebarRefreshRequest != nil {
+          ProgressView().controlSize(.small).padding(.top, 10)
+            .accessibilityLabel(L10n.tr("正在加载"))
+            .accessibilityIdentifier("sidebar-refresh-progress")
+            .allowsHitTesting(false)
+        }
       }
+      #if DEBUG
+      .modifier(SidebarRefreshEvidence(refreshing: sidebarRefreshRequest != nil))
+      #endif
       .scrollBounceBehavior(.always)
       .scrollDismissesKeyboard(.immediately)
       .scrollDismissesKeyboard(.interactively).accessibilityIdentifier("sidebar-list")
@@ -1775,6 +2204,13 @@ struct RootView: View {
   }
 
   private var sidebarClientKey: String { store.client?.id ?? "none" }
+  @MainActor private func refreshSidebar() async {
+    guard sidebarRefreshRequest == nil else { return }
+    let request = UUID()
+    sidebarRefreshRequest = request
+    defer { if sidebarRefreshRequest == request { sidebarRefreshRequest = nil } }
+    await store.refresh(includeHistory: false, userInitiated: true)
+  }
   private var sidebarRefreshKey: String {
     "\(store.targetKey):\(store.drawerOpen):\(scenePhase == .active):\(store.client?.online == true)"
   }
@@ -2065,8 +2501,9 @@ private struct PendingCreationMessageView: View {
 struct MessageView: View, Equatable {
   let message: ChatMessage
   var client: Client?
+  var threadId: String? = nil
   nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs.message == rhs.message && lhs.client == rhs.client
+    lhs.message == rhs.message && lhs.client == rhs.client && lhs.threadId == rhs.threadId
   }
   var body: some View {
     VStack(alignment: message.role == "user" ? .trailing : .leading, spacing: 6) {
@@ -2094,12 +2531,12 @@ struct MessageView: View, Equatable {
         }
       }
       if let client {
-        ForEach(message.attachments ?? []) { file in
+        ForEach(message.attachments ?? [], id: \.resourceIdentity) { file in
           RemoteFileView(client: client, file: file)
         }
       }
     }.font(.body).frame(maxWidth: .infinity, alignment: .leading)
-      .modifier(MessageLinkOpening(messageId: message.id, client: client, attachments: message.attachments ?? []))
+      .modifier(MessageLinkOpening(messageId: message.id, threadId: threadId, client: client, attachments: message.attachments ?? []))
   }
 }
 
@@ -2426,7 +2863,7 @@ struct ToolCallView: View {
           .accessibilityIdentifier("tool-detail-\(message.id)")
           .padding(.bottom, 8)
         if let client {
-          ForEach(message.attachments ?? []) { file in
+          ForEach(message.attachments ?? [], id: \.resourceIdentity) { file in
             RemoteFileView(client: client, file: file)
           }
         }
@@ -2452,6 +2889,9 @@ extension Optional where Wrapped == String {
 struct MarkdownBody: View, Equatable {
   let text: String
   var body: some View {
+    #if DEBUG
+    let _ = { if HistoryScrollProbe.enabled { HistoryScrollProbe.shared.markdownBodies += 1 } }()
+    #endif
     VStack(alignment: .leading, spacing: 8) {
       ForEach(Array(text.components(separatedBy: "```").enumerated()), id: \.offset) {
         index, part in
@@ -2643,7 +3083,7 @@ struct RemoteFileView: View {
       if let image {
         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 220)
           .clipShape(RoundedRectangle(cornerRadius: 12)).onTapGesture {
-            previewURL = localURL
+            Task { await download(preview: true) }
           }
           .accessibilityIdentifier("received-image-\(file.name)")
       }
@@ -2661,7 +3101,7 @@ struct RemoteFileView: View {
           Spacer()
           if loading { ProgressView() }
           else if let localURL {
-            Button { previewURL = localURL } label: {
+            Button { Task { await download(preview: true) } } label: {
               Text(L10n.tr("预览")).font(.caption).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityIdentifier("preview-\(file.name)")
             ShareLink(item: localURL) {
@@ -2685,15 +3125,19 @@ struct RemoteFileView: View {
       }
     }
   }
-  private func download() async {
+  private func download(preview: Bool = false) async {
+    guard !loading else { return }
     loading = true
     defer { loading = false }
     do {
-      localURL = try await AgentClients.resolve(client).download(client, file: file)
+      let downloaded = try await AgentClients.resolve(client).download(client, file: file)
+      guard !Task.isCancelled else { return }
+      localURL = downloaded
       if let localURL, file.mediaType.hasPrefix("image/") {
         image = UIImage(contentsOfFile: localURL.path)
       }
       error = nil
+      if preview { previewURL = downloaded }
     } catch { self.error = error.localizedDescription }
   }
 }
@@ -3993,13 +4437,19 @@ private func highlightedSearchText(_ text: String, query: String) -> AttributedS
 private struct LocatedChatMessageView: View {
   let message: ChatMessage
   let query: String
+  let client: Client?
+  let threadId: String?
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Label(L10n.tr("搜索匹配"), systemImage: "magnifyingglass").font(.caption).foregroundStyle(.secondary)
       Text(highlightedSearchText(searchSnippet(message.searchableText, query: query), query: query)).textSelection(.enabled)
       if SharedMobileRules.longSearchMessage(message.searchableText) {
         DisclosureGroup(L10n.tr("完整消息")) {
-          Text(highlightedSearchText(message.searchableText, query: query)).textSelection(.enabled)
+          if message.role == "assistant" && message.kind == "agentMessage" {
+            MessageView(message: message, client: client, threadId: threadId)
+          } else {
+            Text(highlightedSearchText(message.searchableText, query: query)).textSelection(.enabled)
+          }
         }
       }
     }.frame(maxWidth: .infinity, alignment: .leading).padding(10)

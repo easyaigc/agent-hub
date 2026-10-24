@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory)][string]$ScriptPath,
-    [ValidateSet('lifecycle', 'unrelated', 'wrong-owner', 'stop-tree', 'wrong-process-owner', 'owner-query-failed', 'batch-identity-drift', 'wide-tree', 'pid-reuse', 'stop-timeout', 'slow-queries', 'command-budget', 'late-child', 'outer-recovery', 'launcher-migration', 'launcher-tree', 'unrelated-launcher', 'msix-paths', 'msix-other-root', 'msix-wrong-owner', 'msix-wrong-arguments')][string]$Scenario = 'lifecycle'
+    [ValidateSet('lifecycle', 'unrelated', 'wrong-owner', 'stop-tree', 'wrong-process-owner', 'owner-query-failed', 'batch-identity-drift', 'wide-tree', 'pid-reuse', 'stop-timeout', 'wait-kernel-signal', 'wait-kernel-timeout', 'wait-kernel-throw', 'slow-queries', 'command-budget', 'late-child', 'outer-recovery', 'launcher-migration', 'launcher-tree', 'unrelated-launcher', 'msix-paths', 'msix-other-root', 'msix-wrong-owner', 'msix-wrong-arguments')][string]$Scenario = 'lifecycle'
 )
 # Execute the real task script; only Windows identity and Task Scheduler calls are mocked.
 $ErrorActionPreference = 'Stop'
@@ -18,6 +18,11 @@ $global:FixtureOpenedHandles = @()
 $global:FixtureDisposedHandles = @()
 $global:FixtureLastResult = 0
 $global:FixtureHelperRootsJson = ''
+$global:FixtureWaitSamples = @()
+$global:FixtureWaitThrows = 0
+$global:FixtureActualWaitExceptions = 0
+$global:FixtureKernelSignalAtMs = $null
+$global:FixtureKernelExitCodeAtMs = $null
 $node = 'C:\Fixture Private\node.exe'
 $worker = 'C:\Fixture Private\windows-desktop-worker.mjs'
 $config = 'C:\Fixture Private\windows-host.json'
@@ -78,13 +83,21 @@ function Disable-ScheduledTask {
     $global:FixtureTask.Settings.Enabled = $false
     $global:FixtureTask.State = 'Disabled'
 }
-function Start-ScheduledTask { $global:FixtureStarts++; $global:FixtureTask.State = 'Running' }
+function Start-ScheduledTask {
+    if ($Scenario -in @('wait-kernel-signal', 'wait-kernel-timeout', 'wait-kernel-throw') -and $global:FixtureProcesses.ContainsKey(101)) {
+        Assert-Fixture $global:FixtureProcesses[101].Native.KernelSignaled 'Restart preceded the retained kernel signal'
+    }
+    $global:FixtureStarts++; $global:FixtureTask.State = 'Running'
+}
 function Stop-ScheduledTask {
     Assert-Fixture (-not $global:FixtureTask.Settings.Enabled) 'Disable must precede task stop'
     $global:FixtureOrder += 'task-stop'
     $global:FixtureStops++
     $global:FixtureTask.State = 'Ready'
-    if ($global:FixtureProcesses.ContainsKey(100)) { $global:FixtureProcesses[100].Native.HasExited = $true }
+    if ($global:FixtureProcesses.ContainsKey(100)) {
+        $global:FixtureProcesses[100].Native.HasExited = $true
+        $global:FixtureProcesses[100].Native.KernelSignaled = $true
+    }
     if ($Scenario -eq 'late-child') { Add-FixtureProcess 104 101 'late-private-helper' 'powershell.exe' }
 }
 function Get-ScheduledTaskInfo { [pscustomobject]@{ LastTaskResult = $global:FixtureLastResult; LastRunTime = [datetime]'2026-10-11T00:00:00Z'; NextRunTime = [datetime]'2026-10-18T00:01:00Z' } }
@@ -126,17 +139,47 @@ function Get-Process($Id) {
     if ($null -ne $native) { $global:FixtureOpenedHandles += [int]$Id }
     $native
 }
-function Start-Sleep($Milliseconds) { $global:FixtureElapsedMs += $Milliseconds }
+function Start-Sleep($Milliseconds) {
+    $global:FixtureElapsedMs += $Milliseconds
+    # The synthetic OS signal changes independently of the observed HasExited value.
+    if ($null -ne $global:FixtureKernelSignalAtMs -and $global:FixtureElapsedMs -ge $global:FixtureKernelSignalAtMs) {
+        $global:FixtureProcesses[101].Native.KernelSignaled = $true
+        $global:FixtureOrder += 'kernel-signaled-101'
+        $global:FixtureKernelSignalAtMs = $null
+    }
+}
 function Add-FixtureProcess([int]$Id, [int]$Parent, [string]$Command, [string]$Executable, [string]$Sid = 'fixture-sid', [int]$Offset = 0) {
     $created = ([datetime]'2026-10-11T00:00:00Z').AddSeconds($Id)
-    $native = [pscustomobject]@{ Id = $Id; Handle = [IntPtr]$Id; HasExited = $false; StartTime = $created.AddSeconds($Offset) }
+    $native = [pscustomobject]@{ Id = $Id; Handle = [IntPtr]$Id; HasExited = $false; KernelSignaled = $false; StartTime = $created.AddSeconds($Offset) }
     $native | Add-Member -MemberType ScriptMethod -Name Kill -Value {
         Assert-Fixture (-not $global:FixtureTask.Settings.Enabled) 'Disable must precede forced cleanup'
         Assert-Fixture ($global:FixtureProcesses[[int]$this.Id].Sid -eq 'fixture-sid') 'Cleanup touched an unrelated process owner'
         $global:FixtureOrder += "kill-$($this.Id)"
         $this.HasExited = $true
+        $this.KernelSignaled = $true
+        if ($this.Id -eq 101 -and $Scenario -in @('wait-kernel-signal', 'wait-kernel-timeout', 'wait-kernel-throw')) {
+            $this.KernelSignaled = $false
+            $global:FixtureKernelExitCodeAtMs = $global:FixtureElapsedMs
+            if ($Scenario -eq 'wait-kernel-signal') { $global:FixtureKernelSignalAtMs = $global:FixtureElapsedMs + 200 }
+        }
     }
-    $native | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { param($Timeout) $this.HasExited }
+    $native | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value {
+        param($Timeout)
+        Assert-Fixture ($Timeout -eq 0) 'Shared wait must poll with zero per-process timeout'
+        if ($Scenario -in @('wait-kernel-signal', 'wait-kernel-timeout', 'wait-kernel-throw')) {
+            $global:FixtureWaitSamples += @{ id=[int]$this.Id; timeout=[int]$Timeout; hasExited=$this.HasExited; kernelSignaled=$this.KernelSignaled; atMs=$global:FixtureElapsedMs }
+            if ($Scenario -eq 'wait-kernel-throw' -and $this.Id -eq 101 -and $this.HasExited) {
+                $global:FixtureWaitThrows++
+                # A real local .NET method failure, without starting/opening any OS process.
+                $disposed = New-Object System.Diagnostics.Process
+                $disposed.Dispose()
+                try { $disposed.WaitForExit(0) }
+                catch { $global:FixtureActualWaitExceptions++; throw }
+                finally { $disposed.Dispose() }
+            }
+        }
+        $this.KernelSignaled
+    }
     $native | Add-Member -MemberType ScriptMethod -Name Dispose -Value { $global:FixtureDisposedHandles += [int]$this.Id }
     $global:FixtureProcesses[$Id] = @{
         Native = $native; Sid = $Sid
@@ -169,6 +212,36 @@ function Invoke-FixtureRecoveryTick {
         }
     }
 }
+if ($Scenario -in @('wait-kernel-signal', 'wait-kernel-timeout', 'wait-kernel-throw')) {
+    $null = Invoke-Fixture start
+    $rootArguments = '"' + $node + '" "' + $worker + '" "' + $config + '"'
+    Add-FixtureProcess 100 1 $rootArguments $node
+    Add-FixtureProcess 101 100 ($rootArguments + ' --host-child') $node
+    Add-FixtureProcess 200 1 'original-official-desktop' 'Codex.exe'
+    Add-FixtureProcess 201 1 ('"' + $node + '" "' + $worker + '" "other-config"') $node
+    $global:LASTEXITCODE = 0
+    $output = & $ScriptPath -Action restart -NodePath $node -LauncherPath $launcher -WorkerPath $worker -ConfigPath $config
+    $early = @($FixtureWaitSamples | Where-Object { $_.id -eq 101 -and $_.hasExited -and -not $_.kernelSignaled })
+    Assert-Fixture ($early.Count -gt 0) 'HasExited=true bypassed the independent retained kernel wait'
+    Assert-Fixture ((($FixtureOpenedHandles | Sort-Object) -join ',') -eq (($FixtureDisposedHandles | Sort-Object) -join ',')) 'Retained wait leaked or double-disposed handles'
+    foreach ($Id in @(200, 201)) { Assert-Fixture (-not $FixtureProcesses[$Id].Native.HasExited -and -not $FixtureProcesses[$Id].Native.KernelSignaled) 'Retained wait touched unrelated process' }
+    if ($Scenario -eq 'wait-kernel-signal') {
+        Assert-Fixture ($LASTEXITCODE -eq 0) 'Signal arriving inside the shared wait must permit restart'
+        $result = $output | ConvertFrom-Json
+        Assert-Fixture ($FixtureStarts -eq 2 -and $FixtureProcesses[101].Native.KernelSignaled) 'Restart failed to wait for the later kernel signal'
+        Assert-Fixture (@($FixtureOrder | Where-Object { $_ -eq 'kernel-signaled-101' }).Count -eq 1) 'Independent signal not delivered exactly once'
+        Assert-Fixture (($FixtureElapsedMs - $FixtureKernelExitCodeAtMs) -eq 200 -and $result.commandBudgetMs -eq 45000) 'Restart did not wait for the independent signal on100ms polls'
+        @{ scenario=$Scenario; passed=$true; independentSignal=$true; earlyFalseSamples=$early.Count; elapsedMs=$FixtureElapsedMs } | ConvertTo-Json -Compress
+    } else {
+        Assert-Fixture ($LASTEXITCODE -eq 1 -and $FixtureStarts -eq 1 -and -not $FixtureTask.Settings.Enabled) 'Failed kernel wait must reject and prevent restart'
+        Assert-Fixture (-not $FixtureProcesses[101].Native.KernelSignaled) 'Failed wait fabricated the kernel signal'
+        if ($Scenario -eq 'wait-kernel-throw') { Assert-Fixture ($FixtureWaitThrows -eq 1 -and $FixtureActualWaitExceptions -eq 1) 'Disposed Process.WaitForExit exception was swallowed or replayed' }
+        else { Assert-Fixture (($FixtureElapsedMs - $FixtureKernelExitCodeAtMs) -ge 0 -and ($FixtureElapsedMs - $FixtureKernelExitCodeAtMs) -le 2000) 'Per-process waiting multiplied the final shared2000ms deadline' }
+        @{ scenario=$Scenario; rejected=$true; restartPrevented=$true; waitThrows=$FixtureWaitThrows; actualMethodExceptions=$FixtureActualWaitExceptions; elapsedMs=$FixtureElapsedMs } | ConvertTo-Json -Compress
+    }
+    exit 0
+}
+
 if ($Scenario -eq 'outer-recovery') {
     $first = Invoke-Fixture start
     Assert-Fixture ($first.periodicRecovery -and $first.periodicRecoveryInterval -eq 'PT1M' -and $first.loginAutostart) 'Both registered recovery and login required'

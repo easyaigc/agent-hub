@@ -100,6 +100,42 @@ enum CodexMachineStorage {
       CodexMachineStorage.preferredKey(canonical, candidates: candidates[candidateKey ?? canonical] ?? [])
     }
   }
+  /// Reuse encoded reading identities while the machine and stored-key index
+  /// stay unchanged. Large workspaces otherwise encode every row on every poll.
+  struct ReadingKeyMemo {
+    struct Value {
+      let canonical: String
+      let candidate: String
+      let selected: String
+
+      func preferredKey(canonicalExists: () -> Bool) -> String {
+        // The index already selected this key. Probing the saved dictionaries
+        // again for every row/poll cannot change the result.
+        if selected == canonical { return canonical }
+        // A canonical record created before the next index rebuild must still
+        // take precedence over its legacy alias immediately.
+        if canonical == candidate, canonicalExists() { return canonical }
+        return selected
+      }
+    }
+    private struct Scope {
+      let target: AgentRuntimeTarget
+      let candidate: AgentRuntimeTarget
+      var values: [String?: Value] = [:]
+    }
+    private var scopes: [String: Scope] = [:]
+
+    mutating func value(hostId: String, target: AgentRuntimeTarget, candidate: AgentRuntimeTarget,
+      threadId: String?, create: () -> Value) -> Value {
+      if scopes[hostId]?.target != target || scopes[hostId]?.candidate != candidate {
+        scopes[hostId] = Scope(target: target, candidate: candidate)
+      }
+      if let value = scopes[hostId]?.values[threadId] { return value }
+      let value = create()
+      scopes[hostId]?.values[threadId] = value
+      return value
+    }
+  }
   static func preferredKey(_ canonical: String, candidates: [String], selectedLegacy: String? = nil) -> String {
     // Explicit review selects the original record without overwriting the current
     // draft. Otherwise prefer the current key, never a random old draft.

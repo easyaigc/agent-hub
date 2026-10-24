@@ -82,6 +82,9 @@ class MobilePrivateConnectionLiveTest {
         File(folder,"discovery.json").writeText(JSONObject().put("endpoint",discovered.endpoint).put("actualBonjour",bonjour).put("reachable",discovered.reachable).toString(2))
         assertFalse(session.hasClient);assertEquals(0,read("stats").getInt("claimPosts"));shot("real-discovery-before-explicit-click")
         ui.onNodeWithTag(row).performClick()
+        assertEquals(0,read("stats").getInt("claimPosts"))
+        ui.onNodeWithTag("codex-host-key").performScrollTo().performTextInput(fixture.getString("hostKey"))
+        ui.onNodeWithTag("codex-authorize-connect").performScrollTo().performClick()
         ui.waitUntil(90_000) { session.hasClient && !session.connectionBusy && session.threads.any { it.id==thread } }
         assertFalse(session.selectedClient.isDemo);assertEquals(id,session.selectedClient.id);assertNotNull(session.selectedClient.codexDirect)
         assertEquals(1,read("stats").getInt("claimPosts"));assertTrue(store.token(id).matches(Regex("[A-Za-z0-9_-]{43}")))

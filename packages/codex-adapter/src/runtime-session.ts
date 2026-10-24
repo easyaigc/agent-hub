@@ -1,7 +1,9 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import { setImmediate } from 'node:timers/promises';
-import { AttachmentFiles, AttachmentFileError } from './attachment-files.js';
+import { AttachmentFiles, AttachmentFileError, attachmentFileError } from './attachment-files.js';
+import { realpath } from 'node:fs/promises';
+import { appendRuntimeDiagnostic } from './runtime-diagnostics.js';
 import { localMessagePath, messageLinks } from './message-links.js';
 import {
   permissionModes,
@@ -134,6 +136,7 @@ export class RuntimeError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -176,6 +179,7 @@ interface Thread {
   error: string | null;
   historyCursor?: string | null;
   desktopDirectory?: string;
+  historyDirectory?: string;
   desktopInitializationTurnId?: string;
   desktopCreationProjectId?: string | null;
 }
@@ -185,6 +189,7 @@ interface Step {
 }
 interface Attachment {
   id: string;
+  resourceId?: string;
   hostId: string;
   threadId: string;
   name: string;
@@ -192,6 +197,7 @@ interface Attachment {
   sizeBytes: number;
   sha256: string;
   path: string;
+  desktopMessageLinks?: { messageId: string; reference: string }[];
 }
 interface Message extends Omit<RenderItem, 'paths'> {
   attachments: Omit<Attachment, 'path'>[];
@@ -331,6 +337,7 @@ interface State {
   projects: Project[];
   threads: Thread[];
   attachments: Attachment[];
+  messageFileLinks?: { threadId: string; messageId: string; reference: string; path: string }[];
   receipts: Receipt[];
   creations: Record<string, string>;
   asyncQuestionActions?: Record<
@@ -399,6 +406,7 @@ export class RuntimeSession {
     { fingerprint: string; work: Promise<{ ok: boolean }> }
   >();
   private attachmentFiles = new AttachmentFiles();
+  private attachmentResourceIds = new Map<string, string>();
   private desktopProjections = new Map<
     string,
     {
@@ -433,7 +441,7 @@ export class RuntimeSession {
   // Live events only, bounded to the latest run of each thread; never restored from history.
   private notificationTasks = new Map<string, { runId: string; taskSummary?: string }>();
   private notificationDiscovery = false;
-  private notificationDiscovering = new Set<string>();
+  private desktopDiscovering = new Set<string>();
   private needsCommit = false;
   private closed = false;
   private connectedOnce = false;
@@ -468,6 +476,10 @@ export class RuntimeSession {
       receipts: [],
       creations: {},
     };
+    for (const file of this.state.attachments) {
+      const key = JSON.stringify([file.threadId, file.path]);
+      if (!this.attachmentResourceIds.has(key)) this.attachmentResourceIds.set(key, file.id);
+    }
     this.replyNamespace = replyTarget(this.readingTarget());
     this.persistence.acquireReplyWriter(this.replyNamespace, options.replyCheckpointFile);
     for (const receipt of this.state.receipts) {
@@ -574,7 +586,7 @@ export class RuntimeSession {
     }
     this.runtime.onEvent = (method, params) => {
       if (method === 'desktop/discovered') {
-        void this.discoverNotificationThread(string(params.threadId)).catch(() => undefined);
+        void this.discoverDesktopThread(string(params.threadId)).catch(() => undefined);
       } else this.event(method, params);
     };
     this.runtime.onRequest = (id, method, params) => {
@@ -682,6 +694,8 @@ export class RuntimeSession {
             'reply:delivery-status',
             'attachments:upload',
             'attachments:download',
+            'attachments:resolve-current',
+            'attachments:resolve-message-link',
             'events',
             'stop',
             ...(this.nativeQueue && !this.nativeQueueUnsupported ? ['queue', 'queue:execute'] : []),
@@ -723,6 +737,7 @@ export class RuntimeSession {
           'reply',
           'attachments:upload',
           'attachments:download',
+          'attachments:resolve-current',
           'events',
           'stop',
           'steer',
@@ -817,28 +832,40 @@ export class RuntimeSession {
       this.desktopNotificationNewThreads.clear();
     }
   }
-  private async discoverNotificationThread(threadId: string): Promise<void> {
+  private async discoverDesktopThread(threadId: string): Promise<void> {
     if (
-      !this.notificationDiscovery ||
       this.closed ||
-      this.notificationDiscovering.has(threadId) ||
+      this.desktopDiscovering.has(threadId) ||
       !(this.runtime instanceof DesktopRuntime)
     )
       return;
-    this.notificationDiscovering.add(threadId);
+    // Capture this before follow can grant hasOwner. Optional discovery must
+    // not promote an unknown hint into a known chat after opt-out during await.
+    const known = this.loaded.has(threadId) || this.runtime.ipc.hasOwner(threadId);
+    if (!known && !this.notificationDiscovery) return;
+    this.desktopDiscovering.add(threadId);
     try {
-      // An unknown broadcast is a discovery hint, never ownership or terminal evidence.
+      // A different source is only a hint; the registry verifies the real owner.
       const state = await this.runtime.ipc.follow(threadId, 1000, true);
       if (
-        !this.closed &&
-        this.notificationDiscovery &&
-        state?.id === threadId &&
-        state.hostId === 'local' &&
-        this.runtime.ipc.hasOwner(threadId)
+        this.closed ||
+        state?.id !== threadId ||
+        state.hostId !== 'local' ||
+        !this.runtime.ipc.hasOwner(threadId)
       )
-        await this.open(threadId);
+        return;
+      // Known followers already project via onSnapshot (rich messages only
+      // when loaded). Only opted-in unknown discovery may load another chat.
+      if (!known && this.notificationDiscovery)
+        await this.open(
+          threadId,
+          undefined,
+          undefined,
+          false,
+          () => !this.closed && this.notificationDiscovery,
+        );
     } finally {
-      this.notificationDiscovering.delete(threadId);
+      this.desktopDiscovering.delete(threadId);
     }
   }
   notificationTarget() {
@@ -1067,8 +1094,10 @@ export class RuntimeSession {
     return thread;
   }
   private cleanAttachment(value: Attachment): Omit<Attachment, 'path'> {
-    const { path: _path, ...result } = value;
-    return result;
+    const { path: _path, desktopMessageLinks: _links, ...result } = value;
+    const key = JSON.stringify([value.threadId, value.path]);
+    if (!this.attachmentResourceIds.has(key)) this.attachmentResourceIds.set(key, value.id);
+    return { ...result, resourceId: this.attachmentResourceIds.get(key)! };
   }
 
   private updateReadHead(thread: Thread, reply: Pick<RenderItem, 'id' | 'text' | 'status'>): void {
@@ -1317,6 +1346,7 @@ export class RuntimeSession {
       error: _error,
       codexId: _codexId,
       desktopDirectory: _directory,
+      historyDirectory: _historyDirectory,
       desktopInitializationTurnId: _initialization,
       desktopCreationProjectId: _creationProject,
       notificationLastTurn: _notificationTurn,
@@ -1582,6 +1612,7 @@ export class RuntimeSession {
             permissionMode: _permissionMode,
             speed: _speed,
             desktopDirectory: _directory,
+            historyDirectory: _historyDirectory,
             desktopInitializationTurnId: _initialization,
             desktopCreationProjectId: _creationProject,
             notificationLastTurn: _notificationTurn,
@@ -1655,6 +1686,14 @@ export class RuntimeSession {
             ];
           }),
         );
+        if (
+          messages.reduce(
+            (changed, message) =>
+              this.registerMessageReferences(thread, message, string(complete.cwd)) || changed,
+            false,
+          )
+        )
+          this.saveBackground();
         return {
           hostId: this.hostId,
           threadId,
@@ -1664,10 +1703,16 @@ export class RuntimeSession {
         };
       }
     }
-    return {
-      ...(await runtime.reader.history(threadId, cursor, true)),
-      readTarget: this.readingTarget(),
-    };
+    const page = await runtime.reader.history(threadId, cursor, true);
+    if (
+      page.messages.reduce(
+        (changed, message) =>
+          this.registerMessageReferences(thread, message, page.directory) || changed,
+        false,
+      )
+    )
+      this.saveBackground();
+    return { ...page, readTarget: this.readingTarget() };
   }
   async refreshHistory(threadId: string, cursor?: string, windowed = false) {
     if (
@@ -1697,14 +1742,23 @@ export class RuntimeSession {
       : undefined;
     return this.history(threadId, true, before);
   }
-  async open(threadId: string, cursor?: string, target?: ReplyTarget, windowed = false) {
+  async open(
+    threadId: string,
+    cursor?: string,
+    target?: ReplyTarget,
+    windowed = false,
+    admitUnknown?: () => boolean,
+  ) {
     const pending = this.restoring.get(threadId);
     if (pending) {
       await this.readWithReplyFence(target, () => pending);
-      return cursor ? this.openNow(threadId, cursor, target, windowed) : this.history(threadId);
+      return cursor
+        ? this.openNow(threadId, cursor, target, windowed, admitUnknown)
+        : this.history(threadId);
     }
-    if (this.loaded.has(threadId)) return this.openNow(threadId, cursor, target, windowed);
-    const request = this.openNow(threadId, cursor, target, windowed);
+    if (this.loaded.has(threadId))
+      return this.openNow(threadId, cursor, target, windowed, admitUnknown);
+    const request = this.openNow(threadId, cursor, target, windowed, admitUnknown);
     this.restoring.set(threadId, request);
     try {
       return await this.readWithReplyFence(target, () => request);
@@ -1747,7 +1801,13 @@ export class RuntimeSession {
         this.desktopReceiptHistoryReads.delete(thread.id);
     }
   }
-  private async openNow(threadId: string, cursor?: string, target?: ReplyTarget, windowed = false) {
+  private async openNow(
+    threadId: string,
+    cursor?: string,
+    target?: ReplyTarget,
+    windowed = false,
+    admitUnknown?: () => boolean,
+  ) {
     if (target) this.assertReplyOpen(target);
     this.requireReady();
     const runtime = this.runtime;
@@ -1788,7 +1848,8 @@ export class RuntimeSession {
           !state ||
           state.id !== threadId ||
           state.hostId !== 'local' ||
-          !runtime.ipc.hasOwner(threadId)
+          !runtime.ipc.hasOwner(threadId) ||
+          (admitUnknown && !admitUnknown())
         )
           throw new RuntimeError(404, '对话不属于当前运行时');
         const cwd = string(state.cwd);
@@ -1827,6 +1888,13 @@ export class RuntimeSession {
         if (!cursor) {
           this.desktopHistoryReads.set(threadId, Date.now());
           this.desktopHistoryTips.set(threadId, string(page.messages.at(-1)?.runId));
+          const latest = page.latestTurn;
+          thread.lastTurnStatus =
+            latest &&
+            latest.id === page.messages.at(-1)?.runId &&
+            ['inProgress', 'completed', 'failed', 'interrupted'].includes(latest.status)
+              ? latest.status
+              : undefined;
           this.reconcileReadReceiptEvidence(thread, page.turns ?? []);
           if (
             !page.turns?.length &&
@@ -1847,6 +1915,7 @@ export class RuntimeSession {
             }
           }
         }
+        if (page.directory) thread.historyDirectory = page.directory;
         const previous = thread.messages;
         runtime.ipc.bindObservation(threadId, page.messages);
         if (!state) await runtime.ipc.refreshObservation(threadId);
@@ -1856,10 +1925,42 @@ export class RuntimeSession {
           page.historyMode === 'legacy' &&
           observation?.seeded === true &&
           observation.items.some((v) => v.turnId === this.desktopHistoryTips.get(threadId));
-        const messages = page.messages.map((v) => ({
-          ...v,
-          attachments: previous.find((old) => old.id === v.id)?.attachments ?? [],
-        }));
+        const messages: Message[] = [];
+        for (const value of page.messages) {
+          const message: Message = { ...value, attachments: [] };
+          // History carries newly rendered local links, not the old rewritten
+          // attachment URLs. Inspect them afresh through the same live boundary.
+          await this.projectMessageAttachments(
+            thread,
+            message,
+            messageLinks(message.text).flatMap((link) => {
+              const path = localMessagePath(link.reference);
+              return path ? [path] : [];
+            }),
+            {},
+            page.directory,
+          );
+          // Non-link media (for example an uploaded image) is not present in
+          // the history renderer. Preserve only those existing media entries.
+          const old = previous.find((entry) => entry.id === value.id);
+          const oldLinkIds = new Set(
+            messageLinks(old?.text ?? '').map((link) =>
+              link.reference.replace(/^codex-attachment:\/\//, ''),
+            ),
+          );
+          for (const file of old?.attachments ?? []) {
+            if (
+              !oldLinkIds.has(file.id) &&
+              !message.attachments.some((entry) => entry.id === file.id) &&
+              !(
+                file.resourceId &&
+                message.attachments.some((entry) => entry.resourceId === file.resourceId)
+              )
+            )
+              message.attachments.push(file);
+          }
+          messages.push(message);
+        }
         const ids = new Set(messages.map((v) => v.id));
         const retained = previous.filter((v) => !ids.has(v.id));
         const anchor = previous.findIndex((v) => ids.has(v.id));
@@ -1897,6 +1998,11 @@ export class RuntimeSession {
           thread.speed = undefined;
           this.projectDesktopObservation(thread);
         }
+        // The bounded mobile wait does not cancel desktop discovery. Its live
+        // snapshot may arrive during this slower history/attachment read.
+        // Reapply that verified owner instead of letting the fallback erase it.
+        const current = !cursor && runtime.ipc.hasOwner(threadId) && runtime.ipc.state(threadId);
+        if (current) await this.desktopSnapshot(thread, current);
       }
       this.loaded.add(threadId);
       await this.refreshNativeQueue(threadId);
@@ -2949,6 +3055,11 @@ export class RuntimeSession {
         : []),
     ];
   }
+  private attachmentExactPaths(threadId: string): string[] {
+    return this.state.attachments
+      .filter((file) => file.threadId === threadId && file.desktopMessageLinks?.length)
+      .map((file) => file.path);
+  }
   async download(threadId: string, id: string) {
     const thread = this.thread(threadId);
     const file = this.state.attachments.find((v) => v.id === id && v.threadId === threadId);
@@ -2958,10 +3069,72 @@ export class RuntimeSession {
         file.path,
         this.attachmentRoots(thread),
         file.sha256,
+        this.attachmentExactPaths(threadId),
+        !!file.desktopMessageLinks?.length,
       );
       return { file: this.cleanAttachment(file), data };
     } catch (error) {
-      if (error instanceof AttachmentFileError) throw new RuntimeError(error.status, error.message);
+      appendRuntimeDiagnostic(
+        this.options.directory,
+        {
+          scope: 'attachment',
+          stage: 'download',
+          hostId: this.hostId,
+          threadId,
+          resourceId: id,
+          path: file.path,
+        },
+        error,
+      );
+      if (error instanceof AttachmentFileError)
+        throw new RuntimeError(error.status, error.message, error.code);
+      throw error;
+    }
+  }
+  async resolveAttachment(threadId: string, id: string) {
+    const thread = this.thread(threadId);
+    const source = this.state.attachments.find((v) => v.id === id && v.threadId === threadId);
+    if (!source) throw new RuntimeError(404, '附件不属于当前对话');
+    try {
+      // Resolve only an already registered path. Never change the old version or input receipt.
+      const metadata = await this.attachmentFiles.inspect(
+        source.path,
+        this.attachmentRoots(thread),
+        this.attachmentExactPaths(threadId),
+        !!source.desktopMessageLinks?.length,
+      );
+      let current = this.state.attachments.find(
+        (v) => v.threadId === threadId && v.path === metadata.path && v.sha256 === metadata.sha256,
+      );
+      if (!current) {
+        current = { ...source, ...metadata, id: randomUUID() };
+        this.state.attachments.push(current);
+        this.save();
+      }
+      return {
+        hostId: this.hostId,
+        threadId,
+        sourceAttachmentId: id,
+        readTarget: this.readingTarget(),
+        attachment: this.cleanAttachment(current),
+      };
+    } catch (error) {
+      appendRuntimeDiagnostic(
+        this.options.directory,
+        {
+          scope: 'attachment',
+          stage: 'resolve-current',
+          hostId: this.hostId,
+          threadId,
+          resourceId: id,
+          path: source.path,
+        },
+        error,
+      );
+      if (error instanceof AttachmentFileError)
+        throw new RuntimeError(error.status, error.message, error.code);
+      if (['ENOENT', 'ENOTDIR'].includes(String(object(error).code)))
+        throw new RuntimeError(404, '文件不存在或已被移除');
       throw error;
     }
   }
@@ -3008,55 +3181,225 @@ export class RuntimeSession {
       indexes?.set(message.id, thread.messages.length);
       thread.messages.push(message);
     }
+    await this.projectMessageAttachments(thread, message, rendered.paths, item);
+  }
+
+  private registerMessageReferences(
+    thread: Thread,
+    message: Pick<Message, 'id' | 'role' | 'kind' | 'text'>,
+    directory?: string,
+    parsedLinks?: ReturnType<typeof messageLinks>,
+  ): boolean {
+    if (
+      !(this.runtime instanceof DesktopRuntime) ||
+      message.role !== 'assistant' ||
+      message.kind !== 'agentMessage'
+    )
+      return false;
+    const root =
+      directory && isAbsolute(directory)
+        ? directory
+        : (thread.desktopDirectory ??
+          thread.historyDirectory ??
+          this.state.projects.find((p) => p.id === thread.projectId)?.roots[0] ??
+          this.options.root);
+    let changed = false;
+    for (const link of parsedLinks ??
+      (message.text.includes('](') ? messageLinks(message.text) : [])) {
+      const local = localMessagePath(link.reference);
+      if (!local) continue;
+      const sources = (this.state.messageFileLinks ??= []);
+      if (
+        sources.some(
+          (entry) =>
+            entry.threadId === thread.id &&
+            entry.messageId === message.id &&
+            entry.reference === link.reference,
+        )
+      )
+        continue;
+      sources.push({
+        threadId: thread.id,
+        messageId: message.id,
+        reference: link.reference,
+        path: resolve(root, local),
+      });
+      if (sources.length > 4096) sources.shift();
+      changed = true;
+    }
+    return changed;
+  }
+
+  private async registerMessageFile(
+    thread: Thread,
+    messageId: string,
+    requested: string,
+    reference?: string,
+  ): Promise<Attachment> {
+    try {
+      let exactPath: string | undefined;
+      if (reference !== undefined) {
+        const previous = this.state.attachments.find(
+          (file) =>
+            file.threadId === thread.id &&
+            file.desktopMessageLinks?.some(
+              (link) => link.messageId === messageId && link.reference === reference,
+            ),
+        );
+        exactPath = previous?.path ?? (await realpath(requested));
+        if ((await realpath(requested)) !== exactPath)
+          throw new AttachmentFileError(
+            403,
+            '文件链接的真实目标已变化，请在电脑上核对原消息',
+            'RESOURCE_TARGET_CHANGED',
+          );
+      }
+      const metadata = await this.attachmentFiles.inspect(requested, this.attachmentRoots(thread), [
+        ...this.attachmentExactPaths(thread.id),
+        ...(exactPath ? [exactPath] : []),
+      ]);
+      if (exactPath && metadata.path !== exactPath)
+        throw new AttachmentFileError(
+          403,
+          '文件链接的真实目标已变化，请在电脑上核对原消息',
+          'RESOURCE_TARGET_CHANGED',
+        );
+      let file = this.state.attachments.find(
+        (entry) =>
+          entry.threadId === thread.id &&
+          entry.path === metadata.path &&
+          entry.sha256 === metadata.sha256,
+      );
+      if (!file) {
+        const media: Record<string, string> = {
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.webp': 'image/webp',
+          '.pdf': 'application/pdf',
+          '.txt': 'text/plain',
+          '.md': 'text/markdown',
+        };
+        file = {
+          id: randomUUID(),
+          hostId: this.hostId,
+          threadId: thread.id,
+          ...metadata,
+          name: basename(metadata.path),
+          mediaType: media[extname(metadata.path).toLowerCase()] ?? 'application/octet-stream',
+        };
+        this.state.attachments.push(file);
+      }
+      if (
+        reference !== undefined &&
+        !file.desktopMessageLinks?.some(
+          (link) => link.messageId === messageId && link.reference === reference,
+        )
+      )
+        (file.desktopMessageLinks ??= []).push({ messageId, reference });
+      return file;
+    } catch (error) {
+      throw attachmentFileError(error);
+    }
+  }
+
+  async resolveMessageFile(threadId: string, messageId: string, reference: string) {
+    const thread = this.thread(threadId);
+    if (!(this.runtime instanceof DesktopRuntime))
+      throw new RuntimeError(409, '当前运行时不支持原消息文件解析', 'MESSAGE_FILE_UNSUPPORTED');
+    const local = localMessagePath(reference);
+    if (!local || reference.length > 8192)
+      throw new RuntimeError(400, '不是有效的电脑文件链接', 'INVALID_FILE_LINK');
+    const message = thread.messages.find((message) => message.id === messageId);
+    if (message) this.registerMessageReferences(thread, message);
+    const source = this.state.messageFileLinks?.find(
+      (entry) =>
+        entry.threadId === threadId &&
+        entry.messageId === messageId &&
+        localMessagePath(entry.reference) === local,
+    );
+    if (!source)
+      throw new RuntimeError(
+        403,
+        '文件链接不属于这条电脑助手消息，请刷新原对话后重试',
+        'MESSAGE_LINK_MISMATCH',
+      );
+    try {
+      const file = await this.registerMessageFile(thread, messageId, source.path, source.reference);
+      this.save();
+      return {
+        hostId: this.hostId,
+        threadId,
+        messageId,
+        reference,
+        readTarget: this.readingTarget(),
+        attachment: this.cleanAttachment(file),
+      };
+    } catch (error) {
+      const fileError = attachmentFileError(error);
+      appendRuntimeDiagnostic(
+        this.options.directory,
+        {
+          scope: 'attachment',
+          stage: 'resolve-message-link',
+          hostId: this.hostId,
+          threadId,
+          messageId,
+          path: source.path,
+        },
+        fileError,
+      );
+      throw new RuntimeError(fileError.status, fileError.message, fileError.code);
+    }
+  }
+
+  private async projectMessageAttachments(
+    thread: Thread,
+    message: Message,
+    paths: string[],
+    item: unknown,
+    directory?: string,
+  ): Promise<void> {
+    const links = messageLinks(message.text);
+    this.registerMessageReferences(thread, message, directory, links);
+    const attachments = message.attachments;
+    const root =
+      directory ??
+      thread.desktopDirectory ??
+      this.state.projects.find((project) => project.id === thread.projectId)?.roots[0] ??
+      this.options.root;
     const resolvedPaths = new Map<string, string>();
-    for (const path of rendered.paths) {
+    for (const path of paths) {
       try {
-        const project = this.state.projects.find((p) => p.id === thread.projectId);
-        const requested = resolve(
-          thread.desktopDirectory ?? project?.roots[0] ?? this.options.root,
-          path,
-        );
-        const {
-          path: actual,
-          sizeBytes,
-          sha256,
-        } = await this.attachmentFiles.inspect(requested, this.attachmentRoots(thread));
-        resolvedPaths.set(requested, actual);
-        let attachment = this.state.attachments.find(
-          (v) => v.threadId === thread.id && v.path === actual && v.sha256 === sha256,
-        );
-        if (!attachment) {
-          const ext = extname(actual).toLowerCase();
-          const mediaType =
-            (
-              {
-                '.png': 'image/png',
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.webp': 'image/webp',
-                '.pdf': 'application/pdf',
-                '.txt': 'text/plain',
-                '.md': 'text/markdown',
-              } as Record<string, string>
-            )[ext] ?? 'application/octet-stream';
-          attachment = {
-            id: randomUUID(),
-            hostId: this.hostId,
-            threadId: thread.id,
-            path: actual,
-            name: basename(actual),
-            sha256,
-            sizeBytes,
-            mediaType,
-          };
-          this.state.attachments.push(attachment);
-        }
+        const requested = resolve(root, path);
+        const reference =
+          this.runtime instanceof DesktopRuntime &&
+          message.role === 'assistant' &&
+          message.kind === 'agentMessage'
+            ? links.find((link) => {
+                const local = localMessagePath(link.reference);
+                return local && resolve(root, local) === requested;
+              })?.reference
+            : undefined;
+        const attachment = await this.registerMessageFile(thread, message.id, requested, reference);
+        resolvedPaths.set(requested, attachment.path);
         if (!attachments.some((v) => v.id === attachment.id))
           attachments.push(this.cleanAttachment(attachment));
       } catch (error) {
-        /* Unsupported, outside authorized roots, or nonexistent: no arbitrary download. */
+        appendRuntimeDiagnostic(
+          this.options.directory,
+          {
+            scope: 'attachment',
+            stage: 'register',
+            hostId: this.hostId,
+            threadId: thread.id,
+            messageId: message.id,
+            path: resolve(root, path),
+          },
+          error,
+        );
         if (error instanceof AttachmentFileError && error.status === 503)
-          throw new RuntimeError(error.status, error.message);
+          throw new RuntimeError(error.status, error.message, error.code);
       }
     }
     const wire = object(item);
@@ -3065,7 +3408,7 @@ export class RuntimeSession {
       ...list(wire.contentItems),
       ...list(wire.output),
     ].map(object);
-    if (rendered.kind === 'imageGeneration' && typeof wire.result === 'string')
+    if (message.kind === 'imageGeneration' && typeof wire.result === 'string')
       media.push({ type: 'image', data: wire.result, mimeType: 'image/png' });
     for (const entry of media) {
       if (entry.type !== 'image') continue;
@@ -3096,7 +3439,7 @@ export class RuntimeSession {
       );
       if (!attachment) {
         const id = randomUUID();
-        const name = `image-${rendered.id.replace(/[^a-z0-9-]/gi, '').slice(0, 48)}.${mediaType === 'image/jpeg' ? 'jpg' : mediaType.split('/')[1]}`;
+        const name = `image-${message.id.replace(/[^a-z0-9-]/gi, '').slice(0, 48)}.${mediaType === 'image/jpeg' ? 'jpg' : mediaType.split('/')[1]}`;
         const path = join(this.options.directory, 'attachments', id + extname(name));
         await writeFile(path, bytes, { mode: 0o600 });
         attachment = {
@@ -3114,11 +3457,7 @@ export class RuntimeSession {
       if (!attachments.some((v) => v.id === attachment.id))
         attachments.push(this.cleanAttachment(attachment));
     }
-    const root =
-      thread.desktopDirectory ??
-      this.state.projects.find((p) => p.id === thread.projectId)?.roots[0] ??
-      this.options.root;
-    for (const link of messageLinks(message.text).reverse()) {
+    for (const link of [...links].reverse()) {
       const local = localMessagePath(link.reference);
       if (!local) continue;
       const path = resolvedPaths.get(resolve(root, local));
@@ -3535,7 +3874,7 @@ export class RuntimeSession {
       !this.nativeQueue ||
       !this.nativeQueueThread(threadId) ||
       this.nativeQueueUnsupported ||
-      this.notificationDiscovering.has(threadId) ||
+      this.desktopDiscovering.has(threadId) ||
       !this.loaded.has(threadId) ||
       this.closed ||
       !this.ready ||

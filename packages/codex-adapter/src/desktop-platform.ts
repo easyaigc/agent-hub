@@ -535,6 +535,7 @@ export function windowsAdapterDigest(): string {
     'desktop-suggestion-read-worker.js',
     'desktop-suggestion-worker-client.js',
     'desktop-suggestion-worker-limits.js',
+    'windows-trace-diagnostics.js',
     'desktop-ipc.js',
     'desktop-framing.js',
     'runtime-session.js',

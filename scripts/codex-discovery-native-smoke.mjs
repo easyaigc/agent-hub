@@ -76,6 +76,16 @@ const service = await startDirectDiscovery({
       return;
     }
     res.writeHead(200, { 'content-type': 'application/json' });
+    if (req.url.startsWith('/v1/connection-routes?')) {
+      res.end(
+        JSON.stringify({
+          version: 1,
+          target,
+          httpsEndpoints: ['https://fixture.tail.ts.net:8443'],
+        }),
+      );
+      return;
+    }
     res.end(
       JSON.stringify({
         hostId: 'host',
@@ -100,6 +110,7 @@ const uri =
   Buffer.from(JSON.stringify({ ...descriptor, token })).toString('base64url');
 try {
   const declarations = [
+    block(host, 'enum NativeReadAcceptanceTiming {'),
     block(shared, 'struct AgentAccount:'),
     block(shared, 'struct AgentRuntimeTarget:'),
     block(client, 'struct AgentConnectionCandidate:'),
@@ -139,6 +150,7 @@ ${block(host, '  static func baseURL(')}
 ${block(host, '  static func request(')}
 ${block(host, '  static func hash(')}
 }
+${block(host, 'enum NativeReadAcceptanceTiming {')}
 @main struct Check {
 static func main() async throws {
 let offer = try CodexHostDescriptor.parse(${JSON.stringify(uri)})
@@ -152,6 +164,7 @@ precondition(candidates.count == 4 && Set(candidates.map { $0.id }).count == 4)
 let endpoint = offer.endpoints[0]
 let connected = try await CodexDiscoveryAPI.connect(${JSON.stringify(uri)}, name: "Native")
 precondition(connected.1.codexDirect!.candidates.count == 4)
+precondition(connected.1.codexDirect!.systemEndpoints == ["https://fixture.tail.ts.net:8443"])
 precondition(connected.2.readTarget == offer.target)
 let value = try await CodexDiscoveryAPI.read(endpoint, fingerprint: offer.fingerprint, target: offer.target)
 precondition(value.target == offer.target)
@@ -159,9 +172,16 @@ let discovered = try await CodexDiscoveryAPI.read(endpoint, fingerprint: nil, ta
 precondition(discovered.target == offer.target && discovered.fingerprint == offer.fingerprint)
 let unpaired = try await CodexDiscoveryAPI.readPeers(endpoint, fingerprint: discovered.fingerprint, target: discovered.target)
 precondition(unpaired.peers.count == 1)
-let automatic = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.target.hostId, name: "Automatic")
+for key in ["", "wrong-host-key-with-at-least-32-characters"] {
+do { _ = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.target.hostId, name: "Authorized", hostKey: key); fatalError("Missing or wrong Host Key accepted") } catch {}
+}
+let automatic = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.target.hostId, name: "Authorized", hostKey: offer.token!)
 precondition(automatic.2.readTarget == offer.target && automatic.0.token != offer.token)
-let recovered = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.target.hostId, name: "Automatic")
+var staleTarget = offer.target; staleTarget.runtimeId = "other"
+let stale = CodexDirectConnection(target: staleTarget, candidates: [], fingerprint: offer.fingerprint)
+do { _ = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.target.hostId, name: "Reauthorize", hostKey: offer.token!, expected: stale); fatalError("Changed saved target accepted") } catch {}
+precondition(automatic.1.codexDirect!.systemEndpoints == ["https://fixture.tail.ts.net:8443"])
+let recovered = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.target.hostId, name: "Authorized", hostKey: offer.token!)
 precondition(recovered.0.token == automatic.0.token)
 do { _ = try await CodexDiscoveryAPI.read(endpoint, fingerprint: String(repeating: "0", count: 64), target: offer.target); fatalError("Wrong pin accepted") } catch {}
 var other = offer.target; other.runtimeId = "wrong"
@@ -215,12 +235,12 @@ print("Codex native QR, all paths, pins, identity, URL boundary and one submitte
   );
   const result = await execute(binary, [], { timeout: 60000 });
   assert.equal(writes, 1);
-  assert.equal(reads, 3);
+  assert.equal(reads, 6);
   console.log(
     JSON.stringify({
       passed: true,
       writes,
-      workspaceReads: reads,
+      authenticatedReads: reads,
       native: result.stdout.trim(),
       evidence: 'auxiliary actual Swift/Foundation code; no desktop model or physical VPN',
     }),

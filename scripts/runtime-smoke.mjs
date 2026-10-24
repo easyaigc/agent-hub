@@ -126,6 +126,7 @@ Object.assign(process.env, {
   HOST_AGENT_DISCOVERY_PORT: '0',
   HOST_AGENT_DISCOVERY_BIND: '127.0.0.1',
   HOST_AGENT_DISCOVERY_BONJOUR: '0',
+  HOST_AGENT_HTTPS_ENDPOINTS: '["https://fixture.tail.ts.net:8443"]',
 });
 let service;
 let endpoint;
@@ -163,6 +164,17 @@ try {
   await api('/v1/workspace', undefined, 401, 'wrong');
   const workspace = await api('/v1/workspace');
   hostId = workspace.hostId;
+  const routesPath = '/v1/connection-routes?hostId=' + hostId;
+  await api(routesPath, undefined, 401, 'wrong');
+  await api('/v1/connection-routes?hostId=other', undefined, 400);
+  await api(routesPath + '&hostId=' + hostId, undefined, 400);
+  await api(routesPath + '&unknown=1', undefined, 400);
+  const routes = await api(routesPath);
+  assert.deepEqual(routes, {
+    version: 1,
+    target: workspace.readTarget,
+    httpsEndpoints: ['https://fixture.tail.ts.net:8443'],
+  });
   const suggestionQuery = new URLSearchParams({
     hostId,
     threadId: '00000000-0000-4000-8000-000000000001',
@@ -194,7 +206,11 @@ try {
           path: '/connection/claim',
           method: 'POST',
           rejectUnauthorized: false,
-          headers: { 'content-type': 'application/json', ...headers },
+          headers: {
+            'content-type': 'application/json',
+            authorization: 'Bearer ' + token,
+            ...headers,
+          },
         },
         (res) => {
           let value = '';
@@ -206,6 +222,8 @@ try {
       req.end(JSON.stringify(payload));
     });
   assert.equal((await connect(claim, { Origin: 'https://untrusted.example' })).status, 403);
+  assert.equal((await connect(claim, { authorization: '' })).status, 401);
+  assert.equal((await connect(claim, { authorization: 'Bearer wrong-host-key' })).status, 401);
   assert.equal(
     (await connect({ ...claim, target: { ...claim.target, runtimeId: 'other' } })).status,
     409,

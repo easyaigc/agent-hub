@@ -268,3 +268,13 @@ pnpm test:desktop:controller:ios
 手机模型／强度与权限入口位于输入栏，旧 Host 未声明 `generation-settings` 时隐藏。设置按电脑和聊天保存在草稿；发送或创建首条时固定选择，后续切换目标不会改变已提交内容。请求批准、帮我批准与完全访问均映射当前桌面真实预设。选择跟随电脑会移除手机覆盖；正在执行的补充指令沿用当前任务，原生排队也沿用当前桌面设置，不能表示的覆盖明确拒绝。模型目录读取、协议 fixture 和模拟器专项与真实桌面任务／物理 iPhone 验收分开记录。
 
 任务通知配置、签名、APNs 独立服务与加密迁移见 [任务通知与铃声](notifications.md)。未配置 APNs 时仅覆盖前台；后台和锁屏必须用正式签名 iPhone 实测。Host 升级保留私有通知状态与原身份，不能复制到另一台电脑。
+
+### Windows 原会话打开前的元数据同步
+
+独立元数据连接确认取消归档，不代表原桌面已清除归档抑制或装载原会话。Windows 的显式已有会话打开在无原 owner 时，读取同一 Host 的新鲜完整官方目录；只有唯一准确目标明确未归档，才发送固定 `thread-unarchived` v1 提示（`hostId=local`、准确 `conversationId`），然后使用既有 URI。提示成功不代表打开成功，仍需准确原 owner 的新鲜完整快照；查询旧未知操作不重发提示或导航。其他平台保持原路径。该兼容处理不启动额外执行器、不做归档循环，2026-10-23 新包的真实 Windows 原 A/B 专项通过：B 从 fresh 无 owner 经一次产品打开恢复，同连接 A/B 的原 owner、完整 canonical 快照及原一轮一输入摘要均匹配，Main 独立核对通过。结果只覆盖独立产品桥接路径，正式 Host 未部署新版，不能替代 Trace 业务矩阵或手机验收。
+
+## Codex 局域网与原 HTTPS 双通道
+
+默认双通道，Tailscale 是在外远控的可选依赖；纯局域网无需 VPN。两条路使用同一 Host、授权、草稿和回执。安装流程把实测 Serve 根地址 JSON 数组保存到 `HOST_AGENT_HTTPS_ENDPOINTS`；服务通过鉴权 `GET /v1/connection-routes?hostId=<准确 ID>` 交付严格 v1 路径快照，旧 `/host` 不变。手机保留旧 Serve 地址，局域网固定证书与 Serve 系统信任分开；前台健康路径保留，失败后自动换到同目标可达入口，未知写请求只核对原回执。详见 [网络接入](../skills/codex-host-connect/references/network.md)，逐平台及跨机真实结果另记。
+
+Windows 双通道配置沿 service → 私有配置 → worker 的严格环境边界传递；三处必须同时接受 `HOST_AGENT_HTTPS_ENDPOINTS`。未知字段和非字符串仍拒绝，Host 再验证根地址与数量，不能通过放开整个环境来修复。Windows 原生首次验收发现白名单缺项，原包未切入该机正式服务；修复后统一新包逐机复验，原失败记录保留。

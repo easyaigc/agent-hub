@@ -666,7 +666,13 @@ test('offline/recovery fences prohibit runtime start, and maintenance cannot def
   try {
     for (const file of ['offline-only.json', 'restore-fence.json', 'maintenance.json']) {
       await save(join(root, file), { version: 1 });
-      await assert.rejects(execute({ action: 'start', state: root }), /start is fenced/);
+      await assert.rejects(assertStartAllowed(root), /start is fenced/);
+      await assert.rejects(
+        execute({ action: 'start', state: root }),
+        process.platform === 'darwin'
+          ? /start is fenced/
+          : /Primary install\/start\/upgrade supports macOS only/,
+      );
       const partial = await execute({ action: 'status', state: root });
       assert.equal(partial.partialInstallation, true);
       assert.equal(partial.primaryEligibility, 'fenced');

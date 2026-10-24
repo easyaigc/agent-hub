@@ -59,7 +59,11 @@ final class SessionStore: ObservableObject {
   private var workspaceRefreshGeneration: UUID?
   private var workspaceRefreshOwner: UUID?
   private var pendingManualHistoryRefresh: (client: UUID, history: UUID)?
+
+private var userRequestedWorkspaceGeneration: UUID?
   private var latestHistoryReads: [String: UUID] = [:]
+  private var earlierHistoryReads: [String: UUID] = [:]
+  private var unreadProjectionTask: Task<Void, Never>?
   private var eventRecoveryTask: Task<Void, Never>?
   private var replyRecoveryTask: Task<Void, Never>?
   private var replyRecoveryGeneration: UUID?
@@ -120,6 +124,7 @@ final class SessionStore: ObservableObject {
   private var codexStorageContexts: [String: AgentRuntimeTarget] = [:]
   private var codexReadingIndexKeys: Set<String> = []
   private var codexReadingIndex = CodexMachineStorage.ReadingKeyIndex()
+  private var codexReadingMemo = CodexMachineStorage.ReadingKeyMemo()
   private let unreadReconciler = MobileUnreadReconciler()
 
   #if DEBUG
@@ -307,6 +312,18 @@ final class SessionStore: ObservableObject {
     }
     if let hostId = saved.selectedClientId { restoreSelection(hostId) }
     #if DEBUG
+    if testMode && ProcessInfo.processInfo.arguments.contains("-history-short-paging-fixture") {
+      saved.history[targetKey] = (0..<72).map { index in
+        ChatMessage(id: "short-history-\(index)", role: "user", text: String(format: "HISTORY_SHORT_%03d", index))
+      }
+    }
+    if testMode && ProcessInfo.processInfo.arguments.contains("-history-scroll-fixture") {
+      let paragraph = "历史滑动回归：这是包含 **强调**、`代码` 和 [链接](https://example.com) 的长回复。内容应当完整保留，连续阅读时不能因为界面状态刷新而反复计算全部历史。"
+      saved.history[targetKey] = (0..<2400).map { index in
+        ChatMessage(id: "scroll-history-\(index)", role: index % 3 == 0 ? "user" : "assistant",
+          text: index % 3 == 0 ? "HISTORY_SCROLL_\(index)" : "## HISTORY_SCROLL_\(index)\n\n" + Array(repeating: paragraph, count: 12).joined(separator: "\n\n") + "\n\n```swift\nlet value = 42\n```\n\n| 项目 | 状态 |\n| --- | --- |\n| 历史 | 完整 |", status: "completed")
+      }
+    }
     if typingFixture && !ProcessInfo.processInfo.arguments.contains("-restore-testing") {
       saved.history[targetKey] = (0..<2400).map { index in
         ChatMessage(id: "typing-history-\(index)", role: "assistant", text: index < 2340 ? String(repeating: "Large cached conversation for native input performance. ", count: 80) : L10n.tr("已完成的验收历史 \(index)"), status: "completed")
@@ -331,7 +348,10 @@ final class SessionStore: ObservableObject {
     }
   }
 
-  var client: Client? { saved.clients.first { $0.id == saved.selectedClientId } }
+  var client: Client? {
+    let id = saved.selectedClientId
+    return saved.clients.first { $0.id == id }
+  }
 
   struct VoiceReadinessScope: Hashable {
     let generation: UUID
@@ -502,31 +522,45 @@ final class SessionStore: ObservableObject {
         + DemoData.threads.filter { $0.hostId == client.id && !(saved.demoArchivedThreadIds ?? []).contains($0.id) }
       : saved.workspaces[client.id]?.threads ?? []
   }
-  var conversation: Conversation? { threads.first { $0.id == selectedThreadId } }
+  var conversation: Conversation? {
+    let id = selectedThreadId
+    return threads.first { $0.id == id }
+  }
 
+  private struct ReadingKeyContext {
+    let canonical: AgentRuntimeTarget
+    let machine: AgentRuntimeTarget
+    init(_ host: Client, workspace: WorkspaceSnapshot?) {
+      let fallback = AgentRuntimeTarget(agentId: workspace?.clientType?.id ?? "codex",
+        hostId: host.id, workspaceId: host.id, runtimeId: workspace?.connectionMode ?? "unknown")
+      canonical = host.agentConnection?.target ?? workspace?.readTarget ?? host.codexDirect?.target ?? fallback
+      machine = host.agentConnection?.target ?? host.codexDirect?.target ?? workspace?.readTarget ?? fallback
+    }
+  }
   private func readingKey(_ host: Client, threadId: String?) -> String {
-    let workspace = saved.workspaces[host.id]
-    let target = host.agentConnection?.target ?? workspace?.readTarget ?? host.codexDirect?.target
-    let canonical = ReadingIdentity.key(agentId: target?.agentId ?? workspace?.clientType?.id ?? "codex",
-      authority: target?.account?.authority, subject: target?.account?.subject,
-      hostId: target?.hostId ?? host.id, workspaceId: target?.workspaceId ?? host.id,
-      runtimeId: target?.runtimeId ?? workspace?.connectionMode ?? "unknown", threadId: threadId)
-    let machine = mobileReadingTarget(host)
-    guard machine.agentId == "codex" else { return canonical }
+    let state = saved
+    return readingKey(host, threadId: threadId,
+      context: ReadingKeyContext(host, workspace: state.workspaces[host.id]), state: state)
+  }
+  private func readingKey(_ host: Client, threadId: String?, context: ReadingKeyContext, state: SavedSession, readingIndex: CodexMachineStorage.ReadingKeyIndex? = nil) -> String {
+    func canonicalKey() -> String {
+      SharedMobileRules.nativeReadingKey(context.canonical, threadId: threadId)
+    }
+    guard context.machine.agentId == "codex" else { return canonicalKey() }
+    let index = readingIndex ?? codexReadingIndex
+    let value = codexReadingMemo.value(hostId: host.id, target: context.canonical, candidate: context.machine, threadId: threadId) {
+      let canonical = canonicalKey(), candidate = SharedMobileRules.machineReadingKey(context.machine, threadId: threadId)
+      return .init(canonical: canonical, candidate: candidate,
+        selected: index.preferredKey(canonical, candidateKey: candidate))
+    }
     // New canonical records take precedence immediately, including records added
     // during reconciliation before the next persistence snapshot rebuilds the index.
-    let machineKey = SharedMobileRules.machineReadingKey(machine, threadId: threadId)
-    if canonical == machineKey,
-      saved.mobileReads?[machineKey] != nil || saved.mobileReadBaselines?[machineKey] != nil {
-      return SharedMobileRules.preferredRuntimeKey(canonical, candidates: [machineKey])
+    return value.preferredKey {
+      state.mobileReads?[value.candidate] != nil || state.mobileReadBaselines?[value.candidate] != nil
     }
-    return codexReadingIndex.preferredKey(canonical, candidateKey: machineKey)
   }
   func mobileReadingTarget(_ host: Client) -> AgentRuntimeTarget {
-    let workspace = saved.workspaces[host.id]
-    return host.agentConnection?.target ?? host.codexDirect?.target ?? workspace?.readTarget ?? AgentRuntimeTarget(
-      agentId: workspace?.clientType?.id ?? "codex", hostId: host.id, workspaceId: host.id,
-      runtimeId: workspace?.connectionMode ?? "unknown")
+    ReadingKeyContext(host, workspace: saved.workspaces[host.id]).machine
   }
   private func readingClient(_ host: Client) -> Client {
     var result = host
@@ -703,46 +737,81 @@ final class SessionStore: ObservableObject {
     #endif
     if !transient && displayError && client?.id == host.id { presentError(failure) }
   }
-  private func unreadReply(_ thread: Conversation, host: Client) -> Bool {
-    guard let state = thread.readState, state.version == 1 else { return thread.hasUnreadTurn == true }
-    let key = readingKey(host, threadId: thread.id)
-    guard let record = saved.mobileReads?[key] else {
-      guard let baseline = saved.mobileReadBaselines?[key] else { return thread.showsUnreadDot }
-      return baseline.unread || state.latest.revision > baseline.position.revision || state.latest.contentVersion != baseline.position.contentVersion
-    }
-    if record.position == state.latest || record.position.revision > state.latest.revision { return false }
-    return true
-  }
-  func synchronizeMobileUnread() {
-    guard !localRecoveryRequired else { return }
-    let hosts = saved.clients.filter { !$0.isDemo }
-    let snapshots = hosts.flatMap { host in
-      (saved.workspaces[host.id]?.threads ?? []).map { thread in
-        let target = mobileReadingTarget(host)
+  private func mobileUnreadSnapshots() async throws -> (scopes: [AgentRuntimeTarget], snapshots: [MobileUnreadSnapshot]) {
+    // Keep one frozen input across batches; newer work cancels this projection.
+    let state = saved
+    let readingIndex = codexReadingIndex
+    let hosts = state.clients.filter { !$0.isDemo }
+    var scopes: [AgentRuntimeTarget] = []
+    var snapshots: [MobileUnreadSnapshot] = []
+    #if DEBUG
+    var batchStart = HistoryScrollProbe.workStart()
+    defer { HistoryScrollProbe.workEnd(1, batchStart) }
+    #endif
+    try Task.checkCancellation()
+    for host in hosts {
+      let workspace = state.workspaces[host.id]
+      let context = ReadingKeyContext(host, workspace: workspace)
+      scopes.append(context.machine)
+      for thread in workspace?.threads ?? [] {
+        // Bulk directory projection must not occupy one uninterrupted frame.
+        // A brief suspension lets native scrolling/layout run between batches.
+        if !snapshots.isEmpty && snapshots.count.isMultiple(of: 32) {
+          #if DEBUG
+          HistoryScrollProbe.workEnd(1, batchStart)
+          batchStart = nil
+          #endif
+          try await Task.sleep(for: .milliseconds(1))
+          #if DEBUG
+          batchStart = HistoryScrollProbe.workStart()
+          #endif
+        }
+        let key = readingKey(host, threadId: thread.id, context: context, state: state, readingIndex: readingIndex)
+        let record = state.mobileReads?[key]
         let latest = thread.readState?.latest
         var localReply: (messageId: String, contentVersion: String)?
-        if latest == nil, let reply = saved.history[cacheKey(host, threadId: thread.id)]?.last(where: {
+        if latest == nil, let reply = state.history[cacheKey(host, threadId: thread.id,
+          state: state, machine: context.machine)]?.last(where: {
           $0.role == "assistant" && !["inProgress", "running", "streaming", "unknown"].contains($0.status ?? "completed")
         }) {
           localReply = (reply.id, ReadPosition.contentVersion(messageId: reply.id, text: reply.text, status: reply.status ?? "completed"))
         }
-        return MobileUnreadSnapshot(target: target, threadId: thread.id,
-          latest: latest, read: saved.mobileReads?[readingKey(host, threadId: thread.id)]?.position,
-          unread: unreadReply(thread, host: host), localReply: localReply)
+        snapshots.append(MobileUnreadSnapshot(target: context.machine, threadId: thread.id,
+          latest: latest, read: record?.position,
+          unread: ReadingReconciliation.unread(state: thread.readState, legacyUnread: thread.hasUnreadTurn == true,
+            fallbackUnread: thread.showsUnreadDot, record: record, baseline: state.mobileReadBaselines?[key]),
+          localReply: localReply))
       }
     }
+    return (scopes, snapshots)
+  }
+  func synchronizeMobileUnread() {
+    unreadProjectionTask?.cancel()
+    guard !localRecoveryRequired else { return }
     let backgroundSave: SessionBackgroundSave? = UIApplication.shared.applicationState == .active
       ? nil : SessionBackgroundSave()
     backgroundSave?.start()
-    unreadReconciler.submit(scopes: hosts.map(mobileReadingTarget), snapshots: snapshots) { [weak self] result in
-      Task { @MainActor in
-        defer { backgroundSave?.finish() }
-        guard let self else { return }
-        if case .failure(let failure) = result {
-          self.error = (failure as? MobileUnreadPersistenceError)?.description
-            ?? L10n.tr("无法保存手机阅读状态，已有记录已保留，请稍后重试。")
+    unreadProjectionTask = Task { @MainActor [weak self] in
+      guard let self else { backgroundSave?.finish(); return }
+      do {
+        let projection = try await mobileUnreadSnapshots()
+        try Task.checkCancellation()
+        guard !localRecoveryRequired else { backgroundSave?.finish(); return }
+        unreadReconciler.submit(scopes: projection.scopes, snapshots: projection.snapshots) { [weak self] result in
+          Task { @MainActor in
+            defer { backgroundSave?.finish() }
+            guard let self else { return }
+            if case .failure(let failure) = result {
+              self.error = (failure as? MobileUnreadPersistenceError)?.description
+                ?? L10n.tr("无法保存手机阅读状态，已有记录已保留，请稍后重试。")
+            }
+            TaskNotificationController.shared.updateBadge()
+          }
         }
-        TaskNotificationController.shared.updateBadge()
+      } catch is CancellationError {
+        backgroundSave?.finish()
+      } catch {
+        backgroundSave?.finish()
       }
     }
   }
@@ -806,23 +875,26 @@ final class SessionStore: ObservableObject {
     }
     return result
   }
-  private func reconcileReading(_ host: Client) {
+  private func reconcileReading(_ host: Client, updatedThreadId: String? = nil) {
     let readerId = readingClient(host).readingScopeId
+    // A conversation snapshot updates one summary, not the entire directory.
+    // Other pending acknowledgements must still be retried at the same time.
+    let pendingKeys = Set((saved.mobileReads ?? [:]).compactMap { $0.value.pending ? $0.key : nil })
     for thread in saved.workspaces[host.id]?.threads ?? [] {
+      let changed = updatedThreadId == nil || updatedThreadId == thread.id
+      if !changed && pendingKeys.isEmpty { continue }
       let key = readingKey(host, threadId: thread.id)
-      if let state = thread.readState, state.version == 1, saved.mobileReadBaselines?[key] == nil {
+      if changed, let state = thread.readState, state.version == 1, saved.mobileReadBaselines?[key] == nil {
         if saved.mobileReadBaselines == nil { saved.mobileReadBaselines = [:] }
         saved.mobileReadBaselines?[key] = MobileReadBaseline(position: state.latest, unread: thread.hasUnreadTurn == true)
       }
-      if let state = thread.readState, state.version == 1, state.readerId == readerId,
-        let read = state.read, read.revision <= state.latest.revision {
-        let old = saved.mobileReads?[key]
-        if old == nil || read.revision > old!.position.revision || read == old!.position {
-          if saved.mobileReads == nil { saved.mobileReads = [:] }
-          saved.mobileReads?[key] = MobileReadRecord(position: read, pending: false)
-        }
+      if changed, let state = thread.readState, state.version == 1, state.readerId == readerId,
+        let read = state.read,
+        let next = ReadingReconciliation.acknowledgedChange(current: saved.mobileReads?[key], incoming: read, latest: state.latest) {
+        if saved.mobileReads == nil { saved.mobileReads = [:] }
+        saved.mobileReads?[key] = next
       }
-      syncReading(host, threadId: thread.id)
+      if pendingKeys.contains(key) { syncReading(host, threadId: thread.id, knownKey: key) }
     }
   }
   func recordVisibleRead(_ position: ReadPosition) {
@@ -839,8 +911,8 @@ final class SessionStore: ObservableObject {
     persist()
     syncReading(host, threadId: thread.id)
   }
-  private func syncReading(_ host: Client, threadId: String) {
-    let key = readingKey(host, threadId: threadId)
+  private func syncReading(_ host: Client, threadId: String, knownKey: String? = nil) {
+    let key = knownKey ?? readingKey(host, threadId: threadId)
     guard readingTasks[key] == nil, host.online,
       saved.workspaces[host.id]?.capabilities?.contains("threads:read-state") == true,
       let record = saved.mobileReads?[key], record.pending else { return }
@@ -872,16 +944,22 @@ final class SessionStore: ObservableObject {
     }
   }
   var project: Project? {
-    projects.first { $0.id == (conversation?.projectId ?? selectedProjectId) }
+    let id = conversation?.projectId ?? selectedProjectId
+    return projects.first { $0.id == id }
   }
   var targetKey: String {
     client.map { cacheKey($0, threadId: selectedThreadId, projectId: selectedProjectId) } ?? "none:new:none"
   }
   private func captureCodexStorageKeys() {
+    #if DEBUG
+    let workStart = HistoryScrollProbe.workStart()
+    defer { HistoryScrollProbe.workEnd(7, workStart) }
+    #endif
     let readingKeys = Set((saved.mobileReads ?? [:]).keys).union((saved.mobileReadBaselines ?? [:]).keys)
     if readingKeys != codexReadingIndexKeys {
       codexReadingIndexKeys = readingKeys
       codexReadingIndex = CodexMachineStorage.ReadingKeyIndex(keys: readingKeys)
+      codexReadingMemo = CodexMachineStorage.ReadingKeyMemo()
     }
     var keys = Set(saved.history.keys).union(saved.drafts.keys).union(drafts.values.keys)
     keys.formUnion((saved.runtimes ?? [:]).keys); keys.formUnion((saved.outbox ?? [:]).keys)
@@ -899,8 +977,7 @@ final class SessionStore: ObservableObject {
       codexStorageCandidateCache = [:]
     }
   }
-  private func compatibleCodexStorageKeys(_ host: Client, machine: AgentRuntimeTarget, threadId: String?, projectId: String?) -> [String] {
-    let canonical = SharedMobileRules.machineCacheKey(machine, threadId: threadId, projectId: projectId)
+  private func compatibleCodexStorageKeys(_ host: Client, machine: AgentRuntimeTarget, threadId: String?, projectId: String?, canonical: String) -> [String] {
     if let cached = codexStorageCandidateCache[canonical] { return cached }
     let candidates = CodexMachineStorage.compatibleCacheKeys(machine, threadId: threadId, projectId: projectId, keys: codexStorageKeys,
       legacyDirectTarget: host.codexDirect?.target ?? saved.workspaces[host.id]?.readTarget)
@@ -908,16 +985,21 @@ final class SessionStore: ObservableObject {
     return candidates
   }
   private func cacheKey(_ host: Client, threadId: String?, projectId: String? = nil) -> String {
-    let machine = mobileReadingTarget(host)
-    guard !host.isDemo, machine.agentId == "codex" else { return SharedMobileRules.cacheKey(host, threadId: threadId, projectId: projectId, workspace: saved.workspaces[host.id]) }
+    let state = saved
+    let machine = ReadingKeyContext(host, workspace: state.workspaces[host.id]).machine
+    return cacheKey(host, threadId: threadId, projectId: projectId, state: state, machine: machine)
+  }
+  private func cacheKey(_ host: Client, threadId: String?, projectId: String? = nil,
+    state: SavedSession, machine: AgentRuntimeTarget) -> String {
+    guard !host.isDemo, machine.agentId == "codex" else { return SharedMobileRules.cacheKey(host, threadId: threadId, projectId: projectId, workspace: state.workspaces[host.id]) }
     let canonical = SharedMobileRules.machineCacheKey(machine, threadId: threadId, projectId: projectId)
-    return SharedMobileRules.preferredRuntimeKey(canonical, candidates: compatibleCodexStorageKeys(host, machine: machine, threadId: threadId, projectId: projectId), selectedLegacy: saved.codexStorageAliases?[canonical])
+    return SharedMobileRules.preferredRuntimeKey(canonical, candidates: compatibleCodexStorageKeys(host, machine: machine, threadId: threadId, projectId: projectId, canonical: canonical), selectedLegacy: state.codexStorageAliases?[canonical])
   }
   var codexStorageConflictMessage: String? {
     guard let host = client, !host.isDemo else { return nil }
     let machine = mobileReadingTarget(host); guard machine.agentId == "codex" else { return nil }
     let canonical = SharedMobileRules.machineCacheKey(machine, threadId: selectedThreadId, projectId: selectedProjectId)
-    let candidates = compatibleCodexStorageKeys(host, machine: machine, threadId: selectedThreadId, projectId: selectedProjectId)
+    let candidates = compatibleCodexStorageKeys(host, machine: machine, threadId: selectedThreadId, projectId: selectedProjectId, canonical: canonical)
     let operationKeys = candidates.filter { saved.outbox?[$0] != nil || saved.desktopCreations?[$0] != nil }
     let selected = saved.codexStorageAliases?[canonical].map { candidates.contains($0) } == true
     if (!candidates.contains(canonical) && !selected && candidates.count > 1) || operationKeys.contains(where: { $0 != targetKey }) {
@@ -929,7 +1011,7 @@ final class SessionStore: ObservableObject {
     guard let host = client, !host.isDemo else { return [] }
     let machine = mobileReadingTarget(host); guard machine.agentId == "codex" else { return [] }
     let canonical = SharedMobileRules.machineCacheKey(machine, threadId: selectedThreadId, projectId: selectedProjectId)
-    let candidates = compatibleCodexStorageKeys(host, machine: machine, threadId: selectedThreadId, projectId: selectedProjectId)
+    let candidates = compatibleCodexStorageKeys(host, machine: machine, threadId: selectedThreadId, projectId: selectedProjectId, canonical: canonical)
     return candidates.count < 2 ? [] : candidates
   }
   func selectCodexLegacyStorage(_ key: String) {
@@ -1468,6 +1550,10 @@ final class SessionStore: ObservableObject {
   }
 
   private func persistenceSnapshot(includeHistory: Bool = true) -> SessionPersistenceSnapshot<SavedSession, SessionHistoryPage> {
+    #if DEBUG
+    let workStart = HistoryScrollProbe.workStart()
+    defer { HistoryScrollProbe.workEnd(6, workStart) }
+    #endif
     var snapshot = saved
     snapshot.drafts = drafts.values
     let encrypted = snapshot.clients.contains(where: { $0.agentConnection != nil })
@@ -1519,6 +1605,10 @@ final class SessionStore: ObservableObject {
   }
 
   func persist(reconcileUnread: Bool = true) {
+    #if DEBUG
+    let workStart = HistoryScrollProbe.workStart()
+    defer { HistoryScrollProbe.workEnd(2, workStart) }
+    #endif
     guard !localRecoveryRequired else { return }
     captureCodexStorageKeys()
     if reconcileUnread { synchronizeMobileUnread() }
@@ -2088,14 +2178,25 @@ final class SessionStore: ObservableObject {
     let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connect(text, name: name)
     try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: name)
   }
-  func addCodexDiscovered(_ host: CodexHostDiscovery.Host) async throws {
-    let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connectDiscovered(host.endpoint, hostId: host.id, name: "")
+  func addCodexDiscovered(_ host: CodexHostDiscovery.Host, hostKey: String) async throws {
+    let expected = saved.clients.first(where: { $0.id == host.id })?.codexDirect
+    let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connectDiscovered(host.endpoint, hostId: host.id, name: "", hostKey: hostKey, expected: expected)
     try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: "")
   }
   private func saveCodexConnection(_ offer: CodexHostDescriptor, incoming: Client, rawSnapshot: WorkspaceSnapshot, name: String) throws {
     guard rawSnapshot.projects.allSatisfy({ $0.hostId == incoming.id }), rawSnapshot.threads.allSatisfy({ $0.hostId == incoming.id }) else { throw HostServiceError.wrongHost }
     if let old = saved.clients.first(where: { $0.id == incoming.id }),
       let target = old.codexDirect?.target ?? saved.workspaces[old.id]?.readTarget, target != offer.target { throw HostServiceError.wrongHost }
+    var incoming = incoming
+    if let old = saved.clients.first(where: { $0.id == incoming.id }), var direct = incoming.codexDirect {
+      guard old.codexDirect == nil || old.codexDirect?.fingerprint == direct.fingerprint else { throw HostServiceError.wrongHost }
+      let legacy = old.codexDirect?.candidates.contains(where: { $0.endpoint == old.endpoint }) == true ? nil : old.endpoint
+      direct.systemEndpoints = CodexRouteRules.shared.mergeSystemEndpoints(existing: old.codexDirect?.systemEndpoints ?? [], supplied: direct.systemEndpoints ?? [], legacy: legacy)
+      let oldCandidates = old.codexDirect?.candidates ?? []
+      direct.candidates += oldCandidates.filter { old in !direct.candidates.contains(where: { $0.endpoint == old.endpoint }) }
+      direct.candidates = Array(direct.candidates.prefix(32))
+      incoming.codexDirect = direct
+    }
     try CredentialVault.set(offer.token!, id: incoming.id)
     var snapshot = rawSnapshot
     snapshot.capabilities = CodexAgentClient().normalizedCapabilities(snapshot.capabilities ?? [], connectionMode: snapshot.connectionMode)
@@ -2121,7 +2222,9 @@ final class SessionStore: ObservableObject {
     let candidates = reachable + hostCandidates.filter { item in !reachable.contains(where: { $0.endpoint == item.endpoint }) }
     let old = previous.codexDirect?.candidates ?? []
     let combined = candidates + old.filter { item in !candidates.contains(where: { $0.endpoint == item.endpoint }) }
-    let connection = CodexDirectConnection(target: host.target, candidates: Array(combined.prefix(32)), fingerprint: host.fingerprint.lowercased())
+    let legacy = previous.codexDirect?.candidates.contains(where: { $0.endpoint == previous.endpoint }) == true ? nil : previous.endpoint
+    let systemEndpoints = CodexRouteRules.shared.mergeSystemEndpoints(existing: previous.codexDirect?.systemEndpoints ?? [], supplied: host.systemEndpoints ?? [], legacy: legacy)
+    let connection = CodexDirectConnection(target: host.target, candidates: Array(combined.prefix(32)), fingerprint: host.fingerprint.lowercased(), systemEndpoints: systemEndpoints)
     let priorEndpoint = saved.clients[index].endpoint
     let changed = saved.clients[index].codexDirect != connection || saved.clients[index].endpoint != reachableEndpoint
     saved.clients[index].codexDirect = connection
@@ -2156,6 +2259,7 @@ final class SessionStore: ObservableObject {
     var snapshot = try await HostService.workspace(address, token: token)
     snapshot.capabilities = CodexAgentClient().normalizedCapabilities(snapshot.capabilities ?? [], connectionMode: snapshot.connectionMode)
     guard snapshot.hostId == id else { throw HostServiceError.wrongHost }
+    if let direct = host.codexDirect, snapshot.readTarget != direct.target { throw HostServiceError.wrongHost }
     guard
       ["history-only", "managed-runtime", "shared-runtime", "desktop-runtime", "easywork-runtime"].contains(snapshot.connectionMode),
       snapshot.projects.allSatisfy({ $0.hostId == id }),
@@ -2167,6 +2271,13 @@ final class SessionStore: ObservableObject {
     try CredentialVault.set(token, id: id)
     saved.clients[index].name = name
     saved.clients[index].endpoint = address
+    if var direct = host.codexDirect {
+      let legacy = direct.candidates.contains(where: { $0.endpoint == host.endpoint }) ? nil : host.endpoint
+      let supplied = direct.candidates.contains(where: { $0.endpoint == address }) ? [] : [address]
+      direct.systemEndpoints = CodexRouteRules.shared.mergeSystemEndpoints(existing: direct.systemRoutes, supplied: supplied, legacy: legacy)
+      saved.clients[index].codexDirect = direct
+      CodexHostRoutes.shared.register(saved.clients[index])
+    }
     saved.clients[index].online = true
     // Keep loaded pages and the current conversation when editing the connection.
     let previous = saved.workspaces[id]
@@ -2193,15 +2304,32 @@ final class SessionStore: ObservableObject {
   }
 
   func refresh(loadMore: Bool = false, includeHistory: Bool = true, userInitiated: Bool = false) async {
+    #if DEBUG
+    if userInitiated, client?.isDemo == true,
+      ProcessInfo.processInfo.arguments.contains("-ui-testing"),
+      ProcessInfo.processInfo.arguments.contains("-sidebar-refresh-hold-fixture") {
+      loading = true
+      defer { loading = false }
+      try? await Task.sleep(for: .seconds(30))
+      return
+    }
+    #endif
     guard !sidebarInteracting else { return }
     guard pendingConnection == nil, let host = client, !host.isDemo, host.endpoint != nil || host.agentConnection != nil else { return }
     let generation = clientGeneration
+    if userInitiated { userRequestedWorkspaceGeneration = generation }
     if workspaceRefreshGeneration == generation {
       // Coalesce an explicit latest-history refresh behind the occupied reader.
       // Preserve its navigation; a later target must not inherit this request.
       if userInitiated && includeHistory && !loadMore {
         pendingManualHistoryRefresh = (generation, historyGeneration)
       }
+      guard userInitiated else { return }
+      do {
+        while workspaceRefreshGeneration == generation, clientGeneration == generation {
+          try await Task.sleep(for: .milliseconds(50))
+        }
+      } catch {}
       return
     }
     let owner = UUID()
@@ -2214,6 +2342,7 @@ final class SessionStore: ObservableObject {
     defer {
       if workspaceRefreshOwner == owner {
         workspaceRefreshOwner = nil; workspaceRefreshGeneration = nil
+        if userRequestedWorkspaceGeneration == generation { userRequestedWorkspaceGeneration = nil }
         if clientGeneration == generation { loading = false }
         if let pending = pendingManualHistoryRefresh {
           pendingManualHistoryRefresh = nil
@@ -2303,7 +2432,9 @@ final class SessionStore: ObservableObject {
     } catch {
       guard !isReadCancellation(error), clientGeneration == generation, client?.id == host.id, workspaceRefreshOwner == owner else { return }
       recordConnectionFailure(error, host: host, startedAt: startedAt)
-      if userInitiated { self.error = "刷新失败，请重试。\n" + error.localizedDescription }
+      if userInitiated || userRequestedWorkspaceGeneration == generation {
+        self.error = "刷新失败，请重试。\n" + error.userFacingDescription
+      }
       if client?.id == host.id { startEvents() }
       persist()
     }
@@ -2437,22 +2568,37 @@ final class SessionStore: ObservableObject {
   }
 
   @discardableResult
-  func loadHistory(threadId: String? = nil, more: Bool = false, userInitiated: Bool = false) async -> Bool {
+  func loadHistory(threadId: String? = nil, more: Bool = false, userInitiated: Bool = false,
+    beforePrepend: (@MainActor (Int) -> Void)? = nil) async -> Bool {
     guard let host = client, !host.isDemo, let id = threadId ?? selectedThreadId else { return false }
     guard selectedThreadId == id, threads.contains(where: { $0.id == id && $0.hostId == host.id }) else { return false }
-    // Repeated pulls/taps must not read the same page twice or refresh the latest
-    // page when the earlier-history cursor has already been exhausted.
-    guard !more || (historyCursor != nil && !historyLoading) else { return false }
     let generation = historyGeneration
     let key = cacheKey(host, threadId: id)
-    // Foreground refresh, event reset and recovery can request the same latest
-    // page together. Keep one read per navigation; earlier pages remain separate.
-    guard more || latestHistoryReads[key] != generation else { return false }
-    if !more { latestHistoryReads[key] = generation }
+    if more {
+      guard historyCursor != nil, earlierHistoryReads[key] == nil else { return false }
+      earlierHistoryReads[key] = generation
+    } else {
+      guard latestHistoryReads[key] != generation, earlierHistoryReads[key] != generation else { return false }
+      latestHistoryReads[key] = generation
+    }
+    defer {
+      if more, earlierHistoryReads[key] == generation { earlierHistoryReads.removeValue(forKey: key) }
+      if !more, latestHistoryReads[key] == generation { latestHistoryReads.removeValue(forKey: key) }
+    }
+    if more {
+      // Keep one explicit prefix action while a latest read completes. Reserve
+      // before yielding so repeated actions and new refreshes cannot overtake it.
+      while (loadingHistoryRequests[key] ?? 0) > 0 {
+        guard !Task.isCancelled, historyGeneration == generation,
+          client?.id == host.id, selectedThreadId == id, targetKey == key else { return false }
+        do { try await Task.sleep(for: .milliseconds(50)) } catch { return false }
+      }
+      guard !Task.isCancelled, historyGeneration == generation,
+        client?.id == host.id, selectedThreadId == id, targetKey == key, historyCursor != nil else { return false }
+    }
     let startedAt = ProcessInfo.processInfo.systemUptime
     loadingHistoryRequests[key, default: 0] += 1
     defer {
-      if !more, latestHistoryReads[key] == generation { latestHistoryReads.removeValue(forKey: key) }
       loadingHistoryRequests[key, default: 0] -= 1
       if loadingHistoryRequests[key] == 0 { loadingHistoryRequests.removeValue(forKey: key) }
     }
@@ -2469,7 +2615,7 @@ final class SessionStore: ObservableObject {
       #endif
       try await waitForSidebarInteraction()
       try Task.checkCancellation()
-      guard historyGeneration == generation, client?.id == host.id, selectedThreadId == id
+      guard historyGeneration == generation, client?.id == host.id, selectedThreadId == id, !more || targetKey == key
       else { return false }
       guard result.hostId == host.id, result.threadId == id else { throw HostServiceError.wrongHost }
       recordConnectionSuccess(host)
@@ -2497,7 +2643,9 @@ final class SessionStore: ObservableObject {
       if more && result.runtime == nil {
         let existing = saved.history[key] ?? []
         var ids = Set(existing.map(\.id))
-        saved.history[key] = result.messages.filter { ids.insert($0.id).inserted } + existing
+        let prefix = result.messages.filter { ids.insert($0.id).inserted }
+        beforePrepend?(prefix.count)
+        saved.history[key] = prefix + existing
         dirtyHistoryKeys.insert(key)
         pagedHistoryGeneration = generation
       } else if !more, preserve, result.historyWindow?.isWindowed != true {
@@ -2512,7 +2660,7 @@ final class SessionStore: ObservableObject {
           nextCursor: result.nextCursor, runtime: result.runtime,
           epoch: result.epoch, cursor: result.cursor))
       } else {
-        apply(result, historyPage: more)
+        apply(result, historyPage: more, beforePrepend: more ? beforePrepend : nil)
       }
       if result.historyWindow?.isWindowed == true, more { pagedHistoryGeneration = generation }
       if more || !(preserve || preserveLegacyV9) {
@@ -2658,7 +2806,9 @@ final class SessionStore: ObservableObject {
             let target = mobileReadingTarget(host)
             if saved.agentEventCursors == nil { saved.agentEventCursors = [:] }
             saved.agentEventCursors?[targetKey] = AgentEventCursor(target: target, threadId: threadId, epoch: epoch, sequence: cursor)
-            persist()
+            // Applying a snapshot schedules its own unread reconciliation.
+            // A cursor-only update must not rescan every computer's workspace.
+            persist(reconcileUnread: false)
           }
           delay = 1
           recordConnectionSuccess(host)
@@ -2691,7 +2841,12 @@ final class SessionStore: ObservableObject {
     if let id = selectedThreadId { lastSnapshotAt.removeValue(forKey: cacheKey(host, threadId: id)) }
     startEvents()
   }
-  private func apply(_ snapshot: HistorySnapshot, historyPage: Bool = false) {
+  private func apply(_ snapshot: HistorySnapshot, historyPage: Bool = false,
+    beforePrepend: (@MainActor (Int) -> Void)? = nil) {
+    #if DEBUG
+    let workStart = HistoryScrollProbe.workStart()
+    defer { HistoryScrollProbe.workEnd(3, workStart) }
+    #endif
     if let target = snapshot.readTarget,
       let current = saved.workspaces[snapshot.hostId]?.readTarget, target != current { return }
     if !snapshot.messages.isEmpty {
@@ -2703,16 +2858,33 @@ final class SessionStore: ObservableObject {
     let unavailable = snapshot.synchronization?.state == "unavailable"
       || (saved.workspaces[snapshot.hostId]?.connectionMode == "desktop-runtime"
         && snapshot.runtime?.canControl == false && snapshot.runtime?.state == "unknown")
+    let archivedHistory = snapshot.thread?.archived == true && snapshot.runtime?.canControl == false
+      && ["unknown", "idle", "failed"].contains(snapshot.runtime?.state ?? "") && saved.outbox?[key] == nil
+    let finishedHistory = snapshot.synchronization?.state == "history"
+      && ["completed", "interrupted", "failed"].contains(snapshot.thread?.lastTurnStatus ?? "")
+      && snapshot.runtime?.canControl == false && snapshot.runtime?.turnId == nil
+      && snapshot.runtime?.approvals.isEmpty == true && saved.outbox?[key] == nil
+      && snapshot.runtime?.receipts.contains(where: {
+        $0.noticeContext != "historical" && ["pending", "queued", "sending", "submitted", "accepted", "running", "uncertain"].contains($0.state)
+      }) == false
     if historyFresh, let checkedAt = snapshot.synchronization?.checkedAt {
-      conversationSyncFailures[key] = ConversationSyncIssue(
-        message: liveWindow ? L10n.tr("当前进度正从电脑实时同步；完整桌面状态暂不可用，较早历史按需加载。") : L10n.tr("已从电脑同步最新历史进度，正在重试实时连接。"), historyFresh: true, liveWindow: liveWindow)
+      if archivedHistory || finishedHistory {
+        // A freshly verified terminal turn needs no active stream. This does
+        // not grant execution control or hide failures of actual history reads.
+        conversationSyncFailures.removeValue(forKey: key)
+      } else {
+        conversationSyncFailures[key] = ConversationSyncIssue(
+          message: liveWindow ? L10n.tr("当前进度正从电脑实时同步；完整桌面状态暂不可用，较早历史按需加载。") : L10n.tr("已从电脑同步最新历史进度，正在重试实时连接。"), historyFresh: true, liveWindow: liveWindow)
+      }
       // Repeated cached events do not postpone the next actual history read.
       if historySyncChecks[key].map({ checkedAt > $0 }) ?? true {
         historySyncChecks[key] = checkedAt
         lastSnapshotAt[key] = ProcessInfo.processInfo.systemUptime
       }
     } else if unavailable {
-      if conversationSyncFailures[key] == nil || conversationSyncFailures[key]?.historyFresh == true {
+      // An old event's missing owner is expected for an archived chat. A real
+      // history request failure is still retained until a fresh read succeeds.
+      if !archivedHistory && (conversationSyncFailures[key] == nil || conversationSyncFailures[key]?.historyFresh == true) {
         conversationSyncFailures[key] = ConversationSyncIssue(
           message: L10n.tr("未能取得此对话的最新进度，当前显示缓存。正在自动重试。"))
       }
@@ -2757,7 +2929,9 @@ final class SessionStore: ObservableObject {
     if earlier {
       let existingIds = Set(previous.map(\.id))
       let replacements = Dictionary(snapshot.messages.map { ($0.id, $0) }, uniquingKeysWith: { _, newest in newest })
-      saved.history[key] = snapshot.messages.filter { !existingIds.contains($0.id) }
+      let prefix = snapshot.messages.filter { !existingIds.contains($0.id) }
+      beforePrepend?(prefix.count)
+      saved.history[key] = prefix
         + previous.map { replacements[$0.id] ?? $0 }
     } else if preserve || preserveLegacyV9 {
       let ids = Set(snapshot.messages.map(\.id))
@@ -2765,7 +2939,7 @@ final class SessionStore: ObservableObject {
       saved.history[key] = Array(previous[..<boundary]) + snapshot.messages
     } else { saved.history[key] = snapshot.messages }
     dirtyHistoryKeys.insert(key)
-    if let host = saved.clients.first(where: { $0.id == snapshot.hostId }) { reconcileReading(host) }
+    if let host = saved.clients.first(where: { $0.id == snapshot.hostId }) { reconcileReading(host, updatedThreadId: snapshot.threadId) }
     if let runtime = snapshot.runtime {
       saved.runtimes?[key] = runtime
       if let index = saved.workspaces[snapshot.hostId]?.threads.firstIndex(where: {

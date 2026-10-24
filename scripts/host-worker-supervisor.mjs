@@ -47,6 +47,144 @@ export function workerRecoveryState(scope, code) {
   return 'runtime-failure';
 }
 
+const tracePhases = [
+  'gate_wait',
+  'native_start',
+  'spawn',
+  'native_response',
+  'parse',
+  'verify',
+  'verify_inputs',
+  'verify_inputs_final',
+  'prepare',
+  'source_fence',
+  'commit',
+  'close',
+  'reap',
+  'state',
+];
+const traceEnums = {
+  phase: tracePhases,
+  operation: ['read', 'startup', 'retirement', 'state', 'parser'],
+  stage: ['entered', 'prepared', 'committed', 'interrupted', 'snapshot'],
+  deadlineKind: [
+    'phase',
+    'shared_rpc',
+    'http',
+    'combined',
+    'shared_or_http',
+    'native_budget',
+    'native_response',
+    'startup',
+    'unknown',
+  ],
+};
+const record = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const count = (value) => Number.isSafeInteger(value) && value >= 0;
+const duration = (value) => Number.isFinite(value) && value >= 0;
+
+// Reproject the factory's fixed summary, never the parsed stderr object itself.
+function windowsTraceSummary(value) {
+  if (
+    !record(value) ||
+    value.schemaVersion !== 1 ||
+    !['reader', 'client', 'native', 'host'].includes(value.scope) ||
+    ![
+      'ok',
+      'aborted',
+      'phase_deadline',
+      'native_rejected',
+      'transport_lost',
+      'source_changed',
+      'shutdown_incomplete',
+      'invalid_message',
+    ].includes(value.reason) ||
+    !count(value.generation) ||
+    !count(value.pid) ||
+    value.pid === 0 ||
+    !count(value.threadId) ||
+    !duration(value.elapsedMs) ||
+    typeof value.monotonicNs !== 'string' ||
+    !/^(0|[1-9]\d{0,19})$/.test(value.monotonicNs) ||
+    typeof value.utc !== 'string' ||
+    !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value.utc) ||
+    !Number.isFinite(Date.parse(value.utc)) ||
+    new Date(value.utc).toISOString() !== value.utc ||
+    !['snapshot', 'request_phase', 'lifetime'].includes(value.window) ||
+    !record(value.phases) ||
+    !record(value.native)
+  )
+    return undefined;
+  const summary = {
+    schemaVersion: 1,
+    scope: value.scope,
+    reason: value.reason,
+    generation: value.generation,
+    pid: value.pid,
+    threadId: value.threadId,
+    utc: value.utc,
+    monotonicNs: value.monotonicNs,
+    elapsedMs: value.elapsedMs,
+    window: value.window,
+    phases: {},
+    native: {},
+  };
+  for (const name of tracePhases) {
+    if (!Object.hasOwn(value.phases, name)) continue;
+    const phase = value.phases[name];
+    if (!record(phase) || !count(phase.calls) || !duration(phase.elapsedMs)) return undefined;
+    summary.phases[name] = { calls: phase.calls, elapsedMs: phase.elapsedMs };
+  }
+  for (const name of ['P', 'S', 'B', 'T']) {
+    if (!Object.hasOwn(value.native, name)) continue;
+    const native = value.native[name],
+      projected = {};
+    if (!record(native)) return undefined;
+    for (const key of ['calls', 'completed', 'failed', 'pending', 'items']) {
+      if (!count(native[key])) return undefined;
+      projected[key] = native[key];
+    }
+    for (const key of ['elapsedMs', 'waitMs', 'decodeMs']) {
+      if (!duration(native[key])) return undefined;
+      projected[key] = native[key];
+    }
+    summary.native[name] = projected;
+  }
+  for (const key of ['phase', 'operation', 'stage', 'deadlineKind', 'selectedDeadlineKind']) {
+    if (!Object.hasOwn(value, key)) continue;
+    if (!traceEnums[key === 'selectedDeadlineKind' ? 'deadlineKind' : key].includes(value[key]))
+      return undefined;
+    summary[key] = value[key];
+  }
+  for (const key of ['parserReadSnapshotCalls', 'parserCatalogWalks', 'parserGuardCount']) {
+    if (!Object.hasOwn(value, key)) continue;
+    if (!count(value[key])) return undefined;
+    summary[key] = value[key];
+  }
+  for (const key of [
+    'deadlineTriggered',
+    'readerExited',
+    'transportExited',
+    'childExited',
+    'stdioClosed',
+  ]) {
+    if (!Object.hasOwn(value, key)) continue;
+    if (typeof value[key] !== 'boolean') return undefined;
+    summary[key] = value[key];
+  }
+  for (const key of ['request', 'deadlineMask', 'phaseRemainingMs', 'remainingMs']) {
+    if (!Object.hasOwn(value, key)) continue;
+    if (
+      !Number.isFinite(value[key]) ||
+      (key === 'request' && !Number.isSafeInteger(value[key])) ||
+      (key === 'deadlineMask' && (!count(value[key]) || value[key] > 7))
+    )
+      return undefined;
+    summary[key] = value[key];
+  }
+  return summary;
+}
+
 /** One child at a time; only an observed exit authorizes the next launch. */
 export function superviseWorker({
   executable,
@@ -110,7 +248,18 @@ export function superviseWorker({
       for (const line of lines) {
         try {
           const value = JSON.parse(line);
-          if (value.diagnostic !== 'host-runtime-failure') continue;
+          if (value.diagnostic !== 'host-runtime-failure') {
+            if (process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1') {
+              const summary = windowsTraceSummary(value.windowsTrace);
+              if (summary)
+                diagnostic({
+                  event: 'windows-trace-summary',
+                  childPid: launched.pid,
+                  windowsTrace: summary,
+                });
+            }
+            continue;
+          }
           diagnostic({
             event: 'runtime-failure',
             childPid: child.pid,

@@ -1,5 +1,8 @@
 import XCTest
+import CryptoKit
 import Network
+import Vision
+import Darwin
 
 extension CodexManageUITests {
   @MainActor func testSlowNetworkFirstConversationBeforeCatalog() async throws {
@@ -266,10 +269,25 @@ final class CodexManageUITests: XCTestCase {
   private var suggestionCleanupTarget: (hostId: String, originalId: String)?
   override func setUpWithError() throws {
     continueAfterFailure = false
+    #if DEBUG
+    if name.contains("testPhysicalAgentHubFeatureRestoreExistingClient"),
+      ProcessInfo.processInfo.environment["EXISTING_CLIENT_SELECTION_UUID"] == nil {
+      throw XCTSkip("Requires an explicit existing client UUID")
+    }
+    #endif
     if name.contains("testOriginalDesktopReadOnlySuggestionsDEV") {
       guard let encoded = ProcessInfo.processInfo.environment["SUGGESTION_DEV_FIXTURE_JSON"],
         let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any] else {
         throw XCTSkip("Requires the dedicated read-only suggestion DEV runner")
+      }
+      if value["tracePhoneIsolatedBaseline"] != nil {
+        let method = "testOriginalDesktopReadOnlySuggestionsDEV"
+        guard name.hasSuffix(" " + method + "]") || name.hasSuffix("." + method) || name == method,
+          let bundleId = value["bundleId"] as? String,
+          bundleId.range(of: #"^com\.easyai\.agenthub\.traceacceptance(?:\.[a-z0-9]+)*$"#, options: .regularExpression) != nil else {
+          throw NSError(domain: "TracePhoneUIBaseline", code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "UI baseline requires the exact dedicated test and bundle"])
+        }
       }
       XCUIDevice.shared.orientation = .portrait
       app = XCUIApplication(bundleIdentifier: value["bundleId"] as? String ?? "com.easyai.agenthub")
@@ -314,6 +332,9 @@ final class CodexManageUITests: XCTestCase {
       return
     }
     app = XCUIApplication()
+    if name.contains("testWindowsConversationSyncReadOnlyDEV") { return }
+    if name.contains("testHistoryContinuousScrollPerformance") || name.contains("testHistoryContinuousScrollOriginalDesktopDEV") || name.contains("testHistoryRemotePrependOriginalDesktopDEV") || name.contains("testHistoryShortListPrependKeepsPosition") || name.contains("testHistoryInstalledAppReadOnlyDEV") { return }
+    if name.contains("testRealtimeVoice") { return }
     if name.contains("testEasyWorkRealDEV") || name.contains("testEasyWorkOrdinaryAppDEV") || name.contains("testCodexMachineIdentityLegacySelectionSurvivesRestore") || name.contains("testEasyWorkReceivePerformanceDEV") { return }
     if name.contains("testVoiceExistingTranscriptionDraftDEV") || name.contains("testCodexHostRecordedAudioTranscriptionDEV") && ProcessInfo.processInfo.environment["VOICE_RESTORE_ORIGINAL"] == "1" {
       app.launchArguments = ["-ui-testing", "-restore-testing"]
@@ -322,6 +343,9 @@ final class CodexManageUITests: XCTestCase {
       return
     }
     app.launchArguments = name.contains("testReplyWaitReceiptReadOnlyRecoveryDEV") ? ["-ui-testing", "-restore-testing"] : ["-ui-testing"]
+    if name.contains("testHistoryPaging") { app.launchArguments.append("-history-position-probe") }
+    if name.contains("testHistoryPagingRemoteSecondLayoutKeepsAnchor") { app.launchArguments.append("-history-prepend-layout-fixture") }
+    if name.contains("testSidebarRefreshVisualHitRegionsStayAligned") { app.launchArguments.append("-sidebar-refresh-hold-fixture") }
     app.launchChineseTest()
     XCTAssertTrue(app.buttons["open-sidebar"].waitForExistence(timeout: 10))
   }
@@ -835,39 +859,129 @@ final class CodexManageUITests: XCTestCase {
     #endif
   }
 
-  @MainActor func testCodexDirectDiscoveryRealDEV() async throws {
+  @MainActor func testCodexDualChannelRealDEV() async throws {
     let base = URL(string: "http://127.0.0.1:8797")!
     let (data, _) = try await URLSession.shared.data(from: base)
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    let metadata = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let marker = try XCTUnwrap(metadata["marker"] as? String)
+    func control(_ action: String) async throws {
+      var request = URLRequest(url: base.appendingPathComponent(action)); request.httpMethod = "POST"
+      let (_, response) = try await URLSession.shared.data(for: request)
+      XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+    }
+    func waitRoute(_ route: String) async throws {
+      for _ in 0..<90 {
+        let (data, _) = try await URLSession.shared.data(from: base.appendingPathComponent("state"))
+        let state = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        if (state["observed"] as? String) == route { return }
+        try await Task.sleep(for: .seconds(1))
+      }
+      XCTFail("Expected an authenticated read on " + route)
+    }
+    // Start through the legacy, manually saved Serve address, before it has a private certificate.
+    connectLive(fixture)
+    app.buttons["new-chat"].tap()
+    let projectless = app.buttons["choose-projectless"]
+    XCTAssertTrue(projectless.waitForExistence(timeout: 20)); projectless.tap()
+    app.buttons["generation-settings"].tap()
+    let effort = app.sliders["effort-slider"]
+    XCTAssertTrue(effort.waitForExistence(timeout: 20))
+    effort.adjust(toNormalizedSliderPosition: CGFloat(try XCTUnwrap(fixture.effortPosition)))
+    app.buttons["generation-done"].tap()
+    focusLiveComposer(); typeComposerText("Reply only \(marker)_FIRST. Do not use any tools."); sendLiveComposer()
+    XCTAssertTrue(app.staticTexts[marker + "_FIRST"].waitForExistence(timeout: 180))
+    let draft = "UNSENT_DUAL_DRAFT_" + fixture.nonce
+    focusLiveComposer(); typeComposerText(draft)
+    if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+    try await control("serve-off"); try await waitRoute("lan")
+    XCTAssertEqual(composer.value as? String, draft)
+    XCTAssertTrue(app.staticTexts[marker + "_FIRST"].exists)
+    shot("dual-legacy-serve-to-lan-draft-preserved")
+    XCUIDevice.shared.press(.home); try await Task.sleep(for: .seconds(2))
+    app.terminate(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest()
+    XCTAssertTrue(app.staticTexts[marker + "_FIRST"].waitForExistence(timeout: 40))
+    XCTAssertEqual(composer.value as? String, draft)
+    try await control("serve-on"); try await control("lan-off"); try await waitRoute("serve")
+    XCTAssertEqual(composer.value as? String, draft)
+    shot("dual-lan-to-serve-draft-preserved")
+    XCUIDevice.shared.press(.home); try await Task.sleep(for: .seconds(2))
+    app.terminate(); app.launchChineseTest()
+    XCTAssertTrue(app.staticTexts[marker + "_FIRST"].waitForExistence(timeout: 40))
+    XCTAssertEqual(composer.value as? String, draft)
+    try await control("lan-on"); try await control("serve-off-after-write")
+    clearComposer(); typeComposerText("Reply only \(marker)_SECOND. Do not use any tools."); sendLiveComposer()
+    try await waitRoute("lan")
+    XCTAssertTrue(app.staticTexts[marker + "_SECOND"].waitForExistence(timeout: 180))
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    focusLiveComposer(); typeComposerText(draft)
+    if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+    try await control("restart")
+    try await waitRoute("lan")
+    XCTAssertEqual(composer.value as? String, draft)
+    XCTAssertTrue(app.staticTexts[marker + "_SECOND"].exists)
+    shot("dual-host-restart-and-single-input-preserved")
+  }
+
+  @MainActor func testCodexDirectDiscoveryRealDEV() async throws {
+    #if !targetEnvironment(simulator)
+    let networkAlert = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch
+    if networkAlert.waitForExistence(timeout: 2) {
+      let text = networkAlert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator: " ")
+      if text.contains("Agent Hub") && (text.contains("本地网络") || text.localizedCaseInsensitiveContains("local network")) {
+        let allow = networkAlert.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow"])).firstMatch
+        XCTAssertTrue(allow.exists); allow.tap()
+      }
+    }
+    #endif
+    let base = URL(string: ProcessInfo.processInfo.environment["HOST_KEY_DEV_CONTROL_URL"] ?? "http://127.0.0.1:8797")!
+    func control(_ path: String = "", method: String = "GET") async throws -> (Data, URLResponse) {
+      var request = URLRequest(url: base.appendingPathComponent(path)); request.httpMethod = method
+      if let token = ProcessInfo.processInfo.environment["HOST_KEY_DEV_CONTROL_TOKEN"] { request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
+      return try await URLSession.shared.data(for: request)
+    }
+    let (data, _) = try await control()
     let fixture = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: String])
-    let hostId = try XCTUnwrap(fixture["hostId"]), uri = try XCTUnwrap(fixture["uri"]), marker = try XCTUnwrap(fixture["marker"])
+    let hostId = try XCTUnwrap(fixture["hostId"]), hostKey = try XCTUnwrap(fixture["hostKey"]), marker = try XCTUnwrap(fixture["marker"])
     app.buttons["client-switch"].tap()
     let add = app.buttons["add-client"]
     for _ in 0..<6 { if add.isHittable { break }; app.swipeUp() }
     add.tap()
-    shot("codex-qr-connection-form")
-    XCTAssertTrue(app.buttons["codex-discovered-" + hostId].waitForExistence(timeout: 20), "The real Host must appear through Bonjour before QR pairing")
-    selectConnectionMethod("扫码连接", agent: "codex")
-    let qr = app.textFields["codex-qr-description"]
-    XCTAssertTrue(qr.waitForExistence(timeout: 15)); qr.tap(); qr.typeText(uri)
-    XCTAssertEqual((qr.value as? String)?.count, uri.count)
-    if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
-    app.buttons["codex-connect-qr"].tap()
-    let connected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: qr)
+    let row = app.buttons["codex-discovered-" + hostId]
+    XCTAssertTrue(row.waitForExistence(timeout: 30), "The real Host must appear through Bonjour")
+    row.tap()
+    let keyField = app.secureTextFields["codex-host-key"]
+    XCTAssertTrue(keyField.waitForExistence(timeout: 10))
+    XCTAssertFalse(app.buttons["codex-authorize-connect"].isEnabled)
+    let (before, _) = try await control("stats")
+    XCTAssertEqual((try JSONSerialization.jsonObject(with: before) as? [String: Int])?["claimPosts"], 0)
+    keyField.tap(); keyField.typeText("wrong-host-key-with-at-least-32-characters")
+    app.buttons["codex-authorize-connect"].tap()
+    XCTAssertTrue(app.staticTexts["client-form-error"].waitForExistence(timeout: 20))
+    XCTAssertEqual(app.staticTexts["client-form-error"].label, "Host Key 不正确，请在电脑端核对后重试")
+    shot("host-key-wrong-key-rejected")
+    app.buttons["codex-authorize-cancel"].tap(); row.tap()
+    XCTAssertTrue(keyField.waitForExistence(timeout: 10))
+    XCTAssertFalse(app.buttons["codex-authorize-connect"].isEnabled)
+    keyField.tap(); keyField.typeText(hostKey)
+    app.buttons["codex-authorize-connect"].tap()
+    let connected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: keyField)
     XCTAssertEqual(XCTWaiter.wait(for: [connected], timeout: 90), .completed, app.debugDescription)
-    let mainReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: app.buttons["new-chat"])
-    XCTAssertEqual(XCTWaiter.wait(for: [mainReady], timeout: 20), .completed)
+    shot("host-key-after-authorized")
+    XCTAssertTrue(app.buttons["new-chat"].waitForExistence(timeout: 20), app.debugDescription)
     app.buttons["new-chat"].tap()
     let projectless = app.buttons["choose-projectless"]
     XCTAssertTrue(projectless.waitForExistence(timeout: 20)); projectless.tap()
     XCTAssertTrue(composer.waitForExistence(timeout: 15)); composer.tap()
-    typeComposerText("Reply only \(marker). Do not use any tools.")
-    app.buttons["send-message"].tap()
+    let prompt = "Reply only \(marker). Do not use any tools."
+    typeComposerText(prompt)
+    XCTAssertEqual(composer.value as? String, prompt, "The physical keyboard must deliver the entire immutable input before sending")
+    sendLiveComposer()
     XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 180), app.debugDescription)
-    shot("codex-qr-real-model")
+    shot("host-key-authorized-real-model")
     app.terminate(); app.launchArguments = ["-ui-testing", "-restore-testing"]; app.launchChineseTest()
     XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 30))
-    var request = URLRequest(url: base.appendingPathComponent("restart")); request.httpMethod = "POST"
-    let (_, response) = try await URLSession.shared.data(for: request)
+    let (_, response) = try await control("restart", method: "POST")
     XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
     app.buttons["client-switch"].tap(); app.buttons["add-client"].tap()
     let known = app.buttons["codex-discovered-" + hostId]
@@ -2989,16 +3103,35 @@ final class CodexManageUITests: XCTestCase {
 
   private func typeComposerText(_ text: String) {
     composer.typeText(text)
-    // Xcode 27 may return from typeText while its offscreen keyboard preview
-    // still supplies the old input/button coordinates. Wait for actual layout,
-    // so the next tap exercises the visible control without retrying an action.
+    // Xcode 27 may return before layout settles. A physical device can expose
+    // an offscreen keyboard while hardware input is active; that is valid when
+    // the composer is visible and no onscreen keyboard covers it.
     let ready = XCTNSPredicateExpectation(predicate: NSPredicate { [self] _, _ in
       let keyboard = app.keyboards.firstMatch
-      return keyboard.exists && keyboard.frame.minY < app.frame.maxY
-        && composer.frame.maxY <= keyboard.frame.minY
+      let field = composer.frame
+      guard composer.isHittable && app.frame.contains(field) else { return false }
+      return !keyboard.exists || !keyboard.frame.intersects(app.frame)
+        || field.maxY <= keyboard.frame.minY
     }, object: app)
-    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 8), .completed,
-      "The composer and software keyboard must finish layout before the next action")
+    let layout = XCTWaiter.wait(for: [ready], timeout: 8)
+    if layout != .completed {
+      let keyboard = app.keyboards.firstMatch
+      let evidence: [String: Any] = ["app": String(describing: app.frame),
+        "composer": String(describing: composer.frame), "composerHittable": composer.isHittable,
+        "keyboardExists": keyboard.exists,
+        "keyboard": String(describing: keyboard.exists ? keyboard.frame : .zero)]
+      let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      if let bytes = try? JSONSerialization.data(withJSONObject: evidence, options: [.sortedKeys]) {
+        try? bytes.write(to: directory.appendingPathComponent("composer-layout-failure.json"), options: .atomic)
+        let attachment = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.json")
+        attachment.name = "composer-layout-failure"; attachment.lifetime = .keepAlways; add(attachment)
+      }
+      let screenshot = app.screenshot()
+      try? screenshot.pngRepresentation.write(to: directory.appendingPathComponent("composer-layout-failure.png"), options: .atomic)
+      shot("composer-layout-failure")
+    }
+    XCTAssertEqual(layout, .completed,
+      "The composer must be visible and above any onscreen keyboard before the next action")
   }
 
   func testComposerTypingPerformance() throws {
@@ -3031,6 +3164,387 @@ final class CodexManageUITests: XCTestCase {
     switchClient("demo-studio"); XCTAssertFalse((composer.value as? String ?? "").contains(prompt))
     composer.tap(); typeComposerText("isolated-second-draft")
     switchClient("demo-mac"); XCTAssertEqual(composer.value as? String, prompt)
+  }
+
+  @MainActor func testHistoryContinuousScrollPerformance() throws {
+    app.launchArguments = ["-ui-testing", "-history-scroll-fixture", "-history-scroll-probe"]
+    app.launchChineseTest()
+    XCTAssertTrue(app.scrollViews["message-list"].waitForExistence(timeout: 30))
+    let screen = app.frame
+    let top = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.width * 0.55, dy: screen.height * 0.25))
+    let bottom = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.width * 0.55, dy: screen.height * 0.70))
+    let options = XCTMeasureOptions(); options.iterationCount = 3
+    measure(metrics: [XCTOSSignpostMetric.scrollDecelerationMetric], options: options) {
+      top.press(forDuration: 0.05, thenDragTo: bottom, withVelocity: .fast, thenHoldForDuration: 0)
+      bottom.press(forDuration: 0.05, thenDragTo: top, withVelocity: .fast, thenHoldForDuration: 0)
+    }
+    let report = app.staticTexts["history-scroll-evidence"]
+    XCTAssertTrue(report.waitForExistence(timeout: 5))
+    let metrics = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(report.label.utf8)) as? [String: Double])
+    print("HISTORY_SCROLL_METRICS " + report.label)
+    XCTAssertGreaterThanOrEqual(metrics["gestures"] ?? 0, 8)
+    XCTAssertGreaterThan(metrics["movingFrames"] ?? 0, 250, "The test must actually scroll through history")
+    XCTAssertLessThanOrEqual(metrics["timelineBuilds"] ?? 1000, 2,
+      "Gestures and unrelated UI state must reuse the current history projection")
+    #if !targetEnvironment(simulator)
+    // Simulator frame budgets depend on the host; physical evidence owns this gate.
+    XCTAssertLessThan(metrics["p95FrameMS"] ?? 1000, 25)
+    XCTAssertLessThan(metrics["maxFrameMS"] ?? 1000, 50)
+    #endif
+    XCTAssertTrue(app.buttons["open-sidebar"].isHittable)
+    shot("history-continuous-scroll")
+  }
+
+  @MainActor func testHistoryShortListPrependKeepsPosition() throws {
+    app.launchArguments = ["-ui-testing", "-history-short-paging-fixture", "-history-position-probe", "-history-scroll-probe"]
+    app.launchChineseTest()
+    let boundary = app.staticTexts["HISTORY_SHORT_068"]
+    XCTAssertTrue(boundary.waitForExistence(timeout: 15))
+    XCTAssertEqual(liveHistoryCounts()?["messages"], 72)
+    XCTAssertEqual(liveHistoryCounts()?["window"], 4)
+    let y = boundary.frame.minY
+    let more = app.buttons["history-local-more"]
+    XCTAssertTrue(more.isHittable)
+    more.tap()
+    // LazyVStack can leave the prefix offscreen and uninstantiated. Check the
+    // actual source window rather than depending on an offscreen AX element.
+    let expanded = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+      self.liveHistoryCounts()?["window"] == 64
+    }, object: app)
+    XCTAssertEqual(XCTWaiter.wait(for: [expanded], timeout: 5), .completed,
+      "Expand exactly one cached window, from 4 to 64 of 72 source messages")
+    XCTAssertTrue(boundary.isHittable)
+    XCTAssertEqual(boundary.frame.minY, y, accuracy: 3,
+      "A short list must retain its old reading position when a prefix fills the viewport")
+    shot("history-short-list-prepend")
+    let latest = app.buttons["跳转最新消息"]
+    XCTAssertTrue(latest.isHittable)
+    latest.tap()
+    XCTAssertTrue(app.staticTexts["HISTORY_SHORT_071"].isHittable)
+    XCTAssertTrue(latest.waitForNonExistence(timeout: 5))
+    shot("history-short-list-return-latest")
+  }
+
+  /// Independent App, actual existing Windows history and system TLS. No model
+  /// input, original connection replacement, or test-mode persistence reset.
+  @MainActor func testWindowsConversationSyncReadOnlyDEV() async throws {
+    let encoded = try XCTUnwrap(ProcessInfo.processInfo.environment["WINDOWS_HISTORY_READ_JSON"])
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: Data(encoded.utf8))
+    let configuration = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any])
+    let expectedText = try XCTUnwrap(configuration["expectedText"] as? String)
+    let expectedTarget = try XCTUnwrap(configuration["expectedTarget"] as? [String: String])
+    XCTAssertGreaterThan(expectedText.count, 12)
+    let session = URLSession(configuration: .ephemeral)
+    defer { session.invalidateAndCancel() }
+    for path in ["v1/workspace", "v1/history"] {
+      var url = try XCTUnwrap(URL(string: fixture.endpoint)).appendingPathComponent(path)
+      XCTAssertEqual(url.scheme, "https")
+      url.append(queryItems: [URLQueryItem(name: "hostId", value: fixture.hostId)])
+      if path.hasSuffix("history") {
+        url.append(queryItems: [URLQueryItem(name: "threadId", value: fixture.threadId), URLQueryItem(name: "window", value: "latest-v1")])
+      }
+      var request = URLRequest(url: url); request.timeoutInterval = 40
+      request.setValue("Bearer " + fixture.token, forHTTPHeaderField: "Authorization")
+      let start = ProcessInfo.processInfo.systemUptime
+      do {
+        let (data, response) = try await session.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(body["hostId"] as? String, fixture.hostId)
+        let target = try XCTUnwrap(body["readTarget"] as? [String: String])
+        for key in ["agentId", "hostId", "workspaceId", "runtimeId"] {
+          XCTAssertNotNil(expectedTarget[key]); XCTAssertEqual(target[key], expectedTarget[key])
+        }
+        if path.hasSuffix("history") {
+          XCTAssertEqual(body["threadId"] as? String, fixture.threadId)
+          XCTAssertEqual(body["ready"] as? Bool, true)
+          XCTAssertEqual((body["runtime"] as? [String: Any])?["canControl"] as? Bool, true)
+          XCTAssertFalse((body["messages"] as? [[String: Any]] ?? []).isEmpty)
+        }
+        print("WINDOWS_READ_PROBE", path, "200", Int((ProcessInfo.processInfo.systemUptime - start) * 1000))
+      } catch {
+        print("WINDOWS_READ_NETWORK_ERROR", path, (error as NSError).domain, (error as NSError).code)
+        throw error
+      }
+    }
+    let existingBundle = ProcessInfo.processInfo.environment["WINDOWS_EXISTING_APP_BUNDLE"]
+    if let existingBundle {
+      XCTAssertEqual(existingBundle, "com.easyai.agenthub")
+      app = XCUIApplication(bundleIdentifier: existingBundle)
+    }
+    app.launchArguments = []; app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 20))
+    app.buttons["client-switch"].tap()
+    if existingBundle != nil {
+      XCTAssertTrue(app.buttons["client-" + fixture.hostId].exists, "The original connection must exist; never replace it")
+    }
+    if app.buttons["client-" + fixture.hostId].exists {
+      app.buttons["client-" + fixture.hostId].tap()
+    } else {
+      guard existingBundle == nil else { return }
+      app.buttons["add-client"].tap(); selectConnectionMethod("手动连接", agent: "codex")
+      let address = app.textFields["client-address"]
+      XCTAssertTrue(address.waitForExistence(timeout: 15)); address.tap()
+      address.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (address.value as? String ?? "").count))
+      address.typeText(fixture.endpoint)
+      if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+      let key = app.secureTextFields["client-token"]
+      XCTAssertTrue(key.waitForExistence(timeout: 10)); key.tap(); key.typeText(fixture.token)
+      if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+      let connect = app.buttons["connect-client"]
+      if !connect.isHittable { app.swipeUp() }
+      XCTAssertTrue(connect.isHittable); connect.tap()
+      XCTAssertTrue(key.waitForNonExistence(timeout: 60), "The original Windows HTTPS identity must authenticate")
+    }
+    if app.buttons["完成"].exists { app.buttons["完成"].tap() }
+    dismissSystemPasswordOffer()
+    openDesktopTestConversation(fixture)
+    let actual = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", expectedText)).firstMatch
+    XCTAssertTrue(actual.waitForExistence(timeout: 45), "Render the actual independently read Windows conversation")
+    let draft = composer.value as? String
+    if existingBundle != nil {
+      let menu = app.buttons["chat-menu"]
+      XCTAssertTrue(menu.isHittable); menu.tap()
+      let refresh = app.buttons["刷新历史"]
+      XCTAssertTrue(refresh.waitForExistence(timeout: 10)); refresh.tap()
+      try await Task.sleep(for: .seconds(40))
+      XCTAssertFalse(app.buttons["conversation-sync-retry"].exists)
+      XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+    }
+    for _ in 0..<2 {
+      app.terminate(); app.launchArguments = []; app.activate()
+      XCTAssertTrue(actual.waitForExistence(timeout: 30))
+      try await Task.sleep(for: .seconds(existingBundle == nil ? 6 : 40))
+      XCTAssertFalse(app.buttons["conversation-sync-retry"].exists)
+      XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+      XCTAssertEqual(composer.value as? String, draft)
+    }
+    shot("windows-existing-conversation-read-only-recovered")
+    print("WINDOWS_READ_ONLY_RECOVERY_PASSED")
+  }
+
+  @MainActor func testHistoryContinuousScrollOriginalDesktopDEV() throws {
+    guard let input = ProcessInfo.processInfo.environment["HISTORY_SCROLL_LIVE_JSON"] else {
+      throw XCTSkip("Requires the private read-only original-desktop history configuration")
+    }
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: Data(input.utf8))
+    let monitor = addUIInterruptionMonitor(withDescription: "Isolated history DEV network permission") { alert in
+      for label in ["无线局域网与蜂窝网络", "允许"] where alert.buttons[label].exists {
+        alert.buttons[label].tap(); return true
+      }
+      return false
+    }
+    defer { removeUIInterruptionMonitor(monitor) }
+    app.launchArguments = ["-history-scroll-probe"]
+    if ProcessInfo.processInfo.environment["HISTORY_SCROLL_WORK_PROBE"] == "1" {
+      app.launchArguments.append("-history-work-probe")
+    }
+    app.launchEnvironment["HISTORY_SCROLL_EXPECTED_HOST"] = fixture.hostId
+    app.launchEnvironment["HISTORY_SCROLL_EXPECTED_THREAD"] = fixture.threadId
+    app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 20))
+    prepareHistoryConnection(fixture)
+    openHistoryTestConversation(fixture)
+    XCTAssertTrue(app.scrollViews["message-list"].waitForExistence(timeout: 30))
+    let screen = app.frame
+    let top = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.width * 0.55, dy: screen.height * 0.25))
+    let bottom = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.width * 0.55, dy: screen.height * 0.70))
+    let options = XCTMeasureOptions(); options.iterationCount = 3
+    measure(metrics: [XCTOSSignpostMetric.scrollDecelerationMetric], options: options) {
+      top.press(forDuration: 0.05, thenDragTo: bottom, withVelocity: .fast, thenHoldForDuration: 0)
+      bottom.press(forDuration: 0.05, thenDragTo: top, withVelocity: .fast, thenHoldForDuration: 0)
+    }
+    let evidence = app.staticTexts["history-scroll-evidence"]
+    XCTAssertTrue(evidence.waitForExistence(timeout: 5))
+    print("HISTORY_SCROLL_LIVE_METRICS " + evidence.label)
+    let metrics = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(evidence.label.utf8)) as? [String: Double])
+    XCTAssertGreaterThanOrEqual(metrics["gestures"] ?? 0, 8)
+    XCTAssertGreaterThan(metrics["movingFrames"] ?? 0, 250)
+    XCTAssertLessThan(metrics["p95FrameMS"] ?? 1000, 25)
+    XCTAssertLessThan(metrics["maxFrameMS"] ?? 1000, 50)
+    XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+    XCTAssertTrue(app.buttons["open-sidebar"].isHittable)
+    shot("history-scroll-original-desktop")
+  }
+
+  /// Keep paging independent so a frame failure cannot prevent the real
+  /// remote-prefix regression from executing in the same acceptance run.
+  @MainActor func testHistoryRemotePrependOriginalDesktopDEV() throws {
+    guard let input = ProcessInfo.processInfo.environment["HISTORY_SCROLL_LIVE_JSON"] else {
+      throw XCTSkip("Requires the private read-only original-desktop history configuration")
+    }
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: Data(input.utf8))
+    app.launchArguments = ["-history-scroll-probe", "-history-position-probe"]
+    app.launchEnvironment["HISTORY_SCROLL_EXPECTED_HOST"] = fixture.hostId
+    app.launchEnvironment["HISTORY_SCROLL_EXPECTED_THREAD"] = fixture.threadId
+    app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 20))
+    prepareHistoryConnection(fixture)
+    openHistoryTestConversation(fixture)
+    XCTAssertTrue(app.scrollViews["message-list"].waitForExistence(timeout: 30))
+    try verifyLiveHistoryPrependPosition()
+  }
+
+  /// Ordinary installed application only: no test-mode reset, credential replacement,
+  /// message submission or synthetic history. Also works against a Release build.
+  @MainActor func testHistoryInstalledAppReadOnlyDEV() throws {
+    guard let input = ProcessInfo.processInfo.environment["HISTORY_SCROLL_LIVE_JSON"] else {
+      throw XCTSkip("Requires the private existing-connection history configuration")
+    }
+    let fixture = try JSONDecoder().decode(LiveFixture.self, from: Data(input.utf8))
+    if let installedBundle = ProcessInfo.processInfo.environment["HISTORY_SCROLL_INSTALLED_BUNDLE"] {
+      XCTAssertEqual(installedBundle, "com.easyai.agenthub", "Only the explicitly selected existing formal app is supported")
+      app = XCUIApplication(bundleIdentifier: installedBundle)
+    }
+    app.launchArguments = []
+    app.launchChineseTest()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 20))
+    switchClient(fixture.hostId)
+    openHistoryTestConversation(fixture)
+    XCTAssertTrue(app.scrollViews["message-list"].waitForExistence(timeout: 30))
+    let screen = app.frame
+    let top = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.width * 0.55, dy: screen.height * 0.25))
+    let bottom = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.width * 0.55, dy: screen.height * 0.70))
+    let options = XCTMeasureOptions(); options.iterationCount = 3
+    measure(metrics: [XCTOSSignpostMetric.scrollDecelerationMetric], options: options) {
+      top.press(forDuration: 0.05, thenDragTo: bottom, withVelocity: .fast, thenHoldForDuration: 0)
+      bottom.press(forDuration: 0.05, thenDragTo: top, withVelocity: .fast, thenHoldForDuration: 0)
+    }
+    XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+    try verifyLiveHistoryPrependPosition(requireRemotePage: false)
+    shot("history-installed-read-only")
+  }
+
+  @MainActor private func liveHistoryCounts() -> [String: Int]? {
+    let evidence = app.staticTexts["history-scroll-evidence"]
+    guard evidence.exists, let value = evidence.value as? String,
+      let data = value.data(using: .utf8) else { return nil }
+    return (try? JSONSerialization.jsonObject(with: data)) as? [String: Int]
+  }
+
+  @MainActor private func openHistoryTestConversation(_ fixture: LiveFixture) {
+    // Reopening the app can already restore this exact Host/thread. Check the
+    // native store's opt-in boolean without exposing identities in evidence.
+    if liveHistoryCounts()?["target"] == 1 { return }
+    guard fixture.historyThreadArchived == true else {
+      openDesktopTestConversation(fixture); return
+    }
+    let menu = app.buttons["chat-menu"]
+    XCTAssertTrue(menu.waitForExistence(timeout: 20))
+    menu.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    let archived = app.buttons["archived-chats"]
+    XCTAssertTrue(archived.waitForExistence(timeout: 10))
+    archived.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    XCTAssertTrue(app.navigationBars["已归档对话"].waitForExistence(timeout: 10))
+    let row = app.buttons["archived-chat-" + fixture.threadId]
+    for _ in 0..<80 {
+      if row.exists && row.isHittable { break }
+      app.swipeUp()
+    }
+    XCTAssertTrue(row.isHittable, "The exact existing archived history must be opened read-only")
+    row.tap()
+    if liveHistoryCounts() != nil {
+      let selected = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        self.liveHistoryCounts()?["target"] == 1
+      }, object: app)
+      XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 10), .completed,
+        "The exact requested Host/thread must be selected")
+    }
+  }
+
+  @MainActor private func prepareHistoryConnection(_ fixture: LiveFixture) {
+    // The regression targets an existing connection and its real history.
+    // Pair only if this independent installation has no such saved computer.
+    app.buttons["client-switch"].tap()
+    let existing = app.buttons["client-" + fixture.hostId]
+    if existing.waitForExistence(timeout: 3) {
+      existing.tap(); return
+    }
+    app.buttons["完成"].tap()
+    connectLive(fixture, supportsCreation: false)
+  }
+
+  @MainActor private func verifyLiveHistoryPrependPosition(requireRemotePage: Bool = true) throws {
+    var cachedPages = 0, remotePages = 0
+    var remoteMessagesAdded = 0
+    var deltas: [Double] = []
+    if requireRemotePage {
+      let sourceReady = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        (self.liveHistoryCounts()?["messages"] ?? 0) > 0
+      }, object: app)
+      XCTAssertEqual(XCTWaiter.wait(for: [sourceReady], timeout: 45), .completed,
+        "The existing real history must finish its initial application before paging")
+    }
+    // Each cached expansion must increase the window. Bound by the actual
+    // available prefix rather than assuming a fresh 100-message cache.
+    let maximumPages = requireRemotePage ? max(1, liveHistoryCounts()?["messages"] ?? 0) + 1 : 1
+    for _ in 0..<maximumPages {
+      let id = app.buttons["history-local-more"].exists ? "history-local-more" : "history-more"
+      let control = scrollToHistoryControl(id)
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true AND isHittable == true"), object: control)
+      XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 45), .completed,
+        "Wait for the existing history read to release its paging control")
+      let beforeCounts = liveHistoryCounts()
+      if requireRemotePage { XCTAssertNotNil(beforeCounts, "Native source counts are required for real-page proof") }
+      let lowerEdge = control.frame.maxY
+      let candidates = app.scrollViews["message-list"].staticTexts.allElementsBoundByIndex
+      let candidate = candidates.first { element in
+        let text = element.label
+        guard element.isHittable, element.frame.minY > lowerEdge,
+          element.frame.minY < app.frame.height * 0.75, text.count > 3 else { return false }
+        return app.staticTexts.matching(NSPredicate(format: "label == %@", text)).count == 1
+      }
+      let anchor = try XCTUnwrap(candidate, "A unique visible native reading anchor is required")
+      let label = anchor.label
+      let stableAnchor = app.staticTexts.matching(NSPredicate(format: "label == %@", label)).firstMatch
+      let y = stableAnchor.frame.minY
+      control.tap()
+      var stableSamples = 0
+      let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        guard stableAnchor.exists, stableAnchor.isHittable,
+          self.app.buttons.matching(NSPredicate(format: "identifier IN %@ AND value == %@",
+            ["history-local-more", "history-more"], "正在加载")).count == 0 else { stableSamples = 0; return false }
+        if requireRemotePage {
+          let field = id == "history-more" ? "messages" : "window"
+          guard let before = beforeCounts?[field], let after = self.liveHistoryCounts()?[field], after > before else {
+            stableSamples = 0; return false
+          }
+        }
+        let delta = abs(stableAnchor.frame.minY - y)
+        stableSamples = delta <= 3 ? stableSamples + 1 : 0
+        return stableSamples >= 2
+      }, object: app)
+      let result = XCTWaiter.wait(for: [settled], timeout: 30)
+      var diagnostic: [String: Any] = ["control": id, "anchorExists": stableAnchor.exists,
+        "anchorVisible": stableAnchor.isHittable, "before": beforeCounts ?? [:], "after": liveHistoryCounts() ?? [:]]
+      if stableAnchor.exists { diagnostic["anchorDeltaPt"] = Double(abs(stableAnchor.frame.minY - y)) }
+      let diagnosticData = try JSONSerialization.data(withJSONObject: diagnostic, options: [.sortedKeys])
+      print("HISTORY_SCROLL_LIVE_PAGE_WAIT " + String(decoding: diagnosticData, as: UTF8.self))
+      XCTAssertEqual(result, .completed,
+        "A real earlier page must preserve the old reading anchor within 3pt")
+      let delta = abs(stableAnchor.frame.minY - y)
+      XCTAssertEqual(stableAnchor.frame.minY, y, accuracy: 3)
+      deltas.append(Double(delta))
+      if id == "history-more" {
+        remotePages += 1
+        remoteMessagesAdded += (liveHistoryCounts()?["messages"] ?? 0) - (beforeCounts?["messages"] ?? 0)
+      } else { cachedPages += 1 }
+      if remotePages > 0 { break }
+    }
+    if requireRemotePage {
+      XCTAssertGreaterThan(remotePages, 0, "At least one actual Host page must be read")
+      XCTAssertGreaterThan(remoteMessagesAdded, 0, "Failed or duplicate reads cannot stand in for a new earlier page")
+    }
+    let proof: [String: Any] = ["cachedPages": cachedPages, "remotePages": remotePages,
+      "remoteMessagesAdded": remoteMessagesAdded,
+      "maxAnchorDeltaPt": deltas.max() ?? -1, "checkedPages": deltas.count]
+    let data = try JSONSerialization.data(withJSONObject: proof, options: [.sortedKeys])
+    print("HISTORY_SCROLL_LIVE_PAGING " + String(decoding: data, as: UTF8.self))
+    let latest = app.buttons["跳转最新消息"]
+    XCTAssertTrue(latest.isHittable); latest.tap()
+    XCTAssertTrue(latest.waitForNonExistence(timeout: 10))
+    XCTAssertFalse(app.alerts["无法完成操作"].exists)
+    shot("history-real-earlier-position")
   }
 
   func testComposerChinesePasteAndImmediateSend() {
@@ -4131,43 +4645,51 @@ final class CodexManageUITests: XCTestCase {
       let (data, _) = try await URLSession.shared.data(from: URL(string: base)!)
       fixture = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: String])
     }
+    let restoreOriginal = environment["VOICE_RESTORE_ORIGINAL"] == "1"
+    let injectPairing = fixture["fileFixture"] == "true" && !restoreOriginal && fixture["hostId"] == nil
     if fixture["fileFixture"] == "true" {
-      app.terminate(); app.launchArguments = ["-ui-testing", "-voice-file-fixture"] + (environment["VOICE_RESTORE_ORIGINAL"] == "1" ? ["-restore-testing"] : [])
+      app.terminate(); app.launchArguments = ["-ui-testing", "-voice-file-fixture"] + (restoreOriginal ? ["-restore-testing"] : [])
       app.launchEnvironment = ["VOICE_FILE_FIXTURE_URL": base + "/audio"]
-      app.launchChineseTest()
-    } else {
-      app.buttons["client-switch"].tap(); app.buttons["add-client"].tap()
-      selectConnectionMethod("扫码连接", agent: "codex")
-    }
-    if environment["VOICE_RESTORE_ORIGINAL"] != "1" {
-      app.buttons["client-switch"].tap(); app.buttons["add-client"].tap()
-      if let host = fixture["hostId"] {
-      let row = app.buttons["codex-discovered-" + host]
-      let permissionDeadline = Date().addingTimeInterval(60)
-      let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-      while Date() < permissionDeadline && !row.exists {
-        if springboard.alerts.firstMatch.exists {
-          let alert = springboard.alerts.firstMatch
-          let text = alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator: " ")
-          if text.contains("本地网络") || text.localizedCaseInsensitiveContains("local network") {
-            let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow", "好", "OK"])).firstMatch
-            XCTAssertTrue(allow.exists); allow.tap()
-          }
-        }
-        try await Task.sleep(for: .milliseconds(200))
+      if injectPairing {
+        // Keep the private URI out of XCTest keyboard typing activities.
+        app.launchArguments.append("-voice-pairing-fixture")
+        app.launchEnvironment["VOICE_PAIRING_URI"] = try XCTUnwrap(fixture["uri"])
       }
-      XCTAssertTrue(row.exists, "The actual isolated Host must appear through native discovery; no Host token is supplied to the App")
-      XCTAssertTrue(row.label.contains("点选连接")); row.tap()
-      XCTAssertTrue(row.waitForNonExistence(timeout: 90), app.debugDescription)
-      XCTAssertFalse(app.staticTexts["client-form-error"].exists)
-    } else {
-      let uri = try XCTUnwrap(fixture["uri"])
-      selectConnectionMethod("扫码连接", agent: "codex")
-      let qr = app.textFields["codex-qr-description"]
-      XCTAssertTrue(qr.waitForExistence(timeout: 15)); qr.tap(); qr.typeText(uri)
-      if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
-      app.buttons["codex-connect-qr"].tap()
-      XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: qr)], timeout: 90), .completed)
+      app.launchChineseTest()
+    }
+    if !restoreOriginal {
+      if !injectPairing {
+        app.buttons["client-switch"].tap(); app.buttons["add-client"].tap()
+      }
+      if let host = fixture["hostId"] {
+        let row = app.buttons["codex-discovered-" + host]
+        let permissionDeadline = Date().addingTimeInterval(60)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        while Date() < permissionDeadline && !row.exists {
+          if springboard.alerts.firstMatch.exists {
+            let alert = springboard.alerts.firstMatch
+            let text = alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator: " ")
+            if text.contains("本地网络") || text.localizedCaseInsensitiveContains("local network") {
+              let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow", "好", "OK"])).firstMatch
+              XCTAssertTrue(allow.exists); allow.tap()
+            }
+          }
+          try await Task.sleep(for: .milliseconds(200))
+        }
+        XCTAssertTrue(row.exists, "The actual isolated Host must appear through native discovery; no Host token is supplied to the App")
+        XCTAssertTrue(row.label.contains("点选连接")); row.tap()
+        XCTAssertTrue(row.waitForNonExistence(timeout: 90), app.debugDescription)
+        XCTAssertFalse(app.staticTexts["client-form-error"].exists)
+      } else {
+        if !injectPairing { selectConnectionMethod("扫码连接", agent: "codex") }
+        let qr = app.textFields["codex-qr-description"]
+        XCTAssertTrue(qr.waitForExistence(timeout: 15))
+        if !injectPairing {
+          qr.tap(); qr.typeText(try XCTUnwrap(fixture["uri"]))
+        }
+        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+        app.buttons["codex-connect-qr"].tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: qr)], timeout: 90), .completed)
       }
     }
     func selectRecordingTarget() {
@@ -4284,6 +4806,110 @@ final class CodexManageUITests: XCTestCase {
     evidence.setValue(environment["VOICE_FIXTURE_NONCE"], forHTTPHeaderField: "X-Voice-Fixture-Nonce")
     evidence.httpBody = try JSONSerialization.data(withJSONObject: ["text": result])
     _ = try await URLSession.shared.data(for: evidence)
+  }
+
+  @MainActor func testRealtimeVoiceNetworkPermissionDEV() throws {
+    app.launchArguments = ["-ui-testing", "-voice-open-settings"]
+    app.launchChineseTest()
+    let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+    XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 15))
+    let ax = XCTAttachment(string: settings.debugDescription)
+    ax.name = "own-dev-app-network-settings"; ax.lifetime = .keepAlways; add(ax)
+    let screen = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    screen.name = "own-dev-app-network-settings"; screen.lifetime = .keepAlways; add(screen)
+    let wireless = settings.buttons["com.easyai.agenthub.rtvoicefix.wireless"]
+    XCTAssertTrue(wireless.exists)
+    wireless.tap()
+    let options = XCTAttachment(string: settings.debugDescription)
+    options.name = "own-dev-app-network-options"; options.lifetime = .keepAlways; add(options)
+    let wifi = settings.staticTexts.matching(NSPredicate(format: "label IN %@", ["无线局域网", "WLAN", "Wi-Fi"])).firstMatch
+    XCTAssertTrue(wifi.waitForExistence(timeout: 5), "Only enable Wi-Fi for the exact isolated acceptance bundle")
+    wifi.tap()
+  }
+
+  @MainActor func testRealtimeVoicePhysicalDEV() async throws {
+    guard let encoded = ProcessInfo.processInfo.environment["RTVOICE_PHYSICAL_CONFIG"],
+      let data = encoded.data(using: .utf8),
+      let config = try JSONSerialization.jsonObject(with: data) as? [String: String],
+      let pairing = config["pairingURI"], let threadId = config["threadId"],
+      let title = config["title"], let marker = config["marker"],
+      let archivedThreadId = config["archivedThreadId"],
+      let audioURL = config["audioURL"], let phrase = config["expectedPhrase"] else {
+      throw XCTSkip("Use an isolated signed App and a dedicated real desktop verification conversation")
+    }
+    app.launchArguments = ["-ui-testing", "-voice-pairing-fixture", "-voice-file-fixture"]
+    app.launchEnvironment = ["VOICE_PAIRING_URI": pairing, "VOICE_FILE_FIXTURE_URL": audioURL]
+    app.launchChineseTest()
+    let connect = app.buttons["codex-connect-qr"]
+    XCTAssertTrue(connect.waitForExistence(timeout: 20)); connect.tap()
+    let permissionDeadline = Date().addingTimeInterval(90)
+    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    while Date() < permissionDeadline && connect.exists {
+      let alert = springboard.alerts.firstMatch
+      if alert.exists {
+        let text = alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator: " ")
+        if text.contains("Agent Hub") && (text.contains("本地网络") || text.localizedCaseInsensitiveContains("local network")) {
+          let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow", "好", "OK"])).firstMatch
+          XCTAssertTrue(allow.exists); allow.tap()
+        }
+      }
+      try await Task.sleep(for: .seconds(1))
+    }
+    XCTAssertFalse(connect.exists)
+    XCTAssertFalse(app.staticTexts["client-form-error"].exists)
+    let search = openDesktopSidebarSearch()
+    if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
+    search.tap(); search.typeText(title + "\n")
+    let row = app.buttons.matching(NSPredicate(format: "identifier == %@ OR identifier == %@",
+      "recent-thread-" + threadId, "thread-" + threadId)).firstMatch
+    XCTAssertTrue(row.waitForExistence(timeout: 30)); row.tap()
+    XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch.waitForExistence(timeout: 45))
+    XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+    shot("rtvoice-real-live-owner", fullScreen: true)
+    func menu() {
+      let button = app.buttons["chat-menu"]
+      let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND (value == nil OR value != %@)", "正在更新…"), object: button)
+      XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed)
+      button.tap()
+    }
+    menu(); app.buttons["archived-chats"].tap()
+    let archived = app.buttons["archived-chat-" + archivedThreadId]
+    for _ in 0..<30 {
+      if archived.exists && archived.isHittable { break }
+      app.swipeUp()
+    }
+    XCTAssertTrue(archived.waitForExistence(timeout: 40)); archived.tap()
+    let notice = app.descendants(matching: .any)["archived-conversation-notice"].firstMatch
+    XCTAssertTrue(notice.waitForExistence(timeout: 30))
+    // Span a full event long-poll and background history refresh. Missing an
+    // archived execution owner must not reintroduce the live-retry banner.
+    for _ in 0..<13 {
+      XCTAssertFalse(app.staticTexts["conversation-sync-failure"].exists)
+      try await Task.sleep(for: .seconds(2))
+    }
+    shot("rtvoice-archived-history-without-live-retry", fullScreen: true)
+    // Some third-party keyboards expose keys without a Keyboard element.
+    // Verify the actual draft rather than requiring that standard AX node.
+    let draftReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true AND isHittable == true"), object: composer)
+    XCTAssertEqual(XCTWaiter.wait(for: [draftReady], timeout: 30), .completed)
+    composer.tap(); composer.typeText("RTVOICE_UNSENT_DRAFT")
+    XCTAssertEqual(composer.value as? String, "RTVOICE_UNSENT_DRAFT")
+    app.buttons["voice-input"].tap()
+    if app.buttons["ai-sharing-allow"].waitForExistence(timeout: 10), allowTestAISharingIfNeeded() {
+      app.buttons["voice-input"].tap()
+    }
+    let stop = app.buttons["stop-dictation"]
+    let listening = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND isEnabled == true"), object: stop)
+    XCTAssertEqual(XCTWaiter.wait(for: [listening], timeout: 35), .completed)
+    XCTAssertEqual(app.staticTexts["dictation-transcript"].label, "RTVOICE_UNSENT_DRAFT")
+    stop.tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 110))
+    let result = try XCTUnwrap(composer.value as? String)
+    XCTAssertTrue(result.hasPrefix("RTVOICE_UNSENT_DRAFT\n") && result.contains(phrase))
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label == %@", result)).firstMatch.exists,
+      "Transcription stays in the draft and must not create a chat input")
+    shot("rtvoice-real-asr-unsent-draft", fullScreen: true)
   }
 
   @MainActor func testVoiceExistingTranscriptionDraftDEV() async throws {
@@ -4891,6 +5517,59 @@ final class CodexManageUITests: XCTestCase {
     let stopped = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.scrollViews["sidebar-list"].activityIndicators.firstMatch)
     XCTAssertEqual(XCTWaiter.wait(for: [stopped], timeout: 5), .completed)
     shot("sidebar-refresh-error-cache-retained")
+  }
+
+  @MainActor func testSidebarRefreshVisualHitRegionsStayAligned() async throws {
+    // XCTest normally waits for an active refresh animation before injecting
+    // touches. Only this test skips those waits; the App receives real taps.
+    guard app.responds(to: NSSelectorFromString("setCurrentInteractionOptions:")) else {
+      throw XCTSkip("This Xcode cannot inject touches during a refresh animation")
+    }
+    app.setValue(NSNumber(value: 3), forKey: "currentInteractionOptions")
+    defer { app.setValue(NSNumber(value: 0), forKey: "currentInteractionOptions") }
+    app.buttons["open-sidebar"].tap()
+    pullSidebarRefresh()
+    shot("sidebar-refresh-after-pull")
+    let progress = app.scrollViews["sidebar-list"]
+    let refreshing = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == 'refreshing'"), object: progress)
+    XCTAssertEqual(XCTWaiter.wait(for: [refreshing], timeout: 3), .completed)
+    // Let the ordinary release bounce finish. The refresh remains pending.
+    try await Task.sleep(for: .milliseconds(350))
+    func tapVisible(_ text: String, button: XCUIElement) throws {
+      let request = VNRecognizeTextRequest()
+      request.recognitionLanguages = ["zh-Hans", "en-US"]
+      request.recognitionLevel = .accurate
+      let screenshot = XCUIScreen.main.screenshot()
+      try VNImageRequestHandler(cgImage: try XCTUnwrap(screenshot.image.cgImage), options: [:]).perform([request])
+      let normalized = text.replacingOccurrences(of: " ", with: "")
+      let word = try XCTUnwrap(request.results?.first {
+        $0.topCandidates(1).first?.string.replacingOccurrences(of: " ", with: "").contains(normalized) == true
+      }, "Find the actual visible label in screenshot pixels")
+      let point = CGPoint(x: word.boundingBox.midX * app.frame.width,
+        y: (1 - word.boundingBox.midY) * app.frame.height)
+      print("SIDEBAR_VISUAL_HIT", text, "visible", point, "hitRegion", button.frame)
+      XCTAssertTrue(button.frame.insetBy(dx: -2, dy: -2).contains(point),
+        "Visible text and the native hit region must agree during refresh")
+      app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: point.x, dy: point.y)).tap()
+    }
+    let recent = app.buttons["sidebar-recent-toggle"]
+    shot("sidebar-refresh-visual-hit-before-clicks")
+    try tapVisible("最近", button: recent)
+    XCTAssertEqual(recent.value as? String, "已折叠")
+    try tapVisible("最近", button: recent)
+    XCTAssertEqual(recent.value as? String, "已展开")
+    XCTAssertEqual(progress.value as? String, "refreshing")
+    try tapVisible("新聊天", button: app.buttons["sidebar-new"])
+    XCTAssertTrue(app.buttons["choose-project-mobile"].waitForExistence(timeout: 3))
+    app.buttons["取消"].tap()
+    app.buttons["sidebar-client-switch"].tap()
+    XCTAssertTrue(app.buttons["client-demo-mac"].waitForExistence(timeout: 3))
+    app.buttons["完成"].tap()
+    XCTAssertEqual(progress.value as? String, "refreshing")
+    try tapVisible("优化查询性能", button: app.buttons["recent-thread-query"])
+    XCTAssertTrue(app.buttons["close-sidebar"].waitForNonExistence(timeout: 3))
+    XCTAssertTrue(app.buttons["client-switch"].label.contains("api-service"))
+    shot("sidebar-refresh-visual-hit-selected-correct-chat")
   }
 
   @MainActor func testSidebarStatePriorityPreservesPhoneUnread() async throws {
@@ -6801,9 +7480,12 @@ final class CodexManageUITests: XCTestCase {
   }
 
   @MainActor private func historyPagingReads() async throws -> Int {
-    let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8814/results")!)
-    let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let result = try await historyPagingResults()
     return try XCTUnwrap(result["pageReads"] as? Int)
+  }
+  @MainActor private func historyPagingResults() async throws -> [String: Any] {
+    let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8814/results")!)
+    return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
   }
 
   @MainActor private func scrollToHistoryControl(_ identifier: String) -> XCUIElement {
@@ -6819,6 +7501,115 @@ final class CodexManageUITests: XCTestCase {
     start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)))
   }
 
+  @MainActor func testHistoryPagingRemoteSecondLayoutKeepsAnchor() async throws {
+    let fixture = try await historyPagingFixture("remote-layout")
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_039"].waitForExistence(timeout: 10))
+    let control = scrollToHistoryControl("history-more")
+    let anchor = app.staticTexts["HISTORY_PAGING_020"]
+    let y = anchor.frame.minY
+    control.tap()
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_000"].waitForExistence(timeout: 15))
+    // A transient 112pt tail settles to 56pt below the old row after the first layout.
+    try await Task.sleep(for: .milliseconds(250))
+    XCTAssertTrue(anchor.isHittable)
+    XCTAssertEqual(anchor.frame.minY, y, accuracy: 3,
+      "A second native layout must not invalidate the reading-position compensation")
+    let reads = try await historyPagingReads()
+    XCTAssertEqual(reads, 1)
+    shot("history-remote-second-layout-anchor")
+  }
+
+  @MainActor private func holdLatestHistoryForPaging() async throws -> URL {
+    let fixture = try await historyPagingFixture("queued")
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_023"].waitForExistence(timeout: 10))
+    let base = URL(string: "http://127.0.0.1:8814")!
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("hold-latest"))
+    app.buttons["chat-menu"].tap(); app.buttons["刷新历史"].tap()
+    var held = false
+    for _ in 0..<40 {
+      let result = try await historyPagingResults()
+      if (result["heldLatest"] as? Int ?? 0) > 0 { held = true; break }
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    XCTAssertTrue(held)
+    return base
+  }
+
+  @MainActor func testHistoryPagingRemoteDuringLatestRead() async throws {
+    let base = try await holdLatestHistoryForPaging()
+    let control = scrollToHistoryControl("history-more")
+    XCTAssertTrue(control.isEnabled, "An explicit earlier-page action must queue behind the latest read")
+    guard control.isEnabled else {
+      _ = try await URLSession.shared.data(from: base.appendingPathComponent("release-latest"))
+      return
+    }
+    let anchor = app.staticTexts["HISTORY_PAGING_020"]
+    let y = anchor.frame.minY
+    control.tap()
+    let pending = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "正在加载"), object: app.buttons["history-more"])
+    XCTAssertEqual(XCTWaiter.wait(for: [pending], timeout: 5), .completed)
+    let before = try await historyPagingReads()
+    XCTAssertEqual(before, 0, "The earlier read must wait rather than overlap the latest read")
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("release-latest"))
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_000"].waitForExistence(timeout: 15))
+    XCTAssertEqual(anchor.frame.minY, y, accuracy: 3)
+    let after = try await historyPagingReads()
+    XCTAssertEqual(after, 1, "One explicit action must issue exactly one earlier-page read")
+    let result = try await historyPagingResults()
+    XCTAssertEqual(result["maxHistoryReads"] as? Int, 1)
+
+    shot("history-remote-paging-queued-behind-latest")
+  }
+
+  @MainActor func testHistoryPagingQueuedSwitchDiscardsRequest() async throws {
+    let base = try await holdLatestHistoryForPaging()
+    let control = scrollToHistoryControl("history-more")
+    XCTAssertTrue(control.isEnabled)
+    control.tap()
+    let pending = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "正在加载"), object: app.buttons["history-more"])
+    XCTAssertEqual(XCTWaiter.wait(for: [pending], timeout: 5), .completed)
+    app.buttons["open-sidebar"].tap()
+    let other = app.buttons["recent-thread-other-thread"]
+    XCTAssertTrue(other.waitForExistence(timeout: 5)); other.tap()
+    XCTAssertTrue(app.staticTexts["OTHER_THREAD_HISTORY"].waitForExistence(timeout: 10))
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("release-latest"))
+    try await Task.sleep(for: .milliseconds(300))
+    let reads = try await historyPagingReads()
+    XCTAssertEqual(reads, 0, "An earlier read queued for the old navigation must never be submitted")
+    XCTAssertTrue(app.staticTexts["OTHER_THREAD_HISTORY"].isHittable)
+    XCTAssertFalse(app.staticTexts["HISTORY_PAGING_000"].exists)
+    XCTAssertFalse(app.alerts["无法完成操作"].exists)
+  }
+
+  @MainActor func testHistoryPagingLocalDuringLatestRead() async throws {
+    let fixture = try await historyPagingFixture("local")
+    connectLive(fixture, supportsCreation: false)
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_071"].waitForExistence(timeout: 10))
+    let base = URL(string: "http://127.0.0.1:8814")!
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("hold-latest"))
+    app.buttons["chat-menu"].tap(); app.buttons["刷新历史"].tap()
+    var held = false
+    for _ in 0..<40 {
+      let result = try await historyPagingResults()
+      if (result["heldLatest"] as? Int ?? 0) > 0 { held = true; break }
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    XCTAssertTrue(held, "A real latest-history request must remain in flight")
+    let control = scrollToHistoryControl("history-local-more")
+    XCTAssertTrue(control.isEnabled, "Cached earlier messages must remain available during a latest-page read")
+    let anchor = app.staticTexts["HISTORY_PAGING_052"]
+    let y = anchor.frame.minY
+    control.tap()
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_008"].waitForExistence(timeout: 10))
+    XCTAssertEqual(anchor.frame.minY, y, accuracy: 3)
+    _ = try await URLSession.shared.data(from: base.appendingPathComponent("release-latest"))
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_008"].exists)
+    XCTAssertEqual(anchor.frame.minY, y, accuracy: 3)
+    shot("history-local-paging-during-latest-read")
+  }
+
   @MainActor func testHistoryPagingLocalWindow() async throws {
     let fixture = try await historyPagingFixture("local")
     connectLive(fixture, supportsCreation: false)
@@ -6827,10 +7618,11 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertLessThanOrEqual(control.frame.height, 50)
     XCTAssertFalse(app.buttons["history-more"].exists)
     shot("history-paging-compact-local")
-    let boundaryY = app.staticTexts["HISTORY_PAGING_012"].frame.minY
+    // The production initial window is 20 messages, so 72 cached rows start at 52.
+    let boundaryY = app.staticTexts["HISTORY_PAGING_052"].frame.minY
     control.tap()
-    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_012"].isHittable, "Keep the previous reading boundary on screen")
-    XCTAssertEqual(app.staticTexts["HISTORY_PAGING_012"].frame.minY, boundaryY, accuracy: 3,
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_052"].isHittable, "Keep the previous reading boundary on screen")
+    XCTAssertEqual(app.staticTexts["HISTORY_PAGING_052"].frame.minY, boundaryY, accuracy: 3,
       "The final cached page must preserve the position, including the end control height")
     for _ in 0..<6 where !app.staticTexts["HISTORY_PAGING_000"].isHittable { app.scrollViews["message-list"].swipeDown() }
     XCTAssertTrue(app.staticTexts["HISTORY_PAGING_000"].isHittable)
@@ -6847,24 +7639,25 @@ final class CodexManageUITests: XCTestCase {
     _ = scrollToHistoryControl("history-local-more")
     shot("history-paging-before-local-pull")
     pullEarlierHistory(distance: 40)
-    XCTAssertFalse(app.staticTexts["HISTORY_PAGING_012"].exists,
+    XCTAssertFalse(app.staticTexts["HISTORY_PAGING_052"].exists,
       "A small bounce must not load history")
-    let boundary = app.staticTexts["HISTORY_PAGING_072"]
+    // 132 - 20 = 112 before expansion; 132 - (20 + 60) = 52 after one pull.
+    let boundary = app.staticTexts["HISTORY_PAGING_112"]
     let boundaryY = boundary.frame.minY
     pullEarlierHistory()
-    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_012"].waitForExistence(timeout: 5),
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_052"].waitForExistence(timeout: 5),
       "An ordinary top pull must reveal the next cached window")
     XCTAssertFalse(app.staticTexts["HISTORY_PAGING_000"].exists,
       "One pull must reveal only one window")
-    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_072"].isHittable,
+    XCTAssertTrue(app.staticTexts["HISTORY_PAGING_112"].isHittable,
       "Pull expansion must keep the previous reading boundary")
     XCTAssertGreaterThan(boundary.frame.minY, boundaryY + 20,
       "Prepending must retain the released pull instead of snapping back to the resting top")
     _ = scrollToHistoryControl("history-local-more")
-    let secondBoundaryY = app.staticTexts["HISTORY_PAGING_012"].frame.minY
+    let secondBoundaryY = app.staticTexts["HISTORY_PAGING_052"].frame.minY
     pullEarlierHistory(distance: 500)
     XCTAssertTrue(app.staticTexts["HISTORY_PAGING_000"].waitForExistence(timeout: 5))
-    XCTAssertGreaterThan(app.staticTexts["HISTORY_PAGING_012"].frame.minY, secondBoundaryY + 20,
+    XCTAssertGreaterThan(app.staticTexts["HISTORY_PAGING_052"].frame.minY, secondBoundaryY + 20,
       "A large pull must retain the released position rather than snapping back")
     let reads = try await historyPagingReads()
     XCTAssertEqual(reads, 0)
@@ -7072,6 +7865,7 @@ final class CodexManageUITests: XCTestCase {
     let hostId: String
     let threadId: String
     let threadTitle: String?
+    var historyThreadArchived: Bool? = nil
     let nonce: String
     let secondEndpoint: String
     let secondToken: String
@@ -7333,18 +8127,31 @@ final class CodexManageUITests: XCTestCase {
   @MainActor private func dismissLiveQuestionPresentation(wait: TimeInterval = 0) {
     let close = app.buttons["close-async-questions"]
     guard wait > 0 ? close.waitForExistence(timeout: wait) : close.exists else { return }
+    let window = app.windows.firstMatch
+    func visibleCloseFrame() -> (control: CGRect, window: CGRect)? {
+      guard close.exists, close.isEnabled, window.exists else { return nil }
+      let frame = close.frame, bounds = window.frame
+      guard [frame.minX, frame.minY, frame.width, frame.height,
+        bounds.minX, bounds.minY, bounds.width, bounds.height].allSatisfy({ $0.isFinite }),
+        frame.width > 1, frame.height > 1, bounds.width > 1, bounds.height > 1,
+        bounds.contains(frame) else { return nil }
+      return (frame, bounds)
+    }
     // SwiftUI may expose the sheet's final AX frame while its presentation is
-    // still moving. Require a stable native frame before this UI-only action.
+    // still moving. The close button's hittability query can itself fail in AX;
+    // require a stable visible frame, then tap its center from the window.
     for _ in 0..<2 {
       var previous = CGRect.null
       let stable = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-        guard close.exists, close.isHittable, close.isEnabled else { return false }
-        let frame = close.frame
+        guard let (frame, _) = visibleCloseFrame() else { previous = .null; return false }
         defer { previous = frame }
         return !previous.isNull && previous == frame
       }, object: close)
-      XCTAssertEqual(XCTWaiter.wait(for: [stable], timeout: 10), .completed)
-      close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      let settled = XCTWaiter.wait(for: [stable], timeout: 10)
+      guard settled == .completed else { XCTAssertEqual(settled, .completed); return }
+      guard let (frame, bounds) = visibleCloseFrame(), frame == previous else { continue }
+      window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        .withOffset(CGVector(dx: frame.midX - bounds.midX, dy: frame.midY - bounds.midY)).tap()
       let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: close)
       if XCTWaiter.wait(for: [dismissed], timeout: 3) == .completed { return }
     }
@@ -7754,6 +8561,8 @@ final class CodexManageUITests: XCTestCase {
     var adoptionVerification: Bool?
     var recoverFirstDraftText: String?
     var existingConnection: Bool?
+    var bundleId: String?
+    var tracePhoneIsolatedBaseline: TracePhoneUIBaseline?
 
     func connection(threadId: String, title: String) throws -> LiveFixture {
       try JSONDecoder().decode(LiveFixture.self, from: JSONSerialization.data(withJSONObject: [
@@ -7763,6 +8572,225 @@ final class CodexManageUITests: XCTestCase {
       ]))
     }
   }
+
+  // TRACEPHONE_ISOLATED_UI_BASELINE_V1: ordinary App UI only; no persistence hook.
+  private struct TracePhoneUIBaseline: Decodable {
+    struct Draft: Decodable {
+      let clientId: String
+      let threadId: String
+      let textSha256: String
+      let localOnly: Bool
+    }
+    struct MainM4: Decodable {
+      let endpoint: String
+      let token: String
+      let hostId: String
+      let threadId: String
+      let threadTitle: String
+      let draftText: String
+
+      func connection(taskId: String) throws -> LiveFixture {
+        try JSONDecoder().decode(LiveFixture.self, from: JSONSerialization.data(withJSONObject: [
+          "endpoint": endpoint, "token": token, "hostId": hostId, "threadId": threadId,
+          "threadTitle": threadTitle, "nonce": taskId, "secondEndpoint": "",
+          "secondToken": "", "secondHostId": "", "delayedEndpoint": "",
+        ]))
+      }
+    }
+    let schemaVersion: Int
+    let contract: String
+    let bundleId: String
+    let taskId: String
+    let provenance: String
+    let clientIds: [String]
+    let m4ClientId: String
+    let qa5ffClientId: String
+    let drafts: [Draft]
+    let snapshotSha256: String
+    let mainM4: MainM4
+  }
+
+  private func tracePhoneUIHash(_ text: String) -> String {
+    SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+  }
+
+  @MainActor private func tracePhonePrepareUIBaseline(_ baseline: TracePhoneUIBaseline, fixture: ReadOnlySuggestionFixture) throws {
+    XCTAssertEqual(fixture.bundleId, baseline.bundleId)
+    XCTAssertNotNil(baseline.bundleId.range(of: #"^com\.easyai\.agenthub\.traceacceptance(?:\.[a-z0-9]+)*$"#, options: .regularExpression))
+    XCTAssertEqual(baseline.schemaVersion, 1)
+    XCTAssertEqual(baseline.contract, "TRACEPHONE_ISOLATED_BASELINE_V1")
+    XCTAssertEqual(baseline.provenance, "dedicated-private-fixture-started-empty")
+    XCTAssertFalse(baseline.taskId.isEmpty)
+    XCTAssertEqual(fixture.originalClientId, baseline.m4ClientId)
+    XCTAssertEqual(fixture.hostId, baseline.qa5ffClientId)
+    XCTAssertNotEqual(baseline.m4ClientId, baseline.qa5ffClientId)
+    XCTAssertEqual(baseline.clientIds, [baseline.m4ClientId], "Only the new task-owned M4 belongs to this fresh UI baseline")
+    XCTAssertEqual(baseline.mainM4.hostId, baseline.m4ClientId)
+    XCTAssertNotNil(UUID(uuidString: baseline.m4ClientId))
+    XCTAssertNotNil(UUID(uuidString: baseline.qa5ffClientId))
+    XCTAssertNotNil(UUID(uuidString: baseline.mainM4.threadId))
+    XCTAssertFalse(baseline.mainM4.threadTitle.isEmpty)
+    let endpoint = try XCTUnwrap(URLComponents(string: baseline.mainM4.endpoint))
+    XCTAssertEqual(endpoint.scheme, "https")
+    XCTAssertFalse(endpoint.host?.isEmpty ?? true)
+    XCTAssertTrue(endpoint.path.isEmpty || endpoint.path == "/")
+    XCTAssertNil(endpoint.user)
+    XCTAssertNil(endpoint.password)
+    XCTAssertNil(endpoint.query)
+    XCTAssertNil(endpoint.fragment)
+    XCTAssertFalse(baseline.mainM4.token.isEmpty)
+    XCTAssertNotNil(baseline.mainM4.draftText.range(of: #"^TRACEPHONE_LOCAL_DRAFT_[A-Za-z0-9_-]{8,128}$"#, options: .regularExpression))
+    XCTAssertEqual(baseline.drafts.count, 1)
+    let draft = try XCTUnwrap(baseline.drafts.first)
+    XCTAssertEqual(draft.clientId, baseline.m4ClientId)
+    XCTAssertEqual(draft.threadId, baseline.mainM4.threadId)
+    XCTAssertTrue(draft.localOnly)
+    XCTAssertEqual(draft.textSha256, tracePhoneUIHash(baseline.mainM4.draftText))
+    XCTAssertEqual(fixture.adoptionVerification, true)
+    XCTAssertFalse(fixture.existingConnection == true)
+    XCTAssertNil(fixture.recoverFirstDraftText)
+
+    // The existing scanner requires exactly one selected client. Check the
+    // truly empty picker separately, then keep that scanner unchanged below.
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "ui-baseline-empty"))
+    XCTAssertTrue(readOnlySuggestionClientListReady())
+    let rows = app.collectionViews.firstMatch.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "client-"))
+    XCTAssertEqual(rows.count, 0, "Never seed or clear an App containing any existing client")
+    XCTAssertTrue(app.buttons["add-client"].exists && app.buttons["add-client"].isHittable)
+    print("SUGGESTION_DEV_UI_EMPTY_CLIENTS", baseline.bundleId)
+    XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "ui-baseline-empty-close"))
+    try tracePhoneAddClientUI(baseline.mainM4.connection(taskId: baseline.taskId), nickname: "MainM4 TracePhone")
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "ui-baseline-added"))
+    let clients = try XCTUnwrap(scanReadOnlySuggestionClients())
+    XCTAssertEqual(clients.ids, Set(baseline.clientIds))
+    XCTAssertEqual(clients.selectedId, baseline.m4ClientId)
+    let main = try XCTUnwrap(findReadOnlySuggestionClient(baseline.m4ClientId))
+    XCTAssertTrue(tapReadOnlySuggestionControl(main, step: "ui-baseline-select-M4", allowSheet: true))
+    XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "ui-baseline-selected-M4", automatic: true))
+    print("SUGGESTION_DEV_UI_MAIN_ADDED", baseline.m4ClientId)
+
+    openDesktopTestConversation(try baseline.mainM4.connection(taskId: baseline.taskId))
+    XCTAssertTrue(composer.waitForExistence(timeout: 30))
+    expectSuggestionDraft("")
+    XCTAssertFalse(app.buttons["send-message"].isEnabled)
+    XCTAssertTrue(tapReadOnlySuggestionControl(composer, step: "ui-baseline-marker-focus"))
+    XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
+    composer.typeText(baseline.mainM4.draftText)
+    expectSuggestionDraft(baseline.mainM4.draftText)
+    if app.buttons["composer-dismiss-keyboard"].exists {
+      XCTAssertTrue(tapReadOnlySuggestionControl(app.buttons["composer-dismiss-keyboard"], step: "ui-baseline-marker-keyboard"))
+    }
+    // Navigate away and back before measuring: this is the App's saved local
+    // composer draft, not just the value immediately after typeText.
+    try tracePhoneVerifyUIBaseline(baseline, phase: "before")
+  }
+
+  /// Reuses the normal Add Client form within the exact-bundle App. Unlike the
+  /// broad live-test helper it never queries/acts on SpringBoard or opens URLs.
+  @MainActor private func tracePhoneAddClientUI(_ fixture: LiveFixture, nickname: String, onConnected: (() -> Void)? = nil) throws {
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "ui-add-client-picker"))
+    let add = app.buttons["add-client"]
+    XCTAssertTrue(add.waitForExistence(timeout: 10))
+    XCTAssertTrue(tapReadOnlySuggestionControl(add, step: "ui-add-client", allowSheet: true))
+    selectConnectionMethod("手动连接", agent: "codex")
+    let address = app.textFields["client-address"]
+    XCTAssertTrue(address.waitForExistence(timeout: 15))
+    for _ in 0..<6 where !address.isHittable { app.collectionViews.firstMatch.swipeUp() }
+    for (field, value, step) in [
+      (app.textFields["client-name"], nickname, "name"),
+      (address, fixture.endpoint, "address"),
+    ] {
+      XCTAssertTrue(field.waitForExistence(timeout: 10))
+      XCTAssertTrue(tapReadOnlySuggestionControl(field, step: "ui-add-" + step, allowSheet: true))
+      XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
+      field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (field.value as? String ?? "").count))
+      field.typeText(value)
+      if app.buttons["完成输入"].exists {
+        XCTAssertTrue(tapReadOnlySuggestionControl(app.buttons["完成输入"], step: "ui-add-" + step + "-keyboard", allowSheet: true))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 10))
+      }
+    }
+    let token = app.secureTextFields["client-token"]
+    let tokenReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND isEnabled == true"), object: token)
+    XCTAssertEqual(XCTWaiter.wait(for: [tokenReady], timeout: 15), .completed)
+    XCTAssertTrue(tapReadOnlySuggestionControl(token, step: "ui-add-token", allowSheet: true))
+    XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
+    token.typeText(fixture.token)
+    if app.buttons["完成输入"].exists {
+      XCTAssertTrue(tapReadOnlySuggestionControl(app.buttons["完成输入"], step: "ui-add-token-keyboard", allowSheet: true))
+      XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 10))
+    }
+    let connect = app.buttons["connect-client"]
+    let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND isEnabled == true"), object: connect)
+    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed)
+    XCTAssertTrue(tapReadOnlySuggestionControl(connect, step: "ui-add-connect", allowSheet: true))
+    // Exactly one connect gesture. An unknown outcome fails; never re-submit.
+    XCTAssertTrue(token.waitForNonExistence(timeout: 90), "Normal Add Client UI did not confirm the connection")
+    onConnected?()
+    dismissPhysicalPasswordPrompt()
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 25))
+    if app.buttons["close-sidebar"].exists {
+      XCTAssertTrue(tapReadOnlySuggestionControl(app.buttons["close-sidebar"], step: "ui-add-close-sidebar"))
+      XCTAssertTrue(app.buttons["close-sidebar"].waitForNonExistence(timeout: 10))
+    }
+  }
+
+  @MainActor private func tracePhoneVerifyUIBaseline(_ baseline: TracePhoneUIBaseline, phase: String) throws {
+    XCTAssertTrue(phase == "before" || phase == "after")
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "ui-baseline-" + phase))
+    let clients = try XCTUnwrap(scanReadOnlySuggestionClients())
+    XCTAssertEqual(clients.ids, Set(baseline.clientIds))
+    XCTAssertEqual(clients.selectedId, baseline.m4ClientId)
+    XCTAssertFalse(clients.ids.contains(baseline.qa5ffClientId))
+    XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "ui-baseline-" + phase + "-close"))
+    openDesktopTestConversation(try baseline.mainM4.connection(taskId: baseline.taskId))
+    XCTAssertTrue(composer.waitForExistence(timeout: 30))
+    expectSuggestionDraft(baseline.mainM4.draftText)
+    let actual = try XCTUnwrap(composer.value as? String)
+    let actualHash = tracePhoneUIHash(actual)
+    let draft = try XCTUnwrap(baseline.drafts.first)
+    XCTAssertEqual(actualHash, draft.textSha256, "Hash actual UIText composer content, not the configured marker")
+    XCTAssertEqual(actual, baseline.mainM4.draftText)
+    let descriptor: [String: Any] = [
+      "bundleId": baseline.bundleId, "taskId": baseline.taskId,
+      "clientIds": clients.ids.sorted(), "selectedClientId": clients.selectedId,
+      "drafts": [["clientId": baseline.m4ClientId, "threadId": baseline.mainM4.threadId,
+        "textSha256": actualHash, "localOnly": true] as [String: Any]],
+    ]
+    let bytes = try JSONSerialization.data(withJSONObject: descriptor, options: [.sortedKeys, .withoutEscapingSlashes])
+    let snapshot = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+    XCTAssertEqual(snapshot, baseline.snapshotSha256)
+    shot("trace-phone-ui-baseline-" + phase)
+    print("SUGGESTION_DEV_ISOLATED_BASELINE", phase, snapshot)
+  }
+
+  #if DEBUG
+  @MainActor func testPhysicalAgentHubFeatureRestoreExistingClient() throws {
+    guard let target = ProcessInfo.processInfo.environment["EXISTING_CLIENT_SELECTION_UUID"] else {
+      throw XCTSkip("Requires an explicit existing client UUID")
+    }
+    XCTAssertTrue(target.utf8.count == 36 && UUID(uuidString: target) != nil,
+      "EXISTING_CLIENT_SELECTION_UUID must be a bare UUID")
+    dismissLiveQuestionPresentation(wait: 2)
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "restore-existing-before"))
+    let before = try XCTUnwrap(scanReadOnlySuggestionClients())
+    XCTAssertTrue(before.ids.contains(target), "The requested client must already exist")
+    XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "restore-existing-reset"))
+    if before.selectedId != target {
+      XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "restore-existing-select"))
+      let client = try XCTUnwrap(findReadOnlySuggestionClient(target))
+      XCTAssertTrue(tapReadOnlySuggestionControl(client, step: "restore-existing-tap", allowSheet: true))
+      XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "restore-existing-selected", automatic: true))
+    }
+    dismissLiveQuestionPresentation(wait: 2)
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "restore-existing-verify"))
+    let after = try XCTUnwrap(scanReadOnlySuggestionClients())
+    XCTAssertEqual(after.ids, before.ids)
+    XCTAssertEqual(after.selectedId, target)
+    XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "restore-existing-finish"))
+    print("PHYSICAL_EXISTING_CLIENT_SELECTION_RESTORED", target, "count", after.ids.count)
+  }
+  #endif
 
   private struct RealConversationSuggestionProof: Decodable {
     let hostId: String
@@ -7886,6 +8914,9 @@ final class CodexManageUITests: XCTestCase {
     let fixture = try JSONDecoder().decode(ReadOnlySuggestionFixture.self, from: Data(encoded.utf8))
     XCTAssertNotEqual(fixture.threadAId, fixture.threadBId)
     XCTAssertFalse(fixture.sourceATurnId.isEmpty || fixture.sourceBTurnId.isEmpty)
+    if let baseline = fixture.tracePhoneIsolatedBaseline {
+      try tracePhonePrepareUIBaseline(baseline, fixture: fixture)
+    }
     dismissPhysicalPasswordPrompt()
     XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "initial-client-switch"))
     let clients = try XCTUnwrap(scanReadOnlySuggestionClients(), "Read every connection before DEV")
@@ -7919,8 +8950,13 @@ final class CodexManageUITests: XCTestCase {
         print("SUGGESTION_DEV_REUSE_TEMPORARY_CLIENT", fixture.hostId)
       } else {
         XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "initial-close-picker"))
-        connectLive(try fixture.connection(threadId: fixture.threadAId, title: fixture.threadATitle),
-          supportsCreation: false, onConnected: { self.suggestionCleanupTarget = (fixture.hostId, originalId) })
+        if fixture.tracePhoneIsolatedBaseline != nil {
+          try tracePhoneAddClientUI(fixture.connection(threadId: fixture.threadAId, title: fixture.threadATitle),
+            nickname: "QA5ff TracePhone", onConnected: { self.suggestionCleanupTarget = (fixture.hostId, originalId) })
+        } else {
+          connectLive(try fixture.connection(threadId: fixture.threadAId, title: fixture.threadATitle),
+            supportsCreation: false, onConnected: { self.suggestionCleanupTarget = (fixture.hostId, originalId) })
+        }
       }
     }
     dismissPhysicalPasswordPrompt()
@@ -7991,6 +9027,9 @@ final class CodexManageUITests: XCTestCase {
     } else {
       cleanupReadOnlySuggestionConnection()
       XCTAssertNil(suggestionCleanupTarget, "The dedicated connection must be restored before passing")
+    }
+    if let baseline = fixture.tracePhoneIsolatedBaseline {
+      try tracePhoneVerifyUIBaseline(baseline, phase: "after")
     }
     print("SUGGESTION_DEV_READONLY_COMPLETE")
   }
@@ -9687,12 +10726,18 @@ final class CodexManageUITests: XCTestCase {
     }
   }
   @MainActor func testOriginalDesktopMessageLinksDEV() async throws {
-    struct LinkFixture: Decodable { let connection: LiveFixture; let labels: [String]; let webMarker: String }
+    struct LinkFixture: Decodable { let connection: LiveFixture; let labels: [String]; let webMarker: String; let historyFallback: Bool? }
     let (data, response) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8896/")!)
     XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
     let fixture = try JSONDecoder().decode(LinkFixture.self, from: data)
     connectLive(fixture.connection, supportsCreation: false)
     openDesktopTestConversation(fixture.connection)
+    if fixture.historyFallback == true {
+      let answer = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "LINK_FILE_" + fixture.connection.nonce)).firstMatch
+      XCTAssertTrue(answer.waitForExistence(timeout: 30), app.debugDescription)
+      XCTAssertFalse(app.buttons["conversation-sync-retry"].exists, "Fresh terminal history must not report a live connection failure")
+      shot("history-fallback-terminal-without-false-live-warning")
+    }
     let timeline = app.scrollViews["message-list"]
     func tapLink(_ label: String) {
       let link = app.links.matching(NSPredicate(format: "label == %@", label)).firstMatch
@@ -9713,12 +10758,57 @@ final class CodexManageUITests: XCTestCase {
       shot("message-link-preview-" + label)
       done.tap()
     }
+    func updateFile(_ stage: Int) async throws -> String {
+      struct Update: Decodable { let marker: String }
+      let (data, response) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8896/update?stage=\(stage)")!)
+      XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+      return try JSONDecoder().decode(Update.self, from: data).marker
+    }
+    func checkPreview(_ marker: String) {
+      let done = app.buttons.matching(NSPredicate(format: "identifier == 'QLOverlayDoneButtonAccessibilityIdentifier' OR identifier == 'QLDoneButton' OR label == '关闭' OR label == 'Close' OR label == 'Done' OR label == '完成'")).firstMatch
+      XCTAssertTrue(done.waitForExistence(timeout: 15), app.debugDescription)
+      XCTAssertTrue(app.textViews.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch.waitForExistence(timeout: 10), app.debugDescription)
+      shot("message-link-updated-preview-" + marker)
+      done.tap()
+    }
+    for stage in [1, 2] {
+      let marker = try await updateFile(stage)
+      tapLink(fixture.labels[0])
+      checkPreview(marker)
+    }
+    let download = app.buttons["download-验证 (记录).txt"].firstMatch
+    let preview = app.buttons["preview-验证 (记录).txt"].firstMatch
+    for _ in 0..<10 where !download.isHittable && !preview.isHittable { timeline.swipeUp() }
+    if download.isHittable { download.tap() }
+    XCTAssertTrue(preview.waitForExistence(timeout: 15), app.debugDescription)
+    preview.tap()
+    checkPreview("LINK_FILE_" + fixture.connection.nonce + "_UPDATED_2")
+    let marker = try await updateFile(3)
+    if download.isHittable { download.tap() }
+    XCTAssertTrue(preview.waitForExistence(timeout: 15), app.debugDescription)
+    preview.tap()
+    checkPreview(marker)
+    if fixture.historyFallback == true {
+      func setHistoryState(_ value: String) async throws {
+        let (_, response) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8896/history-state?value=" + value)!)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+      }
+      let retry = app.buttons["conversation-sync-retry"]
+      for state in ["running", "unknown", "read-failure", "pending-reply"] {
+        try await setHistoryState(state)
+        XCTAssertTrue(retry.waitForExistence(timeout: 35), "Missing warning for " + state)
+        shot("history-fallback-warning-" + state)
+        try await setHistoryState("completed")
+        XCTAssertTrue(retry.waitForNonExistence(timeout: 35), app.debugDescription)
+      }
+      shot("history-fallback-terminal-recovered")
+    }
     tapLink("网页预览")
     XCTAssertTrue(app.staticTexts[fixture.webMarker].waitForExistence(timeout: 25), app.debugDescription)
     shot("message-link-web-preview")
     let browserDone = app.buttons.matching(NSPredicate(format: "label == 'Done' OR label == '完成' OR label == '关闭' OR label == 'Close'")).firstMatch
     XCTAssertTrue(browserDone.waitForExistence(timeout: 10)); browserDone.tap()
-    for (label, reason) in [("缺失文件", "这是电脑上的本地文件"), ("电脑本机网页", "此网址指向电脑的本机地址"), ("不支持的链接", "手机暂不支持此类链接")] {
+    for (label, reason) in [("缺失文件", "电脑上的文件不存在"), ("电脑本机网页", "此网址指向电脑的本机地址"), ("不支持的链接", "手机暂不支持此类链接")] {
       tapLink(label)
       let alert = app.alerts["无法打开链接"]
       XCTAssertTrue(alert.waitForExistence(timeout: 10), app.debugDescription)
@@ -9733,7 +10823,7 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertTrue(app.buttons["open-sidebar"].waitForExistence(timeout: 15))
     openDesktopTestConversation(fixture.connection)
     tapLink(fixture.labels[0])
-    XCTAssertTrue(app.textViews.matching(NSPredicate(format: "label CONTAINS %@", "LINK_FILE_" + fixture.connection.nonce)).firstMatch.waitForExistence(timeout: 15))
+    XCTAssertTrue(app.textViews.matching(NSPredicate(format: "label CONTAINS %@", "LINK_FILE_" + fixture.connection.nonce + "_UPDATED_3")).firstMatch.waitForExistence(timeout: 15))
     shot("message-link-restart-preview")
   }
   @MainActor func testOriginalDesktopPhotoFileUploadAndDownload() async throws {
@@ -10162,7 +11252,7 @@ final class CodexManageUITests: XCTestCase {
   }
   @MainActor private func openDesktopSidebarSearch() -> XCUIElement {
     dismissLiveQuestionPresentation()
-    if name.contains("testOriginalDesktopReadOnlySuggestionsDEV") {
+    if name.contains("testOriginalDesktopReadOnlySuggestionsDEV") || name.contains("testWindowsConversationSyncReadOnlyDEV") {
       physicalSidebar()
     } else {
       app.buttons["open-sidebar"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
@@ -10648,6 +11738,12 @@ final class CodexManageUITests: XCTestCase {
     let before = try await read("stats"); XCTAssertEqual(before["claimPosts"] as? Int, 0)
     shot("um04-real-bonjour-before-click")
     row.tap()
+    let keyField = app.secureTextFields["codex-host-key"]
+    XCTAssertTrue(keyField.waitForExistence(timeout: 10))
+    XCTAssertFalse(app.buttons["codex-authorize-connect"].isEnabled)
+    let selected = try await read("stats"); XCTAssertEqual(selected["claimPosts"] as? Int, 0)
+    keyField.tap(); keyField.typeText(try XCTUnwrap(config["hostKey"] as? String))
+    app.buttons["codex-authorize-connect"].tap()
     XCTAssertTrue(row.waitForNonExistence(timeout: 90), app.debugDescription)
     XCTAssertFalse(app.staticTexts["client-form-error"].exists)
     let fixture = LiveFixture(verifyUnread: nil, endpoint: endpoint, token: "unused-no-host-token-provided-to-app",
@@ -11549,6 +12645,207 @@ extension CodexManageUITests {
 
 
 extension CodexManageUITests {
+  @MainActor func testPhysicalAgentHubFeatureAttachmentCurrentVersion() async throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Requires the ordinary App on the paired physical iPhone")
+    #else
+    struct Fixture: Decodable {
+      let hostId: String; let threadId: String; let titleQuery: String
+      let linkLabel: String; let fileName: String
+      let initialMarker: String; let editedMarker: String; let replacedMarker: String
+      let controlURL: String; let controlToken: String
+      let originalClientId: String?
+      let controlMode: String?; let controlRunId: String?; let controlInvitationId: String?
+    }
+    let fixture = try JSONDecoder().decode(Fixture.self, from: Data(XCTUnwrap(ProcessInfo.processInfo.environment["ATTACHMENT_PHYSICAL_FIXTURE_JSON"]).utf8))
+    dismissLiveQuestionPresentation(wait: 2)
+    func tapVisible(_ control: XCUIElement) {
+      XCTAssertTrue(control.exists && control.isEnabled, app.debugDescription)
+      let frame = control.frame
+      XCTAssertTrue(app.windows.firstMatch.frame.contains(frame) && frame.width > 1 && frame.height > 1,
+        "Require a visible control before tapping: " + app.debugDescription)
+      let origin = app.frame.origin
+      app.coordinate(withNormalizedOffset: .zero)
+        .withOffset(CGVector(dx: frame.midX - origin.x, dy: frame.midY - origin.y)).tap()
+    }
+    XCTAssertTrue(app.buttons["client-switch"].waitForExistence(timeout: 30))
+    shot("physical-attachment-before-client-picker", fullScreen: true)
+    tapVisible(app.buttons["client-switch"])
+    shot("physical-attachment-client-picker", fullScreen: true)
+    XCTAssertTrue(app.buttons["client-" + fixture.hostId].waitForExistence(timeout: 15), app.debugDescription)
+    let clients = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'client-'"))
+    let selected = try XCTUnwrap(clients.allElementsBoundByIndex.first(where: { $0.isSelected })?.identifier,
+      "Capture the existing selected client before changing it: " + app.debugDescription)
+    let original = fixture.originalClientId ?? selected
+    XCTAssertTrue(app.buttons[original].exists, "Retain the original selection across a diagnostic retry")
+    func selectClient(_ identifier: String) {
+      let row = app.buttons[identifier]
+      XCTAssertTrue(row.waitForExistence(timeout: 20), app.debugDescription)
+      tapVisible(row)
+      if app.buttons["完成"].exists && app.buttons["完成"].isHittable { tapVisible(app.buttons["完成"]) }
+      XCTAssertTrue(app.buttons["open-sidebar"].waitForExistence(timeout: 20))
+    }
+    selectClient("client-" + fixture.hostId)
+    func openThread() {
+      if !app.buttons["sidebar-search-toggle"].exists {
+        tapVisible(app.buttons["open-sidebar"])
+        XCTAssertTrue(app.buttons["sidebar-search-toggle"].waitForExistence(timeout: 10), app.debugDescription)
+      }
+      if !app.textFields["sidebar-search"].exists { tapVisible(app.buttons["sidebar-search-toggle"]) }
+      let search = app.textFields["sidebar-search"]
+      XCTAssertTrue(search.waitForExistence(timeout: 10)); tapVisible(search)
+      let old = search.value as? String ?? ""
+      search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count) + fixture.titleQuery + "\n")
+      let row = app.buttons["recent-thread-" + fixture.threadId]
+      XCTAssertTrue(row.waitForExistence(timeout: 45), app.debugDescription)
+      for _ in 0..<10 where !row.isHittable { app.swipeUp() }
+      XCTAssertTrue(row.isHittable); tapVisible(row)
+    }
+    let donePredicate = NSPredicate(format: "identifier == 'QLOverlayDoneButtonAccessibilityIdentifier' OR identifier == 'QLDoneButton' OR label IN %@", ["关闭", "Close", "Done", "完成"])
+    func checkPreview(_ marker: String) {
+      XCTAssertTrue(app.buttons.matching(donePredicate).firstMatch.waitForExistence(timeout: 30), app.debugDescription)
+      // QuickLook exposes Markdown as an outer TextView value with nested
+      // TextView labels. Keep version checks inside the presented preview so
+      // matching text in the conversation behind it cannot satisfy the check.
+      let preview = app.otherElements["QLPreviewControllerView"]
+      let versionText = preview.descendants(matching: .textView).matching(
+        NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", marker, marker)
+      ).firstMatch
+      XCTAssertTrue(versionText.waitForExistence(timeout: 20), app.debugDescription)
+      XCTAssertFalse(app.alerts["无法打开链接"].exists)
+    }
+    func closePreview() { tapVisible(app.buttons.matching(donePredicate).firstMatch) }
+    func tapLink() {
+      let link = app.links.matching(NSPredicate(format: "label == %@", fixture.linkLabel)).firstMatch
+      let fallback = app.staticTexts.matching(NSPredicate(format: "label == %@", fixture.linkLabel)).firstMatch
+      let timeline = app.scrollViews["message-list"]
+      for _ in 0..<20 where !(link.exists && link.isHittable) && !(fallback.exists && fallback.isHittable) {
+        let element = link.exists ? link : fallback
+        if element.exists && element.frame.minY < timeline.frame.minY + 100 { timeline.swipeDown() }
+        else { timeline.swipeUp() }
+      }
+      if link.exists && link.isHittable { tapVisible(link) }
+      else { XCTAssertTrue(fallback.isHittable, app.debugDescription); tapVisible(fallback) }
+    }
+    var pairedPhoneClaim: String?
+    var pairedDriverClaim: String?
+    var pairedClaimBytes: Data?
+    var pairedPhase = 1
+    func advance(_ stage: Int) async throws {
+      if fixture.controlMode == "paired-files-v2" {
+        struct Acknowledgement: Decodable {
+          let version: Int; let runId: String; let invitationId: String
+          let phoneClaimId: String; let driverClaimId: String
+          let stage: Int; let verified: Bool; let error: String?
+        }
+        func require(_ value: Bool, _ message: String) throws {
+          if !value { throw NSError(domain: "AttachmentPairedControl", code: 1,
+            userInfo: [NSLocalizedDescriptionKey: message]) }
+        }
+        let deadline = ProcessInfo.processInfo.systemUptime + 300
+        let run = try XCTUnwrap(UUID(uuidString: fixture.controlRunId ?? "")).uuidString
+        let invitation = try XCTUnwrap(UUID(uuidString: fixture.controlInvitationId ?? "")).uuidString
+        try require(stage == pairedPhase + 1 && [2, 3].contains(stage), "Only the next stage of this claimed run may advance")
+        let root = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+          .appendingPathComponent("AttachmentCurrentControl", isDirectory: true)
+        let directory = root.appendingPathComponent(run, isDirectory: true)
+        let requestURL = directory.appendingPathComponent("request.json")
+        let acknowledgementURL = directory.appendingPathComponent("acknowledgement.json")
+        if stage == 2 {
+          try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+          // POSIX mkdir is exclusive even for an existing empty run directory.
+          guard directory.path.withCString({ Darwin.mkdir($0, 0o700) }) == 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno),
+              userInfo: [NSLocalizedDescriptionKey: "Refuse a reused phone run, including old requests or acknowledgements"])
+          }
+          let phone = UUID().uuidString
+          let claim: [String: Any] = ["version": 1, "runId": run, "invitationId": invitation,
+            "phoneClaimId": phone, "hostId": fixture.hostId, "threadId": fixture.threadId]
+          let bytes = try JSONSerialization.data(withJSONObject: claim, options: [.sortedKeys])
+          try bytes.write(to: directory.appendingPathComponent("phone-claim.json"), options: .withoutOverwriting)
+          pairedPhoneClaim = phone; pairedClaimBytes = bytes
+        } else {
+          let previous = try Data(contentsOf: directory.appendingPathComponent("phone-claim.json"))
+          try require(previous == pairedClaimBytes, "The original phone claim must remain unchanged")
+          try require(pairedDriverClaim != nil, "Stage3 requires this run's verified driver claim")
+          let old = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: requestURL)) as? [String: Any])
+          try require(old["stage"] as? Int == 2 && old["runId"] as? String == run
+            && old["invitationId"] as? String == invitation && old["phoneClaimId"] as? String == pairedPhoneClaim,
+            "Stage3 must continue the exact original stage2 request")
+        }
+        let phone = try XCTUnwrap(pairedPhoneClaim)
+        let request: [String: Any] = ["version": 1, "runId": run, "invitationId": invitation,
+          "phoneClaimId": phone, "driverClaimId": pairedDriverClaim as Any? ?? NSNull(),
+          "stage": stage, "hostId": fixture.hostId, "threadId": fixture.threadId]
+        let bytes = try JSONSerialization.data(withJSONObject: request, options: [.sortedKeys])
+        try bytes.write(to: requestURL, options: stage == 2 ? .withoutOverwriting : .atomic)
+        print("PHYSICAL_ATTACHMENT_PAIRED_STAGE_REQUESTED", run, stage)
+        while ProcessInfo.processInfo.systemUptime < deadline {
+          if FileManager.default.fileExists(atPath: acknowledgementURL.path) {
+            let acknowledgement = try JSONDecoder().decode(Acknowledgement.self,
+              from: Data(contentsOf: acknowledgementURL))
+            try require(acknowledgement.version == 1 && acknowledgement.runId == run
+              && acknowledgement.invitationId == invitation && acknowledgement.phoneClaimId == phone,
+              "Reject an acknowledgement from an old request or another run")
+            try require(UUID(uuidString: acknowledgement.driverClaimId) != nil,
+              "A driver must exclusively claim this run")
+            if let driver = pairedDriverClaim {
+              try require(acknowledgement.driverClaimId == driver, "The original driver claim must remain unchanged")
+            }
+            if acknowledgement.stage == stage {
+              try require(acknowledgement.verified, acknowledgement.error ?? "Require exact Host bytes before continuing")
+              try require(ProcessInfo.processInfo.systemUptime < deadline,
+                "Paired acknowledgement exceeded the original 300s budget")
+              pairedDriverClaim = acknowledgement.driverClaimId; pairedPhase = stage
+              return
+            }
+            try require(stage == 3 && acknowledgement.stage == 2 && pairedPhase == 2,
+              "An older acknowledgement cannot complete the current stage")
+          }
+          try await Task.sleep(for: .milliseconds(500))
+        }
+        throw NSError(domain: "AttachmentPairedControl", code: 2,
+          userInfo: [NSLocalizedDescriptionKey: "Paired acknowledgement exceeded the original 300s budget; query original operations"])
+      }
+      if fixture.controlMode != nil {
+        throw NSError(domain: "AttachmentPairedControl", code: 3,
+          userInfo: [NSLocalizedDescriptionKey: "Unsupported control mode; do not fall back to legacy stage execution"])
+      }
+      var url = URLComponents(string: fixture.controlURL + "/advance")!
+      url.queryItems = [URLQueryItem(name: "stage", value: String(stage))]
+      var request = URLRequest(url: url.url!); request.timeoutInterval = 300
+      request.setValue("Bearer " + fixture.controlToken, forHTTPHeaderField: "Authorization")
+      let (_, response) = try await URLSession.shared.data(for: request)
+      XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200,
+        "Require the original remote owner to confirm the exact file update")
+    }
+    openThread(); tapLink(); checkPreview(fixture.initialMarker)
+    shot("physical-attachment-original-link-preview")
+    try await advance(2)
+    checkPreview(fixture.initialMarker)
+    shot("physical-attachment-link-preview-survives-edit")
+    closePreview(); tapLink(); checkPreview(fixture.editedMarker)
+    shot("physical-attachment-link-opens-edited-version"); closePreview()
+    let download = app.buttons["download-" + fixture.fileName].firstMatch
+    let preview = app.buttons["preview-" + fixture.fileName].firstMatch
+    for _ in 0..<12 where !download.isHittable && !preview.isHittable { app.scrollViews["message-list"].swipeUp() }
+    if download.isHittable { tapVisible(download) }
+    XCTAssertTrue(preview.waitForExistence(timeout: 30)); tapVisible(preview); checkPreview(fixture.editedMarker)
+    try await advance(3)
+    checkPreview(fixture.editedMarker)
+    shot("physical-attachment-card-preview-survives-replacement")
+    closePreview(); tapVisible(preview); checkPreview(fixture.replacedMarker)
+    shot("physical-attachment-cached-card-opens-current-version"); closePreview()
+    app.terminate(); app.launchArguments = []; app.activate()
+    dismissLiveQuestionPresentation(wait: 2)
+    XCTAssertTrue(app.buttons["open-sidebar"].waitForExistence(timeout: 30))
+    openThread(); tapLink(); checkPreview(fixture.replacedMarker)
+    shot("physical-attachment-relaunch-opens-current-version"); closePreview()
+    tapVisible(app.buttons["client-switch"]); selectClient(original)
+    print("PHYSICAL_ATTACHMENT_CURRENT_VERSION_PASSED", fixture.hostId, fixture.threadId)
+    #endif
+  }
+
   @MainActor func testPhysicalAgentHubFeaturePreflight() throws {
     #if targetEnvironment(simulator)
     throw XCTSkip("Requires the paired physical iPhone and the ordinary installation")
@@ -12013,5 +13310,91 @@ extension CodexManageUITests {
     }
     menu(); shot("pending-record-original-query-keeps-other-target")
     XCTAssertEqual(app.buttons.matching(queryPredicate).count, 2)
+  }
+
+  @MainActor func testPhysicalAgentHubFeatureStatusAndHistoricalFilePreview() throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Requires the existing formal installation on the paired physical iPhone")
+    #else
+    struct ExistingFile: Decodable {
+      let hostId: String; let threadId: String; let title: String
+      let messageId: String; let linkLabel: String; let previewMarker: String
+      let expectedErrorCode: String?
+    }
+    let fixture = try JSONDecoder().decode(ExistingFile.self, from: Data(XCTUnwrap(
+      ProcessInfo.processInfo.environment["STATUS_PREVIEW_PHYSICAL_JSON"]).utf8))
+    dismissLiveQuestionPresentation(wait: 2)
+    let switcher = app.buttons["client-switch"]
+    XCTAssertTrue(switcher.waitForExistence(timeout: 30)); switcher.tap()
+    let original = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'client-' AND selected == true")).firstMatch
+    let originalId = original.exists ? original.identifier : nil
+    let target = app.buttons["client-" + fixture.hostId]
+    XCTAssertTrue(target.waitForExistence(timeout: 15)); target.tap()
+    if app.buttons["完成"].exists { app.buttons["完成"].tap() }
+    let search = openDesktopSidebarSearch()
+    if app.buttons["清除搜索"].exists { app.buttons["清除搜索"].tap() }
+    search.tap(); search.typeText(fixture.title + "\n")
+    let row = app.buttons.matching(NSPredicate(format: "identifier IN %@", [
+      "recent-thread-" + fixture.threadId, "thread-" + fixture.threadId, "pinned-thread-" + fixture.threadId])).firstMatch
+    XCTAssertTrue(row.waitForExistence(timeout: 40)); row.tap()
+    let connected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value CONTAINS %@", "Codex · 实时连接"), object: switcher)
+    XCTAssertEqual(XCTWaiter.wait(for: [connected], timeout: 60), .completed)
+    XCTAssertTrue(app.buttons["conversation-sync-retry"].waitForNonExistence(timeout: 60), app.debugDescription)
+    XCTAssertFalse(app.staticTexts["实时状态暂不可用"].exists)
+    shot("physical-easyai03-connected-without-false-warning")
+    physicalMenu(); physicalAction("chat-search").tap()
+    let find = app.textFields["chat-search-query"]
+    XCTAssertTrue(find.waitForExistence(timeout: 15)); find.tap(); find.typeText(fixture.linkLabel)
+    let result = app.buttons["chat-search-result-" + fixture.messageId]
+    XCTAssertTrue(result.waitForExistence(timeout: 90), app.debugDescription); result.tap()
+    let located = app.descendants(matching: .any)["chat-search-located-" + fixture.messageId].firstMatch
+    XCTAssertTrue(located.waitForExistence(timeout: 30), app.debugDescription)
+    let timeline = app.scrollViews["message-list"]
+    let expand = app.buttons.matching(NSPredicate(format: "identifier == %@ AND label == %@",
+      "chat-search-located-" + fixture.messageId, "完整消息")).firstMatch
+    for _ in 0..<20 where expand.exists && !expand.isHittable {
+      if expand.frame.minY < timeline.frame.minY + 100 { timeline.swipeDown() }
+      else { timeline.swipeUp() }
+    }
+    if expand.exists { XCTAssertTrue(expand.isHittable); expand.tap() }
+    let link = app.links.matching(NSPredicate(format: "label == %@", fixture.linkLabel)).firstMatch
+    let text = app.staticTexts.matching(NSPredicate(format: "label == %@", fixture.linkLabel)).firstMatch
+    for _ in 0..<16 where !(link.exists && link.isHittable) && !(text.exists && text.isHittable) {
+      let element = link.exists ? link : text
+      if element.exists && element.frame.minY < timeline.frame.minY + 100 { timeline.swipeDown() }
+      else { timeline.swipeUp() }
+    }
+    shot("physical-original-screenshot-file-link")
+    if link.exists && link.isHittable { link.tap() }
+    else { XCTAssertTrue(text.isHittable, app.debugDescription); text.tap() }
+    if let code = fixture.expectedErrorCode {
+      let alert = app.alerts["无法打开链接"]
+      XCTAssertTrue(alert.waitForExistence(timeout: 40), app.debugDescription)
+      let detail = alert.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@ AND label CONTAINS %@", code, "HTTP 410", "诊断编号")).firstMatch
+      XCTAssertTrue(detail.exists, app.debugDescription)
+      shot("physical-missing-file-real-error-and-diagnostic-id")
+      print("PHYSICAL_RESOURCE_ERROR", detail.label)
+      alert.buttons["好"].tap()
+      if let originalId, originalId != "client-" + fixture.hostId {
+        switcher.tap(); app.buttons[originalId].tap()
+        if app.buttons["完成"].exists { app.buttons["完成"].tap() }
+      }
+      return
+    }
+    let close = app.buttons.matching(NSPredicate(format:
+      "identifier == 'QLOverlayDoneButtonAccessibilityIdentifier' OR identifier == 'QLDoneButton' OR label IN %@",
+      ["关闭", "Close", "Done", "完成"])).firstMatch
+    XCTAssertTrue(close.waitForExistence(timeout: 40), app.debugDescription)
+    let content = app.textViews.matching(NSPredicate(format: "label CONTAINS %@", fixture.previewMarker)).firstMatch
+    XCTAssertTrue(content.waitForExistence(timeout: 20), app.debugDescription)
+    XCTAssertFalse(app.alerts["无法打开链接"].exists)
+    shot("physical-original-file-current-content-preview"); close.tap()
+    XCTAssertFalse(app.buttons["conversation-sync-retry"].exists)
+    if let originalId, originalId != "client-" + fixture.hostId {
+      switcher.tap(); app.buttons[originalId].tap()
+      if app.buttons["完成"].exists { app.buttons["完成"].tap() }
+    }
+    print("PHYSICAL_STATUS_PREVIEW_PASSED", fixture.hostId, fixture.threadId, fixture.messageId)
+    #endif
   }
 }

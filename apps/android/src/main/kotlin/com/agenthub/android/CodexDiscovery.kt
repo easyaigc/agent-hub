@@ -14,6 +14,7 @@ import android.util.Base64
 import androidx.compose.runtime.*
 import com.agenthub.core.DomainContract
 import com.agenthub.core.CodexDiscoveryContract
+import com.agenthub.core.CodexRouteRules
 import com.agenthub.core.TargetScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
@@ -27,12 +28,12 @@ import java.util.UUID
 import javax.net.ssl.*
 
 data class CodexRoute(val endpoint: String, val networkKind: String = "unknown")
-data class PairedCodexConnection(val target: TargetScope, val fingerprint: String, val routes: List<CodexRoute>) {
-    override fun equals(other: Any?) = other is PairedCodexConnection && sameScope(target, other.target) && fingerprint == other.fingerprint && routes == other.routes
-    override fun hashCode() = com.agenthub.core.MobileRules.cacheKey("", target, "", "").hashCode() * 31 + fingerprint.hashCode() * 17 + routes.hashCode()
+data class PairedCodexConnection(val target: TargetScope, val fingerprint: String, val routes: List<CodexRoute>, val systemEndpoints: List<String> = emptyList()) {
+    override fun equals(other: Any?) = other is PairedCodexConnection && sameScope(target, other.target) && fingerprint == other.fingerprint && routes == other.routes && systemEndpoints == other.systemEndpoints
+    override fun hashCode() = com.agenthub.core.MobileRules.cacheKey("", target, "", "").hashCode() * 31 + fingerprint.hashCode() * 17 + routes.hashCode() + systemEndpoints.hashCode()
 }
 data class CodexDescriptor(val name: String, val target: TargetScope, val fingerprint: String,
-    val routes: List<CodexRoute>, val token: String? = null, val connectionMode: String? = null) {
+    val routes: List<CodexRoute>, val token: String? = null, val connectionMode: String? = null, val systemEndpoints: List<String> = emptyList()) {
     companion object {
         fun parsePairing(text: String): CodexDescriptor {
             require(text.length <= 24_000) { "连接二维码内容过大" }
@@ -115,6 +116,12 @@ object CodexEndpoints {
 
 /** Trust is scoped to one explicit pairing, endpoint and exact leaf DER hash. */
 internal object PairedCodexTLS {
+    fun configure(connection: HttpsURLConnection, endpoint: String, paired: PairedCodexConnection) {
+        val normalized = CodexEndpoints.local(endpoint)
+        if (paired.routes.any { it.endpoint == normalized }) configure(connection, normalized, paired.fingerprint)
+        else require(CodexRouteRules.systemEndpoint(endpoint)?.let { it in paired.systemEndpoints } == true) { "连接地址不属于已配对电脑" }
+        // A saved Serve route keeps the platform's CA and hostname verification.
+    }
     fun configure(connection: HttpsURLConnection, endpoint: String, fingerprint: String) {
         val expectedHost = URI(endpoint).host
         val expected = fingerprint.lowercase()
@@ -309,6 +316,6 @@ class CodexHostDiscovery(context: Context, private val session: MobileSession, s
     }
 }
 
-internal fun encodeCodexDirect(value: PairedCodexConnection) = JSONObject().put("target", encodeTarget(value.target)).put("fingerprint", value.fingerprint).put("routes", JSONArray(value.routes.map { JSONObject().put("endpoint", it.endpoint).put("networkKind", it.networkKind) }))
-internal fun decodeCodexDirect(json: JSONObject) = PairedCodexConnection(HostReadCodec.target(json.getJSONObject("target"))!!, json.getString("fingerprint"), json.getJSONArray("routes").objects().map { CodexRoute(CodexEndpoints.local(it.getString("endpoint")), it.getString("networkKind")) }).also { require(it.fingerprint.matches(Regex("[a-f0-9]{64}")) && it.routes.size in 1..32) }
+internal fun encodeCodexDirect(value: PairedCodexConnection) = JSONObject().put("target", encodeTarget(value.target)).put("fingerprint", value.fingerprint).put("routes", JSONArray(value.routes.map { JSONObject().put("endpoint", it.endpoint).put("networkKind", it.networkKind) })).put("systemEndpoints", JSONArray(value.systemEndpoints))
+internal fun decodeCodexDirect(json: JSONObject) = PairedCodexConnection(HostReadCodec.target(json.getJSONObject("target"))!!, json.getString("fingerprint"), json.getJSONArray("routes").objects().map { CodexRoute(CodexEndpoints.local(it.getString("endpoint")), it.getString("networkKind")) }, json.optJSONArray("systemEndpoints")?.strings().orEmpty()).also { require(it.fingerprint.matches(Regex("[a-f0-9]{64}")) && it.routes.size in 1..32 && it.systemEndpoints.size <= 4 && it.systemEndpoints.all { endpoint -> CodexRouteRules.systemEndpoint(endpoint) == endpoint }) }
 internal fun encodeTarget(s: TargetScope) = JSONObject().put("agentId", s.agentId).put("hostId", s.hostId).put("workspaceId", s.workspaceId).put("runtimeId", s.runtimeId).apply { if (s.accountAuthority != null) put("account", JSONObject().put("authority", s.accountAuthority).put("subject", s.accountSubject)) }

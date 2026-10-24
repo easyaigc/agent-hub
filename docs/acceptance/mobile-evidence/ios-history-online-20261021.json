@@ -1,0 +1,1129 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-21",
+  "features": ["F17", "F18", "F46", "F56", "F50"],
+  "status": "passed-and-formal-build100-installed",
+  "scope": "Existing original-desktop history read over real HTTPS by the independent physical iPhone app; no model inputs submitted",
+  "beforeFix": {
+    "realHistoryRead": true,
+    "workspaceThreads": 818,
+    "initialPageMessages": 100,
+    "moreAvailable": true,
+    "performanceAccepted": false,
+    "trials": [
+      {
+        "framesOver50MS": 68,
+        "gestures": 8,
+        "markdownBodies": 4,
+        "maxFrameMS": 658.2955833291635,
+        "maxTimelineMS": 0.44675001117866486,
+        "movingFrames": 358,
+        "p95FrameMS": 204.61987500311807,
+        "timelineBuilds": 8,
+        "totalTimelineMS": 1.9015416473848745
+      },
+      {
+        "framesOver50MS": 60,
+        "gestures": 8,
+        "markdownBodies": 3,
+        "maxFrameMS": 501.7748333339114,
+        "maxTimelineMS": 0.5074166547274217,
+        "movingFrames": 388,
+        "p95FrameMS": 219.15949998947326,
+        "timelineBuilds": 1,
+        "totalTimelineMS": 0.5074166547274217
+      }
+    ],
+    "transportLimit": "Transport of the initial successful pilots was not independently captured at test start; they are not certified wireless results",
+    "weakAssertionLimit": "Initial test cases returned success without enforcing the frame budget or proving insertion of an earlier remote page; those results do not satisfy acceptance"
+  },
+  "rootCause": {
+    "observation": "Live event reconciliation and UI reads repeatedly re-encoded full machine/thread identity keys across Swift/Kotlin; the offline demo path did not exercise the real workspace event load",
+    "profile": "Time Profiler on the same physical iPhone, with the pan window isolated and automation snapshot stacks excluded",
+    "windowSeconds": {
+      "start": 99.063,
+      "end": 128.213
+    },
+    "samples": {
+      "mainSamples": 19894,
+      "nonAutomationMainSamples": 18067,
+      "automationSnapshotSamples": 1827
+    },
+    "identityEncoderInclusiveSamples": 6014,
+    "limit": "Inclusive stack sample counts overlap and are not wall-clock time or a post-fix performance result",
+    "fix": "Bounded thread-safe memoization of pure key bytes, scoped to full runtime target and selector; aliases, authorization, readiness and receipt selection remain live",
+    "remainingHotspotAfterCombinedFix": {
+      "actualTraceDeviceIdVerified": true,
+      "testResultDeviceIdVerified": true,
+      "sampledProcessBoundToExactInstalledBundleURL": true,
+      "sourceSha256": "6d86be90f53d73487671418a52ca4b13b6d94cb53ad6567eedecdd2ed0956c6d",
+      "panCount": 8,
+      "windowSeconds": {
+        "start": 21.725537333000002,
+        "end": 60.98625874999999
+      },
+      "samples": {
+        "mainSamples": 15663,
+        "nonAutomationMainSamples": 13936,
+        "automationSnapshotSamples": 1727
+      },
+      "readingKeyInclusiveSamples": 5606,
+      "readingKeyDictionaryDescendantSamples": 3905,
+      "readingKeySourceLine": 536,
+      "sourceFile": "apps/ios/Sources/SessionStore.swift",
+      "fix": "Return an already-selected canonical key without probing saved dictionaries; legacy selection still checks canonical-record presence live.",
+      "limit": "CPU diagnosis on the correct physical device; inclusive samples overlap, trace overhead is not a frame-budget acceptance result."
+    },
+    "remainingAfterScopedReconciliation": {
+      "exactTraceDeviceAndTestDeviceVerified": true,
+      "sampledProcessBoundToInstalledBundleURL": true,
+      "sourceSha256": "1502c8f9187aacc497c96734bd557447a9e8436d66118d54c8649a7c4ed01898",
+      "windowSeconds": {
+        "start": 30.338545124999996,
+        "end": 60.420028458
+      },
+      "samples": {
+        "mainSamples": 7918,
+        "nonAutomationMainSamples": 6032,
+        "automationSnapshotSamples": 1886
+      },
+      "hotInclusiveSamples": {
+        "conversationLookup": 649,
+        "projectLookup": 410,
+        "cacheKeyLookup": 563,
+        "compatibleStorageKeyLookup": 413,
+        "unreadSnapshotBuilding": 581
+      },
+      "fix": "Read client/thread selection once before a lookup, compute project ownership once before the project loop, and pass the already-computed canonical target key into compatibility lookup. Metadata and alias choices remain live.",
+      "limit": "Overlapping inclusive CPU samples, not wall time. Eight pans were captured before a later paging readiness assertion failed; this diagnostic is not an acceptance pass."
+    },
+    "synchronousUnreadProjection": {
+      "diagnosticTrial": "1792603776592",
+      "exactPhysicalDeviceAndExpectedHistoryTargetVerified": true,
+      "movingFrameMaximumMS": 58.34616666743386,
+      "overlappingUnreadProjectionMS": 35.3046,
+      "overlappingPersistenceMS": 35.8435,
+      "inclusiveDurationWarning": "Persistence includes unread projection; these durations must not be added.",
+      "fix": "Build from one frozen state and reading index, process at most 32 rows before suspending for 1ms, cancel a superseded projection before publication, and retain the background save lease through ledger completion.",
+      "limit": "A diagnostic overlap establishes the remaining synchronous cost; a new strict physical acceptance result is required.",
+      "postHoistDiagnosticUnreadMaximumMS": 34.794,
+      "postHoistLimit": "State getter hoisting alone did not eliminate the uninterrupted work. The new batched candidate requires its own strict physical result.",
+      "batchedRecordedMaximumMS": 4.885,
+      "batchedLimit": "Recorded synchronous batches during actual gestures, with a bounded diagnostic buffer; full physical frame metrics remain the acceptance gate.",
+      "currentRecordedBatchMaximumMS": 3.2845000005181646
+    },
+    "earlierReadDuringLatest": {
+      "observation": "Native exact-target taps expanded both cached windows with effectively zero anchor movement, but the remote button never entered its handler while a latest read remained active.",
+      "deterministicProof": "A deliberately held latest HTTP read leaves the explicit remote earlier-page action disabled before the fix.",
+      "fix": "Reserve one explicit earlier read, wait for the existing latest read, then use the current cursor; duplicate actions and newer automatic refreshes cannot overtake the reservation. Cancel on navigation, full target changes or task cancellation."
+    },
+    "remoteMultiPassLayout": {
+      "actualHostMessagesBefore": 100,
+      "actualHostMessagesAfter": 200,
+      "actualAnchorDeltaPt": 112,
+      "firstLayoutHeight": 4751,
+      "laterLayoutHeight": 4639,
+      "observation": "The earlier implementation cleared compensation on the first content-size callback; a subsequent 112pt height reduction left the original reading row displaced.",
+      "fix": "Track a stable existing message row in native coordinates through settling layout passes. Total content-height delta is only a fallback; below-row height changes are not treated as inserted prefix. A new pan, target reset or scroll replacement cancels restoration.",
+      "settling": "200ms without content-size changes, capped at 800ms; frame callbacks end or invalidate if their owner disappears."
+    }
+  },
+  "regressionGates": {
+    "actualGesturesMinimum": 8,
+    "movingFramesExclusiveMinimum": 250,
+    "p95MovingFrameMSExclusiveMaximum": 25,
+    "maxMovingFrameMSExclusiveMaximum": 50,
+    "remotePagesMinimum": 1,
+    "remoteMessagesAddedExclusiveMinimum": 0,
+    "readingAnchorTolerancePt": 3,
+    "failedOrDuplicatePageCannotPass": true,
+    "testSkippedOrBootstrapFailedCannotPass": true,
+    "independentRealHistoryCases": 2,
+    "frameFailureCannotSuppressRemotePagingCase": true
+  },
+  "postFixPhysical": {
+    "status": "passed-for-current-source",
+    "compiled": true,
+    "sourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+    "appExecutableSha256": "dfb84387c37a9727d4f47b6a75d0d89d1486e7b80091d2df5f58fce292e8e327",
+    "bundleId": "com.easyai.agenthub.historyscrolltests",
+    "optimizedDebug": true,
+    "notificationCapabilitiesRemovedOnlyInDisposableCopy": true,
+    "latestDeviceState": {
+      "reality": "physical",
+      "model": "iPhone 15 Pro Max",
+      "osVersion": "27.0.1",
+      "pairing": "paired",
+      "tunnel": "connected",
+      "transport": "wired"
+    },
+    "bootstrapFailures": [
+      {
+        "attempt": 1,
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "runnerExitCode": 74,
+        "testCasesEntered": 0,
+        "transport": "localNetwork",
+        "sourceBindingLimit": "Earlier identity-cache candidate, before the later DEBUG source-count overlay; the test body was never entered"
+      },
+      {
+        "attempt": 2,
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "runnerExitCode": 74,
+        "testCasesEntered": 0,
+        "transport": "localNetwork",
+        "sourceBindingLimit": "Earlier identity-cache candidate, before the later DEBUG source-count overlay; the test body was never entered"
+      },
+      {
+        "attempt": 3,
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "runnerExitCode": 74,
+        "testCasesEntered": 0,
+        "transport": "localNetwork",
+        "sourceBindingLimit": "Earlier identity-cache candidate, before the later DEBUG source-count overlay; the test body was never entered"
+      },
+      {
+        "attempt": 4,
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "runnerExitCode": 74,
+        "testCasesEntered": 0,
+        "transport": "wired",
+        "sourceSha256": "fc679478e70da4d843a1334058720c502d42afd400db11042c0889f01e9687d9"
+      },
+      {
+        "attempt": 5,
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "runnerExitCode": 74,
+        "testCasesEntered": 0,
+        "transport": "wired",
+        "sourceSha256": "fc679478e70da4d843a1334058720c502d42afd400db11042c0889f01e9687d9"
+      },
+      {
+        "attempt": 6,
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "runnerExitCode": 74,
+        "testCasesEntered": 0,
+        "transport": "wired",
+        "sourceSha256": "fc679478e70da4d843a1334058720c502d42afd400db11042c0889f01e9687d9"
+      },
+      {
+        "attempt": "after-human-restart",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "testCasesEntered": 0,
+        "runnerExitCode": 74,
+        "transport": "wired",
+        "sourceBindingLimit": "Private attempt keeps its own source/binary fingerprint; older build control is not claimed identical to accepted offline binary"
+      },
+      {
+        "attempt": "older-build-control-after-restart",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "testCasesEntered": 0,
+        "runnerExitCode": 74,
+        "transport": "wired",
+        "sourceBindingLimit": "Private attempt keeps its own source/binary fingerprint; older build control is not claimed identical to accepted offline binary"
+      },
+      {
+        "attempt": "after-current-user-CoreDevice-service-reset",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "testCasesEntered": 0,
+        "runnerExitCode": 74,
+        "transport": "wired",
+        "sourceBindingLimit": "Private attempt keeps its own source/binary fingerprint; older build control is not claimed identical to accepted offline binary"
+      },
+      {
+        "attempt": "exact-device-GUI-control",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "testCasesEntered": 0,
+        "runnerExitCode": 74,
+        "transport": "wired",
+        "sourceBindingLimit": "Private attempt keeps its own source/binary fingerprint; older build control is not claimed identical to accepted offline binary"
+      },
+      {
+        "attempt": "after-current-user-pairing-service-reset",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "testCasesEntered": 0,
+        "transport": "wired",
+        "runnerHandshakeCompleted": true,
+        "failure": "XCTFuture code 1000: Timed out while enabling automation mode",
+        "initializationTimeoutSeconds": 60
+      }
+    ],
+    "failure": null,
+    "notVerified": [
+      "Wireless transport for the final candidate; temporary USB was explicitly authorized. Android/Windows/full-product scenarios are separate."
+    ],
+    "latestCompiledAppExecutableSha256": "dfb84387c37a9727d4f47b6a75d0d89d1486e7b80091d2df5f58fce292e8e327",
+    "latestAttemptHarnessSha256": "b493de6be4f0471d18f5638bf4a660a938e1fe44c1b4584173c09e7cb19f9968",
+    "usbAuthorization": "Human explicitly allowed temporary USB XCTest for this task; real history transport remains HTTPS/Tailscale",
+    "nextStep": "Completed: matching canonical Release build100 installed in place and ordinary installed-app read-only check passed.",
+    "restartConfirmedByHuman": true,
+    "currentCombinedWorkspaceTrial": {
+      "sourceSha256": "6d86be90f53d73487671418a52ca4b13b6d94cb53ad6567eedecdd2ed0956c6d",
+      "harnessSha256": "279767cd820f4ad3faa219c88670c4cf5326af94d49f982d1abd819c41f9ea24",
+      "deviceState": {
+        "reality": "physical",
+        "model": "iPhone 15 Pro Max",
+        "osVersion": "27.0.1",
+        "pairing": "paired",
+        "tunnel": "connected",
+        "transport": "wired"
+      },
+      "metrics": {
+        "framesOver50MS": 44,
+        "gestures": 8,
+        "markdownBodies": 3,
+        "maxFrameMS": 385.7612500000869,
+        "maxTimelineMS": 0.8699583331690519,
+        "movingFrames": 596,
+        "p95FrameMS": 88.48020833329429,
+        "timelineBuilds": 1,
+        "totalTimelineMS": 0.8699583331690519
+      },
+      "passedTests": 0,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "targetReactivationsDuringScroll": 0,
+      "actualXcresultDeviceIdVerified": true,
+      "testBodyEntered": true,
+      "status": "failed-frame-budget",
+      "remotePageAssertionReached": false
+    },
+    "trials": [
+      {
+        "status": "failed",
+        "sourceSha256": "6d86be90f53d73487671418a52ca4b13b6d94cb53ad6567eedecdd2ed0956c6d",
+        "harnessSha256": "279767cd820f4ad3faa219c88670c4cf5326af94d49f982d1abd819c41f9ea24",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 44,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 385.7612500000869,
+          "maxTimelineMS": 0.8699583331690519,
+          "movingFrames": 596,
+          "p95FrameMS": 88.48020833329429,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.8699583331690519
+        },
+        "deviceState": {
+          "reality": "physical",
+          "model": "iPhone 15 Pro Max",
+          "osVersion": "27.0.1",
+          "pairing": "paired",
+          "tunnel": "connected",
+          "transport": "wired"
+        },
+        "targetReactivationsDuringScroll": 0,
+        "label": "combined-debug",
+        "configuration": "Debug",
+        "actualXcresultDeviceIdVerified": true
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "c339056a46fea01c5b62c1005c972fc1a4279f3325afb090754685a93a671a1a",
+        "harnessSha256": "e829c4a0fd7b788f1e3333dc8d4feb126107daac8f74243022afcd2f339d6180",
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 31,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 84.66279166668755,
+          "maxTimelineMS": 0.5425833332992624,
+          "movingFrames": 755,
+          "p95FrameMS": 47.45408333337764,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.5425833332992624
+        },
+        "deviceState": {
+          "reality": "physical",
+          "model": "iPhone 15 Pro Max",
+          "osVersion": "27.0.1",
+          "pairing": "paired",
+          "tunnel": "connected",
+          "transport": "wired"
+        },
+        "targetReactivationsDuringScroll": 0,
+        "label": "canonical-selection-debug",
+        "configuration": "Debug",
+        "actualXcresultDeviceIdVerified": true
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "53a0faf082703e0f147ba55f8f337230e7c8fe6a5119f58237c1f396a9909802",
+        "harnessSha256": "e829c4a0fd7b788f1e3333dc8d4feb126107daac8f74243022afcd2f339d6180",
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "deviceState": {
+          "reality": "physical",
+          "model": "iPhone 15 Pro Max",
+          "osVersion": "27.0.1",
+          "pairing": "paired",
+          "tunnel": "connected",
+          "transport": "wired"
+        },
+        "targetReactivationsDuringScroll": 0,
+        "label": "scoped-new-connection-failure",
+        "configuration": "Debug",
+        "actualXcresultDeviceIdVerified": true
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "1502c8f9187aacc497c96734bd557447a9e8436d66118d54c8649a7c4ed01898",
+        "harnessSha256": "e829c4a0fd7b788f1e3333dc8d4feb126107daac8f74243022afcd2f339d6180",
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 7,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 54.340791666618316,
+          "maxTimelineMS": 0.5587083333011833,
+          "movingFrames": 806,
+          "p95FrameMS": 29.010875000494707,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.5587083333011833
+        },
+        "deviceState": {
+          "reality": "physical",
+          "model": "iPhone 15 Pro Max",
+          "osVersion": "27.0.1",
+          "pairing": "paired",
+          "tunnel": "connected",
+          "transport": "wired"
+        },
+        "targetReactivationsDuringScroll": 0,
+        "label": "scoped-existing-connection-debug",
+        "configuration": "Debug",
+        "actualXcresultDeviceIdVerified": true
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "793e296cec8df164db7a9b66bebf360c974b9b1b0dcdc159ffeb19521aab8f06",
+        "harnessSha256": "e829c4a0fd7b788f1e3333dc8d4feb126107daac8f74243022afcd2f339d6180",
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 2,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 52.622041666836594,
+          "maxTimelineMS": 0.49770833265938563,
+          "movingFrames": 837,
+          "p95FrameMS": 16.994291667288053,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.49770833265938563
+        },
+        "deviceState": {
+          "reality": "physical",
+          "model": "iPhone 15 Pro Max",
+          "osVersion": "27.0.1",
+          "pairing": "paired",
+          "tunnel": "connected",
+          "transport": "wired"
+        },
+        "targetReactivationsDuringScroll": 0,
+        "label": "selection-hoist-debug",
+        "configuration": "Debug",
+        "actualXcresultDeviceIdVerified": true
+      },
+      {
+        "status": "running",
+        "sourceSha256": "02fac5701fcc2909a1c916a7e4c10331dd82f63c02503a6383e7ee3c67352e26",
+        "harnessSha256": "9cd5eb29059cf6b9729270a96fa24555b38d840f0fde0384be925b126ba99cfd",
+        "deviceState": {
+          "reality": "physical",
+          "model": "iPhone 15 Pro Max",
+          "osVersion": "27.0.1",
+          "pairing": "paired",
+          "tunnel": "connected",
+          "transport": "wired"
+        },
+        "targetReactivationsDuringScroll": 0,
+        "label": "release-core-in-progress",
+        "configuration": "Release",
+        "actualXcresultDeviceIdVerified": false
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "02fac5701fcc2909a1c916a7e4c10331dd82f63c02503a6383e7ee3c67352e26",
+        "configuration": "Release",
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 8,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 82.79066666636936,
+          "maxTimelineMS": 0.44354166675475426,
+          "movingFrames": 803,
+          "p95FrameMS": 17.340083333692746,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.44354166675475426
+        },
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792602508607",
+        "actualDeviceVerified": true,
+        "accepted": false
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "a6f066c5b45ba2847fa3044f9024a6e820fd21c26f142ff45846f87fa32e351b",
+        "configuration": "Release",
+        "workProbe": true,
+        "passedTests": 0,
+        "failedTests": 0,
+        "skippedTests": 0,
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792603063164",
+        "actualDeviceVerified": false,
+        "accepted": false
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "11cf4efbcc0b630225b8c442921b4fefec08cd27a822a6168532525191d7ce19",
+        "configuration": "Release",
+        "workProbe": true,
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792603175336",
+        "actualDeviceVerified": true,
+        "accepted": false
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "dc0eb4fee8ceaabee4d3fd1e0adbfb9403cd2eaed992e29a52b8fbf799c6ade3",
+        "configuration": "Release",
+        "workProbe": true,
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 1,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 58.34616666743386,
+          "maxTimelineMS": 0.34070833316945937,
+          "movingFrames": 845,
+          "p95FrameMS": 16.670333333422604,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.34070833316945937
+        },
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792603776592",
+        "actualDeviceVerified": true,
+        "accepted": false
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "d2401c4df010b868d36f1006a756ccbb9364a58564d442aabc80bcc77cb08b8d",
+        "configuration": "Release",
+        "workProbe": false,
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 1,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 67.14695833306905,
+          "maxTimelineMS": 0.39633333381061675,
+          "movingFrames": 805,
+          "p95FrameMS": 16.738666667151847,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.39633333381061675
+        },
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792604573229",
+        "actualDeviceVerified": true,
+        "accepted": false
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "94db9ea945d49e0dfb98f061abff66a4d01346abf71c4a89c7285a572eaf0083",
+        "configuration": "Release",
+        "workProbe": true,
+        "passedTests": 1,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 0,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 46.05804166658345,
+          "maxTimelineMS": 0.368125000022701,
+          "movingFrames": 831,
+          "p95FrameMS": 17.06862499941053,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.368125000022701
+        },
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792604915928",
+        "actualDeviceVerified": true,
+        "accepted": false
+      },
+      {
+        "status": "failed",
+        "sourceSha256": "2c9fc8dd47505d3e54542f05a92698f017dfdbb725eb308aa2a716ec4f588e7b",
+        "configuration": "Release",
+        "workProbe": true,
+        "passedTests": 1,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 0,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 46.32329166634008,
+          "maxTimelineMS": 0.4110416666662786,
+          "movingFrames": 844,
+          "p95FrameMS": 16.6703333343321,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.4110416666662786
+        },
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792605477299",
+        "actualDeviceVerified": true,
+        "accepted": false,
+        "remotePrepend": {
+          "beforeMessages": 100,
+          "afterMessages": 200,
+          "anchorDeltaPt": 112,
+          "expectedHistoryTargetConfirmed": true
+        }
+      },
+      {
+        "status": "passed",
+        "sourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+        "configuration": "Release",
+        "workProbe": true,
+        "passedTests": 2,
+        "failedTests": 0,
+        "skippedTests": 0,
+        "metrics": {
+          "framesOver50MS": 0,
+          "gestures": 8,
+          "markdownBodies": 3,
+          "maxFrameMS": 49.932166666621924,
+          "maxTimelineMS": 0.6024166668794351,
+          "movingFrames": 811,
+          "p95FrameMS": 16.6703333343321,
+          "timelineBuilds": 2,
+          "totalTimelineMS": 0.9863750001386506
+        },
+        "paging": {
+          "cachedPages": 2,
+          "checkedPages": 3,
+          "maxAnchorDeltaPt": 3.979039320256561e-13,
+          "remoteMessagesAdded": 100,
+          "remotePages": 1
+        },
+        "targetReactivationsDuringScroll": 0,
+        "trial": "1792606227866",
+        "actualDeviceVerified": true,
+        "accepted": true
+      }
+    ],
+    "historicalFailure": "Latest completed Debug-core trial met p95 (16.99ms) but max 52.62ms failed the unchanged 50ms budget; two frames exceeded 50ms. The separate page growth/anchor-settle predicate timed out and is not accepted. A Release-core candidate with numeric page diagnostics is in progress.",
+    "configuration": "Release",
+    "kotlinConfiguration": "Release",
+    "measurementProbeCondition": "DEBUG in the independent test copy only",
+    "metrics": {
+      "framesOver50MS": 0,
+      "gestures": 8,
+      "markdownBodies": 3,
+      "maxFrameMS": 49.932166666621924,
+      "maxTimelineMS": 0.6024166668794351,
+      "movingFrames": 811,
+      "p95FrameMS": 16.6703333343321,
+      "timelineBuilds": 2,
+      "totalTimelineMS": 0.9863750001386506
+    },
+    "paging": {
+      "cachedPages": 2,
+      "checkedPages": 3,
+      "maxAnchorDeltaPt": 3.979039320256561e-13,
+      "remoteMessagesAdded": 100,
+      "remotePages": 1
+    },
+    "passedTests": 2,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "exactPhysicalDeviceVerified": true,
+    "expectedHistoryTargetVerified": true,
+    "targetReactivationsDuringScroll": 0
+  },
+  "auxiliary": {
+    "identityCache": {
+      "status": "passed",
+      "sourceSha256": "2daf99ca5b92fed6bb808803425ea1e2fa98835ed8c98f3c7d8796aec96ff161",
+      "warmReuses": 6000,
+      "assertions": [
+        "codec byte equivalence",
+        "full runtime/selector isolation",
+        "Codex legacy account metadata equivalence",
+        "other provider account isolation",
+        "bounded concurrent eviction"
+      ]
+    },
+    "simulatorPagination": {
+      "status": "passed",
+      "sourceSha256": "7afb50430b887503c287ccc8a2b24522e7f2b51740e89637f38e6a0c29295c8b",
+      "passedTests": 5,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "sourcesUnchanged": true,
+      "reuseLimit": "Run includes the production identity-cache fix. The later DEBUG opt-in source-count overlay and live-only assertion helper were compiled separately; the five paging test bodies and production pagination behavior did not change"
+    },
+    "checks": {
+      "pnpm check": "passed on current combined workspace including exact-device tests; subsequent evidence-only documentation edits require format/parity refresh",
+      "followUpESLint": "passed",
+      "pnpm format:check": "passed",
+      "pnpm check:mobile-parity": "passed",
+      "pnpm build:ios": "passed including canonical selection fast path",
+      "independentPhysicalBuildForTesting": "passed for latest native source",
+      "formalReleaseArchive": "passed for latest native source",
+      "pnpm test:ios:history-live": "failed on physical USB during XCTest bootstrap: 0 passed, 1 reported failure, 0 skipped; test body never entered",
+      "pnpm check:ios-state": "passed on current combined workspace"
+    },
+    "exactDeviceGate": {
+      "status": "passed",
+      "tests": 3,
+      "cases": [
+        "successful same-name other-phone result rejected",
+        "mixed device configurations rejected",
+        "missing device evidence rejected"
+      ]
+    },
+    "currentCombinedStateBoundary": {
+      "status": "passed",
+      "sourceSha256": "323e59b73343e4433060923dd4ae5c70d8a9d424b0b3743ae996f344b54d03e8",
+      "historyProjectionWarmReuses": 500,
+      "projectionInvalidations": 17,
+      "identityKeyWarmReuses": 6000,
+      "sharedProjectionComparisons": 2000
+    },
+    "currentCombinedSimulatorPagination": {
+      "status": "passed",
+      "passedTests": 5,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "nativeSourceSha256": "c8cdf3bfd5b24572443f87ea909a58a0a0420872bc84e05ef5054a0b219c9884",
+      "sourcesUnchanged": true,
+      "reuseLimit": "Before the new canonical-key fast path and split live test. The five paging bodies and production pagination path remain unchanged; new selection behavior is checked separately."
+    },
+    "canonicalSelectionBoundary": {
+      "status": "passed",
+      "sourceSha256": "1c89d2af24c10342de68ac2f9701031b986beacf1d2d93ced87e978fa8831fc5",
+      "canonicalSelectionsWithoutStoredRecordProbe": 6000,
+      "legacyCanonicalPrecedenceRemainsLive": true,
+      "differentCandidateTargetCannotOverrideSelection": true
+    },
+    "nativeUnreadAfterScopedReconciliation": {
+      "status": "passed",
+      "passedTests": 3,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "scope": "real native simulator requests, refresh, legacy connection and matching-body/short-layout reading; no model",
+      "reuseLimit": "Before later pure selection getter hoists and live-only test helper changes; unread algorithms and the three bodies are unchanged. Selection freshness is checked separately."
+    },
+    "selectionAndCoordinatorBoundary": {
+      "status": "passed",
+      "sourceSha256": "3a00493e0ba2bd30e9e33af95cc7e14ca8188c24e1bdf81db1781ada985e6ea4",
+      "productionMethodsCompiled": true,
+      "singleSelectionReadPerLookup": true,
+      "projectFallbackAndImmediateMetadataChange": true,
+      "workspaceRows": 818,
+      "singleSnapshotOnlyReconcilesChangedRow": true,
+      "otherPendingReadsStillRetried": true,
+      "hostIsolation": true,
+      "acknowledgementMergeBoundaries": 7
+    },
+    "localWindowDuringLatestRead": {
+      "before": {
+        "status": "failed",
+        "nativeSourceSha256": "902d70597e3fba603ff24db6b5cae5962edbf03a978fd790ecc9f73c045ad9bb",
+        "sourcesUnchanged": true,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "tests": ["testHistoryPagingLocalDuringLatestRead"],
+        "realCodexRuntime": false
+      },
+      "after": {
+        "status": "passed",
+        "nativeSourceSha256": "a4c0fa42080f0f3acdb770081f607d5637ab3bbb95632cb4d0880677281c28e6",
+        "sourcesUnchanged": true,
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0,
+        "tests": ["testHistoryPagingLocalDuringLatestRead"],
+        "realCodexRuntime": false
+      },
+      "rootCause": "The cached-prefix button and its action were disabled by an unrelated latest-page read.",
+      "fix": "Allow cached local expansion during the in-flight latest read; remote earlier-page requests retain serialization.",
+      "evidenceKind": "Native simulator with a deliberately held actual HTTP latest read; not physical frame or real Host acceptance."
+    },
+    "unreadProjectionBoundaries": {
+      "status": "passed",
+      "sourceSha256": "e1f50391c999fdb42cbc060b0f65f8541f90d8f317250a42da16933ae667619b",
+      "generatedSourceSha256": "93f21b93b2ed5b92eaf98294135db99c4297b35fb7e56581e31d8deaf8c88672",
+      "result": "2000 projection comparisons; 9 migration checks; 5 UTF-8/identity checks passed\n26 machine identity/native codec/non-destructive migration checks passed\nReading key selection passed: 6000 canonical fast paths; live legacy precedence and target isolation\nReading acknowledgement merge passed: 7 duplicate, pending, missing, advancing, stale, conflicting and future boundaries\nProduction selection lookup passed: one observable read per lookup, project fallback and immediate metadata changes\nProduction reading coordinator passed: 818-row full refresh, one-row snapshot, other pending retry and host isolation\nUnread predicate passed: 10 record, baseline, legacy and content-change boundaries\nProduction unread projection passed: one observable snapshot for 818 rows; live reads, legacy reply and target isolation\nSwift reply wire and recovery policy passed: 4 Host fingerprints and 26 proof boundaries\nNative recovery consent persistence and nested creation codec passed: 9 boundaries\nHistory projection cache passed: 500 scroll reuses and 17 invalidation boundaries\nRuntime identity key cache passed: 6000 warm reuses; full-target isolation and bounded concurrent eviction",
+      "evidenceKind": "native-simulator-boundary; UI regression recorded separately"
+    },
+    "sixCaseCurrentTrial": {
+      "status": "failed",
+      "nativeSourceSha256": "e05a13502aefe26bfd94daf28b51c215bc2be8ae87dbdb75af7a3c5ef75e726f",
+      "sourcesUnchanged": true,
+      "passedTests": 5,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "tests": [
+        "testHistoryPagingLocalWindow",
+        "testHistoryPagingLocalPullWindow",
+        "testHistoryPagingLocalDuringLatestRead",
+        "testHistoryPagingPullInMiddleDoesNotExpand",
+        "testHistoryPagingPullFailureRetryAndExhaustion",
+        "testHistoryPagingThreadSwitchDiscardsLatePage"
+      ]
+    },
+    "queuedReadBeforeFix": {
+      "status": "failed",
+      "nativeSourceSha256": "526681831d01d0532b9371379e2d0479cc263f305109ccaeda39a865a01e6da2",
+      "sourcesUnchanged": true,
+      "passedTests": 1,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "tests": ["testHistoryPagingRemoteDuringLatestRead", "testHistoryPagingLocalPullWindow"]
+    },
+    "fullWorkspaceCheck": {
+      "status": "passed",
+      "limit": "Full pnpm check passed before the later async batching and queued-read changes; refreshed checks are still required."
+    },
+    "delayedSecondLayoutBefore": {
+      "status": "failed",
+      "nativeSourceSha256": "776ba4f1a65db4f7d3471b102e76daf2069e228ca64581b9a8ed93e44dd35e56",
+      "harnessSha256": "66d5752e1c1793e08d7f2cc2717d72b855975584f12b31cc8290bcc812db8ca1",
+      "diagnosticCopies": [
+        {
+          "test": "testHistoryPagingRemoteSecondLayoutKeepsAnchor",
+          "result": "failed",
+          "captured": true
+        }
+      ],
+      "sourcesUnchanged": true,
+      "passedTests": 0,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "tests": ["testHistoryPagingRemoteSecondLayoutKeepsAnchor"],
+      "realCodexRuntime": false
+    },
+    "delayedSecondLayoutAfter": {
+      "status": "passed",
+      "nativeSourceSha256": "52f0d17bf13ebd3305a5bc6d021c27fb0720dee4d06335da5db83ae3670dd1f9",
+      "harnessSha256": "66d5752e1c1793e08d7f2cc2717d72b855975584f12b31cc8290bcc812db8ca1",
+      "diagnosticCopies": [
+        {
+          "test": "testHistoryPagingRemoteSecondLayoutKeepsAnchor",
+          "result": "passed",
+          "captured": true
+        }
+      ],
+      "sourcesUnchanged": true,
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "tests": ["testHistoryPagingRemoteSecondLayoutKeepsAnchor"],
+      "realCodexRuntime": false,
+      "limit": "This passing source removes the transient 112pt tail entirely. The final nine-case candidate strengthens it to retain 56pt below the row and must pass independently."
+    },
+    "pagingScenarioCoverage": {
+      "status": "passed-across-matching-source-trials",
+      "passedScenarios": 9,
+      "nativeSourceSha256": "ea00baa8b9401648049ae9110f22b99986feaafba411a1a2002257c27dd6a895",
+      "canonicalSourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+      "tests": [
+        "testHistoryPagingLocalWindow",
+        "testHistoryPagingLocalPullWindow",
+        "testHistoryPagingLocalDuringLatestRead",
+        "testHistoryPagingRemoteDuringLatestRead",
+        "testHistoryPagingRemoteSecondLayoutKeepsAnchor",
+        "testHistoryPagingQueuedSwitchDiscardsRequest",
+        "testHistoryPagingPullInMiddleDoesNotExpand",
+        "testHistoryPagingPullFailureRetryAndExhaustion",
+        "testHistoryPagingThreadSwitchDiscardsLatePage"
+      ],
+      "priorFailure": {
+        "test": "testHistoryPagingLocalPullWindow",
+        "stage": "connection form remained present before paging; screenshot retained",
+        "rerun": "passed in a separate serial run"
+      },
+      "singleFullSuiteStatus": "8 passed and 1 connection-stage failure; original result retained as failed",
+      "trials": [
+        {
+          "directory": "paging-nine-anchor-final",
+          "status": "failed",
+          "passedTests": 8,
+          "failedTests": 1,
+          "skippedTests": 0,
+          "sourcesUnchanged": true
+        },
+        {
+          "directory": "paging-local-pull-serial-final",
+          "status": "passed",
+          "passedTests": 1,
+          "failedTests": 0,
+          "skippedTests": 0,
+          "sourcesUnchanged": true
+        }
+      ]
+    },
+    "currentWorkspaceCheck": {
+      "status": "passed",
+      "exitCode": 0,
+      "sourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+      "logSha256": "32a040c8dbe30ebec628b46637cf7e29367452e2ccbf0da19696bc57e8104e8f"
+    },
+    "currentNativeBuild": {
+      "status": "passed",
+      "exitCode": 0,
+      "sourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+      "logSha256": "3697122d0ffc8ac48c9c098bfc3a9bf822ae849d43f349565fe5c0353ae57148"
+    },
+    "currentUnreadRegression": {
+      "status": "passed",
+      "code": 0,
+      "passedTests": 3,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "canonicalSourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+      "exactDedicatedSimulatorVerified": true
+    }
+  },
+  "readOnlyVerification": {
+    "originalRuntimeIndependentRead": true,
+    "originalTurns": 11,
+    "originalUserInputs": 13,
+    "countsUnchanged": true,
+    "inputFingerprintUnchanged": true,
+    "newModelInputs": 0,
+    "currentOriginalDesktop": {
+      "turns": 11,
+      "inputs": 13,
+      "countsUnchanged": true,
+      "fingerprintUnchanged": true
+    }
+  },
+  "delivery": {
+    "formalInstalledBuild": "100",
+    "formalAppReplaced": true,
+    "preparedBuild": "100",
+    "packageStatus": "installed-and-ordinary-postcheck-passed",
+    "configuration": "Release",
+    "sourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+    "ipaSha256": "476098da811ffe620a4acce5f587396466453b91764daa6ff817d4fc67419938",
+    "signing": "Apple Development for the paired physical device",
+    "apsEnvironment": "development",
+    "notificationExtensionsVerified": 2,
+    "notificationAppGroupPreserved": true,
+    "formalContainerAndNotificationGroupBackedUpPrivately": true,
+    "formalHostChanged": false,
+    "gitCommitted": false,
+    "taskSimulatorRemoved": true,
+    "temporaryWorktreesCreated": 0,
+    "installationGate": "Passed: exact physical eight-gesture frame budget and real remote-prefix position cases for the matching source",
+    "temporaryUsbDebugAuthorizedForThisTask": true,
+    "currentCombinedSourceRequiresNewArchive": false,
+    "formalInstallation": "installed in place 99 to 100; ordinary installed-app check passed",
+    "preparedCandidateLimit": "Earlier archives remain superseded diagnostics; only v4 matches the accepted and installed source.",
+    "currentPreparedBuild": 100,
+    "canonicalSourceMatchesPassedPhysicalCandidate": true,
+    "originalNotificationsAndAppGroupPreservedInSignedPackage": true,
+    "formalExecutableSha256": "73b4873c440c96f073f9c9470e5cc0ce11d8e643be536bb709cb8772e0686028",
+    "taskOwnedSimulatorsRemoved": 2,
+    "formalStateBytesPreservedBeforeFirstLaunch": true,
+    "historyCacheFilesPreserved": 189,
+    "notificationGroupBytesPreservedBeforeFirstLaunch": true,
+    "normalAppLoadedOriginalState": true,
+    "draftFingerprintPreserved": true,
+    "submittedInputFingerprintPreserved": true,
+    "ordinaryPostInstallCases": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "credentialVaultNamespaceAndSigningTeamUnchanged": true
+  },
+  "otherPlatforms": {
+    "android": "no new native acceptance; production shared algorithm unchanged",
+    "windows": "not tested",
+    "A6": "paused"
+  },
+  "sourceFilesSha256": {
+    "apps/ios/Sources/RootView.swift": "93ed20ef4fc6707d31836d62c65e9a3bb6198a570e21c92ae5baa881cf0a9849",
+    "apps/ios/Sources/Models.swift": "8d602678b998c6cb4fdb4b0cf2292b9635d4c19be61b79a32cbeaf43cfbbf78b",
+    "apps/ios/Sources/SessionStore.swift": "00571b85dfed622489902e2779a80dcab0e131b53beab46acd869bc590f17467",
+    "apps/ios/Sources/SharedMobileRules.swift": "ea501934080c96acd2a759d25284d4d620c79a3200e6e6bb455b7b1888791821",
+    "apps/ios/Tests/CodexManageUITests.swift": "e7468e852cf5b4c09fd8991a19eee64ddf92d75ed55fec9233b93fb8e08f931a",
+    "scripts/history-scroll-ios.mjs": "4eca0c922c580db3332840c979287c81f403a0642feadb20ad9f66cdfb60d212",
+    "scripts/mobile/check-ios-state.mjs": "b4ddf899f6e3f01b1c10f6f4a4492654bfc9cf469bbdef715349e48e62128c05",
+    "scripts/mobile/verify-ios-migration.swift": "545d870a308687412d4a8f3ea401a2912078a1e2c3ed9c42e5bdc8c05bfd2074"
+  },
+  "lastUpdated": "2026-10-22",
+  "deviceEvidenceAudit": {
+    "actualXcresultDeviceIdChecked": true,
+    "matchingOriginalResults": [
+      {
+        "label": "offline-accepted",
+        "deviceMatchesRequested": true,
+        "models": ["iPhone 15 Pro Max"],
+        "passedTests": 2,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      {
+        "label": "real-history-before-cache",
+        "deviceMatchesRequested": true,
+        "models": ["iPhone 15 Pro Max"],
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      {
+        "label": "real-profile-before-cache",
+        "deviceMatchesRequested": true,
+        "models": ["iPhone 15 Pro Max"],
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      }
+    ],
+    "excludedWrongDeviceGUIResults": [
+      {
+        "label": "gui-short-first",
+        "deviceMatchesRequested": false,
+        "models": ["iPhone 16 Pro Max"],
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      {
+        "label": "gui-short-fixed",
+        "deviceMatchesRequested": false,
+        "models": ["iPhone 16 Pro Max"],
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      {
+        "label": "gui-live-frame",
+        "deviceMatchesRequested": false,
+        "models": ["iPhone 16 Pro Max"],
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      {
+        "label": "gui-profile-readonly",
+        "deviceMatchesRequested": false,
+        "models": ["iPhone 16 Pro Max"],
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      }
+    ],
+    "failure": "GUI destination was selected by a shared display name instead of the requested exact device ID; the error was disclosed and results excluded",
+    "invalidProfilePairing": "A later trace recorded the requested iPhone 15 while the GUI test actually ran on iPhone 16; it has no target app samples and cannot establish post-fix CPU or frame performance",
+    "remediation": {
+      "humanAuthorizedBackupThenRemoval": true,
+      "status": "backed-up-and-removed",
+      "backupFileCount": 74,
+      "backupBytes": 74107175,
+      "backupIntegrityVerified": true,
+      "removedBundleIds": [
+        "com.easyai.agenthub.historyscrolltests",
+        "com.easyai.agenthub.historyscrolltests.uitests.xctrunner"
+      ],
+      "allOtherPreviouslyInstalledAppsRemain": true,
+      "formalAppRemainsInstalled": true,
+      "noModelInputSubmitted": true
+    }
+  },
+  "currentWorkspaceSourceFilesSha256": {
+    "apps/ios/Sources/RootView.swift": "b8ee1603af92a0fbbf82f49692c1fbda081b6abf0e38fda3889dc2bc2c257ee1",
+    "apps/ios/Sources/Models.swift": "8d602678b998c6cb4fdb4b0cf2292b9635d4c19be61b79a32cbeaf43cfbbf78b",
+    "apps/ios/Sources/SessionStore.swift": "b63c1f613e0e670ca0cdacba3776b20ed8c5185126c248b1bdaed5d7d2fabcf4",
+    "apps/ios/Sources/SharedMobileRules.swift": "26a095f90e60032455e05731f161d90525badf0bfe16c1aca2a37661b007edcf",
+    "apps/ios/Tests/CodexManageUITests.swift": "00a081b3b57145e68f24ce4b03df97f1c6d236aa8ca06619c09a0566a293ea6f",
+    "scripts/history-scroll-ios.mjs": "b493de6be4f0471d18f5638bf4a660a938e1fe44c1b4584173c09e7cb19f9968",
+    "scripts/mobile/check-ios-state.mjs": "64c0a41fc2557d7fb2f3ea860c0f8b15e4615a78fcdad5b8644f10020756ae39",
+    "scripts/mobile/verify-ios-migration.swift": "b5fb78650fc06492e3219e357c5d7acd2e2a475ef7a8d651311e48852b8ccc4c",
+    "scripts/mobile/ios-result-device.mjs": "c0d86eb2b5cccd9b137f7d30efe0ef0400c75dbe66fc857f406c0088aeca9f0c",
+    "scripts/mobile/ios-result-device.test.mjs": "c0722d81d5a3abb89cc122fbcdcf96feb3742c21292ba74e42b45c1a84f617ce",
+    "apps/ios/Sources/NotificationModels.swift": "819b94c0cf0aef6246938db2c4f5725cc0fea7b5bb720269693ea06b5a1f2866"
+  },
+  "currentWorkspaceVerification": {
+    "sourceSha256": "4efa987549ab675695c05fc61b3c787f4786cdb31fbfc2e6f25f5992694c85c5",
+    "pnpmCheck": "passed",
+    "nativeBuild": "passed",
+    "physicalRealHistoryCases": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    "pagingScenarioCoverage": {
+      "passed": 9,
+      "matchingSourceTrials": 2,
+      "priorConnectionSetupFailureRetained": true
+    },
+    "nativeUnreadCases": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ordinaryInstalledFormalCases": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scope": "History/UI delivery on the designated physical iPhone; no new Android or Windows physical acceptance, and A6 remains paused."
+  },
+  "targetHistoryLifecycle": "archived; opened read-only from the native archive list without restoring or submitting inputs"
+}

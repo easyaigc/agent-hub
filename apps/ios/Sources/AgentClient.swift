@@ -191,6 +191,7 @@ protocol AgentClient: Sendable {
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment
   func download(_ client: Client, file: RemoteAttachment) async throws -> URL
+  func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment
   func fileTransfers(_ client: Client) async throws -> ComputerFileCatalog
   func prepareFileTransfer(_ client: Client, file: ComputerFileManifest) async throws -> ComputerFileReceipt
   func fileTransfer(_ client: Client, id: String) async throws -> ComputerFileReceipt
@@ -212,6 +213,7 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。")) }
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { throw HostServiceError.unavailable }
   func chatAction(_ client: Client, request: ChatActionRequest) async throws -> ChatActionReceipt { throw HostServiceError.unavailable }
   func chatActionStatus(_ client: Client, threadId: String, operationId: String) async throws -> ChatActionReceipt { throw HostServiceError.unavailable }
@@ -415,6 +417,7 @@ struct CodexAgentClient: AgentClient {
   func createProject(_ client: Client, name: String, directory: String, operationId: String) async throws -> WorkspaceSnapshot { try await HostService.post(client, "v1/projects", ["name": name, "directory": directory, "clientOperationId": operationId]) }
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { try await HostService.upload(client, threadId: threadId, file: file, data: data) }
   func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await HostService.download(client, file: file) }
+  func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await HostService.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
   func models(_ client: Client) async throws -> ModelList { try await HostService.load(HostService.request(try HostService.url(client, "v1/models"), token: CredentialVault.token(client.id))) }
   func openThread(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { try await HostService.post(client, "v1/desktop/open", ["threadId": threadId, "clientOperationId": operationId]) }
   func openStatus(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { try await HostService.load(HostService.request(try HostService.url(client, "v1/desktop/open-status", ["threadId": threadId, "id": operationId]), token: CredentialVault.token(client.id))) }

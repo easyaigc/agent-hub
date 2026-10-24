@@ -158,8 +158,8 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
                 if (!continuation.isActive) return@submit
                 client.codexDirect?.let { paired ->
                     val endpoint = CodexEndpoints.local(client.endpoint!!)
-                    require(paired.routes.any { it.endpoint == endpoint } && connection is javax.net.ssl.HttpsURLConnection) { "连接地址不属于已配对电脑" }
-                    PairedCodexTLS.configure(connection as javax.net.ssl.HttpsURLConnection, endpoint, paired.fingerprint)
+                    require(connection is javax.net.ssl.HttpsURLConnection) { "连接地址不属于已配对电脑" }
+                    PairedCodexTLS.configure(connection as javax.net.ssl.HttpsURLConnection, endpoint, paired)
                 }
                 connection.instanceFollowRedirects = false
                 connection.connectTimeout = if(path == "host") descriptorBudget.millis else 10_000
@@ -198,8 +198,17 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
         val descriptor = CodexDescriptor.decode(read(client, "host", emptyMap(),budget))
         require(descriptor.target.hostId == client.id && sameScope(descriptor.target, client.scope)) { "电脑运行时身份不匹配" }
         client.codexDirect?.let { require(descriptor.fingerprint == it.fingerprint) { "已配对电脑证书发生变化，请重新配对" } }
-        descriptor
+        descriptor.copy(systemEndpoints = connectionRoutes(client, descriptor.target))
     }
+    suspend fun connectionRoutes(client: MobileClient, target: com.agenthub.core.TargetScope): List<String> = try {
+        if(token(client.id).isEmpty()) emptyList() else {
+            val wire = read(client, "v1/connection-routes", mapOf("hostId" to client.id))
+            require(wire.toByteArray(Charsets.UTF_8).size <= 8192 && com.agenthub.core.CodexDiscoveryContract.validateNamed(wire, "connectionRoutes") == null)
+            val json = org.json.JSONObject(wire)
+            require(sameScope(HostReadCodec.target(json.getJSONObject("target")), target))
+            json.getJSONArray("httpsEndpoints").strings().also { values -> require(values.all { com.agenthub.core.CodexRouteRules.systemEndpoint(it) == it }) }
+        }
+    } catch(cancel: kotlinx.coroutines.CancellationException) { throw cancel } catch(_: Exception) { emptyList() }
     override suspend fun history(client: MobileClient, threadId: String, cursor: String?): MobileHistory {
         val acceptanceTiming=NativeReadAcceptanceTiming.capture();val startedAt=android.os.SystemClock.elapsedRealtimeNanos()
         val query = buildMap { put("hostId", client.id); put("threadId", threadId); put("window", "latest-v1"); cursor?.let { put("cursor", it) }; client.readerId?.let { put("readerId", nativeReaderId(it)) } }

@@ -20,6 +20,7 @@ execFileSync(
     '-D',
     'DEBUG',
     'apps/ios/Sources/ThreadReading.swift',
+    'apps/ios/Sources/SharedReadingPolicy.swift',
     'apps/ios/Sources/Localization.swift',
     'apps/ios/Sources/NotificationModels.swift',
     'apps/ios/Sources/MobileUnreadBadge.swift',

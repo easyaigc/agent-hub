@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   realpathSync,
   readdirSync,
   writeFileSync,
@@ -15,7 +16,6 @@ import { join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { promisify } from 'node:util';
 import ts from 'typescript';
 
 // Actual frozen JS transports, synthetic native stdio only. No Windows C#,
@@ -24,6 +24,7 @@ const repository = fileURLToPath(new URL('../', import.meta.url));
 const source = join(repository, 'packages/codex-adapter/src');
 const names = [
   'windows-process',
+  'windows-trace-diagnostics',
   'desktop-private-state-native',
   'desktop-trace-native',
   'desktop-trace-native-worker',
@@ -43,9 +44,18 @@ const modes = [
   'gate-start-close',
   'gate-start-forced',
 ];
-const run = promisify(execFile);
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const write = (path, value) => writeFileSync(path, value, { mode: 0o600 });
+function publishResult(directory, result) {
+  const pending = join(directory, 'result.partial.json');
+  write(pending, JSON.stringify(result, null, 2));
+  renameSync(pending, join(directory, 'result.json'));
+}
+function preserveRunnerFailure(directory, error) {
+  const path = join(directory, 'runner.log');
+  if (!existsSync(path))
+    write(path, String(error.stack) + '\n' + (error.stdout ?? '') + (error.stderr ?? ''));
+}
 const events = (log) =>
   existsSync(log)
     ? readFileSync(log, 'utf8')
@@ -67,9 +77,114 @@ function exists(pid) {
 }
 async function until(check, message, milliseconds) {
   const deadline = performance.now() + milliseconds;
-  while (!check()) {
+  for (;;) {
     assert(performance.now() < deadline, message);
-    await delay(15);
+    const complete = check();
+    assert(performance.now() < deadline, message);
+    if (complete) return;
+    await delay(Math.min(15, Math.max(1, deadline - performance.now())));
+  }
+}
+
+async function runLifecycleProbe(directory, caseDirectory, env) {
+  const phases = [],
+    startedAt = performance.now();
+  const mark = (event, fields = {}) =>
+    phases.push({ event, elapsedMs: performance.now() - startedAt, ...fields });
+  let execution,
+    child,
+    outputTail = '';
+  mark('launch');
+  try {
+    execution = await new Promise((resolve) => {
+      child = execFile(
+        process.execPath,
+        [join(directory, 'probe.mjs'), caseDirectory, caseDirectory.split(/[\\/]/).at(-1)],
+        { env, timeout: 15000, windowsHide: true },
+        (error, stdout, stderr) => {
+          mark('callback', {
+            error: error
+              ? {
+                  name: error.name,
+                  code: error.code ?? null,
+                  signal: error.signal ?? null,
+                  killed: error.killed ?? false,
+                }
+              : null,
+          });
+          resolve({ error, stdout, stderr });
+        },
+      );
+      mark('supervision-installed', { timeoutMs: 15000, childPid: child.pid ?? null });
+      const kill = child.kill;
+      child.kill = function (...args) {
+        mark('kill-enter', { signal: args[0] ?? 'SIGTERM' });
+        try {
+          const result = Reflect.apply(kill, this, args);
+          mark('kill-return', { result });
+          return result;
+        } catch (error) {
+          mark('kill-throw', { code: error.code ?? null });
+          throw error;
+        }
+      };
+      child.on('exit', (code, signal) => mark('probe-exit', { code, signal }));
+      child.on('close', (code, signal) => mark('probe-close', { code, signal }));
+      for (const [name, stream] of [
+        ['stdin', child.stdin],
+        ['stdout', child.stdout],
+        ['stderr', child.stderr],
+      ]) {
+        stream.on('end', () => mark('stdio-end', { name }));
+        stream.on('close', () => mark('stdio-close', { name }));
+      }
+      child.stdout.on('data', (chunk) => {
+        outputTail += chunk.toString('utf8');
+        if (outputTail.length > 65536) {
+          mark('invalid-phase-output');
+          outputTail = '';
+          return;
+        }
+        for (;;) {
+          const end = outputTail.indexOf('\n');
+          if (end < 0) break;
+          const line = outputTail.slice(0, end);
+          outputTail = outputTail.slice(end + 1);
+          try {
+            const value = JSON.parse(line);
+            if (value.lifecycle) mark('probe-phase', value.lifecycle);
+          } catch {
+            mark('unrecognized-probe-line');
+          }
+        }
+      });
+    });
+    write(
+      join(caseDirectory, 'runner.log'),
+      execution.error
+        ? String(execution.error.stack) + '\n' + execution.stdout + execution.stderr
+        : execution.stdout + execution.stderr,
+    );
+    return execution;
+  } finally {
+    const path = join(caseDirectory, 'result.json');
+    let resultState = 'missing';
+    if (existsSync(path)) {
+      const bytes = readFileSync(path);
+      if (!bytes.length) resultState = 'empty';
+      else {
+        try {
+          JSON.parse(bytes.toString());
+          resultState = 'complete';
+        } catch {
+          resultState = 'invalid-json';
+        }
+      }
+    } else if (existsSync(join(caseDirectory, 'result.partial.json'))) resultState = 'partial';
+    const report = { schemaVersion: 1, syntheticOnly: true, timeoutMs: 15000, resultState, phases };
+    const pending = join(caseDirectory, 'supervisor-report.partial.json');
+    write(pending, JSON.stringify(report, null, 2));
+    renameSync(pending, join(caseDirectory, 'supervisor-report.json'));
   }
 }
 
@@ -77,8 +192,11 @@ async function syntheticChild() {
   const { appendFileSync } = await import('node:fs');
   const { createInterface } = await import('node:readline');
   const mode = process.env.TRACE_LIFECYCLE_MODE;
-  const record = (value) =>
-    appendFileSync(process.env.TRACE_LIFECYCLE_LOG, JSON.stringify(value) + '\n');
+  const record = (value) => {
+    const line = JSON.stringify(value) + '\n';
+    appendFileSync(process.env.TRACE_LIFECYCLE_LOG, line);
+    process.stderr.write(line);
+  };
   record({ event: 'started', pid: process.pid });
   process.once('exit', () => record({ event: 'exit' }));
   // Failure containment only; passing assertions must finish before this fires.
@@ -124,7 +242,7 @@ async function bootstrap() {
   const { fileURLToPath } = await import('node:url');
   const { syncBuiltinESMExports } = await import('node:module');
   const { getWindowsProcessGate } = await import('./windows-process.js');
-  const { threadId } = await import('node:worker_threads');
+  const { threadId, parentPort } = await import('node:worker_threads');
   const wait = Atomics.wait;
   let recorded = false;
   Atomics.wait = function (...args) {
@@ -155,6 +273,33 @@ async function bootstrap() {
       'Trace native spawn must remain inside the production gate',
     );
     const value = Reflect.apply(original, this, [process.execPath, [executable, ...args], options]);
+    const report = (event) =>
+      parentPort.postMessage({ ...event, requestKind: event.kind, kind: 'fixture-lifecycle' });
+    report({ event: 'spawn', pid: value.pid });
+    let tail = '';
+    value.stderr.on('data', (chunk) => {
+      tail += chunk.toString('utf8');
+      for (;;) {
+        const end = tail.indexOf('\n');
+        if (end < 0) break;
+        const row = JSON.parse(tail.slice(0, end));
+        tail = tail.slice(end + 1);
+        report(row);
+      }
+    });
+    value.once('exit', (code, signal) =>
+      report({ event: 'child-exit', pid: value.pid, code, signal }),
+    );
+    value.once('close', (code, signal) =>
+      report({ event: 'child-close', pid: value.pid, code, signal }),
+    );
+    for (const [name, stream] of [
+      ['stdin', value.stdin],
+      ['stdout', value.stdout],
+      ['stderr', value.stderr],
+    ])
+      stream.once('close', () => report({ event: 'child-stdio-close', pid: value.pid, name }));
+
     appendFileSync(
       process.env.TRACE_LIFECYCLE_LOG,
       JSON.stringify({ event: 'spawn', pid: value.pid }) + '\n',
@@ -165,6 +310,18 @@ async function bootstrap() {
 }
 
 async function probe() {
+  const { monitorPrivateStateWorkers } = await import('./transport-monitor.mjs');
+  const observed = [];
+  const mark = (event) => {
+    const row = { ...event, atMs: performance.now() };
+    observed.push(row);
+    process.stdout.write(JSON.stringify({ lifecycle: row }) + '\n');
+  };
+  const monitor = monitorPrivateStateWorkers(
+    new URL('./desktop-trace-native-worker.js', import.meta.url),
+    process.argv[2] + '/events.jsonl',
+    { onEvent: mark },
+  );
   const { DesktopSuggestionWorkerClient } = await import('./desktop-suggestion-worker-client.js');
   const [directory, mode] = process.argv.slice(2);
   const log = join(directory, 'events.jsonl');
@@ -200,9 +357,12 @@ async function probe() {
     stateCount = 0,
     ownerError,
     failure,
-    closeAt;
+    closeAt,
+    ownerExitAt;
   owner.once('exit', () => {
     exited = true;
+    ownerExitAt = performance.now();
+    mark({ event: 'owner-exit' });
   });
   owner.on('error', (error) => {
     ownerError = error;
@@ -211,7 +371,20 @@ async function probe() {
     if (value.kind === 'failed') failed = true;
     if (value.kind === 'state') stateCount++;
   });
-  const records = () => events(log);
+  const records = () => observed;
+  const childrenRetired = () =>
+    records()
+      .filter((v) => v.event === 'spawn')
+      .every(
+        ({ pid }) =>
+          records().some((v) => v.event === 'child-exit' && v.pid === pid) &&
+          records().some((v) => v.event === 'child-close' && v.pid === pid) &&
+          new Set(
+            records()
+              .filter((v) => v.event === 'child-stdio-close' && v.pid === pid)
+              .map((v) => v.name),
+          ).size === 3,
+      );
   try {
     await until(
       () => {
@@ -234,25 +407,26 @@ async function probe() {
       assert.equal(stateCount, 0);
     }
     closeAt = performance.now();
+    mark({ event: 'close-requested' });
     if (mode.startsWith('forced-')) {
       const terminated = owner.terminate();
       client.close();
       await terminated;
     } else client.close();
-    await until(() => exited, 'Reader did not exit', 5000);
+    await until(
+      () => exited && monitor.active.size === 0 && childrenRetired(),
+      'Reader/native transport/child must retire within the original 2500ms grace',
+      Math.max(1, 2500 - (performance.now() - closeAt)),
+    );
     if (ownerError) throw ownerError;
   } catch (error) {
     failure = error;
   } finally {
     client.close();
     try {
-      await until(() => exited, 'Reader cleanup did not exit', 5000);
       await until(
-        () =>
-          records()
-            .filter((v) => v.event === 'spawn')
-            .every((v) => !exists(v.pid)),
-        'Known native child remains alive or zombie',
+        () => exited && monitor.active.size === 0 && childrenRetired(),
+        'Cleanup incomplete',
         3000,
       );
     } catch (error) {
@@ -264,16 +438,24 @@ async function probe() {
       mode,
       failed,
       stateCount,
-      ownerExitAfterCloseMs: closeAt === undefined ? null : Math.round(performance.now() - closeAt),
-      children: children.map((v) => ({ pid: v.pid, gone: !exists(v.pid) })),
+      ownerExitAfterCloseMs:
+        closeAt === undefined || ownerExitAt === undefined ? null : ownerExitAt - closeAt,
+      transportsExited: monitor.active.size === 0,
+      children: children.map((v) => ({
+        pid: v.pid,
+        gone: childrenRetired(),
+        pidAbsent: !exists(v.pid),
+      })),
       events: all.map((v) => v.event),
       error: failure?.message,
     };
-    write(join(directory, 'result.json'), JSON.stringify(result, null, 2));
+    publishResult(directory, result);
+    monitor.restore();
     if (!failure) {
       assert.equal(children.length, 1);
       assert.equal(all.find((v) => v.event === 'started')?.pid, children[0].pid);
-      assert(result.children.every((v) => v.gone));
+      assert(result.children.every((v) => v.gone && v.pidAbsent));
+      assert.equal(result.transportsExited, true);
       if (mode.endsWith('start')) assert(!result.events.includes('ready'));
       if (mode.endsWith('operation'))
         assert(result.events.includes('quit'), 'The hanging helper must receive and ignore QUIT');
@@ -474,14 +656,14 @@ describe(
         write(join(directory, output + '.mjs'), input);
       }
       const imports = `import assert from 'node:assert/strict';
-import {existsSync,readFileSync,mkdirSync,writeFileSync} from 'node:fs';
+import {existsSync,readFileSync,mkdirSync,writeFileSync,renameSync} from 'node:fs';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 `;
       write(
         join(directory, 'probe.mjs'),
         imports +
-          [write, events, exists, until]
+          [write, publishResult, events, exists, until]
             .map((fn) =>
               fn.name === 'write' || fn.name === 'events'
                 ? `const ${fn.name}=${fn.toString()};`
@@ -521,18 +703,11 @@ import {setTimeout as delay} from 'node:timers/promises';
         );
         let failure;
         try {
-          const { stdout, stderr } = await run(
-            process.execPath,
-            [join(directory, 'probe.mjs'), caseDirectory, mode],
-            { env, timeout: 15000, windowsHide: true },
-          );
-          write(join(caseDirectory, 'runner.log'), stdout + stderr);
+          const execution = await runLifecycleProbe(directory, caseDirectory, env);
+          if (execution.error) throw execution.error;
         } catch (error) {
           failure = error;
-          write(
-            join(caseDirectory, 'runner.log'),
-            String(error.stack) + '\n' + (error.stdout ?? '') + (error.stderr ?? ''),
-          );
+          preserveRunnerFailure(caseDirectory, error);
         } finally {
           if (existsSync(log)) chmodSync(log, 0o600);
           const children = events(log).filter((v) => v.event === 'spawn');
@@ -564,6 +739,12 @@ import {setTimeout as delay} from 'node:timers/promises';
           unchanged();
         }
         if (failure) throw failure;
+        const supervisor = JSON.parse(
+          readFileSync(join(caseDirectory, 'supervisor-report.json'), 'utf8'),
+        );
+        assert.equal(supervisor.resultState, 'complete');
+        assert(supervisor.phases.some((v) => v.event === 'probe-exit'));
+        assert(supervisor.phases.some((v) => v.event === 'probe-close'));
         const result = JSON.parse(readFileSync(join(caseDirectory, 'result.json'), 'utf8'));
         assert.equal(result.error, undefined);
         assert.equal(result.children.length, mode.startsWith('gate-') ? 0 : 1);
@@ -575,3 +756,39 @@ import {setTimeout as delay} from 'node:timers/promises';
       });
   },
 );
+
+test('strict lifecycle deadline rejects a condition that only becomes true after a blocking check', async () => {
+  await assert.rejects(
+    until(
+      () => {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+        return true;
+      },
+      'Late true is not timely completion',
+      5,
+    ),
+    /Late true/,
+  );
+});
+
+test('parent preserves an incomplete child report and actual exit/close evidence', async () => {
+  mkdirSync(join(repository, '.local'), { recursive: true, mode: 0o700 });
+  const directory = mkdtempSync(join(repository, '.local/lifecycle-report-failure-'));
+  const caseDirectory = join(directory, 'partial');
+  mkdirSync(caseDirectory);
+  write(
+    join(directory, 'probe.mjs'),
+    "import{writeFileSync}from'node:fs';import{join}from'node:path';writeFileSync(join(process.argv[2],'result.partial.json'),'{');console.log('fixed-stdout-marker');console.error('fixed-stderr-marker');process.exitCode=2;",
+  );
+  const { error } = await runLifecycleProbe(directory, caseDirectory, {});
+  assert.equal(error.code, 2);
+  preserveRunnerFailure(caseDirectory, error);
+  const log = readFileSync(join(caseDirectory, 'runner.log'), 'utf8');
+  assert(log.includes('fixed-stdout-marker'));
+  assert(log.includes('fixed-stderr-marker'));
+  const report = JSON.parse(readFileSync(join(caseDirectory, 'supervisor-report.json'), 'utf8'));
+  assert.equal(report.resultState, 'partial');
+  assert(report.phases.some((v) => v.event === 'probe-exit' && v.code === 2));
+  assert(report.phases.some((v) => v.event === 'probe-close' && v.code === 2));
+  assert.equal(readFileSync(join(caseDirectory, 'result.partial.json'), 'utf8'), '{');
+});

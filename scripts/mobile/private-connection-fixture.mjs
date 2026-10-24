@@ -137,7 +137,9 @@ export async function startPrivateConnectionFixture(directory) {
           fingerprint: mode === 'bad-fingerprint' ? '0'.repeat(64) : fingerprint,
           endpoints: [endpoint],
           endpointHints: [{ endpoint, networkKind: 'lan' }],
-          ...(mode === 'legacy-host' ? {} : { connectionMode: 'automatic' }),
+          ...(mode === 'legacy-host'
+            ? { connectionMode: 'automatic' }
+            : { connectionMode: 'host-key' }),
         };
         if (mode === 'drip-host') {
           const wire = JSON.stringify(descriptor),
@@ -165,6 +167,10 @@ export async function startPrivateConnectionFixture(directory) {
         return;
       }
       if (request.method === 'POST' && url.pathname === '/connection/claim') {
+        if (request.headers.authorization !== 'Bearer ' + 'fixture-host-key-'.repeat(3)) {
+          send(response, {}, 401);
+          return;
+        }
         const bytes = await body(request),
           input = JSON.parse(bytes.toString());
         record.fields = Object.keys(input).sort();

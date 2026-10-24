@@ -10,7 +10,7 @@ import { readDesktopBackendAuth } from './desktop-backend-auth.js';
 // No URL, headers, model, filesystem path or credential is accepted from a remote caller.
 const endpoint = 'https://chatgpt.com/backend-api/transcribe';
 export class DesktopTranscription {
-  private agent = new Agent({ proxyEnv: desktopProxyEnvironment() });
+  private readonly agents = new Set<Agent>();
   private readingAuth: ReturnType<DesktopTranscription['authRead']> | undefined;
   private closed = false;
   private capabilityHint: { available: boolean; checkedAt: number } | undefined;
@@ -102,7 +102,8 @@ export class DesktopTranscription {
   close() {
     this.closed = true;
     this.capabilityHint = undefined;
-    this.agent.destroy();
+    for (const agent of this.agents) agent.destroy();
+    this.agents.clear();
   }
   /** Display metadata only. Audio operations always re-read their actual principal. */
   get capabilityAvailable(): boolean {
@@ -135,7 +136,9 @@ export class DesktopTranscription {
     }
   }
   async transcribe(audio: Buffer, principal: string): Promise<string> {
+    if (this.closed) throw new RuntimeError(503, '电脑转写连接已关闭，原录音未提交');
     const auth = await this.auth();
+    if (this.closed) throw new RuntimeError(503, '电脑转写连接已关闭，原录音未提交');
     if (auth.principal !== principal)
       throw new RuntimeError(409, 'Codex 登录账户已变化，原录音未提交');
     const boundary = 'codex-host-' + randomUUID();
@@ -147,39 +150,69 @@ export class DesktopTranscription {
       Buffer.from(`\r\n--${boundary}--\r\n`),
     ]);
     // HTTP transcription matches the desktop completed-recording path. No re-encoding or retry.
-    const response = await new Promise<{ status: number; body: Buffer }>((resolve, reject) => {
-      const req = request(
-        endpoint,
-        {
-          method: 'POST',
-          agent: this.agent,
-          signal: AbortSignal.timeout(90_000),
-          headers: {
-            Authorization: `Bearer ${auth.token}`,
-            'ChatGPT-Account-Id': auth.accountId,
-            originator: 'Codex Desktop',
-            'User-Agent': 'Codex Desktop',
-            'Content-Type': `multipart/form-data; boundary=${boundary}`,
-            'Content-Length': body.length,
+    // A long-running Host can outlive VPN/system-proxy changes. Resolve the
+    // current route once for this immutable upload; never retry the request.
+    const agent = new Agent({ proxyEnv: desktopProxyEnvironment() });
+    this.agents.add(agent);
+    let stage = '建立连接';
+    let response: { status: number; body: Buffer };
+    try {
+      response = await new Promise<{ status: number; body: Buffer }>((resolve, reject) => {
+        const req = request(
+          endpoint,
+          {
+            method: 'POST',
+            agent,
+            signal: AbortSignal.timeout(90_000),
+            headers: {
+              Authorization: `Bearer ${auth.token}`,
+              'ChatGPT-Account-Id': auth.accountId,
+              originator: 'Codex Desktop',
+              'User-Agent': 'Codex Desktop',
+              'Content-Type': `multipart/form-data; boundary=${boundary}`,
+              'Content-Length': body.length,
+            },
           },
-        },
-        (res) => {
-          const chunks: Buffer[] = [];
-          let size = 0;
-          res.on('data', (chunk: Buffer) => {
-            size += chunk.length;
-            if (size > 1_000_000) req.destroy(new RuntimeError(502, 'Codex 转写响应过大'));
-            else chunks.push(chunk);
-          });
-          res.on('error', reject);
-          res.on('end', () =>
-            resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks) }),
-          );
-        },
+          (res) => {
+            stage = '读取响应';
+            const chunks: Buffer[] = [];
+            let size = 0;
+            res.on('data', (chunk: Buffer) => {
+              size += chunk.length;
+              if (size > 1_000_000) req.destroy(new RuntimeError(502, 'Codex 转写响应过大'));
+              else chunks.push(chunk);
+            });
+            res.on('error', reject);
+            res.on('end', () =>
+              resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks) }),
+            );
+          },
+        );
+        req.once('finish', () => {
+          stage = '等待响应';
+        });
+        req.on('error', reject);
+        req.end(body);
+      });
+    } catch (error) {
+      if (error instanceof RuntimeError) throw error;
+      // Only a bounded code and request stage may enter a receipt. Native
+      // messages/causes can contain proxy credentials, URLs or request details.
+      const native = error as { code?: unknown; name?: unknown };
+      const code =
+        typeof native.code === 'string' && /^[A-Z0-9_]{1,40}$/.test(native.code)
+          ? native.code
+          : 'CONNECTION_FAILED';
+      const timeout =
+        code === 'ABORT_ERR' || code === 'ETIMEDOUT' || native.name === 'TimeoutError';
+      throw new RuntimeError(
+        502,
+        `电脑连接转写服务${timeout ? '超时' : '中断'}（${stage}，${code}）；原录音已保留，请查询原回执，未重复提交`,
       );
-      req.on('error', reject);
-      req.end(body);
-    });
+    } finally {
+      this.agents.delete(agent);
+      agent.destroy();
+    }
     if (response.status !== 200) {
       // Never relay backend error bodies: they may contain auth or request details.
       if (response.status === 401 || response.status === 403)

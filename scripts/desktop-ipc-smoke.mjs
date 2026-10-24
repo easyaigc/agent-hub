@@ -26,6 +26,8 @@ const { RuntimePersistence } =
   await import('../packages/codex-adapter/dist/runtime-persistence.js');
 const { DesktopWorkspaceView } =
   await import('../packages/codex-adapter/dist/desktop-workspace-view.js');
+const { refreshWindowsDesktopOpenState } =
+  await import('../packages/codex-adapter/dist/desktop-prepared-bridge.js');
 const { NotificationObserver } = await import('../packages/notification-runtime/dist/observer.js');
 
 const directory = await mkdtemp(join(tmpdir(), 'codex-manage-desktop-'));
@@ -44,6 +46,7 @@ let socket,
   revision = 10,
   running = true;
 const commands = [];
+const unarchivedHints = [];
 let queueFixture = false;
 let rejectNextSteer = false;
 let fixtureTurns,
@@ -288,6 +291,8 @@ const server = createServer((connected) => {
             result,
           });
         }
+      } else if (message.method === 'thread-unarchived') {
+        unarchivedHints.push(message);
       } else if (message.method === 'thread-stream-following-changed') {
         following++;
         notificationOwnerFixture?.followingRequests?.push({
@@ -594,6 +599,72 @@ const originalSpawn = childProcess.spawn;
 try {
   await oversizedIpcBoundaries();
   await client.connect();
+  const restoredId = randomUUID();
+  assert.throws(() => new DesktopIpc(path).refreshUnarchivedThread(restoredId));
+  assert.throws(() => client.refreshUnarchivedThread('not-an-exact-thread-id'));
+  let catalogReads = 0;
+  const openHost = randomUUID();
+  const unarchivedCatalog = {
+    hostId: openHost,
+    threads: [{ id: restoredId, hostId: openHost, archived: false }],
+  };
+  let currentCatalog = unarchivedCatalog;
+  const openRuntime = {
+    ipc: client,
+    reader: {
+      desktopWorkspace: async () => {
+        catalogReads++;
+        return currentCatalog;
+      },
+    },
+  };
+  for (const platform of ['darwin', 'linux'])
+    assert.equal(
+      await refreshWindowsDesktopOpenState(openRuntime, openHost, restoredId, platform),
+      false,
+    );
+  assert.equal(catalogReads, 0, 'Other platforms do not read metadata or publish hints');
+  for (const catalog of [
+    { ...unarchivedCatalog, hostId: 'other-host' },
+    { ...unarchivedCatalog, threads: [] },
+    { ...unarchivedCatalog, threads: [{ id: restoredId, hostId: 'other-host', archived: false }] },
+    { ...unarchivedCatalog, threads: [{ id: restoredId, hostId: openHost, archived: true }] },
+    { ...unarchivedCatalog, threads: [{ id: restoredId, hostId: openHost }] },
+    { ...unarchivedCatalog, threads: [...unarchivedCatalog.threads, ...unarchivedCatalog.threads] },
+  ]) {
+    currentCatalog = catalog;
+    assert.equal(
+      await refreshWindowsDesktopOpenState(openRuntime, openHost, restoredId, 'win32'),
+      false,
+    );
+  }
+  const freshCatalog = Promise.withResolvers();
+  openRuntime.reader.desktopWorkspace = () => freshCatalog.promise;
+  const refreshing = refreshWindowsDesktopOpenState(openRuntime, openHost, restoredId, 'win32');
+  await settle();
+  assert.equal(unarchivedHints.length, 0, 'Wait for fresh metadata before publishing');
+  freshCatalog.resolve(unarchivedCatalog);
+  assert.equal(await refreshing, true);
+  await settle();
+  assert.deepEqual(unarchivedHints, [
+    {
+      type: 'broadcast',
+      method: 'thread-unarchived',
+      version: 1,
+      sourceClientId: 'phone',
+      params: { hostId: 'local', conversationId: restoredId },
+    },
+  ]);
+  assert.equal(client.hasOwner(restoredId), false, 'A metadata hint is not an owner snapshot');
+  assert.equal(client.state(restoredId), undefined);
+  openRuntime.reader.desktopWorkspace = async () => {
+    throw new Error('Metadata unavailable');
+  };
+  assert.equal(
+    await refreshWindowsDesktopOpenState(openRuntime, openHost, restoredId, 'win32'),
+    false,
+  );
+  assert.equal(unarchivedHints.length, 1);
   const discoveredId = '00000000-0000-4000-8000-000000000001';
   snapshot(discoveredId);
   await settle();
@@ -935,7 +1006,9 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   else if (request.method === 'thread/list') result = { data: JSON.parse(fs.readFileSync(${JSON.stringify(catalogFile)}, 'utf8')).threads.filter(t => request.params.archived === true ? t.archived === true : t.archived !== true).filter(t => !request.params.sectionId || t.section?.id === request.params.sectionId), nextCursor: null };
   else if (request.method === 'model/list') result = { data: [{id:'desktop-fixture-model',displayName:'Desktop Model',isDefault:true,defaultReasoningEffort:'xhigh',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'xhigh'}]}, {id:'desktop-fast',serviceTiers:[{id:'priority',name:'Fast'}],displayName:'Desktop Fast',isDefault:false,defaultReasoningEffort:'low',supportedReasoningEfforts:[{reasoningEffort:'low'}]}] };
   else if (request.method === 'config/read') result = { config: {} };
-  else if (request.method === 'thread/read') result = { thread: { historyMode: 'paginated' } };
+  else if (request.method === 'thread/read')
+    result = { thread: { id: request.params.threadId, historyMode: 'paginated' } };
+  else if (request.method === 'thread/turns/list') { process.stdout.write(JSON.stringify({id:request.id,error:{code:-32601,message:'Legacy reader has no turn summaries'}}) + '\\n'); return; }
   else if (request.method === 'thread/items/list') result = { data: request.params.cursor ? [{ item: { id: 'older-tool', type: 'mcpToolCall', server: 'fixture', tool: 'inspect', status: 'failed', error: { message: 'historical failure' } } }] : [{ item: { id: 'historical-answer', type: 'agentMessage', text: 'completed' } }, { item: { id: 'historical-command', type: 'commandExecution', command: 'printf historical', aggregatedOutput: 'historical', exitCode: 0, status: 'completed' } }], nextCursor: request.params.cursor ? null : 'older' };
   else throw Error('Fixture reader must never execute or load a chat');
   process.stdout.write(JSON.stringify({ id: request.id, result }) + '\\n');
@@ -2230,7 +2303,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       ['oldest-cached-tool', 'older-tool', 'historical-command', 'historical-answer'],
     );
     await writeFile(join(ownerDirectory, 'owned.txt'), 'original-owner-file');
-    await writeFile(join(deniedDirectory, 'denied.txt'), 'must-not-download');
+    await writeFile(join(deniedDirectory, 'denied.txt'), 'explicitly-referenced-outside-report');
     await symlink(join(deniedDirectory, 'denied.txt'), join(ownerDirectory, 'escape.txt'));
     cwd = ownerDirectory;
     messageText = `[owned](${join(ownerDirectory, 'owned.txt')}) [denied](${join(deniedDirectory, 'denied.txt')}) [escape](${join(ownerDirectory, 'escape.txt')})`;
@@ -2239,8 +2312,17 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     await settle();
     const updated = await session.open('thread');
     const files = updated.messages.flatMap((v) => v.attachments);
-    assert.equal(files.length, 1);
+    assert.equal(
+      files.length,
+      2,
+      'explicit original assistant links register project-external resources too',
+    );
     assert.equal(files[0].name, 'owned.txt');
+    const outsideFile = files.find((file) => file.name === 'denied.txt');
+    assert.equal(
+      (await session.download('thread', outsideFile.id)).data.toString(),
+      'explicitly-referenced-outside-report',
+    );
     assert.equal(
       (await session.download('thread', files[0].id)).data.toString(),
       'original-owner-file',
@@ -3293,12 +3375,10 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
         const barrier = [];
         fixture.ownerBarriers.set(newId, barrier);
         broadcastHint(clientId, hintState);
-        if (enabled)
-          await waitForFixture(
-            () => barrier.length === 1,
-            'A different source must revalidate even an already cached live owner',
-          );
-        else await settle();
+        await waitForFixture(
+          () => barrier.length === 1,
+          'A known owner must revalidate even when optional notifications are disabled',
+        );
         const cached = notifications.notificationObservation(newId);
         assert.equal(cached.live, true);
         assert.equal(cached.taskSummary, '接管前的缓存任务');
@@ -3306,27 +3386,25 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
         assert.equal(events.length, beforeEvents, 'An unauthenticated hint cannot emit approval');
         assert.equal(
           fixture.started.filter((id) => id === newId).length,
-          beforeProbes + (enabled ? 1 : 0),
-          'Disabled notifications must skip hint discovery; enabled hints must probe once',
+          beforeProbes + 1,
+          'Known owner recovery must not depend on optional notification discovery',
         );
         assert.equal(fixture.followingRequests.length, beforeFollows);
         assert.equal(fixture.replies.filter((reply) => reply.id === newId).length, beforeReplies);
         releaseOwner(newId);
-        if (enabled) {
-          await waitForObservation(
-            newId,
-            authenticatedOwner.state.turns[0].turnId,
-            authenticatedOwner.state.turns[0].items[0].content[0].text,
-            beforeObservations,
-          );
-          assert.deepEqual(
-            fixture.replies.filter((reply) => reply.id === newId).slice(beforeReplies),
-            [{ id: newId, ownerClientId: authenticatedOwner.clientId }],
-          );
-          assert.deepEqual(fixture.followingRequests.slice(beforeFollows), [
-            { id: newId, targets: [authenticatedOwner.clientId] },
-          ]);
-        }
+        await waitForObservation(
+          newId,
+          authenticatedOwner.state.turns[0].turnId,
+          authenticatedOwner.state.turns[0].items[0].content[0].text,
+          beforeObservations,
+        );
+        assert.deepEqual(
+          fixture.replies.filter((reply) => reply.id === newId).slice(beforeReplies),
+          [{ id: newId, ownerClientId: authenticatedOwner.clientId }],
+        );
+        assert.deepEqual(fixture.followingRequests.slice(beforeFollows), [
+          { id: newId, targets: [authenticatedOwner.clientId] },
+        ]);
       };
       await exerciseHint(
         `forged-source-${label}`,
@@ -3339,7 +3417,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       // Change only the registry's real owner, without disconnecting the old peer.
       fixture.owners.set(newId, nextOwner);
       await exerciseHint(newClientId, nextOwner.state, nextOwner);
-      if (enabled) {
+      {
         const handedOff = notifications.notificationObservation(newId);
         assert.equal(handedOff.live, true);
         assert.equal(handedOff.runId, handoffRun);
@@ -3357,9 +3435,6 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
         assert.equal(events[0].threadId, newId);
         assert.equal(events[0].requestId, handoffRequest);
         assert.equal(events[0].taskSummary, handedOff.requests[0].taskSummary);
-      } else {
-        assert.equal(notifications.notificationObservation(newId).taskSummary, '接管前的缓存任务');
-        assert.equal(events.length, 0);
       }
       assert(observations.every((value) => value.runId !== forgedRun));
       assert(observations.every((value) => value.taskSummary !== '伪造摘要不得接受'));
@@ -3397,7 +3472,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
         'Owner hints must not read, resume or execute chat history',
       );
       console.log(
-        `Notification owner handoff ${label}: cached live owner, forged source rejected, ${enabled ? 'registry-authenticated new summary and approval' : 'hint discovery skipped'}, old peer remains live; no input/history commands. Synthetic fixture only.`,
+        `Notification owner handoff ${label}: cached live owner, forged source rejected, registry-authenticated new summary and approval, old peer remains live; no input/history commands. Synthetic fixture only.`,
       );
     } finally {
       unsubscribe();

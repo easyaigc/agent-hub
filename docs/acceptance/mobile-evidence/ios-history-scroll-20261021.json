@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-21",
+  "features": ["F17", "F18", "F56"],
+  "status": "passed",
+  "scope": "Offline native history regression on the paired physical iPhone; synthetic messages, no Host or model calls",
+  "rootCauses": [
+    {
+      "cause": "Pixel-level bottom preferences invalidated the screen repeatedly; each render bridged the full cached history into Kotlin and rebuilt the timeline on the main thread.",
+      "fix": "Publish boolean visibility boundaries, capture the target outside the per-frame geometry closure, and cache an immutable projection by the full target and all semantic inputs."
+    },
+    {
+      "cause": "The old layout was captured after publishing the earlier page. Short lists also lost visible trailing room, so UIKit clamped the restored offset; the reproduced anchor jumped about 246pt.",
+      "fix": "Capture layout and expand the window immediately before publishing the prefix. Preserve existing trailing room below the anchor and clear it when returning to latest."
+    }
+  ],
+  "physical": {
+    "status": "passed",
+    "device": {
+      "modelName": "iPhone 15 Pro Max",
+      "osVersion": "27.0.1",
+      "osBuildNumber": "24A446",
+      "architecture": "arm64e",
+      "platform": "iOS"
+    },
+    "transport": "Xcode/CoreDevice physical XCTest; contemporaneous wireless transport was not independently retained",
+    "bundleId": "com.easyai.agenthub.historyscrolltests",
+    "optimizedDebug": true,
+    "notificationCapabilitiesRemovedOnlyInDisposableCopy": true,
+    "passedTests": 2,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "targetReactivationsDuringScroll": 0,
+    "tests": ["testHistoryContinuousScrollPerformance", "testHistoryShortListPrependKeepsPosition"],
+    "fixtureMessages": 2400,
+    "metricsBefore": {
+      "framesOver50MS": 0,
+      "gestures": 8,
+      "markdownBodies": 14,
+      "maxFrameMS": 45.36925000138581,
+      "maxTimelineMS": 22.65062498918269,
+      "movingFrames": 849,
+      "p95FrameMS": 16.670333337970078,
+      "timelineBuilds": 23,
+      "totalTimelineMS": 243.1875000038417
+    },
+    "metricsAfter": {
+      "framesOver50MS": 0,
+      "gestures": 8,
+      "markdownBodies": 14,
+      "maxFrameMS": 38.50883332779631,
+      "maxTimelineMS": 17.51095832150895,
+      "movingFrames": 855,
+      "p95FrameMS": 16.670333337970078,
+      "timelineBuilds": 1,
+      "totalTimelineMS": 17.51095832150895
+    },
+    "frameMetricDefinition": "CADisplayLink intervals while the native scroll offset actually moves; not end-to-end touch latency or a guaranteed frame rate.",
+    "gates": {
+      "minimumGestures": 8,
+      "minimumMovingFramesExclusive": 250,
+      "maximumTimelineBuilds": 2,
+      "p95MovingFrameMSExclusive": 25,
+      "maxMovingFrameMSExclusive": 50,
+      "positionTolerancePt": 3
+    },
+    "execution": "separate test-without-building repeat of the unchanged frozen native build",
+    "sourceSnapshotSha256": "ce3cf7006ddf571f735807751ddd5af62303d5a84393cb191dca263ffe25c50f",
+    "harnessSha256": "e36a0a9142f2edc81cfd4f40b6012c08016b7e729e2059126a48c5a06eb2e510",
+    "baselineEvidenceLimit": "Baseline preceded the cache and geometry fixes and used the same optimized native fixture. Its xcresult and trace are retained privately; the exact original baseline source snapshot was not retained.",
+    "appExecutableSha256": "3d6f198ccc79f1f6e2b31f11303dc67ac53315bfd97a114189f3da2201730b3e"
+  },
+  "simulatorPagination": {
+    "status": "passed",
+    "passedTests": 5,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "sourcesUnchanged": true,
+    "sourceSha256": "6f737feb7b302069d654741a25d44ca074a2832be61137054029fbc47d485ad6",
+    "tests": [
+      "testHistoryPagingLocalWindow",
+      "testHistoryPagingLocalPullWindow",
+      "testHistoryPagingPullInMiddleDoesNotExpand",
+      "testHistoryPagingPullFailureRetryAndExhaustion",
+      "testHistoryPagingThreadSwitchDiscardsLatePage"
+    ],
+    "realCodexRuntime": false
+  },
+  "nativeCacheBoundaries": {
+    "status": "passed",
+    "unchangedProjectionReuses": 500,
+    "invalidationBoundaries": 17,
+    "sharedProjectionComparisons": 2000,
+    "sourceSha256": "b19a0dc2ebbfe96088d2bffc72c2ff98e812928555c53c17fbadae2e7e699eb1",
+    "evidenceKind": "native simulator Swift/Kotlin boundary"
+  },
+  "checks": {
+    "pnpm check": "passed",
+    "pnpm build:ios": "passed",
+    "followUpHarnessESLint": "passed",
+    "pnpm format:check": "passed",
+    "pnpm check:mobile-parity": "passed"
+  },
+  "notAcceptedTrials": [
+    {
+      "kind": "second interrupted physical repeat",
+      "passedTests": 1,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "nativeGestures": 7,
+      "targetReactivationsInNativeLog": 1,
+      "reason": "The unchanged frozen build again needed target reactivation and missed a native pan. The failed result remains separate from the later uninterrupted accepted repeat."
+    },
+    {
+      "kind": "harness build failure",
+      "reason": "Snapshot did not retain executable permission on the shared-core build script. Fixed by preserving source file modes."
+    },
+    {
+      "kind": "first interrupted physical repeat",
+      "passedTests": 1,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "nativeGestures": 6,
+      "targetReactivationsInNativeLog": 4,
+      "maxMovingFrameMS": 2167.241916671628,
+      "reason": "Native XCTest logs show target reactivations during measurement. The origin of the foreground changes is unconfirmed. This failed run remains preserved and is not accepted as an uninterrupted performance result."
+    }
+  ],
+  "liveHistory": {
+    "status": "deferred-by-user",
+    "observation": "iOS reported no usable network during the real HTTPS attempt. User requested offline regression first.",
+    "newModelInputs": 0,
+    "phoneRealHistoryVerified": false
+  },
+  "otherPlatforms": {
+    "android": "no new native acceptance; shared production algorithm unchanged",
+    "windows": "not tested",
+    "A6": "paused"
+  },
+  "delivery": {
+    "formalAppReplaced": false,
+    "formalHostChanged": false,
+    "gitCommitted": false,
+    "temporarySimulatorRemoved": true,
+    "unusedTaskAppBundlesRemoved": true,
+    "independentAcceptanceAppRetained": true
+  },
+  "sourceFilesSha256": {
+    "apps/ios/Sources/Models.swift": "8d602678b998c6cb4fdb4b0cf2292b9635d4c19be61b79a32cbeaf43cfbbf78b",
+    "apps/ios/Sources/RootView.swift": "4f63860eab63d652209e52691964dd4956ca09fcc19959ab66bc8e048ff53deb",
+    "apps/ios/Sources/SessionStore.swift": "d60a24821a755d1b4bba31d0ada1049361ef6f60735d435f6d2eb8c5097dbea3",
+    "apps/ios/Tests/CodexManageUITests.swift": "e42640da4d2998591391ed53948d556d6f4649c3eae2057dbe1d0e428d32fbb0",
+    "scripts/history-scroll-ios.mjs": "e36a0a9142f2edc81cfd4f40b6012c08016b7e729e2059126a48c5a06eb2e510",
+    "scripts/history-pagination-ios-fixture.mjs": "4aba6fddece5832da7a0c3ad9b1c5a96e1a6cabe86e916bfe84a000bac98cb93",
+    "scripts/mobile/check-ios-state.mjs": "e096c70ea17cc10240b5830fdd52e1f12e6d6d819f43e786695cf7001dd17b8c",
+    "scripts/mobile/verify-ios-migration.swift": "fdc6649da2de71c42fb79b28b16446e8b4bbefdd1beaee704aa07652df25f4c4"
+  },
+  "actualXcresultDeviceIdAudited": true,
+  "deviceEvidenceAuditLimit": "Exact destination verified against the designated iPhone 15; this does not extend the original run to later modified source."
+}

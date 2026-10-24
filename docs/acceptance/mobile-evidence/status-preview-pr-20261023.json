@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "date": "2026-10-23",
+  "status": "passed-for-pr-integration-checks",
+  "features": ["F17", "F19", "F32", "F68"],
+  "baseCommit": "83892bb34247e414d9141bd39858b704ad47fe66",
+  "sourceFingerprints": {
+    "apps/host-agent/src/runtime-server.ts": "3ce7e418e6cb18fb6f8aa3e88941251be636ecffc4710f8307e4838a96da1fd6",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "c7b264d109f12e0ffd4bae66e7613fc44f9111614690d8854c2b91d8bfb75519",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "09475409a5fc4020ac84f726b36f8485213feae3fc489ab2d8fce05a34073b3a",
+    "apps/ios/Sources/AgentClient.swift": "d2b102759770aae80c7bff5dc4b309245454c339a112617e905b05cc7a684905",
+    "apps/ios/Sources/HostService.swift": "d71b8a0323225e2b0e74521ad9d4b0a9b6dbb36ecd9474eaa72a4ba1178a4bdf",
+    "apps/ios/Sources/MessageLinks.swift": "8460d9c4db9b3ddf9e6714bdca01405d476bc1f92f18b37aecf57f3bb9c0a2fc",
+    "apps/ios/Sources/RootView.swift": "63b4d3b42948ccf23fbeb300ecedd0cf155fcd5194a0759e7871d5693258017d",
+    "apps/ios/Sources/SessionStore.swift": "e3d435fbe7696d60325b80e2c56890c7a210fd3cb48875102e28c9ab0f1a544f",
+    "apps/ios/Tests/CodexManageUITests.swift": "5ffb04c581634fca6526c28768e7773abe300c86899364b316db0ced245cfb6f",
+    "packages/codex-adapter/src/attachment-files.ts": "e7e7038f30e1a5e621142e64c2e6ab3b7daacea3d3330512960c3eb1850a749e",
+    "packages/codex-adapter/src/history-reader.ts": "6f95ef70098fe5de6791f02b11c411372bb4cfefe428bf0261ad69bcb2795263",
+    "packages/codex-adapter/src/index.ts": "c9f1373d6c7b1c923b64eb2b596495846d0849f279b8acd64168e3c98c2f455d",
+    "packages/codex-adapter/src/runtime-diagnostics.ts": "a3657eac45e7b80c28869ea6fb090bcbc4a2b86daca4250d268f0fca114699ea",
+    "packages/codex-adapter/src/runtime-session.ts": "a206678f4220c7d215233ca491bf0e8c930b162b2975e59f4bc50191a1255ea2",
+    "scripts/attachment-grants-smoke.mjs": "816cf5d1da611dff3457def0677100f2d95097ab7430707ec71e92ab012729ad",
+    "scripts/attachment-performance-smoke.mjs": "982f7ea23f037619de37fc7835d45b52a8697db94273de6461b322e5528ddfd6",
+    "scripts/desktop-ipc-smoke.mjs": "24cba6780730912459d85250bb0fccffc0c277c70cc8c92acf0258b3d5409bec",
+    "scripts/history-smoke.mjs": "bce6ae360b778654ee7ce616cda81e4be1306b0f8a9867d19cdc7d6e800e2a4a",
+    "scripts/large-conversation-sync-smoke.mjs": "1a99e40f722ab2aff1c7995afb76f85352fa50f6524746dc277f1b51db7d7a72",
+    "scripts/message-links-desktop-ios-acceptance.mjs": "364dbad4112f2152907478c9479a1d3fcf17522210a82fdae3f1ed7b5b6e9753",
+    "scripts/message-links-smoke.mjs": "aebd70e7c6e8b0d2d40ca1b5c4567ab704ca68858872a7842fd93dfebb4e08d3"
+  },
+  "checks": {
+    "workspaceBuild": {
+      "status": "passed",
+      "logSha256": "9fab18a417f5941dc9f10829b83c99bb171e2474d3e289dd2fb3fdc55c08d429"
+    },
+    "fullPnpmCheck": {
+      "status": "passed",
+      "logSha256": "fc613101d42a8f5c9da3c17d49526a6f3ffc732e5e7afe05b8c21a71ccd7e8b2"
+    },
+    "messageResourceBoundaries": {
+      "status": "passed",
+      "logSha256": "5e048d605c12d0f82d47a8e456f84dbce14bc5038d3cd3f32e7535bb9dfcf3e9"
+    },
+    "pnpmBuildIOS": {
+      "status": "passed",
+      "logSha256": "95d2f22d23f105ea44235e53f2a6ed072acce28036a7365776ccc2c40f8c5041"
+    },
+    "xctestBuildForTesting": {
+      "status": "passed",
+      "logSha256": "9f6bce4f6b72469d7942201651d13d62252ac0d8f2e31c99dce5630eafa250b0"
+    },
+    "finalFormatting": {
+      "status": "passed",
+      "logSha256": "1d66faad74f5e8709353f7288592866bd3a9095da1174a916e7aa632949971e2"
+    },
+    "finalFeatureManifest": {
+      "status": "passed",
+      "logSha256": "fb633c7ec72bcfb269dd0ee8fa2ece33f8f0fafe678553cd51b746577b8fb09b"
+    }
+  },
+  "deployedEvidence": "status-preview-deploy-20261023.json",
+  "scope": {
+    "nativeBuilds": "Actual integrated PR sources; no phone installation or model inputs in this PR phase",
+    "existingDeviceAcceptance": "Original combined-source deployment only, with its own package/source fingerprints",
+    "priorFailedAttempts": "Retained privately: missing bootstrap outputs, malformed-target health assertion, merge duplicate resolver and missing explicit Java/Xcode environment; final checks passed",
+    "remoteCI": "Four checks queued at PR review time; no remote CI success claimed",
+    "originalWorkingFilesPreserved": 80,
+    "androidAndWindowsNative": "No new real verification; A6 remains paused"
+  }
+}

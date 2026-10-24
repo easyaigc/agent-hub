@@ -63,6 +63,20 @@ class MobilePrivateConnectionUiTest {
         ui.runOnIdle { session.discovery!!.offerHint(endpoint,id,"UM04 isolated computer") }
         ui.waitUntil(15_000) { ui.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     }
+    private fun authorize() {
+        ui.onNodeWithTag("codex-host-key").performScrollTo().performTextInput("fixture-host-key-".repeat(3))
+        ui.onNodeWithTag("codex-authorize-connect").performScrollTo().performClick()
+    }
+    @Test fun selectingAndCancellingDoesNotAuthorizeOrSaveAKey() {
+        show();form();offer();ui.onNodeWithTag(tag).performClick()
+        ui.onNodeWithTag("codex-authorize-connect").assertIsNotEnabled()
+        assertEquals(0,postCount());assertFalse(session.hasClient)
+        ui.onNodeWithTag("codex-host-key").performTextInput("discard-this-key")
+        ui.onNodeWithTag("codex-authorize-cancel").performScrollTo().performClick()
+        ui.onNodeWithTag(tag).performScrollTo().performClick()
+        ui.onNodeWithTag("codex-host-key").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.EditableText,androidx.compose.ui.text.AnnotatedString("")))
+        assertEquals(0,postCount());assertFalse(session.hasClient)
+    }
     private fun shot(name: String, expectedSurface: Int? = null) {
         ui.waitForIdle();val i=InstrumentationRegistry.getInstrumentation();i.uiAutomation.waitForIdle(200,5000)
         val run=args.getString("privateRun")!!;require(run.matches(Regex("[a-f0-9-]+")))
@@ -83,33 +97,33 @@ class MobilePrivateConnectionUiTest {
     @Test fun discoveredRowDoesNotClaimUntilExplicitClickAndShowsConnectedCheck() {
         show();form();offer();ui.onNodeWithTag("$tag-icon",useUnmergedTree=true).assertExists()
         ui.onNodeWithTag(tag).assertIsEnabled();assertEquals(0,postCount());assertFalse(session.hasClient);shot("discovered-before-explicit-click")
-        ui.onNodeWithTag(tag).performClick();ui.waitUntil(20_000) { session.hasClient && !session.connectionBusy }
+        ui.onNodeWithTag(tag).performClick();authorize();ui.waitUntil(20_000) { session.hasClient && !session.connectionBusy }
         assertEquals(1,postCount());assertNotNull(session.selectedClient.codexDirect)
         ui.onNodeWithTag("add-client").performClick();ui.onNodeWithTag("$tag-connected",useUnmergedTree=true).assertExists()
         ui.onNodeWithText("已连接").assertExists();assertEquals(1,postCount());shot("explicit-connected-check")
     }
     @Test fun pendingClaimDisablesRepeatedClickAndCancel() {
-        show();form();offer();mode("hold-claim");ui.onNodeWithTag(tag).performClick()
-        ui.waitUntil(10_000) { session.connectionBusy };ui.onNodeWithTag(tag).assertIsNotEnabled()
+        show();form();offer();mode("hold-claim");ui.onNodeWithTag(tag).performClick();authorize()
+        ui.waitUntil(10_000) { session.connectionBusy };ui.onNodeWithTag("codex-authorize-connect").assertIsNotEnabled()
         ui.onNodeWithTag("cancel-client-form").assertIsNotEnabled();ui.onNodeWithTag("codex-discovery-connecting").assertExists();shot("claim-progress-disabled")
         ui.waitUntil(20_000) { !session.connectionBusy };assertEquals(1,postCount());assertTrue(session.hasClient)
     }
     @Test fun failedClaimKeepsDiscoveryAndOriginalDraftAndCredential() {
         show();ui.runOnIdle { session.text="保留原草稿" };store.setToken(id,"fixture-legacy-token-".repeat(2));form();offer();mode("bad-tag")
-        ui.onNodeWithTag(tag).performClick();ui.waitUntil(20_000) { !session.connectionBusy && ui.onAllNodesWithTag("client-form-error").fetchSemanticsNodes().isNotEmpty() }
-        ui.onNodeWithTag("codex-discovery-rescan").assertExists();ui.onNodeWithTag("codex-scan-qr").assertDoesNotExist()
+        ui.onNodeWithTag(tag).performClick();authorize();ui.waitUntil(20_000) { !session.connectionBusy && ui.onAllNodesWithTag("client-form-error").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("codex-host-key").assertExists();ui.onNodeWithTag("codex-scan-qr").assertDoesNotExist()
         ui.onNodeWithText("电脑凭据校验失败，原连接已保留").assertExists()
         assertFalse(session.hasClient);assertEquals("保留原草稿",session.text);assertEquals("fixture-legacy-token-".repeat(2),store.token(id));assertEquals(1,postCount());shot("failed-keeps-form-draft-and-key")
     }
     @Test fun encryptedConnectionReopensWithoutNewClaim() {
-        show();form();offer();ui.onNodeWithTag(tag).performClick();ui.waitUntil(20_000) { session.hasClient && !session.connectionBusy }
+        show();form();offer();ui.onNodeWithTag(tag).performClick();authorize();ui.waitUntil(20_000) { session.hasClient && !session.connectionBusy }
         ui.runOnIdle { session.text="重开保留的草稿" };ui.waitUntil(10_000) { store.metadata()?.optJSONObject("drafts")?.toString()?.contains("重开保留的草稿")==true }
         ui.runOnIdle { session.discovery?.stop();session.leaveForeground();holder.value=MobileSession(store).also { it.restore() } }
         ui.waitUntil(15_000) { !session.restoring && session.hasClient }
         assertEquals("重开保留的草稿",session.text);assertEquals(1,postCount());ui.onNodeWithTag("message-input").assertTextEquals("重开保留的草稿");shot("connection-and-draft-reopened")
     }
     @Test fun foregroundGenerationDropsTransientRowsAndKeepsVerifiedClientWithoutClaim() {
-        show();form();offer();ui.onNodeWithTag(tag).performClick();ui.waitUntil(20_000) { session.hasClient && !session.connectionBusy }
+        show();form();offer();ui.onNodeWithTag(tag).performClick();authorize();ui.waitUntil(20_000) { session.hasClient && !session.connectionBusy }
         val key=store.token(id);ui.onNodeWithTag("add-client").performClick()
         ui.runOnIdle {
             session.discovery!!.offerHint(endpoint,"untrusted-transient-host","Transient address hint")

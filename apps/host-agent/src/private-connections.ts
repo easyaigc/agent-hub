@@ -22,9 +22,15 @@ import {
   RuntimeError,
 } from '@codex-manage/codex-adapter';
 
-type Binding = { target: RuntimeTarget; publicKey: string; token: string; revoked: boolean };
+type Binding = {
+  target: RuntimeTarget;
+  publicKey: string;
+  token: string;
+  revoked: boolean;
+  hostKeyAuthorized?: boolean;
+};
 
-/** Automatic private-network policy, with a separate persistent credential per phone key.
+/** Host-Key-authorized issuance, with a separate persistent credential per phone key.
  * The original Host access-token is never returned, rotated or copied to the phone.
  */
 export class PrivateConnections {
@@ -45,7 +51,11 @@ export class PrivateConnections {
         target: binding.target,
         publicKey: binding.publicKey,
       });
-      if (!/^[A-Za-z0-9_-]{43}$/.test(binding.token) || typeof binding.revoked !== 'boolean')
+      if (
+        !/^[A-Za-z0-9_-]{43}$/.test(binding.token) ||
+        typeof binding.revoked !== 'boolean' ||
+        (binding.hostKeyAuthorized !== undefined && typeof binding.hostKeyAuthorized !== 'boolean')
+      )
         throw Error('Invalid private connection credential');
     }
     this.bindings = state.bindings;
@@ -55,6 +65,7 @@ export class PrivateConnections {
       const expected = Buffer.from(binding.token);
       return (
         !binding.revoked &&
+        binding.hostKeyAuthorized === true &&
         token.length === expected.length &&
         timingSafeEqual(token, expected) &&
         machineRuntimeTargetKey(target) === machineRuntimeTargetKey(binding.target)
@@ -78,12 +89,15 @@ export class PrivateConnections {
     if (existing && machineRuntimeTargetKey(existing.target) !== machineRuntimeTargetKey(target))
       throw new RuntimeError(409, '设备属于其他运行时身份');
     if (!existing && this.bindings.length >= 128) throw new RuntimeError(429, '设备连接数量已满');
-    const binding: Binding = existing ?? {
-      target: claim.target,
-      publicKey: claim.publicKey,
-      token: randomBytes(32).toString('base64url'),
-      revoked: false,
-    };
+    const binding: Binding = existing
+      ? { ...existing, hostKeyAuthorized: true }
+      : {
+          target: claim.target,
+          publicKey: claim.publicKey,
+          token: randomBytes(32).toString('base64url'),
+          revoked: false,
+          hostKeyAuthorized: true,
+        };
     const ephemeral = generateKeyPairSync('x25519');
     let secret;
     try {
@@ -110,8 +124,10 @@ export class PrivateConnections {
       cipher.final(),
       cipher.getAuthTag(),
     ]);
-    if (!existing) {
-      const next = [...this.bindings, binding];
+    if (!existing || !existing.hostKeyAuthorized) {
+      const next = existing
+        ? this.bindings.map((value) => (value === existing ? binding : value))
+        : [...this.bindings, binding];
       const temporary = this.path + '.tmp';
       writeFileSync(temporary, JSON.stringify({ version: 1, bindings: next }), { mode: 0o600 });
       protectWindowsStateFile(temporary);

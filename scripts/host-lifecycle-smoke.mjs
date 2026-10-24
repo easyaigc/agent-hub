@@ -4,6 +4,7 @@ import { renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
+import { channel } from 'node:diagnostics_channel';
 import { setTimeout as delay } from 'node:timers/promises';
 import { RuntimePersistence } from '../packages/codex-adapter/dist/runtime-persistence.js';
 import {
@@ -12,6 +13,7 @@ import {
   assertPrivateFile,
 } from '../packages/codex-adapter/dist/desktop-platform.js';
 import { superviseWorker, safeWorkerFailure } from './host-worker-supervisor.mjs';
+import { createWindowsTraceDiagnostics } from '../packages/codex-adapter/dist/windows-trace-diagnostics.js';
 
 // An independently created state and ephemeral localhost port only. On native
 // Windows successful writes use the actual private ACL helper, never a stub.
@@ -260,6 +262,211 @@ process.once('disconnect', () => process.exit(1));
   await supervisor.stop();
   await delay(100);
   assert.equal(await readFile(marker, 'utf8'), '3', 'Stopping cannot launch a fourth child');
+
+  // Real factory records travel through real child stderr, including split lines.
+  // Subscriber-only capture avoids emitting fixture records from this parent.
+  const traceChannel = channel('agent-hub.windows-trace.summary');
+  const samples = [];
+  const capture = (value) => samples.push(value);
+  const oldTraceFlag = process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+  const restoreTraceFlag = () => {
+    if (oldTraceFlag === undefined) delete process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+    else process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = oldTraceFlag;
+  };
+  delete process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+  traceChannel.subscribe(capture);
+  try {
+    for (const scope of ['reader', 'client', 'native', 'host']) {
+      const diagnostic = createWindowsTraceDiagnostics(scope, 7);
+      diagnostic.phase('prepare', () => {});
+      diagnostic.phase('parse', () => {});
+      diagnostic.phase('verify', () => {});
+      for (const kind of ['P', 'S', 'T']) diagnostic.nativeCall(kind).end(true);
+      diagnostic.nativeCall('B', 8); // Pending is evidence, not a zero-completed success.
+      diagnostic.end('phase_deadline', {
+        operation: scope === 'reader' ? 'parser' : 'read',
+        stage: 'interrupted',
+        phase: 'verify',
+        request: 3,
+        deadlineKind: 'phase',
+        selectedDeadlineKind: 'shared_rpc',
+        deadlineTriggered: true,
+        deadlineMask: 1,
+        phaseRemainingMs: -2,
+        remainingMs: -1,
+        parserReadSnapshotCalls: 2,
+        parserCatalogWalks: 6,
+        parserGuardCount: 8,
+        readerExited: true,
+        transportExited: false,
+        childExited: false,
+        stdioClosed: false,
+      });
+    }
+  } finally {
+    traceChannel.unsubscribe(capture);
+    restoreTraceFlag();
+  }
+  assert.equal(samples.length, 4);
+  const secret = 'SECRET_WINDOWS_TRACE_FIXTURE_MUST_NOT_LEAK';
+  const wrappers = samples.map((sample) => ({
+    childPid: -999,
+    windowsTrace: {
+      ...sample,
+      childPid: -998,
+      supervisorPid: -997,
+      body: secret,
+      path: secret,
+      error: { message: secret },
+      phases: {
+        ...sample.phases,
+        privatePhase: { body: secret },
+        prepare: { ...sample.phases.prepare, path: secret },
+      },
+      native: { ...sample.native, X: { secret }, B: { ...sample.native.B, body: secret } },
+    },
+  }));
+  const invalid = [
+    { windowsTrace: { ...samples[0], scope: secret } },
+    { windowsTrace: { ...samples[0], native: { B: { ...samples[0].native.B, pending: secret } } } },
+    { windowsTrace: { schemaVersion: 2, body: secret } },
+    { windowsTrace: { ...samples[0], phases: { prepare: { calls: secret, elapsedMs: 0 } } } },
+  ];
+  const firstLine = JSON.stringify(wrappers[0]) + '\n';
+  const tail = wrappers
+    .slice(1)
+    .concat(invalid)
+    .map((value) => JSON.stringify(value) + '\n')
+    .join('');
+  assert(
+    Buffer.byteLength(firstLine + tail + secret) < 16_384,
+    'Legitimate multiline fixture stays inside the unchanged buffer cap',
+  );
+  const traceChildFile = join(directory, 'trace-child.mjs');
+  await writeFile(
+    traceChildFile,
+    `
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+const [mode, marker] = process.argv.slice(2);
+const count = existsSync(marker) ? Number(readFileSync(marker, 'utf8')) + 1 : 1;
+process.on('message', message => { if (message.command === 'host-worker-stop') process.exit(0); });
+const write = text => new Promise((resolve, reject) => process.stderr.write(text, error => error ? reject(error) : resolve()));
+if (mode === 'oversized') {
+  await write(JSON.stringify({windowsTrace: ${JSON.stringify(samples[0])}, body: ${JSON.stringify(secret)}.repeat(600)}) + '\\n');
+} else if (mode === 'report-fault') {
+  await write(${JSON.stringify(firstLine)});
+} else {
+  await write(${JSON.stringify(secret + '\n')});
+  const first = ${JSON.stringify(firstLine)};
+  await write(first.slice(0, 31));
+  await write(first.slice(31) + ${JSON.stringify(tail)});
+}
+writeFileSync(marker, String(count));
+if (mode === 'report-fault' && count === 1) process.exit(7);
+`,
+  );
+  let forwardedTraceRecords = 0;
+  for (const [mode, flag] of [
+    ['default-off', undefined],
+    ['not-one', 'true'],
+    ['enabled', '1'],
+    ['oversized', '1'],
+    ['report-fault', '1'],
+  ]) {
+    if (flag === undefined) delete process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+    else process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = flag;
+    const traceMarker = join(directory, 'trace-count-' + mode);
+    const entries = [],
+      warnings = [];
+    const originalError = console.error;
+    if (mode === 'report-fault') console.error = (value) => warnings.push(value);
+    try {
+      supervisor = superviseWorker({
+        executable: process.execPath,
+        args: [traceChildFile, mode, traceMarker],
+        report(entry) {
+          entries.push(entry);
+          if (mode === 'report-fault' && entry.event === 'windows-trace-summary')
+            throw new Error(secret);
+        },
+        delays: [10],
+        healthyMs: 10_000,
+      });
+      const launches = mode === 'report-fault' ? 2 : 1;
+      await waitUntil(async () => {
+        try {
+          return Number(await readFile(traceMarker, 'utf8')) === launches;
+        } catch {
+          return false;
+        }
+      });
+      if (flag === '1' && mode !== 'oversized')
+        await waitUntil(
+          () =>
+            entries.filter((entry) => entry.event === 'windows-trace-summary').length ===
+            (mode === 'report-fault' ? 2 : 4),
+        );
+      await supervisor.stop(); // close guarantees all stderr consumption before assertions.
+      const summaries = entries.filter((entry) => entry.event === 'windows-trace-summary');
+      if (mode === 'enabled') {
+        assert.equal(
+          summaries.length,
+          4,
+          'All four real factory scopes survive split/multiline input',
+        );
+        for (let i = 0; i < summaries.length; i++) {
+          assert.deepEqual(summaries[i].windowsTrace, samples[i]);
+          assert.equal(
+            summaries[i].childPid,
+            entries.find((entry) => entry.event === 'started').childPid,
+          );
+          assert.notEqual(
+            summaries[i].childPid,
+            samples[i].pid,
+            'Reader summary PID may differ from actual launched Host',
+          );
+        }
+        forwardedTraceRecords = summaries.length;
+      } else if (mode === 'report-fault') {
+        assert.equal(
+          entries.filter((entry) => entry.event === 'exited' && entry.exitCode === 7).length,
+          1,
+        );
+        assert.deepEqual(
+          entries.filter((entry) => entry.event === 'retry').map((entry) => entry.delayMs),
+          [10],
+        );
+        assert.equal(entries.filter((entry) => entry.event === 'started').length, 2);
+        assert.deepEqual(warnings, [
+          'HOST_DIAGNOSTICS_UNAVAILABLE',
+          'HOST_DIAGNOSTICS_UNAVAILABLE',
+        ]);
+        for (const entry of summaries) {
+          assert(
+            entries.some(
+              (started) => started.event === 'started' && started.childPid === entry.childPid,
+            ),
+          );
+          assert.deepEqual(entry.windowsTrace, samples[0]);
+        }
+      } else
+        assert.equal(summaries.length, 0, 'Default/non-1 flag and oversized records never forward');
+      assert(
+        !JSON.stringify(entries).includes(secret),
+        'Noise, invalid nested values and unknown secret fields are never logged',
+      );
+      await delay(50);
+      assert.equal(
+        Number(await readFile(traceMarker, 'utf8')),
+        launches,
+        'Stop/reporter failure never authorizes an extra generation',
+      );
+    } finally {
+      await supervisor?.stop();
+      console.error = originalError;
+      restoreTraceFlag();
+    }
+  }
   console.log(
     JSON.stringify({
       result: 'passed',
@@ -270,6 +477,9 @@ process.once('disconnect', () => process.exit(1));
       concurrentReadResponses: 40,
       recoveredChildLaunch: 3,
       stoppedWithoutRespawn: true,
+      windowsTraceForwarded: forwardedTraceRecords,
+      windowsTraceModes: 5,
+      windowsTraceReporterFailureRecovered: true,
       idlePersistenceRecovery: true,
       cooldownStoppedWithoutWrites: true,
       evidence:

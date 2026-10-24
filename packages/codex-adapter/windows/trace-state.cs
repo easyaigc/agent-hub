@@ -6,6 +6,7 @@ using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using System.Web.Script.Serialization;
 
@@ -79,8 +80,40 @@ internal static class TraceState
         if(count==0 || count>=actual.Length || !String.Equals(new string(actual,0,(int)count).Substring(4).TrimEnd('\\'),path.TrimEnd('\\'),StringComparison.OrdinalIgnoreCase)) throw new IOException();
         return info.Volume+":"+info.IndexHigh+":"+info.IndexLow+":"+info.Created.dwHighDateTime+":"+info.Created.dwLowDateTime+":"+Digest(Security(h,ancestor,root));
     }
+    sealed class NamespaceAnchor {
+        public SafeFileHandle Handle;
+        public string Identity;
+    }
+    // Only namespace ancestors ABOVE the private root are shared, for one B
+    // command. Their fresh identity/DACL must still equal the initial capture
+    // before and after EVERY item. The private root and everything beneath it
+    // always receive new kernel access checks through freshly opened handles.
+    static Dictionary<string,NamespaceAnchor> OpenNamespaceAnchors(string rootInput) {
+        string root=Canonical(rootInput), at=root;
+        var paths=new List<string>();
+        while(true) { int split=at.LastIndexOf('\\'); if(split<2)break; at=at.Substring(0,split); paths.Add(at); }
+        paths.Reverse();
+        var anchors=new Dictionary<string,NamespaceAnchor>(StringComparer.OrdinalIgnoreCase);
+        var actual=new char[Math.Min(32768,root.Length+6)];
+        try {
+            foreach(string path in paths) {
+                string native=path.Length==2 ? path+"\\" : path;
+                var handle=CreateFile("\\\\?\\"+native,0x20080u,3,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
+                if(handle.IsInvalid) { handle.Dispose(); throw new IOException(); }
+                // Register ownership before inspecting, including failure paths.
+                var anchor=new NamespaceAnchor { Handle=handle };
+                anchors.Add(path,anchor);
+                anchor.Identity=Inspect(handle,path,true,true,false,actual);
+            }
+            return anchors;
+        } catch { foreach(var anchor in anchors.Values)anchor.Handle.Dispose(); throw; }
+    }
     static string Snapshot(string rootInput, string pathInput, int maximum) {
+        return SnapshotWithAnchors(rootInput,pathInput,maximum,null);
+    }
+    static string SnapshotWithAnchors(string rootInput, string pathInput, int maximum, Dictionary<string,NamespaceAnchor> anchors) {
         var handles=new List<SafeFileHandle>();
+        var ownedHandles=new List<SafeFileHandle>();
         try {
             string root=Canonical(rootInput), path=Canonical(pathInput);
             if(maximum<0 || maximum>32*1024*1024 || !(String.Equals(root,path,StringComparison.OrdinalIgnoreCase)||path.StartsWith(root+"\\",StringComparison.OrdinalIgnoreCase))) throw new IOException();
@@ -91,14 +124,25 @@ internal static class TraceState
             paths.Reverse(); var identities=new List<string>();
             // Unicode char[] avoids StringBuilder's per-query native buffer copy.
             // The marshaller owns each call's pin; storage is local to this Snapshot.
-            var actual=new char[32768];
+            // An accepted DOS path must equal a component of this canonical
+            // input. Reserve the device prefix, a root slash and the terminator;
+            // keep the original maximum and reject any longer native result.
+            var actual=new char[Math.Min(32768,path.Length+6)];
             for(int i=0;i<paths.Count;i++) {
                 bool directory=i<paths.Count-1 || maximum==0;
                 string native=paths[i].Length==2 ? paths[i]+"\\" : paths[i];
-                var h=CreateFile("\\\\?\\"+native, maximum>0 && !directory ? 0x80020000u : 0x20080u,3,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
-                if(h.IsInvalid) { h.Dispose(); throw new IOException(); } handles.Add(h);
                 bool ancestor=paths[i].Length<root.Length;
-                identities.Add(Inspect(h,paths[i],directory,ancestor,paths[i].Length==root.Length,actual));
+                NamespaceAnchor anchor=null;
+                SafeFileHandle h;
+                if(ancestor && anchors!=null && anchors.TryGetValue(paths[i],out anchor)) h=anchor.Handle;
+                else {
+                    h=CreateFile("\\\\?\\"+native, maximum>0 && !directory ? 0x80020000u : 0x20080u,3,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
+                    if(h.IsInvalid) { h.Dispose(); throw new IOException(); } ownedHandles.Add(h);
+                }
+                handles.Add(h);
+                string identity=Inspect(h,paths[i],directory,ancestor,paths[i].Length==root.Length,actual);
+                if(anchor!=null && identity!=anchor.Identity)throw new IOException();
+                identities.Add(identity);
             }
             byte[] bytes=new byte[0];
             if(maximum>0) {
@@ -113,7 +157,7 @@ internal static class TraceState
             } else for(int i=0;i<handles.Count;i++) if(identities[i]!=Inspect(handles[i],paths[i],true,paths[i].Length<root.Length,paths[i].Length==root.Length,actual)) throw new IOException();
             return "{\"identity\":\""+Digest(Encoding.UTF8.GetBytes(String.Join("|",identities)))+"\",\"chain\":[\""+String.Join("\",\"",identities)+"\"],\"bytes\":\""+Convert.ToBase64String(bytes)+"\"}";
         }
-        finally { foreach(var h in handles) h.Dispose(); }
+        finally { foreach(var h in ownedHandles) h.Dispose(); }
     }
     static string Decode(string value) { return Encoding.UTF8.GetString(Convert.FromBase64String(value)); }
     const int BatchRequestBytes=48*1024, BatchResponseBytes=256*1024, BatchMaximum=16384;
@@ -143,7 +187,7 @@ internal static class TraceState
         if(!Fields(request,"schemaVersion","kind","id","items") || !(request["schemaVersion"] is int) || (int)request["schemaVersion"]!=1 ||
             !(request["kind"] is string) || (string)request["kind"]!="snapshot-many" || !(request["id"] is int) || (int)request["id"]<1)throw new ArgumentException();
         var items=request["items"] as object[];
-        if(items==null || items.Length<1 || items.Length>2)throw new ArgumentException();
+        if(items==null || items.Length<1 || items.Length>8)throw new ArgumentException();
         int estimate=256;
         for(int index=0;index<items.Length;index++) {
             var item=items[index] as Dictionary<string,object>;
@@ -156,15 +200,23 @@ internal static class TraceState
             estimate+=256+depth*128+4*((maximum+2)/3);
         }
         if(estimate>BatchResponseBytes)throw new ArgumentException();
-        var results=new List<string>();
-        for(int index=0;index<items.Length;index++) {
+        var anchors=items.Length>1 ? OpenNamespaceAnchors(root) : null;
+        try {
+        var results=new string[items.Length];
+        Action<int> snapshot=index=> {
             var item=(Dictionary<string,object>)items[index];
-            // Independent full chain/ACL/identity/content checks, including duplicates.
+            // Full per-item chain/ACL/identity/content checks, including duplicates.
+            // Only above-root namespace handles are retained for this command.
             // Do not publish any item before the whole command has succeeded.
-            results.Add("{\"index\":"+index+",\"snapshot\":"+Snapshot(root,(string)item["path"],(int)item["maximum"])+"}");
-        }
+            results[index]="{\"index\":"+index+",\"snapshot\":"+SnapshotWithAnchors(root,(string)item["path"],(int)item["maximum"],anchors)+"}";
+        };
+        // B1 avoids scheduling. Parallel.For joins every in-flight Snapshot even
+        // on failure; only this caller assembles/publishes the complete response.
+        if(items.Length==1)snapshot(0);
+        else Parallel.For(0,items.Length,new ParallelOptions { MaxDegreeOfParallelism=8 },snapshot);
         string result="{\"schemaVersion\":1,\"kind\":\"snapshot-many\",\"id\":"+request["id"]+",\"items\":["+String.Join(",",results)+"]}";
         if(Encoding.UTF8.GetByteCount(result)>BatchResponseBytes)throw new ArgumentException();return result;
+        } finally { if(anchors!=null)foreach(var anchor in anchors.Values)anchor.Handle.Dispose(); }
     }
     static int Main(string[] args) {
         try {

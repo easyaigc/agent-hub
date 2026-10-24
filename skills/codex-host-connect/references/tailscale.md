@@ -1,5 +1,7 @@
 # Tailscale 安装和 HTTPS
 
+本步骤仅在配置双通道远程入口时执行，纯局域网安装跳过。默认推荐双通道；没有安装／尚未登录不阻塞局域网接入，交付时注明远程入口缺项。
+
 这是跨局域网的私有网络接入，不是本项目的公网 Relay。手机仍需 Tailscale VPN，电脑保持登录、联网和运行。使用官方安装与 CLI 文档，安装时重新确认最新稳定版本，不固定本机版本或过期安装包 URL。
 
 ## macOS 安装
@@ -20,6 +22,8 @@ TAILSCALE_BE_CLI=1 /Applications/Tailscale.app/Contents/MacOS/Tailscale serve st
 
 `status --json` 可能包含账号与设备信息，只在本机检查，不贴原始输出。确认 BackendState 为 Running、本机在线且加入目标网络。[CLI 说明](https://tailscale.com/docs/reference/tailscale-cli?tab=macos)
 
+临时断开后的恢复也核对这两个实际状态。macOS 的 `scutil --nc` 即使显示 Connected，Tailscale 后台仍可能是 Stopped，私有域名无法解析；不能仅据系统 VPN 状态宣称已恢复。沿用原登录和偏好启动现有连接，核对私有 DNS、证书及准确 Host 的 HTTPS 读取，并与原偏好比较，保留 Serve、路由及账号配置。手机路径另行真实验证，Mac 恢复成功不替代手机结果。
+
 ## Serve HTTPS
 
 先检查当前 Serve/Funnel 路由。默认 HTTPS 443 空闲时代理本机 Host：
@@ -31,6 +35,8 @@ TAILSCALE_BE_CLI=1 /Applications/Tailscale.app/Contents/MacOS/Tailscale serve --
 首次按 CLI 提供的网页完成 HTTPS 功能启用，相关账户操作由用户完成。Serve 生成 `https://device-name.tailnet-name.ts.net`；记录实际输出，不拼接或猜测 DNS 名称。[Serve 文档](https://tailscale.com/docs/features/tailscale-serve)
 
 若 443 已有别的服务，保留它，选择空闲 HTTPS 端口，例如 `serve --bg --https=8443 8794`，手机地址包含 `:8443`。不执行全局 `serve reset`，不把现有 Funnel 公开入口当作私有入口，不放开整个 tailnet 的访问策略。新入口只需允许目标手机访问所选 HTTPS 端口。
+
+成功探测后按 [网络配置](network.md) 将实际根地址持久保存到 `HOST_AGENT_HTTPS_ENDPOINTS`，保留原值。局域网和 Serve 使用各自的证书信任，手机通过鉴权路径清单学习备用地址。
 
 用脚本检查 HTTPS，保持证书校验：
 
@@ -44,7 +50,7 @@ node skills/codex-host-connect/scripts/probe-host.mjs \
 
 ## 手机配置与排障
 
-按 [官方 iOS 安装说明](https://tailscale.com/docs/install/ios)，让用户安装 Tailscale、允许 VPN 配置、登录目标私有网络并开启连接。默认在 Agent Hub“添加客户端 → Codex → 自动发现”点选电脑，按 [Host 部署检查](host.md#身份与本机检查) 核对私网自动授权及完整工作区目标，首次无需扫码或填写密钥。首次纯跨网且没有 Bonjour／缓存目录来源时，单列发现入口缺项；不能将 Serve HTTPS 成功等同于自动发现或公钥授权可用。
+按 [官方 iOS 安装说明](https://tailscale.com/docs/install/ios)，让用户安装 Tailscale、允许 VPN 配置、登录目标私有网络并开启连接。默认在 Agent Hub“添加客户端 → Codex → 自动发现”点选电脑，按 [Host 部署检查](host.md#身份与本机检查) 核对私网密钥授权及完整工作区目标，首次点选后输入这台电脑的 Host Key；同一 VPN 不构成授权。首次纯跨网且没有 Bonjour／缓存目录来源时，单列发现入口缺项；不能将 Serve HTTPS 成功等同于自动发现或公钥授权可用。
 
 手动地址与二维码保留为补充入口。选择手动添加时填写实际电脑名称、HTTPS 根地址和本机客户端密钥；按 [Skill 交付格式](../SKILL.md#配置后的必交付参数) 提供可用参数，App“客户端密钥”只填令牌原文，不加 `Bearer `，保存到 Keychain。普通探测、日志和可分享报告不包含密钥。
 

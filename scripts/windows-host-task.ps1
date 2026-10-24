@@ -223,7 +223,7 @@ function Stop-HostSupervisors($Tracked) {
 }
 function Wait-HostProcessExit($Tracked, [int]$WaitMs) {
     $until = [Math]::Min($CommandBudgetMs, (Get-HostCommandTime) + $WaitMs)
-    while (@($Tracked.Values | Where-Object { -not $_.Process.HasExited }).Count -gt 0) {
+    while (@($Tracked.Values | Where-Object { -not $_.Process.WaitForExit(0) }).Count -gt 0) {
         Assert-HostCommandBudget
         if ((Get-HostCommandTime) -ge $until) { return $false }
         Start-Sleep -Milliseconds 100

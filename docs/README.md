@@ -2,7 +2,11 @@
 
 Android 已获准按计划分阶段实施，当前专用分支、验收门槛与提交记录见[分步进度](plans/android-alignment-20261022/progress.md)。
 
-Android 当前后续安排见 [2026-10-22 开发与验收计划](plans/android-alignment-20261022.md)、[217 条逐提交对照](plans/android-alignment-20261022/commits.md)和[完整功能/UI/场景矩阵](plans/android-alignment-20261022/parity.md)。本次只整理计划；业务项目/任务管理暂缓，A6 保持暂停。[更换后的 Android 真机环境结果](acceptance/android-environment-20261021.md)单列开发通路与产品验收边界。
+Windows 已有对话的本轮恢复与独立真机结果见 [Windows 同步复核](windows-conversation-sync.md)，正式原连接验收与独立安装的结果分别登记。
+
+Android 当前后续安排见 [2026-10-22 开发与验收计划](plans/android-alignment-20261022.md)、[217 条逐提交对照](plans/android-alignment-20261022/commits.md)和[完整功能/UI/场景矩阵](plans/android-alignment-20261022/parity.md)。业务项目/任务管理暂缓，A6 保持暂停。[更换后的 Android 真机环境结果](acceptance/android-environment-20261021.md)单列开发通路与产品验收边界。
+
+本轮问题与收敛顺序见 [Windows Trace、桌面接管与 iPhone 验收问题梳理](plans/windows-trace-convergence-review-20261022.md)。P0 生命周期、P1 原 owner 恢复和 P2 Trace 预算已分别闭环；各项证据、历史失败，以及 P3、手机和正式发布的剩余范围在计划中单列。
 
 远程功能逐项对照使用 [Codex / EasyWork 验收清单](acceptance/remote-access-checklist.md)，用户真实手机的本轮结果见 EasyWork iPhone 验收（本地文件 `docs/acceptance/easywork-iphone.md`）。
 

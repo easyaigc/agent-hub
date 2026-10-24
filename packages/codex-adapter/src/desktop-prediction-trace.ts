@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { channel } from 'node:diagnostics_channel';
 import {
   closeSync,
   constants,
@@ -16,7 +17,14 @@ import {
   windowsTraceSnapshotMany,
   windowsTraceSnapshotBatchAvailable,
 } from './desktop-platform.js';
-import { traceSnapshotBatchFits, type TraceSnapshotValue } from './desktop-trace-native.js';
+import {
+  traceSnapshotBatchFits,
+  traceSnapshotBatchLimits,
+  type TraceSnapshotValue,
+} from './desktop-trace-native.js';
+import { createWindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
+
+const traceSummaries = channel('agent-hub.windows-trace.summary');
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const bundleName = /^trace-([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})-(.+)$/i;
@@ -81,6 +89,93 @@ type Guard = {
 type TraceEvent = { directory: string; event: JsonObject; payload: JsonObject };
 type TraceRequest = TraceEvent & { inferenceCallId: string };
 
+/** Decoding only: every use still acquires a full file receipt in TraceSnapshot. */
+class PreparedTraceLog {
+  private readonly lines: string[];
+  private readonly decoded = new Map<number, TraceEvent>();
+  private readonly starts = new Map<unknown, TraceEvent[]>();
+  private readonly endings = new Map<unknown, TraceEvent[]>();
+  private readonly completions: TraceEvent[] = [];
+  private readonly terminals: TraceEvent[] = [];
+  private validated = false;
+
+  constructor(
+    private readonly bytes: Buffer,
+    private readonly directory: string,
+    private readonly threadId: string,
+    private readonly decode: <T>(body: () => T) => T,
+  ) {
+    this.lines = this.decode(() => bytes.toString('utf8').split('\n'));
+  }
+
+  eventAt(index: number, binding = false): TraceEvent {
+    return this.decode(() => this.event(index, binding));
+  }
+
+  private event(index: number, binding: boolean): TraceEvent {
+    const line = this.lines[index] ?? '',
+      bom = line.startsWith('\uFEFF');
+    // Binding historically decodes each line with TextDecoder, removing one
+    // leading BOM. Discovery parses the original string and must still reject
+    // that BOM, even after binding has cached this record.
+    requireValue(binding || !bom);
+    let value = this.decoded.get(index);
+    if (!value) {
+      const event = parseJson(binding && bom ? line.slice(1) : line);
+      value = { directory: this.directory, event, payload: object(event.payload) };
+      this.decoded.set(index, value);
+    }
+    return value;
+  }
+
+  forTurn(turnId: string) {
+    return this.decode(() => this.turn(turnId));
+  }
+
+  private turn(turnId: string) {
+    if (!this.validated) {
+      // Source discovery historically decodes UTF-8 permissively. The first
+      // binding still requires strict UTF-8, every complete line and sequence,
+      // including records outside the requested turn. Do not validate earlier
+      // or silently omit a malformed/unfinished line when indexing.
+      new TextDecoder('utf-8', { fatal: true }).decode(
+        this.bytes.subarray(0, this.bytes.lastIndexOf(10) + 1),
+      );
+      for (let index = 0; index < this.lines.length - 1; index++) {
+        requireValue(Buffer.byteLength(this.lines[index]!) <= limits.eventLine);
+        const value = this.eventAt(index, true),
+          { event, payload } = value;
+        requireValue(
+          event.schema_version === 1 &&
+            event.rollout_id === this.threadId &&
+            event.seq === index + 1 &&
+            Number.isSafeInteger(event.wall_time_unix_ms),
+        );
+        const add = (map: Map<unknown, TraceEvent[]>) => {
+          // The original selector matches either ID, then rejects disagreement.
+          for (const key of new Set([event.codex_turn_id, payload.codex_turn_id])) {
+            const values = map.get(key) ?? [];
+            values.push(value);
+            map.set(key, values);
+          }
+        };
+        if (payload.type === 'inference_started') add(this.starts);
+        if (payload.type === 'codex_turn_ended') add(this.endings);
+        if (payload.type === 'inference_completed') this.completions.push(value);
+        if (payload.type === 'protocol_event_observed' && payload.event_type === 'turn_complete')
+          this.terminals.push(value);
+      }
+      this.validated = true;
+    }
+    return {
+      starts: this.starts.get(turnId) ?? [],
+      endings: this.endings.get(turnId) ?? [],
+      completions: this.completions,
+      terminals: this.terminals,
+    };
+  }
+}
+
 function requireValue(condition: unknown): asserts condition {
   if (!condition) throw new Error('Unavailable prediction trace');
 }
@@ -119,10 +214,26 @@ class TraceSnapshot {
   private guards: Guard[] = [];
   private directories = new Map<string, Guard>();
   private bytes = 0;
+  private readonly diagnostic?: ReturnType<typeof createWindowsTraceDiagnostics>;
+  private parsing = false;
+  private readSnapshotCalls = 0;
+  private catalogWalks = 0;
   private readonly uid = BigInt(process.getuid?.() ?? 0);
   private traceRoot = '';
   private nativeNodes = new Map<string, string>();
   private nativeFiles = new Map<string, { stat: BigIntStats; bytes: Buffer; identity: string }>();
+  private preparedLogs = new Map<
+    string,
+    {
+      stat: BigIntStats;
+      identity: string;
+      sha256: string;
+      length: number;
+      directory: string;
+      threadId: string;
+      index: PreparedTraceLog;
+    }
+  >();
   private catalogs = new Map<
     string,
     { root: string; threadId: string | undefined; names: string[] }
@@ -135,13 +246,61 @@ class TraceSnapshot {
     authorizedStat: BigIntStats;
   }[] = [];
 
-  constructor(private readonly prepared = false) {}
+  constructor(private readonly prepared = false) {
+    if (
+      prepared &&
+      process.platform === 'win32' &&
+      (traceSummaries.hasSubscribers || process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1')
+    )
+      this.diagnostic = createWindowsTraceDiagnostics('reader');
+  }
+
+  /** Only pure decoding/index work belongs here, never file/native operations. */
+  decode<T>(body: () => T): T {
+    if (!this.diagnostic || this.parsing) return body();
+    this.parsing = true;
+    try {
+      return this.diagnostic.phase('parse', body);
+    } finally {
+      this.parsing = false;
+    }
+  }
+
+  json(bytes: Uint8Array | string): JsonObject {
+    return this.decode(() => parseJson(bytes));
+  }
+
+  capture<T>(body: () => T): T {
+    return this.diagnostic ? this.diagnostic.phase('prepare', body) : body();
+  }
+
+  recordReadSnapshot(): void {
+    if (this.diagnostic) this.readSnapshotCalls++;
+  }
+
+  report(
+    reason: 'ok' | 'native_rejected' | 'aborted',
+    stage: 'prepared' | 'committed' | 'interrupted',
+  ): void {
+    try {
+      this.diagnostic?.end(reason, {
+        operation: 'parser',
+        stage,
+        parserReadSnapshotCalls: this.readSnapshotCalls,
+        parserCatalogWalks: this.catalogWalks,
+        parserGuardCount: this.guards.length,
+      });
+    } catch {
+      // Diagnostic delivery cannot change a prediction, rejection or cleanup.
+    }
+  }
 
   get isPreparedDiscovery(): boolean {
     return this.prepared;
   }
 
   releaseBodies(): void {
+    this.preparedLogs.clear();
     this.nativeFiles.clear();
     this.bytes = 0;
   }
@@ -216,9 +375,19 @@ class TraceSnapshot {
 
   commit(): void {
     requireValue(this.prepared && process.platform === 'win32');
-    this.verifyInputs();
-    this.verify();
-    this.verifyInputs(true);
+    const verify = () => {
+      if (!this.diagnostic) {
+        this.verifyInputs();
+        this.verify();
+        this.verifyInputs(true);
+        return;
+      }
+      this.diagnostic.phase('verify_inputs', () => this.verifyInputs());
+      this.diagnostic.phase('verify', () => this.verify());
+      this.diagnostic.phase('verify_inputs_final', () => this.verifyInputs(true));
+    };
+    if (this.diagnostic) this.diagnostic.phase('commit', verify);
+    else verify();
   }
 
   withByteBudget<T>(read: () => T): T {
@@ -232,9 +401,65 @@ class TraceSnapshot {
     try {
       return read();
     } finally {
-      this.bytes = previousBytes;
+      let retainedBytes = previousBytes;
+      // An index owns its log bytes/decoded events. Keep those bodies charged
+      // and live in this request instead of hiding them behind a reset budget.
+      // Requests/responses remain scoped as before; no receipt is removed.
+      for (const path of this.preparedLogs.keys()) {
+        const file = this.nativeFiles.get(path)!;
+        const previous = previousFiles.get(path);
+        retainedBytes += Math.max(
+          0,
+          file.bytes.length -
+            (previous && sameFile(previous.stat, file.stat) ? previous.bytes.length : 0),
+        );
+        previousFiles.set(path, file);
+      }
+      this.bytes = retainedBytes;
       this.nativeFiles = previousFiles;
+      requireValue(this.bytes <= limits.totalBytes);
     }
+  }
+
+  preparedLog(path: string, bytes: Buffer, directory: string, threadId: string) {
+    if (!this.prepared || process.platform !== 'win32') return undefined;
+    // file() must just have recorded a fresh full-body receipt. Path or parsed
+    // JSON equality alone never authorizes reuse, nor does a prior API read.
+    const guard = this.guards.at(-1),
+      file = this.nativeFiles.get(path);
+    requireValue(
+      guard?.path === path &&
+        guard.body &&
+        guard.body.length === bytes.length &&
+        guard.body.maximum === limits.eventLog &&
+        guard.nativeIdentity &&
+        file &&
+        file.identity === guard.nativeIdentity &&
+        sameFile(file.stat, guard.stat),
+    );
+    const previous = this.preparedLogs.get(path);
+    if (previous) {
+      requireValue(
+        sameFile(previous.stat, guard.stat) &&
+          previous.identity === guard.nativeIdentity &&
+          previous.sha256 === guard.body.sha256 &&
+          previous.length === bytes.length &&
+          previous.directory === directory &&
+          previous.threadId === threadId,
+      );
+      return previous.index;
+    }
+    const index = new PreparedTraceLog(bytes, directory, threadId, (body) => this.decode(body));
+    this.preparedLogs.set(path, {
+      stat: guard.stat,
+      identity: guard.nativeIdentity,
+      sha256: guard.body.sha256,
+      length: bytes.length,
+      directory,
+      threadId,
+      index,
+    });
+    return index;
   }
 
   private native(path: string, maximum = 0): ReturnType<typeof windowsTraceSnapshot> {
@@ -309,6 +534,126 @@ class TraceSnapshot {
     }
   }
 
+  /** Only already-discovered contained directories; root/ancestor paths stay scalar. */
+  directoryGroup(paths: readonly string[]): void {
+    if (!this.prepared || process.platform !== 'win32' || !windowsTraceSnapshotBatchAvailable()) {
+      for (const path of paths) this.directory(path);
+      return;
+    }
+    for (let index = 0; index < paths.length;) {
+      if (this.directories.has(paths[index]!)) {
+        // Preserve the original map-hit fresh lstat/scope check and unique guard.
+        this.directory(paths[index++]!);
+        continue;
+      }
+      const selected: string[] = [];
+      for (
+        let at = index;
+        at < paths.length && selected.length < traceSnapshotBatchLimits.items;
+        at++
+      ) {
+        const path = paths[at]!;
+        if (
+          this.directories.has(path) ||
+          selected.includes(path) ||
+          !traceSnapshotBatchFits([...selected, path].map((path) => ({ path, maximum: 0 })))
+        )
+          break;
+        selected.push(path);
+      }
+      if (selected.length < 2) {
+        this.directory(paths[index++]!);
+        continue;
+      }
+      const plans = selected.map((path) => {
+        const before = lstatSync(path, { bigint: true });
+        this.validate(before, true, 'contained');
+        return { path, before };
+      });
+      const values = windowsTraceSnapshotMany(
+        this.traceRoot,
+        plans.map(({ path }) => ({ path, maximum: 0 })),
+      );
+      requireValue(values.length === plans.length);
+      for (let at = 0; at < plans.length; at++) {
+        const plan = plans[at]!;
+        this.nativeResult(plan.path, values[at]!);
+        requireValue(sameNode(plan.before, lstatSync(plan.path, { bigint: true }), true));
+      }
+      // No early directory receipt is usable before this entire B is fenced.
+      for (const plan of plans)
+        requireValue(sameNode(plan.before, lstatSync(plan.path, { bigint: true }), true));
+      for (let at = 0; at < plans.length; at++) {
+        const plan = plans[at]!;
+        const guard: Guard = {
+          path: plan.path,
+          stat: plan.before,
+          directory: true,
+          scope: 'contained',
+          nativeIdentity: values[at]!.identity,
+        };
+        this.guards.push(guard);
+        this.directories.set(plan.path, guard);
+      }
+      index += plans.length;
+    }
+  }
+
+  /** A fresh full-file Snapshot already retains and checks its complete directory chain. */
+  discoveryFiles(items: readonly { path: string; maximum: number }[]): Buffer[] {
+    const paths = items.map((item) => dirname(item.path));
+    // Select before I/O, never retry a rejected read or turn a cached body into
+    // a new parent proof. Existing request-local receipts keep their old path.
+    if (
+      !this.prepared ||
+      process.platform !== 'win32' ||
+      new Set(paths).size !== paths.length ||
+      paths.some(
+        (path, index) => this.directories.has(path) || this.nativeFiles.has(items[index]!.path),
+      )
+    ) {
+      this.directoryGroup(paths);
+      return this.files(items);
+    }
+    const before = paths.map((path) => {
+      const stat = lstatSync(path, { bigint: true });
+      this.validate(stat, true, 'contained');
+      return stat;
+    });
+    const bodies = this.files(items);
+    const guards = paths.map((path, index): Guard => {
+      // No file was cached on entry. files() has just accepted a fresh native
+      // full-chain receipt, with every sibling fenced, for this exact discovery file.
+      requireValue(this.nativeFiles.has(items[index]!.path));
+      const chain: string[] = [];
+      for (let at = path; ; at = dirname(at)) {
+        const node = this.nativeNodes.get(at.toLowerCase());
+        requireValue(node !== undefined);
+        chain.unshift(node!);
+        if (at === parse(at).root) break;
+      }
+      const leaf = chain.at(-1)!.split(':');
+      requireValue(before[index]!.ino === ((BigInt(leaf[1]!) << 32n) | BigInt(leaf[2]!)));
+      requireValue(sameNode(before[index]!, lstatSync(path, { bigint: true }), true));
+      return {
+        path,
+        stat: before[index]!,
+        directory: true,
+        scope: 'contained',
+        nativeIdentity: createHash('sha256').update(chain.join('|')).digest('base64'),
+      };
+    });
+    // Preserve each standalone directory guard for commit; save only its
+    // duplicate prepare open. Publish none until the entire group is fenced.
+    for (const guard of guards)
+      requireValue(sameNode(guard.stat, lstatSync(guard.path, { bigint: true }), true));
+    for (const guard of guards) {
+      this.guards.push(guard);
+      this.directories.set(guard.path, guard);
+    }
+    return bodies;
+  }
+
   root(path: string): void {
     requireValue(isAbsolute(path) && resolve(path) === path);
     this.traceRoot = path;
@@ -339,6 +684,7 @@ class TraceSnapshot {
   }
 
   private catalog(root: string, threadId?: string): string[] {
+    if (this.diagnostic) this.catalogWalks++;
     const directory = opendirSync(root);
     const names: string[] = [];
     try {
@@ -455,67 +801,101 @@ class TraceSnapshot {
     return native.bytes;
   }
 
-  /** Two already-eligible discovery files; no body escapes until the whole B validates. */
+  /** Ordered discovery inputs; each dispatched B is all-or-nothing, never replayed. */
   files(items: readonly { path: string; maximum: number; prefix?: boolean }[]): Buffer[] {
-    const single = () => items.map((item) => this.file(item.path, item.maximum, item.prefix));
     if (
       !this.prepared ||
       process.platform !== 'win32' ||
-      items.length !== 2 ||
-      items[0]!.path === items[1]!.path ||
+      items.length < 2 ||
       !windowsTraceSnapshotBatchAvailable()
     )
-      return single();
-    const plans = items.map((item) => {
-      this.verifyParents(item.path);
-      const before = lstatSync(item.path, { bigint: true });
-      this.validate(before, false, 'contained');
-      requireValue(item.prefix || before.size <= BigInt(item.maximum));
-      const length = Math.min(Number(before.size), item.maximum);
-      const cached = this.nativeFiles.get(item.path);
-      const reusable = cached && sameFile(cached.stat, before);
-      return { ...item, before, length, cached, reusable };
-    });
-    const nativeItems = plans.map((plan) => ({
-      path: plan.path,
-      maximum: Math.max(1, plan.length),
-    }));
-    // Select original S before dispatch for cache hits, large files or large frames.
-    // A B rejection, timeout, mutation or malformed response never falls back.
-    if (
-      plans.some((plan) => plan.reusable && plan.cached!.bytes.length >= plan.length) ||
-      !traceSnapshotBatchFits(nativeItems)
-    )
-      return single();
-    this.bytes += plans.reduce(
-      (sum, plan) =>
-        sum + Math.max(0, plan.length - (plan.reusable ? plan.cached!.bytes.length : 0)),
-      0,
-    );
-    requireValue(this.bytes <= limits.totalBytes);
-    const values = windowsTraceSnapshotMany(this.traceRoot, nativeItems);
-    requireValue(values.length === plans.length);
-    for (let index = 0; index < plans.length; index++) {
-      const plan = plans[index]!,
-        value = values[index]!;
-      this.nativeResult(plan.path, value);
-      requireValue(
-        value.bytes.length === plan.length &&
-          sameFile(plan.before, lstatSync(plan.path, { bigint: true })),
+      return items.map((item) => this.file(item.path, item.maximum, item.prefix));
+    const result: Buffer[] = [];
+    for (let index = 0; index < items.length;) {
+      const plans: {
+        path: string;
+        maximum: number;
+        prefix?: boolean;
+        before: BigIntStats;
+        length: number;
+        cached: { stat: BigIntStats; bytes: Buffer; identity: string } | undefined;
+        reusable: boolean | undefined;
+      }[] = [];
+      for (
+        let at = index;
+        at < items.length && plans.length < traceSnapshotBatchLimits.items;
+        at++
+      ) {
+        const item = items[at]!;
+        // A duplicate must observe the earlier item's normal request-local cache.
+        if (plans.some((plan) => plan.path === item.path)) break;
+        this.verifyParents(item.path);
+        const before = lstatSync(item.path, { bigint: true });
+        this.validate(before, false, 'contained');
+        requireValue(item.prefix || before.size <= BigInt(item.maximum));
+        const length = Math.min(Number(before.size), item.maximum);
+        const cached = this.nativeFiles.get(item.path);
+        const reusable = cached && sameFile(cached.stat, before);
+        if (
+          (reusable && cached.bytes.length >= length) ||
+          !traceSnapshotBatchFits([
+            ...plans.map((plan) => ({
+              path: plan.path,
+              maximum: Math.max(1, plan.length),
+            })),
+            { path: item.path, maximum: Math.max(1, length) },
+          ])
+        )
+          break;
+        plans.push({ ...item, before, length, cached, reusable });
+      }
+      // Cache hits, large items and remaining singles choose S/cache before dispatch.
+      if (plans.length < 2) {
+        const item = items[index++]!;
+        result.push(this.file(item.path, item.maximum, item.prefix));
+        continue;
+      }
+      this.bytes += plans.reduce(
+        (sum, plan) =>
+          sum + Math.max(0, plan.length - (plan.reusable ? plan.cached!.bytes.length : 0)),
+        0,
       );
+      requireValue(this.bytes <= limits.totalBytes);
+      const values = windowsTraceSnapshotMany(
+        this.traceRoot,
+        plans.map((plan) => ({
+          path: plan.path,
+          maximum: Math.max(1, plan.length),
+        })),
+      );
+      requireValue(values.length === plans.length);
+      for (let at = 0; at < plans.length; at++) {
+        const plan = plans[at]!,
+          value = values[at]!;
+        this.nativeResult(plan.path, value);
+        requireValue(
+          value.bytes.length === plan.length &&
+            sameFile(plan.before, lstatSync(plan.path, { bigint: true })),
+        );
+      }
+      // Fence early items against changes while a later native item ran.
+      for (const plan of plans)
+        requireValue(sameFile(plan.before, lstatSync(plan.path, { bigint: true })));
+      for (let at = 0; at < plans.length; at++) {
+        const plan = plans[at]!;
+        result.push(
+          this.rememberNativeFile(
+            plan.path,
+            plan.maximum,
+            plan.prefix === true,
+            plan.before,
+            values[at]!,
+          ),
+        );
+      }
+      index += plans.length;
     }
-    // Fence the first file against changes while validating the second reply.
-    for (const plan of plans)
-      requireValue(sameFile(plan.before, lstatSync(plan.path, { bigint: true })));
-    return plans.map((plan, index) =>
-      this.rememberNativeFile(
-        plan.path,
-        plan.maximum,
-        plan.prefix === true,
-        plan.before,
-        values[index]!,
-      ),
-    );
+    return result;
   }
 
   private verifyParents(path: string): void {
@@ -538,12 +918,26 @@ class TraceSnapshot {
   verify(prefixContents = true): void {
     if (process.platform === 'win32' && windowsTraceSnapshotBatchAvailable()) {
       for (let index = 0; index < this.guards.length;) {
-        const guards = this.guards.slice(index, index + 2);
+        const guards: Guard[] = [];
+        const width = this.prepared ? traceSnapshotBatchLimits.items : 2;
+        for (let at = index; at < this.guards.length && guards.length < width; at++) {
+          const next = this.guards[at]!;
+          if (
+            !traceSnapshotBatchFits(
+              [...guards, next].map((guard) => ({
+                path: guard.path,
+                maximum: this.nativeMaximum(guard),
+              })),
+            )
+          )
+            break;
+          guards.push(next);
+        }
         const items = guards.map((guard) => ({
           path: guard.path,
           maximum: this.nativeMaximum(guard),
         }));
-        if (guards.length !== 2 || !traceSnapshotBatchFits(items)) {
+        if (guards.length < 2) {
           this.verifyGuard(this.guards[index++]!, prefixContents);
           continue;
         }
@@ -706,7 +1100,11 @@ function payloadBytes(
   return snapshot.file(payloadPath(directory, value, type), maximum);
 }
 
-function predictionText(response: JsonObject, predictionTurnId: string): string {
+function predictionText(
+  response: JsonObject,
+  predictionTurnId: string,
+  snapshot: TraceSnapshot,
+): string {
   requireValue(Array.isArray(response.output_items) && response.output_items.length > 0);
   let text: string | null = null;
   for (const value of response.output_items) {
@@ -735,7 +1133,7 @@ function predictionText(response: JsonObject, predictionTurnId: string): string 
         // alone would silently choose the last conflicting value.
         /^\s*\{\s*"suggestion"\s*:\s*"(?:[^"\\]|\\.)*"\s*\}\s*$/s.test(content.text),
     );
-    const suggestion = parseJson(content.text).suggestion;
+    const suggestion = snapshot.json(content.text).suggestion;
     requireValue(
       typeof suggestion === 'string' && suggestion.trim().length > 0 && suggestion.length <= 16_000,
     );
@@ -795,14 +1193,14 @@ function completedPrediction(
     'inference_response',
     limits.response,
   );
-  const response = parseJson(bytes);
+  const response = snapshot.json(bytes);
   requireValue(
     response.response_id === completion.payload.response_id &&
       (response.upstream_request_id === null || typeof response.upstream_request_id === 'string') &&
       response.upstream_request_id === completion.payload.upstream_request_id,
   );
   return {
-    text: predictionText(response, binding.predictionTurnId),
+    text: predictionText(response, binding.predictionTurnId, snapshot),
     completedAt: new Date(Number(ending.event.wall_time_unix_ms)).toISOString(),
     responsePayloadSha256: createHash('sha256').update(bytes).digest('hex'),
   };
@@ -874,13 +1272,20 @@ export class DesktopPredictionTraceReader {
   ): PreparedDesktopPredictionTraceRead | null {
     if (process.platform !== 'win32') return null;
     let snapshot: TraceSnapshot | null = new TraceSnapshot(true);
-    let results = this.scanSourcePredictions(
-      sourceThreadId,
-      sourceTurnId,
-      authorizedRoot,
-      notBeforeUnixMs,
-      latestOnly,
-      snapshot,
+    const capture = snapshot;
+    let results = capture.capture(() =>
+      this.scanSourcePredictions(
+        sourceThreadId,
+        sourceTurnId,
+        authorizedRoot,
+        notBeforeUnixMs,
+        latestOnly,
+        capture,
+      ),
+    );
+    capture.report(
+      results === null ? 'native_rejected' : 'ok',
+      results === null ? 'interrupted' : 'prepared',
     );
     if (results === null) {
       snapshot.dispose();
@@ -888,6 +1293,7 @@ export class DesktopPredictionTraceReader {
     }
     snapshot.releaseBodies();
     const dispose = () => {
+      snapshot?.report('aborted', 'interrupted');
       snapshot?.dispose();
       snapshot = null;
       results = null;
@@ -903,8 +1309,10 @@ export class DesktopPredictionTraceReader {
         results = null;
         try {
           pending.commit();
+          pending.report('ok', 'committed');
           return projection;
         } catch {
+          pending.report('native_rejected', 'interrupted');
           return null;
         } finally {
           pending.dispose();
@@ -918,22 +1326,37 @@ export class DesktopPredictionTraceReader {
     snapshot: TraceSnapshot,
     names: string[],
     notBeforeUnixMs: number,
-  ): Generator<{ name: string; directory: string; configured: JsonObject | undefined }> {
-    const width = process.platform === 'win32' && snapshot.isPreparedDiscovery ? 2 : 1;
+  ): Generator<{
+    name: string;
+    directory: string;
+    configured: JsonObject | undefined;
+  }> {
+    const preparedWindows = process.platform === 'win32' && snapshot.isPreparedDiscovery;
+    const width = preparedWindows ? traceSnapshotBatchLimits.items : 1;
     for (let index = 0; index < names.length; index += width) {
       let group = names
         .slice(index, index + width)
         .map((name) => ({ name, directory: join(this.root, name) }));
-      for (const item of group) snapshot.directory(item.directory);
+      if (!preparedWindows || notBeforeUnixMs <= 0) {
+        if (preparedWindows) snapshot.directoryGroup(group.map((item) => item.directory));
+        else for (const item of group) snapshot.directory(item.directory);
+      }
       if (notBeforeUnixMs > 0) {
-        const manifests = snapshot.files(
-          group.map((item) => ({
-            path: join(item.directory, 'manifest.json'),
-            maximum: limits.manifest,
-          })),
-        );
+        const manifests = preparedWindows
+          ? snapshot.discoveryFiles(
+              group.map((item) => ({
+                path: join(item.directory, 'manifest.json'),
+                maximum: limits.manifest,
+              })),
+            )
+          : snapshot.files(
+              group.map((item) => ({
+                path: join(item.directory, 'manifest.json'),
+                maximum: limits.manifest,
+              })),
+            );
         group = group.filter((_item, offset) => {
-          const manifest = parseJson(manifests[offset]!);
+          const manifest = snapshot.json(manifests[offset]!);
           requireValue(
             manifest.schema_version === 1 && Number.isSafeInteger(manifest.started_at_unix_ms),
           );
@@ -954,14 +1377,17 @@ export class DesktopPredictionTraceReader {
       const references: { offset: number; path: string }[] = [];
       for (let offset = 0; offset < contexts.length; offset++) {
         const item = contexts[offset]!;
-        for (const line of prefixes[offset]!.toString('utf8').split('\n').slice(0, -1)) {
-          const event = parseJson(line),
+        const lines = snapshot.decode(() =>
+          prefixes[offset]!.toString('utf8').split('\n').slice(0, -1),
+        );
+        for (const line of lines) {
+          const event = snapshot.json(line),
             payload = object(event.payload);
           if (
             payload.type === 'protocol_event_observed' &&
             payload.event_type === 'session_configured'
           ) {
-            snapshot.directory(join(item.directory, 'payloads'));
+            if (!preparedWindows) snapshot.directory(join(item.directory, 'payloads'));
             references.push({
               offset,
               path: payloadPath(item.directory, payload.event_payload, 'protocol_event'),
@@ -970,12 +1396,22 @@ export class DesktopPredictionTraceReader {
           }
         }
       }
-      const payloads = snapshot.files(
-        references.map((item) => ({ path: item.path, maximum: limits.protocolEvent })),
-      );
+      const payloadItems = references.map((item) => ({
+        path: item.path,
+        maximum: limits.protocolEvent,
+      }));
+      let payloads: Buffer[];
+      if (preparedWindows && notBeforeUnixMs > 0) payloads = snapshot.discoveryFiles(payloadItems);
+      else {
+        if (preparedWindows)
+          snapshot.directoryGroup(
+            references.map((item) => join(contexts[item.offset]!.directory, 'payloads')),
+          );
+        payloads = snapshot.files(payloadItems);
+      }
       for (let at = 0; at < references.length; at++) {
         const item = contexts[references[at]!.offset]!;
-        item.configured = parseJson(payloads[at]!);
+        item.configured = snapshot.json(payloads[at]!);
         if (item.configured.type === 'session_configured')
           snapshot.closeDiscoveryPrefix(join(item.directory, 'trace.jsonl'));
       }
@@ -1027,8 +1463,16 @@ export class DesktopPredictionTraceReader {
         snapshot.configuredCwd(authorizedRoot, configured.cwd);
         const log = snapshot.file(join(directory, 'trace.jsonl'), limits.eventLog);
         requireValue(log.length === 0 || log.at(-1) === 10);
-        for (const line of log.toString('utf8').trimEnd().split('\n')) {
-          const event = parseJson(line);
+        const indexed = snapshot.preparedLog(
+          join(directory, 'trace.jsonl'),
+          log,
+          directory,
+          predictionThreadId,
+        );
+        let lineIndex = 0;
+        const lines = snapshot.decode(() => log.toString('utf8').trimEnd().split('\n'));
+        for (const line of lines) {
+          const event = indexed ? indexed.eventAt(lineIndex++).event : snapshot.json(line);
           const payload = object(event.payload);
           if (payload.type !== 'inference_started') continue;
           const turnId = event.codex_turn_id;
@@ -1108,6 +1552,7 @@ export class DesktopPredictionTraceReader {
       return null;
     try {
       const snapshot = sharedSnapshot ?? new TraceSnapshot();
+      snapshot.recordReadSnapshot();
       if (!sharedSnapshot) snapshot.root(this.root);
       const names = snapshot.candidates(this.root, predictionThreadId);
       let binding: DesktopPredictionTraceBinding | null = null;
@@ -1118,9 +1563,8 @@ export class DesktopPredictionTraceReader {
       for (const name of names) {
         const directory = join(this.root, name);
         snapshot.directory(directory);
-        const manifest = parseJson(
-          snapshot.file(join(directory, 'manifest.json'), limits.manifest),
-        );
+        const manifestBytes = snapshot.file(join(directory, 'manifest.json'), limits.manifest);
+        const manifest = snapshot.json(manifestBytes);
         requireValue(
           manifest.schema_version === 1 &&
             validUuid(manifest.trace_id) &&
@@ -1135,29 +1579,45 @@ export class DesktopPredictionTraceReader {
         snapshot.directory(join(directory, 'payloads'));
         const log = snapshot.file(join(directory, 'trace.jsonl'), limits.eventLog);
         if (includePrediction) requireValue(log.length === 0 || log.at(-1) === 10);
+        const indexed = snapshot
+          .preparedLog(join(directory, 'trace.jsonl'), log, directory, predictionThreadId)
+          ?.forTurn(predictionTurnId);
+        if (indexed) {
+          if (recovery) terminalMessages.push(...indexed.terminals);
+          if (includePrediction) {
+            completions.push(...indexed.completions);
+            endings.push(...indexed.endings);
+          }
+        }
         let offset = 0;
         let expectedSequence = 1;
-        while (offset < log.length) {
-          const end = log.indexOf(10, offset);
-          // An in-progress tail is not an event and must never supply evidence.
-          if (end === -1) break;
-          requireValue(end - offset <= limits.eventLine);
-          const event = parseJson(log.subarray(offset, end));
-          offset = end + 1;
-          requireValue(
-            event.schema_version === 1 &&
-              event.rollout_id === predictionThreadId &&
-              event.seq === expectedSequence++ &&
-              Number.isSafeInteger(event.wall_time_unix_ms),
-          );
+        let requestIndex = 0;
+        while (indexed ? requestIndex < indexed.starts.length : offset < log.length) {
+          let event: JsonObject;
+          if (indexed) event = indexed.starts[requestIndex++]!.event;
+          else {
+            const end = log.indexOf(10, offset);
+            // An in-progress tail is not an event and must never supply evidence.
+            if (end === -1) break;
+            requireValue(end - offset <= limits.eventLine);
+            event = snapshot.json(log.subarray(offset, end));
+            offset = end + 1;
+            requireValue(
+              event.schema_version === 1 &&
+                event.rollout_id === predictionThreadId &&
+                event.seq === expectedSequence++ &&
+                Number.isSafeInteger(event.wall_time_unix_ms),
+            );
+          }
           const payload = object(event.payload);
           if (
+            !indexed &&
             recovery &&
             payload.type === 'protocol_event_observed' &&
             payload.event_type === 'turn_complete'
           )
             terminalMessages.push({ directory, event, payload });
-          if (includePrediction) {
+          if (!indexed && includePrediction) {
             if (payload.type === 'inference_completed')
               completions.push({ directory, event, payload });
             if (
@@ -1187,7 +1647,7 @@ export class DesktopPredictionTraceReader {
             'inference_request',
             limits.request,
           );
-          const request = parseJson(requestBytes);
+          const request = snapshot.json(requestBytes);
           // Both HTTP and response.create serialize client_metadata at the top level.
           requireValue(request.type === undefined || request.type === 'response.create');
           const clientMetadata = object(request.client_metadata);
@@ -1198,7 +1658,7 @@ export class DesktopPredictionTraceReader {
               typeof clientMetadata['x-codex-turn-metadata'] === 'string' &&
               clientMetadata['x-codex-turn-metadata'].length <= limits.eventLine,
           );
-          const metadata = parseJson(clientMetadata['x-codex-turn-metadata']);
+          const metadata = snapshot.json(clientMetadata['x-codex-turn-metadata']);
           if (recovery) {
             requireValue(
               metadata.thread_source === 'composer_predictions' &&
@@ -1274,15 +1734,14 @@ export class DesktopPredictionTraceReader {
           terminal.directory === endings[0]!.directory &&
             Number(terminal.event.seq) > Number(endings[0]!.event.seq),
         );
-        const message = parseJson(
-          payloadBytes(
-            snapshot,
-            terminal.directory,
-            terminal.payload.event_payload,
-            'protocol_event',
-            limits.protocolEvent,
-          ),
+        const messageBytes = payloadBytes(
+          snapshot,
+          terminal.directory,
+          terminal.payload.event_payload,
+          'protocol_event',
+          limits.protocolEvent,
         );
+        const message = snapshot.json(messageBytes);
         requireValue(
           message.type === 'task_complete' &&
             message.turn_id === predictionTurnId &&
@@ -1294,7 +1753,7 @@ export class DesktopPredictionTraceReader {
             message.last_agent_message,
           ),
         );
-        const value = parseJson(message.last_agent_message);
+        const value = snapshot.json(message.last_agent_message);
         requireValue(Object.keys(value).length === 1 && value.suggestion === prediction.text);
       }
       requireValue(

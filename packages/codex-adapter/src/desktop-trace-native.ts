@@ -1,3 +1,4 @@
+import type { WindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
 import { createWindowsTraceTransport } from './desktop-private-state-native.js';
 import { win32 } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -16,7 +17,7 @@ export type TraceSnapshotBatch = {
   items: (TraceSnapshotItem & { index: number })[];
 };
 export const traceSnapshotBatchLimits = Object.freeze({
-  items: 2,
+  items: 8,
   maximum: 16_384,
   requestBytes: 48 * 1024,
   responseBytes: 256 * 1024,
@@ -194,11 +195,29 @@ export function decodeTraceSnapshotBatch(
   });
 }
 
+// The original snapshot projection, shared only with the diagnostic timing boundary.
+function decodeSnapshotValue(raw: unknown): TraceSnapshotValue {
+  const value = raw as { identity: unknown; chain: unknown; bytes: unknown };
+  if (
+    typeof value.identity !== 'string' ||
+    !Array.isArray(value.chain) ||
+    value.chain.some((v: unknown) => typeof v !== 'string') ||
+    typeof value.bytes !== 'string'
+  )
+    throw new Error('Invalid native trace response');
+  return {
+    identity: value.identity,
+    chain: value.chain as string[],
+    bytes: Buffer.from(value.bytes, 'base64'),
+  };
+}
+
 /** Persistent fixed native operations, synchronously consumed only in a reader thread. */
 export async function createWindowsTraceBackend(
   identity: WindowsDesktopIdentity,
   root: string,
   signal?: AbortSignal,
+  diagnostics?: () => WindowsTraceDiagnostics,
 ) {
   if (signal?.aborted) throw new Error('Trace native startup closed');
   const shared = new SharedArrayBuffer(48 * 1024 * 1024 + 8);
@@ -249,18 +268,46 @@ export async function createWindowsTraceBackend(
     maximum?: number,
     batch?: TraceSnapshotBatch,
   ) {
-    if (!alive || performance.now() >= deadline) throw new Error('Trace read budget exhausted');
-    Atomics.store(control, 0, 0);
-    worker.postMessage(batch ?? { kind, path, maximum });
-    const status = Atomics.wait(control, 0, 0, Math.min(1000, deadline - performance.now()));
-    if (status === 'timed-out' || Atomics.load(control, 0) !== 1) {
-      close();
-      throw new Error('Trace native operation unavailable');
+    const diagnostic = diagnostics?.();
+    if (!alive || performance.now() >= deadline) {
+      diagnostic?.end(!alive ? 'transport_lost' : 'phase_deadline', {
+        deadlineKind: !alive ? 'unknown' : 'native_budget',
+      });
+      throw new Error('Trace read budget exhausted');
     }
-    const text = Buffer.from(bytes.subarray(0, Atomics.load(control, 1))).toString('utf8');
-    const value = kind === 'snapshot-many' ? parseTraceSnapshotBatchJSON(text) : JSON.parse(text);
-    if (record(value) && value.error) throw new Error('Trace native operation rejected');
-    return value;
+    const sample = diagnostic?.nativeCall(
+      kind === 'probe' ? 'P' : kind === 'snapshot' ? 'S' : kind === 'tokens' ? 'T' : 'B',
+      batch?.items.length ?? 0,
+    );
+    let completed = false;
+    try {
+      Atomics.store(control, 0, 0);
+      worker.postMessage(batch ?? { kind, path, maximum });
+      const status = Atomics.wait(control, 0, 0, Math.min(1000, deadline - performance.now()));
+      sample?.waited();
+      if (status === 'timed-out' || Atomics.load(control, 0) !== 1) {
+        diagnostic?.end(status === 'timed-out' ? 'phase_deadline' : 'transport_lost', {
+          deadlineKind: performance.now() >= deadline ? 'native_budget' : 'native_response',
+        });
+        close();
+        throw new Error('Trace native operation unavailable');
+      }
+      sample?.decoding();
+      const text = Buffer.from(bytes.subarray(0, Atomics.load(control, 1))).toString('utf8');
+      const value = kind === 'snapshot-many' ? parseTraceSnapshotBatchJSON(text) : JSON.parse(text);
+      if (record(value) && value.error) throw new Error('Trace native operation rejected');
+      const result =
+        kind === 'snapshot-many'
+          ? decodeTraceSnapshotBatch(value, batch!)
+          : kind === 'snapshot'
+            ? decodeSnapshotValue(value)
+            : value;
+      sample?.decoded();
+      completed = true;
+      return result;
+    } finally {
+      sample?.end(completed);
+    }
   }
   let nextBatch = 0;
   const backend = {
@@ -275,10 +322,7 @@ export async function createWindowsTraceBackend(
       };
       encodeTraceSnapshotBatch(request);
       try {
-        return decodeTraceSnapshotBatch(
-          call('snapshot-many', undefined, undefined, request),
-          request,
-        );
+        return call('snapshot-many', undefined, undefined, request) as TraceSnapshotValue[];
       } catch (error) {
         close();
         throw error;
@@ -286,19 +330,7 @@ export async function createWindowsTraceBackend(
     },
     snapshot(requestedRoot: string, path: string, maximum = 0) {
       if (requestedRoot !== root) throw new Error('Trace root changed');
-      const value = call('snapshot', path, maximum);
-      if (
-        typeof value.identity !== 'string' ||
-        !Array.isArray(value.chain) ||
-        value.chain.some((v: unknown) => typeof v !== 'string') ||
-        typeof value.bytes !== 'string'
-      )
-        throw new Error('Invalid native trace response');
-      return {
-        identity: value.identity,
-        chain: value.chain as string[],
-        bytes: Buffer.from(value.bytes, 'base64'),
-      };
+      return call('snapshot', path, maximum) as TraceSnapshotValue;
     },
     inspect: () => call('probe') as WindowsTraceInstance,
   };

@@ -1469,13 +1469,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         workspaces[connected.cacheKey(null)] = snapshot
         selectVerifiedClient(connected)
     }
-    suspend fun connectCodexDiscovered(host: DiscoveredCodexHost): MobileClient {
+    suspend fun connectCodexDiscovered(host: DiscoveredCodexHost, hostKey: String): MobileClient {
         val store = storage ?: error("本地安全存储不可用")
         val prior = realClients.firstOrNull { it.id == host.id }
         val revision = revisions[host.id] ?: 0
         val selection = selectionRevision; val sourceKey = targetKey; val sourceVersion = version(sourceKey)
         val identity = EasyWorkIdentity.load(store)
-        val authorized = CodexDiscoveryAPI.authorize(host, identity, store) { descriptor ->
+        val authorized = CodexDiscoveryAPI.authorize(host, identity, store, hostKey) { descriptor ->
             require(prior == null || sameScope(prior.scope, descriptor.target)) { "电脑运行时身份已变化，原连接已保留" }
             require(prior?.codexDirect == null || prior.codexDirect.fingerprint == descriptor.fingerprint) { "已配对电脑证书发生变化，原连接已保留" }
             require((revisions[host.id] ?: 0) == revision && selectionRevision == selection && targetKey == sourceKey && version(sourceKey) == sourceVersion) { "连接或所选目标已改变，未申请凭据" }
@@ -1487,7 +1487,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val routes = (listOf(CodexRoute(CodexEndpoints.local(host.endpoint), host.networkKind ?: "unknown")) + authorized.descriptor.routes).distinctBy { it.endpoint }.take(32)
         val client = MobileClient(id=host.id, name=prior?.name ?: authorized.descriptor.name, scope=target, endpoint=routes.first().endpoint,
             online=true, mode="desktop-runtime", isDemo=false, readerId=prior?.readerId ?: UUID.randomUUID().toString(), requiresReadTarget=true,
-            codexDirect=PairedCodexConnection(target, authorized.descriptor.fingerprint, routes), storageIdentity=prior?.storageIdentity)
+            codexDirect=PairedCodexConnection(target, authorized.descriptor.fingerprint, (routes + prior?.codexDirect?.routes.orEmpty()).distinctBy { it.endpoint }.take(32),
+                com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), authorized.descriptor.systemEndpoints, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })), storageIdentity=prior?.storageIdentity)
         // No suspension between the final generation check, atomic credential/client publication and UI commit.
         CodexConnectionVault(store).save(client, authorized.token)
         revisions[host.id] = revision + 1
@@ -1511,6 +1512,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 val merged = (listOf(route) + descriptor.routes + offer.routes).distinctBy { it.endpoint }.take(32)
                 client = client.copy(codexDirect = direct.copy(routes = merged))
                 val snapshot = NativeHostReads { offer.token!! }.workspace(client)
+                val supplied = NativeHostReads { offer.token!! }.connectionRoutes(client, offer.target)
+                client = client.copy(codexDirect = direct.copy(routes = (merged + prior?.codexDirect?.routes.orEmpty()).distinctBy { it.endpoint }.take(32), systemEndpoints =
+                    com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), supplied, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })))
                 require(snapshot.mode == "desktop-runtime" && sameScope(snapshot.scope, offer.target)) { "电脑运行时身份不匹配" }
                 require((revisions[client.id] ?: 0) == revision) { "连接已改变，请重试" }
                 withContext(Dispatchers.IO) { storage?.setToken(client.id, offer.token!!) }
@@ -1528,7 +1532,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(current.endpoint != original.endpoint || current.codexDirect != original.codexDirect || !sameScope(current.scope, original.scope) || !sameScope(descriptor.target, current.scope)) return false
         if(current.codexDirect != null && current.codexDirect.fingerprint != descriptor.fingerprint) return false
         val preferred=descriptor.routes.firstOrNull { it.endpoint==endpoint } ?: current.codexDirect?.routes?.firstOrNull { it.endpoint==endpoint } ?: CodexRoute(endpoint)
-        val direct = current.codexDirect?.copy(routes = (listOf(preferred) + descriptor.routes + current.codexDirect.routes).distinctBy { it.endpoint }.take(32))
+        val legacy = current.endpoint?.takeIf { address -> current.codexDirect?.routes?.none { it.endpoint == address } != false }
+        val systems = com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(current.codexDirect?.systemEndpoints.orEmpty(), descriptor.systemEndpoints, legacy)
+        val directRoutes = ((if (endpoint in systems) emptyList() else listOf(preferred)) + descriptor.routes + current.codexDirect?.routes.orEmpty()).distinctBy { it.endpoint }.take(32)
+        val direct = PairedCodexConnection(descriptor.target, descriptor.fingerprint, directRoutes, systems)
         val changed=endpoint != current.endpoint || direct != current.codexDirect
         val transportChanged=endpoint != current.endpoint
         val updated=current.copy(endpoint=endpoint,codexDirect=direct)

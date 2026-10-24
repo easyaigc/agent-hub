@@ -8,7 +8,7 @@ Windows GUI launcher、后台 helper、保留任务生命周期的迁移、逐�
 
 发送等待恢复：使用专用模拟器运行 `DEVELOPER_DIR=/path/to/Xcode.app/Contents/Developer IOS_SIMULATOR_ID=<dedicated-simulator> node scripts/reply-wait-ios-fixture.mjs`，以真实 HTTP 挂起原生发送，覆盖脱离等待、旧响应与新发送重叠、终态失败、记录查询和重启；这是合成回归。`node scripts/composer-state-ios-fixture.mjs` 另覆盖终态／未知快照保留历史轮次 ID、空输入与排队／追加显隐、清空草稿后恢复建议及全文采用按钮的浅／深色展示。真实 DEV 使用同一模拟器设置及 `CODEX_EXECUTABLE=<installed-official-cli> node scripts/reply-wait-desktop-ios-acceptance.mjs`，在专用零 Turn 对话中通过原生 App 向原 Electron owner 各提交一次 xhigh 输入，由本地代理延迟回执并独立核对两次模型输入和原轮次。模型已执行而界面验收未完成时，设置 `REPLY_WAIT_RESUME_REPORT=<original-run-directory>`，只查询同一回执并验证重启恢复，禁止再次提交；原失败记录及其摘要保留。独立 Host、原生副本与证据保存在忽略目录，不替代实体手机或其他电脑的验收。
 
-正文链接回归：`node scripts/message-links-smoke.mjs` 在构建后核对本地路径写法、版本变化、目录及会话边界。`node scripts/message-links-desktop-ios-acceptance.mjs` 冻结本次 Host／原生源码，创建专用原桌面 xhigh 任务与专用模拟器，验收文件链接 Quick Look、LAN 网页、错误提示及重启恢复，并独立核对原 owner 和手机缓存字节。需完整 Xcode、原桌面与可达 LAN 地址；使用 `MESSAGE_LINKS_ACCEPTANCE_DIR` 恢复同一记录，只查询原操作，不重放模型输入。通过后清理专用模拟器，证据留在忽略目录。
+正文链接回归：`node scripts/message-links-smoke.mjs` 在构建后核对本地路径写法、版本变化、目录及会话边界；`node scripts/attachment-performance-smoke.mjs` 另覆盖真实 HTTP 的当前版本解析、鉴权、未知字段／重复字段拒绝及跨对话、删除与符号链接边界。macOS 的 `node scripts/attachment-download-native-smoke.mjs` 编译真实 Swift 下载函数，通过合成 HTTP 检查旧缓存更新、两次有界解析、旧 Host 兼容、响应目标／来源错配和损坏字节拒绝，已纳入 `pnpm check`。`node scripts/message-links-desktop-ios-acceptance.mjs` 冻结本次 Host／原生源码，创建专用原桌面 xhigh 任务与专用模拟器，验收文件链接 Quick Look、同路径修改／原子替换后直接打开、已缓存附件再次预览、LAN 网页、错误提示及重启恢复，并独立核对原 owner 和手机缓存字节。需完整 Xcode、原桌面与可达 LAN 地址；使用 `MESSAGE_LINKS_ACCEPTANCE_DIR` 恢复同一记录，只查询原操作，不重放模型输入。通过后清理专用模拟器，证据留在忽略目录。
 
 完整 Android 原生版本与 KMP 公共核心的实施见[开发计划](plans/android-native.md)。早期计划阶段尚无 Android 工程、Gradle Wrapper 或安卓验收命令；下述阶段已建立对应工程，计划中的 `pnpm build:android` 等入口建立后再加入本指南的可执行命令表。JS 工作空间继续只使用 pnpm，Android／KMP 使用固定版本 Gradle Wrapper，iOS 保留 Xcode。任一端功能变更需更新[双端清单](product/mobile-parity.md)、[UI 状态](design/mobile-parity.md)和[逐平台验收](acceptance/mobile-parity.md)；KMP 接入后的 iOS 回归是交付必需项。
 
@@ -85,6 +85,8 @@ pnpm --filter @codex-manage/relay start
 
 ## 验证命令
 
+Swift 状态回归使用生产声明和随源码版本化的旧算法参考，不依赖内部 Git 历史。先运行 `pnpm build:ios`，再为本任务专用的已启动模拟器设置 `IOS_SIMULATOR_ID=<simulator-id>` 并运行 `pnpm check:ios-state`；结果属于原生辅助边界检查，真机与真实模型验收分别记录。
+
 Git 跟踪核心源码、构建配置、可复用测试与必要设计文档。单次运行日志、验收报告、设备截图、商店审核记录和设计预览留在本地，由 `.gitignore` 排除；`docs/acceptance` 仅保留通用远程接入检查清单。文档中的本地验收路径用于定位当前电脑的证据，不随源码分发，也不代表其他环境已通过。
 
 | 命令                     | 内容                                                                     |
@@ -128,6 +130,10 @@ EasyWork 接收回归使用 `node scripts/easywork-receive-native-smoke.mjs`，�
 真实 DEV 使用 `DEVELOPER_DIR=/path/to/Xcode.app/Contents/Developer IOS_SIMULATOR_ID=<dedicated-simulator> CODEX_EXECUTABLE=<installed-official-cli> node scripts/message-receive-desktop-ios-acceptance.mjs`，必须先构建 Host。脚本准备零 Turn 元数据、确认准备进程退出，由原桌面独占执行原生 App 发出的一次 xhigh 模型任务；独立 IPC 核对真实输入、档位与完成结果。手机流量经 512 Kbps/250 ms 限速代理，记录压缩事件和 UI 首次／最终可见时间；这些 UI 时间来自辅助功能检测，不是逐帧渲染采样。使用全新 Host 状态、模拟器和构建目录，失败报告保留，不重放未知输入；仅元数据准备成功而 owner 尚未就绪时，可通过 `RECEIVE_ACCEPTANCE_THREAD_ID` 继续同一零 Turn 专用目标。该参数对已有模型轮立即拒绝。真实 iPhone、其他 Host、丢包和公网另行验收。
 
 交互卡顿定位后的辅助回归使用 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer node scripts/reading-index-native-smoke.mjs`，仅生成独立合成键和账本，核对兼容索引及后台合并、扩展锁竞争和迟到旧投影。另运行 `pnpm check:ios:sidebar`；实体采样、代码／产物指纹和真实验证范围见 [交互性能专项](acceptance/ui-interaction-performance-20261014.md)。
+
+离线历史回归使用 `DEVELOPER_DIR=/path/to/Xcode.app/Contents/Developer IOS_PHYSICAL_DEVICE_ID=<paired-iPhone> pnpm test:ios:history-scroll`，或将设备参数换成 `IOS_SIMULATOR_ID=<dedicated-simulator>`。脚本冻结源码和执行权限，在独立构建目录与独立真机 Bundle 中执行两项测试：2400 条合成历史的八次实际滑动，以及短列表展开后保持阅读位置、返回最新。检查实际移动采样、最多两次投影构建及 3pt 位置误差；移动帧采样 p95 小于 25ms、最大小于 50ms 的预算仅由物理手机执行，模拟器不作为帧率证据。保存指标、指纹及 xcresult，要求两项实际执行且零失败、零跳过，不能把零测试视为通过。 同名手机不能作为目标身份：脚本按显式设备 ID 启动，并核对 xcresult 每个实际设备配置；缺失或不同 ID 一律失败。GUI 仅作诊断时也须先核对准确 ID，再用相同结果门禁核对，其他设备的通过不得复用。真机副本仅为此测试移除通知能力并使用已缓存的开发签名，不修改正式工程或覆盖正式 App；不连接 Host、不调用模型。另运行 `pnpm check:ios-state`（设置专用模拟器）验证缓存失效边界，以及 `node scripts/history-pagination-ios-fixture.mjs` 验证分页位置、失败重试和晚到页；分页脚本同时核对实现与测试断言的指纹。真实 HTTPS／原桌面读取单列，不用合成真机代替。 联网历史使用 `HISTORY_SCROLL_LIVE_FIXTURE=<private-json> IOS_PHYSICAL_DEVICE_ID=<exact-device-id> pnpm test:ios:history-live`；私有配置须指向已有聊天及 HTTPS，分别运行滑动帧预算和真实更早页插入两项，要求两项通过、零失败／跳过、实际远端消息增长及锚点误差不超过3pt。读取和 UI 操作不提交模型输入。
+
+联网真实历史使用 `DEVELOPER_DIR=/path/to/Xcode.app/Contents/Developer IOS_PHYSICAL_DEVICE_ID=<paired-iPhone> HISTORY_SCROLL_LIVE_FIXTURE=<private-json-path> pnpm test:ios:history-live`。配置含已有 HTTPS endpoint、Host／thread 与访问令牌，仅保存在私有文件；脚本通过 Xcode 官方 `TEST_RUNNER_` 环境变量传入运行器，不写入命令行或公开报告。只读打开已有原桌面会话，不提交模型输入；冻结源码、保存本次 CoreDevice 配对／隧道／实际传输方式。验收除八次真实手势及物理帧预算外，还要求真实 Host 更早页使原生消息数量增加、旧阅读锚点保持 3pt 内，并返回最新。读取失败或重复页不能以位置未动冒充通过；零执行、跳过或 XCTest 引导失败均保留为失败。正式版覆盖以本次联网真机通过为前提；普通安装版复核沿用已有连接且不启用测试重置。
 
 新建结果未知时的草稿恢复可运行 `pnpm test:ios:creation-recovery`，使用独立模拟器、构建目录和 HTTP fixture，验证编辑／清空、明确结束等待、后台保存后重启、旧回执晚到及原操作不重复提交。该用例不执行桌面模型，不能替代两台目标电脑和正式 iPhone 的验收。立即强制终止进程发生在草稿防抖保存窗口内时，最新输入的持久化仍未保证；该失败记录与正常后台恢复的通过记录分别保留。
 
@@ -178,10 +184,12 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer pnpm test:ios
 
 `.github/workflows/ci.yml` 包含两个独立 Job：
 
-- Linux：安装锁定依赖并运行 `pnpm check`。
+- Linux：安装锁定依赖，先运行 `pnpm build` 生成协议包，再运行完整 `pnpm check`。
 - macOS：使用共享 Scheme 编译 iOS Simulator 应用，不要求账户签名。
 
 公开源码仓库为 [easyaigc/agent-hub](https://github.com/easyaigc/agent-hub)，默认分支为 `main`。上述工作流使用 GitHub Actions；完整工作区检查包含 macOS 桌面边界 fixture 与 Swift/KMP 契约，因此在 macOS runner 执行。iOS 模拟器编译单列任务，两项均不宣称 Android 或 Windows 原生验收通过。本地检查通过不代表远程 CI 已执行，远程结果以 Actions 的实际运行记录为准。当前未配置发布任务。首次公开版本采用独立源码快照，不包含内部开发历史或本地私有验收资料。
+
+源码远程仓库为 [BCAI/agent-hub-app](https://git.51easyai.com/BCAI/agent-hub-app.git)，默认分支为 `main`。Gitea Actions 使用仓库专用 Linux 容器与 macOS 原生运行器，配置和故障核对见 [CI 运行指南](ci.md)。分支通过 PR 触发检查，主线推送和手动触发也执行检查；同一分支的新检查取消过期运行。每次验收须核对服务器记录的提交、运行器、Job 结论和日志，本地检查不能替代远程 CI。当前未配置发布任务。
 
 ## 后续集成约定
 
@@ -345,8 +353,6 @@ P3-5a 补充只读边界：合成原生反例分别复现归档且运行时仍�
 
 保留v1缺共享确认导致零业务POST的180秒失败；补齐实际确认页，确认后草稿不变且不自动发送，v7零输入原生通过。v2遗漏creation-receipts只读接口导致手机待确认，准确原输入已独立核对仅执行一次并真实成功，未重发。v3四场景已通过但整体代理读门禁失败，不覆盖该失败报告。首次零输入恢复误把已接受后清空的草稿设置当作显式参数，改为核对空草稿和原运行时实际值；v2恢复通过，没有新增模型输入。登记检查首次alias类型及新脚本unused变量失败已修正，未改产品断言。
 
-仅关闭上述四项Android本机权限/进程恢复子边界及准确原记录只读续验；guardian/子运行作用域、EasyWork/Windows、纯附件/首条混合文件、其他计划/审批/问题/通知/控制和完整P3/P4/双语/AX/视觉仍逐项开放。全部27来源节点与20功能整体不关闭。业务任务/项目暂缓、A6/P7暂停，蜂窝/VPN和人工归档单列待验收；本次USB loopback不当作网络链路新通过。
-
 当前检查点先完成检查、提交推送、独立远端核对、树外恢复包和台账，再继续下一项。
 
 完整pnpm check连续59根命令通过，348.92秒，三份源码指纹稳定。之后只把验收器私有密钥等值断言改为固定不匹配提示，避免失败时打印两侧值；对应差异逐字节核对，其他源码未改。当前静态检查及零输入原记录恢复再验通过：原生1项、原四输入仍各一次、分支GET 200、业务POST 0、运行期错误0，正常退出；另一次关闭阶段事件读取取消单独记录。累计仍5新输入，历史13和本轮5均不重放。这是匹配组件的59检查与当前小修复专项组合，不宣称小修复后再次执行59。
@@ -360,3 +366,9 @@ P3-5a 补充只读边界：合成原生反例分别复现归档且运行时仍�
 最终同一App/runner三环境各20方法、2组，共60方法/6完整分组通过（原17+新3）；产品APK与P4-3g相同，新增源码仅一份Android验收器。新增模型输入0，本轮累计仍5、历史13不重放。没有UI变化或新增截图。新对象重新读实际Android加密文件只作辅助恢复，不能称不同进程或Windows实际flush通过。 先登记检查点并提交推送、远端/恢复包/台账核对，再继续纯附件及其余P4。
 
 当前单份Android验收器源码指纹稳定，编译及60/6原生分组通过；mobile-parity/format/diff检查通过。所有生产、KMP、iOS和JS源码及产品APK未改，上一检查点59根命令348.92秒与小修复专项仅按组件匹配复用，没有本项重新全量/iPhone/真实Windows之说。
+
+物理历史性能验收使用 Release 配置的 Kotlin/Native 核心；只有独立副本设置 Swift `DEBUG` 编译条件以启用显式测量探针。正式归档保持正常 Release 条件，不带探针。先前 Debug 核心测量保留原指纹与失败结果，不能改写为 Release 通过；帧预算与真实页增长、锚点门槛保持不变。
+
+历史分页原生回归目前包含九项：本地按钮／下拉、最新页在途时本地展开、排队远端页、排队切换丢弃、延迟第二次布局保位、中部不触发、失败重试与耗尽、在途晚到页隔离。每用例结束保存纯数值原生手势／补偿记录，脚本与实现／断言分别指纹绑定。延迟布局仅用独立DEBUG开关模拟暂态尾部112pt及最终56pt，不进入正式Release或真实历史场景。
+
+本机独立模拟器UI验收按串行调度，避免多个独立xcodebuild同时建立表单连接。连接阶段失败与分页断言分开记录；同源码单项重跑可补齐场景覆盖，但不得将原失败整轮改记为通过。九项场景的聚合记录须核对源码／脚本指纹、实际设备、逐用例结果和零跳过。

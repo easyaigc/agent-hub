@@ -7,6 +7,9 @@ import { randomUUID, createHash } from 'node:crypto';
 import { mock, test } from 'node:test';
 import childProcess from 'node:child_process';
 import { syncBuiltinESMExports } from 'node:module';
+import https from 'node:https';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
 import { VoiceTranscriptions } from '../apps/host-agent/dist/voice-transcriptions.js';
 import { DesktopTranscription } from '../packages/codex-adapter/dist/desktop-transcription.js';
 
@@ -127,6 +130,80 @@ createInterface({input:process.stdin}).on('line', line => {
     childProcess.spawn = originalSpawn;
     syncBuiltinESMExports();
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('voice uploads resolve the current proxy and keep bounded transport errors without replay', async () => {
+  const originalAgent = https.Agent,
+    originalRequest = https.request;
+  const previousProxy = process.env.HTTPS_PROXY;
+  const routes = [];
+  let calls = 0,
+    destroyed = 0,
+    fail = false;
+  https.Agent = class extends originalAgent {
+    constructor(options) {
+      super(options);
+      routes.push(options.proxyEnv.HTTPS_PROXY);
+    }
+    destroy() {
+      destroyed++;
+      return super.destroy();
+    }
+  };
+  https.request = (_url, _options, reply) => {
+    calls++;
+    const request = new EventEmitter();
+    request.end = () =>
+      queueMicrotask(() => {
+        if (fail) {
+          request.emit(
+            'error',
+            Object.assign(new Error('https://private-proxy.invalid?token=DO_NOT_EXPORT'), {
+              code: 'ECONNREFUSED',
+            }),
+          );
+        } else {
+          request.emit('finish');
+          const response = new PassThrough();
+          response.statusCode = 200;
+          reply(response);
+          response.end(JSON.stringify({ text: 'synthetic transcription' }));
+        }
+      });
+    return request;
+  };
+  syncBuiltinESMExports();
+  const adapter = new DesktopTranscription();
+  adapter.auth = async () => ({
+    token: 'synthetic-token',
+    accountId: 'synthetic-account',
+    principal: 'synthetic-principal',
+  });
+  try {
+    process.env.HTTPS_PROXY = 'http://127.0.0.1:23451';
+    assert.equal(await adapter.transcribe(wave, 'synthetic-principal'), 'synthetic transcription');
+    process.env.HTTPS_PROXY = 'http://127.0.0.1:23452';
+    fail = true;
+    await assert.rejects(adapter.transcribe(wave, 'synthetic-principal'), (error) => {
+      assert.equal(error.status, 502);
+      assert.match(error.message, /建立连接，ECONNREFUSED/);
+      assert(!error.message.includes('DO_NOT_EXPORT') && !error.message.includes('private-proxy'));
+      return true;
+    });
+    assert.deepEqual(routes, ['http://127.0.0.1:23451', 'http://127.0.0.1:23452']);
+    assert.equal(calls, 2, 'A failed upload must not fall back to a second upstream request');
+    assert.equal(destroyed, 2, 'Each completed or failed request releases its own Agent');
+    adapter.close();
+    await assert.rejects(adapter.transcribe(wave, 'synthetic-principal'), /连接已关闭/);
+    assert.equal(calls, 2);
+  } finally {
+    adapter.close();
+    https.Agent = originalAgent;
+    https.request = originalRequest;
+    if (previousProxy === undefined) delete process.env.HTTPS_PROXY;
+    else process.env.HTTPS_PROXY = previousProxy;
+    syncBuiltinESMExports();
   }
 });
 

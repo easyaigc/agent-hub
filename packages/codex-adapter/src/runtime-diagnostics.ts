@@ -20,3 +20,90 @@ export function runtimeFailure(scope: string, error: unknown, attempt?: number):
     }),
   );
 }
+
+import { appendFileSync, existsSync, lstatSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  assertPrivateFile,
+  protectWindowsStateDirectory,
+  protectWindowsStateFile,
+} from './desktop-platform.js';
+
+const recentDiagnostics = new Map<string, number>();
+/** Bounded private diagnostics; never serialize request headers, bodies or raw error objects. */
+export function appendRuntimeDiagnostic(
+  directory: string,
+  context: {
+    scope: string;
+    stage?: string | undefined;
+    hostId: string;
+    threadId?: string | undefined;
+    messageId?: string | undefined;
+    resourceId?: string | undefined;
+    path?: string | undefined;
+    requestId?: string | undefined;
+    route?: string | undefined;
+    method?: string | undefined;
+    status?: number | undefined;
+    elapsedMs?: number | undefined;
+  },
+  error: unknown,
+): void {
+  const value = error as {
+    code?: unknown;
+    name?: unknown;
+    status?: unknown;
+    syscall?: unknown;
+    stack?: unknown;
+    cause?: { code?: unknown; syscall?: unknown };
+  };
+  const identifier = (value: unknown) =>
+    typeof value === 'string' && /^[A-Za-z0-9_.:-]{1,200}$/.test(value) ? value : undefined;
+  const row = {
+    at: new Date().toISOString(),
+    ...context,
+    code: identifier(value?.code ?? value?.cause?.code),
+    errorName: identifier(value?.name),
+    syscall: identifier(value?.syscall ?? value?.cause?.syscall),
+    nativeCode: Number.isSafeInteger(value?.code) ? value.code : undefined,
+    status: context.status ?? (Number.isInteger(value?.status) ? value.status : undefined),
+    stack:
+      typeof value?.stack === 'string'
+        ? value.stack
+            .split('\n')
+            .filter((line) => /^\s+at /.test(line))
+            .slice(0, 6)
+        : undefined,
+  };
+  if (context.stage === 'register') {
+    const key = JSON.stringify([
+      context.hostId,
+      context.threadId,
+      context.messageId,
+      context.path,
+      row.code,
+    ]);
+    const now = Date.now();
+    if (now - (recentDiagnostics.get(key) ?? 0) < 30_000) return;
+    recentDiagnostics.set(key, now);
+    if (recentDiagnostics.size > 512)
+      recentDiagnostics.delete(recentDiagnostics.keys().next().value!);
+  }
+  try {
+    const root = join(directory, 'diagnostics');
+    mkdirSync(root, { recursive: true, mode: 0o700 });
+    protectWindowsStateDirectory(root);
+    const file = join(root, 'errors.jsonl');
+    if (existsSync(file)) {
+      assertPrivateFile(file);
+      if (lstatSync(file).size >= 2 * 1024 * 1024) {
+        rmSync(file + '.1', { force: true });
+        renameSync(file, file + '.1');
+      }
+    }
+    appendFileSync(file, JSON.stringify(row) + '\n', { mode: 0o600 });
+    protectWindowsStateFile(file);
+  } catch (writeError) {
+    runtimeFailure('diagnostic-write', writeError);
+  }
+}

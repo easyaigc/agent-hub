@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "date": "2026-10-22",
+  "features": ["F12"],
+  "ui": ["UI02"],
+  "status": "passed-for-native-synthetic-scenario",
+  "sources": {
+    "apps/ios/Sources/RootView.swift": "b9229f99b649a027819552b20afdf2c6947dfb2c7536bd5737d792bb3228f766",
+    "apps/ios/Sources/SessionStore.swift": "998604d8f31adb52914fd479cccf8abcb20025cf1d96e8ef39d272c682e7e4ff",
+    "apps/ios/Tests/CodexManageUITests.swift": "908ba10b1d18aaaef84091fb389d379e5f63b43e2172f5e41e3db9b33cd4b48f"
+  },
+  "physical": {
+    "model": "iPhone 15 Pro Max",
+    "osVersion": "27.0.1",
+    "coreDeviceTransport": "wired",
+    "wirelessVerified": false,
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "baseline": {
+    "result": "failed",
+    "visibleRecentCenterY": 287.81198909632474,
+    "nativeRecentFrameY": 205.33333333333334,
+    "nativeRecentFrameHeight": 44,
+    "tapVisibleRecent": "selected conversation and closed sidebar",
+    "productionRootSha256": "b8ee1603af92a0fbbf82f49692c1fbda081b6abf0e38fda3889dc2bc2c257ee1",
+    "harness": "Independent copy only: hold local demo refresh and expose native refresh-control state"
+  },
+  "fixed": {
+    "visibleRecentCenterY": 228.1879843216611,
+    "nativeRecentFrameY": 205,
+    "nativeRecentFrameHeight": 44,
+    "assertions": [
+      "pending refresh stays active",
+      "screenshot-recognized visible centers lie inside corresponding native hit regions",
+      "raw visible-coordinate tap collapses and expands Recent",
+      "raw visible-coordinate tap opens New chat project picker without creating a chat",
+      "client menu opens and dismisses during same read",
+      "raw visible-coordinate tap selects the intended api-service demo chat"
+    ]
+  },
+  "test": "apps/ios/Tests/CodexManageUITests.swift/testSidebarRefreshVisualHitRegionsStayAligned",
+  "measurement": "Vision reads screenshot pixels; taps are independent of accessibility frames. Test-only XCTest pre/post-event quiescence waits are disabled. Explicit DEBUG local-demo fixture holds a read for 30 seconds.",
+  "scope": {
+    "realNetwork": false,
+    "realDesktop": false,
+    "realModel": false,
+    "androidVerified": false,
+    "productionAppUpdated": false
+  },
+  "preservedFailures": [
+    "initial accessibility-coordinate pass did not test visible coordinates",
+    "network runner was denied Wi-Fi and skipped; not a pass",
+    "native/system progress animations were not accessible as activity indicators",
+    "intermediate progress-node assertions failed before switching to explicit test-only list state",
+    "Intermediate candidate lost explicit error feedback when a pull joined an automatic workspace read; same-generation joining now retains user error intent."
+  ],
+  "auxiliaryRegression": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "cases": [
+      "refresh-success-retains-draft",
+      "refresh-failure-retains-cache",
+      "sidebar-search-project-selection",
+      "recent-and-project-expansion"
+    ],
+    "localHttpFixture": true,
+    "realProductRuntime": false,
+    "freshSimulatorBootAndInstallPerCase": true
+  },
+  "sourceTree": {
+    "filesCompared": 139,
+    "currentSourceSha256": "3dfc00f1e33eff62fdf45a5f42f757e206e3ddf1990bf07e28af98aac999885a",
+    "intentionalDifferences": {
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj": "Independent wildcard test signing only; notification capabilities omitted in the test copy"
+    },
+    "matched": true
+  },
+  "auxiliaryChecks": {
+    "mobileParity": "passed",
+    "iosBuild": "passed",
+    "format": "passed"
+  },
+  "cleanup": {
+    "independentPhysicalApp": "removed",
+    "independentTestRunner": "removed",
+    "taskSimulator": "removed",
+    "taskBuildDirectories": "removed",
+    "worktreesCreated": false
+  },
+  "localMainIsolation": {
+    "baseCommit": "3053c9d72df61b36f05044be1369e42de3f783fc",
+    "sources": {
+      "apps/ios/Sources/RootView.swift": "35ec84012fac04fce09eb4a28c6fdebce90a68d567704b09eaeb1369e015c4e8",
+      "apps/ios/Sources/SessionStore.swift": "f4f1887bc9c197075766c58f0377921e9d278d40c12d853738c0fbda7ae3177a",
+      "apps/ios/Tests/CodexManageUITests.swift": "52b5ea74376d9ddb45911f186af9ee343ca424140b2360c23021a076ab104498"
+    },
+    "nativeResults": "The passing native runs above used the protected existing history work plus this sidebar fix; source hashes in sources/sourceTree remain those tested combined sources.",
+    "isolatedSnapshot": "iOS simulator product compilation, mobile parity checks and scoped document formatting passed. The UI test was previously compiled and executed only in the combined-worktree candidate; no new device execution is claimed for the isolated snapshot.",
+    "excludedChanges": "Existing history scrolling, reading/paging fixes and Windows work remain uncommitted.",
+    "auxiliaryChecks": {
+      "iosBuild": "passed: pnpm build:ios SDK_STAT_CACHE_ENABLE=NO",
+      "mobileParity": "passed: pnpm check:mobile-parity",
+      "scopedFormatting": "passed",
+      "deviceExecution": "not rerun"
+    },
+    "preservedBuildAttempts": [
+      "Initial exported-snapshot invocation lacked copied local JDK settings; build setup failed before product compilation.",
+      "Retry stalled in the SDK state-cache child; only that verified task child was stopped, then the build passed with SDK_STAT_CACHE_ENABLE=NO."
+    ],
+    "cleanup": {
+      "exportedSnapshot": "removed",
+      "snapshotNodeModulesSymlink": "unlinked; shared dependency target preserved",
+      "registeredWorktreeCreated": false,
+      "logsAndSourcePatch": "retained privately"
+    }
+  }
+}

@@ -169,9 +169,13 @@ struct HostService {
     }
     guard http.statusCode == 200 else {
       let error = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-      throw HostServiceError.rejected(
-        http.statusCode,
-        error?["error"] as? String ?? L10n.tr("电脑请求失败（\(http.statusCode)）"))
+      var detail = error?["error"] as? String ?? L10n.tr("电脑请求失败（\(http.statusCode)）")
+      if request.url?.path.hasPrefix("/v1/attachments") == true {
+        detail += "\nHTTP \(http.statusCode)"
+        if let code = error?["code"] as? String { detail += " · " + code }
+        if let id = error?["requestId"] as? String { detail += "\n" + L10n.tr("诊断编号") + "：" + id }
+      }
+      throw HostServiceError.rejected(http.statusCode, detail)
     }
     return data
   }
@@ -336,8 +340,69 @@ struct HostService {
     guard result.hostId == client.id, result.clientOperationId == id, result.id == file.id,
       result.sha256 == hash(data), result.sizeBytes == data.count else { throw HostServiceError.wrongHost }
   }
+  static func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment {
+    struct Resolution: Decodable {
+      let hostId: String; let threadId: String; let messageId: String; let reference: String
+      let readTarget: AgentRuntimeTarget; let attachment: RemoteAttachment
+    }
+    let result: Resolution = try await load(request(
+      try url(client, "v1/attachments/resolve-link", ["threadId": threadId, "messageId": messageId, "reference": reference]),
+      token: CredentialVault.token(client.id)))
+    let file = result.attachment
+    guard result.hostId == client.id, result.threadId == threadId, result.messageId == messageId,
+      result.reference == reference, client.readingTarget == nil || result.readTarget == client.readingTarget,
+      file.hostId == client.id, file.threadId == threadId, !file.id.isEmpty,
+      file.id != ".", file.id != "..", (file.id as NSString).lastPathComponent == file.id,
+      !file.name.isEmpty, (file.name as NSString).lastPathComponent == file.name,
+      file.sizeBytes >= 0, file.sizeBytes <= 20 * 1024 * 1024,
+      file.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil
+    else { throw HostServiceError.wrongHost }
+    return file
+  }
   static func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
     guard file.hostId == client.id else { throw HostServiceError.wrongHost }
+    // Check the source before consulting the cache, so a prior preview cannot hide an update.
+    for attempt in 0..<2 {
+      try Task.checkCancellation()
+      guard let current = try await currentAttachment(client, file: file) else {
+        // Older Hosts retain their exact-version download behavior.
+        return try await downloadVersion(client, file: file)
+      }
+      do { return try await downloadVersion(client, file: current) }
+      catch HostServiceError.rejected(409, _) where attempt == 0 {
+        // A writer can replace the file between resolution and download. Resolve once more.
+      }
+    }
+    throw HostServiceError.invalidResponse
+  }
+  private static func currentAttachment(_ client: Client, file: RemoteAttachment) async throws -> RemoteAttachment? {
+    struct Resolution: Decodable {
+      let hostId: String
+      let threadId: String
+      let sourceAttachmentId: String
+      let readTarget: AgentRuntimeTarget
+      let attachment: RemoteAttachment
+    }
+    let result: Resolution
+    do {
+      result = try await load(request(
+        try url(client, "v1/attachments/resolve", ["threadId": file.threadId, "id": file.id]),
+        token: CredentialVault.token(client.id)))
+    } catch HostServiceError.rejected(404, _) { return nil }
+    let current = result.attachment
+    guard result.hostId == client.id, result.threadId == file.threadId,
+      result.sourceAttachmentId == file.id,
+      client.readingTarget == nil || result.readTarget == client.readingTarget,
+      current.hostId == client.id, current.threadId == file.threadId,
+      !current.id.isEmpty, current.id != ".", current.id != "..",
+      (current.id as NSString).lastPathComponent == current.id,
+      current.name == file.name, current.mediaType == file.mediaType,
+      current.sizeBytes >= 0, current.sizeBytes <= 20 * 1024 * 1024,
+      current.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil
+    else { throw HostServiceError.wrongHost }
+    return current
+  }
+  private static func downloadVersion(_ client: Client, file: RemoteAttachment) async throws -> URL {
     let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
       .appendingPathComponent("Downloads/\(file.id)", isDirectory: true)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -353,6 +418,7 @@ struct HostService {
     guard data.count == file.sizeBytes, hash(data) == file.sha256 else {
       throw HostServiceError.message(L10n.tr("下载文件完整性校验失败"))
     }
+    try Task.checkCancellation()
     try data.write(to: destination, options: [.atomic, .completeFileProtectionUnlessOpen])
     return destination
   }

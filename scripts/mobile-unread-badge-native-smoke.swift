@@ -67,6 +67,27 @@ import Darwin
     let a = AgentRuntimeTarget(agentId: "codex", hostId: "host-a", workspaceId: "space", runtimeId: "desktop-runtime", account: AgentAccount(authority: "local", subject: "account-a"))
     var b = a; b.hostId = "host-b"
     var otherAccount = a; otherAccount.account?.subject = "account-b"
+    // A large directory is visited by successive event/history refreshes. Only
+    // the first visit encodes identities; changing the actual runtime invalidates them.
+    var memo = CodexMachineStorage.ReadingKeyMemo(), encoded = 0
+    for target in [a, a, otherAccount] {
+      for row in 0..<10_000 {
+        let value = memo.value(hostId: target.hostId, target: target, candidate: target, threadId: String(row)) {
+          encoded += 1
+          let key = CodexMachineStorage.readingKey(target, threadId: String(row))
+          return .init(canonical: key, candidate: key, selected: key)
+        }
+        if row == 0 { precondition(value.canonical == CodexMachineStorage.readingKey(a, threadId: "0")) }
+      }
+    }
+    precondition(encoded == 10_000, "Polls and historical Codex account metadata must reuse machine reading keys")
+    var changedRuntime = a; changedRuntime.runtimeId = "another-runtime"
+    let changedKey = memo.value(hostId: a.hostId, target: changedRuntime, candidate: changedRuntime, threadId: "0") {
+      encoded += 1
+      let key = CodexMachineStorage.readingKey(changedRuntime, threadId: "0")
+      return .init(canonical: key, candidate: key, selected: key)
+    }
+    precondition(encoded == 10_001 && changedKey.canonical != CodexMachineStorage.readingKey(a, threadId: "0"))
     let first = ReadPosition(revision: 1, messageId: "reply", contentVersion: String(repeating: "a", count: 64))
     let second = ReadPosition(revision: 2, messageId: "reply", contentVersion: String(repeating: "b", count: 64))
     try MobileUnreadBadge.reconcile(scopes: [a, b], snapshots: [

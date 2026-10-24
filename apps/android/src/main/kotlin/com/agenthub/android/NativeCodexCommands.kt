@@ -44,8 +44,8 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
                     if(!continuation.isActive) return@submit
                     client.codexDirect?.let { paired ->
                         val endpoint=CodexEndpoints.local(client.endpoint!!)
-                        require(paired.routes.any { it.endpoint==endpoint } && connection is javax.net.ssl.HttpsURLConnection) { "地址不属于已配对电脑" }
-                        PairedCodexTLS.configure(connection as javax.net.ssl.HttpsURLConnection,endpoint,paired.fingerprint)
+                        require(connection is javax.net.ssl.HttpsURLConnection) { "地址不属于已配对电脑" }
+                        PairedCodexTLS.configure(connection as javax.net.ssl.HttpsURLConnection,endpoint,paired)
                     }
                     connection.instanceFollowRedirects=false; connection.useCaches=false
                     connection.connectTimeout=10_000; connection.readTimeout=35_000

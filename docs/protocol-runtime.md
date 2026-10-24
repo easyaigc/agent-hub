@@ -8,6 +8,10 @@
 
 原 owner 无法提供基础快照时，最新页继续从独立只读历史 reader 获取。仅成功读取最新页后十秒内可返回 `history`，`checkedAt` 为该次实际读取的 UTC ISO 毫秒时间；缓存事件沿用原时间，不能延长租期。读取失败立即撤销该标记。手机明确显示“实时状态暂不可用”及最新历史已同步的说明；运行状态与控制能力继续为 unknown/false，不把历史成功冒充原 owner 就绪。重复缓存事件不延后下一次实际历史读取，导航与迟到响应继续按完整目标隔离。
 
+2026-10-23 补充：最新历史页通过只读 `thread/turns/list` 的单轮 `notLoaded` 视图取得终态，仅在返回 Turn ID 与最新消息的 Run ID 一致时投影 `lastTurnStatus`；旧服务不支持时保持未知。新鲜历史已确认 completed／interrupted／failed，且没有当前输入、队列、待确认回执或审批时，iOS 不显示实时重试警告；执行控制仍为 false，运行中、未知或实际读取失败继续提示。历史读取期间到达的已验证原 owner 快照优先，不被慢历史结果降级覆盖。
+
+历史分支中的本地 Markdown 文件链接与实时消息共用附件检查、内容摘要和链接替换路径，下载前继续检查最新字节。只读元数据中的工作目录仅用于解析相对链接，不扩大授权目录；旧 inline 附件不再替代本次检查，缺失或越权文件不能继承旧版本。该修复同时影响使用此 Host 的移动端，平台实测范围见 [专项记录](acceptance/status-preview-20261023.md)。
+
 手机最近页不会为未知回执自动要求原 owner 加载全部历史。独立历史 reader 可按准确操作 ID、正文 SHA-256、线程及唯一 Turn 接受记录恢复纯文字回执；没有精确证据继续未知且不重放。原轮中断保留 `interrupted`，不能称为全部业务动作完成。缺少基础快照时，补丁不能构造完整可控状态；同一等待期间合并快照请求，失败后自动重试退避三十秒，显式命令仍需独立重新核对原 owner。此恢复不会卸载、恢复执行或重建原聊天。
 
 `live-window` 单独表示已核实原 owner 的有界消息增量与当前最近历史窗口。完整消息身份由准确历史消息 ID／Turn 绑定，或来自此前实际完整快照的连续部分基线；未知祖先、修订缺口及身份不符不补造。小型原 owner 设置只读响应续租连接；最近历史与 owner 租期均为十秒，控制仍为 false。手机显示“实时进度已同步”并注明完整桌面状态暂不可用；租期失效恢复历史或失败提示。它不等于 `live` 的完整状态或运行时控制。
@@ -79,6 +83,8 @@ desktop-runtime 显式设置 `CODEX_DESKTOP_SUGGESTION_OBSERVER=1` 后，Host �
 ## 其他运行时契约
 
 正文文件链接继续复用既有附件契约：Adapter 只为原消息实际引用、经授权及完整性检查的文件生成逻辑链接；`GET /v1/attachments?threadId&id` 仍绑定准确 Host 与对话，并按登记的 SHA-256 重新检查文件。新增的路径写法解析不增加任意路径下载、URL 代理或运行时执行端点。iOS 原生预览与网页浏览分别使用附件鉴权下载和无 Host 凭据的系统 Safari 组件；本机地址、缺失文件及不支持的链接不再静默交给系统。
+
+2026-10-21 已实现 `attachments:resolve-current`：鉴权 `GET /v1/attachments/resolve?hostId&threadId&id` 只接受这三个单值字段，仅按当前对话已登记附件的路径重新检查真实路径、授权目录、大小与摘要。返回 `hostId`、`threadId`、`sourceAttachmentId`、`readTarget` 和不含路径的 `attachment`。内容变化时登记新 ID，不改旧附件、原消息或已提交输入；相同内容复用版本。iOS 每次打开链接、下载和再次预览均先解析，再按返回的精确 ID、大小与摘要使用缓存或下载；解析后再次变化时最多重新解析一次，仍失败则显示错误。未知附件／缺失文件为 410，越权为 403；404 仅用于入口不存在的旧 Host 兼容，不能将文件消失降级为旧缓存预览。辅助回归与真实原桌面／原生 App／模型结果分别记录，不由接口实现推定实体或其他电脑已部署。
 
 新增受私有配置控制的实验读取端点 `GET /v1/desktop/composer-suggestion?hostId&threadId&sourceTurnId&target`。它经 Adapter 的固定 DOM 读取，前后核对原 owner 和最新完成轮次；手机不能传 CDP 地址、方法或脚本。该 PoC 尚无原 Codex 实读／正式能力声明，返回 `desktop-dom / rendered-text` 及观察来源，不冒称已取得原预测生成对象。完整契约与限制见 [Host DOM Bridge PoC](research/desktop-dom-bridge-poc.md)。
 
@@ -167,7 +173,7 @@ iOS 在前台、会话无遮挡、最新回复实际可见且文字版本匹配�
 
 队列回执可带 `queueSource`、`queuePresent`、`canExecuteNow`。`queue:execute` 能力开放立即执行按钮；运行时有活动任务时沿用其设置追加到该任务，空闲时开始下一轮。Codex 的原队列设置与当前任务不兼容时保留该项并拒绝立即追加。请求始终引用原消息 ID，不能替换正文或附件；原始 queue 意图保持不变。并发同项动作只提交一次，已确认接管返回已有结果，提交未知时只核对。手机切换目标后晚到结果不能覆盖当前界面。`queue:native` 仅表示经过验证的桌面原生队列接入，不能仅凭后台队列可读声明；Codex 在原生队列列表实际可用后声明该能力，采用允许短时延迟的同步方式；不提供手机与桌面同时操作时的跨端原子保证。
 
-历史快照还含 thread 摘要（id、hostId、projectId、title、state、turnId），用于同步新对话标题与侧栏状态。消息含 id、role（user/assistant/tool）、text、files（兼容历史模式）、kind、status、detail、attachments。命令文本和输出分开；文件修改 detail 是 Diff；工具结果为文本；reasoning 只呈现上游公开摘要。附件含 id、hostId、threadId、name、mediaType、sizeBytes、sha256，不返回下载路径。
+历史快照还含 thread 摘要（id、hostId、projectId、title、state、turnId），用于同步新对话标题与侧栏状态。消息含 id、role（user/assistant/tool）、text、files（兼容历史模式）、kind、status、detail、attachments。命令文本和输出分开；文件修改 detail 是 Diff；工具结果为文本；reasoning 只呈现上游公开摘要。附件含 id、hostId、threadId、name、mediaType、sizeBytes、sha256，不返回下载路径。可选 `resourceId` 为同一对话、同一登记路径的稳定不透明身份，跨内容版本及 Host 重启保持；只用于界面生命周期，下载与提交仍使用版本 `id` 和摘要，不能用资源身份替代完整性校验。缺少该字段时客户端回退到版本 ID。
 
 消息可选 `runId` 标记真实任务归属，助手消息可选 `replyPhase=commentary|final_answer` 区分过程说明与最终回复；由 Adapter 从原 owner、公开事件或历史条目映射，不修改消息 ID。iOS 在 run 结束后仅提供一组最终回复复制／分享，同轮追加不拆组；缺少字段的旧 Host／缓存按用户输入后的回复序列兼容展示。这些字段只用于排版，历史读取不因此成为实时连接或任务结束的证明。
 
@@ -340,3 +346,15 @@ DOM 候选使用六秒 `expiresAt` 与前台两秒重读，不能按 source-turn
 EasyWork 的差量接收契约按 `packages/protocol/fixtures/mobile/easywork-thread-sync-v1.json` 保存实际生产器向量。head 的 hash 是不透明版本；单文本补丁校验 UTF-16 长度和 UTF-8 SHA-256，合并失败不发布部分缓存，仅允许一次无 known 的完整读取。目标不符直接拒绝，关闭或换代的响应不能写回当前缓存，原输入不会随读取重试。Android KMP 与现有 Swift 消费者分别通过同一向量，原生层另核对会话／授权和网络边界；辅助通过不替代真实桌面、手机及模型验收。
 
 UM04 客户端迁移补充：`codex-host-discovery-v1.schema.json` 新增具名 `privateClaim`、`privateReply`、`vpnSnapshot`，不改变根公开描述契约。claim 仅含版本、捕获的完整 target、公钥；响应的版本、原 target 元数据、公钥、临时公钥、nonce、ciphertext 均严格校验。设备身份使用 X25519；版本1上下文以 UTF-16 长度前缀固定包括原账号元数据，作为 HKDF-SHA256 info 和 AES-GCM AAD。双端使用相同向量，不重算旧上下文。公开来源最多4、每来源4地址、目录最多32台／每台2地址、每轮最多64次候选探测，并发最多4；只接受 Tailscale CGNAT／指定 IPv6 前缀，网络代次改变后旧结果作废。发现和鉴权相互独立；未知 claim 结果不自动重发，用户再次点选仍使用原设备公钥，由 Host 既有绑定幂等处理。源码实现、合成原生和真实网络结果分别记录，不据契约存在宣称已验收。
+
+## 历史终态与消息文件资源（2026-10-23）
+
+`GET /v1/attachments/resolve` 解析当前已登记资源的最新文件版本，返回准确目标和当前附件；稳定 resourceId 用于同资源交互身份，旧附件 ID、原消息和输入回执保持不可变。下载前重新检查来源与摘要，缺失资源返回 410，只有旧 Host 缺少接口的 404 允许旧版兼容。
+
+2026-10-23 补充：最新历史页通过只读 `thread/turns/list` 的单轮 `notLoaded` 视图取得终态，仅在返回 Turn ID 与最新消息的 Run ID 一致时投影 `lastTurnStatus`；旧服务不支持时保持未知。新鲜历史已确认 completed／interrupted／failed，且没有当前输入、队列、待确认回执或审批时，iOS 不显示实时重试警告；执行控制仍为 false，运行中、未知或实际读取失败继续提示。历史读取期间到达的已验证原 owner 快照优先，不被慢历史结果降级覆盖。
+
+历史分支中的本地 Markdown 文件链接与实时消息共用附件检查、内容摘要和链接替换路径，下载前继续检查最新字节。只读元数据中的工作目录仅用于解析相对链接，不扩大授权目录；旧 inline 附件不再替代本次检查，缺失或越权文件不能继承旧版本。该修复同时影响使用此 Host 的移动端，平台实测范围见 [专项记录](acceptance/mobile-evidence/status-preview-20261023.json)。
+
+`GET /v1/attachments/resolve-link` 已实现，仅接受 hostId、threadId、messageId、reference 各一次。reference 必须匹配该原桌面助手消息的实际本地 Markdown 链接或此前登记的同消息来源证明；它不是任意文件读取参数。返回准确 Host／thread／message／原引用／readTarget 及当前版本附件。原消息资源可位于项目根外，仍绑定首次规范真实路径；用户消息、跨聊天资源、未引用文件与符号链接改指向均拒绝。`attachments:resolve-message-link` 只在相应桌面运行时声明。
+
+附件失败响应保留 error，并增加稳定 code 与本次 requestId；例如 ENOENT/410、EACCES/403、NOT_REGULAR_FILE/422、FILE_TOO_LARGE/413、FILE_CHANGED/409。手机展示真实原因及诊断编号；旧 Host 未提供该接口时显示实际兼容错误。Host 私有有界诊断包含同一 requestId、路由（不含查询和凭据）、Host/thread/message/resource、阶段、原生错误码及堆栈位置。注册失败也记录，不再静默丢弃；日志不包含请求正文、认证头或文件内容。

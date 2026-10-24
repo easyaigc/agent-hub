@@ -1,7 +1,7 @@
 import { withWindowsProcessCreation } from '@codex-manage/codex-adapter';
 import { createServer, type Server } from 'node:https';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
-import { X509Certificate } from 'node:crypto';
+import { X509Certificate, timingSafeEqual } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, mkdir, chmod, rename, rm, writeFile } from 'node:fs/promises';
@@ -36,7 +36,7 @@ export type CodexHostDescriptor = {
   fingerprint: string;
   endpoints: string[];
   endpointHints: DirectEndpoint[];
-  connectionMode?: 'automatic';
+  connectionMode?: 'host-key';
 };
 const execute = promisify(execFile);
 
@@ -142,7 +142,7 @@ export async function startDirectDiscovery(options: {
     fingerprint,
     endpoints: endpoints.map((item) => item.endpoint),
     endpointHints: endpoints,
-    ...(options.claim ? { connectionMode: 'automatic' as const } : {}),
+    ...(options.claim ? { connectionMode: 'host-key' as const } : {}),
   });
   const server = createServer({ cert, key }, (request, response) => {
     if (!isLocalLanAddress(request.socket.remoteAddress ?? '') || request.headers.origin) {
@@ -164,6 +164,15 @@ export async function startDirectDiscovery(options: {
       return;
     }
     if (request.method === 'POST' && request.url === '/connection/claim' && options.claim) {
+      // Network visibility and possession of a phone public key are not authority.
+      // Only the Host Key can authorize issuance, including recovery of a claim.
+      const supplied = Buffer.from(request.headers.authorization ?? '');
+      const expected = Buffer.from('Bearer ' + options.token);
+      if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+        response.writeHead(401, { 'cache-control': 'no-store' });
+        response.end();
+        return;
+      }
       void (async () => {
         try {
           if (request.headers['content-type'] !== 'application/json')

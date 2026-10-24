@@ -14,6 +14,10 @@ using Microsoft.Win32.SafeHandles;
 internal sealed class TraceProcess : IDisposable {
     [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetNamedPipeServerProcessId(SafePipeHandle pipe,out uint pid);
     [DllImport("kernel32.dll",SetLastError=true)] static extern bool ProcessIdToSessionId(uint processId,out uint sessionId);
+    [DllImport("kernel32.dll",SetLastError=true)] static extern IntPtr OpenProcess(uint access,bool inherit,uint pid);
+    [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetProcessTimes(IntPtr process,out long created,out long exited,out long kernel,out long user);
+    [DllImport("kernel32.dll",CharSet=CharSet.Unicode,ExactSpelling=true,SetLastError=true)]
+    static extern bool QueryFullProcessImageNameW(IntPtr process,uint flags,[Out] char[] path,ref uint length);
     [DllImport("advapi32.dll",SetLastError=true)] static extern bool OpenProcessToken(IntPtr process,uint access,out IntPtr token);
     [DllImport("advapi32.dll",SetLastError=true)] static extern bool GetTokenInformation(IntPtr token,int kind,IntPtr data,int size,out int returned);
     [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
@@ -36,9 +40,25 @@ internal sealed class TraceProcess : IDisposable {
     static uint Session(Process process) {
         uint session;if(!ProcessIdToSessionId((uint)process.Id,out session))throw new IOException();return session;
     }
+    // Preserve Framework's fresh QUERY_INFORMATION | VM_READ access check.
+    // Query the OS creation-image name, bound to the retained original instance.
+    string Image() {
+        if(String.IsNullOrEmpty(executable)||executable.Length>32767)throw new IOException();
+        IntPtr process=OpenProcess(0x0400|0x0010,false,(uint)pid);if(process==IntPtr.Zero)throw new IOException();
+        try {
+            long created,exited,kernel,user;
+            if(!GetProcessTimes(process,out created,out exited,out kernel,out user)||
+                created!=original.StartTime.ToUniversalTime().ToFileTimeUtc())throw new IOException();
+            var path=new char[executable.Length+1];uint length=(uint)path.Length;
+            if(!QueryFullProcessImageNameW(process,0,path,ref length)||length==0||
+                length>=(uint)path.Length||length!=(uint)executable.Length||path[(int)length]!='\0')throw new IOException();
+            for(int at=0;at<(int)length;at++)if(path[at]=='\0')throw new IOException();
+            return new string(path,0,(int)length);
+        }finally{CloseHandle(process);}
+    }
     void Check() {
         original.Refresh(); if(original.HasExited || Started(original)!=started ||
-            !String.Equals(original.MainModule.FileName,executable,StringComparison.OrdinalIgnoreCase) ||
+            !String.Equals(Image(),executable,StringComparison.OrdinalIgnoreCase) ||
             Session(original)!=Session(Process.GetCurrentProcess()))throw new IOException();
         using(var identity=Identity(original))if(identity.User.Value!=User)throw new UnauthorizedAccessException();
     }

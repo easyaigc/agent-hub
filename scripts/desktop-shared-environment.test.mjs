@@ -71,7 +71,26 @@ test('original-app configuration preserves cloud routing and never launches an a
     'utf8',
   );
   assert.match(plist, /RunAtLoad/);
-  assert.doesNotMatch(plist, /KeepAlive|\/Contents\/MacOS\/ChatGPT/);
+  assert.doesNotMatch(plist, /<key>KeepAlive<\/key>/);
+  const argumentsXML = plist.match(/<key>ProgramArguments<\/key><array>(.*?)<\/array>/s)?.[1];
+  assert.notEqual(argumentsXML, undefined);
+  const argumentsList = [...argumentsXML.matchAll(/<string>(.*?)<\/string>/gs)].map(([, value]) =>
+    value
+      .replaceAll('&quot;', '"')
+      .replaceAll('&apos;', "'")
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&amp;', '&'),
+  );
+  // The bundled Node may live inside an .app. Its exact argv, rather than a
+  // substring in an ancestor directory, establishes this environment-only action.
+  assert.deepEqual(argumentsList, [
+    realpathSync(process.execPath),
+    join(f.state, 'shared-environment.mjs'),
+    'apply',
+    '--state',
+    f.state,
+  ]);
 });
 
 test('known owned legacy force flag migrates once; later human settings are preserved', (t) => {

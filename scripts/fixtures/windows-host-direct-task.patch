@@ -1,0 +1,58 @@
+--- original/manual-task.ps1
++++ direct-task/manual-task.ps1
+@@ -1,5 +1,5 @@
+ param(
+-    [ValidateSet('Prepare','RegisterStart','Observe')][string]$Action = 'Prepare',
++    [ValidateSet('Prepare','RegisterStart')][string]$Action = 'Prepare',
+     [Parameter(Mandatory)][string]$Binding,
+     [Parameter(Mandatory)][string]$BindingSHA256
+ )
+@@ -61,9 +61,12 @@
+     $def.Settings.Priority = 6 # Normal; record actual priority separately, not a performance claim.
+     $def.Settings.RestartCount = 0; $def.Settings.AllowDemandStart = $true
+     $act = $def.Actions.Create(0)
+-    $act.Path = Join-Path $PSHOME 'powershell.exe'
+-    $act.Arguments = '-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -File ' + (Quote (Join-Path $root 'task-action.ps1')) + ' -BindingSHA256 ' + $BindingSHA256
+-    $act.WorkingDirectory = $root
++    # Match the product Scheduler topology: the action IS the Job-owning launcher.
++    # A PowerShell observer must not own the service lifetime: stopping that
++    # observer does not close the launcher's private Job.
++    $act.Path = $b.launcher.path
++    $act.Arguments = (Quote $b.nodePath) + ' ' + (Quote (Join-Path $b.programRoot 'scripts\windows-desktop-worker.mjs')) + ' ' + (Quote (Join-Path $root 'windows-host.json'))
++    $act.WorkingDirectory = Join-Path $b.programRoot 'scripts'
+     Require ($def.Triggers.Count -eq 0 -and $def.Actions.Count -eq 1) 'TASK_STRUCTURE_REJECTED'
+     # TASK_CREATE only. Never update an existing task, especially the formal task.
+     $task = $folder.RegisterTaskDefinition($b.taskName,$def,2,$b.loggedInSID,$null,3,$null)
+@@ -76,31 +79,4 @@
+     SaveJSON (Join-Path $root 'run-submitted.json') @{utc=[DateTime]::UtcNow.ToString('o'); instanceGuid=[string]$running.InstanceGuid; taskState=[int]$running.State; notReadyProof=$true}
+     'TASK_RUN_SUBMITTED_NOT_ACCEPTANCE_PROOF'; exit 0
+ }
+-$task = ExistingTask; AssertOwnTask $task
+-$state = ReadJSON (Join-Path $root 'action-started.json')
+-$ps = @(Processes ('ProcessId = ' + [uint32]$state.action.pid)); Require ($ps.Count -eq 1) 'ACTION_NOT_OBSERVED'
+-$actual = ProcMeta $ps[0]; Require ($actual.creationUnixMs -eq $state.action.creationUnixMs -and $actual.commandSha256 -ceq $state.action.commandSha256) 'ACTION_IDENTITY_CHANGED'
+-$children = @(Processes ('ParentProcessId = ' + [uint32]$actual.pid))
+-$records = @()
+-# Only this task's bounded descendants, no whole-machine CIM scan.
+-$queue = @($children); $visited = @{}
+-while ($queue.Count -gt 0) {
+-    $next = @()
+-    foreach ($c in $queue) {
+-        Require ($visited.Count -lt 64) 'OWN_TREE_OBSERVATION_LIMIT'
+-        if ($visited.ContainsKey([int]$c.ProcessId)) { continue }; $visited[[int]$c.ProcessId]=$true
+-        $meta = ProcMeta $c; Plain $meta.imagePath; $meta['imageSHA256'] = SHA $meta.imagePath; $meta['imagePathScope'] = 'OS_REPORTED_NOT_GETFINALPATH'
+-        if ((Split-Path -Leaf $meta.imagePath) -ieq 'trace-state.exe') {
+-            $meta['sourceKeyDirectory'] = Split-Path -Leaf (Split-Path -Parent $meta.imagePath)
+-            $fid = & (Join-Path $env:SystemRoot 'System32\fsutil.exe') file queryfileid $meta.imagePath
+-            $meta['fileIdRaw'] = if ($LASTEXITCODE -eq 0) { $fid -join ' ' } else { 'UNOBSERVED' }
+-            $meta['bytes'] = (Get-Item -LiteralPath $meta.imagePath).Length
+-            # Record actual Scheduler cache/image. Never force old b431/LOCALAPPDATA.
+-        }
+-        $records += $meta
+-        $next += @(Processes ('ParentProcessId = ' + [uint32]$c.ProcessId))
+-    }
+-    $queue = $next
+-}
+-SaveJSON (Join-Path $root ('observation-' + [guid]::NewGuid().ToString() + '.json')) @{utc=[DateTime]::UtcNow.ToString('o'); taskState=[int]$task.State; action=$actual; descendants=$records; perimeter=(Perimeter $b $false); scope=$b.scope; isOrdinaryAcceptance=$false; ancestryScope='Current observed own tree only; exited/missed generations remain UNKNOWN; compare canonical generation journal'}
+-'OWN_TASK_METADATA_SAVED_NO_SUGGESTION_GET'
++# Observation is performed by an independent bounded collector, never a Task action.

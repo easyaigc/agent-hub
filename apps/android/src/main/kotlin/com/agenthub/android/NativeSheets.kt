@@ -162,22 +162,37 @@ import androidx.compose.foundation.text.KeyboardOptions
     var scanning by remember { mutableStateOf(false) }
     var method by remember { mutableStateOf("自动发现") }
     var methodMenu by remember { mutableStateOf(false) }
+    var authorizationHost by remember { mutableStateOf<DiscoveredCodexHost?>(null) }
+    var hostKey by remember { mutableStateOf("") }
+    var failedKnownHost by remember { mutableStateOf<DiscoveredCodexHost?>(null) }
     val tasks=rememberCoroutineScope(); val colors=MaterialTheme.colorScheme
     val focus=LocalFocusManager.current; val keyboard=LocalSoftwareKeyboardController.current
     val discovery=session.discovery
     val localPermission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { discovery?.start() }
     LaunchedEffect(editing?.id) { if(editing != null) token=session.credential(editing.id) }
     fun connectQR(value: String) { connecting=true; session.connectionBusy=true;error=null; tasks.launch { try { session.connectCodexQR(value,name); saved() } catch(cancel: kotlinx.coroutines.CancellationException) { throw cancel } catch(failure: Exception) { error=failure.message ?: "连接失败" } finally { connecting=false;session.connectionBusy=false } } }
+    fun connectDiscovered(host: DiscoveredCodexHost) {
+        focus.clearFocus();keyboard?.hide()
+        connecting=true;session.connectionBusy=true;error=null;failedKnownHost=null
+        tasks.launch { try {
+            if(host.known) session.connectKnownCodex(host) else session.connectCodexDiscovered(host,hostKey)
+            hostKey="";authorizationHost=null;saved()
+        } catch(cancel: kotlinx.coroutines.CancellationException) { throw cancel }
+        catch(failure: Exception) { error=failure.message ?: "连接失败，原连接已保留";if(host.known)failedKnownHost=host }
+        finally { connecting=false;session.connectionBusy=false } }
+    }
     Column(Modifier.fillMaxWidth()) {
+        Text("默认使用局域网与 Tailscale HTTPS 双通道，自动切换并保留同一台电脑的连接和草稿。只在局域网使用可不安装 Tailscale；需要在外远程控制，请为手机和电脑配置 Tailscale 并保持在线。",Modifier.padding(horizontal=32.dp,vertical=12.dp).testTag("codex-dual-channel-help"),fontSize=14.sp,color=colors.onSurfaceVariant)
         if(editing==null) {
             GroupCard { Box {
                 SettingsRow("连接方式",method,"codex-connection-method") { if(!connecting) methodMenu=true }
                 DropdownMenu(methodMenu,{ methodMenu=false }) { listOf("自动发现","扫码连接","手动连接").forEach { choice ->
-                    DropdownMenuItem(text={ Text(choice) },onClick={ method=choice; methodMenu=false; error=null; focus.clearFocus(); keyboard?.hide() },modifier=Modifier.testTag("codex-method-$choice"))
+                    DropdownMenuItem(text={ Text(choice) },onClick={ method=choice; methodMenu=false; error=null; authorizationHost=null;hostKey="";focus.clearFocus(); keyboard?.hide() },modifier=Modifier.testTag("codex-method-$choice"))
                 } }
             } }
         }
         if(editing==null && method=="自动发现") {
+            if(authorizationHost==null) {
             GroupTitle("自动发现")
             GroupCard {
                 if(discovery?.needsPermission==true) TextButton(onClick={ localPermission.launch(CodexHostDiscovery.LOCAL_PERMISSION) },modifier=Modifier.fillMaxWidth().testTag("allow-local-network")) { Text("允许发现局域网与 VPN 电脑") }
@@ -188,19 +203,27 @@ import androidx.compose.foundation.text.KeyboardOptions
                     val network=if(host.networkKind=="vpn") "VPN · " else ""
                     val detail=if(client?.online==true) network+"已连接" else if(client!=null && !host.reachable) "未连接 · ${client.connectionLabel}" else network+"未连接 · 点选连接"
                     DiscoveredComputerRow(host.name,detail,"codex-discovered-${host.id}",client?.online==true,!connecting) {
-                        connecting=true;session.connectionBusy=true;error=null
-                        tasks.launch { try { if(host.known) session.connectKnownCodex(host) else session.connectCodexDiscovered(host); saved() }
-                        catch(cancel: kotlinx.coroutines.CancellationException) { throw cancel }
-                        catch(failure: Exception) { error=failure.message ?: "连接失败，原连接已保留" }
-                        finally { connecting=false;session.connectionBusy=false } }
+                        if(host.known) connectDiscovered(host) else { authorizationHost=host;hostKey="";error=null }
                     }
                 }
                 if(rows.isEmpty()) Text(discovery?.detail ?: "正在查找同一网络的电脑…",Modifier.padding(16.dp),fontSize=15.sp,color=colors.onSurfaceVariant)
                 TextButton(onClick={ discovery?.scan() },enabled=!connecting,modifier=Modifier.fillMaxWidth().testTag("codex-discovery-rescan")) { Text("重新查找") }
             }
+            Text("自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+            }
             if(connecting) Row(Modifier.padding(16.dp).testTag("codex-discovery-connecting"),verticalAlignment=Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(18.dp));Text("连接中…",Modifier.padding(start=8.dp)) }
             error?.let { Text(it,Modifier.padding(16.dp).testTag("client-form-error"),color=colors.error,fontSize=14.sp) }
-            Text("自动查找同一网络的电脑，选择后连接。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+            failedKnownHost?.let { host -> TextButton(onClick={ authorizationHost=host.copy(known=false);hostKey="";failedKnownHost=null;error=null },enabled=!connecting,modifier=Modifier.testTag("codex-reauthorize")) { Text("使用 Host Key 重新授权") } }
+            authorizationHost?.let { host ->
+                GroupTitle("首次连接授权")
+                GroupCard {
+                    Text(host.name,Modifier.padding(16.dp))
+                    NativeFormField(hostKey,{ hostKey=it },"Host Key","codex-host-key",!connecting,KeyboardType.Password)
+                    TextButton(onClick={ connectDiscovered(host) },enabled=!connecting&&hostKey.isNotBlank(),modifier=Modifier.fillMaxWidth().testTag("codex-authorize-connect")) { Text("授权并连接") }
+                    TextButton(onClick={ authorizationHost=null;hostKey="";error=null },enabled=!connecting,modifier=Modifier.fillMaxWidth().testTag("codex-authorize-cancel")) { Text("取消") }
+                }
+                Text("请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+            }
         }
         if(editing==null && method=="扫码连接") {
             GroupTitle("扫码连接")
@@ -209,7 +232,7 @@ import androidx.compose.foundation.text.KeyboardOptions
                 NativeFormField(qr,{ qr=it },"或粘贴连接二维码内容","codex-qr-description",!connecting)
                 error?.let { Text(it,Modifier.padding(horizontal=16.dp,vertical=8.dp).testTag("client-form-error"),color=colors.error,fontSize=14.sp) }
                 TextButton(onClick={ connectQR(qr) },enabled=qr.isNotEmpty() && !connecting,modifier=Modifier.fillMaxWidth().testTag("codex-connect-qr")) { Text("使用二维码连接",Modifier.weight(1f)) }
-                Text("可扫描已生成的连接信息，或使用自动发现直接连接。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+                Text("可扫描包含密钥的连接信息，或自动发现后输入 Host Key 授权。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
             }
         }
         if(editing!=null || method=="手动连接") {

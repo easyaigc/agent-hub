@@ -64,6 +64,7 @@ const loadedAdapterDigest = (() => {
     'desktop-suggestion-read-worker.js',
     'desktop-suggestion-worker-client.js',
     'desktop-suggestion-worker-limits.js',
+    'windows-trace-diagnostics.js',
   ])
     hash.update(readFileSync(new URL(name, import.meta.url)));
   return hash.digest('hex');

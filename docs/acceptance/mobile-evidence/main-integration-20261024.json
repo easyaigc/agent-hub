@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "date": "2026-10-24",
+  "status": "passed-auxiliary-main-integration",
+  "scope": "Merge remote main with local voice/sidebar commits and the existing dual-channel/history changes; source checks and native compilation only",
+  "checks": {
+    "pnpm check": "passed",
+    "pnpm build:ios": "passed",
+    "iOS XCTest build-for-testing": "passed",
+    "mobile-core jvmTest": "passed",
+    "CodexRouteRulesTest": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "android assembleDebug": "passed",
+    "android assembleDebugAndroidTest": "passed",
+    "pnpm check:ios-state": "passed"
+  },
+  "nativeStateBoundaries": [
+    "500 unchanged history projection reuses and 17 invalidation boundaries",
+    "6000 identity codec warm reuses, target isolation and concurrent bounded eviction",
+    "6000 canonical reading-key fast paths and live legacy precedence",
+    "7 reading acknowledgement merge boundaries",
+    "818-row production reading coordinator and unread snapshot projection",
+    "10 unread predicate boundaries",
+    "2000 shared projection comparisons"
+  ],
+  "temporarySimulator": {
+    "createdForThisTask": true,
+    "deleted": true
+  },
+  "evidenceLimits": [
+    "No new physical iPhone or Android device acceptance",
+    "No new Windows native acceptance",
+    "No model inputs, formal service deployment or mobile installation in this commit/push task",
+    "Earlier device and deployment evidence retains its original fingerprints",
+    "A6 remains paused"
+  ],
+  "sourceFilesSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileMachineIdentityTest.kt": "a1f626ba324bfb50c77f5b2364c0605ecdd54e762a9457cef133e1f66070224d",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt": "cc73295d0172960bca5f4bf4213997597bd119a7d67e2240efbb08935c20983c",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexPrivateConnection.kt": "39d0fe89f9b60ab2ed38bd7334161c5f03d8deff72bbf556e0c85b9afc415a85",
+    "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "3b3c462e026f4a59df37673d370411ac5ee95eca4e3a082ad2042b74ea5004f0",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "c1274f160e237173fe1278d4686532cd9e0f1b321827786c0110d070ae9f37b8",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "e24c272b07106d4fa75decc99ddfc654785f279b09922f5b11a02b86c85c6158",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "708145a5bc091ada979f2ad4bc1d7f41b17ffecca260b3a4fe9ce19816ace2f1",
+    "apps/host-agent/src/runtime-server.ts": "5c7c951e61b626d6d9e5f4d28bec4815fd5993e2504f2d1d260bd3f97abd9967",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "fd3f5aac2746a45442f21ad816f50ffcda03be031bc9efb226c9652022f47bfd",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "9e4770ddf446bd90eb7656639ce85c33c5708a9685f8d6f5cd6fa8f35929dec0",
+    "apps/ios/Sources/CodexDiscovery.swift": "07c50d99fba58a2fb0d46a6e77552119a03c3d378901603b89d036933a19f1aa",
+    "apps/ios/Sources/Models.swift": "8d602678b998c6cb4fdb4b0cf2292b9635d4c19be61b79a32cbeaf43cfbbf78b",
+    "apps/ios/Sources/NotificationModels.swift": "819b94c0cf0aef6246938db2c4f5725cc0fea7b5bb720269693ea06b5a1f2866",
+    "apps/ios/Sources/RootView.swift": "4322ec35416d7f0e9f74a3fa131c55d65c381db810089383fee3c2846c61bd4f",
+    "apps/ios/Sources/SessionStore.swift": "df8ac0c2545f2d7b76d3c493d05304f65f952199d9bc77f13bfe0447e9e66771",
+    "apps/ios/Sources/SharedMobileRules.swift": "26a095f90e60032455e05731f161d90525badf0bfe16c1aca2a37661b007edcf",
+    "apps/ios/Sources/Sheets.swift": "ccc610c7e7f50e157f10679a9a178849644c01e3a55ab0cc88109878b8c510db",
+    "apps/ios/Sources/ThreadReading.swift": "7cd773ef31858d532c964f7747443be4a1142b8f8e88474e7d989f6ba0745992",
+    "apps/ios/Tests/CodexManageUITests.swift": "118cd9336c18f7af7d0e3a107eecb4ca1f3236c004b14ace2c6af21a1cc472e9",
+    "packages/codex-adapter/src/desktop-transcription.ts": "f5ed5a2133f4471aa1c1548a0a468d50c9b4b28d173223aa56a3231b6aeeae5f",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/CodexRouteRules.kt": "2f4be2d679a64aa60c6614450e628d7bbc84a1798f16a4504edbf1b1d9d16da7",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/CodexRouteRulesTest.kt": "c56f21e90e32755e3d63124b66025d04496b4ff40eeb2c0fc1a152e2dd164206",
+    "packages/protocol/schemas/codex-host-discovery-v1.schema.json": "827f275fc3e2978fe42e8ce8e122a5091a47d341ebf2ad6c8d4692e919ed9d1c",
+    "packages/protocol/src/codex-connection-routes.ts": "5eb06a82fdce930a1064cf3bf966bda6e7e0d4d22ca3ba0e188b7af724083e5d",
+    "packages/protocol/src/index.ts": "53f6383c8d39cc66a2a72d7bb4815a0ae749a866ef4b74425b339da09e603755",
+    "scripts/codex-connection-routes.test.mjs": "e5d986fbbcd458f05a6fa300541da19a4b4578a6dfe42a8fc950cd040324b5f5",
+    "scripts/codex-discovery-native-smoke.mjs": "2db46587c2fed7912186bc4b1ac2f39b82c55d742846438e57247021f2f9cf3e",
+    "scripts/codex-dual-channel-desktop-ios-acceptance.mjs": "eb30d8ec6cfaf09f76cbd4943beeb041d887e496b69a2e543be10443d92b48b9",
+    "scripts/desktop-service.mjs": "88f0106b9c856b8c744a15daf8b116deb09d51ac387d920a8ae2cc1e8d951ed9",
+    "scripts/history-pagination-ios-fixture.mjs": "66d5752e1c1793e08d7f2cc2717d72b855975584f12b31cc8290bcc812db8ca1",
+    "scripts/history-scroll-ios.mjs": "b493de6be4f0471d18f5638bf4a660a938e1fe44c1b4584173c09e7cb19f9968",
+    "scripts/mobile-unread-badge-native-smoke.swift": "a66786c01752733163d4efc6c945772e58d94afe5d12d7718677d4895cda7926",
+    "scripts/mobile-unread-badge-smoke.mjs": "499dc898f96a1b34a0c4b98aaeab774f5974ce95be2cc473701ad7e897bab682",
+    "scripts/mobile/check-ios-state.mjs": "64c0a41fc2557d7fb2f3ea860c0f8b15e4615a78fcdad5b8644f10020756ae39",
+    "scripts/mobile/ios-result-device.mjs": "c0d86eb2b5cccd9b137f7d30efe0ef0400c75dbe66fc857f406c0088aeca9f0c",
+    "scripts/mobile/ios-result-device.test.mjs": "c0722d81d5a3abb89cc122fbcdcf96feb3742c21292ba74e42b45c1a84f617ce",
+    "scripts/mobile/verify-ios-migration.swift": "b5fb78650fc06492e3219e357c5d7acd2e2a475ef7a8d651311e48852b8ccc4c",
+    "scripts/runtime-smoke.mjs": "68334b3523e0fdb98cc8ea6880f1cfe0285675d9806f158a5ab4c85f1c5ac997",
+    "scripts/sidebar-performance-native-smoke.mjs": "12368d6c4370008aa322086bbba24c5153133bd5367c7e05fd48a0a11fc40c2d",
+    "scripts/voice-transcription-smoke.mjs": "de5bbc66c83312a1a928b7e93be1f57eaf7c675b795351699293e0ea00302709",
+    "scripts/windows-control-smoke.mjs": "9202c79ed242be4ef98f86a7c3992d06e42966942089b45b32d8625d9bffb77f",
+    "scripts/windows-desktop-service.mjs": "90e5f6d56de7a6667e4d1860f7c8c5554e923d8317bee0f1332191db247df1ae",
+    "scripts/windows-desktop-worker.mjs": "43c3e9d0313a465c5cdbfbf375fd6711c0dfd9fcba42088fbfe06fbf4973eaaf"
+  },
+  "logSha256": {
+    "pnpm-check.log": "5b5c3827dfe423d4f8bd4aa06bd228cba267a495cf1885bd43972c7d7f3dee73",
+    "ios-build.log": "f0316ee18662df0836a5e94888b5de6256f5eef7bf031905f4d7dcb29b8beeb9",
+    "ios-tests-build.log": "1e9240adceaed0ec9c4bee494b843276e789e151d6671fc7ea6e199f64f737a1",
+    "android-core.log": "ce3dcef578c4dbf3af9245669855c9599be196e685ebb8ff0f93e05b9a6c97e9",
+    "ios-state.log": "ed4682614758f9aa6ed728403a490e5f0f6fe62d732e9aaeae47e7e323dc61d4"
+  }
+}

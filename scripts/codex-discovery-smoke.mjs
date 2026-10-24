@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import https from 'node:https';
+import { generateKeyPairSync } from 'node:crypto';
+import { PrivateConnections } from '../apps/host-agent/dist/private-connections.js';
 import Ajv from 'ajv';
 import { startDirectDiscovery } from '../apps/host-agent/dist/direct-discovery.js';
 import {
@@ -124,6 +126,7 @@ const read = (port, path = '/host', headers = {}) =>
       .on('error', reject);
   });
 try {
+  const privateConnections = new PrivateConnections(directory);
   const options = {
     directory,
     target: () => target,
@@ -133,6 +136,7 @@ try {
     bind: '127.0.0.1',
     registry,
     peers: () => peerDirectory.peers(),
+    claim: (input) => privateConnections.claim(input, target),
     handler: async (_req, res) => {
       res.writeHead(401);
       res.end();
@@ -141,6 +145,79 @@ try {
   service = await startDirectDiscovery(options);
   const port = service.server.address().port;
   const before = service.descriptor();
+  assert.equal(before.connectionMode, 'host-key');
+  const claim = (key, input) =>
+    new Promise((done, reject) => {
+      const req = https.request(
+        {
+          host: '127.0.0.1',
+          port,
+          path: '/connection/claim',
+          method: 'POST',
+          rejectUnauthorized: false,
+          headers: {
+            'content-type': 'application/json',
+            ...(key ? { authorization: 'Bearer ' + key } : {}),
+          },
+        },
+        (res) => {
+          res.resume();
+          res.on('end', () => done(res.statusCode));
+        },
+      );
+      req.on('error', reject);
+      req.end(JSON.stringify(input));
+    });
+  const input = () => ({
+    version: 1,
+    target,
+    publicKey: generateKeyPairSync('x25519')
+      .publicKey.export({ format: 'der', type: 'spki' })
+      .subarray(-32)
+      .toString('base64url'),
+  });
+  const first = input();
+  for (const key of [undefined, '', 'wrong-key', 'x'.repeat(token.length)])
+    assert.equal(await claim(key, first), 401);
+  await assert.rejects(readFile(join(directory, 'private-connections-v1.json')), {
+    code: 'ENOENT',
+  });
+  assert.equal(await claim(token, { ...first, target: { ...target, runtimeId: 'other' } }), 409);
+  assert.equal(await claim(token, first), 200);
+  const bindings = JSON.parse(
+    await readFile(join(directory, 'private-connections-v1.json'), 'utf8'),
+  ).bindings;
+  assert.equal(bindings.length, 1);
+  assert(privateConnections.accepts(Buffer.from(bindings[0].token), target));
+  assert.equal(
+    await claim(bindings[0].token, input()),
+    401,
+    'Device credentials cannot enroll another device',
+  );
+  assert.equal(await claim(undefined, first), 401, 'An existing public key is not authorization');
+  assert.equal(await claim(token, first), 200);
+  assert.deepEqual(
+    JSON.parse(await readFile(join(directory, 'private-connections-v1.json'), 'utf8')).bindings,
+    bindings,
+  );
+  const oldBindings = bindings.map(({ hostKeyAuthorized: _, ...binding }) => binding);
+  await writeFile(
+    join(directory, 'private-connections-v1.json'),
+    JSON.stringify({ version: 1, bindings: oldBindings }),
+    { mode: 0o600 },
+  );
+  const legacy = new PrivateConnections(directory);
+  assert.equal(
+    legacy.accepts(Buffer.from(bindings[0].token), target),
+    false,
+    'Old keyless enrollment must not survive as authorization',
+  );
+  legacy.claim(first, target); // The HTTP boundary separately requires the Host Key.
+  const migrated = new PrivateConnections(directory);
+  assert(
+    migrated.accepts(Buffer.from(bindings[0].token), target),
+    'Explicit reauthorization preserves the original device credential',
+  );
   const schema = JSON.parse(
     await readFile('packages/protocol/schemas/codex-host-discovery-v1.schema.json', 'utf8'),
   );
@@ -186,6 +263,7 @@ try {
         'peer bounds and coalesced cached reads',
         'read-only no credentials',
         'authenticated command boundary',
+        'Host Key required for credential issuance and recovery; no device-token delegation',
         'private QR file',
         'address refresh',
         'certificate restart preservation',

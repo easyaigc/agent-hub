@@ -1,11 +1,12 @@
 import { createServer as httpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createServer as httpsServer } from 'node:https';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import {
   RuntimeSession,
+  appendRuntimeDiagnostic,
   NotificationObserver,
   RuntimeError,
   DesktopWorkspaceView,
@@ -18,6 +19,7 @@ import {
   DesktopDomBridgeError,
   DesktopSuggestionObserver,
   SuggestionObservationError,
+  createWindowsTraceDiagnostics,
 } from '@codex-manage/codex-adapter';
 import { NotificationPublisher } from '@codex-manage/notification-runtime';
 import { startDirectDiscovery } from './direct-discovery.js';
@@ -37,6 +39,8 @@ import {
   parseChatActionRequest,
   parseWorkspaceManagementRequest,
   type VPNDiscoverySnapshot,
+  type CodexConnectionRoutes,
+  parseCodexSystemEndpoints,
   VOICE_MAX_BYTES,
 } from '@codex-manage/protocol';
 
@@ -294,6 +298,7 @@ export async function startRuntimeServer() {
   let direct: Awaited<ReturnType<typeof startDirectDiscovery>> | undefined;
   const vpnDirectory = new VPNPeerDirectory();
   const privateConnections = new PrivateConnections(directory);
+  const httpsEndpoints = parseCodexSystemEndpoints(process.env.HOST_AGENT_HTTPS_ENDPOINTS);
   // Every response that replaces the client's capabilities must include current
   // Host-owned readiness, including collector and trace-directory changes.
   const mergeHostCapabilities = (capabilities: string[]): string[] => [
@@ -309,8 +314,11 @@ export async function startRuntimeServer() {
     ]),
   ];
   let fencedSuggestionPending = false;
+  let suggestionDiagnosticRequest = 0;
   const handler = async (request: IncomingMessage, response: ServerResponse) => {
     const requestStartedAt = performance.now();
+    const requestId = randomUUID();
+    let requestURL: URL | undefined;
     try {
       if (request.headers.origin) throw new RuntimeError(403, '不接受浏览器跨域请求');
       const supplied = Buffer.from((request.headers.authorization ?? '').replace(/^Bearer /, ''));
@@ -323,7 +331,12 @@ export async function startRuntimeServer() {
         )
       )
         throw new RuntimeError(401, '客户端密钥无效或已撤销');
-      const url = new URL(request.url ?? '/', 'http://localhost');
+      try {
+        requestURL = new URL(request.url ?? '/', 'http://localhost');
+      } catch {
+        throw new RuntimeError(400, '无效请求地址', 'INVALID_REQUEST_TARGET');
+      }
+      const url = requestURL;
       const scopedTarget = url.searchParams.get('target');
       let commandTarget: ReturnType<typeof parseNotificationTarget> | undefined;
       if (scopedTarget !== null) {
@@ -346,6 +359,17 @@ export async function startRuntimeServer() {
           throw new RuntimeError(409, '运行目标已变化，请刷新连接');
       };
       verifyCommandTarget();
+      if (request.method === 'GET' && url.pathname === '/v1/connection-routes') {
+        if (url.searchParams.get('hostId') !== session.hostId || [...url.searchParams].length !== 1)
+          throw new RuntimeError(400, '连接路径请求必须指定当前电脑');
+        const routes: CodexConnectionRoutes = {
+          version: 1,
+          target: session.readingTarget(),
+          httpsEndpoints,
+        };
+        json(response, 200, routes);
+        return;
+      }
       if (request.method === 'GET' && url.pathname === '/v1/discovery/peers') {
         if (
           url.searchParams.get('hostId') !== session.hostId ||
@@ -658,6 +682,14 @@ export async function startRuntimeServer() {
           throw new RuntimeError(400, '建议读取必须指定完整机器运行目标');
         }
         if (domSuggestions.capabilities.length === 0) {
+          const diagnosticRequest = ++suggestionDiagnosticRequest;
+          const diagnostic = suggestionObserver.usesFencedSourceRead
+            ? createWindowsTraceDiagnostics('host')
+            : undefined;
+          const traced = <T>(
+            phase: 'source_fence' | 'prepare' | 'commit',
+            operation: () => Promise<T>,
+          ) => (diagnostic ? diagnostic.asyncPhase(phase, operation) : operation());
           const deadlineAt = requestStartedAt + 8000;
           const lifetime = new AbortController();
           const timeoutError = () => new RuntimeError(503, '原桌面建议读取已结束或超时');
@@ -701,25 +733,28 @@ export async function startRuntimeServer() {
             suggestionObserver.assertBoundReadAvailable(target);
             active();
             const sourceTurnId = url.searchParams.get('sourceTurnId')!;
-            const source = async () => {
-              const value = await within(() => session.desktopSuggestionSource(threadId));
-              if (value.threadId !== threadId || value.sourceTurnId !== sourceTurnId)
-                throw new RuntimeError(409, '建议读取期间来源轮次已变化');
-            };
+            const source = async () =>
+              traced('source_fence', async () => {
+                const value = await within(() => session.desktopSuggestionSource(threadId));
+                if (value.threadId !== threadId || value.sourceTurnId !== sourceTurnId)
+                  throw new RuntimeError(409, '建议读取期间来源轮次已变化');
+              });
             await source(); // Original before owner/source guard.
             let confirmed;
             if (suggestionObserver.usesFencedSourceRead) {
-              prepared = await within(() =>
-                suggestionObserver.prepareBoundSourceAsync(
-                  target,
-                  threadId,
-                  sourceTurnId,
-                  deadlineAt,
-                  lifetime.signal,
+              prepared = await traced('prepare', () =>
+                within(() =>
+                  suggestionObserver.prepareBoundSourceAsync(
+                    target,
+                    threadId,
+                    sourceTurnId,
+                    deadlineAt,
+                    lifetime.signal,
+                  ),
                 ),
               );
               await source(); // Original middle guard, no reverse business RPC.
-              confirmed = await within(() => prepared!.commit());
+              confirmed = await traced('commit', () => within(() => prepared!.commit()));
             } else {
               // Darwin retains both original projections and their identity comparison.
               const first = await within(() =>
@@ -741,7 +776,21 @@ export async function startRuntimeServer() {
             response.setHeader('X-Agent-Hub-Suggestion-Response-Unix-Ms', String(Date.now()));
             active();
             json(response, 200, confirmed);
+            diagnostic?.end('ok', {
+              request: diagnosticRequest,
+              remainingMs: deadlineAt - performance.now(),
+            });
             return;
+          } catch (error) {
+            diagnostic?.end(
+              lifetime.signal.aborted || performance.now() >= deadlineAt
+                ? 'phase_deadline'
+                : (error as { status?: number })?.status === 409
+                  ? 'source_changed'
+                  : 'native_rejected',
+              { request: diagnosticRequest, remainingMs: deadlineAt - performance.now() },
+            );
+            throw error;
           } finally {
             try {
               prepared?.dispose();
@@ -978,7 +1027,39 @@ export async function startRuntimeServer() {
           }
           result = session.replyDeliveryStatus(threadId, url.searchParams.get('id') ?? '', target);
         } else if (url.pathname === '/v1/models') result = await session.models();
-        else if (url.pathname === '/v1/attachments') {
+        else if (url.pathname === '/v1/attachments/resolve-link') {
+          if (
+            [...url.searchParams.keys()].some(
+              (key) =>
+                !['hostId', 'threadId', 'messageId', 'reference'].includes(key) ||
+                url.searchParams.getAll(key).length !== 1,
+            )
+          )
+            throw new RuntimeError(400, '原消息文件解析请求无效', 'INVALID_FILE_LINK_REQUEST');
+          result = await session.resolveMessageFile(
+            threadId,
+            url.searchParams.get('messageId') ?? '',
+            url.searchParams.get('reference') ?? '',
+          );
+        } else if (url.pathname === '/v1/attachments/resolve') {
+          if (
+            [...url.searchParams.keys()].some(
+              (key) =>
+                !['hostId', 'threadId', 'id'].includes(key) ||
+                url.searchParams.getAll(key).length !== 1,
+            )
+          )
+            throw new RuntimeError(400, '附件解析请求无效');
+          try {
+            result = await session.resolveAttachment(threadId, url.searchParams.get('id') ?? '');
+          } catch (error) {
+            // Reserve 404 for an old Host without this endpoint. Missing resources must
+            // not trigger the client's legacy fallback and resurrect a cached version.
+            if (error instanceof RuntimeError && error.status === 404)
+              throw new RuntimeError(410, error.message);
+            throw error;
+          }
+        } else if (url.pathname === '/v1/attachments') {
           const { file, data: bytes } = await session.download(
             threadId,
             url.searchParams.get('id') ?? '',
@@ -1138,23 +1219,44 @@ export async function startRuntimeServer() {
         await sendReadJSON(request, response, projected);
       else json(response, 200, projected);
     } catch (error) {
+      const status =
+        error instanceof RuntimeError ||
+        error instanceof CreationError ||
+        error instanceof SuggestionObservationError
+          ? error.status
+          : 502;
+      const resource = requestURL?.pathname.startsWith('/v1/attachments');
+      const nativeCode = (error as { code?: unknown })?.code;
+      const code =
+        typeof nativeCode === 'string' && /^[A-Z0-9_]{1,64}$/.test(nativeCode)
+          ? nativeCode
+          : 'HOST_REQUEST_FAILED';
+      appendRuntimeDiagnostic(
+        directory,
+        {
+          scope: 'http',
+          hostId: session.hostId,
+          requestId,
+          route: requestURL?.pathname,
+          method: request.method,
+          status,
+          threadId: requestURL?.searchParams.get('threadId') ?? undefined,
+          messageId: requestURL?.searchParams.get('messageId') ?? undefined,
+          resourceId: requestURL?.searchParams.get('id') ?? undefined,
+          elapsedMs: Math.round(performance.now() - requestStartedAt),
+        },
+        error,
+      );
       if (!response.headersSent && !response.destroyed)
-        json(
-          response,
-          error instanceof RuntimeError ||
+        json(response, status, {
+          error:
+            error instanceof RuntimeError ||
             error instanceof CreationError ||
             error instanceof SuggestionObservationError
-            ? error.status
-            : 502,
-          {
-            error:
-              error instanceof RuntimeError ||
-              error instanceof CreationError ||
-              error instanceof SuggestionObservationError
-                ? error.message
-                : 'Codex 请求失败，请检查运行时连接并查询发送状态',
-          },
-        );
+              ? error.message
+              : `电脑请求失败（${code}），请根据诊断记录核对原因`,
+          ...(resource ? { code, requestId } : {}),
+        });
     }
   };
   const server = tls

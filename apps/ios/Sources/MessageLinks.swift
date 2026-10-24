@@ -35,6 +35,7 @@ enum MessageLinkDestination: Equatable {
 
 struct MessageLinkOpening: ViewModifier {
   let messageId: String
+  let threadId: String?
   let client: Client?
   let attachments: [RemoteAttachment]
   @State private var previewURL: URL?
@@ -68,11 +69,12 @@ struct MessageLinkOpening: ViewModifier {
       download = nil
       loading = false
     }
+    .onChange(of: threadId) { _, _ in reset() }
     .onChange(of: messageId) { _, _ in reset() }
     .onChange(of: client?.id) { _, _ in reset() }
     .onChange(of: client?.readingTarget) { _, _ in reset() }
     .onChange(of: client?.agentConnection?.target) { _, _ in reset() }
-    .onChange(of: attachments) { _, _ in reset() }
+    .onChange(of: attachments.map(\.resourceIdentity)) { _, _ in reset() }
   }
 
   private func reset() {
@@ -110,7 +112,24 @@ struct MessageLinkOpening: ViewModifier {
         if !opened && selectedURL == url { error = L10n.tr("手机上没有可打开此链接的应用。") }
       }
     case .computerFile:
-      error = L10n.tr("这是电脑上的本地文件，手机不能直接访问。请刷新对话；文件须存在、位于电脑授权目录内且不超过 20 MB，才能下载预览。")
+      guard let client, let threadId else {
+        error = L10n.tr("未取得这条消息对应的电脑或聊天，请重新打开原对话后重试。")
+        return
+      }
+      loading = true
+      download = Task { @MainActor in
+        defer { if !Task.isCancelled { loading = false; download = nil } }
+        do {
+          let service = try AgentClients.resolve(client)
+          let file = try await service.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: url.absoluteString)
+          let local = try await service.download(client, file: file)
+          guard !Task.isCancelled else { return }
+          previewURL = local
+        } catch {
+          guard !Task.isCancelled else { return }
+          self.error = error.localizedDescription
+        }
+      }
     case .computerWeb:
       error = L10n.tr("此网址指向电脑的本机地址，手机无法直接访问。请使用手机可连接的局域网或 VPN 网址。")
     case .unsupported:

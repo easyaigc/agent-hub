@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "date": "2026-10-23",
+  "status": "passed-for-requested-macos-and-physical-ios-scope",
+  "features": ["F17", "F19", "F32", "F68"],
+  "sourceSha256": "540f30382e64af17ab5646191268227795a65e9eb12ae8bb9bd202ee3a222273",
+  "packageSha256": "52137a1c553910ba4e8690325af39394f1cd652b3ff58061d6366e9252cdcda3",
+  "runtimeFingerprints": {
+    "apps/host-agent": "7cb6c004b463bc674b63862eb85eb5766e66d459561dec42dad87a347831a6bd",
+    "packages/codex-adapter": "ee3b89bca41a57209986b54a213b1a05ad27d2f270939f6d0b6350c6e1b0bb9d",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "formalApp": {
+    "bundleId": "com.easyai.agenthub",
+    "build": 104,
+    "model": "iPhone 15 Pro Max",
+    "os": "iOS 27.0.1",
+    "exactPairedDeviceMatched": true,
+    "nativeSourceSha256": "abd8fe3a9a0e925843f46253ac59c5f9f5807f7b9ccefc791a5458ae257a22be",
+    "builtBinarySha256": "6141abd202ecb14dc7ac684dea02105a86ad87c1a0d8deedb2c45664b0c4e69b",
+    "signingAndAccessGroupsPreserved": true,
+    "encryptedStateExactAcrossInstall": true
+  },
+  "native": {
+    "preflight": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scenarios": [
+      {
+        "id": "terminal-history",
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "assertion": "Fresh completed history has no false live retry warning"
+      },
+      {
+        "id": "original-screenshot",
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "assertion": "Original connection has no false warning; the original project-external report opens in Quick Look"
+      },
+      {
+        "id": "real-error",
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "assertion": "A real missing resource shows HTTP 410, ENOENT and its diagnostic ID"
+      }
+    ]
+  },
+  "originalReport": {
+    "name": "run-report.md",
+    "bytes": 7913,
+    "phoneAndHostSha256": "55e60764e65919eb03e128b16de2dbbe08dac4acb9cfa4a64d106843296e9f69",
+    "exactBytesMatch": true,
+    "originalFileUnchanged": true
+  },
+  "diagnostics": {
+    "realFilesystemError": "ENOENT",
+    "httpStatus": 410,
+    "phoneDiagnosticMatchesHostLog": true,
+    "requestIdSha256": "bb519d6e7212c499793431995f7934efa67200ffca4654857ea701e4bd8d1981",
+    "privateBoundedLog": true
+  },
+  "auxiliary": {
+    "fullPnpmCheck": "passed",
+    "pnpmBuildIOS": "passed",
+    "cleanSixComponentBuild": "passed",
+    "messageResourceBoundaries": "passed",
+    "desktopIPC": "passed",
+    "largeConversation": "passed"
+  },
+  "earlierAttempts": {
+    "retained": true,
+    "formal103FirstAutomationAttempt": "Failed before test; retry passed",
+    "firstHostOriginalPreview": "Actual report outside existing roots returned 403; failure retained"
+  },
+  "scope": {
+    "android": "No new native verification; A6 paused",
+    "windows": "No new real verification",
+    "allProductMatrix": "Not claimed",
+    "temporaryGitWorktreesCreated": false
+  },
+  "checkedAt": "2026-10-23T03:32:13.050Z"
+}

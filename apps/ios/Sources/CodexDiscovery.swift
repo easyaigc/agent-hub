@@ -34,6 +34,8 @@ struct CodexDirectConnection: Codable, Equatable, Sendable {
   var target: AgentRuntimeTarget
   var candidates: [AgentConnectionCandidate]
   var fingerprint: String
+  var systemEndpoints: [String]? = nil
+  var systemRoutes: [String] { (systemEndpoints ?? []).prefix(4).compactMap { CodexRouteRules.shared.systemEndpoint(value: $0) } }
 }
 struct CodexHostDescriptor: Codable, Sendable {
   var version: Int
@@ -45,6 +47,8 @@ struct CodexHostDescriptor: Codable, Sendable {
   var endpointHints: [EasyWorkEndpointHint]?
   var connectionMode: String? = nil
   var token: String? = nil
+  // Learned only from the separate authenticated routes contract; /host stays v1 compatible.
+  var systemEndpoints: [String]? = nil
   static func validatePayload(_ data: Data, allowToken: Bool = false) throws {
     guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw HostServiceError.invalidResponse }
     if allowToken { object.removeValue(forKey: "token") }
@@ -123,7 +127,12 @@ final class CodexHostRoutes: @unchecked Sendable {
   }
   func register(_ client: Client) {
     guard let connection = client.codexDirect else { return }
-    lock.withLock { for candidate in connection.candidates { if let url = URL(string: candidate.endpoint), let origin = origin(url) { pins[origin] = connection.fingerprint } } }
+    lock.withLock {
+      for endpoint in connection.systemRoutes { if let url = URL(string: endpoint), let origin = origin(url) { pins.removeValue(forKey: origin) } }
+      for candidate in connection.candidates where !connection.systemRoutes.contains(candidate.endpoint) {
+        if let url = URL(string: candidate.endpoint), let origin = origin(url) { pins[origin] = connection.fingerprint }
+      }
+    }
   }
   func data(for request: URLRequest) async throws -> (Data, URLResponse) {
     let session = lock.withLock { () -> URLSession in
@@ -141,6 +150,22 @@ final class CodexSystemTrust: NSObject, URLSessionTaskDelegate, @unchecked Senda
 }
 
 enum CodexDiscoveryAPI {
+  static func systemEndpoints(_ session: URLSession, base: URL, token: String, target: AgentRuntimeTarget) async -> [String] {
+    guard !token.isEmpty else { return [] }
+    do {
+      var url = URLComponents(url: base.appendingPathComponent("v1/connection-routes"), resolvingAgainstBaseURL: false)!
+      url.queryItems = [URLQueryItem(name: "hostId", value: target.hostId)]
+      let (data, response) = try await session.data(for: HostService.request(url.url!, token: token))
+      guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 8192,
+        let wire = String(data: data, encoding: .utf8), CodexDiscoveryContract.shared.validateNamed(json: wire, definition: "connectionRoutes") == nil else { return [] }
+      struct Routes: Decodable { var target: AgentRuntimeTarget; var httpsEndpoints: [String] }
+      let routes = try JSONDecoder().decode(Routes.self, from: data)
+      guard routes.target == target else { return [] }
+      let values = routes.httpsEndpoints.compactMap { CodexRouteRules.shared.systemEndpoint(value: $0) }
+      guard values.count == routes.httpsEndpoints.count else { return [] }
+      return values
+    } catch { return [] } // Older Hosts have no routes endpoint; retain saved routes.
+  }
   static func read(_ endpoint: String, fingerprint: String?, target: AgentRuntimeTarget?, token: String = "", discover: Bool = false, timeout: TimeInterval = 2) async throws -> CodexHostDescriptor {
     try await EasyWorkProbeBudget.shared.perform {
       let url = try HostService.baseURL(endpoint)
@@ -164,9 +189,10 @@ enum CodexDiscoveryAPI {
       }
       guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 65536 else { throw HostServiceError.unavailable }
       try CodexHostDescriptor.validatePayload(data)
-      let value = try JSONDecoder().decode(CodexHostDescriptor.self, from: data); try value.validate()
+      var value = try JSONDecoder().decode(CodexHostDescriptor.self, from: data); try value.validate()
       guard target == nil || value.target == target, fingerprint == nil || value.fingerprint.lowercased() == fingerprint?.lowercased() else { throw HostServiceError.wrongHost }
       if discover { guard value.fingerprint.lowercased() == discovered.fingerprint else { throw HostServiceError.wrongHost } }
+      value.systemEndpoints = await systemEndpoints(session, base: url, token: token, target: value.target)
       return value
     }
   }
@@ -188,12 +214,14 @@ enum CodexDiscoveryAPI {
       return snapshot
     }
   }
-  static func connectDiscovered(_ endpoint: String, hostId: String, name: String) async throws -> (CodexHostDescriptor, Client, WorkspaceSnapshot) {
+  static func connectDiscovered(_ endpoint: String, hostId: String, name: String, hostKey: String, expected: CodexDirectConnection? = nil) async throws -> (CodexHostDescriptor, Client, WorkspaceSnapshot) {
+    let hostKey = hostKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard (32...512).contains(hostKey.count), !hostKey.contains(where: \.isWhitespace) else { throw HostServiceError.message(L10n.tr("请输入这台电脑的 Host Key")) }
     // An explicit connection must tolerate a cold VPN/TLS handshake. Keep the
     // short background scan independent from this user-initiated read budget.
-    var host = try await read(endpoint, fingerprint: nil, target: nil, discover: true, timeout: 8)
+    var host = try await read(endpoint, fingerprint: expected?.fingerprint, target: expected?.target, discover: expected == nil, timeout: 8)
     guard host.target.hostId == hostId else { throw HostServiceError.wrongHost }
-    guard host.connectionMode == "automatic" else { throw HostServiceError.message(L10n.tr("请更新这台电脑的 Host 后使用直接连接")) }
+    guard host.connectionMode == "host-key" else { throw HostServiceError.message(L10n.tr("请更新这台电脑的 Host 后使用密钥授权连接")) }
     let identity = try EasyWorkIdentity.load()
     struct Claim: Encodable { var version = 1; var target: AgentRuntimeTarget; var publicKey: String }
     let configuration = URLSessionConfiguration.ephemeral
@@ -202,8 +230,9 @@ enum CodexDiscoveryAPI {
     defer { session.invalidateAndCancel() }
     let base = try EasyWorkPairing.localEndpoint(endpoint)
     let claimTarget = host.target
-    let request = HostService.request(base.appendingPathComponent("connection/claim"), method: "POST", body: try JSONEncoder().encode(Claim(target: claimTarget, publicKey: identity.publicKey)))
+    let request = HostService.request(base.appendingPathComponent("connection/claim"), token: hostKey, method: "POST", body: try JSONEncoder().encode(Claim(target: claimTarget, publicKey: identity.publicKey)))
     let (data, response) = try await session.data(for: request)
+    if (response as? HTTPURLResponse)?.statusCode == 401 { throw HostServiceError.message(L10n.tr("Host Key 不正确，请在电脑端核对后重试")) }
     guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 8192 else { throw HostServiceError.message(L10n.tr("无法连接这台电脑，请检查 Host 的直连访问设置")) }
     let token = try CodexPrivateCredential.open(data, target: SharedMobileRules.scope(claimTarget), privateKey: identity.privateKey, publicKey: identity.publicKey)
     let (workspaceData, workspaceResponse) = try await session.data(for: HostService.request(base.appendingPathComponent("v1/workspace"), token: token))
@@ -212,7 +241,8 @@ enum CodexDiscoveryAPI {
     let workspace = try JSONDecoder().decode(WorkspaceSnapshot.self, from: workspaceData)
     guard workspace.hostId == host.target.hostId, workspace.readTarget == host.target, workspace.connectionMode == "desktop-runtime" else { throw HostServiceError.wrongHost }
     let candidates = try EasyWorkPairing.directCandidates([endpoint] + host.endpoints, hints: host.endpointHints ?? [], fingerprint: host.fingerprint).map { value in var candidate = value; candidate.transportId = "codex-https"; return candidate }
-    let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: candidates, fingerprint: host.fingerprint.lowercased()))
+    host.systemEndpoints = await systemEndpoints(session, base: base, token: token, target: host.target)
+    let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: candidates, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints))
     host.token = token
     return (host, client, workspace)
   }
@@ -221,9 +251,9 @@ enum CodexDiscoveryAPI {
     var lastError: Error = HostServiceError.unavailable
     for candidate in try offer.candidates() {
       do {
-        let host = try await read(candidate.endpoint, fingerprint: offer.fingerprint, target: offer.target)
+        let host = try await read(candidate.endpoint, fingerprint: offer.fingerprint, target: offer.target, token: offer.token!)
         let merged = try EasyWorkPairing.directCandidates([candidate.endpoint] + host.endpoints + offer.endpoints, hints: (host.endpointHints ?? []) + (offer.endpointHints ?? []), fingerprint: host.fingerprint).map { value in var candidate = value; candidate.transportId = "codex-https"; return candidate }
-        let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: candidate.endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: merged, fingerprint: host.fingerprint.lowercased()))
+        let client = Client(id: host.target.hostId, name: name.isEmpty ? host.name : name, endpoint: candidate.endpoint, isDemo: false, online: false, codexDirect: CodexDirectConnection(target: host.target, candidates: merged, fingerprint: host.fingerprint.lowercased(), systemEndpoints: host.systemEndpoints))
         let session = URLSession(configuration: .ephemeral, delegate: PairedHostTrust(endpoint: candidate.endpoint, fingerprint: offer.fingerprint), delegateQueue: nil)
         defer { session.invalidateAndCancel() }
         let (data, response) = try await session.data(for: HostService.request(try HostService.baseURL(candidate.endpoint).appendingPathComponent("v1/workspace"), token: offer.token!))
@@ -562,7 +592,7 @@ struct VPNPeerSnapshot: Decodable, Sendable {
       .sorted { $0.id == store.client?.id && $1.id != store.client?.id }
     for client in clients {
       guard let target = client.codexDirect?.target ?? store.saved.workspaces[client.id]?.readTarget else { continue }
-      var endpoints = (client.endpoint.map { [$0] } ?? []) + (client.codexDirect?.candidates.map(\.endpoint) ?? [])
+      var endpoints = (client.endpoint.map { [$0] } ?? []) + (client.codexDirect?.candidates.map(\.endpoint) ?? []) + (client.codexDirect?.systemRoutes ?? [])
       if client.codexDirect != nil { endpoints += bonjour.values.filter { $0.id == client.id }.map(\.endpoint) }
       // Probe the saved route together with VPN alternatives, before a long
       // tail of unreachable LAN hints. Keep the current route when healthy.
@@ -582,7 +612,7 @@ struct VPNPeerSnapshot: Decodable, Sendable {
         while index < probes.count && resolved.contains(probes[index].client.id) { index += 1 }
         guard index < probes.count else { return }; let probe = probes[index]; index += 1
         group.addTask {
-          do { let token = probe.fingerprint == nil ? CredentialVault.token(probe.client.id) : ""
+          do { let token = CredentialVault.token(probe.client.id)
             return Result(probe: probe, host: try await CodexDiscoveryAPI.read(probe.endpoint, fingerprint: probe.fingerprint, target: probe.target, token: token))
           } catch { return nil }
         }

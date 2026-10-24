@@ -11,6 +11,7 @@ const directory = await mkdtemp(join(root, 'run-'));
 const executable = join(directory, 'sidebar-performance');
 const sources = [
   'apps/ios/Sources/ThreadReading.swift',
+  'apps/ios/Sources/SharedReadingPolicy.swift',
   'apps/ios/Sources/Localization.swift',
   'apps/ios/Sources/NotificationModels.swift',
   'apps/ios/Sources/MobileUnreadBadge.swift',

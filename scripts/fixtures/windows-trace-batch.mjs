@@ -224,20 +224,17 @@ async function transportOwner() {
     if (workerData.mode === 'budget')
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1680);
     if (workerData.mode === 'closed') backend.close();
-    const values = backend.backend.snapshotMany(root, [
-      { path: root, maximum: 0 },
-      { path: root + '\\one.txt', maximum: 4 },
-    ]);
-    passed = values.length === 2 && values[1].bytes.toString() === 'AAAA';
+    const items = Array.from({ length: workerData.itemCount }, (_, index) =>
+      index % 2 === 0 ? { path: root, maximum: 0 } : { path: root + '\\one.txt', maximum: 4 },
+    );
+    const values = backend.backend.snapshotMany(root, items);
+    passed = values.length === items.length && values[1].bytes.toString() === 'AAAA';
     firstPassed = passed;
     identities = values.map((value) => value.identity);
     if (workerData.mode === 'stale-while-next' || workerData.mode === 'duplicate-late') {
       passed = false;
       if (workerData.mode === 'duplicate-late') await new Promise((done) => setTimeout(done, 200));
-      backend.backend.snapshotMany(root, [
-        { path: root, maximum: 0 },
-        { path: root + '\\one.txt', maximum: 4 },
-      ]);
+      backend.backend.snapshotMany(root, items);
       passed = true;
     }
   } catch (failure) {
@@ -286,6 +283,8 @@ async function transportMain() {
       await delay(10);
     }
   };
+  const itemCount = Number(process.argv[4]);
+  assert(itemCount === 2 || itemCount === 8, 'Fixed synthetic batch width required');
   registerWindowsTraceTransport();
   const monitor = monitorPrivateStateWorkers(
     new URL('./desktop-trace-native-worker.js', import.meta.url),
@@ -296,6 +295,7 @@ async function transportMain() {
     workerData: {
       root: process.env.TRACE_BATCH_ROOT ?? 'C:\\fixture\\traces',
       mode,
+      itemCount,
       windowsProcessGate: getWindowsProcessGate(),
     },
   });
@@ -343,6 +343,7 @@ export async function frozenBatchFixture() {
   const directory = fs.realpathSync(fs.mkdtempSync(join(repository, '.local/trace-batch-')));
   const inputs = new Map();
   for (const name of [
+    'windows-trace-diagnostics',
     'desktop-trace-native',
     'desktop-trace-native-worker',
     'desktop-private-state-native',
@@ -408,7 +409,8 @@ child.spawn=function(command,args,options){
   };
 }
 
-export async function batchTransportFixture(mode, extra = {}) {
+export async function batchTransportFixture(mode, extra = {}, itemCount = 2) {
+  assert(itemCount === 2 || itemCount === 8, 'Fixed synthetic batch width required');
   const fixture = await frozenBatchFixture();
   const env = Object.fromEntries(
     Object.entries(process.env).filter(([key]) =>
@@ -416,11 +418,15 @@ export async function batchTransportFixture(mode, extra = {}) {
     ),
   );
   try {
-    await run(process.execPath, [join(fixture.directory, 'main.mjs'), fixture.directory, mode], {
-      env: { ...env, ...extra },
-      timeout: 12000,
-      windowsHide: true,
-    });
+    await run(
+      process.execPath,
+      [join(fixture.directory, 'main.mjs'), fixture.directory, mode, String(itemCount)],
+      {
+        env: { ...env, ...extra },
+        timeout: 12000,
+        windowsHide: true,
+      },
+    );
     return JSON.parse(fs.readFileSync(join(fixture.directory, 'result.json')));
   } finally {
     fixture.unchanged();

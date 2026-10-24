@@ -4,6 +4,8 @@
 
 连接电脑上的 Codex、EasyWork，随时管理项目、对话和任务。任务继续在所选电脑上执行，手机负责查看、交互与控制。
 
+**没有 Codex 也可以使用**：先下载并安装我们的桌面 Agent 客户端 **EasyWork**，再通过 Agent Hub 在手机上连接和管理。**[下载 EasyWork](https://aise.si)**。
+
 | 平台        | 下载                                                                                                                                                                                                                                                                 | 源码与本地构建                                                      |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | **Android** | [下载预览版 APK](https://github.com/easyaigc/agent-hub/releases/download/v0.1.0-android-preview.1/agent-hub-0.1.0-android-preview.1.apk)（Android 8.0+，开发签名） · [版本说明与校验值](https://github.com/easyaigc/agent-hub/releases/tag/v0.1.0-android-preview.1) | [Android 源码与构建说明](apps/android/README.md)                    |
@@ -86,7 +88,7 @@ pnpm build
 ```
 
 - **接入 Codex 电脑**：按 [codex-host-connect Skill](skills/codex-host-connect/SKILL.md) 安装和配置 Host Agent；完整接入包可运行 `pnpm package:connect` 生成。
-- **接入 EasyWork**：查看 [EasyWork 接入协议](docs/integrations/easywork-ewdap-1/README.md)。
+- **接入 EasyWork**：先从 [EasyWork 官网](https://aise.si) 下载桌面客户端，再按 [EasyWork 接入协议](docs/integrations/easywork-ewdap-1/README.md) 连接。
 - **编译 Android App**：按 [Android 工程说明](apps/android/README.md) 配置 JDK 17 和 Android SDK，运行 `pnpm build:android`；开发 APK 输出到 `.build/native/android/outputs/apk/debug/`。
 - **编译与安装 iOS App**：按下方[本地构建说明](#本地构建-ios)，使用模拟器或自己的 iPhone 运行。
 - **检查源码**：运行 `pnpm check`；编译 iOS 使用 `pnpm build:ios`。
@@ -132,6 +134,10 @@ skills/               电脑接入 Skill
 - [开发指南](docs/development.md) · [架构设计](docs/architecture.md) · [领域协议](docs/protocol.md)
 - [双端功能清单](docs/product/mobile-parity.md) · [界面规格](docs/design/mobile-parity.md) · [验收规范](docs/acceptance/mobile-parity.md)
 - [Android 开发计划](docs/plans/android-native.md) · [共享核心决策](docs/adr/0002-native-mobile-shared-core.md)
+
+## EasyWork 企业服务
+
+EasyWork 支持**企业私有化部署**与**贴牌（白标）定制**。企业部署、品牌定制与合作咨询，请访问 [EasyWork 官网](https://aise.si)。
 
 ## 开源许可
 

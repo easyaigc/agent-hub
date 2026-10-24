@@ -57,7 +57,7 @@ try {
   await assert.rejects(files.inspect(path, [root]));
   await assert.rejects(
     files.read(path, [root], replacement.sha256),
-    (error) => error.status === 409,
+    (error) => error.status === 410 && error.code === 'ENOENT',
   );
   await writeFile(join(outside, 'secret'), 'outside');
   await symlink(join(outside, 'secret'), path);
@@ -88,7 +88,10 @@ try {
   );
   files.checked = checked;
   await writeFile(join(root, 'oversized.bin'), Buffer.alloc(20 * 1024 * 1024 + 1));
-  await assert.rejects(files.inspect(join(root, 'oversized.bin'), [root]), (e) => e.status === 409);
+  await assert.rejects(
+    files.inspect(join(root, 'oversized.bin'), [root]),
+    (e) => e.status === 413 && e.code === 'FILE_TOO_LARGE',
+  );
 
   const count = full ? 513 : 16;
   const paths = [];
@@ -306,6 +309,21 @@ try {
     })}`;
   await writeFile(paths[0], 'HTTP_CHANGED');
   await request(downloadRoute(attachment.id), token, 409);
+  const resolveRoute = (id = attachment.id, threadId = firstThread.threadId) =>
+    `/v1/attachments/resolve?${new URLSearchParams({ hostId: session.hostId, threadId, id })}`;
+  await request(resolveRoute(), 'wrong-token', 401);
+  await request(resolveRoute(attachment.id, threads[1].id), token, 410);
+  await request(resolveRoute() + '&path=' + encodeURIComponent(paths[0]), token, 400);
+  await request(resolveRoute() + '&id=' + attachment.id, token, 400);
+  const resolution = JSON.parse(Buffer.from(await request(resolveRoute())).toString());
+  assert.equal(resolution.sourceAttachmentId, attachment.id);
+  assert.equal(resolution.attachment.sha256, sha('HTTP_CHANGED'));
+  assert(!('path' in resolution.attachment));
+  assert.equal(
+    Buffer.from(await request(downloadRoute(resolution.attachment.id))).toString(),
+    'HTTP_CHANGED',
+    'a stale link resolves current bytes without reopening the conversation',
+  );
   const changedHistory = await session.open(firstThread.threadId);
   const changedAttachment = changedHistory.messages.find((m) => m.id === fileMessageId)
     .attachments[0];
@@ -322,7 +340,8 @@ try {
     .attachments[0];
   assert.equal(replacedAttachment.sha256, sha('HTTP_REPLACED'));
   await rm(paths[0]);
-  await request(downloadRoute(replacedAttachment.id), token, 409);
+  await request(resolveRoute(), token, 410);
+  await request(downloadRoute(replacedAttachment.id), token, 410);
   assert.equal(
     (await session.open(firstThread.threadId)).messages.find((m) => m.id === fileMessageId)
       .attachments.length,
@@ -341,6 +360,7 @@ try {
   );
   session.attachmentFiles.inspect = inspect;
   await symlink(join(outside, 'secret'), paths[0]);
+  await request(resolveRoute(), token, 403);
   await request(downloadRoute(replacedAttachment.id), token, 403);
   assert.equal(
     (await session.open(firstThread.threadId)).messages.find((m) => m.id === fileMessageId)

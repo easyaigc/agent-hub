@@ -161,6 +161,9 @@ struct CodexConnectionForm: View {
     @State private var showScanner = false
     @State private var qrText = ""
     @State private var connectionMethod = ConnectionMethod.discovery
+    @State private var authorizationHost: CodexHostDiscovery.Host?
+    @State private var hostKey = ""
+    @State private var failedKnownHost: CodexHostDiscovery.Host?
 
     init(store: SessionStore, clientToEdit: Client? = nil) {
         self.store = store
@@ -188,9 +191,15 @@ struct CodexConnectionForm: View {
             } else {
                 discoveredHosts
             }
+            Section {
+                Text(L10n.tr("默认使用局域网与 Tailscale HTTPS 双通道，自动切换并保留同一台电脑的连接和草稿。只在局域网使用可不安装 Tailscale；需要在外远程控制，请为手机和电脑配置 Tailscale 并保持在线。"))
+                    .font(.footnote).foregroundStyle(Palette.secondary)
+                    .accessibilityIdentifier("codex-dual-channel-help")
+            }
         }.disabled(connecting).interactiveDismissDisabled(connecting)
         .onChange(of: connectionMethod) { _, _ in
             formError = nil
+            authorizationHost = nil; hostKey = ""; failedKnownHost = nil
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
         .task {
@@ -224,15 +233,17 @@ struct CodexConnectionForm: View {
             .disabled(qrText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             .accessibilityIdentifier("codex-connect-qr")
         } footer: {
-            Text(L10n.tr("可扫描已生成的连接信息，或使用自动发现直接连接。"))
+            Text(L10n.tr("可扫描包含密钥的连接信息，或自动发现后输入 Host Key 授权。"))
         }
     }
 
     @ViewBuilder private var discoveredHosts: some View {
+        if authorizationHost == nil {
         Section {
             ForEach(discoveryRows) { host in
                 Button {
-                    connectDiscovered(host)
+                    if host.known { connectDiscovered(host) }
+                    else { authorizationHost = host; hostKey = ""; formError = nil; failedKnownHost = nil }
                 } label: {
                     HStack {
                         Image(systemName: "desktopcomputer")
@@ -255,9 +266,33 @@ struct CodexConnectionForm: View {
             }
             Button(L10n.tr("重新查找"), systemImage: "arrow.clockwise") { Task { await discovery.scan(store); await vpnDiscovery.scan(store) } }
         } header: { Text(L10n.tr("自动发现")) } footer: {
-            Text(L10n.tr("自动查找同一网络的电脑，选择后连接。"))
+            Text(L10n.tr("自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。"))
         }
-        if let formError { Section { Text(formError).foregroundStyle(.red).accessibilityIdentifier("client-form-error") } }
+        }
+        if let host = authorizationHost {
+            Section {
+                Text(host.name)
+                SecureField(L10n.tr("Host Key"), text: $hostKey)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .accessibilityIdentifier("codex-host-key")
+                if let formError { Text(formError).foregroundStyle(.red).accessibilityIdentifier("client-form-error") }
+                Button(L10n.tr("授权并连接")) { connectDiscovered(host) }
+                    .disabled(hostKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("codex-authorize-connect")
+                Button(L10n.tr("取消")) { authorizationHost = nil; hostKey = ""; formError = nil }
+                    .accessibilityIdentifier("codex-authorize-cancel")
+            } header: { Text(L10n.tr("首次连接授权")) } footer: {
+                Text(L10n.tr("请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。"))
+            }
+        }
+        if authorizationHost == nil, let formError { Section {
+            Text(formError).foregroundStyle(.red).accessibilityIdentifier("client-form-error")
+            if var host = failedKnownHost {
+                Button(L10n.tr("使用 Host Key 重新授权")) {
+                    host.known = false; authorizationHost = host; hostKey = ""; self.failedKnownHost = nil; self.formError = nil
+                }.accessibilityIdentifier("codex-reauthorize")
+            }
+        } }
     }
 
     private var discoveryRows: [CodexHostDiscovery.Host] {
@@ -281,12 +316,14 @@ struct CodexConnectionForm: View {
 
     private func connectDiscovered(_ host: CodexHostDiscovery.Host) {
         guard !connecting else { return }
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         NativeReadAcceptanceTiming.record("connection-start", hostId: host.id)
-        connecting = true; formError = nil
+        connecting = true; formError = nil; failedKnownHost = nil
         Task {
             do {
                 if !host.known {
-                    try await store.addCodexDiscovered(host)
+                    try await store.addCodexDiscovered(host, hostKey: hostKey)
+                    hostKey = ""; authorizationHost = nil
                     NativeReadAcceptanceTiming.record("connection-success", hostId: host.id)
                     dismiss(); connecting = false; return
                 }
@@ -301,6 +338,7 @@ struct CodexConnectionForm: View {
             } catch {
                 NativeReadAcceptanceTiming.record("connection-failed", hostId: host.id)
                 formError = error.userFacingDescription
+                if host.known { failedKnownHost = host }
             }
             connecting = false
         }

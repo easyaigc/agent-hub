@@ -76,17 +76,17 @@ node skills/codex-host-connect/scripts/probe-host.mjs \
 
 脚本会先检查无令牌的请求被拒绝，再用文件中的令牌读取 health/workspace；要求返回的是本机已保存的 Host ID 和 `desktop-runtime`。只说明接入/身份正常，不证明具体聊天有原 owner。
 
-原回环 Host + Tailscale Serve 继续保留。`desktop-runtime` 默认另开私网 HTTPS 直连入口（8796，IPv4/IPv6 双栈），发布 `_codex-host._tcp`，每 15 秒刷新系统私网和 Tailscale 本机地址。Mac 使用系统 OpenSSL 生成并持久保存直连证书；Windows 默认寻找 Git for Windows 的 OpenSSL，也可通过 `HOST_AGENT_OPENSSL` 指定，或同时提供 `HOST_AGENT_DISCOVERY_TLS_CERT` / `HOST_AGENT_DISCOVERY_TLS_KEY`。缺少证书工具或端口冲突时保留原入口并明确报告自动发现不可用，不能冒充配置成功。
+原回环 Host 及已有 Tailscale Serve 继续保留；Tailscale 可选，没有安装时局域网独立工作。默认双通道按 [网络配置](network.md) 将实际 Serve 根地址持久保存到 `HOST_AGENT_HTTPS_ENDPOINTS`，供新版手机学习远程备用入口。`desktop-runtime` 默认另开私网 HTTPS 直连入口（8796，IPv4/IPv6 双栈），发布 `_codex-host._tcp`，每 15 秒刷新系统私网和 Tailscale 本机地址。Mac 使用系统 OpenSSL 生成并持久保存直连证书；Windows 默认寻找 Git for Windows 的 OpenSSL，也可通过 `HOST_AGENT_OPENSSL` 指定，或同时提供 `HOST_AGENT_DISCOVERY_TLS_CERT` / `HOST_AGENT_DISCOVERY_TLS_KEY`。缺少证书工具或端口冲突时保留原入口并明确报告自动发现不可用，不能冒充配置成功。
 
-默认首次接入在手机“添加客户端 → Codex → 自动发现”中点选电脑，自动授权后读取真实工作区，无需二维码或手动输入密钥。Bonjour 能列出未保存电脑，并提供无凭据 VPN 目录来源；手机经公开 `/discovery/peers?hostId=<来源电脑>` 获取在线电脑提示，再独立读取各目标的公开 `/host`，不传递其他电脑的密钥、不扫描整个网段。首次只有纯跨网 VPN、没有 Bonjour 或已缓存目录入口时，仍需可定位的来源；非标准端口和其他 VPN 的目录范围按实际实现单列，不承诺任意 VPN 都能枚举全部设备。
+默认首次接入在手机“添加客户端 → Codex → 自动发现”中点选电脑，再输入该电脑 Host Key 完成首次授权，成功后读取真实工作区并保存设备凭据；之后自动重连，无需反复输入。Bonjour 能列出未保存电脑，并提供无凭据 VPN 目录来源；手机经公开 `/discovery/peers?hostId=<来源电脑>` 获取在线电脑提示，再独立读取各目标的公开 `/host`，不传递其他电脑的密钥、不扫描整个网段。首次只有纯跨网 VPN、没有 Bonjour 或已缓存目录入口时，仍需可定位的来源；非标准端口和其他 VPN 的目录范围按实际实现单列，不承诺任意 VPN 都能枚举全部设备。
 
 安装和升级必须检查实际私网直连入口，而不只检查回环／Tailscale Serve：
 
-1. 无凭据读取 `/host`，核对发现契约 v1、准确完整目标、实际 TLS 证书与描述指纹一致、`connectionMode: automatic`、有效直连地址；这里的契约版本不是 Codex 应用版本。公开响应不得含原密钥、项目或聊天内容。`/discovery/peers` 返回准确来源目标和有界电脑提示；未配置 VPN 时可为空，局域网连接继续可用。
-2. 使用手机身份或专用验收 X25519 公钥向 `/connection/claim` 提交严格 v1 和完整目标，通过 X25519/HKDF-SHA256/AES-GCM 解密；取得的是该公钥的独立凭据，不是原 Host 密钥。同一公钥重试应取得同一凭据，复用验收公钥，不在每次检查时新增设备绑定。错误目标被拒绝；原身份、密钥、证书与服务配置保留。
-3. 用新凭据访问真实 `/v1/workspace`，核对同一完整目标、Host ID 和 `desktop-runtime`，并逐项核对全部适用功能。手机在场时实际点选并普通重开；缺手机只标这部分未验收，不将协议检查写成真机通过。`probe-host.mjs` 仅检查原鉴权入口；它和 fixture 不能替代此真实自动授权检查。
+1. 无凭据读取 `/host`，核对发现契约 v1、准确完整目标、实际 TLS 证书与描述指纹一致、`connectionMode: host-key`、有效直连地址；这里的契约版本不是 Codex 应用版本。公开响应不得含原密钥、项目或聊天内容。`/discovery/peers` 返回准确来源目标和有界电脑提示；未配置 VPN 时可为空，局域网连接继续可用。
+2. 先验证不带 Host Key、错误 Host Key 均返回 401 且无新绑定；已有设备凭据也不能替其他设备授权。再使用手机身份或专用验收 X25519 公钥，在 `Authorization: Bearer <Host Key>` 中提供从本机私有文件读取的有效密钥，向 `/connection/claim` 提交严格 v1 和完整目标，通过 X25519/HKDF-SHA256/AES-GCM 解密；取得的是该公钥的独立凭据，不是原 Host 密钥。使用正确 Host Key 的同一公钥重试应取得同一凭据，复用验收公钥，不在每次检查时新增设备绑定。错误目标被拒绝；原身份、密钥、证书与服务配置保留。
+3. 用新凭据访问真实 `/v1/workspace`，核对同一完整目标、Host ID 和 `desktop-runtime`，并逐项核对全部适用功能。手机在场时核对点选仅显示密钥表单，取消／切换目标清空输入，错误密钥不保存连接，正确密钥授权后普通重开不再申请凭据；缺手机只标这部分未验收，不将协议检查写成真机通过。`probe-host.mjs` 仅检查原鉴权入口；它和 fixture 不能替代此真实密钥授权检查。
 
-旧 Host 能被发现但没有 `automatic` 或 claim 时，必须部署规范仓库的统一新版；仅补描述字段不能实现授权。二维码和手动地址保留为补充入口：本机 `direct-discovery/connect.html` 含原客户端密钥，只在私有目录保存，不上传、提交或打印；不把扫码作为默认接入或修复前提。旧鉴权 HTTPS `/host` 仍可补齐直连证书与地址。
+旧 Host 能被发现但仍声明 `automatic`、或没有密钥鉴权 claim 时，必须部署规范仓库的统一新版；仅补描述字段不能实现授权。二维码和手动地址保留为补充入口：本机 `direct-discovery/connect.html` 含原客户端密钥，只在私有目录保存，不上传、提交或打印；不把扫码作为默认接入或修复前提。旧鉴权 HTTPS `/host` 仍可补齐直连证书与地址。
 
 `service:desktop` 与 `service:windows` 保留并透传 `HOST_AGENT_DISCOVERY`、`HOST_AGENT_DISCOVERY_BIND`、`HOST_AGENT_DISCOVERY_PORT`、`HOST_AGENT_DISCOVERY_TLS_CERT`、`HOST_AGENT_DISCOVERY_TLS_KEY`、`HOST_AGENT_OPENSSL`。原桌面模式默认启用发现；`HOST_AGENT_DISCOVERY=0` 显式关闭。遗留关闭设置先核对是否为用户明确选择，普通完整接入恢复默认，用户明确关闭则保留并报告子集。私网入口接受原客户端密钥及按公钥持久保存的独立凭据，控制继续使用鉴权与具名接口；公开发现不表示原 owner 已可控。
 
@@ -105,3 +105,11 @@ node skills/codex-host-connect/scripts/probe-host.mjs \
 每次完整接入和升级均完成 [Trace 交付收尾](desktop-suggestions.md#每次安装与升级的收尾)：先解释它用于手机同步原生下一步建议，macOS 和原生 x64 Windows 默认配置各平台持久环境及观察器，保留用户明确关闭或本次诊断的选择，不增加重复授权门槛。配置就绪后给出正常重开的具体动作；未来环境、当前进程、新记录和手机结果分别记证。Windows 注册表成功不等于当前实例已继承，按本机实际结果报告，不能用其他电脑的验收代替。
 
 按 [建议采集与客户端重启](desktop-suggestions.md) 启用。Host 服务持久保存 `CODEX_DESKTOP_SUGGESTION_OBSERVER` 和 `CODEX_DESKTOP_SUGGESTION_TRACE_ROOT`；`HOST_AGENT_STATE_DIR` 显式指定已有状态目录，更新时保留原程序、Node 和工作目录。原 Codex 的 `CODEX_ROLLOUT_TRACE_ROOT` 是另一个进程的启动环境，不能只给 Host 设置同名变量或仅重启 Host 就宣称开启。
+
+### 项目外报告与错误诊断
+
+原桌面助手消息中实际引用的本地文件可直接登记为聊天绑定的只读资源，包括项目目录之外的自动化报告。无需扩大 Host 根目录或逐个配置目录；不能通过客户端拼接路径读取未引用文件。注册证明绑定准确聊天、消息和规范真实路径，保留文件当前版本、20 MB、摘要及读取竞争检查；用户消息、其他聊天和符号链接改指向不获得此授权。
+
+验收同时检查原消息链接和缺失文件：手机错误应包含真实原因、HTTP 状态、code 和诊断编号。Host 状态目录 diagnostics/errors.jsonl 中用 requestId 对账，并核对阶段、thread/message/resource、原生错误码和堆栈位置。日志为用户私有，2 MB 轮换并保留一份旧日志；不复制凭据、请求正文和文件内容到交付报告。不要为让预览通过而把 Host 根目录改为整个 Home 或复制、改写业务原报告。
+
+升级区分历史免密设备凭据与已通过 Host Key 授权的凭据：旧免密绑定缺少 `hostKeyAuthorized` 时不再通过鉴权，用户可在原连接失败后点“使用 Host Key 重新授权”，输入一次后沿用原设备密钥与凭据，保存连接和草稿不清空。原 Host Key 手动／二维码连接及新版已授权设备照常重连。

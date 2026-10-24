@@ -192,9 +192,16 @@ type PrivateStateStart = {
     response: SharedArrayBuffer;
   };
 };
+type NativeTransportRecord = {
+  worker: Worker;
+  owner: Worker;
+  control: Int32Array;
+  exited: Promise<boolean>;
+};
 type PrivateStateSupervisor = {
   starts: Map<string, (request: PrivateStateStart, source: number) => void>;
-  workers: Set<{ worker: Worker; control: Int32Array }>;
+  workers: Set<NativeTransportRecord>;
+  retiring: WeakSet<Worker>;
 };
 const supervisorKey = Symbol.for('codex-manage.windows-private-state-supervisor.v1');
 function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
@@ -205,6 +212,7 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
   const supervisor = (globals[supervisorKey] ??= {
     starts: new Map(),
     workers: new Set(),
+    retiring: new WeakSet(),
   });
   if (!supervisor.starts.size) {
     process.on('workerMessage', (request: PrivateStateStart, source: number) => {
@@ -273,6 +281,7 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       // registered Worker object may own this transport, never a remembered ID.
       const owner = getWindowsProcessWorker(source);
       if (!owner) throw new Error('Registered native transport owner required');
+      if (supervisor.retiring.has(owner)) throw new Error('Native owner is retiring');
       // Entry is fixed by this already-loaded module, never supplied by the sender.
       const entry = new URL(
         trace ? './desktop-trace-native-worker.js' : './desktop-private-state-native-worker.js',
@@ -295,7 +304,11 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
         },
         transferList: [request.ownerPort],
       });
-      const record = { worker, control };
+      let resolveExit!: (complete: boolean) => void;
+      const exited = new Promise<boolean>((resolve) => {
+        resolveExit = resolve;
+      });
+      const record = { worker, owner, control, exited };
       registerWindowsProcessWorker(worker);
       supervisor.workers.add(record);
       const ownerExited = () => {
@@ -310,12 +323,17 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       worker.on('error', () => failPrivateState(control));
       worker.once('exit', () => {
         owner.removeListener('exit', ownerExited);
+        const reaped = Atomics.load(control, p.state) === p.gone;
         failPrivateState(control);
         if (!Atomics.load(control, p.pid)) {
           Atomics.store(control, p.state, p.gone);
           Atomics.notify(control, p.state);
         }
-        supervisor.workers.delete(record);
+        // A stopped isolate with an owned child but no gone acknowledgement is
+        // not proof of recovery. Retain that record and block replacement.
+        const complete = reaped || !Atomics.load(control, p.pid);
+        if (complete) supervisor.workers.delete(record);
+        resolveExit(complete);
       });
       worker.unref();
     } catch {
@@ -331,6 +349,29 @@ registerFixedNativeTransport('windows-private-state-start');
 /** Main bootstrap before any reader isolate starts; both executable entries stay fixed. */
 export function registerWindowsTraceTransport(): void {
   registerFixedNativeTransport('windows-trace-start');
+}
+
+/** Main owns retirement; no numeric PID can authorize a replacement generation. */
+export async function retireWindowsNativeOwner(owner: Worker): Promise<boolean> {
+  if (!isMainThread) throw new Error('Main native retirement supervisor required');
+  const globals = globalThis as typeof globalThis & {
+    [supervisorKey]?: PrivateStateSupervisor;
+  };
+  const supervisor = globals[supervisorKey];
+  if (!supervisor) return true;
+  supervisor.retiring.add(owner);
+  const records = [...supervisor.workers].filter((record) => record.owner === owner);
+  for (const record of records) {
+    record.worker.ref();
+    failPrivateState(record.control);
+    try {
+      record.worker.postMessage({ kind: 'close' });
+    } catch {
+      // Its retained exit result, rather than a send error, decides retirement.
+    }
+  }
+  const results = await Promise.all(records.map((record) => record.exited));
+  return results.every(Boolean);
 }
 
 export function createWindowsTraceTransport(

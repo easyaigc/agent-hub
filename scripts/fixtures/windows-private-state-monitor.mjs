@@ -6,9 +6,9 @@ const watched = new Map();
 let original, wrapper;
 
 // Observe the actual, fixed transport Workers without owning or stopping them.
-export function monitorPrivateStateWorkers(entryURL, log) {
+export function monitorPrivateStateWorkers(entryURL, log, { onEvent } = {}) {
   const active = new Set();
-  watched.set(entryURL.href, { log, active });
+  watched.set(entryURL.href, { log, active, onEvent });
   if (!wrapper) {
     original = workerThreads.Worker;
     wrapper = new Proxy(original, {
@@ -18,8 +18,16 @@ export function monitorPrivateStateWorkers(entryURL, log) {
         if (scope) {
           const id = worker.threadId;
           scope.active.add(worker);
+          scope.onEvent?.({ event: 'transport-start', id });
+          worker.on('message', (message) => {
+            if (message?.kind === 'fixture-lifecycle') {
+              const { kind: _kind, ...event } = message;
+              scope.onEvent?.(event);
+            }
+          });
           worker.once('exit', (code) => {
             scope.active.delete(worker);
+            scope.onEvent?.({ event: 'transport-exit', id, code });
             appendFileSync(scope.log, JSON.stringify({ event: 'transport-exit', id, code }) + '\n');
           });
         }

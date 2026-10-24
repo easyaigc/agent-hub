@@ -126,6 +126,7 @@ const loadedDigest = (() => {
     'desktop-suggestion-read-worker.js',
     'desktop-suggestion-worker-client.js',
     'desktop-suggestion-worker-limits.js',
+    'windows-trace-diagnostics.js',
   ])
     digest.update(readFileSync(new URL(name, import.meta.url)));
   digest.update(readFileSync(new URL('../windows/desktop-open.ps1', import.meta.url)));
@@ -153,6 +154,34 @@ function save(path: string, value: unknown): void {
     } finally {
       closeSync(fd);
     }
+  }
+}
+
+/** Windows may retain a suppressed archived view after a separate metadata connection restores it.
+ * Reconcile only a fresh, exact unarchived catalog entry, before an explicit original-desktop open.
+ * Missing metadata or a failed hint preserves the existing URI/owner-confirmation path.
+ */
+export async function refreshWindowsDesktopOpenState(
+  runtime: Pick<DesktopRuntime, 'reader' | 'ipc'>,
+  hostId: string,
+  threadId: string,
+  platform: NodeJS.Platform = process.platform,
+): Promise<boolean> {
+  if (platform !== 'win32' || !validId(threadId)) return false;
+  try {
+    const workspace = await runtime.reader.desktopWorkspace();
+    const matches = workspace.threads.filter((thread) => thread.id === threadId);
+    if (
+      workspace.hostId !== hostId ||
+      matches.length !== 1 ||
+      matches[0]!.hostId !== hostId ||
+      matches[0]!.archived !== false
+    )
+      return false;
+    runtime.ipc.refreshUnarchivedThread(threadId);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -599,6 +628,8 @@ export class DesktopPreparedBridge implements DesktopCreationBridge {
       throw new BeforeDesktopSubmit(this.reason ?? '原桌面打开不可用');
     const prior = await this.runtime.ipc.follow(threadId, 1000, true);
     if (prior && this.runtime.ipc.hasOwner(threadId)) return true;
+    if (process.platform === 'win32')
+      await refreshWindowsDesktopOpenState(this.runtime, this.hostId, threadId);
     await openOriginalDesktopThread(threadId);
     // The URI handler navigates before the renderer has resumed the thread.
     // no-client-found is an immediate read result, not a 15-second wait.

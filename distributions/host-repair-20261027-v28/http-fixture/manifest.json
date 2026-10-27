@@ -1,0 +1,31 @@
+{
+  "format": "agent-hub-test-only-correction-v1",
+  "canonicalTestSourceCommit": "ef98df6e4dfe37937b3ff41884d35f16ac98412d",
+  "canonicalRuntimeSourceCommit": "b1b933c55deb03ff42a8943251428a03e14d8801",
+  "fullCheckedProductionSource": "e7c1cedbe413f2b187ac38c5bd44f3aa98389cfe",
+  "allProductionInputsMatchFullCheck": true,
+  "runtimeVersion": "host-repair-20261027-v28",
+  "adapterFingerprint": "140ea56fb6ff9554aaa54b8a5917bbf0bbb19e65ab760c5e32d4b37eba79e57a",
+  "fixtureInputsCommit": "89f1d44dddf65475fbc645ff4f57933d8b4e441b",
+  "files": {
+    "scripts/windows-private-state-native.test.mjs": {
+      "beforeSha256": "b97ce77a1eaa2aac5ed4a41b1d8a17e5f2c4bd9b63b970b78f36de38b3c23e67",
+      "afterSha256": "f78ee99b8e84943f88e53e765379823eb8a8197495e6826c252f49b913fb5059",
+      "size": 46966
+    }
+  },
+  "scope": "One private stage test script only. No runtime install, new configuration, source creation, model input, budget change, or additional Host restart. Reuse matched39 Windows successes; run corrected failed case once. Formal A/B still unexecuted; original deployment continuation only after pass. Retain earlier failure.",
+  "validation": {
+    "fullNativeOnMac": {
+      "tests": 40,
+      "pass": 39,
+      "skipped": 1,
+      "fail": 0,
+      "milliseconds": 52243.831167
+    },
+    "closedProxyTarget": "RED rejects; corrected GREEN exits naturally",
+    "silentProxy": "RED same native timeout/hang; GREEN zero proxy connections and natural exit0",
+    "silentHTTPServer": "Expected1500ms failure, native remains valid, natural exit1 in1869ms; no forced stop",
+    "windowsCause": "Original environment not uniquely attributed; new test emits only proxy booleans and phase/timing metadata"
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "format": "agent-hub-host-repair-overlay-v1",
+  "version": 32,
+  "sourceCommit": "12e970d61f708af86c36dbac35f04ddc60010943",
+  "baseSourceCommit": "b1b933c55deb03ff42a8943251428a03e14d8801",
+  "baseUnifiedPackageSha256": "e9f910f56aa70c35ae9d489ce73b75846a8d10c906802a12d732dd14be12c542",
+  "unifiedPackageSha256": "000239d829facc8b78776fb592231e3a3edd185572d61242e3413bc51501b4cf",
+  "baseRuntimeFingerprints": {
+    "apps/host-agent": "23f24e53e017fcfa3ab33a4f0d3be336e6e81cfef66b0f119d7dc9ee3ca01c6b",
+    "packages/codex-adapter": "140ea56fb6ff9554aaa54b8a5917bbf0bbb19e65ab760c5e32d4b37eba79e57a",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "compatibleV22": {
+    "unifiedPackageSha256": "d681bad0de3eb7d52a45e443387a6f03e3acef2bfb3bfcb213fb76f8a155765a",
+    "runtimeFingerprints": {
+      "apps/host-agent": "704272cfbacff467a8bb56e6d3116a384a24538a21b13eedb1298f28d8186b7d",
+      "packages/codex-adapter": "31a392170153b58591a44fcd05d12851dfb82eda79349625a6d1e4d604539ff1",
+      "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+      "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+      "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+    }
+  },
+  "runtimeFingerprints": {
+    "apps/host-agent": "23f24e53e017fcfa3ab33a4f0d3be336e6e81cfef66b0f119d7dc9ee3ca01c6b",
+    "packages/codex-adapter": "43975fbab673cc997c6e9bc125eb37526f98328bdf4d171dd3d7347dcec0fe7b",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "entries": {
+    "bundle.json": {
+      "beforeSha256": "4557987aeb2daf8108b52c64c01d7199ada24ed7d1b47da93aff584d16b966b5",
+      "compatibleV22BeforeSha256": "55f5a2e4dd36a21db978729aacd4186aeeacb35f23ba4f78e33c73d7b98d1f00",
+      "afterSha256": "78d67dc8e1937f5512a527ad8085b189dac1490a7611b048d7675b92503efea9",
+      "size": 2567
+    },
+    "assets/codex-manage/apps/host-agent/dist/runtime-server.js": {
+      "beforeSha256": "97df2832eeba4c91da49df0e1c1af469e5b0378674c0d4f22b3ed7cf50abd720",
+      "compatibleV22BeforeSha256": "9bb361d27574b070ba797231bf9f1c52ef344a8722629616de82be0f5ee2f977",
+      "afterSha256": "97df2832eeba4c91da49df0e1c1af469e5b0378674c0d4f22b3ed7cf50abd720",
+      "size": 63098
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/desktop-platform.js": {
+      "beforeSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "compatibleV22BeforeSha256": "a7eec5f9821c400e25105c9893a157df2985480b6ec3469ff2f885287814bd1c",
+      "afterSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "size": 29236
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/desktop-private-state-native.js": {
+      "beforeSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "compatibleV22BeforeSha256": "49c201ebc1ee79a7fb320b8c4b6b2a6a38f7f47927a2f15064398d13fea7858e",
+      "afterSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "size": 21930
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/desktop-trace-native.js": {
+      "beforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "compatibleV22BeforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "afterSha256": "9702c1780b4bbfc10009b25bd2a08ee8503d579a0a867da0fa728e073103a688",
+      "size": 14740
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/runtime-persistence.js": {
+      "beforeSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "compatibleV22BeforeSha256": "d374634e907734952103067b6488c40fa1573b297ef57a104c4a9ececd0083bc",
+      "afterSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "size": 33611
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/desktop-platform.js": {
+      "beforeSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "compatibleV22BeforeSha256": "a7eec5f9821c400e25105c9893a157df2985480b6ec3469ff2f885287814bd1c",
+      "afterSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "size": 29236
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/desktop-private-state-native.js": {
+      "beforeSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "compatibleV22BeforeSha256": "49c201ebc1ee79a7fb320b8c4b6b2a6a38f7f47927a2f15064398d13fea7858e",
+      "afterSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "size": 21930
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/desktop-trace-native.js": {
+      "beforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "compatibleV22BeforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "afterSha256": "9702c1780b4bbfc10009b25bd2a08ee8503d579a0a867da0fa728e073103a688",
+      "size": 14740
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/runtime-persistence.js": {
+      "beforeSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "compatibleV22BeforeSha256": "d374634e907734952103067b6488c40fa1573b297ef57a104c4a9ececd0083bc",
+      "afterSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "size": 33611
+    }
+  },
+  "sourcePatch": {
+    "file": "host-repair-v32-source.patch",
+    "sha256": "eebfbe23153264b2d3b7e242f7f84124a0cb9b67607296072c61dd196f2c78c2",
+    "size": 17109
+  },
+  "sourceFixtures": {
+    "packages/codex-adapter/src/windows-trace-diagnostics.ts": {
+      "sha256": "28df4ffd383f11e710023cbc466961bd4c6f331858fd9e617b6df428d03ecba9",
+      "size": 10875
+    },
+    "packages/codex-adapter/src/desktop-trace-native.ts": {
+      "sha256": "ee4da90b9be31427d1cf89f1bd0696f31129fe4121f0b4b6faf07f837a276053",
+      "size": 14741
+    },
+    "packages/codex-adapter/src/desktop-trace-native-worker.ts": {
+      "sha256": "26ce8f5132d7c1cd68c060225518cf4325b0bd87d2ac39cc0b99c810e85973cc",
+      "size": 9205
+    },
+    "packages/codex-adapter/src/desktop-private-state-native.ts": {
+      "sha256": "277a6cdccccc46097bcedf8a83f5b7902f5a86085369df62d4c94f60e6c066d7",
+      "size": 21322
+    },
+    "packages/codex-adapter/src/windows-process.ts": {
+      "sha256": "bc7a5155824999391d7fd641ee5464cacfc782825f3ad407a19f9b6ed6e8c586",
+      "size": 4543
+    },
+    "packages/codex-adapter/src/desktop-prediction-trace.ts": {
+      "sha256": "2f0559b66a25acb464743ad808069d822f48e133605338db124c8acf0144e926",
+      "size": 68804
+    },
+    "scripts/windows-trace-worker.test.mjs": {
+      "sha256": "34c261792e348f0a4618b5e72298b1d193334ced57b63602079cea55931bb950",
+      "size": 70456
+    },
+    "scripts/fixtures/windows-trace-batch.mjs": {
+      "sha256": "303ac9744340b4fab6acedddd289616cc448389e73e94b9e61dce685e1730144",
+      "size": 16912
+    },
+    "scripts/fixtures/windows-private-state-monitor.mjs": {
+      "sha256": "f564799e27f2b7d43123c9607fcdaed9dd9717da6e93c3da0f801382cebc8f07",
+      "size": 1705
+    },
+    "scripts/fixtures/desktop-trace.mjs": {
+      "sha256": "e271be092c9a3300c51057da731f10c07ec262d314bea471a19d89851a787009",
+      "size": 9570
+    }
+  },
+  "scope": "Only listed compiled runtime/bundle files are deployable. Source fixtures are canonical auxiliary inputs for a private stage, never replacements for machine-local source or configuration. Select one complete V28 or V22 baseline; no mixed baseline hashes.",
+  "verification": "Cold phase sends8 then remaining items, all guards retained,4/7/8s and per-frame750ms unchanged. No model input, business replay, credential or identity change. Full frozen check/real Windows and physical acceptance are separate records."
+}

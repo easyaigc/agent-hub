@@ -1,0 +1,7 @@
+# Host repair candidate V32
+
+Canonical source 12e970d61f708af86c36dbac35f04ddc60010943. One bounded phase starts Native batching with8 items, then its remaining items; subsequent frames retain the64-item maximum. Input validation, all native/filesystem guards, monotonically increasing IDs and no partial publication/no replay remain. Deadlines4/7/8seconds and750ms per Native frame are unchanged.
+
+Select a complete V28 (beforeSha256) or V22 (compatibleV22BeforeSha256) five-component runtime baseline first. Validate every listed current hash against that same baseline (or an already-identical after hash), preserve private state and local work, back up files, and copy only listed changed runtime files with exact SHA validation. Verify both Adapter copies and all five components against runtimeFingerprints. The unified full package SHA is 000239d829facc8b78776fb592231e3a3edd185572d61242e3413bc51501b4cf; source fixtures are code-only, auxiliary stage inputs, not program-source replacements. They preserve the exact TypeScript and fixture source used by the canonical build.
+
+No credentials, local machine configuration, logs, exports or private history are in this overlay. Keep Host IDs, keys, authorized devices, ports, Codex/other tasks and all drafts/unknown operations. Normal runtime, desktop original inputs and physical iPhone acceptance must be independently recorded. A6 remains paused.

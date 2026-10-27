@@ -1,0 +1,153 @@
+{
+  "format": "agent-hub-host-repair-overlay-v1",
+  "version": 33,
+  "sourceCommit": "568199e0654f9f9609d81e749cea35f244b9e6b9",
+  "baseSourceCommit": "12e970d61f708af86c36dbac35f04ddc60010943",
+  "baseUnifiedPackageSha256": "000239d829facc8b78776fb592231e3a3edd185572d61242e3413bc51501b4cf",
+  "unifiedPackageSha256": "be7566525580ffc60f5a4f9e6eb52a04a3aea2fc9dae017702aae656c7b52cb9",
+  "baseRuntimeFingerprints": {
+    "apps/host-agent": "23f24e53e017fcfa3ab33a4f0d3be336e6e81cfef66b0f119d7dc9ee3ca01c6b",
+    "packages/codex-adapter": "43975fbab673cc997c6e9bc125eb37526f98328bdf4d171dd3d7347dcec0fe7b",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "runtimeFingerprints": {
+    "apps/host-agent": "23f24e53e017fcfa3ab33a4f0d3be336e6e81cfef66b0f119d7dc9ee3ca01c6b",
+    "packages/codex-adapter": "43975fbab673cc997c6e9bc125eb37526f98328bdf4d171dd3d7347dcec0fe7b",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "entries": {
+    "bundle.json": {
+      "beforeSha256": "78d67dc8e1937f5512a527ad8085b189dac1490a7611b048d7675b92503efea9",
+      "compatibleV28BeforeSha256": "4557987aeb2daf8108b52c64c01d7199ada24ed7d1b47da93aff584d16b966b5",
+      "compatibleV22BeforeSha256": "55f5a2e4dd36a21db978729aacd4186aeeacb35f23ba4f78e33c73d7b98d1f00",
+      "afterSha256": "d714cb1f76928387195c9eed84d90b11b664c67cd18d8a656113e37e5a4b1fdc",
+      "size": 2567
+    },
+    "assets/codex-manage/apps/host-agent/dist/runtime-server.js": {
+      "beforeSha256": "97df2832eeba4c91da49df0e1c1af469e5b0378674c0d4f22b3ed7cf50abd720",
+      "compatibleV28BeforeSha256": "97df2832eeba4c91da49df0e1c1af469e5b0378674c0d4f22b3ed7cf50abd720",
+      "compatibleV22BeforeSha256": "9bb361d27574b070ba797231bf9f1c52ef344a8722629616de82be0f5ee2f977",
+      "afterSha256": "97df2832eeba4c91da49df0e1c1af469e5b0378674c0d4f22b3ed7cf50abd720",
+      "size": 63098
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/desktop-platform.js": {
+      "beforeSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "compatibleV28BeforeSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "compatibleV22BeforeSha256": "a7eec5f9821c400e25105c9893a157df2985480b6ec3469ff2f885287814bd1c",
+      "afterSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "size": 29236
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/desktop-private-state-native.js": {
+      "beforeSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "compatibleV28BeforeSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "compatibleV22BeforeSha256": "49c201ebc1ee79a7fb320b8c4b6b2a6a38f7f47927a2f15064398d13fea7858e",
+      "afterSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "size": 21930
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/desktop-trace-native.js": {
+      "beforeSha256": "9702c1780b4bbfc10009b25bd2a08ee8503d579a0a867da0fa728e073103a688",
+      "compatibleV28BeforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "compatibleV22BeforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "afterSha256": "9702c1780b4bbfc10009b25bd2a08ee8503d579a0a867da0fa728e073103a688",
+      "size": 14740
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/runtime-persistence.js": {
+      "beforeSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "compatibleV28BeforeSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "compatibleV22BeforeSha256": "d374634e907734952103067b6488c40fa1573b297ef57a104c4a9ececd0083bc",
+      "afterSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "size": 33611
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/desktop-platform.js": {
+      "beforeSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "compatibleV28BeforeSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "compatibleV22BeforeSha256": "a7eec5f9821c400e25105c9893a157df2985480b6ec3469ff2f885287814bd1c",
+      "afterSha256": "6a83e6901e53c4c7669178ce7e57d48a8fa24c2647cfbeaf36c3f7d818e5796b",
+      "size": 29236
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/desktop-private-state-native.js": {
+      "beforeSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "compatibleV28BeforeSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "compatibleV22BeforeSha256": "49c201ebc1ee79a7fb320b8c4b6b2a6a38f7f47927a2f15064398d13fea7858e",
+      "afterSha256": "edd257e1e6d96b4a2686db8e4a27e9a2044714e5c588ae1df65f0d33c2154254",
+      "size": 21930
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/desktop-trace-native.js": {
+      "beforeSha256": "9702c1780b4bbfc10009b25bd2a08ee8503d579a0a867da0fa728e073103a688",
+      "compatibleV28BeforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "compatibleV22BeforeSha256": "cd203ceebabd474f0f8ebcd2d261a2daae9ffce0f581151c6d6a492c0bdb1e05",
+      "afterSha256": "9702c1780b4bbfc10009b25bd2a08ee8503d579a0a867da0fa728e073103a688",
+      "size": 14740
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/runtime-persistence.js": {
+      "beforeSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "compatibleV28BeforeSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "compatibleV22BeforeSha256": "d374634e907734952103067b6488c40fa1573b297ef57a104c4a9ececd0083bc",
+      "afterSha256": "6979f2537ec092e00ab21184da8ed56c7344d105d271b206e8de1dc429b1d910",
+      "size": 33611
+    },
+    "assets/codex-manage/scripts/windows-host-task.ps1": {
+      "beforeSha256": "345dd50e07dd6e0347c1851ddcc8f136b19aac7e166ed6f0716528cc87310bd1",
+      "compatibleV28BeforeSha256": "345dd50e07dd6e0347c1851ddcc8f136b19aac7e166ed6f0716528cc87310bd1",
+      "compatibleV22BeforeSha256": "345dd50e07dd6e0347c1851ddcc8f136b19aac7e166ed6f0716528cc87310bd1",
+      "afterSha256": "773b6e08170e923c26f325b617c2e40ba001134331cebbb21d869b5f6a934e24",
+      "size": 20707
+    },
+    "assets/codex-manage/scripts/windows-host-task-fixture.ps1": {
+      "beforeSha256": "0933490d1c66c7ff992b121019c8ea017d05721007a7a6d40976d7894931a115",
+      "compatibleV28BeforeSha256": "0933490d1c66c7ff992b121019c8ea017d05721007a7a6d40976d7894931a115",
+      "compatibleV22BeforeSha256": "0933490d1c66c7ff992b121019c8ea017d05721007a7a6d40976d7894931a115",
+      "afterSha256": "b82fc730e3d7d44457e17e3365134a6efa74f56700ac5d3ff504ab80e8f1b4a2",
+      "size": 37880
+    }
+  },
+  "sourcePatch": {
+    "file": "host-repair-v33-source.patch",
+    "sha256": "c81ce2e0f1e567b30d42fb683ae1b1a54a9712d4fdd319bf917aa9c9dd7e6f82",
+    "size": 8751
+  },
+  "sourceFixtures": {
+    "scripts/windows-control-smoke.mjs": {
+      "sha256": "11ecc42bc510d3168db6b37d81ded73027f0d78825daee24b9ceb4d3f0251272",
+      "size": 25043
+    },
+    "scripts/windows-host-task.ps1": {
+      "sha256": "773b6e08170e923c26f325b617c2e40ba001134331cebbb21d869b5f6a934e24",
+      "size": 20707
+    },
+    "scripts/windows-host-task-fixture.ps1": {
+      "sha256": "b82fc730e3d7d44457e17e3365134a6efa74f56700ac5d3ff504ab80e8f1b4a2",
+      "size": 37880
+    },
+    "scripts/fixtures/windows-private-state-boundary.mjs": {
+      "sha256": "419e1492f23cc9bdc7f8d83db434c1e69538ca2684905c9dfef7e50c7262ff3e",
+      "size": 2997
+    }
+  },
+  "scope": "Only listed product scripts, compiled runtime and bundle files are deployable. Select one complete V32, V28 or V22 baseline; do not mix before hashes. Auxiliary fixtures never overwrite independent machine-local source. Preserve all private configuration and identities.",
+  "verification": "Explicit Windows owned task priority4 (Normal), same limited user and guards. Status is read-only registration metadata. Does not modify priority of an already running process. All five runtime fingerprints remain V32. Original4/7/8s and750ms retained. Actual OS priority, native suggestion and physical acceptance remain independent.",
+  "compatibleV22": {
+    "unifiedPackageSha256": "d681bad0de3eb7d52a45e443387a6f03e3acef2bfb3bfcb213fb76f8a155765a",
+    "runtimeFingerprints": {
+      "apps/host-agent": "704272cfbacff467a8bb56e6d3116a384a24538a21b13eedb1298f28d8186b7d",
+      "packages/codex-adapter": "31a392170153b58591a44fcd05d12851dfb82eda79349625a6d1e4d604539ff1",
+      "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+      "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+      "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+    }
+  },
+  "compatibleV28": {
+    "unifiedPackageSha256": "e9f910f56aa70c35ae9d489ce73b75846a8d10c906802a12d732dd14be12c542",
+    "runtimeFingerprints": {
+      "apps/host-agent": "23f24e53e017fcfa3ab33a4f0d3be336e6e81cfef66b0f119d7dc9ee3ca01c6b",
+      "packages/codex-adapter": "140ea56fb6ff9554aaa54b8a5917bbf0bbb19e65ab760c5e32d4b37eba79e57a",
+      "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+      "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+      "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+    }
+  }
+}

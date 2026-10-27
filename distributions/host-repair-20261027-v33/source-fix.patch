@@ -1,0 +1,74 @@
+diff --git a/scripts/windows-host-task-fixture.ps1 b/scripts/windows-host-task-fixture.ps1
+index 9fac8055..cc6889a6 100644
+--- a/scripts/windows-host-task-fixture.ps1
++++ b/scripts/windows-host-task-fixture.ps1
+@@ -53,12 +53,12 @@ function New-ScheduledTaskTrigger([switch]$AtLogOn, [switch]$Once, $User, [datet
+         Repetition = [pscustomobject]@{ Interval = [System.Xml.XmlConvert]::ToString($RepetitionInterval); Duration = $null; StopAtDurationEnd = $false }
+     }
+ }
+-function New-ScheduledTaskSettingsSet($ExecutionTimeLimit, $RestartCount, $RestartInterval, [switch]$AllowStartIfOnBatteries, [switch]$DontStopIfGoingOnBatteries, [switch]$StartWhenAvailable, $MultipleInstances) {
++function New-ScheduledTaskSettingsSet($ExecutionTimeLimit, $RestartCount, $RestartInterval, [switch]$AllowStartIfOnBatteries, [switch]$DontStopIfGoingOnBatteries, [switch]$StartWhenAvailable, $MultipleInstances, [int]$Priority = 7) {
+     [pscustomobject]@{
+         Enabled = $true; ExecutionTimeLimit = $ExecutionTimeLimit; RestartCount = $RestartCount
+         RestartInterval = $RestartInterval; AllowBattery = [bool]$AllowStartIfOnBatteries
+         StayOnBattery = [bool]$DontStopIfGoingOnBatteries; StartWhenAvailable = [bool]$StartWhenAvailable
+-        MultipleInstances = $MultipleInstances
++        MultipleInstances = $MultipleInstances; Priority = $Priority
+     }
+ }
+ function Register-ScheduledTask($TaskName, $Action, $Principal, $Trigger, $Settings) {
+@@ -482,15 +482,22 @@ if ($Scenario -in @('stop-tree', 'wrong-process-owner', 'owner-query-failed', 'b
+ 
+ $absent = Invoke-Fixture status
+ Assert-Fixture (-not $absent.installed -and -not $absent.running -and -not $absent.loginAutostart) 'Absent task status'
++Assert-Fixture ($null -eq $absent.taskPriority) 'Absent task must not fabricate a registered priority'
+ $first = Invoke-Fixture start
+ Assert-Fixture ($first.running -and $first.loginAutostart -and $FixtureStarts -eq 1) 'Install must start and enable login'
+ Assert-Fixture ($FixtureTask.Principal.LogonType -eq 'Interactive' -and $FixtureTask.Principal.RunLevel -eq 'Limited') 'Expected current interactive user'
+ $settings = $FixtureTask.Settings
++Assert-Fixture ($settings.Priority -eq 4 -and $first.taskPriority -eq 4) 'Host registration must use Normal rather than the default BelowNormal priority'
+ Assert-Fixture ($settings.AllowBattery -and $settings.StayOnBattery -and $settings.StartWhenAvailable) 'Battery startup settings'
+ Assert-Fixture ($settings.RestartCount -eq 3 -and $settings.RestartInterval.TotalMinutes -eq 1 -and $settings.ExecutionTimeLimit -eq [TimeSpan]::Zero -and $settings.MultipleInstances -eq 'IgnoreNew') 'Retry and singleton settings'
+ $originalAction = $FixtureTask.Actions[0] | ConvertTo-Json -Compress
++$FixtureTask.Settings.Priority = 7
++$writesBeforePriorityRead = $FixtureWrites
++$oldPriority = Invoke-Fixture status
++Assert-Fixture ($oldPriority.taskPriority -eq 7 -and $FixtureWrites -eq $writesBeforePriorityRead) 'Status must report an old priority without rewriting the task'
+ $null = Invoke-Fixture start
+ Assert-Fixture ($FixtureStarts -eq 1) 'Repeated start duplicated the Host'
++Assert-Fixture ($FixtureTask.Settings.Priority -eq 4) 'Start must upgrade the registered scheduling policy without duplicating a running Host'
+ 
+ # Registration, current running and actual login triggers are independent.
+ $FixtureTask.Triggers[0].Enabled = $false
+@@ -517,5 +524,6 @@ $resumed = Invoke-Fixture start
+ Assert-Fixture ($resumed.running -and $resumed.loginAutostart) 'Start must re-enable stopped task'
+ $null = Invoke-Fixture restart
+ Assert-Fixture ($FixtureStops -eq 2 -and $FixtureStarts -eq 4) 'Restart must replace only one Host'
++Assert-Fixture ((Invoke-Fixture status).taskPriority -eq 4) 'Restart must retain Normal task scheduling'
+ Assert-Fixture (($FixtureTask.Actions[0] | ConvertTo-Json -Compress) -eq $originalAction) 'Lifecycle changed private paths'
+ @{ scenario = $Scenario; passed = $true; starts = $FixtureStarts; stops = $FixtureStops } | ConvertTo-Json -Compress
+diff --git a/scripts/windows-host-task.ps1 b/scripts/windows-host-task.ps1
+index 1081f46e..d18a3c1b 100644
+--- a/scripts/windows-host-task.ps1
++++ b/scripts/windows-host-task.ps1
+@@ -299,7 +299,10 @@ try {
+         $recoveryTrigger = New-ScheduledTaskTrigger -Once -At ([datetime]::Now.AddMinutes(1)) -RepetitionInterval ([TimeSpan]::FromMinutes(1))
+         $recoveryTrigger.Repetition.StopAtDurationEnd = $false
+         $triggers = @($loginTrigger, $recoveryTrigger)
+-        $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval ([TimeSpan]::FromMinutes(1)) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
++        # Task Scheduler defaults to7 (BelowNormal), inherited by Node and its
++        # native helpers. This interactive user service needs ordinary scheduling
++        # for bounded IPC;4 is Normal, with the same limited user token.
++        $settings = New-ScheduledTaskSettingsSet -Priority 4 -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval ([TimeSpan]::FromMinutes(1)) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew
+         $jobAction = New-ScheduledTaskAction -Execute $LauncherPath -Argument $launcherArguments -WorkingDirectory (Split-Path -Parent $WorkerPath)
+         if ($null -eq $task) {
+             $principal = New-ScheduledTaskPrincipal -UserId $sid -LogonType Interactive -RunLevel Limited
+@@ -335,7 +338,7 @@ try {
+     $info = if ($null -ne $task) { Get-ScheduledTaskInfo -TaskName $taskName } else { $null }
+     $consoleLaunch = if ($null -eq $task) { 'not-installed' } elseif (Test-HostLauncher $task.Actions[0].Execute) { 'native-hidden-wait' } else { 'legacy-console' }
+     Assert-HostCommandBudget
+-    @{ consoleLaunch = $consoleLaunch; recoveryPolicy = 'observed-exit-restart'; outerRecoveryPolicy = 'periodic-trigger-ignore-running'; periodicRecovery = $periodicRecovery; periodicRecoveryInterval = if ($periodicRecovery) { 'PT1M' } else { $null }; liveHttpRecovery = 'diagnostic-only'; desktopRefresh = 'validated-at-worker-start'; commandElapsedMs = Get-HostCommandTime; commandBudgetMs = $CommandBudgetMs; processQueries = $processQueryCount; ownerChecks = $processOwnerCheckCount; trackedProcesses = $trackedProcessCount; installed = $null -ne $task; running = $null -ne $task -and $task.State -eq 'Running'; loginAutostart = $loginAutostart; task = $taskName; lastTaskResult = if ($null -ne $info) { $info.LastTaskResult } else { $null }; lastRunTime = if ($null -ne $info) { $info.LastRunTime.ToString('o') } else { $null }; nextRunTime = if ($null -ne $info -and $null -ne $info.NextRunTime) { $info.NextRunTime.ToString('o') } else { $null }; restartCount = if ($null -ne $task) { $task.Settings.RestartCount } else { $null }; restartInterval = if ($null -ne $task) { $task.Settings.RestartInterval } else { $null } } | ConvertTo-Json -Compress
++    @{ taskPriority = if ($null -ne $task) { $task.Settings.Priority } else { $null }; consoleLaunch = $consoleLaunch; recoveryPolicy = 'observed-exit-restart'; outerRecoveryPolicy = 'periodic-trigger-ignore-running'; periodicRecovery = $periodicRecovery; periodicRecoveryInterval = if ($periodicRecovery) { 'PT1M' } else { $null }; liveHttpRecovery = 'diagnostic-only'; desktopRefresh = 'validated-at-worker-start'; commandElapsedMs = Get-HostCommandTime; commandBudgetMs = $CommandBudgetMs; processQueries = $processQueryCount; ownerChecks = $processOwnerCheckCount; trackedProcesses = $trackedProcessCount; installed = $null -ne $task; running = $null -ne $task -and $task.State -eq 'Running'; loginAutostart = $loginAutostart; task = $taskName; lastTaskResult = if ($null -ne $info) { $info.LastTaskResult } else { $null }; lastRunTime = if ($null -ne $info) { $info.LastRunTime.ToString('o') } else { $null }; nextRunTime = if ($null -ne $info -and $null -ne $info.NextRunTime) { $info.NextRunTime.ToString('o') } else { $null }; restartCount = if ($null -ne $task) { $task.Settings.RestartCount } else { $null }; restartInterval = if ($null -ne $task) { $task.Settings.RestartInterval } else { $null } } | ConvertTo-Json -Compress
+ } catch {
+     $known = @('UNRELATED_SCHEDULED_TASK', 'WRONG_TASK_OWNER', 'HOST_PROCESS_IDENTITY_CHANGED', 'WRONG_HOST_PROCESS_OWNER', 'HOST_STOP_TIMEOUT', 'HOST_CHILD_STOP_TIMEOUT', 'HOST_TREE_STOP_TIMEOUT', 'HOST_COMMAND_TIMEOUT', 'HOST_PROCESS_QUERY_REJECTED', 'HOST_PROCESS_QUERY_LIMIT', 'HOST_PROCESS_LIMIT', 'HOST_PROCESS_QUERY_FAILED', 'HOST_PROCESS_OWNER_QUERY_FAILED')
+     $reason = if ($_.Exception.Message -in $known) { $_.Exception.Message } else { 'UNAVAILABLE' }

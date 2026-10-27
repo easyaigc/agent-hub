@@ -38,14 +38,14 @@ class MobileLocalRecoveryUiTest {
         lateinit var writer: MobileSession
         main { writer=MobileSession(storage);writer.restore() }
         ui.waitUntil(5_000) { !writer.restoring }
-        main { writer.setDemoMode(true);writer.text="P4 original unsent draft";writer.changeAppearance("dark");writer.leaveForeground() }
+        main { writer.setDemoMode(true);writer.text="P4 original unsent draft";writer.changeLanguage("zh-Hans");writer.changeAppearance("dark");writer.leaveForeground() }
         val barrier=CountDownLatch(1);storage.enqueueSnapshot("owned-barrier",{ barrier.countDown() },{ barrier.countDown() })
         assertTrue(barrier.await(5,TimeUnit.SECONDS))
         val hash=MessageDigest.getInstance("SHA-256").digest("metadata".toByteArray()).joinToString("") { "%02x".format(it) }
         val file=File(File(context.noBackupFilesDir,namespace),"$hash.bin");val valid=file.readBytes()
         storage.write("metadata","{P4_OWNED_UI_INVALID_METADATA");val failed=file.readBytes()
         lateinit var session: MobileSession
-        main { ui.activity.session.leaveForeground();session=MobileSession(storage);session.restore();ui.activity.setContent { AgentHubApp(session) } }
+        main { ui.activity.session.leaveForeground();session=MobileSession(storage);session.changeLanguage("zh-Hans");session.restore();ui.activity.setContent { AgentHubApp(session) } }
         try {
             ui.waitUntil(5_000) { session.localRecoveryRequired&&!session.restoring }
             ui.onNodeWithTag("local-recovery-required").assertExists()
@@ -60,7 +60,7 @@ class MobileLocalRecoveryUiTest {
             ui.waitUntil(5_000) { !session.localRecoveryRequired&&!session.restoring }
             ui.onNodeWithTag("local-recovery-required").assertDoesNotExist()
             ui.onNodeWithTag("open-sidebar").assertExists();assertEquals("P4 original unsent draft",session.text)
-            assertTrue(session.demo);assertEquals("dark",session.appearance);assertNull(session.error)
+            assertTrue(session.demo);assertEquals("dark",session.appearance);assertEquals("zh-Hans",session.language);assertNull(session.error)
             shot("retry-restores-original-draft")
         } finally { main { session.leaveForeground() } }
     }

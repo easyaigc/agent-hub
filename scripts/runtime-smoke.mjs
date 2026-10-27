@@ -1001,12 +1001,13 @@ try {
   };
   await api('/v1/approvals', { ...appAnswer, decision: 'acceptForSession' }, 400);
   await api('/v1/approvals', appAnswer);
+  await api('/v1/approvals', appAnswer, 409);
+  // The API confirms dispatch; the fixture writes its response before emitting idle.
+  await until(thread.id, (s) => s.runtime.state === 'idle');
   assert.deepEqual(
     JSON.parse(await readFile(join(directory, 'approval-response'), 'utf8')).result,
     { action: 'accept', content: {}, _meta: { persist: 'always' } },
   );
-  await api('/v1/approvals', appAnswer, 409);
-  await until(thread.id, (s) => s.runtime.state === 'idle');
   await api('/v1/replies', {
     ...request,
     clientMessageId: randomUUID(),

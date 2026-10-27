@@ -8,6 +8,12 @@ val acceptanceBuild = providers.gradleProperty("agentHubAcceptance").map {
     require(it == "true" || it == "false") { "agentHubAcceptance must be true or false" }
     it.toBoolean()
 }.getOrElse(false)
+val acceptanceScenario = providers.gradleProperty("agentHubAcceptanceScenario").getOrElse("default")
+require(acceptanceScenario in setOf("default", "document-cold", "photo-cold", "camera-cold")) { "Unknown acceptance scenario" }
+require(acceptanceScenario == "default" || acceptanceBuild) { "Cold selection scope requires an acceptance build" }
+if (acceptanceScenario != "default") {
+    layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(".build/native/android-${acceptanceScenario}"))
+}
 
 android {
     namespace = "com.agenthub.android"
@@ -22,8 +28,13 @@ android {
     }
     buildTypes {
         debug {
-            applicationIdSuffix = if (acceptanceBuild) ".acceptance" else ".debug"
-            versionNameSuffix = if (acceptanceBuild) "-acceptance" else "-dev"
+            applicationIdSuffix = when (acceptanceScenario) {
+                "document-cold" -> ".acceptance.documents"
+                "photo-cold" -> ".acceptance.photos"
+                "camera-cold" -> ".acceptance.cameras"
+                else -> if (acceptanceBuild) ".acceptance" else ".debug"
+            }
+            versionNameSuffix = if (acceptanceScenario != "default") "-${acceptanceScenario}-acceptance" else if (acceptanceBuild) "-acceptance" else "-dev"
         }
         release { isMinifyEnabled = false }
     }
@@ -40,6 +51,7 @@ dependencies {
     implementation(project(":mobile-core"))
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.browser:browser:1.10.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")

@@ -1,6 +1,31 @@
 import Combine
 import CryptoKit
 import Foundation
+import MobileCore
+
+// Native SHA/date parsing stays at this boundary; policy lives in MobileCore.
+private extension DesktopSuggestionScope {
+  var sharedValue: SuggestionScope {
+    SuggestionScope(target: TargetScope(agentId: target.agentId, accountAuthority: target.account?.authority,
+      accountSubject: target.account?.subject, hostId: target.hostId, workspaceId: target.workspaceId,
+      runtimeId: target.runtimeId), threadId: threadId, sourceTurnId: sourceTurnId,
+      navigation: navigation, connection: connection, requiresDisplayed: requiresDisplayedSource,
+      requiresNative: requiresNativeSource, requiresRuntime: requiresRuntimeSource)
+  }
+}
+private extension DesktopSuggestion {
+  func sharedValue(includeExpiration: Bool = false) -> SuggestionValue {
+    SuggestionValue(id: id, text: text, contentSha256: contentSha256, expiresAt: expiresAt,
+      expirationMillis: includeExpiration ? expiration.map { KotlinDouble(value: $0.timeIntervalSince1970 * 1000) } : nil,
+      validity: validity)
+  }
+  var nativeTextSha256: String {
+    SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+  }
+}
+private extension DesktopSuggestionDraftSnapshot {
+  var sharedValue: SuggestionDraft { SuggestionDraft(targetKey: targetKey, text: text, revision: String(revision)) }
+}
 
 /// A read scope never contains or changes a draft or submitted operation.
 struct DesktopSuggestionScope: Equatable, Sendable {
@@ -25,14 +50,16 @@ struct DesktopSuggestion: Decodable, Equatable, Sendable {
   var isDisplayBound: Bool { validity == "desktop-display" }
   var isNativeBound: Bool { validity == "native-version" }
   var isRuntimeBound: Bool { validity == "runtime-version" }
-  var isRefreshBound: Bool { isDisplayBound || isNativeBound || isRuntimeBound }
+  var isRefreshBound: Bool { DesktopSuggestionRules.shared.refreshBound(validity: validity) }
 
   var isSourceBound: Bool { validity == "source-turn" }
 
+  func handledVersionKey(targetKey: String, sourceTurnId: String) -> String {
+    DesktopSuggestionRules.shared.handledVersionKey(targetKey: targetKey, sourceTurnId: sourceTurnId, value: sharedValue())
+  }
+
   static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs.id == rhs.id && lhs.text == rhs.text && lhs.contentSha256 == rhs.contentSha256
-      && lhs.validity == rhs.validity
-      && ((lhs.isRefreshBound && rhs.isRefreshBound) || lhs.expiresAt == rhs.expiresAt)
+    DesktopSuggestionRules.shared.sameVersion(a: lhs.sharedValue(), b: rhs.sharedValue())
   }
 
   var expiration: Date? {
@@ -44,11 +71,8 @@ struct DesktopSuggestion: Decodable, Equatable, Sendable {
   }
 
   func isValid(at now: Date) -> Bool {
-    guard !id.isEmpty, id.utf8.count <= 256, !text.isEmpty, text.utf8.count <= 64_000,
-      validity == nil || isSourceBound || isRefreshBound,
-      isSourceBound || (expiration.map { $0 > now } ?? false) else { return false }
-    let digest = SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
-    return contentSha256 == digest
+    DesktopSuggestionRules.shared.valid(value: sharedValue(includeExpiration: true),
+      nowMillis: now.timeIntervalSince1970 * 1000, actualTextSha256: nativeTextSha256)
   }
 }
 
@@ -62,19 +86,12 @@ struct DesktopSuggestionResponse: Decodable, Sendable {
   var source: String? = nil
 
   func matches(_ scope: DesktopSuggestionScope) -> Bool {
-    schemaVersion == 1 && readOnly && target == scope.target
-      && threadId == scope.threadId && sourceTurnId == scope.sourceTurnId
-      && (source == nil || source == "desktop-display" || source == "native-trace" || source == "runtime")
-      && (!scope.requiresDisplayedSource || source == "desktop-display")
-      && (!scope.requiresNativeSource || source == "native-trace")
-      && (!scope.requiresRuntimeSource || source == "runtime")
-      && (source != "runtime" || scope.target.agentId == "easywork")
-      && (source != "runtime" || suggestion == nil || suggestion?.isRuntimeBound == true)
-      && (suggestion?.isRuntimeBound != true || source == "runtime")
-      && (source != "native-trace" || suggestion == nil || suggestion?.isNativeBound == true)
-      && (suggestion?.isNativeBound != true || source == "native-trace")
-      && (source != "desktop-display" || suggestion == nil || suggestion?.isDisplayBound == true)
-      && (suggestion?.isDisplayBound != true || source == "desktop-display")
+    guard let version = Int32(exactly: schemaVersion) else { return false }
+    return DesktopSuggestionRules.shared.matches(scope: scope.sharedValue, schemaVersion: version,
+      target: TargetScope(agentId: target.agentId, accountAuthority: target.account?.authority,
+        accountSubject: target.account?.subject, hostId: target.hostId, workspaceId: target.workspaceId,
+        runtimeId: target.runtimeId), threadId: threadId, sourceTurnId: sourceTurnId, readOnly: readOnly,
+      source: source, suggestion: suggestion?.sharedValue())
   }
 }
 
@@ -98,13 +115,13 @@ struct DesktopSuggestionDraftAction: Identifiable, Equatable, Sendable {
     currentSuggestion: DesktopSuggestion?, currentDraft: DesktopSuggestionDraftSnapshot,
     at now: Date = Date()
   ) -> String? {
-    guard currentScope == scope, currentSuggestion == suggestion,
-      currentSuggestion?.isValid(at: now) == true, currentDraft == draft else { return nil }
-    switch mode {
-    case .fill: return draft.text.isEmpty ? suggestion.text : nil
-    case .append: return draft.text.isEmpty ? suggestion.text : draft.text + "\n\n" + suggestion.text
-    case .replace: return suggestion.text
-    }
+    let namedMode: String
+    switch mode { case .fill: namedMode = "fill"; case .append: namedMode = "append"; case .replace: namedMode = "replace" }
+    return DesktopSuggestionRules.shared.proposedText(mode: namedMode, capturedScope: scope.sharedValue,
+      currentScope: currentScope?.sharedValue, capturedSuggestion: suggestion.sharedValue(),
+      currentSuggestion: currentSuggestion?.sharedValue(includeExpiration: true), capturedDraft: draft.sharedValue,
+      currentDraft: currentDraft.sharedValue, nowMillis: now.timeIntervalSince1970 * 1000,
+      actualTextSha256: currentSuggestion?.nativeTextSha256 ?? "")
   }
 }
 
@@ -113,12 +130,13 @@ struct DesktopSuggestionDraftUndo: Equatable {
   let suggestionId: String
   let originalText: String
   let applied: DesktopSuggestionDraftSnapshot
+  var handledVersionKey: String = ""
 
   // Once adopted, this is local text. Reader availability, prediction expiry
   // and view recreation must not discard undo for the unchanged draft.
   func restoredText(currentDraft: DesktopSuggestionDraftSnapshot) -> String? {
-    guard currentDraft == applied else { return nil }
-    return originalText
+    DesktopSuggestionRules.shared.restoredText(originalText: originalText, applied: applied.sharedValue,
+      current: currentDraft.sharedValue)
   }
 }
 

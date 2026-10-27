@@ -1,0 +1,139 @@
+{
+  "phase": "P7-5b",
+  "sourceBase": "0b25205a73b8d1b3ccd738f392f2641743cbd974",
+  "features": ["F55"],
+  "summary": "P7-5b：Android新增密码加密封装；与iOS原源码双向核对210000轮PBKDF2-SHA256、原UTF-8密码与AES-GCM nonce/tag/AAD。三环境各6项辅助与各5组双向合成向量通过，18份原加密文件字节保护通过；仅完成封装层，资料来源/版本映射、原子导入与UI仍待实现，不能导入iOS原生资料。",
+  "sourceSha256": "3212d1283d02ae68c881e725bee201512a663f9887f457df9ce2b76ac10eed7a",
+  "appSha256": "829f7d021e4e62975a81198b5fdb442248314063fd21b9afe44cdd4db847fc1e",
+  "runnerSha256": "10cb8c2c132d6079d435554caeb98fa3aa0a38b009ff04f3110bb0c7a4d9d418",
+  "changedFiles": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCrypto.kt": "4a0bca195db5f577eb017b33f33c768c446deb2816d252d607bbb380b36295a1",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationCryptoTest.kt": "bebf6073ac70755af3c7a2b63baaa4804fc5fc569f72aa9d5398608547009ee8",
+    "packages/protocol/fixtures/mobile/migration-envelope-v1.json": "ccc63c9fc28babba3ae8c364fa364a663ed7e189bfdf17c8e47433f14b0b999c",
+    "scripts/mobile/migration-vectors.swift": "a0bf1b6736bbc4190b7714c2ff7076e64c06102f4dbe5495430e404f723f699e"
+  },
+  "iosCryptoReference": {
+    "path": "apps/ios/Sources/EncryptedMigration.swift",
+    "sha256": "e11791f76b82982daff58795635bd6f88ab6853541d2c5185f0f7dd773d3d45b",
+    "executedOn": "macOS Swift using actual production crypto source with synthetic L10n shim",
+    "iosSourceChanged": false,
+    "iosNativeAppRun": false,
+    "iosA6Paused": true
+  },
+  "format": {
+    "envelopeVersion": 1,
+    "saltBytes": 16,
+    "nonceBytes": 12,
+    "tagBits": 128,
+    "keyBits": 256,
+    "kdf": "PBKDF2-HMAC-SHA256",
+    "iterations": 210000,
+    "aad": "codex-manage/encrypted-migration/v1",
+    "passwordMinimumGraphemes": 12,
+    "passwordBytes": "strict UTF-8 without normalization, embedded NUL preserved",
+    "fileLimitBytes": 268435456,
+    "plaintextLimitIncludesEncodedExpansion": true
+  },
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "nativeMethods": 6,
+      "swiftOriginVectorsAuthenticated": 5,
+      "androidOriginEnvelopesAuthenticatedBySwift": 5,
+      "originalEncryptedFileByteProofs": 6,
+      "observedFileCounts": [22998, 22998, 22998, 22998, 22998, 22998],
+      "reportSha256": "4d385efe19c17b3c86a9120ffe499c46195808732a12b80d4f12d0afd437873b",
+      "swiftResultSha256": "8847d2ae8025642abae2bd7121bb5527f9a0ab60c80cd90fea175c28c69f2a7e",
+      "preservationProofSha256": [
+        "003cdca582ef7e4fa3035fb61aa0466976bf95adc52e96c92e4422f7661e5c85",
+        "003cdca582ef7e4fa3035fb61aa0466976bf95adc52e96c92e4422f7661e5c85",
+        "003cdca582ef7e4fa3035fb61aa0466976bf95adc52e96c92e4422f7661e5c85",
+        "003cdca582ef7e4fa3035fb61aa0466976bf95adc52e96c92e4422f7661e5c85",
+        "003cdca582ef7e4fa3035fb61aa0466976bf95adc52e96c92e4422f7661e5c85",
+        "003cdca582ef7e4fa3035fb61aa0466976bf95adc52e96c92e4422f7661e5c85"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "nativeMethods": 6,
+      "swiftOriginVectorsAuthenticated": 5,
+      "androidOriginEnvelopesAuthenticatedBySwift": 5,
+      "originalEncryptedFileByteProofs": 6,
+      "observedFileCounts": [23056, 23056, 23056, 23056, 23056, 23056],
+      "reportSha256": "eb774009582047a33d2acc4f0bb305e20df2b320d098ab5279e0dbe9d99ce632",
+      "swiftResultSha256": "8847d2ae8025642abae2bd7121bb5527f9a0ab60c80cd90fea175c28c69f2a7e",
+      "preservationProofSha256": [
+        "a16a66a58855066627120d868ad3c89a1133e6d1ce3d62c10da8161b32db9844",
+        "a16a66a58855066627120d868ad3c89a1133e6d1ce3d62c10da8161b32db9844",
+        "a16a66a58855066627120d868ad3c89a1133e6d1ce3d62c10da8161b32db9844",
+        "a16a66a58855066627120d868ad3c89a1133e6d1ce3d62c10da8161b32db9844",
+        "a16a66a58855066627120d868ad3c89a1133e6d1ce3d62c10da8161b32db9844",
+        "a16a66a58855066627120d868ad3c89a1133e6d1ce3d62c10da8161b32db9844"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "nativeMethods": 6,
+      "swiftOriginVectorsAuthenticated": 5,
+      "androidOriginEnvelopesAuthenticatedBySwift": 5,
+      "originalEncryptedFileByteProofs": 6,
+      "observedFileCounts": [21698, 21698, 21698, 21698, 21698, 21698],
+      "reportSha256": "922ee8837a0aa3ebae0348aed410894844e86b22dcb76b0590f29ded81bb8933",
+      "swiftResultSha256": "8847d2ae8025642abae2bd7121bb5527f9a0ab60c80cd90fea175c28c69f2a7e",
+      "preservationProofSha256": [
+        "670c654a8bda4b8c3c54672d6e1c95de4edf078ac258d82d7dc1540c4295594e",
+        "670c654a8bda4b8c3c54672d6e1c95de4edf078ac258d82d7dc1540c4295594e",
+        "670c654a8bda4b8c3c54672d6e1c95de4edf078ac258d82d7dc1540c4295594e",
+        "670c654a8bda4b8c3c54672d6e1c95de4edf078ac258d82d7dc1540c4295594e",
+        "670c654a8bda4b8c3c54672d6e1c95de4edf078ac258d82d7dc1540c4295594e",
+        "670c654a8bda4b8c3c54672d6e1c95de4edf078ac258d82d7dc1540c4295594e"
+      ]
+    }
+  ],
+  "effectiveAuxiliaryMethods": 18,
+  "originalEncryptedFileByteProofs": 18,
+  "modelInputMethods": 0,
+  "uiChanged": false,
+  "crossPlatformApplicationPayloadImport": false,
+  "scope": [
+    "wrong password, salt/nonce/ciphertext/tag tamper and alternate AAD reject before returning plaintext",
+    "strict UTF-8 and envelope JSON with duplicate/missing/unknown/version/base64/length/trailing content rejection",
+    "ICU grapheme count exercised on combining accent and joined emoji; tested five exact password byte variants against original Swift crypto",
+    "new salt and nonce, empty binary round-trip, independent Swift open of Android envelopes"
+  ],
+  "rootInputReuse": {
+    "baselineInputs": 1013,
+    "exactMatchingInputs": 1007,
+    "changedInputs": {
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java": "25f82e9e7f84e4cea24157332f02506f9a89cff140938852815496d3880eb34d",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java": "2d0aa02dfe2bb3d7fdab00f3dfb557476a0b42cf82f0fb75fb0d683678980ed3",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java": "355d7dbd7a1f1000da63f0b42c4d5d9dbe6e3a04299c4edfe818bdd29d30299e",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalRecoveryUiTest.kt": "1aee90f5eb5ddc6f731cfdf0626725faddb635008fcc713eff998ef1eee9c42c",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "85626b2a676e864125eddbf2a6c342ef1a9e683c62faf36977b8d8a11225dd57",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "881217573e57e49d4610214acc64b1d267d5b96fa1428dae619e0b6800dc7dd3"
+    },
+    "newInputs": {
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCrypto.kt": "4a0bca195db5f577eb017b33f33c768c446deb2816d252d607bbb380b36295a1",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationCryptoTest.kt": "bebf6073ac70755af3c7a2b63baaa4804fc5fc569f72aa9d5398608547009ee8",
+      "packages/protocol/fixtures/mobile/migration-envelope-v1.json": "ccc63c9fc28babba3ae8c364fa364a663ed7e189bfdf17c8e47433f14b0b999c",
+      "scripts/mobile/migration-vectors.swift": "a0bf1b6736bbc4190b7714c2ff7076e64c06102f4dbe5495430e404f723f699e"
+    },
+    "fullCheckRerun": false,
+    "coverage": "Original G root command exit 0 retained with its observer drift limitation; changed old observer sources covered G/H and parent recovery sources covered 5a. New crypto sources compiled and exercised on three environments; current parity and guard checks run separately."
+  },
+  "failuresRetained": [
+    "Initial successful cohort was repeated after formatting the synthetic JSON asset; production APK unchanged, final source and runner fingerprints are the reported cohort. Earlier passes are retained and not double-counted.",
+    "First API37 private evidence archive preflight raced another archive write and refused before installation/instrumentation. Archive publication changed to verified completed temporary file plus atomic hardlink; original APK/source unchanged; retry passed."
+  ],
+  "pending": [
+    "Android application payload version/identity/attachment and immutable receipt validation, fresh-install import, atomic persistence and rollback, native export/import UI",
+    "Android/iOS application payload interoperability is not implemented; shared crypto envelope does not imply native state compatibility",
+    "256MiB boundary and heap/quota/real I/O faults are not exercised by small synthetic vectors",
+    "all Unicode-version differences in API26 ICU versus current Swift, full UI/IME/AX/theme/landscape",
+    "Existing original camera, phone observer, cellular/VPN and other environment gates remain separate; tasks/projects and iOS A6 paused"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

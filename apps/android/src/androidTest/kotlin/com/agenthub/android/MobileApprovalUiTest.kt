@@ -405,8 +405,180 @@ class MobileApprovalUiTest {
             File(evidenceFolder(),"bounded-field-proof.json").writeText(JSONObject().put("plainFourLineBudget",true).put("secretSingleLineBudget",true).put("longRawAnswersPreserved",true).put("doneDoesNotSubmit",true).put("independentDraftPreserved",true).toString())
         }
     }
+    private fun applicationRequest()=request("允许使用 Calculator？").put("kind","approval")
+        .put("decisions",JSONArray(listOf("accept","acceptAlways","decline","cancel")))
+        .put("decisionLabels",JSONObject().put("accept","本会话允许").put("acceptAlways","始终允许").put("decline","拒绝").put("cancel","取消"))
+    private fun applicationEnglish(f: ExecutionFixture) {
+        f.approvals=JSONArray().put(applicationRequest());connect(f)
+        main { session.changeLanguage("en");session.text="原草稿 100% %@" };ui.waitForIdle()
+    }
+    private fun assertApplicationReads(f: ExecutionFixture) {
+        val reads=f.server.requests.filter { it.method=="GET"&&it.path in listOf("/v1/workspace","/v1/history") }
+        File(owned.folder,"application-read-version.json").writeText(JSONObject()
+            .put("reads",JSONArray(reads.map { row -> JSONObject().put("path",row.path).put("version",row.headers["x-agent-hub-approvals"] ?: JSONObject.NULL) }))
+            .put("nativeDecisions",JSONArray(session.runtime!!.approvals.single().decisions)).put("postsBeforeVersionAssertion",posts(f).size).toString())
+        assertTrue(reads.isNotEmpty())
+        assertTrue("Native reads must declare mcp-v1 before the Host projects application grants",reads.all { it.headers["x-agent-hub-approvals"]=="mcp-v1" })
+    }
+    private fun applicationDecision(decision: String) {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            applicationEnglish(f);assertApplicationReads(f)
+            val expected=mapOf("accept" to "本会话允许","acceptAlways" to "始终允许","decline" to "拒绝","cancel" to "取消")
+            val english=NativeL10n(ui.activity,"en")
+            val original=session.runtime!!.approvals.single()
+            for((id,label) in expected)ui.onNodeWithTag("approval-$id").assertTextEquals(english.tr(label))
+            ui.onNodeWithTag("approval-$decision").performScrollTo().assertIsDisplayed()
+            shot("application-english-$decision")
+            ui.onNodeWithTag("approval-$decision").performClick()
+            ui.waitUntil(10_000) { approvals(f).size==1&&!session.isAnswering(original) }
+            val post=approvals(f).single();val body=JSONObject(String(post.body))
+            assertEquals(decision,body.getString("decision"));assertEquals("approval-id",body.getString("approvalId"))
+            assertEquals("fixture-thread",body.getString("threadId"));assertEquals("approval-turn",body.getString("turnId"))
+            assertEquals(0,body.getJSONObject("answers").length());assertEquals("mcp-v1",post.headers["x-agent-hub-approvals"])
+            assertEquals(0,f.rejectedTargetWrites.get());assertEquals(1,posts(f).size);assertEquals("原草稿 100% %@",session.text)
+        }
+    }
+    @Test fun applicationReadVersionPrecedesAllFourNativeScopeButtons() {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            applicationEnglish(f);assertApplicationReads(f)
+            for(id in listOf("accept","acceptAlways","decline","cancel"))ui.onNodeWithTag("approval-$id").assertExists()
+            assertTrue(posts(f).isEmpty());shot("application-versioned-native-read")
+        }
+    }
+    @Test fun applicationSessionGrantKeepsOriginalAcceptDecision()=applicationDecision("accept")
+    @Test fun applicationAlwaysGrantKeepsOriginalAcceptAlwaysDecision()=applicationDecision("acceptAlways")
+    @Test fun applicationDeclineKeepsOriginalDeclineDecision()=applicationDecision("decline")
+    @Test fun applicationCancelKeepsOriginalCancelDecision()=applicationDecision("cancel")
+    @Test fun extraPermissionTurnAndSessionLabelsKeepTheirDeclaredScopes() {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            f.approvals=JSONArray().put(applicationRequest().put("decisions",JSONArray(listOf("accept","acceptForSession","decline")))
+                .put("decisionLabels",JSONObject().put("accept","允许本轮").put("acceptForSession","本会话允许").put("decline","拒绝")))
+            connect(f);main { session.changeLanguage("en") };ui.waitForIdle();assertApplicationReads(f)
+            val english=NativeL10n(ui.activity,"en")
+            ui.onNodeWithTag("approval-accept").assertTextEquals(english.tr("允许本轮"))
+            ui.onNodeWithTag("approval-acceptForSession").assertTextEquals(english.tr("本会话允许")).performScrollTo().performClick()
+            ui.waitUntil(10_000) { approvals(f).size==1 };assertEquals("acceptForSession",JSONObject(String(approvals(f).single().body)).getString("decision"))
+            assertEquals(1,posts(f).size)
+        }
+    }
+    @Test fun unknownApplicationLabelIsLiteralEvenWhenItLooksLikeProductCopy() {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            applicationEnglish(f)
+            f.approvals=JSONArray().put(applicationRequest().apply { getJSONObject("decisionLabels").put("acceptAlways","设置 100% %@") })
+            read();ui.onNodeWithTag("approval-acceptAlways").assertTextEquals("设置 100% %@")
+            shot("application-unknown-label-raw");assertTrue(posts(f).isEmpty())
+        }
+    }
+    @Test fun changedApplicationLabelsInvalidateTheCapturedBusinessCallback() {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            applicationEnglish(f);val old=captured("approval-decline")
+            f.approvals=JSONArray().put(applicationRequest().apply { getJSONObject("decisionLabels").put("decline","新拒绝 100% %@") })
+            read();ui.runOnIdle { old() };assertTrue(posts(f).isEmpty())
+            ui.onNodeWithTag("approval-decline").assertTextEquals("新拒绝 100% %@").performScrollTo().performClick()
+            ui.waitUntil(10_000) { approvals(f).size==1 };assertEquals("decline",JSONObject(String(approvals(f).single().body)).getString("decision"))
+        }
+    }
+    @Test fun nativePressCannotAnswerAnApplicationRequestReplacedBeforeRelease() {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            applicationEnglish(f);ui.onNodeWithTag("approval-decline").performScrollTo().performTouchInput { down(center) }
+            try {
+                f.approvals=JSONArray().put(applicationRequest().apply { getJSONObject("decisionLabels").put("decline","新拒绝 100% %@") })
+                read()
+            } finally { ui.onNode(isRoot() and hasAnyDescendant(hasTestTag("approval-decline"))).performTouchInput { up() } }
+            ui.waitForIdle();assertTrue("A press spanning DTO replacement must not answer either request",posts(f).isEmpty())
+            ui.onNodeWithTag("approval-decline").assertTextEquals("新拒绝 100% %@").performScrollTo().performClick()
+            ui.waitUntil(10_000) { approvals(f).size==1 };assertEquals(1,posts(f).size)
+        }
+    }
+    private fun lateApplicationResult(fail: Boolean) {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            applicationEnglish(f);f.holdApprovalResponse=true;if(fail)f.approvalFailureStatus=503
+            val original=session.runtime!!.approvals.single()
+            ui.onNodeWithTag("approval-acceptAlways").performScrollTo().performClick()
+            assertTrue(f.approvalStarted.await(5,java.util.concurrent.TimeUnit.SECONDS))
+            f.approvals=JSONArray().put(applicationRequest().put("id","application-replacement"))
+            read();val replacement=session.runtime!!.approvals.single();assertEquals("application-replacement",replacement.id)
+            assertFalse(session.isAnswering(replacement))
+            if(fail)main { session.error="新错误 100% %@" }
+            f.approvalRelease.countDown();ui.waitUntil(10_000) { !session.isAnswering(original) }
+            assertEquals(replacement,session.runtime!!.approvals.single());assertFalse(session.isAnswering(replacement))
+            assertEquals("原草稿 100% %@",session.text);assertEquals(1,approvals(f).size);assertEquals(1,posts(f).size)
+            if(fail)assertEquals("新错误 100% %@",session.error) else assertNull(session.error)
+        }
+    }
+    @Test fun lateApplicationSuccessCannotEraseAReplacementRequestOrDraft()=lateApplicationResult(false)
+    @Test fun lateApplicationFailureCannotOverwriteTheCurrentErrorOrRequest()=lateApplicationResult(true)
+    @Test fun unsupportedApplicationFormDoesNotInventAnyGrantAction() {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            f.approvals=JSONArray().put(applicationRequest().put("decisions",JSONArray(listOf("decline","cancel"))))
+            connect(f);main { session.changeLanguage("en") };ui.waitForIdle()
+            for(id in listOf("accept","acceptForSession","acceptAlways"))ui.onNodeWithTag("approval-$id").assertDoesNotExist()
+            ui.onNodeWithTag("approval-cancel").assertTextEquals(NativeL10n(ui.activity,"en").tr("取消"))
+            assertTrue(posts(f).isEmpty())
+        }
+    }
+    @Test fun legacyApprovalFallbackUsesCatalogWithoutChangingDecisionIds() {
+        ExecutionFixture(applicationProtocol=true).use { f ->
+            f.approvals=JSONArray().put(request());connect(f);main { session.changeLanguage("en") };ui.waitForIdle()
+            val english=NativeL10n(ui.activity,"en")
+            ui.onNodeWithTag("approval-accept").assertTextEquals(english.tr("允许一次"))
+            ui.onNodeWithTag("approval-acceptForSession").assertTextEquals(english.tr("本会话允许"))
+            ui.onNodeWithTag("approval-cancel").assertTextEquals(english.tr("停止任务"));assertTrue(posts(f).isEmpty())
+        }
+    }
+    @Test fun originalOwnerApplicationReadAndDeclineLive() {
+        val name=args.getString("appApprovalLiveFixture")
+        org.junit.Assume.assumeTrue("Requires one fresh owned original-desktop approval",name!=null)
+        require(name!!.matches(Regex("app32-[a-f0-9]{8}\\.json")))
+        val file=File(ui.activity.filesDir,"acceptance/$name")
+        val fixture=JSONObject(file.readText())
+        require(java.net.URI(fixture.getString("endpoint")).host=="127.0.0.1")
+        val threadId=fixture.getString("threadId");val hostId=fixture.getString("hostId")
+        val token=fixture.getString("token");val target=fixture.getJSONObject("target")
+        val expected=MobileRuntime.decode(fixture.getJSONObject("runtime"),hostId,threadId).approvals.single()
+        require(expected.threadId==threadId&&"decline" in expected.decisions)
+        val native=NativeHostReads { token }
+        val reads=object: HostReads by native {
+            override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?): MobileWorkspace {
+                val value=native.workspace(client,projectCursor,threadCursor)
+                check(value.hostId==hostId&&value.mode=="desktop-runtime"&&value.runtimeConnected!=false&&"approvals" in value.capabilities)
+                val scope=checkNotNull(value.scope)
+                check(scope.agentId=="codex"&&scope.hostId==target.getString("hostId")&&scope.workspaceId==target.getString("workspaceId")&&scope.runtimeId==target.getString("runtimeId"))
+                val own=value.threads.filter { it.id==threadId };check(own.size==1)
+                // Scope the test menu to its fresh chat; real history/approval/command data is unchanged.
+                return value.copy(projects=emptyList(),threads=own,nextProjectCursor=null,nextThreadCursor=null,pinnedThreadIds=emptyList(),sidebar=null)
+            }
+            override suspend fun history(client: MobileClient,selected: String,cursor: String?): MobileHistory {
+                check(selected==threadId);return native.history(client,selected,cursor)
+            }
+        }
+        try {
+            main { session.resetAcceptance(reads,NativeCodexCommands { token });session.changeLanguage("en")
+                session.changeAppearance(args.getString("viewportTheme") ?: "light")
+                session.connect("Android APP32 original-owner DEV",fixture.getString("endpoint"),token) }
+            ui.waitUntil(30_000) { !session.loading&&session.threads.any { it.id==threadId } }
+            ui.runOnIdle { session.selectThread(session.threads.single { it.id==threadId }) }
+            ui.waitUntil(30_000) { !session.historyLoading&&session.runtime?.approvals?.any { it.id==expected.id }==true }
+            val actual=session.runtime!!.approvals.single { it.id==expected.id }
+            assertTrue("Current complete native DTO must match the original owned request",actual==expected)
+            assertTrue(session.canAnswer(actual,session.approvalActionDestination()))
+            main { session.text="APP32 unsent original draft "+fixture.getString("nonce") }
+            val draft=session.text
+            ui.onNodeWithTag("approval-decline").performScrollTo().assertIsEnabled()
+                .assertTextEquals(NativeL10n(ui.activity,"en").tr("拒绝"))
+            shot("application-original-owner-live-before-decline")
+            File(owned.folder,"live-attempt.json").writeText(JSONObject().put("hostId",hostId).put("threadId",threadId).put("approvalId",actual.id)
+                .put("turnId",actual.turnId).put("decision","decline").put("attempts",1).put("automaticReplay",false).toString())
+            ui.onNodeWithTag("approval-decline").performClick()
+            ui.waitUntil(35_000) { !session.isAnswering(actual)&&session.runtime?.approvals?.none { it.id==actual.id }==true }
+            assertNull("Original approval command must have a known acknowledgement",session.error)
+            assertEquals(draft,session.text)
+            File(owned.folder,"live-native-proof.json").writeText(JSONObject().put("originalDtoMatched",true).put("nativeDecision","decline")
+                .put("draftPreserved",true).put("requestRetired",true).put("newModelInputsFromPhone",0).put("automaticReplay",false).toString())
+        } finally { file.delete() }
+    }
     @Test fun applicationApprovalShowsOriginalScopesAndSubmitsExactDecision() {
-        ExecutionFixture().use { f ->
+        ExecutionFixture(applicationProtocol=true).use { f ->
             f.approvals=JSONArray().put(request("允许使用 Calculator？")
                 .put("decisions",JSONArray(listOf("accept","acceptAlways","decline","cancel")))
                 .put("decisionLabels",JSONObject().put("accept","本会话允许").put("acceptAlways","始终允许").put("decline","拒绝").put("cancel","取消")))

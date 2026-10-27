@@ -29,6 +29,7 @@ createInterface({input:process.stdin}).on('line', line => {
  const diff={id:'diff',type:'fileChange',changes:[{path:'example.swift',diff:'+fixture'}],status:'completed'};
  const tool={id:'mcp',type:'mcpToolCall',server:'fixture',tool:'inspect',status:'failed',error:{message:'fixture failure'}};
  if(r.method==='thread/read')result={thread:{id:r.params.threadId==='wrong-target'?'foreign-thread':r.params.threadId,...(r.params.threadId==='legacy'?{turns:[{items:[command,diff,tool]}]}:{historyMode:'paginated'})}};
+ if(r.method==='thread/read' && r.params.threadId==='image-input')result={thread:{id:'image-input',turns:[{id:'image-turn',status:'completed',items:[{id:'item-1',type:'userMessage',content:[{type:'text',text:'read this image'},{type:'localImage',path:${JSON.stringify(join(directory, 'image.png'))}}]},{id:'item-2',type:'userMessage',content:[{type:'text',text:'unregistered sources'},{type:'localImage',path:'relative.png'},{type:'image',url:'data:image/png;base64,AAAA'}]}]}]}};
  if(r.method==='thread/turns/list') { if(r.params.limit!==1||r.params.itemsView!=='notLoaded')throw Error('Unbounded turn read'); result={data:[{id:'latest-turn',status:'completed'}],nextCursor:null}; }
  if(r.method==='thread/items/list')result={data:r.params.cursor?[{item:tool},{item:{id:'old',type:'userMessage',content:[{type:'text',text:'older'}]}}]:[{item:{id:'a',type:'agentMessage',text:'reply'}},{item:diff},{item:command},{item:{id:'u',type:'userMessage',content:[{type:'text',text:'prompt'}]}}],nextCursor:r.params.cursor?null:'older-page'};
  if(r.method==='thread/list' && r.params.sortKey==='recency_at' && existsSync(${JSON.stringify(join(directory, 'legacy-sort'))})) {
@@ -85,6 +86,25 @@ try {
   await assert.rejects(reader.history('other-thread'));
   reader.registerCatalogThread('wrong-target');
   await assert.rejects(reader.history('wrong-target'), /History target mismatch/);
+  reader.registerCatalogThread('image-input');
+  const imagePaths = new Map();
+  const imagePage = await reader.history('image-input', undefined, false, (id, paths) =>
+    imagePaths.set(id, paths),
+  );
+  assert.deepEqual(
+    [...imagePaths],
+    [['history-fallback:image-turn:item-1', [join(directory, 'image.png')]]],
+  );
+  assert.deepEqual(imagePage.messages[0].files, ['image.png']);
+  assert(
+    imagePage.messages[1].files.includes('历史附件'),
+    'Unknown media remains explicitly unregistered',
+  );
+  assert(
+    !JSON.stringify(imagePage).includes(join(directory, 'image.png')),
+    'Private source paths never enter the read result',
+  );
+  assert(!Object.keys(imagePage).some((key) => /path/i.test(key)));
   const first = await reader.history('t');
   assert.deepEqual(
     first.messages.map((m) => m.text),

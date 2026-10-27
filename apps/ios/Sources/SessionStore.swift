@@ -681,7 +681,8 @@ private var userRequestedWorkspaceGeneration: UUID?
         currentSuggestion: currentSuggestion, currentDraft: suggestionDraftSnapshot) else { return false }
     setText(text, target: action.draft.targetKey)
     drafts.suggestionUndo = DesktopSuggestionDraftUndo(scope: action.scope, suggestionId: action.suggestion.id,
-      originalText: action.draft.text, applied: suggestionDraftSnapshot)
+      originalText: action.draft.text, applied: suggestionDraftSnapshot,
+      handledVersionKey: action.suggestion.handledVersionKey(targetKey: action.draft.targetKey, sourceTurnId: action.scope.sourceTurnId))
     return true
   }
   func undoDesktopSuggestion(_ undo: DesktopSuggestionDraftUndo) -> Bool {

@@ -1,0 +1,49 @@
+{
+  "phase": "P6-4c",
+  "sourceBase": "d2a234ca3ee834d0cd124820f862c29b3b7f1c03",
+  "features": ["F19", "F32"],
+  "files": {
+    "apps/android/localization/native-copy.json": "ff71d417e91fffd4227b3006071c208769c02db0f70c68987546ed87e353139b",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "8d45b54cdbe21005febe84741830ceee2ee772172c0a6aaffb651742f2449efa",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "799c7401b416de3f18a0ea8a325a40d57cfb059f5cc1c5671c97a0590096ef0a",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f0976053038eb8e7fa61ef4666ca4ad6f60e3663484f4bfd4e4bb4069fadf37f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "26a28b0630463c085290561e38625761f004bee3daf3fb81147e939721b82e9f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceUiTest.kt": "e3caf6f4db6363ed3ba102814fb483191c7f06c4bd46565cbe07720c12041ff5",
+    "apps/android/src/main/AndroidManifest.xml": "c42905579f13a27bfbc1f4d567d7fdb73db846b818f16fce063257c32d74ef62",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "2aebd3ea48b330dbd39904bbeff28e95fc40ffa4ca9ad1b29e9f713a8bc8e8c1",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt": "38efc91075739fb851de5fcc8091ccb1de903b0e6005f723b1b30816d65d7682",
+    "apps/android/src/main/kotlin/com/agenthub/android/DraftAttachmentThumbnails.kt": "7e3f3ca4dcdf21bd99ce8b1c58f15adcbf87666db267c47edbd6cf61698970c2",
+    "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "a59908d52b90dde3456a6ee2871ef0307c11ae21d044a31894bb705655dc1958",
+    "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "31d7338847e90bedba4fad60f0256740f990ba6a8e4d3ed138cd5520fd5a2c2c",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageLinks.kt": "ae994a32be97e5b7ff251de4c6d958b42f789e5529c9906877ee0905f7aeb68e",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1bbe67e4847f24ea94d6dc80e9b2bf3c5bb179f4e982af12fd693cd82668a3c0",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeImageOrientation.kt": "a0c8049a392b988f14d7faabe924974e54cb6ff4932cb5c5130aedf889644c55",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeResourcePreview.kt": "13d91f23ed1d3db8ce07b9b3bdaef5aca7dd764a37bf106dc5bd7c70b6680dc9",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "71dc5180ae08fc1dda42deecf547ab892d2ce150119ec79ef82ae4881eadd944",
+    "apps/android/src/main/res/values/product_strings.xml": "342a635bafaff86a2436c5c7724b05299407906b121781876f405d15233a2787",
+    "apps/android/src/main/res/xml/resource_paths.xml": "7da740ca7865980fd96bdc451d106f5fd13c8dc256d112576596b599e609ec5e"
+  },
+  "summary": "P6-4c：Android原消息文件链接接通逐段高亮/等待、可取消下载及原生文本/图片预览，保留同资源旧版预览并在重开时取当前版本；完整原文件名、48dp关闭/分享/系统打开和仅缓存资源的只读FileProvider已实现。89项当前辅助与1项实际原模型文件链接通过，90份默认存储证明；真实14GET/2资源GET、0写入/新输入，预览和受控分享读取的107字节摘要一致。分享面板Intent由Instrumentation截获，不算真实接收方通过。iOS资源目标/缓存差异、产物卡/直接保存和完整格式/系统矩阵仍开。",
+  "scope": "Android original-message resource GUI plus same-source native boundaries; full resource parity remains in progress",
+  "implemented": [
+    "Exact clicked paragraph anchor highlighted with local wait only; cancel and original-context/lifetime guards including A-B-A",
+    "Native UTF-8 preview <=512KiB and sampled image preview; all 8 EXIF pixel transforms; immutable opened version retained across same-resource updates",
+    "Raw long file name scrolls without ellipsis; >=48dp actions; preserve body/code composition and drafts",
+    "Non-exported resource-only FileProvider; canonical containment, content URI ClipData, read-only grant, no Host headers; SDK and MIUI chooser variants",
+    "Fixed preview/Markdown async state publication and resource actions on main thread; original literal Provider errors not translated; resourceId decoded and persisted"
+  ],
+  "failuresRetained": [
+    "Initial old examiner ActivityScenario.activity access under open native modal hung; cached original Activity before UI work",
+    "API26 ClipboardManager constructed on worker required Looper; fixed examiner main-thread capture",
+    "Actual product native Dialog open on worker failed; explicit main thread actions/publication fixed and complete final cohorts rerun",
+    "MIUI chooser uses exact OEM action; strict standard-only examiner missed share handoff; exact OEM variant accepted with unchanged URI/bytes/permissions assertions",
+    "Initial font-copy generation placeholder/duplicate key errors and old image wait observations preserved; no failed cohort promoted"
+  ],
+  "pending": [
+    "iOS binary target query and full machine/thread/version cache namespace",
+    "Resource cards, direct SAF save, actual recipient, external formats/PDF/office/SVG and full image gestures/AX",
+    "OS browser load/return, system selection/clipboard matrix, token colors and API37 landscape",
+    "No new iOS physical/Windows/cellular/VPN proof; unrelated iOS A6 and task/project business remain paused"
+  ],
+  "wholeStageClosed": false
+}

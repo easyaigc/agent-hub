@@ -1,0 +1,198 @@
+{
+  "phase": "P7-1b",
+  "sourceBase": "2c45ea8e862e1110f5ffd8f7634c8b675642f103",
+  "features": ["F30", "F31", "F32", "F56", "F71"],
+  "files": {
+    "apps/android/src/androidTest/AndroidManifest.xml": "6ed32082fa5a93e23afd75ecdc5232b2b5e98c4a546df83a17aca19d68ac75af",
+    "apps/android/src/androidTest/java/com/agenthub/android/OwnedExternalSourceActivity.java": "03cd2be60d543af493aad086f546f03733196efb9a2fecac50bf0981ee75a656",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExternalReceiverTest.kt": "f35963af9e446675c61728b81ebbccf158f22bea8aa5bdb1a6c836cf02103ec5",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileInboxStorageTest.kt": "003328e0c52663a15bf5695757857f997da27d52739ef7b4e7feb3ee5bfb874f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileInboxUiTest.kt": "c579f0ebdf3f2bce1d393047a500862fc50918f666402edb365c09a89f9c14d0",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "59308978074236409c040bd2c02caecdff7daded8d98d7eeed793d34f492d093",
+    "apps/android/src/main/AndroidManifest.xml": "4d955205dd5e8a83b734e0151ac271511d9732e0ebb22647ba32b14aa3b5da57",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "48f7a5a4176465a54532c746ae2e0e88d402f487a082735fb03bc65147560304",
+    "apps/android/src/main/kotlin/com/agenthub/android/ExternalAttachmentInboxPage.kt": "155c1b55eb4310698101e7bc370d0b949497d3c1798e98673f93b846a0b568e9",
+    "apps/android/src/main/kotlin/com/agenthub/android/LocalAttachmentPreparation.kt": "0c046e6965466ab4532ca0c388cccaa850c0092a7458842bd0ef210131690e1a",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "cab8f0d7327dbf2bc3e67d6ed7fbb5cb03d92f24b4fd871accc8ef5ed9e1f651",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "edc0c707dc6f1310a532bc66e4cae36b11e4dc99911dee4399fc793d8ce7e1cf",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentInboxStore.kt": "ca3fb8c5048a1e36e7bc293a9ac1dd58fe2933d1419b6486c4e7df94330148c2",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "d4e7ede9ca562934ebfb9f37070be07e006651dfd681fff5ab5024abccc06169",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeExternalAttachments.kt": "79b27d35280fbfbb0e259fa669f105eb5215d417a1d6b817c5d9122b10a0d3fa",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeFileIntake.kt": "c4018c4e6163380b13d34a356831fac6d49ee7832b48406ec73159d4b5a3217d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "357cd3cedcadb17bda55d9c756531376766fbe968a86c4f373cc1da2328afa3d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "dc31d85930d5119b91777fa78f503cc1088aaaf2769265731028d33a25632e9d"
+  },
+  "summary": "P7-1b：Android系统分享/打开进入加密本地收件箱，展示批次快照，显式加入准确草稿；固定ID/不可变绑定、原字节和元数据持久确认后才消费，部分重试/满10项缺失字节修复不重复，迟到来源不改旧窗口。119辅助、3实际原目标资源整例及122默认存储证明通过；三环境独立来源APK/真实系统接收/只读URI授权/有序字节核对通过，未上传或新增模型输入。完整冷进程、来源/权限矩阵及P7仍开。",
+  "checks": {
+    "pnpmCheck": "matched I2 complete run; all616 shared/JS/iOS/tooling/catalog inputs byte equal; Android native delta built and checked now",
+    "matchedRootLogSha256": "dcea73be1c39a6130857577d1984dc86496bf47c91cc0c410761d6e5ddd5c3cf",
+    "matchedSourceInputs": 616,
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "androidBuild": "current passed",
+    "androidApprovalGuard": "current passed",
+    "iosBuild": "unchanged source matched I2 independent simulator App/Action build; no iOS A6 execution",
+    "mobileParity": "current passed",
+    "format": "current passed"
+  },
+  "implementation": [
+    "Named ACTION_SEND/ACTION_SEND_MULTIPLE/ACTION_VIEW content-URI boundary; singleTask native Activity, immutable ordered URI snapshot, existing KMP count and bounded20MiB Provider reader; other connection URLs retain existing route",
+    "Separate encrypted child store/version1 atomic index; persist slot identity/manifest before payload, original URI fingerprint, immutable draft binding; consumed tombstone precedes cleanup and cannot resurrect source",
+    "Per-batch/fixed-ID cancellable leases held through caller commit/cleanup; exact existing bytes reused, collision rejected, only disposable unreferenced preparation removed",
+    "Session UI surface/foreground guards and exact presentation snapshot; new arrivals do not alter old Add/Discard, Later reopens explicitly, warm failed source retry retains original IDs, unavailable cold sources request re-share",
+    "Only current valid local draft imports; repair preexisting payload at full capacity without new IDs; wait queued durable metadata and verify encrypted source/hash before consume; no Host command/upload/model interface",
+    "Shared iOS fixed title/footer/Add/Later/Discard/Retry keys, raw names/sizes preserved; responsive existing native sheet, busy state blocks dismissal; publication order avoids premature failed presentation"
+  ],
+  "nativeAuxiliary": {
+    "methods": 119,
+    "normal": 105,
+    "style": 14,
+    "perNormalEnvironment": "6 inbox storage,7 inbox full-App UI,3 independent source native receiver,5 file paste,9 attachment ownership,4 message action regions,1 compiled catalog",
+    "environments": [
+      "physical API33 portrait light",
+      "API26 portrait light",
+      "API37 portrait light",
+      "API26 font scale2",
+      "API37 portrait dark"
+    ],
+    "sourceSha256": "acd7ad3b0181c435bb7338ec77020d9d0451c0859996e84859d0cdc01297fb44",
+    "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+    "testSha256": "d5cbce4d63148a2e3b90765f3609f7efcb36f8df64b04ab5638140cf327ba0e5",
+    "independentSource": "test APK separate UID/PID, constrained exported synthetic file actor/provider, actual native system file intents/read-only URI grants; Host transport synthetic in auxiliary tests",
+    "reconstruction": "Session/storage object reconstruction only, not full process death"
+  },
+  "actualOriginalTargetReads": {
+    "methods": 3,
+    "rows": [
+      {
+        "environment": "API26",
+        "http": {
+          "requests": 31,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "acd7ad3b0181c435bb7338ec77020d9d0451c0859996e84859d0cdc01297fb44",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "d5cbce4d63148a2e3b90765f3609f7efcb36f8df64b04ab5638140cf327ba0e5",
+        "nativeReportSha256": "b5aef0e0b5f47f7f7630efdf7bbc0742306b2d9c0ea59cf1b13abeebd6f87fb2",
+        "hostReportSha256": "252b7315d0fd19aaee173eb2a361a9d62752c53a543bbe7cb5e0e1119dbc1171",
+        "independentInboxProofSha256": "a1cbd30d24ea3c98c0a823dd558adf804355db7df5db66855776a186f08469cb",
+        "independentInbox": {
+          "originalLiveTargetMatched": true,
+          "actualIndependentSourceUid": true,
+          "actualSystemIntentReceiver": true,
+          "sameWarmActivityAndSession": true,
+          "readOnlyUriGrants": true,
+          "fileOrderNamesAndBytesMatched": true,
+          "durableOriginalDraftConfirmedBeforeConsume": true,
+          "originalTextPreserved": true,
+          "newModelInputs": 0,
+          "uploadOrSubmit": false,
+          "sourceReportSha256": "a7114674ff91f17e047ae5eeca5129d6e8b99a0e5a596e67f00bbc63be1d6f03"
+        },
+        "systemPasteAttempted": false,
+        "api26EmptyClipboardPending": true,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "physical API33",
+        "http": {
+          "requests": 52,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "acd7ad3b0181c435bb7338ec77020d9d0451c0859996e84859d0cdc01297fb44",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "d5cbce4d63148a2e3b90765f3609f7efcb36f8df64b04ab5638140cf327ba0e5",
+        "nativeReportSha256": "e27fa9447504ee7b25dec9bc912b87c57ad8044eb2f57f28b6346c2aa15b9321",
+        "hostReportSha256": "56e64769c70e4d66b36b43f59631867533b41a874fa4715a9a9af168cccf3c68",
+        "independentInboxProofSha256": "eae68bc101f68681f834a3a301a8c43f75c2b2fa3164f9a005d69e6a19ced086",
+        "independentInbox": {
+          "originalLiveTargetMatched": true,
+          "actualIndependentSourceUid": true,
+          "actualSystemIntentReceiver": true,
+          "sameWarmActivityAndSession": true,
+          "readOnlyUriGrants": true,
+          "fileOrderNamesAndBytesMatched": true,
+          "durableOriginalDraftConfirmedBeforeConsume": true,
+          "originalTextPreserved": true,
+          "newModelInputs": 0,
+          "uploadOrSubmit": false,
+          "sourceReportSha256": "7af36c22b582935e7d019e4b28f88376eb3b38e90d44bffd67d3bff2b24e5aee"
+        },
+        "systemPasteAttempted": true,
+        "api26EmptyClipboardPending": false,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "API37 portrait",
+        "http": {
+          "requests": 61,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "acd7ad3b0181c435bb7338ec77020d9d0451c0859996e84859d0cdc01297fb44",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "d5cbce4d63148a2e3b90765f3609f7efcb36f8df64b04ab5638140cf327ba0e5",
+        "nativeReportSha256": "c8b6f18f044bff409c59512024b2e7f74b20dbccefbefea2e4b97e4a6822c334",
+        "hostReportSha256": "889b101b95c023e626c7da3ff922f4d9702e0f7b5578537e81583a373ddebf82",
+        "independentInboxProofSha256": "3c603b8b2011b34c96e76b272ebffadd314cf2697b80d8676d1a8fd9ea3cb1ed",
+        "independentInbox": {
+          "originalLiveTargetMatched": true,
+          "actualIndependentSourceUid": true,
+          "actualSystemIntentReceiver": true,
+          "sameWarmActivityAndSession": true,
+          "readOnlyUriGrants": true,
+          "fileOrderNamesAndBytesMatched": true,
+          "durableOriginalDraftConfirmedBeforeConsume": true,
+          "originalTextPreserved": true,
+          "newModelInputs": 0,
+          "uploadOrSubmit": false,
+          "sourceReportSha256": "cde9a2cc63de63550995e17f7f46c20a81b0658ae4dbb87c7c833deecf58565d"
+        },
+        "systemPasteAttempted": true,
+        "api26EmptyClipboardPending": false,
+        "originalOwnerAndTurnsUnchanged": true
+      }
+    ],
+    "httpRequests": 144,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "independentSourceScenes": 3,
+    "sourceOrigin": "separate UID synthetic source App; two unique local TXT files per scene, not yet consumed by model",
+    "systemPastesAttemptedAndMatched": 2,
+    "resourceOrigin": "original completed model referenced examiner107byte resource, did not read it",
+    "nativeSemanticsActivation": true,
+    "pointerActivation": false,
+    "examinerCleanup": "only newly added local files removed, original text/attachments/default storage and opaque prior clipboard preserved; original Activity Session restored",
+    "resourceShare": "controlled chooser intercepted; actual external recipient not claimed"
+  },
+  "defaultStorageProofs": 122,
+  "failuresRetained": [
+    "Early storage/ownership45, UI cohorts and source receiver cohorts retain original fingerprints; not promoted to final119.",
+    "Independent source first Java Intent.setClipData was chained though native API returns void; compiler rejected, examiner corrected.",
+    "API26 independent source oracle used Instrumentation.context.applicationInfo.uid=0; corrected to actual PackageManager application UID and verified cross-UID/PID. Original three failures retained.",
+    "Three actual-host attempts rejected before native start because runner APK fingerprint was stale; no native methods/model inputs, originals retained, current candidate installed through official helper before rerun.",
+    "Early API37 owner positive timed out; isolated diagnostic rerun passed but historical unique cause not proved. Later phone/API37 same positive failures showed pending batch with zero import/error; receiving=false was published before durable final snapshot refresh, allowing an early failed presentation. Production now refreshes final phase before releasing active receive; current cohorts assert pending phase and pass. Earlier snapshots are not relabeled."
+  ],
+  "pending": [
+    "Full process death/relaunch/cold external receiver and full device lifecycle/unknown-result matrix",
+    "Provider unknown length/stalls/directories/revoked grant/dynamic metadata/full format and source App coverage; actual WeChat not claimed",
+    "Actual new model mixed-send consumption of independent source files; current Host side is GET-only local draft preparation, zero upload/submit",
+    "Photo/camera/recent images, storage migration/GC, dual voice/read/unread and remaining P7 scope",
+    "API26 empty prior clipboard not written; pointer/system overlay and complete orientation/font/AX matrix; API37 landscape pending",
+    "P6 remaining formats/AX/token and typed fixed errors open; task/project business deferred; unrelated iOS A6 paused"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false,
+  "visualReview": {
+    "status": "six selected screenshots reviewed: independent multi-source, durable-wait, API26font2, API37dark, original-target inbox and added draft",
+    "images": 6,
+    "completeMatrix": false
+  }
+}

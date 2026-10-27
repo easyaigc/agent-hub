@@ -1,0 +1,40 @@
+{
+  "phase": "P6-5a",
+  "sourceBase": "da3a76e2c5e0e8d56d33c1ad892fe60abc001731",
+  "features": ["F12", "F56", "F70"],
+  "files": {
+    "apps/android/localization/native-copy.json": "dc9f827682ef70d6aa2277eac3b2d82b5123e4d3918db7c46765e0c77a8daf9e",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "0eaca5044a82d7474525269a5f8e4adb1df61515cc9508667a48acb643f376db",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEarlierLoadingUiTest.kt": "29082994f382b8c0bd24a7a00ed702ce0b8b172d7bed98ae81cf43534ecc8e89",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "aaa54024f2c229a97bc992cb37701d227b46ec8faa0da742c43722702efdba7d",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReadingCopyTest.kt": "912820623efc8caa9a5d0f805cf18199b9bdf19425efa19ddbcae81ab8128ad6",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "95bb5cac778dfc69f6778dc0467fb0df985800233a78b97d6cf93d88246bb795",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "5d2b849b6c0814a838a0c5fc1c3bc87f9f1a28df9077eb6daa718996c266300b",
+    "apps/android/src/main/res/values/product_strings.xml": "1c11f97088422dd2587d4fc54791c1b17f75ed77f8c74031f15e1eefe85c3fad"
+  },
+  "summary": "P6-5a：Android恢复重试/读取中、四类只读提示及更早历史状态按当前应用语言显示；复用共享词条并新增5个平台键，1590+58共1648。恢复页抽出无状态生产组件，隔离检查读取中/禁止重试，真实加密损坏重试与原草稿/语言/外观恢复另验；不放开Session私有状态。37项当前辅助与1项实际原回复只读通过，38份默认存储证明；真实5GET/0写入/新输入。实际只读是一般原回复/本地计划回归，不代替真实损坏存储或四类只读Host验收，完整P6仍开。",
+  "implemented": [
+    "Only explicit app-owned keys localized: raw titles/messages/drafts/authority unchanged",
+    "Four archived/history/waiting notices in two languages; no language-derived write authority",
+    "Earlier-read label/spinner differentiates current history refresh from earlier-page loading",
+    "Stateless recovery view uses production text and disabled busy action; original Session private setters remain private",
+    "Earlier native fixture now uses isolated session and default draft/file/version/import-generation guard"
+  ],
+  "iosComparison": {
+    "source": "RootView.swift recovery overlay, archived-conversation-notice and earlier-history control",
+    "sharedCopy": ["重试读取", "正在加载更早消息…", "显示更早消息"],
+    "platformCopy": "Android retains explicit local/desktop restore location and local draft explanation; recovery does not infer device lock. No iOS product change."
+  },
+  "failuresRetained": [
+    "Initial examiner used nonexistent/private Session members; compilation rejected, no production visibility widened",
+    "Initial scoped synthetic history omitted returned readTarget; existing target contract rejected and history did not mount. Add matching fixture target, do not weaken production guard; rerun final complete cohorts"
+  ],
+  "pending": [
+    "Full error/voice/AX/fixed-copy audit and 94 token/page matrix",
+    "Real persisted-storage failure/cold recovery and URI/system work with Android P7",
+    "P6-4e same-turn fallback/live alias observation needs independent exact body/resource comparison",
+    "API37 landscape, cellular/VPN, archived unloaded owner human dependency remain separate",
+    "Task/project business and unrelated iOS A6 remain paused"
+  ],
+  "wholeStageClosed": false
+}

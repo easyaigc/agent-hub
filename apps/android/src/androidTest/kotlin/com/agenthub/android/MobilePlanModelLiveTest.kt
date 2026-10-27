@@ -120,7 +120,7 @@ class MobilePlanModelLiveTest {
             ui.runOnIdle { session.resetAcceptance() };main { session.connect("Android plan model DEV",fixture.getString("endpoint"),fixture.getString("token")) }
             ui.waitUntil(45_000) { session.hasClient&&!session.loading&&session.workspace?.hostId==fixture.getString("hostId")&&session.projects.any { it.id==fixture.getString("projectId") } }
             ui.runOnIdle { session.newChat(fixture.getString("projectId")) };settings()
-            ui.onNodeWithTag("composer-add").performClick();ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick();assertEquals("plan",session.selectedCollaboration)
+            ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick();assertEquals("plan",session.selectedCollaboration)
             ui.onNodeWithTag("message-input").performTextReplacement(fixture.getJSONArray("cases").getJSONObject(0).getString("text"));allowSharing()
             if(index<0) { assertTrue(session.selectedThread.isEmpty());assertEquals("plan",session.selectedCollaboration);control("preflight-complete",JSONObject().put("pid",android.os.Process.myPid()).put("targetKey",session.targetKey));shot("native-plan-preflight-unsent");return }
         } else {

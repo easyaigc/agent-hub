@@ -1,0 +1,52 @@
+{
+  "observedAt": "2026-10-27",
+  "baseline": "69e7e09b966e2db7c7755ee23431eeff4d162303",
+  "observedMain": "7256dd3ac0712e34e2e46117b6f3aff560e8d517",
+  "integration": "I3 source integrated; full pnpm check and iOS simulator build passed;398 Android inputs/APKs unchanged; native voice parity pending",
+  "entries": [
+    {
+      "id": "N050",
+      "commit": "f90bda22c1a5461ef60df5c6753e8fa41cd197ec",
+      "title": "fix(ios): align question voice recovery with composer",
+      "scope": "F64/UI06/UI21 question/composer voice state and recovery; source/test or merge node",
+      "android": "source integrated; current Android native behavior/voice acceptance not inferred"
+    },
+    {
+      "id": "N051",
+      "commit": "4d886a7e6a2db5b104571a6f60e0fb943fe4f296",
+      "title": "test(ios): select voice fixture conversation directly",
+      "scope": "F64/UI06/UI21 question/composer voice state and recovery; source/test or merge node",
+      "android": "source integrated; current Android native behavior/voice acceptance not inferred"
+    },
+    {
+      "id": "N052",
+      "commit": "7256dd3ac0712e34e2e46117b6f3aff560e8d517",
+      "title": "Merge PR #35: align question voice recovery with composer",
+      "scope": "F64/UI06/UI21 question/composer voice state and recovery; source/test or merge node",
+      "android": "source integrated; current Android native behavior/voice acceptance not inferred"
+    }
+  ],
+  "iosA6": "Human pause retained; source/build review does not execute paused scenarios",
+  "tasksProjects": "deferred",
+  "resolvedFiles": {
+    "apps/ios/Sources/RootView.swift": "ea30865b26d3a449b3875e8f7a0c2278fd0da49f0916d6387dedc258d2509a46",
+    "apps/ios/Sources/VoiceInput.swift": "0bfac134d2ee3baad3e3e0b717a50f3c8c9d3837b70b4502a9efce1e99da2761",
+    "apps/ios/Tests/CodexManageUITests.swift": "5d26130aba887a7642dc9ca6a3860a655a14312b088adf6a16c395a7beabdd77",
+    "scripts/question-panel-ios-fixture.mjs": "b2350736e7ee53d231b1cc094d070f58e3ed7c83ad58ec8da7938bd1cf3673c6"
+  },
+  "rootViewResolution": "Incoming voice refactor plus retained shared tool presentation/resource changes; other three source files exact incoming main.",
+  "checks": {
+    "pnpmCheck": "passed complete fresh invocation",
+    "rootLogSha256": "f52fce398045f178929902b8dcccd7c4dd7c1b14887f6c0d488cbf803a41baa2",
+    "frozenInputCount": 1316,
+    "frozenInputsMatchedBeforeAndAfter": true,
+    "sourceStartSha256": "e84a8ca41419d6f6f88332598cc7e1ae89995b65c335f091406db2ad7b9a8ee4",
+    "sourceEndSha256": "e84a8ca41419d6f6f88332598cc7e1ae89995b65c335f091406db2ad7b9a8ee4",
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "pnpmBuildIos": "passed: simulator build only",
+    "iosBuildLogSha256": "53a2fed90a241040e4403852e0f5f7eac9b2ce6c2d43e88eb67ab44546f94442",
+    "iosA6Executed": false,
+    "postRecordFormatAndParity": "passed"
+  }
+}

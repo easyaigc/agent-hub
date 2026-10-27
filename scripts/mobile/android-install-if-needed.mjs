@@ -26,6 +26,13 @@ export async function installAndroidApkIfNeeded({
       'com.easyai.agenthub.android.debug.test',
       'com.easyai.agenthub.android.acceptance',
       'com.easyai.agenthub.android.acceptance.test',
+      'com.easyai.agenthub.android.acceptance.documents',
+      'com.easyai.agenthub.android.acceptance.documents.test',
+      'com.easyai.agenthub.android.acceptance.photos',
+      'com.easyai.agenthub.android.acceptance.photos.test',
+      'com.easyai.agenthub.android.acceptance.cameras',
+      'com.easyai.agenthub.android.acceptance.cameras.test',
+      'com.easyai.agenthub.android.acceptance.coldexaminer',
     ].includes(packageName),
   );
   // The selected package must describe the actual APK before any install can

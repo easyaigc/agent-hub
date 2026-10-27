@@ -1,0 +1,32 @@
+{
+  "phase": "I4-3f",
+  "sourceBase": "e7f0325e7025e754dda69b21eb8fd2d9c643becb",
+  "summary": "I4-3f：API37原双图未知操作的原生进程退出、确认无目标PID后，新进程只读同一本机账本/快照；原ID/目标/指纹/unknown回执、photoSources顺序、双图字节与像素、全部原密文保持。1项实际原输入冷读与1份默认11字段保护通过；桌面独立复核仍0 Turn/0用户输入，0写入/重放。未启动替代操作或来源读取；模型整例仍待验，累计确认221/P4205，1次原未知提交尝试继续封存。生产APK未变，接续P7迁移/语音/未读/生命周期，物理手机等环境待验单列。",
+  "features": ["F30", "F47", "F56", "F71"],
+  "sourceSha256": "92d7a92c8eca46b0609cf8bb9c74945083d9a0b01b6ab80fb6eb00e15c51c496",
+  "appSha256": "c82cb2bd1c31983086f9024ce3263d5cf1de3dc676693a790cc6e5121f2fc280",
+  "runnerSha256": "5710db273e84b3786c32565b77265c6cae2ebeb196d6dbec810321db14016abf",
+  "nativeOriginalColdReadCases": 1,
+  "defaultElevenFieldProofs": 1,
+  "nativeReportSha256": "a0ac2fe37f5c94e75aac72b587270039b4f4b55819529dfa8f7ba9648be4dfb5",
+  "originalProcessEndReceiptSha256": "492377c416385b5e52cac3ae896be6bf2f4ce793230cf5ef13dcb302a0404ee7",
+  "originalFixtureSha256": "ac2dcc8e9a84c6971ba9971d841a79c4b5a6beb9adf0dfc6bfafd2e890ef1a20",
+  "nativeOriginalColdReceiptSha256": "fef1f7659314042473caba6fbb8cae23d568d99e85a3c377226e3c800efd21bd",
+  "defaultProtectionSha256": "91c1e76df7d716f290d427b54785597220c98cbf034407a2e47cf9974f99e999",
+  "originalOwnerAfterColdReadSha256": "9ac1d7b5505fd552c833842ab77049432fc4b7afa5fc91622aa847f968e774ed",
+  "originalEncryptedFileCount": 9,
+  "originalEncryptedBytesUnchanged": true,
+  "sourceUriReads": 0,
+  "uploadOrSubmit": false,
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "scope": "Same installation/device Keystore and actual original unknown two-image operation, after verified original process exit. Read-only journal, submission source map and encrypted image bytes. No Session restore of old operation, OS callback, model success or cross-device migration claim.",
+  "pending": [
+    "Original owner-unconfirmed operation remains observe-only; never resend",
+    "Physical quota cold writer and API37 landscape/full provider/permissions/visual matrix",
+    "P7 full migration, voice, unread and lifecycle",
+    "Business task/project management and iOS A6 remain paused"
+  ]
+}

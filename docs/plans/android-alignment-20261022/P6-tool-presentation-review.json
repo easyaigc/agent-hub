@@ -1,0 +1,57 @@
+{
+  "phase": "P6-5d",
+  "sourceBase": "9dafd51ecd86b70e06b707873cff4df1b26727b5",
+  "features": ["F19", "F22", "F23", "F32", "F56"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileToolCopyTest.kt": "35fdfcba0325d1f84838b1b23088daffb0ba6d1af368393aacbba6ab700b3681",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "a342870161057c0efd8d0d7ebcde414739ae446b6feec0d51b157bdb6ecbc6b2",
+    "apps/android/src/main/kotlin/com/agenthub/android/ToolContent.kt": "079529c8631ce92884d0bd04121b68b323349f8b63b63eb39aa130cd1a31f51b",
+    "apps/ios/Sources/RootView.swift": "ca1b272ba4451a4b8dc82eb325649d1a84f4f49ea7e12438fe3dfe8d2ed21f58",
+    "apps/ios/Sources/SharedMobileRules.swift": "1ab7631bac64c365dec21a58ca74dc5261ae43fcd55a20b7e7ba0a59627241a0",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ToolPresentation.kt": "1ca354b0963108854759b2946d67176d710b22c5ad3714e9f35959b6162f8f49",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt": "9d81ea915f31a590c16b8dddf0a3526f9131fa0463a9f550fdda0ad9e1578c8b",
+    "packages/protocol/fixtures/mobile/state-v1.json": "1fba04fd161fb429543341b6f96fd77d70c63e7e396d3e75466fc26a0ba706c3",
+    "scripts/mobile/verify-ios-state.swift": "1d393febc2654593ef18a0cb6bb3778ed1f0d296b51b0954605626ed60a04b39",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "00939ca8972f5efbc0759eb6eb5f825e2673d20f219885f5922da634eeb95259",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceUiTest.kt": "7921ebb839ec3d9400fd65b1b98ea5d86bfe4adabaed62a1f15341977ce90514",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageResourceCards.kt": "c10bca3b8b99ac49c57e0396e3ca07686996e8df9462be62f2f06cb602fcdd07"
+  },
+  "sharedToolVectors": 33,
+  "newEnglishToolVectors": 8,
+  "nativeAuxiliaryMethods": 53,
+  "actualOriginalToolResourceMethods": 3,
+  "defaultStorageProofs": 56,
+  "checks": {
+    "pnpmCheck": "passed for frozen shared/JS/iOS/tooling inputs; final Android layout/examiner delta checked by current native build and runs",
+    "sourceFilesFrozen": 604,
+    "sourceInputsByteEqualBeforeAfter": true,
+    "rootLogSha256": "3d57e25ec5c09382c3701553dcc56f3a8dc2b17cee56167284bab422a9640bc7",
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "iosBuild": "current passed both simulator architectures; independent bundle",
+    "iosBuildLogSha256": "d08d02ee86cc7398ae4fc7bb3c6d3971aa4548b9ae21fe1f0858c3aab6e1c193",
+    "iosAppExecutableSha256": "54d8d95d16eae7f2328516254e54b174717c060ad7ef8d989298746e7d322ed6",
+    "sharedCore": "current JVM/native iOS simulator/compiled Swift bridge passed",
+    "reportedCoreTests": {
+      "jvm": {
+        "tests": 83,
+        "failures": 0,
+        "skips": 0
+      },
+      "iosSimulatorArm64": {
+        "tests": 83,
+        "failures": 0,
+        "skips": 0
+      }
+    },
+    "toolVectors": 33,
+    "newEnglishToolVectors": 8,
+    "androidBuild": "final candidate passed",
+    "mobileParity": "current final documentation passed",
+    "format": "current final source/document formatting passed"
+  },
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

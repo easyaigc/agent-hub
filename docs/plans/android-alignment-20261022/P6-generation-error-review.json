@@ -1,0 +1,338 @@
+{
+  "phase": "P6-3a",
+  "sourceBase": "dc5d685c2430a80c9b0d09ac47b34d35ddd206b9",
+  "status": "bounded native auxiliary passed; full feature and real source/platform acceptance open",
+  "wholeStageClosed": false,
+  "features": ["F17", "F34", "F35", "F36", "F37", "F38", "F46", "F48", "F56"],
+  "newExplicitCallSites": [
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "无",
+      "english": "None"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "最小",
+      "english": "Minimal"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "低",
+      "english": "Low"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "中",
+      "english": "Medium"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "高",
+      "english": "High"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "极高",
+      "english": "Extra high"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "最高",
+      "english": "Maximum"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "超高",
+      "english": "Ultra"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 355,
+      "key": "默认强度",
+      "english": "Default effort"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 356,
+      "key": "快速",
+      "english": "Fast"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 356,
+      "key": "极速",
+      "english": "Extra fast"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 356,
+      "key": "标准",
+      "english": "Standard"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 356,
+      "key": "跟随电脑",
+      "english": "Use computer settings"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 357,
+      "key": "请求批准",
+      "english": "Ask for approval"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 357,
+      "key": "帮我批准",
+      "english": "Review risks for me"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 357,
+      "key": "完全访问权限",
+      "english": "Full access"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 357,
+      "key": "逐项确认",
+      "english": "Confirm each operation"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 357,
+      "key": "高风险确认",
+      "english": "Confirm high-risk operations"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 357,
+      "key": "允许已授权操作",
+      "english": "Allow authorized operations"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 357,
+      "key": "跟随电脑权限",
+      "english": "Use computer permissions"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 359,
+      "key": "电脑默认",
+      "english": "Computer default"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 373,
+      "key": "计划模式",
+      "english": "Plan mode"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 374,
+      "key": "权限模式，",
+      "english": "Permission mode, "
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 377,
+      "key": "模型，%@，推理强度，%@，速度，%@",
+      "english": "Model, %@, reasoning effort, %@, speed, %@"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 391,
+      "key": "排队执行",
+      "english": "Queue"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 392,
+      "key": "立即追加",
+      "english": "Add immediately"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 415,
+      "key": "推理强度",
+      "english": "Reasoning effort"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 426,
+      "key": "选择模型",
+      "english": "Choose model"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 428,
+      "key": "模型",
+      "english": "Model"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 429,
+      "key": "跟随电脑",
+      "english": "Use computer settings"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 429,
+      "key": " · 推荐",
+      "english": " · Recommended"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 430,
+      "key": "正在读取电脑的模型列表…",
+      "english": "Reading the computer's model list…"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 433,
+      "key": "推理强度",
+      "english": "Reasoning effort"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 436,
+      "key": "跟随电脑",
+      "english": "Use computer settings"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 440,
+      "key": "强度",
+      "english": "Effort"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 441,
+      "key": "跟随电脑",
+      "english": "Use computer settings"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 445,
+      "key": "速度",
+      "english": "Speed"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 448,
+      "key": "速度模式",
+      "english": "Speed mode"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 449,
+      "key": "跟随电脑",
+      "english": "Use computer settings"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 464,
+      "key": "加快模型响应，增加用量消耗。",
+      "english": "Faster model responses with increased usage."
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 464,
+      "key": "当前模型未提供加速模式。",
+      "english": "The current model does not offer fast mode."
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 466,
+      "key": "应如何批准操作？",
+      "english": "How should operations be approved?"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 467,
+      "key": "跟随电脑权限",
+      "english": "Use computer permissions"
+    }
+  ],
+  "iosReferences": {
+    "apps/ios/Sources/Sheets.swift": {
+      "sha256": "569c6e2b21d7a8e50b2f76938381be7345eadc31d6dc4226e6339b2298a4b5d8",
+      "lastSourceCommit": "cff1a2253d9edcb427f0c5ec5c3f8a953ff799d1"
+    },
+    "apps/ios/Sources/RootView.swift": {
+      "sha256": "b098bb17b9fb28488f57693134aa6c8ec899b9b80718e10b0394a964a6603339",
+      "lastSourceCommit": "b2501ce3046eb306f678952addf43f89735e5e4d"
+    },
+    "apps/ios/Sources/SessionStore.swift": {
+      "sha256": "5d1da530c24d70968652a23f3822f485a7b9ff49be8b239d3d3c67c0def869f1",
+      "lastSourceCommit": "9835a17d9728c6b7bdf5758993dbe79738da8147"
+    },
+    "apps/ios/Sources/AgentClient.swift": {
+      "sha256": "e9b2f2a2d21e25d17f228b2c89d7d8a9203679c710a72c59fca005f014e464f9",
+      "lastSourceCommit": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0"
+    },
+    "apps/ios/Sources/EasyWorkAgentClient.swift": {
+      "sha256": "2fd43e7147ce0ec3ebf024344a1feba5755e9eed8126c7c7904f8ee031dec360",
+      "lastSourceCommit": "0e22a1c82f45ecc17ce89c72fe62417e52126c23"
+    },
+    "apps/ios/Sources/OperationFailure.swift": {
+      "sha256": "7e4237a9443eb56279ccdee63ba5dd3e353661b24154922cc277d28249a55589",
+      "lastSourceCommit": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0"
+    },
+    "apps/ios/Resources/en.lproj/Localizable.strings": {
+      "sha256": "c4a4fea618eb5a35b6694ea4cc1ca81801fcd2d8c51316a33deb8ffaafe48a91",
+      "lastSourceCommit": "b10282b7234f54fd117829eacc831afb05b66aa4"
+    }
+  },
+  "trustedDynamicCopy": [
+    "Closed known effort/speed/permission keys; unknown effort literal",
+    "Compiled Codex and EasyWork permission option title/detail: native-only appOwnedCopy marker, default false; never wire-decoded",
+    "Known FailureCopy titles and six classified connection failure bodies; raw exception and operation unchanged"
+  ],
+  "rawValues": [
+    "Model display name and ID",
+    "Unknown native provider permission title/detail, including catalog-like text and percent syntax",
+    "Unknown effort identifier",
+    "Provider/unknown error body",
+    "Draft text/files, original thread title and submitted operation payload"
+  ],
+  "uiInteraction": [
+    "Menus localize display only; choices submit original IDs",
+    "Toolbar AX contains full model, effort, speed and permission mode using iOS format keys",
+    "Compact labels may shorten only owned permission copy; provider title remains literal",
+    "Effort slider has localized semantic description"
+  ],
+  "scopeExclusions": [
+    "No generic Text interception",
+    "No arbitrary exception-message translation",
+    "No task/project business development",
+    "No new model operation or original-owner write",
+    "No transport/classification policy change"
+  ],
+  "remaining": [
+    "Connection/source labels, sidebar and other AX/forms",
+    "App-owned general error prefixes and remaining platform copy",
+    "No-model/default selection behavior comparison",
+    "Generation option icons/full visual matrix, all94tokens",
+    "Controlled links/resources and remaining rendering states",
+    "Actual process/browser/system/lifecycle and Android P7",
+    "API37 landscape and existing provider/environment pending"
+  ],
+  "nativeEvidence": "docs/acceptance/mobile-evidence/android-alignment-P6.json#nativeGenerationFailureCheckpoint",
+  "lateMainPending": {
+    "priorMain": "fa2f14dbde37535dee6db2353ae619325c26b589",
+    "fetchedMain": "d8bf85d00912072f5a8abea37a36e6c855475ab4",
+    "newNodes": 15,
+    "status": "fetched only; next independent source review/integration"
+  }
+}

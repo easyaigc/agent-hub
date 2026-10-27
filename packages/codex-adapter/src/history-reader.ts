@@ -400,6 +400,8 @@ export class CodexHistoryReader {
     threadId: string,
     pageCursor?: string,
     fullDetails = false,
+    // Private adapter side channel. Source paths never enter a history response.
+    localImages?: (messageId: string, paths: readonly string[]) => void,
   ): Promise<{
     hostId: string;
     threadId: string;
@@ -474,6 +476,15 @@ export class CodexHistoryReader {
       if (message.kind === 'reasoning' && !message.text) continue;
       if (item.type === 'userMessage') {
         const content = array(item.content).map(object);
+        const imagePaths = content.flatMap((input) =>
+          input.type === 'localImage' &&
+          typeof input.path === 'string' &&
+          input.path.length <= 8192 &&
+          isAbsolute(input.path)
+            ? [input.path]
+            : [],
+        );
+        if (imagePaths.length) localImages?.(message.id, imagePaths);
         message.files = [
           ...new Set([
             ...message.files,
@@ -482,9 +493,11 @@ export class CodexHistoryReader {
               .map((input) =>
                 typeof input.name === 'string'
                   ? input.name
-                  : typeof input.url === 'string' && !input.url.startsWith('data:')
-                    ? input.url.split('/').at(-1)!
-                    : '历史附件',
+                  : input.type === 'localImage' && typeof input.path === 'string'
+                    ? input.path.replace(/\\/g, '/').split('/').at(-1) || '历史附件'
+                    : typeof input.url === 'string' && !input.url.startsWith('data:')
+                      ? input.url.split('/').at(-1)!
+                      : '历史附件',
               ),
           ]),
         ];

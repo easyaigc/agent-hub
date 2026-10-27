@@ -1,3 +1,4 @@
+import MobileCore
 import PhotosUI
 import QuickLook
 import QuartzCore
@@ -2696,6 +2697,12 @@ private struct ToolGroupIcon: View {
   }
 }
 
+private final class NativeToolPresentationText: NSObject, ToolPresentationText {
+  static let shared = NativeToolPresentationText()
+  var english: Bool { L10n.language == "en" }
+  func text(key: String) -> String { L10n.tr(LocalizedText(stringLiteral: key)) }
+}
+
 struct ToolCallGroupView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let id: String
@@ -2704,26 +2711,7 @@ struct ToolCallGroupView: View {
   @State private var groupExpanded = false
   @State private var expandedTools: Set<String> = []
 
-  private var summary: String {
-    // Shared Chinese presentation and the existing English renderer are both
-    // retained until the shared presentation facade accepts a locale.
-    if L10n.language != "en" { return SharedMobileRules.toolSummary(messages) }
-    var actions: [String] = []
-    var sources: [String] = []
-    for message in messages where ["mcpToolCall", "dynamicToolCall"].contains(message.kind) {
-      let source = message.text.components(separatedBy: " · ").first ?? ""
-      if !source.isEmpty && !sources.contains(source) { sources.append(source) }
-    }
-    if !sources.isEmpty { actions.append(L10n.tr("使用 ") + sources.joined(separator: L10n.tr("、"))) }
-    if messages.contains(where: { $0.kind == "webSearch" }) { actions.append(L10n.tr("搜索网页")) }
-    if messages.contains(where: { $0.kind == "fileChange" }) { actions.append(L10n.tr("编辑文件")) }
-    let commands = messages.filter { $0.kind == "commandExecution" }.count
-    if commands > 0 { actions.append(commands > 1 ? L10n.tr("运行多个命令") : L10n.tr("运行命令")) }
-    if actions.isEmpty { actions.append(L10n.tr("使用多个工具")) }
-    let prefix = messages.contains(where: { $0.status == "inProgress" }) ? L10n.tr("正在") : L10n.tr("已")
-    let detail = actions.joined(separator: L10n.tr("、"))
-    return L10n.language == "en" ? prefix + " · " + detail : prefix + detail
-  }
+  private var summary: String { SharedMobileRules.toolSummary(messages, native: NativeToolPresentationText.shared) }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -2801,26 +2789,7 @@ struct ToolCallView: View {
 
   private var style: ToolActivityStyle { ToolActivityStyle(message.kind) }
   private var emphasized: Bool { !single && (expanded || hovered) }
-  private var title: String {
-    if L10n.language != "en" { return SharedMobileRules.toolTitle(message, single: single) }
-    if !single, ["mcpToolCall", "dynamicToolCall"].contains(message.kind) {
-      let parts = message.text.components(separatedBy: " · ")
-      let activity = parts.count > 1 ? parts.dropFirst().joined(separator: " · ") : message.text
-      if !activity.isEmpty { return activity }
-    }
-    let target = single || message.text.isEmpty ? style.category : message.text
-    let gap = single || message.text.isEmpty ? "" : " "
-    if L10n.language == "en" {
-      return statusLabel + " · " + style.verb + " " + target
-    }
-    switch message.status {
-    case "inProgress": return L10n.tr("正在\(style.verb)\(gap)\(target)")
-    case "completed": return L10n.tr("已\(style.verb)\(gap)\(target)")
-    case "failed": return L10n.tr("\(style.verb)\(gap)\(target)失败")
-    case "interrupted": return L10n.tr("\(style.verb)\(gap)\(target)已停止")
-    default: return target
-    }
-  }
+  private var title: String { SharedMobileRules.toolTitle(message, single: single, native: NativeToolPresentationText.shared) }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -3825,8 +3794,17 @@ private struct SuggestionSelectableTextField: View {
 private struct ComposerView: View {
   private struct HandledSuggestion: Hashable {
     let target: String
-    let sourceTurnId: String
-    let id: String
+    let version: String
+  }
+  private struct SuggestionControlIdentity: Hashable {
+    let navigation: String
+    let connection: String
+    let handled: HandledSuggestion
+    let revision: UInt64
+  }
+  private struct SuggestionUndoIdentity: Hashable {
+    let target: String
+    let revision: UInt64
   }
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   @State private var creationWaitToDetach: (target: String, operationId: String)?
@@ -3850,8 +3828,11 @@ private struct ComposerView: View {
     // Presentation values live for this render only. User actions still recheck live state.
     let context = suggestionReadContext
     let available = voice.isActive ? nil : availableSuggestion(in: context)
+    let action = context.enabled ? context.scope.flatMap { scope in available.map {
+      DesktopSuggestionDraftAction(scope: scope, suggestion: $0, draft: store.suggestionDraftSnapshot)
+    } } : nil
     let presentation = SuggestionPresentation(context: context, available: available,
-      showsGhost: store.draft.text.isEmpty && available != nil)
+      showsGhost: store.draft.text.isEmpty && available != nil, action: action)
     return composer(presentation)
       .modifier(QuickAttachmentPresentation(store: store, library: attachmentPhotos,
         request: attachmentRequest, isPresenting: $attachmentModalPresented))
@@ -3905,9 +3886,11 @@ private struct ComposerView: View {
         focusAfterSuggestionSheet = false
       }) { action in
         DesktopSuggestionDetails(action: action, canApply: canApplySuggestion(action), apply: { mode in
+          guard suggestionPreview?.id == action.id else { return }
           applySuggestion(action, mode: mode)
         }, ignore: {
-          handledSuggestions.insert(suggestionKey(action.scope, action.suggestion.id)); suggestionPreview = nil
+          guard suggestionPreview?.id == action.id, canApplySuggestion(action) else { return }
+          handledSuggestions.insert(suggestionKey(action.scope, action.suggestion, target: action.draft.targetKey)); suggestionPreview = nil
         })
       }
   }
@@ -3916,6 +3899,7 @@ private struct ComposerView: View {
     let context: SuggestionReadContext
     let available: DesktopSuggestion?
     let showsGhost: Bool
+    let action: DesktopSuggestionDraftAction?
     var readScope: DesktopSuggestionScope? { context.enabled ? context.scope : nil }
   }
   private struct SuggestionReadContext: Equatable {
@@ -3931,8 +3915,17 @@ private struct ComposerView: View {
   private var suggestionReadScope: DesktopSuggestionScope? {
     suggestionReadContext.enabled ? suggestionReadContext.scope : nil
   }
-  private func suggestionKey(_ scope: DesktopSuggestionScope, _ id: String) -> HandledSuggestion {
-    HandledSuggestion(target: store.targetKey, sourceTurnId: scope.sourceTurnId, id: id)
+  private func suggestionKey(_ scope: DesktopSuggestionScope, _ value: DesktopSuggestion, target: String? = nil) -> HandledSuggestion {
+    let key = target ?? store.targetKey
+    return HandledSuggestion(target: key, version: value.handledVersionKey(targetKey: key, sourceTurnId: scope.sourceTurnId))
+  }
+  private func suggestionControlIdentity(_ action: DesktopSuggestionDraftAction?) -> SuggestionControlIdentity? {
+    action.map { SuggestionControlIdentity(navigation: $0.scope.navigation, connection: $0.scope.connection,
+      handled: suggestionKey($0.scope, $0.suggestion, target: $0.draft.targetKey), revision: $0.draft.revision) }
+  }
+  private func presentSuggestion(_ action: DesktopSuggestionDraftAction?) {
+    guard let action, canApplySuggestion(action) else { return }
+    composerFocused = false; suggestionPreview = action
   }
   private var availableSuggestion: DesktopSuggestion? {
     // No payload means no presentation scope to resolve. Nonempty values keep all original checks.
@@ -3941,28 +3934,24 @@ private struct ComposerView: View {
   }
   private func availableSuggestion(in context: SuggestionReadContext) -> DesktopSuggestion? {
     guard let scope = context.scope, let suggestion = suggestionReader.visibleSuggestion(for: scope),
-      !handledSuggestions.contains(suggestionKey(scope, suggestion.id)) else { return nil }
+      !handledSuggestions.contains(suggestionKey(scope, suggestion)) else { return nil }
     return suggestion
   }
-  private var showsGhostSuggestion: Bool { store.draft.text.isEmpty && availableSuggestion != nil }
   private var validSuggestionUndo: DesktopSuggestionDraftUndo? {
     guard let undo = drafts.suggestionUndo,
       undo.restoredText(currentDraft: store.suggestionDraftSnapshot) != nil else { return nil }
     return undo
-  }
-  private func suggestionIntent() -> DesktopSuggestionDraftAction? {
-    guard let scope = suggestionReadScope, let suggestion = availableSuggestion else { return nil }
-    return DesktopSuggestionDraftAction(scope: scope, suggestion: suggestion, draft: store.suggestionDraftSnapshot)
   }
   private func canApplySuggestion(_ action: DesktopSuggestionDraftAction) -> Bool {
     suggestionReadScope == action.scope && store.suggestionDraftSnapshot == action.draft
       && availableSuggestion == action.suggestion && availableSuggestion?.isValid(at: Date()) == true
   }
   private func applySuggestion(_ action: DesktopSuggestionDraftAction, mode: DesktopSuggestionAdoptionMode) {
+    guard suggestionPreview == nil || suggestionPreview?.id == action.id else { return }
     guard canApplySuggestion(action), store.adoptDesktopSuggestion(action, mode: mode, currentSuggestion: availableSuggestion) else {
       suggestionPreview = nil; return
     }
-    handledSuggestions.insert(suggestionKey(action.scope, action.suggestion.id))
+    handledSuggestions.insert(suggestionKey(action.scope, action.suggestion, target: action.draft.targetKey))
     focusAfterSuggestionSheet = suggestionPreview != nil
     suggestionPreview = nil
     if !focusAfterSuggestionSheet { composerFocused = true; insertionRequest = UUID() }
@@ -3974,16 +3963,18 @@ private struct ComposerView: View {
         Spacer()
         Button {
           guard store.undoDesktopSuggestion(undo) else { return }
-          handledSuggestions.remove(suggestionKey(undo.scope, undo.suggestionId))
+          handledSuggestions.remove(HandledSuggestion(target: undo.applied.targetKey, version: undo.handledVersionKey))
           composerFocused = true; insertionRequest = UUID()
         } label: {
           Text(L10n.tr("撤销")).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
         }.accessibilityIdentifier("suggestion-undo")
+          .id(SuggestionUndoIdentity(target: undo.applied.targetKey, revision: undo.applied.revision))
       } else if presentation.available != nil && !store.draft.text.isEmpty {
-        Button { composerFocused = false; suggestionPreview = suggestionIntent() } label: {
+        Button { presentSuggestion(presentation.action) } label: {
           Label(L10n.tr("下一步建议"), systemImage: "sparkles").font(.caption)
             .frame(minHeight: 44).contentShape(Rectangle())
         }.accessibilityIdentifier("suggestion-entry").disabled(presentation.readScope == nil)
+          .id(suggestionControlIdentity(presentation.action))
         Spacer()
       }
     }.padding(.horizontal, 6).buttonStyle(.plain)
@@ -4201,8 +4192,8 @@ private struct ComposerView: View {
             .frame(maxWidth: .infinity, minHeight: presentation.showsGhost ? 62 : 44)
             .accessibilityIdentifier("composer-input").accessibilityLabel(L10n.tr("发送给当前客户端的消息"))
             .onKeyPress(.tab, phases: .down) { press in
-              guard press.modifiers.isEmpty, composerFocused, showsGhostSuggestion,
-                let action = suggestionIntent() else { return .ignored }
+              guard press.modifiers.isEmpty, composerFocused, presentation.showsGhost,
+                let action = presentation.action else { return .ignored }
               applySuggestion(action, mode: .fill); return .handled
             }
         }.padding(.horizontal, presentation.showsGhost ? 8 : 0)
@@ -4212,19 +4203,19 @@ private struct ComposerView: View {
         HStack(spacing: 0) {
           attachmentMenu
           Button {
-            guard let action = suggestionIntent() else { return }
+            guard let action = presentation.action else { return }
             applySuggestion(action, mode: .fill)
           } label: {
             Text(L10n.tr("采用")).font(.subheadline).frame(minWidth: 56, minHeight: 44).contentShape(Rectangle())
           }.accessibilityIdentifier("suggestion-adopt").disabled(presentation.readScope == nil)
-          Button { composerFocused = false; suggestionPreview = suggestionIntent() } label: {
+          Button { presentSuggestion(presentation.action) } label: {
             Text(L10n.tr("全文")).font(.caption).foregroundStyle(Palette.secondary)
               .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
           }.accessibilityIdentifier("suggestion-details").disabled(presentation.readScope == nil)
           Spacer(minLength: 0)
           voiceInputButton
           composerActionButton
-        }.buttonStyle(.plain)
+        }.buttonStyle(.plain).id(suggestionControlIdentity(presentation.action))
       }
     }
   }

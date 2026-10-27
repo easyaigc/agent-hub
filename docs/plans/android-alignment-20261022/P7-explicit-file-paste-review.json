@@ -1,0 +1,142 @@
+{
+  "phase": "P7-1a",
+  "sourceBase": "b04ab3a85fd6e6e65f8d5efe03a171b6ee6e1969",
+  "features": ["F30", "F32", "F56", "F71"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "559b072c8aafba8dd04bae8aa6a252f20540b8148af74c6037bf23ca11f295aa",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeFileIntake.kt": "52e2d2047a9f390481f0a78b7e561bc9fdd3b5c33c524972c26a1581f510b755",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilePasteTest.kt": "94511590420237e2066cf5c8463ed543ecf4d8d3895fa2a0d2c4680c90fae1ea",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "92a46fbaa66c7a0f068303e6ddbd48335f5f20979e49cfe45906ab0dcfdff21b"
+  },
+  "summary": "P7-1a：附件菜单增加显式图片/文件粘贴，仅点击后快照content URI；原文件有界读取到准确原草稿，20MiB/10项、名称/字节与代次隔离，旧菜单切换目标关闭，不上传/发送。67辅助、3实际原回复/资源整例通过，其中真机/API37实际系统粘贴与本地元数据匹配，API26空剪贴板保护性未写入；70默认存储证明。收件箱/分享接收和完整P7仍开。",
+  "checks": {
+    "pnpmCheck": "matched I2 complete run; all616 shared/JS/iOS/tooling/catalog inputs byte equal; native delta built and checked now",
+    "matchedRootLogSha256": "dcea73be1c39a6130857577d1984dc86496bf47c91cc0c410761d6e5ddd5c3cf",
+    "matchedSourceInputs": 616,
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "androidBuild": "current passed",
+    "androidApprovalGuard": "current passed",
+    "iosBuild": "unchanged source matched I2 independent simulator App/Action build; no iOS A6 execution",
+    "mobileParity": "current passed",
+    "format": "current passed"
+  },
+  "implementation": [
+    "Explicit clipboard access only after Paste images or files; snapshot exact ordered content URIs, never coerce plain text, fetch web URLs or serialize URL objects into attachment bytes",
+    "Bounded background Provider read, declared/actual size check, empty/over20MiB/unavailable source rejection, normal name/bytes preserved, typed app-owned failures localized with raw cause retained",
+    "Reuse original local attachment preparation, shared capacity/generation commit fences, encrypted source storage and existing send/upload path; no new command interface",
+    "Capture original attachment-menu destination for file picker and paste; close on target/selection change and reject retired callbacks before reading clipboard/Provider"
+  ],
+  "nativeAuxiliary": {
+    "methods": 67,
+    "normal": 57,
+    "style": 10,
+    "perNormalEnvironment": "five new file-paste, nine attachment-ownership, four action-hit-region and one compiled catalog method",
+    "environments": [
+      "physical API33 portrait light",
+      "API26 portrait light",
+      "API37 portrait light",
+      "API26 font scale2",
+      "API37 portrait dark"
+    ],
+    "sourceSha256": "407c591b6a47c3983394537f2f6c585b078a22707276d07549bfdda107201355",
+    "appSha256": "00399c3846a50d963a7994c390eecdf872deea620fcbb791cc16db0b39a0c632",
+    "testSha256": "5642c7568da0b5102203107314c48148747ec899faea30e67f912480b20a90ac",
+    "clipboard": "real system clipboard where prior clip can be exactly restored; API26 empty prior clipboard left untouched",
+    "provider": "real same-App constrained FileProvider with examiner-created source; not independent external producer acceptance"
+  },
+  "actualOriginalTargetReads": {
+    "methods": 3,
+    "rows": [
+      {
+        "environment": "API26",
+        "http": {
+          "requests": 29,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "407c591b6a47c3983394537f2f6c585b078a22707276d07549bfdda107201355",
+        "appSha256": "00399c3846a50d963a7994c390eecdf872deea620fcbb791cc16db0b39a0c632",
+        "testSha256": "5642c7568da0b5102203107314c48148747ec899faea30e67f912480b20a90ac",
+        "nativeReportSha256": "c243b6c4899c2be39168376b43d0c609c9f4ee44f7e2d0f39132e5af918373ef",
+        "hostReportSha256": "4322aebaad39a8e3af21ddb0b42f929fe9aa6483b3d82d50ae472473114ec6ba",
+        "originalTargetPasteProofSha256": "602ce56f69b80cac21e12b216206e99e74547e916bf585cc0079a56777fe93c2",
+        "systemPasteAttempted": false,
+        "api26EmptyClipboardPending": true,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "physical API33",
+        "http": {
+          "requests": 44,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "407c591b6a47c3983394537f2f6c585b078a22707276d07549bfdda107201355",
+        "appSha256": "00399c3846a50d963a7994c390eecdf872deea620fcbb791cc16db0b39a0c632",
+        "testSha256": "5642c7568da0b5102203107314c48148747ec899faea30e67f912480b20a90ac",
+        "nativeReportSha256": "e6f8694eac744bf2a3bba51be03ddab9bdd3a4b10dca59224f1b58b5ce1ce541",
+        "hostReportSha256": "e72890dd0bab6dc25cb150c508cc19e1955376aa86baea36f4da67f92beab101",
+        "originalTargetPasteProofSha256": "84113859674a0f934c4e28ac6c5c5dae26cd888390be3710b5ed044553ab289f",
+        "systemPasteAttempted": true,
+        "api26EmptyClipboardPending": false,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "API37 portrait",
+        "http": {
+          "requests": 45,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "407c591b6a47c3983394537f2f6c585b078a22707276d07549bfdda107201355",
+        "appSha256": "00399c3846a50d963a7994c390eecdf872deea620fcbb791cc16db0b39a0c632",
+        "testSha256": "5642c7568da0b5102203107314c48148747ec899faea30e67f912480b20a90ac",
+        "nativeReportSha256": "f49cfd3b91e50d15e6c04c344fd3fdba598de42deb173aab907dfe66bf696b67",
+        "hostReportSha256": "997a594ee2e01df2e5f8ad80044cfaecc4e38560005f9f3e00269bd53d9a6fe2",
+        "originalTargetPasteProofSha256": "84113859674a0f934c4e28ac6c5c5dae26cd888390be3710b5ed044553ab289f",
+        "systemPasteAttempted": true,
+        "api26EmptyClipboardPending": false,
+        "originalOwnerAndTurnsUnchanged": true
+      }
+    ],
+    "httpRequests": 118,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "systemPastesAttemptedAndMatched": 2,
+    "api26EmptyPriorClipboard": "not attempted, pending",
+    "nativeSemanticsActivation": true,
+    "pointerActivation": false,
+    "sourceBytes": 107,
+    "sourceSha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+    "sourceOrigin": "model referenced examiner-prepared resource; model did not read it",
+    "localMetadata": "new file ID observed in durable owned draft metadata; full cold restore remains pending",
+    "examinerCleanup": "only newly added local file removed, original text and attachment list restored, previous opaque clipboard restored",
+    "resourceShare": "controlled chooser intercepted, not actual external recipient"
+  },
+  "defaultStorageProofs": 70,
+  "failuresRetained": [
+    "New examiner first referenced a file-private WireRequest.query extension; compiler rejected, changed to native Uri parser in test only",
+    "Early30 normal auxiliary results used prior runner before opt-in actual paste examiner; retained by old fingerprint, not promoted to final67"
+  ],
+  "pending": [
+    "External independent source App/Provider, actual clipboard pointer/system overlay matrix and API26 empty-prior clipboard action",
+    "System share/open receiver and durable inbox, exact draft confirmation/fixed ID/partial import recovery",
+    "Photo/camera/recent-photo access and remaining storage/voice/read/lifecycle scope",
+    "Provider unknown-length/stream stalls/revoked grant/dynamic size/partial failure and full permission/font/orientation matrix",
+    "Full cold process restoration and actual model mixed-send consumption; no new model input in this checkpoint",
+    "P6 remaining formats/AX/token and typed error-prefix scope; business task/project management deferred; unrelated iOS A6 paused"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false,
+  "visualReview": {
+    "selectedAuxiliaryPasteImages": 3,
+    "selectedOriginalTargetPasteImages": 2,
+    "completeMatrix": false
+  }
+}

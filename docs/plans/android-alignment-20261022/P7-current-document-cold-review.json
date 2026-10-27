@@ -1,0 +1,129 @@
+{
+  "phase": "P7-4e",
+  "sourceBase": "926b996063756b33935c8bfb23788c9e14073945",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F71"],
+  "summary": "当前共同文件/照片恢复协调器的文档原系统冷返回在API26/37本次通过；保留原选择器，接收进程死亡后返回原请求/草稿，原字节只消费一次。两SDK冷开保持原附件ID/摘要、原文/设置/既有附件和另一聊天草稿，权限回到原基线。",
+  "sourceSha256": "5fe59ddf516125302bd00923cf85231900f28aac9aa8e4d25c59efd507235709",
+  "nativeInputFiles": 421,
+  "changedFiles": {
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java": "63781efb70bb3a784b56875cee2e3ff8a239d4a9ef49f8ffbb475bbe1ab07524",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDocumentProcessColdTest.kt": "c4ae6ff09e3e4ecd54751946cf7768f17a4973e7c1a08404339b3d96bd29fc34"
+  },
+  "productionKotlinResourcesAndSharedCoreUnchangedFrom4c": true,
+  "receiverAndSourceApksUnchangedAcrossEachOriginalCase": true,
+  "actualSystemColdScenarios": 2,
+  "actualColdReopens": 2,
+  "nativeReadOnlyMethods": 4,
+  "fixtureSeedMethods": 2,
+  "cohorts": [
+    {
+      "environment": "owned-API37",
+      "actualOriginalSystemColdResults": 1,
+      "actualColdReopens": 1,
+      "nativeReadMethods": 2,
+      "fixtureSeedMethods": 1,
+      "receiverApkSha256": "6040fcee76f721a4e6093676766bda35cfac8b61883cfe9d4abd5830add9a4b6",
+      "sourceApkSha256": "b2e947a1190c4b017db70ebd436a65e18b1c35b9bb9bd59320f9f5a184c5c6cb",
+      "fixtureReads": 10,
+      "fixtureWrites": 0,
+      "sameRequestFileIdsAndDigestsAcrossReopen": true,
+      "sameOriginalDraftGenerationTextSettingsAndOtherDraft": true,
+      "oneExistingAndOneOriginalResult": true,
+      "readGrantsRestored": true,
+      "returnProofSha256": "71f6a5245b83ac286efe1d6c6e4e2c05d3bc6e3d34afed1c8be1d7f4c26a935e",
+      "reopenProofSha256": "31f3264c9e2a25efda6881a47a8fab96c41a0bacac6ce602704ceee241f6d049",
+      "completedOldFixtureSnapshotSha256": "6e4d2368acfaafb10e5a5dfed7ca2047c80239fecba283f2812d56bbe45d3bde",
+      "ownedCompletedFixtureResetReceiptSha256": "69626fac5a57c5c90d8dc7c19ef27806eaa0f81d81c1de37a9e95243ffa89b45"
+    },
+    {
+      "environment": "owned-API26",
+      "actualOriginalSystemColdResults": 1,
+      "actualColdReopens": 1,
+      "nativeReadMethods": 2,
+      "fixtureSeedMethods": 1,
+      "receiverApkSha256": "6040fcee76f721a4e6093676766bda35cfac8b61883cfe9d4abd5830add9a4b6",
+      "sourceApkSha256": "b2e947a1190c4b017db70ebd436a65e18b1c35b9bb9bd59320f9f5a184c5c6cb",
+      "fixtureReads": 9,
+      "fixtureWrites": 0,
+      "sameRequestFileIdsAndDigestsAcrossReopen": true,
+      "sameOriginalDraftGenerationTextSettingsAndOtherDraft": true,
+      "oneExistingAndOneOriginalResult": true,
+      "readGrantsRestored": true,
+      "returnProofSha256": "c09c98a11e8ff3826bbfe152af957cb788705b0f17cb76b331e38c1535c5ca93",
+      "reopenProofSha256": "5bf63778f5948555a72f6dcff2b3c03e093ab0563d6bb59889eb5adb1b11be18",
+      "completedOldFixtureSnapshotSha256": "7e94cb0b7bd25f96eb6889960201d8f7666103385dbabe032207143231a309fa",
+      "ownedCompletedFixtureResetReceiptSha256": "69626fac5a57c5c90d8dc7c19ef27806eaa0f81d81c1de37a9e95243ffa89b45"
+    }
+  ],
+  "observerVersions": [
+    {
+      "sha256": "63c192a71aad11160a4cb16eafc0427ecb5e0edab616406f035c6e66ffcbc587",
+      "scope": "API37 original chooser launch, saved state and background kill; initial drawer alias assertion retained"
+    },
+    {
+      "sha256": "0542ca31eec31d98abbc0ea742c5e80a6232baf111bb4e084eb1e6d889b839d0",
+      "scope": "API37 drawer-specific original selection and cold reopen; API26 safe background kill no-op retained"
+    },
+    {
+      "sha256": "fe8a3bb51fa9a04a26d0ffb0e5ea6bf53fdce60de2b874666e254584fdbac33f",
+      "scope": "API26 exact old PID/UID termination; drawer-transition touch with no returned result retained"
+    },
+    {
+      "sha256": "8fa7400cae181504732af92517e5f093d1408124e8a2c9009f273ecb4969daa1",
+      "scope": "API26 read-only original chooser/absent result grant verified; null AX text failure before any new touch retained"
+    },
+    {
+      "sha256": "71223c08d1ca1c30720228670b30b60c28ec104d8f8521d9263a6381453a6d57",
+      "scope": "API26 original unselected known source, stable viewport, result and cold reopen"
+    }
+  ],
+  "nativeReopenImages": [
+    {
+      "environment": "owned-API37",
+      "sha256": "e0e322a900fd75255483701cba30f273046ba9768a0ee81ddf80a6333a5c7005"
+    },
+    {
+      "environment": "owned-API26",
+      "sha256": "4d5abf4a3fc896aa6dbc5221a2393ca1ede146d9ad2ff9ffa5abf53a86f617ea"
+    }
+  ],
+  "nativeImageScope": "两SDK当前冷开截图逐张查看；原文件名可见，原输入格式字符与前序附件原生横向滚动保留。完整主题/字体/IME/AX/API37横屏不在本次范围。",
+  "priorFixtureReplacement": "仅重置本任务已完成且与树外4b快照逐字节相同的独立SDK文档样例；完整快照与原证明保留。不是重放4b已完成请求，两个当前请求独立新建。",
+  "checks": {
+    "nativeBuild": "passed",
+    "rootReuse": {
+      "priorCompleteCheck": "P7-4d",
+      "priorRootLogSha256": "e924d4305b2be415c59acd5da2c3c32ac7cd6898f53d806a2a553a994d204983",
+      "priorFrozenProgramInputs": 1009,
+      "currentProgramInputs": 1009,
+      "unchangedExactInputs": 1007,
+      "onlyChangedNativeTestInputs": [
+        "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDocumentProcessColdTest.kt"
+      ],
+      "scope": "仅两份Android原生验收源改变；本批编译、SDK真实系统/原生只读及当前parity验证覆盖，不声称再次执行整仓检查。"
+    },
+    "mobileParity": "passed",
+    "gitDiffCheck": "passed",
+    "nativeFreeze": "421 final native inputs exact",
+    "ownedResourceCleanupSha256": "e74b0afb58ec5120cc0c8a95f6d359b6402c7162760700a0a1303a352e18e98a",
+    "visualInspection": "API26 and API37 actual current cold-reopen PNGs inspected; original full filename and percent markers visible; full theme/AX/IME still open"
+  },
+  "failuresRetained": [
+    "API37来源名同时出现于侧栏/标题/面包屑，选择前拒绝歧义；限定侧栏同一来源后接续。",
+    "API26 ActivityManager后台终止无效；准确原ActivityRecord/PID/UID及已保存STOPPED状态重核后，仅终止本次调试UID。",
+    "API26文件触摸遇侧栏过渡而未返回；原选择器仍在、接收进程不在、结果读授权未发、文件未选中且视口稳定后接续受控源；不把失败触摸计作成功结果。",
+    "观察器只读扫描空AX文本失败，发生在新增触摸意图前；原失败保留，补空值保护后从原等待现场继续。"
+  ],
+  "pending": [
+    "文档真机系统冷结果、自然进程异常及完整URI/权限/Provider/格式矩阵",
+    "照片透明页无OS保存状态直接死亡；API26与真机照片系统冷结果",
+    "相机私有输出/权限与冷回调、存储配额/迁移、语音/未读/生命周期",
+    "API37横屏、完整主题/字号/IME/AX；手机长批稳定性/当前原回复只读和独立观察APK",
+    "iOS当前系统恢复矩阵未重验；iOS A6及任务/项目业务仍暂停"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

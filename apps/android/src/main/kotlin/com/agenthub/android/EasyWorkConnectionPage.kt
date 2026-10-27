@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         if(editing==null) {
             val colors=MaterialTheme.colorScheme
-            Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=16.dp).clip(RoundedCornerShape(10.dp)).background(colors.onSurface.copy(alpha=.08f)).padding(3.dp).testTag("agent-provider").semantics { contentDescription="Agent 客户端" }) {
+            val providerLabel=productText("Agent 客户端")
+            Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=16.dp).clip(RoundedCornerShape(10.dp)).background(colors.onSurface.copy(alpha=.08f)).padding(3.dp).testTag("agent-provider").semantics { contentDescription=providerLabel }) {
                 listOf("codex" to "Codex","easywork" to "EasyWork").forEach { (id,title)->
                     Box(Modifier.weight(1f).heightIn(min=48.dp).clip(RoundedCornerShape(8.dp)).background(if(provider==id)colors.background else androidx.compose.ui.graphics.Color.Transparent).selectable(provider==id,enabled=!session.connectionBusy,role=Role.Tab,onClick={ provider=id }).testTag("agent-provider-$id"),contentAlignment=Alignment.Center) { Text(title,fontSize=14.sp,fontWeight=FontWeight.Medium) }
                 }
@@ -39,7 +40,7 @@ import kotlinx.coroutines.launch
         key(provider) { when(provider) {
             "easywork"->EasyWorkConnectionPage(session,editing,saved)
             "codex"->CodexConnectionPage(session,editing,saved)
-            else->Text("此 Agent 的配置界面尚未注册",Modifier.padding(16.dp))
+            else->Text(productText("此 Agent 的配置界面尚未注册"),Modifier.padding(16.dp))
         } }
     }
 }
@@ -62,56 +63,56 @@ import kotlinx.coroutines.launch
     Column(Modifier.fillMaxWidth()) {
         GroupTitle("EasyWork")
         GroupCard {
-            NativeFormField(name,{ name=it;editing?.let { client->session.renameEasyWork(client,it) } },"名称","easywork-name",!busy)
+            NativeFormField(name,{ name=it;editing?.let { client->session.renameEasyWork(client,it) } },productText("名称"),"easywork-name",!busy)
             if(editing!=null)Box {
                 val preference=session.clients.firstOrNull { it.id==editing.id }?.agentConnection?.preference?:"automatic"
-                SettingsRow("连接偏好",mapOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继")[preference]!!,"connection-preference") { if(!busy)preferenceMenu=true }
-                DropdownMenu(preferenceMenu,{ preferenceMenu=false }) { listOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继").forEach { (id,title)->DropdownMenuItem(text={ Text(title) },onClick={ session.setEasyWorkPreference(editing,id);preferenceMenu=false },modifier=Modifier.testTag("connection-preference-$id")) } }
+                SettingsRow(productText("连接偏好"),productText(mapOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继")[preference]!!),"connection-preference") { if(!busy)preferenceMenu=true }
+                DropdownMenu(preferenceMenu,{ preferenceMenu=false }) { listOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继").forEach { (id,title)->DropdownMenuItem(text={ Text(productText(title)) },onClick={ session.setEasyWorkPreference(editing,id);preferenceMenu=false },modifier=Modifier.testTag("connection-preference-$id")) } }
             }
             Box {
-                SettingsRow("连接方式",method,"easywork-connection-method") { if(!busy)methodMenu=true }
-                DropdownMenu(methodMenu,{ methodMenu=false }) { listOf("自动发现","扫码连接","手动连接","通过中继连接").forEach { choice->DropdownMenuItem(text={ Text(choice) },onClick={ method=choice;methodMenu=false;error=null;pairingStatus=null;focus.clearFocus();keyboard?.hide() },modifier=Modifier.testTag("easywork-method-$choice")) } }
+                SettingsRow(productText("连接方式"),productText(method),"easywork-connection-method") { if(!busy)methodMenu=true }
+                DropdownMenu(methodMenu,{ methodMenu=false }) { listOf("自动发现","扫码连接","手动连接","通过中继连接").forEach { choice->DropdownMenuItem(text={ Text(productText(choice)) },onClick={ method=choice;methodMenu=false;error=null;pairingStatus=null;focus.clearFocus();keyboard?.hide() },modifier=Modifier.testTag("easywork-method-$choice")) } }
             }
             if(busy&&pairingStatus!=null)Text(pairingStatus!!,Modifier.padding(16.dp).testTag("easywork-connecting"),fontSize=14.sp,color=colors.onSurfaceVariant)
             error?.let { Text(it,Modifier.padding(16.dp).testTag("easywork-pair-error"),color=colors.error) }
         }
-        GroupTitle(method)
+        GroupTitle(productText(method))
         GroupCard {
             when(method) {
                 "自动发现"-> {
-                    if(discovery?.needsPermission==true)TextButton(onClick={ permission.launch(CodexHostDiscovery.LOCAL_PERMISSION) },modifier=Modifier.fillMaxWidth().testTag("easywork-allow-local-network")) { Text("允许发现局域网与 VPN 电脑") }
+                    if(discovery?.needsPermission==true)TextButton(onClick={ permission.launch(CodexHostDiscovery.LOCAL_PERMISSION) },modifier=Modifier.fillMaxWidth().testTag("easywork-allow-local-network")) { Text(productText("允许发现局域网与 VPN 电脑")) }
                     val known=session.clients.filter { it.agentConnection?.target?.agentId=="easywork" }
                     val rows=known.map { client->discovery?.hosts?.firstOrNull { it.id==client.id }?:DiscoveredEasyWorkHost(client.id,client.name,client.endpoint.orEmpty(),client.scope?.hostId,true) }+discovery?.hosts.orEmpty().filter { !it.known }
-                    if(rows.isEmpty())Text("正在查找同一网络的电脑…",Modifier.padding(16.dp),fontSize=15.sp,color=colors.onSurfaceVariant)
+                    if(rows.isEmpty())Text(productText("正在查找同一网络的电脑…"),Modifier.padding(16.dp),fontSize=15.sp,color=colors.onSurfaceVariant)
                     rows.forEach { host->
                         val client=known.firstOrNull { it.id==host.id }
-                        val detail=(if(host.networkKind=="vpn") "VPN · " else "") + if(client==null) "未连接 · 点选连接" else if(client.online) "已连接" else "未连接 · ${client.connectionLabel}"
+                        val detail=(if(host.networkKind=="vpn") productText("VPN · ") else "") + if(client==null) productText("未连接 · 点选连接") else if(client.online) productText("已连接") else productText("未连接 · %@",clientConnectionText(client))
                         DiscoveredComputerRow(host.name,detail,"easywork-discovered-${host.id}",client?.online==true,!busy) {
                             if(host.known)perform { session.connectKnownEasyWork(host.endpoint);saved() } else perform { session.connectDiscoveredEasyWork(host);saved() }
                         }
                     }
-                    TextButton(onClick={ discovery?.scan() },enabled=!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-discovery-rescan")) { Text("重新查找") }
+                    TextButton(onClick={ discovery?.scan() },enabled=!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-discovery-rescan")) { Text(productText("重新查找")) }
                 }
                 "扫码连接"-> {
-                    TextButton(onClick={ scanning=true },enabled=!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-scan")) { Text("扫描电脑二维码") }
-                    NativeFormField(qr,{ qr=it },"或粘贴连接二维码内容","easywork-qr-description",!busy)
-                    TextButton(onClick={ pair(qr) },enabled=qr.isNotBlank()&&!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-pair-lan")) { Text("连接电脑") }
-                    Text("首次连接扫描电脑二维码，之后自动发现局域网与 VPN 入口。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+                    TextButton(onClick={ scanning=true },enabled=!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-scan")) { Text(productText("扫描电脑二维码")) }
+                    NativeFormField(qr,{ qr=it },productText("或粘贴连接二维码内容"),"easywork-qr-description",!busy)
+                    TextButton(onClick={ pair(qr) },enabled=qr.isNotBlank()&&!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-pair-lan")) { Text(productText("连接电脑")) }
+                    Text(productText("首次连接扫描电脑二维码，之后自动发现局域网与 VPN 入口。"),Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
                 }
                 "手动连接"-> {
-                    NativeFormField(address,{ address=it },"电脑地址","easywork-manual-address",!busy,KeyboardType.Uri)
-                    TextButton(onClick={ perform { session.connectKnownEasyWork(address);saved() } },enabled=address.isNotBlank()&&!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-manual-connect")) { Text("连接已保存的电脑") }
-                    Text("填写已配对电脑的地址；首次接入请使用电脑提供的连接二维码。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+                    NativeFormField(address,{ address=it },productText("电脑地址"),"easywork-manual-address",!busy,KeyboardType.Uri)
+                    TextButton(onClick={ perform { session.connectKnownEasyWork(address);saved() } },enabled=address.isNotBlank()&&!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-manual-connect")) { Text(productText("连接已保存的电脑")) }
+                    Text(productText("填写已配对电脑的地址；首次接入请使用电脑提供的连接二维码。"),Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
                 }
                 else-> {
-                    NativeFormField(relay,{ relay=it },"中继服务地址","easywork-relay-url",!busy,KeyboardType.Uri)
-                    NativeFormField(code,{ code=it },"电脑连接码","easywork-relay-code",!busy,KeyboardType.Ascii)
-                    TextButton(onClick={ perform { session.connectEasyWorkCode(name,relay,code) { pairingStatus=it };saved() } },enabled=code.isNotBlank()&&relay.isNotBlank()&&!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-pair-relay")) { Text("连接电脑") }
-                    Text("输入电脑显示的连接码，再在已登录的电脑上确认此设备。手机无需登录账号。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+                    NativeFormField(relay,{ relay=it },productText("中继服务地址"),"easywork-relay-url",!busy,KeyboardType.Uri)
+                    NativeFormField(code,{ code=it },productText("电脑连接码"),"easywork-relay-code",!busy,KeyboardType.Ascii)
+                    TextButton(onClick={ perform { session.connectEasyWorkCode(name,relay,code) { pairingStatus=it };saved() } },enabled=code.isNotBlank()&&relay.isNotBlank()&&!busy,modifier=Modifier.fillMaxWidth().testTag("easywork-pair-relay")) { Text(productText("连接电脑")) }
+                    Text(productText("输入电脑显示的连接码，再在已登录的电脑上确认此设备。手机无需登录账号。"),Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
                 }
             }
         }
-        if(busy&&pairingStatus==null)Text("正在连接…",Modifier.padding(16.dp).testTag("easywork-connecting"),color=colors.onSurfaceVariant)
+        if(busy&&pairingStatus==null)Text(productText("正在连接…"),Modifier.padding(16.dp).testTag("easywork-connecting"),color=colors.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
     }
     if(scanning)NativeQRScanner("easywork-host://pair?",{ scanning=false },additionalPrefixes=listOf("easywork://pair?")) { value->scanning=false;qr=value;pair(value) }

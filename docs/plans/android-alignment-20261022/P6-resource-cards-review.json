@@ -1,0 +1,57 @@
+{
+  "phase": "P6-4e",
+  "sourceBase": "3f843f22935b356818f4603e7bb3c693573a49c3",
+  "features": ["F19", "F32"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "0d01854efa81e73f83ac8c4a40bc45c0e7c99e7512b856c7e29a6c070cc36cbc",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceUiTest.kt": "11f7714fb845682ffe2c30182c25946a18e18d47453f7294dd095c9e901b1fff",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "a1d05bb70ba3cec5efe7449af6a66f1989a37710bd14f1129b0f90202c4d3c51",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageLinks.kt": "11f4c1b48a3b3ceedd879cbf36b27dc756c2686fa038652f92d1c0df730865e3",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageResourceCards.kt": "8c4b556ed7cc6f6ca5387f167baac357f4b22ee8d83cfb987f8988b67e7bd6c1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeResourcePreview.kt": "7c2a74b17404bf4b24ea066e0975a51ecf8f6a7600b463b2b0330135ddd66dba",
+    "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "063b6aafc91fab6189817ac628dbb6b124b5a79e18e965e556e097112727d96a"
+  },
+  "summary": "P6-4e：Android原消息附件卡直接提供预览和保存/分享入口，显示原文件名/大小、准备状态与至少48dp动作；等待期间不重建分享控件，重复/旧操作不得增加下载或分享，只有文件名的元数据没有下载权。68项当前App辅助与1项实际原消息资源链通过，69份默认存储证明；实际10GET/4资源GET、0写入/新输入，链接及卡片预览、受控分享字节一致。真实接收方、直接系统保存、完整格式/AX和同轮历史/live别名观察仍待补，不关闭完整F19/F32。",
+  "iosComparison": {
+    "reference": "RemoteFileView in RootView.swift and MessageLinks.swift",
+    "sourceHashes": {
+      "apps/ios/Sources/RootView.swift": "e0d0f730af6f0d16c9c5ef0ddfcaac1a851e08a382be53680aa4c7bc8ea26788",
+      "apps/ios/Sources/MessageLinks.swift": "cf7e6885f3fece2f5d046a88e355a5189a09adaedf0eab752a45ef3ccee0932f"
+    },
+    "sharedAssertions": [
+      "Direct preview/share before downloading; no redundant download button",
+      "Raw name/size, pending state, disabled duplicate actions, original message/target, immutable opened version",
+      "Metadata names alone do not authorize downloads; typed attachment must belong to original message"
+    ],
+    "explicitDifferences": [
+      "Android 48dp native controls and bounded native preview vs iOS Quick Look",
+      "Android image card thumbnails, direct system save/real recipient and full formats remain open"
+    ]
+  },
+  "nativeExaminerOnlyDelta": {
+    "onlyChangedSource": "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt",
+    "scope": "Opt-in actual examiner only: mount exact original LazyColumn message, retain metadata checkpoint and scope same-file card selectors to original message. Not selected by the 68 auxiliary methods.",
+    "acceptedAuxiliarySourceSha256": "230061cfeaa4d8526c5b30c780062f8174232a62a8487a7f677238e687f0c154",
+    "currentSourceSha256": "a3b0cdc93b542c7b5b432b8f1d698ba511a499be2c53082454f19a8084d70c76",
+    "inverseExact": true,
+    "appSha256Unchanged": "8fe9b9b708451e601c53f6692885f1c76c7f6e41350391c3e74928d73b0cdabc",
+    "currentRunnerSha256": "4b4260ad3b74f6344d29af6334ecb346ec17042e8f2d330dc96d39996886c216",
+    "auxiliaryMethods": 68,
+    "noNewProductOrAuxiliaryTestSource": true
+  },
+  "failuresRetained": [
+    "Raw Provider error equals raw file name: scope examiner to original error dialog, retain literal bytes",
+    "Replacing share control during busy retired captured native modifier; keep control identity, change inner icon/progress only",
+    "A prior API26 retired-version modifier rejected dispatch before App callback; this outcome recorded separately, not an App callback pass",
+    "Two actual native reads ended before link because exact lazy message not mounted; wait alone insufficient, mount original message first",
+    "Third actual read passed link/preview share but same file had two message cards; scope examiner to exact original message. All three failed scenes sealed with original owner/Turn unchanged and zero new inputs; no failed cohort promoted"
+  ],
+  "pending": [
+    "Direct SAF save, actual different-UID recipient and full URI/system lifecycle with Android P7",
+    "Image card thumbnails, PDF/office/SVG/large-format preview, full image gestures/AX/token matrix",
+    "Same original turn includes fallback/live ID aliases; duplicate-body/UI meaning requires separate source/read comparison, not inferred from same attachment ID alone",
+    "Current iOS App/physical resource verification, browser/system selection and API37 landscape",
+    "Task/project business and unrelated iOS A6 remain paused"
+  ],
+  "wholeStageClosed": false
+}

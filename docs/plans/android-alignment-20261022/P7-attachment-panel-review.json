@@ -1,0 +1,204 @@
+{
+  "phase": "P7-3b",
+  "sourceBase": "be074730f914a35e758628a84965dd1522ab77fc",
+  "features": ["F25", "F29", "F30", "F31", "F56", "F71"],
+  "files": {
+    "apps/android/localization/native-copy.json": "5b8f9c42dc1394daac52daacdc01dd6d1a9e1b35f925d5a99292174b617dacec",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "e87ebc0e053e3db7c545b6082263c9fb3570fd6d751f96836920079a0d5a6fce",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileAttachmentPanelTest.kt": "161ea01b386ad6a676464368140edd12501f9fd6db888f51db78e174501d2282",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFilePasteTest.kt": "9d7f46225c9fbf8997775bb05d6b88a0c782870a746e1236a9184c1362bfc7cc",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "0f9ae05764722fafe8869e83f5b724f258710ab952d961ced9a6bebd6222c3f0",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt": "1d57de998813f1fa0a73bb14071f123ad6fc2b9b1d86a66bdc39a8ddc2ad169f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRecentPhotosMediaTest.kt": "9444cfe01bf930cbb7603ec7e6d31c965f0a2843d90aa2428662216af17ae49f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedPhotoSelection.kt": "352c6c2ef40c114be36cb2efd36d9704638d0d2745d62c89837152aaea4f1332",
+    "apps/android/src/main/AndroidManifest.xml": "8c0614f89c05ae5433e902631431e26e37ec6cc9d002fd5373d33e983e915587",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "50a9b58770d6091992e64cb645249b150d64f1813f9bed53f8d98027f2d3d366",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "1b247aef3e176ab8f72b7e46a8dd85b6d9bcc218dccb9fe2f8852ce279d1f8fe",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "7e1ddb9ababe3a485725a5bdd815d610821cfd92e7938aeb12fdd4129f0a7878",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentPanel.kt": "478d6b1ecc0687cc81d3e38907821a9c1dd469ab5d1e883ddaf56ffb80919aea",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraCapture.kt": "7464b228c6c073810b0aca5d46adefa5b7a478b72b7f6d80a7d801dc0800733c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentPicker.kt": "7d5055846b718d8e0110fe9c4bcf79a5fa00c7754d17a93cab6282d6ccde1b60",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoPicker.kt": "de4c979fad63391fe72294c1e47e41b2c164e2381666e0e28244e8f271a7c744",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentPhotos.kt": "eb83c5f95631ca2387672c323333885a84e2b294a82fa4aa027ed44e94567537",
+    "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "57b47a7bd4a4ed50349b338b23a3cbd4976053b3f08fdc94f7f6818e809ea899",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "1988647b10158f283429fcfa701a2dcf82f42d46b23cb3fd7c8639ed1ff78235",
+    "apps/android/src/main/res/values/product_strings.xml": "328a0acff130d43f1e8f08cf0e9cc5ffe675b2d38ae182d1df2f6d344eeab9e4"
+  },
+  "summary": "P7-3b：Android附件面板对照iOS分组/图标、原请求及关闭后执行；最近30图横向快选、180px有界缩略图和前台观察，完整/部分权限入口不阻断系统选图。文件选择持于Session，原草稿/错误代次及多入口互斥，清空草稿使旧代次失效。三环境各47方法、API37受控36图与独立来源系统选图各1、暗色大字号2、三环境原模型回复GET-only3，共148默认存储证明；其中138辅助、7系统、3原回复只读。1681双语词条，新增模型0、累计220/P4205。冷回调/完整权限与最近新增提示、真机/API26正向选图和相机仍待验。",
+  "appSha256": "e3648cb75734c5d5f49df5857f48cfa998178410a30379460aaa54d5e7e980dd",
+  "testSha256": "109b70728554b932bed357d78d157006b2a0fcee63cc3bc518794cd1c762934d",
+  "sourceSha256": "c66ae05b8d72942bff7f0d54995f5681a039957687620ede0547d2eec7a7ec50",
+  "nativeAuxiliaryMethods": 138,
+  "actualSystemMethods": 7,
+  "actualOriginalModelReplyMethods": 3,
+  "defaultStorageProofs": 148,
+  "cohorts": [
+    {
+      "environment": "physical-API33",
+      "methods": 47,
+      "classCounts": {
+        "MobileAttachmentPanelTest": 6,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileInboxUiTest": 7,
+        "MobileLocalizationTest": 6
+      },
+      "reportSha256": "775d25c1b1c40e3dc892ece0d4664a2fcb934d35700b31282fd8f1fb0497df53",
+      "logSha256": "b7285da8cbfa6f93c53a6e97fd362430d04812910ca0bd5065d2d6b8d590d5df"
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 47,
+      "classCounts": {
+        "MobileAttachmentPanelTest": 6,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileInboxUiTest": 7,
+        "MobileLocalizationTest": 6
+      },
+      "reportSha256": "69fae9f45ecc537b91ff7c488691e94717667ff675f029f085eef69697919d96",
+      "logSha256": "22d95ae7e473b820068779c373a5e7d41dc7fe17f260c41fb0af2ad921fa2ba5"
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 47,
+      "classCounts": {
+        "MobileAttachmentPanelTest": 6,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileInboxUiTest": 7,
+        "MobileLocalizationTest": 6
+      },
+      "reportSha256": "ecc5959028d793552b60c295c7de24c1a9ed061dbf5aa716873370439eb0e87d",
+      "logSha256": "8c2f489d21deabf54ce587506795c4ce27f6d80d28b1c406caf20ac1aba56739"
+    }
+  ],
+  "cohortClassification": "Each47 comprises45 auxiliary and2 actual system cancellation methods; both source/runner/APK match final candidate. No failed pilot promoted.",
+  "recentLibrary": {
+    "environment": "owned-API37",
+    "methods": 1,
+    "classCounts": {
+      "MobileRecentPhotosMediaTest": 1
+    },
+    "reportSha256": "07e9be32f10c95e9d2656d0fd8afb868906484fc487366a4a6724125b721f3c1",
+    "logSha256": "9fa8d128387557cbb918d97e47b8c30858249e369b63092c42d6809cc786b5c8",
+    "syntheticRows": 36,
+    "rowLimit": 30,
+    "thumbnailEdge": 180,
+    "independentMetadataOrderOracle": true,
+    "providerRefreshAndOriginalPixelDraftVerified": true,
+    "source": "Same acceptance App UID controlled MediaStore rows; no model consumption",
+    "permission": "Temporary full library permission only on owned API37; original grant/flags restored"
+  },
+  "independentSystemPhotoSelection": {
+    "environment": "owned-API37",
+    "methods": 1,
+    "classCounts": {
+      "MobilePhotoPositiveTest": 1
+    },
+    "reportSha256": "5928f6cd18b80ce00f4e4a3fab1498778bb4e42646dad8e6b8fd77e818121b7e",
+    "logSha256": "60b9b95f300ead82648624f11760a2a71d079de23b38587a1cff8af33a5937dd",
+    "differentUidSource": true,
+    "noExplicitSourceUriGrant": true,
+    "currentPanelToSystemPickerAndOriginalEncryptedDraft": true,
+    "newModelInputs": 0
+  },
+  "viewportVariants": [
+    {
+      "environment": "owned-API26",
+      "methods": 1,
+      "classCounts": {
+        "MobileAttachmentPanelTest": 1
+      },
+      "reportSha256": "825e040dc0c59b380f89e9eefbd08afa93085987047f434a316fa61055588f5d",
+      "logSha256": "3b99d029fceea1eaf3d28f1cfe95a42a58ea965f8009c88dbeabab374d406aa0"
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 1,
+      "classCounts": {
+        "MobileAttachmentPanelTest": 1
+      },
+      "reportSha256": "8f2d6bdec673216a717efaca0fedbe8ac7ba380d5a2d5404a317e3fb1b8a04e4",
+      "logSha256": "f5d44484e50fb13fe38b6fe274f039e18334a672514c16b05ba1624e9700f8ff"
+    }
+  ],
+  "viewportScope": "API26 dark font2 and API37 dark font1.3; physical actual landscape viewport; no API37 landscape closure",
+  "actualOriginalModelReplyReads": [
+    {
+      "environment": "physical-API33",
+      "methods": 1,
+      "getRequests": 14,
+      "writeRequests": 0,
+      "originalOwnerAndCanonicalTurnsUnchanged": true,
+      "reportSha256": "2a0782911d9689fd62b1eccc6311c46fc5544d762a32e044e03ec3fa689641f6",
+      "logSha256": "8134c1d7a6d831feff6e9df1b1c8ad5af21750f752c3a2faaf8c1145ac443fc5"
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 1,
+      "getRequests": 23,
+      "writeRequests": 0,
+      "originalOwnerAndCanonicalTurnsUnchanged": true,
+      "reportSha256": "6ea658eea827c4010d21bad25d93ada85484980486625cea00ce34f2d7ac0470",
+      "logSha256": "96b3f651f0c7d0e08046d3afb0fa1006e563211a0282e954a280c1278297e964"
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 1,
+      "getRequests": 20,
+      "writeRequests": 0,
+      "originalOwnerAndCanonicalTurnsUnchanged": true,
+      "reportSha256": "6bece6f36d55bc004393d1fa1bfb8f643e18c7ccfd677d71aca7ee4adcdca194",
+      "logSha256": "c4e779fa939c7d2117c7f595f135cdc1d709e4583b1f29665d492068cccde909"
+    }
+  ],
+  "catalogKeysPerLanguage": 1681,
+  "sharedKeys": 1603,
+  "platformKeys": 78,
+  "checks": {
+    "androidBuild": "passed",
+    "buildLogSha256": "10cd96cf4d916a419b9220fe1d5725fb0dff5bc68b842675908f66daa025945c",
+    "mobileParity": "passed:71 features,1681 native keys, generation/schema/vector/localization boundaries",
+    "androidApprovalGuard": "passed:17 cases",
+    "approvalLogSha256": "1ab61272a85338afcf3f2416391cf2204d5398d686d6a2378d0a2ce7820bd419",
+    "format": "passed",
+    "pnpmCheck": "matched complete P7-2c run;616/620 frozen inputs unchanged,4 native catalog inputs current; native-copy checked separately, no new whole-root invocation",
+    "rootLogSha256": "d5165029b3cf7b758c1896a1975d0eab9440e00c028b2d92b519b088e7aa2bd1",
+    "matchedFrozenInputs": {
+      "total": 620,
+      "matched": 616,
+      "changed": {
+        "apps/android/src/androidTest/assets/localization-catalog.json": "e87ebc0e053e3db7c545b6082263c9fb3570fd6d751f96836920079a0d5a6fce",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "0f9ae05764722fafe8869e83f5b724f258710ab952d961ced9a6bebd6222c3f0",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "1988647b10158f283429fcfa701a2dcf82f42d46b23cb3fd7c8639ed1ff78235",
+        "apps/android/src/main/res/values/product_strings.xml": "328a0acff130d43f1e8f08cf0e9cc5ffe675b2d38ae182d1df2f6d344eeab9e4"
+      }
+    },
+    "nativeCopySourceSha256": "5b8f9c42dc1394daac52daacdc01dd6d1a9e1b35f925d5a99292174b617dacec",
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "ios": "Unchanged source during P7-3b; no A6 execution; new main voice increment observed for next integration",
+    "windows": "Current native matrix pending",
+    "mobileParityLogSha256": "6b6b78e2fe6d4ea7087867043feaa681be215354394f9b99f740686f455e5696"
+  },
+  "pending": [
+    "Original photo/document/camera request and returned URI/output across process death; encrypted durable state/orphan cleanup and full Provider lifecycle",
+    "Physical/API26 full recent-library access, limited permission selection/reselection, denial/revocation/settings-return and background/rotation/IME native matrix",
+    "Android currently asks via explicit Allow photo access button inside the panel; iOS first prompt is triggered on panel open; interaction difference remains tracked",
+    "Recent-new-photo hint/baseline/ignored IDs outside panel not yet implemented; visible recent30 and explicit import are implemented",
+    "Physical/API26 positive system photo selection and physical/API26 camera system cases; physical camera JPEG/model full send",
+    "Full UI07 themes/languages/AX and current native iOS/Windows; API37 landscape remains separate",
+    "New origin/main question-voice-recovery3commits observed; integrate and index before the voice parity stage; tasks/projects remain deferred"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "key": "原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。",
+      "en": "Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery.",
+      "zhHans": "原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"
+    },
+    {
+      "key": "开始一段新对话",
+      "en": "Start a new conversation",
+      "zhHans": "开始一段新对话"
+    },
+    {
+      "key": "从侧栏选择项目或继续对话。",
+      "en": "Choose a project or continue a conversation from the sidebar.",
+      "zhHans": "从侧栏选择项目或继续对话。"
+    },
+    {
+      "key": "结束等待 · ",
+      "en": "Stop waiting · ",
+      "zhHans": "结束等待 · "
+    },
+    {
+      "key": "查询记录 · ",
+      "en": "Query receipt · ",
+      "zhHans": "查询记录 · "
+    },
+    {
+      "key": "添加文件",
+      "en": "Add files",
+      "zhHans": "添加文件"
+    },
+    {
+      "key": "关闭提示",
+      "en": "Dismiss",
+      "zhHans": "关闭提示"
+    },
+    {
+      "key": "查询记录",
+      "en": "Query receipt",
+      "zhHans": "查询记录"
+    },
+    {
+      "key": "修改原消息",
+      "en": "Edit original message",
+      "zhHans": "修改原消息"
+    },
+    {
+      "key": "结束等待保留原操作与附件，不代表电脑任务已取消。",
+      "en": "Stopping the wait preserves the original operation and attachments. It does not cancel the task on the computer.",
+      "zhHans": "结束等待保留原操作与附件，不代表电脑任务已取消。"
+    },
+    {
+      "key": "允许发现局域网与 VPN 电脑",
+      "en": "Allow discovery of computers on the local network and VPN",
+      "zhHans": "允许发现局域网与 VPN 电脑"
+    },
+    {
+      "key": "将电脑上的连接二维码放在画面中。",
+      "en": "Place the computer's connection QR code within the frame.",
+      "zhHans": "将电脑上的连接二维码放在画面中。"
+    },
+    {
+      "key": "未获得相机权限，可返回粘贴电脑的连接内容。",
+      "en": "Camera access was not granted. Go back and paste the computer's connection details.",
+      "zhHans": "未获得相机权限，可返回粘贴电脑的连接内容。"
+    },
+    {
+      "key": "移除",
+      "en": "Remove",
+      "zhHans": "移除"
+    },
+    {
+      "key": "填写电脑上 Host Agent 的 HTTPS 地址和客户端密钥。密钥由系统 Keystore 保护。本机模拟器可使用回环地址；历史只读连接无需密钥。",
+      "en": "Enter the computer's Host Agent HTTPS address and client key. The key is protected by Android Keystore. On an emulator, you can use a loopback address; read-only history connections do not require a key.",
+      "zhHans": "填写电脑上 Host Agent 的 HTTPS 地址和客户端密钥。密钥由系统 Keystore 保护。本机模拟器可使用回环地址；历史只读连接无需密钥。"
+    },
+    {
+      "key": "不关联项目",
+      "en": "No project",
+      "zhHans": "不关联项目"
+    },
+    {
+      "key": "从侧栏选择已有项目和对话。历史只读连接无法创建新对话。",
+      "en": "Choose an existing project or conversation from the sidebar. Read-only history connections cannot create conversations.",
+      "zhHans": "从侧栏选择已有项目和对话。历史只读连接无法创建新对话。"
+    },
+    {
+      "key": "搜索对话",
+      "en": "Search conversations",
+      "zhHans": "搜索对话"
+    },
+    {
+      "key": "没有找到相关对话",
+      "en": "No matching conversations",
+      "zhHans": "没有找到相关对话"
+    },
+    {
+      "key": "暂无发送记录",
+      "en": "No send receipts",
+      "zhHans": "暂无发送记录"
+    },
+    {
+      "key": "刷新",
+      "en": "Refresh",
+      "zhHans": "刷新"
+    },
+    {
+      "key": "批量归档对话",
+      "en": "Batch archive conversations",
+      "zhHans": "批量归档对话"
+    },
+    {
+      "key": "打开侧栏",
+      "en": "Open sidebar",
+      "zhHans": "打开侧栏"
+    },
+    {
+      "key": "回到最新",
+      "en": "Jump to latest",
+      "zhHans": "回到最新"
+    },
+    {
+      "key": "未提交",
+      "en": "Not submitted",
+      "zhHans": "未提交"
+    },
+    {
+      "key": "待确认",
+      "en": "Awaiting confirmation",
+      "zhHans": "待确认"
+    },
+    {
+      "key": "执行计划",
+      "en": "Execute plan",
+      "zhHans": "执行计划"
+    },
+    {
+      "key": "正在执行计划",
+      "en": "Executing plan",
+      "zhHans": "正在执行计划"
+    },
+    {
+      "key": "文件 · %@",
+      "en": "File · %@",
+      "zhHans": "文件 · %@"
+    },
+    {
+      "key": "%@ · 进行中 %@",
+      "en": "%@ · Active %@",
+      "zhHans": "%@ · 进行中 %@"
+    },
+    {
+      "key": "%@，%@个会话进行中",
+      "en": "%@, active conversations: %@",
+      "zhHans": "%@，%@个会话进行中"
+    },
+    {
+      "key": "%@，进行中数量未知",
+      "en": "%@, active conversation count unknown",
+      "zhHans": "%@，进行中数量未知"
+    },
+    {
+      "key": "VPN · ",
+      "en": "VPN · ",
+      "zhHans": "VPN · "
+    },
+    {
+      "key": "局域网 · ",
+      "en": "LAN · ",
+      "zhHans": "局域网 · "
+    },
+    {
+      "key": "尚未连接客户端",
+      "en": "No client connected",
+      "zhHans": "尚未连接客户端"
+    },
+    {
+      "key": "原桌面连接",
+      "en": "Original desktop connection",
+      "zhHans": "原桌面连接"
+    },
+    {
+      "key": "EasyWork 连接",
+      "en": "EasyWork connection",
+      "zhHans": "EasyWork 连接"
+    },
+    {
+      "key": "托管连接",
+      "en": "Managed connection",
+      "zhHans": "托管连接"
+    },
+    {
+      "key": "共享连接",
+      "en": "Shared connection",
+      "zhHans": "共享连接"
+    },
+    {
+      "key": "历史连接",
+      "en": "History connection",
+      "zhHans": "历史连接"
+    },
+    {
+      "key": "允许本地网络访问后可发现局域网与 VPN 电脑",
+      "en": "Allow local network access to discover computers on LAN and VPN",
+      "zhHans": "允许本地网络访问后可发现局域网与 VPN 电脑"
+    },
+    {
+      "key": "暂时无法发现局域网电脑，可使用连接二维码或已保存地址",
+      "en": "Local network discovery is temporarily unavailable. Use a connection QR code or a saved address.",
+      "zhHans": "暂时无法发现局域网电脑，可使用连接二维码或已保存地址"
+    },
+    {
+      "key": "局域网发现暂不可用",
+      "en": "Local network discovery is temporarily unavailable.",
+      "zhHans": "局域网发现暂不可用"
+    },
+    {
+      "key": "原附件信息暂不可用，%@ 个附件的原记录已保留",
+      "en": "Original attachment information is unavailable. Preserved attachment count: %@.",
+      "zhHans": "原附件信息暂不可用，%@ 个附件的原记录已保留"
+    },
+    {
+      "key": "正在读取 %@ 个原附件的信息…",
+      "en": "Reading information for %@ original attachments…",
+      "zhHans": "正在读取 %@ 个原附件的信息…"
+    },
+    {
+      "key": "已读",
+      "en": "Read",
+      "zhHans": "已读"
+    },
+    {
+      "key": "查询聊天操作记录，%@，对话 %@，操作 %@",
+      "en": "Query conversation action receipt, %@, conversation %@, operation %@",
+      "zhHans": "查询聊天操作记录，%@，对话 %@，操作 %@"
+    },
+    {
+      "key": "电脑离线",
+      "en": "Computer offline",
+      "zhHans": "电脑离线"
+    },
+    {
+      "key": "此电脑未提供逻辑资源下载",
+      "en": "This computer does not provide resource downloads.",
+      "zhHans": "此电脑未提供逻辑资源下载"
+    },
+    {
+      "key": "读取电脑资源失败，请重试。",
+      "en": "Unable to read the computer resource. Try again.",
+      "zhHans": "读取电脑资源失败，请重试。"
+    },
+    {
+      "key": "文件不属于当前电脑和对话",
+      "en": "This file does not belong to the current computer and conversation.",
+      "zhHans": "文件不属于当前电脑和对话"
+    },
+    {
+      "key": "此文件无法直接预览，可保存或使用其他应用打开。",
+      "en": "This file cannot be previewed here. Save it or open it in another app.",
+      "zhHans": "此文件无法直接预览，可保存或使用其他应用打开。"
+    },
+    {
+      "key": "用其他应用打开",
+      "en": "Open in another app",
+      "zhHans": "用其他应用打开"
+    },
+    {
+      "key": "正在读取…",
+      "en": "Reading…",
+      "zhHans": "正在读取…"
+    },
+    {
+      "key": "对话已归档，仅支持查看，可在对话选项中恢复。",
+      "en": "This conversation is archived and read-only. Restore it from conversation options.",
+      "zhHans": "对话已归档，仅支持查看，可在对话选项中恢复。"
+    },
+    {
+      "key": "对话已归档，仅支持查看，可在电脑端恢复。",
+      "en": "This conversation is archived and read-only. Restore it on the computer.",
+      "zhHans": "对话已归档，仅支持查看，可在电脑端恢复。"
+    },
+    {
+      "key": "历史连接仅支持查看，草稿保存在手机。",
+      "en": "History connections are read-only. Your draft stays on this phone.",
+      "zhHans": "历史连接仅支持查看，草稿保存在手机。"
+    },
+    {
+      "key": "等待电脑确认连接与控制权，草稿保存在手机。",
+      "en": "Waiting for the computer to confirm connection and control. Your draft stays on this phone.",
+      "zhHans": "等待电脑确认连接与控制权，草稿保存在手机。"
+    },
+    {
+      "key": "已结束等待 · 原记录保留",
+      "en": "Stopped waiting · Original record preserved",
+      "zhHans": "已结束等待 · 原记录保留"
+    },
+    {
+      "key": "新聊天提交记录",
+      "en": "New conversation submission record",
+      "zhHans": "新聊天提交记录"
+    },
+    {
+      "key": "操作待确认",
+      "en": "Operation awaiting confirmation",
+      "zhHans": "操作待确认"
+    },
+    {
+      "key": "内容已保留，请检查当前任务后重新发送。",
+      "en": "Your content is preserved. Check the current task before sending again.",
+      "zhHans": "内容已保留，请检查当前任务后重新发送。"
+    },
+    {
+      "key": "电脑已准备，可以提交原内容",
+      "en": "The computer is ready. You can submit the original content.",
+      "zhHans": "电脑已准备，可以提交原内容"
+    },
+    {
+      "key": "本地意图已保存",
+      "en": "Local intent saved",
+      "zhHans": "本地意图已保存"
+    },
+    {
+      "key": "电脑准备中",
+      "en": "Preparing on the computer",
+      "zhHans": "电脑准备中"
+    },
+    {
+      "key": "原首条结果待核对，请查询原记录",
+      "en": "The original first input needs verification. Query its original record.",
+      "zhHans": "原首条结果待核对，请查询原记录"
+    },
+    {
+      "key": "提交中",
+      "en": "Submitting",
+      "zhHans": "提交中"
+    },
+    {
+      "key": "电脑已接收",
+      "en": "Received by the computer",
+      "zhHans": "电脑已接收"
+    },
+    {
+      "key": "原桌面正在打开",
+      "en": "Opening on the original desktop",
+      "zhHans": "原桌面正在打开"
+    },
+    {
+      "key": "操作未完成",
+      "en": "Operation incomplete",
+      "zhHans": "操作未完成"
+    },
+    {
+      "key": "结果待确认，查询原记录后再继续",
+      "en": "The result is unconfirmed. Query the original record before continuing.",
+      "zhHans": "结果待确认，查询原记录后再继续"
+    },
+    {
+      "key": "收起完整消息",
+      "en": "Collapse full message",
+      "zhHans": "收起完整消息"
+    },
+    {
+      "key": "未完成",
+      "en": "Incomplete",
+      "zhHans": "未完成"
+    },
+    {
+      "key": "归档对话 · %@",
+      "en": "Archive chats · %@",
+      "zhHans": "归档对话 · %@"
+    },
+    {
+      "key": "移除 %@ 的连接？电脑上的项目和对话会保留。",
+      "en": "Remove the connection to %@? Projects and chats on the computer will be kept.",
+      "zhHans": "移除 %@ 的连接？电脑上的项目和对话会保留。"
+    },
+    {
+      "key": "一次最多选择 5 张图片。",
+      "en": "Choose up to 5 photos at a time.",
+      "zhHans": "一次最多选择 5 张图片。"
+    },
+    {
+      "key": "未获得相机权限，照片未添加。",
+      "en": "Camera permission was not granted. No photo was added.",
+      "zhHans": "未获得相机权限，照片未添加。"
+    },
+    {
+      "key": "允许读取照片",
+      "en": "Allow photo access",
+      "zhHans": "允许读取照片"
+    },
+    {
+      "key": "最近图片记录暂时无法读取，原有记录已保留。请重试。",
+      "en": "Recent photo preferences could not be read. Existing records are preserved. Try again.",
+      "zhHans": "最近图片记录暂时无法读取，原有记录已保留。请重试。"
+    },
+    {
+      "key": "系统文件选择结果尚未确认。",
+      "en": "The system file selection result is not confirmed yet.",
+      "zhHans": "系统文件选择结果尚未确认。"
+    },
+    {
+      "key": "结束等待后，迟到的文件结果不会加入草稿。",
+      "en": "After ending this wait, late file results will not be added to a draft.",
+      "zhHans": "结束等待后，迟到的文件结果不会加入草稿。"
+    },
+    {
+      "key": "文件结果尚未加入原草稿，原文件记录已保留。",
+      "en": "The files have not been added to the original draft. The original file records are preserved.",
+      "zhHans": "文件结果尚未加入原草稿，原文件记录已保留。"
+    },
+    {
+      "key": "文件选择记录暂时无法读取，原记录已保留。",
+      "en": "File selection records cannot be read right now. The original records are preserved.",
+      "zhHans": "文件选择记录暂时无法读取，原记录已保留。"
+    },
+    {
+      "key": "丢弃文件结果",
+      "en": "Discard file result",
+      "zhHans": "丢弃文件结果"
+    },
+    {
+      "key": "照片选择记录暂时无法读取，原记录已保留。",
+      "en": "Photo selection records could not be read. The original records are preserved.",
+      "zhHans": "照片选择记录暂时无法读取，原记录已保留。"
+    },
+    {
+      "key": "系统照片选择结果尚未确认。",
+      "en": "The system photo selection result has not been confirmed.",
+      "zhHans": "系统照片选择结果尚未确认。"
+    },
+    {
+      "key": "结束等待后，迟到的照片结果不会加入草稿。",
+      "en": "After you stop waiting, late photo results will not be added to the draft.",
+      "zhHans": "结束等待后，迟到的照片结果不会加入草稿。"
+    },
+    {
+      "key": "照片结果尚未加入原草稿，原照片记录已保留。",
+      "en": "The photos have not been added to the original draft. The original photo records are preserved.",
+      "zhHans": "照片结果尚未加入原草稿，原照片记录已保留。"
+    },
+    {
+      "key": "丢弃照片结果",
+      "en": "Discard photo result",
+      "zhHans": "丢弃照片结果"
+    },
+    {
+      "key": "一次只能添加一张拍照结果。",
+      "en": "Only one camera result can be added at a time.",
+      "zhHans": "一次只能添加一张拍照结果。"
+    },
+    {
+      "key": "拍照请求暂时无法读取，原记录已保留。",
+      "en": "The camera request could not be read. The original record is preserved.",
+      "zhHans": "拍照请求暂时无法读取，原记录已保留。"
+    },
+    {
+      "key": "系统拍照或授权结果尚未确认。",
+      "en": "The system camera or permission result has not been confirmed.",
+      "zhHans": "系统拍照或授权结果尚未确认。"
+    },
+    {
+      "key": "结束等待后会保留原记录，迟到结果不会自动加入草稿。",
+      "en": "The original record is kept after ending the wait. Late results are not added to the draft automatically.",
+      "zhHans": "结束等待后会保留原记录，迟到结果不会自动加入草稿。"
+    },
+    {
+      "key": "拍照结果尚未确认加入原草稿，原记录已保留。",
+      "en": "Adding the camera result to its original draft has not been confirmed. The original record is preserved.",
+      "zhHans": "拍照结果尚未确认加入原草稿，原记录已保留。"
+    },
+    {
+      "key": "丢弃拍照结果",
+      "en": "Discard camera result",
+      "zhHans": "丢弃拍照结果"
+    },
+    {
+      "key": "加入原草稿",
+      "en": "Add to original draft",
+      "zhHans": "加入原草稿"
+    },
+    {
+      "key": "图片：",
+      "en": "Image: ",
+      "zhHans": "图片："
+    },
+    {
+      "key": "查看图片：",
+      "en": "View image: ",
+      "zhHans": "查看图片："
+    },
+    {
+      "key": "文件较大，请使用其他应用打开或分享原文件。",
+      "en": "This file is large. Open it in another app or share the original file.",
+      "zhHans": "文件较大，请使用其他应用打开或分享原文件。"
+    },
+    {
+      "key": "暂不支持此文件的文本编码，请使用其他应用打开或分享原文件。",
+      "en": "This text encoding is not supported. Open it in another app or share the original file.",
+      "zhHans": "暂不支持此文件的文本编码，请使用其他应用打开或分享原文件。"
+    },
+    {
+      "key": "文档结构较复杂，请使用其他应用打开或分享原文件。",
+      "en": "This document is too complex to preview. Open it in another app or share the original file.",
+      "zhHans": "文档结构较复杂，请使用其他应用打开或分享原文件。"
+    },
+    {
+      "key": "表格较大，请使用其他应用打开或分享原文件。",
+      "en": "This table is too large to preview. Open it in another app or share the original file.",
+      "zhHans": "表格较大，请使用其他应用打开或分享原文件。"
+    },
+    {
+      "key": "目标已变化，请重新打开预览。",
+      "en": "The target has changed. Open the preview again.",
+      "zhHans": "目标已变化，请重新打开预览。"
+    },
+    {
+      "key": "暂时无法预览文件，请重试。",
+      "en": "The file could not be previewed. Try again.",
+      "zhHans": "暂时无法预览文件，请重试。"
+    },
+    {
+      "key": "下一项",
+      "en": "Next result",
+      "zhHans": "下一项"
+    },
+    {
+      "key": "无法读取图片目录，请重试。",
+      "en": "Unable to load photos. Try again.",
+      "zhHans": "无法读取图片目录，请重试。"
+    },
+    {
+      "key": "使用系统选图器",
+      "en": "Use system photo picker",
+      "zhHans": "使用系统选图器"
+    }
+  ]
+}

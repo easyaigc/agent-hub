@@ -150,6 +150,7 @@ class MobileChatActionSessionTest {
 
 internal class ChatManagementFixture: java.io.Closeable {
     companion object { const val first="thread-actions-01";const val other="thread-actions-02" }
+    @Volatile var firstTitle="Original managed chat"
     val target=TargetScope("codex",null,null,"host-session-actions","workspace-actions","runtime-actions-"+UUID.randomUUID())
     @Volatile var extraThreads: List<String> = emptyList()
     @Volatile var writableHistory=false
@@ -174,7 +175,7 @@ internal class ChatManagementFixture: java.io.Closeable {
         .put("connectionMode","desktop-runtime").put("runtimeConnected",true).put("capabilities",JSONArray((if(supported)listOf("threads:manage") else emptyList<String>())+(if(writableHistory)listOf("reply","commands:target-bound:v1","queue","stop","generation-settings","plan-mode")else emptyList<String>())+(if(batchSupported)listOf("threads:archive:unloaded")else emptyList<String>())))
         .put("projects",JSONArray()).put("pinnedThreadIds",JSONArray(if(pinned)listOf(first) else emptyList<String>()))
         .put("threads",JSONArray((listOf(first,other)+extraThreads).filter { !deleted||it!=first }.map { id ->
-            JSONObject().put("id",id).put("hostId",target.hostId).put("title",if(id==first)"Original managed chat" else "Other managed chat")
+            JSONObject().put("id",id).put("hostId",target.hostId).put("title",if(id==first)firstTitle else "Other managed chat")
                 .put("state",if(id==first)state else "idle").put("archived",id==first&&archived||id in batchArchived).also { if(id==first&&lastTurnStatus!=null)it.put("lastTurnStatus",lastTurnStatus) }
         }))
     val server=CommandFixture { request -> when(request.path) {

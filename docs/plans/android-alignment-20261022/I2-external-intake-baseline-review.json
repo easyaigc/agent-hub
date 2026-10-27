@@ -1,0 +1,191 @@
+{
+  "phase": "I2",
+  "sourceBase": "6980671a046344891a318adc8595937be6eb12d7",
+  "upstream": "69e7e09b966e2db7c7755ee23431eeff4d162303",
+  "nodes": ["N048", "N049"],
+  "features": ["F56", "F71"],
+  "files": {
+    "apps/android/src/androidTest/assets/localization-catalog.json": "76fd036fc26044464f7aeea328e9c8121719327d275f8efd76b0640d485c2381",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "e9c93e3f0135109c59927a4f1781377930176acbe3f8a73db13b81f3cca3cae7",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "bce92f6dcb80405cc1a61d59d35bf025ac732190204da569d6f6356ebc03722c",
+    "apps/android/src/main/res/values/product_strings.xml": "e745d58cce40f2271e97d7ad6026f7e767a459d2e0508d4c8ca0bd4b2b7e28de",
+    "apps/ios/AttachmentAction/AttachmentAction.entitlements": "f855232ca43c95464fe8a7000af63f2f6c6eab75c0be8b27568f28622a23df0f",
+    "apps/ios/AttachmentAction/AttachmentActionViewController.swift": "f914fc3c5506fe5a1240625cab25bc1461a5823b9d7366f46cf3a80cc776e6ea",
+    "apps/ios/AttachmentAction/Info.plist": "e338ebdf799d49c460f55475009667fcf02430eea20e49566faf21dc2512de1f",
+    "apps/ios/AttachmentAction/en.lproj/InfoPlist.strings": "7564b62be47ac14cd784b169d9acf3ed75fa455905da8f66ddc9f521ed2f4ad9",
+    "apps/ios/AttachmentAction/zh-Hans.lproj/InfoPlist.strings": "b2fe09a39d5d543642b60d6266931559df91386bc8421a1ba7186ec27fb921c9",
+    "apps/ios/CodexManage-Simulator.entitlements": "9a9141d717b18ff219f3e2a50f0e613775ae90df25887fe3dedbdce1e4124960",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "cc7a6447466efbc0e6ec29d70ca3d8874be5938354c75a6f843671b4902d0c68",
+    "apps/ios/Info.plist": "53d9d5f609dad0948e4d4ae8d40081a6720e680af671dd5a8364e5c0427cd6b3",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "d55e61bb729ef467f492dbf86a0b23937779fd89c31ab6e3699e0f82ea3ab67b",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "c15fd128f757c5efae28582da9364a6d625f2fdc180116529d28154dc05b9ad6",
+    "apps/ios/Sources/AttachmentFileIntake.swift": "996f01da69e2cacf76514e87bdb171268eee260b79f4224c0d57c45a90008221",
+    "apps/ios/Sources/CodexManageApp.swift": "810b979168f4770be9244cb13b83c990158717e2352f04b3f4539964fe660163",
+    "apps/ios/Sources/ExternalAttachmentIntake.swift": "6047e1a35bce8de5fb2d7bc17769bd6bcc27ce3e1a5f39ffe6a3218bc7ff8fa6",
+    "apps/ios/Sources/LocalAttachmentPreparation.swift": "0eb509589e57cae85281392f1032504d7c12f87b2d24a4dd166ab98f1ee22c71",
+    "apps/ios/Sources/QuickAttachmentAcceptance.swift": "3ce44df12f40103a648f89828cabff3656d599cbc7ba02e38d785e8d5e424d1d",
+    "apps/ios/Sources/QuickAttachmentViews.swift": "d6b67baf40ec4ba84204eff5915dbbd78aeb836dfc9c72b0e6ad9f13d8f465e7",
+    "apps/ios/Sources/RootView.swift": "c8a47a371fd1051b55f0499054c6100f7d0d695910c08b1369b92c4265247086",
+    "apps/ios/Sources/SessionStore.swift": "8115dcaed0d88d23d835117a82f1e03402c47789864f388bab178dfb83a44660",
+    "apps/ios/Tests/CodexManageUITests.swift": "bb0b56193137865ecf3742714ea11d9f22d7fdc12e04385301ab11a340f09d38",
+    "apps/ios/Tests/ExternalAttachmentSourceApp.swift": "d41dfecb48c8b627853217cd180c1e9d176a38f493d89ca8752a5e88a1a9d7d5",
+    "scripts/mobile/quick-attachments-ios-acceptance.mjs": "134a4e67da0f780d79346bf2a94c46b0113fbbb297600208bfd448814caa2acf",
+    "scripts/runtime-smoke.mjs": "d3de8093d38b3ef5e3c2ac0ffb14dce95f75ac0c4fb436d0dacab855cceee5a1"
+  },
+  "newCatalogKeysPerLanguage": 13,
+  "catalogKeysPerLanguage": 1678,
+  "sharedKeys": 1603,
+  "nativeSupplementKeys": 75,
+  "androidSystemIntakeImplemented": false,
+  "newRealModelInputs": 0,
+  "wholeStageClosed": false,
+  "auxiliaryHarnessRepair": "Await the original idle receipt after approval dispatch and duplicate rejection before reading fixture output, which is synchronously written before idle. No product approval or wait deadline change.",
+  "checks": {
+    "pnpmCheck": "current complete run passed",
+    "rootLogSha256": "dcea73be1c39a6130857577d1984dc86496bf47c91cc0c410761d6e5ddd5c3cf",
+    "sourceInputs": 616,
+    "sourceInputsUnchanged": true,
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "androidBuild": "current passed",
+    "iosBuild": "current independent simulator App and Action target, arm64/x86_64, passed; no iOS A6 App/physical execution",
+    "iosBuildLogSha256": "a7d071f4b65531c5f9a219e9e87ff07abeb2a996d3e96cad12289d3df06af745",
+    "iosExecutableSha256": "7b9e72aaf328200eaa9856e8a6c657f41d4ff5e9710e8ff266da6b2fa85ec58f",
+    "iosActionExecutableSha256": "5dad6f480fb62fc9c86c05a8402bc8eaa66c74b5d58a258ed42e1aa9530d606e",
+    "mobileParity": "current passed",
+    "format": "current passed"
+  },
+  "nativeAuxiliary": {
+    "methods": 33,
+    "environments": [
+      "physical API33 portrait light",
+      "API26 portrait light",
+      "API37 portrait light"
+    ],
+    "perEnvironment": "six isolated caption, four full-App action and one compiled-catalog method",
+    "sourceSha256": "bbae6b40114aa9b9784ceb79b090c98668ea081a189096fabb14d4da78c8d10a",
+    "appSha256": "0dd51b7dcc0c7f188d1b3d78aa2b312389a02a09cb513a353f848220f79eb7af",
+    "runnerSha256": "4cc2902aa0b301f3064e74b82c784804454d0b3ebc21a6a10723fe68cc829cf7",
+    "wholeNewAndroidSystemFunctionAcceptance": false
+  },
+  "actualOriginalReads": {
+    "methods": 6,
+    "rows": [
+      {
+        "environment": "physical API33",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 35,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bbae6b40114aa9b9784ceb79b090c98668ea081a189096fabb14d4da78c8d10a",
+        "nativeReportSha256": "c5f0458f22685399be45dd01f451d2685dacbbaaf2ab98d375841521397ddd0b",
+        "hostReportSha256": "ca3f32c5389fb584a9326adce7bc04dc657ba03a8c3e347119c1e766e6bcaf80",
+        "ownerTurnsUnchanged": true,
+        "resourceGets": 4
+      },
+      {
+        "environment": "physical API33",
+        "kind": "code",
+        "http": {
+          "requests": 16,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bbae6b40114aa9b9784ceb79b090c98668ea081a189096fabb14d4da78c8d10a",
+        "nativeReportSha256": "a7b3bd9dbafce7e0071eda777241400977ce71080290d03625a4d14417f0ea9d",
+        "hostReportSha256": "42fec1682ba27df2306b6e91d24a5a195d05377b0f42ac65e770e908b8341589",
+        "ownerTurnsUnchanged": true,
+        "systemCopyAttempted": true,
+        "systemCopyMatched": true,
+        "api26ClipboardPending": false
+      },
+      {
+        "environment": "API26",
+        "kind": "code",
+        "http": {
+          "requests": 16,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bbae6b40114aa9b9784ceb79b090c98668ea081a189096fabb14d4da78c8d10a",
+        "nativeReportSha256": "06c3d3dbdc81723df94d96873160e700df21a8c3c3b568d99654294f22c56125",
+        "hostReportSha256": "45a9a4a8d3fbd2b5765bce48a05af3ee741af22ec264d4d7034a73dac67e0901",
+        "ownerTurnsUnchanged": true,
+        "systemCopyAttempted": false,
+        "systemCopyMatched": false,
+        "api26ClipboardPending": true
+      },
+      {
+        "environment": "API37 portrait",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 42,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bbae6b40114aa9b9784ceb79b090c98668ea081a189096fabb14d4da78c8d10a",
+        "nativeReportSha256": "532eec3d72b652e229ad82c7c50d57c4d1d9a107cc71e6a907da93c2ede27e1e",
+        "hostReportSha256": "03b0ed1c699b58d6c73f4f187b1d4adb9d0934aa6ddde65c3abae1797d11abed",
+        "ownerTurnsUnchanged": true,
+        "resourceGets": 4
+      },
+      {
+        "environment": "API26",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 25,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bbae6b40114aa9b9784ceb79b090c98668ea081a189096fabb14d4da78c8d10a",
+        "nativeReportSha256": "d5a554c5ceece55aaf500a9bd4aecaeca505373e6e2c00098bba2e0584e95204",
+        "hostReportSha256": "aad7ccdc79e3da5eb5c1d6a9cae758fda5016184e26984d563ac21b63528a2f0",
+        "ownerTurnsUnchanged": true,
+        "resourceGets": 4
+      },
+      {
+        "environment": "API37 portrait",
+        "kind": "code",
+        "http": {
+          "requests": 19,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bbae6b40114aa9b9784ceb79b090c98668ea081a189096fabb14d4da78c8d10a",
+        "nativeReportSha256": "477a847245a98ce3865e57916f1caeb77614af4a598d81df8063742ce5dc7c76",
+        "hostReportSha256": "0423f997158b910fe521eb0f165d80b05fdb2d5cdb870baeb6cf4c895008e418",
+        "ownerTurnsUnchanged": true,
+        "systemCopyAttempted": true,
+        "systemCopyMatched": true,
+        "api26ClipboardPending": false
+      }
+    ],
+    "httpRequests": 153,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "originalOwnerAndTurnsUnchanged": true,
+    "systemCodeCopiesMatched": 2,
+    "api26EmptyPriorClipboard": "not attempted, pending",
+    "resourceChooser": "intercepted; not actual external recipient"
+  },
+  "defaultStorageProofs": 39,
+  "mergeResolution": [
+    "iOS project source-group/build-phase references union; original resource presentation and new Action target both retained",
+    "Manifest source/feature/change indices union; original F71 common assertion already exactly matched upstream",
+    "Generated product table regenerated; local Android caption/action and shared tool production paths preserved"
+  ],
+  "failuresRetained": [
+    "First copied private resource controller retained the old relative source depth and stopped before Host/IPC/HTTP; normal native cohort already passed and was not rerun; path corrected before actual read-only scenes",
+    "Initial complete root attempt failed at an existing fixture race: approval API returned before child wrote approval-response. Examiner now waits for the same idle receipt emitted after synchronous fixture write; duplicate request still409 and product logic unchanged. Original failed log retained"
+  ],
+  "pending": [
+    "Android explicit clipboard file/image intake, system share/open receiver, durable local inbox and original-draft import confirmation",
+    "Remaining P6 formats/AX/token and typed app-owned failure prefixes",
+    "iOS current App/physical A6 remains paused; inherited iOS evidence is not current Android proof",
+    "OS/provider/landscape/cellular/VPN pending remain separate"
+  ],
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205
+}

@@ -28,7 +28,10 @@ struct EasyWorkAgentClient: AgentClient {
     var value = try object(await channel.request("thread/suggestion/read", ["threadId": scope.threadId, "sourceTurnId": scope.sourceTurnId]))
     // The encrypted session has already verified the exact response-envelope target.
     value["target"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(scope.target))
-    let response = try JSONDecoder().decode(DesktopSuggestionResponse.self, from: easyWorkJSON(value))
+    let data = try easyWorkJSON(value)
+    guard let json = String(data: data, encoding: .utf8),
+      CodexHttpContract.shared.validate(json: json, definition: "desktopSuggestionResponse") == nil else { throw HostServiceError.invalidResponse }
+    let response = try JSONDecoder().decode(DesktopSuggestionResponse.self, from: data)
     guard response.matches(scope) else { throw HostServiceError.invalidResponse }
     return response
   }

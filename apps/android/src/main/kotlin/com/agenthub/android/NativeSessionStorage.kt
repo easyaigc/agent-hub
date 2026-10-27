@@ -18,7 +18,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /** Local secrets and cached reads are bound to this installation's Android Keystore key. */
-class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1") {
+class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1") {
     init { require(keyAlias.matches(Regex("[a-zA-Z0-9_-]{1,128}"))) }
     private val root = File(context.noBackupFilesDir, namespace).apply { mkdirs() }
     // AtomicFile's older reader may restore its backup while another instance
@@ -144,6 +144,15 @@ class NativeSessionStorage(context: Context, namespace: String = "mobile-v1", pr
     internal fun <T> snapshotTransaction(block: ()->T): T = synchronized(SNAPSHOT_IO_LOCK,block)
     // A retry fence must be consumed atomically across journal instances too.
     internal fun <T> operationTransaction(block: ()->T): T = ioLock.withLock(block)
+    internal val coordinationKey get()=root.canonicalPath
+    internal fun child(context: Context,suffix: String): NativeSessionStorage {
+        require(suffix.matches(Regex("[a-z0-9-]{1,32}")))
+        val childAlias="agent-hub-child-"+MessageDigest.getInstance("SHA-256").digest((keyAlias+"\u0000"+suffix).toByteArray()).take(24).joinToString("") { "%02x".format(it) }
+        return NativeSessionStorage(context,namespace+"-"+suffix,childAlias)
+    }
+    internal suspend fun awaitQueuedWrites() = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { waiting ->
+        writes.execute { if(waiting.isActive)waiting.resumeWith(Result.success(Unit)) }
+    }
     internal fun storedBytes(name: String): Long = ioLock.withLock { file(name).baseFile.length() }
     fun remove(name: String) = ioLock.withLock { requireWritable();file(name).delete() }
     fun token(id: String) = CodexConnectionVault(this).token(id) ?: read("token:$id").orEmpty()

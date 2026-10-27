@@ -14,7 +14,8 @@ import org.junit.Assert.*
 class MobilePendingCreationAttachmentTest {
     @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
     @get:Rule(order=1) val ui=createAndroidComposeRule<MainActivity>()
-    private val session get()=ui.activity.session
+    private lateinit var owned: OwnedControlAcceptance
+    private val session get()=owned.session
     private val scope=TargetScope("codex",null,null,"creation-isolation-fixture-host","fixture-workspace",java.util.UUID.randomUUID().toString())
     private val intents=mutableListOf<CreationIntent>()
     private val submits=mutableListOf<String>()
@@ -76,9 +77,9 @@ class MobilePendingCreationAttachmentTest {
                 assertFalse(detaches.contains(operationId));detaches.add(operationId);return result(operationId,"outcome-unknown",true)
             }
         }
-        ui.waitUntil(10_000) { !session.restoring }
-        assertFalse("Only reset the fixture after the default encrypted restore has completed",session.localRecoveryRequired)
-        ui.runOnIdle { ui.activity.readNetworkMonitor.stop();session.resetAcceptance(reads,commands) }
+        ui.waitUntil(10_000) { !ui.activity.session.restoring }
+        assertFalse("Only start the isolated fixture after the default encrypted restore has completed",ui.activity.session.localRecoveryRequired)
+        ui.runOnIdle { owned=OwnedControlAcceptance(ui.activity,"pending-creation-attachments");session.resetAcceptance(reads,commands) }
         main { session.connect("Synthetic creation isolation fixture","https://fixture.invalid","") }
         ui.waitUntil(5_000) { session.hasClient&&!session.loading&&session.projects.size==2&&session.models.isNotEmpty() }
         ui.runOnIdle { session.newChat("fixture-project");session.configure(chosen) };main { allowSyntheticRegressionSharing(session) }
@@ -113,11 +114,11 @@ class MobilePendingCreationAttachmentTest {
         ui.waitUntil(10_000) { submits.size==2&&session.transferStatus==null&&row(first).phase=="confirmed"&&jobs.getValue(first.id).isCompleted }
         assertEquals(listOf(first.id,first.id),submits);assertEquals(listOf("First immutable creation"),intents.map { it.text });assertTrue(detaches.isEmpty())
         val saved=row(first);assertEquals(first.intent,saved.intent);assertEquals(first.intentSha256,saved.intentSha256);assertEquals(first.sharingScope,saved.sharingScope);assertFalse(saved.detached)
-        val cold=runBlocking { NativeOperationJournal(NativeSessionStorage(InstrumentationRegistry.getInstrumentation().targetContext)).records(first.target).single { it.id==first.id } }
+        val cold=runBlocking { NativeOperationJournal(owned.storage).records(first.target).single { it.id==first.id } }
         assertEquals(saved.body().toString(),cold.body().toString())
     }
     private fun continueOriginal(first: SavedOperation) { ui.onNodeWithTag("continue-creation-${first.id}").performScrollTo().assertIsEnabled().performClick();waitConfirmed(first) }
-    @After fun release() { submitGate?.complete(Unit);authorityGate?.complete(Unit);ui.runOnIdle { session.leaveForeground() } }
+    @After fun release() { submitGate?.complete(Unit);authorityGate?.complete(Unit);if(::owned.isInitialized)ui.runOnIdle { session.leaveForeground();owned.verifyDefault() } }
     private fun immutable(first: SavedOperation) {
         assertEquals(first.intent,row(first).intent);assertEquals(first.intentSha256,row(first).intentSha256)
         assertEquals(first.sharingScope,row(first).sharingScope);assertEquals(1,intents.size)
@@ -135,7 +136,7 @@ class MobilePendingCreationAttachmentTest {
         val settings=session.generationSettings;continueOriginal(first)
         assertEquals("",session.selectedThread);assertEquals("Independent text with next attachment",session.text);assertEquals(listOf(nextFile),session.attachments);assertEquals(settings,session.generationSettings)
         assertEquals(1,uploads.size);immutable(first)
-        main { assertArrayEquals("Original attachment bytes".toByteArray(),NativeDraftFiles(NativeSessionStorage(ui.activity)).bytes(originalFile.manifest));assertArrayEquals("Independent next attachment".toByteArray(),NativeDraftFiles(NativeSessionStorage(ui.activity)).bytes(nextFile.manifest)) }
+        main { assertArrayEquals("Original attachment bytes".toByteArray(),NativeDraftFiles(owned.storage).bytes(originalFile.manifest));assertArrayEquals("Independent next attachment".toByteArray(),NativeDraftFiles(owned.storage).bytes(nextFile.manifest)) }
     }
     @Test fun unresolvedWithoutRetryAuthorityStillAllowsOnlyLocalPreparation() {
         proofEnabled=false;val first=original();newFile()
@@ -157,7 +158,8 @@ class MobilePendingCreationAttachmentTest {
     }
     @Test fun pendingPreparationKeepsTenFileLimitAndOriginalIntent() {
         val first=original()
-        repeat(10) { newFile("local-$it.txt") };val files=session.attachments
+        lateinit var legacy: AttachmentImportDestination;main {legacy=session.attachmentImportDestination().copy(maximum=10)}
+        repeat(10) { n->main {session.addAttachment("local-$n.txt","text/plain","legacy $n".toByteArray(),legacy.copy(requestId=java.util.UUID.randomUUID().toString()))} };val files=session.attachments
         main { assertTrue(runCatching { session.addAttachment("eleventh.txt","text/plain",byteArrayOf(1)) }.isFailure) }
         assertEquals(10,session.attachments.size);assertEquals(files,session.attachments);immutable(first)
         assertTrue(JSONObject(first.intent).getJSONArray("attachments").length()==0);assertEquals(listOf(first.id),submits);assertTrue(uploads.isEmpty());assertFalse(session.decision.enabled)

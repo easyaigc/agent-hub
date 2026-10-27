@@ -12,7 +12,8 @@ data class MobilePlanStep(val step: String,val status: String)
 data class MobileProposedPlan(val id: String,val turnId: String,val text: String)
 data class MobileRuntime(val state: String,val turnId: String?,val plan: List<MobilePlanStep>,
     val error: String?,val approvals: List<MobileApproval>,val receipts: List<DeliveryReceipt>,val canControl: Boolean?,
-    val collaborationMode: String?,val proposedPlan: MobileProposedPlan?,val settings: GenerationSettings) {
+    val collaborationMode: String?,val proposedPlan: MobileProposedPlan?,val settings: GenerationSettings,
+    val suggestionSourceTurnId: String?=null) {
     companion object {
         fun decode(v: JSONObject,hostId: String,threadId: String): MobileRuntime {
             CodexCommandCodec.validate(v,"runtime")
@@ -31,7 +32,7 @@ data class MobileRuntime(val state: String,val turnId: String?,val plan: List<Mo
             val settings=v.optJSONObject("generationSettings")
             return MobileRuntime(v.getString("state"),v.optional("turnId"),v.getJSONArray("plan").objects().map { MobilePlanStep(it.getString("step"),it.getString("status")) },
                 v.optional("error"),approvals,receipts,v.booleanOrNull("canControl"),v.optional("collaborationMode"),plan,
-                GenerationSettings(settings?.optional("model"),settings?.optional("effort"),settings?.optional("permissionMode"),settings?.optional("speed")))
+                GenerationSettings(settings?.optional("model"),settings?.optional("effort"),settings?.optional("permissionMode"),settings?.optional("speed")),v.optional("suggestionSourceTurnId"))
         }
     }
 }

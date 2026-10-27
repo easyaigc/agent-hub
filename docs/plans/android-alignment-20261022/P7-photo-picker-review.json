@@ -1,0 +1,250 @@
+{
+  "phase": "P7-2a",
+  "sourceBase": "4ddc01c95d2f2acdef929a6b1557d70e9bc71577",
+  "features": ["F30", "F31", "F32", "F56", "F71"],
+  "files": {
+    "apps/android/localization/native-copy.json": "f22d9a65698dc09790ccd8ad947f1130659751550f596f3b49019592f5469819",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "c784925f25071371a4e4339a31684c75dbc883ca1fbef3f0310498fbfd81c88a",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "e7b02a2786d716bdd6cc8d455de5129d77e36523735e6603873f90b6bd03ad05",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt": "92b27aab27e04ef269bc74055e47ceb64aa80cb5787e529011428c60b2789d6c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "9caa66a60471ee573220090b7ce45f5783aa2658599de64b011f764a3ab6d3d0",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "e661d3e8838c45ff99ac06b93e16f942eb3dc257c35912c3264c454a5d27fb15",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "06194139e931348eeeadf2428dbdfbfdd92b0bd9dffb0ed5bc6170f4ee6ef3e4",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "a6272ca1ee8b8cc0e17610753bf72818901a8d262d929b20893fbd3e8c29cc16",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoIntake.kt": "1467ab96106f1fef2582e44a1e45d0c9a8b657c3421c69c785642a454f1bc9b0",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoPicker.kt": "ba726e5f19dc160bedea123eefa73aa2f82275ae66613fe0bbe78e22bb2bd03c",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "4cb14d375629bc76ad3683f66aa951504d93c4373a40bfe5fb084061b18dbdbc",
+    "apps/android/src/main/res/values/product_strings.xml": "44a42c2212cd13d200a86c2202ddf8ab2587d0bcb9398b9b9147767ee13f0374"
+  },
+  "summary": "P7-2a：Android增加只选图片系统入口，原请求持于Session，旧回调不消费新请求；5项选择/20MiB/100MP边界及本机PNG/JPEG/EXIF方向准备，对齐iOS图片准备规则，错误按原草稿/错误代次保护。1679双语词条。101匹配辅助、3实际原目标本地图片/资源整例及104默认存储证明通过；三环境系统打开/取消已验，正向系统选图/模型读取、相机/最近图片及完整P7仍开。",
+  "checks": {
+    "pnpmCheck": "matched prior P7-1c completed root run:616/620 input files exact. Four differences are Android generated catalogs/native catalog examiner; current native build,101 methods and parity/catalog checks cover delta. No new whole-root invocation.",
+    "rootLogSha256": "d34db5986cf30ca494714ed9f62bcd5f9b0ade3adae076052c5420efe80eb791",
+    "matchedInputs": 616,
+    "priorFrozenInputs": 620,
+    "currentNativeCatalogInputs": {
+      "apps/android/src/androidTest/assets/localization-catalog.json": "c784925f25071371a4e4339a31684c75dbc883ca1fbef3f0310498fbfd81c88a",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "e7b02a2786d716bdd6cc8d455de5129d77e36523735e6603873f90b6bd03ad05",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "4cb14d375629bc76ad3683f66aa951504d93c4373a40bfe5fb084061b18dbdbc",
+      "apps/android/src/main/res/values/product_strings.xml": "44a42c2212cd13d200a86c2202ddf8ab2587d0bcb9398b9b9147767ee13f0374"
+    },
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "androidBuild": "current passed",
+    "androidApprovalGuard": "current passed",
+    "ios": "unchanged source/I2 App+Action build matched; iOS A6 not executed",
+    "mobileParity": "current passed",
+    "format": "current passed"
+  },
+  "implementation": [
+    "Native pinned Activity1.13 image-only PickMultipleVisualMedia contract, max5 and ordered request; native fallback remains OS-selected, no photo-library permission/read on launch without user action",
+    "Menu-disposal notification matches original presentation; wait actual native popup release and main-window focus plus frame before OS launch, matching iOS deferred action; retired menu cannot release a newer request",
+    "Retained Session one outstanding immutable request; callback captures exact request object and draft generation, cannot consume or fail newer request; empty result preserves draft, duplicate URIs ordered-deduped and errors use captured error revision",
+    "Actual ContentResolver bounded read then native dimension/decode/EXIF orientation and PNG-or-JPEG92 preparation,100MP boundary, recycled bitmaps, bounded compression output/20MiB; ordinary file loader unchanged",
+    "Only local original-generation attachment preparation/encrypted draft storage, no Host upload/submit; fixed file/image names not translated, one Android-only fallback limit caption,1603+76=1679 bilingual keys",
+    "Controller is observable when configured after root render; actual rotation/process result matrix remains pending"
+  ],
+  "nativeAuxiliary": {
+    "methods": 101,
+    "normal": 87,
+    "style": 14,
+    "perNormalEnvironment": "7 photo methods,9 original attachment ownership,5 file paste,7 inbox UI,1 compiled catalog",
+    "environments": [
+      "physical API33 current viewport light",
+      "API26 portrait light",
+      "API37 portrait light",
+      "API26 font2",
+      "API37 dark"
+    ],
+    "sourceSha256": "1d00e8a784dffe48edb44241db9638f4d53a47d8f0d1c8e427a075257eee80ca",
+    "appSha256": "e9874bb0294725763fae072a69fed8c1c1739b787507aba917c4cbd8490cd390",
+    "testSha256": "e2cabfc7fc0f72860af09ebc0db859b911fc4ccbb3c71e36abf8ed6675c9da93",
+    "evidenceReuse": "101 exact matched product APK and all auxiliary/core/protocol inputs. Only separate actual ResourceLiveTest later changes Activity ownership, readiness and explicit semantic activation; current actual runner tested separately.",
+    "systemPicker": "Actual resolved system image-only handler opened and SDK Back canceled on all3 environments; owner/child/idle checks, no photo selected. This is not positive system selection.",
+    "imageAssertions": "Real FileProvider bytes, exact PNG pixels/name/MIME, independent EXIF2/6/8 fixed vectors, JPEG output, malformed/non-image/non-content/empty rejection; request/new-error/original-generation fences",
+    "transport": "Synthetic GET-only Host for owned native cohorts, not real Electron/model assertions",
+    "systemSelectorCaptureViewports": [
+      {
+        "environment": "API26",
+        "themeArgument": "light",
+        "fontScale": "2",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "environment": "API26",
+        "themeArgument": "light",
+        "fontScale": "1",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "environment": "API37",
+        "themeArgument": "light",
+        "fontScale": "1",
+        "width": 1080,
+        "height": 2424
+      },
+      {
+        "environment": "physical API33",
+        "themeArgument": "light",
+        "fontScale": "1",
+        "width": 2340,
+        "height": 1080
+      },
+      {
+        "environment": "API37",
+        "themeArgument": "dark",
+        "fontScale": "1",
+        "width": 1080,
+        "height": 2424
+      }
+    ],
+    "orientationScope": "portrait requested by test argument; no physical orientation enforcement or blanket portrait claim"
+  },
+  "actualOriginalTargetReads": {
+    "methods": 3,
+    "rows": [
+      {
+        "environment": "API37 portrait",
+        "http": {
+          "requests": 66,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "83861efbc2cd1b2858717d95a196cac6a6c7d231c655de6bd2b66df80e35f859",
+        "appSha256": "e9874bb0294725763fae072a69fed8c1c1739b787507aba917c4cbd8490cd390",
+        "testSha256": "fc98a9ba777fc10fbd5231c617cc272d28219e06bb263b9f9ce3fa376b697787",
+        "nativeReportSha256": "3ac38c0a8a81083cfb2bcbe2b7edc32b3a1c49601f1999bdea3cef6a7a7069c7",
+        "hostReportSha256": "b2dbf6105cc66a32a142a7cbb0c84c6fb8447eb57d6d3b5251492eef535fdc11",
+        "originalPhotoProofSha256": "6892230e43ab77d9fa1a3855d067cb808ddc2af073308f7c4f4228bfac917462",
+        "photoPreparation": {
+          "originalLiveTargetMatched": true,
+          "nativePhotoControllerAndResolver": true,
+          "normalizedPixelsNameMimeAndEncryptedBytesMatched": true,
+          "durableOriginalDraftMetadataConfirmed": true,
+          "originalTextAndFilesRestored": true,
+          "systemPositiveSelection": false,
+          "source": "same-App examiner-created PNG",
+          "newModelInputs": 0,
+          "uploadOrSubmit": false
+        },
+        "systemPasteAttempted": true,
+        "independentInboxReceivedAndAdded": true,
+        "originalOwnerAndTurnsUnchanged": true,
+        "photoCapturedViewport": {
+          "width": 1080,
+          "height": 2219
+        }
+      },
+      {
+        "environment": "physical API33",
+        "http": {
+          "requests": 61,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "83861efbc2cd1b2858717d95a196cac6a6c7d231c655de6bd2b66df80e35f859",
+        "appSha256": "e9874bb0294725763fae072a69fed8c1c1739b787507aba917c4cbd8490cd390",
+        "testSha256": "fc98a9ba777fc10fbd5231c617cc272d28219e06bb263b9f9ce3fa376b697787",
+        "nativeReportSha256": "e38c1e06873e4c09388c351755f8eaa7a353c64b91b19c537330c4372433894c",
+        "hostReportSha256": "f3d9356e385702710c95a042de90ad6f1e2336421bfb17efba93d1f15afa2fe6",
+        "originalPhotoProofSha256": "6892230e43ab77d9fa1a3855d067cb808ddc2af073308f7c4f4228bfac917462",
+        "photoPreparation": {
+          "originalLiveTargetMatched": true,
+          "nativePhotoControllerAndResolver": true,
+          "normalizedPixelsNameMimeAndEncryptedBytesMatched": true,
+          "durableOriginalDraftMetadataConfirmed": true,
+          "originalTextAndFilesRestored": true,
+          "systemPositiveSelection": false,
+          "source": "same-App examiner-created PNG",
+          "newModelInputs": 0,
+          "uploadOrSubmit": false
+        },
+        "systemPasteAttempted": true,
+        "independentInboxReceivedAndAdded": true,
+        "originalOwnerAndTurnsUnchanged": true,
+        "photoCapturedViewport": {
+          "width": 2250,
+          "height": 946
+        }
+      },
+      {
+        "environment": "API26",
+        "http": {
+          "requests": 36,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "83861efbc2cd1b2858717d95a196cac6a6c7d231c655de6bd2b66df80e35f859",
+        "appSha256": "e9874bb0294725763fae072a69fed8c1c1739b787507aba917c4cbd8490cd390",
+        "testSha256": "fc98a9ba777fc10fbd5231c617cc272d28219e06bb263b9f9ce3fa376b697787",
+        "nativeReportSha256": "090bd712921b794c8501738607980fe9c067869af2465f90175a088d99224ee0",
+        "hostReportSha256": "4c7da37840ceea717364af3a22eccc7a60d122c395d374fbd6a069c7bd4ade96",
+        "originalPhotoProofSha256": "6892230e43ab77d9fa1a3855d067cb808ddc2af073308f7c4f4228bfac917462",
+        "photoPreparation": {
+          "originalLiveTargetMatched": true,
+          "nativePhotoControllerAndResolver": true,
+          "normalizedPixelsNameMimeAndEncryptedBytesMatched": true,
+          "durableOriginalDraftMetadataConfirmed": true,
+          "originalTextAndFilesRestored": true,
+          "systemPositiveSelection": false,
+          "source": "same-App examiner-created PNG",
+          "newModelInputs": 0,
+          "uploadOrSubmit": false
+        },
+        "systemPasteAttempted": false,
+        "independentInboxReceivedAndAdded": true,
+        "originalOwnerAndTurnsUnchanged": true,
+        "photoCapturedViewport": {
+          "width": 1080,
+          "height": 1731
+        }
+      }
+    ],
+    "httpRequests": 163,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "scope": "Original completed Electron/model target; direct production photo controller with same-App examiner PNG confirms normalized pixels/name/MIME/encrypted bytes/durable exact local draft. Examiner removes only newly added local attachment reference. Actual system positive selection and model consumption not claimed. Existing clipboard and independent inbox/resource regressions also run.",
+    "nativeSemanticsActivation": true,
+    "pointerActivation": false
+  },
+  "defaultStorageProofs": 104,
+  "failuresRetained": [
+    "Initial7-method cohort failed exact EXIF orientation-tag=1 oracle although upright normalized PNG can correctly omit metadata. Replaced with independent fixed color pixel vectors for orientations2/6/8 and only undefined/normal output tags.",
+    "Runtime configuration originally used a plain PhotoPicker field; changed to observable Session state so roots observe a controller installed after initial render. Earlier failure alone does not prove every launch race.",
+    "Second native launch test waited only real time while Compose test frame clock had not advanced; diagnostic pending request existed with no launch failure. Examiner now pumps frames until request launch before SDK owner check. Product launcher was not weakened.",
+    "First full functional101/3 scenes passed, but selected system screenshots caught opening transitions. Retained separately; current examiner completes Compose dismissal and waits native accessibility idle/owner/children before screenshots, full current cohorts rerun.",
+    "One current physical actual-resource scene failed immediate canCompose before paste after photo preparation had passed. Retained; actual examiner now waits up to10s for same original destination readiness, keeps authority assertion and records pre-wait state; no input/operation replay.",
+    "System screenshot exposed the original menu still visible under an opening OS picker. Product now waits original popup disposal, main-window focus and a frame; current101/3 cohorts rerun after this product change, not just retimed screenshots.",
+    "Later physical actual scenes intermittently failed original composition readiness or lost the paste menu after photo preparation. Historical unique cause not claimed. Examiner binds its owned Session to actual Activity early, waits exact ready scope, records state, and activates owned paste controls with explicit native OnClick semantics plus bounded discovery; physical pointer/clipboard overlay remains pending.",
+    "Later physical actual scenes intermittently failed original composition readiness or lost the paste menu after photo preparation. Historical unique cause not claimed. Actual examiner binds owned Session to Activity early, waits exact ready scope and records state, uses explicit owned OnClick semantics and bounded menu discovery; physical pointer/clipboard overlay remains pending.",
+    "Photo intake maps unreadable or non-content sources to photo-specific typed copy instead of clipboard/share-specific instructions; raw failure retained as cause. Current candidate includes this product delta."
+  ],
+  "pending": [
+    "Positive actual system photo selection, full Activity recreation/process-death result delivery and model consumption of selected photos",
+    "Camera capture, recent30-image carousel/new-photo suggestion/permissions and complete iOS attachment panel UI; current Android menu is an interim presentation",
+    "Photo permissions/OS/native picker/font/orientation/format matrix; HEIC and broad color/animation/large-image memory cases not complete",
+    "General file/clipboard/shared-image normalization policy parity with iOS remains open; this adapter normalizes user-selected photo inputs only, ordinary file bytes stay unchanged",
+    "Provider stalls/unknown lengths/revoked grants/dynamic metadata, remaining storage migration/GC/voice/read/unread/lifecycle",
+    "Physical independent cold examiner install restricted, API37 landscape pending; P6 remaining formats/AX/tokens, business task/project deferred and iOS A6 paused"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false,
+  "visualReview": {
+    "status": "four selected images reviewed: API26/API37 system picker plus physical/API26 original-target prepared-photo UI; original menu gone before native selector. Physical prepared-photo source was a wide2250x946 viewport, not a portrait assertion.",
+    "images": 4,
+    "physicalSystemFullVisualMatrix": false,
+    "completeMatrix": false
+  },
+  "environmentRecheck": {
+    "simRecognized": true,
+    "tailscaleInstalled": true,
+    "cellularVpnEndToEnd": "pending actual path verification"
+  }
+}

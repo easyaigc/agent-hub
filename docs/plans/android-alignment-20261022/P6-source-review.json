@@ -1,0 +1,1458 @@
+{
+  "phase": "P6",
+  "status": "P6-1 bounded native language/settings checking; complete P6 remains open",
+  "sourceBase": "b2501ce3046eb306f678952addf43f89735e5e4d",
+  "frozenSourceNodes": [
+    {
+      "recordId": "B003",
+      "phase": "baseline",
+      "index": 3,
+      "sha": "7ce8fe2111682a9ab4e355a5f168b32b029e4b6d",
+      "title": "feat(android): add native read UI and preserve A3 acceptance checkpoint",
+      "parents": ["e3a9e6275f3a476a0952cf60da28c4cdfd075c57"],
+      "behavior": "A3 原生抽屉、客户端/项目目录、发现/二维码、Markdown/工具/Diff、缓存与只读 Host。",
+      "androidStatus": "已实现基础读取与 UI；不包含后续置顶/查找/聊天管理。",
+      "workPackages": ["P2", "P3", "P6"],
+      "acceptance": "页面空/忙/错误/只读状态、真实只读历史、扫码拒绝与错误证书。",
+      "reviewEvidence": "Git parent/diff inventory; Android/KMP source and historical A/UM stage records; current UI/F/S audit",
+      "changedPaths": [
+        "apps/android/build.gradle.kts",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDiscoveryTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileFoundationTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReadTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRealReadTest.kt",
+        "apps/android/src/main/AndroidManifest.xml",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileDesign.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ToolContent.kt",
+        "apps/android/src/main/res/xml/network_security_config.xml",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Sources/CodexDiscovery.swift",
+        "apps/ios/Sources/MobileDesign.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SharedMobileRules.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "design/mobile/tokens.json",
+        "docs/acceptance/android-stages.md",
+        "docs/architecture.md",
+        "docs/design/mobile-parity.md",
+        "docs/plans/android-native.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "package.json",
+        "packages/mobile-core/build.gradle.kts",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DomainContract.kt",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ToolPresentation.kt",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt",
+        "packages/protocol/fixtures/mobile/state-v1.json",
+        "scripts/mobile/android-acceptance.mjs",
+        "scripts/mobile/android-camera-acceptance.mjs",
+        "scripts/mobile/android-discovery-fixture.mjs",
+        "scripts/mobile/android-read-fixture.mjs",
+        "scripts/mobile/android-real-read-gate.mjs",
+        "scripts/mobile/check-core.mjs",
+        "scripts/mobile/complete-ios-baseline.mjs",
+        "scripts/mobile/generate-design-tokens.mjs",
+        "scripts/mobile/ios-baseline.mjs",
+        "scripts/mobile/verify-ios-state.swift",
+        "scripts/native-read-ui-ios-fixture.mjs"
+      ],
+      "firstParentPatchSha256": "1b41159630d949d83ac2711cacd7f3884dbb61a4562b4e5db80b6b155711549d",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "B004",
+      "phase": "baseline",
+      "index": 4,
+      "sha": "7d1e62f868399acced21464ca9e8c4e7d6eb8b39",
+      "title": "feat: 增加文件互传并完善 iOS 连接与已读体验",
+      "parents": ["e80e5a2911fa4aa0a3daafae73d261aed12853ac"],
+      "behavior": "iOS 文件互传、连接方式、手机独立阅读与未读、分页及 Windows Host 生命周期更新。",
+      "androidStatus": "Android A3 只吸收其中读取/连接部分；F59 独立文件互传仍待做。",
+      "workPackages": ["P2", "P6", "P7"],
+      "acceptance": "独立文件传输无模型输入；分页/已读/连接保留草稿；Windows 环境单列。",
+      "reviewEvidence": "Git parent/diff inventory; Android/KMP source and historical A/UM stage records; current UI/F/S audit",
+      "changedPaths": [
+        "README.md",
+        "apps/host-agent/src/file-transfers.ts",
+        "apps/host-agent/src/runtime-server.ts",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/EasyWorkDiscovery.swift",
+        "apps/ios/Sources/EasyWorkPairing.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/FileTransfers.swift",
+        "apps/ios/Sources/MobileUnreadBadge.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/async-questions.md",
+        "docs/acceptance/client-experience.md",
+        "docs/acceptance/file-transfers.md",
+        "docs/acceptance/history-pagination.md",
+        "docs/acceptance/host-persistence-lifecycle.md",
+        "docs/acceptance/physical-regression-20261012.md",
+        "docs/acceptance/run-reply-actions.md",
+        "docs/acceptance/task-notifications.md",
+        "docs/acceptance/ui-details.md",
+        "docs/architecture.md",
+        "docs/design/ui-ux-v1.md",
+        "docs/development.md",
+        "docs/feasibility.md",
+        "docs/file-transfers.md",
+        "docs/protocol-runtime.md",
+        "package.json",
+        "packages/protocol/src/file-transfers.ts",
+        "packages/protocol/src/index.ts",
+        "scripts/codex-discovery-desktop-ios-acceptance.mjs",
+        "scripts/file-transfers-desktop-ios-acceptance.mjs",
+        "scripts/file-transfers-smoke.mjs",
+        "scripts/history-pagination-ios-fixture.mjs",
+        "scripts/mobile-unread-badge-ios-fixture.mjs",
+        "scripts/mobile-unread-badge-native-smoke.swift",
+        "scripts/read-cancellation-ios-fixture.mjs",
+        "scripts/unread-state-desktop-ios-acceptance.mjs",
+        "scripts/unread-state-ios-fixture.mjs",
+        "scripts/windows-control-smoke.mjs",
+        "scripts/windows-desktop-service.mjs",
+        "scripts/windows-host-task-fixture.ps1",
+        "scripts/windows-host-task.ps1",
+        "skills/codex-host-connect/references/full-functions.md",
+        "skills/codex-host-connect/references/host.md"
+      ],
+      "firstParentPatchSha256": "185915c35fd2768dc10726654bda371d594130866a164efbc980f6750abb1983",
+      "newPhoneProductAcceptance": "not-executed",
+      "executionGate": "A6相关新增系统/存储/阅读/语音工作继续暂停；历史实现保留，需人类明确恢复后执行。",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "B006",
+      "phase": "baseline",
+      "index": 6,
+      "sha": "6c2ed5d8840f579d8b2a32895aefd5bff3b80fb5",
+      "title": "Align A3 native UI and validate Android read paths",
+      "parents": ["f5d0d96a730a1334c85bd63f3ef943248bbc6f88"],
+      "behavior": "A3 修复弹层/IME/系统栏，边缘抽屉、连接表单、真实扫码，分页防重复及阅读锚点。",
+      "androidStatus": "Android 基础交互已实现，后续同聊天重选/弱网优化尚未完全同步。",
+      "workPackages": ["P2", "P3", "P6"],
+      "acceptance": "API26/37 与新真机核键盘弹收、手势阈值、保持更早消息和锚点。",
+      "reviewEvidence": "Git parent/diff inventory; Android/KMP source and historical A/UM stage records; current UI/F/S audit",
+      "changedPaths": [
+        "apps/android/src/androidTest/assets/dense-qr.txt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDiscoveryTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReadTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRealReadTest.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/android-stages.md",
+        "docs/acceptance/mobile-parity.md",
+        "docs/design/mobile-parity.md",
+        "docs/plans/android-native.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "docs/product/mobile-parity.template.md",
+        "scripts/mobile/android-acceptance.mjs",
+        "scripts/mobile/android-camera-acceptance.mjs",
+        "scripts/mobile/android-read-fixture.mjs",
+        "scripts/mobile/android-workspace-ui-acceptance.mjs",
+        "scripts/mobile/ios-baseline.mjs",
+        "scripts/mobile/parity.mjs"
+      ],
+      "firstParentPatchSha256": "576149c7ea9ace904b4a244280891e092ef641a0ab8a6eefefaaa20237f61826",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "B007",
+      "phase": "baseline",
+      "index": 7,
+      "sha": "cb8e93f8bf2e140087daa11e47600af1a5fb49bb",
+      "title": "Preserve iOS reading position after history pulls",
+      "parents": ["6c2ed5d8840f579d8b2a32895aefd5bff3b80fb5"],
+      "behavior": "iOS 下拉历史等待布局帧及原生回弹结束再恢复锚点。",
+      "androidStatus": "Android 以自身 LazyColumn/帧等待实现等价结果；不逐句翻译 UIKit。",
+      "workPackages": ["P2", "P6"],
+      "acceptance": "顶部松手加载一次、锚点不跳、工具组重分组后位置稳定。",
+      "reviewEvidence": "Git parent/diff inventory; Android/KMP source and historical A/UM stage records; current UI/F/S audit",
+      "changedPaths": [
+        "apps/ios/Sources/RootView.swift",
+        "docs/acceptance/android-stages.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md"
+      ],
+      "firstParentPatchSha256": "bbe10769e9b903528f925d438c92da3329be62deee88978172e76e17d7422ab8",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "B009",
+      "phase": "baseline",
+      "index": 9,
+      "sha": "0ff3fcf2abdd44cb520c038a58b43610583850e7",
+      "title": "Complete A3 native UI and read acceptance across both platforms",
+      "parents": ["0ac7c2f953003c28b1b6f46eced878c6e95ba3a5"],
+      "behavior": "完成 A3 双端 UI/读取：Android userInitiated 刷新与分页错误提示、离线缓存和原生状态。",
+      "androidStatus": "A3 历史适用门槛已关闭；本次新设备未执行产品回归。",
+      "workPackages": ["P2", "P6"],
+      "acceptance": "按新冻结输入复验视觉/读取；旧 322 张图仅作历史参考。",
+      "reviewEvidence": "Git parent/diff inventory; Android/KMP source and historical A/UM stage records; current UI/F/S audit",
+      "changedPaths": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReadTest.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+        "docs/acceptance/android-stages.md",
+        "docs/acceptance/mobile-evidence/A3.json",
+        "docs/acceptance/mobile-parity.md",
+        "docs/architecture.md",
+        "docs/feasibility.md",
+        "docs/plans/android-native.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "scripts/mobile/android-acceptance.mjs",
+        "scripts/mobile/android-workspace-ui-acceptance.mjs",
+        "scripts/mobile/parity.test.mjs"
+      ],
+      "firstParentPatchSha256": "e703ad206cf2091a370c5201008fedd3a39e74dd02d15f3a01c5f15c6549efb2",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "B015",
+      "phase": "baseline",
+      "index": 15,
+      "sha": "c674bd1e79e05ccab01dd9272f9a1caf8fe3a1ae",
+      "title": "fix(android): align async questions and desktop opening flow",
+      "parents": ["91564455e9e037a06f3df2997ec5d910b7991788"],
+      "behavior": "补非阻塞问题多选/自由文字/跳过、桌面打开流程以及旧 API 系统栏。",
+      "androidStatus": "基础问题交互已实现；后续状态更新及语言仍需回归。",
+      "workPackages": ["P4", "P6"],
+      "acceptance": "问题待答时原任务继续；回答归属正确；失效/桌面抢答可见。",
+      "reviewEvidence": "Git parent/diff inventory; Android/KMP source and historical A/UM stage records; current UI/F/S audit",
+      "changedPaths": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLiveQuestionsTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReadTest.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt",
+        "docs/acceptance/android-stages.md",
+        "docs/acceptance/mobile-evidence/A4-execution-progress.json",
+        "docs/design/mobile-parity.md",
+        "docs/plans/android-native.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "scripts/mobile/android-async-live.mjs",
+        "scripts/mobile/android-execution-ui.mjs",
+        "scripts/receipt-notices-ios-fixture.mjs"
+      ],
+      "firstParentPatchSha256": "45d608a0c2b76dcb5c815b9f62a4a1606828ec47628445da7a0794ee94d093c1",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "O005",
+      "phase": "optimization",
+      "index": 5,
+      "sha": "5168b597fa0873cb6deca2bd8651eb8345ebeea6",
+      "title": "feat(ios): 增加中英文界面与通知本地化",
+      "parents": ["b60a25f8bc3d0ef931adf543ad2f5dc8196a4fbd"],
+      "behavior": "iOS 系统语言匹配、中文/英文即时切换与保存，插值安全；App/通知扩展/权限说明及帮助隐私页同语种。",
+      "classification": "Android缺口",
+      "androidStatus": "Android 源码仍大量直接中文 Text/error 字符串，没有等价语言设置/完整资源；Task Hub 的翻译项随业务暂缓。",
+      "workPackages": ["P6"],
+      "acceptance": "系统中英/其他语言回退、设置即时切换/重启、通知/系统权限/无障碍、长英文布局；草稿附件及操作ID不变。",
+      "mainPaths": [
+        "README.md",
+        "apps/ios/AppStore/site/privacy-en.html",
+        "apps/ios/AppStore/site/privacy.html",
+        "apps/ios/AppStore/site/support-en.html",
+        "apps/ios/AppStore/site/support.html",
+        "apps/ios/AppStore/store-metadata-en-US.json",
+        "apps/ios/AppStore/store-metadata-zh-CN.json",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/NotificationContent/NotificationViewController.swift",
+        "apps/ios/NotificationService/NotificationService.swift",
+        "apps/ios/Resources/en.lproj/InfoPlist.strings",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/InfoPlist.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/BusinessNotificationModels.swift",
+        "apps/ios/Sources/CodexDiscovery.swift",
+        "apps/ios/Sources/CodexManageApp.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkDiscovery.swift",
+        "apps/ios/Sources/EasyWorkPairing.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EncryptedMigration.swift",
+        "apps/ios/Sources/FileTransfers.swift",
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/Localization.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/NotificationModels.swift",
+        "apps/ios/Sources/NotificationSettings.swift",
+        "apps/ios/Sources/NotificationSounds.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Sources/TaskHubBusinessNotifications.swift",
+        "apps/ios/Sources/TaskHubClient.swift",
+        "apps/ios/Sources/TaskHubConsent.swift",
+        "apps/ios/Sources/TaskHubDiscovery.swift",
+        "apps/ios/Sources/TaskHubModels.swift",
+        "apps/ios/Sources/TaskHubNavigation.swift",
+        "apps/ios/Sources/TaskHubPairing.swift",
+        "apps/ios/Sources/TaskHubSQLitePersistence.swift",
+        "apps/ios/Sources/TaskHubStore.swift",
+        "apps/ios/Sources/TaskHubUploadCoordinator.swift",
+        "apps/ios/Sources/TaskHubViews.swift",
+        "apps/ios/Sources/TaskNotifications.swift",
+        "apps/ios/Sources/VoiceInput.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "apps/ios/Tests/LocalizationUITests.swift",
+        "apps/ios/Tests/TaskHubNetworkUITests.swift",
+        "apps/ios/Tests/TaskHubUITests.swift",
+        "docs/development.md",
+        "package.json",
+        "scripts/check-agent-contract.mjs",
+        "scripts/codex-discovery-native-smoke.mjs",
+        "scripts/easywork-discovery-native-smoke.mjs",
+        "scripts/easywork-transport-native-smoke.mjs",
+        "scripts/localization-native-smoke.swift",
+        "scripts/localization-smoke.mjs",
+        "scripts/mobile-unread-badge-smoke.mjs",
+        "scripts/notifications-native-smoke.mjs",
+        "scripts/package-host-connect.mjs",
+        "scripts/sidebar-performance-native-smoke.mjs"
+      ],
+      "androidSourceEvidence": [
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt"
+      ],
+      "reviewEvidence": {
+        "first_parent_patch_sha256": "5d5933b2ee2d202140e1fb07e986b7145a6cdba9d569b418b01bd27e569827e1",
+        "first_parent_changed_file_count": 62,
+        "first_parent_patch_lines": 7976,
+        "method": "父提交真实diff的生产行为/协议文档/验收场景核读；非按标题分类。重复大快照结合合并净差异去重。",
+        "patchCommand": "git diff --unified=0 <first-parent> <sha>"
+      },
+      "changedPaths": [
+        "README.md",
+        "apps/ios/AppStore/site/privacy-en.html",
+        "apps/ios/AppStore/site/privacy.html",
+        "apps/ios/AppStore/site/support-en.html",
+        "apps/ios/AppStore/site/support.html",
+        "apps/ios/AppStore/store-metadata-en-US.json",
+        "apps/ios/AppStore/store-metadata-zh-CN.json",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/NotificationContent/NotificationViewController.swift",
+        "apps/ios/NotificationService/NotificationService.swift",
+        "apps/ios/Resources/en.lproj/InfoPlist.strings",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/InfoPlist.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/BusinessNotificationModels.swift",
+        "apps/ios/Sources/CodexDiscovery.swift",
+        "apps/ios/Sources/CodexManageApp.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkDiscovery.swift",
+        "apps/ios/Sources/EasyWorkPairing.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EncryptedMigration.swift",
+        "apps/ios/Sources/FileTransfers.swift",
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/Localization.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/NotificationModels.swift",
+        "apps/ios/Sources/NotificationSettings.swift",
+        "apps/ios/Sources/NotificationSounds.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Sources/TaskHubBusinessNotifications.swift",
+        "apps/ios/Sources/TaskHubClient.swift",
+        "apps/ios/Sources/TaskHubConsent.swift",
+        "apps/ios/Sources/TaskHubDiscovery.swift",
+        "apps/ios/Sources/TaskHubModels.swift",
+        "apps/ios/Sources/TaskHubNavigation.swift",
+        "apps/ios/Sources/TaskHubPairing.swift",
+        "apps/ios/Sources/TaskHubSQLitePersistence.swift",
+        "apps/ios/Sources/TaskHubStore.swift",
+        "apps/ios/Sources/TaskHubUploadCoordinator.swift",
+        "apps/ios/Sources/TaskHubViews.swift",
+        "apps/ios/Sources/TaskNotifications.swift",
+        "apps/ios/Sources/VoiceInput.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "apps/ios/Tests/LocalizationUITests.swift",
+        "apps/ios/Tests/TaskHubNetworkUITests.swift",
+        "apps/ios/Tests/TaskHubUITests.swift",
+        "docs/development.md",
+        "package.json",
+        "scripts/check-agent-contract.mjs",
+        "scripts/codex-discovery-native-smoke.mjs",
+        "scripts/easywork-discovery-native-smoke.mjs",
+        "scripts/easywork-transport-native-smoke.mjs",
+        "scripts/localization-native-smoke.swift",
+        "scripts/localization-smoke.mjs",
+        "scripts/mobile-unread-badge-smoke.mjs",
+        "scripts/notifications-native-smoke.mjs",
+        "scripts/package-host-connect.mjs",
+        "scripts/sidebar-performance-native-smoke.mjs"
+      ],
+      "firstParentPatchSha256": "ea9e7bd4c4a1121fcfd64d3dae60d288a1997d2077e2f7bac54d32bb92994b28",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "O011",
+      "phase": "optimization",
+      "index": 11,
+      "sha": "1644f48494c4f198b8b0cb0fb7a43a78dae4b90f",
+      "title": "fix(attachments): 支持长中文文件名并保留原始附件清单",
+      "parents": ["a59699a94e1cd788e35a391f553f240bccb8912e"],
+      "behavior": "创建附件名最多200 UTF-16单元，长UTF-8名称用短内部文件名，原名保留不可变清单。",
+      "classification": "共享Host自动受益但Android待验",
+      "androidStatus": "Host已修；Android NativeDraftFiles检查512再交schema校验，需对齐200边界与清楚文案；未取得新机系统选择器实证。",
+      "workPackages": ["P6", "P7"],
+      "acceptance": "长中文/emoji、200/201 UTF-16、超过200 UTF-8、扩展名、同字节摘要；新建/回复均仅执行一次。",
+      "mainPaths": [
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/development.md",
+        "docs/protocol-runtime.md",
+        "packages/codex-adapter/src/desktop-creation.ts",
+        "packages/codex-adapter/src/runtime-session.ts",
+        "scripts/attachment-filename-desktop-ios-acceptance.mjs",
+        "scripts/desktop-creation-smoke.mjs"
+      ],
+      "androidSourceEvidence": [
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt"
+      ],
+      "reviewEvidence": {
+        "first_parent_patch_sha256": "0ab5fe650b16abfdd5ba174b0bc282b48bd6d13d02be286847458cfbe6041687",
+        "first_parent_changed_file_count": 7,
+        "first_parent_patch_lines": 618,
+        "method": "父提交真实diff的生产行为/协议文档/验收场景核读；非按标题分类。重复大快照结合合并净差异去重。",
+        "patchCommand": "git diff --unified=0 <first-parent> <sha>"
+      },
+      "changedPaths": [
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/development.md",
+        "docs/protocol-runtime.md",
+        "packages/codex-adapter/src/desktop-creation.ts",
+        "packages/codex-adapter/src/runtime-session.ts",
+        "scripts/attachment-filename-desktop-ios-acceptance.mjs",
+        "scripts/desktop-creation-smoke.mjs"
+      ],
+      "firstParentPatchSha256": "a1e477cc3a75f4556e3285bb3e0c8078330a5cc0688d8e3ca6179c87254e28ae",
+      "newPhoneProductAcceptance": "not-executed",
+      "executionGate": "A6相关新增系统/存储/阅读/语音工作继续暂停；历史实现保留，需人类明确恢复后执行。",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "O016",
+      "phase": "optimization",
+      "index": 16,
+      "sha": "82f0120eb943412934988956c1fdb70dabe05227",
+      "title": "chore: preserve current development inputs before branch consolidation",
+      "parents": ["3cedec7c67e44ed47598990233d653b61b4fc6df"],
+      "behavior": "大快照纳入正文文件/网页链接、后台历史不锁输入、直接已就绪回复、原生队列与立即执行、分段添加连接、六行用户气泡折叠、通知事项摘要和批量管理，以及未绑定建议观察。",
+      "classification": "Android缺口",
+      "androidStatus": "Android链接仅http/https/mailto；SessionPolicies仍!historyLoading；Flow每次读workspace/history；无建议/通知/批量管理；队列旧execute方案被83部分覆盖。",
+      "workPackages": ["P2", "P3", "P4", "P5", "P6", "P7", "P9"],
+      "acceptance": "每项独立矩阵：长正文6行实际布局、Safe浏览/下载取消、慢网输入按钮稳定、队列来源与未知、通知隐私；业务TaskHub暂缓。",
+      "mainPaths": [
+        "apps/host-agent/src/desktop-dom-suggestions.ts",
+        "apps/host-agent/src/runtime-server.ts",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/NotificationContent/NotificationViewController.swift",
+        "apps/ios/NotificationService/NotificationService.swift",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EasyWorkTransport.swift",
+        "apps/ios/Sources/MessageLinks.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/NotificationModels.swift",
+        "apps/ios/Sources/NotificationSettings.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Sources/TaskNotifications.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/architecture.md",
+        "docs/design/codex-next-turn-suggestions.md",
+        "docs/design/ui-ux-v1.md",
+        "docs/development.md",
+        "docs/feasibility.md",
+        "docs/notifications.md",
+        "docs/protocol-runtime.md",
+        "docs/research/desktop-dom-bridge-poc.md",
+        "docs/research/desktop-suggestion-read-channel.md",
+        "docs/research/native-queue-boundary-20261017.md",
+        "package.json",
+        "packages/codex-adapter/src/desktop-creation.ts",
+        "packages/codex-adapter/src/desktop-dom-bridge.ts",
+        "packages/codex-adapter/src/desktop-native-queue.ts",
+        "packages/codex-adapter/src/desktop-prediction-trace.ts",
+        "packages/codex-adapter/src/desktop-suggestion-observer.ts",
+        "packages/codex-adapter/src/desktop-thread-preparer.ts",
+        "packages/codex-adapter/src/desktop-workspace-management.ts",
+        "packages/codex-adapter/src/desktop-workspace-view.ts",
+        "packages/codex-adapter/src/index.ts",
+        "packages/codex-adapter/src/message-links.ts",
+        "packages/codex-adapter/src/runtime-session.ts",
+        "packages/codex-adapter/src/runtime.ts",
+        "packages/codex-adapter/src/workspace-management.ts",
+        "packages/notification-runtime/src/observer.ts",
+        "packages/protocol/contract-manifest.json",
+        "packages/protocol/schemas/agent-management-v1.schema.json",
+        "packages/protocol/src/agent-management.ts",
+        "packages/protocol/src/desktop-suggestion-observations.ts",
+        "packages/protocol/src/index.ts",
+        "packages/protocol/src/notifications.ts",
+        "packages/protocol/src/workspace-management.ts",
+        "scripts/check-agent-contract.mjs",
+        "scripts/codex-queue-desktop-ios-acceptance.mjs",
+        "scripts/composer-slow-network-ios-fixture.mjs",
+        "scripts/desktop-completion-notify-observer-test.py",
+        "scripts/desktop-completion-notify-observer.py",
+        "scripts/desktop-creation-smoke.mjs",
+        "scripts/desktop-dom-bridge-smoke.mjs",
+        "scripts/desktop-dom-suggestion-probe.mjs",
+        "scripts/desktop-ipc-smoke.mjs",
+        "scripts/desktop-prediction-trace.test.mjs",
+        "scripts/desktop-suggestion-observer.test.mjs",
+        "scripts/desktop-suggestion-trace-launch.mjs",
+        "scripts/easywork-receive-desktop-ios-acceptance.mjs",
+        "scripts/easywork-receive-evidence.mjs",
+        "scripts/easywork-relay-transport-native-smoke.mjs",
+        "scripts/message-links-desktop-ios-acceptance.mjs",
+        "scripts/message-links-smoke.mjs",
+        "scripts/message-receive-desktop-ios-acceptance.mjs",
+        "scripts/notification-native-smoke.swift",
+        "scripts/notifications-desktop-acceptance.mjs",
+        "scripts/notifications-native-smoke.mjs",
+        "scripts/notifications-smoke.mjs",
+        "scripts/package-host-connect.mjs",
+        "scripts/runtime-smoke.mjs",
+        "scripts/workspace-management-desktop-ios-acceptance.mjs",
+        "scripts/workspace-management-smoke.mjs",
+        "skills/codex-host-connect/SKILL.md",
+        "skills/codex-host-connect/references/coordination-guide.md",
+        "skills/codex-host-connect/references/cross-host-policy.md"
+      ],
+      "androidSourceEvidence": [],
+      "reviewEvidence": {
+        "first_parent_patch_sha256": "4704740b4bebefd089563cb0107323fec7838c877126b73a4d82a10a7a369727",
+        "first_parent_changed_file_count": 81,
+        "first_parent_patch_lines": 10500,
+        "method": "父提交真实diff的生产行为/协议文档/验收场景核读；非按标题分类。重复大快照结合合并净差异去重。",
+        "patchCommand": "git diff --unified=0 <first-parent> <sha>"
+      },
+      "changedPaths": [
+        "apps/host-agent/src/desktop-dom-suggestions.ts",
+        "apps/host-agent/src/runtime-server.ts",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/NotificationContent/NotificationViewController.swift",
+        "apps/ios/NotificationService/NotificationService.swift",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EasyWorkTransport.swift",
+        "apps/ios/Sources/MessageLinks.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/NotificationModels.swift",
+        "apps/ios/Sources/NotificationSettings.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Sources/TaskNotifications.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/architecture.md",
+        "docs/design/codex-next-turn-suggestions.md",
+        "docs/design/ui-ux-v1.md",
+        "docs/development.md",
+        "docs/feasibility.md",
+        "docs/notifications.md",
+        "docs/protocol-runtime.md",
+        "docs/research/desktop-dom-bridge-poc.md",
+        "docs/research/desktop-suggestion-read-channel.md",
+        "docs/research/native-queue-boundary-20261017.md",
+        "package.json",
+        "packages/codex-adapter/src/desktop-creation.ts",
+        "packages/codex-adapter/src/desktop-dom-bridge.ts",
+        "packages/codex-adapter/src/desktop-native-queue.ts",
+        "packages/codex-adapter/src/desktop-prediction-trace.ts",
+        "packages/codex-adapter/src/desktop-suggestion-observer.ts",
+        "packages/codex-adapter/src/desktop-thread-preparer.ts",
+        "packages/codex-adapter/src/desktop-workspace-management.ts",
+        "packages/codex-adapter/src/desktop-workspace-view.ts",
+        "packages/codex-adapter/src/index.ts",
+        "packages/codex-adapter/src/message-links.ts",
+        "packages/codex-adapter/src/runtime-session.ts",
+        "packages/codex-adapter/src/runtime.ts",
+        "packages/codex-adapter/src/workspace-management.ts",
+        "packages/notification-runtime/src/observer.ts",
+        "packages/protocol/contract-manifest.json",
+        "packages/protocol/schemas/agent-management-v1.schema.json",
+        "packages/protocol/src/agent-management.ts",
+        "packages/protocol/src/desktop-suggestion-observations.ts",
+        "packages/protocol/src/index.ts",
+        "packages/protocol/src/notifications.ts",
+        "packages/protocol/src/workspace-management.ts",
+        "scripts/check-agent-contract.mjs",
+        "scripts/codex-queue-desktop-ios-acceptance.mjs",
+        "scripts/composer-slow-network-ios-fixture.mjs",
+        "scripts/desktop-completion-notify-observer-test.py",
+        "scripts/desktop-completion-notify-observer.py",
+        "scripts/desktop-creation-smoke.mjs",
+        "scripts/desktop-dom-bridge-smoke.mjs",
+        "scripts/desktop-dom-suggestion-probe.mjs",
+        "scripts/desktop-ipc-smoke.mjs",
+        "scripts/desktop-prediction-trace.test.mjs",
+        "scripts/desktop-suggestion-observer.test.mjs",
+        "scripts/desktop-suggestion-trace-launch.mjs",
+        "scripts/easywork-receive-desktop-ios-acceptance.mjs",
+        "scripts/easywork-receive-evidence.mjs",
+        "scripts/easywork-relay-transport-native-smoke.mjs",
+        "scripts/message-links-desktop-ios-acceptance.mjs",
+        "scripts/message-links-smoke.mjs",
+        "scripts/message-receive-desktop-ios-acceptance.mjs",
+        "scripts/notification-native-smoke.swift",
+        "scripts/notifications-desktop-acceptance.mjs",
+        "scripts/notifications-native-smoke.mjs",
+        "scripts/notifications-smoke.mjs",
+        "scripts/package-host-connect.mjs",
+        "scripts/runtime-smoke.mjs",
+        "scripts/workspace-management-desktop-ios-acceptance.mjs",
+        "scripts/workspace-management-smoke.mjs",
+        "skills/codex-host-connect/SKILL.md",
+        "skills/codex-host-connect/references/coordination-guide.md",
+        "skills/codex-host-connect/references/cross-host-policy.md"
+      ],
+      "firstParentPatchSha256": "37a6d995de022ba3c9eb1d8ec66e9918d9d323e1ed4ca4615e6f243001c30e9e",
+      "newPhoneProductAcceptance": "not-executed",
+      "userScopeDecision": "新增项目记录管理/删除暂缓；现有聊天目录导航保留；聊天归档/恢复/删除按P3独立规划。",
+      "executionGate": "A6相关新增系统/存储/阅读/语音工作继续暂停；历史实现保留，需人类明确恢复后执行。",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "O076",
+      "phase": "optimization",
+      "index": 76,
+      "sha": "894f39aa361ad25862f8f2f9d8bd4de7ddfcff84",
+      "title": "tools: add bounded Windows timing diagnostics and native development checks",
+      "parents": ["54962b5862b214bd1aafca5509c3e9c27fc3a97b"],
+      "behavior": "新增隔离DEV有界分段计时器及check:windows-native串行范围，保全仓原失败条件，不在正式目录重建。",
+      "classification": "文档验收或工具",
+      "androidStatus": "无Android功能；用于建议/普通读取延迟归因，不把诊断当新手机功能。",
+      "workPackages": ["P0", "P2", "P6", "P10"],
+      "acceptance": "原生Windows/实际模块/固定预算；health、语音、trace、IPC分段；平台skip和全仓失败分记。",
+      "mainPaths": [
+        "docs/windows-native-trace.md",
+        "package.json",
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs",
+        "scripts/windows-suggestion-timing-import.test.mjs"
+      ],
+      "androidSourceEvidence": [],
+      "reviewEvidence": {
+        "first_parent_patch_sha256": "88140898a483505c228aa1fd1d2e7df4bfe12f19810c391ba487adc755233d0a",
+        "first_parent_changed_file_count": 4,
+        "first_parent_patch_lines": 844,
+        "method": "父提交真实diff的生产行为/协议文档/验收场景核读；非按标题分类。重复大快照结合合并净差异去重。",
+        "patchCommand": "git diff --unified=0 <first-parent> <sha>"
+      },
+      "changedPaths": [
+        "docs/windows-native-trace.md",
+        "package.json",
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs",
+        "scripts/windows-suggestion-timing-import.test.mjs"
+      ],
+      "firstParentPatchSha256": "c86cff184bb4cc77bb7e292af233ff5fe512904129e6d9e855ce0f0e2133c21a",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "O084",
+      "phase": "optimization",
+      "index": 84,
+      "sha": "05b57ebb707b8ccd0c62917d7ec8b21d2cbd2c48",
+      "title": "Improve bounded Windows suggestion diagnostics without changing runtime behavior",
+      "parents": ["f3352b14fad12a073809fc192a8294019080e3db"],
+      "behavior": "Windows计时导入要求共享5b+创建gate，补Worker传递与Promise身份保真、关闭后停止记录；不改运行行为。",
+      "classification": "文档验收或工具",
+      "androidStatus": "隔离开发诊断，不是Android产品功能；不可据计时结果预设新机吞吐。",
+      "workPackages": ["P0", "P2", "P6", "P10"],
+      "acceptance": "原函数返回/throw/Promise语义不变；预算/并发/关闭记录私有无正文；指标与真实手机耗时分列。",
+      "mainPaths": [
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs",
+        "scripts/windows-suggestion-timing-import.test.mjs"
+      ],
+      "androidSourceEvidence": [],
+      "reviewEvidence": {
+        "first_parent_patch_sha256": "a1c8b42fffc4a6979436f7a2032bd56cbe23fb8c98d9c7f7931b5db9e7b74af0",
+        "first_parent_changed_file_count": 2,
+        "first_parent_patch_lines": 848,
+        "method": "父提交真实diff的生产行为/协议文档/验收场景核读；非按标题分类。重复大快照结合合并净差异去重。",
+        "patchCommand": "git diff --unified=0 <first-parent> <sha>"
+      },
+      "changedPaths": [
+        "scripts/diagnostics/windows-suggestion-timing-import.mjs",
+        "scripts/windows-suggestion-timing-import.test.mjs"
+      ],
+      "firstParentPatchSha256": "630791d42f25574b259aa53436f43722ec58c2d6fbf59eff2ed61c290c6cb54d",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    },
+    {
+      "recordId": "O146",
+      "phase": "optimization",
+      "index": 146,
+      "sha": "0b18da8ec6611a4cb242eef5e08c9b6cdc567345",
+      "title": "fix(ios): show friendly connection failure guidance",
+      "parents": ["3e97f256069b41d8ec1256d3d8d4dff90a7ab33c"],
+      "behavior": "iOS OperationFailure把TLS/证书/无网/超时/DNS/连接中断映射标题与可行动文案，覆盖连接、历史、fork、提交、回执、审批和导入，原传输错误保留且不自动重试。",
+      "classification": "Android缺口",
+      "androidStatus": "Android多数泛化HostReadError或e.message；缺完整统一错误展示与错误源保真，应共享分类/文案并原生映射。",
+      "workPackages": ["P2", "P6"],
+      "acceptance": "逐错误类与取消差异；当前目标才提示；安全身份失败不变成功；保留草稿/原operation无重发。",
+      "mainPaths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/OperationFailure.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "docs/architecture.md",
+        "scripts/localization-native-smoke.swift",
+        "scripts/localization-smoke.mjs",
+        "scripts/read-cancellation-ios-fixture.mjs"
+      ],
+      "androidSourceEvidence": [
+        "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt"
+      ],
+      "reviewEvidence": {
+        "first_parent_diff_sha256": "f2f11d332b92a4f9d5ab9ef1a5875ac7d6e64ab84becd0c53a904ab13b7fa89f",
+        "first_parent_diff_bytes": 36982,
+        "review": "逐提交读取真实修改路径、相关生产/边界/测试diff；文档节点读取实际增量；合并检查父关系和combined冲突净调整。",
+        "patchCommand": "git diff <first-parent> <sha>"
+      },
+      "featureIds": ["F02", "F17", "F43", "F48", "F62"],
+      "changedPaths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/OperationFailure.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/architecture.md",
+        "scripts/localization-native-smoke.swift",
+        "scripts/localization-smoke.mjs",
+        "scripts/read-cancellation-ios-fixture.mjs"
+      ],
+      "firstParentPatchSha256": "f2f11d332b92a4f9d5ab9ef1a5875ac7d6e64ab84becd0c53a904ab13b7fa89f",
+      "newPhoneProductAcceptance": "not-executed",
+      "wholeNodeClosed": false,
+      "status": "open: retain every implementation/optimization source and final assertion; no source-presence acceptance"
+    }
+  ],
+  "sourceNodeCount": 12,
+  "designTokens": [
+    {
+      "id": "colors.background.ios",
+      "baseline": "systemBackground",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.background.light",
+      "baseline": "#FFFFFF",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.background.dark",
+      "baseline": "#000000",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.secondarySurface.ios",
+      "baseline": "secondarySystemBackground",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.secondarySurface.light",
+      "baseline": "#F2F2F7",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.secondarySurface.dark",
+      "baseline": "#1C1C1E",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.userBubble.lightRGB",
+      "baseline": [0.91, 0.96, 1.0],
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.userBubble.darkRGB",
+      "baseline": [0.12, 0.24, 0.34],
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.userBubbleText.lightRGB",
+      "baseline": [0.14, 0.36, 0.57],
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.userBubbleText.darkRGB",
+      "baseline": [0.8, 0.9, 1.0],
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.toolDetail.lightGray",
+      "baseline": 0.95,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "colors.toolDetail.darkGray",
+      "baseline": 0.12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.unit",
+      "baseline": "iOS pt; Android product geometry in dp with platform touch targets",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.floatingRadius",
+      "baseline": 24,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.floatingStrokeWidth",
+      "baseline": 0.5,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.floatingStrokeAlpha",
+      "baseline": 0.08,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.floatingShadowRadius",
+      "baseline": 8,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.floatingShadowYOffset",
+      "baseline": 2,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.floatingShadowAlpha",
+      "baseline": 0.08,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarMaxWidth",
+      "baseline": 350,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarOutsideMinWidth",
+      "baseline": 44,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarBackdropAlpha",
+      "baseline": 0.22,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerRadius",
+      "baseline": 27,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerHorizontalInset",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerVerticalInset",
+      "baseline": 4,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerRowSpacing",
+      "baseline": 6,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerInnerInset",
+      "baseline": 4,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerDetailRadius",
+      "baseline": 16,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerSettingsHeight",
+      "baseline": 44,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerVisibleLinesMin",
+      "baseline": 1,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.composerVisibleLinesMax",
+      "baseline": 6,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.iosIconTouchSize",
+      "baseline": 44,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.androidIconTouchSize",
+      "baseline": 48,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.headerHorizontalInset",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.headerTopInset",
+      "baseline": 1,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.headerBottomInset",
+      "baseline": 9,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.clientHeaderMaxWidth",
+      "baseline": 145,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.chatHorizontalInset",
+      "baseline": 16,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.chatTopInset",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.chatBottomInset",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.userBubbleRadius",
+      "baseline": 20,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.userBubbleHorizontalInset",
+      "baseline": 14,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.userBubbleVerticalInset",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.userBubbleAttachmentSpacing",
+      "baseline": 6,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarHorizontalInset",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarRowInset",
+      "baseline": 9,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarRowHeight",
+      "baseline": 44,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarSelectionRadius",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarProjectThreadIndent",
+      "baseline": 24,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.sidebarSearchRadius",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.toolDetailRadius",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.toolDetailInset",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.toolDetailSpacing",
+      "baseline": 8,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.toolOutputMaxHeight",
+      "baseline": 180,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.toolDetailStrokeWidth",
+      "baseline": 1,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.toolDetailStrokeAlpha",
+      "baseline": 0.1,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.markdownBlockSpacing",
+      "baseline": 8,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.codeBlockInset",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.codeBlockRadius",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.runtimePlanInset",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.runtimePlanRadius",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.planMessageInset",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.planMessageRadius",
+      "baseline": 16,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.planReviewInset",
+      "baseline": 14,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.planReviewRadius",
+      "baseline": 18,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.planReviewSpacing",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.approvalInset",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.approvalRadius",
+      "baseline": 12,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.approvalSpacing",
+      "baseline": 8,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.approvalFillAlpha",
+      "baseline": 0.08,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.approvalStrokeAlpha",
+      "baseline": 0.2,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.questionInputInset",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.questionInputRadius",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.asyncQuestionSheetCompactHeight",
+      "baseline": 380,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.asyncQuestionSheetRadius",
+      "baseline": 24,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.receiptInset",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.receiptRadius",
+      "baseline": 10,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.queuedReplyRowHeight",
+      "baseline": 48,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "geometry.queuedReplyMaxHeight",
+      "baseline": 144,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.policy",
+      "baseline": "Platform font; map semantic hierarchy and Dynamic Type rather than copy Apple font files",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.message",
+      "baseline": "body",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.clientHeader",
+      "baseline": "caption",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.clientHeaderSecondary",
+      "baseline": "caption2",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.sidebarTitle",
+      "baseline": "title3 semibold",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.sidebarRow",
+      "baseline": "callout",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.toolHeader",
+      "baseline": "callout",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.toolBody",
+      "baseline": "subheadline monospaced",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.code",
+      "baseline": "callout monospaced",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.planHeading",
+      "baseline": "subheadline semibold",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.approvalBody",
+      "baseline": "subheadline",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.receipt",
+      "baseline": "caption",
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.sourceSymbols.headerIconPt",
+      "baseline": 17,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.sourceSymbols.composerSendPt",
+      "baseline": 18,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    },
+    {
+      "id": "typography.sourceSymbols.composerStopPt",
+      "baseline": 14,
+      "acceptance": "对照生成Swift/Kotlin值及实际UI采用，浅深/默认大字/横竖/48dp触控分别截图和交互；仅资源相等不足以证明UI相等。"
+    }
+  ],
+  "unregisteredDeltas": [
+    {
+      "id": "X01",
+      "title": "语言及设置完整性",
+      "features": ["F56"],
+      "ui": ["UI12"],
+      "iosEvidence": "apps/ios/Sources/Sheets.swift:627,apps/ios/Sources/Localization.swift",
+      "gap": "Android无strings.xml/语言偏好；中文硬编码，缺系统/中文/英文立即切换、隐私政策与帮助支持设置入口。",
+      "acceptance": "逐条iOS中英资源对照产品字符串/动态插值/错误/无障碍/数字；切换立即生效与重启保留；屏宽截断/读屏。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X02",
+      "title": "双语音后端与可用性回退",
+      "features": ["F33", "F64"],
+      "ui": ["UI07", "UI12", "UI21"],
+      "iosEvidence": "apps/ios/Sources/VoiceInput.swift:54,apps/ios/Sources/LocalVoiceInput.swift:6,apps/ios/Sources/Sheets.swift:637",
+      "gap": "UM05已完成Host录音转写，但iOS新增默认电脑/本地、预检与不可用时本地回退；Android仍只Host。",
+      "acceptance": "两后端真实麦克风、权限/可用性/本地模型/网路限制；开始录音前选定后端，已提交未知音频绝不改目标重放。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X03",
+      "title": "受控消息链接与原生预览",
+      "features": ["F19", "F32"],
+      "ui": ["UI05", "UI12"],
+      "iosEvidence": "apps/ios/Sources/MessageLinks.swift:5",
+      "gap": "Android只允许http/https/mailto直接链接，缺codex-attachment、tel、电脑本地路径/loopback提示、内置网页和下载预览路由。",
+      "acceptance": "公共网页/失败/返回、受控附件授权与摘要、tel/mail、非法scheme/电脑路径/私有loopback逐项，不能错开手机本机资源。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X04",
+      "title": "聊天内全文搜索与定位",
+      "features": ["F13", "F17", "F70"],
+      "ui": ["UI05", "UI10"],
+      "iosEvidence": "apps/ios/Sources/RootView.swift:3898",
+      "gap": "F13仅描述侧栏标题搜索；iOS已有完整历史加载、结果snippet/高亮、跳到准确消息/工具/长文展开，Android无入口。",
+      "acceptance": "超过60条/服务端分页/中文英文/无结果/加载失败重试/取消换目标/准确ID高亮/上下文，查询不建立控制权。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X05",
+      "title": "聊天管理与桌面侧栏投影",
+      "features": ["F12", "F14", "F15", "F70"],
+      "ui": ["UI01", "UI02", "UI03", "UI10"],
+      "iosEvidence": "apps/ios/Sources/RootView.swift:1151,apps/ios/Sources/Sheets.swift:437",
+      "gap": "F70仅概括归档/删除，漏置顶/取消、已归档列表、批量归档、桌面来源顺序、管理回执、归档和任务双状态；Android均缺。新增项目记录管理（含项目删除/管理页）明确暂缓；聊天归档与批量归档继续独立规划，现有聊天目录选择/分组入口保留。",
+      "acceptance": "置顶顺序/取消/归档过滤，恢复/删除准确ID；已加载完成/停止/后台各项独立，未知只查原ID；运行中操作仍按原桌面实际能力验，不冒称历史完成。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X06",
+      "title": "可操作的错误与本地读取恢复",
+      "features": ["F04", "F17", "F47", "F48", "F56"],
+      "ui": ["UI01", "UI03", "UI05", "UI10"],
+      "iosEvidence": "apps/ios/Sources/OperationFailure.swift:4,apps/ios/Sources/RootView.swift:959",
+      "gap": "iOS已新增安全证书/网络/DNS/timeout/断流友好错误和本地资料暂不可读阻断重试页；Android多处直接failure.message，首次恢复错误可能缺UI门禁。",
+      "acceptance": "每类错误有准确恢复动作，原草稿/资料不覆盖；单历史超时和任务失败区分；恢复前不落空库。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X07",
+      "title": "桌面建议完整交互",
+      "features": ["F69"],
+      "ui": ["UI07"],
+      "iosEvidence": "apps/ios/Sources/DesktopSuggestions.swift:6,apps/ios/Sources/RootView.swift:3231",
+      "gap": "F69已有ID但概括不足：空草稿灰字、详情、采用、已有草稿追加/替换二次确认、忽略、版本约束撤销；源失效和后台停止读取。",
+      "acceptance": "逐native/display/source-turn有效性、空/有草稿、附件/录音/键盘/抽屉组合；采用仅本地，零发送，旧撤销不覆盖新编辑。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X08",
+      "title": "弱网调度和同对话重选",
+      "features": ["F02", "F05", "F12", "F17", "F18", "F46", "F57", "F68"],
+      "ui": ["UI01", "UI02", "UI03", "UI05"],
+      "iosEvidence": "apps/ios/Sources/CodexDiscovery.swift,apps/ios/Sources/HostService.swift,apps/ios/Sources/SessionStore.swift",
+      "gap": "Android recordConnectionFailure把任一读取失败置整机offline；selectThread每次取消事件/历史并重置60条。缺iOS点选8秒、近期地址60秒、首快照优先/8秒历史兜底与在途合并。",
+      "acceptance": "受控RTT/带宽/抖动/截断/仅历史超时/全通道故障分别真机；统计首次新内容、缓存保持和上游零写入，不能只看请求总耗时。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    },
+    {
+      "id": "X09",
+      "title": "客户端运行数、手机独立未读和侧栏搜索",
+      "features": ["F02", "F11", "F14", "F49", "F50"],
+      "ui": ["UI01", "UI02", "UI03"],
+      "iosEvidence": "apps/ios/Sources/Sheets.swift:68,apps/ios/Sources/RootView.swift:1582",
+      "gap": "iOS已有每电脑运行/本机未读计数与无障碍、搜索显隐入口及置顶/最近独立折叠；Android以源unread蓝点和常驻搜索框为主。",
+      "acceptance": "多电脑状态计数、同聊天多分组只算一、手机可见性版本、搜索关闭清空及横滑/IME；A6相关未读仍暂停。",
+      "scope": "retained",
+      "idPolicy": "审计附录ID，未新增/修改正式F编号"
+    }
+  ],
+  "sourceFiles": {
+    "apps/android/src/androidTest/assets/localization-catalog.json": "03d66ea030fb9639eed10cf0016f77e9adf263a60928fd6ef6e9d446f17dba3c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "e1a52bea92918436248de1e9491c760fb1e59c04fe3a1ec2703ee4a52f439156",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "c40085a697a69ecc80985f98fe1a4729f0e0b9a52d464b7322705352200b4855",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "2b45e71fda3543084d1dd525ba988c12e70357ac9a81be182e2a52c2ee966130",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeLocalization.kt": "6043ee0a259f0c8768fb35aa0f2f2165559a10d83fecde5e6e33ad23f995cfa6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "63ab0ee96f0d035d3d0c586c4d1e57782df1005b04a59aaa61a55701fa920f97",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "ed91ead4256e074b78412e369bbc686edb997f1fd41d9bdd22114faa2857f866",
+    "apps/android/src/main/res/values/product_strings.xml": "a75950a485bd0b5c91bb24e904aa99fe2fab14968da31c325bd4e5152b4e8f5e",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "c4a4fea618eb5a35b6694ea4cc1ca81801fcd2d8c51316a33deb8ffaafe48a91",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "5c5d71d99bbffd04788d64d084c77ca50ac3e6b8082eb2bd804d58d06d3bec89",
+    "scripts/mobile/generate-localization.mjs": "c032e454a9933ffd6857eabc087870e7037b316fbe5099e5d81f38b42fd061ea",
+    "scripts/mobile/localization-catalog.mjs": "36e62ef3e6404b8dc55275b30c1927e6b404fbb5df64bbe55f8b5df681a07229",
+    "scripts/mobile/localization-catalog.test.mjs": "f6fd9e8e2ec81ad5a311d5e8e08f2be8cf8f1ab1c4e6da8c5492714985de0778"
+  },
+  "deferred": "Task/project business and unrelated iOS A6 remain deferred; Android P7 follows P6; provider/OS pending does not block local work",
+  "priorP5": "P5-3c bounded local scope committed; provider/OS pending separate",
+  "latestInspectedMain": "d8bf85d00912072f5a8abea37a36e6c855475ab4",
+  "wholeStageClosed": false,
+  "postFreezeSourceIndices": [
+    "docs/plans/android-alignment-20261022/upstream-20261024.json",
+    "docs/plans/android-alignment-20261022/upstream-20261025-evening.json",
+    "docs/plans/android-alignment-20261022/upstream-20261025-night.json",
+    "docs/plans/android-alignment-20261022/upstream-20261025.json",
+    "docs/plans/android-alignment-20261022/upstream-20261026.json",
+    "docs/plans/android-alignment-20261022/upstream-20261026-later.json"
+  ],
+  "scopeGroups": [
+    {
+      "id": "P6-settings",
+      "features": ["F56"],
+      "status": "Native language/settings six bounded checks across owned environments; other page copy and cold-process/system/browser matrices open"
+    },
+    {
+      "id": "P6-rendering",
+      "features": ["F19", "F20", "F22", "F23", "F32"],
+      "status": "remaining Markdown/code/table/Diff/tool/link/resource states open"
+    },
+    {
+      "id": "P6-visual",
+      "scope": "UI01-13/UI20/UI21,94 design tokens",
+      "status": "full language/theme/font/orientation/AX matrix open; UI14-19 business deferred"
+    }
+  ],
+  "next": "Continue P6 complete rendering/token/AX and typed failure-prefix review; import reviewed N048/N049 before Android P7 system URI/share inbox, explicit clipboard file intake, storage and voice lifecycle. Environmental pending stays separate; task/project business deferred.",
+  "currentCheckpoint": "P6-6b",
+  "nativeLanguageSettingsCheckpoint": {
+    "phase": "P6-1",
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P6.json#nativeLanguageSettingsCheckpoint",
+    "wholeStageClosed": false,
+    "implemented": "native bilingual resource adapter and settings/language/appearance; explicit keys and immutable runtime values; metadata compatibility and adaptive complete title",
+    "remaining": "all other page and dynamic/error copy, settings privacy/support icons and complete94-token/native/system/platform matrix"
+  },
+  "nativeStaticCopyCheckpoint": {
+    "phase": "P6-2",
+    "review": "docs/plans/android-alignment-20261022/P6-static-copy-review.json",
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P6.json#nativeStaticCopyCheckpoint",
+    "wholeStageClosed": false
+  },
+  "nativeGenerationFailureCheckpoint": {
+    "phase": "P6-3a",
+    "review": "docs/plans/android-alignment-20261022/P6-generation-error-review.json",
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P6.json#nativeGenerationFailureCheckpoint",
+    "wholeStageClosed": false
+  },
+  "mainIncrementReview": {
+    "priorMain": "fa2f14dbde37535dee6db2353ae619325c26b589",
+    "currentMain": "d8bf85d00912072f5a8abea37a36e6c855475ab4",
+    "index": "docs/plans/android-alignment-20261022/upstream-20261026-later.json",
+    "newNodes": 15,
+    "frozenNodes": 217,
+    "postFreezeNodes": 47,
+    "catalogKeysPerLanguage": 1590,
+    "sourceStatus": "reviewed, integrated and bounded auxiliary checked; full Android adaptations and current real owner/platform matrices open",
+    "wholeNodeClosed": false
+  },
+  "nativeMainIntegrationCheckpoint": {
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P6.json#nativeMainIntegrationCheckpoint",
+    "wholeStageClosed": false
+  }
+}

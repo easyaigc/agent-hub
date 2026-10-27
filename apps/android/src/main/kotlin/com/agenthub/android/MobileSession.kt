@@ -26,6 +26,9 @@ data class MobileClient(val id: String, val name: String, val scope: TargetScope
         ConnectionPhase.WAITING -> "正在重新连接…"
         ConnectionPhase.FAILED -> "连接未完成 · 查看缓存"
     }
+    val sourceLabel get() = if (isDemo) "界面体验 · 本地示例" else when (mode) {
+        "desktop-runtime" -> "原桌面连接"; "easywork-runtime" -> "EasyWork 连接"; "managed-runtime" -> "托管连接"; "shared-runtime" -> "共享连接"; else -> "历史连接"
+    }
 }
 data class PendingAgentLink(val presentation: String=UUID.randomUUID().toString(),val payload: String)
 data class DraftDestination(val key: String,val selection: Long)
@@ -115,6 +118,16 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!) }
     private val easyWorkAgent=easyWorkSessions?.let(::EasyWorkAgentClient)
     private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    internal val desktopSuggestionReader=NativeDesktopSuggestionReader(tasks)
+    private val suggestionReadAhead=NativeSuggestionReadAhead(tasks)
+    private var suggestionNeedsFreshHistory by mutableStateOf(false)
+    private val textRevisions=mutableStateMapOf<String,Long>()
+    private val handledSuggestions=mutableStateMapOf<String,Set<String>>()
+    private var suggestionUndo by mutableStateOf<MobileSuggestionUndo?>(null)
+    private var suggestionSurfaceOwner: String?=null
+    private var suggestionSurfaceNavigation: String?=null
+    private var suggestionSurfaceInteractive=false
+    private var suggestionReadsVisible=false
     private fun registry(reader: HostReads?,commands: CodexCommands?)=AgentRegistry(reader?:NativeHostReads { storage?.token(it).orEmpty() },commands?:NativeCodexCommands { storage?.token(it).orEmpty() }).apply { easyWorkAgent?.let { register("easywork",it,it) } }
     private var providers=registry(reader,commandProvider)
     private var reads: HostReads = providers
@@ -127,8 +140,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val attachmentImportGenerations=mutableStateMapOf<String,String>()
     private val attachmentPreparation=LocalAttachmentPreparation(tasks,{ execution?.files },::currentAttachmentImport,
         { draftFiles[it].orEmpty().size },{ destination,file ->
-            draftFiles[destination.key]=draftFiles[destination.key].orEmpty()+file
-            draftVersions[destination.key]=UUID.randomUUID().toString();persistMetadata()
+            val old=draftFiles[destination.key].orEmpty()
+            val same=old.firstOrNull { it.manifest.id==file.manifest.id }
+            require(same==null||same==file) { "原附件清单已改变" }
+            if(same==null) {
+                draftFiles[destination.key]=old+file
+                draftVersions[destination.key]=UUID.randomUUID().toString();persistMetadata()
+            }
         },{ file -> draftFiles.values.any { values -> values.any { it.manifest==file.manifest } } })
     private val generation=mutableStateMapOf<String,GenerationSettings>()
     private val generationPreferences=mutableStateMapOf<String,GenerationSettings>()
@@ -168,6 +186,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun conversationProgressKey(key: String,client: MobileClient)="$key:$selectionRevision:${revisions[client.id] ?: 0}"
     internal val conversationSyncIssue: ConversationSyncIssue? get()=conversationSyncIssues[targetKey].takeUnless { selectedClient.isDemo || selectedThread.isEmpty() }
     private fun receivedConversationSnapshot(key: String,client: MobileClient,page: MobileHistory,proofIsFresh: Boolean=true) {
+        if(proofIsFresh&&key==targetKey&&page.runtimePresent)suggestionNeedsFreshHistory=false
         val state=page.synchronization?.state
         val historyFresh=state in listOf("history","live-window") && page.synchronization?.checkedAt!=null
         val unavailable=state=="unavailable" || client.mode=="desktop-runtime" && page.runtime?.canControl==false && page.runtime.state=="unknown"
@@ -195,7 +214,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var historyRecoveryIdentity: Triple<String,Long,Long>?=null
     private var readyHistorySelection: Triple<String,Long,Long>?=null
     private var foreground=true
-    val importing get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])
+    val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
+    internal val attachmentRecoveryBusy: Boolean get()=documentPicker?.recovery?.let { it.loading||it.busy }==true||photoPicker?.recovery?.let { it.loading||it.busy }==true||cameraCapture?.recovery?.let { it.loading||it.busy }==true
     private val realClients = mutableStateListOf<MobileClient>()
     val clients: List<MobileClient> get() = realClients.toList() + if (demo) DemoMobileData.clients else emptyList()
     var demo by mutableStateOf(false)
@@ -207,6 +227,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         get() = selectedThreads[clientKey] ?: if (selectedClient.isDemo) "demo-chat" else ""
         set(value) { updateReadingSelection(value); persistMetadata() }
     private fun updateReadingSelection(thread: String) { selectedThreads[clientKey]=thread; synchronizeReadingPresentation() }
+    var language by mutableStateOf("system")
+        private set
     var appearance by mutableStateOf("system")
     var search by mutableStateOf("")
     private var errorRevision=0L
@@ -214,18 +236,24 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     var errorTitle by mutableStateOf(FailureCopy.defaultTitle)
         private set
     private var readErrorActive=false
+    private var readErrorKind by mutableStateOf<com.agenthub.core.MobileConnectionFailureKind?>(null)
+    private var localErrorProductKey by mutableStateOf<String?>(null)
+    val errorProductKey get()=localErrorProductKey ?: readErrorKind?.let(FailureCopy::message)
     var error: String?
         get()=errorMessage
-        set(value) { errorRevision++;errorMessage=value;errorTitle=FailureCopy.defaultTitle;readErrorActive=false }
+        set(value) { localErrorProductKey=null;errorRevision++;errorMessage=value;errorTitle=FailureCopy.defaultTitle;readErrorActive=false;readErrorKind=null }
     private fun readError(failure: Exception,prefix: String="",userInitiated: Boolean=false,fallback: String="读取失败") {
         if(error==null || readErrorActive || userInitiated) {
             val display=NativeOperationFailure.describe(failure,fallback)
-            error=(if(display.kind==null) prefix else "")+display.message;errorTitle=display.title;readErrorActive=true
+            error=(if(display.kind==null) prefix else "")+display.message;errorTitle=display.title;readErrorKind=display.kind;readErrorActive=true
         }
     }
     private fun clearReadError(userInitiated: Boolean) { if(userInitiated || readErrorActive) error=null }
     var localRecoveryRequired by mutableStateOf(false)
         private set
+    internal var localRecoveryAllowsAttachmentStaging by mutableStateOf(false)
+        private set
+    internal val canReceiveOriginalAttachmentResults get()=(!restoring&&!localRecoveryRequired)||localRecoveryAllowsAttachmentStaging
     private val localReady get()=!restoring&&!localRecoveryRequired
     private var restoreJob: Job?=null
     var restoring by mutableStateOf(storage != null)
@@ -288,7 +316,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { pendingCreationWait=null;voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -431,15 +459,15 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val currentChat get()=threads.firstOrNull { it.id==selectedThread&&it.hostId==selectedClient.id }
     val currentChatPinned get()=selectedThread in workspace?.pinnedThreadIds.orEmpty()
     val chatActionRecords get()=operationRecords.filter { it.kind=="chat-action" }
-    fun chatActionRecordDescription(record: SavedOperation): String {
+    internal fun chatActionRecordDescription(record: SavedOperation,t: NativeL10n): String {
         val request=ChatActionCodec.request(JSONObject(record.intent))
-        return "查询聊天操作记录，"+chatActionRecordLabel(record)+"，对话 "+request.threadId+"，操作 "+request.operationId
+        return t.tr("查询聊天操作记录，%@，对话 %@，操作 %@",chatActionRecordLabel(record,t),request.threadId,request.operationId)
     }
-    fun chatActionRecordLabel(record: SavedOperation): String {
+    internal fun chatActionRecordLabel(record: SavedOperation,t: NativeL10n): String {
         val request=ChatActionCodec.request(JSONObject(record.intent))
         val action=when(request.action) { "pin"->"置顶";"unpin"->"取消置顶";"archive"->"归档";"unarchive"->"恢复对话";else->"删除" }
         val title=threads.firstOrNull { it.hostId==request.hostId&&it.id==request.threadId }?.title ?: request.threadId
-        return action+" · "+request.operationId.take(8)+" · "+title
+        return t.tr(action)+" · "+request.operationId.take(8)+" · "+title
     }
     fun pendingChatActions(threadId: String? = null)=chatActionRecords.filter {
         ChatManagementRules.pending(it.phase)&&(threadId==null||JSONObject(it.intent).getString("threadId")==threadId)
@@ -459,15 +487,15 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun managementCurrent(context: ChatManagementContext)=targetKey==context.key&&selectionRevision==context.selection&&
         (revisions[context.client.id] ?: 0)==context.revision&&selectedClient.endpoint==context.client.endpoint&&
         sameScope(selectedClient.scope,context.client.scope)
-    fun chatTaskStatus(thread: MobileThread): String {
+    internal fun chatTaskStatus(thread: MobileThread,t: NativeL10n): String {
         val selected=thread.hostId==selectedClient.id&&thread.id==selectedThread
         val state=if(selected)runtime?.state ?: thread.state else thread.state
         val unconfirmed=selected&&(loadedHistorySelections[targetKey]!=(selectionRevision to (revisions[selectedClient.id] ?: 0))||conversationSyncIssue!=null)
         val status=ChatManagementRules.taskStatus(state,thread.lastTurnStatus,thread.archived==true,selectedClient.online,unconfirmed)
         val text=when(status.code) { "running"->"执行中";"approval"->"等待审批";"failed"->"执行失败";"stopped"->"已停止";"completed"->"已完成";"idle"->"空闲";else->"状态未确认" }
-        return if(status.lastKnown)"上次状态：$text" else text
+        return if(status.lastKnown)t.tr("上次状态：%@",t.tr(text)) else t.tr(text)
     }
-    fun chatLifecycleStatus(thread: MobileThread)="${if(thread.archived==true)"已归档" else "未归档"} · 任务状态：${chatTaskStatus(thread)}"
+    internal fun chatLifecycleStatus(thread: MobileThread,t: NativeL10n)=t.tr("%@ · 任务状态：%@",t.tr(if(thread.archived==true)"已归档" else "未归档"),chatTaskStatus(thread,t))
     fun manageChat(action: String,context: ChatManagementContext? = captureChatManagement()) {
         val captured=context ?: return;val flow=execution ?: return
         if(!managementCurrent(captured)||!managementAllowed(captured.thread)||action !in listOf("pin","unpin","archive","unarchive","delete")||
@@ -539,9 +567,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val loading get() = loadingTargets[clientKey]?.let { it.navigation==clientNavigationRevision && it.connectionRevision==(revisions[selectedClient.id] ?: 0)&&it.managementRevision==(workspaceManagementRevisions[clientKey] ?: 0) }==true
     val historyLoading get() = historyTargets[targetKey]?.let { it.selection==selectionRevision && it.connectionRevision==(revisions[selectedClient.id] ?: 0) }==true
     val historyCursor get() = historyPages[targetKey]?.nextCursor
-    val sourceLabel get() = if (selectedClient.isDemo) "界面体验 · 本地示例" else when (selectedClient.mode) {
-        "desktop-runtime" -> "原桌面连接"; "easywork-runtime" -> "EasyWork 连接"; "managed-runtime" -> "托管连接"; "shared-runtime" -> "共享连接"; else -> "历史连接"
-    }
+    val sourceLabel get()=selectedClient.sourceLabel
     val selectedTitle get() = threads.firstOrNull { it.id == selectedThread }?.title ?: "新聊天"
     var runtimeState: String
         get() = runs[targetKey] ?: historyPages[targetKey]?.state ?: "idle"
@@ -551,19 +577,127 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         set(value) { runtimeState = if (value) "running" else "idle" }
     var text: String
         get() = drafts[targetKey].orEmpty()
-        set(value) { drafts[targetKey] = value; draftVersions[targetKey]=UUID.randomUUID().toString(); persistMetadata() }
+        set(value) {
+            val key=targetKey
+            if(drafts[key]==value)return
+            if(suggestionUndo?.applied?.targetKey==key)suggestionUndo=null
+            textRevisions[key]=(textRevisions[key] ?: 0)+1
+            if(value.isEmpty())handledSuggestions.remove(key)
+            drafts[key]=value;draftVersions[key]=UUID.randomUUID().toString();persistMetadata()
+        }
     val messages: List<MobileMessage> get() = histories[targetKey] ?: if (selectedClient.isDemo && demo && selectedThread == "demo-chat") DemoMobileData.messages else emptyList()
     val runtime get() = historyPages[targetKey]?.runtime
+    internal val suggestionNavigation get()="$clientNavigationRevision:$selectionRevision:${revisions[selectedClient.id] ?: 0}"
+    private fun suggestionCandidate(online: Boolean): SuggestionScope? {
+        val client=selectedClient;val workspace=workspace ?: return null;val target=workspace.scope ?: return null
+        val runtime=runtime ?: return null;val source=runtime.suggestionSourceTurnId?.takeIf { it.isNotEmpty() } ?: return null
+        if(!foreground||!localReady||client.isDemo||incomingEasyWorkLink!=null||selectedThread.isEmpty()||
+            online&&!client.online||!RuntimeIdentity.matches(target,client.scope)||runtime.state!="idle"||runtime.canControl!=true)return null
+        val displayed="desktop:suggestions:displayed:v1" in workspace.capabilities
+        val codex=workspace.mode=="desktop-runtime"&&target.agentId=="codex"&&
+            (displayed||"desktop:suggestions:native-version:v1" in workspace.capabilities)
+        val easyWork=workspace.mode=="easywork-runtime"&&target.agentId=="easywork"&&
+            "desktop:suggestions:runtime-version:v1" in workspace.capabilities
+        if(!codex&&!easyWork)return null
+        return SuggestionScope(target,selectedThread,source,suggestionNavigation,
+            "${client.endpoint.orEmpty()}:${client.codexDirect?.fingerprint.orEmpty()}",codex&&displayed,codex&&!displayed,easyWork)
+    }
+    internal val nextSuggestionScope: SuggestionScope? get() = suggestionCandidate(true)?.takeIf {
+        !suggestionNeedsFreshHistory&&readyHistorySelection==Triple(targetKey,selectionRevision,revisions[selectedClient.id] ?: 0)&&
+            freshHistories[targetKey]==true
+    }
+    internal val suggestionPresentationScope: SuggestionScope? get() {
+        nextSuggestionScope?.let { return it }
+        if(selectedClient.connectionPhase==ConnectionPhase.FAILED||
+            !(suggestionNeedsFreshHistory||selectedClient.connectionPhase==ConnectionPhase.WAITING)||
+            readyHistorySelection!=Triple(targetKey,selectionRevision,revisions[selectedClient.id] ?: 0))return null
+        return suggestionCandidate(false)?.takeIf { desktopSuggestionReader.visible(it)!=null }
+    }
+    internal val suggestionDraft get()=SuggestionDraft(targetKey,text,(textRevisions[targetKey] ?: 0).toString())
+    internal val availableSuggestion: MobileDesktopSuggestion? get() {
+        val scope=suggestionPresentationScope ?: return null
+        return desktopSuggestionReader.visible(scope)?.takeUnless {
+            DesktopSuggestionRules.handledVersionKey(targetKey,scope.sourceTurnId,it.sharedValue(false)) in handledSuggestions[targetKey].orEmpty()
+        }
+    }
+    internal fun claimSuggestionSurface(owner: String,navigation: String=suggestionNavigation) {
+        if(navigation!=suggestionNavigation)return
+        if(suggestionSurfaceOwner==owner)return
+        suggestionSurfaceOwner=owner;suggestionSurfaceNavigation=navigation;suggestionSurfaceInteractive=false;suggestionReadsVisible=false
+    }
+    internal fun releaseSuggestionSurface(owner: String) {
+        if(suggestionSurfaceOwner!=owner)return
+        val navigation=suggestionSurfaceNavigation
+        suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionReadsVisible=false
+        if(navigation==suggestionNavigation)desktopSuggestionReader.suspendKeeping(suggestionPresentationScope)
+        else if(desktopSuggestionReader.scope?.navigation==navigation)desktopSuggestionReader.clear()
+        if(navigation!=null)suggestionReadAhead.cancel(navigation)
+    }
+    internal fun reconcileSuggestionSurface(owner: String,interactive: Boolean,previewOpen: Boolean) {
+        if(suggestionSurfaceOwner!=owner||suggestionSurfaceNavigation!=suggestionNavigation)return
+        suggestionSurfaceInteractive=interactive&&foreground&&voice?.active!=true
+        val scope=suggestionPresentationScope;val client=selectedClient
+        val enabled=suggestionSurfaceInteractive&&!previewOpen&&nextSuggestionScope!=null
+        suggestionReadsVisible=suggestionSurfaceInteractive&&!previewOpen
+        if(!suggestionReadsVisible||scope==null&&suggestionCandidate(false)==null)suggestionReadAhead.cancel()
+        desktopSuggestionReader.reconcile(scope,enabled) {
+            checkNotNull(scope)
+            suggestionReadAhead.read(scope) { reads.nextTurnSuggestion(client,scope) }
+        }
+    }
+    private fun prepareSuggestionRead() {
+        if(suggestionSurfaceOwner!=null&&!suggestionReadsVisible)return
+        val scope=suggestionCandidate(false) ?: return;val client=selectedClient
+        suggestionReadAhead.prepare(scope,{ expected,response ->
+            if(DesktopSuggestionRules.sameScope(nextSuggestionScope,expected))desktopSuggestionReader.seed(response,expected)
+        }) { reads.nextTurnSuggestion(client,scope) }
+        if(DesktopSuggestionRules.sameScope(nextSuggestionScope,scope))
+            suggestionReadAhead.completed(scope)?.let { desktopSuggestionReader.seed(it,scope) }
+    }
+    internal fun suggestionIntent(): MobileSuggestionAction? {
+        if(!suggestionSurfaceInteractive||suggestionSurfaceNavigation!=suggestionNavigation)return null
+        val scope=nextSuggestionScope ?: return null;val value=availableSuggestion ?: return null
+        return MobileSuggestionAction(scope,value,suggestionDraft)
+    }
+    internal fun suggestionActionCurrent(action: MobileSuggestionAction): Boolean =
+        foreground&&suggestionSurfaceInteractive&&suggestionSurfaceNavigation==suggestionNavigation&&voice?.active!=true&&
+            DesktopSuggestionRules.proposedText("replace",action.scope,nextSuggestionScope,
+                action.suggestion.sharedValue(false),availableSuggestion?.sharedValue(),action.draft,suggestionDraft,
+                System.currentTimeMillis().toDouble(),availableSuggestion?.actualTextSha256.orEmpty())!=null
+    internal fun canApplySuggestion(action: MobileSuggestionAction): Boolean =
+        suggestionActionCurrent(action)&&canCompose&&pendingRecords.isEmpty()&&transferStatus==null&&!importing
+    internal fun adoptSuggestion(action: MobileSuggestionAction,mode: String): Boolean {
+        if(!canApplySuggestion(action))return false
+        val value=availableSuggestion ?: return false
+        val proposed=DesktopSuggestionRules.proposedText(mode,action.scope,nextSuggestionScope,action.suggestion.sharedValue(false),
+            value.sharedValue(),action.draft,suggestionDraft,System.currentTimeMillis().toDouble(),value.actualTextSha256) ?: return false
+        text=proposed
+        handledSuggestions[targetKey]=handledSuggestions[targetKey].orEmpty()+action.handledKey
+        suggestionUndo=MobileSuggestionUndo(action.draft.text,suggestionDraft,action.handledKey)
+        return true
+    }
+    internal fun ignoreSuggestion(action: MobileSuggestionAction): Boolean {
+        if(!canApplySuggestion(action))return false
+        handledSuggestions[targetKey]=handledSuggestions[targetKey].orEmpty()+action.handledKey;return true
+    }
+    internal val validSuggestionUndo get()=suggestionUndo?.takeIf {
+        DesktopSuggestionRules.restoredText(it.original,it.applied,suggestionDraft)!=null
+    }
+    internal fun undoSuggestion(undo: MobileSuggestionUndo): Boolean {
+        if(!foreground||validSuggestionUndo!==undo)return false
+        val restored=DesktopSuggestionRules.restoredText(undo.original,undo.applied,suggestionDraft) ?: return false
+        text=restored;handledSuggestions[targetKey]=handledSuggestions[targetKey].orEmpty()-undo.handledKey;suggestionUndo=null;return true
+    }
     val attachments get() = draftFiles[targetKey].orEmpty()
     val generationSettings get() = generation[targetKey] ?: GenerationSettings()
     val models get() = modelsByClient[clientKey].orEmpty()
     val selectedModel get() = models.firstOrNull { it.id==(generationSettings.model ?: runtime?.settings?.model) }
     val modelLabel get() = selectedModel?.name ?: generationSettings.model ?: runtime?.settings?.model ?: "电脑默认"
     val selectedEffort get() = generationSettings.effort ?: runtime?.settings?.effort
-    val generationDisplay get() = SessionPolicies.generationDisplay(selectedThread != null,
+    val generationDisplay get() = SessionPolicies.generationDisplay(selectedThread.isNotEmpty(),
         generationSettings.model,generationSettings.effort,runtime?.settings?.model,runtime?.settings?.effort)
     val displayedModelLabel get() = generationDisplay.model.let { id -> models.firstOrNull { it.id==id }?.name ?: id }
-        ?: if(selectedThread==null) "跟随电脑" else "同步中"
+        ?: if(selectedThread.isEmpty()) "跟随电脑" else "同步中"
     val displayedEffort get() = generationDisplay.effort
     val selectedSpeed get() = generationSettings.speed ?: runtime?.settings?.speed ?: selectedModel?.defaultSpeed
     val selectedPermission get() = generationSettings.permissionMode ?: runtime?.settings?.permissionMode
@@ -727,6 +861,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun projectExpanded(id: String) = id in expandedProjects[clientKey].orEmpty()
     fun toggleProject(id: String) { expandedProjects[clientKey] = expandedProjects[clientKey].orEmpty().let { if (id in it) it - id else it + id }; persistMetadata() }
+    fun changeLanguage(value: String) { require(NativeAppLanguage.entries.any { it.value==value });language=value;persistMetadata() }
     fun changeAppearance(value: String) { require(value in listOf("system", "light", "dark")); appearance = value; persistMetadata() }
     fun setDemoMode(value: Boolean) {
         demo = value
@@ -844,6 +979,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         // A newer validated response disproves this older transport inference.
         // Authentication, identity and protocol failures always fail closed.
         if(transient && successAtStart!=null && (connectionSuccesses[client.cacheKey(null)] ?: 0)>successAtStart)return
+        if(client.id==selectedClient.id&&sameScope(client.scope,selectedClient.scope)) {
+            suggestionNeedsFreshHistory=true
+            if(!transient) { desktopSuggestionReader.clear();suggestionReadAhead.cancel() }
+        }
         freshWorkspaces[client.cacheKey(null)]=false
         val latest=realClients.firstOrNull { it.id==client.id&&sameScope(it.scope,client.scope) }?:client
         replaceClient(latest.copy(online=false,connectionPhase=if(transient) ConnectionPhase.WAITING else ConnectionPhase.FAILED))
@@ -855,6 +994,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if (client.isDemo || incomingEasyWorkLink!=null || thread.isEmpty() || thread.startsWith("draft-") || historyLoading) return null
         if(!more && userInitiated) { pagedSelections.remove(key); loadedHistorySelections.remove(key) }
         val selection = selectionRevision; val revision = revisions[client.id] ?: 0
+        if(!more)prepareSuggestionRead()
         val cursor = if (more) historyCursor ?: return null else null
         val owner=HistoryReadOwner(selection,revision)
         historyJob = tasks.launch {
@@ -898,6 +1038,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 }
                 recordConnectionSuccess(client)
                 replaceClient(selectedClient.copy(online=true))
+                if(!more)prepareSuggestionRead()
                 persistHistory(key, client, thread, page, merged)
                 startEvents()
             } catch (cancel: CancellationException) { throw cancel }
@@ -1343,6 +1484,73 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         } catch(failure: Exception) { if(current() && errorRevision==errorAtStart) error=failure.message ?: "回复未确认，请刷新请求" }
             finally { if(answeringTargets[requestKey]==owner) answeringTargets.remove(requestKey) } }
     }
+    internal var externalInbox by mutableStateOf<NativeExternalAttachments?>(null)
+        private set
+    internal var recentPhotos: NativeRecentPhotoLibrary? by mutableStateOf(null)
+        private set
+    internal var photoAuthorization: NativePhotoAuthorization? by mutableStateOf(null)
+        private set
+    internal fun configureRecentPhotos(context: android.content.Context,source: NativeRecentPhotoSource=NativeRecentPhotos(context)) {
+        if(recentPhotos==null&&storage!=null)recentPhotos=NativeRecentPhotoLibrary(source,storage.child(context,"recent-photos"))
+        if(photoAuthorization==null&&storage!=null)photoAuthorization=NativePhotoAuthorization(storage.child(context,"photo-permission"),source.permissions())
+    }
+    internal var documentPicker: NativeDocumentPicker? by mutableStateOf(null)
+        private set
+    internal fun configureDocumentPicker(context: android.content.Context) { if(documentPicker==null)documentPicker=NativeDocumentPicker(context,this,storage?.child(context,"document-results")) }
+    internal fun acceptsAttachmentAction(original: NativePhotoRequest): Boolean=currentAttachmentImport(original.destination)&&isCurrent(original.destination.presentation)&&canCompose&&!importing&&!localRecoveryRequired
+    internal fun clearAttachmentDraft(original: NativePhotoRequest) {
+        if(!acceptsAttachmentAction(original)||submission.sending)return
+        val key=original.destination.key
+        text="";draftFiles[key]=emptyList();attachmentImportGenerations.remove(key);draftVersions[key]=UUID.randomUUID().toString();persistMetadata()
+    }
+    internal val attachmentErrorGeneration get()=errorRevision
+    internal fun photoSelectionFailure(original: NativePhotoRequest,message: String) { reportAttachmentImportFailure(original.destination,original.errorGeneration,IllegalStateException(message)) }
+    internal var photoPicker: NativePhotoPicker? by mutableStateOf(null)
+        private set
+    internal var cameraCapture: NativeCameraCapture? by mutableStateOf(null)
+        private set
+    internal fun configureCameraCapture(context: android.content.Context,access: NativeCameraAccess=AndroidCameraAccess(context)) { if(cameraCapture==null)cameraCapture=NativeCameraCapture(context,this,storage?.child(context,"camera-results"),access) }
+    internal fun configurePhotoPicker(context: android.content.Context) { if(photoPicker==null)photoPicker=NativePhotoPicker(context,this,storage?.child(context,"photo-results")) }
+    internal fun configureExternalInbox(context: android.content.Context) {
+        if(externalInbox==null&&storage!=null)externalInbox=NativeExternalAttachments(context.applicationContext,storage.child(context,"external-inbox")) { foreground }
+    }
+    internal fun inboxFiles(destination: AttachmentImportDestination): List<CreationFile> {
+        require(currentAttachmentImport(destination)) { NativeFileIntakeFailure.CHANGED }
+        return draftFiles[destination.key].orEmpty().map { it.manifest }
+    }
+    internal suspend fun verifyInboxFile(file: CreationFile) {
+        val repository=storage ?: throw NativeFileIntakeFailure(NativeFileIntakeFailure.UNAVAILABLE)
+        NativeDraftFiles(repository).bytes(file)
+    }
+    internal suspend fun repairInboxFile(destination: AttachmentImportDestination,expected: CreationFile,input: LocalAttachmentInput) {
+        require(inboxFiles(destination).any { it==expected }) { NativeFileIntakeFailure.CHANGED }
+        val store=execution?.files ?: throw NativeFileIntakeFailure(NativeFileIntakeFailure.UNAVAILABLE)
+        val result=store.prepare(input.name,input.mediaType,input.bytes,expected.id)
+        try {
+            require(result.file.manifest==expected&&currentAttachmentImport(destination)) { NativeFileIntakeFailure.CHANGED }
+            // This ID was already referenced by the original draft; never discard its repaired bytes.
+        } finally { result.close() }
+    }
+    internal suspend fun confirmInboxFiles(destination: AttachmentImportDestination,expected: List<CreationFile>): Boolean {
+        if(!currentAttachmentImport(destination))return false
+        val repository=storage ?: return false
+        repository.awaitQueuedWrites()
+        val confirmed=withContext(Dispatchers.IO) {
+            val metadata=repository.metadata() ?: return@withContext false
+            if(metadata.optJSONObject("attachmentImportGenerations")?.optString(destination.key)!=destination.generation)return@withContext false
+            val rows=metadata.optJSONObject("draftFiles")?.optJSONArray(destination.key) ?: return@withContext false
+            val persisted=(0 until rows.length()).map { n -> rows.getJSONObject(n).let { row -> CreationFile(row.getString("id"),row.getString("name"),row.getString("mediaType"),row.getLong("sizeBytes"),row.getString("sha256")) } }
+            if(!expected.all { file -> persisted.any { it==file } })return@withContext false
+            for(file in expected)NativeDraftFiles(repository).bytes(file)
+            true
+        }
+        return confirmed&&currentAttachmentImport(destination)
+    }
+    internal suspend fun confirmPhotoFiles(destination: AttachmentImportDestination,expected: List<LocalDraftFile>): Boolean {
+        if(!confirmInboxFiles(destination,expected.map {it.manifest}))return false
+        val origins=withContext(Dispatchers.IO) {storage?.metadata()?.optJSONObject("photoSources")}
+        return currentAttachmentImport(destination)&&expected.all {it.photoSourceId!=null&&origins?.optional(it.manifest.id)==it.photoSourceId}
+    }
     fun attachmentDestination()=DraftDestination(targetKey,selectionRevision)
     fun isCurrent(destination: DraftDestination)=destination.key==targetKey && destination.selection==selectionRevision
     fun attachmentImportDestination(): AttachmentImportDestination {
@@ -1350,27 +1558,35 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val key=targetKey
         val generation=attachmentImportGenerations.getOrPut(key) { UUID.randomUUID().toString() }
         persistMetadata()
-        return AttachmentImportDestination(key,generation,DraftDestination(key,selectionRevision))
+        return AttachmentImportDestination(key,generation,DraftDestination(key,selectionRevision),maximum=5)
     }
     private fun currentAttachmentImport(destination: AttachmentImportDestination)=localReady &&
         AttachmentPreparationRules.canCommit(destination.key,destination.key,destination.generation,
             attachmentImportGenerations[destination.key],false)
-    private fun reportAttachmentImportFailure(destination: AttachmentImportDestination,errorAtStart: Long,failure: Exception) {
-        if(currentAttachmentImport(destination)&&isCurrent(destination.presentation)&&errorRevision==errorAtStart)
-            error=failure.message ?: "附件读取失败，原草稿已保留"
+    internal val attachmentStorageReady get()=localReady
+    internal suspend fun confirmAttachmentOrigin(destination: AttachmentImportDestination): Boolean {
+        if(!currentAttachmentImport(destination))return false
+        val repository=storage ?: return false
+        repository.awaitQueuedWrites()
+        return withContext(Dispatchers.IO) { repository.metadata()?.optJSONObject("attachmentImportGenerations")?.optString(destination.key)==destination.generation }&&currentAttachmentImport(destination)
     }
-    private fun startAttachmentImport(destination: AttachmentImportDestination,loaders: List<suspend ()->LocalAttachmentInput>,errorAtStart: Long)=
-        attachmentPreparation.start(destination,loaders) { reportAttachmentImportFailure(destination,errorAtStart,it) }
-    fun importAttachments(destination: AttachmentImportDestination,loaders: List<suspend ()->LocalAttachmentInput>): Deferred<Unit>? {
-        val errorAtStart=errorRevision
-        return try { startAttachmentImport(destination,loaders,errorAtStart) }
-            catch(failure: Exception) { reportAttachmentImportFailure(destination,errorAtStart,failure);null }
+    private fun reportAttachmentImportFailure(destination: AttachmentImportDestination,errorAtStart: Long,failure: Exception) {
+        if(currentAttachmentImport(destination)&&isCurrent(destination.presentation)&&errorRevision==errorAtStart) {
+            error=failure.message ?: "附件读取失败，原草稿已保留"
+            localErrorProductKey=(failure as? NativeAttachmentQuotaFailure)?.key
+        }
+    }
+    private fun startAttachmentImport(destination: AttachmentImportDestination,loaders: List<suspend ()->LocalAttachmentInput>,errorAtStart: Long,maximum: Int=destination.maximum,reportFailure: Boolean=true)=
+        attachmentPreparation.start(destination,loaders,maximum) { if(reportFailure)reportAttachmentImportFailure(destination,errorAtStart,it) }
+    fun importAttachments(destination: AttachmentImportDestination,loaders: List<suspend ()->LocalAttachmentInput>,errorAtStart: Long=errorRevision,maximum: Int=destination.maximum,reportFailure: Boolean=true): Deferred<Unit>? {
+        return try { startAttachmentImport(destination,loaders,errorAtStart,maximum,reportFailure) }
+            catch(failure: Exception) { if(reportFailure)reportAttachmentImportFailure(destination,errorAtStart,failure);null }
     }
     suspend fun addAttachment(name: String,mediaType: String,bytes: ByteArray,destination: AttachmentImportDestination=attachmentImportDestination()) {
         val captured=bytes.copyOf()
         startAttachmentImport(destination,listOf({ LocalAttachmentInput(name,mediaType,captured) }),errorRevision)?.await()
     }
-    val canRemoveDraftAttachment get()=localReady&&!submission.sending
+    val canRemoveDraftAttachment get()=localReady&&!submission.sending&&documentPicker?.recovery?.blocksRemoval(targetKey,attachmentImportGenerations[targetKey])!=true&&photoPicker?.recovery?.blocksRemoval(targetKey,attachmentImportGenerations[targetKey])!=true&&cameraCapture?.recovery?.blocksRemoval(targetKey,attachmentImportGenerations[targetKey])!=true
     fun removeAttachment(id: String)=removeAttachment(id,attachmentDestination())
     fun removeAttachment(id: String,destination: DraftDestination) {
         if(!canRemoveDraftAttachment||!isCurrent(destination)||attachments.none { it.manifest.id==id })return
@@ -1382,10 +1598,33 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val bytes=execution?.files?.thumbnail(file.manifest) ?: return null
         return if(localReady&&isCurrent(destination)&&attachments.any { it.manifest==file.manifest })bytes else null
     }
-    suspend fun downloadResource(file: MobileFile,cache: java.io.File): java.io.File {
-        val client=selectedClient
-        require(client.scope!=null&&file.hostId==client.id&&file.threadId==selectedThread&&messages.any { file in it.attachments }) { "文件不属于当前电脑和对话" }
-        return commands.downloadResource(client,file,cache)
+    /** Explicit local preview reads the original encrypted bytes under the captured draft. */
+    internal suspend fun draftAttachmentImage(file: LocalDraftFile,destination: DraftDestination): android.graphics.Bitmap? {
+        if(!file.manifest.mediaType.startsWith("image/")||!localReady||!isCurrent(destination)||attachments.none { it.manifest==file.manifest })return null
+        val bytes=execution?.files?.bytes(file.manifest) ?: return null
+        val image=NativeAttachmentImageDecoder.decode(bytes)
+        return if(localReady&&isCurrent(destination)&&attachments.any { it.manifest==file.manifest })image else null
+    }
+    internal data class MessageLinkContext(val key: String,val selection: Long,val connection: Long,val message: MobileMessage)
+    internal fun messageLinkContext(message: MobileMessage)=MessageLinkContext(targetKey,selectionRevision,revisions[selectedClient.id] ?: 0,message)
+    internal fun messageLinkCurrent(context: MessageLinkContext)=context.key==targetKey&&context.selection==selectionRevision&&
+        context.connection==(revisions[selectedClient.id] ?: 0)&&messages.any { it==context.message }
+    internal data class PreparedMessageResource(val name: String,val mediaType: String,val local: java.io.File)
+    internal suspend fun prepareMessageResource(owner: MessageLinkContext,reference: String,cache: java.io.File): PreparedMessageResource {
+        if(!messageLinkCurrent(owner))throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
+        val client=selectedClient;val thread=selectedThread
+        val destination=MessageLinkDestination.resolve(reference)
+        val file=when(destination.kind) {
+            "attachment" -> owner.message.attachments.firstOrNull { candidate->
+                MessageLinkDestination.sameAttachmentId(candidate.id,destination.attachmentId)
+            } ?: throw CodexCommandError("此文件尚未由电脑提供，请刷新对话后重试。",appOwnedCopy=true)
+            "computerFile" -> commands.resolveMessageFile(client,thread,owner.message.id,reference)
+            else -> throw CodexCommandError("手机暂不支持此类链接，可复制后在对应应用中打开。",appOwnedCopy=true)
+        }
+        if(!messageLinkCurrent(owner)||file.hostId!=client.id||file.threadId!=thread)throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
+        val local=commands.downloadResource(client,file,cache)
+        if(!messageLinkCurrent(owner))throw CodexCommandError("文件不属于当前电脑和对话",appOwnedCopy=true)
+        return PreparedMessageResource(file.name,file.mediaType,local)
     }
     private fun startEvents(initialReadGraceMillis: Long=0) {
         if(!foreground || incomingEasyWorkLink!=null || selectedClient.isDemo || selectedThread.isEmpty() || "events" !in workspace?.capabilities.orEmpty() || "commands:target-bound:v1" !in workspace?.capabilities.orEmpty()) return
@@ -1755,11 +1994,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun storageFailure() { tasks.launch { error = "本地保存失败，请保留当前内容并检查手机存储" } }
     private fun persistMetadata() {
         if (storage == null || !localReady) return
-        val json = JSONObject().put("version", 1).put("appearance", appearance).put("demo", demo).put("selected", selectedClient.id)
+        val json = JSONObject().put("version", 1).put("appearance", appearance).put("language",language).put("demo", demo).put("selected", selectedClient.id)
             .put("clients", JSONArray(realClients.map(::encodeClient)))
             .put("drafts", JSONObject(drafts.toMap())).put("selectedThreads", JSONObject(selectedThreads.toMap()))
             .put("draftVersions",JSONObject(draftVersions.toMap())).put("attachmentImportGenerations",JSONObject(attachmentImportGenerations.toMap())).put("newProjects",JSONObject(newProjects.toMap()))
-            .put("draftFiles",JSONObject(draftFiles.mapValues { JSONArray(it.value.map { f -> f.manifest.body() }) }))
+            .put("draftFiles",JSONObject(draftFiles.mapValues { JSONArray(it.value.map { f -> f.manifest.body() }) })).put("photoSources",NativePhotoOrigins.encode(draftFiles.values.flatten()))
             .put("generation",JSONObject(generation.mapValues { it.value.append(JSONObject()) })).put("replyModes",JSONObject(preferredModes.toMap()))
             .put("generationPreferences",JSONObject(generationPreferences.mapValues { it.value.append(JSONObject()) }))
             .put("dismissedReceiptFailures",JSONObject(dismissedReceiptFailures.mapValues { JSONArray(it.value.toList()) }))
@@ -1791,16 +2030,19 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     fun restore() {
         val storage=storage ?: return
         if(restoreJob?.isActive==true) return
-        restoring=true
+        restoring=true;localRecoveryAllowsAttachmentStaging=false
         val generation=storage.beginRestore()
         restoreJob=tasks.launch {
+            var authenticatedParentRead=false
             try {
                 aiSharing.restore()
                 val applyState=withContext(Dispatchers.IO) {
-                    val json=storage.metadata()
+                    val raw=storage.read("metadata")
+                    authenticatedParentRead=raw!=null
+                    val json=raw?.let(::JSONObject)
                     val privateClients=CodexConnectionVault(storage).clients()
                     val realClients=mutableListOf<MobileClient>()
-                    var appearance="system";var demo=false
+                    var appearance="system";var language="system";var demo=false
                     var selectedClient=DemoMobileData.clients.first()
                     val drafts=this@MobileSession.drafts.toMutableMap().apply { clear() }
                     val draftVersions=this@MobileSession.draftVersions.toMutableMap().apply { clear() }
@@ -1819,12 +2061,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                         require(json.getInt("version") == 1)
                         val storageKeys=listOf("drafts","draftVersions","draftFiles","attachmentImportGenerations","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces").flatMap { field -> json.optJSONObject(field)?.keys()?.asSequence()?.toList().orEmpty() }.distinct()
                         realClients.clear(); realClients.addAll(json.getJSONArray("clients").objects().map(::decodeClient).map { it.copy(online = false, storageIdentity=it.storageIdentity?.withKeys(storageKeys)) })
-                        appearance = json.getString("appearance"); demo = json.getBoolean("demo")
+                        appearance = json.getString("appearance");language=NativeAppLanguage.from(json.optString("language","system")).value; demo = json.getBoolean("demo")
                         json.getJSONObject("drafts").let { v -> v.keys().forEach { drafts[it] = v.getString(it) } }
                         json.optJSONObject("draftVersions")?.let { v -> v.keys().forEach { draftVersions[it]=v.getString(it) } }
                         json.optJSONObject("attachmentImportGenerations")?.let { v -> v.keys().forEach { attachmentImportGenerations[it]=v.getString(it) } }
                         json.optJSONObject("newProjects")?.let { v -> v.keys().forEach { newProjects[it]=v.optional(it) } }
-                        json.optJSONObject("draftFiles")?.let { v -> v.keys().forEach { key -> draftFiles[key]=v.getJSONArray(key).objects().map { f -> LocalDraftFile(CreationFile(f.getString("id"),f.getString("name"),f.getString("mediaType"),f.getLong("sizeBytes"),f.getString("sha256"))) } } }
+                        json.optJSONObject("draftFiles")?.let { v -> v.keys().forEach { key -> draftFiles[key]=v.getJSONArray(key).objects().map { f -> NativePhotoOrigins.attach(LocalDraftFile(CreationFile(f.getString("id"),f.getString("name"),f.getString("mediaType"),f.getLong("sizeBytes"),f.getString("sha256"))),json.optJSONObject("photoSources")) } } }
+                        NativePhotoOrigins.validate(json.optJSONObject("photoSources"),draftFiles.values.flatten())
                         json.optJSONObject("generation")?.let { v -> v.keys().forEach { key -> val s=v.getJSONObject(key); generation[key]=GenerationSettings(s.optional("model"),s.optional("effort"),s.optional("permissionMode"),s.optional("speed"),s.optional("collaborationMode")) } }
                         json.optJSONObject("generationPreferences")?.let { v -> v.keys().forEach { key -> val g=v.getJSONObject(key); generationPreferences[key]=GenerationSettings(g.optional("model"),g.optional("effort"),g.optional("permissionMode"),g.optional("speed")) } }
                         json.optJSONObject("dismissedReceiptFailures")?.let { v -> v.keys().forEach { key -> dismissedReceiptFailures[key]=v.getJSONArray(key).strings().toSet() } }
@@ -1852,7 +2095,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
 
                     val publish: ()->Unit = {
                         this@MobileSession.realClients.apply { clear();addAll(realClients) }
-                        this@MobileSession.appearance=appearance;this@MobileSession.demo=demo
+                        this@MobileSession.appearance=appearance;this@MobileSession.language=language;this@MobileSession.demo=demo
                         this@MobileSession.drafts.apply { clear();putAll(drafts) }
                         this@MobileSession.draftVersions.apply { clear();putAll(draftVersions) }
                         this@MobileSession.newProjects.apply { clear();putAll(newProjects) }
@@ -1874,7 +2117,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 storage.finishRestore(generation,applyState)
                 localRecoveryRequired=false;error=null
             } catch (cancel: CancellationException) { localRecoveryRequired=true;throw cancel }
-            catch (_: Exception) { localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留" }
+            catch (failure: Exception) {
+                // Known authenticated-data format failures can still seal an original
+                // result in its independent journal. Crypto/I/O failures retain the
+                // original OS callback until a successful explicit parent retry.
+                localRecoveryAllowsAttachmentStaging=authenticatedParentRead&&(failure is org.json.JSONException||failure is IllegalArgumentException)
+                localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
+            }
             finally { restoring=false;synchronizeReadingPresentation() }
             if (localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
         }
@@ -1882,9 +2131,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
         aiSharing.clearAcceptance();aiSharingRequest=null
-        clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
+        desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()
         selectedClient = DemoMobileData.clients.first(); selectionRevision++; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false
-        demo = false; appearance = "system"; restoring = false; localRecoveryRequired=false; error = null; providers=registry(reader,commandProvider); reads=providers
+        // Existing native fixtures own Chinese app copy; language tests explicitly override it.
+        demo = false; appearance = "system";language="zh-Hans"; restoring = false; localRecoveryRequired=false;localRecoveryAllowsAttachmentStaging=false; error = null; providers=registry(reader,commandProvider); reads=providers
         queueActionOwners.clear();replyRecordQueryOwners.clear();replyRecordQueryErrors.clear();busyOwners.clear(); busyCommands.clear(); freshWorkspaces.clear(); freshHistories.clear();attachmentPreparation.reset();attachmentImportGenerations.clear(); draftVersions.clear(); draftFiles.clear(); generation.clear(); generationPreferences.clear(); dismissedReceiptFailures.clear(); modelErrors.clear(); preferredModes.clear(); newProjects.clear(); operations.clear(); preparingCreationMessages.clear(); creationMessageCache=null; pendingCreationWait=null; busyTargets.clear(); stoppingTargets.clear(); answeringTargets.clear(); modelsByClient.clear(); foreground=true
         commands=providers; execution=storage?.let { NativeCodexFlow(it,reads,commands).apply { confirmedReplyReads=::confirmedReplyReads } }; eventJob=null;eventReadOwner=null;historyRecoveryJob=null;networkRecoveryJob=null;networkReadPath=null
         observingOperations.clear();connectionSuccesses.clear();conversationSyncIssues.clear();conversationSnapshotRevisions.clear();usefulConversationProgress.clear();historyRecoveryIdentity=null;readyHistorySelection=null;loadedHistorySelections.clear()
@@ -1897,7 +2147,7 @@ internal fun encodeClient(client: MobileClient) = JSONObject().put("id", client.
     .put("storageIdentity",client.storageIdentity?.json() ?: JSONObject.NULL).put("mode", client.mode).put("readerId", client.readerId).put("scope", client.scope?.let { s -> JSONObject().put("agentId", s.agentId).put("hostId", s.hostId).put("workspaceId", s.workspaceId).put("runtimeId", s.runtimeId).apply { if (s.accountAuthority != null) put("account", JSONObject().put("authority", s.accountAuthority).put("subject", s.accountSubject)) } })
 internal fun decodeClient(json: JSONObject) = MobileClient(json.getString("id"), json.getString("name"), HostReadCodec.target(json.optJSONObject("scope")), json.getString("endpoint"), false, json.getString("mode"), false, json.optional("readerId"), json.optBoolean("requiresReadTarget"), json.optJSONObject("codexDirect")?.let(::decodeCodexDirect),agentConnection=json.optJSONObject("agentConnection")?.let(AgentConnection::decode),storageIdentity=json.optJSONObject("storageIdentity")?.let(MobileStorageIdentity::decode) ?: if(json.has("storageIdentity")) null else HostReadCodec.target(json.optJSONObject("scope"))?.takeIf { it.agentId=="codex" }?.let { MobileStorageIdentity(it,emptyList()) }).also { require(it.codexDirect == null || sameScope(it.scope, it.codexDirect.target));require(it.agentConnection==null||sameScope(it.scope,it.agentConnection.target)) }
 internal fun encodeWorkspace(w: MobileWorkspace) = MobileWorkspaceMetadata.encode(w)
-internal fun encodeMessage(m: MobileMessage) = JSONObject().put("id", m.id).put("role", m.role).put("text", m.text).put("status", m.status).put("kind", m.kind).put("detail", m.detail).put("runId", m.runId).put("replyPhase", m.replyPhase).put("replyMessageId", m.replyMessageId).put("files", JSONArray(m.files)).put("blocks", m.blocks?.let(::JSONArray)).put("attachments", JSONArray(m.attachments.map { f -> JSONObject().put("id", f.id).put("name", f.name).put("mediaType", f.mediaType).put("sizeBytes", f.sizeBytes).put("hostId", f.hostId).put("threadId", f.threadId).put("sha256", f.sha256) }))
+internal fun encodeMessage(m: MobileMessage) = JSONObject().put("id", m.id).put("role", m.role).put("text", m.text).put("status", m.status).put("kind", m.kind).put("detail", m.detail).put("runId", m.runId).put("replyPhase", m.replyPhase).put("replyMessageId", m.replyMessageId).put("files", JSONArray(m.files)).put("blocks", m.blocks?.let(::JSONArray)).put("attachments", JSONArray(m.attachments.map { f -> JSONObject().put("id", f.id).put("name", f.name).put("mediaType", f.mediaType).put("sizeBytes", f.sizeBytes).put("hostId", f.hostId).put("threadId", f.threadId).put("sha256", f.sha256).put("resourceId",f.resourceId) }))
 
 object DemoMobileData {
     val clients = listOf(MobileClient("demo-mac", "我的 MacBook", online = true), MobileClient("demo-pc", "办公电脑", online = true), MobileClient("demo-home", "家里的 Mac"))

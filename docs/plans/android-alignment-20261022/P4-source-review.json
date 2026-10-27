@@ -6014,5 +6014,11 @@
     "processRecord": "docs/plans/android-alignment-20261022/records/p4-files-late-callbacks.md",
     "wholeFeatureClosed": false,
     "wholeStageClosed": false
+  },
+  "applicationApprovalReadVersionCheckpoint": {
+    "evidence": "docs/acceptance/mobile-evidence/android-alignment-P4.json#applicationApprovalReadVersionCheckpoint",
+    "sourceBase": "093df54fb8c053a6ae37e80caac7434f60e32334",
+    "wholeFeatureClosed": false,
+    "scope": "N037/N039 Android read declaration, six semantic labels, four decisions and replacement/late callbacks; one actual original-owner native decline"
   }
 }

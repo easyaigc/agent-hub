@@ -1,0 +1,721 @@
+{
+  "phase": "P7-3a",
+  "sourceBase": "4154c903080e3bbe86d4ef88b166d28387c80bdf",
+  "features": ["F25", "F29", "F30", "F31", "F56", "F71"],
+  "files": {
+    "apps/android/localization/native-copy.json": "d0946a3fcbcf05f56ee8eba47876acb19afd52f0505966f91cc62c7d6e0c49cc",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "290548ade96dc3b5b5082ad7dd83050845ce69b5650afd0cf350e4a0b11f143a",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraCaptureTest.kt": "f50bfd10651c9068ccdf5f7354bb5bba81223a44f5352c70aab08804500ecb9b",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraSystemTest.kt": "37a71205016e379481f27ce06d39b66552a95c0a550d9eb291d4d1f8fb5b1e45",
+    "apps/android/src/main/AndroidManifest.xml": "c3509516a55261605c17933df7bacc76c2eb1221b2bb7471db9a69aebf48e954",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "8953b8aa1fa81cea2595cfbc75b4b0d5ac07377399bc8676a9b078dbf281940f",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "c2de99d54744e2f8978756f6101fefd1e0832daaf84beece9fb11fc84e361c0c",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "bf945dadd5976c91367bb9cc401fbba857742befbbea1dcb1dd71f06d08e0814",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraCapture.kt": "c53d1a892b0a3197e32237671f22a49e7b18298a35ff160960fa74fefdab8249",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoPicker.kt": "d2c16a9eee43bbfe6c32b6a8444c3cfa586aa3f11de74c90d06c62c343d4834b",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "880214943a808a364274f55a94a48a561ecfacfef92fa7a0d7578cf8396d2b86",
+    "apps/android/src/main/res/values/product_strings.xml": "14e934258ef292834f9d0761434c8fee9dc85d6ffb538f0ffee10dc07add52f2",
+    "apps/android/src/main/res/xml/resource_paths.xml": "d16b8a3b5e65c0a47afc7a6b1ac7932b0cf1c78f7ca53ac0bda0573cccbc8e31",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f2213dffaab8dcf9ab4cf5ebbe266c25927588e58c5dc4cafd5c854063e51853"
+  },
+  "summary": "P7-3a：拍照入口沿用原菜单关闭/焦点/原请求守卫，权限结果及临时URI绑定准确原草稿；外部相机只获该URI读写权限，回调仅本地JPEG/EXIF准备，加密持久化后清理，取消/错误/迟到及附件入口互斥，不上传/发送。当前108原生辅助（105非目录方法严格匹配复用、3目录本次）、API37实际拍摄与取消2项、三环境原回复只读3项，共113默认存储证明；1680双语词条。API26相机自身首启权限、真机权限弹窗准确调用方未核实仍待验；完整面板/最近图及权限/冷结果矩阵继续，模型新增0、累计220/P4205。",
+  "appSha256": "93371a669ef096aa0ead98437ba1a2197fa151469b91638244a9a3fe0488673c",
+  "testSha256": "31106cb221f5377f6c1d2f67d0c6e31407cdf499235c59ff4cc45f283913e80a",
+  "sourceSha256": "d5e9ee97c8ba17049d0d971459caaabc075b9bce3aa386ac53d8b2c8bc289d6a",
+  "nativeAuxiliary": {
+    "methods": 108,
+    "matchedMethods": 105,
+    "currentCatalogMethods": 3,
+    "matchedRunnerSha256": "1f195e817b3c9685e1d6e6b8e3a0f8e6c5e2c02e353709f2e51bf49fbc781d7d",
+    "sameProductionApk": true,
+    "onlyChangedInputsOutsideMatchedCases": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraSystemTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt"
+    ],
+    "inputMapSha256": "ae346994614a72dc39251a5a14194015577ff721d7d3ffd3db54af6c35ce5b86",
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "cohortStatus": "failed only old catalog expected count; never promoted as whole-cohort pass",
+        "passedMatchedMethods": 35,
+        "methodResults": [
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "cameraResultStaysWithOriginalDraftAfterNavigation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "staleMenuRetiresBeforeLaunchAndPhotoAndCameraCannotOverlap",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "duplicateOldCallbackCannotConsumeOrRemoveNewOutput",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "outputIntentGrantsOnlyOriginalPrivateUriAndCancelDeletesIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "unreadableOrRetiredGenerationCannotAddFilesAndAlwaysRemovesOwnedOutput",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "deniedOrFailedOldRequestCannotReplaceNewerError",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "cameraOutputIsNormalizedToEncryptedOriginalDraftAndThenRemoved",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "nativeExifQuarterTurnsAndMirroringBecomeUprightPixelsWithoutChangingOrdinaryFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "selectedPhotoCommitsOnlyToItsOriginalGenerationAfterNavigation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "fallbackOverLimitAndLateReadFailureDoNotReplaceNewerError",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "pngPixelsNameAndMimeSurviveRealProviderNormalization",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "originalRequestCannotConsumeOrFailANewerRequestAndDuplicateUrisDoNotDuplicateFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "actualSystemImageOnlyPickerCancellationPreservesOriginalDraftAndFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "nonPngIsPreparedAsJpegAndUnreadableSourcesRemainTypedFailures",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "navigationRoundTripAndDuplicateCallbackCannotImportTwice",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "cancellationAfterEncryptedWriteDiscardsOnlyTheUnpublishedFile",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "oneProviderFailureRetainsGoodFilesAndContinuesTheOriginalBatch",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "lateFailureCannotOverwriteAnErrorAfterNavigationRoundTrip",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "acceptedClearRejectsAnOlderPickerGenerationBeforeReadingIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "ordinaryEditsKeepTheirTextWhenTheOriginalFileArrives",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "completeBatchCapacityIsReservedBeforeAnyRejectedProviderReads",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "lateProviderCommitsOnlyToItsValidOriginalDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "encryptedOriginalGenerationSurvivesSessionReconstruction",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "clipboardSnapshotRejectsTextUrlsAndExcessItemsWithoutReadingAnyProvider",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "attachmentMenuClosesOnTargetChangeWithoutApplyingToNewDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "explicitSystemClipboardActionOnlyPreparesOriginalDraftAndRestoresClipboard",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "emptyOversizedUnavailableAndWebSourcesRejectBeforeAnyDraftMutation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "realContentProviderPreservesExactTextImageBytesAndOriginalNames",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "laterReopensExactFilesThenAddsOnlyToTheExplicitlyChosenOriginalDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "originalPendingReceiptAfterSessionReconstructionSkipsAlreadyDurableFixedId",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "retiredSurfaceAndBackgroundActionsRejectBeforeChangingTheInbox",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "missingOriginalPayloadRepairsAtFullCapacityWithoutAddingOrDuplicatingIds",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "batchCannotBeConsumedBeforeQueuedExactDraftMetadataIsDurable",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "newArrivalDoesNotChangePresentedSnapshotAndDiscardCannotConsumeIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "warmReadRetryKeepsOriginalBatchAndSlotUntilUserExplicitlyAdds",
+            "code": 0
+          }
+        ],
+        "reportSha256": "bb8cca591ef4be8e40437e107b45c7f8c4d85bd57d6da6cddb63509506cef073",
+        "logSha256": "b6794bf554c0a891b1be9272cb8d3bf04f2057f43e0b7912903460e6ffabcc14"
+      },
+      {
+        "environment": "owned-API37",
+        "cohortStatus": "failed only old catalog expected count; never promoted as whole-cohort pass",
+        "passedMatchedMethods": 35,
+        "methodResults": [
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "cameraResultStaysWithOriginalDraftAfterNavigation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "staleMenuRetiresBeforeLaunchAndPhotoAndCameraCannotOverlap",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "duplicateOldCallbackCannotConsumeOrRemoveNewOutput",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "outputIntentGrantsOnlyOriginalPrivateUriAndCancelDeletesIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "unreadableOrRetiredGenerationCannotAddFilesAndAlwaysRemovesOwnedOutput",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "deniedOrFailedOldRequestCannotReplaceNewerError",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "cameraOutputIsNormalizedToEncryptedOriginalDraftAndThenRemoved",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "nativeExifQuarterTurnsAndMirroringBecomeUprightPixelsWithoutChangingOrdinaryFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "selectedPhotoCommitsOnlyToItsOriginalGenerationAfterNavigation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "fallbackOverLimitAndLateReadFailureDoNotReplaceNewerError",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "pngPixelsNameAndMimeSurviveRealProviderNormalization",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "originalRequestCannotConsumeOrFailANewerRequestAndDuplicateUrisDoNotDuplicateFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "actualSystemImageOnlyPickerCancellationPreservesOriginalDraftAndFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "nonPngIsPreparedAsJpegAndUnreadableSourcesRemainTypedFailures",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "navigationRoundTripAndDuplicateCallbackCannotImportTwice",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "cancellationAfterEncryptedWriteDiscardsOnlyTheUnpublishedFile",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "oneProviderFailureRetainsGoodFilesAndContinuesTheOriginalBatch",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "lateFailureCannotOverwriteAnErrorAfterNavigationRoundTrip",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "acceptedClearRejectsAnOlderPickerGenerationBeforeReadingIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "ordinaryEditsKeepTheirTextWhenTheOriginalFileArrives",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "completeBatchCapacityIsReservedBeforeAnyRejectedProviderReads",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "lateProviderCommitsOnlyToItsValidOriginalDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "encryptedOriginalGenerationSurvivesSessionReconstruction",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "clipboardSnapshotRejectsTextUrlsAndExcessItemsWithoutReadingAnyProvider",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "attachmentMenuClosesOnTargetChangeWithoutApplyingToNewDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "explicitSystemClipboardActionOnlyPreparesOriginalDraftAndRestoresClipboard",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "emptyOversizedUnavailableAndWebSourcesRejectBeforeAnyDraftMutation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "realContentProviderPreservesExactTextImageBytesAndOriginalNames",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "laterReopensExactFilesThenAddsOnlyToTheExplicitlyChosenOriginalDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "originalPendingReceiptAfterSessionReconstructionSkipsAlreadyDurableFixedId",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "retiredSurfaceAndBackgroundActionsRejectBeforeChangingTheInbox",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "missingOriginalPayloadRepairsAtFullCapacityWithoutAddingOrDuplicatingIds",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "batchCannotBeConsumedBeforeQueuedExactDraftMetadataIsDurable",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "newArrivalDoesNotChangePresentedSnapshotAndDiscardCannotConsumeIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "warmReadRetryKeepsOriginalBatchAndSlotUntilUserExplicitlyAdds",
+            "code": 0
+          }
+        ],
+        "reportSha256": "eba584a5c802db0d30a3b94aade131108e7b1ec294849b7518194d5bc175670b",
+        "logSha256": "778e2cdc11af2d850dcf8f0135af9f1f82e8456ac66f3e94f25249374bd10748"
+      },
+      {
+        "environment": "physical-API33",
+        "cohortStatus": "failed only old catalog expected count; never promoted as whole-cohort pass",
+        "passedMatchedMethods": 35,
+        "methodResults": [
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "cameraResultStaysWithOriginalDraftAfterNavigation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "staleMenuRetiresBeforeLaunchAndPhotoAndCameraCannotOverlap",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "duplicateOldCallbackCannotConsumeOrRemoveNewOutput",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "outputIntentGrantsOnlyOriginalPrivateUriAndCancelDeletesIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "unreadableOrRetiredGenerationCannotAddFilesAndAlwaysRemovesOwnedOutput",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "deniedOrFailedOldRequestCannotReplaceNewerError",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileCameraCaptureTest",
+            "test": "cameraOutputIsNormalizedToEncryptedOriginalDraftAndThenRemoved",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "nativeExifQuarterTurnsAndMirroringBecomeUprightPixelsWithoutChangingOrdinaryFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "selectedPhotoCommitsOnlyToItsOriginalGenerationAfterNavigation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "fallbackOverLimitAndLateReadFailureDoNotReplaceNewerError",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "pngPixelsNameAndMimeSurviveRealProviderNormalization",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "originalRequestCannotConsumeOrFailANewerRequestAndDuplicateUrisDoNotDuplicateFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "actualSystemImageOnlyPickerCancellationPreservesOriginalDraftAndFiles",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobilePhotoPickerTest",
+            "test": "nonPngIsPreparedAsJpegAndUnreadableSourcesRemainTypedFailures",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "navigationRoundTripAndDuplicateCallbackCannotImportTwice",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "cancellationAfterEncryptedWriteDiscardsOnlyTheUnpublishedFile",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "oneProviderFailureRetainsGoodFilesAndContinuesTheOriginalBatch",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "lateFailureCannotOverwriteAnErrorAfterNavigationRoundTrip",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "acceptedClearRejectsAnOlderPickerGenerationBeforeReadingIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "ordinaryEditsKeepTheirTextWhenTheOriginalFileArrives",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "completeBatchCapacityIsReservedBeforeAnyRejectedProviderReads",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "lateProviderCommitsOnlyToItsValidOriginalDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileAttachmentImportOwnershipTest",
+            "test": "encryptedOriginalGenerationSurvivesSessionReconstruction",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "clipboardSnapshotRejectsTextUrlsAndExcessItemsWithoutReadingAnyProvider",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "attachmentMenuClosesOnTargetChangeWithoutApplyingToNewDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "explicitSystemClipboardActionOnlyPreparesOriginalDraftAndRestoresClipboard",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "emptyOversizedUnavailableAndWebSourcesRejectBeforeAnyDraftMutation",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileFilePasteTest",
+            "test": "realContentProviderPreservesExactTextImageBytesAndOriginalNames",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "laterReopensExactFilesThenAddsOnlyToTheExplicitlyChosenOriginalDraft",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "originalPendingReceiptAfterSessionReconstructionSkipsAlreadyDurableFixedId",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "retiredSurfaceAndBackgroundActionsRejectBeforeChangingTheInbox",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "missingOriginalPayloadRepairsAtFullCapacityWithoutAddingOrDuplicatingIds",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "batchCannotBeConsumedBeforeQueuedExactDraftMetadataIsDurable",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "newArrivalDoesNotChangePresentedSnapshotAndDiscardCannotConsumeIt",
+            "code": 0
+          },
+          {
+            "class": "com.agenthub.android.MobileInboxUiTest",
+            "test": "warmReadRetryKeepsOriginalBatchAndSlotUntilUserExplicitlyAdds",
+            "code": 0
+          }
+        ],
+        "reportSha256": "b79df6ae47717591fdb5cea8b44dbcf2ff1497571f094d673565a6ee699aa201",
+        "logSha256": "147bce71442357fcba8c3e4040811018d249eeadc897495043e438e71460aed5"
+      }
+    ],
+    "currentCatalogs": [
+      {
+        "environment": "owned-API26",
+        "passedMethods": 1,
+        "reportSha256": "7e203553532bb7c095c862131887bb5f93241a505183e55c09281b5641485640",
+        "logSha256": "b9c88a821cd7f59e1efe49604443a5cc22609ce4120c2205b22ff38fed65c3cd",
+        "wholeInvocationStatus": "failed"
+      },
+      {
+        "environment": "owned-API37",
+        "passedMethods": 1,
+        "reportSha256": "dd845a27c247142f99b60571fed83c02c1676fc3078c5c03210856e1364cfc45",
+        "logSha256": "72686ed8a568ff1c22af9e098579d7b5a716ef4b64302c140086b59ada797f74",
+        "wholeInvocationStatus": "passed"
+      },
+      {
+        "environment": "physical-API33",
+        "passedMethods": 1,
+        "reportSha256": "154461b7e53f2bdcbb640c4b00a2793a0d3ed86b67c832d7efe2cab698d15bf8",
+        "logSha256": "e5d7e551e544c4779ad3a00f456425df7326366bee7da309d8098e64e06759aa",
+        "wholeInvocationStatus": "failed"
+      }
+    ],
+    "catalogKeysPerLanguage": 1680,
+    "sharedKeys": 1603,
+    "platformKeys": 77
+  },
+  "actualSystemCamera": [
+    {
+      "environment": "API37 portrait light owned emulator",
+      "methods": 2,
+      "captureProofSha256": "5b07abe337615a4e3c30f0850c0c527509374e3db1996a41c7882c369d6d8adf",
+      "cancelProofSha256": "69c4bd29f1e219eb33cc4028a2a0eb03f59f66cc1b181265adffb1b8263d3163",
+      "reportSha256": "dd845a27c247142f99b60571fed83c02c1676fc3078c5c03210856e1364cfc45",
+      "nativePermissionPregrantedAndRestored": true,
+      "permissionFlagsMatched": true,
+      "actualSystemCameraOwner": "com.android.camera2",
+      "captureSize": [1392, 1856]
+    }
+  ],
+  "actualOriginalModelReplyReads": {
+    "methods": 3,
+    "rows": [
+      {
+        "environment": "owned-API37",
+        "reportSha256": "dfe9e3d3d4f1becc0fc4e4bdfe5a38e46ce96c9b0fbef4140158e4394bf606d5",
+        "requests": 14,
+        "writeRequests": 0,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "owned-API26",
+        "reportSha256": "6e7f1026de7c4ff77be15b4e65912b2e56097dfcd551c99537591685668d3405",
+        "requests": 16,
+        "writeRequests": 0,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "physical-API33",
+        "reportSha256": "18b007af0e47007617c693e981fa87d77edecc47399c8c250c62ca16df7bf17b",
+        "requests": 16,
+        "writeRequests": 0,
+        "originalOwnerAndTurnsUnchanged": true
+      }
+    ],
+    "totalGetRequests": 46,
+    "newModelInputs": 0,
+    "notCameraImageModelConsumption": true
+  },
+  "defaultStorageProofs": 113,
+  "implementation": [
+    "Capture original target/import generation/error generation; menu disposal and main focus/frame before permission or camera",
+    "Native permission result captured by original request; retired or old callback cannot launch/consume new request or replace newer error",
+    "Exact private cache JPEG via FileProvider EXTRA_OUTPUT and single ClipData URI read/write grant; never trusts a returned foreign URI",
+    "Native photo normalization/encrypted draft pipeline; completion/cancel/failure removes only own unique temporary output; no upload/send",
+    "Prevent another camera/photo/document request while any attachment OS picker is outstanding; stale file/paste menu callbacks also reject",
+    "iOS Take photo/UIImagePicker original-draft/cancel semantics compared; Android external system camera is an explicit platform difference"
+  ],
+  "checks": {
+    "androidBuild": "passed",
+    "mobileParity": "passed: 71 feature definitions, native catalog 1680; generation and boundary vectors",
+    "androidApprovalGuard": "passed: 17 command scope cases",
+    "format": "passed",
+    "pnpmCheck": "matched complete P7-2c run;616/620 frozen inputs unchanged, four Android native catalog inputs current and platform native-copy source separately changed/checked; no new whole-root invocation",
+    "rootLogSha256": "d5165029b3cf7b758c1896a1975d0eab9440e00c028b2d92b519b088e7aa2bd1",
+    "matchedFrozenInputs": 616,
+    "changedNativeCatalogInputs": {
+      "apps/android/src/androidTest/assets/localization-catalog.json": "290548ade96dc3b5b5082ad7dd83050845ce69b5650afd0cf350e4a0b11f143a",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f2213dffaab8dcf9ab4cf5ebbe266c25927588e58c5dc4cafd5c854063e51853",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "880214943a808a364274f55a94a48a561ecfacfef92fa7a0d7578cf8396d2b86",
+      "apps/android/src/main/res/values/product_strings.xml": "14e934258ef292834f9d0761434c8fee9dc85d6ffb538f0ffee10dc07add52f2"
+    },
+    "nativeCopySourceSha256": "d0946a3fcbcf05f56ee8eba47876acb19afd52f0505966f91cc62c7d6e0c49cc",
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "ios": "Unchanged source; no A6 execution; system camera platform matrix pending",
+    "windows": "Current native matrix pending",
+    "parity-final-check.logSha256": "1c0564008017465bf198bafbeefc0080d6e77574378b7b45573249b2aa77897d",
+    "approval-final-check.logSha256": "e88e7fbf184e9c1da3141faecbfd8243a799b1c693152e247217c220040d1329"
+  },
+  "pendingSystemResults": [
+    {
+      "environment": "owned-API26",
+      "failedSystemMethods": [
+        "ownedEmulatedCameraPhotoReturnsThroughActualContractIntoOriginalDraft",
+        "actualSystemCameraOpenAndCancelPreservesOriginalDraft"
+      ],
+      "reportSha256": "7e203553532bb7c095c862131887bb5f93241a505183e55c09281b5641485640",
+      "permissionRestored": true,
+      "noModelInputs": true
+    },
+    {
+      "environment": "physical-API33",
+      "failedSystemMethods": ["actualSystemCameraOpenAndCancelPreservesOriginalDraft"],
+      "reportSha256": "154461b7e53f2bdcbb640c4b00a2793a0d3ed86b67c832d7efe2cab698d15bf8",
+      "permissionRestored": true,
+      "noModelInputs": true
+    }
+  ],
+  "pending": [
+    "API26 system Camera first-run own permission gate; no shutter/contract completion accepted",
+    "Physical native permission witness did not prove exact caller, no grant selected; ADB temporary grant rejected, state/flags restored",
+    "Physical camera capture and full camera image send/model use, camera permission denial/rotation/IME/theme/AX matrix",
+    "Private plaintext temporary camera output during external capture is copied to encrypted draft; process-death request/orphan recovery and full storage policy remain pending",
+    "Full iOS attachment panel/icons/grouping/recent30 carousel and document launcher lifecycle remain next",
+    "Prior physical/API26 positive system photo selection, API37 landscape, physical cold observer install and network-path cases remain separate"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

@@ -1,0 +1,22 @@
+{
+  "phase": "P6-3e",
+  "sourceBase": "e866d94998887b7468858762e94cf57bd468a06d",
+  "scope": "Responsive native SettingsRow labels/details, current-language initial new-client name matching iOS initializer. Existing/edited values and actions are preserved.",
+  "iosReference": ["apps/ios/Sources/Sheets.swift:171-172"],
+  "newModelInputs": 0,
+  "wholeStageClosed": false,
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSettingsRowTest.kt": "e7e0b431a21a09d3e2f640d75172290e123c33cf3eae2f167943b0a425b3c921",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "3df42fd8d6235904e4ff20b011dec9c8f4290c7f7ae16e39b220bc335ca5c546"
+  },
+  "features": ["F02", "F56"],
+  "layoutRule": "Measure native label/detail with current font; if combined width cannot fit, keep one clickable row and place detail below label. Full text and raw values are retained.",
+  "baseline": "Exact prior App rejects English mid-word split under API26 double font before any write.",
+  "nativeAuxiliaryMethods": 102,
+  "realReadOnlyMethods": 1,
+  "defaultStorageProofs": 103,
+  "appSha256": "1c0ac32af34bbab9a6530589f06f2e9513bffd11404f3ab91911bcb148ac93f2",
+  "testSha256": "195e0eb5c6c18e83315d70214ce0e03afec7f061aae22d32d3c0f35aa576a51d",
+  "sourceSha256": "21efa38cbc7e8e27d72352be76b560019bf6f3e8d9504b4c9f2cabcf00d5be01",
+  "selectedOwnedImagesReviewed": 18
+}

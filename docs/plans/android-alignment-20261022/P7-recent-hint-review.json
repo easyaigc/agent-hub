@@ -1,0 +1,276 @@
+{
+  "phase": "P7-3c",
+  "sourceBase": "c6430c09f416dd8a7219ebd8ec77c4667391e247",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F69", "F71"],
+  "files": {
+    "apps/android/localization/native-copy.json": "499459f36d97e37f6f479227d56913b2ae6946318d2ceb995ddb90d1977f865f",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "a2c250858b00f1f6cc4f606f068ae44696b4a29d40eb261e55e87b84f2b1de14",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileActionCopyTest.kt": "c543dd8f305503a46c654b4f2ad4f8d2e08e168b62baeff845eb5e3201fce03e",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "ee03e23c1d4104f4cec5ce07093bbf009666bf6890f6aae98b1e2320fb2a0f73",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRecentPhotoHintMediaTest.kt": "182b4c8e494dbe23d8d132ca82515b3b720f131581fae70ce375b6f3bce944be",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRecentPhotoHintTest.kt": "823054c5d96d84f8d942c3c886b716453e17e03cc07326c09562ae55e431ab93",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRecentPhotoPreferenceColdTest.kt": "8f428106b010f25eb292fba432967d30c7d7f85def6472c674737a68156d746e",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSuggestionComposerTest.kt": "19060647372495c3e12eb4a3c3ac95998cba161a4def9a2db94ce2011293a190",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "7caedd400f03a56e6bc2a6b6d5d8ca6e0061653d0a26df535d48a2ecee2558b6",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/RecentPhotoHintAcceptance.kt": "736beb77e6c18a0bb78c229501328a217ab3d4e01f91e7bdf022a7c9e15a65af",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "38dd210990982c8471e7180e2d2711aeb6d16be80e23529daea0d543a9cebb9d",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "4e188173006145ca5fed55be663917e57fb66f372073304250dc710c7edb02aa",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "d5e31e098d9c8efbe037da6826d6ddc70184823e0e92a732a01eff1fe0a00dd1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentPanel.kt": "b1daed8cdbe516b139fe8784bd606368db49fd0d4b67d654bec5219da09a1022",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentPhotoLibrary.kt": "e6ce99ecc6af1e6259726345357050ca009401fe8f08e448098f5735fb070670",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentPhotoViews.kt": "ce95de9f79b17594215e10d1d76bc23e3f1b9c020795d5f229dd6c22e9de913e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentPhotos.kt": "6f8015a8de68f45afa97bfd715c3d01ecbe4b6887a788d6f03ab37337a855b22",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "1a22b82332d24a89a7f2dca7e41a124f94f021f5ebc035485ca7beeb2ee7adb0",
+    "apps/android/src/main/res/values/product_strings.xml": "82b462b00f5371a039ef774d78d721e0686a6dbaf49f3e03d8ed13ba21eeab28"
+  },
+  "summary": "P7-3c：最近新增图片提示复用共享资格，首次基线不提示，完整授权前台64项基线/30图展示；缩略预览、显式加入原稿、256项加密忽略与读取失败保护，旧提示/旧导入不改新状态。三环境各59项有界通过（168项严格匹配复用、9截图方法本次），三组真实进程重启的忽略/Keystore只读核对、API37独立来源提示与媒体库/系统选图、暗色大字号和3原回复GET-only分列，共179辅助/9平台/3原回复、191默认存储证明。1682双语键，新增模型0、累计220/P4205；首次授权节奏、原URI/相机冷结果及完整P7仍开。",
+  "appSha256": "d06d6fd7a1d3411f957a68bdb3d96912e577f6a92f2e16813873e221896f42a5",
+  "testSha256": "585c5a63af6b0938d332727eae84383855498f4041ad9c5a17c28d91ad675abf",
+  "sourceSha256": "cf390e70d3247ecd406e215f451bd668ebcb11d527388719efb7ad99e63bddcf",
+  "nativeAuxiliaryMethods": 179,
+  "nativePlatformMethods": 9,
+  "actualOriginalModelReplyMethods": 3,
+  "defaultStorageProofs": 191,
+  "matchedCohortMethods": 168,
+  "currentActionCopyMethods": 9,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "matchedMethods": 56,
+      "classCounts": {
+        "MobileRecentPhotoHintTest": 7,
+        "MobileAttachmentPanelTest": 6,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileInboxUiTest": 7,
+        "MobileLocalizationTest": 6,
+        "MobileSuggestionComposerTest": 2
+      },
+      "originalInvocationStatus": "failed",
+      "reportSha256": "5bee050d472cdcfc7fb9c378d82f6df5e4a77dc8deac04d84e9549786abfb6e0",
+      "logSha256": "96aeeb69efb23397a40fc8fe25e5620c5872d5a4185138602d709d3c4655de88"
+    },
+    {
+      "environment": "owned-API37",
+      "matchedMethods": 56,
+      "classCounts": {
+        "MobileRecentPhotoHintTest": 7,
+        "MobileAttachmentPanelTest": 6,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileInboxUiTest": 7,
+        "MobileLocalizationTest": 6,
+        "MobileSuggestionComposerTest": 2
+      },
+      "originalInvocationStatus": "passed",
+      "reportSha256": "f9870452f297b56edfdc9e87382fb106abc9d3853d2645ba054a62865de23121",
+      "logSha256": "0c9f25505b5f00cb094c701a60ba6359b2df9296b051c4673d8b83cb1f8cb976"
+    },
+    {
+      "environment": "physical-API33",
+      "matchedMethods": 56,
+      "classCounts": {
+        "MobileRecentPhotoHintTest": 7,
+        "MobileAttachmentPanelTest": 6,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileInboxUiTest": 7,
+        "MobileLocalizationTest": 6,
+        "MobileSuggestionComposerTest": 2
+      },
+      "originalInvocationStatus": "passed",
+      "reportSha256": "fda30c0868173049ef2c973a1b555b045519b80cb1b0b3561760cbddb8e9e239",
+      "logSha256": "28af474c0cdeb23566fa5a65ef88086e510f2a9064aa0b9c1e5cd71106f1dd2e"
+    }
+  ],
+  "currentActionCopy": [
+    {
+      "environment": "owned-API26",
+      "methods": 3,
+      "reportSha256": "c555d40b0ae49caf3cf3fcaf2a0158e19aeda97efbe685183834ee7446f1e708",
+      "logSha256": "4b4dbab0f31497a4c68513ff0271eeb5fcf3d98ffe1b607d6380637421f29de0",
+      "currentRunner": true
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 3,
+      "reportSha256": "4118303db4bcb03406f362db8209dbcd89a5500027fbe50e262eff8fe05c00fb",
+      "logSha256": "da938414e523788c4e0d09c1a372ff3aa77083cb8e0cd5b32ac09b3cf30d5155",
+      "currentRunner": true
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 3,
+      "reportSha256": "d51165768faaf71ed9f1c0adb3162a7e4d19206859e5fceadb317dbbc208d508",
+      "logSha256": "ad80961e72b80db8a9cc1c04409d46f37b40a40b21f7209b1dedb5e7ad49da83",
+      "currentRunner": true
+    }
+  ],
+  "independentMediaHint": {
+    "environment": "owned-API37",
+    "methods": 1,
+    "reportSha256": "cb720cf26d21329e8b2b19bbe72e8be82a9b6a7c2a7ff781e5d691884f392f57",
+    "logSha256": "449dd0bf03684c6b0277acbb686b874a4e1e015bc7ec0c6f439a7925cfa048c1",
+    "currentRunner": false,
+    "differentSourceUid": true,
+    "actualMediaStoreObserverAndNativePreviewAdd": true,
+    "originalPixelsAndEncryptedMetadataMatched": true,
+    "originalPermissionAndFlagsRestored": true,
+    "examinerMatch": "Four unrelated examiner file differences; own method/helpers and all production/core/protocol inputs exact; no original operation replay"
+  },
+  "processColdIgnoredPreferences": [
+    {
+      "environment": "owned-API26",
+      "methods": 2,
+      "separateActualProcesses": true,
+      "sameDeviceKeystoreAndOriginalEncryptedBytes": true,
+      "photoSource": "synthetic media IDs",
+      "writerNotReplayed": true,
+      "controllerSha256": "e619516bc40c8d2ded398b55ad315beeb12b441455816ebc98c28ba232f3ea9b",
+      "readerReceiptSha256": "7fd3d94f1806b1b8347ebb49363f684e380714a0d5877db4e9b96c445a74c532"
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 2,
+      "separateActualProcesses": true,
+      "sameDeviceKeystoreAndOriginalEncryptedBytes": true,
+      "photoSource": "synthetic media IDs",
+      "writerNotReplayed": true,
+      "controllerSha256": "dbf30a3c840795f1edb8e71a4a468afa24dbe929ceeb522e6b256463615c272a",
+      "readerReceiptSha256": "1da082ac028307c8aba68989ba2ac66386973565f46e03ba6fe2601f8665b5b7"
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 2,
+      "separateActualProcesses": true,
+      "sameDeviceKeystoreAndOriginalEncryptedBytes": true,
+      "photoSource": "synthetic media IDs",
+      "writerNotReplayed": true,
+      "controllerSha256": "3c80b5a3c87134b50c2b0d2330254e6fd1d0d68296de2404f03f983dcb9162bb",
+      "readerReceiptSha256": "3c5001f66e98bc1b69708d9fdc88998caf87cb62ffe370499110cb50cc0ea7e4"
+    }
+  ],
+  "currentNativeMediaLibrary": {
+    "environment": "owned-API37",
+    "methods": 1,
+    "reportSha256": "0ca84192864d948bcf3c8b7933e2cffc2b8482eec536cfea258dfa17c29eb32b",
+    "logSha256": "a908c8b7641179b9ba51c532f31cc4ee03a70ebdff201bdb37fa1d2d5ea88a7c",
+    "currentRunner": true
+  },
+  "currentIndependentSystemPhotoSelection": {
+    "environment": "owned-API37",
+    "methods": 1,
+    "reportSha256": "dc9690dfde9d9bfce29a6e8c6f6b36e7df776533c566818997f086da5cce2368",
+    "logSha256": "f48ae68985ca999863282aad0db8211fc6cd5191bd3bc97342eea65d1f4552fa",
+    "currentRunner": true
+  },
+  "viewportVariants": [
+    {
+      "environment": "owned-API26",
+      "methods": 1,
+      "reportSha256": "1a0fe3b8a6e7170db78858e49a4476a749e5aa5501eb71fcdb9e8fa66b8f211f",
+      "logSha256": "a1baae56f9000de6a7de371ab84712964cf3ba05c93056ff4e012859b82a8f8a",
+      "currentRunner": true
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 1,
+      "reportSha256": "731adcddc02c3139d09149bd62c388505cc700ef75f44a8dff63e480d4e401c4",
+      "logSha256": "2e64b1aa58f4d2aa05bffd9878f184d17880671bbdcc2fdb50363fa9a27a2d5b",
+      "currentRunner": true
+    }
+  ],
+  "viewportScope": "API26 dark font2 and API37 dark font1.3; physical actual viewport separately recorded; API37 landscape not closed",
+  "actualOriginalModelReplyReads": [
+    {
+      "environment": "owned-API26",
+      "methods": 1,
+      "getRequests": 21,
+      "writeRequests": 0,
+      "originalOwnerAndCanonicalTurnsUnchanged": true,
+      "reportSha256": "d1d4a904f88e0c58d76b2b44a414ff61f8e8ff62323cce3cae743d2dda44c4d4",
+      "logSha256": "c708c90cf1b450683b6d4496ddd232f064db7c1664229e161e98bfb920a33da0"
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 1,
+      "getRequests": 45,
+      "writeRequests": 0,
+      "originalOwnerAndCanonicalTurnsUnchanged": true,
+      "reportSha256": "7e3f144eb3fe3e85b85bcc1f55f36a64669929bf4fa37c24fbdfd612eb90acfa",
+      "logSha256": "f035aaab4b65591f49bdac85c272a4939b8174dba1776e0147934400a1142baa"
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 1,
+      "getRequests": 32,
+      "writeRequests": 0,
+      "originalOwnerAndCanonicalTurnsUnchanged": true,
+      "reportSha256": "c92c7ab99bbccf46ce1186ad46bea50876e03ad18502a4bb1b35076a95bc5b0a",
+      "logSha256": "59f229c80eff4b3e660c3d91c800501da8777be50ccb3086b312855fb52e1b9d"
+    }
+  ],
+  "catalogKeysPerLanguage": 1682,
+  "sharedKeys": 1603,
+  "platformKeys": 79,
+  "checks": {
+    "androidBuild": "passed",
+    "buildLogSha256": "efdad25431348db550cb98d6ddf49800d5d1f6c5ece8f8ee7d0eba4756377812",
+    "mobileParity": "passed:71 feature definitions,1682 native bilingual keys, generation/schema/vector boundaries",
+    "androidApprovalGuard": "passed:17 cases",
+    "format": "passed",
+    "pnpmCheck": "reuse fresh complete I3; all non-Android/non-documentation programs unchanged; current Android native/catalog/doc contracts separately checked, no new whole-root invocation",
+    "rootLogSha256": "f52fce398045f178929902b8dcccd7c4dd7c1b14887f6c0d488cbf803a41baa2",
+    "rootFrozenMatch": {
+      "fullRootRun": "I3",
+      "frozenTotal": 1316,
+      "matchedNow": 1298,
+      "changedNativeOrDocs": {
+        "apps/android/localization/native-copy.json": "499459f36d97e37f6f479227d56913b2ae6946318d2ceb995ddb90d1977f865f",
+        "apps/android/src/androidTest/assets/localization-catalog.json": "a2c250858b00f1f6cc4f606f068ae44696b4a29d40eb261e55e87b84f2b1de14",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileActionCopyTest.kt": "c667a31134e3bd164ef3a59d4ade49aafefd67ae281a23431a732ebe95511777",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "ee03e23c1d4104f4cec5ce07093bbf009666bf6890f6aae98b1e2320fb2a0f73",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSuggestionComposerTest.kt": "19060647372495c3e12eb4a3c3ac95998cba161a4def9a2db94ce2011293a190",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "7caedd400f03a56e6bc2a6b6d5d8ca6e0061653d0a26df535d48a2ecee2558b6",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "38dd210990982c8471e7180e2d2711aeb6d16be80e23529daea0d543a9cebb9d",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "4e188173006145ca5fed55be663917e57fb66f372073304250dc710c7edb02aa",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "d5e31e098d9c8efbe037da6826d6ddc70184823e0e92a732a01eff1fe0a00dd1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentPanel.kt": "b1daed8cdbe516b139fe8784bd606368db49fd0d4b67d654bec5219da09a1022",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentPhotos.kt": "6f8015a8de68f45afa97bfd715c3d01ecbe4b6887a788d6f03ab37337a855b22",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "1a22b82332d24a89a7f2dca7e41a124f94f021f5ebc035485ca7beeb2ee7adb0",
+        "apps/android/src/main/res/values/product_strings.xml": "82b462b00f5371a039ef774d78d721e0686a6dbaf49f3e03d8ed13ba21eeab28",
+        "docs/acceptance/mobile-evidence/android-alignment-P7.json": "e57686c85bcb6b26c422b82bce8d080bddd22415d797a5543bfb8360196e0cfb",
+        "docs/plans/android-alignment-20261022/progress.md": "73c0c1466f62d5eaadbb8f529482afd5f38b9677c60d5dd11bfb10eab1125c12",
+        "docs/plans/android-alignment-20261022/records/README.md": "e09401560d34d8c3ce7eaf3f666c56cdc46ffc6408b8d8bd885487f3ddf2484e",
+        "docs/plans/android-alignment-20261022/upstream-20261027-voice.json": "b65527ab61015690ae73f80f195a750ef9bf2f856e07574859d64fcef485e8e6",
+        "docs/product/mobile-parity.manifest.json": "4d494af98e59df1fa9fae2e1f860b3a8b8e947255d558006656c999ab32b4ea6"
+      },
+      "allNonAndroidNonDocumentationProgramsUnchanged": true
+    },
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "ios": "Exact I3 source/Core/build inputs; no iOS A6 execution; current native matrix pending",
+    "windows": "Current native matrix pending",
+    "mobileParityLogSha256": "a801d3dbe4cc2418ea413846af8fa517dd5a5a04102a2dfd9471cde1e25c15c3",
+    "approvalLogSha256": "e39762c9bfc8c0dfb9f6276f3c43a23f37d7545f12ac0e2d07a274b24f0177dd"
+  },
+  "pending": [
+    "First photo permission prompt interaction alignment; limited/full/denial/revocation/settings/volume/provider complete native matrix",
+    "Original file/photo/camera request+URI/output across process death; preference cold proof is not attachment-result cold recovery",
+    "Private camera temporary plaintext/orphan handling, full storage migration/cleanup, voice/read and other P7 areas",
+    "Physical/API26 positive system photo selection/camera, physical image full send/model use; API37 landscape remains separate",
+    "Full UI07 languages/themes/AX and current native iOS/Windows; iOS A6 pause retained",
+    "P5 real desktop suggestion source remains pending; overlay checks here use a synthetic read-only source",
+    "Task/project business remains deferred"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

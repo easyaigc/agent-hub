@@ -248,6 +248,18 @@
               "const": null
             }
           ]
+        },
+        "suggestionSourceTurnId": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            {
+              "const": null
+            }
+          ]
         }
       }
     },
@@ -2203,6 +2215,90 @@
           "type": "string",
           "minLength": 1,
           "pattern": "\\S"
+        }
+      }
+    },
+    "desktopSuggestion": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "text", "contentSha256", "expiresAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64000
+        },
+        "contentSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "validity": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["source-turn", "desktop-display", "native-version", "runtime-version"]
+            },
+            {
+              "const": null
+            }
+          ]
+        }
+      }
+    },
+    "desktopSuggestionResponse": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schemaVersion", "target", "threadId", "sourceTurnId", "readOnly", "suggestion"],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "threadId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "sourceTurnId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "readOnly": {
+          "const": true
+        },
+        "suggestion": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/desktopSuggestion"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["desktop-display", "native-trace", "runtime"]
+            },
+            {
+              "const": null
+            }
+          ]
         }
       }
     }

@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-26",
+  "previousIndex": "upstream-20261025-night.json",
+  "baseMain": "f2937db808079bde1d0d12d6292d897d10cd9c33",
+  "currentMain": "fa2f14dbde37535dee6db2353ae619325c26b589",
+  "frozenSourceNodes": 217,
+  "previousPostFreezeNodes": 31,
+  "newPostFreezeNodes": [
+    {
+      "recordId": "N032",
+      "sha": "fa2f14dbde37535dee6db2353ae619325c26b589",
+      "parents": ["f2937db808079bde1d0d12d6292d897d10cd9c33"],
+      "title": "feat(mobile): animate transcription status waveforms",
+      "kind": "implementation-or-documentation",
+      "firstParentPatchSha256": "b275b09e40814bda00ea7e984974dcaa57fd251cae8f0ba9badb57200c9b3a70",
+      "paths": [
+        ".gitignore",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/VoiceInput.swift",
+        "docs/acceptance/mobile-parity.md",
+        "docs/acceptance/voice-transcribing-animation-20261026.md",
+        "docs/design/mobile-parity.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "docs/product/mobile-parity.template.md"
+      ],
+      "androidImpact": "Retain current main Android/iOS decorative transcription animation, no new input/recording/ASR behavior. Android combined visual/system-animation proof remains open for local P7; original iPhone synthetic proof is not Android acceptance. Task/project business and unrelated iOS A6 remain paused.",
+      "wholeNodeClosed": false
+    }
+  ],
+  "ownAndroidIntegrationOutsideUpstreamCounter": "PR29 and P5 dedicated checkpoints retain independent delivery proofs, not additional iOS feature nodes",
+  "wholeStageClosed": false
+}

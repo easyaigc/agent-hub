@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.text.format.Formatter
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.agenthub.core.TargetScope
@@ -21,7 +21,8 @@ import java.io.File
 class MobileDraftAttachmentUiTest {
     @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
     @get:Rule(order=1) val ui=createAndroidComposeRule<MainActivity>()
-    private val session get()=ui.activity.session
+    private lateinit var owned: OwnedControlAcceptance
+    private val session get()=owned.session
     private val scope=TargetScope("codex",null,null,"attachment-fixture","attachment-workspace","attachment-runtime")
     private val capabilities=listOf("reply","commands:target-bound:v1","generation-settings","models:read","attachments:upload")
     private fun main(block: suspend ()->Unit)=runBlocking { withContext(Dispatchers.Main) { block() } }
@@ -43,13 +44,14 @@ class MobileDraftAttachmentUiTest {
             override suspend fun events(client: MobileClient,threadId: String,epoch: String,cursor: Long)=EventBatch(scope.hostId,"attachment-fixture",0,false,true,capabilities,emptyList())
             override suspend fun send(client: MobileClient,intent: ReplyIntent): DeliveryReceipt { writes++;error("This attachment strip examiner must never send") }
         }
-        ui.runOnIdle { ui.activity.readNetworkMonitor.stop();session.resetAcceptance(reader,commands) }
+        ui.waitUntil(30_000) {!ui.activity.session.restoring}
+        ui.runOnIdle { owned=OwnedControlAcceptance(ui.activity,"draft-images");session.resetAcceptance(reader,commands) }
         main { session.connect("synthetic draft attachments","https://fixture.invalid","") }
         ui.waitUntil(10_000) { session.hasClient&&!session.loading }
         ui.runOnIdle { session.selectThread(session.threads.first()) }
         ui.waitUntil(10_000) { !session.historyLoading&&session.canCompose }
     }
-    @After fun leave() { ui.runOnIdle { assertEquals(0,writes);session.leaveForeground() } }
+    @After fun leave() { ui.runOnIdle { assertEquals(0,writes);session.leaveForeground();owned.verifyDefault() } }
     private fun image(): ByteArray {
         val b=Bitmap.createBitmap(64,32,Bitmap.Config.ARGB_8888);b.eraseColor(Color.BLUE)
         return try { java.io.ByteArrayOutputStream().also { b.compress(Bitmap.CompressFormat.PNG,100,it) }.toByteArray() }finally{b.recycle()}
@@ -130,11 +132,59 @@ class MobileDraftAttachmentUiTest {
         ui.runOnIdle { session.selectThread(a) };ui.waitUntil(10_000) { !session.historyLoading&&session.canCompose }
         assertEquals(listOf(original),session.attachments)
         ui.runOnIdle { remove() };assertEquals("A revisited same target still rejects the old navigation callback",listOf(original),session.attachments)
-        main { assertNull(session.draftAttachmentThumbnail(original,destination));assertNotNull(session.draftAttachmentThumbnail(original,session.attachmentDestination()));assertArrayEquals(bytes,NativeDraftFiles(NativeSessionStorage(ui.activity)).bytes(original.manifest)) }
+        main { assertNull(session.draftAttachmentThumbnail(original,destination));assertNotNull(session.draftAttachmentThumbnail(original,session.attachmentDestination()));assertArrayEquals(bytes,NativeDraftFiles(owned.storage).bytes(original.manifest)) }
         shot("revisited-original-rejects-old-remove")
         ui.onNodeWithTag("draft-attachment-remove-${original.manifest.id}").performClick();assertTrue(session.attachments.isEmpty())
         ui.runOnIdle { session.selectThread(b) };ui.waitUntil(10_000) { !session.historyLoading };assertEquals(listOf(other),session.attachments);assertEquals("另一草稿",session.text)
         assertEquals(0,writes)
+    }
+
+    @Test fun explicitDraftImagePreviewKeepsOriginalBytesAndOnlyRemovesCurrentPage() {
+        val bytes=image()
+        main { session.addAttachment("first.png","image/png",bytes);session.addAttachment("second.png","image/png",bytes);session.text="Unsent image draft" }
+        val originals=session.attachments.toList()
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("draft-attachment-image-${originals[0].manifest.id}").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("draft-attachment-image-${originals[0].manifest.id}").performClick()
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("attachment-image-pixels").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("attachment-image-name").assertTextEquals("first.png")
+        ui.onNodeWithTag("attachment-image-page-${originals[1].manifest.id}").performClick()
+        ui.onNodeWithTag("attachment-image-name").assertTextEquals("second.png")
+        ui.onNodeWithTag("draft-image-preview-remove").performClick()
+        ui.waitUntil(10_000) { session.attachments.size==1 }
+        assertEquals(listOf(originals[0]),session.attachments)
+        ui.onNodeWithTag("attachment-image-name").assertTextEquals("first.png")
+        ui.onNodeWithTag("attachment-image-done").performClick()
+        ui.onAllNodesWithTag("attachment-image-viewer").assertCountEquals(0)
+        main { assertArrayEquals(bytes,NativeDraftFiles(owned.storage).bytes(originals[0].manifest)) }
+        assertEquals("Unsent image draft",session.text);assertEquals(0,writes)
+    }
+    @Test fun brokenDraftPreviewCanRetryWithoutMutatingOriginalAndRemovingLastCloses() {
+        val bytes="broken original image".toByteArray()
+        main { session.addAttachment("broken.png","image/png",bytes) }
+        val original=session.attachments.single()
+        ui.onNodeWithTag("draft-attachment-document-${original.manifest.id}").performClick()
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("attachment-image-error").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("attachment-image-retry").performClick()
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("attachment-image-error").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(listOf(original),session.attachments)
+        main { assertArrayEquals(bytes,NativeDraftFiles(owned.storage).bytes(original.manifest)) }
+        ui.onNodeWithTag("draft-image-preview-remove").performClick()
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("attachment-image-viewer").fetchSemanticsNodes().isEmpty() }
+        assertTrue(session.attachments.isEmpty());assertEquals(0,writes)
+    }
+    @Test fun draftPreviewClosesOnNavigationAndOldSourceCannotReadRevisitedDraft() {
+        main { session.addAttachment("bound.png","image/png",image()) }
+        val original=session.attachments.single();val destination=session.attachmentDestination();val a=session.threads.first()
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("draft-attachment-image-${original.manifest.id}").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithTag("draft-attachment-image-${original.manifest.id}").performClick()
+        ui.waitUntil(10_000) { ui.onAllNodesWithTag("attachment-image-pixels").fetchSemanticsNodes().isNotEmpty() }
+        ui.runOnIdle {session.selectThread(session.threads.last())}
+        ui.waitUntil(10_000) { !session.historyLoading&&session.canCompose }
+        ui.onAllNodesWithTag("attachment-image-viewer").assertCountEquals(0)
+        main {assertNull(session.draftAttachmentImage(original,destination))}
+        ui.runOnIdle {session.selectThread(a)};ui.waitUntil(10_000) {!session.historyLoading&&session.canCompose}
+        main {assertNull(session.draftAttachmentImage(original,destination));assertNotNull(session.draftAttachmentImage(original,session.attachmentDestination()))}
+        assertEquals(listOf(original),session.attachments);assertEquals(0,writes)
     }
 
     @Test fun largeOriginalUsesSmallAuthenticatedCacheAndStillRequiresExactBytesForSubmission() {
@@ -143,7 +193,7 @@ class MobileDraftAttachmentUiTest {
         val bytes=try { java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }.toByteArray() }finally{bitmap.recycle()}
         assertTrue(bytes.size>1024*1024)
         main { session.addAttachment("large-original.png","image/png",bytes) }
-        val file=session.attachments.single();val store=NativeSessionStorage(ui.activity);val files=NativeDraftFiles(store)
+        val file=session.attachments.single();val store=owned.storage;val files=NativeDraftFiles(store)
         val cache=store.read("draft-thumbnail-v1:${file.manifest.id}")!!;assertTrue(cache.length<160*1024)
         assertEquals(file.manifest.body().toString(),JSONObject(cache).getJSONObject("file").toString())
         val source=store.read("draft-file:${file.manifest.id}")!!
@@ -171,7 +221,7 @@ class MobileDraftAttachmentUiTest {
         val bitmap=Bitmap.createBitmap(80,40,Bitmap.Config.ARGB_8888);val canvas=android.graphics.Canvas(bitmap)
         for(n in 0..3)canvas.drawRect((n%2*40).toFloat(),(n/2*20).toFloat(),(n%2*40+40).toFloat(),(n/2*20+20).toFloat(),android.graphics.Paint().apply { color=colors[n] })
         val jpeg=try { java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG,95,it) }.toByteArray() }finally{bitmap.recycle()}
-        val files=NativeDraftFiles(NativeSessionStorage(ui.activity))
+        val files=NativeDraftFiles(owned.storage)
         for(orientation in 1..8) {
             assertEquals(0xff,jpeg[0].toInt() and 0xff);assertEquals(0xd8,jpeg[1].toInt() and 0xff)
             // EXIF APP1: little-endian TIFF IFD0 with one inline SHORT orientation tag.

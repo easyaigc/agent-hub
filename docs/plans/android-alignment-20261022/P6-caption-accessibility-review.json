@@ -1,0 +1,178 @@
+{
+  "phase": "P6-6b",
+  "sourceBase": "349db4165139fc53706fdfd9ef5b41e975d87702",
+  "features": ["F02", "F12", "F19", "F40", "F56", "F62", "F70"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/PendingCreationMessage.kt": "5a8ff246d9e5508a6ee275a045b4932f7753fcb63fee5c374c360ee2dada1fde",
+    "apps/android/src/main/kotlin/com/agenthub/android/UserMessageBubble.kt": "81a3a3842b8026c107cfbe433f3cdf39c5492c671823cb14bbcf1e6b414ea690",
+    "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "490e24d782fc3e129a58f504f5caae46715d23c804ed2190abf73726235772f2",
+    "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt": "0939701818e0c2749837c35bd6b46fa51cbcbb91f19605c1293fac16d1d731c2",
+    "apps/android/src/main/kotlin/com/agenthub/android/ThreadForkViews.kt": "4a09c14b16579e493f03c6950ce7feb531d04cae3f93f60f69aca5e9ab61696b",
+    "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "d152a2c87330befaf59b4e6f185df9a424b8f064e061651e39967588a3639516",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "219b3ec8786d3519b11ff0e25624d1d91f2bbc944ca3a165b8bcbf2b3f1fd5bf",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePresentationCaptionTest.kt": "ba3b7dfb150036f71c6bbc0515bf6ecd46bb22b41f44d6909923fcbb4130211f",
+    "apps/android/localization/native-copy.json": "7109e57b28dfec3772a261a05b06914b466120abd884e41da64e5fb0865beeeb",
+    "apps/android/src/main/res/values/product_strings.xml": "28e3b1841e90c3f05834324d0c38f8927373ea1d396936206dda9322d3afa31d",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "0946b227fb427d65074ec8c8376b67b363170c1bb11533bac45373950eff7f0f",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "89d67eb4fcfb108ba93e6121d96feeff5460d10e1d7aa4dac4fef8a853b8af25",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "23307dffdadd79535838460c9858ba3c66b2bee113e48eaa0b89c89b1932862c"
+  },
+  "newNativeCatalogKeys": 4,
+  "catalogKeysPerLanguage": 1665,
+  "newRealModelInputs": 0,
+  "businessTaskProjectManagement": "deferred",
+  "ios": "existing product key implementation compared; no iOS source changes; not current iOS App acceptance",
+  "wholeStageClosed": false,
+  "summary": "P6-6b：发送/展开/完整消息、计划状态读屏、分支回执、聊天归档及连接固定文案接入双语；原消息/文件名/错误不翻译，展开/选择和原意图保持。1665词条，45辅助/6实际原代码及工具资源只读整例、51份默认存储证明通过。任务/项目管理仍暂缓，完整P6未关闭。",
+  "checks": {
+    "pnpmCheck": "current complete run passed; final Android examiner count fix separately rebuilt/native checked",
+    "rootLogSha256": "55a71631f95aeed830b82aec89b428d27955bc4ef43d3d6d7eb2b1a791158051",
+    "frozenSourceInputs": 616,
+    "sourceInputsUnchanged": true,
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "androidBuild": "current passed",
+    "iosBuild": "unchanged source matched P6-5d simulator build, not current iOS App/physical acceptance",
+    "mobileParity": "current passed",
+    "format": "current passed"
+  },
+  "nativeAuxiliary": {
+    "methods": 45,
+    "normal": 33,
+    "style": 12,
+    "perNormalEnvironment": "six caption, four message-action regression, one full compiled catalog",
+    "environments": [
+      "physical API33 portrait light",
+      "API26 portrait light",
+      "API37 portrait light",
+      "API26 font scale 2",
+      "API37 portrait dark"
+    ],
+    "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+    "appSha256": "41a561ba4b746d3c79eaa8a72b6ca247de3114eb39710669a38056074f5b2336",
+    "runnerSha256": "a621966f051182792a8716fdd35a288369f55b894ee98900acec7d6261da3443",
+    "componentScope": "caption methods use isolated Material palette, do not certify full product theme/tokens; four action regressions use full App",
+    "selectedBehavior": "language changes preserve expansion, selected chat, original body/intent/diagnostic; archive and connection removal dismissed without remote write"
+  },
+  "actualOriginalReads": {
+    "methods": 6,
+    "rows": [
+      {
+        "environment": "physical API33",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 41,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+        "nativeReportSha256": "a8c5d08f3910bdeba27b9eda0028f79f4158a85b6938ddfa26dfd965164e4aef",
+        "hostReportSha256": "8748b9a7f2ba847de16d96f1a28393962288cc1c0750a7b4f14b4992fd36a6fe",
+        "ownerTurnsUnchanged": true,
+        "resourceGets": 4
+      },
+      {
+        "environment": "API37 portrait",
+        "kind": "code",
+        "http": {
+          "requests": 25,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+        "nativeReportSha256": "1c56b5c02d74f9463569ca8d70ae5475aa6ff9ddf068a2233f45ec0c1f328668",
+        "hostReportSha256": "ebc60621bcfd8878bfcc02abe947c72c42f1a6f12e94808ea3bd82a60b3be1c0",
+        "ownerTurnsUnchanged": true,
+        "systemCopyAttempted": true,
+        "systemCopyMatched": true,
+        "api26ClipboardPending": false
+      },
+      {
+        "environment": "physical API33",
+        "kind": "code",
+        "http": {
+          "requests": 28,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+        "nativeReportSha256": "d7ed1ca21abf186508478eb26b3d342d740ad6cd923ecceeaeef7f23acbb7c61",
+        "hostReportSha256": "f6668d73f444c5e29cbed1478214e116e591b98480dda667ab68f4d659a20c83",
+        "ownerTurnsUnchanged": true,
+        "systemCopyAttempted": true,
+        "systemCopyMatched": true,
+        "api26ClipboardPending": false
+      },
+      {
+        "environment": "API26",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 30,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+        "nativeReportSha256": "6bab60efca9f41ed83da58ba237e10c7371130aacad6a8b84f4ab1131827c7c8",
+        "hostReportSha256": "f6440ee6844cd50e4ca1d626cb50f278e82fe1524c31c3fe78b10bf4765d69fb",
+        "ownerTurnsUnchanged": true,
+        "resourceGets": 4
+      },
+      {
+        "environment": "API37 portrait",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 47,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+        "nativeReportSha256": "a49f4eabc36ff27a7356795bff02b5d005c1ebe050749b29db41352514d7f22e",
+        "hostReportSha256": "b450e4ff297c73e233a6e2bf029e96f4444f5dafcdc06da0632cd2aeadb6495d",
+        "ownerTurnsUnchanged": true,
+        "resourceGets": 4
+      },
+      {
+        "environment": "API26",
+        "kind": "code",
+        "http": {
+          "requests": 25,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+        "nativeReportSha256": "b0e60406689ed3dcbf29ce819a3288031fcc3c209cdb9aee574e5c2dd6702b47",
+        "hostReportSha256": "7143d0e2e7a706b6bff228a72491b95f68ef06fe36fbb38ba4af8369d3440f49",
+        "ownerTurnsUnchanged": true,
+        "systemCopyAttempted": false,
+        "systemCopyMatched": false,
+        "api26ClipboardPending": true
+      }
+    ],
+    "httpRequests": 196,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "originalOwnerAndTurnsUnchanged": true,
+    "codeSystemCopiesMatched": 2,
+    "api26EmptyPriorClipboard": "not attempted; system copy remains pending",
+    "resourceShare": "chooser intercepted; not external recipient"
+  },
+  "defaultStorageProofs": 51,
+  "failuresRetained": [
+    "Initial new examiner used nullable captureChatSearch where nonnull context required; compiler rejected. Explicit original synthetic presenter context used; no product gate changed",
+    "First native cohort six caption methods passed, but exact catalog examiner still expected1661 and failed on1665 in all three environments; whole cohorts retained as failed. Reviewed expected inventory updated to1665; all final checks rerun"
+  ],
+  "pending": [
+    "Full language/theme/font/orientation/AX/token/rendering matrix",
+    "App-owned error prefixes mixed with raw Provider failure text need typed source separation; no blanket translation",
+    "Fork unavailable reasons may include raw Host detail; not blanket translated",
+    "API37 landscape, API26 empty-clipboard system Copy and other environmental pending",
+    "iOS current App/physical comparison; no substitute by Android tests"
+  ],
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "visualReview": {
+    "selectedIsolatedPlanImages": 5,
+    "selectedOriginalCodeImages": 3,
+    "fullMatrixClosed": false
+  }
+}

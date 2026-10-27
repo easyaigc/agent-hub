@@ -46,7 +46,11 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         return record
     }
     private fun read(target: String): List<SavedOperation> {
-        val body=storage.read("operations:$target")?.let(::JSONObject) ?: return emptyList()
+        val raw=storage.read("operations:$target") ?: return emptyList()
+        return validateMigrationRecords(target,JSONObject(raw))
+    }
+    /** Decode the same immutable records without writing, observing or retrying an operation. */
+    internal fun validateMigrationRecords(target: String,body: JSONObject): List<SavedOperation> {
         require(body.getInt("version")==1 && body.getString("target")==target) { "本地提交记录目标不匹配" }
         return body.getJSONArray("operations").objects().map(::decode).also { records ->
             require(records.all { it.target==target } && records.map { it.id }.distinct().size==records.size) { "本地提交记录身份冲突" }

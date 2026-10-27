@@ -20,7 +20,7 @@ import org.json.JSONObject
     LaunchedEffect(session.targetKey) { if(session.targetKey!=target)close() }
     val records=if(session.targetKey==target)session.detachedReplies.asReversed() else emptyList()
     LazyColumn(Modifier.fillMaxSize().testTag("reply-record-list"),contentPadding=PaddingValues(vertical=12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-        if(records.isEmpty())item { Text("暂无发送记录",Modifier.padding(20.dp)) }
+        if(records.isEmpty())item { Text(productText("暂无发送记录"),Modifier.padding(20.dp)) }
         items(records,key={ it.target+":"+it.id }) { record ->
             var content by remember(record.target,record.id,record.intentSha256) { mutableStateOf<CodexContent?>(null) }
             var unavailable by remember(record.target,record.id) { mutableStateOf(false) }
@@ -39,13 +39,13 @@ import org.json.JSONObject
                         ProductIcon(if(file.manifest.mediaType.startsWith("image/"))"image" else "document",Modifier.size(16.dp))
                         Text(file.manifest.name,fontSize=12.sp,modifier=Modifier.testTag("reply-record-file-${record.id}-${file.manifest.id}"))
                     } }
-                    if(content==null && attachments>0)Text(if(unavailable)"原附件信息暂不可用，$attachments 个附件的原记录已保留" else "正在读取 $attachments 个原附件的信息…",fontSize=12.sp)
-                    Text(when(receipt?.state ?: record.phase) { "failed"->if(receipt?.turnId.isNullOrEmpty())"消息提交失败" else "任务执行失败";"cancelled","interrupted"->"已停止";"completed"->"已完成";"submitted"->"已提交";"queued"->"已排队";else->"已结束等待 · 结果待确认" },fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.testTag("reply-record-state-${record.id}"))
+                    if(content==null && attachments>0)Text(if(unavailable)productText("原附件信息暂不可用，%@ 个附件的原记录已保留",attachments) else productText("正在读取 %@ 个原附件的信息…",attachments),fontSize=12.sp)
+                    Text(productText(when(receipt?.state ?: record.phase) { "failed"->if(receipt?.turnId.isNullOrEmpty())"消息提交失败" else "任务执行失败";"cancelled","interrupted"->"已停止";"completed"->"已完成";"submitted"->"已提交";"queued"->"已排队";else->"已结束等待 · 结果待确认" }),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.testTag("reply-record-state-${record.id}"))
                     record.error?.let { SelectionContainer { Text(it,fontSize=12.sp) } }
                     session.replyRecordQueryError(record)?.let { Text(it,fontSize=12.sp,color=MaterialTheme.colorScheme.error,modifier=Modifier.testTag("reply-record-query-error-${record.id}")) }
                     TextButton(onClick={ session.queryReplyRecord(record,target) },enabled=session.canQueryReplyRecord(record,target),modifier=Modifier.testTag("query-detached-reply-${record.id}")) {
                         if(session.replyRecordQuerying(record))CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp)
-                        Text("查询原回执")
+                        Text(productText("查询原回执"))
                     }
                 }
             }

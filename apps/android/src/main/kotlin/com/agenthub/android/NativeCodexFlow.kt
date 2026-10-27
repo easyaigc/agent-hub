@@ -17,7 +17,24 @@ import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.UUID
 
-data class LocalDraftFile(val manifest: CreationFile)
+data class LocalDraftFile(val manifest: CreationFile,val photoSourceId: String?=null)
+internal class LocalDraftSourceMissing: IllegalStateException("原附件不存在，未提交")
+internal class PreparedLocalDraftFile(val file: LocalDraftFile,val disposable: Boolean,private val release: ()->Unit={}) {
+    private val closed=java.util.concurrent.atomic.AtomicBoolean(false)
+    fun close() { if(closed.compareAndSet(false,true))release() }
+}
+/** A fixed source cannot be reused until its prior prepare/commit/cleanup has finished. */
+internal object FixedFilePreparationLeases {
+    private class Entry(val mutex: Mutex=Mutex(),var users: Int=0)
+    private val entries=mutableMapOf<Pair<String,String>,Entry>()
+    suspend fun acquire(scope: String,id: String): ()->Unit {
+        val key=scope to id
+        val entry=synchronized(entries) { entries.getOrPut(key) { Entry() }.also { it.users++ } }
+        fun releaseReference() { synchronized(entries) { if(--entry.users==0)check(entries.remove(key)===entry) } }
+        try { entry.mutex.lock() }catch(failure: Throwable) { releaseReference();throw failure }
+        return { entry.mutex.unlock();releaseReference() }
+    }
+}
 data class SubmissionOrigin(val key: String,val version: String)
 data class CodexContent(val text: String,val files: List<LocalDraftFile>,val settings: GenerationSettings,val sharingScope: String? = null)
 data class CodexFlowResult(val record: SavedOperation,val thread: MobileThread? = null,val project: MobileProject?=null)
@@ -25,24 +42,57 @@ data class CodexFlowResult(val record: SavedOperation,val thread: MobileThread? 
 /** Platform storage holds source bytes; submitted snapshots never follow later draft edits. */
 class NativeDraftFiles(private val storage: NativeSessionStorage) {
     suspend fun import(name: String,mediaType: String,bytes: ByteArray): LocalDraftFile {
-      val prepared=java.util.concurrent.atomic.AtomicReference<LocalDraftFile?>()
-      return try { withContext(Dispatchers.IO) {
+        val result=prepare(name,mediaType,bytes)
+        return try { result.file }finally { result.close() }
+    }
+    internal suspend fun prepare(name: String,mediaType: String,bytes: ByteArray,id: String?=null): PreparedLocalDraftFile {
+      if(id!=null)require(UUID.fromString(id).toString()==id) { "附件标识无效" }
+      val release=if(id==null) ({})else FixedFilePreparationLeases.acquire(storage.coordinationKey,id)
+      var handedOff=false
+      val newlyWritten=java.util.concurrent.atomic.AtomicReference<LocalDraftFile?>()
+      try { val result=withContext(Dispatchers.IO) {
         require(name.isNotBlank() && name.length<=512 && mediaType.isNotBlank()) { "附件名称或类型无效" }
         require(bytes.size<=20*1024*1024) { "单个附件不能超过 20 MiB" }
-        val file=CreationFile(UUID.randomUUID().toString(),name,mediaType,bytes.size.toLong(),sha(bytes))
+        val fileId=id ?: UUID.randomUUID().toString()
+        if(id!=null)require(UUID.fromString(id).toString()==id) { "附件标识无效" }
+        val file=CreationFile(fileId,name,mediaType,bytes.size.toLong(),sha(bytes))
         CodexCommandCodec.validate(file.body(),"creationFile")
-        prepared.set(LocalDraftFile(file))
-        storage.write("draft-file:${file.id}",JSONObject().put("file",file.body())
-            .put("bytes",android.util.Base64.encodeToString(bytes,android.util.Base64.NO_WRAP)).toString())
-        DraftAttachmentThumbnails.storeIfMissing(storage,file,bytes)
-        LocalDraftFile(file)
-      } } catch(failure: Exception) {
-        withContext(NonCancellable+Dispatchers.IO) { prepared.get()?.let { runCatching { discardPrepared(it) } } }
+        storage.operationTransaction {
+            val prior=storage.read("draft-file:${file.id}")
+            if(prior!=null) {
+                val old=JSONObject(prior)
+                require(old.getJSONObject("file").toString()==file.body().toString()) { "原附件清单已改变" }
+                require(android.util.Base64.decode(old.getString("bytes"),android.util.Base64.NO_WRAP).contentEquals(bytes)) { "原附件内容已改变，未提交" }
+                PreparedLocalDraftFile(LocalDraftFile(file),false,release)
+            } else {
+                newlyWritten.set(LocalDraftFile(file))
+                storage.write("draft-file:${file.id}",JSONObject().put("file",file.body())
+                    .put("bytes",android.util.Base64.encodeToString(bytes,android.util.Base64.NO_WRAP)).toString())
+                DraftAttachmentThumbnails.storeIfMissing(storage,file,bytes)
+                PreparedLocalDraftFile(LocalDraftFile(file),true,release)
+            }
+        }
+      };handedOff=true;return result
+      } catch(failure: Exception) {
+        withContext(NonCancellable+Dispatchers.IO) { newlyWritten.get()?.let { runCatching { discardPrepared(it) } } }
         throw failure
       } catch(failure: OutOfMemoryError) {
-        withContext(NonCancellable+Dispatchers.IO) { prepared.get()?.let { runCatching { discardPrepared(it) } } }
+        withContext(NonCancellable+Dispatchers.IO) { newlyWritten.get()?.let { runCatching { discardPrepared(it) } } }
         throw IllegalStateException("手机内存不足，未能准备附件；原草稿已保留",failure)
-      }
+      } finally { if(!handedOff)release() }
+    }
+    internal suspend fun inboxOwnedFile(id: String): LocalDraftFile? = withContext(Dispatchers.IO) {
+        val raw=storage.read("draft-file:$id") ?: return@withContext null
+        val value=JSONObject(raw).getJSONObject("file");CodexCommandCodec.validate(value,"creationFile")
+        require(value.getString("id")==id) { "原附件清单已改变" }
+        LocalDraftFile(CreationFile(id,value.getString("name"),value.getString("mediaType"),value.getLong("sizeBytes"),value.getString("sha256")))
+    }
+    internal suspend fun discardInboxOwned(file: LocalDraftFile) {
+        val release=FixedFilePreparationLeases.acquire(storage.coordinationKey,file.manifest.id)
+        try { withContext(Dispatchers.IO) {
+            discardPrepared(file)
+            check(storage.read("draft-file:${file.manifest.id}")==null) { "本地文件清理未完成" }
+        } }finally { release() }
     }
     /** Called only for a freshly prepared file that has never entered a draft or operation. */
     internal fun discardPrepared(file: LocalDraftFile) {
@@ -62,7 +112,7 @@ class NativeDraftFiles(private val storage: NativeSessionStorage) {
         DraftAttachmentThumbnails.read(storage,file).png
     }
     suspend fun bytes(file: CreationFile): ByteArray = withContext(Dispatchers.IO) {
-        val saved=JSONObject(storage.read("draft-file:${file.id}") ?: error("原附件不存在，未提交"))
+        val saved=JSONObject(storage.read("draft-file:${file.id}") ?: throw LocalDraftSourceMissing())
         val original=saved.getJSONObject("file")
         require(original.toString()==file.body().toString()) { "原附件清单已改变" }
         android.util.Base64.decode(saved.getString("bytes"),android.util.Base64.NO_WRAP).also {
@@ -105,7 +155,7 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
     private suspend fun source(client: MobileClient,id: String,origin: SubmissionOrigin,content: CodexContent) {
         require(MobileRules.hasContent(content.text,content.files.size) && content.text.length<=100_000 && content.files.size<=10) { "消息为空或超出文字／附件限制" }
         val body=content.settings.append(JSONObject().put("hostId",client.id).put("target",CodexCommandCodec.target(client.scope!!))
-            .put("sourceKey",origin.key).put("sourceVersion",origin.version).put("text",content.text).put("files",JSONArray(content.files.map { it.manifest.body() })))
+            .put("sourceKey",origin.key).put("sourceVersion",origin.version).put("text",content.text).put("files",JSONArray(content.files.map { it.manifest.body() })).put("photoSources",NativePhotoOrigins.encode(content.files)))
         require(body.toString().toByteArray(Charsets.UTF_8).size<=150_000) { "消息超出电脑请求大小限制" }
         withContext(Dispatchers.IO) { storage.write("submission:$id",body.toString()) }
     }
@@ -340,7 +390,7 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
         val input=JSONObject(current.intent)
         val manifests=source.getJSONArray("files").objects().map { file ->
             CodexCommandCodec.validate(file,"creationFile")
-            LocalDraftFile(CreationFile(file.getString("id"),file.getString("name"),file.getString("mediaType"),file.getLong("sizeBytes"),file.getString("sha256")))
+            NativePhotoOrigins.attach(LocalDraftFile(CreationFile(file.getString("id"),file.getString("name"),file.getString("mediaType"),file.getLong("sizeBytes"),file.getString("sha256"))),source.optJSONObject("photoSources"))
         }
         require(manifests.size==input.getJSONArray("attachmentIds").length())
         val settings=GenerationSettings(source.optional("model"),source.optional("effort"),source.optional("permissionMode"),source.optional("speed"),source.optional("collaborationMode"))

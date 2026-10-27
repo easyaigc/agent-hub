@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "public https",
+      "reference": "https://example.com/a?q=1#part",
+      "expected": "web",
+      "attachmentId": null
+    },
+    {
+      "name": "public http",
+      "reference": "http://example.com/",
+      "expected": "web",
+      "attachmentId": null
+    },
+    {
+      "name": "uppercase scheme",
+      "reference": "HTTPS://example.com/x",
+      "expected": "web",
+      "attachmentId": null
+    },
+    {
+      "name": "ipv6 public",
+      "reference": "https://[2001:db8::1]/x",
+      "expected": "web",
+      "attachmentId": null
+    },
+    {
+      "name": "localhost",
+      "reference": "http://localhost:3000",
+      "expected": "computerWeb",
+      "attachmentId": null
+    },
+    {
+      "name": "localhost suffix",
+      "reference": "https://app.LOCALHOST./x",
+      "expected": "computerWeb",
+      "attachmentId": null
+    },
+    {
+      "name": "ipv4 loopback",
+      "reference": "http://127.9.2.3:80",
+      "expected": "computerWeb",
+      "attachmentId": null
+    },
+    {
+      "name": "ipv6 loopback",
+      "reference": "http://[::1]:3000/",
+      "expected": "computerWeb",
+      "attachmentId": null
+    },
+    {
+      "name": "ipv6 unspecified",
+      "reference": "http://[::]/",
+      "expected": "computerWeb",
+      "attachmentId": null
+    },
+    {
+      "name": "ipv4 unspecified",
+      "reference": "http://0.0.0.0/",
+      "expected": "computerWeb",
+      "attachmentId": null
+    },
+    {
+      "name": "mapped loopback",
+      "reference": "http://[::ffff:127.0.0.1]/",
+      "expected": "computerWeb",
+      "attachmentId": null
+    },
+    {
+      "name": "public suffix not loopback",
+      "reference": "https://localhost.example.com/",
+      "expected": "web",
+      "attachmentId": null
+    },
+    {
+      "name": "web credentials",
+      "reference": "https://user:secret@example.com/x",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "web empty user",
+      "reference": "https://@example.com/x",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "web missing host",
+      "reference": "https:/relative",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "mail",
+      "reference": "mailto:person@example.com",
+      "expected": "external",
+      "attachmentId": null
+    },
+    {
+      "name": "telephone",
+      "reference": "tel:+123456789",
+      "expected": "external",
+      "attachmentId": null
+    },
+    {
+      "name": "local file",
+      "reference": "file:///tmp/sample.txt",
+      "expected": "computerFile",
+      "attachmentId": null
+    },
+    {
+      "name": "sandbox file",
+      "reference": "sandbox:/mnt/data/sample.txt",
+      "expected": "computerFile",
+      "attachmentId": null
+    },
+    {
+      "name": "relative file",
+      "reference": "reports/sample.txt",
+      "expected": "computerFile",
+      "attachmentId": null
+    },
+    {
+      "name": "root file",
+      "reference": "/tmp/sample.txt",
+      "expected": "computerFile",
+      "attachmentId": null
+    },
+    {
+      "name": "windows forward drive",
+      "reference": "C:/reports/sample.txt",
+      "expected": "computerFile",
+      "attachmentId": null
+    },
+    {
+      "name": "attachment query",
+      "reference": "codex-attachment://open?id=owned-id",
+      "expected": "attachment",
+      "attachmentId": "owned-id"
+    },
+    {
+      "name": "attachment encoded plus",
+      "reference": "codex-attachment://open?id=a%2Bb",
+      "expected": "attachment",
+      "attachmentId": "a+b"
+    },
+    {
+      "name": "attachment literal plus",
+      "reference": "codex-attachment://open?id=a+b",
+      "expected": "attachment",
+      "attachmentId": "a+b"
+    },
+    {
+      "name": "attachment host",
+      "reference": "codex-attachment://owned-id",
+      "expected": "attachment",
+      "attachmentId": "owned-id"
+    },
+    {
+      "name": "attachment missing id",
+      "reference": "codex-attachment://open",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "attachment empty id",
+      "reference": "codex-attachment://open?id=",
+      "expected": "unsupported",
+      "attachmentId": ""
+    },
+    {
+      "name": "javascript",
+      "reference": "javascript:alert%281%29",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "inline data",
+      "reference": "data:text/html,hello",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "intent",
+      "reference": "intent://example.com/",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "content",
+      "reference": "content://private/document",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "international hostname",
+      "reference": "https://例子.测试/path",
+      "expected": "web",
+      "attachmentId": null
+    },
+    {
+      "name": "nonnumeric web port",
+      "reference": "https://example.com:bad/x",
+      "expected": "unsupported",
+      "attachmentId": null
+    },
+    {
+      "name": "malformed ipv6",
+      "reference": "https://[bad",
+      "expected": "unsupported",
+      "attachmentId": null
+    }
+  ]
+}

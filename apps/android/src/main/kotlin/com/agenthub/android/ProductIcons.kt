@@ -25,9 +25,17 @@ import androidx.compose.ui.unit.dp
         fun line(x: Float, y: Float, xx: Float, yy: Float) = drawLine(color, Offset(x*u,y*u), Offset(xx*u,yy*u), 1.7f*u, StrokeCap.Round)
         fun path(vararg points: Float) { val p = Path(); p.moveTo(points[0]*u, points[1]*u); for (i in 2 until points.size step 2) p.lineTo(points[i]*u,points[i+1]*u); drawPath(p,color,style=stroke) }
         when(name) {
+            "doc" -> { path(5f,2f,14f,2f,19f,7f,19f,22f,5f,22f,5f,2f);path(14f,2f,14f,7f,19f,7f);line(8f,12f,16f,12f);line(8f,16f,16f,16f) }
+            "camera" -> { path(2f,7f,7f,7f,9f,3f,15f,3f,17f,7f,22f,7f,22f,21f,2f,21f,2f,7f);drawCircle(color,5f*u,Offset(12f*u,14f*u),style=stroke) }
+            "clipboard" -> { path(7f,4f,3f,4f,3f,22f,21f,22f,21f,4f,17f,4f);path(7f,2f,17f,2f,17f,7f,7f,7f,7f,2f);line(7f,12f,17f,12f);line(7f,17f,14f,17f) }
+            "tray" -> { path(3f,13f,3f,21f,21f,21f,21f,13f,16f,13f,14f,17f,10f,17f,8f,13f,3f,13f);path(12f,2f,12f,11f);path(8f,7f,12f,11f,16f,7f) }
+            "photo" -> { drawRoundRect(color,Offset(2f*u,3f*u),Size(20f*u,18f*u),androidx.compose.ui.geometry.CornerRadius(2f*u),style=stroke);drawCircle(color,2f*u,Offset(8f*u,8f*u),style=stroke);path(3f,19f,10f,12f,14f,16f,17f,13f,21f,17f) }
             "question" -> { drawRoundRect(color,Offset(2f*u,2f*u),Size(20f*u,16f*u),androidx.compose.ui.geometry.CornerRadius(3f*u),style=stroke); path(7f,18f,7f,22f,12f,18f); drawArc(color,190f,270f,false,Offset(9f*u,5f*u),Size(6f*u,6f*u),style=stroke); line(12f,10f,12f,12f); drawCircle(color,.8f*u,Offset(12f*u,15f*u)) }
             "shield" -> { path(12f,2f,3f,6f,4f,15f,7f,19f,12f,22f,17f,19f,20f,15f,21f,6f,12f,2f) }
+            "privacy" -> path(8f,22f,4f,18f,2f,13f,4f,12f,7f,15f,7f,5f,9f,5f,9f,12f,9f,2f,11f,2f,11f,11f,11f,1f,13f,1f,13f,11f,13f,3f,15f,3f,15f,13f,17f,8f,19f,9f,18f,17f,15f,22f,8f,22f)
+            "help-circle" -> { drawCircle(color,10f*u,Offset(12f*u,12f*u),style=stroke);drawArc(color,205f,280f,false,Offset(8f*u,5f*u),Size(8f*u,8f*u),style=stroke);line(12f,12f,12f,14f);drawCircle(color,.8f*u,Offset(12f*u,18f*u)) }
             "bolt" -> path(14f,2f,4f,14f,11f,14f,9f,22f,21f,9f,13f,9f,14f,2f)
+            "lightbulb-fill" -> { val bulb=Path().apply { moveTo(12f*u,2f*u);cubicTo(3f*u,2f*u,3f*u,12f*u,8f*u,15f*u);lineTo(9f*u,17f*u);lineTo(15f*u,17f*u);lineTo(16f*u,15f*u);cubicTo(21f*u,12f*u,21f*u,2f*u,12f*u,2f*u);close() };drawPath(bulb,color);line(9f,20f,15f,20f);line(11f,22f,13f,22f) }
             "lightbulb" -> { drawArc(color,160f,220f,false,Offset(5f*u,2f*u),Size(14f*u,14f*u),style=stroke); path(5.5f,11f,9f,17f,15f,17f,18.5f,11f); line(9f,20f,15f,20f); line(11f,22f,13f,22f) }
             "tools" -> { for (point in listOf(Offset(5f,5f),Offset(19f,5f),Offset(5f,19f),Offset(19f,19f))) drawCircle(color,3f*u,point*u,style=stroke); line(8f,16f,16f,8f) }
             "command" -> { path(3f,5f,9f,12f,3f,19f); line(12f,19f,21f,19f) }

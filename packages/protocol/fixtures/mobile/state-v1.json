@@ -2268,6 +2268,96 @@
       "definition": "executeQueueRequest",
       "json": "{\"hostId\":\"queue-host\",\"threadId\":\"original-thread\",\"clientMessageId\":\"\"}",
       "valid": false
+    },
+    {
+      "name": "suggestion-wire-native",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": true
+    },
+    {
+      "name": "suggestion-wire-empty",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":null,\"source\":\"native-trace\"}",
+      "valid": true
+    },
+    {
+      "name": "suggestion-wire-schema",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":2,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-readonly",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":false,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-readonly-string",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":\"true\",\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-target-type",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":\"wrong\",\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-future-source",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"future\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-future-validity",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"future\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-hash",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"bad\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-empty-text",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-id-type",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":7,\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-missing-schema",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"target\":{\"agentId\":\"codex\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\"},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"native-version\"},\"source\":\"native-trace\"}",
+      "valid": false
+    },
+    {
+      "name": "suggestion-wire-easywork-runtime",
+      "definition": "desktopSuggestionResponse",
+      "json": "{\"schemaVersion\":1,\"target\":{\"agentId\":\"easywork\",\"hostId\":\"fixture-host\",\"workspaceId\":\"fixture-workspace\",\"runtimeId\":\"fixture-runtime\",\"account\":{\"authority\":\"fixture\",\"subject\":\"synthetic\"}},\"threadId\":\"fixture-thread\",\"sourceTurnId\":\"fixture-turn\",\"readOnly\":true,\"suggestion\":{\"id\":\"version-1\",\"text\":\"Synthetic next action\",\"contentSha256\":\"9664b8ed30165e806125e87348941881fcf47230633c1594c85f93203069419b\",\"expiresAt\":\"2030-01-01T00:00:00Z\",\"validity\":\"runtime-version\"},\"source\":\"runtime\"}",
+      "valid": true
+    },
+    {
+      "name": "suggestion-wire-runtime-source",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"canControl\":false,\"suggestionSourceTurnId\":\"fixture-source\"}",
+      "valid": true
+    },
+    {
+      "name": "suggestion-wire-runtime-source-type",
+      "definition": "runtime",
+      "json": "{\"state\":\"idle\",\"plan\":[],\"approvals\":[],\"receipts\":[],\"canControl\":false,\"suggestionSourceTurnId\":7}",
+      "valid": false
     }
   ],
   "toolPresentation": [
@@ -2583,6 +2673,208 @@
       "messages": [],
       "value": null,
       "flag": false
+    },
+    {
+      "operation": "summary",
+      "expected": "Running · Use 原工具 100% %@, Edit files, Run command",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "原工具 100% %@ · original activity",
+          "kind": "mcpToolCall",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "2",
+          "role": "tool",
+          "text": "原工具 100% %@ · another",
+          "kind": "dynamicToolCall",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "3",
+          "role": "tool",
+          "text": "raw cmd",
+          "kind": "commandExecution",
+          "status": "inProgress",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "4",
+          "role": "tool",
+          "text": "raw",
+          "kind": "fileChange",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false,
+      "locale": "en"
+    },
+    {
+      "operation": "summary",
+      "expected": "Completed · Search the web, Run multiple commands",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "正在",
+          "kind": "commandExecution",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "2",
+          "role": "tool",
+          "text": "已",
+          "kind": "commandExecution",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        },
+        {
+          "id": "3",
+          "role": "tool",
+          "text": "https://example.invalid",
+          "kind": "webSearch",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false,
+      "locale": "en"
+    },
+    {
+      "operation": "summary",
+      "expected": "Completed · Use multiple tools",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "原正文",
+          "kind": "unknown",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false,
+      "locale": "en"
+    },
+    {
+      "operation": "title",
+      "expected": "In progress · run command",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "Raw source must not replace category",
+          "kind": "commandExecution",
+          "status": "inProgress",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": true,
+      "locale": "en"
+    },
+    {
+      "operation": "title",
+      "expected": "Failed · run 原文 成功 100% %@",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "原文 成功 100% %@",
+          "kind": "commandExecution",
+          "status": "failed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false,
+      "locale": "en"
+    },
+    {
+      "operation": "title",
+      "expected": "原活动 · 100% %@",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "Provider · 原活动 · 100% %@",
+          "kind": "mcpToolCall",
+          "status": "completed",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false,
+      "locale": "en"
+    },
+    {
+      "operation": "title",
+      "expected": "Stopped · search web",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "秘密中文",
+          "kind": "webSearch",
+          "status": "interrupted",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": true,
+      "locale": "en"
+    },
+    {
+      "operation": "title",
+      "expected": "Unknown status · perform reasoning",
+      "messages": [
+        {
+          "id": "1",
+          "role": "tool",
+          "text": "",
+          "kind": "reasoning",
+          "status": "unknown",
+          "runId": null,
+          "replyPhase": null,
+          "replyMessageId": null
+        }
+      ],
+      "value": null,
+      "flag": false,
+      "locale": "en"
     }
   ],
   "discovery": [
@@ -5580,5 +5872,33 @@
       "canExecuteNow": true,
       "allowed": false
     }
-  ]
+  ],
+  "toolPresentationCopy": {
+    "en": {
+      "使用 ": "Use ",
+      "、": ", ",
+      "搜索网页": "Search the web",
+      "编辑文件": "Edit files",
+      "运行多个命令": "Run multiple commands",
+      "运行命令": "Run command",
+      "使用多个工具": "Use multiple tools",
+      "正在": "Running",
+      "已": "Completed",
+      "命令": "command",
+      "文件": "file",
+      "网页": "web",
+      "思考": "reasoning",
+      "工具": "tool",
+      "运行": "run",
+      "编辑": "edit",
+      "搜索": "search",
+      "进行": "perform",
+      "使用": "use",
+      "进行中": "In progress",
+      "成功": "Succeeded",
+      "失败": "Failed",
+      "已停止": "Stopped",
+      "状态未知": "Unknown status"
+    }
+  }
 }

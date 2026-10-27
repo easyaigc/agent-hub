@@ -1,0 +1,203 @@
+{
+  "phase": "P7-1c",
+  "sourceBase": "d97bb412ddecf1517168eb4a87f6ab68ec1c679e",
+  "features": ["F30", "F31", "F56", "F71"],
+  "files": {
+    "scripts/mobile/android-install-if-needed.mjs": "acd8380781d9e02b8452c2db26c8fe40ad51315d70bb7aee037e8ead445571e1",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileInboxColdProcessTest.kt": "476d739280718c49ed7d0ba8ba73f351d69b0cb9c0d565a8895b224cf8a6e3cf",
+    "apps/android-inbox-examiner/build.gradle.kts": "6c89de1ad6f907e327809118d01f75633c84ead519d618a20f65ae7e7d40b00a",
+    "apps/android-inbox-examiner/src/main/AndroidManifest.xml": "45ba5e985c5e48c322d2509fc41cd831d69753a9bb0d318e49281853db7b5be2",
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedExternalInboxColdDriver.java": "68ec213a1cdbe89c5e7bfd31db541f384c3e9faba6c7384c48f8af2b10b7c22b",
+    "settings.gradle.kts": "c6fcc8c256b8e4ccf39dca4d5569c226c3f3e5c26369ae7d2e11cbff07fe0348"
+  },
+  "summary": "P7-1c：独立SDK观察APK在另一UID运行，API26/API37确认接收App已停后系统分享冷唤起，再冷MAIN重开，同批原名/字节保留且来源不重启；14个跨进程方法覆盖三环境原草稿部分导入补齐、固定ID及消费后再次冷恢复。62项原生回归与3实际原目标只读整例通过，共79默认存储证明。手机拒装新SDK观察APK，手机系统冷接收单列待验，手机原草稿冷恢复通过。完整P7未关闭。",
+  "checks": {
+    "pnpmCheck": "current complete passed,620 frozen source inputs match",
+    "rootLogSha256": "d34db5986cf30ca494714ed9f62bcd5f9b0ade3adae076052c5420efe80eb791",
+    "frozenInputs": 620,
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "androidBuild": "current App/JUnit runner/independent SDK examiner passed with pinned Gradle Wrapper",
+    "androidApprovalGuard": "current full check passed",
+    "ios": "source unchanged; native compile checks in root run, I2 App/Action build reused; no iOS A6 execution",
+    "mobileParity": "current passed",
+    "format": "current passed"
+  },
+  "implementationImpact": "Acceptance tooling only; product inbox/Session import path unchanged from d97bb412. Pinned Gradle acceptance configuration includes dependency-free SDK observer APK; exact install identity added to maintained installer without relaxing SHA/package/device fences.",
+  "nativeAuxiliary": {
+    "methods": 76,
+    "regressionMethods": 62,
+    "coldProcessMethods": 14,
+    "normalRegression": 48,
+    "styleRegression": 14,
+    "sourceSha256": "38b5f351f744883413f6f9cc68eec824558869d6649b638f7d7e48104931e5e9",
+    "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+    "testSha256": "8aabb95d07afb385e9fb7d863a29341bcd22d198d530a1d3f9e478a563da500f",
+    "examinerSha256": "296a92b605fca2d84bd9e3d18add6312b8a3f483cff2b419cdad7f08557b54ce",
+    "scope": "6 storage,7 full-App inbox UI,3 independent receiver regressions per normal environment;7 UI methods on API26 font2 and API37 dark; separate phased process examiner",
+    "coldRows": [
+      {
+        "environment": "physical API33",
+        "nativeMethods": 4,
+        "independentSystemColdScenes": 0,
+        "distinctNativePids": true,
+        "reportSha256": "9a2403db7f6f0e37406c6898d1f67a02d143d51c8e6370fe9fd32f80def3f243",
+        "sourceSha256": "1bc93481eebc4508872f593276676cf705ab00845298e54a5a50e8cc46e0d4e4",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "8aabb95d07afb385e9fb7d863a29341bcd22d198d530a1d3f9e478a563da500f",
+        "examinerSha256": "296a92b605fca2d84bd9e3d18add6312b8a3f483cff2b419cdad7f08557b54ce",
+        "syntheticOwnedHost": {
+          "requests": 10,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "independentColdReceiver": {
+          "status": "pending",
+          "reason": "Physical OS rejected new independent examiner APK with INSTALL_FAILED_USER_RESTRICTED; existing native runner/draft process checks continue."
+        }
+      },
+      {
+        "environment": "API26 portrait",
+        "nativeMethods": 5,
+        "independentSystemColdScenes": 2,
+        "distinctNativePids": true,
+        "reportSha256": "94edbebccef5b49bf50010c5be6ded47f6137e2ce4bd5c6dfcf3c23cc305e9b1",
+        "sourceSha256": "1bc93481eebc4508872f593276676cf705ab00845298e54a5a50e8cc46e0d4e4",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "8aabb95d07afb385e9fb7d863a29341bcd22d198d530a1d3f9e478a563da500f",
+        "examinerSha256": "296a92b605fca2d84bd9e3d18add6312b8a3f483cff2b419cdad7f08557b54ce",
+        "syntheticOwnedHost": {
+          "requests": 10,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "independentColdReceiver": {
+          "distinctRecipientPids": true
+        },
+        "distinctColdRecipientPids": true,
+        "sourceNotRelaunchedForReopen": true,
+        "independentSourceAndExaminerUid": true,
+        "exactNativeFilesAndLaterAction": true,
+        "animationsTemporarilyDisabledAndRestored": true
+      },
+      {
+        "environment": "API37 portrait",
+        "nativeMethods": 5,
+        "independentSystemColdScenes": 2,
+        "distinctNativePids": true,
+        "reportSha256": "2a3b7b6b18b74184f3c5bedaf6c551ddb2f00757a531773854cd369567ba0bd9",
+        "sourceSha256": "1bc93481eebc4508872f593276676cf705ab00845298e54a5a50e8cc46e0d4e4",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "8aabb95d07afb385e9fb7d863a29341bcd22d198d530a1d3f9e478a563da500f",
+        "examinerSha256": "296a92b605fca2d84bd9e3d18add6312b8a3f483cff2b419cdad7f08557b54ce",
+        "syntheticOwnedHost": {
+          "requests": 10,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "independentColdReceiver": {
+          "distinctRecipientPids": true
+        },
+        "distinctColdRecipientPids": true,
+        "sourceNotRelaunchedForReopen": true,
+        "independentSourceAndExaminerUid": true,
+        "exactNativeFilesAndLaterAction": true,
+        "animationsTemporarilyDisabledAndRestored": true
+      }
+    ],
+    "coldSdkScenes": 4,
+    "coldSdkCounting": "Four SDK observations are separate from the76 JUnit methods, no duplicate count. API26/API37 only; physical installation pending.",
+    "ownedTransport": "Synthetic stable strict GET-only Host. Same encrypted original target/draft settings/bytes/IDs across distinct native PIDs; not actual Electron/model acceptance.",
+    "defaultReceiverNetwork": "SDK default-App observations trigger only receive/Later, no Add/Send. Default-App background reads/read acknowledgements are not proxied and are not counted as zero network writes."
+  },
+  "actualOriginalTargetReads": {
+    "methods": 3,
+    "rows": [
+      {
+        "environment": "physical API33",
+        "http": {
+          "requests": 37,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "38b5f351f744883413f6f9cc68eec824558869d6649b638f7d7e48104931e5e9",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "8aabb95d07afb385e9fb7d863a29341bcd22d198d530a1d3f9e478a563da500f",
+        "nativeReportSha256": "9a9f779b25a35bd1f724ab490ea07ed3f4b60cf1a2fab4b406abb440582978ea",
+        "hostReportSha256": "424d85aaffa8c782fdb62d634bdbcf2a9a784ef1e734ce6baf0085fd5ab8b7ab",
+        "independentInboxProofSha256": "d4df44f4004a3107710759cb715b7a50d73877c9893fff9c334b9c60719ac32e",
+        "systemPasteAttempted": true,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "API26",
+        "http": {
+          "requests": 39,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "38b5f351f744883413f6f9cc68eec824558869d6649b638f7d7e48104931e5e9",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "8aabb95d07afb385e9fb7d863a29341bcd22d198d530a1d3f9e478a563da500f",
+        "nativeReportSha256": "8dcfe3b02a6e683fdc6bcb5e9f1aad7786e6f4059a7f3d0b0e9ff6a73ab72fbf",
+        "hostReportSha256": "e59387a66090f1e6b4e9f1422ce51af8fbbc79277a79d1ae0d49afd0fb8d2378",
+        "independentInboxProofSha256": "a0d2f481fc599014f4f275aaed58d517d8ea2004c5673a2199374bf6ee00d1f1",
+        "systemPasteAttempted": false,
+        "originalOwnerAndTurnsUnchanged": true
+      },
+      {
+        "environment": "API37 portrait",
+        "http": {
+          "requests": 65,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "resourceGets": 4,
+        "sourceSha256": "38b5f351f744883413f6f9cc68eec824558869d6649b638f7d7e48104931e5e9",
+        "appSha256": "2ee30f077d732213e52456dba2ae4875754ef44e1d11cd53af703e6ad57ad775",
+        "testSha256": "8aabb95d07afb385e9fb7d863a29341bcd22d198d530a1d3f9e478a563da500f",
+        "nativeReportSha256": "f37162c41f22cbdb99a0bb333acb0ea450b8cc3907bea706018d279d9431fa73",
+        "hostReportSha256": "dc947d4a4c3b055a155e2914a6134da9f248da1523bda7157dfb901eb5a8838f",
+        "independentInboxProofSha256": "677303c29ef5cc4a5e9d9253e0677476f44fdbebf146d52f153c716760bbd537",
+        "systemPasteAttempted": true,
+        "originalOwnerAndTurnsUnchanged": true
+      }
+    ],
+    "httpRequests": 141,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "scope": "Same original completed Electron/model target and resource; independent source warm native receive/Add and durable exact local draft confirmed, original owner/Turns unchanged. Does not substitute original-owner Host cold matrix.",
+    "sourceFilesNotReadByModel": true,
+    "resourceOrigin": "Original model referenced examiner107byte resource; did not read it",
+    "nativeSemanticsActivation": true,
+    "pointerActivation": false
+  },
+  "defaultStorageProofs": 79,
+  "failuresRetained": [
+    "First extra instrumentation registration was omitted by AGP test-manifest generation; no SDK scene started. Replaced with acceptance-only independent APK targeting only synthetic source test APK, no product seam.",
+    "Installer initially rejected unregistered exact new examiner identity before install; added only exact debug package, embedded APK identity/SHA/authorized device checks retained.",
+    "Physical OS returned INSTALL_FAILED_USER_RESTRICTED for new examiner APK. No bypass, uninstall or data clear; two physical SDK cold scenes pending, existing runner and owned draft process phases continued.",
+    "API26 source cleanup am start -W timed out although SDK/data phases passed; source Activity finishes without a displayed window. Examiner now launches without -W and separately confirms exact nonce rows were actually removed. Prior report retained.",
+    "First root check rejected missing pending feature record; next source/path check rejected tools/root aliases outside manifest allowed roots. Examiner moved under apps, root Gradle fingerprint kept in evidence, manifest source paths stay within supported roots. Full final root check follows registration.",
+    "Earlier cold SDK screenshot caught opening animation, not stable layout. Original frame retained; final two owned-emulator SDK runs temporarily disable animation and restore all exact prior settings, no product fix claimed. Earlier passes not counted twice."
+  ],
+  "pending": [
+    "Physical independent SDK APK installation and two system cold receiver/reopen scenes; existing physical draft cold recovery passed",
+    "Actual original-owner Host cold reception/partial-inbox recovery and new model mixed-send consumption; current actual-host scenes remain warm GET-only/local draft preparation",
+    "Provider stalls/unknown lengths/directories/revoked grants/dynamic metadata/full formats and real source App matrix including WeChat",
+    "Photo/camera/recent images, storage migration/GC, dual voice/read/unread and remaining P7 lifecycle",
+    "API26 empty prior clipboard preserved; complete pointer/animation/orientation/font/AX matrix and API37 landscape remain open",
+    "P6 remaining formats/AX/token and typed fixed errors open; business task/project management deferred; iOS A6 paused"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false,
+  "visualReview": {
+    "status": "six selected settled cold/recovery screenshots reviewed; earlier animation frame retained separately",
+    "images": 6,
+    "completeMatrix": false
+  }
+}

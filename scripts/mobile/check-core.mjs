@@ -31,6 +31,8 @@ const fingerprint = async () => {
       'scripts/mobile/check-core.mjs',
       'scripts/mobile/verify-ios-core.swift',
       'scripts/mobile/verify-ios-attachments.swift',
+      'scripts/mobile/verify-ios-message-links.swift',
+      'apps/ios/Sources/MessageLinkDestination.swift',
       'scripts/mobile/verify-ios-state.swift',
       'scripts/mobile/verify-ios-recovery.swift',
       'scripts/mobile/verify-ios-generation-preferences.swift',
@@ -88,6 +90,22 @@ const suites = [];
 for (const [runtime, file] of [
   [
     'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.MessageLinkRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.MessageLinkRulesTest.xml',
+  ],
+  [
+    'jvm',
+    '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.DesktopSuggestionRulesTest.xml',
+  ],
+  [
+    'iosSimulatorArm64',
+    '.build/native/mobile-core/test-results/iosSimulatorArm64Test/TEST-iosSimulatorArm64Test.com.agenthub.core.DesktopSuggestionRulesTest.xml',
+  ],
+  [
+    'jvm',
     '.build/native/mobile-core/test-results/jvmTest/TEST-com.agenthub.core.AttachmentPreparationRulesTest.xml',
   ],
   [
@@ -113,8 +131,13 @@ for (const [runtime, file] of [
 ]) {
   const xml = await readFile(file, 'utf8');
   const head = xml.match(/<testsuite\s[^>]+>/)?.[0];
-  const tests =
-    file.includes('TaskHubRulesTest') || file.includes('AttachmentPreparationRulesTest') ? 4 : 3;
+  const tests = file.includes('MessageLinkRulesTest')
+    ? 2
+    : file.includes('DesktopSuggestionRulesTest')
+      ? 3
+      : file.includes('TaskHubRulesTest') || file.includes('AttachmentPreparationRulesTest')
+        ? 4
+        : 3;
   assert(head && head.includes('tests="' + tests + '"'));
   for (const key of ['failures', 'errors', 'skipped']) assert(head.includes(key + '="0"'));
   suites.push({
@@ -291,6 +314,10 @@ await writeFile(
     '\n' +
     (await readFile('scripts/mobile/verify-ios-attachments.swift', 'utf8')) +
     '\n' +
+    (await readFile('apps/ios/Sources/MessageLinkDestination.swift', 'utf8')) +
+    '\n' +
+    (await readFile('scripts/mobile/verify-ios-message-links.swift', 'utf8')) +
+    '\n' +
     (await readFile('apps/ios/Sources/NativeChatSearch.swift', 'utf8')) +
     '\n' +
     (await readFile('scripts/mobile/verify-ios-state.swift', 'utf8')) +
@@ -312,7 +339,7 @@ await writeFile(
     taskHubFramer +
     '\n' +
     (await readFile('scripts/mobile/verify-ios-task-hub.swift', 'utf8')) +
-    '\ntry verifyStateVectors(CommandLine.arguments[2])\nverifyAsyncBoundary()\ntry verifyRecoveryCoreVectors(CommandLine.arguments[3])\ntry verifyPrivateCredential(CommandLine.arguments[4])\ntry verifySharingVoiceVectors(CommandLine.arguments[5])\ntry verifyTaskHubVectors(CommandLine.arguments[6])\ntry verifyGenerationPreferenceVectors(CommandLine.arguments[7])\ntry verifyAttachmentPreparationVectors(CommandLine.arguments[8])\n',
+    '\ntry verifyStateVectors(CommandLine.arguments[2])\nverifyAsyncBoundary()\ntry verifyRecoveryCoreVectors(CommandLine.arguments[3])\ntry verifyPrivateCredential(CommandLine.arguments[4])\ntry verifySharingVoiceVectors(CommandLine.arguments[5])\ntry verifyTaskHubVectors(CommandLine.arguments[6])\ntry verifyGenerationPreferenceVectors(CommandLine.arguments[7])\ntry verifyAttachmentPreparationVectors(CommandLine.arguments[8])\ntry verifyMessageLinkVectors(CommandLine.arguments[9])\n',
 );
 const sdk = execFileSync('xcrun', ['--sdk', 'iphonesimulator', '--show-sdk-path'], {
   encoding: 'utf8',
@@ -351,12 +378,16 @@ const boundary = execFileSync(
     resolve('packages/protocol/fixtures/mobile/task-hub-v1.json'),
     resolve('packages/protocol/fixtures/mobile/generation-preferences-v1.json'),
     resolve('packages/protocol/fixtures/mobile/attachment-preparation-v1.json'),
+    resolve('packages/protocol/fixtures/mobile/message-links-v1.json'),
   ],
   { encoding: 'utf8' },
 );
 const vectors = async (name) =>
   JSON.parse(await readFile('packages/protocol/fixtures/mobile/' + name + '.json', 'utf8'));
 const generationVectors = await vectors('generation-preferences-v1');
+assert(
+  boundary.includes('Message link vectors: ' + (await vectors('message-links-v1')).cases.length),
+);
 assert(
   boundary.includes(
     `Attachment preparation vectors: ${(await vectors('attachment-preparation-v1')).cases.length}`,

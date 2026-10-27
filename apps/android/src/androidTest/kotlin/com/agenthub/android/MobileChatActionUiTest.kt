@@ -143,9 +143,9 @@ class MobileChatActionUiTest {
             android.os.SystemClock.uptimeMillis()-quietSince>=1800
         }
         menu()
-        assertEquals(records.size,records.map { session.chatActionRecordLabel(it) }.distinct().size)
+        assertEquals(records.size,records.map { session.chatActionRecordLabel(it,NativeL10n(activity,session.language)) }.distinct().size)
         for(record in records)ui.onNodeWithTag("chat-action-query-${record.id}").performScrollTo().assertIsDisplayed()
-            .assertTextContains(session.chatActionRecordLabel(record),substring=true).assertContentDescriptionEquals(session.chatActionRecordDescription(record))
+            .assertTextContains(session.chatActionRecordLabel(record,NativeL10n(activity,session.language)),substring=true).assertContentDescriptionEquals(session.chatActionRecordDescription(record,NativeL10n(activity,session.language)))
         shot("all-six-original-pending-records-reachable")
         val original=records.first();val expected=ChatActionCodec.request(org.json.JSONObject(original.intent))
         val beforeQueryReads=fixture.server.requests.count { it.method=="GET"&&it.path=="/v1/threads/actions" }

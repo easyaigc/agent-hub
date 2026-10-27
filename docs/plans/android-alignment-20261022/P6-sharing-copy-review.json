@@ -1,0 +1,80 @@
+{
+  "phase": "P6-3f",
+  "sourceBase": "e8f36543e6624a8c802bb0e258f311ee20f51bb7",
+  "features": ["F56", "F64"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt": "6fcfe475672344843d98cf94d1401e4173f888c5e865070cbcc41b13f8177a75",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSharingCopyTest.kt": "63e7349f7cd6ae5c7538f8d29bb20a62d77a31052b611f3fc866969b92f466f7"
+  },
+  "scope": "Explicit native sharing permission/settings/voice explanation copy and locale privacy URL. Raw grant names, errors, immutable scope and consent actions unchanged.",
+  "iosReference": ["apps/ios/Sources/Sheets.swift:743-804"],
+  "nativeKeys": {
+    "shared": 1590,
+    "platform": 46,
+    "newKeys": 0,
+    "totalPerLanguage": 1636
+  },
+  "newRealModelInputs": 0,
+  "wholeStageClosed": false,
+  "status": "bounded copy/native and existing-original-owner read passed; full P6/F64 open",
+  "nativeAuxiliary": {
+    "methods": 129,
+    "normalPerEnvironment": 40,
+    "stylePerGroup": 3,
+    "environments": ["physical API33 normal/dark", "API26 normal/double font", "API37 normal/dark"],
+    "defaultStorageProofs": 129,
+    "selectedOwnedImagesReviewed": 24,
+    "appSha256": "3a7d960399db6fbea0660839fe0a7a8f25693d90602749608babaa69a8c8b233",
+    "testSha256": "ce57a582d419e2356419594736039bb742c9458fdb50de9287cbff2950d0f7f3",
+    "sourceSha256": "5f947470123d78bfff4ce94fe454a54375f62b7c0d8c902489a54fcdffccebde"
+  },
+  "nativePrivacyLink": {
+    "status": "native ACTION_VIEW intercepted",
+    "urls": [
+      "https://51easyai.com/agent-hub/privacy-en.html",
+      "https://51easyai.com/agent-hub/privacy.html"
+    ],
+    "noCredentialsOrQuery": true,
+    "actualBrowserPageVerified": false,
+    "monitorRemoved": true
+  },
+  "realOriginalOwner": {
+    "nativeMethods": 1,
+    "defaultStorageProofs": 1,
+    "readOriginalActualModelReply": true,
+    "localDraftPlanAndSidebarPreserved": true,
+    "http": {
+      "requests": 15,
+      "methods": ["GET"],
+      "writeRequests": 0
+    },
+    "independentOwner": {
+      "originalTurnsUnchanged": true,
+      "onePriorInput": true,
+      "zeroNewInputs": true,
+      "stillOriginalOwner": true
+    },
+    "scope": "Existing completed actual source read only; does not close actual sharing/grant operation. ADB loopback only."
+  },
+  "failuresRetained": [
+    "Initial three-method cohorts had ambiguous same computer name in main/sidebar/dialog; final raw-name lookup is scoped to its exact page. No promotion of other methods in failed cohorts.",
+    "Main-composition UriHandler observer did not capture privacy link dispatch. Original failures retained; final examiner intercepts only two public privacy ACTION_VIEW intents with Android ActivityMonitor and removes it after each case. No full browser-load claim.",
+    "Phone preflight twice found active instrumentation and backed off before install/launch; later native checks passed without stopping the other task.",
+    "Baseline exact prior App rejected missing English Destination before sharing approval/operation."
+  ],
+  "checks": {
+    "android": "current App and runner build passed",
+    "catalogAndParity": "1636 keys unchanged, current native resource reads and final parity checks separately recorded",
+    "workspaceAndIos": "Exact unchanged tracked JS/shared/Swift/Host sources compared with P6-3c complete check/build; no new full run claimed"
+  },
+  "allPhasesCumulativeInputs": 218,
+  "p4CumulativeInputs": 204,
+  "pending": [
+    "App-owned codex-dictation/follow-computer sharing model captions and dynamic lifecycle/receipt copy",
+    "Actual original-owner session grants remain P4 failed/pending, no replay",
+    "Full browser/URI/resource/TalkBack/IME/token/system matrix",
+    "Android P7 real voice/local fallback/storage/read/recent photos",
+    "API37 actual landscape",
+    "Task/project business and unrelated iOS A6 deferred"
+  ]
+}

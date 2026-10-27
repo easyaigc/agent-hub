@@ -1,0 +1,84 @@
+{
+  "phase": "I4-3d1",
+  "sourceBase": "475f9d82eec47997ca320cf370cc4fe224967393",
+  "summary": "I4-3d1：相册可读时保留原生目录，并增加独立系统选图器入口；选择暂存项后切换系统入口再取消不会自动导入或改原草稿。三环境各4项及API26实际横屏/字体2另4项，共16原生辅助与16默认11字段保护通过。系统Intent由测试monitor接管返回取消，不冒称系统页面/实际Provider通过；1747双语词条。接续新请求五项与旧十项配额兼容。",
+  "features": ["F30", "F47", "F56", "F59", "F71"],
+  "sourceSha256": "99a94894eab1c5663bfeb2f9606d6af0a4fe93e95d50d28583382eb687045739",
+  "appSha256": "7a9f1bae98ac6931676b7fc490bc5338fc524cf957e22b8b016736311d54bab5",
+  "runnerSha256": "d4f77e4a6dcc96fa3f5d2c637e312b87bea4b31b54b2187e935b690dfafefd4c",
+  "nativeAuxiliary": 16,
+  "defaultElevenFieldProofs": 16,
+  "cohorts": [
+    {
+      "environment": "owned-API37",
+      "methods": 4,
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "a90ee5bca9a7c2492664f49adc93ac7c1e1385abc0edb3d2d6838634e534fb09",
+      "defaultElevenFieldProofs": 4,
+      "proofSha256s": [
+        "7a9d56b537ff7c94bfafd76848c9651f5e28b332b4081a3bfbf435a4a40c4c79",
+        "1dc4419806c1dc33cb2829a02845d6237e7cdef6668a5a1993ca5746027b776b",
+        "bf657400b38889624031ece0109f9d1e551716a4def4d59bc5c98a91897a326d",
+        "d36049ab11c85c75899ff6818063179596c10939561996ef3a0c24de5748f362"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 4,
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "30b646572ff329d66ac0f0d103e22af66f22ca7a7eda66b65d6ddf4727d2f553",
+      "defaultElevenFieldProofs": 4,
+      "proofSha256s": [
+        "ffc1119f906f8490966fe659aa035ff72b43599f3780141fac5fb53e1177b994",
+        "4ff0abda7d9c33e0d994f402c85d303a01b3c6e77692c4a76bb14a0af551a3a0",
+        "92d25a972dbe87cbc050321ee63cb1568f390cf94a01ba736c2a0f988a1b897d",
+        "3c66537beb39383a91dde69bb748502c911f72e61fedebb69727f8019de00a4e"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 4,
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "5626f93e385d39665ebf4604afb9a83357868682e1d29d7f58e8a13e5f8e59d3",
+      "defaultElevenFieldProofs": 4,
+      "proofSha256s": [
+        "540817cfe8f87a17445dd2869f157eccf3031b927e787f847427cd4967c2fb9e",
+        "920ca4795d44617d0db1cb20b5ebd4707ca615a5e713535f06d1b0d2ecedd2bf",
+        "60ebe143fad753300fd3625f3c19f7438b901f712b2ffa0a7f7098579894e9a3",
+        "8cfd138e87873945a76f88513f8d24aa9c01d6bf1fca63ea0aa53708fe5c0eab"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 4,
+      "orientation": "landscape",
+      "fontScale": "2",
+      "reportSha256": "876d5a0765e0b0a4c4b91a7490a91c36248bf143d1112d642f44561dbd67b20f",
+      "defaultElevenFieldProofs": 4,
+      "proofSha256s": [
+        "850f0ea74730b601c91e4344a3f1151aff6ec5ffc892e2dc94e83426a2cf261c",
+        "0c3303cc86b14bda386610363a558b22b435cf66f486946d302a310d4886c5ee",
+        "637329277bf173879c04069279369b2d055fdc326127d308217d78aaa0ddc178",
+        "1353b418f9a3e4e9d7dd6ad25d173eb4847f926c34a1c72ea90b13fc8b92bbc7"
+      ]
+    }
+  ],
+  "scope": "Actual app menu/ActivityResult launch/known cancel, external intent intercepted by Instrumentation.ActivityMonitor; no system picker UI, external Provider or cloud success claim",
+  "invalidAttemptRetained": {
+    "fileSha256": "8ef1ae6ef44170efc8a136fb7134a7e70b91bc546e2d1dffc056eb77e2c578f5",
+    "reason": "Initial test compiler error followed by artifact copy due missing fail-fast; subsequent three-method runner result excluded. Final build succeeded and all selected cohorts execute the new fourth method."
+  },
+  "iosImpact": "Android MediaStore catalogue needs independent system-provider entry; iOS PhotoKit source remains unchanged. No A6/iOS device upgrade.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeInputs": 221,
+  "p4CumulativeInputs": 205,
+  "pending": [
+    "New request quota5 with captured legacy10 compatibility",
+    "Process/batch restore and real multi-image model/desktop verification",
+    "Actual system Provider/cloud and full permissions/AX/visual matrices",
+    "API37 landscape; business tasks/projects and iOS A6 paused"
+  ]
+}

@@ -1048,6 +1048,26 @@ Android三环境36项原生归属回归/36默认存储保护、真实原owner问
 
 当前真机/API26/API37各9项原生边界、三环境系统选择器6次原生调用通过；真机纯文件首条、冷回复及混合首条5次调用/3真实输入通过，独立原owner/canonical对账3原输入、附件原字节和准确输出且无重复。已查看27份composer子树及22份App窗口，不扩展为完整主题/横屏/AX通过。累计215/P4201；早期真机合成发送超时与编译失败保留。 详见[结构化证据](mobile-evidence/android-alignment-P4.json#originalDraftFileImportCheckpoint)及[过程档案](../plans/android-alignment-20261022/records/p4-files-late-callbacks.md)。
 
+### P5-1 共享建议策略辅助检查
+
+版本化56项向量分别执行JVM核心和Swift生产桥接，既有来源/读取/预读/租期检查与两端构建分开保存。这些结果不代表Android建议产品验收；真实原owner、手机界面和无新增输入对账继续执行。见[证据](mobile-evidence/android-alignment-P5.json#sharedPolicyMigrationCheckpoint)和[过程档案](../plans/android-alignment-20261022/records/p5-desktop-suggestions.md)。
+
+### P5-2 来源读取辅助验收
+
+当前真机/API26/API37各6项原生检查、15次合成GET与9次加密读取帧、0命令/回执查询及18份默认状态保持证明通过。15项新增HTTP向量在共享核心与原生侧执行，iOS构建通过。真实原桌面源建议、读前后owner对账及手机交互/界面仍待P5-3，不由合成通道结果替代。见[证据](mobile-evidence/android-alignment-P5.json#sourceReadAdaptersCheckpoint)和[档案](../plans/android-alignment-20261022/records/p5-desktop-suggestions.md)。
+
+### P5-3a reader auxiliary acceptance
+
+Phone/API26/API37 each9 native coroutine/state methods passed,27 default metadata proofs and0 real model inputs. Rendered UI and original source remain pending. [Evidence](mobile-evidence/android-alignment-P5.json#nativeReaderCheckpoint).
+
+### P5-3b 原生会话与草稿交互
+
+当前三环境各8项交互通过，24项本次、75项未受最后颜色差异影响的读取/输入回调/导入/菜单检查按原指纹匹配复用。真实原owner只读对账保持原3输入，但建议正文为空，未验真实源采用；没有新增模型输入。旧菜单瞬态与错误验收器、完整视口/主题/系统选择分别保留。见[证据](mobile-evidence/android-alignment-P5.json#nativeComposerCheckpoint)和[过程档案](../plans/android-alignment-20261022/records/p5-desktop-suggestions.md)。
+
+### P6-3a 生成设置与已分类错误文案
+
+[Android P6证据](mobile-evidence/android-alignment-P6.json#nativeGenerationFailureCheckpoint)记录159项当前原生辅助结果、144份默认存储保持证明及18张自有窗口图。生成/权限显示与六类平台错误按iOS词表，原模型/Provider正文、菜单ID、草稿与错误原文保留；完整读屏模板和语言切换分别核对。零新增真实模型输入；一般错误前缀、其他状态/表单、全量token/系统矩阵及新抓取主线节点仍开放。过程与失败只在[P6档案](../plans/android-alignment-20261022/records/p6-presentation-settings.md)登记。
+
 ## 附件横滑与计划开关（2026-10-26）
 
 F40/F71，UI04/UI07/UI09，S04/S05/S08/S11/S13/S18：本次iOS候选移除最近图片展开及提醒开关，打开附件面板按需请求相册授权，最多30张缩略图默认横向滑动；计划开关移到输入框上方审批之后并显示开关状态。原图读取、原草稿目标、发送后上传及计划提交规则保持。
@@ -1059,3 +1079,149 @@ iPhone 15 Pro Max专用验收版本次通过1项完整原生用例：首次授�
 Android当前未同步该入口变化，A6仍暂停；拒绝/部分照片权限完整原生矩阵、全部字体/主题/方向、完整F40/F71、Windows及其他手机均未据此新增通过。正式App未更新，其他DEV数据保持。
 
 2026-10-26 F49/F50：原桌面附件链接投影造成阅读正文与版本不匹配的修复，原始实际响应反例、辅助回归、实体iPhone和原owner结果按[专项记录](unread-attachment-projection-20261026.md)分别登记。其他并行源码、Android/Windows及完整产品状态不据此升级。
+
+### P6-I1 主线增量集成辅助验收
+
+[证据](mobile-evidence/android-alignment-P6.json#nativeMainIntegrationCheckpoint)绑定d8bf85d0来源、32个集成源文件、162项当前原生辅助与147份默认存储保持证明。双端构建、当前源码完整工作区检查通过，平台跳过按原分组保留；文档登记后的parity/格式另查。1590键保留双方有效词表。新增应用审批的合成载荷不关闭真实读取：NativeHostReads版本头、标签与完整原owner矩阵仍待后续修复/验收。照片/计划及P7语音/未读增量不因合并获得Android通过。过程见[主线档案](../plans/android-alignment-20261022/records/p4-main-increments.md#p6-i1-安卓分支集成主线当前增量)。
+
+### P4-4o.32 应用审批读取与原生拒绝
+
+Android读取新增mcp-v1声明，旧包同runner只显示decline且在零写入时被准确拒绝。最终包五组70项合成原生及新手机1项真实原owner拒绝通过，71份默认草稿/附件/版本/代次保持证明。原桌面独立确认一个原输入/完成轮、原请求结束、拒绝回执且无Probe内容读取；真实许可/session/always/cancel与额外权限仍待验。工作区和iOS检查按P6-I1未变源码匹配，未新增iOS手机或跨机通过；构建及登记后parity/格式另核。累计216/P4202，结果未知不重放。 [证据](mobile-evidence/android-alignment-P4.json#applicationApprovalReadVersionCheckpoint)及[档案](../plans/android-alignment-20261022/records/p4-owner-conflicts.md)。
+
+### P6-3b 常驻计划开关与原草稿
+
+N033对齐后的最终Android包：三环境各42项计划/审批/建议/生成文案原生辅助，加真机深色/API26双倍字号各7项，共140项；另1项真实原owner只读验收，141份默认存储保持证明。读取原实际模型回复，手机两次本地开关恢复原模式，Host十次请求全为GET且原桌面轮次保持；新增真实输入0，累计216/P4202。22张最终工具栏图复核。旧包缺入口、初期脱离节点错误及过度空白的视觉诊断版本均单列，不替换最终通过。15条旧live测试仅改入口并编译，未新增其模型场景通过。 [证据](mobile-evidence/android-alignment-P6.json#nativePlanToggleCheckpoint)、[逐源审查](../plans/android-alignment-20261022/P6-plan-toggle-review.json)与[档案](../plans/android-alignment-20261022/records/p6-presentation-settings.md)。
+
+### P6-3c 原生操作文案与平台补充词表
+
+最终包三环境各51项、真机深色/API26双倍字号各9项，共171项合成原生；另1项真实原owner读取及当前英文操作语义核对，172份默认草稿/文件/版本/导入代次证明。真实Host十次GET、零写入，独立桌面原轮保持；新增输入0，累计216/P4202。1590共享词条和iOS原文件逐字节保持，29个平台词条独立合并，五组原生逐项读回1619×双语资源。完整pnpm check通过且保留非零跳过分组1/24/22，双端构建通过，未新增iOS手机结果。新手机系统Back注入被INJECT_EVENTS拒绝，失败保留；最终仅验证菜单保持时语言切换，不关闭系统Back待验。22张所选自有图复核，侧栏固定分组/状态及其他动态/展示/系统继续开放。 [证据](mobile-evidence/android-alignment-P6.json#nativeActionCopyCheckpoint)、[审查](../plans/android-alignment-20261022/P6-action-copy-review.json)及[过程](../plans/android-alignment-20261022/records/p6-presentation-settings.md)。
+
+### P6-3d 侧栏、连接与原答案边界
+
+三环境各54项、三个附加视口各9项，共189项辅助：135项当前runner，54项API37严格逆向源码匹配复用；当前App相同，旧runner保留。另1项新手机真实原owner读取/侧栏/本地草稿检查，190份默认草稿/文件/版本/导入代次保护，十二次真实GET、零写入/新增模型输入，累计216/P4202。原名称即便等于词表键也保留，单选仍提交原“设置”值及准确Target/Turn，合成回答不作模型证据。17个平台词条扩至46，Android两语1636键逐项读回，共享1590与iOS源码不变。编译、目录/资源和parity分别检查；全工作区/iOS按P6-3c未变源码匹配，未重跑冒领。27图复核，双倍字号连接方式行异常换词明确待修，完整视觉/AX未关闭。 [证据](mobile-evidence/android-alignment-P6.json#nativeNavigationCopyCheckpoint)、[审查](../plans/android-alignment-20261022/P6-navigation-copy-review.json)与[档案](../plans/android-alignment-20261022/records/p6-presentation-settings.md)。
+
+### P6-3e 设置行与原名称
+
+当前包三环境各22项及三个样式组各12项，共102项原生辅助；另1项真实原owner只读，103份默认存储保护。准确旧包双倍字号断词反例保留，最终标签/详情完整单词、行点击及新建/编辑原名通过；18图复核。真实Host十二次GET、零写入/新增输入，原桌面轮保持；累计216/P4202。共享/JS/Swift不变，未新增完整工作区或iOS结果。[证据](mobile-evidence/android-alignment-P6.json#nativeSettingsRowLayoutCheckpoint)与[审查](../plans/android-alignment-20261022/P6-row-layout-review.json)分别记录，完整系统/视觉继续。
+
+### P4-4o.33 共享确认边界与真实会话待验
+
+3项当前原生合成确认通过，70项在生产App相同且唯一检查器逆向后整体源码严格匹配复用，73份默认存储保护；两次实际模型输入未取得完成回执，分别只读核对原owner并封存，不新增真实授权通过、不重放。累计218/P4204。26张合成图复核不关闭完整视觉；实际共享页仍有固定中文，纳入P6后续。[证据](mobile-evidence/android-alignment-P4.json#applicationConsentBoundaryCheckpoint)、[审查](../plans/android-alignment-20261022/P4-application-consent-review.json)与[档案](../plans/android-alignment-20261022/records/p4-approval-viewport.md)。
+
+### P6-3f 共享页文案及公共URL
+
+三环境各40项和三个样式组各3项，共129项当前辅助；另1项原模型回复只读，130份默认存储保护，真实十五次GET、零写入/新增输入，累计218/P4204。原生ACTION_VIEW监视器核两个语种公共隐私URL且无凭据/query，方法后移除；未验系统浏览器页面加载。19个共享键、1636×双语原资源保持。原名定位/URI观察器原失败、准确旧包英文缺失反例分别保留；24张当前自有图复核，应用自有语音模型说明和完整系统/视觉仍开。原P4两次实际授权仍失败/待验，不由本批只读或合成结果代替。[证据](mobile-evidence/android-alignment-P6.json#nativeSharingCopyCheckpoint)、[审查](../plans/android-alignment-20261022/P6-sharing-copy-review.json)及[档案](../plans/android-alignment-20261022/records/p6-presentation-settings.md)。
+
+### P6-3g 原回执与类型化显示
+
+当前三环境各43项，18项样式严格匹配复用，147项辅助；另1项原模型只读同App/检查器逆向匹配，148份默认存储保护，真实Host15次GET、零写入/新增输入，累计218/P4204。双语1638键逐项读回，原名和IDs、原intent/hash及只读查询不变。API26系统崩溃及无效导出保持失败，保留数据冷启后当前43通过；唯一原因/长时稳定性未关闭。24自有图复核，iOS保存许可语种行为、其余UI/系统与P4两原请求仍待验。[证据](mobile-evidence/android-alignment-P6.json#nativeDynamicRecordCopyCheckpoint)、[审查](../plans/android-alignment-20261022/P6-dynamic-records-review.json)及[档案](../plans/android-alignment-20261022/records/p6-presentation-settings.md)。
+
+### N048–N049 来源登记与待验
+
+新增外部附件/分享扩展/显式粘贴的iOS两节点已按[索引](../plans/android-alignment-20261022/upstream-20261026-share-intake.json)逐项核对，扩充F71/UI07共同断言；本次只有范围/来源登记，没有导入新iOS代码、没有Android实现或原生结果。Android P7已按最新人类指示恢复；iOS原生证据按其原平台保存，不替代Android的URI授权、提供器生命周期、部分导入/防重、重启与视觉矩阵。
+
+### P4-4o.34 原owner本会话授权
+
+P4-4o.34：仅检查器等待共享确认原生窗口退场、主窗口焦点与原按钮稳定后再明确点击；5项当前合成确认与1项真实原owner本会话授权通过，原DTO/草稿保持、一次审批POST、原请求退役且一输入一完成轮，独立Probe内容核对。生产源码未改，不证明旧两次失败的唯一原因；原请求封存不重放，完整四范围/自然故障/系统矩阵仍待验。累计219/P4205。 [证据](mobile-evidence/android-alignment-P4.json#applicationWindowReturnCheckpoint)。
+
+### P6-4a 原消息受控链接
+
+P6-4a：链接分类迁入KMP，iOS删除对应旧生产规则，保留原生URL解析；Android按原消息/完整目标/导航及连接代次处理链接，阻止电脑loopback、未知协议和带凭据网页直开，错误保留原链接复制入口。网页采用Custom Tabs且不附Host鉴权。35条双端解析向量、28项当前Android辅助与1项原owner只读通过，29份默认存储证明；流式追加保留原代码横滚和安全计划系统链接；系统页面加载/返回、原文剪贴板、文件解析/预览和完整矩阵仍待验，不关闭F19/F32。 [证据](mobile-evidence/android-alignment-P6.json#controlledMessageLinksCheckpoint)。Android采用原生AlertDialog与系统Custom Tabs；实际系统加载、完整AX/复制、文件预览及iOS真机仍开。
+
+### P6-4b 原消息资源版本边界
+
+P6-4b：Android接通原消息具名文件解析和当前版本下载边界；严格核host/thread/message/reference/readTarget与附件，只有两个解析GET省略target，二进制及原控制保留原目标。当前解析先于缓存，410不复活旧缓存，404仅旧Host精确版本；409最多一次补读，完整机器/聊天/版本隔离、取消清理、原子发布及0/20MiB核验。36项资源+15项链接当前辅助与1项原回复只读通过，52份默认存储证明；没有实际资源传输/预览通过。iOS二进制target与缓存命名空间差异单列后续修复，完整F19/F32仍开。 [证据](mobile-evidence/android-alignment-P6.json#controlledResourceVersionsCheckpoint)。界面加载/预览/分享和迟到回调继续P6-4c；iOS缓存与二进制目标差异单列，不冒领原生资源通过。
+
+### P6-4c 原消息资源预览与受控分享
+
+P6-4c：Android原消息文件链接接通逐段高亮/等待、可取消下载及原生文本/图片预览，保留同资源旧版预览并在重开时取当前版本；完整原文件名、48dp关闭/分享/系统打开和仅缓存资源的只读FileProvider已实现。89项当前辅助与1项实际原模型文件链接通过，90份默认存储证明；真实14GET/2资源GET、0写入/新输入，预览和受控分享读取的107字节摘要一致。分享面板Intent由Instrumentation截获，不算真实接收方通过。iOS资源目标/缓存差异、产物卡/直接保存和完整格式/系统矩阵仍开。 [证据](mobile-evidence/android-alignment-P6.json#controlledResourceUiCheckpoint)。Android使用原生90%底部预览面板；大名区域限高120dp可滚动，文本512KiB以内、图片采样边长2048；其他格式提供系统打开/分享入口，未等同iOS Quick Look全格式能力。深色蓝色链接对比度与全部token仍待收口。
+
+### P6-4d 资源目标与缓存隔离
+
+P6-4d：补正iOS资源下载的原运行目标与缓存隔离。二进制GET携带捕获的完整target，两个解析GET仍遵循白名单；缓存使用实际KMP机器/聊天键及文件ID/摘要版本，Codex账号元数据不分裂缓存，其他Provider账号仍隔离，旧无runtime连接使用独立host/thread空间。源文件先解析、410不复活缓存、409仅一次重读和已开旧版字节保持；非法文件名/大小/摘要先拒绝。当前Swift模拟器真实共享边界属于辅助证据，不冒领iOS App/真机资源通过。 Android P6-4c展示和原文保持；本项没有新增界面或改动现有文案。[证据](mobile-evidence/android-alignment-P6.json#resourceTargetIsolationCheckpoint)。
+
+### P6-4e 原消息附件卡直接操作
+
+P6-4e：Android原消息附件卡直接提供预览和保存/分享入口，显示原文件名/大小、准备状态与至少48dp动作；等待期间不重建分享控件，重复/旧操作不得增加下载或分享，只有文件名的元数据没有下载权。68项当前App辅助与1项实际原消息资源链通过，69份默认存储证明；实际10GET/4资源GET、0写入/新输入，链接及卡片预览、受控分享字节一致。真实接收方、直接系统保存、完整格式/AX和同轮历史/live别名观察仍待补，不关闭完整F19/F32。 单行卡名截断与完整预览标题分别核对，卡背景对应iOS侧栏色；系统文件大小单位随Android原生格式。等待截图含触控波纹瞬态，不作无触控稳态视觉通过。[证据](mobile-evidence/android-alignment-P6.json#directResourceCardsCheckpoint)。
+
+### P6-5a 读取与恢复状态文案
+
+P6-5a：Android恢复重试/读取中、四类只读提示及更早历史状态按当前应用语言显示；复用共享词条并新增5个平台键，1590+58共1648。恢复页抽出无状态生产组件，隔离检查读取中/禁止重试，真实加密损坏重试与原草稿/语言/外观恢复另验；不放开Session私有状态。37项当前辅助与1项实际原回复只读通过，38份默认存储证明；真实5GET/0写入/新输入。实际只读是一般原回复/本地计划回归，不代替真实损坏存储或四类只读Host验收，完整P6仍开。 普通刷新不得制造更早页转圈，读旧页才显示等待；当前isolated busy组件只计语言/禁用状态，不算慢IO或深色整页通过。[证据](mobile-evidence/android-alignment-P6.json#readingStateCopyCheckpoint)。
+
+### P6-5b 资源最终回复唯一展示
+
+原Turn完成后，准确正文、渲染字段和登记资源相同的临时/正式回复只展示一个；不同正文/资源、多个正式ID及未知字段保持。链接和卡片操作继续绑定原消息与原资源，客户端不按显示文件名删除记录。共享Host影响双端，本次Android三环境有界通过，iOS原生及全矩阵仍待验。[证据](mobile-evidence/android-alignment-P6.json#completedResourceReplyIdentityCheckpoint)。
+
+### P6-5c 执行状态与读屏文案
+
+应用队列动作、历史回执展开、原操作固定状态及问题分页遵从当前语言。原正文/错误/意图和选择保持，语言不建立或消除控制权限，不提交原操作或回答。真实控制、完整大字号触达和系统AX另验。[证据](mobile-evidence/android-alignment-P6.json#executionStateCopyCheckpoint)。
+
+### P6-5d 共享工具中英展示
+
+工具摘要/标题使用同一共享组合规则，平台提供已解析语言和固定词条翻译。工具状态、详情标题、空输出、压缩及展开读屏随语言变化；原Provider名称、原活动、命令与输出保持。单项/分组展开及原数据保护逐端验收，不以共享向量代替App真实结果。[证据](mobile-evidence/android-alignment-P6.json#localizedSharedToolPresentationCheckpoint)。
+
+P6-6a消息操作触达按[检查点](mobile-evidence/android-alignment-P6.json#messageActionHitRegionCheckpoint)登记：67辅助/6实际只读整例有界通过，API26空剪贴板系统复制仍待验，完整矩阵未关闭。
+
+P6-6b文案/读屏按[检查点](mobile-evidence/android-alignment-P6.json#presentationCaptionsAccessibilityCheckpoint)登记：45辅助/6实际只读整例、51份默认存储证明，组件palette与完整产品主题分别记证。
+
+I2外部附件对照基线见[检查点](mobile-evidence/android-alignment-I2.json)：双端构建、33辅助/6原回复只读整例有界通过；Android接收/粘贴尚待实现，未执行暂停的iOS A6。
+
+P7-1a显式文件粘贴按[检查点](mobile-evidence/android-alignment-P7.json#explicitFilePasteCheckpoint)登记：67辅助/3实际原目标资源整例，实际系统粘贴2个环境，API26空剪贴板待验，独立外部来源/坐标/冷恢复及完整P7未关闭。
+
+P7-1b外部收件箱按[检查点](mobile-evidence/android-alignment-P7.json#externalAttachmentInboxCheckpoint)登记：119辅助、3实际原目标资源整例、122默认存储证明；独立来源真实UID/系统接收/有序原字节/只读URI权限通过，无新模型输入，完整冷进程/模型消费/Provider矩阵继续待验。
+
+P7-1c按[冷恢复检查点](mobile-evidence/android-alignment-P7.json#processColdInboxCheckpoint)登记：76辅助方法、4单计SDK冷观察、3暖实际原目标整例及79默认存储证明。手机原草稿冷恢复通过，系统冷接收因新观察APK安装拒绝待验；实际原owner冷/模型消费仍开。
+
+P7-2a按[图片准备检查点](mobile-evidence/android-alignment-P7.json#photoPickerPreparationCheckpoint)登记：101辅助、3实际原目标本地准备/资源整例及104默认存储证明；系统打开/取消与原草稿准备分别计证，正向系统选图、模型读取、相机/最近图仍开。
+
+P7-2b：49当前原生辅助/49默认存储证明通过，含API37独立来源、无直接照片授权、唯一原媒体ID、实际系统回调、原像素/隐私别名/加密原草稿；没有模型输入或上传，生产APK与P7-2a相同。真机/API26正向系统选择仍待验，不能提升为真实Electron/模型通过；详情见[图片档案](../plans/android-alignment-20261022/records/p7-photo-picker.md)和[检查点](mobile-evidence/android-alignment-P7.json#photoPositiveSelectionCheckpoint)。
+
+P7-2c：API37独立来源系统图片经一次原生发送由真实模型读取像素标记，原桌面单轮/单输入/单图/单答复与字节、设置核对；控制器cwd误判后只读对账通过，原失败保留。当前共享Host修复在新手机、API26、API37对同一原回复分别冷重开GET-only验收，共62GET/零写、原轮未变；另9附件辅助，总13默认存储证明，累计模型220/P4205。原模型输入在Host修复前执行，不重放以制造当前候选结果；当前Host回读与旧执行分别记指纹。详见[档案](../plans/android-alignment-20261022/records/p7-photo-model.md)和[检查点](mobile-evidence/android-alignment-P7.json#photoModelAndColdHistoryCheckpoint)。
+
+P7-3a：108辅助（105非目录逐方法通过且严格匹配复用、3目录本次）、API37实际相机拍摄/取消2方法及三环境原图片回复只读3方法，共113默认存储证明。失败整批不提升通过，当前相机无上传/模型输入，累计220/P4205。真机权限调用方未证明而未授权、API26相机首启权限均单列待验，完整面板及冷回调等仍开；详见[拍照档案](../plans/android-alignment-20261022/records/p7-camera.md)和[检查点](mobile-evidence/android-alignment-P7.json#cameraCaptureCheckpoint)。
+
+P7-3b：同一候选三环境各47、受控36图/独立来源系统选图各1、暗色大字号2和原模型回复GET-only3，共148默认存储证明；138辅助/7系统/3实际原回复分别列证，新增模型0。完整权限/冷结果/最近新增提示、真机/API26正向选图与相机、API37横屏等继续待验。[档案](../plans/android-alignment-20261022/records/p7-attachment-panel.md)。
+
+P7-3c：168项按源匹配+9本次文案类方法、三组原进程忽略记录冷读、实际独立图片提示/媒体库/选图、暗色大字号与原回复回核分列；共179辅助/9平台/3原回复、191默认草稿/附件/最近偏好证明，新增模型0。偏好冷读不替代原文件/照片/相机URI或结果冷恢复。[档案](../plans/android-alignment-20261022/records/p7-recent-hint.md)。
+
+Android P7-3d：156项辅助、API26/API37真实首次照片请求/拒绝/重开2项、三环境原模型图片回复GET-only3项，共161份默认草稿/附件/代次/最近照片偏好/授权记录保护证明。系统调用方包名/UID独立核对；API26保留本任务独立SDK包拒绝USER_SET，未授予读取，不记flags完全恢复。0新模型，累计220/P4205；首次手机/完整权限、原URI和相机输出冷结果及完整P7仍开。详见[档案](../plans/android-alignment-20261022/records/p7-photo-authorization.md)。
+
+Android P7-3e：API26/API37新进程直接读取原真实系统请求记录2项/2默认保护证明通过，原PID不同、同设备Keystore、加密字节保持且无新权限窗口。生产APK/407旧输入不变，3d的161项保留原分类匹配复用；模型新增0、累计220/P4205。不作为原文件/照片/相机结果冷恢复证明，见[档案](../plans/android-alignment-20261022/records/p7-photo-authorization.md#p7-3e-原授权记录进程冷读)。
+
+Android P7-4a：原文档ID/草稿/代次、稳定registry键、加密选中暂存和持久回执恢复；204辅助、6真实系统取消、3原回复GET-only，共213默认草稿/偏好/授权/文档账本证明，1687双语键。重建registry/journal为同进程辅助，真实进程被杀后返回、完整URI/提供者和照片/相机冷结果待验。模型新增0、累计220/P4205；完整根检查命令0与最终三项Kotlin收尾的当前原生/契约检查分列，见[档案](../plans/android-alignment-20261022/records/p7-document-recovery.md)。
+
+P7-4b：独立验收身份完成API37/API26原文件系统选择器前台下接收进程死亡与同一原请求返回，4项只读核对/2项冷开无重复；原字节、草稿、代次、设置及授权释放有界通过。Android/iOS产品源码未变，iOS当前真机及照片/相机冷结果、完整Provider/权限矩阵仍待验。模型新增0、累计220/P4205。 受控Host与真实系统边界分列；四版观察器及失败/续跑保留，未重放原选择器或模型输入。 见[档案](../plans/android-alignment-20261022/records/p7-document-recovery.md)。
+
+P7-4c：照片稳定请求/加密结果和文件共用单一原草稿事务，父草稿就绪续跑、双源互斥与恢复界面有界通过；239个有效方法断言（最终runner51、相同生产包/未改测试精确匹配188），含231辅助、6系统取消、2原回复GET-only。1692双语键；手机长批libhwui原生崩溃与真实照片进程死亡/完整矩阵单列，iOS A6暂停。模型新增0、累计220/P4205。 同进程registry/journal重建为辅助；照片实际进程死亡与新共同协调器文档冷回归接续4d，不重放原系统或模型操作。 见[照片恢复档案](../plans/android-alignment-20261022/records/p7-photo-recovery.md)。
+
+P7-4d / F25/F29–F31/F47/F56/F71：API37独立源与观察UID、同一系统照片选择器、同任务OS状态保存后的接收进程死亡及原结果返回有界通过；1次冷开/2次只读确认同一附件ID/像素/摘要，原草稿/设置/既有文件/第二草稿与权限保持。透明无保存状态分支未执行，API26/真机及当前文档冷回归待验。新增模型0、无发送，累计220/P4205。[限定证据](../plans/android-alignment-20261022/P7-photo-process-cold-review.json)。
+
+P7-4e / F25/F29–F31/F47/F56/F71：当前共同恢复协调器两SDK本次2个实际文档系统冷结果、2次冷开/4次原生只读与2次准备通过；同一请求、附件ID/字节/摘要、原草稿/设置和权限基线保持。仅两份原生验收源变化，4d其余1007程序输入精确匹配；未将旧失败改记成功或重放旧请求。模型新增0，累计220/P4205。[证据](../plans/android-alignment-20261022/P7-current-document-cold-review.json)。
+
+P7-4f：原相机权限/输出接入加密原草稿事务；三环境各89项分组、8项暗色大字号、API37实际拍摄/取消2项及三环境原回复只读有界通过。受控回调重建、系统同进程拍摄与实际进程死亡分别记证；当前相机冷返回及共同协调器照片/文件冷回归接续。默认仓库增加相机账本/输出保护，原失败与准确源/包/runner关联见[档案](../plans/android-alignment-20261022/records/p7-camera-recovery.md)，不关闭完整P7。
+
+P7-4g：API37原相机保留、接收进程死亡后原结果及同ID/摘要冷开有界对账；1个系统冷结果、1次冷开、3项只读与2项准备分别记证。最初AX30秒失败保留，经原密文/回执和原Activity核对，不重复拍摄；API26首次相机自有引导调用链待验。生产Kotlin/res/KMP保持4f，新增模型0，完整P7未关闭。[证据](../plans/android-alignment-20261022/P7-camera-process-cold-review.json)。
+
+P7-4h：当前协调器文档API26/37、照片API37共3组原系统冷结果/3次冷开、6只读、3seed及1来源准备分别记证。原请求/附件ID/摘要、原草稿/设置/其他草稿与授权基线保持，照片独立像素准确；透明页仍需同任务先保存OS状态，直接死亡未关闭。生产Kotlin/res/KMP保持4f，新增模型0。[证据](../plans/android-alignment-20261022/P7-current-selection-cold-review.json)。
+
+P7-5a：有效基线原文件未达ready已复现；最终三环境各61项、6暗色大字号、API37实际拍摄/取消2项及三环境原回复只读有界通过，共194有效执行、191十字段默认保护证明。父JSON格式错误先独立加密，AEAD失败/读取中原回调不消费；明确读取恢复只入原稿一次。实际系统损坏父资料/进程死亡、真实Key/I/O和迁移仍待验。[证据](../plans/android-alignment-20261022/P7-parent-recovery-results-review.json)。
+
+P7-5b / F55、S18、UI12：三环境各6项合成加密辅助、每环境5组双向Swift/Android原字节核对与18份原加密文件字节保护通过。未执行真实资料迁移或iOS原生App，未关闭新安装导入/回滚、UI、内存/配额和真实设备故障；任务/项目与iOS A6继续暂停。[审查数据](../plans/android-alignment-20261022/P7-migration-crypto-review.json)。
+
+P7-5c / F55、S18、UI12：当前同包/runner三环境共72个执行方法、3组真实进程原候选冷读，45份逐方法加密文件保护及冷读保护通过；完整根检查1014份输入/18根配置无漂移。保留手机旧合批480秒失败，最终分组另记。原安装未激活，完整Schema/身份/凭据/清单、原子激活回滚和UI仍未关闭；iOS未改、A6与业务任务/项目仍暂停。[审查数据](../plans/android-alignment-20261022/P7-migration-candidate-review.json)。
+
+I4：13节点/F72已登记。19项最终包执行（12模型UI、4暗色大字号、3同一原回复/实际owner只读）与168项文案无关实现匹配复用分开，187份十字段保护通过；原输入/轮次/参数未变，0新模型。根检查1031输入无漂移通过后，3份原生差异另编译/原生/只读复验。iOS模拟器编译通过，A6未执行；F72入口、F71新预览/多选及完整矩阵仍开放。 [阶段档案](../plans/android-alignment-20261022/records/integration-main-preview.md)。
+
+I4-2：受控Markdown阅读入口、BOM/CRLF原文、目录搜索/表格、版本阅读点、原入口重试、只读URI/原文件名已实现；当前限定原生执行（含复验）136项及127份十字段保护通过，失败与未验保留。真实模型文件阅读、完整格式/视觉/系统及F72仍未整项关闭。 [阶段档案](../plans/android-alignment-20261022/records/p6-markdown-reader.md)。
+
+I4-2b：修复阅读窗口随原消息懒加载回收而消失；旧包基线失败保留。三环境原模型文件真实读取3项、同App且原fixture源匹配的96项辅助与99份默认十字段保护通过；真实一次输入不重放，累计221/P4 205。完整F72/P6/P7与系统/AX/跨目标矩阵仍未关闭。 [阅读档案](../plans/android-alignment-20261022/records/p6-markdown-reader.md#i4-2b-真实原文件与阅读窗口寿命)。
+
+I4-2c：源码模式切换保留位置、后台消息/版本变化后的同资源刷新、独立窗口代次与忙碌/关闭迟到隔离通过限定验收；当前三环境126项原生辅助、3项同一原模型只读和129份十字段保护通过，新增模型0，累计221/P4 205。完整F72/系统/视觉仍开，继续F71和P7。 [阅读档案](../plans/android-alignment-20261022/records/p6-markdown-reader.md#i4-2c-源码位置与同资源刷新)。
+
+I4-3a：F30/F47/F56/F71的本地图片预览取得73项原生辅助、1项API37独立媒体来源整例与74份默认十字段保护；无新模型输入。手势首版、旧测试断言及授权前置失败保留，完整F71/权限/系统/原模型和iOS真机未关闭。见[图片档案](../plans/android-alignment-20261022/records/p7-image-selection.md)。
+
+I4-3b：F30/F47/F55/F56/F71最终两SDK62辅助、22存储实现限定复用、真实独立媒体1及原模型只读2（API26另附独立owner复核），65默认11字段与22原密文保护；手机最终包受独立runner占用待验。原历史就绪/owner瞬态和旧视觉失败保留，完整F71/迁移/原生矩阵未关闭。见[图片档案](../plans/android-alignment-20261022/records/p7-image-selection.md)。
+
+I4-3c：F30/F47/F56/F59/F71的57原生辅助与1真实MediaStore元数据、52默认11字段保护通过；旧短视口裁切基线失败保留，最终完整触达/实际触摸与三环境继承通过。图库UI合成源与真实元数据分证，未新增模型输入；完整权限/系统/进程和多图模型仍开。见[图片档案](../plans/android-alignment-20261022/records/p7-image-selection.md)。
+
+I4-3d1：可读态系统入口16原生辅助/16默认11字段通过；外部Intent被monitor接管取消，未计真实系统UI/Provider。无新模型输入，配额/冷恢复接续；见[图片档案](../plans/android-alignment-20261022/records/p7-image-selection.md)。

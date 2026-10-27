@@ -24,9 +24,15 @@ struct ProjectionRow: Decodable, Equatable { let kind: String, id: String, indic
 struct ProjectionExpected: Decodable { let rows: [ProjectionRow], hasEarlierMessages: Bool }
 struct ProjectionCase: Decodable { let name: String, messages: [ProjectionMessage], limit: Int32, activeRunId: String?, running: Bool, expected: ProjectionExpected }
 struct ContractCase: Decodable { let name: String, definition: String, json: String, valid: Bool }
-struct ToolCase: Decodable { let operation: String, expected: String, messages: [ProjectionMessage], value: String?, flag: Bool }
+struct ToolCase: Decodable { let operation: String, expected: String, messages: [ProjectionMessage], value: String?, flag: Bool, locale: String? }
+private final class VectorToolText: NSObject, ToolPresentationText {
+  let english: Bool
+  let copy: [String: String]
+  init(_ test: ToolCase, copy: [String: String]) { english = test.locale == "en"; self.copy = copy }
+  func text(key: String) -> String { copy[key] ?? key }
+}
 struct DiscoveryCase: Decodable { let name: String, json: String, valid: Bool }
-struct StateVectors: Decodable { let policy: [PolicyCase], timeline: [ProjectionCase], contracts: [ContractCase], http: [ContractCase], toolPresentation: [ToolCase], discovery: [DiscoveryCase] }
+struct StateVectors: Decodable { let policy: [PolicyCase], timeline: [ProjectionCase], contracts: [ContractCase], http: [ContractCase], toolPresentation: [ToolCase], discovery: [DiscoveryCase], toolPresentationCopy: [String: [String: String]] }
 
 func verifyStateVectors(_ path: String) throws {
   try verifyChatManagementVectors(path)
@@ -42,8 +48,8 @@ func verifyStateVectors(_ path: String) throws {
     let p = ToolPresentation.shared
     let actual: String
     switch test.operation {
-    case "summary": actual = p.summary(messages: test.messages.map(\.core))
-    case "title": actual = p.title(message: test.messages[0].core, single: test.flag)
+    case "summary": actual = test.locale == "en" ? p.localizedSummary(messages: test.messages.map(\.core), native: VectorToolText(test, copy: vectors.toolPresentationCopy["en"] ?? [:])) : p.summary(messages: test.messages.map(\.core))
+    case "title": actual = test.locale == "en" ? p.localizedTitle(message: test.messages[0].core, single: test.flag, native: VectorToolText(test, copy: vectors.toolPresentationCopy["en"] ?? [:])) : p.title(message: test.messages[0].core, single: test.flag)
     case "compaction": actual = p.compaction(status: test.value, live: test.flag)
     case "status": actual = p.status(status: test.value)
     case "style": let style = p.style(kind: test.value); actual = [style.category, style.verb, style.detailTitle].joined(separator: "|")

@@ -192,6 +192,7 @@ struct HostService {
     else if T.self == ThreadForkOperation.self { contract = "threadForkOperation" }
     else if T.self == VoiceTranscriptionReadiness.self { contract = "voiceReadiness" }
     else if T.self == VoiceTranscriptionReceipt.self { contract = "voiceReceipt" }
+    else if T.self == DesktopSuggestionResponse.self { contract = "desktopSuggestionResponse" }
     else { contract = nil }
     if let contract {
       guard let json = String(data: data, encoding: .utf8),
@@ -362,7 +363,7 @@ struct HostService {
     return file
   }
   static func download(_ client: Client, file: RemoteAttachment) async throws -> URL {
-    guard file.hostId == client.id else { throw HostServiceError.wrongHost }
+    try validateResource(client, file: file)
     // Check the source before consulting the cache, so a prior preview cannot hide an update.
     for attempt in 0..<2 {
       try Task.checkCancellation()
@@ -404,19 +405,47 @@ struct HostService {
     else { throw HostServiceError.wrongHost }
     return current
   }
+  private static func validateResource(_ client: Client, file: RemoteAttachment) throws {
+    guard file.hostId == client.id, !file.threadId.isEmpty, !file.id.isEmpty,
+      !file.name.isEmpty, file.name != ".", file.name != "..",
+      !file.name.contains("/"), !file.name.contains("\\"), !file.name.contains("\0"),
+      file.sizeBytes >= 0, file.sizeBytes <= 20 * 1024 * 1024,
+      file.sha256.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil,
+      client.readingTarget == nil || client.readingTarget?.hostId == client.id
+    else { throw HostServiceError.wrongHost }
+  }
+  // The shared identity ignores Codex account metadata and retains other
+  // providers' account rules. Old Hosts without a runtime remain host-scoped.
+  private static func resourceDirectory(_ client: Client, file: RemoteAttachment) throws -> URL {
+    try validateResource(client, file: file)
+    let scope: String
+    if let target = client.readingTarget {
+      scope = SharedMobileRules.machineReadingKey(target, threadId: file.threadId)
+    } else {
+      scope = String(decoding: try JSONSerialization.data(withJSONObject:
+        ["legacy-resource-v1", client.id, file.threadId]), as: UTF8.self)
+    }
+    let version = try JSONSerialization.data(withJSONObject: [file.id, file.sha256])
+    return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("Downloads/v2", isDirectory: true)
+      .appendingPathComponent(hash(Data(scope.utf8)), isDirectory: true)
+      .appendingPathComponent(hash(version), isDirectory: true)
+  }
   private static func downloadVersion(_ client: Client, file: RemoteAttachment) async throws -> URL {
-    let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent("Downloads/\(file.id)", isDirectory: true)
+    let directory = try resourceDirectory(client, file: file)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let destination = directory.appendingPathComponent(
       (file.name as NSString).lastPathComponent)
-    if let cached = try? Data(contentsOf: destination), hash(cached) == file.sha256 {
+    if let cached = try? Data(contentsOf: destination), cached.count == file.sizeBytes,
+      hash(cached) == file.sha256 {
       return destination
     }
+    var query = ["threadId": file.threadId, "id": file.id]
+    if let target = client.readingTarget {
+      query["target"] = String(decoding: try JSONEncoder().encode(target), as: UTF8.self)
+    }
     let data = try await bytes(
-      request(
-        try url(client, "v1/attachments", ["threadId": file.threadId, "id": file.id]),
-        token: CredentialVault.token(client.id)))
+      request(try url(client, "v1/attachments", query), token: CredentialVault.token(client.id)))
     guard data.count == file.sizeBytes, hash(data) == file.sha256 else {
       throw HostServiceError.message(L10n.tr("下载文件完整性校验失败"))
     }

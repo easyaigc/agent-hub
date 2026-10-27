@@ -1,0 +1,52 @@
+{
+  "phase": "I4-3e",
+  "sourceBase": "b96757763a2065ea47248b887a119bf3695f3843",
+  "summary": "I4-3e：API37独立来源UID双图，经原生目录顺序1/2、统一添加、原像素/名称/本机来源、双文件摘要上传与同一原请求仅提交一次的前置核对完成；模型整例失败/待验。原Host回执owner-unconfirmed/observe-only，240秒无最终回复；独立原owner只读为0 Turn/0用户输入，封存原操作，不补发。两个失败退场均恢复精确媒体基线/权限/ADB映射，2份默认11字段保护通过；不计成功模型整例。新增确认模型0，累计221/P4205，另列1次未知提交尝试。接续原双图回执/本机来源冷读与P7其余工作。",
+  "features": ["F30", "F47", "F56", "F71"],
+  "sourceSha256": "07140f8bccc530fc208ccf7f9570ea9e1942158f3f46fe24f360a1050c050a28",
+  "appSha256": "c82cb2bd1c31983086f9024ce3263d5cf1de3dc676693a790cc6e5121f2fc280",
+  "runnerSha256": "1e1b410d573a8709fffbc050d17b3db186fcc4113bf6f36fd78f98046273da25",
+  "adapterSha256": "699326513b3b48e2b2bce2014984c95178aa2ca6b96b0d1494bd0fa273ab3f3a",
+  "nativeSuccessfulModelCases": 0,
+  "nativeFailedModelCases": 1,
+  "localPreflightAssertionsReached": true,
+  "localScope": [
+    "Two actual independent-source MediaStore images and original pixel digests",
+    "Ordered native catalogue circles and one explicit Add; no preparation before Add",
+    "Original canonical local photo source IDs and two file manifests",
+    "Two exact digest uploads, one prepare and one original submit only"
+  ],
+  "nativeReportSha256": "44bfa6aeb6f8a02acc26c42142a9ae9ab470f20d41a37cd9d9f54fe96eae4c51",
+  "nativeLogSha256": "18a2ff94c2c61f3b2da99bff0cafed9c509b80ae3df5f63240cf6c8f1202c9b5",
+  "leaseSha256": "6b49900f601de0e41c6ec70d677745b8b913f6041c45ad9ac2ed2bd11baaa3af",
+  "originalReceiptSha256": "00cd46cfcfbad10aaea6a03813732c69b16b1ebeb417fc3cffe67bb8b074728e",
+  "originalOwnerReadonlySha256": "e120974e74afc4a653ffa2eab412749dccdbe633029ae08d966dacbee38be369",
+  "originalOwnerAfterFailure": true,
+  "canonicalTurnsObserved": 0,
+  "userMessagesObserved": 0,
+  "replayed": false,
+  "originalDisposition": "observe-only",
+  "defaultElevenFieldProtectionAfterFailure": 2,
+  "protectionProofSha256s": [
+    "33a09dfd1295715bfc771c617faa94c7f7240edd20252a18eaf07d5aab3699eb",
+    "b5c5de56873c5c22435acab636a480c8ec383a3f96024af1425f27d24cfd766a"
+  ],
+  "environmentRestored": true,
+  "visualReview": "Actual owned native catalogue screenshot inspected: two ordered independent selection circles, Back/Cancel, visible Add(2). Thumbnail crop is not full image content proof; pixel digests checked before the sealed lease. No whole-theme/AX closure.",
+  "earlierFailure": {
+    "reportSha256": "82f1ba7f15b3359884e8a6ca3efb249280281be06771a97308af3e9dca727b3d",
+    "modelSubmissionAttempts": 0,
+    "reason": "Synthetic source returns external_primary URI; product library uses canonical external URI. Test expected canonical URI by exact ID and independently checks original pixels. First failure and cleanup preserved."
+  },
+  "auxiliaryReadAttempts": "An initial diagnostic GET omitted full target and was rejected403; corrected query reached closed owned server. Neither changed the operation; original persisted receipt and fresh desktop owner read are final evidence.",
+  "newConfirmedModelInputs": 0,
+  "unknownSubmissionAttempts": 1,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "pending": [
+    "Original two-image model request remains observe-only; no resubmission",
+    "Original encrypted source/intent/attachments in a fresh native process",
+    "Complete physical/provider/permissions/AX/visual and API37 landscape matrices",
+    "P7 full migration/voice/unread/lifecycle; business tasks/projects and iOS A6 paused"
+  ]
+}

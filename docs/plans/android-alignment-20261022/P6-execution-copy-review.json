@@ -1,0 +1,36 @@
+{
+  "phase": "P6-5c",
+  "sourceBase": "3fd243375f45ab13bfaa8a61faf76cb293cdd144",
+  "features": ["F37", "F38", "F42", "F43", "F44", "F45", "F56", "F58"],
+  "files": {
+    "apps/android/localization/native-copy.json": "ed11934a26e598a6d6c417919d5d220463b9c8b41fcacc7a46c3a6f26a6e909c",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "44f364513760d16de82f24cb41935a30ae1fd3d5b055d65137ebd07565ab0932",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionCopyTest.kt": "3b86416d0787e8af31ae13c8f194044cf5d0e66bb79d885ff241343e2ea111c9",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "b3c0f0c96eec78afc65a39de835221994dbde773cb38bdda1ab321ecc32f4e9d",
+    "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "d61c31bfc7162b7ea74c0ef0f1bfa6cf5f624e2ceb76751bc66e47317506e4fb",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "8efade08b51635bdca1fee0c84b45b39e7a6c898b51517c2d02da4ff48058d34",
+    "apps/android/src/main/res/values/product_strings.xml": "d735d81ce47b2de52c51c7c0b56a978226780efeaaebd26ab88a1657aafe2187"
+  },
+  "scope": "Fixed queue/receipt/operation/question/legacy-record captions only",
+  "currentAuxiliaryMethods": 23,
+  "currentActualOriginalReadMethods": 3,
+  "defaultStorageProofs": 26,
+  "keysPerLanguage": 1661,
+  "checks": {
+    "androidBuild": "current passed",
+    "mobileParity": "current passed",
+    "format": "current source and final docs formatting passed",
+    "unaffectedSource": {
+      "baseCheckpoint": "P6-5b",
+      "baseCommit": "3fd243375f45ab13bfaa8a61faf76cb293cdd144",
+      "sourceFiles": 604,
+      "byteEqual": true,
+      "frozenFileListSha256": "8e31f517fba52e6290e3fb3e51e25382090969556792e065da14c1d20981985d",
+      "scope": "JS/iOS/shared-core/tooling; earlier full check matched only. Android build/parity/format current."
+    }
+  },
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

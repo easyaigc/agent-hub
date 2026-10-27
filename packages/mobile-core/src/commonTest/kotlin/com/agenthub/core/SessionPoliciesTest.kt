@@ -54,9 +54,14 @@ class SessionPoliciesTest {
         for (entry in vectors.getValue("toolPresentation").jsonArray) {
             val test=entry.jsonObject
             val messages=test.getValue("messages").jsonArray.map { it.jsonObject.let { m -> TimelineMessage(m.text("id")!!,m.text("role")!!,m.text("text")!!,m.text("kind"),m.text("status"),m.text("runId"),m.text("replyPhase"),m.text("replyMessageId")) } }
+            val localized=test["locale"]?.jsonPrimitive?.content=="en"
+            val native=object: ToolPresentationText {
+                override val english=localized
+                override fun text(key: String)=vectors["toolPresentationCopy"]?.jsonObject?.get("en")?.jsonObject?.get(key)?.jsonPrimitive?.content ?: key
+            }
             val actual=when(test.text("operation")) {
-                "summary" -> ToolPresentation.summary(messages)
-                "title" -> ToolPresentation.title(messages.single(),test.flag("flag"))
+                "summary" -> if(localized)ToolPresentation.localizedSummary(messages,native) else ToolPresentation.summary(messages)
+                "title" -> if(localized)ToolPresentation.localizedTitle(messages.single(),test.flag("flag"),native) else ToolPresentation.title(messages.single(),test.flag("flag"))
                 "compaction" -> ToolPresentation.compaction(test.text("value"),test.flag("flag"))
                 "style" -> ToolPresentation.style(test.text("value")).let { "${it.category}|${it.verb}|${it.detailTitle}" }
                 "status" -> ToolPresentation.status(test.text("value"))

@@ -1,0 +1,229 @@
+{
+  "phase": "I4-3c",
+  "sourceBase": "a35ac3f0d30ddfa7c8c4d95ac620945f2afc2728",
+  "summary": "I4-3c：Android可访问图片目录按60条游标分页，跨页/最近面板共用有序选择和大图，返回保留暂选、取消不导入；复选语义/深色对比及固定错误重试条已修复。三环境最终57项原生辅助、1项真实MediaStore三页元数据及52份默认11字段保护通过；原库1条保持、131精确测试URI清理和权限恢复已核对。手机继承流程已补验，旧包记录保留。系统选图可读态入口、各新请求5项/旧10项兼容、进程冷恢复及多图真实模型仍继续。",
+  "features": ["F30", "F47", "F56", "F59", "F71"],
+  "sourceSha256": "8c77691bb6c14360d7e71914d97dc8a2f22c32b1dd0dda51d4f510ff2defbb0a",
+  "appSha256": "a661c7d57605022fa4c1e860263f5724f39789adcc5573399ab2892fc984af36",
+  "runnerSha256": "ca0155bcb1f616f09b181283cec3f3fe618be21d9e45cd62351012c5608a9f47",
+  "currentNativeAuxiliary": 57,
+  "actualMediaStoreMetadataCases": 1,
+  "defaultElevenFieldProofs": 52,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "methods": 16,
+      "kind": "native UI auxiliary",
+      "orientation": "portrait",
+      "theme": "light",
+      "fontScale": "1",
+      "reportSha256": "e2044e089f42b2e224d7c37d95b8ceda6c531e3995cbc9842c660866966984c3",
+      "defaultElevenFieldProofs": 16,
+      "proofSha256s": [
+        "1b61bf6ccf82c345c8f2b1fcc741c1f53afcf8f75eeb22f733a2fd5959271ee0",
+        "3c50371f1a64503de6159a1ed181431ea0d5e668b48c7cc9f5860b43763af557",
+        "04018c94de9dfc0a3b6cb8783fd1153dee84d0c3d176920f714bb788ebc2a087",
+        "07627f013843471e7ceda13f9441655134386477843a6dfafc4a11b6cc584d3d",
+        "ca20b41377b32f018a9bb3698f0ca3a01a503eda0251ec9805ad3de444f07ba1",
+        "da5d22f4e31aebd108ab3991ae25abf9bbb675f43f6975bf3807ed6b658a1349",
+        "88e52fab57a27a6637115c3f1d73d384c28cae468e92d048647855751f104f7a",
+        "183f49ff9000f9a459e41647132aeedc679c426d6292194a816a675c7513c272",
+        "06bba5ffa04e62b28302ea34d5104ecb0451d152db56879c5bc697cbf0e24277",
+        "e944ea8e0ab6f3d626be6c5d1b76d8b1d3ef7e91a6a2b54be9c429755a481f92",
+        "bc5cc20b965af028674a71cdbe078339a3aa54b6495b8c10bec3cd2b92a8d3af",
+        "39d7be521c6319c35f62497b5d0c08e2c73040bf0f86e8f1dfdb12fbc4f9adeb",
+        "bb50ea8fae0193b1fb113a10c1893a8c30ac4a30b859b17cc5fcdb0b27cc7f00",
+        "88a2313e9d78f5e509e80a740b8a653523cd137177891cc9e3cd16e16768e86d",
+        "07f35f347f88e8e1c87e79f496f4e2c22f8ae87ed0f0849184bb2b7e25a52fef",
+        "eb2b5a79273222f335af7002e00514f76c200210889d5ad83f96280245588841"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 16,
+      "kind": "native UI auxiliary",
+      "orientation": "portrait",
+      "theme": "light",
+      "fontScale": "1",
+      "reportSha256": "ee90b43c8649fec1646744a26316a54bf09f6bcf0acc6f702e8e51be4af3c78d",
+      "defaultElevenFieldProofs": 16,
+      "proofSha256s": [
+        "f69da0101172a8351655037648849519cdc6c64cbf989ef7246dd3b0c33a7722",
+        "dd9c1fe4f05ef6cee73ce7535a34b15271d3f1e20b391cc1c417a90172a5d8f8",
+        "b05158aefa9397968013df3a823b452f105480135cf3457506cdf4d63c1f55d1",
+        "c7040200bb86dd6e59a103fd9ea1ec5853c5cf5bb8d876c238cafdf2041bf857",
+        "826c089a07c73bf61df05e98b22798566cd0f7e12813f80fd9808a7a84072cd2",
+        "e371d661bd5aea2c762d810a88ba014bdd35b477a49521ef0df8125f6a15ef73",
+        "143b6edf7c9f69d7476f5c00dade0286404de0d36910312ff3111e4b6d744c3e",
+        "ac5e0c8ccdcf69706a7ba0fbae634d438905879e086a8d61dae6d0b28b3a711e",
+        "4fc21442a108ab82fb012d2cb3fc7ada2f5d241a4bcfa8a60bcb7e0ca2cf1019",
+        "0756663ba5cc44a891f3071cb2b0e98758885ad5bf79e8997505e5400fd22899",
+        "61ef2d02b56c20ff0cc681360caa22e8241900c84a2d4ab982dc8a49dd6993a0",
+        "37f4ce42694cc3dc6367dffc938ee3069c12b90d10ed59b2c873382aac910bd7",
+        "ed6be888af103d9485dfc0a538fbc29f8ca9bbd21a6ad710651113d10c5545e4",
+        "78e4c6f2bed8c2a851c7c1b2429baed00804869175a2113b1d8e0bc5adeef528",
+        "4649ac1ec2c545943eb0e3739411db3d87fafcd088ca27a47248ae2bc6bb42d6",
+        "372f391ed4f09b882b844007d854e0b8e9a6e0268a1b41b47ea58557f0fba79d"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 16,
+      "kind": "native UI auxiliary",
+      "orientation": "portrait",
+      "theme": "light",
+      "fontScale": "1",
+      "reportSha256": "ef47b8832467e0006e1af8f2c0280eda2ed8c468b151e908ee5e65983111184b",
+      "defaultElevenFieldProofs": 16,
+      "proofSha256s": [
+        "b55c6f8a8d60574fe9a599c2868184b7beb2f5da920bd111a922206976030fe9",
+        "3b2869869953d30d2a2986386e9f22f5f48083c7598ea919629a37dbb633338f",
+        "2cfd951afb48af9749d0a30ed1c65bc4dd926603f1b4a5f19ccc300d93259148",
+        "9b627bb2d0da1d3184310778f67bf1a3a7d583d016ba550ec5a313d611330b7c",
+        "ba957d6ae7f44e166a9df9de147652ab0787bba233714d2cebbd76ea8787f20d",
+        "25c6522a2f4ce992bc12ba4a1c404a9040054a81ff9c4e99cd6cdf2da65dbc79",
+        "253b831a3506f771d7740c0be7afe8f04a7109e65886d8687f472bb330c33d9d",
+        "f6205c55f3536185002015b1971303b5a50c85192f5c9ba8dad13c257a63b156",
+        "77965fe88e46c8e37d5d0654e5082902b3606f5c427b242001bf303bca8f7c90",
+        "4528516d4bdab28f6609385d5e9724a743961f466cdf559e3b42a569bad78229",
+        "388964319583c4a11fca7215693dca6185a0c32479910622338482dc5278dda7",
+        "618577fef913a6a21b07e900b52c2a686deb0c7c0f2bf37c5624e0781b2eadb3",
+        "b1f5b68aca963bf613cb51d88092ea300ee25566e93467590af778624c214fce",
+        "e1f3ab38bf05fd7d4281573f6724360257fb9776ec83eb82b6088ed8fe2d6fe7",
+        "c3a5a81d7b523485ab1db4b72f25569661a6833f482d09bd9dea5dc973fdc4b9",
+        "4f9baafa7b1aaa673f206fbbdbe97e286fe30f80ad60e2029ff8a5851bc5ab12"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 3,
+      "kind": "native UI auxiliary",
+      "orientation": "landscape",
+      "theme": "dark",
+      "fontScale": "2",
+      "reportSha256": "e4beb95726a37a2d534cc19403432ac6f07978fc96c256445f7b407dc7cb4a70",
+      "defaultElevenFieldProofs": 3,
+      "proofSha256s": [
+        "88fefb2fad107923e82d2d6e3f5ca4a58f6fe3c621c3217e88fbaee92d89aa95",
+        "b7a48e6a0e7aafc986025d240d1ddcd30bb48a6bc1a5f577b87c01f593d47f24",
+        "96b1777814f8f63f0a8c7120a74d11497da3121db7ae1402eb6ee55e9f0c1a7f"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 3,
+      "kind": "in-memory native SQLite/source auxiliary",
+      "orientation": "portrait",
+      "theme": "light",
+      "fontScale": "1",
+      "reportSha256": "fda493c387d3a88b500eac050bc9b99287359e126e844839f162ed7d11314eac",
+      "defaultElevenFieldProofs": 0,
+      "proofSha256s": []
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 3,
+      "kind": "in-memory native SQLite/source auxiliary",
+      "orientation": "portrait",
+      "theme": "light",
+      "fontScale": "1",
+      "reportSha256": "609f444e4fb5e5e3968360efcfc54ef0fc28c5278f981b4ee8a5ba375879d15d",
+      "defaultElevenFieldProofs": 0,
+      "proofSha256s": []
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 1,
+      "kind": "actual MediaStore metadata",
+      "orientation": "portrait",
+      "theme": "light",
+      "fontScale": "1",
+      "reportSha256": "c804c3f75fb1770e313dd94069532e515c654982ac64dd0a8d87de03114174b8",
+      "defaultElevenFieldProofs": 1,
+      "proofSha256s": ["0f73fc5bfbc501bd48d7165db0e854f07673be7052fcbce6d70dba7c8a073133"]
+    }
+  ],
+  "actualMedia": {
+    "nativeMediaStore": true,
+    "createdRows": 131,
+    "baselineRowsPreserved": 1,
+    "accessibleRows": 129,
+    "pages": 3,
+    "exactDateAndIdOrder": true,
+    "pendingAndApplicableTrashExcluded": true,
+    "recentRemainsThirty": true,
+    "nativeNullCursorQuery": true,
+    "newModelInputs": 0,
+    "uploadOrSubmit": false,
+    "proofSha256": "3e4e48f8ef68de93170021bae0770e78477f3d449b3d2329de3f6bed47abd402",
+    "scope": "Real SDK37 MediaStore metadata pagination only; generated assets owned by the test UID, original baseline metadata preserved, exact created URIs removed; not model/independent source UID/UI gallery proof"
+  },
+  "visibleRetryBaselineFailure": {
+    "reportSha256": "55483d9cc49891c040a42626c75ab2a26edf804c58ab7d2a86c1ed8531341472",
+    "appSha256": "77d6bdb9041e7d8fc0167c0f5abf7a935674650538ff98ec259755d643b855cf",
+    "nativeAssertion": "Retry retains a fully visible48dp touch target"
+  },
+  "visualReview": {
+    "screens": [
+      {
+        "environment": "owned-API26",
+        "screen": "catalogue-page-error.png",
+        "sha256": "5d9f01e5c4e3ff2111f3339929568ae657a882b776c79c0469e3f783cfdffdcc"
+      },
+      {
+        "environment": "owned-API26",
+        "screen": "catalogue-second-page-preview.png",
+        "sha256": "0844bb056ffda91ea813e7b132e11e687ad472bf68299d17d02826615ce4e97a"
+      },
+      {
+        "environment": "owned-API37",
+        "screen": "catalogue-second-page-preview.png",
+        "sha256": "1c1e7b0f26133cbc277115ce2a925675e81062f979e2966abd19c01488b5c68c"
+      },
+      {
+        "environment": "owned-API37",
+        "screen": "catalogue-page-error.png",
+        "sha256": "4c0607964f1e2ba53495df2ab076cbcc1fae82a62b593a402fded1fdcb673515"
+      },
+      {
+        "environment": "physical-API33",
+        "screen": "catalogue-second-page-preview.png",
+        "sha256": "b409230e500c2592af382d3b4875baf0001f6c58732eb06be3d98a0d81cb72df"
+      },
+      {
+        "environment": "physical-API33",
+        "screen": "catalogue-page-error.png",
+        "sha256": "bda7dcf4cf5be2b9b59f004323132ebe29bd3a89d1873399ad865a2cfe9fe94e"
+      },
+      {
+        "environment": "owned-API26",
+        "screen": "catalogue-page-error.png",
+        "sha256": "c09199cb73908bfa8ae0c24fd4290518c2611070b24eb5daff83f877937548e5"
+      },
+      {
+        "environment": "owned-API26",
+        "screen": "catalogue-second-page-preview.png",
+        "sha256": "aa8e5c8002adf2cd5dc790969f07d9b218e6c16d30c6c0804a44f21881b92b28"
+      }
+    ],
+    "scope": "Phone second-page preview and API26 actual landscape/font2 fixed error/retry; active same selected set, original black viewer and localized labels. Full theme/AX matrix remains open"
+  },
+  "rootCheckReuse": {
+    "unchangedNonAndroidInputs": 671,
+    "fullRootRerun": false,
+    "basis": "I4-3b root command exit0 plus its explicit native-only drift qualification; current native build/parity/instrumentation separate"
+  },
+  "iosImpact": "iOS PhotoKit paged gallery source/reference unchanged. Android minimum104dp up to3 grid columns and native provider retry bar are explicit platform differences; no iOS device/A6 upgrade.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeInputs": 221,
+  "p4CumulativeInputs": 205,
+  "pending": [
+    "Readable-library explicit system photo picker entry to retain access to other system providers; prioritize immediately",
+    "All intake new quota5 while preserving captured legacy10 requests/old manifests",
+    "Actual process cold-origin/batch recovery; cross-device activation must clear local photo hints",
+    "Real gallery multi-image model send/desktop independent verification",
+    "Actual API26/physical MediaStore, full/limited/revoked/cloud/other provider/volume matrices",
+    "API37 landscape and complete AX/theme/locale/system visuals",
+    "Business task/project management and iOS A6 stay paused"
+  ]
+}

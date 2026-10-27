@@ -1,0 +1,75 @@
+{
+  "phase": "P7-2b",
+  "sourceBase": "2d9fd6cb3d3837f2ab89669ee5617185d7bbff5b",
+  "features": ["F30", "F31", "F56", "F71"],
+  "files": {
+    "apps/android/src/androidTest/AndroidManifest.xml": "191c817042135b557e959fe6d58b12c3b70abb1970bc2d7810b7278c7226fba1",
+    "apps/android/src/androidTest/java/com/agenthub/android/OwnedPhotoMediaActivity.java": "c0f8afde5e9289c568a9fb404a59ff1ab1f46eb78470e6f72239135d989437f4",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPositiveTest.kt": "8d5eec17302f812f2330b353167ce4c596e2831cb75685c9fcfefcad1103a42e",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedPhotoSelection.kt": "46be56bb70440ea7e409c49a07e7e4312535c946afe2ad2fea31aa309660c8da"
+  },
+  "summary": "P7-2b：独立来源APK创建唯一受控图片，未给接收App照片读取授权；API37实际系统选择/原请求回调/图片像素与加密原草稿确认有界通过，系统隐私文件别名按原媒体ID核对。三环境图片与附件归属回归共49项、49默认存储证明；新增模型输入0。API26媒体文件页未显示受控图、真机现代选择器不显示自定义相册，正向验收仍待补；不选不明照片。模型读取、相机/最近图及完整P7继续开放。",
+  "productionApkUnchanged": true,
+  "nativeAuxiliaryMethods": 49,
+  "defaultStorageProofs": 49,
+  "systemPositiveSelection": {
+    "environment": "owned API37 portrait",
+    "methods": 1,
+    "independentSourceUid": true,
+    "noDirectPhotoGrantBeforePicker": true,
+    "guard": "Exact one global media row equals original synthetic source; SDK accessibility exact sole thumbnail; pixels/name alias validated after callback",
+    "proofSha256": "152433f8bd361527624c90754e347af66ae9d4fcaf8474a36d732d1c073073c6",
+    "soleMediaProofSha256": "dbea1b8eae287d5a863e6b21d6aa04b05ac52f202ebf12a6f3d1a9331e1cc777",
+    "visual": "Known synthetic text pixels settled before screenshot; actual original draft thumbnail and text separately viewed",
+    "physicalPointer": false,
+    "host": "synthetic GET-only",
+    "realElectronModelAcceptance": false
+  },
+  "nativeReports": [
+    {
+      "environment": "API37 portrait",
+      "methods": 8,
+      "reportSha256": "a9694742970d56dd763f304838de365b8550c2a81d42f319831dd5dbceb413c6"
+    },
+    {
+      "environment": "API26",
+      "methods": 16,
+      "reportSha256": "cd45ceb9c169a432b0666c89d43adbf64515425097b8d371072e7784f51f2f1b"
+    },
+    {
+      "environment": "physical API33 actual viewport recorded per screenshot",
+      "methods": 16,
+      "reportSha256": "167dc789ee77b4ca2707bb440b4a81106b1c45d34d740bb2009671ec57095bde"
+    },
+    {
+      "environment": "API37 portrait",
+      "methods": 9,
+      "reportSha256": "9cb7ac1b907d0c2f6843374e5bdcab67a301467ee2358cacddbde7da8c59ec96"
+    }
+  ],
+  "sourceSha256": "fcaf90eb668cabaad17ac288801a97f5003b59bb2132f7efc3d49ec4d76834b5",
+  "appSha256": "e9874bb0294725763fae072a69fed8c1c1739b787507aba917c4cbd8490cd390",
+  "testSha256": "7a037ba0257029df7915c16ede99d60166048c13143e6e1c829596f5ec993447",
+  "checks": {
+    "root": "Matched completed P7-1c full run:616/620 inputs unchanged, four Android native catalogs covered by current native/parity checks; no new whole-root run",
+    "rootLogSha256": "d34db5986cf30ca494714ed9f62bcd5f9b0ade3adae076052c5420efe80eb791",
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "androidBuild": "passed",
+    "androidApprovalGuard": "passed",
+    "mobileParity": "passed",
+    "format": "passed",
+    "ios": "unchanged; no iOS A6 execution"
+  },
+  "pending": [
+    "Physical positive system selection: current picker exposes fixed albums, custom nonce album absent; do not choose ambiguous images",
+    "API26 positive system selection: source verified, system DocumentsUI Images root/item absent; unique cause not established",
+    "Actual model image consumption in a new isolated input; old frozen chats unchanged",
+    "Camera/recent/full panel, cold photo callbacks, provider/permissions/format/lifecycle and remaining P7",
+    "Existing physical cold observer installation and API37 landscape separately pending"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

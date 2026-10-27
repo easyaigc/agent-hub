@@ -1,0 +1,60 @@
+{
+  "phase": "I4-3d3",
+  "sourceBase": "fca7283a3ed7b257b11b27e2ff30ffc59a15d8d4",
+  "summary": "I4-3d3：两SDK各一写一新进程只读，共4项原生辅助/4份默认11字段保护通过；同设备Keystore下，新5项v2与旧10项v1原目标/请求/批次/附件ID、解密内容及全部原密文字节保持，原来源读取0，无上传/提交。真机writer240秒超时且归档格式失败，未计通过、不重放；后续待核原本地记录。生产APK与3d2完全相同，仅增冷读验收器。新增模型0，累计221/P4205；系统原结果、photoSources冷恢复与实际多图模型仍开放。",
+  "features": ["F30", "F47", "F56", "F71"],
+  "sourceSha256": "09b279d1c581e6a7679f72294087ec8ef398e0c21e22eba76a9a749db0f45070",
+  "appSha256": "c82cb2bd1c31983086f9024ce3263d5cf1de3dc676693a790cc6e5121f2fc280",
+  "runnerSha256": "c08db1b641eedaa1f782151d1e8c9d71f90343ff33be55d40b98db4bce0d295f",
+  "nativeAuxiliary": 4,
+  "defaultElevenFieldProofs": 4,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "nativeMethods": 2,
+      "reportSha256": "35b371beffa2d45cf0c71560625f8a654277f7d29f1b18c9e42d79cfb219ecb1",
+      "writerFixtureSha256": "6f02fa440893302cd2c06040a2e73e09ed544535ccc1b0134c06d4e25272e5ca",
+      "readerReceiptSha256": "b86577f2a5fc8c9626298c3bee38448b87a962dadd54de4095aadf4ddaee868d",
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "419294ef1218179c6c167084b3596c07e61135138ba9953f68318c987aff18b5",
+        "cbaea3a82aebf3b81cc948b6ebbbf9852cc77284ba6efae256b1cae237fa0be3"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "nativeMethods": 2,
+      "reportSha256": "2de20af818c67a08f91a96550546ad9178343bae2a41d9e704f4f6b4755756c4",
+      "writerFixtureSha256": "ae9297910ef46ff17dbdacd8a41429274a72c90469f11ace2bd4481ae5c6a125",
+      "readerReceiptSha256": "a4d6e47ac393d367376be9fbc60004f544b5d0b702ebf011f5331ed4562eec41",
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "d9175e844e3aba8b67ab4aee7d203f5d8230ff1ba3ab1a7fa36844ec47268b16",
+        "ed1f56b2d859401e76e0bbce9a56727c2ee3aa8f022d4a1241e06a534fb989f5"
+      ]
+    }
+  ],
+  "priorImplementationEvidence": {
+    "checkpoint": "I4-3d2",
+    "review": "I4-3d2-captured-quota-review.json",
+    "methods": 190,
+    "basis": "Identical production APK and all original production/KMP/protocol/test inputs; only one opt-in cold test added. Prior scopes/failures/reuse limits remain."
+  },
+  "phonePending": {
+    "reportSha256": "b340bf3a4bc1a59f2bc505bc88c8316b927bfce34c5c77b4388ee47885da422e",
+    "nativeReportSha256": "48c4f8545236fa786e8c61e57b8deb921405d2e7ae3e6e50e1f614d86a68c4d8",
+    "status": "not-verified",
+    "reason": "Writer instrumentation timed out at 240 seconds; archive could not be extracted. No reader was started; no original writer replay. Another target instrumentation was active after timeout; no interference.",
+    "uniqueCauseConfirmed": false
+  },
+  "scope": "Synthetic owned local journals and encrypted inbox payloads across actual distinct processes; no OS picker/camera process-result or model/desktop success claim",
+  "newModelInputs": 0,
+  "allPhasesCumulativeInputs": 221,
+  "p4CumulativeInputs": 205,
+  "pending": [
+    "Reconcile original physical-device local writer and finish phone cold read without replay",
+    "Photo-source metadata and actual system-result complete cold matrix",
+    "Ordered real gallery multi-image model and independent original desktop verification",
+    "P7 full migration, voice, unread and lifecycle; API37 landscape and other environment items remain; business tasks/projects and iOS A6 paused"
+  ]
+}

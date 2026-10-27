@@ -1,0 +1,446 @@
+{
+  "phase": "P7-4f",
+  "sourceBase": "427d2b7335d16f86e710336120dfe3ac9d28e11c",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F69", "F71"],
+  "summary": "P7-4f：相机原权限/结果稳定回调、加密原请求及认领私有输出接入原草稿事务；结束等待保留原记录，迟到结果需明确加入，重复回调不覆盖。三环境各89项分组、8项暗色大字号、API37实际拍摄/取消2项及三环境原回复只读有界通过；1699双语键。实际相机进程冷返回及当前照片/文件冷回归接续，完整P7未关闭。",
+  "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+  "nativeInputFiles": 417,
+  "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+  "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+  "changedFiles": {
+    "apps/android/localization/native-copy.json": "7f281aea77381caf3c2236bdf7e72a2982d0c7a5581757c5d038d10a2ff40f72",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "9560954e7288cf30a3186bba84df033fdb6353f55d66995af0552dd1e3952a14",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraCaptureTest.kt": "4be57151c35c9f19ec74f9ba19376dc0e7268c26cd5b9c4971e3413286f70fff",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraRecoveryTest.kt": "aa14b357f9c63abef4b5a32dd7c791735cd662791a6b812eb8af5ab998d8898c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraSystemTest.kt": "abfc5728a754f85e7db8297ecea509e43801e05dae574bb4e72ad96d139b7c21",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "a08bd7fda3baa8b96915964254e2e639d5946b79fabd86e6ff498666a2964e32",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "80fc1e9c6fcc38ca3bad7876b6c7a669e185dfc54f07278e06b32facfebdbcff",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/RecentPhotoHintAcceptance.kt": "533a960f2a10938af5354c330f9c7df40b282cd29fafde90ba3dffc1ab040460",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "072e92e66741738aa72a9c5fda3d744a137263da083fda9eb51f3a0ea5b686d5",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraCapture.kt": "ba19bc9b4dac82517781054dc9476bf9a97ce16d2727dfdd72cbb4526111ded2",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraOutputs.kt": "f656dcfbaa06c959f0f168a304452877c7807819de9ff21623c7ce469e3e19d6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentJournal.kt": "e9ff2ff982c4ee509cff122fb9952f1d5c7fa9f65bc78e276152f6976fde89b4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentPicker.kt": "584ac23c0a944d4242346aef23babc46ecc648c4e162d8d2e35320ee99af1fea",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt": "95d796e9e04c80ac0ba2f1d39783d8b014a5cb9d5200c57b786c1e5140e27767",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoPicker.kt": "17f13fd1686a5f9e2f2c8124b6ec820f9d55c45991a874aeaba4967991d0d9d4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSelectionKind.kt": "c4cf4165e4dc14e069af7a03c3feb283eda986f42bbe3ceb572bfd6fbf3be4f0",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "8273c1a01e411d5651c258fce66dd6572dd78bd22af45e797c8818a99482e9c1",
+    "apps/android/src/main/res/values/product_strings.xml": "0c306718e2462fb57e45a0c59fd97ec9ad4eebdeb83048a59bba77ef8100d767",
+    "apps/android/src/main/res/xml/resource_paths.xml": "abc5ddaad279492b6ee1a9933d2500ea15f6bbac93fbba604ae9a81029270581"
+  },
+  "nativeCohorts": [
+    {
+      "environment": "owned-API26",
+      "methods": 89,
+      "auxiliaryMethods": 87,
+      "actualSystemCancelMethods": 2,
+      "groups": [
+        {
+          "methods": 14,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "d18c63ab7b674af8e6d4676711c0bdb390fe8f3b6b2fcf2ca836fa2af1eec64a"
+        },
+        {
+          "methods": 7,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "d339606b8317597b8f8ebdb352295ed697d76f50a4982971b39ee71e7d52a5e3"
+        },
+        {
+          "methods": 17,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "f53ae6a5e21adcf8b59751e59c5e5284cd35d11ea14292afc6530dda9124ef50"
+        },
+        {
+          "methods": 13,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "deed4f4249c8f0a737b1dd3174661393830175b8b20c3da2fcbfcccfb0f59369"
+        },
+        {
+          "methods": 16,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "b146fb05743a08e71066c90e0e50aa19ce21aae2304fad681b51bb6147251f2a"
+        },
+        {
+          "methods": 12,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "4423cbc55bcb03a05f5392e6a592c6b9a11a93885793a3cda7f65f75007a5c2f"
+        },
+        {
+          "methods": 10,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "7300ebf138fd68d2b6acfde9e281a767d10a2061edf1e026ffd77f0012fd26d2"
+        }
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 89,
+      "auxiliaryMethods": 87,
+      "actualSystemCancelMethods": 2,
+      "groups": [
+        {
+          "methods": 14,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "d4e729a03b2049735706c6870b5e7f18e62062ecdb714d3795f0c9a4c717b707"
+        },
+        {
+          "methods": 7,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "8694539042c111bdd0faad71745a0e4da89e6286d144d55bf6d7a46bacb47bb4"
+        },
+        {
+          "methods": 17,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "9460e9631af2c89523fc89a9f8da232e6867ee0337e3cb60d72e98933483fc54"
+        },
+        {
+          "methods": 13,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "a47c4e00e567ac1efea8ace127fce7c97d3425b959578f57d56ec0988412e1c0"
+        },
+        {
+          "methods": 16,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "08eaf318cd738e2b12ae3d0a939c84fd69abcec282218110a050b167031f6fa5"
+        },
+        {
+          "methods": 12,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "3d397d56e2a796f9acd1fa59712ad78b63d32458e8a543cffc8a748228ce0b04"
+        },
+        {
+          "methods": 10,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "5f57cff40dab8f74ccc90c2864278dcf5535f0e09862e32038c72e9d81724916"
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 89,
+      "auxiliaryMethods": 87,
+      "actualSystemCancelMethods": 2,
+      "groups": [
+        {
+          "methods": 14,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+          "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+          "reportSha256": "2985cc75fcd240dfe37e04a665e692b9a72cb6925d6bc823868901e21b61c62b"
+        },
+        {
+          "methods": 7,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "c319e7d1c7a69202f25b88a911be5c65c205c0454235388ba2fe5f784b4f193d"
+        },
+        {
+          "methods": 17,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "a091fe0333e4055005db141985faa2e1775822c8ecadb573fa7850c085b5ff0f"
+        },
+        {
+          "methods": 13,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "f654ed6ed921ddb90f506e4ac681096ca877173c81f4ad758ca8207b82539532"
+        },
+        {
+          "methods": 16,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "2f999335ae2733192f7c6ac6b6a71b7501f83e6a2433a8afe6bab25dc6659d74"
+        },
+        {
+          "methods": 12,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "877bc5af93ea064e3a466616baa2d99d6f3bdd9d08ef6dc54ce53de93c5f6ff3"
+        },
+        {
+          "methods": 10,
+          "appSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+          "runnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+          "sourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+          "reportSha256": "cc963886e64b840de95ea7c808b0fe7c5f73da636df0fa185b3553a6c995de40"
+        }
+      ]
+    }
+  ],
+  "nativeAuxiliaryMethods": 269,
+  "actualSystemMethods": 8,
+  "actualSystemScope": "各环境文件/照片选择取消共6项；API37外部系统相机受控虚拟场景实际拍摄和取消2项；非实际进程死亡证明",
+  "darkViewport": [
+    {
+      "environment": "owned-API26",
+      "fontScale": "2",
+      "theme": "dark",
+      "methods": 4,
+      "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+      "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+      "images": [
+        {
+          "state": "camera-permission-denied",
+          "sha256": "7463856df9f5b6982982c7c080eabe3ce5ac8901fcebb4e5ec3453f7c3dd603f"
+        },
+        {
+          "state": "camera-ended-late-result-held",
+          "sha256": "98414dd5043e271625e5c92dafedf563159b509ddd75d42c721b08e6238d4712"
+        },
+        {
+          "state": "camera-unknown-wait",
+          "sha256": "4847711518726549cf80b8d6c1aec6a03f003583da172b240b86599ca36a0618"
+        },
+        {
+          "state": "camera-original-failed",
+          "sha256": "5cb5770368cb05f3f4cb776305ad8e6ac7c9fd6a6ac75e06c80aee662784c5a8"
+        },
+        {
+          "state": "camera-record-read-failed",
+          "sha256": "9ff51bb014a2534173b6912496aeec1104626d1e7adfbbc1a6f52fc36bf5e9b9"
+        }
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "fontScale": "1.3",
+      "theme": "dark",
+      "methods": 4,
+      "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+      "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+      "images": [
+        {
+          "state": "camera-record-read-failed",
+          "sha256": "2f3f8999c84c09b93ffb6b8bd6a6c5eb396188c348a2bfacce10ae131a0e5af4"
+        },
+        {
+          "state": "camera-permission-denied",
+          "sha256": "8af9497c8b443a45b12056d6afbf6a74935dd9bd4403d045a104baa5c3949ef6"
+        },
+        {
+          "state": "camera-ended-late-result-held",
+          "sha256": "8480dbea5fdbe64022bb70244ce14ba0dfae0988efa117f2747904f5f907a26d"
+        },
+        {
+          "state": "camera-unknown-wait",
+          "sha256": "07ee262e038b866bc9ca8807603cf5530946c05b53d0cb44610b27c00acc220c"
+        },
+        {
+          "state": "camera-original-failed",
+          "sha256": "12b767300df6074e1a1837f22a259bfd30a406c418387e1430250976fc92e962"
+        }
+      ]
+    }
+  ],
+  "readOnlyOriginalReply": [
+    {
+      "environment": "API26",
+      "methods": 1,
+      "newInputs": 0,
+      "writeRequests": 0,
+      "originalOwnerAndTurnsUnchanged": true,
+      "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+      "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+      "reportSha256": "9589ba6dc7330e8be68f6ae21d8e8f30f7230d15fa17304ddbd9336c4e03cb22"
+    },
+    {
+      "environment": "API37",
+      "methods": 1,
+      "newInputs": 0,
+      "writeRequests": 0,
+      "originalOwnerAndTurnsUnchanged": true,
+      "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+      "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+      "reportSha256": "9053c34c91ca0b244b1f2e417e07382678ae8f99a58a7737d4d2664aeddade4f"
+    },
+    {
+      "environment": "physical",
+      "methods": 1,
+      "newInputs": 0,
+      "writeRequests": 0,
+      "originalOwnerAndTurnsUnchanged": true,
+      "sourceSha256": "d11574f1fd1f055dd04459722e000a5c97e38b2dbe6e213407d136655660b7d6",
+      "runnerSha256": "28c54b231748eefd8c786a500abf344ecb02fc1fd3721bd5f2e80464e41b2557",
+      "reportSha256": "3fc046cd83aae3128424feb9e04c849b93da8b6dc1229fe8d7605192dcc16508"
+    }
+  ],
+  "totalEffectiveNativeMethods": 280,
+  "defaultStorageProofs": 280,
+  "defaultProofFields": [
+    "draftsPreserved",
+    "draftFilesPreserved",
+    "draftVersionsPreserved",
+    "attachmentImportGenerationsPreserved",
+    "recentPhotoPreferencesPreserved",
+    "photoAuthorizationPreserved",
+    "documentRequestsPreserved",
+    "photoRequestsPreserved",
+    "cameraRequestsPreserved",
+    "cameraOutputsPreserved"
+  ],
+  "defaultProofIndexSha256": "c4622fb29bfef9cfb3aa687d64db24a43587cde943b7d7e504f28e3f9dd70613",
+  "matchedEvidence": {
+    "sameProductionApk": true,
+    "onlyChangedRunnerSource": "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraRecoveryTest.kt",
+    "olderRunnerSha256": "3b5cb23659cfbd09e5d36fff66ed5689ee60a0911b2419f9b4a3b3c46ecf233e",
+    "olderNativeSourceSha256": "c21e3f74bdb9d3f7d6f1150c5c85bd1ad3191c5e456a38b3f3e471e75973142b",
+    "methods": 150,
+    "scope": "API26和真机各75项，排除已修改相机恢复组；原组源字节准确匹配，当前14项分别重验"
+  },
+  "rootCheck": {
+    "fullCheckRerun": false,
+    "baselinePhase": "P7-4d",
+    "baselineLogSha256": "e924d4305b2be415c59acd5da2c3c32ac7cd6898f53d806a2a553a994d204983",
+    "baselineInputs": 1009,
+    "exactMatchingInputs": 990,
+    "changedInputs": {
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java": {
+        "before": "e7703afdc9c1899a76e8999a7678d8f20738c7fd0513e38e5353f19e965537d8",
+        "after": "63781efb70bb3a784b56875cee2e3ff8a239d4a9ef49f8ffbb475bbe1ab07524"
+      },
+      "apps/android/localization/native-copy.json": {
+        "before": "abbeb5156878c61d646aedcf009d3b99240ebd5ed523c1cda65c11bb6b5b22b7",
+        "after": "7f281aea77381caf3c2236bdf7e72a2982d0c7a5581757c5d038d10a2ff40f72"
+      },
+      "apps/android/src/androidTest/assets/localization-catalog.json": {
+        "before": "7bcfb8754553d92c747560a7525fcdb0d2b689238bc0ed0047ccb2ddc4d7c205",
+        "after": "9560954e7288cf30a3186bba84df033fdb6353f55d66995af0552dd1e3952a14"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraCaptureTest.kt": {
+        "before": "abe825605d68395b252b317721a9dbaa1434bb4ee50cddfb69934cf8233006e5",
+        "after": "4be57151c35c9f19ec74f9ba19376dc0e7268c26cd5b9c4971e3413286f70fff"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraSystemTest.kt": {
+        "before": "37a71205016e379481f27ce06d39b66552a95c0a550d9eb291d4d1f8fb5b1e45",
+        "after": "abfc5728a754f85e7db8297ecea509e43801e05dae574bb4e72ad96d139b7c21"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDocumentProcessColdTest.kt": {
+        "before": "07b8ed4228d4f3c97289ced005171854c6497e84a600256b0595994e475dcb4a",
+        "after": "c4ae6ff09e3e4ecd54751946cf7768f17a4973e7c1a08404339b3d96bd29fc34"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": {
+        "before": "074ff2e11bb4bba51169d24674e6a05615a3f0748264b14a9cbaba6fc6f315e2",
+        "after": "a08bd7fda3baa8b96915964254e2e639d5946b79fabd86e6ff498666a2964e32"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": {
+        "before": "afdfbe160e3279390e30f949bf928e09566ba6b31ee4e7196f80a2d6e041af99",
+        "after": "80fc1e9c6fcc38ca3bad7876b6c7a669e185dfc54f07278e06b32facfebdbcff"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/RecentPhotoHintAcceptance.kt": {
+        "before": "e23ba5370f5c4f0e748ab4fc7244ada5b537a17a09f9a8e8f237f864237c41ab",
+        "after": "533a960f2a10938af5354c330f9c7df40b282cd29fafde90ba3dffc1ab040460"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+        "before": "4bbd2f33bc02ba4aea23c01ad6fff86d202471b18ee52b377175ab3b5b67c994",
+        "after": "072e92e66741738aa72a9c5fda3d744a137263da083fda9eb51f3a0ea5b686d5"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraCapture.kt": {
+        "before": "2fa18b0757b7afd3411f92c7fd9af4d3c5303a585c58e08f95425fcc6a25e86f",
+        "after": "ba19bc9b4dac82517781054dc9476bf9a97ce16d2727dfdd72cbb4526111ded2"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentJournal.kt": {
+        "before": "e1092899642fc7926408a4053b6f3dc2f7bb6780ac3d36f3b5cf37dca5b304e1",
+        "after": "e9ff2ff982c4ee509cff122fb9952f1d5c7fa9f65bc78e276152f6976fde89b4"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentPicker.kt": {
+        "before": "d4efa2cd92274f773c7bfa3c57b5f827af2d12c9db77a28ad75f9e4d04ffe480",
+        "after": "584ac23c0a944d4242346aef23babc46ecc648c4e162d8d2e35320ee99af1fea"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt": {
+        "before": "560440c961c39e70d36cff6cbba481eeabbcd4c14d8cc53f44cdef0d303621bf",
+        "after": "95d796e9e04c80ac0ba2f1d39783d8b014a5cb9d5200c57b786c1e5140e27767"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoPicker.kt": {
+        "before": "3dd664b57be972afc1dd5c8bb16d44a9461cf5c3587e12c742979f819db1c092",
+        "after": "17f13fd1686a5f9e2f2c8124b6ec820f9d55c45991a874aeaba4967991d0d9d4"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSelectionKind.kt": {
+        "before": "99d7c55b9775b97fd8b38c29c8a47aaad9a3aaf1ffd69f86ae39875e583271bc",
+        "after": "c4cf4165e4dc14e069af7a03c3feb283eda986f42bbe3ceb572bfd6fbf3be4f0"
+      },
+      "apps/android/src/main/res/values-zh/product_strings.xml": {
+        "before": "dd43f42b3c40bc1f43887aca16e7d9f2f8d542520dcc3adb24dcbf210b68bf03",
+        "after": "8273c1a01e411d5651c258fce66dd6572dd78bd22af45e797c8818a99482e9c1"
+      },
+      "apps/android/src/main/res/values/product_strings.xml": {
+        "before": "074a661185b9a63482839bf75ee34d88b94b3d45fe2b24aa58c5ca1d6c83a422",
+        "after": "0c306718e2462fb57e45a0c59fd97ec9ad4eebdeb83048a59bba77ef8100d767"
+      },
+      "apps/android/src/main/res/xml/resource_paths.xml": {
+        "before": "d16b8a3b5e65c0a47afc7a6b1ac7932b0cf1c78f7ca53ac0bda0573cccbc8e31",
+        "after": "abc5ddaad279492b6ee1a9933d2500ea15f6bbac93fbba604ae9a81029270581"
+      }
+    },
+    "currentChecks": [
+      "native build",
+      "selected native/device methods",
+      "mobile parity",
+      "17 Android approval guards",
+      "changed-document formatting"
+    ]
+  },
+  "failuresRetained": [
+    "权限成功触发同一启动副作用取消，改为独立权限修订代次",
+    "旧取消脚本未等持久清理、目录数量期望、菜单异步准备及权限ActivityRecord解析分别失败并修正",
+    "真机脚本读取尚未刷新的detached，改等准确held终态；API37测试线程迭代Compose列表异常，读取移至主线程",
+    "两次错误工作目录预检发现APK包名不符，在安装与仪器启动前拒绝；保留失败，不计产品通过"
+  ],
+  "pending": [
+    "实际相机进程死亡后的原输出返回；本批registry重建和同进程系统相机不能替代",
+    "共同协调器变化后的当前照片/文件系统冷回归，4d/4e保留原指纹且不重放原操作",
+    "完整URI/权限/Provider、存储配额/迁移、语音、未读和生命周期",
+    "手机独立观察APK、长批原生崩溃、蜂窝/VPN、API37横屏、完整IME/AX",
+    "iOS当前原生系统矩阵未重验；iOS A6与任务/项目业务保持暂停"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false,
+  "iosSourceReview": {
+    "path": "apps/ios/Sources/QuickAttachmentViews.swift",
+    "sha256": "d6b67baf40ec4ba84204eff5915dbbd78aeb836dfc9c72b0e6ad9f13d8f465e7",
+    "assertions": [
+      "原菜单关闭后进入相机",
+      "不可用提示和取消不追加附件",
+      "准确原草稿与导入ID",
+      "单张图片本地归一化，发送时才上传"
+    ],
+    "platformDifference": "Android外部相机/私有URI/独立结果账本；iOS UIImagePickerController，当前iOS进程恢复及原生界面未重验",
+    "iosSourceChanged": false,
+    "iosA6Paused": true
+  }
+}

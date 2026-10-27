@@ -1,0 +1,280 @@
+{
+  "phase": "I4-3a",
+  "sourceBase": "dcca3d87173b4396a9c4422cd99f7adee54a9ecf",
+  "summary": "I4-3a：Android草稿与最近提示接通本地全屏图片预览、原文件名、翻页/缩略导航、1–6倍按钮/双击/双指缩放及平移、重试和当前图片移除；三环境73项原生辅助与API37独立来源媒体整例1项、74份默认十字段保护通过，新增模型0。完整F71有序多选/统一添加/全库分页/5项配额与权限矩阵继续。",
+  "features": ["F30", "F47", "F56", "F71"],
+  "sourceSha256": "1866f78951698e0d83fb57ccf999e203ea6e875102eec4b94ff4ce6fbef8d7e0",
+  "appSha256": "bf3c16abd319f2a7b002df64257c6fd59c85e31bfc2ca9ae5583a8d9ed8d3168",
+  "runnerSha256": "b11f3e6bd90496a0c0bfcde15f74a0943ff3fab680b4e7a361429369a5601c7e",
+  "fixtureMethods": 73,
+  "independentMediaStoreFlows": 1,
+  "defaultTenFieldProofs": 74,
+  "cohorts": [
+    {
+      "environment": "owned-API37",
+      "orientation": "portrait",
+      "fontScale": "1",
+      "theme": "light",
+      "methods": 21,
+      "defaultTenFieldProofs": 21,
+      "reportSha256": "08775eb2aa4369289df3a8360d6dd9bc663c5d6023b9f91bf795a424db32c487",
+      "proofSha256s": [
+        "4328a1ea645428e5b985dfe10bb80b875ea3ef3eabb128bd93ae0693041482c9",
+        "b2859a281bec5144de9ce7c0ce94e7ea3336d8115b8236dcb8794f53d428e2fa",
+        "cf1dc1e2f9b40a731e592c92bc789da75d1cd6698b9aeb614fe0b680034bbaf9",
+        "d959a0b7b5f8a0deb66e117d8b8ab10c82fd81e49d9581e4bd4b3fa08dc6b985",
+        "515fcd2ba1d4a2912541a53259dc1fbd4366563f8bf641b3ef9c686e8d09d5d1",
+        "bf8c0917f3cdbef870958b356cc2cb9881aef92ab34632fd79bc493036116788",
+        "8a80853f7b6474cb93601ab837ae9aa3d9bdfca1de273bf13477a793bf540275",
+        "7117a0704835e563539ae3bb095d02dceeb8a682a05f7898949c9b0e12af6753",
+        "41bfc32dfe1e7c58bf91eb83aeffa2950f9e18f024b949dc89222f9dd7d9321f",
+        "7dc4ac5146c603f3175bd7fe734eb59b2d8dd529716308b52db9bc9f0b7d93bf",
+        "bf420299320b25651ffa359ca36182caf5907089f428fca93f97669c99cee357",
+        "02bda1bc52a40276482bbb8115d708396152b3a3e8af6fa6738878687796b489",
+        "e186238a8ab277a15917765476754f8aa0010ba6be0ef43b02ab49386f9a0dd4",
+        "e55e05861e890a88c1c246304988149cd9da0884ce1238dc9217f7eb0605fc4e",
+        "1a1f33f6c233430aaafa02ade8c9f476983d8e3aac8bb9d8577729eb10d47200",
+        "b5d2495b6a38efddd248a48ba3b2bdbc3befcd0734dcaa74b466f650a561360d",
+        "4e29fdbaea842c432cfdef14ec9cce9c10ab021283d1dd759ec48620ee859ce2",
+        "321e3104a52c9387d638a4a4baf0eca7ba96c18f5adb4de415c0c705799815c3",
+        "2f1c4d77023254c3dc39260f6ce1df85b561655159e39ee7c5f925efbae82722",
+        "0a8d8da90c9c2cfd4c42b2472c47cfcbb208620d38f4d9881426a5c289baebbb",
+        "a938279f5450fadf9767dfd7826e590834ec8d1b0ceb3d19fbb03565bbc247b6"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "orientation": "portrait",
+      "fontScale": "1",
+      "theme": "light",
+      "methods": 21,
+      "defaultTenFieldProofs": 21,
+      "reportSha256": "20000a51501e72a4dc9f0d63e9d14477401edb12cf5b164de431fb195348fa03",
+      "proofSha256s": [
+        "9823e66aa844ffe91b01f5c1ca0b5c70abac8e5489ae2a75948e8f95473545dc",
+        "87d5a4d5338155ba50a0b07349cfeac9cabc907b964ba7c70c7c29f9d0bc258c",
+        "b57396a00baa7b2ab07f2a63d1e64297646e3cbd48b3ae5ae0ee07ac55a69b21",
+        "bd6cb2f139f024327fe7d29d902d553060fb7c2ae1118db11c9a221c18d8b665",
+        "8be9fed6358aab14cec1e7705c1882c2a45e7d0dd0e62b51aef3a14551d065cb",
+        "9c00f5df35a97b1a5d82224eb7fb969669170c566a40973ad48e86b9e9c696b6",
+        "bf4c6db1951a517625346a63b2fe656d9c1d2ea212e68c0af2e6447e46bbd54a",
+        "c865267809266d56a7545f99026c7a923483ef9fcf12a13258d5be09d9a5ff35",
+        "cde639ddaeba7f25315c80eec757130de161d417566ce605d1bd9e145e89e918",
+        "673fcae6d3debbd94f69f6cf900fc5afc796de797ad5ad32e3ba08f1b8cfaa00",
+        "b259eeaa7376b2df30c41df897ff31dab6ff865ef33c2b47fcf0adbbfd57ce6f",
+        "dc27098e1d741d199bc7a4b475fb32c92949ba4e5fc444e022c894884dd830fa",
+        "354aef1499a1c944ba9f7861a866175b0c1707c0021fe5e506f63c19db5fd717",
+        "bfb07fe32ba076e2e84b94659c55a33e01bbe1dc970d59e6238552fb54e63580",
+        "380ba84fcce5066db1f29977ef652bbeece3166a10c3851cdba59a4f051ba126",
+        "53acc2e8af2baa965481c2257e747ebe13d65b21f3cf967521a77d135c881064",
+        "dd13f5e4023242ee04074dc07272154d9dda7b40f9df97d65e8ddb9fe44415fb",
+        "61ea3d19d8fd2c2a741513b9ca16c831bcea865bfe7b0ba3b65ca8bd76930134",
+        "579af209b2c19e73dadaeb781c5c20cf7182fec4f8b7221a4c1b2a7dcb4b36ed",
+        "d2448b52d6867ae6871d53a861455e1827b60d88c110ff54f3984f8d1ca823cc",
+        "7c01253ec704aff6f9e8bed0ec1d2c621593e6c29ac589fa7006f4384b51148a"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "orientation": "portrait",
+      "fontScale": "1",
+      "theme": "light",
+      "methods": 21,
+      "defaultTenFieldProofs": 21,
+      "reportSha256": "9d8c41a4fda0f50b0f19eded93a3364504b38b7091266eb0e7425d5e05ffb825",
+      "proofSha256s": [
+        "1769e075b7407984801a70f208973772b16d2a413f4d41b73610faa1e72a212c",
+        "864763a8f24a7d14100db443085bce79f25faaced09fd9e49e281fb384383769",
+        "209b7ac9dbf9bb43ed4f7b0f0cfcbd9e99efb4ab6b9677b82825f28dc4c91ba6",
+        "32357d8353415b2f4db8b70b273dd9833ce97b48210c0f3beb1402a3237faf65",
+        "da52b798d8a597085391d7387f8e9477d7e4a43bd5b80a2a2ab55dbed36088e4",
+        "d0e45a05d1fbdbb0674dff8695ebcbb3bd9a6f4090d9b9b86f4884b49b11e6dc",
+        "b997ed90238c39cefc5180f330e2065e0972172e16a35113f9ed0651ecb7e819",
+        "9a38de6c4e8194182e1f7be185092597958f4ec687405ece30d3d92d000e781c",
+        "88a8f0786237729e4630c1aeac71ffe44d258cf8d3604c578a9b3c3348d79026",
+        "e50b7e53be841c8f013338c5db200cf0b1dca89d8aa5a2a734b6c994d04e9c28",
+        "f1b115b4fd18836b6e4a68f5356cc995f769511803a791be8bd34c6a3ab206c1",
+        "9b039fc1e6cbe440435726d37571defa26c4a303a8abd38dc51c2e4964632e4b",
+        "64274491375da6c0d936c7a0e32e22c77854a61dd72234f2beb97f88e40ece5b",
+        "a2f42f8121d4c9ae81a46b2e97e5d5fa4c37be9d55316e624ba10b59f1015f61",
+        "349f516a7dcf4ba09c1786bc4863015570fcb99dabeb30afded1d61f92c2a304",
+        "16c19c49f63d086771b4daf2bdc8f8e29f5cf9811979cf66b6510a61cd6fd89e",
+        "1bc006515e750b52a292a1954fe40715747f39acd074bb9b9c62ec234e0320ea",
+        "2985492c0ec0d2707e432749c0fe389d0f16fbf5ad7aee726753d412511c88e0",
+        "30cafb8592fd897b09f57626d43e30acc724f009c182f70b9c1a83c965f88287",
+        "3d179f845b23171a576eed6d5d35dd86e07f6d23d65fefa2e2ce535f02a5f82c",
+        "33b942552cd824e438efbc9aa60a8860ca4ed8e23a2d0960236286d67e9968f9"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "orientation": "portrait",
+      "fontScale": "1.3",
+      "theme": "dark",
+      "methods": 5,
+      "defaultTenFieldProofs": 5,
+      "reportSha256": "5fc902c066d0429142dcb39324250bd62d0f89adafa2df6976f5ab781b02df00",
+      "proofSha256s": [
+        "8648f73434d884a63733fc9a0270fd19a668b8384436963dde8ebeb9cd03e2c6",
+        "87a85bbd7045aad8c3450538b5e1463c58c041dd51bed7265b1541deb02339ff",
+        "ea3f88f896eea7137b49301ba2c8080afcf0cb70ec16cdfab332df1f8f65f0b2",
+        "21b59df31a857586ae9935219881d7b59df2c842ed6dc8e952cac8d54d7cb947",
+        "1ebb74b675bb001db91f9395991192ba96f26ec3be2abbef2b40af4a0b93677c"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "orientation": "landscape",
+      "fontScale": "2",
+      "theme": "dark",
+      "methods": 5,
+      "defaultTenFieldProofs": 5,
+      "reportSha256": "f9b66b9f93558b5049299a387f995c0f6d5ebe2547a1c0ba9b3a498b8e3af591",
+      "proofSha256s": [
+        "7cbb5af515171296dfb6d34103b125915cec4696183ca8ba6846ebee75f75f8a",
+        "4a80405231455b03e9ba0e807b5d93f569e3f6c3266858d3e65c4171159b7b15",
+        "ea4b6416027dafe4ca87608df63d6c146ceac59548d598c5e5004e4f37812758",
+        "b6ded7c99d9bcee123ff79daf4903adea364395b2465bb0dc8092276313a57b4",
+        "3cabb7a83924ceaf629631dee98fc5dfd201c2b379b52d0cff6c48ff7206140e"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "orientation": "portrait",
+      "fontScale": "1",
+      "theme": "light",
+      "methods": 1,
+      "defaultTenFieldProofs": 1,
+      "reportSha256": "e482a7ab386d2d569038223abb9500404008cc122ee5c5636b1dff0b967a5b66",
+      "proofSha256s": ["278998044eb599d57bff96c0ffa7f7f05053e6a3177f463969cbddbecd02503d"]
+    }
+  ],
+  "visualReview": {
+    "screens": [
+      {
+        "environment": "owned-API37",
+        "screen": "image-second-page.png",
+        "sha256": "113c7370d845abe5cb4327155c50d145f43631cce3bad027bce6f007bd647a5f"
+      },
+      {
+        "environment": "owned-API37",
+        "screen": "image-zoomed.png",
+        "sha256": "7f4af2b817f98813013128ad61d6faa6476c24c41ef0af1e33e1acba00ce6622"
+      },
+      {
+        "environment": "physical-API33",
+        "screen": "image-second-page.png",
+        "sha256": "4625f8706b1bcec58c61282c25847559dd64ce1cbfa650f29eeb186ab88b3bcb"
+      },
+      {
+        "environment": "physical-API33",
+        "screen": "image-zoomed.png",
+        "sha256": "52bf2bfd57397d43a76790d23a09cfeedbfd6b129209069f14bb68a4dd0892f2"
+      },
+      {
+        "environment": "owned-API26",
+        "screen": "image-second-page.png",
+        "sha256": "bf660af2181ae28506c0e245ecdf7dc32f4afaee85afbdbc6221b700018f3648"
+      },
+      {
+        "environment": "owned-API26",
+        "screen": "image-zoomed.png",
+        "sha256": "ac12f90a13b6f03703617169713e0f9690360596c44d502d51e12f4826372e7d"
+      },
+      {
+        "environment": "owned-API37",
+        "screen": "image-second-page.png",
+        "sha256": "6ece6ac1dabfca729568223d74050167bd4aac338968284dee810352a4231616"
+      },
+      {
+        "environment": "owned-API37",
+        "screen": "image-zoomed.png",
+        "sha256": "ce3561af051323af86f31059e846317677895ad360e70e916aa48ade1841b723"
+      },
+      {
+        "environment": "owned-API26",
+        "screen": "image-second-page.png",
+        "sha256": "2d2a5b49384ff2576ae60238e8fc602ac476fdf7760bfdd867b4b70fb5d8c414"
+      },
+      {
+        "environment": "owned-API26",
+        "screen": "image-zoomed.png",
+        "sha256": "899e0bf6f48ddcd29d97b9ae6cf92c20cbc3a86ee7ba02e462de72c25f67c648"
+      },
+      {
+        "environment": "owned-API37",
+        "screen": "actual-source-new-photo-preview.png",
+        "sha256": "320712a72093c3eccc72ba29f7830a17d06b7419871abdab8e4b44e76e574f95"
+      }
+    ],
+    "review": "Viewed both SDK portrait, physical and API26 actual landscape/font2, plus API37 independent source original image; custom viewer fixtures use ambient/default theme and locale, not whole App theme/locale proof"
+  },
+  "failedAttemptsRetained": [
+    {
+      "environment": "owned-API37",
+      "reportSha256": "8680f18593b8f14fb38f2c86aedbd8f8de5e1a6ac53c1d44e4ee8eff6bdc449f",
+      "sourceSha256": "45dbe22d676a6b46c603a0269db79e37d47cd4702f800278d249be0a928048e5",
+      "appSha256": "bf3c16abd319f2a7b002df64257c6fd59c85e31bfc2ca9ae5583a8d9ed8d3168",
+      "runnerSha256": "3c52ba80bb24f4d40f79ac0f6b17e225c3b651ab9cc41d2f6c390fc1617702ae"
+    },
+    {
+      "environment": "owned-API37",
+      "reportSha256": "10b372caa2ae19e0c12df34052170d0c057fac68937d0f4fbfe4c02e1096cabd",
+      "sourceSha256": "1866f78951698e0d83fb57ccf999e203ea6e875102eec4b94ff4ce6fbef8d7e0",
+      "appSha256": "bf3c16abd319f2a7b002df64257c6fd59c85e31bfc2ca9ae5583a8d9ed8d3168",
+      "runnerSha256": "b11f3e6bd90496a0c0bfcde15f74a0943ff3fab680b4e7a361429369a5601c7e"
+    },
+    {
+      "environment": "physical-API33",
+      "reportSha256": "e9b7cd925757e0f7ee3992bf66be1026b54dce3e8a5798e1ce05b9bb2f2a69bb",
+      "sourceSha256": "3f94ea2544d9f92be96cf2ed074f9e90fb771cd050901f2b530e6f6e76da4fe2",
+      "appSha256": "3e4dc97ba887320188c5e19f14fb92f7013cfab4b1ef8d9322a5eb2ab8276c58",
+      "runnerSha256": "4af42c5a4b832cac0675067b1ae8ac0ab57fe6c7db520b4645927e32e16b84a4"
+    },
+    {
+      "environment": "physical-API33",
+      "reportSha256": "31e85b99fa78685ece36bae4de4bca85994a3571d51596b3d08437c0d87e656e",
+      "sourceSha256": "45dbe22d676a6b46c603a0269db79e37d47cd4702f800278d249be0a928048e5",
+      "appSha256": "bf3c16abd319f2a7b002df64257c6fd59c85e31bfc2ca9ae5583a8d9ed8d3168",
+      "runnerSha256": "3c52ba80bb24f4d40f79ac0f6b17e225c3b651ab9cc41d2f6c390fc1617702ae"
+    },
+    {
+      "environment": "owned-API26",
+      "reportSha256": "e0e96a3f14937f47e8373df44954b11e01e0bbcce811b09730d4a65f6b07dbc7",
+      "sourceSha256": "3f94ea2544d9f92be96cf2ed074f9e90fb771cd050901f2b530e6f6e76da4fe2",
+      "appSha256": "3e4dc97ba887320188c5e19f14fb92f7013cfab4b1ef8d9322a5eb2ab8276c58",
+      "runnerSha256": "4af42c5a4b832cac0675067b1ae8ac0ab57fe6c7db520b4645927e32e16b84a4"
+    },
+    {
+      "environment": "owned-API26",
+      "reportSha256": "fce5d453b7aecde6b686243031be1b785e4e42b8dde4171d2a0547c0e8420d52",
+      "sourceSha256": "45dbe22d676a6b46c603a0269db79e37d47cd4702f800278d249be0a928048e5",
+      "appSha256": "bf3c16abd319f2a7b002df64257c6fd59c85e31bfc2ca9ae5583a8d9ed8d3168",
+      "runnerSha256": "3c52ba80bb24f4d40f79ac0f6b17e225c3b651ab9cc41d2f6c390fc1617702ae"
+    },
+    {
+      "environment": "owned-API37",
+      "reportSha256": "3c33f50bac1d54d17b59b4aaef04a9e9e5d7f1b0333dd6c6ddc4a3988dd055b6",
+      "sourceSha256": "3f94ea2544d9f92be96cf2ed074f9e90fb771cd050901f2b530e6f6e76da4fe2",
+      "appSha256": "3e4dc97ba887320188c5e19f14fb92f7013cfab4b1ef8d9322a5eb2ab8276c58",
+      "runnerSha256": "4af42c5a4b832cac0675067b1ae8ac0ab57fe6c7db520b4645927e32e16b84a4"
+    }
+  ],
+  "temporarySdkMediaReadPermissionExactlyRestored": true,
+  "originalModelInputsThisPhase": 0,
+  "allPhasesCumulativeInputs": 221,
+  "p4CumulativeInputs": 205,
+  "rootCheckReuse": {
+    "unchangedNonAndroidFiles": 688,
+    "configFiles": 18,
+    "currentFullRootRerun": false
+  },
+  "limits": [
+    "Full preview decoder bounded to4096 edge and8MP, versus iOS4096 edge only; 20MiB read bound",
+    "Original bytes unchanged; bitmap display only",
+    "Recent panel still immediate single add until I4-3b",
+    "Custom fixture lifecycle/gesture tests are auxiliary, not original model or full native phone Photos proof",
+    "API37 landscape, actual photo full/limited/revoked and process cold remain pending",
+    "Business tasks/projects and iOS A6 stay paused"
+  ]
+}

@@ -128,3 +128,5 @@ P3-5b 已实现：workspaceManagementRequest/Operation 严格有序ID、1..100�
 本项新增2条，P4累计20、总33条已消费输入均不重放。只关闭本次请求批准权限回退缺陷；前项命令终态、原CLI读取失败、完整异步/审批/跨端抢答/其他权限预设及复杂配置和F34/F35/F41/F42/F46/F58仍开放。iOS共用修复后的Host规则，未新增iOS原生真实验收或更新正式服务；Windows未验收。6张原App/dialog独有窗口图已查看，仅作局部状态证据，完整视觉P6继续。继续队列/追加/停止/恢复；蜂窝/VPN与人工归档待验收，任务/项目管理暂缓，A6/P7暂停、P9依赖保持。
 
 升级区分历史免密设备凭据与已通过 Host Key 授权的凭据：旧免密绑定缺少 `hostKeyAuthorized` 时不再通过鉴权，用户可在原连接失败后点“使用 Host Key 重新授权”，输入一次后沿用原设备密钥与凭据，保存连接和草稿不清空。原 Host Key 手动／二维码连接及新版已授权设备照常重连。
+
+P5-2移动建议读取使用`codex-mobile-http-v1.schema.json`中的`desktopSuggestionResponse`与可选`runtime.suggestionSourceTurnId`。Codex的具名GET继续绑定机器/聊天/来源轮次及既有鉴权/证书；EasyWork的`thread/suggestion/read`在已鉴权加密会话中映射同一响应投影，保持其账号约束。Android读取预算为八秒，接收体有界，超时可恢复，原消费者取消保持取消。响应匹配不授予命令权限或自动采用；Android会话读取器与界面仍在P5-3接通。

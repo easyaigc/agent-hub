@@ -74,7 +74,7 @@
     "proof:desktop:prepared": "node scripts/desktop-prepared-proof.mjs",
     "check:codex-discovery": "pnpm build && HOST_AGENT_DISCOVERY_BONJOUR=0 node scripts/codex-discovery-smoke.mjs && node scripts/codex-discovery-native-smoke.mjs && node scripts/mobile/codex-discovery-scheduling.mjs && node scripts/codex-authorization-alert-native-smoke.mjs",
     "generate:mobile-parity": "node scripts/mobile/parity.mjs --write",
-    "check:mobile-parity": "node scripts/mobile/parity.mjs && node --test scripts/mobile/parity.test.mjs && node scripts/mobile/generate-reading-policy.mjs && node scripts/mobile/check-contract.mjs && node scripts/mobile/private-connection-vectors.mjs && node scripts/mobile/generate-design-tokens.mjs && node scripts/mobile/generate-failure-copy.mjs",
+    "check:mobile-parity": "node scripts/mobile/parity.mjs && node --test scripts/mobile/parity.test.mjs && node scripts/mobile/generate-reading-policy.mjs && node scripts/mobile/check-contract.mjs && node scripts/mobile/private-connection-vectors.mjs && node scripts/mobile/generate-design-tokens.mjs && node scripts/mobile/generate-failure-copy.mjs && node scripts/mobile/generate-localization.mjs && node --test scripts/mobile/localization-catalog.test.mjs",
     "check:ios-state": "node scripts/mobile/check-ios-state.mjs",
     "generate:mobile-design": "node scripts/mobile/generate-design-tokens.mjs --write",
     "check:file-transfers": "pnpm build && node scripts/file-transfers-smoke.mjs",
@@ -101,6 +101,7 @@
     "test:ios:history-live": "node scripts/history-scroll-ios.mjs --live",
     "check:ios:publication": "node scripts/mobile/check-ios-publication.mjs",
     "check:mobile-idle-performance": "node scripts/mobile-idle-performance-smoke.mjs",
+    "generate:mobile-localization": "node scripts/mobile/generate-localization.mjs --write",
     "check:github-sync": "node --test scripts/ci/sync-github.test.mjs",
     "check:file-preview": "node scripts/mobile/file-preview-smoke.mjs"
   },

@@ -1,0 +1,44 @@
+{
+  "phase": "P4-4o.34",
+  "sourceBase": "3a22cba86e55e7a14f41a71a14aa49604d493dff",
+  "features": ["F41"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileApplicationSessionLiveTest.kt": "ad2a72c3b5009dc0818bd246a4f52f92bfebc9737b53afefb88a3713035133b9"
+  },
+  "scope": "Opt-in examiner waits for native consent Dialog disappearance, main-window focus and stable original button bounds before one explicit original operation. Product source unchanged. Earlier failures retain unknown causes.",
+  "nativeAuxiliary": {
+    "currentConsentCases": 5,
+    "environments": [
+      "physical API33 light/dark",
+      "API26 light and fontScale2",
+      "API37 portrait light"
+    ],
+    "appSha256": "313cdd89dddf71d895feaf236ea4ed65c4ccf8683644bcd99ab425dad1ec4f44",
+    "runnerSha256": "4e2b307278f40633135668b5b8cd0d0d506e4d8f14b86a98cc02c636bc2b74a7",
+    "sourceSha256": "ff50592e6d2b07ee68a8752226303bc99ae6d4dcba909dba9e4abe4651f7df08",
+    "defaultStorageProofs": 6
+  },
+  "actualOriginalOwner": {
+    "acceptedMethods": 1,
+    "parentInputAttempts": 1,
+    "mobileInputAttempts": 0,
+    "nativeMainWindowStable": true,
+    "oneApprovalPost": true,
+    "exactOriginalDtoAndTarget": true,
+    "originalRequestRetired": true,
+    "unsentDraftPreserved": true,
+    "originalOwnerOneInputOneCompletedTurn": true,
+    "independentPrivateProbeViewMatched": true,
+    "permanentGrantNotUsed": true,
+    "resourceReferenceObservedButNotPreviewed": true,
+    "automaticReplay": false,
+    "actualOwnedImagesReviewed": 2,
+    "transport": "ADB loopback, not LAN/TLS/cellular/VPN proof",
+    "cleanup": "Owned Probe PID absent; owned Host/observer closed; original ADB routes restored."
+  },
+  "priorFailures": "Two P4-4o.33 original requests remain sealed and are not answered or replayed. This fresh success does not prove their unique prior failure cause.",
+  "newRealModelInputs": 1,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeFeatureClosed": false
+}

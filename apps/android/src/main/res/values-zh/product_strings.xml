@@ -1,0 +1,1750 @@
+<!-- Generated from shared iOS catalogs and Android native-copy.json; do not edit. -->
+<resources>
+    <string name="product_603b7475591558bd45ecf3f4" formatted="false">"\n请查询原回执；不会再次提交。"</string>
+    <string name="product_37e1ec8919726b514f99eb15" formatted="false">" · 推荐"</string>
+    <string name="product_bf0b984f1f19965eb00886cf" formatted="false">" · 第 %@ 轮"</string>
+    <string name="product_ddf30a8d516a3034dc4e413e" formatted="false">" · 第 %@ 轮 · "</string>
+    <string name="product_632e7f73f223ef78f31615aa" formatted="false">" · 第 %@ 轮 · 版本 %@"</string>
+    <string name="product_4931e95ab712d2169422fcfb" formatted="false">" 原草稿已保留。"</string>
+    <string name="product_49544e6afc8d921d27d7d71a" formatted="false">" 录音已保留；重试只查询或补齐原操作。"</string>
+    <string name="product_07d9014e098f1c16ea72c318" formatted="false">"%@ · %@ · 实时连接"</string>
+    <string name="product_4760bfd1242e7cba29eb4f2e" formatted="false">"%@ · Agent 托管"</string>
+    <string name="product_eae63b81d8dee2618fad674b" formatted="false">"%@ · Agent 托管 · 实时连接"</string>
+    <string name="product_f08af0ec0e502c0fcc1c99a5" formatted="false">"%@ · 共享运行时"</string>
+    <string name="product_46988019014280d53112db3c" formatted="false">"%@ · 共享运行时 · 实时连接"</string>
+    <string name="product_6783ea6e5f3d6b5df52393fd" formatted="false">"%@ · 发送时自动连接"</string>
+    <string name="product_51a651838c88024c47fde71f" formatted="false">"%@ · 同一运行时"</string>
+    <string name="product_f30cb43fa6e0d8d180e9d931" formatted="false">"%@ · 同一运行时 · %@"</string>
+    <string name="product_9e32a5c799da47231379645d" formatted="false">"%@ · 实时连接"</string>
+    <string name="product_fa293b8e9004009877b1d19c" formatted="false">"%@ · 已连接 · 当前只读"</string>
+    <string name="product_25fc0dd22e275a459b3e4371" formatted="false">"%@ · 正在连接运行时"</string>
+    <string name="product_136e8e67142d02ffddf78451" formatted="false">"%@ · 缓存与草稿已保留"</string>
+    <string name="product_9c8109e2b79e78f94b03637b" formatted="false">"%@ · 设备会话由系统安全保存。"</string>
+    <string name="product_6d50d224f6a90ec859ab739d" formatted="false">"%@ 个"</string>
+    <string name="product_0bbec03a720943e4d616c050" formatted="false">"%@ 个问题待回答"</string>
+    <string name="product_234b0e82ddf97d68bc74ce07" formatted="false">"%@ 历史 · 只读"</string>
+    <string name="product_b5138703e6fad43beadda5d5" formatted="false">"%@ 历史连接 · 运行状态未同步"</string>
+    <string name="product_af18f5b9073da58e49c85189" formatted="false">"%@ 尚未连接此对话，消息和附件仍保留在草稿中。"</string>
+    <string name="product_b58d3411ebe891d6fe55ef3e" formatted="false">"%@ 新建暂不可用 · 草稿已保留"</string>
+    <string name="product_469911a338ab6a66463ffed2" formatted="false">"%@ 新聊天 · 首条发送时创建"</string>
+    <string name="product_6ffb82256042d1c76fde1d18" formatted="false">"%@ 暂不能新建聊天。草稿已保留。"</string>
+    <string name="product_0d002d5c3949bd2a902e6425" formatted="false">"%@ 未打开此对话 · 当前只读"</string>
+    <string name="product_43f967307d3b4cf7a83dcba2" formatted="false">"%@ 条待响应"</string>
+    <string name="product_fca4814112ccf285ca8884a6" formatted="false">"%@ 正在执行"</string>
+    <string name="product_cb5b465d0c670b19fbb83969" formatted="false">"%@ 草稿保存在此对话。"</string>
+    <string name="product_87d67f720b44e4f3f992f204" formatted="false">"%@ 超过 20 MB"</string>
+    <string name="product_6d80ed8b6d2b9ed9d40764bd" formatted="false">"%@ 项原操作待核对"</string>
+    <string name="product_682588d9514a35491b0aee05" formatted="false">"%@%@%@失败"</string>
+    <string name="product_1f80a1becc876e1c8552272d" formatted="false">"%@%@%@已停止"</string>
+    <string name="product_8d06f4a44e77de40bfde8722" formatted="false">"%@个会话进行中"</string>
+    <string name="product_8f759e7f6146c01a56973813" formatted="false">"%@个未读对话，%@，%@"</string>
+    <string name="product_95021053c9a0eead64ab7c38" formatted="false">"%@，%@"</string>
+    <string name="product_6921bf348b6cbdb0bf633ea7" formatted="false">"2–16 位大写字母、数字或下划线，以字母开头。"</string>
+    <string name="product_33ea8fe9eec54a5878f86c5e" formatted="false">"AI 数据共享"</string>
+    <string name="product_42d47b861ddb9990bffccd4d" formatted="false">"AI 数据共享许可已撤销或目标已变化。内容未继续提交，请重新确认后主动发送。"</string>
+    <string name="product_f0e5e964f46ed46c13d20c05" formatted="false">"AI 账户来源"</string>
+    <string name="product_0b36b56c7ba1fd110ee6e980" formatted="false">"AI 账户标识"</string>
+    <string name="product_9a0ea7ebe582c843a07e1019" formatted="false">"APNs 已接受，手机展示需由系统确认"</string>
+    <string name="product_ce4458385d8248fac3304024" formatted="false">"APNs 注册失败（%@ · %@）"</string>
+    <string name="product_b446aeecc9ddcbc247d7ebba" formatted="false">"APNs 设备已注册"</string>
+    <string name="product_dd254be20ba5de1bdc6170b0" formatted="false">"Agent Hub 测试通知"</string>
+    <string name="product_f95f46d60f486ab9bdf4af6c" formatted="false">"Agent 客户端"</string>
+    <string name="product_47e40f84e3d7df7eecc2a5eb" formatted="false">"Agent 尚无准确开发／验收映射；未提交内容，请先核对项目设置"</string>
+    <string name="product_7fe8a8a8733dfcbde1b7469e" formatted="false">"Agent 尚无当前项目的实际执行映射，授权未更新"</string>
+    <string name="product_4fcc05bbc144ca491effd0a3" formatted="false">"Agent 执行身份与人类设备会话分别授权。权限变更由主服务核验。"</string>
+    <string name="product_1c370dd0a80760ad56d5eab6" formatted="false">"Agent 映射或账户归属已变化，请重新核验"</string>
+    <string name="product_81b42569eb8ec34fa885534f" formatted="false">"Agent 电脑尚未在线核对，映射未保存"</string>
+    <string name="product_f31a09512650eb1ca72cf001" formatted="false">"Agent 的机器身份尚未核对（Agent、Host、workspace 和 runtime）。请刷新原电脑及项目映射；不会仅凭 Host ID 派发。"</string>
+    <string name="product_739a034d0cd5f47d0faa4591" formatted="false">"Agent 验收"</string>
+    <string name="product_e16563091d12b172d8e32f81" formatted="false">"Agent 验收 · "</string>
+    <string name="product_5b28d535ec76f8f052f81b75" formatted="false">"Agent 验收必须使用独立电脑"</string>
+    <string name="product_1e9fc358e7f706c7d9cdc7ee" formatted="false">"Agent 验收须使用当前已核对的 Agent 身份"</string>
+    <string name="product_b9d311862fa7fa1251caa5f1" formatted="false">"Codex 语音转写"</string>
+    <string name="product_693bb6d5837f11356942bd83" formatted="false">"Codex 账户仅为信息，不作为机器身份或许可范围。证书及已批准客户端密钥仍须核对。"</string>
+    <string name="product_46d3c59627e634fad8b9d626" formatted="false">"EasyAI 登录失效，请重新登录"</string>
+    <string name="product_738b36ac05c003a98c8ce12e" formatted="false">"EasyAI 登录服务地址"</string>
+    <string name="product_b64b5dd5a377dc81f4883f58" formatted="false">"EasyWork 未开放生成速度设置"</string>
+    <string name="product_6464c4f61a11b67bdb2370b3" formatted="false">"HTTPS 地址"</string>
+    <string name="product_f9d4db3dc9d0761c1feb8aab" formatted="false">"HTTPS 地址或配对 JSON"</string>
+    <string name="product_e1b962366a1a50db397052c8" formatted="false">"Host 尚未找到此操作回执，请先核对桌面历史。原消息和操作 ID 已保留。"</string>
+    <string name="product_4607abbd6835c663c7d7157d" formatted="false">"OAuth 客户端 ID"</string>
+    <string name="product_c4a40ea8fe35627476f7f8cb" formatted="false">"、"</string>
+    <string name="product_39b1c2253dc352a0f4924954" formatted="false">"上一题"</string>
+    <string name="product_bddc29ad011a93a6b759956e" formatted="false">"上下文压缩"</string>
+    <string name="product_3dfee69118fbc2b8d314e5fb" formatted="false">"上下文压缩失败"</string>
+    <string name="product_f0ad74d0525702ce8c3074a5" formatted="false">"上下文压缩已停止"</string>
+    <string name="product_bb8452788aa92d5bf9d9f483" formatted="false">"上下文压缩状态待同步"</string>
+    <string name="product_7491bf2bfc7b361c24c5189d" formatted="false">"上下文已压缩"</string>
+    <string name="product_ce1c9d61565f624b209c48f9" formatted="false">"上传中…"</string>
+    <string name="product_2510a13c9cd7260892f1179d" formatted="false">"上传到电脑"</string>
+    <string name="product_304db3fa1bfebd1967c1d92c" formatted="false">"上传回执的摘要或大小不一致"</string>
+    <string name="product_f3084505a290f19fe3566ea4" formatted="false">"上传失败，可重试"</string>
+    <string name="product_900924f6fd07ef8bd6dfc8e7" formatted="false">"上传完成后，文件和保存位置会显示在这里。"</string>
+    <string name="product_44384e04b012467f70dd9464" formatted="false">"上传结果待核对，不能重复上传"</string>
+    <string name="product_b42c8e02e474e7af0a74385f" formatted="false">"上传草稿关联尚未保存"</string>
+    <string name="product_53db3d56df6ff7a82d2ca231" formatted="false">"上传草稿附件"</string>
+    <string name="product_0df155bf1f19760dafd0b14e" formatted="false">"上传附件 %@/%@ · %@"</string>
+    <string name="product_b7f47dd83cb51b0a87ac0a79" formatted="false">"上传首条附件 %@/%@ · %@"</string>
+    <string name="product_c51c0e301e9685724165e7bc" formatted="false">"下一步可以按三个阶段推进：\n\n1. **连接电脑**：在同一局域网中自动发现并添加客户端。\n2. **组织任务**：按项目浏览对话，继续已有工作或新建任务。\n3. **查看结果**：检查回复和工具进度，处理需要确认的操作。\n\n当前项目为 **Agent Hub**。切换电脑后，会进入对应电脑上的项目与对话。\n\n这是本地界面示例，不会向电脑或 AI 服务发送内容。"</string>
+    <string name="product_f82c68c72b8f9acaf14af557" formatted="false">"下一题"</string>
+    <string name="product_4673a2306165612576462979" formatted="false">"下载"</string>
+    <string name="product_17cc4375f6907abac0cf2279" formatted="false">"下载并预览 "</string>
+    <string name="product_450d7ef1dc5498a99cca3b70" formatted="false">"下载文件完整性校验失败"</string>
+    <string name="product_fceb9faa67bdd5fc37cdaaa3" formatted="false">"不可变提交内容"</string>
+    <string name="product_460b3574e4bdb8ca1d460510" formatted="false">"不可用"</string>
+    <string name="product_1aa6eb241b2263b34d24010a" formatted="false">"不选择项目"</string>
+    <string name="product_cf1ed46cf82dcf58c8567661" formatted="false">"不通过必须说明未通过项，服务端将保留本轮并开启返修轮。"</string>
+    <string name="product_254438aca36d94e0041653d2" formatted="false">"与原主服务身份不同"</string>
+    <string name="product_a9ad93f5405f6a033c56e5f0" formatted="false">"业务任务已完成"</string>
+    <string name="product_4b97184dc5d0b1a2e33802de" formatted="false">"业务待办与通知"</string>
+    <string name="product_8be38d3ce9186c63a50991ad" formatted="false">"业务提醒"</string>
+    <string name="product_8161086e0288adaf022ee03d" formatted="false">"业务提醒补齐待恢复："</string>
+    <string name="product_aa1b8381a45d8bdd546994c9" formatted="false">"业务通知所属服务、账户或项目已变化"</string>
+    <string name="product_6fcda941ac248f710bee4699" formatted="false">"业务通知撤销待联网同步"</string>
+    <string name="product_fd0eccc898505b9e5a90834c" formatted="false">"业务通知载荷无效"</string>
+    <string name="product_ca37e81a06d71a5f78a9e34a" formatted="false">"业务项目"</string>
+    <string name="product_51fcaa8035fc61e2838a0a92" formatted="false">"个人空间"</string>
+    <string name="product_53730d766bc9ec2508cdee04" formatted="false">"个人笔记"</string>
+    <string name="product_a567bdaa11367f260f070839" formatted="false">"中"</string>
+    <string name="product_715ce81251a4531977b52f94" formatted="false">"中继"</string>
+    <string name="product_3b75c15ada396a692cdc3a44" formatted="false">"中继服务地址"</string>
+    <string name="product_9efadbbbb6257ac330b1b419" formatted="false">"临时通知权限"</string>
+    <string name="product_0d51aacc927c7703cde1362c" formatted="false">"主服务与账户"</string>
+    <string name="product_14912cf6c58e873ab709daa1" formatted="false">"主服务冲突，提交已暂停"</string>
+    <string name="product_80511b39f7b72c3753f33fe8" formatted="false">"主服务尚未声明成员管理能力。"</string>
+    <string name="product_4a1098550408c1a3a266aab2" formatted="false">"主服务尚未完成配置或版本不兼容"</string>
+    <string name="product_ccc3a42df28c6354119be2e3" formatted="false">"主服务未声明 workflow-closing 能力，请完成主服务升级后提交。"</string>
+    <string name="product_4f92357670b669ad2b6372f3" formatted="false">"主服务未提供此项目的策略。历史流程不会补填证明。"</string>
+    <string name="product_a1fdcf8d58aebfd8b16757ed" formatted="false">"主服务未提供结构化关闭证明，不能据此宣称完整交付通过。"</string>
+    <string name="product_a2de1c50ef23e6a30bb03a09" formatted="false">"主服务离线"</string>
+    <string name="product_ac0b117af64574034af52de1" formatted="false">"主服务请求失败（%@）"</string>
+    <string name="product_5477736f949163d3442ab385" formatted="false">"主服务身份发生变化，已停止连接。请核对原主服务，避免连接到另一套数据。"</string>
+    <string name="product_9a171c188f27da6fbbf3c45a" formatted="false">"主服务返回无效响应"</string>
+    <string name="product_ed82e03e8ba514e162d9bcfc" formatted="false">"主电脑"</string>
+    <string name="product_0df556fb7147dc0d4cdde3a5" formatted="false">"主要验收"</string>
+    <string name="product_8648a50adbf696c422a5862f" formatted="false">"也可以在列表顶部下拉加载"</string>
+    <string name="product_e62630cca7621ef23edf9fb1" formatted="false">"云端等待投递"</string>
+    <string name="product_1b29df5aa1ecea698324e2ad" formatted="false">"交付"</string>
+    <string name="product_790b8e1169e2b30a14228c2a" formatted="false">"交付候选"</string>
+    <string name="product_89d81c9051908b3e39318568" formatted="false">"交付材料"</string>
+    <string name="product_68e1b8aa0780ef96762a3204" formatted="false">"产物 SHA-256"</string>
+    <string name="product_ce00691542c9b3bfe529c1b4" formatted="false">"产物 SHA-256（64 位）"</string>
+    <string name="product_f21f45e798647235416ebe3d" formatted="false">"人工"</string>
+    <string name="product_fe0481c066bcec2767149da8" formatted="false">"人工 · "</string>
+    <string name="product_c5efc3dcc0ff68e9347d24d7" formatted="false">"人工验收 · "</string>
+    <string name="product_f3a8dcb414db1850b682f7b6" formatted="false">"人工验收不通过"</string>
+    <string name="product_38211d38179a664d4b99114a" formatted="false">"人工验收结论"</string>
+    <string name="product_9aa2724409b03da6666aed0f" formatted="false">"人工验收通过"</string>
+    <string name="product_d1414ba6890233e3fd295a51" formatted="false">"人类"</string>
+    <string name="product_fe91cde592e547448227479d" formatted="false">"人类成员 ID："</string>
+    <string name="product_000fd8fe0dca837e86774a07" formatted="false">"人类账户"</string>
+    <string name="product_752e705ca8a181d18a1ea431" formatted="false">"仅中继"</string>
+    <string name="product_0b68f7b7bd9aea90412e2988" formatted="false">"仅前台提醒"</string>
+    <string name="product_71f1fa19437401e10b3d0301" formatted="false">"仅对检测到的风险操作请求批准"</string>
+    <string name="product_add18092da4d751ff7b76472" formatted="false">"仅指定负责人本人可以响应。"</string>
+    <string name="product_beb507d45f98bcb679730545" formatted="false">"仅支持图片、UTF-8 文本、日志、JSON、CSV、patch/diff 和受限 ZIP"</string>
+    <string name="product_98251ad051cc5a26d2c43fab" formatted="false">"仅直连"</string>
+    <string name="product_f11d17de2f1d7469fac9d756" formatted="false">"仅结束本机等待；电脑端操作未取消，原回执保留。"</string>
+    <string name="product_af25d166138b9e034440cc41" formatted="false">"仅通知中心"</string>
+    <string name="product_457fb751f150708e7ddc3331" formatted="false">"从左侧栏选择项目与对话"</string>
+    <string name="product_3dfcc580c70090e427f6ea96" formatted="false">"从文件选择"</string>
+    <string name="product_c93d46275e99476f1496e5c8" formatted="false">"从照片选择"</string>
+    <string name="product_e6161ef37a6289ff15c181e8" formatted="false">"仓库地址"</string>
+    <string name="product_e6f04ffbaa424001e9716a18" formatted="false">"代码"</string>
+    <string name="product_5253040db8643c857d0bd782" formatted="false">"任务"</string>
+    <string name="product_80f08809ca297faff726730a" formatted="false">"任务 AI 数据共享"</string>
+    <string name="product_11a62743447631ccda71e4b7" formatted="false">"任务 AI 数据共享许可已撤回或目标已变化。草稿保留，请核对目标后再次主动提交。"</string>
+    <string name="product_578b1156b31b1e466e8f2acf" formatted="false">"任务 · %@"</string>
+    <string name="product_f1e978745d3ddb6a6fb9f360" formatted="false">"任务主服务"</string>
+    <string name="product_7b3e12709b1b4f1ec1523610" formatted="false">"任务仍在继续，可随时回答或跳过"</string>
+    <string name="product_82da0fca2e80f3e3084a258a" formatted="false">"任务受阻"</string>
+    <string name="product_558518b13361ab07d93b2c40" formatted="false">"任务失败"</string>
+    <string name="product_47eae46509f9cde2cd337f87" formatted="false">"任务失败记录"</string>
+    <string name="product_324225eef1d76994dc69ab73" formatted="false">"任务完成"</string>
+    <string name="product_457c158338e543bbcdc90417" formatted="false">"任务实时更新包含无效文本"</string>
+    <string name="product_6983ddc8fc612a1332645d21" formatted="false">"任务实时更新单行超过大小限制"</string>
+    <string name="product_ec12604bde13eb7d3339a316" formatted="false">"任务实时更新消息超过大小限制"</string>
+    <string name="product_21aa794d62c167b58c7aecff" formatted="false">"任务实时更新游标无效"</string>
+    <string name="product_085e5c5db553de29637e8bf8" formatted="false">"任务尚未同步"</string>
+    <string name="product_1f8473152b04bbb84a3201e5" formatted="false">"任务已主动停止"</string>
+    <string name="product_26eff32fa96e4e5a2cf1e77b" formatted="false">"任务已创建，派发尚未确认："</string>
+    <string name="product_e9a880e595218fd2ec7b0f12" formatted="false">"任务已完成"</string>
+    <string name="product_7e81b38d68f1c752ea679a71" formatted="false">"任务已暂停，请查看当前状态"</string>
+    <string name="product_e58e00ab94c026de0c9fffa2" formatted="false">"任务已更新，正在重新读取当前轮；草稿继续保留。"</string>
+    <string name="product_3b2ac2aca6785dcfd6aaaaa0" formatted="false">"任务已结束，回答将继续此对话"</string>
+    <string name="product_acce21457821e69c592e16b0" formatted="false">"任务异常中断，请查看原因"</string>
+    <string name="product_f7d6974190bfdb5f784f920c" formatted="false">"任务待响应"</string>
+    <string name="product_ba9adf5f2dc2cbe127dedef4" formatted="false">"任务待澄清"</string>
+    <string name="product_1d87281efb09fb62a85e8f2d" formatted="false">"任务待验收"</string>
+    <string name="product_a3cfc7bf04264fbd6e523d73" formatted="false">"任务执行失败"</string>
+    <string name="product_67058f03417a2f37d7ad7fa6" formatted="false">"任务执行失败，请查看详情"</string>
+    <string name="product_f741f8b089b84a181b968538" formatted="false">"任务提醒"</string>
+    <string name="product_21a07234feb3b6eb867a36dc" formatted="false">"任务操作"</string>
+    <string name="product_474d409eaa8c1033521c3381" formatted="false">"任务暂停"</string>
+    <string name="product_b5a9a156fd7b118b75d7f6b9" formatted="false">"任务更新"</string>
+    <string name="product_78f5751d7d29fb9d137f9ff3" formatted="false">"任务服务二维码不兼容或身份无效"</string>
+    <string name="product_120b71283cebcc185ebf7692" formatted="false">"任务服务二维码内容过长"</string>
+    <string name="product_e0596593071a4e1f1a910687" formatted="false">"任务本机缓存损坏或版本不兼容，请保留原缓存并停止提交。"</string>
+    <string name="product_412670a3be49554266102b1d" formatted="false">"任务本机缓存无法打开（SQLite %@/%@，系统 %@）。请保留缓存并停止提交。"</string>
+    <string name="product_131753e86dc8334c5dbca604" formatted="false">"任务本机缓存未完成保存或读取（SQLite %@）。"</string>
+    <string name="product_019edd4a12a44f15bfb8d6ed" formatted="false">"任务本机缓存路径不安全，未保存。"</string>
+    <string name="product_f118de64d6ec8f5befccab2a" formatted="false">"任务标题"</string>
+    <string name="product_f7ba4fdedab1cdbd3aae7a89" formatted="false">"任务正在等待你的回答"</string>
+    <string name="product_39f7a367c237cdc7b44dbb21" formatted="false">"任务版本已变化，请关闭后核对当前轮再派发。"</string>
+    <string name="product_291f8c5b31eb92c6592eb92f" formatted="false">"任务范围"</string>
+    <string name="product_c1f35fc1a5d657aebe676a98" formatted="false">"任务计划等待确认"</string>
+    <string name="product_56b3909705f355fc00f7f600" formatted="false">"任务详情"</string>
+    <string name="product_2e5c36a8732d4716bc7785fd" formatted="false">"任务资料更新"</string>
+    <string name="product_784ddbd459f4b74daba0bb4a" formatted="false">"任务需求、反馈、回复、图片证据、候选材料及相关任务上下文可能由主服务自动派发到这些电脑，再由电脑配置的第三方 AI 处理，用于开发、自验、独立验收和最终交付。"</string>
+    <string name="product_b748b26a23c1be2ee1a9b350" formatted="false">"优先使用所选方式。电脑端转写不可用时，自动使用本地听写。本地听写使用手机系统语音识别，部分设备或语言可能需要联网。"</string>
+    <string name="product_565d64601d4d174f24d1a912" formatted="false">"优先级"</string>
+    <string name="product_67d8f79c3273366cad258c67" formatted="false">"优化查询性能"</string>
+    <string name="product_988df7b7a0c1544306965f5b" formatted="false">"会话属于当前主服务和人类账户。会话过期后需要重新登录；撤销设备会话会停止该设备继续读取和提交。"</string>
+    <string name="product_aa9e366f68d3d097d4890b65" formatted="false">"低"</string>
+    <string name="product_bd38beab7fc02492608e4b2e" formatted="false">"你的文字、图片、文件、问题回答及相关对话上下文将发送至这台电脑，并由电脑端实际配置的第三方 AI 服务处理，用于生成回复、分析附件和执行任务。"</string>
+    <string name="product_cdfd0b34e4918648910bd74b" formatted="false">"使用"</string>
+    <string name="product_0b075ee0562c7e5615be0111" formatted="false">"使用 "</string>
+    <string name="product_b20063ef55c2feb343f39b12" formatted="false">"使用 HTTPS 电脑地址；本机模拟器可用 http://127.0.0.1:8788。"</string>
+    <string name="product_f0bc7d0996ce675ead9ddeb6" formatted="false">"使用二维码连接"</string>
+    <string name="product_0f4640b7f1922fb2358dae3c" formatted="false">"使用多个工具"</string>
+    <string name="product_e11014c0a1c06661b9994e07" formatted="false">"使用本地 DEV 登录"</string>
+    <string name="product_a3030bf8f16dc63c6b277564" formatted="false">"保存"</string>
+    <string name="product_991bb7cfe5a81550cffd1004" formatted="false">"保存修改"</string>
+    <string name="product_67a4835b438752e19f9f8b06" formatted="false">"保存到：%@"</string>
+    <string name="product_81d24433b24f68ca524347c0" formatted="false">"保存并核对通知通道"</string>
+    <string name="product_fc7025460f8d9ef6b1de4779" formatted="false">"保存或分享文件"</string>
+    <string name="product_742c44d663feb7d2b394ec9e" formatted="false">"保存的原录音不完整，已停止转写"</string>
+    <string name="product_37d63393ec5204565f00cff8" formatted="false">"保存结果需核对原回执；不会再次提交"</string>
+    <string name="product_5329e3f0ee463df52ef9d8aa" formatted="false">"保存草稿"</string>
+    <string name="product_baa8404ed246d265cdd4afe7" formatted="false">"保留原操作，不重新提交"</string>
+    <string name="product_3e6d3ed53e48e17e7b700028" formatted="false">"保留编辑内容，采用当前版本 %@"</string>
+    <string name="product_b5850939ad6423481cc18b28" formatted="false">"保留记录并返回编辑"</string>
+    <string name="product_a99d038c018ad7dcca461a52" formatted="false">"保留项目与任务历史，按服务端权限及项目策略生效。"</string>
+    <string name="product_3b63d4bdd9b87143e9a05e08" formatted="false">"候选交付说明"</string>
+    <string name="product_bc19079fff75063d5e3eacc4" formatted="false">"候选引用"</string>
+    <string name="product_817429f6b5b7a88b38cf23ad" formatted="false">"候选必须与本轮已通过自验的候选、产物摘要和材料一致。"</string>
+    <string name="product_e90c68d1360db693e3b98f8b" formatted="false">"候选材料"</string>
+    <string name="product_33845e82b64a2c8cdbf7e6ab" formatted="false">"候选自验"</string>
+    <string name="product_6687ac8617e444c3a60abf2d" formatted="false">"停止任务"</string>
+    <string name="product_bb50e844891840c18b26773f" formatted="false">"停止未确认，请刷新任务状态。"</string>
+    <string name="product_4a6d8d490c54d4381c980e8e" formatted="false">"允许一次"</string>
+    <string name="product_49020b8b03ad77499364a1fe" formatted="false">"允许业务写入"</string>
+    <string name="product_7df7030f91f451a274d823d2" formatted="false">"允许只保存目标许可。返回后须再次点击原提交按钮；本页不会发送内容、派发任务或重放未知操作。许可不代替项目权限、Host 授权或沙盒权限。"</string>
+    <string name="product_5918c57d29faa569c1af70cf" formatted="false">"允许后返回原界面，再次点击发送或原操作按钮。当前草稿和附件会保留；本页不会自动发送。"</string>
+    <string name="product_1e6f84b39c883c1015cf527a" formatted="false">"允许哪些实际目标"</string>
+    <string name="product_3b7dda5bfc438d4bf8d8480e" formatted="false">"允许已授权操作"</string>
+    <string name="product_8c7a9ccce94c223c8e22f954" formatted="false">"允许此电脑和模型处理内容"</string>
+    <string name="product_7bbbd7775d41d8e1ca0b22d6" formatted="false">"允许说明无需提交"</string>
+    <string name="product_4e29e5a61d8cb6037a3d4efe" formatted="false">"允许这些目标，返回后再次提交"</string>
+    <string name="product_0cf4953b84b848a9adab6181" formatted="false">"先核对已绑定主服务。草稿仍可编辑和保存。"</string>
+    <string name="product_0631af77f360682a34ab87c4" formatted="false">"先添加一个项目"</string>
+    <string name="product_cc753bd27b03ba72cb0bc69c" formatted="false">"免去任务工具确认，仍受设备授权和 Host 边界约束"</string>
+    <string name="product_5c55a67935af8f4508ba05d6" formatted="false">"全部"</string>
+    <string name="product_0a379c1e7398fba103b2fa17" formatted="false">"全部状态"</string>
+    <string name="product_57a44a9407c668e6412cb528" formatted="false">"全部负责人"</string>
+    <string name="product_52d25a9e30ba94f1fd31be6b" formatted="false">"关于"</string>
+    <string name="product_3fd47edce45b3603d4192f61" formatted="false">"关闭"</string>
+    <string name="product_9ec65d0c311b9b9b07643947" formatted="false">"关闭失败提示"</string>
+    <string name="product_46b69098a0f1886e468c9810" formatted="false">"关闭此表单并明确进入当前轮后，才能提交。"</string>
+    <string name="product_f3d52724af1ac157b0278dfe" formatted="false">"关闭计划模式"</string>
+    <string name="product_a9e8949a409fc756560caa61" formatted="false">"冻结候选"</string>
+    <string name="product_325f54acd2ae37cbc1cb10b9" formatted="false">"冻结候选后由服务端创建必要验收。"</string>
+    <string name="product_6251d0de84c7729220fcbc15" formatted="false">"冻结候选引用"</string>
+    <string name="product_a85e827579e6cc1d378fac7a" formatted="false">"冻结时间"</string>
+    <string name="product_98b5c4bde31c6fb8ecf65242" formatted="false">"冻结材料 · %@ 项"</string>
+    <string name="product_4a43ae00bfe2eedb4722997e" formatted="false">"冻结材料尚未同步："</string>
+    <string name="product_1e7e4ada87459fac80e32544" formatted="false">"准备听写…"</string>
+    <string name="product_cce518f1f1400a37e1e0137c" formatted="false">"准备本地听写…"</string>
+    <string name="product_ede2480fd170fbaad932fb33" formatted="false">"准确任务目标"</string>
+    <string name="product_4f7e673d53935757843e673d" formatted="false">"准确材料引用"</string>
+    <string name="product_23ff7c43720bcd94e5b93f5f" formatted="false">"分享回复"</string>
+    <string name="product_08095d2270353155c7146fce" formatted="false">"分享已下载附件"</string>
+    <string name="product_2b071bbfa1f67dc95182e75d" formatted="false">"分支对话"</string>
+    <string name="product_63ef16c77a9a148d9566c2fa" formatted="false">"分支已创建"</string>
+    <string name="product_94206062c7c45279e4be22b7" formatted="false">"分支未创建"</string>
+    <string name="product_22afa9ea735c48eaa9304785" formatted="false">"分支结果待确认"</string>
+    <string name="product_14a6a4587985393dd817edcd" formatted="false">"切换客户端，%@，%@"</string>
+    <string name="product_52c36037b070288031caae01" formatted="false">"切换客户端，查看项目和对话。"</string>
+    <string name="product_a538755106f58021d591c6b4" formatted="false">"切换签名团队前先导出，并妥善保存密码。Agent Hub 可导入原 Codex Manage 的加密备份，恢复连接、草稿、附件及未确认回执。文件只通过你选择的位置保存；导入适用于尚未添加真实电脑的新安装，导入后需重新开启通知。"</string>
+    <string name="product_aedd6814ff8c516cb8815410" formatted="false">"列表"</string>
+    <string name="product_d2ff17f44817a3d71c26398c" formatted="false">"创建任务"</string>
+    <string name="product_acb94b8ea003a8da35d1639b" formatted="false">"创建关联未保存"</string>
+    <string name="product_e258e403fa4eb2bebc336b19" formatted="false">"创建后执行"</string>
+    <string name="product_f8c422265fb7f905ecf2db2b" formatted="false">"创建并派发到真实电脑"</string>
+    <string name="product_5f04895be31e956de20c968b" formatted="false">"创建草稿的稳定身份尚未保存"</string>
+    <string name="product_63f3bfcb7208ac87154f693d" formatted="false">"创建草稿身份尚未保存"</string>
+    <string name="product_43d7d2b51d75fa42d80c78b1" formatted="false">"创建项目"</string>
+    <string name="product_c1087a68941ab9c38299d31a" formatted="false">"创建项目当前无权访问"</string>
+    <string name="product_b5e1bb61b32e8e5273a4727b" formatted="false">"删除 "</string>
+    <string name="product_9ca4b75d03266b03676668d7" formatted="false">"到期时间"</string>
+    <string name="product_81f87a284eb188cd4f90468e" formatted="false">"刷新传输记录"</string>
+    <string name="product_a2e016a613dbb634bdc8c0d6" formatted="false">"刷新历史"</string>
+    <string name="product_c6cefa9e4d57fe3a73d7aa68" formatted="false">"刷新并采用最新版本"</string>
+    <string name="product_348da32a18742f1b5c2b99e6" formatted="false">"刷新执行记录"</string>
+    <string name="product_e30a1f03eee08dd0150a4e62" formatted="false">"刷新通道"</string>
+    <string name="product_1f07eaf0c91f034de3455dcc" formatted="false">"前台显示横幅"</string>
+    <string name="product_25f5ce57a1909740c1f26740" formatted="false">"功能"</string>
+    <string name="product_0737d1dcf9a6482e43c89eef" formatted="false">"加密文件已保存。确认文件和密码可用后再更换签名。"</string>
+    <string name="product_22163ba3faeeb53a11b6900b" formatted="false">"加快模型响应，增加用量消耗。"</string>
+    <string name="product_af90a08fec8ee28d12d84969" formatted="false">"加载更多"</string>
+    <string name="product_7ebe11f67d470c2026706d41" formatted="false">"加载更多本轮过程"</string>
+    <string name="product_b9103ec268137432ca26597d" formatted="false">"加载更多（已显示 %@ / %@）"</string>
+    <string name="product_2c521de73c7cb432c6c41fdc" formatted="false">"加载更早消息失败，请重试。\n"</string>
+    <string name="product_0f18a3b286fc3ff3d8c496b9" formatted="false">"加载更早轮次"</string>
+    <string name="product_f2739900781666f0d0047451" formatted="false">"单条消息最多添加 10 个附件。"</string>
+    <string name="product_b0385cfe4b424d835963f2ce" formatted="false">"历史"</string>
+    <string name="product_d909d78ffc6732ff64d0b2f2" formatted="false">"历史只读"</string>
+    <string name="product_8da39275c94662f332a02290" formatted="false">"历史流程"</string>
+    <string name="product_5467922dce50a319ceab2a26" formatted="false">"历史记录"</string>
+    <string name="product_901b2de9fde7b0750e6ae79e" formatted="false">"历史轮次只读，请先明确进入当前轮。"</string>
+    <string name="product_4ab7564aeb58b479fed453ef" formatted="false">"原上传回执的附件 SHA-256 不一致"</string>
+    <string name="product_099b8fb8e9f1526136d4b39a" formatted="false">"原上传操作已登记，请查询原回执"</string>
+    <string name="product_1b806c361fe9bbae5c2f224f" formatted="false">"原上传票据尚未确认或内容已改变，请核对原准备回执"</string>
+    <string name="product_7f6735ad57decc5614b0f557" formatted="false">"原上传账户已退出或会话过期；请登录后查询原回执"</string>
+    <string name="product_f0a97b5ffc49f1c65f868671" formatted="false">"原会话"</string>
+    <string name="product_8a5783ba896df3cd0de6ed99" formatted="false">"原分支结果尚未确认，请查询原回执或结束等待"</string>
+    <string name="product_a44b4b2769f6643988c028dd" formatted="false">"原创建 %@ 已绑定提交内容；请核对原操作，或明确另建新草稿"</string>
+    <string name="product_9049692731adb4a672647f9b" formatted="false">"原创建 %@ 的结果尚未确认，请查询原回执；草稿变化不会产生新操作"</string>
+    <string name="product_e9cb5f4a8599ee00986adc2c" formatted="false">"原创建关联与不可变操作不一致，请核对原回执"</string>
+    <string name="product_a004dbcc668c330822b6cc0b" formatted="false">"原创建已确认。打开原任务会保留其操作结果；恢复时不会再次创建或自动派发。"</string>
+    <string name="product_eabc368d77ac9271a77b35e6" formatted="false">"原创建已确认，但项目权限或原结果尚未核对：%@"</string>
+    <string name="product_138f7ae9a179c9bf87e3d470" formatted="false">"原创建结果尚未确认。请查询原回执；本草稿不会换新编号重新创建。"</string>
+    <string name="product_e70e46434499cf3e5e7fa19c" formatted="false">"原始需求"</string>
+    <string name="product_f416215787dfe428ab74fef2" formatted="false">"原始需求附件"</string>
+    <string name="product_4838a9bfd9f788a0483b71d4" formatted="false">"原录音不存在"</string>
+    <string name="product_7b478c57736a52b4173fac34" formatted="false">"原操作 ID"</string>
+    <string name="product_e9f886f30c7859f21ae2cb65" formatted="false">"原操作回执"</string>
+    <string name="product_cbfbfaca8eb6f27f1218cf1b" formatted="false">"原操作已登记，请核对原回执"</string>
+    <string name="product_a5de68144d5f4292a484c16b" formatted="false">"原操作已登记；请查询同一 ID，不能重复提交"</string>
+    <string name="product_eb5aebfbe4902f86353fae6e" formatted="false">"原操作已确认，新草稿继续保留。"</string>
+    <string name="product_4b0841a6330278dd4c1fd1a5" formatted="false">"原操作已确认；新编辑的草稿已保留。"</string>
+    <string name="product_ab1828fde5d66f58365b9dcf" formatted="false">"原操作记录"</string>
+    <string name="product_287611c1a2a71623eb1e288f" formatted="false">"原操作返回无效状态"</string>
+    <string name="product_129fdd02d2089b5d9f945bc2" formatted="false">"原模型轮"</string>
+    <string name="product_c3697a1243bfdb02ecf2ffa7" formatted="false">"原消息已确认未提交"</string>
+    <string name="product_09872ddf8dba49abc4981078" formatted="false">"原消息结果仍待核对，仅查询原操作 ID；没有重新提交。"</string>
+    <string name="product_10244c1ee6a03ed8c8397ff0" formatted="false">"原消息结果待核对，不能重新提交；请查询原回执。"</string>
+    <string name="product_8a5ffa5dbb67bc3d8500ee57" formatted="false">"原消息结果待核对，仅查询原操作 ID；没有重新提交。"</string>
+    <string name="product_902597c0694b6bae63c5f54c" formatted="false">"原确认回执缺少结果，请继续核对同一操作 ID"</string>
+    <string name="product_a7fa9ccdb7e6b21ba9cd934a" formatted="false">"原输入未提交尚未得到确认，原消息和当前草稿均已保留。"</string>
+    <string name="product_33e7d4d23e78880edfaeb008" formatted="false">"原附件已绑定其他草稿或轮次，请保留原记录并重新选择证据"</string>
+    <string name="product_4472f53b06957f7121d4ee9e" formatted="false">"原验收已失效，草稿保留。"</string>
+    <string name="product_0860509c4570cce2a9e5e7dc" formatted="false">"及时通知"</string>
+    <string name="product_b6ac0f5d7a7f42b0e4cdee56" formatted="false">"双通道重复创建"</string>
+    <string name="product_1061426aacc35c15867cb2aa" formatted="false">"双通道重复发送"</string>
+    <string name="product_8b2106ca13719cb2d606feab" formatted="false">"反馈"</string>
+    <string name="product_0215ff0b3cce53f14fced0a7" formatted="false">"反馈内容"</string>
+    <string name="product_4aeacc113cb22e6b3d828f80" formatted="false">"反馈标题"</string>
+    <string name="product_6d5e537c3eeba572aa15d730" formatted="false">"发现不同主服务实例"</string>
+    <string name="product_13d18b895685acc941ff317e" formatted="false">"发现与核对服务"</string>
+    <string name="product_b07c0dbc2d67254f97cf746a" formatted="false">"发现主服务"</string>
+    <string name="product_bf7811c5782a50ba3416c5f9" formatted="false">"发现多个实例，登录已暂停。"</string>
+    <string name="product_28b1fd5aea025e12f98ca7b9" formatted="false">"发现重复原操作记录，请查询原 ID；不会重放"</string>
+    <string name="product_364970d8168ca5febaa4368e" formatted="false">"发送中…"</string>
+    <string name="product_8187c352d3702f344254145b" formatted="false">"发送到哪里"</string>
+    <string name="product_68b4e82066b68c47a630f7e0" formatted="false">"发送前由你明确允许所选电脑及其 AI 配置处理文字、图片、文件和对话上下文。本地界面示例不访问 AI 服务。"</string>
+    <string name="product_2a4d6dbccfa9e5ba519beaa9" formatted="false">"发送方式"</string>
+    <string name="product_5e0022a1e9076490a3023b97" formatted="false">"发送测试通知"</string>
+    <string name="product_008814832cf7026a6987ab1c" formatted="false">"发送消息"</string>
+    <string name="product_d9fdcdff329086f4c830e910" formatted="false">"发送结果待核对，仅查询原操作 ID"</string>
+    <string name="product_8d3722a1f1d1a0f49454be8f" formatted="false">"发送结果：%@，请查询发送状态。"</string>
+    <string name="product_49c052512733fda6fbf6f4ff" formatted="false">"发送给当前客户端的消息"</string>
+    <string name="product_275bae9fd8cd3aab6a30265b" formatted="false">"发送调整"</string>
+    <string name="product_2cd0f3be8738a86cede1a145" formatted="false">"取消"</string>
+    <string name="product_dd9db147a3225c4e9da1188f" formatted="false">"取消录音"</string>
+    <string name="product_aaa99f7505dd5f735ff2a620" formatted="false">"取消第 %@ 条排队指令"</string>
+    <string name="product_fffc5e83e953e1e92cf1a214" formatted="false">"只发送你有权分享的内容。连接加密不影响 AI 服务读取已发送内容。你可以在设置中撤回许可；撤回不删除已经发送的内容，也不停止电脑上已有任务。"</string>
+    <string name="product_064ae0803ad1a980829b9c4c" formatted="false">"只接受可信私网 HTTPS 服务。地址变化不会自动切换数据归属；未发现主服务时请在原主电脑恢复服务。"</string>
+    <string name="product_06542402b8eba02828986cb8" formatted="false">"只结束手机等待，不取消远端。原操作 ID、正文和附件继续保留。"</string>
+    <string name="product_47eb10da0559c4cca3d27945" formatted="false">"只结束手机等待，不表示取消远端。原操作与附件保留，可继续查询原回执。"</string>
+    <string name="product_3b5ec3533b0e44856a0266ef" formatted="false">"只读"</string>
+    <string name="product_05ac32bf48b2eb7cbde0dbb7" formatted="false">"可以查看已有缓存、编辑并保存草稿。连接原主服务后才能提交。"</string>
+    <string name="product_98560503150f2be632b1f167" formatted="false">"可以清除筛选，或在此项目创建任务。"</string>
+    <string name="product_16fa14af836a707451dc92e0" formatted="false">"可关闭"</string>
+    <string name="product_a3bc3e79fc0d129e51e6035b" formatted="false">"可写"</string>
+    <string name="product_256e027f574c38db1566e1aa" formatted="false">"可在“主服务与账户 → 任务 AI 数据共享”撤回。撤回会阻止本机后续提交，不能撤回已经发到主服务或 AI 的内容，也不会停止已获派发的自动工作流；需要停止时请处理对应电脑的任务。"</string>
+    <string name="product_c19ebe63f72a740e156f1c86" formatted="false">"可扫描已生成的连接信息，或使用自动发现直接连接。"</string>
+    <string name="product_4d99c976beb8827ecac5f423" formatted="false">"可用"</string>
+    <string name="product_8f22e9a737827b47ec1cba52" formatted="false">"可访问互联网和电脑上的任何文件"</string>
+    <string name="product_d4330c836f4c22a7847f7602" formatted="false">"同一操作正在等待 Host 回执"</string>
+    <string name="product_d44e9b3d3b31d37b4f0cd94f" formatted="false">"名称"</string>
+    <string name="product_3e18cde6fde5febfcd1fe6a7" formatted="false">"后台推送不可用"</string>
+    <string name="product_516e4a7a2d870a36d83f1cc8" formatted="false">"后台推送尚未连接，当前可使用前台提醒。请检查推送签名和网络。"</string>
+    <string name="product_c7d61becb3a22372dcfd3c9f" formatted="false">"后台推送已连接"</string>
+    <string name="product_1b3eb0ddba9d4461fa3a6c19" formatted="false">"听写已停止：%@"</string>
+    <string name="product_ec909e76c1a2dab352d23a73" formatted="false">"听写被中断，已识别的文字保留在草稿中。"</string>
+    <string name="product_59ec7740ed58abe5e9ef33ca" formatted="false">"告诉助手应该如何调整计划"</string>
+    <string name="product_928f87d4507bf9a0085474e3" formatted="false">"命令"</string>
+    <string name="product_1346318a365104cc763504af" formatted="false">"响应 · "</string>
+    <string name="product_28ad983da52dd4eedbfbed3b" formatted="false">"响应内容"</string>
+    <string name="product_fff5aa7120aebc49fd8ac55c" formatted="false">"唯一项目源"</string>
+    <string name="product_9ae6dd3e7a82080eee2861cb" formatted="false">"回答不符合此问题的选项规则"</string>
+    <string name="product_6a9070bf6ac484b1b3dc38c6" formatted="false">"图片.%@"</string>
+    <string name="product_421b27120346dc344250c32b" formatted="false">"图片与文件证据"</string>
+    <string name="product_9c9f48d53f94292176752a5d" formatted="false">"图片缩略图不可用"</string>
+    <string name="product_0d153c13ff1482950df28cd4" formatted="false">"在 %@ 中开始新对话"</string>
+    <string name="product_8bbfe2d4ff5a8bca83f62daf" formatted="false">"在 %@ 新建对话"</string>
+    <string name="product_7b4d1ee0119235753a4518e4" formatted="false">"在当前工作目录中分支"</string>
+    <string name="product_5e28ac891a67173afe0bfa52" formatted="false">"在新工作树中分支"</string>
+    <string name="product_b9086662b1df1f201abb3c36" formatted="false">"在线"</string>
+    <string name="product_68cd694bfff00c92dd31f729" formatted="false">"填写已配对电脑的地址；首次接入请使用电脑提供的连接二维码。"</string>
+    <string name="product_c98c2b98055b31d82c36e3b0" formatted="false">"填写本次实际源码与构建产物指纹。不会自动生成或代填通过证明。"</string>
+    <string name="product_5a646264c3ce7150ca2641f0" formatted="false">"填写电脑上 Host Agent 的 HTTPS 地址和客户端密钥。密钥保存在系统钥匙串。本机模拟器可使用回环地址；历史只读连接无需密钥。"</string>
+    <string name="product_71b7cf86f34363d6bdf1b891" formatted="false">"增加候选材料"</string>
+    <string name="product_c39a6689342414e6d4ae7d20" formatted="false">"增加必要验收"</string>
+    <string name="product_fb720af633e5018b08440749" formatted="false">"增加索引要求"</string>
+    <string name="product_2d973a2c6a59618492ccf7a3" formatted="false">"增加索引记录"</string>
+    <string name="product_4f6529700bd4b13966ae9519" formatted="false">"增加自验检查"</string>
+    <string name="product_473400815c0f687da9d51a61" formatted="false">"声音"</string>
+    <string name="product_694b71bc8013ff4330dca5be" formatted="false">"处理中"</string>
+    <string name="product_edbd21d2520f4c110728744f" formatted="false">"处理决定"</string>
+    <string name="product_63d90d977348ab1f9aa34ebb" formatted="false">"复制"</string>
+    <string name="product_67d75166a0d7302d77dc3cbd" formatted="false">"复制中文"</string>
+    <string name="product_605c82dd96bc6ce023832eba" formatted="false">"复制命令"</string>
+    <string name="product_d784b8b766ead0ab0305fff8" formatted="false">"复制回复"</string>
+    <string name="product_dff23770c12d6ebfc5464760" formatted="false">"复制工具详情"</string>
+    <string name="product_613f76d4e01cead5c54deefd" formatted="false">"复制电脑路径"</string>
+    <string name="product_42db12649b38dcc8becf2293" formatted="false">"复制计划"</string>
+    <string name="product_86a63f23a076b11ec0243cce" formatted="false">"外观"</string>
+    <string name="product_4075fa4317f936824bc86858" formatted="false">"多个旧创建回执匹配此草稿，请先核对原操作；不能猜测或重新创建"</string>
+    <string name="product_28384d7afd2e4fa66084f680" formatted="false">"失败"</string>
+    <string name="product_f867f34178594f891eb70a42" formatted="false">"好"</string>
+    <string name="product_eb5b4894204ea7a695e25d23" formatted="false">"安全迁移"</string>
+    <string name="product_cc66c3f576fd5a49a7b85c7b" formatted="false">"完全访问权限"</string>
+    <string name="product_542c497c08e5d54a8bb2aee5" formatted="false">"完善网站首页"</string>
+    <string name="product_c0b3fbff51ccc40b8bf1a816" formatted="false">"完成"</string>
+    <string name="product_23d249aeec8c4fbd91d7441d" formatted="false">"完成输入"</string>
+    <string name="product_7e4cb67841cd4cca7edb78b4" formatted="false">"完成门槛"</string>
+    <string name="product_99fc84c8b8ae3bb3493967cc" formatted="false">"实例 ID"</string>
+    <string name="product_f28b82567be03ba55b293daa" formatted="false">"实施此计划。"</string>
+    <string name="product_0d1c1e85a8bdf883c8440f7d" formatted="false">"实施此计划？"</string>
+    <string name="product_746f374591477c33ea28d107" formatted="false">"实时业务事件身份无效"</string>
+    <string name="product_22b8a0c2a515d09d6967588f" formatted="false">"实时快照未同步，保留原游标等待恢复"</string>
+    <string name="product_bc20edffb64d614cfd4bf5c0" formatted="false">"实际同步结果引用"</string>
+    <string name="product_71fbb0530128115d76c1fd8a" formatted="false">"实际推理档位"</string>
+    <string name="product_e54554fd953b6ee5d46a4cdc" formatted="false">"实际检查结果和证据引用"</string>
+    <string name="product_97c81c54ffdd8fc95ea31d93" formatted="false">"实际结果"</string>
+    <string name="product_1d9c9a880ebdec7fcf4061ec" formatted="false">"实际进展"</string>
+    <string name="product_21b1b14e03e372586dd379c1" formatted="false">"实际验收电脑："</string>
+    <string name="product_477581b84e505d10e22035af" formatted="false">"客户端"</string>
+    <string name="product_0545625bdbf5e09e8c6cb7cc" formatted="false">"客户端名称"</string>
+    <string name="product_7183484f9a9f4fb76f3bd9bb" formatted="false">"客户端密钥"</string>
+    <string name="product_eb7267188a1657796ccf2877" formatted="false">"家里的 Mac"</string>
+    <string name="product_a621ab606db2a11f63edc576" formatted="false">"密码"</string>
+    <string name="product_4922db780544938f11553367" formatted="false">"密码错误或迁移文件已损坏，原有数据未更改。"</string>
+    <string name="product_48780054810772759a271d9f" formatted="false">"对应原反馈："</string>
+    <string name="product_71eea335228d132ae89d8606" formatted="false">"对话选项"</string>
+    <string name="product_72032d2dd4e2ab777a4b7cb5" formatted="false">"导入 DEV 验收附件"</string>
+    <string name="product_75941a190cf9398bc348f325" formatted="false">"导入加密迁移文件"</string>
+    <string name="product_c16f02dc40ad32a6f421dc37" formatted="false">"导入铃声"</string>
+    <string name="product_0e1c1490635ae1eb90028833" formatted="false">"导出加密迁移文件"</string>
+    <string name="product_db7ac88a068b2696b7a0cada" formatted="false">"尚未允许任务数据共享"</string>
+    <string name="product_dadd200b443a31434a24fbf2" formatted="false">"尚未允许共享"</string>
+    <string name="product_256e98c3bcf4a97c6dcdf324" formatted="false">"尚未发现服务。请确认主电脑服务正在运行，并允许 App 访问本地网络。"</string>
+    <string name="product_d65e0b84208176fa4f95d3e9" formatted="false">"尚未提交本轮候选。"</string>
+    <string name="product_7410dae3f11ec6a0e30d9a61" formatted="false">"尚未核对"</string>
+    <string name="product_87938d53d751e951261b24df" formatted="false">"尚未注册后台推送"</string>
+    <string name="product_8ccd6e83c07ec83376c6c8cc" formatted="false">"尚未申请权限"</string>
+    <string name="product_2c5afb962cc7153440ce3ff2" formatted="false">"尚未确认原会话"</string>
+    <string name="product_47ec6c6af795e49e1023a498" formatted="false">"尚未记录当前目标的实际发送操作"</string>
+    <string name="product_42aee83abafbf223c21432ab" formatted="false">"尚未记录本轮候选自验。历史记录不补填通过证明。"</string>
+    <string name="product_de38ab7a6129e432a7562c9f" formatted="false">"尝试其他名称或清除搜索。"</string>
+    <string name="product_0f57ba07aa64ac1d38472745" formatted="false">"局域网发现暂不可用（%@）。请核对网络和 App 的本地网络权限，也可使用主电脑的配对 JSON。"</string>
+    <string name="product_15d822e0983d89305c666169" formatted="false">"展开 %@ 的更多聊天"</string>
+    <string name="product_83ad87eee587826a3df77ace" formatted="false">"展开显示"</string>
+    <string name="product_3ef85f3d796ec3ebd173046f" formatted="false">"展开更多最近聊天"</string>
+    <string name="product_3bcd2b0c8570bbb11cd2bd1e" formatted="false">"展开最近聊天"</string>
+    <string name="product_b7d872209becc4b9729dbff4" formatted="false">"展开置顶聊天"</string>
+    <string name="product_4e823a486a2de80374a6e4c4" formatted="false">"工作室 Mac"</string>
+    <string name="product_5ca6730d441522017552bf30" formatted="false">"工具"</string>
+    <string name="product_d15e8edc823e30055b6f6b93" formatted="false">"工具输出"</string>
+    <string name="product_a3b445efc48f2835e22eb9bc" formatted="false">"已"</string>
+    <string name="product_cad846aaa64e4bb23eb047a3" formatted="false">"已%@%@%@"</string>
+    <string name="product_f2f02049468d58581201c94d" formatted="false">"已上传"</string>
+    <string name="product_225b664ac0525ce636d5d895" formatted="false">"已上传 · 待关联业务提交"</string>
+    <string name="product_ae0dce2357fac8924ffb8e07" formatted="false">"已与主电脑核对实例和证书指纹"</string>
+    <string name="product_624ecd8431832fac2f1432f7" formatted="false">"已交付"</string>
+    <string name="product_9c3767e64acbeb5f87d3a949" formatted="false">"已保存，暂不可达"</string>
+    <string name="product_f006455e3baf2b0bbc0919fa" formatted="false">"已停止"</string>
+    <string name="product_545edb71066dd7bf104652b0" formatted="false">"已允许的电脑和模型"</string>
+    <string name="product_97468345aa2dfe9db6f02b85" formatted="false">"已允许的目标"</string>
+    <string name="product_6744b4c6a9aa00381ffea2b3" formatted="false">"已关闭"</string>
+    <string name="product_8bef70b009895a8e418bf42e" formatted="false">"已准备"</string>
+    <string name="product_88e6e5293a1923337ff8a7f8" formatted="false">"已压缩上下文"</string>
+    <string name="product_cc4f958078895a76bff39ae5" formatted="false">"已发现"</string>
+    <string name="product_b0604396c9d76576c80dd829" formatted="false">"已发现 · "</string>
+    <string name="product_5d91cca6192723d449f2a016" formatted="false">"已响应 · 待澄清"</string>
+    <string name="product_76fa85ab708b47c35390de8e" formatted="false">"已声明能力"</string>
+    <string name="product_f28461bb49c8564716309d57" formatted="false">"已完成"</string>
+    <string name="product_27b8c29690d52fab21ffffef" formatted="false">"已完成的验收历史 %@"</string>
+    <string name="product_df647b73b990c259294ed447" formatted="false">"已展开"</string>
+    <string name="product_865e3b7422c43f3be8761f4a" formatted="false">"已开始一份新的创建草稿，请核对后提交。"</string>
+    <string name="product_82395d423099a07ae94b5d22" formatted="false">"已归档"</string>
+    <string name="product_bd92e611292d9308955e2180" formatted="false">"已恢复此草稿的原录音。点击重试查询同一转写；不会自动重新提交。"</string>
+    <string name="product_ee60469308d3b6bed37e6e89" formatted="false">"已折叠"</string>
+    <string name="product_00bd3960fea8ea982bcce83a" formatted="false">"展开"</string>
+    <string name="product_afd4b783536b8297bb250683" formatted="false">"收起"</string>
+    <string name="product_f098218a3032a6257b5140d0" formatted="false">"已拒绝"</string>
+    <string name="product_3cc8745436a73e7bc1322e7a" formatted="false">"已排队"</string>
+    <string name="product_d1b059338671b1d3fcf22af4" formatted="false">"已探测 · 点按核对身份"</string>
+    <string name="product_bc37a6110a07493f21d0bc20" formatted="false">"已提交"</string>
+    <string name="product_4ae869bd21739174589f7f5a" formatted="false">"发送记录"</string>
+    <string name="product_495abab884e30c5161f5a7fd" formatted="false">"已提交操作的结果需要核对"</string>
+    <string name="product_fef96e34f77b742b32120dac" formatted="false">"已撤销"</string>
+    <string name="product_e81267636d287f84be6d0d2a" formatted="false">"已明确处理"</string>
+    <string name="product_e2b7ae89944db8b2a8610098" formatted="false">"已显示全部消息"</string>
+    <string name="product_d68f6e0d257eb21b91c37841" formatted="false">"已有原操作等待确认"</string>
+    <string name="product_df01ae93619fe7c47fab98d4" formatted="false">"已有轮次保留冻结策略。任务指定的验收人会由服务端加入必要验收。"</string>
+    <string name="product_05681be05653f3bdcaf4ac3d" formatted="false">"已核验映射"</string>
+    <string name="product_d56a511f498f7e734563da64" formatted="false">"已确认"</string>
+    <string name="product_b01a4c41c8d2c422f5395f4a" formatted="false">"已结束手机等待；后台上传与原回执仍可核对"</string>
+    <string name="product_c3db0a873514f5b6f4272d2b" formatted="false">"已结束手机等待；远端结果仍需查询原回执"</string>
+    <string name="product_83640d9757e97347cb71d210" formatted="false">"已结束等待 · 原回执保留"</string>
+    <string name="product_7b0ed33216b09bf345ab8b00" formatted="false">"已结束等待 · 结果待确认"</string>
+    <string name="product_2fe0e3339ac4d1bb337b06c5" formatted="false">"已过期"</string>
+    <string name="product_5be0323e8adcaeae8a644b6e" formatted="false">"已连接"</string>
+    <string name="product_bc486d107a55f9ef121440d2" formatted="false">"已退出本机并取消本机上传；主服务会话撤销结果未确认，请在其他有效设备核对原会话。"</string>
+    <string name="product_2fdabf428856401480626655" formatted="false">"已选主服务"</string>
+    <string name="product_3f4ebc4aad9793b6c696340a" formatted="false">"已选择"</string>
+    <string name="product_37ff393af4497563c47f7344" formatted="false">"已采用最新版本，请核对内容后提交。"</string>
+    <string name="product_639d2f67a86e61a136f7e891" formatted="false">"帮助与支持"</string>
+    <string name="product_79f1c34bd0bc95e41f7fd2f3" formatted="false">"帮我批准"</string>
+    <string name="product_b90d16fdead85770e0e37d04" formatted="false">"帮我整理移动端开发任务，列出下一步工作。"</string>
+    <string name="product_7ce4204bddfe9327441217f7" formatted="false">"应响应人"</string>
+    <string name="product_7db2b2a4d5a6391bf9311f5a" formatted="false">"应响应人："</string>
+    <string name="product_8397162626d67ba113c56ccd" formatted="false">"应如何批准操作？"</string>
+    <string name="product_9ec428625fee9e42ef478cd1" formatted="false">"开发"</string>
+    <string name="product_8dfa94524e39610352aca248" formatted="false">"开发与验收"</string>
+    <string name="product_15264536352c29615e51d205" formatted="false">"开发与验收电脑映射"</string>
+    <string name="product_78c33fbf0e2aa58a970b26ec" formatted="false">"开发中"</string>
+    <string name="product_244dd86f9bb37c87affbf7db" formatted="false">"开发执行"</string>
+    <string name="product_35105b4203bba4b653981885" formatted="false">"开发映射"</string>
+    <string name="product_6b3e3bfd8a80c8e0c7b92bcd" formatted="false">"开发映射须属于任务负责人；验收映射须属于本輪待验收 Agent。请管理员在项目设置核验。"</string>
+    <string name="product_4e41865b62eb2e43ae36eb2f" formatted="false">"开发电脑"</string>
+    <string name="product_e4d2baeb1f20ccb0be2e05c6" formatted="false">"开发进度"</string>
+    <string name="product_fab9698420365f9e14595248" formatted="false">"开启 App 通知权限"</string>
+    <string name="product_212f374b92f0cb0534f54910" formatted="false">"开始一个无项目对话"</string>
+    <string name="product_66b2dbc6cbdcce5903a55f69" formatted="false">"开始处理"</string>
+    <string name="product_b02b864fd9a0343a7aaa9012" formatted="false">"异常中断"</string>
+    <string name="product_a2846644a638fb45f8f9bdd8" formatted="false">"强度"</string>
+    <string name="product_36547f54918ea4f66cd2c754" formatted="false">"归档此项目？"</string>
+    <string name="product_912866627f0a800435bc3533" formatted="false">"归档项目"</string>
+    <string name="product_082101eed24a406fc0bcb390" formatted="false">"当前业务阶段不能派发此角色。"</string>
+    <string name="product_a65f89f2c5d430f473ecf431" formatted="false">"当前主服务只声明 PNG、JPEG、WebP、GIF 图片附件能力；普通文件上传暂不可用。"</string>
+    <string name="product_360cd03b5550680432b455c0" formatted="false">"当前主服务暂不支持此文件格式"</string>
+    <string name="product_9c3d8f086d06fef8b04980fa" formatted="false">"当前任务及执行尚未同步，保留原游标"</string>
+    <string name="product_fd9325afc1a0ad4e160f66a8" formatted="false">"当前任务账户"</string>
+    <string name="product_29e4f108d36ba930f4fde67f" formatted="false">"当前只能查看历史；草稿保存在此对话。"</string>
+    <string name="product_e8b0ceb2582738bcaa7b05d5" formatted="false">"当前对话已切换，请重新选择执行记录"</string>
+    <string name="product_4ce9147e45ef510ae58e2890" formatted="false">"当前模型未提供加速模式。"</string>
+    <string name="product_8d6c63bd6bfb7db4277de268" formatted="false">"当前正在查看历史轮次"</string>
+    <string name="product_c258ccd468261ecf2ed6ff43" formatted="false">"当前绑定"</string>
+    <string name="product_896af3a6c415a667d49693c1" formatted="false">"当前网络发现"</string>
+    <string name="product_62a9388a42a81919c5945f4d" formatted="false">"当前设备会话"</string>
+    <string name="product_04acc672c56b0bebb2f459da" formatted="false">"当前设备将需要重新登录。原草稿与原操作记录继续保留。"</string>
+    <string name="product_c3a0dd35fb65bd7d8ba016b2" formatted="false">"当前设备无法使用相机，请粘贴电脑提供的连接链接。"</string>
+    <string name="product_2ec4788cf55f1156ac10e2e3" formatted="false">"当前语言没有可用的本地语音识别格式。"</string>
+    <string name="product_ccff9550ca07dc5914493c50" formatted="false">"当前语言的语音识别暂不可用，请稍后重试。"</string>
+    <string name="product_d969c9b174c2a34d854f77e5" formatted="false">"当前轮"</string>
+    <string name="product_99ebc6d0ae398df1c9e6595d" formatted="false">"当前连接仅支持查看历史；草稿保存在此对话。"</string>
+    <string name="product_f95798ccf431bc89c12dc7c3" formatted="false">"当前通道"</string>
+    <string name="product_af5c2e006e3f05e520b9cc66" formatted="false">"录音已保留，点击重试查询转写"</string>
+    <string name="product_f236a7239a80f0a773244908" formatted="false">"录音已暂停并保留，点击重试查询或完成原转写。"</string>
+    <string name="product_dbb41d4fd342cbd5bac3a187" formatted="false">"录音目标已变化"</string>
+    <string name="product_2669067094223e832a2fdf73" formatted="false">"录音结束后，原录音文件将发送至这台电脑，再使用 Codex 桌面当前 ChatGPT 账户提交给 OpenAI 的语音转写服务。手机只录音，返回的文字填入输入框，由你确认后发送。"</string>
+    <string name="product_204d56d8d2defc580732ccff" formatted="false">"录音超过五分钟或大小限制"</string>
+    <string name="product_2b6f8f37f0e9fef1bcb7a5ec" formatted="false">"待上传"</string>
+    <string name="product_916bc753ae4deeae90f67cdb" formatted="false">"待回答"</string>
+    <string name="product_90f68b00f01971e48ef558c1" formatted="false">"待回答问题"</string>
+    <string name="product_999a459c3f3f2d1694440efc" formatted="false">"待处理"</string>
+    <string name="product_7f750504c5bac7d8914076b6" formatted="false">"待完成"</string>
+    <string name="product_dcb49342a5e5fbcb79818482" formatted="false">"待审批"</string>
+    <string name="product_c37f9cc7631089b8bc39b020" formatted="false">"待我处理"</string>
+    <string name="product_2822c6173f460b82bb8efb4d" formatted="false">"待补齐"</string>
+    <string name="product_35a735864b9c7b2a0d6e1537" formatted="false">"待负责人响应"</string>
+    <string name="product_6389730ff031d702f00e513a" formatted="false">"待连接原主服务核对"</string>
+    <string name="product_3aabdf81615364254a128a84" formatted="false">"待验收"</string>
+    <string name="product_ce4ca5307598d927576f04d1" formatted="false">"必要索引"</string>
+    <string name="product_c6215556a0f225eddb1c517a" formatted="false">"必要索引名称"</string>
+    <string name="product_9f3dd74f2770afdbe2663c1d" formatted="false">"必要验收"</string>
+    <string name="product_2e994c4d9a9910ef8f0cbb22" formatted="false">"必要验收已通过"</string>
+    <string name="product_c25927c64abc749a8a33f313" formatted="false">"必要验收角色"</string>
+    <string name="product_e7065c96e61f06f72a7c4b9d" formatted="false">"必须使用负责人对应的开发映射。创建已确认但派发失败时会保留任务，不能重新创建。"</string>
+    <string name="product_78e9a6d58e69e5d20ea56329" formatted="false">"必须独立"</string>
+    <string name="product_9ef87c2012e6fc7ca549538e" formatted="false">"必须登记"</string>
+    <string name="product_aed14c36b7601e2567c4cf24" formatted="false">"必须通过"</string>
+    <string name="product_db945cfe9f9f8ffeaa77a3d3" formatted="false">"快速"</string>
+    <string name="product_6e02d1ce18dbfc8b3dcb4b38" formatted="false">"快速模式"</string>
+    <string name="product_8cf0105d35ee8db8f069297f" formatted="false">"思考"</string>
+    <string name="product_bfc3ad3e3f62c5b192e3d211" formatted="false">"恢复未提交消息"</string>
+    <string name="product_6ba0721e06240172f8631d30" formatted="false">"恢复此归档项目？"</string>
+    <string name="product_52a1d56be51d48aeb4767a50" formatted="false">"恢复项目"</string>
+    <string name="product_053461ce86d265729d98285c" formatted="false">"成功"</string>
+    <string name="product_6e6d6ddbb7c1a453d2c1ca55" formatted="false">"成员"</string>
+    <string name="product_b27f3804ff2c8ad11f7a9cfb" formatted="false">"成员授权"</string>
+    <string name="product_939bc919572996c8935003b1" formatted="false">"成员权限"</string>
+    <string name="product_744061c61b9e94e8cdfde759" formatted="false">"成员目录不可用："</string>
+    <string name="product_b70bb4acc0484cf040de4c07" formatted="false">"我"</string>
+    <string name="product_902aaeb0867f964fdca7f439" formatted="false">"我的 MacBook"</string>
+    <string name="product_94391a38ab5693c7e29a8451" formatted="false">"我负责"</string>
+    <string name="product_15d1c139a98939f7985bb4a6" formatted="false">"或粘贴连接二维码内容"</string>
+    <string name="product_31802424217f51b030512cf9" formatted="false">"截止日期"</string>
+    <string name="product_f79ced242cae7de99ae57a7b" formatted="false">"所选照片格式暂不支持"</string>
+    <string name="product_3d5dd81de8125a16fc1009e0" formatted="false">"手动探测"</string>
+    <string name="product_8a1cbddd8f6a469c47337b35" formatted="false">"手动连接"</string>
+    <string name="product_a083ecda40e3d778b88d4a25" formatted="false">"手机 → 电脑 · 每个文件最多 20 MB。同名文件会保留独立副本。"</string>
+    <string name="product_6686865a3ce748c2b600c220" formatted="false">"手机与电脑共用一套任务库。发现服务后，核对电脑上的实例信息和证书指纹，再点选连接。"</string>
+    <string name="product_facbe65fab0cf4066de28b02" formatted="false">"手机主动停止"</string>
+    <string name="product_db228c0a33c11a27a202ab63" formatted="false">"手机保存的文件已变化，请保留原记录并重新选择文件。"</string>
+    <string name="product_0849d893acab95f09957fb9a" formatted="false">"手机共%@个未读对话"</string>
+    <string name="product_6faa024a96e454ceab862694" formatted="false">"手机回到前台会核对原任务和原操作。通知点击只定位服务、账户、任务及原轮次。"</string>
+    <string name="product_b64b08cdeb9048104ea79526" formatted="false">"手机需要使用人类成员账户登录"</string>
+    <string name="product_ec6e13d6276459af3e045ea4" formatted="false">"打开分支"</string>
+    <string name="product_e2451f7eb54eedf61f09d5b3" formatted="false">"打开原任务"</string>
+    <string name="product_48500aa9c3fb6268d92005a5" formatted="false">"打开原任务核对"</string>
+    <string name="product_0407dbdaf0dd84d9a6685573" formatted="false">"打开系统设置"</string>
+    <string name="product_6e8a57892e5bdb788fd2ca03" formatted="false">"打开系统通知设置"</string>
+    <string name="product_831262b1e6b9c96501d030d5" formatted="false">"打开项目和对话"</string>
+    <string name="product_32c8d373afe083288422a6f2" formatted="false">"执行"</string>
+    <string name="product_5026a63b58cdf0483faf3524" formatted="false">"执行中"</string>
+    <string name="product_735fa3058aa2973fa5ac65f1" formatted="false">"执行对话的实际项目与任务映射不一致"</string>
+    <string name="product_6bb155a9ba1d494801dcfb81" formatted="false">"执行已结束"</string>
+    <string name="product_7b84438abc8b266ab508a7a3" formatted="false">"执行或验收身份已变化，请刷新成员与任务"</string>
+    <string name="product_743ef9285010a8e18ed79525" formatted="false">"执行状态与业务状态分别记录。历史会话和执行目标不证明电脑运行时当前在线。"</string>
+    <string name="product_1f0b5bce9a50b948dcb31d6c" formatted="false">"执行状态等待同步"</string>
+    <string name="product_e3ec4047b0640b1dfc041b68" formatted="false">"执行空间或成员目录暂不可用："</string>
+    <string name="product_672c00b875442b7de58d77c5" formatted="false">"执行角色"</string>
+    <string name="product_b3e7e288fff18efa1ef143a1" formatted="false">"执行计划 · %@/%@"</string>
+    <string name="product_72a7d6d860dccff933c1efed" formatted="false">"执行身份"</string>
+    <string name="product_6cf527f0cfc71b2e50fbfb13" formatted="false">"执行身份："</string>
+    <string name="product_2226e8a58009406772de9158" formatted="false">"扫描主电脑配对二维码"</string>
+    <string name="product_3080151b7fac30cc7ff182cf" formatted="false">"扫描任务主服务"</string>
+    <string name="product_359ea3b6990e6b77ed008762" formatted="false">"扫描电脑二维码"</string>
+    <string name="product_b431a37597fca22f9542a28a" formatted="false">"扫码连接"</string>
+    <string name="product_40a17dc5b8b94901fb9a0697" formatted="false">"把电脑上的工作带在身边"</string>
+    <string name="product_c6664b01b17463b432ba718c" formatted="false">"投递未被接受"</string>
+    <string name="product_5f8fbcacd795076573011992" formatted="false">"投递状态待查询"</string>
+    <string name="product_426d6c26abdc69cc88fdffcb" formatted="false">"投递结果待确认"</string>
+    <string name="product_02593c31f51b3c634cf2959f" formatted="false">"折叠 %@ 的聊天"</string>
+    <string name="product_136de7a8c46fc8031b2243ef" formatted="false">"拒绝"</string>
+    <string name="product_7c625bbc30f70def5fc461b5" formatted="false">"拟保存版本"</string>
+    <string name="product_d204e3925cb2b7127f6679a8" formatted="false">"按 EasyWork 风险策略对高风险操作请求确认"</string>
+    <string name="product_a0776006a560c994eedb6baf" formatted="false">"按冻结策略补齐所有必要索引。填写引用后仍由服务端核对。"</string>
+    <string name="product_e4a9391a2efe92d4b7d686ae" formatted="false">"按实际候选"</string>
+    <string name="product_6a60818a29b612055d559940" formatted="false">"按验收角色"</string>
+    <string name="product_6d92e9f1b1bf178b06117326" formatted="false">"排队执行"</string>
+    <string name="product_4ac841d30fd020f903dc628f" formatted="false">"探测 HTTPS 地址"</string>
+    <string name="product_181aba8aff90e4b7ed6652c1" formatted="false">"接受并处理"</string>
+    <string name="product_6a2edc112944bb5cacfdeeeb" formatted="false">"接收此类通知"</string>
+    <string name="product_da2efedb0d4da7b03ed3ef45" formatted="false">"接收此项目业务通知"</string>
+    <string name="product_682ced0cb0bea0033c865ed4" formatted="false">"接收结果待确认 · 文件已保留在手机"</string>
+    <string name="product_c8c14507b2d37395b9831d95" formatted="false">"推理强度"</string>
+    <string name="product_b6f37f1ff7bd39d777dae040" formatted="false">"推送待同步"</string>
+    <string name="product_08a85f4ab4bab9cac9adb342" formatted="false">"提交"</string>
+    <string name="product_18931020ad52e63a09e01c7e" formatted="false">"提交中…"</string>
+    <string name="product_561b5d6b5ea9c4550f955301" formatted="false">"提交冻结候选"</string>
+    <string name="product_54eb374b184150a08cf4c750" formatted="false">"提交后由服务端核验冻结候选、必要验收、材料及索引。全部门槛通过后才完成任务。"</string>
+    <string name="product_faab7e319393a7700f542451" formatted="false">"提交回复"</string>
+    <string name="product_a8a2ed2656849d2e3bb7e436" formatted="false">"提交最终交付"</string>
+    <string name="product_a0db4b0ab72084a2969e288a" formatted="false">"提交本人响应"</string>
+    <string name="product_4c44448fd64bf02e5face407" formatted="false">"提交结果待核对"</string>
+    <string name="product_775dd99a604f040d8d0da3c8" formatted="false">"提交给 %@…"</string>
+    <string name="product_b3ccf0f545b985ab2c398a57" formatted="false">"提醒内容"</string>
+    <string name="product_a29a66660e102968932c802f" formatted="false">"提醒声音"</string>
+    <string name="product_44ce7ae909bbb28bbbe3cbbb" formatted="false">"搜索"</string>
+    <string name="product_af694c47eeb6312711153de3" formatted="false">"搜索业务项目"</string>
+    <string name="product_88d72ece7cf767373367a4a7" formatted="false">"搜索结果"</string>
+    <string name="product_27cdea2c0e15792e88695e7d" formatted="false">"搜索编号、标题或内容"</string>
+    <string name="product_01aeaf3f0fdef73f26fd1fc5" formatted="false">"搜索网页"</string>
+    <string name="product_b2b794ed53b398b5ed5f27a6" formatted="false">"搜索项目和对话"</string>
+    <string name="product_02bfdc2d1e35551c55784c74" formatted="false">"撤回后，新发送、回答及继续执行操作会再次询问。已经提交的内容和电脑端任务不受撤回影响；请到对应电脑或 AI 服务处理删除和停止请求。"</string>
+    <string name="product_6485094953e6ae1cca5156df" formatted="false">"撤回许可"</string>
+    <string name="product_91f426e038d960e66bcb6b18" formatted="false">"撤销会话"</string>
+    <string name="product_af1b35ceba7ea6e24b1bb094" formatted="false">"撤销此会话"</string>
+    <string name="product_6ada4647c945065756937346" formatted="false">"撤销此设备会话？"</string>
+    <string name="product_ed31fbb483ee1b0a40f8b154" formatted="false">"操作"</string>
+    <string name="product_b7f73c2014a400e51e508770" formatted="false">"操作结果仍不确定，请查询状态并核对桌面结果。"</string>
+    <string name="product_61050c173bfb41fa11b7859b" formatted="false">"操作结果待确认"</string>
+    <string name="product_3d17896a5f3b4dc9b267b3f3" formatted="false">"操作需要确认"</string>
+    <string name="product_aa72a63ac4261284675a6421" formatted="false">"支持 WAV、AIFF、CAF、M4A 和 MP3，最多 10 MB、29 秒。铃声仅保存在这部手机。音量和振动遵循系统设置。"</string>
+    <string name="product_bb0b6e36b3ae63825f914a92" formatted="false">"收起侧栏"</string>
+    <string name="product_0330f79612632d802bc32d1a" formatted="false">"收起显示"</string>
+    <string name="product_5b9266392e9d791e4c438d81" formatted="false">"收起更多最近聊天"</string>
+    <string name="product_33936d585d0297e4d257ceab" formatted="false">"收起最近聊天"</string>
+    <string name="product_9ea73f2311a6b23c76a6f883" formatted="false">"收起置顶聊天"</string>
+    <string name="product_d826c4ece4dd4031bd1df00e" formatted="false">"收起键盘"</string>
+    <string name="product_8b951cb9bafd35f4bb7c5066" formatted="false">"收起问题"</string>
+    <string name="product_5b39b63689704f22a10a221f" formatted="false">"整理读书笔记"</string>
+    <string name="product_39932f24fe11a6baf55145a8" formatted="false">"文件"</string>
+    <string name="product_92ba69fe09710d7293f0efa0" formatted="false">"文件互传"</string>
+    <string name="product_e0f27e3317c7e650f1ae8761" formatted="false">"文件在读取时发生变化，请重新选择。"</string>
+    <string name="product_8559c94186fbfe76e8dd4eb3" formatted="false">"文件完整性校验失败"</string>
+    <string name="product_4e93f0be82d655389275c963" formatted="false">"文件未保存，请重新导出。"</string>
+    <string name="product_b66cf41e489b945a36be4e53" formatted="false">"新反馈"</string>
+    <string name="product_547f8f2d3ff13c0a93725466" formatted="false">"新反馈会开启返修轮，旧候选与验收保留。"</string>
+    <string name="product_ea4b29f58f879802461cd48b" formatted="false">"新对话"</string>
+    <string name="product_6bee2372805a2fd73ff12149" formatted="false">"新建任务"</string>
+    <string name="product_6897a8ef070bd2c31797d9f2" formatted="false">"新建对话"</string>
+    <string name="product_b53510a971353db1ab7c981b" formatted="false">"新建尚未确认提交"</string>
+    <string name="product_ca1da0894a138274cfe57bec" formatted="false">"新建暂不可用"</string>
+    <string name="product_beabaa933a623b64c46546a1" formatted="false">"新建记录"</string>
+    <string name="product_a72bea7869dfa64611413c88" formatted="false">"新聊天"</string>
+    <string name="product_91697a026c35d9c09733ddc6" formatted="false">"方式"</string>
+    <string name="product_484d55613910eb8c0917fe30" formatted="false">"无"</string>
+    <string name="product_c8eb52e56e8e2b8a2f14c93f" formatted="false">"无效的主服务地址"</string>
+    <string name="product_48f43d4029df900766f9d87c" formatted="false">"无效的任务接口"</string>
+    <string name="product_e56def2ceae87b18e4d38459" formatted="false">"无法保存业务通知撤销状态"</string>
+    <string name="product_0e8ec6d157fad92d2ec7a86f" formatted="false">"无法保存传输状态，请检查手机存储空间。"</string>
+    <string name="product_83ec2a1bc7b1a07943c925d5" formatted="false">"无法保存手机未读状态，请检查设备存储空间。"</string>
+    <string name="product_cf4da41ac7b3e722f2514c3a" formatted="false">"无法保存手机阅读状态，请检查设备存储空间。"</string>
+    <string name="product_7a7c7b81961712564759bfb1" formatted="false">"无法保存本地会话，请检查设备存储空间。"</string>
+    <string name="product_b1901635e8825577ad808d75" formatted="false">"无法保存电脑订阅撤销状态。"</string>
+    <string name="product_97ebf6595c82c3b0a82f7825" formatted="false">"无法保存订阅撤销状态。"</string>
+    <string name="product_5600d614f3b296e4ea789f8e" formatted="false">"无法保存通知设置。"</string>
+    <string name="product_6bef01a94efe887db4efd966" formatted="false">"无法准备麦克风语音格式。"</string>
+    <string name="product_978b29b840aa178a7e981607" formatted="false">"无法删除内置铃声。"</string>
+    <string name="product_d0ca1318f4a30afb11a7a265" formatted="false">"无法删除铃声。"</string>
+    <string name="product_c470db02a9f415e4944ac464" formatted="false">"无法安全保存客户端密钥"</string>
+    <string name="product_b2dc1dd7cccc010e0bc93806" formatted="false">"无法安全保存通知密钥"</string>
+    <string name="product_04720df50f9272c20f9a0af7" formatted="false">"无法完成听写"</string>
+    <string name="product_1037edc3aea103653340d405" formatted="false">"无法完成听写，已保留识别文字：%@"</string>
+    <string name="product_1f0a01abb1908f192935d2bd" formatted="false">"无法完成操作"</string>
+    <string name="product_1da9152b0659a2470d6fce68" formatted="false">"无法开始听写：%@"</string>
+    <string name="product_d5418adaa151084497dc00b1" formatted="false">"无法开始录音"</string>
+    <string name="product_c47be6c78048af07f0360149" formatted="false">"无法打开无效业务通知"</string>
+    <string name="product_6c177121ab4e1812f4298ec7" formatted="false">"无法打开附件"</string>
+    <string name="product_d18703d1d3ebd57812a3c45b" formatted="false">"无法显示通知，请检查系统通知设置。"</string>
+    <string name="product_534977224c039e2b24c051b6" formatted="false">"无法清理业务通知绑定"</string>
+    <string name="product_0d07c9b26bb35eba942447aa" formatted="false">"无法申请通知权限，请检查系统设置。"</string>
+    <string name="product_54f3d088d8d72c09f55e1b68" formatted="false">"无法试听这段铃声。"</string>
+    <string name="product_31156ea7510d53a0c66929aa" formatted="false">"无法读取保存的传输记录；请保留手机数据并检查存储空间。"</string>
+    <string name="product_d72818e4659060af77a6da6c" formatted="false">"无法读取所选照片"</string>
+    <string name="product_bf5f145789eb49d5fb5439ac" formatted="false">"无法读取这张图片，请选择可预览的静态图片。"</string>
+    <string name="product_39c351d6b58712fa2dc0bb8e" formatted="false">"无法转换这段音频。"</string>
+    <string name="product_0ad2118b4e244914a1c88e81" formatted="false">"无法连接电脑，请检查地址和连接程序。"</string>
+    <string name="product_3a7d602df1dcf87ffee17bc5" formatted="false">"无法连接这台电脑，请检查 Host 的直连访问设置"</string>
+    <string name="product_ffcd5fad25173daee2aa7337" formatted="false">"无法连接这台电脑，请检查桌面的直连访问设置"</string>
+    <string name="product_dab990264bb3c99d77f836c3" formatted="false">"无附件"</string>
+    <string name="product_142b60fdc9c1e6f7f0c06b61" formatted="false">"无需提交的具体说明（与提交引用二选一）"</string>
+    <string name="product_0f18700803ba604b843a889e" formatted="false">"无需提交说明"</string>
+    <string name="product_98fad43d2a807c4c6dc19ac7" formatted="false">"无需账号或连接电脑即可浏览示例、切换项目和体验对话。示例回复在手机本地生成，不会发送给电脑或 AI 服务。"</string>
+    <string name="product_335f6e2bca50e7ae495d19b8" formatted="false">"无项目"</string>
+    <string name="product_1b07fd3b8f7ed0c4e9817f12" formatted="false">"旧创建 %@ 尚未确认；请查询原回执，不能用变化后的草稿重新创建"</string>
+    <string name="product_f4de28ed308cfa3d6f1a1d11" formatted="false">"旧订阅撤销待联网同步"</string>
+    <string name="product_8ef8ccc62e659d8174a9d72d" formatted="false">"明确另建新任务"</string>
+    <string name="product_cb800ec1ddf8fba0193ba670" formatted="false">"明确响应"</string>
+    <string name="product_3bc52141f741b346caa19891" formatted="false">"是，实施此计划"</string>
+    <string name="product_7bb8f91c4a6c46f440d5731b" formatted="false">"显示与提醒"</string>
+    <string name="product_843e84c4652c75578f8edf74" formatted="false">"显示任务名称和摘要"</string>
+    <string name="product_ffe21a671190323eb55aa45c" formatted="false">"显示密码"</string>
+    <string name="product_25e93de96d93dc11e51cf830" formatted="false">"显示归档项目"</string>
+    <string name="product_8d3d73a18affda8e05904d0c" formatted="false">"显示方式"</string>
+    <string name="product_d2001c6f714c54b7c3cebe6a" formatted="false">"显示更早消息"</string>
+    <string name="product_ebfecf1d6474284f78e9c17d" formatted="false">"显示未读对话角标"</string>
+    <string name="product_6c8264801bd9aa09dd7ed51d" formatted="false">"显示 App 图标角标"</string>
+    <string name="product_5833887c9c876a5691c58af2" formatted="false">"仅控制手机桌面 App 图标上的未读数量，不影响消息通知和客户端列表。"</string>
+    <string name="product_c90efadcff7972609e7ce78b" formatted="false">"暂不允许"</string>
+    <string name="product_29a02a10512d1cd78b4e49c2" formatted="false">"暂无匹配任务"</string>
+    <string name="product_508f0f9372d7295d8f8e60f9" formatted="false">"暂无已同步的业务提醒。"</string>
+    <string name="product_7fb587b744cb05f8774536b3" formatted="false">"暂无已提交操作"</string>
+    <string name="product_230a5a9b30d86b7eda1255fe" formatted="false">"暂无真实执行记录"</string>
+    <string name="product_43c2f9bdb749754107b555a0" formatted="false">"暂无真实设备映射。"</string>
+    <string name="product_e93adf95f4c7fdcbc4bcd1ce" formatted="false">"暂无详细输出"</string>
+    <string name="product_4550442e55f8e8503d454f52" formatted="false">"暂无项目"</string>
+    <string name="product_0b65c79cc51f6ddd62c0b220" formatted="false">"更新于 "</string>
+    <string name="product_a056164d4abccd314b79c0b7" formatted="false">"最后同步"</string>
+    <string name="product_6a26a6276a695ba9ef485a94" formatted="false">"最多选择 20 个附件"</string>
+    <string name="product_d80c21a204909f441d26f948" formatted="false">"最小"</string>
+    <string name="product_d325580cb201ff6c8e3e5e74" formatted="false">"最终交付"</string>
+    <string name="product_469d263d196021ece032572d" formatted="false">"最终交付候选"</string>
+    <string name="product_5245c61ac2bf78b78a6e56d4" formatted="false">"最终交付门槛"</string>
+    <string name="product_37d0814da03b8f7aa09b8dd9" formatted="false">"最终提交"</string>
+    <string name="product_c31dbb8e20e22af5e1a0e4ad" formatted="false">"最终提交引用"</string>
+    <string name="product_997a5e6e513f2a90797b2637" formatted="false">"最近"</string>
+    <string name="product_bc4419fd19d80cfbbe7b286d" formatted="false">"最近投递："</string>
+    <string name="product_7992604ca67dd6aa713f4db3" formatted="false">"最近投递：%@"</string>
+    <string name="product_8672864e9041713891eb1fdd" formatted="false">"最高"</string>
+    <string name="product_3d9b09725b4a5291de4ad743" formatted="false">"有什么可以帮忙的？"</string>
+    <string name="product_ed90c3805611750ace466a29" formatted="false">"有操作需要你审批"</string>
+    <string name="product_11afd2a534395b181392145e" formatted="false">"有效"</string>
+    <string name="product_3d4b392ef035576a0e49d081" formatted="false">"有新的业务提醒，请打开核对。"</string>
+    <string name="product_ed33e93e09c3a32e9de869d7" formatted="false">"有新的任务提醒，请打开 App 查看"</string>
+    <string name="product_1d56cf831988b7adf69771a7" formatted="false">"有新的任务提醒，请打开查看。"</string>
+    <string name="product_ca7925aee43ef640518909c8" formatted="false">"服务与账户"</string>
+    <string name="product_47e6110d0deac911c057ece0" formatted="false">"服务地址解析失败，请重新发现或使用配对 JSON。"</string>
+    <string name="product_74fd18322c791faad03d1a30" formatted="false">"服务未提供细分阶段"</string>
+    <string name="product_fe77a34493529b623b3e8690" formatted="false">"服务端关闭状态"</string>
+    <string name="product_c411e2a15b3908af56cb82ab" formatted="false">"服务端尚未提供完整运行目标，关联对话不可打开。"</string>
+    <string name="product_1add03c92a79e6863d8b672e" formatted="false">"服务端版本 %@ · 第 %@ 轮"</string>
+    <string name="product_d25bd30d754b88acf3988e15" formatted="false">"服务端版本已变化"</string>
+    <string name="product_a751dc286eccff66c38b3878" formatted="false">"服务身份"</string>
+    <string name="product_a8f011b3298b73c89666da3b" formatted="false">"未发送"</string>
+    <string name="product_53bbab014a12fabebea8bf7e" formatted="false">"未发送分支请求：无法保存本地操作。"</string>
+    <string name="product_524a0bd8be900fcf7e5f8276" formatted="false">"未声明"</string>
+    <string name="product_7409a608060f580437b54d9b" formatted="false">"未指定"</string>
+    <string name="product_44332bc0d006e1d6b30cfb72" formatted="false">"未指定电脑"</string>
+    <string name="product_9509d5aa8d85f72a4a7159be" formatted="false">"未提交 · 草稿已保留"</string>
+    <string name="product_756762e293f2aaffb9590f45" formatted="false">"未提供"</string>
+    <string name="product_0ee53bffe0c5b771766d3533" formatted="false">"未核对"</string>
+    <string name="product_17cbf126b0111a5ecb04c51c" formatted="false">"未核对主服务"</string>
+    <string name="product_a19fcc35fc6513557e5d3845" formatted="false">"未核验"</string>
+    <string name="product_a5b7a02f598e1b1f79030e97" formatted="false">"未注册此连接方式"</string>
+    <string name="product_c1f65837307903eb6a2812a4" formatted="false">"未登录"</string>
+    <string name="product_4d8c1c5b42830791a4ce99f6" formatted="false">"未知"</string>
+    <string name="product_3b9b2c3b44a72cca9584d4a7" formatted="false">"未能读取最新任务"</string>
+    <string name="product_6a0b1be3918601563e8d318b" formatted="false">"未设置项目源，设备派发暂不可用。"</string>
+    <string name="product_4d0680f9efaef147a78da726" formatted="false">"未读"</string>
+    <string name="product_33e89a4825321481d3480117" formatted="false">"未读 %@"</string>
+    <string name="product_3d52574ce15005618ef3b4bf" formatted="false">"未连接"</string>
+    <string name="product_bceee733575252a34bab87a9" formatted="false">"未连接 · "</string>
+    <string name="product_3abe9610a5aa7c0f5e870449" formatted="false">"未连接 · %@"</string>
+    <string name="product_011103a3812e3f7e826d822c" formatted="false">"未连接 · 点选连接"</string>
+    <string name="product_1182c5454f113db566b41207" formatted="false">"未选择"</string>
+    <string name="product_1b1353fb16916c51a993e388" formatted="false">"未选择主服务"</string>
+    <string name="product_ea871791cee0ffdcee698f34" formatted="false">"未选择源对话"</string>
+    <string name="product_2875bc4f7fcb16da1daa6a65" formatted="false">"未通过"</string>
+    <string name="product_9f56a066f90e167707e06a56" formatted="false">"本会话允许"</string>
+    <string name="product_952ad13d15937951643eb634" formatted="false">"本地 DEV 凭据"</string>
+    <string name="product_2ae35e85e248838ed9d8754f" formatted="false">"本地体验"</string>
+    <string name="product_4c614a318458dc92819c4602" formatted="false">"本地体验已接收这条消息，目标为 **%@ · %@**。\n\n这是界面示例回复，没有向电脑或模型发送。"</string>
+    <string name="product_e19cbc7e94f2285733d961a3" formatted="false">"本地听写已暂停，已识别的文字已保留，点击完成或重新录音。"</string>
+    <string name="product_f6f58c0aa0214ec5cc4ebd31" formatted="false">"本地听写已结束，点击完成以填入草稿"</string>
+    <string name="product_3f17da3d037d46baf6fd0665" formatted="false">"本地听写未完成，请重新录音。"</string>
+    <string name="product_de265acd44b232982f1cd2f3" formatted="false">"本地示例任务已停止。"</string>
+    <string name="product_b7de45094aa66b898cfefded" formatted="false">"本地草稿 · 尚未上传"</string>
+    <string name="product_3dde42867ba0b6dbe5d1decb" formatted="false">"本地通知绑定保存或清理失败，通道尚未确认；请稍后核对"</string>
+    <string name="product_46b0cba5a4350d0cd6a2117a" formatted="false">"本地通知绑定尚未确认"</string>
+    <string name="product_c1537369258dcaa47cbbf3b9" formatted="false">"本地通知绑定清理尚未完成："</string>
+    <string name="product_54b4f931411cdecfc32d5317" formatted="false">"本地（手机）"</string>
+    <string name="product_15701bbd73ad9184c927312d" formatted="false">"本机 Codex · 原桌面"</string>
+    <string name="product_05c9d44d410f80be9e334dbb" formatted="false">"本机 Mac"</string>
+    <string name="product_a42d52bbdae4f19e9bbbb8db" formatted="false">"本次验收候选"</string>
+    <string name="product_65bac12e0a95aa9eeed414cb" formatted="false">"本轮候选自验"</string>
+    <string name="product_024356f934094b33ce6841cf" formatted="false">"本轮冻结候选"</string>
+    <string name="product_21e93e98e9a1b3d58688d444" formatted="false">"本轮冻结候选尚未同步。连接原服务并刷新后再提交最终交付。"</string>
+    <string name="product_9ac30c861b87a52026252b36" formatted="false">"本轮冻结策略"</string>
+    <string name="product_96e5b1980ed163dadd46c41d" formatted="false">"本轮反馈与负责人响应"</string>
+    <string name="product_2d492c71598249da77962ca8" formatted="false">"本轮操作"</string>
+    <string name="product_390ab48190f37ac736278d3e" formatted="false">"本轮时间线"</string>
+    <string name="product_4073b415427e956c28f59a22" formatted="false">"本轮暂无反馈。"</string>
+    <string name="product_978cbca6265d1af23a61e639" formatted="false">"权限"</string>
+    <string name="product_df3ce3347c8fa2599630131a" formatted="false">"权限模式，"</string>
+    <string name="product_e140c977bfb9051c1efa53ba" formatted="false">"材料"</string>
+    <string name="product_8c9d5af65edd0bf326973c08" formatted="false">"材料 SHA-256（64 位）"</string>
+    <string name="product_15adeb8e65630813ab21451b" formatted="false">"材料名称"</string>
+    <string name="product_498730f9337f8b120ecab221" formatted="false">"材料引用可使用 attachment:&lt;已上传附件 ID&gt; 或实际产物地址，摘要应来自对应真实文件。"</string>
+    <string name="product_a488e93d69cc12961ea26e97" formatted="false">"来源"</string>
+    <string name="product_919034ef1c8f88026c5da4d2" formatted="false">"来源发生变化后，旧电脑映射需重新核验。服务端保存真实来源版本。"</string>
+    <string name="product_77f52d742326b79314625c66" formatted="false">"来源版本"</string>
+    <string name="product_89bc4cb34d0224d898fe4272" formatted="false">"极速"</string>
+    <string name="product_392d0dceb45998d33d040a35" formatted="false">"极高"</string>
+    <string name="product_594b8ecf13aa875c3636d561" formatted="false">"查看关联对话"</string>
+    <string name="product_4db0d876c37e4ad079f293ef" formatted="false">"查看已创建任务"</string>
+    <string name="product_3fe6dfd3371447cab5998f89" formatted="false">"查看第 %@ 份原记录"</string>
+    <string name="product_aed5b2af529bf103f6e9ef05" formatted="false">"查看计划"</string>
+    <string name="product_c9ff798bc89057e59573f75d" formatted="false">"查询原回执"</string>
+    <string name="product_926fb62d4abaa11a0552d3b2" formatted="false">"查询原操作回执"</string>
+    <string name="product_80168cb940549ebbd32738d6" formatted="false">"查询此原上传回执"</string>
+    <string name="product_8f0a33b3350fe5d23126dd56" formatted="false">"查询状态"</string>
+    <string name="product_bbecd91f11041d8f9a7047f0" formatted="false">"查询结果"</string>
+    <string name="product_388cad7a3612d0d2e038e115" formatted="false">"查询记录 · 已确认"</string>
+    <string name="product_956b90698466c255d115e4c8" formatted="false">"查询记录 · 待确认"</string>
+    <string name="product_f968ed196735c16af1a55d25" formatted="false">"查询记录 · 未提交"</string>
+    <string name="product_6bea77acefb364ac3d4024c2" formatted="false">"标准"</string>
+    <string name="product_bc1b5eb8231e4a25485e30fa" formatted="false">"核对 %@"</string>
+    <string name="product_01bffc78897adb2ae6ab2ae8" formatted="false">"核对主服务"</string>
+    <string name="product_7a864a72e7b690c4ba2fa050" formatted="false">"核对原草稿/回执"</string>
+    <string name="product_e28a18ca110fc43a6898effe" formatted="false">"核对最新需求"</string>
+    <string name="product_c24fdf7f97a43834097dd481" formatted="false">"核对目标中…"</string>
+    <string name="product_353cf98ec7b5b019c84ae4c0" formatted="false">"核验中…"</string>
+    <string name="product_228666bfbdf7e43dc7db7399" formatted="false">"核验并保存"</string>
+    <string name="product_42ee2863b6d776ffdd152c2b" formatted="false">"根目录"</string>
+    <string name="product_6ed677a5ea33a624d0009c3f" formatted="false">"桌面拒绝了配对"</string>
+    <string name="product_e61777d91ba4437099e01aab" formatted="false">"桌面拒绝配对或配对码已失效"</string>
+    <string name="product_48c2fbcc0348d11e5668ae45" formatted="false">"梳理设备配对流程"</string>
+    <string name="product_5bfd95a10ecb3ad31f5fb49d" formatted="false">"检查结果默认未通过。所有必要检查通过后才能交付；保存自验不会完成任务。"</string>
+    <string name="product_be55279f1e404646cccbf199" formatted="false">"检查项"</string>
+    <string name="product_d942ea595ca75284c9595807" formatted="false">"检查项名称"</string>
+    <string name="product_c98e118e0a43f078bac8043a" formatted="false">"模型"</string>
+    <string name="product_4fc7bcdc88853ccde2c5f250" formatted="false">"模型、推理与权限"</string>
+    <string name="product_9d0ad518c5789214ab55c2e2" formatted="false">"模型名称不一定代表服务商；请在电脑端确认实际服务商、数据保留、训练用途和处理地区。切换电脑或模型后需要重新允许。选择跟随电脑时，你允许使用该电脑的当前 AI 配置。"</string>
+    <string name="product_c67377a050d104dd1b35f766" formatted="false">"模型，%@，推理强度，%@，速度，%@"</string>
+    <string name="product_2a845bd8e225c00462e1b8ba" formatted="false">"模型："</string>
+    <string name="product_9ef1af2805098682e6266c31" formatted="false">"模型：跟随电脑端当前 AI 配置（含后续调整）"</string>
+    <string name="product_e6b02a08e69a342d4ff67ffd" formatted="false">"正在"</string>
+    <string name="product_c93a9aa360a7edf7ce02e7fa" formatted="false">"正在 %@ 中创建聊天…"</string>
+    <string name="product_e95ab4498a29fdec2d68a0d4" formatted="false">"正在%@%@%@"</string>
+    <string name="product_6272393ce65c80d008480d3b" formatted="false">"正在上传 %@…"</string>
+    <string name="product_5cf639a2550131cc7ee3976f" formatted="false">"正在上传首条附件"</string>
+    <string name="product_6bdb4435095e5d285aa21be6" formatted="false">"正在保存…"</string>
+    <string name="product_edddd836277b557c24223595" formatted="false">"正在保存新建请求"</string>
+    <string name="product_15138234a93cc4627f0a10b6" formatted="false">"正在保存通知设置"</string>
+    <string name="product_f07335163e36765027240903" formatted="false">"正在准备…"</string>
+    <string name="product_5562da534c08d822533f0736" formatted="false">"正在准备聊天"</string>
+    <string name="product_0f8c66d688d5a1bd4b132835" formatted="false">"正在制定计划…"</string>
+    <string name="product_f020e4630a54d32202cdf29b" formatted="false">"正在加载"</string>
+    <string name="product_0206efcabcc795ad286a5484" formatted="false">"正在加载更早消息…"</string>
+    <string name="product_e75f8a7bbc032d82764e9566" formatted="false">"正在压缩上下文 · 可能需要几分钟"</string>
+    <string name="product_d48e501234755241ed85ccbd" formatted="false">"正在发现局域网服务"</string>
+    <string name="product_954ec984cd4f49d1d6fdf82d" formatted="false">"正在同步…"</string>
+    <string name="product_c02e591fdea1b0fb2560f8f4" formatted="false">"正在同步任务"</string>
+    <string name="product_88b932debf349f9ec51c914c" formatted="false">"正在听写"</string>
+    <string name="product_3b7e27cb4379da3c65e51264" formatted="false">"正在处理"</string>
+    <string name="product_db96a60806d62135f7050e83" formatted="false">"正在完成听写…"</string>
+    <string name="product_975b775764d02111dddd0947" formatted="false">"正在完成本地听写…"</string>
+    <string name="product_6510966ab16ab874be6a92bb" formatted="false">"正在导入附件…"</string>
+    <string name="product_8386a7845fdd3ca3032c3a41" formatted="false">"正在录音，结束后由电脑转写"</string>
+    <string name="product_f26c1e60700686446d35f8b4" formatted="false">"正在探测…"</string>
+    <string name="product_6b70462dbb4cfa9627ed66aa" formatted="false">"正在提交"</string>
+    <string name="product_26ef00b7d061c53475ffe93e" formatted="false">"正在提交…"</string>
+    <string name="product_a512eca143c3f2c6972f3bd8" formatted="false">"正在提交原操作，请等待回执后切换服务"</string>
+    <string name="product_4789e7864b5578f773f9ed5d" formatted="false">"正在提交新建请求"</string>
+    <string name="product_53cb3d52890975984e27382c" formatted="false">"正在提交给 APNs"</string>
+    <string name="product_6d625c3d0e934095150600b9" formatted="false">"正在本地听写"</string>
+    <string name="product_8e9dc63a3c8184ea9e1329d5" formatted="false">"正在查找同一网络的电脑…"</string>
+    <string name="product_9ae88c315fc69c6252e62f9e" formatted="false">"正在查看通知原轮次 · 历史只读"</string>
+    <string name="product_8bbb38569df143b35ed0aa23" formatted="false">"正在查询…"</string>
+    <string name="product_737c73820a374ddcf1b88da5" formatted="false">"正在查询传输记录…"</string>
+    <string name="product_ad5f5c196830b0e96e6c343a" formatted="false">"正在查询创建结果"</string>
+    <string name="product_56653ca3f7868d492e107b18" formatted="false">"正在查询电脑接收结果…"</string>
+    <string name="product_352a49a0c1bbbfba47b27293" formatted="false">"正在核对系统通知通道"</string>
+    <string name="product_af6f73d9bb77a9b4b54c9151" formatted="false">"正在核对设备会话"</string>
+    <string name="product_6521695e3a33d10af0d45a3e" formatted="false">"准备录音…"</string>
+    <string name="product_96667a063881954fc0d9c744" formatted="false">"电脑转写暂不可用，正在本地听写"</string>
+    <string name="product_498ee734ef2ce16d4bbdafc2" formatted="false">"正在等待电脑确认分支"</string>
+    <string name="product_18e347f8d4d3ac932e898750" formatted="false">"正在等待电脑确认创建"</string>
+    <string name="product_2194be9b774320e3afcec211" formatted="false">"正在读取 %@…"</string>
+    <string name="product_7d677cb1f81a9804198fdce9" formatted="false">"正在读取分支选项…"</string>
+    <string name="product_ee179978d77c5299c0cd7d17" formatted="false">"正在读取所选附件"</string>
+    <string name="product_7a5c14794e565a1cc92fc4f2" formatted="false">"正在读取电脑的模型列表…"</string>
+    <string name="product_ef86d455dc490092ef8baa61" formatted="false">"正在读取真实项目清单"</string>
+    <string name="product_4874559fb2a5f5d0876cb575" formatted="false">"正在读取这一轮过程"</string>
+    <string name="product_1d418e5a5148004062f4178e" formatted="false">"正在读取项目设置"</string>
+    <string name="product_7c247d30840fe9e83adf975a" formatted="false">"正在输出…"</string>
+    <string name="product_2809fdaa2df471a8f1661e47" formatted="false">"正在连接 %@…"</string>
+    <string name="product_8be0ea36a9bba286a545597e" formatted="false">"正在连接…"</string>
+    <string name="product_90e28b54e030bd664887930d" formatted="false">"正在重新连接…"</string>
+    <string name="product_96fd4e9c6caa313cb48e7532" formatted="false">"此 Agent 客户端尚未注册"</string>
+    <string name="product_642a2063af276e7397f42ddc" formatted="false">"此 Agent 的配置界面尚未注册"</string>
+    <string name="product_42c5bcda21bf5ed28745c0c5" formatted="false">"此事项已处理，已显示最新任务状态。"</string>
+    <string name="product_bb8a1440a8b8e051adab5eb4" formatted="false">"此回复缺少准确的轮次 ID，请更新电脑连接程序并重新读取历史"</string>
+    <string name="product_df102e22d21371a2a45ba10e" formatted="false">"此实例不能替代已绑定任务库。请核对主电脑登记及原主服务；当前绑定保持不变。"</string>
+    <string name="product_80b59f3871f1dbebc2707438" formatted="false">"此客户端尚未支持对话分支"</string>
+    <string name="product_72058b303050073b33ac0247" formatted="false">"此客户端未开放取消队列"</string>
+    <string name="product_c1836dac5a906e8572b51c66" formatted="false">"此客户端未开放模型设置"</string>
+    <string name="product_cf298a861092a972eb835c61" formatted="false">"此客户端未开放此发送方式"</string>
+    <string name="product_689e26dd38d24040dabb84ed" formatted="false">"此对话不在 Git 项目中，不能创建工作树"</string>
+    <string name="product_35c6447f2d2c0887f6790048" formatted="false">"此对话当前不能创建分支"</string>
+    <string name="product_3c27e69022d85fae25bedbaf" formatted="false">"此对话暂时没有可显示的文字消息。"</string>
+    <string name="product_a4987dc6af2e006e00738b50" formatted="false">"此执行尚未确认原桌面对话"</string>
+    <string name="product_07feaf75883dc6203d6fa49c" formatted="false">"此操作已处理或回执不在这部手机，请查看最新任务状态。"</string>
+    <string name="product_b4856cae783d61c696b656aa" formatted="false">"此服务暂不支持完整交付流程"</string>
+    <string name="product_5d46b0a05d8f6231e615a4f3" formatted="false">"此电脑尚未支持录音转写，请更新电脑连接程序。"</string>
+    <string name="product_84d0ed1086d5061bfeb40279" formatted="false">"此电脑尚未支持文件互传，请更新电脑连接程序。"</string>
+    <string name="product_756e0bc3550cbacf4f58713c" formatted="false">"此电脑未提供默认目录，请填写完整目录路径"</string>
+    <string name="product_586cead84960b40c98acaa34" formatted="false">"此聊天已移除或暂不可读取，请刷新电脑连接。"</string>
+    <string name="product_5146e48afc2b0776272bd49a" formatted="false">"此表单是可编辑草稿；查询回执不会重放原提交或覆盖草稿。"</string>
+    <string name="product_a9240e0eda85fa7c5e000ac6" formatted="false">"此设备下次访问需要重新登录。"</string>
+    <string name="product_fa2636dd1b858384ed120e68" formatted="false">"此设备当前无法扫描，请粘贴主电脑提供的配对 JSON。"</string>
+    <string name="product_71d32859f45a8f34c0dab2a9" formatted="false">"此请求已被处理，请刷新审批状态。"</string>
+    <string name="product_aea918eb7859c2496b96fa24" formatted="false">"此连接尚未支持文件互传，请更新电脑连接程序。"</string>
+    <string name="product_734ef86b19bd1c9137d9c541" formatted="false">"此连接尚未支持通知订阅"</string>
+    <string name="product_5cbf4cf316684c5873fc53ef" formatted="false">"每项受权限管理的工具操作都请求确认"</string>
+    <string name="product_5e6e330e1410de5b26f869bf" formatted="false">"每项最多 20 MB、共 20 项。已上传证据在业务提交成功后关联本轮事件；失败与未知回执保留在原记录。"</string>
+    <string name="product_37b2f0bcebfc349094b9daf2" formatted="false">"没有匹配项目"</string>
+    <string name="product_44d1a54327d64977f61a3d4f" formatted="false">"没有可用映射"</string>
+    <string name="product_2d588dc18a5a39770b460e41" formatted="false">"没有可用的麦克风。"</string>
+    <string name="product_4765e51c7945f398f54547c9" formatted="false">"没有当前账户的原操作记录"</string>
+    <string name="product_017799558da2384da563f233" formatted="false">"没有找到相关内容"</string>
+    <string name="product_afa7557d04d4e8aeee09b231" formatted="false">"没有识别到语音，请重新录音。"</string>
+    <string name="product_68a18a9b752d283dad4fd380" formatted="false">"没有采集到录音，请重录。使用手机镜像时，请先退出镜像。"</string>
+    <string name="product_88fd760743ce5ee604fead42" formatted="false">"派发"</string>
+    <string name="product_c4090028bdfdd873af0b17a8" formatted="false">"派发开发或验收"</string>
+    <string name="product_a56acbb371e482410d88e8c9" formatted="false">"派发映射必须属于当前任务的准确执行／验收身份"</string>
+    <string name="product_a05363870ece27183275c2f3" formatted="false">"派发最终交付"</string>
+    <string name="product_14da8010e69a45d341eae00c" formatted="false">"派发真实执行"</string>
+    <string name="product_d8a3fe2ae0012993f6395f43" formatted="false">"流程策略"</string>
+    <string name="product_aa0819dfc4d8d78280b8c760" formatted="false">"浅色"</string>
+    <string name="product_b559d2dec8336fa825b78b85" formatted="false">"测试通知发送失败。"</string>
+    <string name="product_b4fac93b8e20bad7e63e46be" formatted="false">"消息执行结果待确认"</string>
+    <string name="product_441757c163554c470920ac93" formatted="false">"消息提交失败"</string>
+    <string name="product_9dd80033eceef18165dc2c18" formatted="false">"消息正在发送"</string>
+    <string name="product_4cfc2a36de5a8b4f65f83789" formatted="false">"消息通知"</string>
+    <string name="product_a6b75d0680322a61f4d46185" formatted="false">"深色"</string>
+    <string name="product_af795b382c0649f5d4f576e8" formatted="false">"添加反馈"</string>
+    <string name="product_caadc9c964357aca56e8ab9e" formatted="false">"添加图片、文件或计划模式"</string>
+    <string name="product_b3c58a41a43658eb059afe01" formatted="false">"添加客户端"</string>
+    <string name="product_ad9737dafdbfbc00ea89958a" formatted="false">"添加成员"</string>
+    <string name="product_b94823cbae5a3823a32a723e" formatted="false">"添加或重新核验映射"</string>
+    <string name="product_4b2740339cb6bfb0fb77ff65" formatted="false">"添加电脑"</string>
+    <string name="product_c05130fb7a2490a2fb56b6bd" formatted="false">"添加示例项目"</string>
+    <string name="product_8964f53ac30f0bbdb3d44139" formatted="false">"添加项目"</string>
+    <string name="product_89d1a27dfe12396c22fce9bc" formatted="false">"清亮铃声"</string>
+    <string name="product_b5c4f91f1ee44e7905f66359" formatted="false">"清空草稿"</string>
+    <string name="product_ee32f25f70508f9c7f88ddd9" formatted="false">"清除搜索"</string>
+    <string name="product_657d9cbf45ec9e6a87298c93" formatted="false">"清除筛选"</string>
+    <string name="product_1f566fe8f8b718f37513ea6d" formatted="false">"源码版本"</string>
+    <string name="product_f43da731df841991c5e53a11" formatted="false">"澄清响应仍会阻止交付。信息齐全后，在同一反馈补充明确处理响应。"</string>
+    <string name="product_d691669de805fa44037fc028" formatted="false">"点选连接"</string>
+    <string name="product_d0112fe970d4505911b78ef8" formatted="false">"照片-"</string>
+    <string name="product_c011940f7678dde5767890a5" formatted="false">"版本 %@ · "</string>
+    <string name="product_6320b4a8722a851fb99566e4" formatted="false">"状态"</string>
+    <string name="product_93e474c68ed556478a63700b" formatted="false">"状态未知"</string>
+    <string name="product_309b5d8cc2045d5a274f6994" formatted="false">"独立验收"</string>
+    <string name="product_ff0aae186ca707deb6ea2bb5" formatted="false">"独立验收电脑"</string>
+    <string name="product_9eb9aa2df628601884a6db05" formatted="false">"现有任务可以查看。创建和管理操作不可用。"</string>
+    <string name="product_60609e10cd45d8a435bb4846" formatted="false">"用于后续任务和新轮次"</string>
+    <string name="product_96279857c4ef38fea3755fd2" formatted="false">"由主服务核对原执行回执，不能重新派发相同输入。刷新会读取实际运行记录。"</string>
+    <string name="product_dda514644bc2dbe16343894f" formatted="false">"由主服务核对在线能力、项目源、权限和原执行意图。请求 xhigh；实际档位以执行回执为准。"</string>
+    <string name="product_d48f1dcf88d2ca0d01195370" formatted="false">"电脑"</string>
+    <string name="product_ee5425ffbea27e605c32b31f" formatted="false">"电脑上的目录"</string>
+    <string name="product_653e744d6bd9ebe5fa866c36" formatted="false">"电脑上的项目"</string>
+    <string name="product_06488c0767c96df29f78af57" formatted="false">"电脑地址"</string>
+    <string name="product_80cac9c7f83bda7e94a1e7de" formatted="false">"电脑尚未开放对话分支，请更新连接程序"</string>
+    <string name="product_61ab09ba1dc5f59e975e5864" formatted="false">"电脑尚未开放工作树分支"</string>
+    <string name="product_509092123e156a6d9fd78c72" formatted="false">"电脑已明确原输入未接受；可显式重试同一原消息。"</string>
+    <string name="product_336642a0ae0dfd93941b14e4" formatted="false">"电脑报告运行异常，仍在处理中"</string>
+    <string name="product_73db9c447e2aa2ea2924993c" formatted="false">"电脑映射"</string>
+    <string name="product_6dad69d66a3553841191d9c8" formatted="false">"电脑未找到此创建记录。原内容已保留，可以结束等待后继续编辑。"</string>
+    <string name="product_560ea8241d17d9f15cbe3d5f" formatted="false">"电脑未连接，请恢复连接后分支"</string>
+    <string name="product_c26957a88891a6a0f5f1fd17" formatted="false">"电脑正在转写…"</string>
+    <string name="product_51b384c8e753cc37d15ba209" formatted="false">"电脑端"</string>
+    <string name="product_ed4c9208740102dd37bedfae" formatted="false">"电脑继续执行任务。开启后可在前台、后台和锁屏收到提醒；后台提醒需要电脑接入推送服务。"</string>
+    <string name="product_d4e20d8e8ab6869f12edae91" formatted="false">"电脑订阅撤销待联网同步"</string>
+    <string name="product_b4b59b7c254b400df3a690a1" formatted="false">"电脑请求失败（%@）"</string>
+    <string name="product_5acc195a9c77e5dc7055615d" formatted="false">"电脑身份不一致，已停止操作。请重新添加客户端。"</string>
+    <string name="product_c1a6e0a7d1e729be931eac63" formatted="false">"电脑连接发生变化"</string>
+    <string name="product_63b0c3337afca17812ecdf59" formatted="false">"电脑连接密码"</string>
+    <string name="product_b971187f3bc4fcc84c6016b4" formatted="false">"电脑项目"</string>
+    <string name="product_c0ce4c3f7e97b17bdf663713" formatted="false">"电脑默认"</string>
+    <string name="product_5144413f950fc60ed3d27155" formatted="false">"界面体验 · 本地示例"</string>
+    <string name="product_e0171e7839baeb99e306b32a" formatted="false">"界面示例"</string>
+    <string name="product_1e2df9c3075ae9e48a96d101" formatted="false">"登录"</string>
+    <string name="product_664e76197a80fb0654a877ab" formatted="false">"登录 EasyAI"</string>
+    <string name="product_3f06ed8f8c380da381703d5b" formatted="false">"登录中…"</string>
+    <string name="product_789aa317ed7fedf9370c24f0" formatted="false">"登录人类成员账户"</string>
+    <string name="product_96bfe6cd27ec57ac8617d228" formatted="false">"登录状态校验失败"</string>
+    <string name="product_5eab8fbae6a01eb700a9354b" formatted="false">"登录设备与会话"</string>
+    <string name="product_4037ef224e6c50e12b53275c" formatted="false">"登录设置"</string>
+    <string name="product_52daa71ebc31058156b21dc2" formatted="false">"目录"</string>
+    <string name="product_bf0469dd436520ec032f2e30" formatted="false">"目录不在此设备已授权范围中"</string>
+    <string name="product_b06325c5660f0c295b1fcdbf" formatted="false">"直连"</string>
+    <string name="product_eee43f9f32b12eb8f83febfc" formatted="false">"相对于授权工作目录的路径"</string>
+    <string name="product_1f557e306c81f2000db4bb45" formatted="false">"相对路径不能超出电脑工作目录"</string>
+    <string name="product_0072da457a093523a80caf31" formatted="false">"看板"</string>
+    <string name="product_fec4e1d7cb802f4ed28bde16" formatted="false">"看板状态"</string>
+    <string name="product_ddc2b7da9265407cd57a6e14" formatted="false">"真实候选指纹"</string>
+    <string name="product_10ec0d494acf679b0aedb73f" formatted="false">"真实执行空间"</string>
+    <string name="product_71b93ff42386498ad7d22e77" formatted="false">"示例模型"</string>
+    <string name="product_be1b4f3c6c1cda1e6f4989ef" formatted="false">"离线"</string>
+    <string name="product_87599761bcae21996f26629a" formatted="false">"离线 · 查看缓存"</string>
+    <string name="product_ec129f076f33c2eca7dc79ff" formatted="false">"离线 · 草稿保留在此对话"</string>
+    <string name="product_271f20aa5f95c976d5bdaa8c" formatted="false">"移除 %@"</string>
+    <string name="product_d7e57c297a6939fb720539ff" formatted="false">"移除成员"</string>
+    <string name="product_43c663cb78d0756632bd7f9b" formatted="false">"移除此成员的项目授权？"</string>
+    <string name="product_e4e4e0ad5de1719fec9986d5" formatted="false">"移除连接"</string>
+    <string name="product_321f21e8373b6c3b20af2361" formatted="false">"移除项目成员"</string>
+    <string name="product_9a907f8eb25d1b3e7759e76b" formatted="false">"立即追加"</string>
+    <string name="product_245c8b2c07acf5d19193dcea" formatted="false">"第 %@ 轮 · "</string>
+    <string name="product_662d9d448e0ccda5aece6318" formatted="false">"第 %@ 轮 · 交付与验收证据"</string>
+    <string name="product_93549b12c929c39e256b8bee" formatted="false">"第 %@ 轮 · 反馈与响应"</string>
+    <string name="product_619d90b1c6e7e8f5a50dc68e" formatted="false">"第 %@ 轮 · 过程证据"</string>
+    <string name="product_ba87203896ed2c1e71ecb3fd" formatted="false">"第三方 AI 如何处理任务"</string>
+    <string name="product_45273152a9446f606efedf09" formatted="false">"第三方 AI 如何处理内容"</string>
+    <string name="product_ed90fe7563a4cc9737845b0a" formatted="false">"等待你的处理"</string>
+    <string name="product_8bd9f5f4d84d83e4b94035e6" formatted="false">"等待回执"</string>
+    <string name="product_150fec9297f26fc7e4786ac8" formatted="false">"等待审批"</string>
+    <string name="product_a4eabd1eea9022646bcc2e8f" formatted="false">"等待工具输出…"</string>
+    <string name="product_1c634abc6e7fa13f3ced75b2" formatted="false">"等待已结束；原消息保留，未取消远端"</string>
+    <string name="product_f82a69953eec2df60b2da9ef" formatted="false">"等待桌面确认超时"</string>
+    <string name="product_14793e5cb975fc55b08ef7a5" formatted="false">"等待真实 Agent 运行回报，可在执行记录中核对。手机不能代 Agent 给出通过结论。"</string>
+    <string name="product_2959a425a1f025e98b549c1a" formatted="false">"等待确认数据来源"</string>
+    <string name="product_a94857c3ab87d791780c748c" formatted="false">"等待系统分配 APNs 设备令牌"</string>
+    <string name="product_d80f8bbe1ddf76b9226a32ad" formatted="false">"等待连接"</string>
+    <string name="product_72fbbe1016ed05ea1f57f43f" formatted="false">"等待重新连接；草稿保存在此对话。"</string>
+    <string name="product_cf480120d5fd92465a440658" formatted="false">"策略版本"</string>
+    <string name="product_5a40048069a37ffc4b7309ea" formatted="false">"策略版本已变化"</string>
+    <string name="product_e19796712f1cf0de97d54a66" formatted="false">"管理员"</string>
+    <string name="product_ba40014ff496f64e755492a5" formatted="false">"类型"</string>
+    <string name="product_5bc72a1a4c0d8025941ef5df" formatted="false">"精确覆盖本轮反馈"</string>
+    <string name="product_c347f3d26178030c531e1008" formatted="false">"系统推送暂不可用，可前台补齐"</string>
+    <string name="product_ce844d463a0ed82e28b4f240" formatted="false">"系统推送通道准备中，可前台补齐"</string>
+    <string name="product_77058a1c2b43bf0f3feb4925" formatted="false">"系统推送通道已就绪"</string>
+    <string name="product_fdecfb1879d406224099aa11" formatted="false">"系统权限"</string>
+    <string name="product_be3729e22535d66d2236db67" formatted="false">"系统语音服务暂不可用。请检查 Siri 及「设置 → 通用 → 键盘」中的「启用听写」后重试。原草稿已保留。"</string>
+    <string name="product_d464022b87681870914565a4" formatted="false">"系统通知已允许"</string>
+    <string name="product_6394ecf051df46d1dd01fd4d" formatted="false">"系统通知已允许 · 声音已关闭"</string>
+    <string name="product_8219de42a4b88abeece45b5a" formatted="false">"系统通知已关闭"</string>
+    <string name="product_04b77083689b09774777b9bf" formatted="false">"系统默认"</string>
+    <string name="product_9ac22d24d8c324be60812a22" formatted="false">"索引"</string>
+    <string name="product_2a42944c3a0bae2795f751f4" formatted="false">"索引同步结果"</string>
+    <string name="product_299b8b640dfdaf1f98740e57" formatted="false">"索引名称"</string>
+    <string name="product_e2a76ef1f12e147fe9f6914b" formatted="false">"终端"</string>
+    <string name="product_34d5db65ee935b364a6657b7" formatted="false">"结束当前等待"</string>
+    <string name="product_5201d1e3588da097a6aae88d" formatted="false">"结束录音并转写"</string>
+    <string name="product_8cd8e2cd4a714c46fc7d6e63" formatted="false">"结束本机等待，保留原回执；电脑端操作未取消"</string>
+    <string name="product_42845f3003a1232727c1cee7" formatted="false">"结束等待"</string>
+    <string name="product_dcb43f7a245824a894c441e3" formatted="false">"结束等待不会撤销可能已执行的请求。原记录仍可查询；再次发送将是一条新请求。"</string>
+    <string name="product_030503c1981fc9b6b82bf264" formatted="false">"结束等待？"</string>
+    <string name="product_ea94ce072104019af05b638a" formatted="false">"结构化冻结材料尚未同步。"</string>
+    <string name="product_79989e841c63729c1d5c2a75" formatted="false">"结果待核对"</string>
+    <string name="product_fb7e71452c047b3d9cce8a6e" formatted="false">"结果未知"</string>
+    <string name="product_025d9f8bd9a091114504b93f" formatted="false">"结果未知时查询相同操作 ID。返回工作区只离开此页面，原意图、附件和回执继续保留，远端执行不会被取消。"</string>
+    <string name="product_f9791df58d2e81db4d138b51" formatted="false">"统一管理局域网内多台电脑上的 Agent 客户端，目前支持 Codex 和 Easy Work，后续可兼容更多客户端。\n\n一键切换客户端，随时发起任务，让 AI 自动完成并交付工作。"</string>
+    <string name="product_899c24ab8452804bc59b6d17" formatted="false">"统一组件间距"</string>
+    <string name="product_e3aab03ac4312965ca5a4b74" formatted="false">"继承此轮次之前的对话，不发送新消息"</string>
+    <string name="product_406682a5e014e1466d1d1f39" formatted="false">"继续上传并创建"</string>
+    <string name="product_f00c443e17a0901a3665ce69" formatted="false">"继续任务"</string>
+    <string name="product_460265e8dd1c19f350fae723" formatted="false">"继续完成上一个任务。"</string>
+    <string name="product_68d85f14049984b161bf8b1d" formatted="false">"继续等待"</string>
+    <string name="product_21138f1b0642c3f727fc47f7" formatted="false">"维护"</string>
+    <string name="product_a94932b55314ef9db91293a9" formatted="false">"编号前缀"</string>
+    <string name="product_af157acfc4e20f5b7ec5daa8" formatted="false">"编号前缀（如 APP）"</string>
+    <string name="product_051836569928a9f91145a70e" formatted="false">"编辑"</string>
+    <string name="product_a9f5ed3ecb3f625236757618" formatted="false">"编辑%@"</string>
+    <string name="product_1f8732f1de5491b2392fffd8" formatted="false">"编辑任务"</string>
+    <string name="product_997bb5a6e73de9b82ea45105" formatted="false">"编辑内容已保留。先核对最新策略，再主动采用当前版本并提交。"</string>
+    <string name="product_0c0806d237ba69ab5412e678" formatted="false">"编辑后续轮次策略"</string>
+    <string name="product_dfa5387ce9a1ea2490a2b5dc" formatted="false">"编辑外部文件和使用互联网时始终询问"</string>
+    <string name="product_51fb4b4bbbd495852a871e8e" formatted="false">"编辑客户端"</string>
+    <string name="product_60ed265346273d74e28d46b8" formatted="false">"编辑文件"</string>
+    <string name="product_577feeefb88d35cf4e03645e" formatted="false">"编辑项目"</string>
+    <string name="product_0348724556300b4b2b77249d" formatted="false">"编辑项目资料"</string>
+    <string name="product_80c6819f0938440065ce31a0" formatted="false">"缺少证据"</string>
+    <string name="product_bb8840b5bc9af7eeffe894d7" formatted="false">"缺陷"</string>
+    <string name="product_005074b65962188cbd88f09a" formatted="false">"网页"</string>
+    <string name="product_173f88d28ebfb1e6399d60f9" formatted="false">"置顶"</string>
+    <string name="product_7eb336e42cb5076b0eac0305" formatted="false">"自动"</string>
+    <string name="product_7fdbb049d2f6518e39407b9a" formatted="false">"自动发现"</string>
+    <string name="product_558a3b4c14e85484b436231b" formatted="false">"自动查找同一网络的电脑，选择后连接。"</string>
+    <string name="product_9eaefc2edcaf74fcf459fcd7" formatted="false">"自验检查与证据"</string>
+    <string name="product_92089470c1410409f02d6ce4" formatted="false">"草稿保留在原轮次。先核对最新任务，再明确采用新版本；不会覆盖他人改动。"</string>
+    <string name="product_0940b6b7369a9b01150b62f9" formatted="false">"草稿可编辑，当前无法提交"</string>
+    <string name="product_ed6341cbd5113515a47118a6" formatted="false">"草稿已保存"</string>
+    <string name="product_dcd67eb0003bde6f246a596f" formatted="false">"草稿或目标已变化，转写已保留，未覆盖当前输入。"</string>
+    <string name="product_9936f506872d78c96d9e8b2a" formatted="false">"补充本人响应"</string>
+    <string name="product_ece5ef21580936ef3d0aea65" formatted="false">"被阻塞"</string>
+    <string name="product_24adffe545aba4122531d117" formatted="false">"被验候选"</string>
+    <string name="product_951b83f6286156a972a842c1" formatted="false">"要求交付材料"</string>
+    <string name="product_185c50b3782a0603cdd3308b" formatted="false">"要求最终提交引用"</string>
+    <string name="product_755d477b50ef7629b6a5b44e" formatted="false">"覆盖 %@ 条反馈"</string>
+    <string name="product_b3b9783f9f3b747e103f7b8b" formatted="false">"角标汇总这部手机在所有已添加电脑上的未读对话，每个对话计一次。电脑上的阅读不影响手机；已看过但尚未处理的审批继续保留待处理提示。开启内容预览后显示对话标题与任务摘要，待回答通知显示具体问题；关闭后仅显示电脑和通知类型。及时通知遵循系统权限和专注模式。"</string>
+    <string name="product_c47b54e84e79d77fcdfe73e0" formatted="false">"角色"</string>
+    <string name="product_0f6b1949b093e35266991fbe" formatted="false">"计划"</string>
+    <string name="product_46196ae1e6b1fde7d36a271d" formatted="false">"计划待确认"</string>
+    <string name="product_7cbb85b7e8519070363f7c91" formatted="false">"计划模式"</string>
+    <string name="product_c5ec5d3c187fd1256b9b957e" formatted="false">"计划模式，点击关闭"</string>
+    <string name="product_c32d925ee30e4f6b2d8bfa29" formatted="false">"记录候选自验"</string>
+    <string name="product_a3b117a26236d207e042bd8c" formatted="false">"记录进度"</string>
+    <string name="product_408e2c8c84281a85b7f6c150" formatted="false">"许可仅保存在本机当前任务主服务与人类账户范围内，不沿用聊天连接或另一台手机的许可。"</string>
+    <string name="product_6ac30eec0912a691ea765df2" formatted="false">"设备、项目和根目录均来自主服务核验的当前目录。保存后由服务端登记独立执行身份。"</string>
+    <string name="product_468aaef3a4faae09d51f7a2d" formatted="false">"设备派发"</string>
+    <string name="product_df3d58c7d84b85f2037cdd20" formatted="false">"设置"</string>
+    <string name="product_912a1e9582cdaded72ee8bff" formatted="false">"设置已保存，通道仍待核对；可刷新通道"</string>
+    <string name="product_121081e806200a72498fb656" formatted="false">"设置已保存，通道核对暂未完成；可刷新通道"</string>
+    <string name="product_bd11dc29abb8b0b08036141b" formatted="false">"设置截止日期"</string>
+    <string name="product_db5a1a27cb61c61fd5738fd8" formatted="false">"设置项目源"</string>
+    <string name="product_12c3b9e79fe6410b84f355bd" formatted="false">"设计移动端导航"</string>
+    <string name="product_6cc83e256d2b9d2bc4e8de6e" formatted="false">"证书 SHA-256"</string>
+    <string name="product_d883c636d3f8913e51a7cbbb" formatted="false">"证据"</string>
+    <string name="product_254b01ed5c9344530fbc1f7e" formatted="false">"询问 %@"</string>
+    <string name="product_104c612730052b255471100f" formatted="false">"该地址没有可用的任务主服务"</string>
+    <string name="product_2acaa5ec904ab20aa885bebf" formatted="false">"该账户草稿和原操作记录保留在原服务与账户范围内。"</string>
+    <string name="product_29a0c9ec9483ce25310124d4" formatted="false">"详情分段"</string>
+    <string name="product_913ff546ec58381fc946a96e" formatted="false">"语音处理未能跟上录音，已停止听写并保留草稿，请重试。"</string>
+    <string name="product_b616744a2d1858ccb2476fa7" formatted="false">"语音识别权限未开启，请在系统设置中允许语音识别。"</string>
+    <string name="product_2fdc91e671fde5aa95703ec1" formatted="false">"语音输入"</string>
+    <string name="product_451d9615da2cc3947b679384" formatted="false">"语音输入回复"</string>
+    <string name="product_6aed2e2971474d057efcdec3" formatted="false">"语音输入测试"</string>
+    <string name="product_e3b07d025280fb2d254554ab" formatted="false">"请优化输入框，保留中文、换行和标点。\n"</string>
+    <string name="product_34b2fd97e33ba34b280335e1" formatted="false">"请先上传全部附件，或移除不提交的草稿附件。"</string>
+    <string name="product_dafb100d3cd7654e4866cbdc" formatted="false">"请先保存默认铃声选择。"</string>
+    <string name="product_b793920db90a49d6c495b464" formatted="false">"请先在客户端菜单连接这台执行电脑及对应 Agent 机器身份，再打开执行对话"</string>
+    <string name="product_1171b8334fc228b3d61ceafd" formatted="false">"请先在桌面授权项目目录"</string>
+    <string name="product_ea3772db6edcdad012df609a" formatted="false">"请先处理当前草稿，再恢复原消息。当前草稿已保留。"</string>
+    <string name="product_7447a247825e9877cf09568e" formatted="false">"请先开启系统通知权限。"</string>
+    <string name="product_908467c20033615f29cb73b2" formatted="false">"请先查询当前提交结果，再切换人类账户"</string>
+    <string name="product_758f84ff046f614f8ddd9e7c" formatted="false">"请先核对主服务冲突"</string>
+    <string name="product_32b16cbcc454f64b7953b55d" formatted="false">"请先核对原上传回执，不能重复上传"</string>
+    <string name="product_2d3be37add1c8f879f8178c3" formatted="false">"请先登录 EasyAI"</string>
+    <string name="product_34e3907c8ddc409277bf8bfa" formatted="false">"请先确认任务 AI 数据共享目标。允许后再次点击原提交按钮；当前内容未提交。"</string>
+    <string name="product_4fae0277f2a1da5964f5ae57" formatted="false">"请先结束本机等待或取得回执，再退出账户"</string>
+    <string name="product_b83748bd663ef7846200119b" formatted="false">"请先选择任务主服务"</string>
+    <string name="product_f6ae40dcd843c5b82d129956" formatted="false">"请在 EasyWork 桌面确认目录授权，然后重试。"</string>
+    <string name="product_8e5a183bc3d877658470a403" formatted="false">"请在尚未添加真实电脑的新安装中导入迁移文件，现有连接未更改。"</string>
+    <string name="product_6ab4adf84d7762476784826f" formatted="false">"请在服务设置核对身份。新提交与派发已暂停，原主服务保持绑定。"</string>
+    <string name="product_5424c6d1f820721486824c69" formatted="false">"请在系统设置中允许 Agent Hub 的通知。"</string>
+    <string name="product_6a5418e8644df0b4c8e58c8d" formatted="false">"请填写局域网或 VPN 电脑地址"</string>
+    <string name="product_c92a6e54641f494f03c74016" formatted="false">"请打开核对业务提醒"</string>
+    <string name="product_a115c9b65ce280ac2cdae22f" formatted="false">"请扫描或粘贴桌面的局域网配对二维码"</string>
+    <string name="product_71829bf02aa450e5c8c50c1a" formatted="false">"请更新电脑端后使用直接连接"</string>
+    <string name="product_4ff2daf6e4f7b2166c136d40" formatted="false">"请更新这台电脑的 Host 后使用直接连接"</string>
+    <string name="product_205050642550699f92b8bc56" formatted="false">"请求批准"</string>
+    <string name="product_fb687f9588d48afe19842c8c" formatted="false">"请求推理档位"</string>
+    <string name="product_3d6b9363933648ae786a019c" formatted="false">"请求被拒绝"</string>
+    <string name="product_b2e529bc874f4f630d3703fe" formatted="false">"请确认此操作。"</string>
+    <string name="product_bce9e4790928eac32a15bfab" formatted="false">"请输入客户端名称。"</string>
+    <string name="product_0fb3237e881a272be0aeec9f" formatted="false">"请输入项目名称"</string>
+    <string name="product_49993befece9b7f5bf19cf05" formatted="false">"请连接原主服务并登录后上传"</string>
+    <string name="product_413b8e06457c03bb495147cc" formatted="false">"请连接原主服务并登录后提交；草稿已保留"</string>
+    <string name="product_a666ad50a51a224fe8df112a" formatted="false">"请连接原主服务并重新登录。"</string>
+    <string name="product_8bf0a405be98d5c7486dadc5" formatted="false">"请选择 WAV、AIFF、CAF、M4A 或 MP3 音频。"</string>
+    <string name="product_e3631fa32bd717fcdd30da3b" formatted="false">"请选择不超过 29 秒的短铃声。"</string>
+    <string name="product_c6d207e814f092413efafd54" formatted="false">"请选择准确电脑、项目和根目录"</string>
+    <string name="product_ace0ddc1b90bf7741340191a" formatted="false">"请选择已存在且已授权的目录"</string>
+    <string name="product_8c0b5950b4564070135900b3" formatted="false">"请选择非空且不超过 20 MB 的文件。"</string>
+    <string name="product_1a7d13dd085b1a0cc5484d49" formatted="false">"请重新执行上一个任务。"</string>
+    <string name="product_40ac2e32f4abd4632dd287fc" formatted="false">"请重新核对原主服务、人类会话和项目权限后提交"</string>
+    <string name="product_5d637c2db91823fd81800b61" formatted="false">"请重新登录 EasyAI"</string>
+    <string name="product_963033ece0be8acb90ade749" formatted="false">"读取历史…"</string>
+    <string name="product_4df79f789c9b287f7fac0525" formatted="false">"读取输入性能"</string>
+    <string name="product_5ced06d2604020248c5baf69" formatted="false">"调整计划"</string>
+    <string name="product_a525346277ed54bd52d3cd3c" formatted="false">"负责人"</string>
+    <string name="product_052951813126202af74f94af" formatted="false">"负责人响应"</string>
+    <string name="product_311bb313fdeca6aa2ce7d941" formatted="false">"账号"</string>
+    <string name="product_8696c49ac55b8c71559a13f0" formatted="false">"超高"</string>
+    <string name="product_370c7d742646deda7c6a8162" formatted="false">"跟随电脑"</string>
+    <string name="product_1a9743019730314e2ab85e74" formatted="false">"跟随电脑权限"</string>
+    <string name="product_341fe191ea34994ede64e57c" formatted="false">"跟随电脑的许可涵盖该目标的 AI 配置后续调整。撤回只影响本机后续提交，不删除已发送内容，也不停止电脑端已获派发的自动工作流。"</string>
+    <string name="product_ccfeed3507b16166b25077ce" formatted="false">"跟随电脑端配置"</string>
+    <string name="product_385cda63adb55d399fd4bd94" formatted="false">"跟随电脑表示允许该目标使用电脑端当前及之后调整的 AI 配置；这里没有承诺某个固定模型或服务商。请在电脑端核对实际服务商、数据保留、训练用途和处理地区。Agent 或机器运行目标变化后需要重新确认；Codex 账户变化不改变机器许可，其他 Agent 的账户规则保持。"</string>
+    <string name="product_1e58873d764a1d77f8389f23" formatted="false">"跟随电脑速度"</string>
+    <string name="product_217cfe7db1e3d10a734f5a03" formatted="false">"跟随系统"</string>
+    <string name="product_308892f1c2800d32b942588b" formatted="false">"跟随默认铃声"</string>
+    <string name="product_156ec5d8a52aa6fc10479ffb" formatted="false">"跳转最新消息"</string>
+    <string name="product_fc50a99caae0cddc10e0d3f9" formatted="false">"跳过"</string>
+    <string name="product_e3d73a95f7c481b72d1c682a" formatted="false">"转写仍在处理中，录音已保留；点击重试查询原结果。"</string>
+    <string name="product_94a9d07b5c29722d56bab33d" formatted="false">"转写回执与原录音或目标不一致"</string>
+    <string name="product_03394d019197c5f4480b8b5c" formatted="false">"轮次已改变，请关闭表单并进入当前轮；旧草稿继续保留。"</string>
+    <string name="product_21af9845b0b819009cd16f6c" formatted="false">"轻柔提示"</string>
+    <string name="product_40cc9fb4d49c96f5f4a7ec25" formatted="false">"输入回复"</string>
+    <string name="product_d341055f05a729371aa8abf1" formatted="false">"输入回复或补充说明"</string>
+    <string name="product_9f1a0bf3602a493654e197d0" formatted="false">"输入已被接续"</string>
+    <string name="product_604176fb173f72daaac5ef3f" formatted="false">"迁移密码至少需要 12 个字符。"</string>
+    <string name="product_a3c353a965ea56bc12733d61" formatted="false">"迁移密码（至少 12 个字符）"</string>
+    <string name="product_6ea5b46edff7d2c37a22c909" formatted="false">"迁移文件过大。"</string>
+    <string name="product_35606a0a68b3cd6bd0048d08" formatted="false">"迁移铃声已损坏。"</string>
+    <string name="product_50112e8b4278ec27c8f4bc42" formatted="false">"迁移铃声格式无效。"</string>
+    <string name="product_15b18a0a2ad921654e7e97f8" formatted="false">"过程"</string>
+    <string name="product_75b269496f698fae9fc5394e" formatted="false">"运行"</string>
+    <string name="product_1f0eb99b7ed094bed9583489" formatted="false">"运行中"</string>
+    <string name="product_e53f35dc006b8d4674548d2a" formatted="false">"运行命令"</string>
+    <string name="product_e9b4454f50113bbe304aa678" formatted="false">"运行多个命令"</string>
+    <string name="product_01fb1cbda910ec7ebaf48035" formatted="false">"运行异常记录（%@ 条）"</string>
+    <string name="product_aa28b4e0ad564d1190229f34" formatted="false">"运行目标"</string>
+    <string name="product_e7b32c53b906ea7263bf596d" formatted="false">"运行账户"</string>
+    <string name="product_572cf45ba43634b3448aadbc" formatted="false">"返回"</string>
+    <string name="product_dc8db8dd4f07baaacf007cd6" formatted="false">"返回草稿"</string>
+    <string name="product_c1fe7fb67eca29ff6e991c45" formatted="false">"还没有项目"</string>
+    <string name="product_2da5cbe1ca3eaaa65aa6fd55" formatted="false">"还没有项目或对话"</string>
+    <string name="product_d19a742339e61c27bf7dd316" formatted="false">"这一轮尚未缓存，连接原主服务后读取。"</string>
+    <string name="product_488e23d9565a73bd1f212dbc" formatted="false">"这些许可属于本机当前任务主服务和人类账户。聊天连接的许可独立管理。允许后由你再次提交；未知结果只查询原回执。"</string>
+    <string name="product_ce1a7a6aa96b7e352907ed36" formatted="false">"这份备份不属于当前 App 或受支持的旧版本，现有数据未更改。"</string>
+    <string name="product_c42c83aa563c981a7c4a6984" formatted="false">"这台电脑的旧草稿或原回执范围有冲突，全部记录已保留。核对原记录后再提交；不会覆盖当前草稿或重放未知操作。"</string>
+    <string name="product_73b02540155ef26571e3f693" formatted="false">"这是本地示例对话，可以继续输入文字或选择附件来体验界面。"</string>
+    <string name="product_dacec1b51858b9e68f38b043" formatted="false">"这条通知属于另一服务或人类账户，请先连接原服务并核对登录"</string>
+    <string name="product_31e82555274b358a14a45d17" formatted="false">"这条通知的连接已移除或身份已变化。"</string>
+    <string name="product_c618e3ca0e739553b982815e" formatted="false">"这里只添加本地示例项目。"</string>
+    <string name="product_ab34325ed5a2426335f3882d" formatted="false">"这项操作的结果尚未确认，请先查询原回执"</string>
+    <string name="product_474172ffd010e2b98c3cb23c" formatted="false">"进入当前第 %@ 轮"</string>
+    <string name="product_9646f90e46a5064efeb17c01" formatted="false">"进展、结果与下一步"</string>
+    <string name="product_760aa1681047cfcaa9b465cc" formatted="false">"进行"</string>
+    <string name="product_dc9591e56d502b436c29bdd2" formatted="false">"进行中"</string>
+    <string name="product_63b9ed4a86449de452053cd8" formatted="false">"进行中 %@"</string>
+    <string name="product_7541a37059030ee6c5de4168" formatted="false">"进行中数量未知"</string>
+    <string name="product_a5574109f0208e899feb6b62" formatted="false">"连接"</string>
+    <string name="product_6fe588b0798fc22219b73135" formatted="false">"连接、草稿和回执已恢复。通知已关闭，请先核对电脑身份再开启。"</string>
+    <string name="product_f35d3b424c240d7d2377fb58" formatted="false">"连接与账户"</string>
+    <string name="product_a898478be1813b95eb1c01e0" formatted="false">"连接中"</string>
+    <string name="product_ee9ebe523d4205f8523fdc57" formatted="false">"连接中…"</string>
+    <string name="product_236c5e2b4bcdae46faf512ed" formatted="false">"连接主服务后创建业务项目。"</string>
+    <string name="product_fe9e135bae9506e106b2f021" formatted="false">"连接主服务后可以查看证据附件"</string>
+    <string name="product_f71b361850e91fbf2d13cb65" formatted="false">"连接信息无效或已过期，请在桌面重新生成"</string>
+    <string name="product_eb88f13d7bb94f8109c6e100" formatted="false">"连接偏好"</string>
+    <string name="product_942818518011ff13019daf02" formatted="false">"连接原主服务后可撤销设备会话"</string>
+    <string name="product_f18346c2c1074ed1b49fd4e4" formatted="false">"连接原主服务后才能下载证据附件。"</string>
+    <string name="product_c1679320233c356731944d5d" formatted="false">"连接原主服务后重试。离线时仅显示已保存的任务。"</string>
+    <string name="product_dc1132540518e348cd05fc50" formatted="false">"连接地址"</string>
+    <string name="product_4dd25e301019c2f4066b88d5" formatted="false">"连接客户端"</string>
+    <string name="product_98edfcb6223d3329cb0db56f" formatted="false">"连接已保存的电脑"</string>
+    <string name="product_e0d53046f33be2c3a8178835" formatted="false">"连接异常"</string>
+    <string name="product_485a26050ce574311f211883" formatted="false">"连接方式"</string>
+    <string name="product_bc0643467018d9b060c5b8db" formatted="false">"连接未完成 · 查看缓存"</string>
+    <string name="product_a243b6e3acddd8c56707afd0" formatted="false">"连接此主服务"</string>
+    <string name="product_aa8446366b2cdde368b5f5d2" formatted="false">"连接电脑"</string>
+    <string name="product_dfcaec73f46b014419406b11" formatted="false">"连接程序返回了不兼容的数据。"</string>
+    <string name="product_3886c3c2b68b73ebaa708cb8" formatted="false">"连接结果待确认，消息仍保留在草稿中；再次发送会先查询连接状态。"</string>
+    <string name="product_5dd11f1ec35cbe6560836d1c" formatted="false">"退出当前设备登录？"</string>
+    <string name="product_53ce146355a30a63d982b658" formatted="false">"退出此设备登录"</string>
+    <string name="product_3ab8cc15939f3b5c56d8e0a8" formatted="false">"退出登录"</string>
+    <string name="product_f1199c4c95463562decc3fd9" formatted="false">"选择任务主服务"</string>
+    <string name="product_c95d9ce73c46829ce129dc58" formatted="false">"选择会记住，供此客户端的新对话使用。设置随下一条消息或排队消息提交，补充指令沿用当前任务设置。"</string>
+    <string name="product_5f71600dd8fcb6ed2fd308b1" formatted="false">"选择准确执行空间"</string>
+    <string name="product_9ad12a1ab4f6b5271662f3c6" formatted="false">"选择图片"</string>
+    <string name="product_71a336ef2ea881cae4cd0982" formatted="false">"选择在线电脑"</string>
+    <string name="product_5356fdc0255544651a1ac136" formatted="false">"选择已核验的开发空间"</string>
+    <string name="product_45bf847b470d89652cd8fe74" formatted="false">"选择成员"</string>
+    <string name="product_822fb37dba29381aa0a412d0" formatted="false">"选择文件"</string>
+    <string name="product_8a268fd06b48a98dc2a2db34" formatted="false">"选择文件上传"</string>
+    <string name="product_a795bc589bfcaaeeda2d65f2" formatted="false">"选择根目录"</string>
+    <string name="product_1afed6a81a2512d29377567b" formatted="false">"选择模型"</string>
+    <string name="product_f8792502dd7351474cbc5309" formatted="false">"选择独立验收人"</string>
+    <string name="product_8082e6629ba6d3f5c50b2f78" formatted="false">"选择电脑授权工作目录中的已有文件夹。"</string>
+    <string name="product_73d537f7ab41a7b5695eef49" formatted="false">"选择真实项目"</string>
+    <string name="product_5b894d63abb84403bf8cca04" formatted="false">"选择负责人"</string>
+    <string name="product_1e8251f5f17b334ef8c055d3" formatted="false">"选择身份"</string>
+    <string name="product_682279bfae230569afb18580" formatted="false">"选择项目"</string>
+    <string name="product_b4d37cd2b87c20b14e8e5693" formatted="false">"逐项交付说明"</string>
+    <string name="product_ad6c36a9c67338343b28c44c" formatted="false">"逐项确认"</string>
+    <string name="product_d0bf58ae111235d963588dfa" formatted="false">"逐项验收结果与意见（必填）"</string>
+    <string name="product_4b6ded8a7f181397121cbfa6" formatted="false">"通知"</string>
+    <string name="product_f094715442da739798e03882" formatted="false">"通知原任务或轮次尚未确认，未切换页面"</string>
+    <string name="product_86ae6bb2830cccee6bd30952" formatted="false">"通知和铃声设置已应用。"</string>
+    <string name="product_79fe329558d14b1945473431" formatted="false">"通知声音"</string>
+    <string name="product_0dd9d30ca3aaf808f6d12f38" formatted="false">"通知属于另一服务或账户，请先连接原服务并核对登录"</string>
+    <string name="product_77717f1d9317d83c1d9782ea" formatted="false">"通知类型"</string>
+    <string name="product_adebb4786c9cfa7f883a6008" formatted="false">"通知设置尚待核对"</string>
+    <string name="product_37c754f8485d6c6fc820581a" formatted="false">"通知设置尚未确认；当前仅提供前台补齐"</string>
+    <string name="product_cf5a6e121ecb60d555fd677d" formatted="false">"通知账户与当前登录不同；须重新核对原服务及账户"</string>
+    <string name="product_2ae6c5dd11867ea2e244e071" formatted="false">"通知项目当前无权访问"</string>
+    <string name="product_1e9f2561b7cf43c495c3417e" formatted="false">"通过"</string>
+    <string name="product_7a51afb0bd91529626d8a454" formatted="false">"通过中继连接"</string>
+    <string name="product_4542e4a4c2848ec2199725bb" formatted="false">"通道仍待核对"</string>
+    <string name="product_f27b7af6a1bda57389305b37" formatted="false">"通道仍待核对，可前台补齐"</string>
+    <string name="product_0e14d148b46b8c0bcb53c2a6" formatted="false">"速度"</string>
+    <string name="product_26910bf0cba625322e108d47" formatted="false">"速度模式"</string>
+    <string name="product_7b2534a7d59d809ec3deb883" formatted="false">"部分电脑的通知撤销待联网同步。"</string>
+    <string name="product_f6e0f9e676e1fe2e93396625" formatted="false">"部署 ID"</string>
+    <string name="product_2b37be6391d025cd51478787" formatted="false">"醒目提醒"</string>
+    <string name="product_87e95352cb20b85276075dcb" formatted="false">"重新发现"</string>
+    <string name="product_c74c9f5e375f1c0fa0c9e27d" formatted="false">"重新录音"</string>
+    <string name="product_a71aa9ed7813349a26bdfd38" formatted="false">"重新查找"</string>
+    <string name="product_d312ab2392caea893fbc4a84" formatted="false">"重新登录 EasyAI"</string>
+    <string name="product_df7392cc96bedc5170808f93" formatted="false">"重新读取"</string>
+    <string name="product_90ba62504bf3ea4e52c3e119" formatted="false">"重新运行上一任务"</string>
+    <string name="product_9d4ece0da850f4ba3a233aec" formatted="false">"重置输入性能"</string>
+    <string name="product_b8784c8dd5636ff231b12189" formatted="false">"重试"</string>
+    <string name="product_fcff8ee2ea11a41f4725b76e" formatted="false">"重试原消息"</string>
+    <string name="product_e5f522a0dc59edec49926e13" formatted="false">"重试转写"</string>
+    <string name="product_f4227deb6774dfcc15f77920" formatted="false">"重连原主服务"</string>
+    <string name="product_e9fb38182f9489507f3a1e05" formatted="false">"铃声"</string>
+    <string name="product_246d55e682c1c777d0a63dfb" formatted="false">"铃声文件最多 10 MB。"</string>
+    <string name="product_33a8618cb6710e43488a4b7e" formatted="false">"问题"</string>
+    <string name="product_37107e23ae0c166f26d32197" formatted="false">"阅读隐私政策"</string>
+    <string name="product_02365fc0397b8486dc957d50" formatted="false">"附件上传正文 · %@ 字节"</string>
+    <string name="product_02085fc30f0a167e44031f4e" formatted="false">"附件字节或 SHA-256 与登记不一致"</string>
+    <string name="product_f039242b3ecd0b01fa01004c" formatted="false">"附件对话"</string>
+    <string name="product_a5bc297a5fe7cfeadff6c52b" formatted="false">"附件指令"</string>
+    <string name="product_b6ee68de903a62fdbe469357" formatted="false">"附件须为 1 byte–20 MB"</string>
+    <string name="product_b068685ebc853327342b85ca" formatted="false">"随心输入"</string>
+    <string name="product_e464b41fd5c45ba59eee93e3" formatted="false">"隐私政策"</string>
+    <string name="product_128a7a03668b3cb1267579ac" formatted="false">"需求"</string>
+    <string name="product_3a80ee3c267b9607871dbb5b" formatted="false">"需求与验收标准"</string>
+    <string name="product_543f8190f9887bf4c481e55a" formatted="false">"需求修订"</string>
+    <string name="product_8ab8c2080a8df942c8285641" formatted="false">"需求变化由服务端形成反馈或新轮次；已有验收不会被静默沿用。"</string>
+    <string name="product_a3bbd42a16b9de7593ad0c1e" formatted="false">"需求响应"</string>
+    <string name="product_700e2b8e48da9c1ac5a30c6f" formatted="false">"需求描述"</string>
+    <string name="product_494c14ad61481130d1dffe36" formatted="false">"需要人类账号登录"</string>
+    <string name="product_6116a14f6a10576f6ba53d30" formatted="false">"需要你的回答"</string>
+    <string name="product_505a2cd2e8cc14966a38b840" formatted="false">"需要升级"</string>
+    <string name="product_deabe554144cd6a87641daf3" formatted="false">"需要回复"</string>
+    <string name="product_478847e6766b98680a66dc44" formatted="false">"需要审批"</string>
+    <string name="product_5d471b10a67ab749fd3b690c" formatted="false">"需要澄清"</string>
+    <string name="product_a9a4a6c1239d927eee30c37b" formatted="false">"需要连接原桌面运行时，历史连接不能创建分支"</string>
+    <string name="product_103bff76624748ca7d377d31" formatted="false">"需要重新核验"</string>
+    <string name="product_7db2e189ecb010659eee6465" formatted="false">"静音"</string>
+    <string name="product_e3521dff2bb0ea6579f56fb8" formatted="false">"音频已损坏或无法解码，请选择其他音频。"</string>
+    <string name="product_af34ffe76f963c95436a1578" formatted="false">"音频已损坏或无法转换。"</string>
+    <string name="product_4c5fd8b09fd5479437da59b8" formatted="false">"音频没有可播放的内容。"</string>
+    <string name="product_79f326be4409d51fe60f4edc" formatted="false">"项目"</string>
+    <string name="product_f279ddfd54430b9058dabbc5" formatted="false">"项目与任务"</string>
+    <string name="product_b64d7a73236ec37770926932" formatted="false">"项目业务通知"</string>
+    <string name="product_326fee743deca8e6539dcfe3" formatted="false">"项目任务"</string>
+    <string name="product_867698fb7b0c730c9c692a01" formatted="false">"项目名称"</string>
+    <string name="product_94eeb6b6efc47f7283d58bae" formatted="false">"项目和根目录已变化，请重新读取真实目录"</string>
+    <string name="product_ea1bc376c26500a0ca3657f2" formatted="false">"项目尚未保存，无法核对实际 Agent 目标；请先创建项目并设置映射"</string>
+    <string name="product_704ae78dcb1d51306b3af47e" formatted="false">"项目已归档"</string>
+    <string name="product_118a0007f0702454873c7482" formatted="false">"项目成员"</string>
+    <string name="product_8fe5d8dbdf0a990a05358f16" formatted="false">"项目源"</string>
+    <string name="product_1929eb8def3b70c7d440c91c" formatted="false">"项目源版本 %@"</string>
+    <string name="product_961e6abe71d489f07ccd09a3" formatted="false">"项目源目录"</string>
+    <string name="product_a2923487e0ae0a5485b012db" formatted="false">"项目设置"</string>
+    <string name="product_7725bcb29aa36f5bca46ef43" formatted="false">"项目说明"</string>
+    <string name="product_d0a787af6e273e39fb6e87c9" formatted="false">"项目资料"</string>
+    <string name="product_0354d185bff27fb2bb8ff5f0" formatted="false">"项目通知已关闭"</string>
+    <string name="product_ac58c8d11744c1973f991762" formatted="false">"项目通知设置"</string>
+    <string name="product_13d61fea9f1749051d111b55" formatted="false">"预览"</string>
+    <string name="product_f2793cc734b0603c5484df93" formatted="false">"预览标题、任务摘要与问题内容"</string>
+    <string name="product_6d6f47c382184a4adc81295c" formatted="false">"首条附件已变化，原创建内容已保留。"</string>
+    <string name="product_e523ebe372b0b4656d72a7fd" formatted="false">"首次输入桌面设置的连接密码，之后自动重连。"</string>
+    <string name="product_2b6db5c5cbcef192b831ae85" formatted="false">"首次连接扫描电脑二维码，之后自动发现局域网与 VPN 入口。"</string>
+    <string name="product_7acb62b7d92970b0167d47c9" formatted="false">"验收"</string>
+    <string name="product_898619d3beb570d289c7bbf8" formatted="false">"验收中"</string>
+    <string name="product_c123f249e0d88814cff2b301" formatted="false">"验收人"</string>
+    <string name="product_3b086d0897e4fde72ac47940" formatted="false">"验收失败，等待返修"</string>
+    <string name="product_8f5dd34bc2b14b267e6b7af4" formatted="false">"验收已通过 · 待最终交付"</string>
+    <string name="product_782d491be27b8f4da40d57a2" formatted="false">"验收执行"</string>
+    <string name="product_d028a67a39ef921d79625272" formatted="false">"验收方式"</string>
+    <string name="product_df431cfed98e5f242c6284c5" formatted="false">"验收标准"</string>
+    <string name="product_7f06bc01b2f936ccb9e8efde" formatted="false">"验收结论"</string>
+    <string name="product_96ca9284ac73923f7a2ffa93" formatted="false">"验收身份"</string>
+    <string name="product_e73a97e99e936796f1ce277b" formatted="false">"验收进度"</string>
+    <string name="product_b1c27820fec23edbd70cecde" formatted="false">"高"</string>
+    <string name="product_abaf5236a0a62f42e93a8769" formatted="false">"高风险确认"</string>
+    <string name="product_56e0f272cc29a8b4f984347d" formatted="false">"麦克风已被系统静音。"</string>
+    <string name="product_48d182db0e181eb48f2a6a90" formatted="false">"麦克风已被系统静音，请解除静音后重试。原草稿已保留。"</string>
+    <string name="product_4d365bc7e766bfc74cbb2f67" formatted="false">"麦克风未提供音频，听写已停止。请检查系统麦克风及通话、其他录音占用后重试。原草稿已保留。"</string>
+    <string name="product_add4fb3c7cb7a70683fc2c8a" formatted="false">"麦克风权限未开启，请在系统设置中允许访问麦克风。"</string>
+    <string name="product_35e9a0c6fbb2864033e2049c" formatted="false">"默认分支"</string>
+    <string name="product_fc84645acc3644cbbe640a8a" formatted="false">"默认强度"</string>
+    <string name="product_f1e50b198cb321acd1a1d073" formatted="false">"默认转写"</string>
+    <string name="product_f6bec630883c13244d1e6a3d" formatted="false">"默认铃声"</string>
+    <string name="product_ad9464da161a8d5ae3709ec9" formatted="false">"，"</string>
+    <string name="product_ba054c37c8b11e0ef5533873" formatted="false">"，手机共%@个未读对话"</string>
+    <string name="product_9f6fee1aba17a56586bf16a7" formatted="false">"语言"</string>
+    <string name="product_5cb543749ba35f006112d023" formatted="false">"跟随系统，或选择中文和英文。更改会立即生效。"</string>
+    <string name="product_117a5c35e51be8467629b20d" formatted="false">"本地数据密钥不可用，已保留原数据。"</string>
+    <string name="product_c9e3b4b8bb347e28b729ae40" formatted="false">"本地数据暂时无法读取"</string>
+    <string name="product_433a8d32f7c5ff71c6516145" formatted="false">"原有连接、草稿和聊天已保留。请解锁设备后重试，恢复前不会保存空数据。"</string>
+    <string name="product_1133d6759e101e216860b667" formatted="false">"重试读取"</string>
+    <string name="product_c92179b74af616891426fbea" formatted="false">"取消置顶"</string>
+    <string name="product_929d59c8947ba8efae0f749d" formatted="false">"在聊天中查找"</string>
+    <string name="product_5292ab1a36c56a6bc8980b3d" formatted="false">"归档"</string>
+    <string name="product_4de556125d9f1e0466b7b8c6" formatted="false">"恢复对话"</string>
+    <string name="product_2f9daa828907b93ff8a00d41" formatted="false">"删除"</string>
+    <string name="product_aebeb7b48ed2b05ca1d7cf9b" formatted="false">"已归档对话"</string>
+    <string name="product_9094428d1057f6fa388a6fcd" formatted="false">"此对话已归档，恢复后可继续。"</string>
+    <string name="product_25b2fb1dbcfe3b52c1080b57" formatted="false">"删除此对话？"</string>
+    <string name="product_9aa0b8f1693f1acbdf9fbee4" formatted="false">"将同步删除电脑端的原始聊天，无法恢复。仅想保留历史时请选择归档。"</string>
+    <string name="product_a0834daa07dcbf6155cbe6eb" formatted="false">"查询聊天操作记录"</string>
+    <string name="product_0ae53ed5a7df4ddedb54eeb3" formatted="false">"未发送操作：无法保存本地记录。"</string>
+    <string name="product_a80de1bbe211c3de1ca24190" formatted="false">"操作结果待确认，请在对话选项中查询原记录。"</string>
+    <string name="product_8c7a448b7b36f33101f26c49" formatted="false">"正在读取完整历史…"</string>
+    <string name="product_5620cc4ae52cf053fdf6ae13" formatted="false">"没有匹配结果"</string>
+    <string name="product_3250b852d9e8c0c6610b48cc" formatted="false">"搜索消息、工具输出或附件名称"</string>
+    <string name="product_e682a5922fd76e012ce5fb06" formatted="false">"无法读取完整历史。可搜索已缓存内容；连接恢复后重试。"</string>
+    <string name="product_54b57e71b1451f1f59c88eac" formatted="false">"搜索匹配"</string>
+    <string name="product_a0344a35687ea8761ad993ff" formatted="false">"没有已归档对话"</string>
+    <string name="product_a0c7716669b5ded0d8051abf" formatted="false">"你"</string>
+    <string name="product_f0235a9050ab3322eae4e125" formatted="false">"完整消息"</string>
+    <string name="product_cf945e21ddefbb46e97ad780" formatted="false">"回复"</string>
+    <string name="product_9c318af82417e2d8a1fc4196" formatted="false">"仅解除本机等待，原操作仍可查询，不会取消电脑端操作或重新提交。"</string>
+    <string name="product_e6442ce18f53cf9901f87fa2" formatted="false">"正在更新…"</string>
+    <string name="product_b3c55fddf1f9e6a6cbfab849" formatted="false">"当前电脑连接暂不支持归档、恢复或删除已加载的聊天。"</string>
+    <string name="product_1bb47b696709f063602395c6" formatted="false">"显示会话标题与待处理概要"</string>
+    <string name="product_b554152ba28a62c50e7b0055" formatted="false">"请打开对话核对已提交操作是否执行，避免重复提交"</string>
+    <string name="product_314d11797188175d292b3a76" formatted="false">"通知优先显示会话标题，正文显示待审批操作、具体问题、待确认计划或需要核对的原操作。新设置默认开启内容预览；已有关闭选择保持。关闭后仅显示电脑和通知类型。角标按手机未读对话计数，电脑上的阅读不影响手机。及时通知遵循系统权限和专注模式。"</string>
+    <string name="product_f6dc6a110d09321f2f0f2b64" formatted="false">"删除项目"</string>
+    <string name="product_8553ed76d85f9edd25b53325" formatted="false">"归档对话"</string>
+    <string name="product_fcbeef8ff59f10285ac2e090" formatted="false">"任务进行中或有待回答问题，暂不可归档"</string>
+    <string name="product_a7289d4e02da4a370f1a532c" formatted="false">"管理内容"</string>
+    <string name="product_6bf6d3f3d6261b7505285078" formatted="false">"对话"</string>
+    <string name="product_9c924361314b1f921807579d" formatted="false">"从此电脑的项目列表移除，保留文件和对话。"</string>
+    <string name="product_d0229bc31dd493d922770cbb" formatted="false">"归档后从活跃列表移除，可在电脑端恢复。"</string>
+    <string name="product_585b68c55f863002a18d912d" formatted="false">"此客户端尚未支持此操作，请更新电脑连接程序或切换客户端。"</string>
+    <string name="product_38cd5524707818203b0934a0" formatted="false">"电脑离线，连接后可批量管理。"</string>
+    <string name="product_f4d4bae588c4c0ff245a7a77" formatted="false">"取消全选"</string>
+    <string name="product_3a5040b68abf75f96f27ffe4" formatted="false">"全选"</string>
+    <string name="product_17667c17d6ed6471c9102dbd" formatted="false">"没有可管理的内容"</string>
+    <string name="product_ccd797f898741955ebde690e" formatted="false">"选择要删除的项目"</string>
+    <string name="product_537a07dc33a82d75f9ee2e1e" formatted="false">"选择要归档的对话"</string>
+    <string name="product_72da7cfdcc6da6db4a1209e6" formatted="false">"每批最多选择 100 项。全选仅选择当前搜索结果。"</string>
+    <string name="product_b2db0d03bb7d08cad8258b4a" formatted="false">"操作记录"</string>
+    <string name="product_729cd4b71e0af909b8cd6f1c" formatted="false">"核对结果"</string>
+    <string name="product_cb026041f004f3347a219dff" formatted="false">"项目与对话管理"</string>
+    <string name="product_6376aadb6e96fada584e250f" formatted="false">"正在处理批量操作"</string>
+    <string name="product_29390e25b686c5989d25eaaf" formatted="false">"管理目标已变化，请重新选择。"</string>
+    <string name="product_7297a698578a3d097b72299d" formatted="false">"仅移除此电脑的项目记录，文件和对话历史会保留。"</string>
+    <string name="product_b8a7b28a856166b30bde91e3" formatted="false">"所选对话将从活跃列表移除，历史会保留。"</string>
+    <string name="product_bb6d995724f49a72e190cd17" formatted="false">"管理"</string>
+    <string name="product_189f83d137308fac66bd8604" formatted="false">"所选内容还有待核对的操作，请先核对结果。"</string>
+    <string name="product_0f0612827c74dba9aeccaa78" formatted="false">"批量操作结果尚未确认，请使用“核对结果”查询原操作。"</string>
+    <string name="product_827b1417b31e541b5ca96e7f" formatted="false">"删除 %@ 个项目"</string>
+    <string name="product_0da1ae19055680498f4185be" formatted="false">"归档 %@ 个对话"</string>
+    <string name="product_46df532b408d0d4a843784e0" formatted="false">"已选 %@ 项"</string>
+    <string name="product_270cb479acaa435cedf18eaf" formatted="false">"成功 %@ 项 · 失败 %@ 项 · 待确认 %@ 项"</string>
+    <string name="product_312e1413a3a3fa273552fe69" formatted="false">"删除选中的 %@ 个项目？"</string>
+    <string name="product_8c96cce8df4fc28cf954ea5e" formatted="false">"归档选中的 %@ 个对话？"</string>
+    <string name="product_03a49b80d6a9b523c1b3c17f" formatted="false">"原桌面正在占用此对话，请在桌面归档"</string>
+    <string name="product_b7392b8934a3485a6ad8a524" formatted="false">"此客户端未开放立即执行队列"</string>
+    <string name="product_bb696cd701d2ca9968a2fc61" formatted="false">"队列操作结果待核对，请刷新原任务"</string>
+    <string name="product_cdb6be7c14654d08963e5e3c" formatted="false">"立即执行"</string>
+    <string name="product_991c2d36d7c820db3c9cf8f4" formatted="false">"立即执行第 %@ 条排队指令"</string>
+    <string name="product_06f4872bfc568cc856db3d57" formatted="false">"正在打开文件…"</string>
+    <string name="product_37a6c5e4db9606bd0ed150e1" formatted="false">"正在下载并打开文件…"</string>
+    <string name="product_1db01e54aa3c1faf65475b71" formatted="false">"正在准备文件…"</string>
+    <string name="product_d079d4c5598ccaf8d0a36552" formatted="false">"无法打开链接"</string>
+    <string name="product_8e86f9b1d54f2c5125b0deb2" formatted="false">"复制链接"</string>
+    <string name="product_2fb49d3f22b3c3dbb741ca8c" formatted="false">"此文件尚未由电脑提供，请刷新对话后重试。"</string>
+    <string name="product_d9f2388df8958d7ea9dee029" formatted="false">"手机上没有可打开此链接的应用。"</string>
+    <string name="product_2af6350946783700a521626a" formatted="false">"这是电脑上的本地文件，手机不能直接访问。请刷新对话；文件须存在、位于电脑授权目录内且不超过 20 MB，才能下载预览。"</string>
+    <string name="product_c8ab0e35e62d5095a6afddbf" formatted="false">"此网址指向电脑的本机地址，手机无法直接访问。请使用手机可连接的局域网或 VPN 网址。"</string>
+    <string name="product_8f890014289eae055dff502c" formatted="false">"手机暂不支持此类链接，可复制后在对应应用中打开。"</string>
+    <string name="product_6efc764f1c437ea5b10a8874" formatted="false">"网页未能加载，请检查手机网络或网址。"</string>
+    <string name="product_258d74110049f982056719b2" formatted="false">"归档后从活跃列表移除，可在已归档对话中恢复。"</string>
+    <string name="product_bb82907b7385b242c7832f4d" formatted="false">"桌面下一轮建议"</string>
+    <string name="product_2e8ca551a9e109ede428007e" formatted="false">"下一步建议"</string>
+    <string name="product_e628f623f7f825947691de94" formatted="false">"来自桌面的建议"</string>
+    <string name="product_6f6004072ae719c784673f59" formatted="false">"采用"</string>
+    <string name="product_f0ee0a5efa3b0d21bd44736f" formatted="false">"全文"</string>
+    <string name="product_5e2e475a81ca79f28b131cca" formatted="false">"采用到输入框"</string>
+    <string name="product_4e54d485e8c2e1bc32ab1eea" formatted="false">"追加到草稿末尾"</string>
+    <string name="product_c42fe9249b5f5ab600524bc6" formatted="false">"替换现有草稿…"</string>
+    <string name="product_a195fd8910367dfd1803b40a" formatted="false">"替换现有草稿？"</string>
+    <string name="product_ac975a30a87f83d51d446961" formatted="false">"确认替换"</string>
+    <string name="product_5600f3981ab7d4e70095b767" formatted="false">"保留原草稿"</string>
+    <string name="product_cdc0575555aa1b962939a5ab" formatted="false">"原草稿将被替换，填入后仍可编辑。"</string>
+    <string name="product_1f109d4e40085745b3735fed" formatted="false">"忽略这条建议"</string>
+    <string name="product_752685a531fcb611b116753b" formatted="false">"已填入输入框"</string>
+    <string name="product_926a50b98ece2667069d47bd" formatted="false">"撤销"</string>
+    <string name="product_451af944cee82f12f985c6e8" formatted="false">"对话同步失败"</string>
+    <string name="product_e5e072aa54d24bc7a89e41d0" formatted="false">"未能取得此对话的最新进度，当前显示缓存。正在自动重试。"</string>
+    <string name="product_084c26d53772a247afadc110" formatted="false">"实时状态暂不可用"</string>
+    <string name="product_79dcadf3f7dda68fad05d331" formatted="false">"已从电脑同步最新历史进度，正在重试实时连接。"</string>
+    <string name="product_6a14bd90671aca433ed80f00" formatted="false">"实时进度已同步"</string>
+    <string name="product_8de034130fa480f5bcdadccd" formatted="false">"当前进度正从电脑实时同步；完整桌面状态暂不可用，较早历史按需加载。"</string>
+    <string name="product_6eea749245e8bfe8af9f0301" formatted="false">"历史消息结果待核对"</string>
+    <string name="product_9e58760407a2dac32f81eb89" formatted="false">"电脑已继续后续任务。这条旧消息是否执行仍缺少确认，不代表当前任务在等待；不会自动重发。"</string>
+    <string name="product_3f53b43f3d77b48fdf4c1d43" formatted="false">"连接器待发送 · 尚未进入电脑队列"</string>
+    <string name="product_882fbb660e42f72dffae9cf5" formatted="false">"手机阅读状态暂未保存：通知更新繁忙，将在下次刷新时重试。"</string>
+    <string name="product_c6be52e8fc0f35f0e3efe157" formatted="false">"手机阅读状态暂未保存：后台保存已中断，将在回到 App 后重试。"</string>
+    <string name="product_0ae13ed1ac7ed02cebfe2e26" formatted="false">"无法保存手机阅读状态：设备存储空间不足。"</string>
+    <string name="product_2c99ea4d9384abb04cd0a32d" formatted="false">"无法保存手机阅读状态（%@，%@ %@）。已有记录已保留，请稍后重试。"</string>
+    <string name="product_cd1930b0cdfb5a8bc3d0720b" formatted="false">"无法保存手机阅读状态，已有记录已保留，请稍后重试。"</string>
+    <string name="product_f68a127a06a48da617af9660" formatted="false">"客户端队列不可用，消息未提交。可保留草稿，或自行选择立即追加。"</string>
+    <string name="product_f52f52a79a4c67cc0aaf380d" formatted="false">"客户端队列同步失败"</string>
+    <string name="product_e7df441ec221fe347a185b15" formatted="false">"输入电脑显示的连接码，再在已登录的电脑上确认此设备。手机无需登录账号。"</string>
+    <string name="product_e2f6a53aca5c53069c81cd8b" formatted="false">"本地 DEV 电脑连接码"</string>
+    <string name="product_a5fc5abfdd565f6ccf49aa66" formatted="false">"电脑连接码"</string>
+    <string name="product_ffa0c201e60bad76f56623b4" formatted="false">"设备尚未配对，请在电脑上确认授权"</string>
+    <string name="product_29f8de1060b6f98fd199788e" formatted="false">"录音设备准备超时，请检查麦克风后重试。原草稿已保留。"</string>
+    <string name="product_a818ad46894c30d3c64d5152" formatted="false">"暂时无法连接电脑"</string>
+    <string name="product_aae945d514f9a3f262fcced3" formatted="false">"与电脑的安全连接未能建立。请确认电脑已联网、连接服务正在运行，稍后再试；若仍无法连接，请在电脑端检查连接设置。"</string>
+    <string name="product_1f491f35e2231a47cbca786c" formatted="false">"暂时无法验证这台电脑的安全连接。请在电脑端检查连接设置后重试；如果最近重新配置过连接，请重新添加这台电脑。"</string>
+    <string name="product_107f04c4757f9bd614b26e9b" formatted="false">"手机当前没有可用的网络。请检查 Wi-Fi 或移动网络；如果通过 VPN 连接，也请确认 VPN 已连接。"</string>
+    <string name="product_80032b02c7e8c5ca6646a2de" formatted="false">"连接电脑超时。请确认电脑已开机并联网，且连接服务正在运行，然后重试。"</string>
+    <string name="product_bef4b61cd584c201ba1e7560" formatted="false">"暂时无法连接这台电脑。请确认电脑已开机并联网，且连接服务正在运行；如果通过 VPN 连接，也请确认 VPN 已连接。"</string>
+    <string name="product_15916ba83598e8b7e7ebda1b" formatted="false">"与电脑的连接已中断。请检查手机和电脑的网络，连接恢复后再试。"</string>
+    <string name="product_01fb70233f450f1ec218e035" formatted="false">"聊天历史已变化，请刷新后重试。"</string>
+    <string name="product_76699cae2c001e4b309d721c" formatted="false">"加载历史失败，请重试。\n"</string>
+    <string name="product_8d536273e13dc46021f426d7" formatted="false">"提交原内容"</string>
+    <string name="product_b90fd2b36723a1e1f7d8281d" formatted="false">"读取对话超时，已有消息和草稿已保留。"</string>
+    <string name="product_dae661d17c2dd8f0ac88e0cd" formatted="false">"空闲"</string>
+    <string name="product_9344597efd4950cc14a07d87" formatted="false">"执行失败"</string>
+    <string name="product_def24911b45de6134d2bd322" formatted="false">"状态未确认"</string>
+    <string name="product_84934cf86c89e7e78b8483a7" formatted="false">"未归档"</string>
+    <string name="product_407aa997bb9d35d36b6e4e9f" formatted="false">"上次状态：%@"</string>
+    <string name="product_34646b60deeb7ab608f9c1ad" formatted="false">"%@ · 任务状态：%@"</string>
+    <string name="product_fb2f5e7ee736dafb14cac34b" formatted="false">"将同步删除电脑端的原始聊天及其子对话，无法恢复。仅想保留历史时请选择归档。"</string>
+    <string name="product_552515f01b9800b88e186a86" formatted="false">"电脑端拒绝了此次操作：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。"</string>
+    <string name="product_6abc17242a454d850840e5f0" formatted="false">"电脑端拒绝了此次归档：当前连接暂不支持管理桌面已加载的对话，请在桌面端操作。对话未改变。"</string>
+    <string name="product_599ee8e7d6f7546c11b0ce44" formatted="false">"未发送操作：目标已变化。"</string>
+    <string name="product_7a82da99c5142387de357d23" formatted="false">"未查到原聊天操作记录，结果仍未确认；不会重新提交。"</string>
+    <string name="product_1a2e86ebea7c4a0f6a492896" formatted="false">"Host Key"</string>
+    <string name="product_bd425a0b5d4f6d7442ec9916" formatted="false">"请输入这台电脑的 Host Key"</string>
+    <string name="product_e580ce8f7e5e5cb3686b7642" formatted="false">"Host Key 不正确，请在电脑端核对后重试"</string>
+    <string name="product_a09aa1f14781aeb57b9ff8ac" formatted="false">"请更新这台电脑的 Host 后使用密钥授权连接"</string>
+    <string name="product_c40645ae5b17a3a9474c9605" formatted="false">"可扫描包含密钥的连接信息，或自动发现后输入 Host Key 授权。"</string>
+    <string name="product_c469de7792bfc6939cb2bb21" formatted="false">"自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。"</string>
+    <string name="product_33ea4fa24fed98c549477cc3" formatted="false">"授权并连接"</string>
+    <string name="product_aab2b3c6a4e4327c585d1800" formatted="false">"首次连接授权"</string>
+    <string name="product_98b825313055ba4c50b2e268" formatted="false">"请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。"</string>
+    <string name="product_9b01c38ca9321666a2938e23" formatted="false">"使用 Host Key 重新授权"</string>
+    <string name="product_bb78f61222998c8a9ccfb0c7" formatted="false">"默认使用局域网与 Tailscale HTTPS 双通道，自动切换并保留同一台电脑的连接和草稿。只在局域网使用可不安装 Tailscale；需要在外远程控制，请为手机和电脑配置 Tailscale 并保持在线。"</string>
+    <string name="product_4372fcf22c721b27d66ea333" formatted="false">"诊断编号"</string>
+    <string name="product_bb04c1e69f95074cefa61821" formatted="false">"当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。"</string>
+    <string name="product_6e3612893e44a94ca3b37fdd" formatted="false">"未取得这条消息对应的电脑或聊天，请重新打开原对话后重试。"</string>
+    <string name="product_fd033e6c10ee01fed9c2481d" formatted="false">"自动查找同一网络的电脑；需要密钥的电脑会在首次连接时要求输入 Host Key。"</string>
+    <string name="product_e0ee937888651ecf60f5b13f" formatted="false">"预览最近图片"</string>
+    <string name="product_c7b1c88599491e1daddb26a7" formatted="false">"要添加这张图片吗？"</string>
+    <string name="product_b94c60018a9da20ff6b72573" formatted="false">"最近新增的图片"</string>
+    <string name="product_49a5c5d6dc0aae2ba92eaee3" formatted="false">"忽略这张图片"</string>
+    <string name="product_c723344f4517428c306407a4" formatted="false">"添加后保存在手机，发送消息时再上传。"</string>
+    <string name="product_f8273963eda93302a90576b1" formatted="false">"添加到当前草稿"</string>
+    <string name="product_89cc31e8fc0efacc891d1f89" formatted="false">"最近图片"</string>
+    <string name="product_6578c0c96bbb0f13adcf29fe" formatted="false">"添加最近图片"</string>
+    <string name="product_a0113f873595c31fed59834f" formatted="false">"点选加入草稿，发送时再上传。"</string>
+    <string name="product_6e3a10ade7c74955ddb8875c" formatted="false">"拍照"</string>
+    <string name="product_8f7681048732e90a69c78719" formatted="false">"粘贴图片"</string>
+    <string name="product_5d6201fc307235fa625e68b7" formatted="false">"最近图片提醒"</string>
+    <string name="product_b6e5131ed7abdb477e563a37" formatted="false">"允许读取照片后可显示最近图片，也可以继续使用系统选图器。"</string>
+    <string name="product_63ff4c46865c2c545b6f2105" formatted="false">"部分照片授权仅提供手动快选，可管理允许访问的照片。"</string>
+    <string name="product_d78d66f5a841c4484499a9cf" formatted="false">"管理可访问的照片"</string>
+    <string name="product_79a6a11abca6ea410b5d9f08" formatted="false">"仅在你添加后保存在手机，点击发送才上传。"</string>
+    <string name="product_c8a47d0018480abe1867d4b1" formatted="false">"添加附件"</string>
+    <string name="product_93d2621775ac4f85b1ad001f" formatted="false">"当前设备无法使用相机。"</string>
+    <string name="product_19ebaa950ee3980da181b8fb" formatted="false">"已添加 · 待发送"</string>
+    <string name="product_7a8a11ead50742a2a0a72583" formatted="false">"添加"</string>
+    <string name="product_04c7fd9eef8d6804f24912ff" formatted="false">"始终允许"</string>
+    <string name="product_e1682860bb6885c144d2d071" formatted="false">"允许本轮"</string>
+    <string name="product_f99e983e439c1cba69f0dee3" formatted="false">"本地转写超时，录音已保留，请重试。"</string>
+    <string name="product_9ff346c5a225be5da01d6fc4" formatted="false">" 录音和原草稿已保留，可再次选择转写方式。"</string>
+    <string name="product_6b061a85bfa3ed3f73c10f22" formatted="false">"准备本地转写…"</string>
+    <string name="product_908800a39b53cb81dd5a72a9" formatted="false">"正在本地转写…"</string>
+    <string name="product_3b9a054e495636328d88c843" formatted="false">"电脑转写暂不可用"</string>
+    <string name="product_6bc3afa54d4e79857bd0b23c" formatted="false">"转写失败"</string>
+    <string name="product_4c71f74f12e163a1c607d465" formatted="false">"使用本地转写"</string>
+    <string name="product_866055a997fa818b46068dbf" formatted="false">"录音已保留，可重试转写，或使用手机本地转写。"</string>
+    <string name="product_7962947ea56f1512490f0564" formatted="false">"添加图片或文件"</string>
+    <string name="product_2417caa0413ba94fd03d4b48" formatted="false">"计划 · 开"</string>
+    <string name="product_2ac36f5fd706871ddc30368c" formatted="false">"计划 · 关"</string>
+    <string name="product_8a4ef3e48e4e8a5a35b62a67" formatted="false">"已开启"</string>
+    <string name="product_aa77837f74392d63d96dbd15" formatted="false">"暂无可访问的图片"</string>
+    <string name="product_407017fdda310aed19bdd18d" formatted="false">"粘贴图片或文件"</string>
+    <string name="product_d9f634d10cd35792d6500da1" formatted="false">"复制文件或图片后点粘贴；若来源应用未提供文件，请使用分享或用其他应用打开。"</string>
+    <string name="product_dce8bf81b5ba839fc58dc38e" formatted="false">"剪贴板中没有可读取的文件或图片。请在来源应用中选择分享或用其他应用打开。"</string>
+    <string name="product_82da65813dc49cf0cf76c37f" formatted="false">"附件为空或超过 20 MB，无法添加。"</string>
+    <string name="product_1984200e4a9986cdf902dc1a" formatted="false">"暂时无法读取共享文件，请稍后重试。"</string>
+    <string name="product_aaaba9697c17f1ecac0f7d7a" formatted="false">"共享文件已变化或不可读取，请重新分享。"</string>
+    <string name="product_360c8b5c4d2de53ea775621c" formatted="false">"选择好聊天后添加到当前草稿，发送消息时才上传。"</string>
+    <string name="product_60ba47ec1fbb5d65539b207b" formatted="false">"丢弃共享文件"</string>
+    <string name="product_b91eaa3c85bdfd9772793830" formatted="false">"来自其他应用的附件"</string>
+    <string name="product_a1fbc42b29698a9b7b28cd4b" formatted="false">"稍后添加"</string>
+    <string name="product_f9c44c0be5393850dbed6d78" formatted="false">"添加到 Agent Hub"</string>
+    <string name="product_76e5ca16926e716d1f6ab2ed" formatted="false">"已保存。返回 Agent Hub，选择聊天后添加到草稿。"</string>
+    <string name="product_04060bbd988d2df57b1ff610" formatted="false">"文件仅保存在手机，返回 Agent Hub 后添加到聊天草稿，发送时才上传。"</string>
+    <string name="product_81abf28f67d22fc2bad66933" formatted="false">"电脑当前设置"</string>
+    <string name="product_fb888d412def1d1b169ddd48" formatted="false">"下次发送"</string>
+    <string name="product_348ab6a270d788ed6af46bdd" formatted="false">"以下选择用于下次发送，发送前不会修改电脑当前设置。"</string>
+    <string name="product_bb429d0227b7d9d6c5298844" formatted="false">"同步中"</string>
+    <string name="product_90718714b1cf0fc05c8390b9" formatted="false">"上一个结果"</string>
+    <string name="product_3de4db518ae17f66862ff5a4" formatted="false">"下一个结果"</string>
+    <string name="product_68ff543408a34f2e0ebe93a9" formatted="false">"使用系统预览"</string>
+    <string name="product_2bedf3a376e78d39beaa7a2a" formatted="false">"原始文本"</string>
+    <string name="product_6c9ee200f5a3309d1f316bf9" formatted="false">"复制源码"</string>
+    <string name="product_c3ff00163c504249d6086afe" formatted="false">"左右滑动查看完整表格"</string>
+    <string name="product_e0ec651f0dae7cf3bdab4577" formatted="false">"引用"</string>
+    <string name="product_9c8bd1565def7849c60aff1a" formatted="false">"搜索文件"</string>
+    <string name="product_99569ea7b2caf1dce8f34858" formatted="false">"文件较大，请使用系统预览或保存原文件。"</string>
+    <string name="product_1b4fc35e92f9e2539dbb8909" formatted="false">"文档中没有找到此章节。"</string>
+    <string name="product_e468744b6287baa1f9d5d05e" formatted="false">"文档结构较复杂，请使用系统预览或保存原文件。"</string>
+    <string name="product_f3060cb2456ccee3f7fe037e" formatted="false">"暂不支持此文件的文本编码，请使用系统预览或保存原文件。"</string>
+    <string name="product_f5c9ad6828c07e92b6a53eaa" formatted="false">"暂时无法排版此文件"</string>
+    <string name="product_a9769c63597028731b1940b5" formatted="false">"查看图片"</string>
+    <string name="product_9cbeebf62a6d909d36a35cda" formatted="false">"正在准备预览…"</string>
+    <string name="product_45e085c4f13e77c63cb02923" formatted="false">"此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。"</string>
+    <string name="product_41b50a9198f43fa3e6ab9ab1" formatted="false">"源码"</string>
+    <string name="product_265c91e02275bbe5057c8900" formatted="false">"点图片预览，点圆圈快速选择；添加到草稿后，发送时再上传。"</string>
+    <string name="product_d663cc64165b60690df06236" formatted="false">"仅添加到草稿，发送时再上传。"</string>
+    <string name="product_b9e05f2501343515705b17cf" formatted="false">"部分图片未能添加，请重试。"</string>
+    <string name="product_d85077ec821e1b6d14676f7c" formatted="false">"最多添加 5 个附件，请先移除部分附件。"</string>
+    <string name="product_de078ce976cebdbd9a115020" formatted="false">"预览图片"</string>
+    <string name="product_33f2f8808719da60822315d2" formatted="false">"取消选择图片"</string>
+    <string name="product_ffe81084fe24f34ce682c3fe" formatted="false">"图片不可用"</string>
+    <string name="product_c655cffc7e83eead10f29669" formatted="false">"缩小图片"</string>
+    <string name="product_c4189466c4c4068d3e40852a" formatted="false">"放大图片"</string>
+    <string name="product_7214faaaac9701e3cd7e349b" formatted="false">"左右滑动切换 · 双击或双指缩放"</string>
+    <string name="product_572993f5820a55ba36ebf00c" formatted="false">"图片加载失败"</string>
+    <string name="product_ba8b49f3fd10b338559a1b65" formatted="false">"图片预览"</string>
+    <string name="product_2c01a0bebff6edc057963f93" formatted="false">"选择此图"</string>
+    <string name="product_eeb1584afb53da6dc7b90e32" formatted="false">"从草稿移除"</string>
+    <string name="product_889839915c3f4b8da43889be" formatted="false">"已添加"</string>
+    <string name="product_d24c10d37db0feea7bd73498" formatted="false">"图片"</string>
+    <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
+    <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
+    <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>
+    <string name="product_c38ecb43b796fdb3b50e3abf" formatted="false">"结束等待 · "</string>
+    <string name="product_54da1fb66a9e4acae3215a71" formatted="false">"查询记录 · "</string>
+    <string name="product_ad9daebe00dc30e2937a2665" formatted="false">"添加文件"</string>
+    <string name="product_d301bc1258334c7c70efe8fd" formatted="false">"关闭提示"</string>
+    <string name="product_ae86e3f42d8ab2d67dbd5c82" formatted="false">"查询记录"</string>
+    <string name="product_ceb99491f82350fbe8d12a00" formatted="false">"修改原消息"</string>
+    <string name="product_db2ac824e5fd5f51635316aa" formatted="false">"结束等待保留原操作与附件，不代表电脑任务已取消。"</string>
+    <string name="product_bc677eab718c8c3a970d7258" formatted="false">"允许发现局域网与 VPN 电脑"</string>
+    <string name="product_de5619ec9d14ed15d3640b75" formatted="false">"将电脑上的连接二维码放在画面中。"</string>
+    <string name="product_2c0f53762acc4ce762a94a74" formatted="false">"未获得相机权限，可返回粘贴电脑的连接内容。"</string>
+    <string name="product_6135d4159e8925413f334138" formatted="false">"移除"</string>
+    <string name="product_7d6076629ac8e0fdbd3815ce" formatted="false">"填写电脑上 Host Agent 的 HTTPS 地址和客户端密钥。密钥由系统 Keystore 保护。本机模拟器可使用回环地址；历史只读连接无需密钥。"</string>
+    <string name="product_8bc3ae7e5c9ba419254a55b1" formatted="false">"不关联项目"</string>
+    <string name="product_63ea94d6c21ac5a69d2f0fe3" formatted="false">"从侧栏选择已有项目和对话。历史只读连接无法创建新对话。"</string>
+    <string name="product_55c9e43dd2a28800d03c745a" formatted="false">"搜索对话"</string>
+    <string name="product_6b6ad1bbb7b85cde65fe5d47" formatted="false">"没有找到相关对话"</string>
+    <string name="product_2458e973be0b6f204303ab1a" formatted="false">"暂无发送记录"</string>
+    <string name="product_aee88743413144a2ec6c48e3" formatted="false">"刷新"</string>
+    <string name="product_a542ecfcff49cc2518a59e64" formatted="false">"批量归档对话"</string>
+    <string name="product_9cca11ae452e6980386adeba" formatted="false">"打开侧栏"</string>
+    <string name="product_1c59875d3a151bffb0ae295e" formatted="false">"回到最新"</string>
+    <string name="product_8032af4a590ff373ab67e4c1" formatted="false">"未提交"</string>
+    <string name="product_a8b0bd9c65f7fad55d929dcf" formatted="false">"待确认"</string>
+    <string name="product_2619ddf6f550035a6a49ecff" formatted="false">"执行计划"</string>
+    <string name="product_4da68cb30de1721ac4bf5552" formatted="false">"正在执行计划"</string>
+    <string name="product_0b73ed9eb8014f719b29751c" formatted="false">"文件 · %@"</string>
+    <string name="product_0d6111d536570c3991c1a863" formatted="false">"%@ · 进行中 %@"</string>
+    <string name="product_cc1cad1dacbe2003ed928055" formatted="false">"%@，%@个会话进行中"</string>
+    <string name="product_dfa11fa57fe13c097a95982a" formatted="false">"%@，进行中数量未知"</string>
+    <string name="product_c2053c50bd5d1c1f53f81da9" formatted="false">"VPN · "</string>
+    <string name="product_a8b84ad1fdec99409a9588d2" formatted="false">"局域网 · "</string>
+    <string name="product_78bee5a45241af7ff9c42af9" formatted="false">"尚未连接客户端"</string>
+    <string name="product_b6b628ea992b59ea61105b76" formatted="false">"原桌面连接"</string>
+    <string name="product_768c7d5d290db81cf56acde5" formatted="false">"EasyWork 连接"</string>
+    <string name="product_ecb04255652bbdf435f47ece" formatted="false">"托管连接"</string>
+    <string name="product_5393caacbe8382175b5a46b9" formatted="false">"共享连接"</string>
+    <string name="product_8378e9fb1c21f4167df6853e" formatted="false">"历史连接"</string>
+    <string name="product_586b541e9f630e192e2a7ebd" formatted="false">"允许本地网络访问后可发现局域网与 VPN 电脑"</string>
+    <string name="product_de05998deda987f61dd47d93" formatted="false">"暂时无法发现局域网电脑，可使用连接二维码或已保存地址"</string>
+    <string name="product_9c9ac72906ac312c31fb056b" formatted="false">"局域网发现暂不可用"</string>
+    <string name="product_8624b7f490a7abd7fdcf4e5b" formatted="false">"原附件信息暂不可用，%@ 个附件的原记录已保留"</string>
+    <string name="product_82f03a5dabd44b71ff6eb4c1" formatted="false">"正在读取 %@ 个原附件的信息…"</string>
+    <string name="product_efdd1a47e4beb2f97c1f8aad" formatted="false">"已读"</string>
+    <string name="product_829010de602ffeb75a1acf1e" formatted="false">"查询聊天操作记录，%@，对话 %@，操作 %@"</string>
+    <string name="product_abfa64cb81c37d8c098030fc" formatted="false">"电脑离线"</string>
+    <string name="product_4df44c740718f5cec25ba12a" formatted="false">"此电脑未提供逻辑资源下载"</string>
+    <string name="product_441027138450f80ec7cda971" formatted="false">"读取电脑资源失败，请重试。"</string>
+    <string name="product_2c0eb4f337975bca64a51961" formatted="false">"文件不属于当前电脑和对话"</string>
+    <string name="product_6a12e2693570915967051cb3" formatted="false">"此文件无法直接预览，可保存或使用其他应用打开。"</string>
+    <string name="product_a0f8c91829d45a918ce10432" formatted="false">"用其他应用打开"</string>
+    <string name="product_86b6d0d63062ba81715ba823" formatted="false">"正在读取…"</string>
+    <string name="product_6eba9a6e020f1a36bc35bf24" formatted="false">"对话已归档，仅支持查看，可在对话选项中恢复。"</string>
+    <string name="product_dbd42a5aafcf57f94e016ac8" formatted="false">"对话已归档，仅支持查看，可在电脑端恢复。"</string>
+    <string name="product_44d6e354c456a3f15ae907b7" formatted="false">"历史连接仅支持查看，草稿保存在手机。"</string>
+    <string name="product_9af25f215bcf62ec0f985c47" formatted="false">"等待电脑确认连接与控制权，草稿保存在手机。"</string>
+    <string name="product_fca1ba7f014965021ec545c7" formatted="false">"已结束等待 · 原记录保留"</string>
+    <string name="product_b2a98b9a337917d914b994c0" formatted="false">"新聊天提交记录"</string>
+    <string name="product_48fd5a485e086e097aa1f9f9" formatted="false">"操作待确认"</string>
+    <string name="product_6c6027d8e6681bd9a8ca2f11" formatted="false">"内容已保留，请检查当前任务后重新发送。"</string>
+    <string name="product_2cccfee286ce4ae0db11d836" formatted="false">"电脑已准备，可以提交原内容"</string>
+    <string name="product_97b4041d7e88f17f56939bf5" formatted="false">"本地意图已保存"</string>
+    <string name="product_58429286262c4027bcd31fdc" formatted="false">"电脑准备中"</string>
+    <string name="product_b55421e7b575491b3fd1f073" formatted="false">"原首条结果待核对，请查询原记录"</string>
+    <string name="product_dcc1a22d9e72d6743926b6e4" formatted="false">"提交中"</string>
+    <string name="product_3667f588df524d903de8f199" formatted="false">"电脑已接收"</string>
+    <string name="product_1f9517a270a2abe071f5d1f1" formatted="false">"原桌面正在打开"</string>
+    <string name="product_79be13bdf0c598b46d41fb7f" formatted="false">"操作未完成"</string>
+    <string name="product_5488398ae7d892feece80439" formatted="false">"结果待确认，查询原记录后再继续"</string>
+    <string name="product_c2f259af61d5e51ff588889f" formatted="false">"收起完整消息"</string>
+    <string name="product_6707de42c29ddf4e778897f9" formatted="false">"未完成"</string>
+    <string name="product_d0bf4ec697eee45e3fba7b4a" formatted="false">"归档对话 · %@"</string>
+    <string name="product_83522db2f10f0b12bf69af81" formatted="false">"移除 %@ 的连接？电脑上的项目和对话会保留。"</string>
+    <string name="product_9b860edbbf5bf0a3ec9b2f30" formatted="false">"一次最多选择 5 张图片。"</string>
+    <string name="product_b325c833a4580621b079fb57" formatted="false">"未获得相机权限，照片未添加。"</string>
+    <string name="product_f15d06cafbbd94898518d580" formatted="false">"允许读取照片"</string>
+    <string name="product_7dd9f3a3ac9224020597ed81" formatted="false">"最近图片记录暂时无法读取，原有记录已保留。请重试。"</string>
+    <string name="product_10d5df353d98a2f5824e688f" formatted="false">"系统文件选择结果尚未确认。"</string>
+    <string name="product_9c1ef3ef83a50b27f418f6d4" formatted="false">"结束等待后，迟到的文件结果不会加入草稿。"</string>
+    <string name="product_a81e05162fd947b0f3d2bbf8" formatted="false">"文件结果尚未加入原草稿，原文件记录已保留。"</string>
+    <string name="product_44125455d5010f4760a298ec" formatted="false">"文件选择记录暂时无法读取，原记录已保留。"</string>
+    <string name="product_b6796eda5c5233547a19b6ca" formatted="false">"丢弃文件结果"</string>
+    <string name="product_56f2869036dd995bc7447cb4" formatted="false">"照片选择记录暂时无法读取，原记录已保留。"</string>
+    <string name="product_ba53d7bb96f6c92cd35e1fcb" formatted="false">"系统照片选择结果尚未确认。"</string>
+    <string name="product_58a5d415734b451cacb37cc7" formatted="false">"结束等待后，迟到的照片结果不会加入草稿。"</string>
+    <string name="product_888bc7e9d4a4cc3b19548e76" formatted="false">"照片结果尚未加入原草稿，原照片记录已保留。"</string>
+    <string name="product_8793e6ba542e4e98ed7d7c9a" formatted="false">"丢弃照片结果"</string>
+    <string name="product_0d40c847846d979e23f93b54" formatted="false">"一次只能添加一张拍照结果。"</string>
+    <string name="product_915fff9302d81f3a3a758905" formatted="false">"拍照请求暂时无法读取，原记录已保留。"</string>
+    <string name="product_1f20891b607a9f4d13ff5c03" formatted="false">"系统拍照或授权结果尚未确认。"</string>
+    <string name="product_8f444bc584c79b3cc1f03b19" formatted="false">"结束等待后会保留原记录，迟到结果不会自动加入草稿。"</string>
+    <string name="product_74d7062c74e725994a998dcb" formatted="false">"拍照结果尚未确认加入原草稿，原记录已保留。"</string>
+    <string name="product_a740ad668079fbd55bb914de" formatted="false">"丢弃拍照结果"</string>
+    <string name="product_2d4418a97214e4044c7fac2f" formatted="false">"加入原草稿"</string>
+    <string name="product_7b74987ae6be2ff418be425d" formatted="false">"图片："</string>
+    <string name="product_0ab748ce592642850747657a" formatted="false">"查看图片："</string>
+    <string name="product_87b08872373fbb5797cad3ad" formatted="false">"文件较大，请使用其他应用打开或分享原文件。"</string>
+    <string name="product_7ab4f8c0d65465130f3ca8a9" formatted="false">"暂不支持此文件的文本编码，请使用其他应用打开或分享原文件。"</string>
+    <string name="product_baa371bd16d6266afab3b6df" formatted="false">"文档结构较复杂，请使用其他应用打开或分享原文件。"</string>
+    <string name="product_fda8e55ab210a8a394d1e971" formatted="false">"表格较大，请使用其他应用打开或分享原文件。"</string>
+    <string name="product_8a601e9a9bb6fac0ead10bfa" formatted="false">"目标已变化，请重新打开预览。"</string>
+    <string name="product_f3fbbfda646d30c946932d40" formatted="false">"暂时无法预览文件，请重试。"</string>
+    <string name="product_f8baad25a05174807b7290a0" formatted="false">"下一项"</string>
+    <string name="product_6c56ec1524e6e4f6b2d40880" formatted="false">"无法读取图片目录，请重试。"</string>
+    <string name="product_feda7009bcf6c204adad5dcf" formatted="false">"使用系统选图器"</string>
+</resources>

@@ -9,11 +9,21 @@ import java.util.UUID
 
 /** Only this adapter knows EasyWork protocol v2 method names and provider content parts. */
 class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,AgentCommands {
+    override suspend fun nextTurnSuggestion(client: MobileClient,scope: com.agenthub.core.SuggestionScope): MobileDesktopSuggestionResponse = boundedDesktopSuggestionRead {
+        require(scope.target.agentId=="easywork"&&sameScope(client.scope,scope.target)) { "桌面建议目标不匹配" }
+        val c=channel(client)
+        require(c.target.desktopDeviceId==scope.target.hostId&&c.target.workspaceId==scope.target.workspaceId&&
+            c.target.runtimeId==scope.target.runtimeId&&c.target.authority==scope.target.accountAuthority&&
+            c.target.subject==scope.target.accountSubject) { "桌面建议运行时不匹配" }
+        val result=c.request("thread/suggestion/read",JSONObject().put("threadId",scope.threadId).put("sourceTurnId",scope.sourceTurnId))
+        // The encrypted response envelope has already authenticated this exact runtime/account target.
+        MobileDesktopSuggestionResponse.decode(JSONObject(result.toString()).put("target",CodexCommandCodec.target(scope.target)),scope)
+    }
     private val resolvedResources=object: LinkedHashMap<String,MobileFile>(64,.75f,true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String,MobileFile>?)=size>256
     }
     override fun agentTitle(client: MobileClient)="EasyWork"
-    override fun permissionOptions(client: MobileClient)=listOf(AgentPermissionOption("confirm_every_operation","逐项确认","每项受权限管理的工具操作都请求确认"),AgentPermissionOption("confirm_high_risk","高风险确认","按 EasyWork 风险策略对高风险操作请求确认"),AgentPermissionOption("allow_all","允许已授权操作","免去任务工具确认，仍受设备授权和 Host 边界约束",true))
+    override fun permissionOptions(client: MobileClient)=listOf(AgentPermissionOption("confirm_every_operation","逐项确认","每项受权限管理的工具操作都请求确认",appOwnedCopy=true),AgentPermissionOption("confirm_high_risk","高风险确认","按 EasyWork 风险策略对高风险操作请求确认",appOwnedCopy=true),AgentPermissionOption("allow_all","允许已授权操作","免去任务工具确认，仍受设备授权和 Host 边界约束",true,appOwnedCopy=true))
     private suspend fun channel(client: MobileClient)=sessions.session(client)
     private fun project(client: MobileClient,v: JSONObject)=MobileProject(v.getString("id"),client.id,v.getString("name"),listOfNotNull(v.optional("workspacePath")))
     override suspend fun createProject(client: MobileClient,name: String,directory: String,operationId: String): MobileProject {
@@ -145,7 +155,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
             encodeReceipt(easyWorkQueueReceipt(client.id,threadId,q))
         }?.toMutableList()?:mutableListOf()
         if(active==null&&latest?.optString("status") in listOf("failed","cancelled","interrupted")) receipts.add(encodeReceipt(DeliveryReceipt(client.id,threadId,latest!!.getString("id"),latest.getString("status"),latest.getString("id"),latest.optional("error"),null,null,emptyList())))
-        val runtime=if(cursor!=null)null else JSONObject().put("state",state).put("turnId",active?.optional("runId")?:active?.optional("id")?:control?.optional("runId")?.takeIf { control.optString("phase") in listOf("paused","pausing","resuming") }).put("plan",JSONArray(plan?.optJSONArray("steps")?.objects()?.map { JSONObject().put("step",it.optString("title")).put("status",if(it.optString("status")=="in_progress")"inProgress" else it.optString("status","pending")) }.orEmpty())).put("error",if(active==null)latest?.optional("error") else null).put("approvals",approvals).put("receipts",JSONArray(receipts)).put("canControl",true).put("collaborationMode",if((active?.optional("agentRunMode")?:preferences.optional("agentRunMode"))=="plan")"plan" else "default").put("generationSettings",settings).apply {
+        val runtime=if(cursor!=null)null else JSONObject().put("state",state).put("suggestionSourceTurnId",if(state=="idle")snapshot.optional("suggestionSourceTurnId")else null).put("turnId",active?.optional("runId")?:active?.optional("id")?:control?.optional("runId")?.takeIf { control.optString("phase") in listOf("paused","pausing","resuming") }).put("plan",JSONArray(plan?.optJSONArray("steps")?.objects()?.map { JSONObject().put("step",it.optString("title")).put("status",if(it.optString("status")=="in_progress")"inProgress" else it.optString("status","pending")) }.orEmpty())).put("error",if(active==null)latest?.optional("error") else null).put("approvals",approvals).put("receipts",JSONArray(receipts)).put("canControl",true).put("collaborationMode",if((active?.optional("agentRunMode")?:preferences.optional("agentRunMode"))=="plan")"plan" else "default").put("generationSettings",settings).apply {
             if(plan!=null&&plan.optString("status") in listOf("ready","saved"))put("proposedPlan",JSONObject().put("id","easywork-plan."+easyBase64(easyCanonical(JSONObject().put("id",plan.getString("planId")).put("version",plan.getInt("version"))).toByteArray())).put("turnId",plan.optString("createdRunId")).put("text",plan.optString("markdown")))
         }
         val wire=MobileSnapshotCodec.header(client).put("threadId",threadId).put("messages",JSONArray(messages.map(::encodeMessage))).put("nextCursor",if(value.optBoolean("hasEarlier"))value.optional("before") else null).put("runtime",runtime).put("epoch",c.epoch).put("historyWindow",true).put("historyRevision",revision)

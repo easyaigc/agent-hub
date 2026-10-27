@@ -23,10 +23,10 @@ import androidx.compose.ui.unit.sp
 
 /** Disclosure state belongs to this original target and document, never command authority. */
 @Composable private fun PlanDisclosure(title: String,tag: String,stateKey: Any,icon: String?=null,content: @Composable ()->Unit) {
-    var expanded by remember(stateKey,tag) { mutableStateOf(false) }
+    var expanded by remember(stateKey,tag) { mutableStateOf(false) };val t=currentProductText()
     Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min=44.dp).clickable(role=Role.Button) { expanded=!expanded }
-            .testTag(tag).semantics(mergeDescendants=true) { stateDescription=if(expanded)"已展开" else "已折叠" },
+            .testTag(tag).semantics(mergeDescendants=true) { stateDescription=t.tr(if(expanded)"已展开" else "已折叠") },
             verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             icon?.let { ProductIcon(it,Modifier.size(18.dp)) }
             Text(title,Modifier.weight(1f),fontSize=14.sp)
@@ -41,11 +41,11 @@ import androidx.compose.ui.unit.sp
     Surface(shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surface,
         modifier=Modifier.fillMaxWidth().testTag("proposed-plan-message-${message.id}")) {
         Column(Modifier.padding(12.dp)) {
-            PlanDisclosure(if(message.status in setOf("inProgress","in_progress","in-progress","streaming"))"正在制定计划…" else "计划",
+            PlanDisclosure(productText(if(message.status in setOf("inProgress","in_progress","in-progress","streaming"))"正在制定计划…" else "计划"),
                 "proposed-plan-toggle-${message.id}",targetKey+":"+message.id,icon="lightbulb") {
                 MarkdownContent(message.text,"markdown-${message.id}")
                 TextButton(onClick={ clipboard.setText(AnnotatedString(message.text)) },modifier=Modifier.testTag("copy-plan-${message.id}")) {
-                    ProductIcon("copy",Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text("复制计划",fontSize=12.sp)
+                    ProductIcon("copy",Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text(productText("复制计划"),fontSize=12.sp)
                 }
             }
         }
@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.sp
 @Composable internal fun RuntimePlanProgress(steps: List<MobilePlanStep>,targetKey: String) {
     Surface(shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surface,modifier=Modifier.fillMaxWidth().testTag("runtime-plan")) {
         Column(Modifier.padding(10.dp)) {
-            PlanDisclosure("执行计划 · ${steps.count { it.status=="completed" }}/${steps.size}","runtime-plan-toggle",targetKey) {
+            PlanDisclosure(productText("执行计划 · %@/%@",steps.count { it.status=="completed" },steps.size),"runtime-plan-toggle",targetKey) {
                 steps.forEachIndexed { index,step -> Row(Modifier.fillMaxWidth().padding(vertical=2.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     PlanStepStatus(step.status,Modifier.size(16.dp).testTag("runtime-plan-status-$index"))
                     Text(step.step,fontSize=12.sp,modifier=Modifier.testTag("runtime-plan-step-$index"))
@@ -67,8 +67,8 @@ import androidx.compose.ui.unit.sp
 
 @Composable private fun PlanStepStatus(status: String,modifier: Modifier) {
     val foreground=MaterialTheme.colorScheme.onSurface;val background=MaterialTheme.colorScheme.surface
-    val active=status in setOf("in_progress","inProgress","in-progress")
-    Canvas(modifier.semantics { contentDescription=if(status=="completed")"已完成" else if(active)"进行中" else "未完成" }) {
+    val active=status in setOf("in_progress","inProgress","in-progress");val t=currentProductText()
+    Canvas(modifier.semantics { contentDescription=t.tr(if(status=="completed")"已完成" else if(active)"进行中" else "未完成") }) {
         val u=size.width/24f;val center=Offset(12f*u,12f*u)
         if(status=="completed") {
             drawCircle(foreground,10f*u,center)
@@ -88,7 +88,7 @@ import androidx.compose.ui.unit.sp
         Surface(shape=RoundedCornerShape(18.dp),color=colors.background,border=BorderStroke(1.dp,colors.onSurface.copy(alpha=.1f)),
             modifier=Modifier.fillMaxWidth().testTag("plan-review")) {
             Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                Text("实施此计划？",fontSize=14.sp,fontWeight=FontWeight.SemiBold)
+                Text(productText("实施此计划？"),fontSize=14.sp,fontWeight=FontWeight.SemiBold)
                 if(session.messages.none { it.kind=="plan"&&it.text==plan.text }) {
                     PlanDisclosure("查看计划","review-plan-toggle",destination to plan) { MarkdownContent(plan.text,"proposed-plan-text") }
                 }
@@ -97,17 +97,17 @@ import androidx.compose.ui.unit.sp
                     .testTag("implement-plan").semantics(mergeDescendants=true) { }.padding(12.dp),
                     verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                     val color=colors.onSurface.copy(alpha=if(enabled)1f else .38f)
-                    ProductIcon("resume",Modifier.size(18.dp),color);Text("是，实施此计划",Modifier.weight(1f),fontSize=14.sp,color=color)
+                    ProductIcon("resume",Modifier.size(18.dp),color);Text(productText("是，实施此计划"),Modifier.weight(1f),fontSize=14.sp,color=color)
                     ProductIcon("send",Modifier.size(16.dp).rotate(90f),color)
                 }
                 if(adjusting) {
-                    OutlinedTextField(feedback,{ feedback=it },placeholder={ Text("告诉助手应该如何调整计划") },minLines=2,maxLines=5,
+                    OutlinedTextField(feedback,{ feedback=it },placeholder={ Text(productText("告诉助手应该如何调整计划")) },minLines=2,maxLines=5,
                         modifier=Modifier.fillMaxWidth().testTag("plan-feedback"))
                     TextButton(onClick={ session.revisePlan(plan,feedback,destination) },enabled=enabled&&feedback.isNotBlank(),modifier=Modifier.testTag("send-plan-feedback")) {
-                        ProductIcon("send",Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text("发送调整",fontSize=14.sp)
+                        ProductIcon("send",Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text(productText("发送调整"),fontSize=14.sp)
                     }
                 } else TextButton(onClick={ adjusting=true },enabled=enabled,modifier=Modifier.testTag("revise-plan")) {
-                    ProductIcon("pencil",Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text("调整计划",fontSize=14.sp)
+                    ProductIcon("pencil",Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text(productText("调整计划"),fontSize=14.sp)
                 }
             }
         }

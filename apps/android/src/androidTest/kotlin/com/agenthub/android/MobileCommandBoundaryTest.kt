@@ -256,7 +256,7 @@ class MobileCommandBoundaryTest {
 internal data class WireRequest(val method: String,val pathWithQuery: String,val headers: Map<String,String>,val body: ByteArray) {
     val path get()=pathWithQuery.substringBefore('?')
 }
-internal data class WireResponse(val status: Int=200,val body: String="{}",val headers: Map<String,String> = emptyMap(),val disconnect: Boolean=false,val raw: ByteArray?=null)
+internal data class WireResponse(val status: Int=200,val body: String="{}",val headers: Map<String,String> = emptyMap(),val disconnect: Boolean=false,val raw: ByteArray?=null,val beforeBody: (()->Unit)?=null)
 internal class CommandFixture(private val response: (WireRequest)->WireResponse): java.io.Closeable {
     private val socket=ServerSocket(0,16,InetAddress.getByName("127.0.0.1"))
     private val workers=Executors.newCachedThreadPool()
@@ -276,7 +276,7 @@ internal class CommandFixture(private val response: (WireRequest)->WireResponse)
                     if(!result.disconnect) {
                         val bytes=result.raw ?: result.body.toByteArray(Charsets.UTF_8)
                         val head="HTTP/1.1 ${result.status} Fixture\r\nContent-Type: application/json\r\nContent-Length: ${bytes.size}\r\nConnection: close\r\n"+result.headers.entries.joinToString("") { "${it.key}: ${it.value}\r\n" }+"\r\n"
-                        peer.getOutputStream().write(head.toByteArray(Charsets.UTF_8)); peer.getOutputStream().write(bytes); peer.getOutputStream().flush()
+                        peer.getOutputStream().write(head.toByteArray(Charsets.UTF_8));peer.getOutputStream().flush();result.beforeBody?.invoke();peer.getOutputStream().write(bytes); peer.getOutputStream().flush()
                     }
                 } catch(_: Exception) { }
             } } } catch(failure: java.util.concurrent.RejectedExecutionException) {

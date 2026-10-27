@@ -1,0 +1,1891 @@
+{
+  "sourceBase": "b10282b7234f54fd117829eacc831afb05b66aa4",
+  "changed": [
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt",
+      "line": 40,
+      "key": "撤回许可",
+      "english": "Revoke permission",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 660,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt",
+      "line": 68,
+      "key": "暂不允许",
+      "english": "Not now",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 745,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 60,
+      "key": "本地数据暂时无法读取",
+      "english": "Local data is temporarily unavailable",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1408,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 169,
+      "key": "好",
+      "english": "OK",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 410,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 235,
+      "key": "在聊天中查找",
+      "english": "Find in chat",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1416,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 240,
+      "key": "删除",
+      "english": "Delete",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1422,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 245,
+      "key": "已归档对话",
+      "english": "Archived chats",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1424,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 247,
+      "key": "查询聊天操作记录",
+      "english": "Check chat operation",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1431,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 253,
+      "key": "刷新历史",
+      "english": "Refresh history",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 280,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 254,
+      "key": "模型、推理与权限",
+      "english": "Model, reasoning, and permissions",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 868,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 255,
+      "key": "发送记录",
+      "english": "Message delivery records",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 490,
+        "sourceCommit": "284246667b6a919ee50bb4cbe065c723787cf8b1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 260,
+      "key": "设置",
+      "english": "Settings",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1141,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 265,
+      "key": "删除此对话？",
+      "english": "Delete this chat?",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1427,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 267,
+      "key": "将同步删除电脑端的原始聊天及其子对话，无法恢复。仅想保留历史时请选择归档。",
+      "english": "This permanently deletes the original desktop chat and its subagent chats. This cannot be undone. Choose Archive to keep its history.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1596,
+        "sourceCommit": "8e6f9d657c60b3ce0131b6c34b4cb65e21b33528"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 268,
+      "key": "删除",
+      "english": "Delete",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1422,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 269,
+      "key": "取消",
+      "english": "Cancel",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 352,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 272,
+      "key": "结束等待？",
+      "english": "Stop waiting?",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1087,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 272,
+      "key": "仅解除本机等待，原操作仍可查询，不会取消电脑端操作或重新提交。",
+      "english": "This only ends the local wait. The original operation remains queryable; it is not canceled or resubmitted.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1455,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 273,
+      "key": "结束等待",
+      "english": "Stop waiting",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1085,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 274,
+      "key": "取消",
+      "english": "Cancel",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 352,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 282,
+      "key": "把电脑上的工作带在身边",
+      "english": "Take your computer's work with you",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 623,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 283,
+      "key": "切换客户端，查看项目和对话。",
+      "english": "Switch clients to view projects and conversations.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 266,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 284,
+      "key": "添加客户端",
+      "english": "Add client",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 975,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 356,
+      "key": "停止任务",
+      "english": "Stop task",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 227,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 358,
+      "key": "继续任务",
+      "english": "Continue task",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1096,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 359,
+      "key": "重新运行上一任务",
+      "english": "Run previous task again",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1323,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 369,
+      "key": "已填入输入框",
+      "english": "Added to composer",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1540,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 370,
+      "key": "撤销",
+      "english": "Undo",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1541,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 371,
+      "key": "下一步建议",
+      "english": "Next-step suggestion",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1528,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 418,
+      "key": "采用",
+      "english": "Use",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1530,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 419,
+      "key": "全文",
+      "english": "View all",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1531,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 439,
+      "key": "重试",
+      "english": "Retry",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1325,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 530,
+      "key": "已显示全部消息",
+      "english": "All messages shown",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 494,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 561,
+      "key": "任务失败记录",
+      "english": "Task failure records",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 161,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+      "line": 48,
+      "key": "复制计划",
+      "english": "Copy plan",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 406,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+      "line": 91,
+      "key": "实施此计划？",
+      "english": "Implement this plan?",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 419,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+      "line": 100,
+      "key": "是，实施此计划",
+      "english": "Yes, implement this plan",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 735,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+      "line": 104,
+      "key": "告诉助手应该如何调整计划",
+      "english": "Tell the assistant how to adjust the plan",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 375,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+      "line": 107,
+      "key": "发送调整",
+      "english": "Send changes",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 351,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+      "line": 110,
+      "key": "调整计划",
+      "english": "Adjust plan",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1200,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 55,
+      "key": "核对原草稿/回执",
+      "english": "Check original drafts and receipts",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 855,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 122,
+      "key": "返回草稿",
+      "english": "Return to draft",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1236,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 124,
+      "key": "重试原消息",
+      "english": "Retry original message",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1326,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 126,
+      "key": "提交原内容",
+      "english": "Submit original content",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1587,
+        "sourceCommit": "aa7fe05e13d7c851398d9502e315830aa40fa42d"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 127,
+      "key": "结束等待",
+      "english": "Stop waiting",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1085,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 137,
+      "key": "结束等待？",
+      "english": "Stop waiting?",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1087,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 138,
+      "key": "结束等待不会撤销可能已执行的请求。原记录仍可查询；再次发送将是一条新请求。",
+      "english": "Stopping the wait does not revoke a request that may have executed. Its original record remains queryable; sending again creates a new request.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1086,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 140,
+      "key": "保留记录并返回编辑",
+      "english": "Keep record and return to editing",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 220,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 141,
+      "key": "继续等待",
+      "english": "Keep waiting",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1098,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 156,
+      "key": "历史消息结果待核对",
+      "english": "Earlier message outcome needs verification",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1553,
+        "sourceCommit": "6e1bb10dd7d10cae2d5c6684b2c27c86e2bbb873"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 160,
+      "key": "电脑已继续后续任务。这条旧消息是否执行仍缺少确认，不代表当前任务在等待；不会自动重发。",
+      "english": "Your computer has continued with later tasks. This earlier message remains unconfirmed; the current task is not waiting and the message will not be resent automatically.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1555,
+        "sourceCommit": "6e1bb10dd7d10cae2d5c6684b2c27c86e2bbb873"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 227,
+      "key": "问题",
+      "english": "Question",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1331,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 285,
+      "key": "正在提交…",
+      "english": "Submitting…",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 898,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 340,
+      "key": "跳过",
+      "english": "Skip",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1214,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 344,
+      "key": "提交回复",
+      "english": "Submit reply",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 646,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 377,
+      "key": "客户端队列不可用，消息未提交。可保留草稿，或自行选择立即追加。",
+      "english": "The client queue is unavailable. Your message has not been submitted. Keep the draft or choose to add it to the current task.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1566,
+        "sourceCommit": "f3352b14fad12a073809fc192a8294019080e3db"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 423,
+      "key": "重试",
+      "english": "Retry",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1325,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 450,
+      "key": "快速模式",
+      "english": "Fast mode",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 576,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 455,
+      "key": "跟随电脑速度",
+      "english": "Use computer speed",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1210,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 464,
+      "key": "选择会记住，供此客户端的新对话使用。设置随下一条消息或排队消息提交，补充指令沿用当前任务设置。",
+      "english": "Your selection is remembered for new conversations on this client. Settings are submitted with the next sent or queued message; additional instructions use the current task settings.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1280,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt",
+      "line": 138,
+      "key": "复制",
+      "english": "Copy",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 400,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "line": 69,
+      "key": "重新录音",
+      "english": "Record again",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1319,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 42,
+      "key": "此 Agent 的配置界面尚未注册",
+      "english": "No configuration interface registered for this Agent",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 927,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 85,
+      "key": "正在查找同一网络的电脑…",
+      "english": "Looking for computers on the same network…",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 903,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 93,
+      "key": "重新查找",
+      "english": "Search again",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1320,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 96,
+      "key": "扫描电脑二维码",
+      "english": "Scan computer QR code",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 621,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 98,
+      "key": "连接电脑",
+      "english": "Connect computer",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1273,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 99,
+      "key": "首次连接扫描电脑二维码，之后自动发现局域网与 VPN 入口。",
+      "english": "Scan the computer's QR code once. Local network and VPN endpoints are discovered automatically afterward.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1379,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 103,
+      "key": "连接已保存的电脑",
+      "english": "Connect a saved computer",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1268,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 104,
+      "key": "填写已配对电脑的地址；首次接入请使用电脑提供的连接二维码。",
+      "english": "Enter the address of a paired computer. For a first connection, use the QR code provided by the computer.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 389,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 109,
+      "key": "连接电脑",
+      "english": "Connect computer",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1273,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 110,
+      "key": "输入电脑显示的连接码，再在已登录的电脑上确认此设备。手机无需登录账号。",
+      "english": "Enter the connection code shown on your computer, then approve this device on the signed-in computer. You do not need to sign in on your phone.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1571,
+        "sourceCommit": "5060010c0dae79fe2307734e7a291501c8ac9fae"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 114,
+      "key": "正在连接…",
+      "english": "Connecting…",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 924,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+      "line": 84,
+      "key": "搜索项目和对话",
+      "english": "Search projects and conversations",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 658,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+      "line": 89,
+      "key": "新聊天",
+      "english": "New chat",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 690,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+      "line": 118,
+      "key": "加载更多",
+      "english": "Load more",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 288,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+      "line": 126,
+      "key": "我",
+      "english": "Me",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 586,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+      "line": 127,
+      "key": "个人空间",
+      "english": "Personal space",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 105,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+      "line": 170,
+      "key": "待处理",
+      "english": "To do",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 558,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt",
+      "line": 76,
+      "key": "搜索消息、工具输出或附件名称",
+      "english": "Search messages, tool output, or attachment names",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1441,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt",
+      "line": 80,
+      "key": "正在读取完整历史…",
+      "english": "Reading full history…",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1437,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt",
+      "line": 82,
+      "key": "无法读取完整历史。可搜索已缓存内容；连接恢复后重试。",
+      "english": "Full history could not be read. Search cached content or retry when connected.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1443,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt",
+      "line": 83,
+      "key": "重试",
+      "english": "Retry",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1325,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt",
+      "line": 86,
+      "key": "没有匹配结果",
+      "english": "No matches",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1439,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt",
+      "line": 109,
+      "key": "搜索匹配",
+      "english": "Search match",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1445,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt",
+      "line": 63,
+      "key": "扫描电脑二维码",
+      "english": "Scan computer QR code",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 621,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt",
+      "line": 64,
+      "key": "取消",
+      "english": "Cancel",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 352,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ThreadForkViews.kt",
+      "line": 54,
+      "key": "仅结束本机等待；电脑端操作未取消，原回执保留。",
+      "english": "Only stop waiting on this device. The computer operation is not canceled and its receipt is preserved.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 146,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ThreadForkViews.kt",
+      "line": 59,
+      "key": "结束等待",
+      "english": "Stop waiting",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1085,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 191,
+      "key": "编辑",
+      "english": "edit",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1102,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 197,
+      "key": "移除连接",
+      "english": "Remove connection",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1044,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 197,
+      "key": "移除连接",
+      "english": "Remove connection",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1044,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 197,
+      "key": "取消",
+      "english": "Cancel",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 352,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 241,
+      "key": "默认使用局域网与 Tailscale HTTPS 双通道，自动切换并保留同一台电脑的连接和草稿。只在局域网使用可不安装 Tailscale；需要在外远程控制，请为手机和电脑配置 Tailscale 并保持在线。",
+      "english": "Use LAN and Tailscale HTTPS routes with automatic switching while keeping the same computer connection and drafts. Tailscale is optional for LAN use. For remote control away from your local network, set up Tailscale on both devices and keep them online.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1617,
+        "sourceCommit": "14ef1da30ea7b84380b141b1977872c9f64dd4ab"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 252,
+      "key": "首次连接授权",
+      "english": "Authorize first connection",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1612,
+        "sourceCommit": "e5bbb73be3c2ff073f256051c7187fa03f01d9ac"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 256,
+      "key": "授权并连接",
+      "english": "Authorize and connect",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1611,
+        "sourceCommit": "e5bbb73be3c2ff073f256051c7187fa03f01d9ac"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 257,
+      "key": "取消",
+      "english": "Cancel",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 352,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 259,
+      "key": "请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。",
+      "english": "Read the Host Key from this computer’s private key file. After authorization, device credentials are stored securely for automatic reconnection.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1613,
+        "sourceCommit": "e5bbb73be3c2ff073f256051c7187fa03f01d9ac"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 261,
+      "key": "自动发现",
+      "english": "Automatic discovery",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1117,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 275,
+      "key": "重新查找",
+      "english": "Search again",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1320,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 277,
+      "key": "自动查找同一网络的电脑；需要密钥的电脑会在首次连接时要求输入 Host Key。",
+      "english": "Find computers on the same network. Computers requiring a key ask for their Host Key on the first connection.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1626,
+        "sourceCommit": "f9d2ebda68aa36a8cfd0a2c2cfe246abd2bd5576"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 278,
+      "key": "连接中…",
+      "english": "Connecting…",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1258,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 280,
+      "key": "使用 Host Key 重新授权",
+      "english": "Reauthorize with Host Key",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1614,
+        "sourceCommit": "e5bbb73be3c2ff073f256051c7187fa03f01d9ac"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 284,
+      "key": "扫码连接",
+      "english": "Scan QR code",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 622,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 286,
+      "key": "扫描电脑二维码",
+      "english": "Scan computer QR code",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 621,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 289,
+      "key": "使用二维码连接",
+      "english": "Connect using QR code",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 207,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 290,
+      "key": "可扫描包含密钥的连接信息，或自动发现后输入 Host Key 授权。",
+      "english": "Scan connection details containing the key, or discover a computer and enter its Host Key to authorize.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1609,
+        "sourceCommit": "e5bbb73be3c2ff073f256051c7187fa03f01d9ac"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 294,
+      "key": "客户端",
+      "english": "Clients",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 428,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 34,
+      "key": "此客户端尚未支持此操作，请更新电脑连接程序或切换客户端。",
+      "english": "This client does not support this action yet. Update the computer connection service or switch clients.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1472,
+        "sourceCommit": "82f0120eb943412934988956c1fdb70dabe05227"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 35,
+      "key": "电脑离线，连接后可批量管理。",
+      "english": "This computer is offline. Connect to manage items.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1473,
+        "sourceCommit": "82f0120eb943412934988956c1fdb70dabe05227"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 53,
+      "key": "加载更多",
+      "english": "Load more",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 288,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 55,
+      "key": "每批最多选择 100 项。全选仅选择当前搜索结果。",
+      "english": "Select up to 100 items per batch. Select all applies to the current search results.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1479,
+        "sourceCommit": "82f0120eb943412934988956c1fdb70dabe05227"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 67,
+      "key": "核对结果",
+      "english": "Check results",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1481,
+        "sourceCommit": "82f0120eb943412934988956c1fdb70dabe05227"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 80,
+      "key": "所选对话将从活跃列表移除，历史会保留。",
+      "english": "Selected chats will leave the active list. History will be kept.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1486,
+        "sourceCommit": "82f0120eb943412934988956c1fdb70dabe05227"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 81,
+      "key": "归档对话",
+      "english": "Archive chats",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1466,
+        "sourceCommit": "82f0120eb943412934988956c1fdb70dabe05227"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 82,
+      "key": "取消",
+      "english": "Cancel",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 352,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt",
+      "line": 48,
+      "key": "查询原回执",
+      "english": "Query original receipt",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 844,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt",
+      "line": 28,
+      "key": "没有已归档对话",
+      "english": "No archived chats",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1447,
+        "sourceCommit": "c2152f104a6a3938edd5589460b23b92724d11a1"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt",
+      "line": 40,
+      "key": "加载更多",
+      "english": "Load more",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 288,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 25,
+      "key": "下一步建议",
+      "english": "Next-step suggestion",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1528,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 26,
+      "key": "完成",
+      "english": "Done",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 414,
+        "sourceCommit": "5168b597fa0873cb6deca2bd8651eb8345ebeea6"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 29,
+      "key": "来自桌面的建议",
+      "english": "Suggested on your desktop",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1529,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 39,
+      "key": "替换现有草稿…",
+      "english": "Replace draft…",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1534,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 40,
+      "key": "忽略这条建议",
+      "english": "Dismiss suggestion",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1539,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 46,
+      "key": "替换现有草稿？",
+      "english": "Replace your draft?",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1535,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 47,
+      "key": "原草稿将被替换，填入后仍可编辑。",
+      "english": "Your draft will be replaced. You can still edit it before sending.",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1538,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 48,
+      "key": "确认替换",
+      "english": "Replace draft",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1536,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt",
+      "line": 49,
+      "key": "保留原草稿",
+      "english": "Keep draft",
+      "kind": "explicit app-authored Text/GroupTitle literal only",
+      "iosSource": {
+        "path": "apps/ios/Resources/en.lproj/Localizable.strings",
+        "lineAtSourceBase": 1537,
+        "sourceCommit": "27b904cba6ea4c4a3fc23c8646d4270a8c035197"
+      }
+    }
+  ],
+  "remainingExplicitLiterals": [
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 61,
+      "key": "原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 123,
+      "key": "开始一段新对话"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 123,
+      "key": "从侧栏选择项目或继续对话。"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 251,
+      "key": "结束等待 · "
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 258,
+      "key": "查询记录 · "
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "line": 378,
+      "key": "添加文件"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 117,
+      "key": "关闭提示"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 118,
+      "key": "查询记录"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 125,
+      "key": "修改原消息"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 129,
+      "key": "结束等待保留原操作与附件，不代表电脑任务已取消。"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "line": 165,
+      "key": "关闭提示"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "line": 82,
+      "key": "允许发现局域网与 VPN 电脑"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt",
+      "line": 66,
+      "key": "将电脑上的连接二维码放在画面中。"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt",
+      "line": 108,
+      "key": "未获得相机权限，可返回粘贴电脑的连接内容。"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 191,
+      "key": "移除"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 263,
+      "key": "允许发现局域网与 VPN 电脑"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 300,
+      "key": "填写电脑上 Host Agent 的 HTTPS 地址和客户端密钥。密钥由系统 Keystore 保护。本机模拟器可使用回环地址；历史只读连接无需密钥。"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 317,
+      "key": "不关联项目"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 320,
+      "key": "从侧栏选择已有项目和对话。历史只读连接无法创建新对话。"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 33,
+      "key": "搜索对话"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt",
+      "line": 41,
+      "key": "没有找到相关对话"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt",
+      "line": 23,
+      "key": "暂无发送记录"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt",
+      "line": 23,
+      "key": "刷新"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt",
+      "line": 25,
+      "key": "批量归档对话"
+    }
+  ],
+  "runtimeValuesTranslated": false,
+  "taskProjectBusinessEnabled": false,
+  "deferredProjectFormUnchanged": [
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 328,
+      "key": "项目名称",
+      "english": "Project name",
+      "kind": "explicit app-authored Text/GroupTitle literal only"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 330,
+      "key": "电脑上的目录",
+      "english": "Directory on computer",
+      "kind": "explicit app-authored Text/GroupTitle literal only"
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "line": 332,
+      "key": "选择电脑授权工作目录中的已有文件夹。",
+      "english": "Choose an existing folder in the computer's authorized working directory.",
+      "kind": "explicit app-authored Text/GroupTitle literal only"
+    }
+  ],
+  "phase": "P6-2",
+  "features": [
+    "F01",
+    "F03",
+    "F04",
+    "F05",
+    "F06",
+    "F07",
+    "F08",
+    "F09",
+    "F10",
+    "F11",
+    "F12",
+    "F13",
+    "F14",
+    "F15",
+    "F16",
+    "F17",
+    "F19",
+    "F20",
+    "F21",
+    "F23",
+    "F24",
+    "F25",
+    "F29",
+    "F30",
+    "F31",
+    "F33",
+    "F34",
+    "F35",
+    "F36",
+    "F38",
+    "F39",
+    "F40",
+    "F41",
+    "F42",
+    "F43",
+    "F44",
+    "F45",
+    "F46",
+    "F48",
+    "F56",
+    "F57",
+    "F58",
+    "F60",
+    "F61",
+    "F62",
+    "F63",
+    "F64",
+    "F69",
+    "F70"
+  ],
+  "wholeStageClosed": false,
+  "wholeFeatureClosed": false,
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "0304679dc2a36b6ef1a8d70c31956248f2c232dbfde8305e30d8bc2d0968cf21",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizedContentTest.kt": "61e9e66e8a776bdfa35458f631f1ffe1c29c84b25fdf9ed3bca8180df7b96f86",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSuggestionComposerTest.kt": "b9ac6681e1b80a34fbddda00dc6a6619466562095db9a84bc60d0c2722cadc6e",
+    "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt": "db1b41828f92e08afffd44f804ddedcef967ac369d2ac889f1aeb627a427a687",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "6a1467cfa5d2abbf61bacecdb32b0e54b5434728f659fe09da9dadaa483f0f30",
+    "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "7af3b895eb479ec3611f28f1270b5c91cf0694391c570c53a905738afa27786e",
+    "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "9b99c3deadb4fe4494fdf6b02612152c7abb79b0306280c73105c31064762ae6",
+    "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt": "11baa6702599d8f67c5928813f7b1f818a85e51fcf7cbbce8ee793ee97e19bb1",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "d44df12bfdedc5671856dac753e20350e073028de902a16df7331cd45cbcbc69",
+    "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "3b2e773214bc89cbba42093219bda9caa6b69bd577764c4b9e0afe9c7af67759",
+    "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "f8050013076d8394d0440820697346d3d16487c98604281cb7ca7e98b8382f6a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeLocalization.kt": "02d8c9eb61f87541963ba1ed819a02d9ee27f65bb96e68e0c1ed9064d1c5f58d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt": "f85aa74c4b0ad9643f2b4bb08de1653447a89df94a32c3a2287affc8883fdf52",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "b3a94d5d813455fa1c3dc67e756524f560c124b0edf1f030d78fc785fc9d7606",
+    "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt": "ac2012b2c8186095282db18dd47b07d7c700b3668cf733c7b123d1a5da2e4a0a",
+    "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "9e3f00b565807d6c9fa8d61c52cc40e3d5b736006d5ad5c6b20966dae4bab5f9",
+    "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt": "011809ace42265dddc03c31373714e7bb7ddb8491dd296dead4b43036c89d4d1",
+    "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "5bde4207a3f593b64dba28614a66df518cc6776f072535361e74faa6a68d3e94",
+    "apps/android/src/main/kotlin/com/agenthub/android/ThreadForkViews.kt": "7a933e0e0161a81bf1fe7bb38d5f7bbfe56d8ff8aa79113a969fb9c1653ef258",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt": "3430c7789c7c3aec505ed0c07f15efce501ebcff07bf4cddbf4459505bb0fb04",
+    "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "7bb880686529bd2c83fffae064945f038d50134b2efbefda144030879adde6c7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileAttachmentImportOwnershipTest.kt": "75243dd4da392641f7d3ffcf8411cf69a07299f606c6bb5799c28c2ada2af38a",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "75f00c09496e22a80fd62af82c326933574649b11d09b09dc1dda6f2085ae8c4"
+  },
+  "perFileFeatures": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": ["F56"],
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizedContentTest.kt": [
+      "F19",
+      "F20",
+      "F25",
+      "F30",
+      "F56"
+    ],
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSuggestionComposerTest.kt": [
+      "F23",
+      "F24",
+      "F46",
+      "F69"
+    ],
+    "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt": ["F58"],
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": [
+      "F01",
+      "F23",
+      "F24",
+      "F25",
+      "F30",
+      "F33",
+      "F36",
+      "F38",
+      "F39",
+      "F43",
+      "F44",
+      "F46",
+      "F48",
+      "F56",
+      "F69",
+      "F70"
+    ],
+    "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": ["F70"],
+    "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": ["F13", "F17", "F70"],
+    "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt": ["F69"],
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": [
+      "F06",
+      "F07",
+      "F08",
+      "F09",
+      "F10"
+    ],
+    "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": [
+      "F34",
+      "F35",
+      "F36",
+      "F38",
+      "F39",
+      "F41",
+      "F42",
+      "F43",
+      "F44",
+      "F46",
+      "F48"
+    ],
+    "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": ["F19", "F20"],
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeLocalization.kt": ["F56"],
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt": ["F04", "F60"],
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": [
+      "F03",
+      "F04",
+      "F05",
+      "F10",
+      "F25",
+      "F45",
+      "F56",
+      "F57",
+      "F61",
+      "F63"
+    ],
+    "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt": ["F21", "F40"],
+    "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": ["F56"],
+    "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt": [
+      "F43",
+      "F44",
+      "F46"
+    ],
+    "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": [
+      "F11",
+      "F12",
+      "F13",
+      "F14",
+      "F15",
+      "F16",
+      "F70"
+    ],
+    "apps/android/src/main/kotlin/com/agenthub/android/ThreadForkViews.kt": ["F62"],
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt": ["F33", "F64"],
+    "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": ["F70"],
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileAttachmentImportOwnershipTest.kt": [
+      "F25",
+      "F29",
+      "F30",
+      "F31",
+      "F46"
+    ],
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": ["F56"]
+  },
+  "additionalClosedProductBranches": [
+    "Empty code-language fallback uses the localized Code label; nonempty source fence language is literal",
+    "Suggestion apply chooses only the two fixed iOS keys; raw suggestion body stays literal"
+  ],
+  "otherEndImpact": "iOS product and catalog unchanged from P6-1; Android uses those exact catalog values. No full iOS native or current real-provider pass implied.",
+  "next": "dynamic/error/AX product text and complete visual/link/runtime matrix, then Android P7; task/project business deferred",
+  "nativeExaminerRefinement": "Exact original text and stable native bounds before one synthetic submit; preserve primary failure. One phone zero-write/zero-record group is retained, no production send behavior changed.",
+  "nativeOwnedCaptureRefinement": "A null native AX root may wait at most2s for the same exact app owner; any different nonnull package still fails. Capture remains owned subtree only. Original API26 null-root failure retained.",
+  "iosSourceCommits": {
+    "5168b597fa0873cb6deca2bd8651eb8345ebeea6": "feat(ios): 增加中英文界面与通知本地化",
+    "c2152f104a6a3938edd5589460b23b92724d11a1": "feat: add chat pin and history search with guarded lifecycle actions",
+    "284246667b6a919ee50bb4cbe065c723787cf8b1": "fix: integrate suggestion recovery and composer wait handling",
+    "8e6f9d657c60b3ce0131b6c34b4cb65e21b33528": "fix(mobile): align chat management policy and show lifecycle status",
+    "27b904cba6ea4c4a3fc23c8646d4270a8c035197": "feat: integrate bound desktop suggestions and native draft adoption",
+    "aa7fe05e13d7c851398d9502e315830aa40fa42d": "Merge commit '880ba1cd05a9e227cd23a810a362bbdac8d771ec' into codex/trace-windows-production",
+    "6e1bb10dd7d10cae2d5c6684b2c27c86e2bbb873": "fix: retain verified desktop live synchronization in unified release",
+    "f3352b14fad12a073809fc192a8294019080e3db": "fix: preserve client-owned queues and normalize exact delivery evidence",
+    "5060010c0dae79fe2307734e7a291501c8ac9fae": "Merge upstream mobile foundations with Windows Trace and client-owned queues",
+    "14ef1da30ea7b84380b141b1977872c9f64dd4ab": "feat(connection): preserve Codex LAN and Tailscale routes",
+    "e5bbb73be3c2ff073f256051c7187fa03f01d9ac": "Require Host Key authorization and validate preserving iPhone upgrade",
+    "f9d2ebda68aa36a8cfd0a2c2cfe246abd2bd5576": "fix: recover M5 Host Key authorization with discovery compatibility",
+    "82f0120eb943412934988956c1fdb70dabe05227": "chore: preserve current development inputs before branch consolidation"
+  },
+  "reviewMethod": "Each explicit Android call maps to the exact existing English catalog key, its source-base line and originating iOS commit; initial and later optimization nodes remain in the parent phase/source indices. No node closed from source presence."
+}

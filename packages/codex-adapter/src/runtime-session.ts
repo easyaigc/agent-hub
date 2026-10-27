@@ -1971,8 +1971,11 @@ export class RuntimeSession {
         // history just to reconcile an old unknown submission. Keep it unknown.
         if (!windowed) await this.recoverDesktopReceiptHistory(thread, runtime, target);
       } else {
+        const localImagePaths = new Map<string, readonly string[]>();
         const page = await this.readWithReplyFence(target, () =>
-          runtime.reader.history(threadId, cursor),
+          runtime.reader.history(threadId, cursor, false, (id, paths) =>
+            localImagePaths.set(id, paths),
+          ),
         ).catch((error: unknown) => {
           if (!cursor) this.desktopHistoryReads.delete(threadId);
           throw error;
@@ -2025,10 +2028,13 @@ export class RuntimeSession {
           await this.projectMessageAttachments(
             thread,
             message,
-            messageLinks(message.text).flatMap((link) => {
-              const path = localMessagePath(link.reference);
-              return path ? [path] : [];
-            }),
+            [
+              ...(localImagePaths.get(value.id) ?? []),
+              ...messageLinks(message.text).flatMap((link) => {
+                const path = localMessagePath(link.reference);
+                return path ? [path] : [];
+              }),
+            ],
             {},
             page.directory,
           );
@@ -2054,7 +2060,19 @@ export class RuntimeSession {
           messages.push(message);
         }
         const ids = new Set(messages.map((v) => v.id));
-        const retained = previous.filter((v) => !ids.has(v.id));
+        const retained = cursor
+          ? previous.filter((v) => !ids.has(v.id))
+          : retainedDesktopHistory(
+              previous,
+              messages,
+              new Set(),
+              new Set([
+                ...(page.turns ?? [])
+                  .filter((turn) => turn.status === 'completed')
+                  .map((turn) => turn.id),
+                ...(page.latestTurn?.status === 'completed' ? [page.latestTurn.id] : []),
+              ]),
+            );
         const anchor = previous.findIndex((v) => ids.has(v.id));
         // A fresh latest page is the authoritative tip; retained desktop-only
         // tools must not trail it. Earlier pages keep their existing position.

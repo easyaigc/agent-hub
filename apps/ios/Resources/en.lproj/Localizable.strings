@@ -1622,15 +1622,6 @@
 
 "未取得这条消息对应的电脑或聊天，请重新打开原对话后重试。" = "The computer or chat for this message is unavailable. Reopen the original chat and retry.";
 
-"Host Key" = "Host Key";
-"请输入这台电脑的 Host Key" = "Enter the Host Key for this computer";
-"Host Key 不正确，请在电脑端核对后重试" = "Incorrect Host Key. Check it on the computer and try again.";
-"可扫描包含密钥的连接信息，或自动发现后输入 Host Key 授权。" = "Scan connection details containing the key, or discover a computer and enter its Host Key to authorize.";
-"自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。" = "Find computers on the same network. Enter the computer’s Host Key to authorize the first connection.";
-"授权并连接" = "Authorize and connect";
-"首次连接授权" = "Authorize first connection";
-"请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。" = "Read the Host Key from this computer’s private key file. After authorization, device credentials are stored securely for automatic reconnection.";
-"使用 Host Key 重新授权" = "Reauthorize with Host Key";
 
 "自动查找同一网络的电脑；需要密钥的电脑会在首次连接时要求输入 Host Key。" = "Find computers on the same network. Computers requiring a key ask for their Host Key on the first connection.";
 "预览最近图片" = "Preview recent photo";

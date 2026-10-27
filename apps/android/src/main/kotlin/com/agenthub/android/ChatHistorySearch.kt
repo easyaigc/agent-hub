@@ -73,24 +73,24 @@ internal fun searchHighlighted(text: String,query: String,color: Color)=buildAnn
             BasicTextField(query,{ query=it },Modifier.weight(1f).padding(start=8.dp).testTag("chat-search-query"),singleLine=true,
                 keyboardOptions=KeyboardOptions(imeAction=ImeAction.Search),keyboardActions=KeyboardActions(onSearch={ resultsFocus.requestFocus();keyboard?.hide();nativeKeyboard.hide() }),
                 textStyle=androidx.compose.ui.text.TextStyle(color=colors.onSurface,fontSize=17.sp),
-                decorationBox={ inner -> if(query.isEmpty())Text("搜索消息、工具输出或附件名称",fontSize=14.sp,color=colors.onSurfaceVariant);inner() })
-            if(query.isNotEmpty())IconAction("close","清除搜索","chat-search-clear") { query="" }
+                decorationBox={ inner -> if(query.isEmpty())Text(productText("搜索消息、工具输出或附件名称"),fontSize=14.sp,color=colors.onSurfaceVariant);inner() })
+            if(query.isNotEmpty())IconAction("close",productText("清除搜索"),"chat-search-clear") { query="" }
         }
         LazyColumn(Modifier.fillMaxSize().focusRequester(resultsFocus).focusable().testTag("chat-search-results"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            if(loading)item { Row { CircularProgressIndicator(Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text("正在读取完整历史…") } }
+            if(loading)item { Row { CircularProgressIndicator(Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text(productText("正在读取完整历史…")) } }
             if(failed)item {
-                Column { Text("无法读取完整历史。可搜索已缓存内容；连接恢复后重试。",color=colors.onSurfaceVariant)
-                    TextButton(onClick={ reload++ },modifier=Modifier.testTag("chat-search-retry")) { Text("重试") } }
+                Column { Text(productText("无法读取完整历史。可搜索已缓存内容；连接恢复后重试。"),color=colors.onSurfaceVariant)
+                    TextButton(onClick={ reload++ },modifier=Modifier.testTag("chat-search-retry")) { Text(productText("重试")) } }
             }
             if(!resultsCurrent&&ChatSearchRules.query(query).isNotEmpty())item { CircularProgressIndicator(Modifier.size(18.dp)) }
-            if(!loading&&!failed&&resultsCurrent&&ChatSearchRules.query(query).isNotEmpty()&&results.isEmpty())item { Text("没有匹配结果",Modifier.testTag("chat-search-empty"),color=colors.onSurfaceVariant) }
+            if(!loading&&!failed&&resultsCurrent&&ChatSearchRules.query(query).isNotEmpty()&&results.isEmpty())item { Text(productText("没有匹配结果"),Modifier.testTag("chat-search-empty"),color=colors.onSurfaceVariant) }
             items(if(resultsCurrent)results else emptyList(),key={ it.id }) { message ->
                 Column(Modifier.fillMaxWidth().testTag("chat-search-result-${message.id}").clickable {
                     if(context!=null&&session.chatSearchCurrent(context)&&ChatSearchRules.resultsCurrent(resultQuery,query,resultVersion,historyVersion)) {
                         session.prepareChatSearchSelection(context,message,resultQuery,history,!failed&&!loading);close()
                     }
                 }.padding(vertical=8.dp)) {
-                    Text(when(message.role) { "tool"->"工具输出";"user"->"你";else->"回复" },fontSize=12.sp,color=colors.onSurfaceVariant)
+                    Text(productText(when(message.role) { "tool"->"工具输出";"user"->"你";else->"回复" }),fontSize=12.sp,color=colors.onSurfaceVariant)
                     val snippet=ChatSearchRules.snippet(message.searchableText(),query,NativeChatSearchText)
                     Text(searchHighlighted(snippet.text,query,colors.onSurface),Modifier.padding(top=4.dp),maxLines=4,fontSize=16.sp)
                 }
@@ -106,10 +106,10 @@ internal fun searchHighlighted(text: String,query: String,color: Color)=buildAnn
     var expanded by remember(selection.token) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().testTag("chat-search-located-${selection.message.id}")
         .background(Color.Yellow.copy(alpha=.08f),RoundedCornerShape(10.dp)).border(1.dp,Color(0xFFCC8800),RoundedCornerShape(10.dp)).padding(10.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text("搜索匹配",fontSize=12.sp,color=colors.onSurfaceVariant)
+        Text(productText("搜索匹配"),fontSize=12.sp,color=colors.onSurfaceVariant)
         SelectionContainer { Text(searchHighlighted(snippet.text,selection.query,colors.onSurface),fontSize=16.sp) }
         if(ChatSearchRules.longMessage(text,NativeChatSearchText)) {
-            TextButton(onClick={ expanded=!expanded },modifier=Modifier.testTag("chat-search-full-message")) { Text(if(expanded)"收起完整消息" else "完整消息") }
+            TextButton(onClick={ expanded=!expanded },modifier=Modifier.testTag("chat-search-full-message")) { Text(productText(if(expanded)"收起完整消息" else "完整消息")) }
             if(expanded)SelectionContainer { Text(searchHighlighted(text,selection.query,colors.onSurface),Modifier.testTag("chat-search-full-text"),fontSize=16.sp) }
         }
     }

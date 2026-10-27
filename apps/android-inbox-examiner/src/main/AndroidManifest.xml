@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation android:name="com.agenthub.android.OwnedExternalInboxColdDriver"
+        android:targetPackage="com.easyai.agenthub.android.acceptance.test" />
+    <instrumentation android:name="com.agenthub.android.OwnedDocumentColdDriver"
+        android:targetPackage="com.easyai.agenthub.android.acceptance.documents.test" />
+    <instrumentation android:name="com.agenthub.android.OwnedPhotoColdDriver"
+        android:targetPackage="com.easyai.agenthub.android.acceptance.photos.test" />
+    <instrumentation android:name="com.agenthub.android.OwnedCameraColdDriver"
+        android:targetPackage="com.easyai.agenthub.android.acceptance.cameras.test" />
+    <application android:label="Agent Hub Cold Inbox Examiner" android:allowBackup="false" />
+</manifest>

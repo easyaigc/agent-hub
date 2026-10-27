@@ -44,9 +44,9 @@ import kotlin.math.sin
 @Composable internal fun VoiceInputStrip(voice: VoiceInputController,text: String) {
     val colors=MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp).floatingProduct(MobileDesign.composerRadius).padding(4.dp).testTag("voice-panel"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text(text.ifEmpty { "随心输入" },Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(text.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
+        Text(if(text.isEmpty())productText("随心输入") else text,Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(text.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(3.dp)) {
-            Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "结束等待","cancel-dictation",onClick=voice::cancel) }
+            Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",productText(if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "结束等待"),"cancel-dictation",onClick=voice::cancel) }
             if(voice.phase==VoiceInputController.Phase.FINISHING) {
                 VoiceTranscriptionActivity(voice.status,Modifier.weight(1f))
             } else Canvas(Modifier.weight(1f).height(44.dp).testTag("dictation-waveform").semantics { contentDescription=voice.status }) {
@@ -62,11 +62,11 @@ import kotlin.math.sin
                     IconButton(onClick=voice::finish,enabled=false,modifier=Modifier.size(48.dp).testTag("stop-dictation").semantics { contentDescription=voice.status }) {
                         CircularProgressIndicator(Modifier.size(18.dp),color=colors.onSurfaceVariant,strokeWidth=2.dp)
                     }
-                } else IconAction(if(voice.phase==VoiceInputController.Phase.FAILED) "refresh" else "stop",if(voice.phase==VoiceInputController.Phase.FAILED) "重试转写" else "结束录音并转写","stop-dictation",voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.FAILED),voice::finish)
+                } else IconAction(if(voice.phase==VoiceInputController.Phase.FAILED) "refresh" else "stop",productText(if(voice.phase==VoiceInputController.Phase.FAILED) "重试转写" else "结束录音并转写"),"stop-dictation",voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.FAILED),voice::finish)
             }
         }
         if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(voice.status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
-        if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text("重新录音",fontSize=17.sp,color=Color(0xFF007AFF)) }
+        if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text(productText("重新录音"),fontSize=17.sp,color=Color(0xFF007AFF)) }
     }
 }
 

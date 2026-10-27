@@ -1,0 +1,96 @@
+{
+  "phase": "P7-4g",
+  "sourceBase": "6c62338df1724a5d2533654d6eb74c9971422797",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F71"],
+  "summary": "P7-4g：API37原系统相机保留、接收进程死亡后原私有结果及冷开同ID/摘要有界核对；首次界面索引超时保留失败，经原加密已消费记录/原Activity与截图对账，未再次拍摄。API26首次系统相机引导调用链待验。生产Kotlin/res/KMP保持4f，当前文件/照片冷回归与存储/语音/阅读继续。",
+  "expandedSourceSha256": "7f84c18b8457935efa8c50b64e284522c5149c158869a2deebca1bb7a996744a",
+  "expandedNativeInputFiles": 425,
+  "changedFiles": {
+    "apps/android-inbox-examiner/src/main/AndroidManifest.xml": "527c78546b8e88b5c8e41545d59b4b67a260224c26dd8f79b756ad724f96b96d",
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java": "25f82e9e7f84e4cea24157332f02506f9a89cff140938852815496d3880eb34d",
+    "apps/android/build.gradle.kts": "962eaf860fc0d8c3ded560b702604ffdf5cf12e89c0dd8dd760fc31e4dcc067b",
+    "apps/android/src/androidTest/AndroidManifest.xml": "248ca4d9fbde5c53a97a8fc82afcf18dfef91e20792264891b359f832d1d0715",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCameraProcessColdTest.kt": "b600afaf3ab334c8e7d63ed1be33d6bb960a54996e1f9b7a07109367f583b4fe",
+    "scripts/mobile/android-install-if-needed.mjs": "48c6942d3909ba7c79caa6bacc1bfba9a7385268305129ad9888c0a41590884f"
+  },
+  "productionKotlinResourcesAndSharedCoreUnchangedFrom4f": true,
+  "actualSystemColdScenarios": 1,
+  "actualColdReopens": 1,
+  "originalSystemUiVisibilityDeadlinePassed": false,
+  "nativeReadOnlyMethods": 3,
+  "fixtureSeedMethods": 2,
+  "currentScope": "API37 reconciled original camera cold result and same-ID cold reopen; API26 first-run original camera is pending",
+  "closedCohort": {
+    "environment": "owned-API37",
+    "receiverApkSha256": "1e479fcdc331a1d80e068bf554f526a77d9824c0a36dc8ad06947ea606e29fd9",
+    "initialRunnerApkSha256": "2055f669ef856eb38108b8dd727f735e738c98e0bc591902cb2cc8e7ff8809a0",
+    "readOnlyProbeAndFinalReadRunnerSha256": "52a50d17fa5813a15b7781f75ffffc97b8535f05777617c0579e0b018a475ae1",
+    "sameReceiverApkAcrossOriginalCase": true,
+    "originalCameraRetained": true,
+    "originalPidChanged": true,
+    "sameRequestAttachmentIdAndDigestAcrossReopen": true,
+    "originalDraftTextSettingsAndOtherDraftUnchanged": true,
+    "onePriorFileAndOneCameraPhoto": true,
+    "ownedOutputAndClaimRemoved": true,
+    "originalCameraUriReadWriteGrantsRevoked": true,
+    "rawRecordBeforeReadOnlyProbeUnchanged": true,
+    "unchangedEncryptedStoreFiles": 8,
+    "returnReceiptSha256": "6eee768d1a345ea57734b2b651d02b6c26ff3a3a2dc0b99aabb4ede8aaaf7fab",
+    "reopenReceiptSha256": "0d6c8a96fb63024e4f1ed9c78f3e2f53424c6b025b5b98f72afc93b9d0fdfd77",
+    "reopenedImageSha256": "d6fb194621fae67240c75cc0fb625339285fac961961b0280b56f964ecaf35b9",
+    "termination": "activity-manager-background-kill",
+    "cameraConfiguration": {
+      "back": "emulated",
+      "front": "none"
+    }
+  },
+  "observerVersions": [
+    {
+      "sha256": "20b543fd0b57acce12a27bd0e7600c68ef25d56098e7ccc6d2676a12c1744af9",
+      "scope": "API37 original open, exact saved STOPPED receiver, kill and one shutter/confirmation; original 30-second AX deadline failed"
+    },
+    {
+      "sha256": "ff71173006ab3d9c24ecd17804520467258648082bfb9e6068da72a7adac8eb4",
+      "scope": "API37 read-only original consumed receipt/Activity reconciliation; API26 pre-permission component recognition miss and API37 cold-open AX deadline retained"
+    },
+    {
+      "sha256": "50491283841af9af5610dc4eb6b0db8dcec820df3d8a53fa47c0d29ef1d61334",
+      "scope": "API37 same cold-opened window cache refresh/owned draft-strip observation; API26 exact old permission caller verified but first-run camera self-Activity caller gate still pending"
+    }
+  ],
+  "fixtureRequests": {
+    "reads": 14,
+    "writes": 0,
+    "realElectronOrModelExecution": false
+  },
+  "rootCheck": {
+    "pnpmCheckExitCode": 0,
+    "elapsedSeconds": 614.763129234314,
+    "inputFiles": 1013,
+    "matchingInputFiles": 1012,
+    "inputDrift": [
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java"
+    ],
+    "logSha256": "fe1291dc792451c60133a50a148e6af0add5234751a8cfeb3b0d03916da83803",
+    "wholeInputSetFrozen": false,
+    "currentChangedInputCoverage": "Late observer-only cache/old permission-owner changes compiled and actually executed in original API37 window and original API26 permission flow; current parity/format checked separately",
+    "skipsNotNativePlatformPasses": true
+  },
+  "pending": [
+    "API26原首次相机自有引导Activity的调用链与原本地请求/输出对账；未点击快门、未推进位置引导、未清数据或重放",
+    "API37首次返回/冷开原AX视口30秒截止失败；后续刷新原索引/滚动通过，不追认旧窗口为及时通过",
+    "当前共同协调器文件/照片冷回归、真机相机/系统冷结果、完整权限/Provider/存储配额/迁移",
+    "语音、未读和生命周期；API37横屏、完整IME/AX，手机长批稳定性及独立观察APK",
+    "iOS当前原生系统矩阵未重验；iOS A6与任务/项目业务保持暂停"
+  ],
+  "failuresRetained": [
+    "首次新包安装器具名白名单拒绝在安装/seed前发生；确认新接收包不存在并留原回执后补准确身份，未清原数据",
+    "API37原拍照后AX30秒未见附件，原失败截图已显示结果；原加密记录在只读探针前后八份密文准确不变，原请求/Activity/新PID后续对账，不重拍",
+    "API37原冷开AX同样超时；新观察器刷新缓存并只滚动同一原附件栏后接续成功，不重开相机或创建第二冷开意图",
+    "API26原Google旧权限组件漏识别，无点击；补包名且核准确UID/调用方后完成原应用权限，系统相机首次引导为自身Activity，原caller门槛继续拒绝"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

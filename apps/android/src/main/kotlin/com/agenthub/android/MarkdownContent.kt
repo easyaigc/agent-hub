@@ -1,5 +1,7 @@
 package com.agenthub.android
 
+import androidx.compose.ui.text.style.TextOverflow
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +50,8 @@ internal object NativeMarkdown {
         return source.substring(start, end)
     }
     fun children(node: Node): List<Node> = buildList { var child = node.firstChild; while (child != null) { add(child); child = child.next } }
-    fun inline(node: Node, linkColor: Color, onLink: ((String) -> Unit)? = null): AnnotatedString = buildAnnotatedString {
+    fun inline(node: Node, linkColor: Color, onLink: ((String,String)->Unit)? = null, anchorPrefix: String="", openingAnchor: String?=null,imageLabel: String="图片：",linkedImageLabel: String="查看图片："): AnnotatedString = buildAnnotatedString {
+        var linkIndex=0
         fun visit(n: Node) {
             fun nested() { children(n).forEach(::visit) }
             when (n) {
@@ -59,16 +62,21 @@ internal object NativeMarkdown {
                 is Strikethrough -> withStyle(SpanStyle(textDecoration=TextDecoration.LineThrough)) { nested() }
                 is SoftLineBreak, is HardLineBreak -> append("\n")
                 is Link -> {
-                    val uri = runCatching { java.net.URI(n.destination) }.getOrNull()
-                    if(onLink != null) {
-                        withLink(LinkAnnotation.Clickable(n.destination, TextLinkStyles(style=SpanStyle(color=linkColor, textDecoration=TextDecoration.Underline))) { onLink(n.destination) }) { nested() }
-                    } else if (uri?.scheme?.lowercase() in listOf("https", "http", "mailto")) {
-                        withLink(LinkAnnotation.Url(n.destination, TextLinkStyles(style = SpanStyle(color=linkColor, textDecoration=TextDecoration.Underline)))) { nested() }
+                    val anchor=anchorPrefix+":"+linkIndex++
+                    if (onLink != null) {
+                        withLink(LinkAnnotation.Clickable(anchor, TextLinkStyles(style = SpanStyle(color=linkColor, textDecoration=TextDecoration.Underline,background=if(openingAnchor==anchor)linkColor.copy(alpha=.15f) else Color.Transparent))) {
+                            onLink(n.destination,anchor)
+                        }) { nested() }
+                    } else if(MessageLinkDestination.resolve(n.destination).kind in listOf("web","external") &&
+                        runCatching { java.net.URI(n.destination).scheme?.lowercase() }.getOrNull() in listOf("http","https","mailto")) {
+                        // Runtime plan text without a message identity retains its safe system-link behavior.
+                        withLink(LinkAnnotation.Url(n.destination,TextLinkStyles(style=SpanStyle(color=linkColor,textDecoration=TextDecoration.Underline)))) { nested() }
                     } else nested()
                 }
                 is Image -> {
-                    if(onLink != null) withLink(LinkAnnotation.Clickable(n.destination,TextLinkStyles(style=SpanStyle(color=linkColor))) { onLink(n.destination) }) { append("查看图片："); nested() }
-                    else { append("图片："); nested() }
+                    val imageAnchor=anchorPrefix+":image:"+linkIndex++
+                    if(onLink != null) withLink(LinkAnnotation.Clickable(imageAnchor,TextLinkStyles(style=SpanStyle(color=linkColor))) { onLink(n.destination,imageAnchor) }) { append(linkedImageLabel); nested() }
+                    else { append(imageLabel); nested() }
                 }
                 is HtmlInline -> append(n.literal)
                 else -> nested()
@@ -84,8 +92,14 @@ private data class ParsedMarkdown(val source: String, val document: Node)
     // produceState retains its prior value until the next parse completes. Keep
     // source offsets and their document in one snapshot during streaming updates.
     val parsed by produceState<ParsedMarkdown?>(null, text) {
-        value = withContext(Dispatchers.Default) { ParsedMarkdown(text, NativeMarkdown.parse(text)) }
+        val result=withContext(Dispatchers.Default) { ParsedMarkdown(text, NativeMarkdown.parse(text)) }
+        withContext(Dispatchers.Main.immediate) { value=result }
     }
+    val open=LocalMessageLinkOpen.current
+    // Preserve rendered block/scroll ownership during an async parse, but disable
+    // callbacks from the earlier rendered source until the current document is ready.
+    val renderedOpen=remember(parsed?.source,text,open) { if(parsed?.source!=text) ({ _: String,_: String -> Unit }) else open }
+    CompositionLocalProvider(LocalMessageLinkOpen provides renderedOpen) {
     SelectionContainer(Modifier.testTag(tag)) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val document = parsed
@@ -93,12 +107,13 @@ private data class ParsedMarkdown(val source: String, val document: Node)
             else NativeMarkdown.children(document.document).forEachIndexed { index, block -> MarkdownBlock(block, "$tag-$index", document.source) }
         }
     }
+    }
 }
 
 @Composable internal fun MarkdownBlock(node: Node, tag: String, source: String) {
     val colors = MaterialTheme.colorScheme
     when (node) {
-        is Heading -> Text(rememberInline(node), fontSize = when (node.level) { 1 -> 22.sp; 2 -> 20.sp; else -> 17.sp }, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, modifier = Modifier.padding(top=4.dp).testTag(tag))
+        is Heading -> Column { Text(rememberInline(node,tag), fontSize = when (node.level) { 1 -> 22.sp; 2 -> 20.sp; else -> 17.sp }, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, modifier = Modifier.padding(top=4.dp).testTag(tag));MessageLinkWait(tag) }
         is FencedCodeBlock -> CodeContent(NativeMarkdown.codeBody(node, source), node.info.orEmpty(), tag)
         is IndentedCodeBlock -> CodeContent(node.literal, "", tag)
         is BlockQuote -> Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag(tag)) {
@@ -113,14 +128,18 @@ private data class ParsedMarkdown(val source: String, val document: Node)
         is TableBlock -> MarkdownTable(node, tag)
         is ThematicBreak -> HorizontalDivider(Modifier.padding(vertical=4.dp))
         is HtmlBlock -> Text(node.literal, fontFamily=FontFamily.Monospace, fontSize=13.sp)
-        else -> Text(rememberInline(node), fontSize = 17.sp, lineHeight = 24.sp, modifier = Modifier.testTag(tag))
+        else -> Column { Text(rememberInline(node,tag), fontSize = 17.sp, lineHeight = 24.sp, modifier = Modifier.testTag(tag));MessageLinkWait(tag) }
     }
 }
 // Container blocks render their children and must not first flatten the entire
 // subtree. Parsed nodes are immutable after publication to the composition.
-@Composable private fun rememberInline(node: Node): AnnotatedString {
-    val handler=LocalMarkdownLinkHandler.current
-    return remember(node,handler) { NativeMarkdown.inline(node, Color(0xFF007AFF),handler) }
+@Composable private fun rememberInline(node: Node,tag: String): AnnotatedString {
+    val messageOpen=LocalMessageLinkOpen.current
+    val fileOpen=LocalMarkdownLinkHandler.current
+    val open: ((String,String)->Unit)?=remember(messageOpen,fileOpen) { fileOpen?.let { handler -> { reference: String,_: String -> handler(reference) } } ?: messageOpen }
+    val opening=if(fileOpen==null)LocalOpeningMessageAnchor.current else null
+    val imageLabel=productText("图片：");val linkedImageLabel=productText("查看图片：")
+    return remember(node,open,opening,tag,imageLabel,linkedImageLabel) { NativeMarkdown.inline(node, Color(0xFF007AFF),open,tag,opening,imageLabel,linkedImageLabel) }
 }
 @Composable private fun MarkdownTable(node: TableBlock, tag: String) {
     val colors = MaterialTheme.colorScheme
@@ -128,9 +147,9 @@ private data class ParsedMarkdown(val source: String, val document: Node)
     val columns = rows.maxOfOrNull { NativeMarkdown.children(it).size } ?: 0
     val widths = (0 until columns).map { 156.dp }
     Column(Modifier.testTag("$tag-table").horizontalScroll(rememberScrollState()).border(1.dp, colors.onSurface.copy(alpha=.12f), RoundedCornerShape(8.dp)).clip(RoundedCornerShape(8.dp))) {
-        rows.forEach { row ->
+        rows.forEachIndexed { rowIndex,row ->
             Row(Modifier.background(if (row.parent is TableHead) colors.surface else Color.Transparent)) {
-                NativeMarkdown.children(row).forEachIndexed { index, cell -> Text(rememberInline(cell),Modifier.width(widths[index]).padding(10.dp),fontSize=15.sp, fontWeight=if (row.parent is TableHead) FontWeight.SemiBold else FontWeight.Normal) }
+                NativeMarkdown.children(row).forEachIndexed { index, cell -> val cellTag="$tag-$rowIndex-$index";Column(Modifier.width(widths[index])) { Text(rememberInline(cell,cellTag),Modifier.padding(10.dp),fontSize=15.sp, fontWeight=if (row.parent is TableHead) FontWeight.SemiBold else FontWeight.Normal);MessageLinkWait(cellTag) } }
             }
             HorizontalDivider(color=colors.onSurface.copy(alpha=.12f))
         }
@@ -141,9 +160,9 @@ private data class ParsedMarkdown(val source: String, val document: Node)
     val clipboard = LocalClipboardManager.current
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surface).testTag("$tag-code")) {
         DisableSelection {
-        Row(Modifier.fillMaxWidth().padding(start=12.dp), horizontalArrangement=Arrangement.SpaceBetween) {
-            Text(language.ifEmpty { "代码" }, Modifier.padding(top=12.dp), fontSize=12.sp, color=colors.onSurfaceVariant)
-            TextButton(onClick={ clipboard.setText(AnnotatedString(text)) },modifier=Modifier.testTag("$tag-copy-code")) { Text("复制",fontSize=12.sp) }
+        Row(Modifier.fillMaxWidth().padding(start=12.dp,end=LocalMessageActionEndInset.current), horizontalArrangement=Arrangement.SpaceBetween) {
+            Text(if(language.isEmpty())productText("代码") else language, Modifier.weight(1f).padding(top=12.dp), fontSize=12.sp, color=colors.onSurfaceVariant,maxLines=1,overflow=TextOverflow.Ellipsis)
+            TextButton(onClick={ clipboard.setText(AnnotatedString(text)) },modifier=Modifier.heightIn(min=MobileDesign.androidIconTouchSize.dp).testTag("$tag-copy-code")) { Text(productText("复制"),fontSize=12.sp) }
         }
         }
         SelectionContainer(Modifier.testTag("$tag-code-body")) {

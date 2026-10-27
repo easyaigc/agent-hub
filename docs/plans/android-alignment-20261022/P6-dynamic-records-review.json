@@ -1,0 +1,111 @@
+{
+  "phase": "P6-3g",
+  "sourceBase": "4023a4e38ced22c88182d9c3f1f12694a8d52786",
+  "features": ["F02", "F56", "F64", "F70"],
+  "files": {
+    "apps/android/localization/native-copy.json": "7243318abee69fa51fce5a597b6111b26adf35df4fdf290f073449b417d9a7fa",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "5171acef112b084c919dbd52cc0efbcc2b219eae80856e8165d9dc669a9c77a3",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "1eeb8be3ca9384cd3724aa43873cef7d04665aa2dd7dc0e1e9b02ddb070dc159",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionUiTest.kt": "dd2a54011a529333029cec0ee98ed00c33ab917e9cd4ddd4a1d76b900ceb507d",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatCopyTest.kt": "f9ebc70a620180b8a09827d89033ec5f4d2aa63800a566db24db68bd3c89c2de",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "39830a79eff31c27147acc8ab56065dd42e0ba31607d87d6e49b825d1faa5612",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "1552354071af03953e4583c0d58278767b6926171b56d37287e3c06746cc26ad",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSharingCopyTest.kt": "f99eb82f6cf818294fb1ac3a05db457938196e0cb799e83f35279fb77e4342ba",
+    "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt": "1e7697df7167fd32b9e3d24174b694a5c8209df2725e9cb7ff5d2c8748967095",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "e6c65e1f6941bb8f3cdc80a39fc3099a23a06628944fc23042dd4c3a5a2ee13a",
+    "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "8d83ee7cd247878e34d262dd1491766914862b47baf2483703f4c049a22077d6",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "0e6a2eafa366f527d7203a21018411e88acb278b17a67eee27cd9551f320abd2",
+    "apps/android/src/main/kotlin/com/agenthub/android/SharingProductText.kt": "40973ae44e312602801d208f10a36037e35be88980e94c33c84294787a494d4b",
+    "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "dfffababd88c80490c14a9e7ac0b616ca0e691cb1e71b5b2d04cb9a45e19c075",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "2455a4db3d23e74060df18ab6c8e685574e4120eea58368fb64704226507a230",
+    "apps/android/src/main/res/values/product_strings.xml": "23ea25f1ecb421f7b2caa23929452869e20f6531867e5821b9b40f16003012da"
+  },
+  "scope": "Typed app-owned sharing model captions; dynamic chat-action labels/full-ID accessibility; localized lifecycle captions, management labels and archived/offline/no-project display. Raw titles/Provider names/immutable intents and rules unchanged.",
+  "iosReference": [
+    "apps/ios/Sources/SessionStore.swift:484-486",
+    "apps/ios/Sources/Models.swift:837-845",
+    "apps/ios/Sources/SessionStore.swift:4358-4360",
+    "apps/ios/Sources/RootView.swift:1578-1587"
+  ],
+  "nativeKeys": {
+    "shared": 1590,
+    "platform": 48,
+    "totalPerLanguage": 1638,
+    "newThisStage": 2
+  },
+  "newRealModelInputs": 0,
+  "wholeStageClosed": false,
+  "status": "bounded native display/identity and matched original-owner read passed; full P6/F64/F70 open",
+  "nativeAuxiliary": {
+    "methods": 147,
+    "currentRunnerMethods": 129,
+    "matchedRunnerMethods": 18,
+    "normalPerEnvironment": 43,
+    "stylePerGroup": 6,
+    "environments": [
+      "physical API33 normal/dark",
+      "API26 current cold-boot normal / prior double-font",
+      "API37 normal/dark"
+    ],
+    "defaultStorageProofs": 147,
+    "selectedOwnedImagesReviewed": 24,
+    "appSha256": "313cdd89dddf71d895feaf236ea4ed65c4ccf8683644bcd99ab425dad1ec4f44",
+    "testSha256": "4a99d0056bb86c42126a550becc58b14c465fa1a864de296e29f000ab1a4a0d4",
+    "matchedTestSha256": "ceac4d2c0c8d9f9f67ed3fd105d34ff787d36c6ea8492532d61548b4298cd788",
+    "sourceSha256": "292362cb4c26be1a199c216cfac9b451c97c9f950546b851dc391df6936f24ee"
+  },
+  "matchedReuse": {
+    "styleMethods": 18,
+    "realReadMethods": 1,
+    "proof": "Inverse only MobileLocalizationTest two catalog-count constants restores entire prior Android/shared/protocol source. Same production App; exact old runner and original results retained. No failed cohort promoted.",
+    "originalSourceSha256": "f9d23ca061f03072bc134e753d72cbdf1b60d8f537906bfaf08c7c75033e8c47",
+    "originalRunnerRetained": true
+  },
+  "realOriginalOwner": {
+    "nativeMethods": 1,
+    "matchedExaminer": true,
+    "defaultStorageProofs": 1,
+    "http": {
+      "requests": 15,
+      "methods": ["GET"],
+      "writeRequests": 0
+    },
+    "independentOwner": {
+      "originalTurnsUnchanged": true,
+      "onePriorInput": true,
+      "zeroNewInputs": true,
+      "stillOriginalOwner": true
+    },
+    "scope": "Existing actual reply read and local plan/sidebar/draft preservation only; no new model operation or application grant acceptance."
+  },
+  "iosComparison": {
+    "initialRequestCaption": "iOS SessionStore484-486 already localizes reserved app scopes; action title uses Models837-845 and record concatenation4358. Android now renders these known captions without looking up arbitrary metadata.",
+    "storedGrantLocale": "Android current-language reserved captions are explicit; iOS stored grant-caption behavior after changing language remains a separate parity acceptance item.",
+    "sourceUnchanged": true
+  },
+  "failuresRetained": [
+    "Initial caption assertion incorrectly required exact Archived when native node contains full lifecycle line; corrected to full text and existing shared-rule state, no rule change.",
+    "Archived row is intentionally one clickable merged semantic node; final examiner addresses the row by exact ID and checks its separate title/status text entries. No production accessibility change.",
+    "Three broad 43-method cohorts retained failed because the catalog assertion still expected 1636. Final 1638 count and complete per-key/per-byte native reads passed; other methods from failed cohorts were not promoted.",
+    "API26 final attempt aborted System has crashed; activity service absent, invalid tar and helper cleanup failure preserved. SystemUI OOM/dead-system logs retained without assigning unique product cause. Exact isolated AVD cold-booted without data wipe; current final43 passed. First restart wrapper lacked isolated AVD home and exited before VM; corrected path/launch/runtime receipt retained.",
+    "One initial parity check ran before generated feature table was updated; preserved failed log, generated table and later checks passed."
+  ],
+  "checks": {
+    "android": "current App/runner builds passed",
+    "catalog": "1638 bilingual values read on current normal runner in each environment",
+    "workspaceAndIos": "Exact unchanged JS/shared/Swift/Host source from P6-3c complete checks/build; not rerun or claimed as current iOS native acceptance",
+    "parity": "final documentation registration checked separately"
+  },
+  "allPhasesCumulativeInputs": 218,
+  "p4CumulativeInputs": 204,
+  "pending": [
+    "Full native follow-computer/saved reserved-grant locale combinations and corresponding iOS saved-grant behavior",
+    "Remaining four read-only notices/general error/pairing/voice status copy",
+    "Controlled links/current-version resources/full Markdown/token/system matrix",
+    "API26 system crash unique cause and long-run stability, full TalkBack/IME/system composite",
+    "API37 actual landscape",
+    "P4 two original session-grant requests remain sealed pending, no replay",
+    "Android P7 real dual voice/local fallback/recent photos/storage/read",
+    "Task/project business and unrelated iOS A6 deferred"
+  ]
+}

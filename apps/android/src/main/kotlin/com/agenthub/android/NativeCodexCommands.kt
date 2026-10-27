@@ -13,14 +13,14 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class CodexCommandError(message: String, val status: Int? = null, cause: Throwable? = null): Exception(message,cause)
+class CodexCommandError(message: String, val status: Int? = null, cause: Throwable? = null,val appOwnedCopy: Boolean=false): Exception(message,cause)
 
 /** Single-attempt HTTP transport. Recovery and durable intent belong to the session, never here. */
 class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     companion object { private val executor=Executors.newFixedThreadPool(4) }
     private suspend fun request(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null): JSONObject =
-        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path.startsWith("v1/voice/")) 2*1024*1024 else 64*1024*1024,active)) }
+        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
     private suspend fun <T> exchange(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null,decode: (java.io.InputStream,()->Boolean)->T): T {
         require(!client.isDemo && client.id.isNotBlank() && client.scope?.hostId==client.id) { "未绑定真实电脑目标" }
@@ -32,7 +32,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
             require(definition!=null); CodexCommandCodec.validate(body,definition)
         }
         val base=NativeHostReads.baseAddress(client.endpoint ?: throw CodexCommandError("尚未配置电脑地址")).toString().trimEnd('/')
-        val parameters=mapOf("hostId" to client.id)+query+if(path.startsWith("v1/voice/")) emptyMap() else mapOf("target" to CodexCommandCodec.target(client.scope!!).toString())
+        val parameters=mapOf("hostId" to client.id)+query+if(path.startsWith("v1/voice/") || !post&&path in RESOURCE_QUERYLESS_ROUTES) emptyMap() else mapOf("target" to CodexCommandCodec.target(client.scope!!).toString())
         val encoded=parameters.entries.joinToString("&") { (k,v)->URLEncoder.encode(k,"UTF-8")+"="+URLEncoder.encode(v,"UTF-8") }
         val url=URI("$base/$path?$encoded").toURL()
         return suspendCancellableCoroutine { continuation ->
@@ -51,7 +51,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
                     connection.instanceFollowRedirects=false; connection.useCaches=false
                     connection.connectTimeout=10_000; connection.readTimeout=35_000
                     connection.requestMethod=if(post) "POST" else "GET"
-                    connection.setRequestProperty("Accept","application/json")
+                    connection.setRequestProperty("Accept",if(!post&&path=="v1/attachments") "application/octet-stream" else "application/json")
                     connection.setRequestProperty("X-Agent-Hub-Approvals","mcp-v1")
                     token(client.id).takeIf { it.isNotEmpty() }?.let { connection.setRequestProperty("Authorization","Bearer $it") }
                     if(post) {
@@ -73,14 +73,14 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
                             val buffer=ByteArray(8192); val n=input.read(buffer)
                             if(n>0) JSONObject(String(buffer,0,n,Charsets.UTF_8)).optional("error") else null
                         } } catch(_: Exception) { null }
-                        throw CodexCommandError(detail ?: "电脑请求失败（$status）",status)
+                        throw CodexCommandError(detail ?: "电脑请求失败（$status）",status,appOwnedCopy=detail==null)
                     }
                     val value=connection.inputStream.use { input -> decode(input) { continuation.isActive } }
                     if(continuation.isActive) continuation.resume(value)
                 } catch(failure: Exception) {
-                    if(continuation.isActive) continuation.resumeWithException(if(failure is CodexCommandError) failure else CodexCommandError("电脑操作未确认，请查询原操作记录",cause=failure))
+                    if(continuation.isActive) continuation.resumeWithException(if(failure is CodexCommandError) failure else if(!post&&path in RESOURCE_READ_ROUTES) CodexCommandError("读取电脑资源失败，请重试。",cause=failure,appOwnedCopy=true) else CodexCommandError("电脑操作未确认，请查询原操作记录",cause=failure))
                 } catch(failure: OutOfMemoryError) {
-                    if(continuation.isActive) continuation.resumeWithException(CodexCommandError("手机内存不足，电脑操作结果未确认；请查询原操作记录"))
+                    if(continuation.isActive) continuation.resumeWithException(if(!post&&path in RESOURCE_READ_ROUTES) CodexCommandError("读取电脑资源失败，请重试。",appOwnedCopy=true) else CodexCommandError("手机内存不足，电脑操作结果未确认；请查询原操作记录"))
                 } finally { active.getAndSet(null)?.disconnect(); connection?.disconnect() }
             }
             continuation.invokeOnCancellation { active.getAndSet(null)?.disconnect(); future.cancel(true) }
@@ -194,48 +194,30 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         require(v.getString("hostId")==client.id && v.getString("threadId")==threadId && v.getString("sha256")==file.sha256 && v.getLong("sizeBytes")==file.sizeBytes && v.getString("name")==file.name) { "附件回执不匹配" }
         return MobileFile(v.getString("id"),v.getString("name"),v.getString("mediaType"),v.getLong("sizeBytes"),client.id,threadId,v.getString("sha256"))
     }
+    override suspend fun resolveMessageFile(client: MobileClient,threadId: String,messageId: String,reference: String): MobileFile {
+        require(threadId.isNotEmpty()&&messageId.isNotEmpty()&&reference.isNotEmpty())
+        return CodexResources.fromMessage(client,threadId,messageId,reference,request(client,"v1/attachments/resolve-link",
+            mapOf("threadId" to threadId,"messageId" to messageId,"reference" to reference)))
+    }
+    override suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: java.io.File): java.io.File =
+        CodexResources.download(client,file,cache,resolve={
+            try { CodexResources.current(client,file,request(client,"v1/attachments/resolve",mapOf("threadId" to file.threadId,"id" to file.id))) }
+            catch(error: CodexCommandError) { if(error.status==404)null else throw error }
+        },fetch={ current,destination->
+            exchange(client,"v1/attachments",mapOf("threadId" to current.threadId,"id" to current.id)) { input,active->
+                CodexResources.write(input,active,current,destination)
+            }
+        })
     override suspend fun uploadCreation(client: MobileClient,operationId: String,file: CreationFile,bytes: ByteArray) {
         bytes(file,bytes)
         val v=CodexCommandCodec.validate(request(client,"v1/desktop/creation-attachments",mapOf("id" to operationId,"attachmentId" to file.id),bytes=bytes,mediaType=file.mediaType),"creationUpload")
         require(v.getString("hostId")==client.id && v.getString("clientOperationId")==operationId && v.getString("id")==file.id && v.getString("sha256")==file.sha256 && v.getLong("sizeBytes")==file.sizeBytes) { "首条附件回执不匹配" }
     }
-    override suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: java.io.File): java.io.File {
-        require(file.hostId==client.id && file.sizeBytes in 0..20L*1024*1024)
-        for(attempt in 0..1) {
-            val current = try {
-                val response=request(client,"v1/attachments/resolve",mapOf("threadId" to file.threadId,"id" to file.id))
-                require(response.getString("hostId")==client.id && response.getString("threadId")==file.threadId &&
-                    response.getString("sourceAttachmentId")==file.id && sameScope(HostReadCodec.target(response.getJSONObject("readTarget")),client.scope)) { "文件目标不匹配" }
-                val a=CodexCommandCodec.validate(response.getJSONObject("attachment"),"attachment")
-                MobileFile(a.getString("id"),a.getString("name"),a.getString("mediaType"),a.getLong("sizeBytes"),a.getString("hostId"),a.getString("threadId"),a.getString("sha256"))
-            } catch(error: CodexCommandError) { if(error.status==404) file else throw error }
-            require(current.hostId==client.id && current.threadId==file.threadId && current.name==file.name && current.mediaType==file.mediaType &&
-                current.sizeBytes in 0..20L*1024*1024 && current.sha256.matches(Regex("[a-f0-9]{64}"))) { "文件版本不匹配" }
-            try {
-                return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val scope=hash(com.agenthub.core.RuntimeIdentity.readingKey(client.scope!!,file.threadId).toByteArray())
-                    val directory=java.io.File(cache,"file-preview/$scope/${hash(current.id.toByteArray())}/${current.sha256}").apply { mkdirs() }
-                    require(current.name.isNotBlank() && current.name !in listOf(".","..") && java.io.File(current.name).name==current.name && !current.name.contains('\\'))
-                    val destination=java.io.File(directory,current.name)
-                    if(destination.isFile && destination.length()==current.sizeBytes && hash(destination.readBytes())==current.sha256) return@withContext destination
-                    val data=exchange(client,"v1/attachments",mapOf("threadId" to file.threadId,"id" to current.id)) { input,active ->
-                        val output=java.io.ByteArrayOutputStream(); val buffer=ByteArray(16_384)
-                        while(true) { if(!active()) throw kotlinx.coroutines.CancellationException(); val count=input.read(buffer);if(count<0)break
-                            require(output.size()+count<=20*1024*1024) { "文件超过读取预算" };output.write(buffer,0,count) }
-                        output.toByteArray()
-                    }
-                    require(data.size.toLong()==current.sizeBytes && hash(data)==current.sha256) { "下载文件完整性校验失败" }
-                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                    val temp=java.io.File(directory,".${java.util.UUID.randomUUID()}.tmp")
-                    try { temp.writeBytes(data); require(temp.renameTo(destination)) { "无法保存下载文件" } } finally { temp.delete() }
-                    destination
-                }
-            } catch(error: CodexCommandError) { if(error.status!=409 || attempt!=0) throw error }
-        }
-        error("文件已变化，请重新打开")
-    }
+
 
 }
 private fun hash(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 private val POST_ROUTES=setOf("v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
-private val ROUTES=POST_ROUTES+setOf("v1/attachments/resolve","v1/threads/fork-options","v1/models","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")
+private val RESOURCE_QUERYLESS_ROUTES=setOf("v1/attachments/resolve","v1/attachments/resolve-link")
+private val RESOURCE_READ_ROUTES=setOf("v1/attachments","v1/attachments/resolve","v1/attachments/resolve-link")
+private val ROUTES=POST_ROUTES+RESOURCE_READ_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")

@@ -1,0 +1,147 @@
+{
+  "phase": "P7-4h",
+  "sourceBase": "e69d793bd88a4d0d5d6b37bedcb183d060545e67",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F71"],
+  "summary": "P7-4h：当前4f共同协调器的文档API26/37与照片API37共3个原系统冷结果/3次冷开本次通过；同一请求/附件ID/摘要、原草稿及设置、既有附件/另一草稿与授权基线保持。独立观察器刷新AX索引，生产Kotlin/res/KMP未变；透明照片页无OS保存状态、API26首次相机及真机系统矩阵继续单列。",
+  "expandedSourceSha256": "d453dd502c1e295a0e29e019db0afa9b5a6fd3e40e58709818aebc793f0fd444",
+  "expandedNativeInputFiles": 425,
+  "changedFiles": {
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java": "2d0aa02dfe2bb3d7fdab00f3dfb557476a0b42cf82f0fb75fb0d683678980ed3",
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java": "355d7dbd7a1f1000da63f0b42c4d5d9dbe6e3a04299c4edfe818bdd29d30299e"
+  },
+  "productionKotlinResourcesAndSharedCoreUnchangedFrom4f": true,
+  "actualSystemColdScenarios": 3,
+  "actualColdReopens": 3,
+  "nativeReadOnlyMethods": 6,
+  "fixtureSeedMethods": 3,
+  "independentPhotoSourcePreparation": 1,
+  "cohorts": [
+    {
+      "kind": "document",
+      "environment": "owned-API37",
+      "receiverApkSha256": "6130b524adf9e78e3d6f742e019ae443f578eea078b72af5dae75fea45483696",
+      "sourceRunnerApkSha256": "0066e7571c99166c28e233a4230bf12d136cd50a1c08814dc8a6472a9a6c5182",
+      "observerApkSha256": "114ef4214ca80646ddc77890d0d6078d495489637edf5513dbabae83cf0d0db2",
+      "expandedSourceSha256": "d453dd502c1e295a0e29e019db0afa9b5a6fd3e40e58709818aebc793f0fd444",
+      "sameReceiverAndSourceApksAcrossOriginalCase": true,
+      "actualOriginalSystemColdResults": 1,
+      "actualColdReopens": 1,
+      "nativeReadOnlyMethods": 2,
+      "fixtureSeedMethods": 1,
+      "sameOriginalRequestAttachmentIdsAndDigests": true,
+      "originalDraftTextSettingsOtherDraftAndExistingAttachmentUnchanged": true,
+      "readGrantsRestored": true,
+      "normalizedPhotoPixelsMatchIndependentSource": false,
+      "osStateExplicitlySavedByTaskBackgrounding": false,
+      "termination": "activity-manager-background-kill",
+      "fixtureReads": 10,
+      "fixtureWrites": 0,
+      "returnReceiptSha256": "1447b1e9de106d96d8910ca95f0a42df9ca4857bdeb3fbd2d122568d7adda40a",
+      "reopenReceiptSha256": "b13eebf87454c58aed68a1f4c9a1569e981060207bb953808b4d784ce615adcd",
+      "oldClosedFixtureSnapshotSha256": "31f3264c9e2a25efda6881a47a8fab96c41a0bacac6ce602704ceee241f6d049",
+      "resetReceiptSha256": "69626fac5a57c5c90d8dc7c19ef27806eaa0f81d81c1de37a9e95243ffa89b45"
+    },
+    {
+      "kind": "document",
+      "environment": "owned-API26",
+      "receiverApkSha256": "6130b524adf9e78e3d6f742e019ae443f578eea078b72af5dae75fea45483696",
+      "sourceRunnerApkSha256": "0066e7571c99166c28e233a4230bf12d136cd50a1c08814dc8a6472a9a6c5182",
+      "observerApkSha256": "114ef4214ca80646ddc77890d0d6078d495489637edf5513dbabae83cf0d0db2",
+      "expandedSourceSha256": "d453dd502c1e295a0e29e019db0afa9b5a6fd3e40e58709818aebc793f0fd444",
+      "sameReceiverAndSourceApksAcrossOriginalCase": true,
+      "actualOriginalSystemColdResults": 1,
+      "actualColdReopens": 1,
+      "nativeReadOnlyMethods": 2,
+      "fixtureSeedMethods": 1,
+      "sameOriginalRequestAttachmentIdsAndDigests": true,
+      "originalDraftTextSettingsOtherDraftAndExistingAttachmentUnchanged": true,
+      "readGrantsRestored": true,
+      "normalizedPhotoPixelsMatchIndependentSource": false,
+      "osStateExplicitlySavedByTaskBackgrounding": false,
+      "termination": "own-debug-uid-sigkill",
+      "fixtureReads": 9,
+      "fixtureWrites": 0,
+      "returnReceiptSha256": "c98a7b98fd1fd2f5c4146ef910393e92e9a66b289120de086a7bea15cf93f11d",
+      "reopenReceiptSha256": "3ba50406a98ee06c278c00d3021018621800e70a791ffa421221a1c1fba9ff26",
+      "oldClosedFixtureSnapshotSha256": "5bf63778f5948555a72f6dcff2b3c03e093ab0563d6bb59889eb5adb1b11be18",
+      "resetReceiptSha256": "69626fac5a57c5c90d8dc7c19ef27806eaa0f81d81c1de37a9e95243ffa89b45"
+    },
+    {
+      "kind": "photo",
+      "environment": "owned-API37",
+      "receiverApkSha256": "756a0f22f84fa5c93ea7d3e61af47fc708e5b614a35973ab90738bf29a91adf7",
+      "sourceRunnerApkSha256": "facc658849f82c71c675ba23b9e63a94b349b54ab0ad570aa348f3a91c3c07f7",
+      "observerApkSha256": "114ef4214ca80646ddc77890d0d6078d495489637edf5513dbabae83cf0d0db2",
+      "expandedSourceSha256": "d453dd502c1e295a0e29e019db0afa9b5a6fd3e40e58709818aebc793f0fd444",
+      "sameReceiverAndSourceApksAcrossOriginalCase": true,
+      "actualOriginalSystemColdResults": 1,
+      "actualColdReopens": 1,
+      "nativeReadOnlyMethods": 2,
+      "fixtureSeedMethods": 1,
+      "sameOriginalRequestAttachmentIdsAndDigests": true,
+      "originalDraftTextSettingsOtherDraftAndExistingAttachmentUnchanged": true,
+      "readGrantsRestored": true,
+      "normalizedPhotoPixelsMatchIndependentSource": true,
+      "osStateExplicitlySavedByTaskBackgrounding": true,
+      "termination": "own-debug-uid-sigkill-after-os-state-save",
+      "fixtureReads": 11,
+      "fixtureWrites": 0,
+      "returnReceiptSha256": "47181dc13f88d3375e41819d1bc33b10f1e42957c45792ce4362313326c5f66b",
+      "reopenReceiptSha256": "f778d0cdc09245ff4acb3b3514396e59a0437dfbb52aff274bc01e381cc5b4bc",
+      "oldClosedFixtureSnapshotSha256": "18b0d0d7bc2430cf5d6b35990fcccebf3c271cb24f969154491d4db4ab8dd302",
+      "resetReceiptSha256": "d9541981bde5b876c6ae6da0a4fc43e3348002aaa7521757c927a7d1136d4f22"
+    }
+  ],
+  "nativeColdReopenImages": [
+    {
+      "kind": "document",
+      "environment": "owned-API37",
+      "sha256": "66c40a3830667af9fc62b01b5f3a112a8bfcca271a0a65c1016ec506d66378fe"
+    },
+    {
+      "kind": "document",
+      "environment": "owned-API26",
+      "sha256": "71e6b5635e64dbccbcb03c85921df10c158deb9a04f9539d508438a1a5d41569"
+    },
+    {
+      "kind": "photo",
+      "environment": "owned-API37",
+      "sha256": "fd6b0f20caf2c7837e565c4200e0da91d47503e07d23da92bdc278508ceaac08"
+    }
+  ],
+  "sourceAndResourceCleanup": {
+    "allThreeExactOwnedReverseMappingsRemoved": true,
+    "onlyOriginalControlledPhotoSourceRemovedAfterConfirmedConsumption": true,
+    "oldClosedFixturesSnapshottedAndByteIdenticalBeforeReset": true,
+    "userDefaultDevReleaseOrCameraPendingDataCleared": false
+  },
+  "rootCheckReuse": {
+    "baselinePhase": "P7-4g",
+    "baselineCommandExitCode": 0,
+    "currentFullCheckRerun": false,
+    "baselineProgramInputs": 1013,
+    "currentExactlyMatchingInputs": 1010,
+    "changedObserverInputs": {
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java": "25f82e9e7f84e4cea24157332f02506f9a89cff140938852815496d3880eb34d",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java": "2d0aa02dfe2bb3d7fdab00f3dfb557476a0b42cf82f0fb75fb0d683678980ed3",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java": "355d7dbd7a1f1000da63f0b42c4d5d9dbe6e3a04299c4edfe818bdd29d30299e"
+    },
+    "coverage": "P7-4g camera observer compilation and original-window/permission execution retained; two current selection observers compiled and used in all three actual cold cases; parity/format current"
+  },
+  "failuresRetained": [
+    "构建配置切换后旧文档输出路径缺包，原生seed前拒绝；已关闭自有样例的重置快照与回执保留，固定并提前校验APK后沿用同一准备nonce，只执行一次原生seed",
+    "并发发布私有APK池时读到未完成写入，指纹检查在设备安装前拒绝；改为私有临时完整写入后原子链接发布，保留原失败，同一准备未重置或重复seed",
+    "API26后台am kill未终止原PID；确认原STOPPED/已保存Activity/PID/UID及原选择器后，只终止该自有调试UID",
+    "API37照片透明页原接收App未保存OS状态，原kill前门槛拒绝；保留原选择器，同任务后台保存状态再返回并受控终止，不重新打开选择器"
+  ],
+  "pending": [
+    "透明照片页无OS保存状态直接进程死亡；API26/真机照片与真机文件/相机系统冷矩阵",
+    "API26原首次相机自有引导调用链/原结果对账，API37相机原AX及时性，手机观察APK及长批稳定性",
+    "完整URI/权限/Provider/格式/存储配额迁移、语音/未读/生命周期、API37横屏与完整IME/AX",
+    "iOS当前系统矩阵未重验；iOS A6和任务/项目业务保持暂停"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

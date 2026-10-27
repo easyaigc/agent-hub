@@ -775,12 +775,16 @@ class MobileExecutionTest {
     private fun question(id: String="approval-id",questionId: String="q",secret: Boolean=true)=JSONObject().put("id",id).put("threadId","fixture-thread").put("turnId","approval-turn").put("kind","question").put("title","合成问题").put("detail","").put("interactionMode","async").put("decisions",JSONArray()).put("questions",JSONArray().put(JSONObject().put("id",questionId).put("question","请选择或输入回复").put("custom",true).put("isSecret",secret).put("options",JSONArray().put(JSONObject().put("label","One").put("description","选项说明")))))
 }
 
-internal class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=true,val streaming: Boolean=false): java.io.Closeable {
+internal class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=true,val streaming: Boolean=false,val applicationProtocol: Boolean=false): java.io.Closeable {
     @Volatile var controlled=controlled
     @Volatile var openingQueries=0
     private var opening: JSONObject?=null
     @Volatile var runtimeId="fixture-runtime-"+UUID.randomUUID().toString()
     @Volatile var state="idle"
+    @Volatile var computerName="合成电脑"
+    @Volatile var projectName="空项目"
+    @Volatile var threadTitle="合成聊天"
+    @Volatile var modelName="合成模型"
     @Volatile var queueAvailable=true
     @Volatile var steerAvailable=true
     @Volatile var turn: String?=null
@@ -792,6 +796,9 @@ internal class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=tr
     val acceptedReplyCount get()=originalReplies.size
     val replyQueryStarted=CountDownLatch(1);val replyQueryRelease=CountDownLatch(1)
     @Volatile var loseReply=false
+    @Volatile var holdApprovalResponse=false
+    @Volatile var approvalFailureStatus: Int?=null
+    val approvalStarted=CountDownLatch(1);val approvalRelease=CountDownLatch(1)
     @Volatile var holdHistoryResponse=false
     val historyStarted=CountDownLatch(1);val historyRelease=CountDownLatch(1)
     val missingReceipts=java.util.concurrent.atomic.AtomicInteger();val missingReceiptResponses=java.util.concurrent.atomic.AtomicInteger()
@@ -817,11 +824,12 @@ internal class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=tr
     private val uploaded=mutableListOf<String>()
     val server=CommandFixture(::response)
     private fun target()=JSONObject().put("agentId","codex").put("hostId","fixture-host").put("workspaceId","fixture-workspace").put("runtimeId",runtimeId)
-    private fun thread(id: String="fixture-thread")=JSONObject().put("id",id).put("hostId","fixture-host").put("title",if(id=="created-thread") "新建合成聊天" else "合成聊天").put("state",state).put("projectId",if(id=="created-thread") creation?.get("projectId") ?: JSONObject.NULL else JSONObject.NULL)
-    private fun workspace()=JSONObject().put("hostId","fixture-host").put("name","合成电脑").put("connectionMode","desktop-runtime").put("readTarget",target()).put("projects",JSONArray().put(JSONObject().put("id","empty-project").put("hostId","fixture-host").put("name","空项目").put("roots",JSONArray()))).put("threads",JSONArray().put(thread()).apply { additionalThread?.let { put(thread(it)) };if(creations.isNotEmpty() && submitPhase=="confirmed") put(thread("created-thread")) }).put("agentConnectionState",JSONObject().put("runtimeConnected",true)).put("capabilities",JSONArray(listOf("reply","desktop:open","desktop:creations","desktop:creations:projectless","commands:target-bound:v1","queue","steer","stop","approvals","plan-mode","generation-settings","generation-speed","models:read").filter { (it!="queue"||queueAvailable)&&(it!="steer"||steerAvailable) }+if(streaming) listOf("events") else emptyList()))
+    private fun thread(id: String="fixture-thread")=JSONObject().put("id",id).put("hostId","fixture-host").put("title",if(id=="created-thread") "新建合成聊天" else threadTitle).put("state",state).put("projectId",if(id=="created-thread") creation?.get("projectId") ?: JSONObject.NULL else JSONObject.NULL)
+    private fun workspace()=JSONObject().put("hostId","fixture-host").put("name",computerName).put("connectionMode","desktop-runtime").put("readTarget",target()).put("projects",JSONArray().put(JSONObject().put("id","empty-project").put("hostId","fixture-host").put("name",projectName).put("roots",JSONArray()))).put("threads",JSONArray().put(thread()).apply { additionalThread?.let { put(thread(it)) };if(creations.isNotEmpty() && submitPhase=="confirmed") put(thread("created-thread")) }).put("agentConnectionState",JSONObject().put("runtimeConnected",true)).put("capabilities",JSONArray(listOf("reply","desktop:open","desktop:creations","desktop:creations:projectless","commands:target-bound:v1","queue","steer","stop","approvals","plan-mode","generation-settings","generation-speed","models:read").filter { (it!="queue"||queueAvailable)&&(it!="steer"||steerAvailable) }+if(streaming) listOf("events") else emptyList()))
     private fun receipt(data: JSONObject,phase: String=queryState)=JSONObject().put("hostId","fixture-host").put("threadId",data.getString("threadId")).put("clientMessageId",data.getString("clientMessageId")).put("state",phase).put("turnId",turn ?: JSONObject.NULL).put("error",JSONObject.NULL).put("text",data.getString("text")).put("attachmentIds",data.getJSONArray("attachmentIds"))
     private fun history(id: String)=JSONObject().put("hostId","fixture-host").put("threadId",id).put("readTarget",target()).put("epoch",eventEpoch).put("cursor",eventCursor).put("messages",JSONArray().put(JSONObject().put("id","old-user").put("role","user").put("text","先前任务")).put(JSONObject().put("id","old-assistant").put("role","assistant").put("text",streamText ?: "先前任务完成").put("status",if(streamText=="第一段流式正文") "streaming" else "completed")).apply { planMessages.objects().forEach { put(it) } }).put("runtime",JSONObject().put("state",state).put("turnId",turn ?: JSONObject.NULL).put("plan",planSteps).put("error",JSONObject.NULL).put("approvals",approvals).put("receipts",JSONArray().apply { cancelledReply?.takeIf { it.getString("threadId")==id }?.let { put(receipt(it,"cancelled")) }; reply?.takeIf { it.getString("threadId")==id }?.let { put(receipt(it,if(state=="running") { if(it.optString("mode")=="queue") "queued" else "submitted" } else if(state=="interrupted") "interrupted" else queryState)) } }).put("canControl",controlled).put("proposedPlan",proposed ?: JSONObject.NULL))
     private fun creationResult(phase: String,data: JSONObject=creation!!)=JSONObject().put("hostId","fixture-host").put("clientOperationId",data.getString("clientOperationId")).put("projectId",data.get("projectId")).put("phase",phase).put("threadId",if(phase=="confirmed") "created-thread" else JSONObject.NULL).put("error",JSONObject.NULL).put("uploaded",JSONArray(uploaded)).put("thread",if(phase=="confirmed") thread("created-thread") else JSONObject.NULL)
+    internal fun resourceUiResponse(request: WireRequest)=response(request)
     private fun response(request: WireRequest): WireResponse {
         val query=request.query
         // Match runtime-server verifyCommandTarget before any command/upload side effect.
@@ -839,7 +847,7 @@ internal class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=tr
             "/v1/attachments"->JSONObject().put("hostId","fixture-host").put("threadId",query.getValue("threadId")).put("id","uploaded-original-file")
                 .put("name",query.getValue("name")).put("mediaType",request.headers.entries.first { it.key.equals("content-type",true) }.value)
                 .put("sizeBytes",request.body.size).put("sha256",java.security.MessageDigest.getInstance("SHA-256").digest(request.body).joinToString("") { "%02x".format(it) })
-            "/v1/models"->JSONObject().put("models",JSONArray().put(JSONObject().put("id","fixture-model").put("name","合成模型").put("isDefault",true).put("defaultEffort","medium").put("supportedEfforts",JSONArray(listOf("low","medium","high"))).put("defaultSpeed","standard").put("supportedSpeeds",JSONArray(listOf("standard","fast","ultrafast")))))
+            "/v1/models"->JSONObject().put("models",JSONArray().put(JSONObject().put("id","fixture-model").put("name",modelName).put("isDefault",true).put("defaultEffort","medium").put("supportedEfforts",JSONArray(listOf("low","medium","high"))).put("defaultSpeed","standard").put("supportedSpeeds",JSONArray(listOf("standard","fast","ultrafast")))))
             "/v1/replies"->{ reply=JSONObject(String(request.body,Charsets.UTF_8));originalReplies[reply!!.getString("clientMessageId")]=JSONObject(reply.toString());if(holdReplyResponse) { replyStarted.countDown();check(replyRelease.await(20,TimeUnit.SECONDS)) }; if(loseReply) return WireResponse(disconnect=true); receipt(reply!!,if(state=="running"&&reply!!.optString("mode")=="queue") "queued" else "submitted") }
             "/v1/receipts"->{ if(missingReceipts.getAndUpdate { if(it>0)it-1 else 0 }>0) { missingReceiptResponses.incrementAndGet();return WireResponse(status=404,body="{\"error\":\"Original receipt temporarily absent\"}") };val value=receipt(originalReplies.getValue(query.getValue("id")));if(holdReplyReceipt) { replyQueryStarted.countDown();check(replyQueryRelease.await(20,TimeUnit.SECONDS)) };replyQueryFailureStatus?.let { return WireResponse(status=it,body="{\"error\":\"Original receipt read unavailable\"}") };value }
             "/v1/desktop/open"->{ controlled=openingQueries==0; val body=JSONObject(String(request.body)); JSONObject().put("hostId","fixture-host").put("threadId",body.getString("threadId")).put("clientOperationId",body.getString("clientOperationId")).put("phase",if(controlled) "opened" else "opening").put("error",JSONObject.NULL).also { opening=it } }
@@ -866,12 +874,25 @@ internal class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=tr
                 val body=JSONObject(String(request.body)); val id=body.getString("approvalId")
                 val approval=approvals.objects().single { it.getString("id")==id }
                 check(body.getString("threadId")==approval.getString("threadId") && body.getString("turnId")==approval.getString("turnId"))
-                approvals=JSONArray(approvals.objects().filter { it.getString("id")!=id }); JSONObject().put("ok",true)
+                val original=approval.toString()
+                if(holdApprovalResponse) { approvalStarted.countDown();check(approvalRelease.await(20,TimeUnit.SECONDS)) }
+                approvalFailureStatus?.let { return WireResponse(status=it,body=JSONObject().put("error","Synthetic application response unavailable").toString()) }
+                if(!holdApprovalResponse || approvals.objects().any { it.getString("id")==id && it.toString()==original })
+                    approvals=JSONArray(approvals.objects().filter { it.getString("id")!=id })
+                JSONObject().put("ok",true)
             }
             else->return WireResponse(status=404,body="{\"error\":\"Unknown synthetic route\"}")
         }
-        return WireResponse(body=result.toString())
+        // Model runtime-server's compatibility projection without mutating canonical fixture requests.
+        val projected=if(applicationProtocol && request.headers["x-agent-hub-approvals"]!="mcp-v1") {
+            JSONObject(result.toString()).apply {
+                optJSONObject("runtime")?.optJSONArray("approvals")?.objects()?.forEach { row ->
+                    if(row.has("decisionLabels"))row.put("decisions",JSONArray(listOf("decline")))
+                }
+            }
+        }else result
+        return WireResponse(body=projected.toString())
     }
-    override fun close() { historyRelease.countDown();replyQueryRelease.countDown();replyRelease.countDown();queryRelease.countDown(); secondSubmitRelease.countDown(); server.close() }
+    override fun close() { approvalRelease.countDown();historyRelease.countDown();replyQueryRelease.countDown();replyRelease.countDown();queryRelease.countDown(); secondSubmitRelease.countDown(); server.close() }
 }
 private val WireRequest.query get()=pathWithQuery.substringAfter('?').split('&').associate { java.net.URLDecoder.decode(it.substringBefore('='),"UTF-8") to java.net.URLDecoder.decode(it.substringAfter('='),"UTF-8") }

@@ -60,10 +60,10 @@ internal object NativeQRDecoder {
     Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().testTag("qr-scanner")) {
             Row(Modifier.fillMaxWidth().padding(horizontal=12.dp), verticalAlignment=Alignment.CenterVertically) {
-                Text("扫描电脑二维码", Modifier.weight(1f))
-                TextButton(onClick=close, modifier=Modifier.testTag("qr-scanner-close")) { Text("取消") }
+                Text(productText("扫描电脑二维码"), Modifier.weight(1f))
+                TextButton(onClick=close, modifier=Modifier.testTag("qr-scanner-close")) { Text(productText("取消")) }
             }
-            Text("将电脑上的连接二维码放在画面中。", Modifier.padding(16.dp), color=MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(productText("将电脑上的连接二维码放在画面中。"), Modifier.padding(16.dp), color=MaterialTheme.colorScheme.onSurfaceVariant)
             if(granted) {
                 val view = remember { PreviewView(context) }
                 AndroidView(factory={ view }, modifier=Modifier.weight(1f).fillMaxWidth().testTag("qr-camera-preview"))
@@ -105,7 +105,7 @@ internal object NativeQRDecoder {
                 }
             } else {
                 Spacer(Modifier.weight(1f))
-                if(denied) Text("未获得相机权限，可返回粘贴电脑的连接内容。", Modifier.padding(24.dp).testTag("qr-camera-denied"))
+                if(denied) Text(productText("未获得相机权限，可返回粘贴电脑的连接内容。"), Modifier.padding(24.dp).testTag("qr-camera-denied"))
                 Spacer(Modifier.weight(1f))
             }
             failure?.let { Text(it, Modifier.padding(16.dp).testTag("qr-scanner-error"), color=MaterialTheme.colorScheme.error) }

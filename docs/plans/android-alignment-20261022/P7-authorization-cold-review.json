@@ -1,0 +1,80 @@
+{
+  "phase": "P7-3e",
+  "sourceBase": "686d8fdf4dd63e50694e49f0a611f5de71e45703",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F69", "F71"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoAuthorizationColdTest.kt": "2637efe63a2c9dd554484fc59da7b4aac0ae6b8101342bb29282394bb71be17c"
+  },
+  "summary": "P7-3e：API26/API37新进程直接读取3d真实系统请求的原授权子仓库；原PID与新PID不同，同设备Keystore解密及原加密字节保持，automatic claim拒绝且未启动权限窗口，不重做原拒绝。新增2进程原生核对/2默认保护证明；生产APK与全部407既有输入不变，3d的161项按原指纹匹配复用。新增模型0，累计220/P4205；这不是文件/照片/相机原结果冷恢复，完整权限与P7仍开。",
+  "appSha256": "bfccd8b589eccf69dc9ea6557de42bb7547ef54183e52a7d3fd6a6119abceb20",
+  "testSha256": "8558683c67db95a044e280c1c1b0e289af583185e573e81baf9045e06eb32077",
+  "sourceSha256": "422b6a2e9684d71e188bb5dbf4f5c9639ca1669ad748cf353bbee4852ded0577",
+  "nativeAuxiliaryMethods": 0,
+  "nativePlatformMethods": 2,
+  "actualOriginalModelReplyMethods": 0,
+  "defaultStorageProofs": 2,
+  "processColdOriginalAuthorization": [
+    {
+      "environment": "owned-API26",
+      "methods": 1,
+      "originalRealOsRequestRecord": true,
+      "differentProcess": true,
+      "sameDeviceKeystore": true,
+      "originalEncryptedBytesUnchanged": true,
+      "automaticRequestNotClaimed": true,
+      "nativePermissionLaunches": 0,
+      "reportSha256": "9b0987b43ee56159e0f000b53c06be5a4157e3ba3f6d87e240abe6c2a9eafb1c",
+      "proofSha256": "46fe2b5379d3d42313a5187a4e945ff59f9f55994a2689540654c64e570ad6bc",
+      "logSha256": "c801d8bba66e585c2d0c16b1a6193676fbf8ea06f9c85c6ec164d5e353259cf9",
+      "originalNativeReportSha256": "c58822787e07a5b9b3a72d29c596c219c3c63ac6f476c9c7c3a98f11938c2031"
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 1,
+      "originalRealOsRequestRecord": true,
+      "differentProcess": true,
+      "sameDeviceKeystore": true,
+      "originalEncryptedBytesUnchanged": true,
+      "automaticRequestNotClaimed": true,
+      "nativePermissionLaunches": 0,
+      "reportSha256": "b2ccc627e5098cb058943e42933e41edfd6e9b769f737210b155f2fb95acdb5a",
+      "proofSha256": "9eb2cd95a36559a1aa8c53c7dcba4fb8f046f5d1c41311925b2ac6a70a2715fa",
+      "logSha256": "7373b9de3caee19d6df9a63d224f86d19fa118ab8179f1b90ae4d60731c67e1c",
+      "originalNativeReportSha256": "acca5ce2ede05f552e8b06a7ccb162d9c6ab647e9b2a0eabbb26f0ee79345f71"
+    }
+  ],
+  "matchedPrevious": {
+    "checkpoint": "P7-3d",
+    "sourceCommit": "686d8fdf4dd63e50694e49f0a611f5de71e45703",
+    "proofs": 161,
+    "reviewSha256": "47581b02be85ef256fc8cacfdc4293ea5ae405db1d96c4c8d06311cd24bf41a5",
+    "all407ExistingNativeInputsExact": true,
+    "sameProductionApk": true,
+    "onlyAddedUnexecutedExaminer": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoAuthorizationColdTest.kt"
+    ],
+    "scope": "Reuse original source-bound 3d records, including its explicit examiner-only/old native caller reconciliation; do not count as new OS decisions or new model reads."
+  },
+  "checks": {
+    "androidBuild": "passed",
+    "buildLogSha256": "417855a6fc29584e36564232ee45590d365057681f9902ad142e919005c57485",
+    "mobileParity": "passed",
+    "format": "passed",
+    "pnpmCheck": "Complete I3 and exact 3d production/Host/Core/protocol evidence reused; this stage adds one native examiner only; no fresh whole-root invocation",
+    "androidApprovalGuard": "3d 17 passed, exact guard and all product inputs unchanged",
+    "ios": "I3 exact source/build; no A6 execution",
+    "catalogKeysPerLanguage": 1682,
+    "mobileParityLogSha256": "f734ccd3b97da11e51a0b44add5ceb584dd04a11a29a9d7b20ed412307d03ce0",
+    "formatLogSha256": "b49cc082df409f8c318a5f8730304a3668b6cd1e9fc4112c82dc75d4329bf7f1"
+  },
+  "pending": [
+    "Original document/photo/camera request/result/URI/output process recovery; current proof only reads original photo authorization attempt",
+    "Physical first permission, full/limited/revoked/settings/provider and prior-install decisions migration; API26 retained owned SDK USER_SET denial as 3d",
+    "Full native iOS/Windows/UI/AX/API37 landscape and earlier manual/environment gates",
+    "Storage cleanup/migration, voice/read and remaining P7; task/project business deferred"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

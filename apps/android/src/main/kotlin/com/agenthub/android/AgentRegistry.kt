@@ -21,6 +21,7 @@ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands
     override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=provider(client).first.workspace(client,projectCursor,threadCursor)
     override suspend fun history(client: MobileClient,threadId: String,cursor: String?)=provider(client).first.history(client,threadId,cursor)
     override suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String?)=provider(client).first.searchHistory(client,threadId,cursor)
+    override suspend fun nextTurnSuggestion(client: MobileClient,scope: com.agenthub.core.SuggestionScope)=provider(client).first.nextTurnSuggestion(client,scope)
     override fun creationOperationId(client: MobileClient,parent: String)=provider(client).second.creationOperationId(client,parent)
     override fun permissionOptions(client: MobileClient)=provider(client).second.permissionOptions(client)
     override fun agentTitle(client: MobileClient)=provider(client).second.agentTitle(client)
@@ -46,6 +47,7 @@ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands
     override suspend fun cancelQueue(client: MobileClient, threadId: String, operationId: String)=provider(client).second.cancelQueue(client,threadId,operationId)
     override suspend fun answer(client: MobileClient, threadId: String, turnId: String, approvalId: String, decision: String, answers: Map<String,List<String>>)=provider(client).second.answer(client,threadId,turnId,approvalId,decision,answers)
     override suspend fun upload(client: MobileClient, threadId: String, file: CreationFile, bytes: ByteArray)=provider(client).second.upload(client,threadId,file,bytes)
+    override suspend fun resolveMessageFile(client: MobileClient,threadId: String,messageId: String,reference: String)=provider(client).second.resolveMessageFile(client,threadId,messageId,reference)
     override suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: java.io.File)=provider(client).second.downloadResource(client,file,cache)
     override suspend fun uploadCreation(client: MobileClient, operationId: String, file: CreationFile, bytes: ByteArray)=provider(client).second.uploadCreation(client,operationId,file,bytes)
 }

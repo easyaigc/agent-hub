@@ -28,6 +28,14 @@ class AttachmentPreparationRulesTest {
         assertFalse(AttachmentPreparationRules.canReserve(-1, 0, 1))
         assertFalse(AttachmentPreparationRules.canReserve(0, 0, 0))
     }
+    @Test fun lowerUiQuotaIncludesConcurrentReservationsWithoutChangingLegacyCeiling() {
+        for(existing in 0..10)for(reserved in 0..10)for(requested in 1..10) {
+            assertEquals(existing+reserved+requested<=5,AttachmentPreparationRules.canReserveWithinLimit(existing,reserved,requested,5))
+            assertEquals(AttachmentPreparationRules.canReserve(existing,reserved,requested),AttachmentPreparationRules.canReserveWithinLimit(existing,reserved,requested,10))
+        }
+        assertFalse(AttachmentPreparationRules.canReserveWithinLimit(0,Int.MAX_VALUE,1,5))
+        assertFalse(AttachmentPreparationRules.canReserveWithinLimit(0,0,1,11))
+    }
     @Test fun capturedDraftCannotBeReplacedOrCompletedTwice() {
         assertTrue(AttachmentPreparationRules.canCommit("host-a/thread", "host-a/thread", "draft-1", "draft-1", false))
         assertFalse(AttachmentPreparationRules.canCommit("host-a/thread", "host-b/thread", "draft-1", "draft-1", false))

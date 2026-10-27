@@ -1,0 +1,2208 @@
+{
+  "phase": "P6",
+  "features": [
+    "F56",
+    "F17",
+    "F34",
+    "F35",
+    "F36",
+    "F37",
+    "F38",
+    "F46",
+    "F48",
+    "F33",
+    "F40",
+    "F49",
+    "F50",
+    "F64",
+    "F69",
+    "F71"
+  ],
+  "wholeStageClosed": false,
+  "currentCheckpoint": "P6-6b",
+  "nativeLanguageSettingsCheckpoint": {
+    "phase": "P6-1",
+    "sourceBase": "b2501ce3046eb306f678952addf43f89735e5e4d",
+    "features": ["F56"],
+    "files": {
+      "apps/android/src/androidTest/assets/localization-catalog.json": "03d66ea030fb9639eed10cf0016f77e9adf263a60928fd6ef6e9d446f17dba3c",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "e1a52bea92918436248de1e9491c760fb1e59c04fe3a1ec2703ee4a52f439156",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "c40085a697a69ecc80985f98fe1a4729f0e0b9a52d464b7322705352200b4855",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "2b45e71fda3543084d1dd525ba988c12e70357ac9a81be182e2a52c2ee966130",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeLocalization.kt": "6043ee0a259f0c8768fb35aa0f2f2165559a10d83fecde5e6e33ad23f995cfa6",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "63ab0ee96f0d035d3d0c586c4d1e57782df1005b04a59aaa61a55701fa920f97",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "ed91ead4256e074b78412e369bbc686edb997f1fd41d9bdd22114faa2857f866",
+      "apps/android/src/main/res/values/product_strings.xml": "a75950a485bd0b5c91bb24e904aa99fe2fab14968da31c325bd4e5152b4e8f5e",
+      "apps/ios/Resources/en.lproj/Localizable.strings": "c4a4fea618eb5a35b6694ea4cc1ca81801fcd2d8c51316a33deb8ffaafe48a91",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "5c5d71d99bbffd04788d64d084c77ca50ac3e6b8082eb2bd804d58d06d3bec89",
+      "scripts/mobile/generate-localization.mjs": "c032e454a9933ffd6857eabc087870e7037b316fbe5099e5d81f38b42fd061ea",
+      "scripts/mobile/localization-catalog.mjs": "36e62ef3e6404b8dc55275b30c1927e6b404fbb5df64bbe55f8b5df681a07229",
+      "scripts/mobile/localization-catalog.test.mjs": "f6fd9e8e2ec81ad5a311d5e8e08f2be8cf8f1ab1c4e6da8c5492714985de0778"
+    },
+    "status": "bounded native language/settings and adaptive header checks passed; full P6 open",
+    "checks": {
+      "androidBuild": "passed",
+      "iosBuild": "passed",
+      "pnpmCheck": "passed before final Android-only header; current native/parity separately passed",
+      "currentNativeMethods": 120,
+      "nativeSettingsMethods": 36,
+      "nativeRegressionMethods": 84,
+      "catalogKeysPerLanguage": 1575,
+      "catalogDuplicateRemoval": "9 identical entries/language; effective iOS mapping unchanged",
+      "oldHeaderNegative": "same examiner rejects original34px overlap; current separate title fits",
+      "iosNativeSimulator": "1 system-language passed,1 typed-draft failed; not full parity",
+      "visual": "18 selected current native-window images reviewed; full tokens/icons/platform matrix open"
+    },
+    "actualAuditSha256": "8d53dfec2c8f6714721dd6517a75330d33997fd54e36e217b4462cd36f763c3d",
+    "wholeFeatureClosed": false,
+    "wholeStageClosed": false,
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 215,
+    "p4CumulativeInputs": 201,
+    "nextDevelopmentScope": "P6-2 explicit fixed page copy and settings icons, then dynamic/error copy, remaining presentation/tokens and Android P7. No confirmation pause; task/project business deferred."
+  },
+  "nativeStaticCopyCheckpoint": {
+    "phase": "P6-2",
+    "sourceBase": "b10282b7234f54fd117829eacc831afb05b66aa4",
+    "features": [
+      "F01",
+      "F03",
+      "F04",
+      "F05",
+      "F06",
+      "F07",
+      "F08",
+      "F09",
+      "F10",
+      "F11",
+      "F12",
+      "F13",
+      "F14",
+      "F15",
+      "F16",
+      "F17",
+      "F19",
+      "F20",
+      "F21",
+      "F23",
+      "F24",
+      "F25",
+      "F29",
+      "F30",
+      "F31",
+      "F33",
+      "F34",
+      "F35",
+      "F36",
+      "F38",
+      "F39",
+      "F40",
+      "F41",
+      "F42",
+      "F43",
+      "F44",
+      "F45",
+      "F46",
+      "F48",
+      "F56",
+      "F57",
+      "F58",
+      "F60",
+      "F61",
+      "F62",
+      "F63",
+      "F64",
+      "F69",
+      "F70"
+    ],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "0304679dc2a36b6ef1a8d70c31956248f2c232dbfde8305e30d8bc2d0968cf21",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizedContentTest.kt": "61e9e66e8a776bdfa35458f631f1ffe1c29c84b25fdf9ed3bca8180df7b96f86",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSuggestionComposerTest.kt": "b9ac6681e1b80a34fbddda00dc6a6619466562095db9a84bc60d0c2722cadc6e",
+      "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt": "db1b41828f92e08afffd44f804ddedcef967ac369d2ac889f1aeb627a427a687",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "6a1467cfa5d2abbf61bacecdb32b0e54b5434728f659fe09da9dadaa483f0f30",
+      "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "7af3b895eb479ec3611f28f1270b5c91cf0694391c570c53a905738afa27786e",
+      "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "9b99c3deadb4fe4494fdf6b02612152c7abb79b0306280c73105c31064762ae6",
+      "apps/android/src/main/kotlin/com/agenthub/android/DesktopSuggestionDetails.kt": "11baa6702599d8f67c5928813f7b1f818a85e51fcf7cbbce8ee793ee97e19bb1",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "d44df12bfdedc5671856dac753e20350e073028de902a16df7331cd45cbcbc69",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "3b2e773214bc89cbba42093219bda9caa6b69bd577764c4b9e0afe9c7af67759",
+      "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "f8050013076d8394d0440820697346d3d16487c98604281cb7ca7e98b8382f6a",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeLocalization.kt": "02d8c9eb61f87541963ba1ed819a02d9ee27f65bb96e68e0c1ed9064d1c5f58d",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt": "f85aa74c4b0ad9643f2b4bb08de1653447a89df94a32c3a2287affc8883fdf52",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "b3a94d5d813455fa1c3dc67e756524f560c124b0edf1f030d78fc785fc9d7606",
+      "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt": "ac2012b2c8186095282db18dd47b07d7c700b3668cf733c7b123d1a5da2e4a0a",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "9e3f00b565807d6c9fa8d61c52cc40e3d5b736006d5ad5c6b20966dae4bab5f9",
+      "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt": "011809ace42265dddc03c31373714e7bb7ddb8491dd296dead4b43036c89d4d1",
+      "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "5bde4207a3f593b64dba28614a66df518cc6776f072535361e74faa6a68d3e94",
+      "apps/android/src/main/kotlin/com/agenthub/android/ThreadForkViews.kt": "7a933e0e0161a81bf1fe7bb38d5f7bbfe56d8ff8aa79113a969fb9c1653ef258",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt": "3430c7789c7c3aec505ed0c07f15efce501ebcff07bf4cddbf4459505bb0fb04",
+      "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "7bb880686529bd2c83fffae064945f038d50134b2efbefda144030879adde6c7",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileAttachmentImportOwnershipTest.kt": "75243dd4da392641f7d3ffcf8411cf69a07299f606c6bb5799c28c2ada2af38a",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "75f00c09496e22a80fd62af82c326933574649b11d09b09dc1dda6f2085ae8c4"
+    },
+    "status": "bounded native fixed product copy, source-data preservation and settings icons; complete phase open",
+    "checks": {
+      "androidBuild": "passed",
+      "mobileParity": "passed",
+      "currentNativeMethods": 14,
+      "matchingReusedNativeMethods": 118,
+      "totalBoundedMethods": 132,
+      "matchingProofSha256": "148598bbfbeb5c6ad871b513602c5b719617a98bf009f8dcf8b7d74a6e25cd74",
+      "literalCallSites": 128,
+      "controlledProductBranches": 2,
+      "dataBoundary": "9 native methods, exact original code CRLF via SDK Copy, source language/names/draft preserved; no real-model or system-selection promotion",
+      "visual": "15 selected app-owned crops/dialog windows; includes native pressed feedback; full static token/platform matrix open"
+    },
+    "actualAuditSha256": "c08dbfd7d8c426f78696b32dd36d04a032923984b3f3dc06d82c88cd8611809c",
+    "wholeFeatureClosed": false,
+    "wholeStageClosed": false,
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 215,
+    "p4CumulativeInputs": 201,
+    "nextDevelopmentScope": "P6-3 classify and localize dynamic state/AX/form/error copy without touching provider text or wire identities; continue remaining rendering/links/tokens and Android P7 without confirmation"
+  },
+  "nativeGenerationFailureCheckpoint": {
+    "phase": "P6-3a",
+    "sourceBase": "dc5d685c2430a80c9b0d09ac47b34d35ddd206b9",
+    "features": ["F17", "F34", "F35", "F36", "F37", "F38", "F46", "F48", "F56"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizedControlsTest.kt": "f6298053b2f792ba2f76dbb5692f68c926e6114a96c4d998e104a88e6cdac181",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "f6c9969dee67be9146547fc6b35f5178540e97896591b04c6d9a99f8ecb28faa",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "8f6e1fa1288db3a5c7b7922523282f420d1ce83e97a9777c67c11d9c3d73c5ff",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "2487ed49d0ea3db78eaec8f71d79e422f1f0dde865bb3ba44154eba946961094",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "8484becacee945e87ebc8462d88dfc8b780afb9144a4fd812c6b101fe3905090",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "53662cb26d3681952d04a2cd7c0a53eb931328a49353b1dbd6f87845c4310d5d"
+    },
+    "status": "bounded native generation/known failure localization and raw provider boundary",
+    "checks": {
+      "androidBuild": "passed",
+      "mobileParity": "passed",
+      "currentNativeMethods": 159,
+      "matchingReusedNativeMethods": 0,
+      "defaultStorageProofs": 144,
+      "newExplicitLiteralCallSites": 43,
+      "newLiteralKeys": 37,
+      "knownFailureKinds": 6,
+      "visual": "18 selected current owned Dialog images, includes pressed feedback; complete94token/UI matrix open"
+    },
+    "actualAuditSha256": "4404dbe0374ffd754383c2ebc99d7006c63986f08d261a2fb3cab434177b21d2",
+    "wholeFeatureClosed": false,
+    "wholeStageClosed": false,
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 215,
+    "p4CumulativeInputs": 201,
+    "nextDevelopmentScope": "Review all15 new main nodes from fa2f14db to d8bf85d0 and integrate without erasing Android checkpoints; prioritize applicable application approvals/remaining P4, then P6 form/state/AX, rendering/links/tokens and Android P7; no repeated confirmation."
+  },
+  "nativeMainIntegrationCheckpoint": {
+    "phase": "P6-I1",
+    "sourceBase": "d95987c67b941ed14c5443f19aeb25548f7196a5",
+    "integratedMain": "d8bf85d00912072f5a8abea37a36e6c855475ab4",
+    "features": ["F33", "F40", "F46", "F48", "F49", "F50", "F56", "F64", "F69", "F71"],
+    "files": {
+      "apps/android/src/androidTest/assets/localization-catalog.json": "8d5844caad43b9077574751fc3bb3acccf0f3292feb63b688324cd0fc0f267fe",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileApprovalUiTest.kt": "4da0942ec6678c50670a85e8d26c9107b6733d3501057d7056c9e3e2ef3cfde2",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "bd279c032b4374f4fbf5a749df344a5cbfa9696136205d4d8328bb603913490b",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "c2523f12e7a5aa60369495b90757afd3834e8614f34609415d2aa00ae8a06c3b",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileRuntime.kt": "f6ad26f417c46767d18a80f5d5167dcea83d2466d1f73250a70d057a8674e599",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "1b023a22cdebfc1540d20ff79fe3b6d64d727885d555899a9fae89cd78b4bb91",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "08006a5a94da3403b2975a2bd70399c2df354624dd34cc4339b96e0f204c25d5",
+      "apps/android/src/main/res/values/product_strings.xml": "789ec13bcf1ed03469003d1d33c1d10f10091824aed04c6e9608cb646d83c978",
+      "apps/host-agent/src/runtime-server.ts": "06e4122252de83000572da95c7537ee6de577b83e17aae7aaea87ccb519bbb15",
+      "apps/ios/Resources/en.lproj/Localizable.strings": "07653d2b8bc2a171189e11ef89659d17bb0f79ee149cc0b7dc60227ecfcbd0c4",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "fd15542f326bc01dff7dea72aa130488f1e350629bb0831a195fc3480eab5773",
+      "apps/ios/Sources/HostService.swift": "348c2050e9303687b262535bc587045b53cfe10446fe9e79f3b4da3a6f58e735",
+      "apps/ios/Sources/LocalVoiceInput.swift": "4dec37721f1402a12db64b73bf965e4f5806ed6d669239b89481272591240736",
+      "apps/ios/Sources/Models.swift": "97fcf5cde8a66e20af66ed4080038dbf61fe4e03d28f66537fd267f575aca65b",
+      "apps/ios/Sources/QuickAttachmentAcceptance.swift": "f98d79ff2989ba408392aa9fbcdf7bc676b021e8f18302823663d8cb79a34f0e",
+      "apps/ios/Sources/QuickAttachmentViews.swift": "d9b28cfb84219c90f58cddc3234d82ca4df6848dcda9c84aff497d9e901b1c7b",
+      "apps/ios/Sources/RecentAttachmentPhotos.swift": "a04ddf9cfaf98b348ff6e0e5942f6045ab919bc5f82411ba9dc2f61b1e3349f4",
+      "apps/ios/Sources/RootView.swift": "e0d0f730af6f0d16c9c5ef0ddfcaac1a851e08a382be53680aa4c7bc8ea26788",
+      "apps/ios/Sources/VoiceInput.swift": "2b674952d02db616376b256adaf43dc73ba8c5585e90a4f31b7267ca62f21c75",
+      "apps/ios/Tests/CodexManageUITests.swift": "18695e6501a6132384e90e86e217366bbe85692fa55330539263e7cb26c737cc",
+      "packages/codex-adapter/src/approval-requests.ts": "469f5c3df7d7f2210b861fc47bdb25e43e3e31ff8d955bf182ebee1b1b115136",
+      "packages/codex-adapter/src/desktop-controller.ts": "b263057cc41feb6a589fd9eb6991175e01962262bbf360d6f33ec217a9223e8e",
+      "packages/codex-adapter/src/desktop-ipc.ts": "83a041e3383e2c8d0a85efafe990003b8bcec46849cbfa1628b0fea43eca5ae2",
+      "packages/codex-adapter/src/desktop-platform.ts": "48be49b1adca187a7ecd1725fc19252b70ff409a9365a98858a67d31aa6c89a1",
+      "packages/codex-adapter/src/desktop-prepared-bridge.ts": "f2c50f8762ba28955f16ba2710286407f4d28037f6400f0952fd5ea217f03269",
+      "packages/codex-adapter/src/runtime-session.ts": "2d393089b611fcdef51502eda652062f755d8513e9618ad193f577b8f0a3fb40",
+      "packages/protocol/schemas/codex-mobile-http-v1.schema.json": "834779b0ab3f8982271a0043e36686dd7f4d1c1eeba2c94567543e20ca82d106",
+      "scripts/application-approval-ios-fixture.mjs": "97222bd1bd3163ba7a9aa154e17edf0dd5a76150df80c30fb2a7cb9cd0abc0f1",
+      "scripts/computer-use-approval-ios-acceptance.mjs": "2824e894558539d7bb3921110c617ab2b6dc47d65bbbd7ab74def17506b1d6fb",
+      "scripts/desktop-ipc-smoke.mjs": "e5f25995b1c2785b72e69d2bed151b60224aec175caa04584e7dad4577f7848d",
+      "scripts/mobile/quick-attachments-ios-acceptance.mjs": "2ea4be6d4558b4689f0f3de4fe4ca0b0033ad7e0e45bbbbdc166f657f06aaf19",
+      "scripts/runtime-smoke.mjs": "9ebcff2f42f5eb2242c9f9851f32586658228c4cfeadba74a597d0e10bb23ce2"
+    },
+    "status": "source integration and bounded current auxiliary checks passed; full features/platform/real-owner verification open",
+    "checks": {
+      "fullWorkspace": "passed; source current, final docs-only parity/format follow",
+      "nonzeroNodeSkipSummaryGroups": [1, 24, 22],
+      "androidBuild": "passed",
+      "iosBuild": "passed; no new iOS native/device acceptance",
+      "currentNativeMethods": 162,
+      "matchingReusedNativeMethods": 0,
+      "defaultStorageProofs": 147,
+      "currentVisualImages": 18,
+      "catalogKeysPerLanguage": 1590,
+      "upstreamNodesReviewed": 15
+    },
+    "actualAuditSha256": "393de49471c33943809e2dda3baddef14ccdf5aea0909fba5fdf27ef8cddcd5b",
+    "wholeFeatureClosed": false,
+    "wholeStageClosed": false,
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 215,
+    "p4CumulativeInputs": 201,
+    "nextDevelopmentScope": "P4-4o.32 NativeHostReads application approval read-version declaration and known-label localization with a failing read-only baseline and strict native four decisions/DTO replacement/callback tests; continue photo/plan delta, P6 remaining rendering/links/tokens and Android P7 without confirmation."
+  },
+  "nativePlanToggleCheckpoint": {
+    "phase": "P6-3b",
+    "sourceBase": "05e2dec2cf6cfa2b8029ba8b4ecce0bf7061175e",
+    "status": "bounded-current-native-and-original-owner-read-passed; full P6/P4 open",
+    "features": ["F34", "F40", "F56"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileApprovalModelLiveTest.kt": "45286179a39189d18ff5f7191ba4273f4a6d89e8982300d384fa23a1062fc1c8",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCreationDetachModelLiveTest.kt": "2fa1ed6f0278ba11b786494906626b6ee3aaea02079bd668fcad88b69139250e",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCreationIsolationModelLiveTest.kt": "5bfe8c12871b89ddbf969d907b99acb01fad134bacd7238ac0d3785be3fe5a40",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCreationRecoveryModelLiveTest.kt": "aa598ad575fb856eb3acdfa5548b7c95aef3372e4c32bb627de5891ac8a9b275",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCreationRestartModelLiveTest.kt": "2b21a2e26d237adb8cbec6912522bfb3ec2d7f11aa2b4879c67fcca87b3155b8",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLivePlanApprovalTest.kt": "1e70fedbcc97117f0d5ca43bcd3425528b01046d340ee64d7959ef8eef41ac09",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileOperationRecoveryModelLiveTest.kt": "4b9422e29036e951ee3a09aa6e209dbb748e17d2a8baab62a6565b833af08539",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePairedTlsReadLiveTest.kt": "9515c9dc6823092e02405a2cd8277d33489b9d658924628fb804996f58621a61",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingAttachmentModelLiveTest.kt": "3de6ffd078a0272105a0dc92bb88f214914789aab0cb3da1099d9a53e4b24b25",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePlanModelLiveTest.kt": "bf426145f9603b561ecc24ad7fe5f017fd2b978f4b49b4c256342955abfb901f",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileQuestionModelLiveTest.kt": "cb6723a5da81a46fe15b2f62e283f291cc6923458ecc6241054fd67c99998c9b",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileQueueModelLiveTest.kt": "479dbd7bbf6075f1977a6586ee1991593c32189c9e6418eaf2ecc0b18ac1ef03",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileRejectedCreationModelLiveTest.kt": "2c5681b42ed7f9b1e76ead0f00571ff4e602725c5dc4a929a53f7d46cba55397",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReplyTlsRecoveryModelLiveTest.kt": "454eb86cee55d44ed89259ff735e1d7396279b7700da7086a601e41c77ea054d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileStopModelLiveTest.kt": "c018626ec00ea1986767414526bbd6bc30cd46a864c09a7550fe35a368f06680",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSuggestionComposerTest.kt": "6b1d0008e1fa5fae23a68c820b930975d63b0c2bcf3b9aae01fb9cb7dcdde1ad",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "6ababe054b95b8a2f950b56b8c44fa7433fa6dcf7ad54fff4f8d4fb6825f8f6d",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "915ab30178a9a846755f0bdb6460a8a41bee5c4718ccc301ef593d2db6c3f3c9",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "be835fe191f0c1ab4254b605f19960228c545d0adac44e518a54839702272f8d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePlanToggleTest.kt": "133dfe4b2358fbfc2d7274bd6aa41115a17ac75c7da806fb116c6048491a22ce"
+    },
+    "sourceNode": "N033/5cf7d2f3",
+    "implementation": [
+      "Persistent plan toggle after permission/before model, outside attachment menu; on/off labels and accessibility value match current iOS.",
+      "Selected unsupported plan stays visible/disabled; shared capability, queue/steer and pending submission gates unchanged.",
+      "Original text/files/model/effort/speed/permission retained; captured target/draft/mode guards and native press replacement prevent stale local edits.",
+      "Native row adapts to width/font scale; filled app-owned bulb and blue active state. Full model/permission AX labels retained under visual elision."
+    ],
+    "nativeAuxiliary": {
+      "status": "passed",
+      "methods": 140,
+      "groups": 5,
+      "normalMethodsPerEnvironment": 42,
+      "styleMethodsPerGroup": 7,
+      "environments": ["physical API33 light/dark", "API26 normal/double font", "API37 portrait"],
+      "sourceSha256": "852867a734a8235335f7e08c0da2c6e1c32e3f22ae5662dd9f7a122c065a3e56",
+      "appSha256": "d219320934b690f246c2de528124058cb0589413edd5036813f57a094b77052a",
+      "testSha256": "9b004e53e317106d85690dec4117539bceb3401ca68e086be0e88c188220db77",
+      "defaultStorageProofs": 140,
+      "selectedOwnedToolbarImagesReviewed": 20,
+      "scope": "7 plan +14 approval +15 suggestion +6 localized controls per normal environment; synthetic HTTP/native SDK, not new real model writes"
+    },
+    "realOriginalOwner": {
+      "status": "passed",
+      "nativeMethods": 1,
+      "defaultStorageProofs": 1,
+      "selectedOwnedToolbarImagesReviewed": 2,
+      "actualModelReplyRead": true,
+      "twoLocalTogglesAndOriginalModeRestored": true,
+      "draftFilesSettingsKept": true,
+      "http": {
+        "requests": 9,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "originalOwnerProof": {
+        "originalTurnsUnchanged": true,
+        "onePriorInput": true,
+        "zeroNewInputs": true,
+        "stillOriginalOwner": true
+      },
+      "newModelInputs": 0,
+      "transport": "explicit owned ADB loopback; no new LAN/TLS/cellular/VPN result",
+      "testProjection": "Only workspace menu scoped to the prior fresh owned source; actual target/history/model APIs retained. Not full directory navigation acceptance."
+    },
+    "priorRuns": {
+      "baseline": "Prior P4-4o.32 App plus initial plan runner rejected before writes because persistent toolbar action absent. Exact old runner retained; not called final runner.",
+      "initial": "Two seven-method groups each retained a detached SDK semantic-node exception; no completion promotion. Test catches only that SDK guard and separately exercises native press/release. Reset fixture language/theme now explicitly follows resetAcceptance.",
+      "layout": "Initial current source groups 140 auxiliary +1 read-only native passed functionally, but visual review found excessive weighted Spacer and short model label. Entire layout cohort retained as diagnostic; final width allocation rebuild/retests stand independently."
+    },
+    "routeMaintenance": {
+      "legacyLiveTestRoutesUpdated": 15,
+      "scope": "Only use the moved action directly; compile is not new model acceptance for those classes."
+    },
+    "otherEndImpact": "iOS current RootView is reference. Swift/shared/Host production source unchanged; matched P6-I1 checks, no new iOS native/physical pass.",
+    "checks": {
+      "android": "current App/test build passed",
+      "parityAndFormat": "checked after registration",
+      "wholeWorkspaceIos": "unchanged source matched to P6-I1; not claimed rerun"
+    },
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 216,
+    "p4CumulativeInputs": 202,
+    "pending": [
+      "API37 actual landscape",
+      "Full visual/token/state and TalkBack/system matrix",
+      "Recent-photo system control with Android P7",
+      "Remaining explicit/form/error/AX copy, rendering/links/resources and P7",
+      "Actual suggestion source and other real approval scopes",
+      "Task/project business and unrelated iOS A6 remain deferred"
+    ],
+    "wholeStageClosed": false
+  },
+  "nativeActionCopyCheckpoint": {
+    "phase": "P6-3c",
+    "sourceBase": "943370d593706aa700c8d7c7343e73948378ea05",
+    "status": "bounded-current-native-and-workspace-checks-passed; whole P6 open",
+    "features": [
+      "F01",
+      "F11",
+      "F19",
+      "F22",
+      "F23",
+      "F25",
+      "F26",
+      "F30",
+      "F33",
+      "F37",
+      "F38",
+      "F41",
+      "F42",
+      "F44",
+      "F45",
+      "F48",
+      "F56",
+      "F58",
+      "F62",
+      "F64"
+    ],
+    "files": {
+      "apps/android/localization/native-copy.json": "89bedf856eaf0b804633fbc5b1fd1c13a979a5761af613078b57b645264242ff",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileActionCopyTest.kt": "a6c3937c7be9a982e142ed8dedca1f989fae676f1c739f9cee7c078e37aef3ed",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "3163b2277f5395538a812b82f7864faf45ce9354a8393e91326e6865664b5c31",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f5f7cef11b4a4428a5fc8d1cd5188077b6208952d31992ab69cf02392d9a8065",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePlanToggleTest.kt": "0950ab0af6f0b900d3b307bb3c259d8d0050aed2236567fea2405d547f4947b3",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "2821a9bc9f975a19ab45ad1cdc5435fbf24f16c5bf11ced16829101b759b1880",
+      "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "069aa33b6f4002cf77401a4b0f7068d3492beb6b6ca3942c1ff9f53d3dd6a402",
+      "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "a366df660af838af69c96d07ff9c8aa382722cec2eab15bbde834ee1db38f6ee",
+      "apps/android/src/main/kotlin/com/agenthub/android/DraftAttachmentStrip.kt": "6f068d51eac69815b8d1ca7a7dbf8c37b29b42b0a3c2266e5d6aeeade882824e",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "5423f5bc820d029c7b0804018eb98b3a880501a90a394655caf3a43a15a4f49b",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "c40ff3e3d3b13f4276a302d40100b14fe4d147f82e793948d2cec73c5ae92143",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeQRScanner.kt": "5389af59395dcafbeffc01d4cdbde48b8fe68714f622f9262421b50a2dbc3019",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "931734222cdc6c30c5478e37971241d37aa4987309d36d6838e6f0431121c73c",
+      "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt": "380bb9a64c362b13ca4fae943a4221ebb8b872ebe7586bfee7f0479f14261dc2",
+      "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "59a20fed00b4ca565af08ff0367f1a6390a885be8110e82229a50bba75c79d8f",
+      "apps/android/src/main/kotlin/com/agenthub/android/ToolContent.kt": "9922f43b6b74857421a1ac417cf7ec0e8f87fd4b18b870ca2b0924462bd36446",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt": "c91dc5086914f257015427189f0cecaa20ad1368c97ccf63d07889a5928f08f0",
+      "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "13f0bdf1ff6ac87365886acf9a81a0d25fd4e2fe942aca233302806896e8f63a",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "3bc0002e37ca03b036741605f00c466979fd4cb6d6bcc3dfde337ed66a3ee00e",
+      "apps/android/src/main/res/values/product_strings.xml": "d48c396351d06d489f03d9bf544e2a2fa917d81fc27a6a1c54067d94a6826368",
+      "scripts/mobile/generate-localization.mjs": "9051b05d5779c0982033ddec7e8acc64f45469b2071c9cc70b1cbe573fb88c32",
+      "scripts/mobile/localization-catalog.mjs": "b7126140d27710822893444d1cc6d3d7da392e07f6299e0a1797a4dac6217b26",
+      "scripts/mobile/localization-catalog.test.mjs": "0fd1fdecfe448cde86e3206894fc7717d980fef2f4bcd33b9ded9bc42f0eae1f"
+    },
+    "newExplicitProductCalls": 52,
+    "nativeCopy": {
+      "sharedKeys": 1590,
+      "newPlatformOnlyKeys": 29,
+      "androidKeysPerLanguage": 1619,
+      "sharedValuesAndIosSourcePreserved": true,
+      "supplement": "apps/android/localization/native-copy.json",
+      "strictSchemaTests": 4,
+      "schema": "v1 bilingual entries only; no shared override, duplicate, unknown field, missing language or format drift",
+      "genericTextAndIconImplementationUnchanged": true
+    },
+    "boundaries": [
+      "Explicit fixed Text/action call sites; closed primary action and voice control branches only.",
+      "Draft/file/project/model/Provider values stay literal parameters or raw text; share body and original command/receipt payloads unchanged.",
+      "AddProjectPage and deferred add-project action bytes unchanged. Existing directory navigation/chat creation retained."
+    ],
+    "nativeAuxiliary": {
+      "status": "passed",
+      "methods": 171,
+      "normalPerEnvironment": 51,
+      "stylePerGroup": 9,
+      "sourceSha256": "9ae3904185ebc2c4810600a5c3469c653a01da7daadb268d8e64f4ee2da96e82",
+      "appSha256": "56c14ae214e26022395a71156c0fa0441e05aacdf696bf31fe7f519c3cbcd921",
+      "testSha256": "f295b1be5f0600e55c6fdc5bd59c96310053d944d2bcf36cacbafc71faec53a6",
+      "defaultStorageProofs": 171,
+      "selectedOwnedImagesReviewed": 20,
+      "coverage": "3 action/data +6 compiled catalog/settings +6 typed generation/errors +7 plan +14 approval +15 suggestion per normal environment; style uses action3/localization6",
+      "environments": [
+        "physical API33 portrait light/dark",
+        "API26 portrait normal/double font",
+        "API37 portrait"
+      ],
+      "notRealModelAcceptance": true
+    },
+    "realOriginalOwner": {
+      "status": "passed",
+      "nativeMethods": 1,
+      "defaultStorageProofs": 1,
+      "selectedOwnedImagesReviewed": 2,
+      "actualReplyRead": true,
+      "currentEnglishActionSemantics": true,
+      "localPlanAndDraftFilesPreserved": true,
+      "http": {
+        "requests": 10,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "originalOwnerProof": {
+        "originalTurnsUnchanged": true,
+        "onePriorInput": true,
+        "zeroNewInputs": true,
+        "stillOriginalOwner": true
+      },
+      "newModelInputs": 0,
+      "transport": "owned ADB loopback, not LAN/TLS/cellular/VPN acceptance",
+      "testMenuScope": "Only current owned source thread; actual target/history/model responses preserved. Not complete navigation."
+    },
+    "baseline": {
+      "status": "exact943370d App rejected old Chinese open-sidebar semantics under English before writes",
+      "exactAppSha256": "d219320934b690f246c2de528124058cb0589413edd5036813f57a094b77052a",
+      "firstMisidentifiedOldLayoutCohort": "diagnostic only, source correction retained privately; not used as delivered943 baseline"
+    },
+    "failuresRetained": [
+      "Initial phone method failed system Back injection with INJECT_EVENTS; final method changes language with original popup still open. No system Back pass claimed for phone.",
+      "Initial iOS catalog append was an intermediate candidate only; final Android-only supplement keeps both original shared files byte-identical.",
+      "Source inspection marker and orchestration interpolation failed before product execution; corrected without business writes."
+    ],
+    "checks": {
+      "workspace": {
+        "status": "passed",
+        "logSha256": "7c1eabdf5520376978687b514cb18733dd88e0b1a16aa0e2bfdad352e15bb7ed",
+        "nonzeroSkipGroups": [1, 24, 22],
+        "notUniquePlatformResults": true
+      },
+      "android": "current App/test build passed",
+      "ios": "independent bundle build passed with unchanged Swift/shared catalogs; no new iOS UI or physical run",
+      "finalParityAndFormat": "after final registration"
+    },
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 216,
+    "p4CumulativeInputs": 202,
+    "pending": [
+      "Sidebar app-owned group headings and expansion states remain Chinese in English; next P6 batch. Original synthetic titles/names remain raw by design.",
+      "QR/recovery and other newly compiled strings have not all received independent full UI/system acceptance.",
+      "Other dynamic/forms/error prefixes/AX and remaining render/link/resource states",
+      "Full token/theme/viewport/system matrix and actual phone Back injection",
+      "Voice status/errors and local/backend system flow with P7",
+      "API37 landscape, SIM/VPN, unloaded owner and actual suggestion source",
+      "Task/project business and unrelated iOS A6 remain deferred"
+    ],
+    "wholeStageClosed": false
+  },
+  "nativeNavigationCopyCheckpoint": {
+    "phase": "P6-3d",
+    "sourceBase": "707325647180faf5b52edb19692fa1fafef102dd",
+    "status": "bounded-copy/data/native-and-original-owner-read-passed; full visual/P6 open",
+    "features": [
+      "F02",
+      "F03",
+      "F11",
+      "F17",
+      "F41",
+      "F42",
+      "F44",
+      "F45",
+      "F48",
+      "F56",
+      "F57",
+      "F58",
+      "F60"
+    ],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileNavigationCopyTest.kt": "c028927b9994959247150720bb10a23a5cab259bf6922ffb8a587dbeb65dd535",
+      "apps/android/src/main/kotlin/com/agenthub/android/ConnectionProductText.kt": "eab536fa75b38557f4219d9f32632d4d89df21d324acb1966ad27f004860de6e",
+      "apps/android/localization/native-copy.json": "d270cdd7dc7624b8d038f2f4da0d3bef5e3c8fc31fe1bde932b332c261af47c3",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "54f732577bd626d8ee714275f6d8673bc2570b5af7d5fcbc2624afc1cb3de0b9",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "9fd4f86297227632a74c04347ab3a98cd25536909184acc266fed4350f813328",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f52c872a94cbfdff081043b501d5526a16d26070b9ee9082df620c5cf7aea575",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePlanToggleTest.kt": "ad952e43b13ed31d7bdefde3768519b093e86ca2d91944b842268cabb4481e86",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "ea460d202b603ff6abb2f1398a72ba97d805da6f0cd99014b516f7a8c28543f1",
+      "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "b09216c682ae0e844965734b60cc1cc12e8eada942a4d7c6f471de6d0e5948ec",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "c8acede9f47f2f98e2ba0bbc7dbc86d06c0a0d52f1c9c0d7a9240d301e160921",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "57c68ba9ea929657e96c455bee177b8ac3eaabdcd401a01063cdde6d257d93d2",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "22710b24490157b95efcf508d243dd6abcbaf5f95cc269b620e9e5d7f71ed628",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "9f0a6b1d05287fc9d1f617d3d5a76965d533a890da4e734307934d4b807e4879",
+      "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt": "165d4aa36b75324950ce6148af80409ffc049d3ea3d4df13b7e2c8d22a9c3139",
+      "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "7e9ad03b7ae965c00b469ea5f01bc573bc22e392e39fa419494f98508311c711",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "1ef6c6068446f167760a3823164110941e355c9b1f73d21e1a1f3f33e3272106",
+      "apps/android/src/main/res/values/product_strings.xml": "953ab3a90be3162e75845de2f33d63c6aa3e9823e6d8de0c7a485438e23b4209"
+    },
+    "scope": "Sidebar fixed groups/expansion/status and typed client mode/connection captions; explicit connection field/method/preference labels; closed reply/question state display. Internal IDs, route state, targets and payloads unchanged.",
+    "nativeKeys": {
+      "shared": 1590,
+      "platform": 46,
+      "totalPerLanguage": 1636,
+      "newThisStage": 17,
+      "iosSourceUnchanged": true,
+      "strictCatalogTests": 4
+    },
+    "implementation": [
+      "Explicit sidebar groups, expansion/read states, source/phase/count captions and connection form/method/preference labels.",
+      "Move compiled source-mode label to MobileClient and let selected session delegate; clients page now accurately labels EasyWork/managed/shared modes instead of always desktop. Names stay raw.",
+      "Only closed question/receipt states and hint labels localize; exact original option/answer/Target/Turn stays unchanged.",
+      "Pairing progress and raw diagnostics remain untouched pending typed classification; deferred project form and add-project action unchanged."
+    ],
+    "nativeAuxiliary": {
+      "methods": 189,
+      "currentRunnerMethods": 135,
+      "matchedRunnerMethods": 54,
+      "environments": [
+        "physical API33 normal/dark",
+        "API26 normal/double font",
+        "API37 normal/dark"
+      ],
+      "normalPerEnvironment": 54,
+      "stylePerGroup": 9,
+      "appSha256": "1ca4a55a794bb720a87351ed87019d457da1efd38d5e91ac8d09f4a139fbab0c",
+      "testSha256": "86415abbff1143f183a704bc88d43a8d26dd877986abad0b7b28a2de7c1250c3",
+      "sourceSha256": "b3cf22cb62b96e36d639aafd8806bd1cdb9c3acd905e377e53d453b2550144a1",
+      "defaultStorageProofs": 189,
+      "selectedOwnedImagesReviewed": 24,
+      "scope": "Synthetic HTTP/native SDK: raw names equal catalog keys remain raw; collapse/language/order and local draft preserved; fields unsubmitted/masked; one exact original synthetic answer. Not actual model approvals."
+    },
+    "matchedReuse": {
+      "methods": 54,
+      "environment": "API37 portrait light",
+      "originalSourceSha256": "38b50b9ef599ed2bc065a51cff9217684bbcf17ad31e55a7f1fc081af6f37ae6",
+      "proof": "Exact inverse two examiner-file changes matches whole Android/shared/protocol source. Production App unchanged. Original API37 owned node capture was supported and verified App owner; final explicit Dialog PixelCopy separately exercised on API26/phone/styles.",
+      "originalProofRetained": true
+    },
+    "realOriginalOwner": {
+      "status": "passed",
+      "nativeMethods": 1,
+      "defaultStorageProofs": 1,
+      "selectedOwnedImagesReviewed": 3,
+      "actualReplyAndSidebarRead": true,
+      "englishSourceAndRecentSection": true,
+      "draftFilesAndLocalPlanRestored": true,
+      "http": {
+        "requests": 12,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "independentOwner": {
+        "originalTurnsUnchanged": true,
+        "onePriorInput": true,
+        "zeroNewInputs": true,
+        "stillOriginalOwner": true
+      },
+      "newInputs": 0,
+      "scope": "Only fresh owned source in menu, actual target/history/model data preserved. ADB loopback, not LAN/TLS/cellular/VPN or whole navigation."
+    },
+    "failuresAndEnvironment": [
+      "Duplicate private-set compile error corrected; discovery detail was already private-set and restricted to compiled copy. No model/native execution from failed build.",
+      "Two initial three-method cohorts failed placeholder assertions because unsaved name/address seeds already fill fields; examiner clears only its unsaved values.",
+      "Three next cohorts failed incorrect plaintext expectation of masked EditableText. Final checks privileged InputText for original synthetic value and verifies public editable text masks it; product unchanged.",
+      "Initial API26 54-method cohort failed Compose Dialog capture below API28; no promotion of its other methods. Explicit owned-window PixelCopy fixes examiner only.",
+      "Phone preflight detected another package instrumentation and stopped before install/launch; after it released, own normal/dark and real checks passed. Other package/service/data untouched."
+    ],
+    "checks": {
+      "android": "current App/test build passed",
+      "catalogAndParity": "current source checks passed; final documentation parity/format after registration",
+      "workspaceAndIos": "unchanged JS/shared/Swift compared with P6-3c complete check/build; no new full workspace/iOS run claimed"
+    },
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 216,
+    "p4CumulativeInputs": 202,
+    "pending": [
+      "API26 double font connection-method row gives too little width to its label and breaks English words awkwardly; responsive row layout is a next P6 item, not a full visual pass.",
+      "Selected question/window crops do not replace full short-viewport, IME/system composite or TalkBack acceptance.",
+      "general dynamic/error prefixes and records",
+      "voice status/local backend",
+      "full links/resources/render/token/system matrix",
+      "Review inherited manual-connection default name/address against iOS and physical-device routes; current stage verifies labels/data, not these defaults.",
+      "Real original-owner session/always/cancel scope combinations",
+      "API37 landscape and full AX/theme/token/system matrix",
+      "Task/project business and unrelated iOS A6 deferred"
+    ],
+    "wholeStageClosed": false
+  },
+  "nativeSettingsRowLayoutCheckpoint": {
+    "phase": "P6-3e",
+    "sourceBase": "e866d94998887b7468858762e94cf57bd468a06d",
+    "scope": "Responsive native SettingsRow labels/details, current-language initial new-client name matching iOS initializer. Existing/edited values and actions are preserved.",
+    "iosReference": ["apps/ios/Sources/Sheets.swift:171-172"],
+    "newModelInputs": 0,
+    "wholeStageClosed": false,
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSettingsRowTest.kt": "e7e0b431a21a09d3e2f640d75172290e123c33cf3eae2f167943b0a425b3c921",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "3df42fd8d6235904e4ff20b011dec9c8f4290c7f7ae16e39b220bc335ca5c546"
+    },
+    "features": ["F02", "F56"],
+    "layoutRule": "Measure native label/detail with current font; if combined width cannot fit, keep one clickable row and place detail below label. Full text and raw values are retained.",
+    "baseline": "Prior App rejected before writes for English mid-word split. Retained exact original failure.",
+    "nativeAuxiliaryMethods": 102,
+    "realReadOnlyMethods": 1,
+    "defaultStorageProofs": 103,
+    "appSha256": "1c0ac32af34bbab9a6530589f06f2e9513bffd11404f3ab91911bcb148ac93f2",
+    "testSha256": "195e0eb5c6c18e83315d70214ce0e03afec7f061aae22d32d3c0f35aa576a51d",
+    "sourceSha256": "21efa38cbc7e8e27d72352be76b560019bf6f3e8d9504b4c9f2cabcf00d5be01",
+    "selectedOwnedImagesReviewed": 18,
+    "status": "bounded-passed; full P6 open",
+    "nativeAuxiliary": {
+      "methods": 102,
+      "normalPerEnvironment": 22,
+      "stylePerGroup": 12,
+      "environments": [
+        "physical API33 normal/dark",
+        "API26 normal/double font",
+        "API37 normal/dark"
+      ],
+      "defaultStorageProofs": 102
+    },
+    "realOriginalOwner": {
+      "status": "passed",
+      "nativeMethods": 1,
+      "defaultStorageProofs": 1,
+      "http": {
+        "requests": 17,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "independentOwner": {
+        "originalTurnsUnchanged": true,
+        "onePriorInput": true,
+        "zeroNewInputs": true,
+        "stillOriginalOwner": true
+      },
+      "newInputs": 0,
+      "scope": "Read existing actual model reply and local plan/sidebar; no new model input or write. ADB loopback only."
+    },
+    "checks": {
+      "android": "current App and runner build passed",
+      "parity": "final documentation check recorded separately",
+      "workspaceAndIos": "Unchanged from P6-3c exact JS/shared/Swift source; no new full check/iOS execution claimed"
+    },
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 216,
+    "p4CumulativeInputs": 202,
+    "pending": [
+      "Full row/theme/token/IME/TalkBack matrix",
+      "API37 landscape",
+      "Other dynamic and error copy, links/resources/render",
+      "Android P7 system/voice/storage/read",
+      "Task/project business and unrelated iOS A6 deferred"
+    ]
+  },
+  "nativeSharingCopyCheckpoint": {
+    "phase": "P6-3f",
+    "sourceBase": "e8f36543e6624a8c802bb0e258f311ee20f51bb7",
+    "features": ["F56", "F64"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt": "6fcfe475672344843d98cf94d1401e4173f888c5e865070cbcc41b13f8177a75",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSharingCopyTest.kt": "63e7349f7cd6ae5c7538f8d29bb20a62d77a31052b611f3fc866969b92f466f7"
+    },
+    "scope": "Explicit native sharing permission/settings/voice explanation copy and locale privacy URL. Raw grant names, errors, immutable scope and consent actions unchanged.",
+    "iosReference": ["apps/ios/Sources/Sheets.swift:743-804"],
+    "nativeKeys": {
+      "shared": 1590,
+      "platform": 46,
+      "newKeys": 0,
+      "totalPerLanguage": 1636
+    },
+    "newRealModelInputs": 0,
+    "wholeStageClosed": false,
+    "status": "bounded copy/native and existing-original-owner read passed; full P6/F64 open",
+    "nativeAuxiliary": {
+      "methods": 129,
+      "normalPerEnvironment": 40,
+      "stylePerGroup": 3,
+      "environments": [
+        "physical API33 normal/dark",
+        "API26 normal/double font",
+        "API37 normal/dark"
+      ],
+      "defaultStorageProofs": 129,
+      "selectedOwnedImagesReviewed": 24,
+      "appSha256": "3a7d960399db6fbea0660839fe0a7a8f25693d90602749608babaa69a8c8b233",
+      "testSha256": "ce57a582d419e2356419594736039bb742c9458fdb50de9287cbff2950d0f7f3",
+      "sourceSha256": "5f947470123d78bfff4ce94fe454a54375f62b7c0d8c902489a54fcdffccebde"
+    },
+    "nativePrivacyLink": {
+      "status": "native ACTION_VIEW intercepted",
+      "urls": [
+        "https://51easyai.com/agent-hub/privacy-en.html",
+        "https://51easyai.com/agent-hub/privacy.html"
+      ],
+      "noCredentialsOrQuery": true,
+      "actualBrowserPageVerified": false,
+      "monitorRemoved": true
+    },
+    "realOriginalOwner": {
+      "nativeMethods": 1,
+      "defaultStorageProofs": 1,
+      "readOriginalActualModelReply": true,
+      "localDraftPlanAndSidebarPreserved": true,
+      "http": {
+        "requests": 15,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "independentOwner": {
+        "originalTurnsUnchanged": true,
+        "onePriorInput": true,
+        "zeroNewInputs": true,
+        "stillOriginalOwner": true
+      },
+      "scope": "Existing completed actual source read only; does not close actual sharing/grant operation. ADB loopback only."
+    },
+    "failuresRetained": [
+      "Initial three-method cohorts had ambiguous same computer name in main/sidebar/dialog; final raw-name lookup is scoped to its exact page. No promotion of other methods in failed cohorts.",
+      "Main-composition UriHandler observer did not capture privacy link dispatch. Original failures retained; final examiner intercepts only two public privacy ACTION_VIEW intents with Android ActivityMonitor and removes it after each case. No full browser-load claim.",
+      "Phone preflight twice found active instrumentation and backed off before install/launch; later native checks passed without stopping the other task.",
+      "Baseline exact prior App rejected missing English Destination before sharing approval/operation."
+    ],
+    "checks": {
+      "android": "current App and runner build passed",
+      "catalogAndParity": "1636 keys unchanged, current native resource reads and final parity checks separately recorded",
+      "workspaceAndIos": "Exact unchanged tracked JS/shared/Swift/Host sources compared with P6-3c complete check/build; no new full run claimed"
+    },
+    "allPhasesCumulativeInputs": 218,
+    "p4CumulativeInputs": 204,
+    "pending": [
+      "App-owned codex-dictation/follow-computer sharing model captions and dynamic lifecycle/receipt copy",
+      "Actual original-owner session grants remain P4 failed/pending, no replay",
+      "Full browser/URI/resource/TalkBack/IME/token/system matrix",
+      "Android P7 real voice/local fallback/storage/read/recent photos",
+      "API37 actual landscape",
+      "Task/project business and unrelated iOS A6 deferred"
+    ]
+  },
+  "nativeDynamicRecordCopyCheckpoint": {
+    "phase": "P6-3g",
+    "sourceBase": "4023a4e38ced22c88182d9c3f1f12694a8d52786",
+    "features": ["F02", "F56", "F64", "F70"],
+    "files": {
+      "apps/android/localization/native-copy.json": "7243318abee69fa51fce5a597b6111b26adf35df4fdf290f073449b417d9a7fa",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "5171acef112b084c919dbd52cc0efbcc2b219eae80856e8165d9dc669a9c77a3",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionSessionTest.kt": "1eeb8be3ca9384cd3724aa43873cef7d04665aa2dd7dc0e1e9b02ddb070dc159",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatActionUiTest.kt": "dd2a54011a529333029cec0ee98ed00c33ab917e9cd4ddd4a1d76b900ceb507d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileChatCopyTest.kt": "f9ebc70a620180b8a09827d89033ec5f4d2aa63800a566db24db68bd3c89c2de",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "39830a79eff31c27147acc8ab56065dd42e0ba31607d87d6e49b825d1faa5612",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "1552354071af03953e4583c0d58278767b6926171b56d37287e3c06746cc26ad",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileSharingCopyTest.kt": "f99eb82f6cf818294fb1ac3a05db457938196e0cb799e83f35279fb77e4342ba",
+      "apps/android/src/main/kotlin/com/agenthub/android/AISharingViews.kt": "1e7697df7167fd32b9e3d24174b694a5c8209df2725e9cb7ff5d2c8748967095",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "e6c65e1f6941bb8f3cdc80a39fc3099a23a06628944fc23042dd4c3a5a2ee13a",
+      "apps/android/src/main/kotlin/com/agenthub/android/ArchivedChatsPage.kt": "8d83ee7cd247878e34d262dd1491766914862b47baf2483703f4c049a22077d6",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "0e6a2eafa366f527d7203a21018411e88acb278b17a67eee27cd9551f320abd2",
+      "apps/android/src/main/kotlin/com/agenthub/android/SharingProductText.kt": "40973ae44e312602801d208f10a36037e35be88980e94c33c84294787a494d4b",
+      "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "dfffababd88c80490c14a9e7ac0b616ca0e691cb1e71b5b2d04cb9a45e19c075",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "2455a4db3d23e74060df18ab6c8e685574e4120eea58368fb64704226507a230",
+      "apps/android/src/main/res/values/product_strings.xml": "23ea25f1ecb421f7b2caa23929452869e20f6531867e5821b9b40f16003012da"
+    },
+    "scope": "Typed app-owned sharing model captions; dynamic chat-action labels/full-ID accessibility; localized lifecycle captions, management labels and archived/offline/no-project display. Raw titles/Provider names/immutable intents and rules unchanged.",
+    "iosReference": [
+      "apps/ios/Sources/SessionStore.swift:484-486",
+      "apps/ios/Sources/Models.swift:837-845",
+      "apps/ios/Sources/SessionStore.swift:4358-4360",
+      "apps/ios/Sources/RootView.swift:1578-1587"
+    ],
+    "nativeKeys": {
+      "shared": 1590,
+      "platform": 48,
+      "totalPerLanguage": 1638,
+      "newThisStage": 2
+    },
+    "newRealModelInputs": 0,
+    "wholeStageClosed": false,
+    "status": "bounded native display/identity and matched original-owner read passed; full P6/F64/F70 open",
+    "nativeAuxiliary": {
+      "methods": 147,
+      "currentRunnerMethods": 129,
+      "matchedRunnerMethods": 18,
+      "normalPerEnvironment": 43,
+      "stylePerGroup": 6,
+      "environments": [
+        "physical API33 normal/dark",
+        "API26 current cold-boot normal / prior double-font",
+        "API37 normal/dark"
+      ],
+      "defaultStorageProofs": 147,
+      "selectedOwnedImagesReviewed": 24,
+      "appSha256": "313cdd89dddf71d895feaf236ea4ed65c4ccf8683644bcd99ab425dad1ec4f44",
+      "testSha256": "4a99d0056bb86c42126a550becc58b14c465fa1a864de296e29f000ab1a4a0d4",
+      "matchedTestSha256": "ceac4d2c0c8d9f9f67ed3fd105d34ff787d36c6ea8492532d61548b4298cd788",
+      "sourceSha256": "292362cb4c26be1a199c216cfac9b451c97c9f950546b851dc391df6936f24ee"
+    },
+    "matchedReuse": {
+      "styleMethods": 18,
+      "realReadMethods": 1,
+      "proof": "Inverse only MobileLocalizationTest two catalog-count constants restores entire prior Android/shared/protocol source. Same production App; exact old runner and original results retained. No failed cohort promoted.",
+      "originalSourceSha256": "f9d23ca061f03072bc134e753d72cbdf1b60d8f537906bfaf08c7c75033e8c47",
+      "originalRunnerRetained": true
+    },
+    "realOriginalOwner": {
+      "nativeMethods": 1,
+      "matchedExaminer": true,
+      "defaultStorageProofs": 1,
+      "http": {
+        "requests": 15,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "independentOwner": {
+        "originalTurnsUnchanged": true,
+        "onePriorInput": true,
+        "zeroNewInputs": true,
+        "stillOriginalOwner": true
+      },
+      "scope": "Existing actual reply read and local plan/sidebar/draft preservation only; no new model operation or application grant acceptance."
+    },
+    "iosComparison": {
+      "initialRequestCaption": "iOS SessionStore484-486 already localizes reserved app scopes; action title uses Models837-845 and record concatenation4358. Android now renders these known captions without looking up arbitrary metadata.",
+      "storedGrantLocale": "Android current-language reserved captions are explicit; iOS stored grant-caption behavior after changing language remains a separate parity acceptance item.",
+      "sourceUnchanged": true
+    },
+    "failuresRetained": [
+      "Initial caption assertion incorrectly required exact Archived when native node contains full lifecycle line; corrected to full text and existing shared-rule state, no rule change.",
+      "Archived row is intentionally one clickable merged semantic node; final examiner addresses the row by exact ID and checks its separate title/status text entries. No production accessibility change.",
+      "Three broad 43-method cohorts retained failed because the catalog assertion still expected 1636. Final 1638 count and complete per-key/per-byte native reads passed; other methods from failed cohorts were not promoted.",
+      "API26 final attempt aborted System has crashed; activity service absent, invalid tar and helper cleanup failure preserved. SystemUI OOM/dead-system logs retained without assigning unique product cause. Exact isolated AVD cold-booted without data wipe; current final43 passed. First restart wrapper lacked isolated AVD home and exited before VM; corrected path/launch/runtime receipt retained.",
+      "One initial parity check ran before generated feature table was updated; preserved failed log, generated table and later checks passed."
+    ],
+    "checks": {
+      "android": "current App/runner builds passed",
+      "catalog": "1638 bilingual values read on current normal runner in each environment",
+      "workspaceAndIos": "Exact unchanged JS/shared/Swift/Host source from P6-3c complete checks/build; not rerun or claimed as current iOS native acceptance",
+      "parity": "final documentation registration checked separately"
+    },
+    "allPhasesCumulativeInputs": 218,
+    "p4CumulativeInputs": 204,
+    "pending": [
+      "Full native follow-computer/saved reserved-grant locale combinations and corresponding iOS saved-grant behavior",
+      "Remaining four read-only notices/general error/pairing/voice status copy",
+      "Controlled links/current-version resources/full Markdown/token/system matrix",
+      "API26 system crash unique cause and long-run stability, full TalkBack/IME/system composite",
+      "API37 actual landscape",
+      "P4 two original session-grant requests remain sealed pending, no replay",
+      "Android P7 real dual voice/local fallback/recent photos/storage/read",
+      "Task/project business and unrelated iOS A6 deferred"
+    ]
+  },
+  "controlledMessageLinksCheckpoint": {
+    "phase": "P6-4a",
+    "sourceBase": "c19695cba6a2bc1b64d53773c701ee6469f71563",
+    "features": ["F19", "F32"],
+    "files": {
+      "apps/android/build.gradle.kts": "c145259e66c93aee83ceaff751c7a32745de0154fd72c4845739247648126ece",
+      "apps/android/localization/native-copy.json": "c182430cee1b28316236aadb6485a90b881db524cc623f5d04ae97a75a89a8b8",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "32cdf8a09d6b74767d7f710df24c9342c74ce431d25d522bd080a281b1fa24fc",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f8491d394549a91302733cc9fc44aef82e354448816a6edee6217bf9e5f4514c",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileMessageLinkTest.kt": "756ee873ae5a757df1c6f1a8f03a9722ff46bd031f4b1bd4b2ae88fdd8aaec22",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "1b3dcb5ddada931d210ace2de55524e6a172839bd07123788fddd5104e56c155",
+      "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "688d345063101a14a51a76d53e3168cc8111ecbab5d715dae5606fe0faa395a0",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageLinkDestination.kt": "26ecb21a8f1c317a9715f980fb05067974fac7c8ec731e645fff8050898b5587",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageLinks.kt": "717354da87cedb826deafe1a080b2fa5a2e8bc8df663e7029788d0b1e11b4d99",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1e1a7dfde2187ec21db32da251dde1e23fbb7f98396355f8362cbbc47c198e98",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "7d7ec2af4640864ceb28328493f46a0786667a9715c31de617f118052d4d48cd",
+      "apps/android/src/main/res/values/product_strings.xml": "f76bd7b4e0ae9eb73ee5d8bb50f9fb243f4b72dbb5599391edd928094c35ba0c",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj": "f6f9a8a9258c1ad9bd7479103bc087a2290b15f611747a2a1aba56f6a1f03261",
+      "apps/ios/Sources/MessageLinkDestination.swift": "2afb89a9446d5b80262bf4c268c5eb4eb1eae767b6545f7ff6e15618a728799e",
+      "apps/ios/Sources/MessageLinks.swift": "cf7e6885f3fece2f5d046a88e355a5189a09adaedf0eab752a45ef3ccee0932f",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/MessageLinkRules.kt": "a56e8c54c1fc9de33fab40f2496825bc7d2682b4c474ad2ae17fe252d7ec99dd",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/MessageLinkRulesTest.kt": "e6516ed79fb5601306ea5546052ff6a1325c3ba7a2cc1a34672302ddb88b2438",
+      "packages/protocol/fixtures/mobile/message-links-v1.json": "044dd083b4e350cc99e3f00cac04654d2e1dd3e85c78fb4b2e8a9f95e5e8f790",
+      "scripts/mobile/check-core.mjs": "de6ec263dd96b6e4f08d434c77585f7717425a55215e8b796fa2537eced0fb0c",
+      "scripts/mobile/verify-ios-message-links.swift": "7df592c52f83866edb28e1d3afa916aaff2126cf5a567ac9215863fd47b59c8e"
+    },
+    "scope": "Shared destination policy migrated from iOS production path; native URL parsing remains platform-specific. Android callbacks bind original message/navigation/connection; web uses Custom Tabs, external schemes use named Intents, blocked links show copyable errors. File resolution/download/preview remains next. Final Android review preserves existing block composition and horizontal code scroll while retiring stale link callbacks; unbound runtime plan Markdown retains shared-classified safe system links.",
+    "sharedCore": {
+      "newCommonTestsPerRuntime": 2,
+      "nativeParsingVectors": 35,
+      "executedRuntimes": [
+        "JVM",
+        "iOS Simulator ARM64",
+        "Android API26",
+        "Android API37",
+        "physical API33"
+      ],
+      "iosLegacyRuleRemoved": true,
+      "swiftProductionFacadeExecuted": true,
+      "reportSha256": "a01bc5afb32e9cb11d4bb5a57e4f99c705bb288eb4b12da61d1563f912b1eb8d"
+    },
+    "nativeAuxiliary": {
+      "cases": 28,
+      "messageLinkCases": 25,
+      "compiledCatalogCases": 3,
+      "keysPerLanguage": 1639,
+      "defaultStorageProofsIncludingActualRead": 29,
+      "ownedImagesReviewed": 15,
+      "appSha256": "60ca118913be00b4e54a1233f1a385f40add077c0e8828d759359659a8febd0a",
+      "runnerSha256": "cd23bd6f7e0b9583271b5483dfcb4069c5c0a87466fc54d4b2e4a3eee01a00b4",
+      "sourceSha256": "81ef6c58dab04eb67ba6a924e000f89ebd53f9a765c7c5650a4aa560b47626a0",
+      "environments": [
+        "API26 portrait default/fontScale2",
+        "API37 portrait light/dark",
+        "physical API33 portrait light"
+      ],
+      "systemLaunchScope": "Instrumentation monitors exact URI and Custom Tabs marker. Only SDK Accept-Language header/app referrer allowed; no Host auth. No actual browser load proof.",
+      "streamingAndPlanBoundary": "Actual SDK scroll remains at original code offset after message tail update; old callbacks invalidated without recreating message content. Plan text without message identity retains safe original system URL annotations; Custom Tabs proof scoped to message links."
+    },
+    "actualRead": {
+      "nativeMethods": 1,
+      "httpGetRequests": 22,
+      "writeRequests": 0,
+      "newModelInputs": 0,
+      "originalOwnerAndTurnsUnchanged": true,
+      "scope": "Current App reads prior actual reply and preserves draft/files during local plan toggles; not actual-model link activation.",
+      "imagesReviewed": 3
+    },
+    "checks": {
+      "androidBuild": "passed",
+      "sharedCoreAndSwiftBoundary": "passed",
+      "iosBuild": "passed",
+      "pnpmCheck": "passed on exact JS/shared/Swift/tooling scope; final 3 Android-only review separately rebuilt and all native/read cases rerun",
+      "pnpmSkipGroups": [1, 24, 22],
+      "pnpmLogSha256": "bb2f9fb24ffc2658890945b598a25c4c43d890be4c82ad5ecaadf3dd47ceeae1",
+      "finalFormatAndParity": "passed"
+    },
+    "failuresRetained": "Three first native cohorts: wrong asset context/overstrict SDK-header assertion; wrong catalog selector; old expected count in core checker. Final entire cohorts rerun.",
+    "pending": [
+      "Resource resolution/current-version download/preview/share",
+      "Actual browser page load/error/return and missing app",
+      "Exact raw-link clipboard/full OS AX and copy",
+      "iOS app UI/physical phone",
+      "Remaining P6 tokens/render/copy"
+    ],
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 219,
+    "p4CumulativeInputs": 205,
+    "wholeFeatureClosed": false
+  },
+  "controlledResourceVersionsCheckpoint": {
+    "phase": "P6-4b",
+    "sourceBase": "eaff6cd05b55b2cc7189149db19c11403e3b79c6",
+    "features": ["F19", "F32"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCommandBoundaryTest.kt": "9ba93e6caefdc59330fb4e3d2340946c63e1e315d40b9e937a9a09d6f909de98",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceDownloadTest.kt": "83070976d124ee9de1e26c155911ec36d74852e21bd72ffb3f907782d509e146",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "edf3d8b09fda67769f58e9a409f3a1b6db3b4866412169e24b4b52b0673c8454",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "0a79d284a08d266313ed9fb334991ecaa83c7c2d68064a298bf286e7cc92d212",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt": "7793d439d862b2a8125d21a41c72bffaef642f655c4188fac7a7ec84707e50e8",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageLinkDestination.kt": "b24cdd524d673b7ef6f2c92e9e957442dd4e884b08623aefe851adebc9f65113",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "8cf16e9101a32adcda2ca6ecd588f5b40a65842286d393fc3a08ccd0b66e07c9",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "5b09be996f07df05a963ff04050a8d752972f401d643f9390b9c8165402cc22f"
+    },
+    "scope": "Android Codex resource wire and native cache pipeline; original-message context captured separately from arbitrary file DTO. File UI/actual resource transfer not yet accepted.",
+    "implemented": [
+      "Named Provider resolveMessageFile; strict host/thread/message/reference/readTarget/attachment claims and canonical UUID aliases only",
+      "Only two resolve GETs omit target to match Host whitelist; binary GET and all original control routes keep original target",
+      "Resolve current source before cache; 404 only old Host exact-version fallback, 410 never cache resurrection",
+      "409 retries at most one new resolve/download read; new runtime claims reject before second binary read",
+      "Cache partitions full machine/thread/version, ignores Codex historical account metadata; basename/size/hash and bounded atomic publication",
+      "Binary cancellation removes unpublished temp; no redirects or Host credentials sent to another destination; resolution JSON limited to 1MiB",
+      "Session refuses late resolver/download result after original selection/connection/message changes; UI callback integration still pending"
+    ],
+    "nativeAuxiliary": {
+      "currentCases": 51,
+      "resourceBoundaryCases": 36,
+      "messageLinkRegressionCases": 15,
+      "environments": ["physical Android API33 portrait", "API26 portrait", "API37 portrait"],
+      "defaultStorageProofsIncludingGeneralRead": 52,
+      "resourceSizeEdges": [0, 20971520],
+      "retargetedAndMalformedClaimsRejected": true,
+      "oneSyntheticControlPostPerEnvironment": "In-memory HTTP fixture only; proves original query/body target retained and no replay. Not a real model input.",
+      "appSha256": "a8d6bd7d66a16d4516df1003a79b246db33e1198b8d3c0afff4649103b2b6261",
+      "runnerSha256": "3f4a76f86009bd3594eda849badbf02a90ef754ffd7d55de82a4c951a279df19",
+      "sourceSha256": "26ba69d2ab7858e805db9378e1f66fdc80dbe9a021ca47cdcc62bc34c192aad2",
+      "ownedRegressionImagesReviewed": 9
+    },
+    "actualGeneralReplyRead": {
+      "nativeMethods": 1,
+      "httpGetRequests": 5,
+      "writeRequests": 0,
+      "newModelInputs": 0,
+      "originalOwnerAndTurnSummaryUnchanged": true,
+      "imagesReviewed": 3,
+      "scope": "Current App reads prior actual reply and changes/restores local plan choice while preserving original draft/files. No actual resource transfer or preview proof."
+    },
+    "dualEndComparison": {
+      "iosSource": "HostService.swift resolveMessageFile/currentAttachment/downloadVersion",
+      "aligned": "Original claims, current-before-cache, 404/410 and bounded 409 reads. No iOS source change in this slice.",
+      "openGap": "Current iOS binary download lacks explicit target query and cache directory lacks full machine/thread namespace. Register for follow-on hardening and dual-end checks; do not claim full F32 parity."
+    },
+    "checks": {
+      "androidBuild": "passed",
+      "rootWorkspaceIosShared": "exact source match to P6-4a, retained results only",
+      "matchedSourceSha256": "1c02e677f8e9bff9450c84c0ec96352ce75dadfe7e585af1dfbc4f76149018f6",
+      "formatAndParity": "passed"
+    },
+    "failuresRetained": "Three initial native cohorts failed only old binary target-query assertion; no methods promoted from failed cohorts. Final entire 17-method cohorts each passed.",
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 219,
+    "p4CumulativeInputs": 205,
+    "wholeFeatureClosed": false,
+    "pending": [
+      "Original-message inline loading/highlight and file preview/share",
+      "Actual resource model-reply path and bytes with independent source/desktop check",
+      "Late resource callbacks/target changes through native UI",
+      "iOS binary target and cache namespace hardening",
+      "Full system browser/clipboard/AX and resource/appearance matrix"
+    ]
+  },
+  "controlledResourceUiCheckpoint": {
+    "phase": "P6-4c",
+    "sourceBase": "d2a234ca3ee834d0cd124820f862c29b3b7f1c03",
+    "features": ["F19", "F32"],
+    "files": {
+      "apps/android/localization/native-copy.json": "ff71d417e91fffd4227b3006071c208769c02db0f70c68987546ed87e353139b",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "8d45b54cdbe21005febe84741830ceee2ee772172c0a6aaffb651742f2449efa",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "799c7401b416de3f18a0ea8a325a40d57cfb059f5cc1c5671c97a0590096ef0a",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f0976053038eb8e7fa61ef4666ca4ad6f60e3663484f4bfd4e4bb4069fadf37f",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "26a28b0630463c085290561e38625761f004bee3daf3fb81147e939721b82e9f",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceUiTest.kt": "e3caf6f4db6363ed3ba102814fb483191c7f06c4bd46565cbe07720c12041ff5",
+      "apps/android/src/main/AndroidManifest.xml": "c42905579f13a27bfbc1f4d567d7fdb73db846b818f16fce063257c32d74ef62",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "2aebd3ea48b330dbd39904bbeff28e95fc40ffa4ca9ad1b29e9f713a8bc8e8c1",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt": "38efc91075739fb851de5fcc8091ccb1de903b0e6005f723b1b30816d65d7682",
+      "apps/android/src/main/kotlin/com/agenthub/android/DraftAttachmentThumbnails.kt": "7e3f3ca4dcdf21bd99ce8b1c58f15adcbf87666db267c47edbd6cf61698970c2",
+      "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "a59908d52b90dde3456a6ee2871ef0307c11ae21d044a31894bb705655dc1958",
+      "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "31d7338847e90bedba4fad60f0256740f990ba6a8e4d3ed138cd5520fd5a2c2c",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageLinks.kt": "ae994a32be97e5b7ff251de4c6d958b42f789e5529c9906877ee0905f7aeb68e",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1bbe67e4847f24ea94d6dc80e9b2bf3c5bb179f4e982af12fd693cd82668a3c0",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeImageOrientation.kt": "a0c8049a392b988f14d7faabe924974e54cb6ff4932cb5c5130aedf889644c55",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeResourcePreview.kt": "13d91f23ed1d3db8ce07b9b3bdaef5aca7dd764a37bf106dc5bd7c70b6680dc9",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "71dc5180ae08fc1dda42deecf547ab892d2ce150119ec79ef82ae4881eadd944",
+      "apps/android/src/main/res/values/product_strings.xml": "342a635bafaff86a2436c5c7724b05299407906b121781876f405d15233a2787",
+      "apps/android/src/main/res/xml/resource_paths.xml": "7da740ca7865980fd96bdc451d106f5fd13c8dc256d112576596b599e609ec5e"
+    },
+    "summary": "P6-4c：Android原消息文件链接接通逐段高亮/等待、可取消下载及原生文本/图片预览，保留同资源旧版预览并在重开时取当前版本；完整原文件名、48dp关闭/分享/系统打开和仅缓存资源的只读FileProvider已实现。89项当前辅助与1项实际原模型文件链接通过，90份默认存储证明；真实14GET/2资源GET、0写入/新输入，预览和受控分享读取的107字节摘要一致。分享面板Intent由Instrumentation截获，不算真实接收方通过。iOS资源目标/缓存差异、产物卡/直接保存和完整格式/系统矩阵仍开。",
+    "scope": "Android original-message resource GUI plus same-source native boundaries; full resource parity remains in progress",
+    "implemented": [
+      "Exact clicked paragraph anchor highlighted with local wait only; cancel and original-context/lifetime guards including A-B-A",
+      "Native UTF-8 preview <=512KiB and sampled image preview; all 8 EXIF pixel transforms; immutable opened version retained across same-resource updates",
+      "Raw long file name scrolls without ellipsis; >=48dp actions; preserve body/code composition and drafts",
+      "Non-exported resource-only FileProvider; canonical containment, content URI ClipData, read-only grant, no Host headers; SDK and MIUI chooser variants",
+      "Fixed preview/Markdown async state publication and resource actions on main thread; original literal Provider errors not translated; resourceId decoded and persisted"
+    ],
+    "nativeAuxiliary": {
+      "methods": 89,
+      "environments": [
+        "physical API33 light",
+        "API26 light",
+        "API37 portrait light",
+        "API26 font scale 2",
+        "API37 portrait dark"
+      ],
+      "sourceSha256": "6e892e5dbcf072af2c6b6b5ccd816a4649d251bbdd5160d7113d4850a45eb855",
+      "appSha256": "a10ee87b7db2896f0a789f6b19397fcdac709f2d9ec2647ad50be085849cfde3",
+      "runnerSha256": "dd6685a56a9504f126c151fa7c4bf914de1fd25776d133803e2a97ea50deec7b",
+      "defaultStorageProofs": 90,
+      "catalogKeys": 1643,
+      "sharedKeys": 1590,
+      "platformKeys": 53,
+      "imagesReviewed": 15
+    },
+    "actualResource": {
+      "nativeMethods": 1,
+      "originalOwnerAndTurnUnchanged": true,
+      "newModelInputs": 0,
+      "automaticReplay": false,
+      "http": {
+        "requests": 14,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "resourceGets": 2,
+      "previewAndControlledShareBytes": 107,
+      "sha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+      "readOnlyGrant": true,
+      "shareIntentIntercepted": true,
+      "externalRecipientAccepted": false,
+      "modelGeneratedFile": false,
+      "transport": "owned ADB loopback only",
+      "hostAdapterSha256": "8ca122fcc93ec1368db24e5798431f576eb8b60400e5faf5c402d3d552825067",
+      "imagesReviewed": 1,
+      "routesRestored": true
+    },
+    "failuresRetained": [
+      "Initial old examiner ActivityScenario.activity access under open native modal hung; cached original Activity before UI work",
+      "API26 ClipboardManager constructed on worker required Looper; fixed examiner main-thread capture",
+      "Actual product native Dialog open on worker failed; explicit main thread actions/publication fixed and complete final cohorts rerun",
+      "MIUI chooser uses exact OEM action; strict standard-only examiner missed share handoff; exact OEM variant accepted with unchanged URI/bytes/permissions assertions",
+      "Initial font-copy generation placeholder/duplicate key errors and old image wait observations preserved; no failed cohort promoted"
+    ],
+    "checks": {
+      "androidBuild": "current assembleDebug/assembleDebugAndroidTest passed",
+      "unaffectedSource": {
+        "baseCommit": "eaff6cd05b55b2cc7189149db19c11403e3b79c6",
+        "areas": [
+          "apps/ios",
+          "packages",
+          "scripts",
+          "package.json",
+          "pnpm-lock.yaml",
+          "build.gradle.kts",
+          "settings.gradle.kts",
+          "gradle.properties"
+        ],
+        "files": 604,
+        "aggregateSha256": "1c02e677f8e9bff9450c84c0ec96352ce75dadfe7e585af1dfbc4f76149018f6",
+        "byteEqualToBase": true,
+        "checks": "Matched P6-4a full pnpm check/iOS build/shared Swift-KMP boundaries only; no new iOS native pass."
+      },
+      "mobileParity": "current passed",
+      "format": "current passed"
+    },
+    "pending": [
+      "iOS binary target query and full machine/thread/version cache namespace",
+      "Resource cards, direct SAF save, actual recipient, external formats/PDF/office/SVG and full image gestures/AX",
+      "OS browser load/return, system selection/clipboard matrix, token colors and API37 landscape",
+      "No new iOS physical/Windows/cellular/VPN proof; unrelated iOS A6 and task/project business remain paused"
+    ],
+    "wholeStageClosed": false
+  },
+  "resourceTargetIsolationCheckpoint": {
+    "phase": "P6-4d",
+    "sourceBase": "2aede6fcc28f5485bcccbc8693a8c271dbf2333c",
+    "features": ["F19", "F32"],
+    "files": {
+      "apps/ios/Sources/HostService.swift": "ab6e4642a46db2f60b5f1d9969986e3d8661d5b3db1a739fa4b7aae3e0ebb1e8",
+      "scripts/attachment-download-native-smoke.mjs": "2907d62ebf7b00707d96dcd27f734ec4310acdc59e458da246aec18fd802881a"
+    },
+    "summary": "P6-4d：补正iOS资源下载的原运行目标与缓存隔离。二进制GET携带捕获的完整target，两个解析GET仍遵循白名单；缓存使用实际KMP机器/聊天键及文件ID/摘要版本，Codex账号元数据不分裂缓存，其他Provider账号仍隔离，旧无runtime连接使用独立host/thread空间。源文件先解析、410不复活缓存、409仅一次重读和已开旧版字节保持；非法文件名/大小/摘要先拒绝。当前Swift模拟器真实共享边界属于辅助证据，不冒领iOS App/真机资源通过。",
+    "implementation": [
+      "iOS binary target JSON preserves original full runtime payload; resolver GET whitelist unchanged",
+      "Downloads/v2 caches by actual shared KMP machine/thread identity and original version ID/SHA, raw safe basename; verify cached size and hash",
+      "Codex account metadata compatible; other Provider account boundaries retained; legacy targetless cache cannot stand in for known runtime",
+      "Validate original and resolved resources before cache/path/network; preserve original current-before-cache/410/404/bounded409 policy"
+    ],
+    "auxiliary": {
+      "native": "Actual production Swift download functions, target DTO and shared identity facade compiled against real iOS MobileCore simulator framework; synthetic HTTP",
+      "binaryTargetChecks": 15,
+      "isolationCases": 7,
+      "invalidNameCases": 5,
+      "originalImmutableVersionPreserved": true,
+      "legacyTargetlessGet": true,
+      "currentChecks": "current full pnpm check and dual-architecture iOS build passed",
+      "ownedTemporarySimulatorDeleted": true
+    },
+    "matchedAndroid": {
+      "checkpoint": "P6-4c",
+      "auxiliaryMethods": 89,
+      "actualNativeResourceMethods": 1,
+      "scope": "exact unchanged apps/android/shared core/protocol and Host; no new Android/platform pass"
+    },
+    "newRealModelInputs": 0,
+    "wholeStageClosed": false,
+    "pending": [
+      "Current iOS App UI/physical resource verification, complete format/OS recipient/AX matrix",
+      "Android resource cards, direct save/export, full preview formats and browser/selection/token states",
+      "API37 landscape, cellular/VPN, unloaded-owner human dependency remain separate",
+      "Task/project business and unrelated iOS A6 remain paused"
+    ],
+    "checks": {
+      "pnpmCheck": "current passed",
+      "nonzeroSkipGroups": [1, 24, 22],
+      "iosBuild": "current passed both simulator architectures; independent acceptance bundle",
+      "sourceFilesFrozen": 604,
+      "rootLogSha256": "7d355bfddbf6341556a208d12c1c15587c1cc573d43287d5acfc5d2914e84d52",
+      "iosBuildLogSha256": "341c56157c03ebf51f90364094fee7e10354b6275c078eab04528bc614d76b0c",
+      "sharedFrameworkSha256": "c90ae02dbc962654eab80c24e3aaf03be47b6e2d6e7749feb684dad34ae776b8",
+      "iosAppExecutableSha256": "33c1a71b616194c4688eba7a69f529bdf27f9d6599494b126651c66f3ad99012"
+    }
+  },
+  "directResourceCardsCheckpoint": {
+    "phase": "P6-4e",
+    "sourceBase": "3f843f22935b356818f4603e7bb3c693573a49c3",
+    "features": ["F19", "F32"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "0d01854efa81e73f83ac8c4a40bc45c0e7c99e7512b856c7e29a6c070cc36cbc",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceUiTest.kt": "11f7714fb845682ffe2c30182c25946a18e18d47453f7294dd095c9e901b1fff",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "a1d05bb70ba3cec5efe7449af6a66f1989a37710bd14f1129b0f90202c4d3c51",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageLinks.kt": "11f4c1b48a3b3ceedd879cbf36b27dc756c2686fa038652f92d1c0df730865e3",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageResourceCards.kt": "8c4b556ed7cc6f6ca5387f167baac357f4b22ee8d83cfb987f8988b67e7bd6c1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeResourcePreview.kt": "7c2a74b17404bf4b24ea066e0975a51ecf8f6a7600b463b2b0330135ddd66dba",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "063b6aafc91fab6189817ac628dbb6b124b5a79e18e965e556e097112727d96a"
+    },
+    "summary": "P6-4e：Android原消息附件卡直接提供预览和保存/分享入口，显示原文件名/大小、准备状态与至少48dp动作；等待期间不重建分享控件，重复/旧操作不得增加下载或分享，只有文件名的元数据没有下载权。68项当前App辅助与1项实际原消息资源链通过，69份默认存储证明；实际10GET/4资源GET、0写入/新输入，链接及卡片预览、受控分享字节一致。真实接收方、直接系统保存、完整格式/AX和同轮历史/live别名观察仍待补，不关闭完整F19/F32。",
+    "iosComparison": {
+      "reference": "RemoteFileView in RootView.swift and MessageLinks.swift",
+      "sourceHashes": {
+        "apps/ios/Sources/RootView.swift": "e0d0f730af6f0d16c9c5ef0ddfcaac1a851e08a382be53680aa4c7bc8ea26788",
+        "apps/ios/Sources/MessageLinks.swift": "cf7e6885f3fece2f5d046a88e355a5189a09adaedf0eab752a45ef3ccee0932f"
+      },
+      "sharedAssertions": [
+        "Direct preview/share before downloading; no redundant download button",
+        "Raw name/size, pending state, disabled duplicate actions, original message/target, immutable opened version",
+        "Metadata names alone do not authorize downloads; typed attachment must belong to original message"
+      ],
+      "explicitDifferences": [
+        "Android 48dp native controls and bounded native preview vs iOS Quick Look",
+        "Android image card thumbnails, direct system save/real recipient and full formats remain open"
+      ]
+    },
+    "nativeAuxiliary": {
+      "methods": 68,
+      "defaultStorageProofs": 69,
+      "environments": [
+        "physical API33 light",
+        "API26 light",
+        "API37 portrait light",
+        "API26 font scale 2",
+        "API37 portrait dark"
+      ],
+      "sourceSha256": "230061cfeaa4d8526c5b30c780062f8174232a62a8487a7f677238e687f0c154",
+      "appSha256": "8fe9b9b708451e601c53f6692885f1c76c7f6e41350391c3e74928d73b0cdabc",
+      "runnerSha256": "bbbdfc398db0f4d143ebf0c69cb9674bcd0be01020291f4fddccb7285ba3fe2b",
+      "catalogKeys": 1643,
+      "sharedKeys": 1590,
+      "platformKeys": 53,
+      "imagesReviewed": 10,
+      "retiredControlOutcomes": [
+        "original-click-callback-invoked",
+        "original-click-callback-invoked",
+        "original-click-callback-invoked",
+        "original-click-callback-invoked",
+        "original-click-callback-invoked"
+      ]
+    },
+    "actualResource": {
+      "methods": 1,
+      "currentSourceSha256": "a3b0cdc93b542c7b5b432b8f1d698ba511a499be2c53082454f19a8084d70c76",
+      "runnerSha256": "4b4260ad3b74f6344d29af6334ecb346ec17042e8f2d330dc96d39996886c216",
+      "http": {
+        "requests": 10,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "resourceGets": 4,
+      "originalOwnerAndTurnsUnchanged": true,
+      "nativeLinkAndOriginalMessageCard": true,
+      "previewAndControlledShareBytes": 107,
+      "sha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+      "readOnlyGrant": true,
+      "externalRecipientAccepted": false,
+      "modelGeneratedFile": false,
+      "newModelInputs": 0,
+      "automaticReplay": false,
+      "routesRestored": true,
+      "transport": "owned ADB loopback only",
+      "imagesReviewed": 2
+    },
+    "nativeExaminerOnlyDelta": {
+      "onlyChangedSource": "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt",
+      "scope": "Opt-in actual examiner only: mount exact original LazyColumn message, retain metadata checkpoint and scope same-file card selectors to original message. Not selected by the 68 auxiliary methods.",
+      "acceptedAuxiliarySourceSha256": "230061cfeaa4d8526c5b30c780062f8174232a62a8487a7f677238e687f0c154",
+      "currentSourceSha256": "a3b0cdc93b542c7b5b432b8f1d698ba511a499be2c53082454f19a8084d70c76",
+      "inverseExact": true,
+      "appSha256Unchanged": "8fe9b9b708451e601c53f6692885f1c76c7f6e41350391c3e74928d73b0cdabc",
+      "currentRunnerSha256": "4b4260ad3b74f6344d29af6334ecb346ec17042e8f2d330dc96d39996886c216",
+      "auxiliaryMethods": 68,
+      "noNewProductOrAuxiliaryTestSource": true
+    },
+    "checks": {
+      "androidBuild": "current passed",
+      "unaffectedSource": {
+        "baseCommit": "3f843f22935b356818f4603e7bb3c693573a49c3",
+        "files": 604,
+        "byteEqualToPassedP6_4d": true,
+        "inputIndexSha256": "6e7e0883251fef58ffc7b1a80fde850481a4ee7b345fbef2f4b08dfadf0cd193",
+        "scope": "iOS/packages/scripts/tooling unchanged; P6-4d full pnpm check and iOS build matched only; no new platform pass"
+      },
+      "mobileParity": "current passed",
+      "format": "current passed"
+    },
+    "failuresRetained": [
+      "Raw Provider error equals raw file name: scope examiner to original error dialog, retain literal bytes",
+      "Replacing share control during busy retired captured native modifier; keep control identity, change inner icon/progress only",
+      "A prior API26 retired-version modifier rejected dispatch before App callback; this outcome recorded separately, not an App callback pass",
+      "Two actual native reads ended before link because exact lazy message not mounted; wait alone insufficient, mount original message first",
+      "Third actual read passed link/preview share but same file had two message cards; scope examiner to exact original message. All three failed scenes sealed with original owner/Turn unchanged and zero new inputs; no failed cohort promoted"
+    ],
+    "pending": [
+      "Direct SAF save, actual different-UID recipient and full URI/system lifecycle with Android P7",
+      "Image card thumbnails, PDF/office/SVG/large-format preview, full image gestures/AX/token matrix",
+      "Same original turn includes fallback/live ID aliases; duplicate-body/UI meaning requires separate source/read comparison, not inferred from same attachment ID alone",
+      "Current iOS App/physical resource verification, browser/system selection and API37 landscape",
+      "Task/project business and unrelated iOS A6 remain paused"
+    ],
+    "wholeStageClosed": false
+  },
+  "readingStateCopyCheckpoint": {
+    "phase": "P6-5a",
+    "sourceBase": "da3a76e2c5e0e8d56d33c1ad892fe60abc001731",
+    "features": ["F12", "F56", "F70"],
+    "files": {
+      "apps/android/localization/native-copy.json": "dc9f827682ef70d6aa2277eac3b2d82b5123e4d3918db7c46765e0c77a8daf9e",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "0eaca5044a82d7474525269a5f8e4adb1df61515cc9508667a48acb643f376db",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEarlierLoadingUiTest.kt": "29082994f382b8c0bd24a7a00ed702ce0b8b172d7bed98ae81cf43534ecc8e89",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "aaa54024f2c229a97bc992cb37701d227b46ec8faa0da742c43722702efdba7d",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReadingCopyTest.kt": "912820623efc8caa9a5d0f805cf18199b9bdf19425efa19ddbcae81ab8128ad6",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "95bb5cac778dfc69f6778dc0467fb0df985800233a78b97d6cf93d88246bb795",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "5d2b849b6c0814a838a0c5fc1c3bc87f9f1a28df9077eb6daa718996c266300b",
+      "apps/android/src/main/res/values/product_strings.xml": "1c11f97088422dd2587d4fc54791c1b17f75ed77f8c74031f15e1eefe85c3fad"
+    },
+    "summary": "P6-5a：Android恢复重试/读取中、四类只读提示及更早历史状态按当前应用语言显示；复用共享词条并新增5个平台键，1590+58共1648。恢复页抽出无状态生产组件，隔离检查读取中/禁止重试，真实加密损坏重试与原草稿/语言/外观恢复另验；不放开Session私有状态。37项当前辅助与1项实际原回复只读通过，38份默认存储证明；真实5GET/0写入/新输入。实际只读是一般原回复/本地计划回归，不代替真实损坏存储或四类只读Host验收，完整P6仍开。",
+    "implemented": [
+      "Only explicit app-owned keys localized: raw titles/messages/drafts/authority unchanged",
+      "Four archived/history/waiting notices in two languages; no language-derived write authority",
+      "Earlier-read label/spinner differentiates current history refresh from earlier-page loading",
+      "Stateless recovery view uses production text and disabled busy action; original Session private setters remain private",
+      "Earlier native fixture now uses isolated session and default draft/file/version/import-generation guard"
+    ],
+    "iosComparison": {
+      "source": "RootView.swift recovery overlay, archived-conversation-notice and earlier-history control",
+      "sharedCopy": ["重试读取", "正在加载更早消息…", "显示更早消息"],
+      "platformCopy": "Android retains explicit local/desktop restore location and local draft explanation; recovery does not infer device lock. No iOS product change."
+    },
+    "nativeAuxiliary": {
+      "methods": 37,
+      "environments": [
+        "physical API33 light",
+        "API26 light",
+        "API37 portrait light",
+        "API26 font scale 2",
+        "API37 portrait dark"
+      ],
+      "englishPrimaryMethods": 18,
+      "chineseEarlierMethods": 9,
+      "extraStyleMethods": 10,
+      "sourceSha256": "7b4d0df58d74ba6907a4093f87e27732657adb9dee529a4f0c1fcbe2601aed9f",
+      "appSha256": "0c483253d779294ebc5ad6e4293ff77023ceb2c934815ea0ca1e965c9c176204",
+      "runnerSha256": "88b0559257e9b8ac61aabb2288ab042ef7026532b9740340378c2dc6091889bd",
+      "catalogKeys": 1648,
+      "sharedKeys": 1590,
+      "platformKeys": 58,
+      "defaultStorageProofs": 38,
+      "imagesReviewed": 10,
+      "busyUiFixture": "Isolated production component, light default Material theme even in dark batch; no full-theme or slow-I/O claim"
+    },
+    "actualGeneralRead": {
+      "methods": 1,
+      "http": {
+        "requests": 5,
+        "methods": ["GET"],
+        "writeRequests": 0
+      },
+      "originalOwnerAndTurnsUnchanged": true,
+      "twoLocalPlanToggles": true,
+      "draftAndFilesPreserved": true,
+      "newModelInputs": 0,
+      "automaticReplay": false,
+      "routesRestored": true,
+      "transport": "owned ADB loopback only",
+      "imagesReviewed": 3,
+      "notLiveRecoveryOrReadOnlyHostAcceptance": true
+    },
+    "checks": {
+      "androidBuild": "current passed",
+      "unaffectedSource": {
+        "baseCheckpoint": "P6-4d",
+        "baseCommit": "3f843f22935b356818f4603e7bb3c693573a49c3",
+        "files": 604,
+        "byteEqual": true,
+        "scope": "JS/packages/iOS/tooling; full pnpm check and iOS build matched only, no new platform pass"
+      },
+      "mobileParity": "current passed",
+      "format": "current passed"
+    },
+    "failuresRetained": [
+      "Initial examiner used nonexistent/private Session members; compilation rejected, no production visibility widened",
+      "Initial scoped synthetic history omitted returned readTarget; existing target contract rejected and history did not mount. Add matching fixture target, do not weaken production guard; rerun final complete cohorts"
+    ],
+    "pending": [
+      "Full error/voice/AX/fixed-copy audit and 94 token/page matrix",
+      "Real persisted-storage failure/cold recovery and URI/system work with Android P7",
+      "P6-4e same-turn fallback/live alias observation needs independent exact body/resource comparison",
+      "API37 landscape, cellular/VPN, archived unloaded owner human dependency remain separate",
+      "Task/project business and unrelated iOS A6 remain paused"
+    ],
+    "wholeStageClosed": false
+  },
+  "completedResourceReplyIdentityCheckpoint": {
+    "phase": "P6-5b",
+    "sourceBase": "60fc12d31e08ae88640aaa893177c0addc63eb67",
+    "features": ["F17", "F18", "F19", "F32"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "931cbe3473631e991e30b70eb7dd75f48d9b6cb38f7523e7cb6b0ff6914027fc",
+      "packages/codex-adapter/src/desktop-history-identity.ts": "a3f40eaa97331cfbb80da20238442cc44461cc446980878285fd5c46e3775566",
+      "scripts/desktop-history-identity-smoke.mjs": "f4312b7b9ef9049cfbb1d54f6f25ca041822ac6fdcf71781d6831ef315ea12b6"
+    },
+    "summary": "P6-5b：已完成原Turn的资源最终回复，按原正文、完整登记附件和渲染字段一对一核对临时/正式ID；文件名仅作冗余显示提示，不作身份。不同正文、版本、目标、未完成轮和未知字段保留。真机/API26/API37各1项实际原回复、链接/卡片预览与受控分享通过，0写入/新模型输入；原owner/Turn与原文件字节保持。完整展示及系统能力矩阵仍开。",
+    "implemented": [
+      "Positive original completed-Turn evidence and exact assistant/agentMessage/final_answer/completed only",
+      "Raw body, run, render detail/reply ID and complete ordered registered resource claims match; redundant name hints covered by claims only",
+      "One provisional/stable occurrence consumed once; real IDs, changed/unknown claims, raw user text and incomplete Turns retained",
+      "History reader remains read-only; no original operation replay or source-history rewriting"
+    ],
+    "iosComparison": {
+      "sharedHostChanged": true,
+      "uiContract": "Same original logical final reply and resource, preserving distinct source content. No platform rendering code changed.",
+      "currentIOSNativePass": false
+    },
+    "actualAndroid": {
+      "environments": [
+        "physical API33 portrait light",
+        "API26 portrait light",
+        "API37 portrait light"
+      ],
+      "rows": [
+        {
+          "httpRequests": 24,
+          "resourceGetRequests": 4,
+          "writeRequests": 0,
+          "nativeMethods": 1,
+          "sourceSha256": "9bc2f8a99b7feceec0adf4f1717c510c6e3f4eb14aa4c28d4bd28d3d528a6841",
+          "appSha256": "0c483253d779294ebc5ad6e4293ff77023ceb2c934815ea0ca1e965c9c176204",
+          "runnerSha256": "df5609d433e322948f175944925fd651323bc7f7536d24a21d60f910d3e98f0c",
+          "hostAdapterSha256": "91c2711c3ce1b335cbfd96dcc8e83f773691a91dcf66f8dbcbf788b1d6731b15",
+          "aliasProofSha256": "b7d27b477fd21259944e69d91572c4b26905db790f85476a5c8cd8a79a34629f",
+          "defaultStorageProofSha256": "32cfbd0c75a20f87930be5f3600d7134afc12d145f8ef3ad6bc67d97d2b29e84",
+          "originalTurnsUnchanged": true,
+          "originalFileSha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+          "reportSha256": "f39fad178c3d1b751add018ac57a5f2e96d065b5a49d22ca518d176f65e66d3a",
+          "nativeReportSha256": "47f679570e2c1b073615f50eb4ce9d0e6f02daa75eb741d3a3348475e0b477d8",
+          "environment": "physical API33"
+        },
+        {
+          "httpRequests": 26,
+          "resourceGetRequests": 4,
+          "writeRequests": 0,
+          "nativeMethods": 1,
+          "sourceSha256": "9bc2f8a99b7feceec0adf4f1717c510c6e3f4eb14aa4c28d4bd28d3d528a6841",
+          "appSha256": "0c483253d779294ebc5ad6e4293ff77023ceb2c934815ea0ca1e965c9c176204",
+          "runnerSha256": "df5609d433e322948f175944925fd651323bc7f7536d24a21d60f910d3e98f0c",
+          "hostAdapterSha256": "91c2711c3ce1b335cbfd96dcc8e83f773691a91dcf66f8dbcbf788b1d6731b15",
+          "aliasProofSha256": "b7d27b477fd21259944e69d91572c4b26905db790f85476a5c8cd8a79a34629f",
+          "defaultStorageProofSha256": "e0e17a82b9891a08f2faa4eeb0b1a12666e3cdd06a8a8eb4b41e0176281d6a47",
+          "originalTurnsUnchanged": true,
+          "originalFileSha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+          "reportSha256": "bbdd945f8a80af7f19aff2489f211be21c17d764c6c098649105e6ae48a96d96",
+          "nativeReportSha256": "ca96dc9e1e158529cb90f71a3e159dce03d35ae7c0091bd488277588472353d8",
+          "environment": "API37 portrait"
+        },
+        {
+          "httpRequests": 17,
+          "resourceGetRequests": 4,
+          "writeRequests": 0,
+          "nativeMethods": 1,
+          "sourceSha256": "9bc2f8a99b7feceec0adf4f1717c510c6e3f4eb14aa4c28d4bd28d3d528a6841",
+          "appSha256": "0c483253d779294ebc5ad6e4293ff77023ceb2c934815ea0ca1e965c9c176204",
+          "runnerSha256": "df5609d433e322948f175944925fd651323bc7f7536d24a21d60f910d3e98f0c",
+          "hostAdapterSha256": "91c2711c3ce1b335cbfd96dcc8e83f773691a91dcf66f8dbcbf788b1d6731b15",
+          "aliasProofSha256": "b7d27b477fd21259944e69d91572c4b26905db790f85476a5c8cd8a79a34629f",
+          "defaultStorageProofSha256": "822c95cd56a80923ad5e34e704b7ea22f1cff8160e26fd13f2060273ff33b5fc",
+          "originalTurnsUnchanged": true,
+          "originalFileSha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+          "reportSha256": "c185b0c5206f0a9b83d241a932332fcb2192b3c0d1ca7af910d2a16ca3a12884",
+          "nativeReportSha256": "570ddc88b178c2c9192a82d61aa1d9e37085f91d4b5b2cd4fe045ef6634eb7fe",
+          "environment": "API26"
+        }
+      ],
+      "methods": 3,
+      "defaultStorageProofs": 3,
+      "httpRequests": 67,
+      "resourceGets": 12,
+      "writeRequests": 0,
+      "modelInputs": 0,
+      "originalOwnerAndTurnsUnchanged": true,
+      "canonicalOriginalReplyOnly": true,
+      "resourceBytes": 107,
+      "resourceSha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+      "resourceFilePreparedByExaminerReferencedByModel": true,
+      "sharing": "Exact read-only own content URI/ClipData and bytes, chooser intercepted; no actual external recipient",
+      "routeRestored": true,
+      "transport": "Owned ADB loopback; not LAN/TLS/cellular/VPN",
+      "imagesRetained": 6,
+      "selectedImagesReviewed": 3
+    },
+    "auxiliary": {
+      "baselineCounterfactual": "Original owned Host cache has identical raw final body and claims under provisional/stable IDs. Old compiled helper retains alias; new helper retires only matched occurrence. Auxiliary not native proof.",
+      "boundarySmoke": "Current passed; exact/changed/malformed/unknown claims, raw data, completion, multiplicity and restart",
+      "androidBuild": "Current passed",
+      "otherAndroidAuxiliary": "Earlier results remain under original fingerprints, not counted as current native execution"
+    },
+    "checks": {
+      "pnpmCheck": "current full run passed",
+      "rootLogSha256": "e5da04cf20bfd9645effbb6556828855a6c1293db99fe40a950120bedada38e7",
+      "sourceFilesFrozen": 604,
+      "sourceInputsByteEqualBeforeAfter": true,
+      "nonzeroSkipGroups": [1, 24, 22],
+      "skipsNotOtherPlatformAcceptance": true,
+      "androidBuild": "current passed",
+      "mobileParity": "final rerun before commit",
+      "iosBuild": "Only unchanged iOS/shared-core source matches P6-4d; no new iOS App acceptance"
+    },
+    "pending": [
+      "Different original user bodies observed; preserve both until source-formatting analysis, no heuristic deletion",
+      "Full history/format/AX/visual matrix, real external recipient and system save",
+      "API37 landscape, cellular/VPN and archived unloaded owner remain separate",
+      "Task/project business and unrelated iOS A6 remain paused"
+    ],
+    "wholeStageClosed": false
+  },
+  "executionStateCopyCheckpoint": {
+    "phase": "P6-5c",
+    "sourceBase": "3fd243375f45ab13bfaa8a61faf76cb293cdd144",
+    "features": ["F37", "F38", "F42", "F43", "F44", "F45", "F56", "F58"],
+    "files": {
+      "apps/android/localization/native-copy.json": "ed11934a26e598a6d6c417919d5d220463b9c8b41fcacc7a46c3a6f26a6e909c",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "44f364513760d16de82f24cb41935a30ae1fd3d5b055d65137ebd07565ab0932",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionCopyTest.kt": "3b86416d0787e8af31ae13c8f194044cf5d0e66bb79d885ff241343e2ea111c9",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "b3c0f0c96eec78afc65a39de835221994dbde773cb38bdda1ab321ecc32f4e9d",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "d61c31bfc7162b7ea74c0ef0f1bfa6cf5f624e2ceb76751bc66e47317506e4fb",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "8efade08b51635bdca1fee0c84b45b39e7a6c898b51517c2d02da4ff48058d34",
+      "apps/android/src/main/res/values/product_strings.xml": "d735d81ce47b2de52c51c7c0b56a978226780efeaaebd26ab88a1657aafe2187"
+    },
+    "summary": "P6-5c：队列动作/读屏、历史回执展开、原操作固定状态、原记录菜单及异步问题数量/上一题文案按当前应用语言显示；新增13个平台键，1590+71共1661。原正文、错误、意图、选择和控制权限不翻译不改变。23项当前原生辅助与三环境各1实际原回复资源回归通过，26份默认存储证明，0写入/新输入；完整P6及原生系统/控制矩阵仍开。",
+    "implemented": [
+      "Only explicit app literals formatted; raw queued instructions and Provider errors matching catalog keys remain original",
+      "Queue original IDs/order/Turn and enabled authority unchanged by language; no queue action dispatched in this copy test",
+      "Historical disclosure remains expanded across language; no current wait or replay created",
+      "Actual encrypted ready intent, SHA and submissionAttempted=false preserved while captions switch",
+      "Two original async question pages, selected option and raw question survive language/close/reopen without answer callback",
+      "13 Android-specific fixed states plus existing shared keys; no wire/operation/storage-rule change"
+    ],
+    "iosComparison": {
+      "sources": [
+        "apps/ios/Sources/RootView.swift original queue/receipt/legacy-record/question UI",
+        "apps/ios/Resources/en.lproj/Localizable.strings"
+      ],
+      "sharedKeys": [
+        "附件指令",
+        "立即执行第 %@ 条排队指令",
+        "取消第 %@ 条排队指令",
+        "查看第 %@ 份原记录",
+        "客户端队列同步失败",
+        "%@ 个问题待回答",
+        "上一题"
+      ],
+      "androidSpecificStates": "Local intent and creation stage captions retain current Android meaning and receive platform catalog entries. iOS source unchanged; no new iOS native pass."
+    },
+    "nativeAuxiliary": {
+      "methods": 23,
+      "primaryMethods": 15,
+      "styleMethods": 8,
+      "environments": [
+        "physical API33 portrait light",
+        "API26 portrait light",
+        "API37 portrait light",
+        "API26 font scale 2",
+        "API37 portrait dark"
+      ],
+      "sourceSha256": "f39f5273b478695f9e756d844644de2799337d191449af833a0fc8177686e574",
+      "appSha256": "c8ec68f8ae5e92d619d0df1e8a39073bd506bfd98b269b85338146bb86889746",
+      "runnerSha256": "3b5e343f2fff86ee08e94a58856159c707c003b2132916f5d1d47cdf9e862171",
+      "keysPerLanguage": 1661,
+      "sharedKeys": 1590,
+      "platformKeys": 71,
+      "imagesRetained": 20,
+      "selectedImagesReviewed": 10,
+      "scope": "Synthetic GET-only native Session/UI/HTTP plus actual encrypted local journal and compiled catalog. No real queued model command or answer acceptance."
+    },
+    "actualOriginalResourceRead": {
+      "methods": 3,
+      "environments": ["physical API33", "API26", "API37 portrait"],
+      "httpRequests": 65,
+      "resourceGets": 12,
+      "writeRequests": 0,
+      "modelInputs": 0,
+      "originalOwnerAndTurnsUnchanged": true,
+      "canonicalOriginalReplyOnly": true,
+      "bytes": 107,
+      "resourceSha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+      "modelReferencedExaminerPreparedFile": true,
+      "draftAndFilesPreserved": true,
+      "chooserIntercepted": true,
+      "actualExternalRecipient": false,
+      "routesRestored": true,
+      "transport": "Owned ADB loopback only",
+      "selectedImagesReviewed": 3
+    },
+    "defaultStorageProofs": 26,
+    "checks": {
+      "androidBuild": "current passed",
+      "mobileParity": "current passed",
+      "format": "current source and final docs formatting passed",
+      "unaffectedSource": {
+        "baseCheckpoint": "P6-5b",
+        "baseCommit": "3fd243375f45ab13bfaa8a61faf76cb293cdd144",
+        "sourceFiles": 604,
+        "byteEqual": true,
+        "frozenFileListSha256": "8e31f517fba52e6290e3fb3e51e25382090969556792e065da14c1d20981985d",
+        "scope": "JS/iOS/shared-core/tooling; earlier full check matched only. Android build/parity/format current."
+      }
+    },
+    "pending": [
+      "Full actual queue/approval/answer and saved-operation state matrix; this stage changes captions only",
+      "Large-font queue last-row touch/scroll, full AX/TalkBack, error prefix and 94-token/page matrix",
+      "Original user body source-formatting observation retained; no heuristic deduplication",
+      "System save/cross-UID recipient/URI and Android P7; API37 landscape/cellular/VPN/archived unloaded owner separate",
+      "Task/project business and unrelated iOS A6 remain paused"
+    ],
+    "wholeStageClosed": false
+  },
+  "localizedSharedToolPresentationCheckpoint": {
+    "phase": "P6-5d",
+    "sourceBase": "9dafd51ecd86b70e06b707873cff4df1b26727b5",
+    "features": ["F19", "F22", "F23", "F32", "F56"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileToolCopyTest.kt": "35fdfcba0325d1f84838b1b23088daffb0ba6d1af368393aacbba6ab700b3681",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "a342870161057c0efd8d0d7ebcde414739ae446b6feec0d51b157bdb6ecbc6b2",
+      "apps/android/src/main/kotlin/com/agenthub/android/ToolContent.kt": "079529c8631ce92884d0bd04121b68b323349f8b63b63eb39aa130cd1a31f51b",
+      "apps/ios/Sources/RootView.swift": "ca1b272ba4451a4b8dc82eb325649d1a84f4f49ea7e12438fe3dfe8d2ed21f58",
+      "apps/ios/Sources/SharedMobileRules.swift": "1ab7631bac64c365dec21a58ca74dc5261ae43fcd55a20b7e7ba0a59627241a0",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/ToolPresentation.kt": "1ca354b0963108854759b2946d67176d710b22c5ad3714e9f35959b6162f8f49",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/SessionPoliciesTest.kt": "9d81ea915f31a590c16b8dddf0a3526f9131fa0463a9f550fdda0ad9e1578c8b",
+      "packages/protocol/fixtures/mobile/state-v1.json": "1fba04fd161fb429543341b6f96fd77d70c63e7e396d3e75466fc26a0ba706c3",
+      "scripts/mobile/verify-ios-state.swift": "1d393febc2654593ef18a0cb6bb3778ed1f0d296b51b0954605626ed60a04b39",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceLiveTest.kt": "00939ca8972f5efbc0759eb6eb5f825e2673d20f219885f5922da634eeb95259",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceUiTest.kt": "7921ebb839ec3d9400fd65b1b98ea5d86bfe4adabaed62a1f15341977ce90514",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageResourceCards.kt": "c10bca3b8b99ac49c57e0396e3ca07686996e8df9462be62f2f06cb602fcdd07"
+    },
+    "summary": "P6-5d：工具摘要/标题的中英组合规则统一到KMP，平台只翻译固定键，iOS删除重复英文生产规则；Android工具状态/展开读屏、空输出及压缩文案对齐。原Provider内容不翻译。另修复浮动“回到最新”遮住附件分享：资源卡保留56dp右侧空间。53项当前辅助与三环境各1实际原工具/资源整例通过，56份默认存储证明，0写入/新输入；完整P6仍开。",
+    "implemented": [
+      "Shared summary/title formatting with narrow platform text catalog interface; original Chinese entry points delegate to same implementation",
+      "iOS removes duplicated English summary/title production paths; existing style/status and raw text preserved",
+      "Android fixed statuses/detail/waiting/disclosure/compaction labels follow current language",
+      "Raw Provider names/activity/command/output never localized, including values equal to catalog keys",
+      "Reserve 56dp trailing resource-card lane, matching inline approvals, so floating latest control cannot intercept native share touch"
+    ],
+    "auxiliary": {
+      "toolVectors": 33,
+      "newEnglishVectors": 8,
+      "core": "current JVM/native iOS simulator and compiled Swift vectors passed; not iOS App acceptance",
+      "androidNative": "final candidate passed; totals detailed separately",
+      "currentIOSAppAcceptance": false
+    },
+    "checks": {
+      "pnpmCheck": "passed for frozen shared/JS/iOS/tooling inputs; final Android layout/examiner delta checked by current native build and runs",
+      "sourceFilesFrozen": 604,
+      "sourceInputsByteEqualBeforeAfter": true,
+      "rootLogSha256": "3d57e25ec5c09382c3701553dcc56f3a8dc2b17cee56167284bab422a9640bc7",
+      "nonzeroSkipGroups": [1, 24, 22],
+      "skipsNotWindowsAcceptance": true,
+      "iosBuild": "current passed both simulator architectures; independent bundle",
+      "iosBuildLogSha256": "d08d02ee86cc7398ae4fc7bb3c6d3971aa4548b9ae21fe1f0858c3aab6e1c193",
+      "iosAppExecutableSha256": "54d8d95d16eae7f2328516254e54b174717c060ad7ef8d989298746e7d322ed6",
+      "sharedCore": "current JVM/native iOS simulator/compiled Swift bridge passed",
+      "reportedCoreTests": {
+        "jvm": {
+          "tests": 83,
+          "failures": 0,
+          "skips": 0
+        },
+        "iosSimulatorArm64": {
+          "tests": 83,
+          "failures": 0,
+          "skips": 0
+        }
+      },
+      "toolVectors": 33,
+      "newEnglishToolVectors": 8,
+      "androidBuild": "final candidate passed",
+      "mobileParity": "current final documentation passed",
+      "format": "current final source/document formatting passed"
+    },
+    "failuresRetained": [
+      "First core invocation omitted mandatory dedicated simulator ID and stopped before tests",
+      "First scoped core run rejected new vector messages missing required nullable render fields; add null fields to fixture without weakening production parsing, rerun all vectors",
+      "New original-tool examiner first used Boolean conjunction for SemanticsMatcher; compilation rejected, examiner corrected only",
+      "Six original tool/resource scenes failed at direct card share; original model/owner/Turn and zero writes independently sealed. Current tool checks had passed; no old scene promoted.",
+      "Reusable composition hypothesis passed on all three platforms; no lifecycle change made",
+      "Bounds/focus wait alone did not repair actual share. Temporary callback-state probe showed native touch never entered Share callback. Long-content hit-region counterexample then confirmed floating latest overlap; final trailing lane fixes it",
+      "Diagnostic preflight dumpsys exceeded default child buffer on API37; bounded larger buffer, no native method had started"
+    ],
+    "pending": [
+      "Remaining pending bubble/chat archive/fork/connection/plan AX and fixed error prefixes; full 94-token/format/theme/font/AX matrix",
+      "Full actual tool/group/compaction and raw content/clipboard matrix",
+      "94 token/full theme/font/AX matrix and API37 landscape",
+      "Before Android P7 adopt N048/N049; system capabilities/environment pending separate",
+      "Business task/project management and unrelated iOS A6 remain paused",
+      "Other trailing tool/code/reply controls versus floating latest remain in complete interaction/AX matrix; this layout fix is scoped to resource cards"
+    ],
+    "wholeStageClosed": false,
+    "nativeAuxiliary": {
+      "methods": 53,
+      "normalMethods": 45,
+      "styleMethods": 8,
+      "environments": [
+        "physical API33 portrait light",
+        "API26 portrait light",
+        "API37 portrait light",
+        "API26 font scale 2",
+        "API37 portrait dark"
+      ],
+      "sourceSha256": "0aff11490eae06f4dcd66c74a50f3dfd53a4bff8b3e254667f95260bb1dbc8b5",
+      "appSha256": "19e8ec352b43340a0d0a6aa8c9fb67537958c0df4a13abca9e9d4cb49e6f6bf4",
+      "testSha256": "bdefc823632a6ee17603034243789111eafa82da821ed0223bbdc6d48076ac29",
+      "compiledCatalogKeysPerLanguage": 1661,
+      "resourceUiMethodsPerNormalEnvironment": 12,
+      "toolMethodsPerNormalEnvironment": 2,
+      "catalogMethodsPerNormalEnvironment": 1,
+      "reusableCompositionCheck": "Three reactivations/four exact shares/one binary; three retired actual App callbacks cannot read/share. Isolated default Material light component even in dark batch, not full dark-theme proof.",
+      "floatingHitRegion": "Old native long-content control has share center inside scroll-latest rectangle; final normal/style controls have no center overlap and real SDK share succeeds. Same 56dp lane as existing inline approvals.",
+      "earlierCohortsNotPromoted": true,
+      "selectedImagesReviewed": 10
+    },
+    "actualOriginalToolResourceRead": {
+      "methods": 3,
+      "rows": [
+        {
+          "environment": "physical API33",
+          "http": {
+            "requests": 40,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "resourceGets": 4,
+          "sourceSha256": "0aff11490eae06f4dcd66c74a50f3dfd53a4bff8b3e254667f95260bb1dbc8b5",
+          "appSha256": "19e8ec352b43340a0d0a6aa8c9fb67537958c0df4a13abca9e9d4cb49e6f6bf4",
+          "runnerSha256": "bdefc823632a6ee17603034243789111eafa82da821ed0223bbdc6d48076ac29",
+          "originalToolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+          "originalTurnsUnchanged": true,
+          "hitRegionProofSha256": "1aeda119d4ac0faa2b85660b7c81b1c752b68b554aa08fbc1d1318ba5a0881a0",
+          "nativeReportSha256": "ded4ecc251095ad9011f57a27cf0c9799993e8cb01620c3a60e227e21e8d5dad",
+          "reportSha256": "00811173dc19e8b19709af4fa4e7e18584dea47e141c36d4c58895a4e4216c89"
+        },
+        {
+          "environment": "API37 portrait",
+          "http": {
+            "requests": 47,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "resourceGets": 4,
+          "sourceSha256": "0aff11490eae06f4dcd66c74a50f3dfd53a4bff8b3e254667f95260bb1dbc8b5",
+          "appSha256": "19e8ec352b43340a0d0a6aa8c9fb67537958c0df4a13abca9e9d4cb49e6f6bf4",
+          "runnerSha256": "bdefc823632a6ee17603034243789111eafa82da821ed0223bbdc6d48076ac29",
+          "originalToolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+          "originalTurnsUnchanged": true,
+          "hitRegionProofSha256": "b691a69a23996f594a95c746437e85e3f13c4386a43d87aa5daae1112ef3b28a",
+          "nativeReportSha256": "fee4e1802667bd86d761543a167e26aacf88d6c41889d4fdc4627214543d5f80",
+          "reportSha256": "6f8b0a7132b026a032d94cb3aa7833ea763167e98367dc0d0e0ecd183684455d"
+        },
+        {
+          "environment": "API26",
+          "http": {
+            "requests": 21,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "resourceGets": 4,
+          "sourceSha256": "0aff11490eae06f4dcd66c74a50f3dfd53a4bff8b3e254667f95260bb1dbc8b5",
+          "appSha256": "19e8ec352b43340a0d0a6aa8c9fb67537958c0df4a13abca9e9d4cb49e6f6bf4",
+          "runnerSha256": "bdefc823632a6ee17603034243789111eafa82da821ed0223bbdc6d48076ac29",
+          "originalToolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+          "originalTurnsUnchanged": true,
+          "hitRegionProofSha256": "970849b4077066aab83cb1227452a14c56a2e385748762ebfe947a63c06db57e",
+          "nativeReportSha256": "cc23a8d2cab92cee44cc7e922e78c3f0703efda81b06d5287a51d8942c21fade",
+          "reportSha256": "d537af2fcf70cac6620e28ef08d9aa0f11f45cb15d6aac0861c6eac40bde9281"
+        }
+      ],
+      "httpRequests": 108,
+      "resourceGets": 12,
+      "writeRequests": 0,
+      "newModelInputs": 0,
+      "stableOriginalToolIdRawTextAndDetail": true,
+      "twoLanguageStatusAndExpandedState": true,
+      "originalOwnerAndTurnsUnchanged": true,
+      "linkAndCardPreviewAndDirectShare": true,
+      "bytes": 107,
+      "resourceSha256": "ac2fe46329e57c1f7a921aa3520af1f519f9ff16de71583ccc41bc57cddca6fe",
+      "modelReferencedExaminerPreparedFile": true,
+      "allShareCentersOutsideFloatingLatest": true,
+      "chooserIntercepted": true,
+      "actualExternalRecipient": false,
+      "routesRestored": true,
+      "transport": "Owned ADB loopback only",
+      "selectedImagesReviewed": 6
+    },
+    "defaultStorageProofs": 56,
+    "failedActualReadScenes": {
+      "count": 6,
+      "allGetOnly": true,
+      "originalOwnerAndTurnsUnchanged": true,
+      "originalOneInputPreserved": true,
+      "notPromotedToPass": true
+    },
+    "temporaryProbe": "Only boolean lifecycle/callback state, no body/credential; removed. MessageLinks.kt restored byte for byte, no production callback/authority relaxation."
+  },
+  "messageActionHitRegionCheckpoint": {
+    "phase": "P6-6a",
+    "sourceBase": "915e656537f8b2415ca65017bb25014841d7e3b3",
+    "features": ["F19", "F20", "F32", "F56"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "0b88ed7eaab5a02a29022620ba8b9406adca474600f1f45b14851d82c8378f77",
+      "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "b0566c96885e94fcc775b532b86eb5c01276856858649191bc8d8e1da0303175",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageActionLayout.kt": "5f280329a581ca85b2a3850647ae8b39660a2dbeba595da401f9991b59462527",
+      "apps/android/src/main/kotlin/com/agenthub/android/MessageResourceCards.kt": "89e4db1617c3a8b69f6b95491c01a38c924fc24eb3e4d04cf1543632b1c1e505",
+      "apps/android/src/main/kotlin/com/agenthub/android/ToolContent.kt": "61457fafe12a02d8306e05edad3cd7c9504111154f3b6a9cc97ffb3b9c0bc8bf",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileMessageActionOverlapTest.kt": "82684ab9b77476d3e827cb18eae3189a0109ae17afcdc896cde54d4d4ea76b1b",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCodeReadOnlyLiveTest.kt": "adc7937588b90fda23cfe1e308fa2f6513e39a78387c61ea23ded483b158e332"
+    },
+    "summary": "P6-6a：消息列表内代码/工具复制与资源分享预留浮动入口空间；弹层默认不留，代码语言单行省略但保留完整读屏值，复制至少48dp。67项辅助、6项实际原代码/工具资源只读整例和73份默认存储证明通过；真机/API37原代码系统复制匹配，API26空剪贴板保护性未写入，单列待验。完整P6未关闭。",
+    "checks": {
+      "androidBuild": "current passed",
+      "pnpmCheck": "matched P6-5d complete run: all 604 shared/JS/iOS/tooling inputs byte equal; Android delta built and natively checked now",
+      "rootLogSha256": "3d57e25ec5c09382c3701553dcc56f3a8dc2b17cee56167284bab422a9640bc7",
+      "matchedSourceInputs": 604,
+      "nonzeroSkipGroups": [1, 24, 22],
+      "skipsNotWindowsAcceptance": true,
+      "iosBuild": "matched unchanged P6-5d simulator build; not current iOS App UI or phone acceptance",
+      "mobileParity": "current passed",
+      "format": "current passed",
+      "androidApprovalGuard": "current passed"
+    },
+    "nativeAuxiliary": {
+      "methods": 67,
+      "normal": 57,
+      "style": 10,
+      "environments": [
+        "physical API33 portrait light",
+        "API26 portrait light",
+        "API37 portrait light",
+        "API26 font scale 2",
+        "API37 portrait dark"
+      ],
+      "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+      "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+      "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+      "clipboardRecorder": "auxiliary raw payload verification; system clipboard untouched",
+      "chooser": "intercepted exact text/plain payload, not external recipient acceptance"
+    },
+    "actualOriginalReads": {
+      "methods": 6,
+      "rows": [
+        {
+          "environment": "API37 portrait",
+          "kind": "tool-resource",
+          "http": {
+            "requests": 32,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+          "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+          "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+          "ownerTurnsUnchanged": true,
+          "newModelInputs": 0,
+          "routesRestored": true,
+          "nativeReportSha256": "97d213654a080f37c19f67fcdc0d5f178f3f3a9f18468e032189e5093ad6a1a5",
+          "hostReportSha256": "18a923e46e12be5d67aca6f04a86686d77256a50b02165f1ddac980c933d8774",
+          "proofSha256": "7799460436b6cc4b3e0112ec77610f09d7a4b6c96d1ff57b7ecc8ea180b5723f",
+          "toolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+          "resourceGets": 4
+        },
+        {
+          "environment": "physical API33",
+          "kind": "tool-resource",
+          "http": {
+            "requests": 43,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+          "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+          "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+          "ownerTurnsUnchanged": true,
+          "newModelInputs": 0,
+          "routesRestored": true,
+          "nativeReportSha256": "3c0db968e708dc99d8d1155b9af64f42c314f55607bd69c0b4902e200ee64289",
+          "hostReportSha256": "0a7ff740198a22fa3030b2298fc45971fba134240bb0e5a56f991e1c0d613247",
+          "proofSha256": "7799460436b6cc4b3e0112ec77610f09d7a4b6c96d1ff57b7ecc8ea180b5723f",
+          "toolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+          "resourceGets": 4
+        },
+        {
+          "environment": "API37 portrait",
+          "kind": "code",
+          "http": {
+            "requests": 14,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+          "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+          "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+          "ownerTurnsUnchanged": true,
+          "newModelInputs": 0,
+          "routesRestored": true,
+          "nativeReportSha256": "772253017aa4e4c9accd4087cb19fa509cc38d9b9c01212db531a31b723be549",
+          "hostReportSha256": "4e975153141772c292d67e082a927d1d1b73fbc6746e98f5cd76f5b012144d28",
+          "systemCopyAttempted": true,
+          "systemCopyMatched": true,
+          "api26ClipboardPending": false,
+          "proofSha256": "f274c2169a4b74c17f37cd85b520f04ce4d8956e550b986f77861701cb611780"
+        },
+        {
+          "environment": "API26",
+          "kind": "tool-resource",
+          "http": {
+            "requests": 35,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+          "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+          "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+          "ownerTurnsUnchanged": true,
+          "newModelInputs": 0,
+          "routesRestored": true,
+          "nativeReportSha256": "f084df112a89f12c13dc077aeae2b0fcf381235b8c3901e607b63d5b0501b294",
+          "hostReportSha256": "68e8d34de8558318be47765387eb0253c0926a9178614118cb00dc9e24e5c564",
+          "proofSha256": "7799460436b6cc4b3e0112ec77610f09d7a4b6c96d1ff57b7ecc8ea180b5723f",
+          "toolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+          "resourceGets": 4
+        },
+        {
+          "environment": "physical API33",
+          "kind": "code",
+          "http": {
+            "requests": 17,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+          "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+          "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+          "ownerTurnsUnchanged": true,
+          "newModelInputs": 0,
+          "routesRestored": true,
+          "nativeReportSha256": "713a30219a0125d522174f7bdfbd049191b9da87b4947d9ab333fae104af3760",
+          "hostReportSha256": "505fbb996300470d6e952b8a9c72b4464885fb8582db849910419bfbce1fa491",
+          "systemCopyAttempted": true,
+          "systemCopyMatched": true,
+          "api26ClipboardPending": false,
+          "proofSha256": "f274c2169a4b74c17f37cd85b520f04ce4d8956e550b986f77861701cb611780"
+        },
+        {
+          "environment": "API26",
+          "kind": "code",
+          "http": {
+            "requests": 20,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+          "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+          "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+          "ownerTurnsUnchanged": true,
+          "newModelInputs": 0,
+          "routesRestored": true,
+          "nativeReportSha256": "955792edc78e5000261406266faabb463c2dc31b7ef60f37b85597fe9a08340b",
+          "hostReportSha256": "ba2e25e89c20450a1644590cb29e0a33197e212579555f481b8fb6ce823bd55a",
+          "systemCopyAttempted": false,
+          "systemCopyMatched": false,
+          "api26ClipboardPending": true,
+          "proofSha256": "de84345df218b73a3e47cf82cc6e818151d7654a9e4e9e44537a188c78e7f9c4"
+        }
+      ],
+      "httpRequests": 161,
+      "writeRequests": 0,
+      "newModelInputs": 0,
+      "codeSystemCopiesMatched": 2,
+      "api26CopyWithEmptyPriorClipboard": "not attempted because API26 cannot restore an empty clipboard without inventing content",
+      "codeSelectionToolbar": "not covered by whole-code-button check",
+      "resourceChooser": "intercepted, not external recipient",
+      "ownerAndTurnsUnchanged": true
+    },
+    "defaultStorageProofs": 73,
+    "failuresRetained": [
+      "Old normal-size baseline: code copy center covered by floating latest on all three platforms; tool/reply positive controls passed",
+      "Intermediate candidate API26 font scale 2: tool copy center also covered; final product adds the same list-scoped lane",
+      "Initial code examiner Elvis/if compile error corrected only in test",
+      "Two intermediate GET-only code scenes passed native UI but failed instantaneous post-owner snapshot assertion; retained as failed whole scenes. Bounded fresh read-only observer retry added to examiner, original before/after Turn hashes independently matched; no product owner relaxation"
+    ],
+    "pending": [
+      "API37 landscape",
+      "API26 system Copy when prior clipboard empty; system selection/toolbar matrix",
+      "All iOS current App/physical and complete theme/AX/token/format matrices",
+      "External actual recipients/save providers and full file formats",
+      "Natural recovery and other environmental pending remain separate"
+    ],
+    "newRealModelInputs": 0,
+    "allPhasesCumulativeInputs": 219,
+    "p4CumulativeInputs": 205,
+    "wholeStageClosed": false,
+    "visualReview": {
+      "selectedAuxiliaryImages": 10,
+      "selectedActualCodeImages": 3,
+      "completeMatrix": false
+    }
+  },
+  "presentationCaptionsAccessibilityCheckpoint": {
+    "phase": "P6-6b",
+    "sourceBase": "349db4165139fc53706fdfd9ef5b41e975d87702",
+    "features": ["F02", "F12", "F19", "F40", "F56", "F62", "F70"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/PendingCreationMessage.kt": "5a8ff246d9e5508a6ee275a045b4932f7753fcb63fee5c374c360ee2dada1fde",
+      "apps/android/src/main/kotlin/com/agenthub/android/UserMessageBubble.kt": "81a3a3842b8026c107cfbe433f3cdf39c5492c671823cb14bbcf1e6b414ea690",
+      "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "490e24d782fc3e129a58f504f5caae46715d23c804ed2190abf73726235772f2",
+      "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt": "0939701818e0c2749837c35bd6b46fa51cbcbb91f19605c1293fac16d1d731c2",
+      "apps/android/src/main/kotlin/com/agenthub/android/ThreadForkViews.kt": "4a09c14b16579e493f03c6950ce7feb531d04cae3f93f60f69aca5e9ab61696b",
+      "apps/android/src/main/kotlin/com/agenthub/android/WorkspaceArchivePage.kt": "d152a2c87330befaf59b4e6f185df9a424b8f064e061651e39967588a3639516",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "219b3ec8786d3519b11ff0e25624d1d91f2bbc944ca3a165b8bcbf2b3f1fd5bf",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePresentationCaptionTest.kt": "ba3b7dfb150036f71c6bbc0515bf6ecd46bb22b41f44d6909923fcbb4130211f",
+      "apps/android/localization/native-copy.json": "7109e57b28dfec3772a261a05b06914b466120abd884e41da64e5fb0865beeeb",
+      "apps/android/src/main/res/values/product_strings.xml": "28e3b1841e90c3f05834324d0c38f8927373ea1d396936206dda9322d3afa31d",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "0946b227fb427d65074ec8c8376b67b363170c1bb11533bac45373950eff7f0f",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "89d67eb4fcfb108ba93e6121d96feeff5460d10e1d7aa4dac4fef8a853b8af25",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "23307dffdadd79535838460c9858ba3c66b2bee113e48eaa0b89c89b1932862c"
+    },
+    "newNativeCatalogKeys": 4,
+    "catalogKeysPerLanguage": 1665,
+    "newRealModelInputs": 0,
+    "businessTaskProjectManagement": "deferred",
+    "ios": "existing product key implementation compared; no iOS source changes; not current iOS App acceptance",
+    "wholeStageClosed": false,
+    "summary": "P6-6b：发送/展开/完整消息、计划状态读屏、分支回执、聊天归档及连接固定文案接入双语；原消息/文件名/错误不翻译，展开/选择和原意图保持。1665词条，45辅助/6实际原代码及工具资源只读整例、51份默认存储证明通过。任务/项目管理仍暂缓，完整P6未关闭。",
+    "checks": {
+      "pnpmCheck": "current complete run passed; final Android examiner count fix separately rebuilt/native checked",
+      "rootLogSha256": "55a71631f95aeed830b82aec89b428d27955bc4ef43d3d6d7eb2b1a791158051",
+      "frozenSourceInputs": 616,
+      "sourceInputsUnchanged": true,
+      "nonzeroSkipGroups": [1, 24, 22],
+      "skipsNotWindowsAcceptance": true,
+      "androidBuild": "current passed",
+      "iosBuild": "unchanged source matched P6-5d simulator build, not current iOS App/physical acceptance",
+      "mobileParity": "current passed",
+      "format": "current passed"
+    },
+    "nativeAuxiliary": {
+      "methods": 45,
+      "normal": 33,
+      "style": 12,
+      "perNormalEnvironment": "six caption, four message-action regression, one full compiled catalog",
+      "environments": [
+        "physical API33 portrait light",
+        "API26 portrait light",
+        "API37 portrait light",
+        "API26 font scale 2",
+        "API37 portrait dark"
+      ],
+      "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+      "appSha256": "41a561ba4b746d3c79eaa8a72b6ca247de3114eb39710669a38056074f5b2336",
+      "runnerSha256": "a621966f051182792a8716fdd35a288369f55b894ee98900acec7d6261da3443",
+      "componentScope": "caption methods use isolated Material palette, do not certify full product theme/tokens; four action regressions use full App",
+      "selectedBehavior": "language changes preserve expansion, selected chat, original body/intent/diagnostic; archive and connection removal dismissed without remote write"
+    },
+    "actualOriginalReads": {
+      "methods": 6,
+      "rows": [
+        {
+          "environment": "physical API33",
+          "kind": "tool-resource",
+          "http": {
+            "requests": 41,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+          "nativeReportSha256": "a8c5d08f3910bdeba27b9eda0028f79f4158a85b6938ddfa26dfd965164e4aef",
+          "hostReportSha256": "8748b9a7f2ba847de16d96f1a28393962288cc1c0750a7b4f14b4992fd36a6fe",
+          "ownerTurnsUnchanged": true,
+          "resourceGets": 4
+        },
+        {
+          "environment": "API37 portrait",
+          "kind": "code",
+          "http": {
+            "requests": 25,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+          "nativeReportSha256": "1c56b5c02d74f9463569ca8d70ae5475aa6ff9ddf068a2233f45ec0c1f328668",
+          "hostReportSha256": "ebc60621bcfd8878bfcc02abe947c72c42f1a6f12e94808ea3bd82a60b3be1c0",
+          "ownerTurnsUnchanged": true,
+          "systemCopyAttempted": true,
+          "systemCopyMatched": true,
+          "api26ClipboardPending": false
+        },
+        {
+          "environment": "physical API33",
+          "kind": "code",
+          "http": {
+            "requests": 28,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+          "nativeReportSha256": "d7ed1ca21abf186508478eb26b3d342d740ad6cd923ecceeaeef7f23acbb7c61",
+          "hostReportSha256": "f6668d73f444c5e29cbed1478214e116e591b98480dda667ab68f4d659a20c83",
+          "ownerTurnsUnchanged": true,
+          "systemCopyAttempted": true,
+          "systemCopyMatched": true,
+          "api26ClipboardPending": false
+        },
+        {
+          "environment": "API26",
+          "kind": "tool-resource",
+          "http": {
+            "requests": 30,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+          "nativeReportSha256": "6bab60efca9f41ed83da58ba237e10c7371130aacad6a8b84f4ab1131827c7c8",
+          "hostReportSha256": "f6440ee6844cd50e4ca1d626cb50f278e82fe1524c31c3fe78b10bf4765d69fb",
+          "ownerTurnsUnchanged": true,
+          "resourceGets": 4
+        },
+        {
+          "environment": "API37 portrait",
+          "kind": "tool-resource",
+          "http": {
+            "requests": 47,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+          "nativeReportSha256": "a49f4eabc36ff27a7356795bff02b5d005c1ebe050749b29db41352514d7f22e",
+          "hostReportSha256": "b450e4ff297c73e233a6e2bf029e96f4444f5dafcdc06da0632cd2aeadb6495d",
+          "ownerTurnsUnchanged": true,
+          "resourceGets": 4
+        },
+        {
+          "environment": "API26",
+          "kind": "code",
+          "http": {
+            "requests": 25,
+            "methods": ["GET"],
+            "writeRequests": 0
+          },
+          "sourceSha256": "fe161ec23818f13baee07c467003c2c44a96d2542ab4859e9f95bfdf15004657",
+          "nativeReportSha256": "b0e60406689ed3dcbf29ce819a3288031fcc3c209cdb9aee574e5c2dd6702b47",
+          "hostReportSha256": "7143d0e2e7a706b6bff228a72491b95f68ef06fe36fbb38ba4af8369d3440f49",
+          "ownerTurnsUnchanged": true,
+          "systemCopyAttempted": false,
+          "systemCopyMatched": false,
+          "api26ClipboardPending": true
+        }
+      ],
+      "httpRequests": 196,
+      "writeRequests": 0,
+      "newModelInputs": 0,
+      "originalOwnerAndTurnsUnchanged": true,
+      "codeSystemCopiesMatched": 2,
+      "api26EmptyPriorClipboard": "not attempted; system copy remains pending",
+      "resourceShare": "chooser intercepted; not external recipient"
+    },
+    "defaultStorageProofs": 51,
+    "failuresRetained": [
+      "Initial new examiner used nullable captureChatSearch where nonnull context required; compiler rejected. Explicit original synthetic presenter context used; no product gate changed",
+      "First native cohort six caption methods passed, but exact catalog examiner still expected1661 and failed on1665 in all three environments; whole cohorts retained as failed. Reviewed expected inventory updated to1665; all final checks rerun"
+    ],
+    "pending": [
+      "Full language/theme/font/orientation/AX/token/rendering matrix",
+      "App-owned error prefixes mixed with raw Provider failure text need typed source separation; no blanket translation",
+      "Fork unavailable reasons may include raw Host detail; not blanket translated",
+      "API37 landscape, API26 empty-clipboard system Copy and other environmental pending",
+      "iOS current App/physical comparison; no substitute by Android tests"
+    ],
+    "allPhasesCumulativeInputs": 219,
+    "p4CumulativeInputs": 205,
+    "visualReview": {
+      "selectedIsolatedPlanImages": 5,
+      "selectedOriginalCodeImages": 3,
+      "fullMatrixClosed": false
+    }
+  }
+}

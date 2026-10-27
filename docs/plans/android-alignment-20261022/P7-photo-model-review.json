@@ -1,0 +1,136 @@
+{
+  "phase": "P7-2c",
+  "sourceBase": "4cfad47a104d2b2be1b185a2a521df9472be3bc4",
+  "features": ["F18", "F19", "F25", "F29", "F30", "F31", "F56", "F71"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedPhotoSelection.kt": "c255287fd27dd2a79c42e08e305fab3ba377de3d5a5b858ac13c71dc232d6263",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoModelLiveTest.kt": "392cb99d232c24a9128ef951cbdf7a421b29287faa2c963d2e5eaa310b5ca9f9",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoReplyReadLiveTest.kt": "9f7291e843182c137d8f9b6213b05be9050c932c53515b0854b459ae6d1b4e3c",
+    "packages/codex-adapter/src/history-reader.ts": "8799c266cfb355264c7c4ca0659978bdca3c4b1678ebf0009bc5c858573e29b1",
+    "packages/codex-adapter/src/runtime-session.ts": "db44a7eeec46328a099cf20aa6724654a1e4d430ff5aea30c9ea8e53dfa5f358",
+    "packages/codex-adapter/src/desktop-history-identity.ts": "e1e519017658433965558ed81a3b9f25df575468055030d0b6435e9128437ea0",
+    "scripts/history-smoke.mjs": "3896a3aae6d6130f6ccf4822a8ada0a0ac3a9bd1445fffc43f2e46fce4c436a7",
+    "scripts/desktop-history-identity-smoke.mjs": "550f6a582612e3eb61cfced38731a6ac6ceda145243a05893409367ef4285339"
+  },
+  "summary": "P7-2c：受控独立图片经API37系统选择、加密原草稿及一次原生发送，真实模型只从像素读出六位码；原桌面单轮/单输入、实际图片字节和设置独立核对。发现并修复共享Host冷读图片输入与原owner重复投影：仅在完成轮及完整注册附件/正文一致时一对一替换临时ID，不按同文/同名删除。新手机/API26/API37各一次当前Host重开GET-only读取，输入/最终回复各一条且空闲控制正确；另9项附件归属辅助，共13默认存储证明。新增模型1，累计220/P4205；原输入在修复前执行、当前修复只读复验，不重放。真机/API26正向选图、完整键盘/格式/冷回调及拍照/最近图继续开放。",
+  "productionAndroidApkUnchanged": true,
+  "appSha256": "e9874bb0294725763fae072a69fed8c1c1739b787507aba917c4cbd8490cd390",
+  "originalModelRunnerSha256": "e83f233405a93b7057e2cd81d836453964ec2edb55dc529449f2f80238351569",
+  "currentReadRunnerSha256": "e87e54112adfe51ed1a3db36f7b2500bb211bab9e927d62714dbb3abddfcdd4c",
+  "modelInput": {
+    "environment": "owned API37 system photo selector -> actual original Electron model",
+    "nativeMethods": 1,
+    "oneNativeSend": true,
+    "onePrepareUploadSubmit": true,
+    "source": "independent source APK UID; no direct photo read grant before system selection",
+    "expectedMarkerOnlyInPixels": true,
+    "canonicalTurns": 1,
+    "canonicalUsers": 1,
+    "canonicalImages": 1,
+    "canonicalFinals": 1,
+    "toolCalls": 0,
+    "model": "gpt-6.1-sol",
+    "effort": "xhigh",
+    "serviceTier": "priority",
+    "permission": "read-only",
+    "collaboration": "default",
+    "uploadedAndCanonicalImageSha256": "52d75eb6d6c2d88c7d8c1a9a420b8e0068d47a9dc8f526000f3317d8d315e645",
+    "originalOwnerMatched": true,
+    "projectlessOfficialPreparedCwdMatched": true,
+    "reconciliationInputs": 0,
+    "proofSha256": "36da4ab407eff35a9b63ddb3096181d6280be59f297d6ada1e5c71ad49a7e300",
+    "canonicalImageProofSha256": "f26d9fd9efae16e53067109d448e3650283766cf5748d16e90db9c08b5cb2eb9",
+    "nativePassedBeforeIndependentOracleError": true,
+    "originalWrongCwdReportPreservedSha256": "47d968dbd1561f0a6797499d5cf39a42f683ee924db06b1e9df84c3f9c38e7ed",
+    "executedBeforeHostIdentityFix": true
+  },
+  "currentHostOriginalReads": {
+    "methods": 3,
+    "rows": [
+      {
+        "environment": "API37 portrait",
+        "reportSha256": "eaa29e692f9c72df5b26cb7facc04938ab38ea94c5b1adf87ee6d4c4ce2a72b5",
+        "requests": 24,
+        "writeRequests": 0,
+        "originalTurnsUnchanged": true,
+        "originalOwnerMatched": true,
+        "runtimeIdle": true,
+        "oneUserOneFinal": true,
+        "currentAdapterSha256": "3579253d853f1c2d3ba9f5325ac42cbdd0f94a57cad01a4e8a46506f4a46565a"
+      },
+      {
+        "environment": "physical API33 wide viewport",
+        "reportSha256": "103f1bdd4ed66de6bc75fc02e52b4afa0039f196f23cc9443cd1db0e8232c448",
+        "requests": 20,
+        "writeRequests": 0,
+        "originalTurnsUnchanged": true,
+        "originalOwnerMatched": true,
+        "runtimeIdle": true,
+        "oneUserOneFinal": true,
+        "currentAdapterSha256": "3579253d853f1c2d3ba9f5325ac42cbdd0f94a57cad01a4e8a46506f4a46565a"
+      },
+      {
+        "environment": "API26",
+        "reportSha256": "3cd2558ff54ddc5d2c0775d5c4d8f9e871fa60b804a4181c5382380a21fb50bb",
+        "requests": 18,
+        "writeRequests": 0,
+        "originalTurnsUnchanged": true,
+        "originalOwnerMatched": true,
+        "runtimeIdle": true,
+        "oneUserOneFinal": true,
+        "currentAdapterSha256": "3579253d853f1c2d3ba9f5325ac42cbdd0f94a57cad01a4e8a46506f4a46565a"
+      }
+    ],
+    "totalGetRequests": 62,
+    "newInputs": 0,
+    "sameOriginalHostStateRestarted": true,
+    "newHostProcessDistinctFromWriter": true
+  },
+  "nativeAuxiliary": {
+    "methods": 9,
+    "scope": "API37 attachment import ownership; before separate read examiner was added",
+    "reportSha256": "32785ef5e25011f4c10098c841d6c09cd916284c4582575b51b29b719a17d744",
+    "runnerSha256": "e83f233405a93b7057e2cd81d836453964ec2edb55dc529449f2f80238351569"
+  },
+  "defaultStorageProofs": 13,
+  "matchedPriorNativeInputs": {
+    "files": 389,
+    "changes": 0,
+    "onlyAddedInput": "MobilePhotoReplyReadLiveTest.kt",
+    "originalModelAndOwnershipMethodsUnchanged": true,
+    "productionAppSame": true,
+    "inputMapSha256": "e53b2ca9d42761ea2e030340fbe9c5466a9dbba5d8e46032b4b6f8b4924f5211"
+  },
+  "hostFix": [
+    "Reader privately supplies absolute localImage paths to existing authorized file inspection; paths never enter history JSON",
+    "Known localImage gets its actual basename, unknown media retains unregistered hint",
+    "Completed user-image rows need same exact target/run/text/full registered version claims; one replacement retires one provisional occurrence only",
+    "Latest cold reader and original owner use the same bounded alias reconciliation; pagination retains original order and unmatched history",
+    "No new endpoint, wire fields, model execution, history mutation or account gate"
+  ],
+  "checks": {
+    "androidBuild": "passed",
+    "historyReaderBoundary": "passed",
+    "historyIdentityBoundary": "passed",
+    "pnpmCheck": "current complete workspace run passed;620 frozen inputs unchanged",
+    "rootLogSha256": "d5165029b3cf7b758c1896a1975d0eab9440e00c028b2d92b519b088e7aa2bd1",
+    "frozenRootInputs": 620,
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "mobileParity": "passed in current full check",
+    "androidApprovalGuard": "passed in current full check",
+    "format": "passed in current full check; final evidence-only edits formatted separately",
+    "ios": "Source unchanged; shared Host impacts iOS, actual iOS current Host identity matrix pending; no A6 execution",
+    "windows": "Current native Windows matrix pending"
+  },
+  "pending": [
+    "Physical/API26 positive system selection remains separate; read-only model reply on these devices does not replace photo selection acceptance",
+    "Physical full image send and full format/permission/IME/rotation/provider/cold result matrix",
+    "Camera/recent/full attachment panel and remaining P7 storage/voice/read/lifecycle",
+    "API37 landscape, physical cold observer install and other prior environment cases unchanged"
+  ],
+  "newRealModelInputs": 1,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

@@ -9,8 +9,10 @@ import java.util.UUID
 
 /** Local preparation belongs to a draft generation, not the screen showing it. */
 data class AttachmentImportDestination(val key: String,val generation: String,
-    val presentation: DraftDestination,val requestId: String=UUID.randomUUID().toString())
-data class LocalAttachmentInput(val name: String,val mediaType: String,val bytes: ByteArray)
+    val presentation: DraftDestination,val requestId: String=UUID.randomUUID().toString(),val maximum: Int=10) {init {require(maximum==5||maximum==10)}}
+internal class NativeAttachmentQuotaFailure(val key: String): IllegalStateException(key)
+
+data class LocalAttachmentInput(val name: String,val mediaType: String,val bytes: ByteArray,val fixedId: String?=null,val photoSourceId: String?=null)
 
 /** This component can prepare local bytes only. It has no Host command or upload interface. */
 internal class LocalAttachmentPreparation(
@@ -27,11 +29,11 @@ internal class LocalAttachmentPreparation(
     private val completed=linkedSetOf<String>()
     private val workers=Semaphore(2)
     fun preparing(key: String,generation: String?)=active.values.any { it.key==key&&it.generation==generation }
-    fun start(destination: AttachmentImportDestination,sources: List<suspend ()->LocalAttachmentInput>,failed: (Exception)->Unit): Deferred<Unit>? {
+    fun start(destination: AttachmentImportDestination,sources: List<suspend ()->LocalAttachmentInput>,maximum: Int=destination.maximum,failed: (Exception)->Unit): Deferred<Unit>? {
         val loaders=sources.toList()
         if(!current(destination)||destination.requestId in active||destination.requestId in completed)return null
         val store=files() ?: return null
-        require(AttachmentPreparationRules.canReserve(count(destination.key),reservations[destination.generation] ?: 0,loaders.size)) { "最多添加 10 个附件" }
+        if(!AttachmentPreparationRules.canReserveWithinLimit(count(destination.key),reservations[destination.generation] ?: 0,loaders.size,maximum))throw NativeAttachmentQuotaFailure(if(maximum==5)"最多添加 5 个附件，请先移除部分附件。" else "单条消息最多添加 10 个附件。")
         active[destination.requestId]=destination
         reservations[destination.generation]=(reservations[destination.generation] ?: 0)+loaders.size
         val job=tasks.async<Unit>(start=CoroutineStart.LAZY) {
@@ -41,16 +43,18 @@ internal class LocalAttachmentPreparation(
                     ensureActive();if(!current(destination))break
                     try { workers.withPermit {
                         ensureActive();if(!current(destination))return@withPermit
-                        var prepared: LocalDraftFile?=null
+                        var prepared: PreparedLocalDraftFile?=null
                         try {
                             val input=withContext(Dispatchers.IO) { loader() }
                             ensureActive();if(!current(destination))return@withPermit
-                            val file=store.import(input.name,input.mediaType,input.bytes);prepared=file
+                            val result=store.prepare(input.name,input.mediaType,input.bytes,input.fixedId);prepared=result;val file=result.file.copy(photoSourceId=input.photoSourceId)
+                            NativePhotoOrigins.encode(listOf(file))
                             ensureActive()
                             if(current(destination))commit(destination,file)
                         } finally {
                             val file=prepared
-                            if(file!=null&&!referenced(file))withContext(NonCancellable+Dispatchers.IO) { store.discardPrepared(file) }
+                            try { if(file!=null&&file.disposable&&!referenced(file.file))withContext(NonCancellable+Dispatchers.IO) { store.discardPrepared(file.file) } }
+                            finally { file?.close() }
                         }
                     } } catch(cancel: CancellationException) { throw cancel }
                       catch(failure: Exception) { failed(failure);if(firstFailure==null)firstFailure=failure }

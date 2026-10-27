@@ -121,8 +121,8 @@ enum SharedMobileRules {
     TimelineMessage(id: message.id, role: message.role, text: message.text, kind: message.kind, status: message.status,
       runId: message.runId, replyPhase: message.replyPhase, replyMessageId: message.replyMessageId)
   }
-  static func toolSummary(_ messages: [ChatMessage]) -> String { ToolPresentation.shared.summary(messages: messages.map(timelineMessage)) }
-  static func toolTitle(_ message: ChatMessage, single: Bool) -> String { ToolPresentation.shared.title(message: timelineMessage(message), single: single) }
+  static func toolSummary(_ messages: [ChatMessage], native: ToolPresentationText) -> String { ToolPresentation.shared.localizedSummary(messages: messages.map(timelineMessage), native: native) }
+  static func toolTitle(_ message: ChatMessage, single: Bool, native: ToolPresentationText) -> String { ToolPresentation.shared.localizedTitle(message: timelineMessage(message), single: single, native: native) }
   static func toolStyle(_ kind: String?) -> ToolPresentationStyle { ToolPresentation.shared.style(kind: kind) }
   static func toolStatus(_ status: String?) -> String { ToolPresentation.shared.status(status: status) }
   static func compactionLabel(_ status: String?, live: Bool) -> String { ToolPresentation.shared.compaction(status: status, live: live) }

@@ -1,0 +1,510 @@
+{
+  "schemaVersion": 1,
+  "scope": "pure read/version/local-draft policy, no transport or device acceptance",
+  "nowMillis": 1000,
+  "value": {
+    "id": "v1",
+    "text": "\u4e0b\u4e00\u6b65 Next action",
+    "contentSha256": "5e7b44cf3a4eb534912a69007a3ca1be48c242db153c0dc92d469eb41f7d4452",
+    "expiresAt": "1970-01-01T00:00:02Z",
+    "expirationMillis": 2000,
+    "validity": "native-version"
+  },
+  "target": {
+    "agentId": "codex",
+    "hostId": "host",
+    "workspaceId": "workspace",
+    "runtimeId": "runtime",
+    "accountAuthority": "legacy",
+    "accountSubject": "old"
+  },
+  "cases": [
+    {
+      "name": "valid-native",
+      "kind": "valid",
+      "expected": true,
+      "value": {}
+    },
+    {
+      "name": "empty-id",
+      "kind": "valid",
+      "expected": false,
+      "value": {
+        "id": ""
+      }
+    },
+    {
+      "name": "empty-text",
+      "kind": "valid",
+      "expected": false,
+      "value": {
+        "text": ""
+      }
+    },
+    {
+      "name": "unknown-validity",
+      "kind": "valid",
+      "expected": false,
+      "value": {
+        "validity": "future-kind"
+      }
+    },
+    {
+      "name": "expired",
+      "kind": "valid",
+      "expected": false,
+      "value": {
+        "expirationMillis": 999,
+        "expiresAt": "1970-01-01T00:00:00.999Z"
+      }
+    },
+    {
+      "name": "expiry-equals-now",
+      "kind": "valid",
+      "expected": false,
+      "value": {
+        "expirationMillis": 1000,
+        "expiresAt": "1970-01-01T00:00:01.000Z"
+      }
+    },
+    {
+      "name": "missing-expiry",
+      "kind": "valid",
+      "expected": false,
+      "value": {
+        "expirationMillis": null,
+        "expiresAt": "invalid"
+      }
+    },
+    {
+      "name": "legacy-expiry",
+      "kind": "valid",
+      "expected": true,
+      "value": {
+        "validity": null
+      }
+    },
+    {
+      "name": "source-turn-no-expiry",
+      "kind": "valid",
+      "expected": true,
+      "value": {
+        "validity": "source-turn",
+        "expirationMillis": null,
+        "expiresAt": "invalid"
+      }
+    },
+    {
+      "name": "hash-mismatch",
+      "kind": "valid",
+      "expected": false,
+      "value": {
+        "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "name": "refresh-display",
+      "kind": "valid",
+      "expected": true,
+      "value": {
+        "validity": "desktop-display"
+      }
+    },
+    {
+      "name": "refresh-runtime",
+      "kind": "valid",
+      "expected": true,
+      "value": {
+        "validity": "runtime-version"
+      }
+    },
+    {
+      "name": "renewed-native",
+      "kind": "version",
+      "expected": true,
+      "other": {
+        "expiresAt": "new",
+        "expirationMillis": 6000
+      },
+      "base": {}
+    },
+    {
+      "name": "changed-id",
+      "kind": "version",
+      "expected": false,
+      "other": {
+        "id": "v2"
+      },
+      "base": {}
+    },
+    {
+      "name": "changed-text",
+      "kind": "version",
+      "expected": false,
+      "other": {
+        "text": "different"
+      },
+      "base": {}
+    },
+    {
+      "name": "changed-hash",
+      "kind": "version",
+      "expected": false,
+      "other": {
+        "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "base": {}
+    },
+    {
+      "name": "changed-validity",
+      "kind": "version",
+      "expected": false,
+      "other": {
+        "validity": "desktop-display"
+      },
+      "base": {}
+    },
+    {
+      "name": "renewed-display",
+      "kind": "version",
+      "expected": true,
+      "other": {
+        "expiresAt": "new"
+      },
+      "base": {
+        "validity": "desktop-display"
+      }
+    },
+    {
+      "name": "legacy-renewed",
+      "kind": "version",
+      "expected": false,
+      "other": {
+        "expiresAt": "new"
+      },
+      "base": {
+        "validity": null
+      }
+    },
+    {
+      "name": "None-codex",
+      "kind": "matches",
+      "expected": true,
+      "source": null,
+      "value": {
+        "validity": null
+      },
+      "target": {
+        "agentId": "codex"
+      }
+    },
+    {
+      "name": "None-easywork",
+      "kind": "matches",
+      "expected": true,
+      "source": null,
+      "value": {
+        "validity": null
+      },
+      "target": {
+        "agentId": "easywork"
+      }
+    },
+    {
+      "name": "native-trace-codex",
+      "kind": "matches",
+      "expected": true,
+      "source": "native-trace",
+      "value": {
+        "validity": "native-version"
+      },
+      "target": {
+        "agentId": "codex"
+      }
+    },
+    {
+      "name": "native-trace-easywork",
+      "kind": "matches",
+      "expected": true,
+      "source": "native-trace",
+      "value": {
+        "validity": "native-version"
+      },
+      "target": {
+        "agentId": "easywork"
+      }
+    },
+    {
+      "name": "desktop-display-codex",
+      "kind": "matches",
+      "expected": true,
+      "source": "desktop-display",
+      "value": {
+        "validity": "desktop-display"
+      },
+      "target": {
+        "agentId": "codex"
+      }
+    },
+    {
+      "name": "desktop-display-easywork",
+      "kind": "matches",
+      "expected": true,
+      "source": "desktop-display",
+      "value": {
+        "validity": "desktop-display"
+      },
+      "target": {
+        "agentId": "easywork"
+      }
+    },
+    {
+      "name": "runtime-codex",
+      "kind": "matches",
+      "expected": false,
+      "source": "runtime",
+      "value": {
+        "validity": "runtime-version"
+      },
+      "target": {
+        "agentId": "codex"
+      }
+    },
+    {
+      "name": "runtime-easywork",
+      "kind": "matches",
+      "expected": true,
+      "source": "runtime",
+      "value": {
+        "validity": "runtime-version"
+      },
+      "target": {
+        "agentId": "easywork"
+      }
+    },
+    {
+      "name": "schema",
+      "kind": "matches",
+      "expected": false,
+      "schemaVersion": 2
+    },
+    {
+      "name": "writable",
+      "kind": "matches",
+      "expected": false,
+      "readOnly": false
+    },
+    {
+      "name": "wrong-thread",
+      "kind": "matches",
+      "expected": false,
+      "threadId": "other"
+    },
+    {
+      "name": "wrong-turn",
+      "kind": "matches",
+      "expected": false,
+      "sourceTurnId": "other"
+    },
+    {
+      "name": "unknown-source",
+      "kind": "matches",
+      "expected": false,
+      "source": "future"
+    },
+    {
+      "name": "wrong-runtime",
+      "kind": "matches",
+      "expected": false,
+      "responseTarget": {
+        "runtimeId": "other"
+      }
+    },
+    {
+      "name": "codex-account",
+      "kind": "matches",
+      "expected": true,
+      "responseTarget": {
+        "accountSubject": "new"
+      }
+    },
+    {
+      "name": "easywork-account",
+      "kind": "matches",
+      "expected": false,
+      "target": {
+        "agentId": "easywork"
+      },
+      "responseTarget": {
+        "accountSubject": "new"
+      }
+    },
+    {
+      "name": "native-missing-source",
+      "kind": "matches",
+      "expected": false,
+      "source": null
+    },
+    {
+      "name": "native-mismatched",
+      "kind": "matches",
+      "expected": false,
+      "source": "desktop-display"
+    },
+    {
+      "name": "fill-empty",
+      "kind": "proposal",
+      "expected": "\u4e0b\u4e00\u6b65 Next action",
+      "mode": "fill",
+      "text": ""
+    },
+    {
+      "name": "fill-existing",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "fill",
+      "text": "keep"
+    },
+    {
+      "name": "append-existing",
+      "kind": "proposal",
+      "expected": "keep\n\n\u4e0b\u4e00\u6b65 Next action",
+      "mode": "append",
+      "text": "keep"
+    },
+    {
+      "name": "append-empty",
+      "kind": "proposal",
+      "expected": "\u4e0b\u4e00\u6b65 Next action",
+      "mode": "append",
+      "text": ""
+    },
+    {
+      "name": "replace-existing",
+      "kind": "proposal",
+      "expected": "\u4e0b\u4e00\u6b65 Next action",
+      "mode": "replace",
+      "text": "keep"
+    },
+    {
+      "name": "unknown-mode",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "send",
+      "text": "keep"
+    },
+    {
+      "name": "new-revision",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "currentRevision": "2"
+    },
+    {
+      "name": "new-text",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "currentText": "new edit"
+    },
+    {
+      "name": "new-target",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "currentTargetKey": "other"
+    },
+    {
+      "name": "new-navigation",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "currentScope": {
+        "navigation": "new"
+      }
+    },
+    {
+      "name": "new-connection",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "currentScope": {
+        "connection": "new"
+      }
+    },
+    {
+      "name": "new-source",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "currentScope": {
+        "sourceTurnId": "other"
+      }
+    },
+    {
+      "name": "expired-action",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "nowMillis": 2000
+    },
+    {
+      "name": "renewed-current",
+      "kind": "proposal",
+      "expected": "\u4e0b\u4e00\u6b65 Next action",
+      "mode": "replace",
+      "text": "keep",
+      "currentSuggestion": {
+        "expiresAt": "1970-01-01T00:00:05.000Z",
+        "expirationMillis": 5000
+      }
+    },
+    {
+      "name": "replaced-suggestion",
+      "kind": "proposal",
+      "expected": null,
+      "mode": "replace",
+      "text": "keep",
+      "currentSuggestion": {
+        "id": "v2"
+      }
+    },
+    {
+      "name": "unchanged-undo",
+      "kind": "undo",
+      "expected": "original",
+      "current": {}
+    },
+    {
+      "name": "edited-undo",
+      "kind": "undo",
+      "expected": null,
+      "current": {
+        "text": "edit"
+      }
+    },
+    {
+      "name": "new-revision-undo",
+      "kind": "undo",
+      "expected": null,
+      "current": {
+        "revision": "2"
+      }
+    },
+    {
+      "name": "new-target-undo",
+      "kind": "undo",
+      "expected": null,
+      "current": {
+        "targetKey": "other"
+      }
+    }
+  ]
+}

@@ -134,7 +134,7 @@ internal class EasyWorkLiveScenarios(
         wait(30_000) { session.messages.flatMap { it.attachments }.any { it.name=="generated-$suffix.txt" } }
         val generated=session.messages.flatMap { it.attachments }.first { it.name=="generated-$suffix.txt" }
         val context=InstrumentationRegistry.getInstrumentation().targetContext
-        val downloaded=runBlocking { session.downloadResource(generated,File(context.cacheDir,"a5-resource-examiner")) }
+        val downloaded=runBlocking { session.prepareMessageResource(session.messageLinkContext(session.messages.first { generated in it.attachments }),"codex-attachment://"+generated.id,File(context.cacheDir,"resources")).local }
         val actual=downloaded.readBytes()
         assertEquals(generated.sha256,easyHash(actual));assertEquals(generated.sizeBytes,actual.size.toLong())
         assertEquals(listOf(imageCode,fileCode),downloaded.readText().trim().lines())
@@ -298,7 +298,7 @@ internal class EasyWorkLiveScenarios(
         wait(30_000) { session.messages.flatMap { it.attachments }.any { it.name==filename } }
         val resource=session.messages.flatMap { it.attachments }.first { it.name==filename }
         val context=InstrumentationRegistry.getInstrumentation().targetContext
-        val downloaded=runBlocking { session.downloadResource(resource,File(context.cacheDir,"a5-recovery-examiner")) }
+        val downloaded=runBlocking { session.prepareMessageResource(session.messageLinkContext(session.messages.first { resource in it.attachments }),"codex-attachment://"+resource.id,File(context.cacheDir,"resources")).local }
         assertEquals(listOf(marker),downloaded.readText().trim().lines())
         shot("native-switch-during-send-once")
         mark("lan-response-loss-query-relay-original-operation-once",JSONObject().put("threadId",thread).put("runId",reply.runId).put("operationId",operation.id).put("fileSha256",easyHash(downloaded.readBytes())))

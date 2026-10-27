@@ -1,0 +1,37 @@
+[
+  {
+    "envelope": "eyJjaXBoZXJ0ZXh0IjoiMUFcL0R1bkJYVVlkdEZNQWU0WTduTTZ5OU5YQjBNeGVlSklmQnM2QnF2cHlkVkZwQkM3dCtmc0NueXNBZWF5dG1Bc1NOVlhTOWpYcXQiLCJzYWx0Ijoic0ZsdG8rc1FyUERwWUhyMVp0M3Q4dz09IiwidmVyc2lvbiI6MX0=",
+    "key": "Pt4XzNryd5DWFxXCGbG8JbqnNuT48PWxrUNTgK8U1e0=",
+    "password": "synthetic-only-password",
+    "plaintext": "AAF\/gP9zeW50aGV0aWMgZHJhZnQgMArojYnnqL8=",
+    "salt": "AAECAwQFBgcICQoLDA0ODw=="
+  },
+  {
+    "envelope": "eyJzYWx0IjoiM0FsZzhMUGZlVXVVYnNHNGVIWVBYQT09IiwiY2lwaGVydGV4dCI6IkJtUEJHaDVYMk4wdmhqellnV2l3aHZGU2tYdTdFMGNzYUJYV1wvOFdnTEltMXNqYkRjYlVJZXAxakk3S2VWQ2M1Yk1uZVAwTWpPSUpkIiwidmVyc2lvbiI6MX0=",
+    "key": "yAvU+ERAgPGvOywiafHVtuY3ciBNnFvCi9yF8Cnll5M=",
+    "password": "测试迁移密码十二个字符一二三四",
+    "plaintext": "AAF\/gP9zeW50aGV0aWMgZHJhZnQgMQrojYnnqL8=",
+    "salt": "AAECAwQFBgcICQoLDA0ODw=="
+  },
+  {
+    "envelope": "eyJjaXBoZXJ0ZXh0IjoieHQ0cFFxdkp1cUVoUXFvYnp2a3FINUpYZXk3elZGOEk5ZzFnZjZ0WFwvR0hXZ0FqeUsxVVwvXC9MTWRjbGNCbDJ5OWFZbGFMMzk3TnNTMyIsInNhbHQiOiJwcFdqOUYzY0I5TU5rTWZKN2VZRTV3PT0iLCJ2ZXJzaW9uIjoxfQ==",
+    "key": "f+yW9eLB9kqcXcCunbDn9\/fcOKI13IB6WfE78\/OBcCA=",
+    "password": "é12345678901",
+    "plaintext": "AAF\/gP9zeW50aGV0aWMgZHJhZnQgMgrojYnnqL8=",
+    "salt": "AAECAwQFBgcICQoLDA0ODw=="
+  },
+  {
+    "envelope": "eyJjaXBoZXJ0ZXh0IjoiRDV0SmVVZkVWQ1hTR3NIYUhJVHZmM1N1NXRWZTU3MjMxQnBsckdIQjVHa2ZCNEdhbWZJMHpYTVwvN3VOM3BlZUd3ZENGYVNkNTMrY04iLCJzYWx0IjoicVpRQ0VnRlN3d3A3aUdaY1A0QVBzQT09IiwidmVyc2lvbiI6MX0=",
+    "key": "ucgI1XQwb9oW2j7ytTDSEG1SEV8wn1Im\/+WzM9AxUDE=",
+    "password": "👩‍💻12345678901",
+    "plaintext": "AAF\/gP9zeW50aGV0aWMgZHJhZnQgMwrojYnnqL8=",
+    "salt": "AAECAwQFBgcICQoLDA0ODw=="
+  },
+  {
+    "envelope": "eyJjaXBoZXJ0ZXh0IjoiZHhiMDVDa2hGQXNBXC9yMnR6N0cwR0FySHE3dDl2UzQxdmV5YVwvbTRCSlwvUE13cEJLQVB2aSs5SXZhWm5FMjVcLzA3Q0hEMUVxbHJscUoiLCJzYWx0IjoiSFVjaFwvanVcLzhmVFNHeVZhRzkzRytBPT0iLCJ2ZXJzaW9uIjoxfQ==",
+    "key": "F4+eopTo0wOTOEZ9W1ZEPLUHJ4CvDJaIvpZkpqv7ryE=",
+    "password": "synthetic\u0000password",
+    "plaintext": "AAF\/gP9zeW50aGV0aWMgZHJhZnQgNArojYnnqL8=",
+    "salt": "AAECAwQFBgcICQoLDA0ODw=="
+  }
+]

@@ -29,3 +29,25 @@ Prior accepted commits352f9ff/85f22fd and formatting6f04da1 were preserved in ca
 ### Main8c7e3716 source reconciliation after P4-4o.30
 
 f7018a63 was committed/pushed and independently saved before this merge. Main advanced by4 nodes (N028-N031):a gated physical-iOS loaded-chat lifecycle scaffold, a merge retaining accepted Android work, review documentation and PR28. Source contracts/product Host/Adapter/Android remain unchanged by this increment; the added native method is not executed here and carries no new physical/Android/Windows pass. Both change-record tails are preserved, generated parity is regenerated. The existing iOS question waveform failure was compared against pre-change dc2cc53 in the same isolated simulator; later scaffold-only source does not retroactively become that baseline. Business task/project deferral and unrelated iOS A6 pause remain; AndroidP7 follows current human authorization. Whole-source-node closures remain false; proceed with original-draft file import alignment after this source reconciliation.
+
+### PR #29 P4-4o.29–31 主线交付
+
+本批原请求回调、非空草稿菜单及原草稿文件导入检查点，经workspace/iOS CI通过后合入主线 `f2937db808079bde1d0d12d6292d897d10cd9c33`。候选 `1a8497b301269e6fbdc0ad37b454f5d3d77520dd` 为主线祖先，树内容一致；已验证树外恢复包，原P4分支本地/远端均精确清理。P5专用分支及其未提交内容保留。完整P4仍开放，不扩展Provider/OS/iOS基线待验为通过；真实累计215/P4201不变。
+
+## P6-I1 安卓分支集成主线当前增量
+
+在P6-3a提交d95987c并核对远端后，抓取主线d8bf85d0相对fa2f14db的15个节点：5个源码节点、10个合并节点逐个保存父链、路径和首父补丁摘要，见[增量索引](../upstream-20261026-later.json)。原217节点及此前32节点保留，累计后续47节点；本次安卓集成本身不冒充新的iOS来源节点。该合并方向是主线进入安卓开发分支，未据此宣称P5/P6开发分支已提PR合入主线。
+
+新增范围包括最近图片默认横滑/按需授权和计划开关位置，保存录音的本地转写回退，权限/MCP应用审批及刷新映射回收，附件回复实际投影后的未读版本。合并保留双方功能ID/来源别名/变更条目、全部P5/P6正文及新主线记录，F64追加说明合并而非二选一。重叠iOS源码保留既有建议按钮守卫；非重叠源逐文件对主线字节核对。双语词表增至1590键，原安卓与新主线有效键值分别完整保留，编译资源及fixture同步。
+
+当前合并源双端构建、完整pnpm check通过；Node组的非零跳过摘要分别1/24/22，保留其平台限制，不相加成唯一用例或Windows/x64真实通过。之后只追加文档登记，最终parity/格式另查。新源码同一App/runner三环境各50项，加真机深色与API26双倍字号各6项，共162项当前原生辅助执行、147份默认草稿/文件/版本/导入代次保持证明。18张当前自有窗口图复核；原字体、按压反馈、滚动位置及未完成94token/系统矩阵明确保留。
+
+新增的应用审批用例核对显示范围和一次准确acceptAlways载荷及POST版本头，属于合成HTTP辅助证据。源码审查同时发现NativeHostReads未发送mcp-v1，真实Host会将未声明的读取降为仅拒绝；当前fixture未对此投影，不能用该用例关闭读取链路。审批已知标签翻译、四决策/新请求替换/迟到回调及原owner证据下一阶段优先补齐。照片/计划、P7语音回退和未读矩阵逐项排入，不把iOS或Host导入当Android通过。任务/项目业务、无关iOS A6和既有环境待验保持原范围，继续不逐次确认。
+
+[结构化证据](../../../acceptance/mobile-evidence/android-alignment-P6.json#nativeMainIntegrationCheckpoint)。新增真实模型输入0，累计215/P4201。先登记/提交/核远端，再进入P4-4o.32应用审批读取与标签阶段。
+
+## N048–N049 外部附件新节点对照（未集成代码）
+
+主线d8bf85d0之后新增ccd904a7源节点和69e7e09b合并节点，逐一登记父节点、首父补丁hash和32条最终改动路径；原217及后续49节点均保留，Android自身检查点不计入上游节点数。该批只有F71/UI07附件增量，不改变本阶段Host资源解析接口。新iOS代码/扩展/项目与26词尚未导入本安卓分支，P7实施前统一集成并重新冻结，不拿远端或iOS真机结果当Android通过。
+共同断言补外部文件/系统操作扩展、显式文件/图片粘贴、本地收件箱、准确草稿确认、固定文件ID及消费前持久化、部分导入原目标绑定、最多10项/单文件20MiB、来源/普通文字/网页/URL archive过滤，真实URI权限/进程重启/后台及Provider矩阵分别待验。手机发送时才上传。上游档案旧Android/A6暂停文字按最新人类授权覆盖，Android P7继续；无关iOS A6及任务/项目业务保持原暂停。
+[逐节点索引](../upstream-20261026-share-intake.json)。当前先补P4原生弹层返回条件下的新独立真实审批，再受控链接与资源；不是重放先前两条待验原请求。

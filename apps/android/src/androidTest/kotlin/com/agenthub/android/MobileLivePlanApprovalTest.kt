@@ -110,7 +110,7 @@ class MobileLivePlanApprovalTest {
             ui.onNodeWithTag("send-message").assertIsNotEnabled();return
         }
         settings("full-access")
-        ui.onNodeWithTag("composer-add").performClick();ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick()
+        ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick()
         assertEquals("plan",session.selectedCollaboration)
         input("专属安卓真实计划验收：制定仅含一步的计划，正文要求最终仅回复 ${marker("IMPLEMENTED")}，不要调用工具、修改文件或提问。本轮仅提出计划，不能实施。使用 proposed_plan 格式使原桌面显示待实施计划，正文包含 ${marker("INITIAL")}。")
         ui.waitUntil(180_000) { session.runtime?.proposedPlan!=null && !session.running && session.transferStatus==null }

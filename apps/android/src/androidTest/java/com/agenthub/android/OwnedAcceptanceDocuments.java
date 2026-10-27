@@ -28,9 +28,17 @@ public final class OwnedAcceptanceDocuments extends DocumentsProvider {
         for (JSONObject row : entries()) if (id.equals(row.optString("fileName"))) return row;
         throw new FileNotFoundException("Unknown owned synthetic document");
     }
+    private String rootTitle() {
+        try {
+            JSONObject value=new JSONObject(new String(java.nio.file.Files.readAllBytes(new File(getContext().getFilesDir(),"owned-documents.json").toPath()),StandardCharsets.UTF_8));
+            String title=value.optString("rootTitle");
+            if(title.matches("AH_DOC_[a-f0-9]{32}"))return title;
+        }catch(Exception ignored) { }
+        return "Agent Hub acceptance files";
+    }
     @Override public Cursor queryRoots(String[] projection) {
         String[] columns = projection == null ? new String[]{Root.COLUMN_ROOT_ID,Root.COLUMN_DOCUMENT_ID,Root.COLUMN_TITLE,Root.COLUMN_FLAGS,Root.COLUMN_MIME_TYPES,Root.COLUMN_AVAILABLE_BYTES} : projection;
-        Map<String,Object> values = new HashMap<>(); values.put(Root.COLUMN_ROOT_ID,"owned"); values.put(Root.COLUMN_DOCUMENT_ID,"owned-root"); values.put(Root.COLUMN_TITLE,"Agent Hub acceptance files"); values.put(Root.COLUMN_FLAGS,Root.FLAG_SUPPORTS_IS_CHILD); values.put(Root.COLUMN_MIME_TYPES,"text/plain"); values.put(Root.COLUMN_AVAILABLE_BYTES,0L);
+        Map<String,Object> values = new HashMap<>(); values.put(Root.COLUMN_ROOT_ID,"owned"); values.put(Root.COLUMN_DOCUMENT_ID,"owned-root"); values.put(Root.COLUMN_TITLE,rootTitle()); values.put(Root.COLUMN_FLAGS,Root.FLAG_SUPPORTS_IS_CHILD); values.put(Root.COLUMN_MIME_TYPES,"text/plain"); values.put(Root.COLUMN_AVAILABLE_BYTES,0L);
         MatrixCursor cursor = new MatrixCursor(columns); MatrixCursor.RowBuilder row = cursor.newRow(); for(String column:columns)row.add(values.get(column)); return cursor;
     }
     private Cursor cursor(List<String> ids,String[] projection) throws FileNotFoundException {

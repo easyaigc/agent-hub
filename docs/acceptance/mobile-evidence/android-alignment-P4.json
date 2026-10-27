@@ -3236,9 +3236,9 @@
     "wholeSourceNodeVerified": false,
     "currentParityCheck": "passed"
   },
-  "currentCheckpoint": "P4-4o.31",
-  "p4CumulativeRealInputs": 201,
-  "allPhasesCumulativeRealInputs": 215,
+  "currentCheckpoint": "P4-4o.33",
+  "p4CumulativeRealInputs": 205,
+  "allPhasesCumulativeRealInputs": 219,
   "creationCallbackDraftNativeCheckpoint": {
     "sourceBase": "3c354d8290a74d9340886a0cede536558ca6d9df",
     "implementation": "2026-10-24 P4-4g.8c 回调草稿保护复核：新增七项确定性原生Compose/NativeCodexFlow/真实加密账本辅助，分别挂起首条submit响应和后台原创建GET。核对后来编辑文字、编辑后重新输入与原正文相同的文字、后台确认期间的文字加附件/纯文件草稿，以及原设置保留；原记录的ID/正文/意图摘要/许可/原版本及cold confirmed结果不变，只一次合成原提交、无detach或第二输入。两项正向控制继续确认未编辑原草稿可正常导航并释放，保留现有iOS相应自动确认行为。本组未复现覆盖新草稿问题，生产代码/Host/协议/KMP/iOS均未改。",
@@ -6272,5 +6272,175 @@
       "apps/ios/Sources/RootView.swift": "5edae0ce810cb1eba951588a33aea2b03a06cf05c6cc97aa540447d8808216ba",
       "apps/ios/Sources/SessionStore.swift": "fe11e1ad30d6bf215b165f2d44dd7dd19be3388eb40af8eca344e5d09a1fa31f"
     }
+  },
+  "applicationApprovalReadVersionCheckpoint": {
+    "phase": "P4-4o.32",
+    "sourceBase": "093df54fb8c053a6ae37e80caac7434f60e32334",
+    "status": "bounded-current-native-and-original-owner-decline-passed; whole P4 open",
+    "features": ["F41", "F56"],
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": "cd33b58a15c4ae14e267f220da0aa41300171bb26cbc9adafda94e9c5ea1f078",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "1b92e7f3741a1e64d1e5d4f7272e8dc16f2281b0fa4da941f0bda0a6ae1bf162",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileApprovalUiTest.kt": "10be43e9cb0255bd3cdc32a30c59afb5bcdcd264b220a03410235ff2bf78e5fb",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "3aed9566901e68bccfe367a5af1c44b3ba4d699dbc70c861a8d887576df387ee"
+    },
+    "implementation": [
+      "Native Codex GET declares mcp-v1 before projection, matching existing command POST.",
+      "Only six iOS semantic Host decision labels localize; unknown supplied labels remain raw. Original decision IDs and payload scopes do not change.",
+      "Full DTO identity continues fencing captured callbacks, native press/release replacement and late success/failure."
+    ],
+    "iosComparison": {
+      "files": ["apps/ios/Sources/HostService.swift", "apps/ios/Sources/RootView.swift"],
+      "sourceNodes": ["N037/9f3caef0", "N039/4f33e03c"],
+      "impact": "Uses current iOS version declaration and six-label mapping; Swift/shared/Host production code unchanged; no new iOS native result."
+    },
+    "nativeAuxiliary": {
+      "status": "passed",
+      "methods": 70,
+      "groups": 5,
+      "environments": [
+        "physical API33 portrait light/dark",
+        "API26 portrait normal/double font",
+        "API37 portrait light"
+      ],
+      "appSha256": "d23510b6c40bf60ae741183ae9c0e91a398c32aac3517a97baada5dc8d4843c6",
+      "testSha256": "ae87a7e54d20299fb21737d8e8de72687cb8f4749ba7648b76b88cebf14ccd31",
+      "sourceSha256": "0eb9b1f72cb5196ed62ee4a032b592529bc2cff092fb5ce739bc13039624c8d7",
+      "defaultStorageProofs": 70,
+      "ownedImagesReviewed": 30,
+      "scope": "synthetic HTTP and SDK native interaction, not original model proof"
+    },
+    "realOriginalOwner": {
+      "status": "passed",
+      "nativeMethods": 1,
+      "defaultStorageProofs": 1,
+      "ownedImagesReviewed": 1,
+      "oneFreshModelInput": true,
+      "phoneModelInputs": 0,
+      "fourOriginalDecisionsRead": true,
+      "nativeAction": "decline exactly once",
+      "completeDtoMatched": true,
+      "independentDesktopProof": {
+        "turns": 1,
+        "userInputs": 1,
+        "completed": true,
+        "originalRequestRetired": true,
+        "declineMarkerObserved": true,
+        "probeViewNotDisclosed": true
+      },
+      "transport": "explicit owned ADB loopback tunnel; LAN/TLS/cellular/VPN not newly accepted",
+      "limitedTestProjection": "Only workspace menu scoped to fresh owned thread; target/mode/capabilities and actual history/approval/command responses unchanged. Not full navigation proof.",
+      "wholeScopeClosed": false
+    },
+    "baseline": {
+      "status": "rejected original missing version",
+      "originalAppCheckpoint": "P6-I1/093df54",
+      "assertion": "Native reads must declare mcp-v1 before Host projects grants",
+      "nativeDecisions": ["decline"],
+      "postsBeforeAssertion": 0
+    },
+    "failuresRetained": [
+      "Runner compile: live decode missing host argument, corrected before model input.",
+      "Real preflight demanded a workspace runtimeConnected field that actual Codex HTTP does not expose; zero model input. Actual adapter.ready and desktop owner plus history canControl separately proved.",
+      "Probe SIGTERM yields signalCode, not exitCode; original false cleanup flag retained. Independent exact PID process absence receipt proves cleanup.",
+      "Earlier synthetic and baseline runs retained separately; no upgrade of failed cohorts."
+    ],
+    "checks": {
+      "android": "current App/test build passed",
+      "workspaceAndIos": "exact unchanged JS/shared/Swift from P6-I1 full checks; not rerun as current native proof",
+      "finalParityAndFormat": "run after documentation registration"
+    },
+    "newRealModelInputs": 1,
+    "allPhasesCumulativeInputs": 216,
+    "p4CumulativeInputs": 202,
+    "pending": [
+      "Real session/always/cancel grants and extra-permission provider variants",
+      "API37 actual landscape",
+      "Complete system Copy/TalkBack/AX/visual and natural fault matrix",
+      "Original archived/unloaded-owner and SIM/VPN environment",
+      "Remaining P4/P6/P7 and actual suggestion source"
+    ],
+    "wholeFeatureClosed": false
+  },
+  "applicationConsentBoundaryCheckpoint": {
+    "phase": "P4-4o.33",
+    "sourceBase": "ad74de9d99605a2c8ecac0516298efd32574e121",
+    "features": ["F41"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileApplicationSessionLiveTest.kt": "ff610068a22dec50f31a0d5334d14a73bc82f3380aedabf8bc864bb2a231a193"
+    },
+    "scope": "Opt-in original-owner session approval examiner and product consent/no automatic replay native check. Production source unchanged; actual grant remains unaccepted.",
+    "nativeAuxiliary": {
+      "currentConsentCases": 3,
+      "matchedSyntheticCases": 70,
+      "defaultStorageProofs": 73,
+      "currentAppSha256": "1c0ac32af34bbab9a6530589f06f2e9513bffd11404f3ab91911bcb148ac93f2",
+      "currentRunnerSha256": "6386ad99c80dce2c14999c05ac218bebe0f3863c22c43b641a99abd4a7ecc9ae",
+      "sourceSha256": "76ad90c2046ec2701428aa260716dd13cf83bf43edf9bab21db568d8ed03054f",
+      "selectedOwnedSyntheticImagesReviewed": 26
+    },
+    "matchedReuse": {
+      "proof": "Inverse one new examiner file exactly matches whole prior Android/shared/protocol aggregate. Production App identical.",
+      "originalSourceSha256": "27f9c04ec1bfa44ab52ad046c66afeb081a93c99013a0074789e98745f2358c9",
+      "originalProofRetained": true
+    },
+    "realOriginalOwner": {
+      "attempts": 2,
+      "acceptedMethods": 0,
+      "status": "failed/pending; two original requests remain open and sealed",
+      "first": "Examiner missed product content-sharing confirmation; 35s wait failed. Original owner remains pending.",
+      "second": "Actual native consent granted without automatic operation; subsequent explicit click did not yield completion within 35s. Command marker absent; unique cause not proven.",
+      "reconciliation": "Each original owner independently has one input/in-progress turn and original pending request; read only, no replay.",
+      "cleanup": "Both owned Probe exact PIDs absent, owned Hosts/observers closed and ADB routes restored.",
+      "scope": "No permanent grant used. Native synthetic results do not close actual original-owner session authorization."
+    },
+    "newRealModelInputs": 2,
+    "allPhasesCumulativeInputs": 218,
+    "p4CumulativeInputs": 204,
+    "wholeFeatureClosed": false
+  },
+  "applicationWindowReturnCheckpoint": {
+    "phase": "P4-4o.34",
+    "sourceBase": "3a22cba86e55e7a14f41a71a14aa49604d493dff",
+    "features": ["F41"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileApplicationSessionLiveTest.kt": "ad2a72c3b5009dc0818bd246a4f52f92bfebc9737b53afefb88a3713035133b9"
+    },
+    "scope": "Opt-in examiner waits for native consent Dialog disappearance, main-window focus and stable original button bounds before one explicit original operation. Product source unchanged. Earlier failures retain unknown causes.",
+    "nativeAuxiliary": {
+      "currentConsentCases": 5,
+      "environments": [
+        "physical API33 light/dark",
+        "API26 light and fontScale2",
+        "API37 portrait light"
+      ],
+      "appSha256": "313cdd89dddf71d895feaf236ea4ed65c4ccf8683644bcd99ab425dad1ec4f44",
+      "runnerSha256": "4e2b307278f40633135668b5b8cd0d0d506e4d8f14b86a98cc02c636bc2b74a7",
+      "sourceSha256": "ff50592e6d2b07ee68a8752226303bc99ae6d4dcba909dba9e4abe4651f7df08",
+      "defaultStorageProofs": 6
+    },
+    "actualOriginalOwner": {
+      "acceptedMethods": 1,
+      "parentInputAttempts": 1,
+      "mobileInputAttempts": 0,
+      "nativeMainWindowStable": true,
+      "oneApprovalPost": true,
+      "exactOriginalDtoAndTarget": true,
+      "originalRequestRetired": true,
+      "unsentDraftPreserved": true,
+      "originalOwnerOneInputOneCompletedTurn": true,
+      "independentPrivateProbeViewMatched": true,
+      "permanentGrantNotUsed": true,
+      "resourceReferenceObservedButNotPreviewed": true,
+      "automaticReplay": false,
+      "actualOwnedImagesReviewed": 2,
+      "transport": "ADB loopback, not LAN/TLS/cellular/VPN proof",
+      "cleanup": "Owned Probe PID absent; owned Host/observer closed; original ADB routes restored."
+    },
+    "priorFailures": "Two P4-4o.33 original requests remain sealed and are not answered or replayed. This fresh success does not prove their unique prior failure cause.",
+    "newRealModelInputs": 1,
+    "allPhasesCumulativeInputs": 219,
+    "p4CumulativeInputs": 205,
+    "wholeFeatureClosed": false
   }
 }

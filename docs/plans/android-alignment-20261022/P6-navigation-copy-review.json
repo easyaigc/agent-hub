@@ -1,0 +1,89 @@
+{
+  "phase": "P6-3d",
+  "sourceBase": "707325647180faf5b52edb19692fa1fafef102dd",
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileNavigationCopyTest.kt": "c028927b9994959247150720bb10a23a5cab259bf6922ffb8a587dbeb65dd535",
+    "apps/android/src/main/kotlin/com/agenthub/android/ConnectionProductText.kt": "eab536fa75b38557f4219d9f32632d4d89df21d324acb1966ad27f004860de6e",
+    "apps/android/localization/native-copy.json": "d270cdd7dc7624b8d038f2f4da0d3bef5e3c8fc31fe1bde932b332c261af47c3",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "54f732577bd626d8ee714275f6d8673bc2570b5af7d5fcbc2624afc1cb3de0b9",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileExecutionTest.kt": "9fd4f86297227632a74c04347ab3a98cd25536909184acc266fed4350f813328",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f52c872a94cbfdff081043b501d5526a16d26070b9ee9082df620c5cf7aea575",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePlanToggleTest.kt": "ad952e43b13ed31d7bdefde3768519b093e86ca2d91944b842268cabb4481e86",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "ea460d202b603ff6abb2f1398a72ba97d805da6f0cd99014b516f7a8c28543f1",
+    "apps/android/src/main/kotlin/com/agenthub/android/ChatHistorySearch.kt": "b09216c682ae0e844965734b60cc1cc12e8eada942a4d7c6f471de6d0e5948ec",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "c8acede9f47f2f98e2ba0bbc7dbc86d06c0a0d52f1c9c0d7a9240d301e160921",
+    "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "57c68ba9ea929657e96c455bee177b8ac3eaabdcd401a01063cdde6d257d93d2",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "22710b24490157b95efcf508d243dd6abcbaf5f95cc269b620e9e5d7f71ed628",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "9f0a6b1d05287fc9d1f617d3d5a76965d533a890da4e734307934d4b807e4879",
+    "apps/android/src/main/kotlin/com/agenthub/android/ReplyDeliveryRecords.kt": "165d4aa36b75324950ce6148af80409ffc049d3ea3d4df13b7e2c8d22a9c3139",
+    "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "7e9ad03b7ae965c00b469ea5f01bc573bc22e392e39fa419494f98508311c711",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "1ef6c6068446f167760a3823164110941e355c9b1f73d21e1a1f3f33e3272106",
+    "apps/android/src/main/res/values/product_strings.xml": "953ab3a90be3162e75845de2f33d63c6aa3e9823e6d8de0c7a485438e23b4209"
+  },
+  "wholeStageClosed": false,
+  "scope": "Sidebar fixed groups/expansion/status and typed client mode/connection captions; explicit connection field/method/preference labels; closed reply/question state display. Internal IDs, route state, targets and payloads unchanged.",
+  "preservedRaw": [
+    "client/project/thread names",
+    "pairingStatus",
+    "error/record.error",
+    "question/option text",
+    "all original input and attachments"
+  ],
+  "pending": [
+    "general dynamic/error prefixes and records",
+    "voice status/local backend",
+    "full links/resources/render/token/system matrix",
+    "Review inherited manual-connection default name/address against iOS and physical-device routes; current stage verifies labels/data, not these defaults."
+  ],
+  "newNativeKeys": {
+    "%@ · 进行中 %@": "%@ · Active %@",
+    "%@，%@个会话进行中": "%@, active conversations: %@",
+    "%@，进行中数量未知": "%@, active conversation count unknown",
+    "VPN · ": "VPN · ",
+    "局域网 · ": "LAN · ",
+    "尚未连接客户端": "No client connected",
+    "原桌面连接": "Original desktop connection",
+    "EasyWork 连接": "EasyWork connection",
+    "托管连接": "Managed connection",
+    "共享连接": "Shared connection",
+    "历史连接": "History connection",
+    "允许本地网络访问后可发现局域网与 VPN 电脑": "Allow local network access to discover computers on LAN and VPN",
+    "暂时无法发现局域网电脑，可使用连接二维码或已保存地址": "Local network discovery is temporarily unavailable. Use a connection QR code or a saved address.",
+    "局域网发现暂不可用": "Local network discovery is temporarily unavailable.",
+    "原附件信息暂不可用，%@ 个附件的原记录已保留": "Original attachment information is unavailable. Preserved attachment count: %@.",
+    "正在读取 %@ 个原附件的信息…": "Reading information for %@ original attachments…",
+    "已读": "Read"
+  },
+  "keysPerLanguage": 1636,
+  "realInputsSoFar": 0,
+  "iosSourcesUnchanged": true,
+  "initialCompileFailure": "Duplicate private setter introduced then removed; class detail already private-set and contains only compiled discovery copy. No native or model operation executed by failed build.",
+  "nextRealCase": "After stage source/native freeze, prefer one fresh owned Probe session-grant scene; do not modify sealed operations or overwrite P4 source pointers. This has not run yet.",
+  "initialNativeFailure": "Both three-method groups failed only because new manual form seeds already fill name/address and hide placeholders. Examiner clears only its unsaved form values before checking labels; production unchanged.",
+  "features": [
+    "F02",
+    "F03",
+    "F11",
+    "F17",
+    "F41",
+    "F42",
+    "F44",
+    "F45",
+    "F48",
+    "F56",
+    "F57",
+    "F58",
+    "F60"
+  ],
+  "captureRefinement": "Explicit strict native Dialog PixelCopy for API26; only two form captures change. Exact inverse source matches original API37 54-method cohort.",
+  "deferredProjectFormSha256": "2323621e8690f6dcb13d95aa2853945ea4257f5f66b9935efe686b8bdba2d43c",
+  "manualSeedIosComparison": {
+    "source": "apps/ios/Sources/Sheets.swift:171-172",
+    "address": "same prefilled loopback as iOS; physical route matrix remains separate",
+    "name": "iOS initializes new name through L10n; Android still uses raw bootstrap name. Next P6 defaults batch must localize initial seed without retranslating edited names."
+  },
+  "visualFindings": [
+    "API26 double font connection-method row gives too little width to its label and breaks English words awkwardly; responsive row layout is a next P6 item, not a full visual pass.",
+    "Selected question/window crops do not replace full short-viewport, IME/system composite or TalkBack acceptance."
+  ]
+}

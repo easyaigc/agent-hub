@@ -28,6 +28,7 @@ class MobileAttachmentImportOwnershipTest {
     private val receipts=mutableMapOf<String,DeliveryReceipt>()
     private var writes=0
     private var expectedWrites=0
+    private var primaryFailure=false
     private lateinit var reader: HostReads
     private lateinit var commands: CodexCommands
     private fun <T> main(block: suspend ()->T): T=runBlocking { withContext(Dispatchers.Main) { block() } }
@@ -69,7 +70,7 @@ class MobileAttachmentImportOwnershipTest {
     @After fun finish() {
         if(!::owned.isInitialized)return
         main { gates.forEach { it.complete(Unit) };jobs.forEach { it.cancel() };jobs.joinAll();otherSessions.forEach { it.leaveForeground() };session.leaveForeground();owned.verifyDefault() }
-        assertEquals(expectedWrites,writes)
+        if(!primaryFailure)assertEquals(expectedWrites,writes)
     }
     @Test fun lateProviderCommitsOnlyToItsValidOriginalDraft() {
         ui.onNodeWithTag("message-input").performTextReplacement("Original A draft")
@@ -101,9 +102,22 @@ class MobileAttachmentImportOwnershipTest {
     }
     @Test fun acceptedClearRejectsAnOlderPickerGenerationBeforeReadingIt() {
         val original=main { session.attachmentImportDestination() };ui.onNodeWithTag("message-input").performTextReplacement("One synthetic transport input")
-        expectedWrites=1;ui.onNodeWithTag("send-message").assertIsEnabled().performClick()
-        try { ui.waitUntil(15_000) { writes==1&&session.text.isEmpty()&&session.transferStatus==null } }
+        expectedWrites=1
+        try {
+            ui.onNodeWithTag("message-input").assertTextEquals("One synthetic transport input")
+            val button=ui.onNodeWithTag("send-message").performScrollTo().assertIsDisplayed().assertIsEnabled()
+            var previous: Pair<androidx.compose.ui.geometry.Rect,Int>?=null;var stableAt=android.os.SystemClock.elapsedRealtime()
+            ui.waitUntil(5_000) {
+                val position=button.fetchSemanticsNode().boundsInRoot to ui.activity.window.decorView.height
+                val now=android.os.SystemClock.elapsedRealtime()
+                if(position!=previous) { previous=position;stableAt=now }
+                now-stableAt>=350
+            }
+            button.performClick()
+            ui.waitUntil(15_000) { writes==1&&session.text.isEmpty()&&session.transferStatus==null }
+        }
         catch(failure: Throwable) {
+            primaryFailure=true
             File(owned.folder,"accepted-clear-failure.json").writeText(JSONObject().put("error",session.error)
                 .put("text",session.text).put("writes",writes).put("decision",session.decision.toString())
                 .put("sharingRequest",session.aiSharingRequest?.toString()).put("transferStatus",session.transferStatus)
@@ -114,13 +128,28 @@ class MobileAttachmentImportOwnershipTest {
         var calls=0;ui.runOnIdle { assertNull(session.importAttachments(original,listOf({ calls++;input("stale.txt") }))) }
         assertEquals(0,calls);assertTrue(session.attachments.isEmpty());assertEquals("New draft after accepted clear",session.text);shot("accepted-clear-rejects-old-picker")
     }
+    @Test fun newRequestsReserveOnlyFiveSlotsBeforeAnyRejectedSourceRead() {
+        ui.runOnIdle {session.changeLanguage("en")}
+        val gate=gate();val original=main {session.attachmentImportDestination()};assertEquals(5,original.maximum)
+        val first=main {track(session.importAttachments(original,(0..3).map {n->suspend {gate.await();input("new-$n.txt")}}))}
+        var rejected=0
+        ui.runOnIdle {assertNull(session.importAttachments(session.attachmentImportDestination(),(0..1).map {suspend {rejected++;input("rejected.txt")}}))}
+        assertEquals(0,rejected)
+        val last=main {track(session.importAttachments(session.attachmentImportDestination(),listOf({input("fifth.txt")})))}
+        main {gate.complete(Unit);first.await();last.await()};assertEquals(5,session.attachments.size)
+        ui.runOnIdle {assertNull(session.importAttachments(session.attachmentImportDestination(),listOf({rejected++;input("sixth.txt")})))}
+        assertEquals(0,rejected);assertEquals(5,session.attachments.map {it.manifest.id}.distinct().size)
+        val key="最多添加 5 个附件，请先移除部分附件。"
+        ui.onNodeWithTag("session-error").assertTextEquals(NativeL10n(ui.activity,"en").tr(key))
+        ui.runOnIdle {session.error=key};ui.onNodeWithTag("session-error").assertTextEquals(key)
+    }
     @Test fun completeBatchCapacityIsReservedBeforeAnyRejectedProviderReads() {
-        val gate=gate();val first=main { session.attachmentImportDestination() };lateinit var a: Deferred<Unit>;lateinit var b: Deferred<Unit>
+        val gate=gate();val first=main { session.attachmentImportDestination().copy(maximum=10) };lateinit var a: Deferred<Unit>;lateinit var b: Deferred<Unit>
         ui.runOnIdle { a=track(session.importAttachments(first,(0..7).map { n -> suspend { gate.await();input("first-$n.txt") } })) }
         var rejectedReads=0
-        ui.runOnIdle { assertNull(session.importAttachments(session.attachmentImportDestination(),(0..2).map { suspend { rejectedReads++;input("never.txt") } })) }
+        ui.runOnIdle { assertNull(session.importAttachments(session.attachmentImportDestination().copy(maximum=10),(0..2).map { suspend { rejectedReads++;input("never.txt") } })) }
         assertEquals(0,rejectedReads)
-        ui.runOnIdle { session.error=null;b=track(session.importAttachments(session.attachmentImportDestination(),(0..1).map { n -> suspend { input("second-$n.txt") } })) }
+        ui.runOnIdle { session.error=null;b=track(session.importAttachments(session.attachmentImportDestination().copy(maximum=10),(0..1).map { n -> suspend { input("second-$n.txt") } })) }
         main { gate.complete(Unit);a.await();b.await() }
         assertEquals(10,session.attachments.size);assertEquals(10,session.attachments.map { it.manifest.id }.distinct().size);assertFalse(session.importing);shot("ten-reserved-files-without-overflow")
     }

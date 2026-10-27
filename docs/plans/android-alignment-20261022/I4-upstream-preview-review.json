@@ -1,0 +1,436 @@
+{
+  "phase": "I4",
+  "before": "a4bc0fb4128cf25ede4cb575b7092335944c69a5",
+  "incomingMain": "2523520230f794ac837027779b2eea82a9deec2a",
+  "mergeBase": "7256dd3ac0712e34e2e46117b6f3aff560e8d517",
+  "upstreamNodes": 13,
+  "nodeRange": ["N053", "N065"],
+  "features": ["F19", "F30", "F31", "F32", "F34", "F47", "F71", "F72"],
+  "summary": "I4：逐条纳入N053–N065共13上游节点与F72源码，保留既有资源/附件边界。Android当前模型/强度与下次发送分离，修复空字符串草稿判定和英文说明回退；19项最终包执行、168项仅文案无关实现匹配复用、187份十字段保护通过，含三环境同一原回复/实际owner参数只读核对。阅读入口与图片多选预览仍待Android后续。",
+  "sourceSha256": "734034b5aafe7dbcc07c404f3a4c20d341f265af912d75d51dfebec7fdcc99d6",
+  "appSha256": "1a7485d4e0eb7a1c8b5dcdb332bbddcda128e516c5e5bb16b16a26e7926cf8c2",
+  "runnerSha256": "978ab97a7cd1143ff549eb2c927a46576b0e71816738896f613e390655df5536",
+  "nativeCohorts": [
+    {
+      "environment": "owned-API26",
+      "finalModelMethods": 4,
+      "matchedCaptionIndependentRegressionMethods": 56,
+      "finalModelReportSha256": "2c948fce3715832875122254b0863a0cdcc5cad65ba55a3b37dc5982bbe9ccfe",
+      "reusedSourceSha256": "5e6b33a9d3455a767a63100d92d434f1bce46814938228798e7a4540e0accd2d",
+      "reusedAppSha256": "915d676321865aae5663d315d8533b9d3bd035af0536fc8135ac93341d524e95",
+      "reusedRunnerSha256": "61621fbb089a622ddea89cc5974bf49bb6e18efbc2d35c5c678692aa9d55eef9",
+      "regressionGroups": [
+        {
+          "methods": 12,
+          "reportSha256": "f5c61190353eab3799a9ec33df7fb74536272ad4e9c047da8abc513061dd72d3"
+        },
+        {
+          "methods": 17,
+          "reportSha256": "300bb072fd71e17ec57159d1c0483036a4110c025180d49798dcdaa784983b00"
+        },
+        {
+          "methods": 13,
+          "reportSha256": "5dbcdc469501001de58649b320826b6b212b8a6bdd17562a76af234e7c161707"
+        },
+        {
+          "methods": 14,
+          "reportSha256": "584ac76817719c6bac7bb39f80a963adf2f286357892351765725ff789cec679"
+        }
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "finalModelMethods": 4,
+      "matchedCaptionIndependentRegressionMethods": 56,
+      "finalModelReportSha256": "43640ee492f1b794a37afa9b951778bf0e3f70d5b942fcb9d9970f201004b112",
+      "reusedSourceSha256": "5e6b33a9d3455a767a63100d92d434f1bce46814938228798e7a4540e0accd2d",
+      "reusedAppSha256": "915d676321865aae5663d315d8533b9d3bd035af0536fc8135ac93341d524e95",
+      "reusedRunnerSha256": "61621fbb089a622ddea89cc5974bf49bb6e18efbc2d35c5c678692aa9d55eef9",
+      "regressionGroups": [
+        {
+          "methods": 12,
+          "reportSha256": "1a573310341ee0085fbd04e5fe410ccfb3a04366990ebc30dd5e752f3bbed2d7"
+        },
+        {
+          "methods": 17,
+          "reportSha256": "21e4f179249aba85da16407e339da3bf8ffdc1d39f5e1f4769b5227dc477e64f"
+        },
+        {
+          "methods": 13,
+          "reportSha256": "43f36e53e0a4c82db90744ce05489e827182b8d7c660d0e0494909673ddfd234"
+        },
+        {
+          "methods": 14,
+          "reportSha256": "5f4a438f0283822800f51927f55e01c078d12cd27efc5cd10ebc5d20036e1fe1"
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "finalModelMethods": 4,
+      "matchedCaptionIndependentRegressionMethods": 56,
+      "finalModelReportSha256": "81e099963932f56d7dc5f1c3dca6fc1fceefd81c8c5b72710d8ad76c5c728f5c",
+      "reusedSourceSha256": "5e6b33a9d3455a767a63100d92d434f1bce46814938228798e7a4540e0accd2d",
+      "reusedAppSha256": "915d676321865aae5663d315d8533b9d3bd035af0536fc8135ac93341d524e95",
+      "reusedRunnerSha256": "61621fbb089a622ddea89cc5974bf49bb6e18efbc2d35c5c678692aa9d55eef9",
+      "regressionGroups": [
+        {
+          "methods": 12,
+          "reportSha256": "21d76ed1b64e87314b503517c1f241c35232959c4dd84f334ee95365dcd6ae54"
+        },
+        {
+          "methods": 17,
+          "reportSha256": "871d9b42d559c1c812df13b1f8205e76f6e95ae383a9d0f8d5f74ba1f690150d"
+        },
+        {
+          "methods": 13,
+          "reportSha256": "b4883f637925de45676f59615fd97fa64af91f34ce8d2e4d6be2696ef6692342"
+        },
+        {
+          "methods": 14,
+          "reportSha256": "863f43d95151bd8f2eaecf52639b419abb7cd49d68fbc8803ee38dc3f386f032"
+        }
+      ]
+    }
+  ],
+  "darkViewport": [
+    {
+      "environment": "owned-API26",
+      "fontScale": "2",
+      "theme": "dark",
+      "methods": 2,
+      "reportSha256": "b7b386ebd13963b3ed1b2b074c99e06e65562d8f89d3104d4127ff3e7b7b147f",
+      "imageSha256": [
+        "14b4c7bf57aa5fa4cebf546d8ac3ab95aadf0f5be364f6b534709828c1e58ac4",
+        "588f5657baac149f186e9fa054cc7649115866f71dccf1aa2eb61c08e2a7120e",
+        "a57892ce0a87f910353a94479816560de6cf68484f1df5e3049300adcf86e49e"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "fontScale": "1.3",
+      "theme": "dark",
+      "methods": 2,
+      "reportSha256": "d914567371a414465dd51717d807073ac27a6ea01c0d1fd2af806981b09caeec",
+      "imageSha256": [
+        "d0aae671b36eed58e1a39973cfe6d661f513f4fba450aef3b40cac118ddd9974",
+        "fde27c62000b5f6d08ec4f734464c69573901a0d67b1d114058493ace5941d01",
+        "6ca8b60e198cab5d908a3eb336ca2a4c7193f54a1a93bda011c4380f314835c8"
+      ]
+    }
+  ],
+  "originalLiveRead": [
+    {
+      "environment": "physical",
+      "methods": 1,
+      "originalOwnerAndTurnsUnchanged": true,
+      "independentOwnerModelAndEffortStable": true,
+      "nativeCurrentDisplayMatchedOwner": true,
+      "writeRequests": 0,
+      "reportSha256": "4b9ea4414d56f1548233b5915b7aaea210d4b2e58267be8a007be526fd73f79a",
+      "modelDisplayProofSha256": "63b64b72b0438beabcfa31ab23c981a5c046ddcefe5a2f3ec35c2f677f2f5921"
+    },
+    {
+      "environment": "API26",
+      "methods": 1,
+      "originalOwnerAndTurnsUnchanged": true,
+      "independentOwnerModelAndEffortStable": true,
+      "nativeCurrentDisplayMatchedOwner": true,
+      "writeRequests": 0,
+      "reportSha256": "e4e74ade6bb2f38c1fe725209af48237d9ed6d2448c14d60adf3d892fc2ee251",
+      "modelDisplayProofSha256": "63b64b72b0438beabcfa31ab23c981a5c046ddcefe5a2f3ec35c2f677f2f5921"
+    },
+    {
+      "environment": "API37",
+      "methods": 1,
+      "originalOwnerAndTurnsUnchanged": true,
+      "independentOwnerModelAndEffortStable": true,
+      "nativeCurrentDisplayMatchedOwner": true,
+      "writeRequests": 0,
+      "reportSha256": "4363757a7c2c44094ab12af7441f812e12530694185466ec7ec2b6941b6786ed",
+      "modelDisplayProofSha256": "63b64b72b0438beabcfa31ab23c981a5c046ddcefe5a2f3ec35c2f677f2f5921"
+    }
+  ],
+  "finalPackageMethods": 19,
+  "captionIndependentMatchedReuseMethods": 168,
+  "effectiveMethods": 187,
+  "defaultTenFieldProofs": 187,
+  "defaultProofFields": [
+    "draftsPreserved",
+    "draftFilesPreserved",
+    "draftVersionsPreserved",
+    "attachmentImportGenerationsPreserved",
+    "recentPhotoPreferencesPreserved",
+    "photoAuthorizationPreserved",
+    "documentRequestsPreserved",
+    "photoRequestsPreserved",
+    "cameraRequestsPreserved",
+    "cameraOutputsPreserved"
+  ],
+  "defaultProofSha256": [
+    "6966ba1466b82ceeb91707be116905a8d674105a6b2c60b79c5705a3dd8e0cde",
+    "68c417ffd856cd83b1d08bff1ce4bf2099473af94895558ea5a54e8e951c6e85",
+    "831355b911d3617752a67d2de8dc9f9d31845ce40b5c5c0700dc7478d5e1802a",
+    "7f77fe4d884e96ee2cd09678d2347307fecec25317e88d2c853d18d6c93c79df",
+    "4e0f5ac464f0689133e6ca54390cf4f3dedc328633dfe9e2edca694e0f4479ae",
+    "0a4e45acb2ef78febdecab5bc84e7c84ae08f2587c38d2bbf71208cf680d40f0",
+    "6a601254ec7eeb969b38ab74f891f22cc7e4e3e2768e8ad609b7612d06338b83",
+    "8c17cd1a09edb8aeb0e9f99a6e499291edcd32c92ec31ee06df5a8aec84988fd",
+    "812b9f08cdf19c3933136de40353e39f8f3f46f10e2cbc9f5b61579b38b3e454",
+    "4cea0076e3fa054449bedad6887e2cee41d846406329a4990c35b728197d5663",
+    "efaa871ccd3da50be3eeebce1afd63ebf05219825201df52c9dc8b104e2774c8",
+    "6a126756f03cbdeae762c9c3b42be4d783823c9775c053c0aad34f17ecaa9c64",
+    "bc4466768619f14ec601c3c73fe600bc7ea498ad2719e411f1b0cdde0b5f4c23",
+    "28933815e887cbd8f4f7dfdd25b6d3aedecb4a1a5ee850671dfaae83d2814663",
+    "2073f07f25b62ed3d3b9220b51cf598a7f7a8aa0558846e9ed99a5d964d91bda",
+    "bdecce8f28e4e5e59c7b09d9a8fc7e87c9438f3728673372cbcd40d1963c4499",
+    "4e541d459745f4d4ba0811bc8004c2da07da63ead96f2e501cac84b05ff7e662",
+    "a7f7b7eab671844a809280430662ff5c4c8ba8ae2fe0ab9ad14c17a73e22b554",
+    "2979026d499ae6375bbe4624286e33c2a7eeeb9c582fcc07a8b489c3f209a56a",
+    "ca81c830585818a91149692a7c022b0ed67e0e1b9e8eb0e23d3ba75d0d9a1cb7",
+    "6560cdd2cc9942d631e4e17268efd8221be206476d3cc809344d6222e90227c7",
+    "9537606067ac8d92b2109859a5ea35a3d9d217b968e290f371a381f30cb695c5",
+    "339cf195e22c985cae572c3106ee5f494f8b36fa935fcd7e89687908e84ed784",
+    "58c31a7a55d6c0764cc3bedfd4ae8d90b1d2c31f1efaf36b15102e074f49d890",
+    "ebd5b9a43bcf09ac9eedebc2b716ba6baa38baf33f9381412d7152cd52542d58",
+    "080ffb9b07bee77bde670d0c9f260d7a094d858b4b9d0c175d3d0a6447100dee",
+    "8a2626bec96a9a752788a45309fcefceede8ed42d4645146158ccd99c3d4d5ba",
+    "e1fe4ace2a92660d0514ecfc8f7dae3b86cb94e6e65146ccdb3f6619292b7df0",
+    "9dfe799f4ac4d9dae4e12bec9b863d34b784d76dc91469bc7d0211e862261246",
+    "d9d5cce5c3df45ca537857de4ee2a8fd0fdc1a7e7f53e23b33fe7420abcba6c6",
+    "c8fab07d152da6f571cf2cc682bb192fd8b43dc742c7ccaaaaf6e85ffa84eb71",
+    "2f61d8dfa292553fa9be7d3092d793c16ecaad9b614a171862009e7c23efd9c8",
+    "44c9e7063dd19ddefcaad492a945f88dc7c8b00b25c8932d2433902b9b70d6d9",
+    "3f7b42cc0e2cff2653ed0906efb689a36b78692bc3185f5b9ba7ee08075f0c9e",
+    "5733ca1ba04990b4d66dd90a7dfb847baa1511e71cb1d3f71e173ac1e70bfb67",
+    "1b96914041a1b193c1b7d635c48e3a2dbdd2a597741ff623887db6ed9a8e253e",
+    "f3139417f7c4c927b4f309a004e70691b733888838020894094da83435a456c3",
+    "ee9d78fece6a22d8c19aeb538e9d1f02afece0c187df816886bb09b516c4230e",
+    "e5c35e8ea82768dbfe44380dc986ebd7c3c8e447365838980b85062087ef1320",
+    "95fb7e63b55ca7c080257ddf7954a6846670272360d9e06b249795703428d0a1",
+    "5e320a2cd19eab2284eeb6f8ffa70aeab65a483ecc4d0f0328334df84e6d41e5",
+    "75bb96683b4162728821e6b7c5f181464b24ccd9d71c72599b7b218593f3ad4a",
+    "d2b3c645d4305bedb84abed4e28cdd4a6bf8e6fa51fc620d157a92ebad6bbf5f",
+    "1003752a5b02dec80dc49312f7b0300af702695f7dece27bf402ee5d2253ff7e",
+    "1c70bf7c5c5cf141c29c1c84e5e757699357e184f639d02338f909fd734a02be",
+    "ae28c6b48071cad8ac9e0a871a491c8b4f554fe34e4b0e878c677ff8cf69939b",
+    "05e60ef9229bd115b4b46a517f04f2c01b019f454574725e6d5ac3ceafaf601a",
+    "7b7d75ea3a9ad9da164f8a18d553682f3371a7711a778aa1fe44a6a131a18dbf",
+    "21ba409bd8df2366d617820f056d45d22f1c6280b73736bd38cff4d8ebe32d95",
+    "d52e7ecbf9fd0085123ff9ead7bb2553ca271037eb504702498df8b37dbb8f55",
+    "bc5ff70414969146379fb9a42f545765afa9dcc30c56d912ef95bbe9ba73d3f0",
+    "5c57f3ca91e438e37859ce7047e924d781cff641ee46f20d249541ec6963e3b8",
+    "1e1c7207af39f4e0ac4685792cb2cb6d7fd91e03f807bb7d3ca70f0e194fe226",
+    "e4c83dec234f1ef42d3e89338d4b68977a522c8ab5df80c8d551b86157064723",
+    "e737aa3957e95f1487c0a8b4b38be1e230282d99916f6b4f191a9571a04dad21",
+    "cfe06af20976f62d7413c47ded59fdc4809b46f2d215d894cfcec608aab770eb",
+    "572a301a2302b314b7a9375c6167bf8fefdcc8b57467262feb1e973dd9ddfb04",
+    "2b42c9026811deb913849103a02c2ba250aed38725008773d6f417718fb2e6c6",
+    "83e7c2ec2b155ecae340ffa65e7d7737e270cce508f212616019b7ef3bd72b67",
+    "0a44605e1f429b8a641a50071418260e75d04d232969fcb8eb58f5b5b18fa962",
+    "018392efcbe15a506d3574a34df3ee2e8f813c9c2da409c8ca54e4517c0a5267",
+    "abbcfe9ca1e01096616752b314193a1c0b0d237d956ec7a6cfdbe49d27d4cae0",
+    "d747334743512ef23a8a086a613ce1004180cb8326630b35f06fbab67848d1c2",
+    "946ebef5ef9cf9f2a0c8c73a0c1ab8fc8f41fa76ebd2672c2af29e47a13cf9f6",
+    "d8b7c9816315973e987199f3bab8e9c61e3b0e0dfa872e5a9a5853a39dbacf37",
+    "f030bd14e7af48762ecf661ad7b20638f6dfc38c68cd223574be2e0c38aa4d4e",
+    "698987525568c1f50ff4339768548ffe18b092adf87919a8fb014aa02a46d977",
+    "d621e833315eb9081ff23b2284cb773e2ea81bea9395a8915215b675226cbc79",
+    "5073728c9cbe91286fb368f126c3045ae652252c7b33e62e956b3b9ff0dc4a2c",
+    "68a2083dcc4943441cbca6a1be791a387050a07aedaf0cb9372b4b0dd3de0c9a",
+    "2a4cbe9b5584ef2ad600c4ec9c4fd1dd217a343a6a2906951facac1eb049a918",
+    "a13a3a92711b85e360bf528a451561f91e220ab578efa91a4d97fedcfb8aafb8",
+    "9761fb2d04dde0f14ee8c9cca6192b5ae9692245360c929a592e3e8782a3867a",
+    "b9516fae2ca264b05d99ed6535648c09c6faa6d642391d2eefcd6ce59f7cd98a",
+    "7d8664ee3d7ae0abd6f42be4085de664ad61014dd22053b61f4aba86e164ef2b",
+    "63e217ea3d804a229f31a4fa4ca352aca5482031fdbf4fbe3d5934442547b184",
+    "ef2497d3d0733a752247f83204fa07525a71dfcb506b1f0baf5e05c04356d53b",
+    "5033a6f7e4c6db4ece0c55f365f247b10723f2852aeba3445801319f4251eb51",
+    "dd759e90ebc65f57c66f44e6c65ade7a0b883747df80ec9337e02dd6aad34308",
+    "020254aff7d26c6d809f79c7093f822afff18e2bd5125b6da35d9c18cea46572",
+    "ccb01221550b47b4f82fc59e243e36ce5c43bb5ea3e95f85e7200e9a71c9ce80",
+    "94c60b6976db5763f76b33938f169263a9056375b42032500b6e729f582c6e6d",
+    "afcd84b6a574445d4ca91c47cd5c6109ef1e99625be0efc056e84702d0877eb0",
+    "abeedf232dcb9c74a47b7504254251170e40e8d58c1b53520a88f4e3d19dc913",
+    "908c0183a0685d05ccc4b96ce3f265e3e41175dbd9eeb83be95963fee509dd62",
+    "6e08e1fc0da9564f436689f31fedf82d0c1a78bf0b4135985252c6efde054384",
+    "34b774abecd53e9362c52e558113f0e400ab2f6bf8d569ac04e7c51e2b5a7353",
+    "f5bf2b512f7a054c5d8a6efbbd66deac5cb42cd01d311b4987616ad52b48f8a4",
+    "45978f341f850123ad566fa3113b657c4e02a28ac638ac61c0f8729bef1abdf4",
+    "072e1817fefbd222126fe80f8f7abe4d773636a6cae0c55400533fc436f1b703",
+    "662a6abdfc10f249dfeb7b312796092f38525336fa457416432e43264f182739",
+    "81cc758f24045e7927c5cab148308ef98fa289d43831c8801b32aace091c7293",
+    "45933d8b5b6d9581ef7e1844bc29d7d509c66fe097f47a28742055021113d009",
+    "c2ce1a87612934e1ae988494a3195c358253ce38e23eb1f608d56756211784fa",
+    "c18fb4dc85563bd52b4aa32f25afc92de2fa668810bb1d91be8e1be1396b769c",
+    "ae4c633600d313a174d2acffb4238b574750720f581c4a9155196877624f81dd",
+    "1c96ae5d85d71ece13eb863e83fe2fe32225d42f5577bbf4898e67801b0a87e3",
+    "947e6f31d2f4d379040eb025453a474d1683a57c0bc3a6c741e3e2d3e2dfe67a",
+    "f872701d50570b4f9ec2433e646026a7518717e57775d7e64bcf21fbfea7faf1",
+    "9a69e605b741e5196381d6b03f251489842b651f70af539fa811451821a83a60",
+    "d088cb148d8066c1baddaed850c6403c92be4c67c46e47518dc529bb1e4eef1f",
+    "9a04fb5eb23c00e9319c3e2ada50a7d577816ddb9768454ca457238885cb375f",
+    "5fcb4dc169f9789208ded43f009848883b9d92ad45cd2603159c78ef38690f09",
+    "9ff4da01fa8c1901d7eedf763c5f65d0417ea3a7ee2040f35fc72ee5ea626531",
+    "4b5a599d420de1760cb5b6c19e1e5986d8d95fabac7ad65c85d8a0dba4d0fb8e",
+    "b6e0528cbe4cd393c2de6fb554f91a4b4b7de715786d6e0212c58b1bc9367faa",
+    "ba5a418e1ce4fea042051c25c3e49dfc7ad59d7c8dd8fe88834f1f32358d6a1e",
+    "8b93f1914c601a254c9b59de9e6b9b8bc8b3bf6bf083eb3aa0fef439cfabf7ea",
+    "541d71778286c953fc2f1b8e25d5cca5ffdcc4b1014f5b5f9f61875d7b301258",
+    "f29418d91a3a66caf3a08c9e9340dadf8dff1e1b51ed36b127db86208c6653e6",
+    "e6a15a1bf1666735dc2e7e0ed3990c12c908249a065373d17165ef7c027d8024",
+    "048735cbf6ab3e1f49154e0a2e9f9d0c5a3bb77225ce7bac8f9905139959e15d",
+    "41ac19a43238851fc41e6ee267e82d5ca2a1a2c5a441e422ff3ee39c46c227c7",
+    "b7912dad5a77287eebd2bf160c80290d39b2b04ed81acc60ad4967a38c27043c",
+    "1fd4cae3fa873a89484da9f803398706a7249940be9eb10ce398a8c5f2342a26",
+    "27b7cc5ca53af5c71d41b08758fb61274c5a2bd4e06949cec1f47d08fed51507",
+    "a897a8f32b7beddc86293e5a344375700bb8f32fe9fd6210e0e05c7f1a4a35ea",
+    "a162996f60b53d5450856d70f9218ef28da49aca193d213b68a9fddb77ac1e5e",
+    "ee52aaba22259bb67855c00888a035451ecf23ca25e8b3c0077d8c63fc1dd754",
+    "d8b51b05e8144d5b435daa46d30f6e725bc4f672e34c3eeb28322d5531d4449d",
+    "6a0590536c1e68d793a3e7c3e799b060b70b1a414386601b46cf325a0c7a33ad",
+    "65bdc6bde8941fa35e3095f786f3343b44760080e624c977269df44fab1db181",
+    "b51246de481d39805758412948f8662d6f2d623a9fafc4c776fa81d898f25e0c",
+    "7c5e4a5a10b58757afc509e85067fde30932bf87d9587777bbf839c21fdc3096",
+    "fb14bf12cb909b35648f773496e10de2af2b7db678b3f632219a946841f3f884",
+    "611dc8e267595f3e8d330bde78632c6727a892b7d0c0941d157364975f6f1a1d",
+    "e0100981ce649f925d3e5613600619a076bc79bd485a434871211cad9da7a487",
+    "14b78ceef1167b52e2cece201776d4bc5f63af1e01111fd1e5bf16ac8b6836d8",
+    "000b4be2275bbd8f953e75e4947fb962406c4489111a1f7d970939dc7ee5b4ed",
+    "afa8939dfd802a5f25cd60ab5290f78c28a9287ac4d9143bb595812de54dadc5",
+    "95fbb62fef55fe250274b1ca5044f74ae4e2a1edf10172f884384d0373cac15f",
+    "002d01f3602913ee2ea154a53f18d347f1dcb0eb799da6f7d6bd83cc0e2cb402",
+    "b8726efe9a81aaf97832d1b8977859e8ca61e9d059246caf7ee408675313fec4",
+    "73c58be6cf78ddd51cea0d877909928ea0d091b3d716f8a29786b0cb2e8c8275",
+    "9db835d98abe3100a0ea5ec8981f864c9c270175cb0ce9422b5818a906c0e1df",
+    "8d9b59fe2a817639643878443f61674b920951abc77cb050c3341ff44ec2c8b8",
+    "31602fdd7fe7855b69fb31f8deb2b0db9c62ec554986adbfeda2715c9775d62d",
+    "510267448efd35d645a1ddefcec8b247e11afb3a53633b0d9984eedaa3a0ebc6",
+    "900ab2aa019b3387d4c1a7e39864a0f9e181ca323111ae9a76c21a63580761fb",
+    "aecab15608f015c8a3831c359cdfe353d75cfc94d6d149c41c9c090725eff559",
+    "e8571c9223101d7bf983c744a6165df273ef061a476189ce615186642992b5ef",
+    "9a52b7c9c89431bf210756b8f9799f358466a74d863b119527c52f1c2229da89",
+    "fddad4c154fe55b626c452abe62f5b3762461f0f39a2a38f17b8c38d6681e0b9",
+    "088d85db9f83cee4a8a1a9c60d56575ff39e22c1d61aa85209555cda565e2ea8",
+    "a9aa0d0baba49eb5741c83a471a1192af73f2ebb56d5d708ff83963d84c44fa7",
+    "aaf564abb626e41b71662fa670890d82ed72e4dcedd70736f6a0cc0a3b65aa47",
+    "846bfa8c390bdaf498e7012b6e460414ff300930d51d5430ec283380d1d85cd1",
+    "a6814aa96fe7936115b22cc25962fcc2cd4afde77e81cf6c162d7c9d67719ec8",
+    "a67b0ee49373310854ea19ad7b861afe786e75c3c3ae09cbdea3ec4f8acb73bb",
+    "b69897b9f90e9992bbc7af08c540bb6ead0b1638b14f338fec63b9ff85fb2d21",
+    "303b9a31967569f25dcdd71680c1489d9a69df546e379995bd43cf41faedfaf2",
+    "7e6fca9c01da664f3d061243d99deeb342b239cb99e078134e02f75dd43dbdfb",
+    "a6309d4c84baf55d14db09af53f74578a278528a8442af0581fd98f999df2522",
+    "05ad61258b65165a73b9585a32fe8d4e54b07b4b851a23b7fe16f9624f2e4b62",
+    "03e9d71dfe610fe845b4deeb979150bab6c1ba4edf54c7e3256bab9b3ea981e8",
+    "3492110758d99100602711fe0a617c2e1de303603901f11883cce4fd9e347786",
+    "b39c809e8f08b76d94fe9ee15bd3882b7267c0077e40742eb5d4f7fdad6f2d28",
+    "4f7baa2fb6a6d5e12ad719fe2321191ca81f6a9d0b617bba95d527252470c00c",
+    "2893e972ee41298dd4740c0938b4f27a52f62b8d2127b813fd111ecd906d0aef",
+    "f17cd251cab73ef5bcf5820197355de7bc3c98938d816fc740007be8caad0686",
+    "5a7cf7dbae67c02dfa4c4e644e7185e001187d591d766a99875ea5c2b53e31c3",
+    "edd43e5c4f323edfb6d9030aa486044fc9029282ecd244af42168b81a1e99c4b",
+    "710c4d71d1997ba9f3f406fe965a89e15ccf79439357312122e72e252e08912e",
+    "f7e5edbe3391ec9c614d84a474f17e60d65fc1d65ab3963189f8a6d52844b803",
+    "159dc5773842b18a49af00db2c8112c7516b841d9db049c8479aeb49c5ad44d2",
+    "7a24e34735e205c34f862de63657133a6baa21b0d80442b5cc89a6ff5cf5abbb",
+    "d689d683f73cd4c671c6cdd7d75db0482839a9f6c54463c6e63b91d4dee78d5a",
+    "a6bbff7f0acf9e82d7a82f6c5dfd47c7373a2dd661cb6ab813b8f6c0ce611059",
+    "163afafa1bf8c70fc977f18cde5d26d36761d62895ed6978dd0b438bb6c046ca",
+    "f720cd70e71d61d16513bd817ec332995e9e82fb1f2deba865f9dd1380f1538f",
+    "c8d227a8fad5ff8aa8c867df97a56a4521577648f81cb1fdbdc1f987fdaa7f8a",
+    "e318c6e7e21b1fda7a1fba397bfe9970b1843fe7e98e78011713748d238e9227",
+    "95c1d84b5a745d156f935bc6d054cbef38b4b778f39eca4a343284655a1fc885",
+    "eb89d677afbeaddf6c93d0dc63374450c6468b81b6072f6e75f31c3ac23749e5",
+    "c44a431ea63339d314691e24f310e1b0e7c83b54e18c2de22f6c6318d0cfb6da",
+    "4fa6b7fc707f2b3b2424f584d3a05fff3fc4e7d3494202d236d611c364980ef9",
+    "2771541070c0f704f2b8a5b2647fc0e7f3fd9baa1542c550e2f2048f52c0dc08",
+    "61945cca23f52c882e6ba3a929809d63d12c96b09b18b7fe7fe5a1fc27d688a3",
+    "fe1fcf6c9e806f49919ce677b3a3fe68efa9c084d915c5c2eab326c2feaa190d",
+    "d646c657e04eac5dad92dd59cb7e205ff81fa6e5e093a007abc9d5afa2c2cb11",
+    "a5cad4ee383a7863f0f1c52d2693e26d914fb4c228cd8852ccfaa4c830adacfa",
+    "700f539eac4b4929ec9401d6d56159fe0f8332164ae0a7ece8f8e29f499fb2b5",
+    "1e636e5481e0db31b65caccb097084ebd23bd790357f09707a1d2922d590972d",
+    "d919e20233995ad852f19d88a2f83e46d1a925097ec731ca51fc3e93d913cb4e",
+    "4858dea36bd764b52afdd1b45d357bca9eb81d793d9a2867ef130c6f8500038c",
+    "222e25c989d3ded78e27459decf593b1bc770eabe379ab07826ee4fb54e1fbf4",
+    "73af0309d13d689bdc033fb1d79f7897814b4b7c17ce58916746f2c41ac9670a"
+  ],
+  "reuseBoundary": {
+    "nativeChangedFiles": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCurrentGenerationDisplayTest.kt": {
+        "before": "23177c08da7879a3cc2d8ffd435e5266fb405dd534e494edc1a8e7920a74017d",
+        "after": "39b3f25a9698c0a1df8714671b5f2dc7ff79b4eeafb77d3f7fd9bd80063dc700"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoReplyReadLiveTest.kt": {
+        "before": "9f7291e843182c137d8f9b6213b05be9050c932c53515b0854b459ae6d1b4e3c",
+        "after": "f73842963ca3cfd0609aabd4ed3f2aa7eca03ffd86356f7560a63a0545e9d076"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": {
+        "before": "1b522629ec0f1d2f3532c5ed6d165dd65cef3ddf1921b330af3165bc7b921af8",
+        "after": "db64ecf05c60fa566ce1b903daef67c5360e2e4d7f0204bfc5523b9c916c5923"
+      }
+    },
+    "onlyProductionChange": "one existing translated explanation key in GenerationSettingsSheet",
+    "catalogueAndTransportAndResourcesAndAttachmentProgramsUnchanged": true,
+    "unaffectedNativeCohortsRetainOriginalAppRunnerFingerprints": true
+  },
+  "rootCheck": {
+    "command": "pnpm check",
+    "exitCode": 0,
+    "frozenInputCount": 1031,
+    "inputsMatchedAtCompletion": true,
+    "finalStillMatchingInputs": 1028,
+    "finalNativeOnlyChangedInputs": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCurrentGenerationDisplayTest.kt": "39b3f25a9698c0a1df8714671b5f2dc7ff79b4eeafb77d3f7fd9bd80063dc700",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoReplyReadLiveTest.kt": "f73842963ca3cfd0609aabd4ed3f2aa7eca03ffd86356f7560a63a0545e9d076",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "db64ecf05c60fa566ce1b903daef67c5360e2e4d7f0204bfc5523b9c916c5923"
+    },
+    "rootConfigFiles": 18,
+    "logSha256": "f8a07fd184a2dceeb4fa4e3cd6984f12ace7f12bc7cf90319d94e5713a46629d",
+    "finalNativeDeltaChecks": "final Android app/runner compile, model four methods per environment, dark/big-font four methods and real original-owner reads three methods; format/parity repeated after final records",
+    "wholeCheckRerunAfterCaptionAndNativeAssertionOnlyChange": false
+  },
+  "iosBuild": {
+    "command": "pnpm build:ios",
+    "exitCodeObserved": 0,
+    "scope": "simulator compile only",
+    "matchedSourceFiles": 155,
+    "sourceMatchSha256": "031359f6ddb3a4adb0fe94ed39824ef01251a711e79d50cfddd69101844ab24d",
+    "logSha256": "d20e7b8a380e0b37fe36d7625a6281204a7ca8fe2767e0128acbd7d689134b51",
+    "iosA6Executed": false
+  },
+  "localization": {
+    "totalPerLanguage": 1738,
+    "sharedKeys": 1640,
+    "androidOnly": 98,
+    "priorSharedAndAndroidOnlyValuesPreserved": true,
+    "englishCaptionUsesExistingSharedIosKey": true
+  },
+  "conflictResolution": [
+    "resource and preview providers coexist; existing singleTask and SEND/VIEW inbox behavior retained",
+    "current message/resource context, target/version/grants/hash/streaming/late guards retained; no duplicate downloader production path",
+    "existing localized compaction, model AX/compact/end-lane layout and copy selection retained",
+    "new file reader link-handler signature adapted to existing anchor context; current resource-card entry remains existing safe preview until next stage",
+    "Xcode source/build lists unioned by exact IDs and package scripts retain all 72 root checks from both sides",
+    "manifest changes/features/source aliases reconciled by ID; F71 incoming note insertion preserved with current Android human authorization; F72 remains in-progress"
+  ],
+  "failedCandidatesRetained": [
+    "initial private manifest reconciliation refused non-prefix F71 source notes; explicit incoming insertion preserved, original failures not called passing checks",
+    "first Kotlin source merge failed on composable method references and one-argument image callback; corrected with localized direct calls and stable anchors",
+    "first native four-scenario cohort rejected restoring owned test session before use; fixture now resets its own namespace before adoption",
+    "second cohort had three passing methods and one test timeout because workspace refresh was used for a history-setting update; switched to explicit history read, all four passed",
+    "visual audit found English paragraph still Chinese due concatenated unmatched key; exact existing iOS shared key used, English nonfallback assertion added; final three environments and dark viewport repeated; pre-copy pictures retained"
+  ],
+  "pending": [
+    "Android current guarded resource preview has not adopted the new Markdown reader entry; renderer/source/search/outline/reading-position/same-name/late/error/share matrices follow immediately",
+    "new iOS image preview and independent multi-selection/ordered add/source marks need corresponding Android UI and actual native acceptance",
+    "remaining F34 physical mutation/reconnect/full null/owner/historical/Windows and full locale/font/AX/IME/API37 landscape matrix not closed by one original gpt-6.1-sol/xhigh read",
+    "P7 complete migration schema/identity/credentials/inventory/atomic activation rollback and UI, then voice/unread/lifecycle continue",
+    "existing environment gates, business tasks/projects and iOS A6 remain separate; no formal Host/service or signing key change"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

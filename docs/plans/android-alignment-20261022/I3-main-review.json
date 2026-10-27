@@ -1,0 +1,43 @@
+{
+  "phase": "I3",
+  "sourceBase": "18c9d172e399268c3782b4a0efccc42c9fca3b83",
+  "mergedMain": "7256dd3ac0712e34e2e46117b6f3aff560e8d517",
+  "nodes": ["N050", "N051", "N052"],
+  "sourceFiles": {
+    "apps/ios/Sources/RootView.swift": "ea30865b26d3a449b3875e8f7a0c2278fd0da49f0916d6387dedc258d2509a46",
+    "apps/ios/Sources/VoiceInput.swift": "0bfac134d2ee3baad3e3e0b717a50f3c8c9d3837b70b4502a9efce1e99da2761",
+    "apps/ios/Tests/CodexManageUITests.swift": "5d26130aba887a7642dc9ca6a3860a655a14312b088adf6a16c395a7beabdd77",
+    "scripts/question-panel-ios-fixture.mjs": "b2350736e7ee53d231b1cc094d070f58e3ed7c83ad58ec8da7938bd1cf3673c6"
+  },
+  "rootView": "Combined incoming voice recovery and retained shared tool/resource changes; explicit fingerprint recorded",
+  "androidInputsMatched": 398,
+  "matchedAndroidCheckpoint": "P7-3b",
+  "matchedNativeAuxiliary": 138,
+  "matchedNativeSystem": 7,
+  "matchedNativeOriginalReplyReads": 3,
+  "matchedDefaultStorageProofs": 148,
+  "appSha256": "e3648cb75734c5d5f49df5857f48cfa998178410a30379460aaa54d5e7e980dd",
+  "testSha256": "109b70728554b932bed357d78d157006b2a0fcee63cc3bc518794cd1c762934d",
+  "androidSourceSha256": "c66ae05b8d72942bff7f0d54995f5681a039957687620ede0547d2eec7a7ec50",
+  "newNativeMethods": 0,
+  "checks": {
+    "pnpmCheck": "passed complete fresh invocation",
+    "rootLogSha256": "f52fce398045f178929902b8dcccd7c4dd7c1b14887f6c0d488cbf803a41baa2",
+    "frozenInputCount": 1316,
+    "frozenInputsMatchedBeforeAndAfter": true,
+    "sourceStartSha256": "e84a8ca41419d6f6f88332598cc7e1ae89995b65c335f091406db2ad7b9a8ee4",
+    "sourceEndSha256": "e84a8ca41419d6f6f88332598cc7e1ae89995b65c335f091406db2ad7b9a8ee4",
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "pnpmBuildIos": "passed: simulator build only",
+    "iosBuildLogSha256": "53a2fed90a241040e4403852e0f5f7eac9b2ce6c2d43e88eb67ab44546f94442",
+    "iosA6Executed": false,
+    "postRecordFormatAndParity": "passed",
+    "parityFinalLogSha256": "57d4b403cf6b9dd6b71b1b5b1c57b07882f9e753ead1b261ba60ef31a3833a5e"
+  },
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false,
+  "next": "P7 recent-new-photo hint/first permission behavior and original attachment process-cold results/storage; then voice/read, pending OS/platform cases separate; tasks/projects deferred"
+}

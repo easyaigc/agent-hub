@@ -1,0 +1,98 @@
+{
+  "phase": "P7-4d",
+  "sourceBase": "daca8cd9596afd1b8dd58bc57158e4515c114a5c",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F71"],
+  "summary": "API37独立安装身份、独立源UID及观察进程，原照片选择器保持；同一任务先退后台保存OS状态再返回，原接收进程受控死亡并重建，原系统选择结果归一化后只消费一次。移除本次受控源图后冷开，同一附件ID/摘要/像素及原草稿/设置/既有文件/另一聊天草稿保持，未重新选图或发送。",
+  "sourceSha256": "d73103dc77697b6519376eb2f0cb9ebef2060eef3c921b71e76aba537f843662",
+  "nativeInputFiles": 421,
+  "changedFiles": {
+    "apps/android-inbox-examiner/src/main/AndroidManifest.xml": "c6e2b032918cd2c0253d471fa700dd36f8c5d189130d353e4b929f1cf5656295",
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java": "5dd4dc3744cdd352872568b641136427a79e946a6b44ae1fadfb754f957858eb",
+    "apps/android/build.gradle.kts": "e222ecab1eed99090a91fa9f910eeeeb5f7a95ec6c95f9f9712916ab7f092aa2",
+    "apps/android/src/androidTest/AndroidManifest.xml": "17137340611889578d9957ed9ab4e43f7f7be587cff791988da7e1839b37e831",
+    "apps/android/src/androidTest/java/com/agenthub/android/OwnedPhotoMediaActivity.java": "8efa49210ce085e5390887d93c420d2f73f7ff0e40f0fd029e2c9902511c7a02",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoProcessColdTest.kt": "d877d95aa3ed869e6a2d8f3e3eb66c3f64e0cc9f73609198401edb0699528114",
+    "scripts/mobile/android-install-if-needed.mjs": "fae4a5e86b0d878301db1235d2ef715ca6193d9c84696aa7c19f4c7d5a002a78"
+  },
+  "receiverApkSha256": "74ac597e29ea969d1addae19d1fd963151d9307b400ca5d54f998868c3eb23a2",
+  "sourceApkSha256": "c14948a2bbf297c182c4601c7fb4b23789283b67053090195416afadfe312ed8",
+  "observerVersions": [
+    {
+      "sha256": "f1e597f2e8ea316b87bcc5074d76b8bc0b517749ec9552f62038598eb4a002d5",
+      "scope": "prepare/open; open rejected unsaved translucent recipient before termination"
+    },
+    {
+      "sha256": "6c335079a6ff57a659b19825b51eeae44a0277479188bf3a34dda8110e66262d",
+      "scope": "same task background/save/return then exact debug UID termination"
+    },
+    {
+      "sha256": "dcd28f23bb8ac7534291188ca7cabbaad9b33f2dfa889808341e76a68ae9812d",
+      "scope": "same original picker single source selection; original parent already recreated"
+    },
+    {
+      "sha256": "2111d4fd50a7f87e1bcf8cb5caaa8d789375cce39e42d51c354588f648a5634b",
+      "scope": "acknowledge exact local fixture outage; source cleanup and initial cold reopen assertion"
+    },
+    {
+      "sha256": "d023d684e9dc9b53824e2ca887d92512238c3fe74e34ab5b1196439c18033d5d",
+      "scope": "scroll only original draft attachment ancestor after retained cold-open assertion"
+    }
+  ],
+  "receiverAndSourceApksUnchangedThroughoutOriginalCase": true,
+  "productionKotlinResourcesAndSharedCoreUnchangedFrom4c": true,
+  "actualSystemColdScenarios": 1,
+  "actualColdReopens": 1,
+  "readOnlyNativeMethods": 2,
+  "fixtureSeedMethods": 1,
+  "fixtureReads": 9,
+  "fixtureWrites": 0,
+  "assertions": {
+    "independentSourceUid": true,
+    "sourceNotExplicitlyGrantedBeforeSelection": true,
+    "sameOriginalTaskAndPicker": true,
+    "osSavedStatePreparedByBackgrounding": true,
+    "temporaryReorderTaskPermissionDropped": true,
+    "receiverPidChanged": true,
+    "oneOriginalSystemSelection": true,
+    "normalizedPixelsMatchIndependentSource": true,
+    "sameOriginalDraftAndGeneration": true,
+    "originalTextSettingsExistingFileAndSecondDraftUnchanged": true,
+    "sameFileIdAndDigestAfterReopen": true,
+    "payloadConsumedOnce": true,
+    "readGrantsRestored": true,
+    "onlyOwnedSourceRemovedAfterConsumption": true,
+    "noChooserRelaunch": true,
+    "noSend": true
+  },
+  "scope": "仅API37、OS状态已由同任务后台保存的受控进程死亡；透明选择器首次启动仍PAUSED且无OS保存状态的直接死亡未执行。真实系统照片返回属于本次系统证据，未向真实Host/模型发送；既有真实照片模型结果保持原指纹。",
+  "failuresRetained": [
+    "open：透明系统选择器下父Activity为PAUSED/无保存状态，按门槛拒绝终止；后续同任务后台保存分支不替代直接死亡验收",
+    "choose：OS已自动重建原Activity，旧PID为空的观察前置不成立，未选择；具名续跑只选择原源一次",
+    "choose-recreated：原结果已返回，被分阶段本地fixture停服产生的连接错误对话框遮住；仅确认准确错误后原照片可见",
+    "reopen：聊天区滚动未使第二附件可见；续跑只滚动原草稿附件祖先，原PNG与原文可见"
+  ],
+  "checks": {
+    "androidPhotoVariantBuild": "passed",
+    "independentObserverBuild": "passed",
+    "visualInspection": "API37原生冷开截图已查看，原PNG可见、既有附件横向前序及原文百分号保持；完整主题/IME/AX/横屏未计通过",
+    "pnpmCheck": "passed",
+    "frozenRootProgramInputs": 1009,
+    "rootProgramDrift": [],
+    "rootCheckLogSha256": "e924d4305b2be415c59acd5da2c3c32ac7cd6898f53d806a2a553a994d204983",
+    "nativeFreeze": "all final native inputs match archived source hashes",
+    "ownedResourceCleanupSha256": "8812ce8098729edd74478224554eeebaa1832b34d846b80ad2a25081e496bbd7",
+    "platformLimits": "macOS check and owned SDK37 actual case; Windows native skips remain separate, no iOS A6 or other device execution"
+  },
+  "pending": [
+    "API26文档回退式图片选择及真机原照片系统冷结果",
+    "透明选择器无OS保存状态的直接进程死亡/自然杀进程与崩溃",
+    "4c共同协调器后的当前文档实际冷回归",
+    "相机私有输出及系统冷回调、完整权限/撤销/Provider/存储迁移矩阵",
+    "手机长批libhwui稳定性、当前原回复只读及独立观察APK",
+    "API37横屏和完整系统主题/字号/AX/IME；iOS A6仍人类暂停"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

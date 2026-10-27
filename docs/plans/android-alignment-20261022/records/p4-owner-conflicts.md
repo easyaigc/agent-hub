@@ -59,3 +59,13 @@ Current Android product/runner real question preflight0 and full original-owner 
 证据：[P4-4o.30 结构化记录](../../../acceptance/mobile-evidence/android-alignment-P4.json#approvalCallbackParityCheckpoint)。精确阶段提交/远端与树外恢复包另行核对；不改写历史失败。
 
 Final P4-4o.30 source/baseline reconciliation: current Android36 native +3 real and final iOS compiled callback31/build pass. Current iOS question-waveform failure also reproduces with unchanged dc2cc53 RootView/SessionStore in the exact same simulator/fixture; original/current failure, one diagnostic pass and failed unshipped trial results remain distinct. No unique cause assigned. All diagnostic, pre-grant, modal owner and hit-test trial changes were reverted; restored source hashes independently checked. This is a separate iOS pending proof, not a reason to stop Android original-draft imports/P5. Current Android23 images reviewed; whole-stage/physical-iPhone gates remain open. Remote main8c7e3716 increment will be reconciled after this frozen checkpoint.
+
+## P4-4o.32 原应用审批读取、范围与迟到隔离
+
+N037/N039逐源对照发现写入声明已导入、NativeHostReads读取头遗漏，Host兼容投影只返回拒绝。补上GET版本头，按iOS仅翻译六种已知语义标签，未知Provider标签及正文不改；原决策/范围/目标不变。旧App配当前检查器准确在零POST时拒绝。14项覆盖四决策准确POST、本轮/会话、未知原文、同ID标签替换、按下到抬手间替换零写入、迟到成功/失败不覆盖新请求/错误/草稿、受限表单及旧协议回退。最终真机/API26/API37各14项、真机深色与API26双倍字号各14项，共70项，70份默认存储保持及30张自有窗口复核。
+
+另在本机标准候选Host启动独立原owner验收，用一个新模型输入仅请求本次空白Probe应用。手机经具名ADB回环读取完整原DTO及四决策，原生只拒绝一次；独立Electron owner确认一个用户输入/完成轮、请求结束与拒绝标记，Probe内容未披露。手机无模型输入，原草稿保持；菜单仅为测试限制到新聊天，实际目标/历史/审批/命令保持，不能作为完整导航矩阵。真实模型累计216/P4202；系统/Provider/自然故障仍开放。
+
+初期runner缺少decode host参数与实际workspace没有runtimeConnected字段的前置断言失败保留，前置失败零模型输入；分别用实际Adapter.ready、原owner及history.canControl验证运行时，未伪造wire字段。Probe SIGTERM的Node exitCode仍null，原假阴性保留；独立准确PID无进程回执核对实际清理，私有Host关闭且原ADB路由恢复。真实请求只提交一次，不重放。真实session/always/cancel及额外权限、API37横屏/系统复制/AX/蜂窝VPN/未加载原owner单列。构建和最终parity/格式分别检查；JS/共同规则/iOS与P6-I1相同，不把旧检查改称本轮重跑。
+
+[结构化证据](../../../acceptance/mobile-evidence/android-alignment-P4.json#applicationApprovalReadVersionCheckpoint)。先提交与核远端，再继续N033计划位置/状态和P6展示，随后Android P7，不逐次确认。

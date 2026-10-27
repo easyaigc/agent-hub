@@ -1,5 +1,15 @@
 package com.agenthub.core
 
+/** Platform catalogs resolve only the fixed keys supplied by shared presentation rules. */
+interface ToolPresentationText {
+    val english: Boolean
+    fun text(key: String): String
+}
+private object OriginalToolText: ToolPresentationText {
+    override val english=false
+    override fun text(key: String)=key
+}
+
 class ToolPresentationStyle(val category: String, val verb: String, val detailTitle: String)
 
 /** Shared product wording; vector drawing, hover and disclosure remain native. */
@@ -14,25 +24,29 @@ object ToolPresentation {
     fun status(status: String?): String = when(status) {
         "inProgress" -> "进行中"; "completed" -> "成功"; "failed" -> "失败"; "interrupted" -> "已停止"; else -> "状态未知"
     }
-    fun summary(messages: List<TimelineMessage>): String {
+    fun summary(messages: List<TimelineMessage>): String = localizedSummary(messages,OriginalToolText)
+    fun localizedSummary(messages: List<TimelineMessage>,native: ToolPresentationText): String {
         val actions=mutableListOf<String>()
         val sources=messages.filter { it.kind in listOf("mcpToolCall", "dynamicToolCall") }.map { it.text.split(" · ").first() }.filter { it.isNotEmpty() }.distinct()
-        if(sources.isNotEmpty()) actions.add("使用 " + sources.joinToString("、"))
-        if(messages.any { it.kind=="webSearch" }) actions.add("搜索网页")
-        if(messages.any { it.kind=="fileChange" }) actions.add("编辑文件")
+        if(sources.isNotEmpty()) actions.add(native.text("使用 ") + sources.joinToString(native.text("、")))
+        if(messages.any { it.kind=="webSearch" }) actions.add(native.text("搜索网页"))
+        if(messages.any { it.kind=="fileChange" }) actions.add(native.text("编辑文件"))
         val commands=messages.count { it.kind=="commandExecution" }
-        if(commands>0) actions.add(if(commands>1) "运行多个命令" else "运行命令")
-        if(actions.isEmpty()) actions.add("使用多个工具")
-        return (if(messages.any { it.status=="inProgress" }) "正在" else "已") + actions.joinToString("、")
+        if(commands>0) actions.add(native.text(if(commands>1) "运行多个命令" else "运行命令"))
+        if(actions.isEmpty()) actions.add(native.text("使用多个工具"))
+        val prefix=native.text(if(messages.any { it.status=="inProgress" }) "正在" else "已")
+        return prefix + (if(native.english) " · " else "") + actions.joinToString(native.text("、"))
     }
-    fun title(message: TimelineMessage, single: Boolean): String {
+    fun title(message: TimelineMessage, single: Boolean): String = localizedTitle(message,single,OriginalToolText)
+    fun localizedTitle(message: TimelineMessage,single: Boolean,native: ToolPresentationText): String {
         if(!single && message.kind in listOf("mcpToolCall", "dynamicToolCall")) {
             val parts=message.text.split(" · ")
             val activity=if(parts.size>1) parts.drop(1).joinToString(" · ") else message.text
             if(activity.isNotEmpty()) return activity
         }
         val style=style(message.kind)
-        val target=if(single || message.text.isEmpty()) style.category else message.text
+        val target=if(single || message.text.isEmpty()) native.text(style.category) else message.text
+        if(native.english) return native.text(status(message.status)) + " · " + native.text(style.verb) + " " + target
         val gap=if(single || message.text.isEmpty()) "" else " "
         return when(message.status) {
             "inProgress" -> "正在${style.verb}$gap$target"

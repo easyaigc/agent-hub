@@ -27,36 +27,6 @@ extension EnvironmentValues {
   }
 }
 
-enum MessageLinkDestination: Equatable {
-  case attachment(String), web(URL), external(URL), computerFile, computerWeb, unsupported
-
-  static func resolve(_ url: URL) -> Self {
-    switch url.scheme?.lowercased() {
-    case "codex-attachment":
-      if url.host == "open" {
-        guard let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "id" })?.value, !id.isEmpty else { return .unsupported }
-        return .attachment(id)
-      }
-      guard let id = url.host, !id.isEmpty else { return .unsupported }
-      return .attachment(id)
-    case "http", "https":
-      guard let host = url.host?.lowercased(), !host.isEmpty,
-        url.user == nil, url.password == nil else { return .unsupported }
-      let normalized = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]."))
-      if normalized == "localhost" || normalized.hasSuffix(".localhost")
-        || normalized == "::1" || normalized == "::" || normalized == "0.0.0.0"
-        || normalized.hasPrefix("127.") || normalized.hasPrefix("::ffff:127.") {
-        return .computerWeb
-      }
-      return .web(url)
-    case "mailto", "tel": return .external(url)
-    case nil, "file", "sandbox": return .computerFile
-    default:
-      if url.absoluteString.range(of: #"^[A-Za-z]:[/\\]"#, options: .regularExpression) != nil { return .computerFile }
-      return .unsupported
-    }
-  }
-}
 
 struct MessageLinkOpening: ViewModifier {
   let messageId: String

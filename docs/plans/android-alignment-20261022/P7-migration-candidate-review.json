@@ -1,0 +1,282 @@
+{
+  "phase": "P7-5c",
+  "sourceBase": "aa04555b68391aad66679e1510e4a7e7b7239756",
+  "features": ["F55"],
+  "summary": "P7-5c：本端格式/来源、附件与原记录校验后只写独立Keystore候选，稳定ID/原摘要核对、替换CAS和不可读旧候选保留。三环境共72项执行、3组真实进程冷读、45份逐方法原文件保护及冷读保护通过；完整根检查当前冻结输入通过。当前安装不激活，连接凭据/设备身份、完整资料Schema与原子激活回滚/UI继续。",
+  "sourceSha256": "3ab0749f75eeb29bdf987b736018c3fa5a0cb31786bb62bbfac1b72e12b6c76e",
+  "appSha256": "9d7437caaac6ec0395b9abba09dd062f9ce7dac73e51f0aaaaf31c978b330c0b",
+  "runnerSha256": "0bf7fcb1e41c30780b7722d3575ca24c68b4becec524ebf379356ef655550281",
+  "changedFiles": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "dcfc8007d5eb2368a1cf490006981848dab8284b2176138ba7f5baef5fcbe427",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "90b8c1d76e06913f1c0e82864373515262e44d8be0909d972fa7c4c2aa16fb2a",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationCandidateTest.kt": "a09f95ea1c8992c3b783899d10e448b003341b6fc7a9f1d1c7bdb72a404b7aae",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationCandidateColdTest.kt": "071095d271e4c9e1f73cce15a5a6aad831a3b0e694b497cecb25cc708ad14949"
+  },
+  "candidateFormat": {
+    "version": 1,
+    "format": "agent-hub/android-migration",
+    "applicationId": "exact destination runtime package",
+    "payloadQuotaBytes": 8388608,
+    "envelopeQuotaBytes": 12582912,
+    "activeInstallationChanged": false,
+    "credentialsAndDeviceBindingsIncluded": false
+  },
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "candidateMethods": 9,
+      "cryptoMethods": 6,
+      "journalStorageFixtureMethods": 7,
+      "coldSeedAndReadMethods": 2,
+      "candidateByteProofs": 9,
+      "cryptoByteProofs": 6,
+      "candidateProofSha256": [
+        "0e45cf3ad84233fddc87d7010724fafe711ecc47f3de8d29e6cd09489f82a618",
+        "e3cb89f034ad21f0b58972e8e4a5ef770e1a187b0e9092af3ff098018a2b0aaa",
+        "67705e2533222afdbf024aa5594db1d1e5d290584aab7442c4c35ed201ddb73a",
+        "a725535bb5f4efd2165afecec1d289d2401455196b3ee3a2bc5cf17102d4f19b",
+        "1cc83178cd9fe9b7197aaa51de7e036903882426955d2c6ab72a9c2c4d6a810d",
+        "0d4b08d8f9b8cb3f2dc61691dab844c097911444c7f26b2135108f10b9a995a5",
+        "89b31e243ee84aa938530ff0092b970f5b9ac2f4ba80cbf61bc6ae9d39b39473",
+        "87703028a9f547bd13a9216f07ae9bceca38d9500a54ab162af963d1d9a5707e",
+        "49c5ca9dc165817f03991e5e8d0e863a2cec04bc540077b2df16301eeb1a3cb8"
+      ],
+      "cryptoProofSha256": [
+        "60e6fae5299f2c075d15d295c349cb2bfd39c3f956584389c114c6cc454e1eed",
+        "60e6fae5299f2c075d15d295c349cb2bfd39c3f956584389c114c6cc454e1eed",
+        "60e6fae5299f2c075d15d295c349cb2bfd39c3f956584389c114c6cc454e1eed",
+        "60e6fae5299f2c075d15d295c349cb2bfd39c3f956584389c114c6cc454e1eed",
+        "60e6fae5299f2c075d15d295c349cb2bfd39c3f956584389c114c6cc454e1eed",
+        "60e6fae5299f2c075d15d295c349cb2bfd39c3f956584389c114c6cc454e1eed"
+      ],
+      "groups": [
+        {
+          "methods": 15,
+          "reportSha256": "556e33006b5100fbfc9d4c4852d45ea851e5d49854e2b06a8ea28983d0a3fb28"
+        },
+        {
+          "methods": 1,
+          "reportSha256": "bf203fb5526df791129e5c5d0b28e9591795bece64b49cd22134d319f1cae046"
+        },
+        {
+          "methods": 1,
+          "reportSha256": "0c9a1108ec64f1f3bba1ec88a8579eedc90def11855aaa97d68c9384a0347ec9"
+        },
+        {
+          "methods": 7,
+          "reportSha256": "3920da169ae9f78d4656e0cc6995f64aca7cdc82fec81fea91a2dbda6644a316"
+        }
+      ],
+      "swiftReverseEnvelopes": 5,
+      "swiftResultSha256": "8847d2ae8025642abae2bd7121bb5527f9a0ab60c80cd90fea175c28c69f2a7e"
+    },
+    {
+      "environment": "owned-API37",
+      "candidateMethods": 9,
+      "cryptoMethods": 6,
+      "journalStorageFixtureMethods": 7,
+      "coldSeedAndReadMethods": 2,
+      "candidateByteProofs": 9,
+      "cryptoByteProofs": 6,
+      "candidateProofSha256": [
+        "5a8f0e62ff8521d12986c4f177bc3a54a251bec0df79ba30f4c78dfabd4d9fcb",
+        "9e19727258c0e05854d5095cd0f2ebe73aff4c8d66cd411f20f067f3ee0147fe",
+        "8162058a8a71b56fb90ed4ca6e2785632c2d9c3256b12d057d4940d75a70eaa8",
+        "46548d80c87c590e7a8ff8a7c84cb7f161d02f358055615e3036c9d02d20eb4d",
+        "6c1e093eb373c32c17918b7bea040604abbc79723b21eecb033b4e1c6273cf68",
+        "6e8e3b24753262905a7f1a9776988ea6e421705e484f182a661712eda5d29e3a",
+        "2dfc3cc199376e58b2959d429ae1d94bf0b5bb871f645482637519de95fd5a26",
+        "ff3762b12453ab2ebb63cab96797c3166e21cade5a789243dd2979177027acfe",
+        "56a376dce3d62bf0c823a2364a91ab9e17b0647d0dde8e5a71e7bd4a220f1707"
+      ],
+      "cryptoProofSha256": [
+        "017a5f3394aca7720c5429d4c87603321a27d4746c1fe49cc51cc36ced4fada5",
+        "017a5f3394aca7720c5429d4c87603321a27d4746c1fe49cc51cc36ced4fada5",
+        "017a5f3394aca7720c5429d4c87603321a27d4746c1fe49cc51cc36ced4fada5",
+        "017a5f3394aca7720c5429d4c87603321a27d4746c1fe49cc51cc36ced4fada5",
+        "017a5f3394aca7720c5429d4c87603321a27d4746c1fe49cc51cc36ced4fada5",
+        "017a5f3394aca7720c5429d4c87603321a27d4746c1fe49cc51cc36ced4fada5"
+      ],
+      "groups": [
+        {
+          "methods": 15,
+          "reportSha256": "cbc17c683e34cdc29428ff86ea4c5d024acfee524d1bd0ebfefdba38bfd9a4e8"
+        },
+        {
+          "methods": 1,
+          "reportSha256": "48b34a2deb6c59b9dd4571d5c11c9a5b166f912773d940b777762cb8174c378c"
+        },
+        {
+          "methods": 1,
+          "reportSha256": "410237393481c0d36ba2c4e23005f7afe5458de8c81fb7d31e99dc54cf6759a4"
+        },
+        {
+          "methods": 7,
+          "reportSha256": "72e3d3d0be0674b0c3c1e8bf79124c1b1ae45bbf13b07988e00fee549e4764cc"
+        }
+      ],
+      "swiftReverseEnvelopes": 5,
+      "swiftResultSha256": "8847d2ae8025642abae2bd7121bb5527f9a0ab60c80cd90fea175c28c69f2a7e"
+    },
+    {
+      "environment": "physical-API33",
+      "candidateMethods": 9,
+      "cryptoMethods": 6,
+      "journalStorageFixtureMethods": 7,
+      "coldSeedAndReadMethods": 2,
+      "candidateByteProofs": 9,
+      "cryptoByteProofs": 6,
+      "candidateProofSha256": [
+        "975e2786e8bd311e752591dd9eda1cafdb3284886f1860f4218f34a17e092b42",
+        "ff9b7ce001337f5ab21b460a4e8451a6e55cc59e21873f3ecb16bea05a759734",
+        "90f0848fa2e1c971fcc392e7629411d6304dd5c843e36cbffa5a361e224ffdb8",
+        "a4f410cd7a447135041a21d091dbe2d754c8e4419ec0256a76c240fbf02a4a28",
+        "a142b2b983e8295bdfd7d6dd15e434df6448f4844cb3d6fd5e57fdec4de21a24",
+        "6e372a347cc3939db0a402269bb32449abdb3fd434ffe06331643ce4b139b748",
+        "de0323c352405218993cda882e05b4adcba9e4d61729825656b0bf9d97e74d1f",
+        "e0bd2fcc42f36b05cadbfa4cf8c839b473a647c4bafa7b58390c13bda022ee35",
+        "bbe2e6fed2a8fdca4b96f314141a8cb0d655f2255b67a3b813742375baa32290"
+      ],
+      "cryptoProofSha256": [
+        "ca4760648fd55eeaa6d102ac4dd87bbbf53dd89fd14ba6ff180acf6a26ff6b79",
+        "ca4760648fd55eeaa6d102ac4dd87bbbf53dd89fd14ba6ff180acf6a26ff6b79",
+        "ca4760648fd55eeaa6d102ac4dd87bbbf53dd89fd14ba6ff180acf6a26ff6b79",
+        "ca4760648fd55eeaa6d102ac4dd87bbbf53dd89fd14ba6ff180acf6a26ff6b79",
+        "ca4760648fd55eeaa6d102ac4dd87bbbf53dd89fd14ba6ff180acf6a26ff6b79",
+        "ca4760648fd55eeaa6d102ac4dd87bbbf53dd89fd14ba6ff180acf6a26ff6b79"
+      ],
+      "groups": [
+        {
+          "methods": 3,
+          "reportSha256": "dd2494d7827de309098ac55d8614cd887f4222f3e321c91e9c92467b82d8b5d9"
+        },
+        {
+          "methods": 3,
+          "reportSha256": "0a1bcc943bf80c8af7ad56bc359db1af2cc65f397094df18b50249f423519b7f"
+        },
+        {
+          "methods": 3,
+          "reportSha256": "eb9d4acd9e87262be14add0b02805a78c6a8497da0ac522e8ac0df988b5cf8f5"
+        },
+        {
+          "methods": 6,
+          "reportSha256": "01fc8909735be18fdc10fa879d5f9c8054f8129fe49111fe292b10b34971dbd2"
+        },
+        {
+          "methods": 1,
+          "reportSha256": "b3a3afe92cce052f1eaa9877c65222da1ce761e5d3f67e9f1d4ba7f76124f6ee"
+        },
+        {
+          "methods": 1,
+          "reportSha256": "199c86af112b4f10877c6cca11d7050ddb188b1883ebc8e7597c8de25e050108"
+        },
+        {
+          "methods": 7,
+          "reportSha256": "099c938cc3cc8e036925d6341f2d0a94ddeac746b69a51c6a2ea74f86339031d"
+        }
+      ],
+      "swiftReverseEnvelopes": 5,
+      "swiftResultSha256": "8847d2ae8025642abae2bd7121bb5527f9a0ab60c80cd90fea175c28c69f2a7e"
+    }
+  ],
+  "coldScenarios": [
+    {
+      "environment": "owned-API26",
+      "sameOriginalCandidateAndDigest": true,
+      "originalUnknownOperationUnchangedAndNotReplayed": true,
+      "seedAndReadPidsDiffer": true,
+      "noProcessBetweenSeedAndRead": true,
+      "seedMethods": 1,
+      "readMethods": 1,
+      "readEvidenceSha256": "009789e40e7f2c566700fb5f5be09e13c02aaccdd4694a5788109e0b13b7d145",
+      "stopProofSha256": "6476e5242ead50d04dd296465ebfee8b20c34fea9888f3444001e8cf165dd0df"
+    },
+    {
+      "environment": "owned-API37",
+      "sameOriginalCandidateAndDigest": true,
+      "originalUnknownOperationUnchangedAndNotReplayed": true,
+      "seedAndReadPidsDiffer": true,
+      "noProcessBetweenSeedAndRead": true,
+      "seedMethods": 1,
+      "readMethods": 1,
+      "readEvidenceSha256": "189548ee69ee06cf22ef60634342a8ae6fbdd4ab5f12335995d74afb0eb1ee9d",
+      "stopProofSha256": "08550baffc508c6828643a0e70c1f78029e63c3ced0801962ce3e456bd0502c2"
+    },
+    {
+      "environment": "physical-API33",
+      "sameOriginalCandidateAndDigest": true,
+      "originalUnknownOperationUnchangedAndNotReplayed": true,
+      "seedAndReadPidsDiffer": true,
+      "noProcessBetweenSeedAndRead": true,
+      "seedMethods": 1,
+      "readMethods": 1,
+      "readEvidenceSha256": "ab5fcc0505fd61aea83e741d904b4e6e57f63d76bd16374763d578a42fcad510",
+      "stopProofSha256": "2393de8910a66595f005db786be75051907fcbca3365b0159b9b044be6c2391b"
+    }
+  ],
+  "effectiveExecutionMethods": 72,
+  "candidateMethods": 27,
+  "cryptoMethods": 18,
+  "fixtureJournalStorageMethods": 21,
+  "realProcessColdSeedMethods": 3,
+  "realProcessColdReadMethods": 3,
+  "perMethodByteProofs": {
+    "candidateOriginalNoBackupFiles": 27,
+    "cryptoOriginalNoBackupAndCameraOutputs": 18
+  },
+  "coldProtectionAssertions": 6,
+  "rootCheck": {
+    "command": "pnpm check",
+    "exitCode": 0,
+    "frozenInputCount": 1014,
+    "matchingFinalInputCount": 1014,
+    "inputDrift": {},
+    "logSha256": "99146f49ca2e93525e61d8c3eebe64d698b047e7e0357994f89e56b2eb7be0bd",
+    "baseConfigurationFiles": 18,
+    "baseConfigurationProofSha256": "72b25dee7c8e653bf4fa77a3d1e9236c2f8790e466dc661c570fe0affe75efd3"
+  },
+  "incompletePhoneBatch": {
+    "status": "failed",
+    "deadlineSeconds": 480,
+    "sourceSha256": "6ae1c3c347cdb9bbdf710da5fa40f00846c2dda51cf7caead231b8f8f6496b9b",
+    "appSha256": "bc5a707a7890259f42b40cc26d2a0560da54a9f8866eede2f757f57c95412a3c",
+    "runnerSha256": "473ac7c909f93b8e5f0a239ff6c71146e5b67c8052215258c5e68d9a9a7e362d",
+    "reportSha256": "2b0a6acbaaa7b0dee0454edffe43d44b7eee551a3180c26ca4f02230a1e85953",
+    "countedAsPass": false
+  },
+  "behavior": [
+    "strict outer origin/version/duplicate/depth/UTF8 checks; individual original record text is retained without normalization",
+    "current draft and submission attachment UUID/manifests/base64/size/SHA checked before candidate publication",
+    "original operation ID/intent SHA/target/result decoded through the same journal read validator; original uncertain/submitted flags remain intact",
+    "original submission text/settings matched against captured reply or creation intent",
+    "same candidate ID and digest returns original ciphertext; changed content under same ID and stale replacement cannot overwrite current candidate",
+    "concurrent initial writes yield one candidate; an unreadable previous candidate remains unchanged",
+    "cold seed and read occur in separate owned package processes with exact no-PID proof in between, original candidate and receipt survive, no active import"
+  ],
+  "iosComparison": {
+    "reference": "apps/ios/Sources/EncryptedMigration.swift and SessionStore.swift migrationPayload/restoreMigration",
+    "cryptoSourceExecutedOnMacOS": true,
+    "iosSourceChanged": false,
+    "iosNativeAppRun": false,
+    "iosA6Paused": true
+  },
+  "uiChanged": false,
+  "realHostCommandInputs": 0,
+  "fixtureBoundaryWritesAreNotRealHostInputs": true,
+  "failuresRetained": [
+    "earlier pre-nested-result intermediate two-SDK cohorts passed; not counted in final candidate totals",
+    "earlier phone 15-method candidate/crypto combined run reached fixed 480-second instrumentation timeout; preserved as failed, not passed. Final same-source phone candidate 3+3+3 and crypto6 are separately bounded cohorts.",
+    "final review added strict parse of original embedded result strings and a duplicate-result-host counterexample; final cohort includes it. No old failed/incomplete cohort is promoted."
+  ],
+  "pending": [
+    "No active profile adoption, fresh-install predicate, user-facing exporter/importer or full atomic activation rollback is implemented by this candidate store",
+    "Full metadata and nested record schema/version/type matrix remains to be tightened before activation; current shared journal read compatibility is preserved",
+    "Connection credentials and installation/device identity/re-pairing, EasyWork native source mapping, notification disable/rebind and consent migration",
+    "Complete record inventory including detached/orphan receipt sources, large attachment/chunked quota/memory, real Key/I/O/disk/full faults",
+    "Native UI/IME/AX/theme/API37 landscape and original system/environment gates remain separate; tasks/projects and iOS A6 paused"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

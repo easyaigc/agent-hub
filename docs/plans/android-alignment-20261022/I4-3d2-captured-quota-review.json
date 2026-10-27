@@ -1,0 +1,579 @@
+{
+  "phase": "I4-3d2",
+  "sourceBase": "4e915d4737efd1a32e016f11ca83b907e81ae08f",
+  "summary": "I4-3d2：所有新本地附件请求捕获5项额度；旧v1原请求/收件箱保留10项，写入v2显式额度且原ID/来源/字节与已提交清单保持。新越限在源读取前拒绝，额度错误按产品键翻译，任意来源错误仍原文。29项最终runner与161项按未变生产实现/测试类精确匹配，共190方法（187辅助、三环境实际系统取消各1）和190份默认11字段保护。手机初始菜单定位失败的整批排除；修正Lazy目录滚动及可读相册独立系统入口后，手机17项通过。待创建附件测试已改独立加密空间，保留早期隔离缺陷与读错空间失败。实际进程冷读及多图模型继续；新增模型0，累计221/P4205。",
+  "features": ["F30", "F47", "F55", "F56", "F59", "F71"],
+  "sourceSha256": "68cc934daa47644ce7361bdeeec3a331c5fbfc053636b7eda2615cd0a895c229",
+  "appSha256": "c82cb2bd1c31983086f9024ce3263d5cf1de3dc676693a790cc6e5121f2fc280",
+  "runnerSha256": "064adb327151ea15fced74a0f3f7fc0a6960b752b168b3546caeb8ad82b73889",
+  "finalRunnerMethods": 29,
+  "matchedImplementationMethods": 161,
+  "matchedImplementationReuse": {
+    "scope": "Only passed reports and selected unchanged test classes; identical production app/KMP/protocol/helpers. Changed unrelated test classes excluded, no changed class result promoted.",
+    "methods": 161
+  },
+  "nativeAuxiliary": 187,
+  "actualSystemCancellation": 3,
+  "defaultElevenFieldProofs": 190,
+  "cohorts": [
+    {
+      "environment": "owned-API37",
+      "methods": 16,
+      "selectedClasses": {
+        "com.agenthub.android.MobileDocumentRecoveryTest": 10,
+        "com.agenthub.android.MobileInboxStorageTest": 6
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "d660fc31f8193731ccca12aaa2448fd98b2e6ebedd8d14f53c899dc9c456834c",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 16,
+      "proofSha256s": [
+        "f97641e5dc44d9d135015051abbb8d91419698c5af0dca6d16f78adc73d75bde",
+        "b931957ba58e02723fb0ec8d23328a073b758ada08e7be193e2e494c7d343d18",
+        "d25ad03b5c8c65c56a4099cc75d82354229f3c5bd8b84c740d32d1ab76b92aeb",
+        "203b958b326ca717243dd525c24551c8d92718724b6744f22b5f2ee82162bcf5",
+        "8935e21b3c26ef934f3f79935ca0241973796ac48734da449b79b09f12491e21",
+        "0c2f42f38a4ecbe5fee16feb2e3b5999ee9618593232f3ae5534ce784604eaee",
+        "2521021f9d7b6def449f5398520ffa42f84ed1cec58a8a1fd30bd4110d11d2d5",
+        "7ee20fc3191d621254df58f7017832aaeb4def44c182f3771ec6472410d81931",
+        "cb0417cea62aab9053157ddec4ef4f41e2b34a63a94db018d3e3e20a9121657c",
+        "56a3f14b0951352fff600f8710bdf29e671fb7a0b2576683427a29149ff11735",
+        "cad54069e5102d444ceaea2e97ea513943ba5a8240c0cfdced2b1e28e18b4387",
+        "8edcf740cf2fdf6cac0fea6a25dee466f053b024e28f12a9496280d56c304442",
+        "9edfc00a1d2f0c3a5b608367b77b41927665056c5bf03a2586e8b9608784336b",
+        "bf00dbf3e0f601467579ecc19da24a8227f0a354bb0499c8748093fa514a53c1",
+        "ef962ce103c1abd6e8525c09ae4a7b38083a06dd77ed9a03e6f22a9c556b7460",
+        "f11d7d4477b662ee62a3903505f04dc790ff15212412d65b3847e9e7186b7ef3"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 16,
+      "selectedClasses": {
+        "com.agenthub.android.MobileDocumentRecoveryTest": 10,
+        "com.agenthub.android.MobileInboxStorageTest": 6
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "e154e23583ed9ec04089ba7874ed0b7cc8fab8979315961f5c26fd89d9396c4c",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 16,
+      "proofSha256s": [
+        "826e8ed2508debde9459a68d51763944afc261385ba6b7460e090751bc5e1572",
+        "7adebecc30a1641a013898c53ea977b327aa1f566a51e8674833452bbf43bcf1",
+        "8103fd6ce3cc543880a8451f18f90acdd777f3bba39596728302099940f89068",
+        "90bdfb036fa2b6e43d78b2ef5d2856a446d1c734d885ea9cfc44c65b481ffafe",
+        "9fbb80f7cb259a70372ff20ee0a83baa7f7045dcc39f49a0084a93bf3a6ff372",
+        "7639327a906986e48b598f087b92ed83302b4a1071f4bed4c9cb01ccfd4396de",
+        "38eaeef8a296cb6de09c5bd533da93e3f24e0a39e1929e72ad63a2760a6e6ec0",
+        "caa46fb11b193813b19f888169c478dfd6b6e78af1727eb3d776e01f00949bcb",
+        "b72ae8206f718a4bdcf2043e899f1d33c00c96b308948217fdfbd0beb9174998",
+        "251da2a38a7b80fc4db4c0dc2313a0e1e0b74d358ebf10e272548b663056e99b",
+        "86d63ca5e6e3dfdeb6ddc1b3310a843f2ad2a22351a1a6b0df56769612201ac1",
+        "054abe4f5fd4def5d65e4928f6bce18a9b2fa334f25f186e175e8b5ffbae7419",
+        "939b20d4743e5e466da864b5490ad210d96dd0399b11d96baea6f70b7baa8e4d",
+        "b2b12841f01033c55250b5cc450e18eb9cfade7fecc3e9c5daa0210526022b88",
+        "bcf29dd6a929e9e4b81ab241b3748016118f7d7086c235fddc9adff7c88489cb",
+        "fbdeb6da8a581ceb3b3a9b98ff80ff65e07f7efb251155f33f0b909b5dcb3452"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 16,
+      "selectedClasses": {
+        "com.agenthub.android.MobileDocumentRecoveryTest": 10,
+        "com.agenthub.android.MobileInboxStorageTest": 6
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "9c0e5b159105c69fc541ca181116744cc0de7b26ad8fa7ad8ef5e66929ecfeb1",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 16,
+      "proofSha256s": [
+        "fa8565cb85247a2b439898771ea4c6e7b0b558f0015f5fff0433e7e2933cde2d",
+        "941aeacbbfefad60ea46c5e52eafc4108fe4ff720a3fbbcb676a441ff91ab15d",
+        "46ac540f847373c6cf65a3a860569e79a7de62cc86488588609e452077b0789d",
+        "c95ded0a58126ecaf410da37a1fa2df62e9fcf3618b3164f9c166e45bc428958",
+        "2cf005d703b65769b0d04421b22f817691162b485145e3ec22da5e1e8e861b7a",
+        "bc6e9470fba6eab41aaf0683959d52894bd6b99cc50a79193432279b48941b1e",
+        "b1b691098602963bd59e692862bb506be710b15396b147e2c7b83e99cc4ff852",
+        "70a0cb91a481706decfee8ea937262b6fb9e07c0c7e454f699aa96c2680f1ad0",
+        "fd5a1917846bf8b19acca5b276537c529cef81c5093a643691ddb15fc1652d7d",
+        "0acc9e676f403c49ccc453149073df21994716b49e8fc4216792ba5c1f8c1f69",
+        "d77cc085db831b4a85e30c1171a3e189b0cb65739ad9103d376abc76a4f8c8a8",
+        "9fcfa3311548aa374079d2c3743ed8edbdcd70c69172467b47e6e44b54d8c16d",
+        "e4acbf04b25c8f85139accf10e62f5be532884e98dad0a5c7f09a4e0cd44d729",
+        "c29ec4b727e2c1f1bac4af8e2093444c6b85daee82657ee0164730a9fed5f09c",
+        "634b4cfea8147c958ab7575d2c7371f5bd770ba9010b89442555720e8ceab96c",
+        "eee6322a82343a6e1f355f2b657adac5867fdd5ea70cb878cf1add1c7ed999a5"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 7,
+      "selectedClasses": {
+        "com.agenthub.android.MobileInboxUiTest": 7
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "76484aeea9725ad3402604f0f4c344ec42a5913f21f6a7531ff51b3a36638560",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 7,
+      "proofSha256s": [
+        "fabc0da7abf83700989c5431cd0aa4077fb1d832138e8a2f982f5426ce661927",
+        "bf343876361e0f4314838373d5212275da8c896dee9068943baa44ddbfec82ae",
+        "f3e0bc631eca8da5a209b634d03c15489e5e7629f8aa0317cbd7235f1a4efa96",
+        "7456255c8cf7e35f84f411ef7ac8b8df081624ddebf601ec17ded8cad1365db3",
+        "601248389d72da4442869da3e8b6d55f7a6db4a14fed4f736fca94d7166edab9",
+        "7b038dd2f76768b6779877fab98f2f458cf03dea500a85a852a35d104bdc6150",
+        "cdbb5ae4c2250f961adc8338b73960068d64ee7caec0a3b31392adafe6a4a8d3"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 7,
+      "selectedClasses": {
+        "com.agenthub.android.MobileInboxUiTest": 7
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "5b726dcda32dfa9c73619778d861302645e79678d5c952808bb6c804e032a5d6",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 7,
+      "proofSha256s": [
+        "797de3395901e83d7b8daab495bbe1f206bf077f65b851d42901f17efc71a475",
+        "3c4580b97ff9801b39de40fe386f8d0c926bd917200807f802280076edab4148",
+        "a10ff94583f5fd8093043f57ace10799bd47adc023f422ffc3a15a8252bff868",
+        "b7e63ce08a3e13be342d7f8acd59bb36070efd2dcb024989f492cfa4d1e10694",
+        "4cee84729732b5607750659e6e551b1323b1583cd8afe9a75e31fa8320b9667a",
+        "a5450994e49f3d39e775c3f3d2dcdc84a61621c237616c84ea1e209e07002f74",
+        "bf66d45047694cead3bfcb3ac4ff66068268801b0c862e3b4f92fb9c8fdb7a81"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 7,
+      "selectedClasses": {
+        "com.agenthub.android.MobileInboxUiTest": 7
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "77494a53b61b558ab1e938b8813ced19337f903742a9840647b66117a30bab6f",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 7,
+      "proofSha256s": [
+        "fa81969f0bee96a054121466371ca77d9b5c7a574d500e0e7ccd0e7cd89c55f4",
+        "4d440fd31ff321dcca52b3a42365d0436fda67ef2998213b85e6c62032cdedde",
+        "9e1201d55b33e59ca3950c76664a5adc2d2b01576f633b4dbc85c37372adaaaf",
+        "1466d1cb4dd612f4a1b075c80c3c367cd7192a4a082db4d79f21b82898abebf5",
+        "a4acde759b02d695c5e8acfbd7f498a91c3e28ce40c8bcba796b6d1c18f9759e",
+        "2663eb40560ebf123e9a6e47bce27bab731288711961f7b6ecd9769d1b9c3b1b",
+        "82e5beb9a26c86909e599ac1d7c8650fba14e89e1521d3d0d6e8cc39eda95cc8"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 10,
+      "selectedClasses": {
+        "com.agenthub.android.MobilePhotoCatalogUiTest": 4,
+        "com.agenthub.android.MobilePhotoStagingTest": 6
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "83a81480106a6dd03033ac68ffe1e130c797ee393c0a0c9a1529a3dc89322d96",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 10,
+      "proofSha256s": [
+        "d696886d4e315871813f50a1b9ff74ffc7a0dfa51b2f4c7c4b00e4b78178144d",
+        "c8b57b0950c86ffff6eabff93d79ba24526f767bf6e9e2840c112dddd4cb6d60",
+        "518eb8f433b71eb1c5f73e20778e5cd74a1334dc235f22f9083c8efedb3712dc",
+        "de8327bb468f71a591512549b40e756886cdcd1f540ef0af58365f9a606b20a5",
+        "2248be4a3ee3aeb30e60bdf578c3be58036446d988546450d77f4b2c2c78b197",
+        "8b11d0ecdef70ae43feaa35146dc0b96a4421e752fc0b6ec4f1bc7f9c4550743",
+        "3d2592de2a7b17d40c5de53cc8c5b4ae3006896c0938ce3fca499690ac14e152",
+        "c3650fc05fb52d6349da5e31f090dc89dae8f93ad38704b5c807bde195f4dc2b",
+        "d2e4cdee61898495bf7f2e34b485e89366d8fb63ae22405a8ff36d22b80ecc67",
+        "229e1fa10efb33ece786ab7ae456db20f51c41347644dc2e3cb42939ae47e1d7"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 10,
+      "selectedClasses": {
+        "com.agenthub.android.MobilePhotoCatalogUiTest": 4,
+        "com.agenthub.android.MobilePhotoStagingTest": 6
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "bddd6d573f02c166eec5257aaf9611310f83ce7a67f46804c7213202fe53795b",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 10,
+      "proofSha256s": [
+        "17800ac00bb9373dfe79883fac1877c5dbfb6d8290d0924d73a9566ac44deedf",
+        "38de06f27f631855bc6955f1619b1c8028a839effe245956146a75a070ec9399",
+        "fffa4db4ff6e94430956df2e8a200bb64a4cb66596dd3ee96f400f0bde043d87",
+        "e87c7a0b783ad8c2dca42dfb26d8917c9e43e5d28e301c279e5efde03cdc99f0",
+        "f35b2751cd9efb842acb0cb962d5ba2d5e22536e72e5b230f81f19bf1b136f10",
+        "0716f62774bbfdf3835e856a48a17c98c81014cc83b31b1698692d9587f17f10",
+        "7747745e8f86daf08108242ae886f6ae517605fb5c4fca34293487fbc23ef95c",
+        "2f5b57f1d57cf7d5a59008d992e89f0c5b68de02ff5cbde481aba563fbf291d8",
+        "82dd4bfa90035efed0448a1f122150f5988002545f457a0119f43ea3749fa8fb",
+        "6eab83a4aac9533efd31dc2c055bc37a3561b531d32c7eb5c5b58cd38592c4e5"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 15,
+      "selectedClasses": {
+        "com.agenthub.android.NativeCapturedQuotaTest": 5,
+        "com.agenthub.android.MobileAttachmentImportOwnershipTest": 10
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "84f9dd762f58f9823e755f433a166e5ec2a1845a8e6f42f1551084d15fb857ad",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 15,
+      "proofSha256s": [
+        "40780acbbbe2eecbbb8071c7617c07ecb59ca44dcfa9fa3665e89cf3610ca069",
+        "1beadac7c662a93a4fc57059c96f14febbece03f94fd620e969a933efa301320",
+        "1ad6f8ec4c377902a0bf745273f9abb89c86e50533b2fad50a0d25556dcdefe3",
+        "ec8e7f79560f3690292349f9e0df4ae458fce7895511af42f58fe97202e7c6ee",
+        "9a7c48a44a250d5b43d948ea6221636363f1c6baf4adcc5f0a72ae51791ff4d5",
+        "0d427e818e3edec45edca01348ae29d687fe3b902b9f2068889f9816fa8b6216",
+        "ba4a65650c3a812de548fedf23f310f8a03d03d8eddf4823394bc5eb49d258d3",
+        "6851fefcd037df5f7913e239ff725e42a0cabeac142967d425ed838768705435",
+        "0fe7a49b181b11901553242e3616b8c3f27899b4af9a3f4dce01b13da6b5737e",
+        "4b6f541643bbbe6247112c73fd356b4b0b1e2561ed6b77ec0eea4a97e97320f7",
+        "571ce2f01c6a6699f1354428a1c50d5007bcf96dbbcdf233a94f4016aa408d21",
+        "875249f468d3e762a4fe06aed1fc4c00515e441d7362406ef11cba09b5b22aed",
+        "467568133e15e639c8eb023fe1f157c7778cd5f4a0360132e127ef0220731e75",
+        "752d4788c55dc5d0fdc5a07c79b4b3c384c647ded07f1f4713f58145bd184683",
+        "90dadf32365d36cc46bad469223b9f4ee1fb32b6af26a74a6b974f6b68439617"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 15,
+      "selectedClasses": {
+        "com.agenthub.android.NativeCapturedQuotaTest": 5,
+        "com.agenthub.android.MobileAttachmentImportOwnershipTest": 10
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "ef90290187084e0036310e3196315cffd53a936906086ccc8b10e420cf159f00",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 15,
+      "proofSha256s": [
+        "052534c8f113870d892a8ca0e46695d8fbbbf24bf54ecaa445aa251b6dd2e822",
+        "bb9e50de2d250980029286010cf4ea3a8f5fa88e089bb880701bba7626196492",
+        "433e1a039b7888ca6eda23a0816dec1be4bd8608a95b1b3b097ff55f1cc73245",
+        "c6687a29d5c454cf8f6d9cf0702c40502bac8fd7e850c7839b58d081df20574c",
+        "c473e5985c49b2dc32d2b51b924015013d2ab33b8bd84daa3055b43e9cb1d274",
+        "ebce38ad70396b8ba45d86046f1fd3eff8a1e24395167884edc3a654859dd5cb",
+        "912065f02d02979ad964520c9377215c9e1e457bc9f19cb7501bcad1ef01fc57",
+        "7cafc5d23e690db76cf7f0ef2e06e0dd55b6f637d5e45ae0e71b95b38d458903",
+        "7cbec3b17284d8e8d84169e818116c8518fd61206a834a059b75a0492f9152f2",
+        "6b6e44c414ea84d297cbd6a6294a5b981286bdf22e40f6bbeaf7d229deec067f",
+        "7e6f69a06bb58e27f0668f22483cf61d487680434ad11a8e7985362dbb20648d",
+        "923d5b141130bc66841294b41fe9e4efb70dcb06bd9d614e6f55939402c62bac",
+        "6990de923f75b6bd6218e870e3b18e9abf67d517a73275d7e5a4ba621686a308",
+        "686af1427a551ed3d37a86e2095074f66656cad57bcd58d2708f2007e9ef8db2",
+        "5d16723a28cb7351035fefb28055378d934caa1ee39173b8bcff38796d62c113"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 15,
+      "selectedClasses": {
+        "com.agenthub.android.NativeCapturedQuotaTest": 5,
+        "com.agenthub.android.MobileAttachmentImportOwnershipTest": 10
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "c10e5bccea9644fa51228b7ab58927183c007757ad4b8c1d9401155d57fab9dd",
+      "sourceSha256": "0e901a52567541f3843769068dccb46063c5a1200a751c17b11c42da217cb643",
+      "runnerSha256": "2c8a7e002069a5abbe118d4d8d68e825b80ebb3c0871f1e5fc65dd434687d042",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDocumentRecoveryTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileInboxUiTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 15,
+      "proofSha256s": [
+        "408bae1f4dfcf851416f4592c3e61d3c5035056e27325f25738c6db0120cdc38",
+        "6a6cef56762e429e1f3fe1dc4a23bf496ff522a57a7fcad6561b44426343f123",
+        "790b025b86fa814121d9129a7c9b6ea254426666bda527ce8c09334da4a360c6",
+        "98ec1089704371aadc1d1484f6078be132e998ccdda2dac0d1bbb5f6cc9991d5",
+        "3b30d39d152fec91c550002af861e5d6b40f0ad6ebaab6c359735c5c6c72b079",
+        "6351e7b845e450c87d2dc24daef16b844771eb6037a4d57f802a789f06c355f1",
+        "4ea7c95df055175d056f17855a2b7b5945143cf938d67c2520d2626a9e4e7513",
+        "feeaf5306a17dc9eacb34cb273da2486ffbe6efb03fcaeff8ca8fbba82b00e35",
+        "fe1ef477ac134a7a734000fd931605379ba4fec4563c93fa7becd70b3a05db7c",
+        "9b142227e8f4baf88f43487284a67c0989a39f3d693b6cc011b50b0e2064bd9b",
+        "bd6ab2a56cfb8fffb4213ad794ee2216b5c4e93598fbb9fde8ef4ba43f3ffc88",
+        "9f23ae371aed73a3ca2808b1a6abcbce4f5e49ca0a40fdeceba5e97da87e304b",
+        "d411d156f365b948861e1e78591670935e905f0da89bf2c4b9560fe493eeae9d",
+        "dc4ac53b9709a9648b57f3f78ccdcb5884aef256c831ec16be83b78c2186d40b",
+        "f8f70d4ae5e0e9f12972b646a3bf6242a42c2cb3a594eaa7072c19a1a6cb270d"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 10,
+      "selectedClasses": {
+        "com.agenthub.android.MobilePhotoCatalogUiTest": 4,
+        "com.agenthub.android.MobilePhotoStagingTest": 6
+      },
+      "orientation": "landscape",
+      "fontScale": "2",
+      "reportSha256": "f6ad10a13e9029206494590d122063d162e4c69175b82abaf68bf86cd5b2677f",
+      "sourceSha256": "48d0aa0e58d1a2f56c5cffb241196fd88bda77cdd387f4e4471de4feb9aef8d8",
+      "runnerSha256": "373f8d33463a0ab0c5e2db61ed90f3ef33e060e641847e8cc75bef0170463953",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePhotoPickerTest.kt"
+      ],
+      "defaultElevenFieldProofs": 10,
+      "proofSha256s": [
+        "d22b0448bec072d4687e5b4361e38d04ffed9a554c14b5629fd712f05797df35",
+        "4e92603370bb18b54cecb7f9fb25edca5225e9f7ba1ddde518f9cea1fcc0c7c9",
+        "8eba299f0134ba3524ac4647eb75ca4d8fa48bd03c10b1ad56ebfd2aee638b1c",
+        "ff3f247208191e8959cbf8d2d78b1f02a085d45b2fd487ff732905924a475099",
+        "24e648ef8b21d80fe5395b13cd4fbbf0ad7debf85c9a52726dbb734a7d9614f1",
+        "f381c5bccbbccbe33d9d22ce66123e9c1344552f8df963d1c8147c8671fbae87",
+        "f7f6a055276655995d0c916988d7de12fcaa37994377bf1b33d5c78bed3853a0",
+        "59db2226f1fb71ec5ff8ac5959428d8f12069ae380e79d8ed730bce69df402ba",
+        "39fcdc5611d19887145700a342b68a85c016715f8a8ae6496cdfdd42a0d1e4ca",
+        "2d3440b12f1db62a1313ca2a62f7ba7f6d05741a2b8beb783aed94f192c3484b"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 17,
+      "selectedClasses": {
+        "com.agenthub.android.MobilePhotoCatalogUiTest": 4,
+        "com.agenthub.android.MobilePhotoStagingTest": 6,
+        "com.agenthub.android.MobilePhotoPickerTest": 7
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "4fbfd2accfaa85f9e4a9165e2b2e4aa6eff0c4a6302195d8e0b86908e3aafdc9",
+      "sourceSha256": "4d7fdcdae615f15a7c7cc4783158a6863b0ffa339725b80ebbf67c634964ec19",
+      "runnerSha256": "9aaa70b65a1afe15126511c22f9125c30ca8dedc5c251a5ddd514a59686a0fae",
+      "matchedSourceReuse": true,
+      "unrelatedExcludedTestDifferences": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobilePendingCreationAttachmentTest.kt"
+      ],
+      "defaultElevenFieldProofs": 17,
+      "proofSha256s": [
+        "f31f7d33b3b1ed9575fa37888080e418f1993ef37547582b9e26fb0b36a6b772",
+        "cfd6766ac42b2650120c47a5c8493a0b424a7c150e21060d518dac46f8be48e3",
+        "392b3ba5f8f6dbd994ae007ba0ca90acb1ab4a0c00e177216215f899035a4dad",
+        "f927ee892939f883f37fbb454ff10b0e313f8835929c648f94936b095f7faa61",
+        "2aef1e92029c63461c93edd768bc04d2a1aacab672135aeba313936ed7e80007",
+        "89a2ff1872ce3d8f9ffe7be28096279def34201114715c3173ce92fdc29a6ed0",
+        "0f1daa4b5eb9c79b03fe9457aee734c446f8f7bd9f1385b9532b032b5898bae1",
+        "b49f3273450e3d1d9fafc944e472d81ce8bef69c4cee168add1177d0ddd97e45",
+        "64e004e1699cbb8fa34cafaaf8b1085044b4abb45b8e98e47ecbcbcd7f3947a6",
+        "317af0588c85287bc8bd6679ff1126122768cb78499f77c3a4c96ddc199e65cd",
+        "3b5f187d33d0cb6a6e97b2087883a3241539e006fcc85e07670aceda009a9932",
+        "270ed62dede1fd6a0398360b6b0ccefdeef9108263722a82acb8a17efea4543c",
+        "fc53c550f0737f7503ebc672f39ac5d28437f0c7df0549039e8453a5a39e20fd",
+        "6bc0bc92347bb86e443c2935b723af8afce50bfdc70d34e10ede8a588e487f72",
+        "05581722003f202b22fc49df476b8de270e8217d8d78868c34d812a672d108ee",
+        "92c533e6443a5408e1556f319b047d26065c0c1bce93f0cb35ea3cf387e89759",
+        "ac8d23623688a64c0a30d6ed9f13a3e276883f0be1407ab0e4842e46cf60d6ef"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 12,
+      "selectedClasses": {
+        "com.agenthub.android.MobilePendingCreationAttachmentTest": 5,
+        "com.agenthub.android.MobilePhotoPickerTest": 7
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "8ad46da5dbb770733c4f3dfcf2aaa2a9e85f7648f8235aee208666ecdcdb9c38",
+      "sourceSha256": "68cc934daa47644ce7361bdeeec3a331c5fbfc053636b7eda2615cd0a895c229",
+      "runnerSha256": "064adb327151ea15fced74a0f3f7fc0a6960b752b168b3546caeb8ad82b73889",
+      "matchedSourceReuse": false,
+      "unrelatedExcludedTestDifferences": [],
+      "defaultElevenFieldProofs": 12,
+      "proofSha256s": [
+        "3d640a61e39705fb79ae9c7158ff76f15f4c3f09ebb72360fc2412534c4c5223",
+        "01826f84562a51ded0d5c16f1d6ff0bf7088d16d846e7019ebe05c05d7902bcb",
+        "0d88e2207259f45e5fb821a442674d238aab2397aaa2afde9232a5287390129b",
+        "d34b0e1f89a2c5616930180475477ed171439ab282ec4e7b22055951bce2c81f",
+        "9f357e7fbb758925dd41d4fe3f5251b4d547d1184398320653bdeb96278f9a33",
+        "cb21af5fc1c5aab11e1936f2194e5e6b1ef80bef4537d9b33f8bc2d9855223fd",
+        "142d27f732579bd5eae087026effb5f088db6462709a28dd5adba315da99964b",
+        "64dd74356ec0cb0776edfe5be82a9ef5092e47024e421853d5c184b3c5c07d25",
+        "e81ee8338c67ee6e282daed1b0e368b4d467283c8436009e6b00e0798952b005",
+        "98e866eccb641051af99c0f0567862384eb6132199712bf75dc80bb278ab88d4",
+        "d27b2431fb31a56c5df08280a852704d2446e1cfd83c346406c5a65b2b93512f",
+        "dd2c52b4d23433be5a3ab51a2177488e44d495078fcab3bd455837d150b2c476"
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 12,
+      "selectedClasses": {
+        "com.agenthub.android.MobilePendingCreationAttachmentTest": 5,
+        "com.agenthub.android.MobilePhotoPickerTest": 7
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "cd5d32411f36d604939f88a18c75a17cc958ac4c3c5a177c6993e4acfe5d93bd",
+      "sourceSha256": "68cc934daa47644ce7361bdeeec3a331c5fbfc053636b7eda2615cd0a895c229",
+      "runnerSha256": "064adb327151ea15fced74a0f3f7fc0a6960b752b168b3546caeb8ad82b73889",
+      "matchedSourceReuse": false,
+      "unrelatedExcludedTestDifferences": [],
+      "defaultElevenFieldProofs": 12,
+      "proofSha256s": [
+        "df28364302424f5cdfaa7373ea203b8d34b6e66962e3cebbbaaa18c87a3ad705",
+        "b15dd3a8bafd56dff011adfe142acaa374168f3870ebcedc41c7cda387f9d293",
+        "ecd1baefa86b098005eb3797b54fe6277c64033c9331aa1ff3cb15e3bb734a4b",
+        "1d22edfcb270151a917670d32a8646215d9f19f59f90b4227d88e45c7c5c1b3a",
+        "1f9cfe3b6c7496781b8b4a39cb2b9eaf6da03ba1e7880283b29d105671d6daba",
+        "f374de7f8cb3c1439cdca4f3d14f4946595cfdd2d2830ffcfa9eb6a8a11868f3",
+        "aeb0f99acbb38b475dbc41b4a33b3b84a0cfdd11966c982b4ac4908559341a31",
+        "fc35249f90d079164e8839fed1af27e65af0666b446abf3f0292d5181bfd01a9",
+        "a2633881bac9a881693602e8f4b6d7e8e3a795f0eca72da694ecb1996a22d4bd",
+        "6426652dd6fbf95ae33a6b96dfc73966b2fa09f46b0cbdb19d79ce8f4d9ef9a9",
+        "4b4de920c1ad6a07a4cac8b14fd24c2320900bdecce6d2315a2f929c8de95620",
+        "9e484fca75e60aacba4e54d9dae735f56a025b75107e623e58f3f4aa17b252a0"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 5,
+      "selectedClasses": {
+        "com.agenthub.android.MobilePendingCreationAttachmentTest": 5
+      },
+      "orientation": "portrait",
+      "fontScale": "1",
+      "reportSha256": "1edcc838d956279ba4a002e08758299fff2e20b9e9bbb0dbc9a824cc2e2e11b0",
+      "sourceSha256": "68cc934daa47644ce7361bdeeec3a331c5fbfc053636b7eda2615cd0a895c229",
+      "runnerSha256": "064adb327151ea15fced74a0f3f7fc0a6960b752b168b3546caeb8ad82b73889",
+      "matchedSourceReuse": false,
+      "unrelatedExcludedTestDifferences": [],
+      "defaultElevenFieldProofs": 5,
+      "proofSha256s": [
+        "5c97d7a810856473c794f09d3336849dc3b96d96b2eb98a86da1273e01dcc9cf",
+        "b995f7c58b824429f0c058f91f4ee6389a961ea4b9258acf0d7c0dad4c927b4b",
+        "47abe7c802e3c3ef7aa4564587564f1c8e1b7962b5555cffc5b214990f1c29d0",
+        "a59ca6f689370f499b4a47f2dde3c7971243b66421430724f05d6499176cb459",
+        "19c253fb7d1518dc585b666eff3b323404f10f9a1eee2fabfdb9f23c4547a196"
+      ]
+    }
+  ],
+  "iosImpact": "Matches the iOS five-item new selection and quota copy. Android captured pre-upgrade ten-item local receipts and old Host manifests remain valid; no iOS/A6 execution upgrade.",
+  "rootCheck": {
+    "basis": "I4-3b/root-result.json",
+    "basisFrozenGuardPassed": false,
+    "basisCommandExit": 0,
+    "nonAndroidInputs": 622,
+    "changed": [],
+    "scope": "Only exactly matching non-Android/non-KMP root inputs; current native Android independently built and tested; not a new whole-root frozen pass"
+  },
+  "failuresRetained": [
+    {
+      "reportSha256": "9fcd4144d63e05993576c91b02b08d735bba8ae44c89cae51a6b7c973dd64a85",
+      "counted": false
+    },
+    {
+      "reportSha256": "b147818f33051bf11098a7bb32082041e8c2b5f5f4c8ef2fb18c3fe175e9d2a8",
+      "counted": false
+    },
+    {
+      "reportSha256": "ace02f73337b0b7db893290b819a4cad4e1a49c5bf0e6d406f2f846624e30f91",
+      "counted": false
+    },
+    {
+      "reportSha256": "b0611d69fb7e1e51a5a2f2553c306668a162640826819883df589ca852e7c826",
+      "counted": false
+    },
+    {
+      "reportSha256": "1bb8eceb995d4ce67a1824370503ce5a451592c1d0ce4d5bd81e9a43636ced7c",
+      "counted": false
+    },
+    {
+      "reportSha256": "694fcaf2f65d957b2a2cb122c3e57668c8edcbcf3eaf00a8ec278e3f27bec4e2",
+      "counted": false
+    }
+  ],
+  "newModelInputs": 0,
+  "allPhasesCumulativeInputs": 221,
+  "p4CumulativeInputs": 205,
+  "pending": [
+    "Actual process cold read/recovery of captured quotas, file IDs, photo origins and encrypted bytes",
+    "Real ordered multi-image model plus original desktop verification",
+    "Complete phone/system permissions/provider/visual matrix",
+    "API37 landscape; business tasks/projects and iOS A6 paused"
+  ]
+}

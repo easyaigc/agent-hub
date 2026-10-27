@@ -46,6 +46,9 @@ import com.agenthub.core.WorkspaceSidebarRules
     }
     LaunchedEffect(active) { if(active&&searchVisible)finishSearchEditing() }
     val client=session.selectedClient
+    val source=if(session.hasClient)clientSourceText(client) else productText("尚未连接客户端")
+    val connection=if(session.hasClient)clientConnectionText(client) else productText("未连接")
+    val switchDescription=productText("切换客户端，%@，%@",if(session.hasClient)client.name else productText("未连接"),source)
     val threads=session.threads
     val projects=session.projects
     val order=remember(client.cacheKey(null),threads,projects,session.workspace?.pinnedThreadIds,session.workspace?.sidebar) {
@@ -63,15 +66,15 @@ import com.agenthub.core.WorkspaceSidebarRules
     Column(Modifier.fillMaxSize().background(colors.surface).padding(horizontal=10.dp).testTag("sidebar")) {
         Row(verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f).heightIn(min=48.dp).padding(start=9.dp).testTag("sidebar-client-switch")
-                .semantics { role=Role.Button;contentDescription="切换客户端，${if(session.hasClient)session.selectedClient.name else "未连接"}，${if(session.hasClient)session.sourceLabel else "尚未连接客户端"}";stateDescription=if(session.hasClient)session.selectedClient.connectionLabel else "未连接" }
+                .semantics { role=Role.Button;contentDescription=switchDescription;stateDescription=connection }
                 .clickable(onClick=clients)) {
                 Row(verticalAlignment=Alignment.CenterVertically) {
                     Text(if(session.hasClient) session.selectedClient.name else "Agent Hub",Modifier.weight(1f,fill=false),fontSize=20.sp,fontWeight=FontWeight.SemiBold,maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     Spacer(Modifier.width(6.dp));ProductIcon("down",Modifier.size(12.dp),colors.onSurfaceVariant)
                 }
-                Text(if(session.hasClient) session.sourceLabel else "尚未连接客户端",fontSize=11.sp,color=colors.onSurfaceVariant)
+                Text(source,fontSize=11.sp,color=colors.onSurfaceVariant)
             }
-            IconAction("search","搜索项目和对话","sidebar-search-toggle") {
+            IconAction("search",productText("搜索项目和对话"),"sidebar-search-toggle") {
                 searchVisible=!searchVisible
                 if(!searchVisible) { session.search="";focus.clearFocus();keyboard?.hide() }
             }
@@ -81,17 +84,17 @@ import com.agenthub.core.WorkspaceSidebarRules
                 ProductIcon("search",Modifier.size(18.dp),colors.onSurfaceVariant)
                 BasicTextField(session.search,{ session.search=it },Modifier.weight(1f).padding(start=8.dp,top=12.dp,bottom=12.dp).focusRequester(searchFocus).testTag("sidebar-search"),singleLine=true,enabled=active,
                     keyboardOptions=KeyboardOptions(imeAction=ImeAction.Search),keyboardActions=KeyboardActions(onSearch={ finishSearchEditing() }),
-                    textStyle=androidx.compose.ui.text.TextStyle(color=colors.onSurface,fontSize=17.sp),decorationBox={ inner -> if(session.search.isEmpty()) Text("搜索项目和对话",fontSize=17.sp,color=colors.onSurfaceVariant);inner() })
-                if(searching)IconAction("close","清除搜索","sidebar-search-clear") { session.search="" }
+                    textStyle=androidx.compose.ui.text.TextStyle(color=colors.onSurface,fontSize=17.sp),decorationBox={ inner -> if(session.search.isEmpty()) Text(productText("搜索项目和对话"),fontSize=17.sp,color=colors.onSurfaceVariant);inner() })
+                if(searching)IconAction("close",productText("清除搜索"),"sidebar-search-clear") { session.search="" }
             }
             LaunchedEffect(Unit) { if(active)searchFocus.requestFocus() }
         }
-        TextButton(onClick=newChat,enabled=session.canCreateThread,modifier=Modifier.fillMaxWidth().testTag("sidebar-new")) { ProductIcon("new");Spacer(Modifier.width(8.dp));Text("新聊天",Modifier.weight(1f),color=colors.onSurface) }
+        TextButton(onClick=newChat,enabled=session.canCreateThread,modifier=Modifier.fillMaxWidth().testTag("sidebar-new")) { ProductIcon("new");Spacer(Modifier.width(8.dp));Text(productText("新聊天"),Modifier.weight(1f),color=colors.onSurface) }
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing=session.loading,onRefresh={ session.refresh(userInitiated=true) },modifier=Modifier.weight(1f).fillMaxWidth().testTag("sidebar-refresh")) {
             LazyColumn(Modifier.fillMaxSize().focusRequester(resultsFocus).focusable(enabled=active).testTag("sidebar-list"),state=list) {
                 if(pinned.isNotEmpty()) {
                     val expanded=WorkspaceSidebarRules.expanded(display.pinnedSectionExpanded,searching)
-                    item(key="pinned-section") { SidebarSection("置顶",expanded,!searching,"sidebar-pinned-toggle",session::toggleSidebarPinnedSection) }
+                    item(key="pinned-section") { SidebarSection(productText("置顶"),expanded,!searching,"sidebar-pinned-toggle",session::toggleSidebarPinnedSection) }
                     if(expanded)pinned.forEach { pin ->
                         if(pin.kind=="thread")item(key="pinned-thread-${pin.id}") { ThreadRow(byThread.getValue(pin.id),session,"pinned-thread",close,active) }
                         else sidebarProjectRows(byProject.getValue(pin.id),projectChildren(byProject.getValue(pin.id)),session,searching,close,active)
@@ -99,23 +102,23 @@ import com.agenthub.core.WorkspaceSidebarRules
                 }
                 if(recent.isNotEmpty()) {
                     val expanded=WorkspaceSidebarRules.expanded(display.recentSectionExpanded,searching)
-                    item(key="recent-section") { SidebarSection("最近",expanded,!searching,"sidebar-recent-toggle",session::toggleSidebarRecentSection) }
+                    item(key="recent-section") { SidebarSection(productText("最近"),expanded,!searching,"sidebar-recent-toggle",session::toggleSidebarRecentSection) }
                     if(expanded) {
                         val visible=WorkspaceSidebarRules.visibleIds(recent.map { it.id },display.recentExpanded,searching)
                         items(visible,key={ "recent-$it" }) { ThreadRow(byThread.getValue(it),session,"recent-thread",close,active) }
-                        if(!searching&&recent.size>5)item { TextButton(onClick=session::toggleSidebarRecent,modifier=Modifier.testTag("sidebar-more-recent")) { Text(if(display.recentExpanded) "收起显示" else "展开显示",color=colors.onSurfaceVariant) } }
+                        if(!searching&&recent.size>5)item { TextButton(onClick=session::toggleSidebarRecent,modifier=Modifier.testTag("sidebar-more-recent")) { Text(productText(if(display.recentExpanded) "收起显示" else "展开显示"),color=colors.onSurfaceVariant) } }
                     }
                 }
                 if(folders.isNotEmpty()||session.canCreateProject) {
                     val expanded=WorkspaceSidebarRules.expanded(display.projectsExpanded,searching)
                     item(key="projects-section") { Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f)) { SidebarSection("项目",expanded,!searching,"sidebar-projects-toggle",session::toggleSidebarProjects) }
+                        Box(Modifier.weight(1f)) { SidebarSection(productText("项目"),expanded,!searching,"sidebar-projects-toggle",session::toggleSidebarProjects) }
                         if(session.canCreateProject)IconAction("plus","添加项目","add-project",onClick=addProject)
                     } }
                     if(expanded)folders.forEach { project -> sidebarProjectRows(project,projectChildren(project),session,searching,close,active) }
                 }
-                if(folders.isEmpty()&&recent.isEmpty()&&pinned.isEmpty())item { Text(if(!searching) "还没有项目或对话" else "没有找到相关内容",Modifier.padding(vertical=24.dp,horizontal=9.dp),fontSize=14.sp,color=colors.onSurfaceVariant) }
-                if(session.workspace?.nextProjectCursor!=null||session.workspace?.nextThreadCursor!=null)item { TextButton(onClick={ session.refresh(more=true,userInitiated=true) },enabled=!session.loading,modifier=Modifier.testTag("sidebar-load-more")) { Text("加载更多",color=colors.onSurfaceVariant) } }
+                if(folders.isEmpty()&&recent.isEmpty()&&pinned.isEmpty())item { Text(productText(if(!searching) "还没有项目或对话" else "没有找到相关内容"),Modifier.padding(vertical=24.dp,horizontal=9.dp),fontSize=14.sp,color=colors.onSurfaceVariant) }
+                if(session.workspace?.nextProjectCursor!=null||session.workspace?.nextThreadCursor!=null)item { TextButton(onClick={ session.refresh(more=true,userInitiated=true) },enabled=!session.loading,modifier=Modifier.testTag("sidebar-load-more")) { Text(productText("加载更多"),color=colors.onSurfaceVariant) } }
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
@@ -123,17 +126,18 @@ import com.agenthub.core.WorkspaceSidebarRules
         HorizontalDivider(color=colors.onSurface.copy(alpha=.08f))
         Row(Modifier.fillMaxWidth().padding(top=6.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
             Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("sidebar-settings").semantics { role=Role.Button }.clickable { close();settings() },verticalAlignment=Alignment.CenterVertically) {
-                Box(Modifier.size(30.dp).clip(CircleShape).background(colors.onSurface),contentAlignment=Alignment.Center) { Text("我",fontSize=12.sp,color=colors.surface) }
-                Spacer(Modifier.width(10.dp));Text("个人空间",fontSize=16.sp,color=colors.onSurface)
+                Box(Modifier.size(30.dp).clip(CircleShape).background(colors.onSurface),contentAlignment=Alignment.Center) { Text(productText("我"),fontSize=12.sp,color=colors.surface) }
+                Spacer(Modifier.width(10.dp));Text(productText("个人空间"),fontSize=16.sp,color=colors.onSurface)
             }
-            IconAction("sidebar","收起侧栏","close-sidebar",onClick=close)
+            IconAction("sidebar",productText("收起侧栏"),"close-sidebar",onClick=close)
         }
     }
 }
 
 @Composable private fun SidebarSection(title: String,expanded: Boolean,enabled: Boolean,tag: String,toggle: ()->Unit) {
+    val expansion=productText(if(expanded)"已展开" else "已折叠")
     Row(Modifier.fillMaxWidth().heightIn(min=48.dp).padding(horizontal=9.dp).testTag(tag)
-        .semantics { role=Role.Button;stateDescription=if(expanded) "已展开" else "已折叠" }
+        .semantics { role=Role.Button;stateDescription=expansion }
         .clickable(enabled=enabled,onClick=toggle),verticalAlignment=Alignment.CenterVertically) {
         Text(title,fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.width(6.dp))
         ProductIcon(if(expanded) "down" else "chevron",Modifier.size(12.dp),MaterialTheme.colorScheme.onSurfaceVariant)
@@ -145,29 +149,32 @@ private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: Li
     val all=project.id in session.sidebarDisplay.expandedLists
     item(key="project-${project.id}") {
         val colors=MaterialTheme.colorScheme
+        val expansion=productText(if(expanded)"已展开" else "已折叠")
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             Row(Modifier.weight(1f).heightIn(min=48.dp).padding(horizontal=9.dp).testTag("project-${project.id}")
-                .semantics { stateDescription=if(expanded) "已展开" else "已折叠";role=Role.Button }.clickable(enabled=!searching) { session.toggleProject(project.id) },verticalAlignment=Alignment.CenterVertically) {
+                .semantics { stateDescription=expansion;role=Role.Button }.clickable(enabled=!searching) { session.toggleProject(project.id) },verticalAlignment=Alignment.CenterVertically) {
                 ProductIcon("folder");Spacer(Modifier.width(10.dp));Text(project.name,Modifier.weight(1f),maxLines=1,fontSize=16.sp,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(Modifier.width(8.dp));ProductIcon(if(expanded) "down" else "chevron",Modifier.size(12.dp),colors.onSurfaceVariant)
             }
-            if(session.canCreateThread)IconAction("new","在 ${project.name} 新建对话","new-in-${project.id}") { session.newChat(project.id);close() }
+            if(session.canCreateThread)IconAction("new",productText("在 %@ 新建对话",project.name),"new-in-${project.id}") { session.newChat(project.id);close() }
         }
     }
     if(expanded) {
         val byId=children.associateBy { it.id }
         items(WorkspaceSidebarRules.visibleIds(children.map { it.id },all,searching),key={ "project-${project.id}-$it" }) { id -> Box(Modifier.padding(start=24.dp)) { ThreadRow(byId.getValue(id),session,"project-thread-${project.id}",close,active) } }
-        if(children.size>5&&!searching)item { TextButton(onClick={ session.toggleSidebarList(project.id) },modifier=Modifier.padding(start=24.dp).testTag("project-more-${project.id}")) { Text(if(all) "收起显示" else "展开显示",color=MaterialTheme.colorScheme.onSurfaceVariant) } }
+        if(children.size>5&&!searching)item { TextButton(onClick={ session.toggleSidebarList(project.id) },modifier=Modifier.padding(start=24.dp).testTag("project-more-${project.id}")) { Text(productText(if(all) "收起显示" else "展开显示"),color=MaterialTheme.colorScheme.onSurfaceVariant) } }
     }
 }
 
 @Composable private fun ThreadRow(thread: MobileThread,session: MobileSession,prefix: String,close: () -> Unit,active: Boolean) {
     val colors=MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(10.dp)).background(if(thread.id==session.selectedThread) colors.onSurface.copy(alpha=.06f) else Color.Transparent).testTag("$prefix-${thread.id}").semantics { contentDescription="${thread.title}，${when(thread.state) { "running"->"运行中"; "waiting-for-approval"->"待处理"; else->if(thread.showsUnread) "未读" else "已读" }}" }.clickable { session.selectThread(thread);close() }.padding(horizontal=9.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically) {
+    val status=productText(when(thread.state) { "running"->"运行中";"waiting-for-approval"->"待处理";else->if(thread.showsUnread)"未读" else "已读" })
+    val description=productText("%@，%@",thread.title,status)
+    Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(10.dp)).background(if(thread.id==session.selectedThread) colors.onSurface.copy(alpha=.06f) else Color.Transparent).testTag("$prefix-${thread.id}").semantics { contentDescription=description }.clickable { session.selectThread(thread);close() }.padding(horizontal=9.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically) {
         Text(thread.title,Modifier.weight(1f),fontSize=16.sp,maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         when { thread.state=="running" -> if(active) CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp)
                 else CircularProgressIndicator(progress={ .25f },modifier=Modifier.size(14.dp),strokeWidth=1.5.dp)
-            thread.state=="waiting-for-approval" -> Text("待处理",fontSize=11.sp,color=Color(0xFFD68B00))
+            thread.state=="waiting-for-approval" -> Text(productText("待处理"),fontSize=11.sp,color=Color(0xFFD68B00))
             thread.showsUnread -> Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF007AFF)).testTag("unread-${thread.id}")) }
     }
 }

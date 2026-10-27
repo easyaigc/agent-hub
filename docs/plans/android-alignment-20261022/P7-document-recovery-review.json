@@ -1,0 +1,188 @@
+{
+  "phase": "P7-4a",
+  "sourceBase": "1e0e702c66a77f21acc764e9b9da1acae41ef5c4",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F56", "F69", "F71"],
+  "files": {
+    "apps/android/localization/native-copy.json": "fcfcb7df2a76c86960ac5cfd563026c2beb93f13642f2aba2d9073da421cfefb",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "ce82636556e2645b21e246b368d03d3ae2b999de1dca66d716a74305b3d4c3fe",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDocumentRecoveryTest.kt": "a525aa0cc468723f095ee991ebde06373950eec2caff980e702ced123cbd75fb",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "c5c9bdfe2820fd1a831d9f190a5ae316bfd5895b3aa1fee71e2d16191559fee8",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "3cb2ced7a6c51d248df7daf78c92d5495015e770e7efcba939ab73f0881752ca",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "4e4941fb750b3b06c9db3664b9342881fe98457d7887da8be38e8f69fe327f38",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "fa11e0d4db3414affd9b10aaa56ebe2b03ab39754bc7394149736764c406a7b6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentPanel.kt": "e864206e287ab02f91e65b7e3fb35b572e4eb77cc233c9d9d8dc65b55acd74d2",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraCapture.kt": "687897ab9bf2c6aa085b4f3a551682cf16e4ae7984680544575d56de135f70b7",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentJournal.kt": "e1092899642fc7926408a4053b6f3dc2f7bb6780ac3d36f3b5cf37dca5b304e1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentPicker.kt": "87c4ef8abf43c852a0c8a958baf5f671b5af443ce691afe64bf88b1aac654c6d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt": "f8472f764015c690680849568c020b25bdf973fb56d66de65e3c74a9b5377cc1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoPicker.kt": "dd4007261b4fb04dc3f6928ecda040faa045316f1a3f191f4440552a9cfd5593",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "891f31da54d87131c3b8a810bd9efa34397d2eccc2fa3a447e796264ed4af3f8",
+    "apps/android/src/main/res/values/product_strings.xml": "4dcbead9b2ceee5a27c9c2001b74d6ae4875fdae1d4d5e7fabdb05c6e0f27116"
+  },
+  "summary": "P7-4a：系统文件请求按原ID/完整草稿与代次持久化、稳定注册回调，恢复不重开选择器；选中字节先加密暂存，固定附件ID及元数据确认后消费，旧结果/新等待和旧代次忙碌隔离，回执确认前保护当前附件移除。未知/失败提供本机结束等待、原结果重试/丢弃，短视口有界滚动。三环境各68项（含各2真实系统取消），另6暗色大字号/3原回复GET-only，共204辅助、6系统、3原回复及213默认草稿/偏好/授权/文档账本保护证明。1687双语键；模型新增0、累计220/P4205。真实进程被杀后的文件返回、原URI/权限与完整P7仍开。",
+  "appSha256": "f4164bd4aed0af3f47cf5ed9baae977408c8a9f3eee8b06a6357ea4d6e93ef25",
+  "testSha256": "720cf707eaba521f50be02a65a9ae9322fc8486a828516a41cd2acb0e3843f58",
+  "sourceSha256": "c89777b4341f2e6918c941e470a460ab9b3f823101b465c862b672db69702b87",
+  "nativeAuxiliaryMethods": 204,
+  "nativePlatformMethods": 6,
+  "actualOriginalModelReplyMethods": 3,
+  "defaultStorageProofs": 213,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "methods": 68,
+      "reportSha256": "181d4d6c650114c1f29b27c374c7b8d84296443fba9bcfc57806dfa6c705a02f",
+      "logSha256": "c9a1f8aa18a249317f8f4ead9a022a52493ee40877c8fc981d74a35770b94e12",
+      "classCounts": {
+        "MobileDocumentRecoveryTest": 10,
+        "MobileRecentPhotoHintTest": 7,
+        "MobileAttachmentPanelTest": 6,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileInboxUiTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileLocalizationTest": 6,
+        "MobilePhotoAuthorizationTest": 4
+      },
+      "auxiliaryMethods": 66,
+      "nativeSystemCancelMethods": 2
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 68,
+      "reportSha256": "fe15bc5bd29ef95451ff108091e98f138fafecfdac0e1fe3d0bc57ae364c84be",
+      "logSha256": "d7ede381cf2d15a7f1e832a23621681aac8572c917f629a6786b10215ae2f9f6",
+      "classCounts": {
+        "MobileDocumentRecoveryTest": 10,
+        "MobileRecentPhotoHintTest": 7,
+        "MobileAttachmentPanelTest": 6,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileInboxUiTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileLocalizationTest": 6,
+        "MobilePhotoAuthorizationTest": 4
+      },
+      "auxiliaryMethods": 66,
+      "nativeSystemCancelMethods": 2
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 68,
+      "reportSha256": "81cd978824e5f149e748f4f29a18a83e5ba34478312b02fe6da6274898950f29",
+      "logSha256": "a01adee0b748968ce38f227de7794dd756dcaf94ed6a15f5e8e0a6785231185a",
+      "classCounts": {
+        "MobileDocumentRecoveryTest": 10,
+        "MobileRecentPhotoHintTest": 7,
+        "MobileAttachmentPanelTest": 6,
+        "MobileAttachmentImportOwnershipTest": 9,
+        "MobileCameraCaptureTest": 7,
+        "MobilePhotoPickerTest": 7,
+        "MobileInboxUiTest": 7,
+        "MobileFilePasteTest": 5,
+        "MobileLocalizationTest": 6,
+        "MobilePhotoAuthorizationTest": 4
+      },
+      "auxiliaryMethods": 66,
+      "nativeSystemCancelMethods": 2
+    }
+  ],
+  "viewportVariants": [
+    {
+      "environment": "owned-API26",
+      "methods": 3,
+      "reportSha256": "f51560dc6192b0fc490581db89e05ce9ddea0224151f11fb5067609338bd5bc9",
+      "logSha256": "3453eb12a016c0c5aadbd5e40444a661b4664a7e800be151c97f5f3999653057",
+      "classCounts": {
+        "MobileDocumentRecoveryTest": 3
+      }
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 3,
+      "reportSha256": "34d7d3a160c7dfa36d9414b5c8fbcc4cecea167fe6a175a92c17ae9e94fb5ea4",
+      "logSha256": "415895f97dbeec479289f5ed7dfd18e440bbd7b9c7f84d26a27f73f282ddbd51",
+      "classCounts": {
+        "MobileDocumentRecoveryTest": 3
+      }
+    }
+  ],
+  "viewportScope": "API26 dark font2/API37 dark font1.3, three controlled recovery layouts each; physical actual viewport/system font recorded. API37 landscape and full IME matrix not closed.",
+  "actualOriginalModelReplyReads": [
+    {
+      "environment": "owned-API26",
+      "methods": 1,
+      "originalOwner": true,
+      "originalTurnsUnchanged": true,
+      "writeRequests": 0,
+      "newInputs": 0,
+      "reportSha256": "609fa3bf6f5fbabfeb97b700414d9a1ee52d584df6619637bb3adbf835d3c61f"
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 1,
+      "originalOwner": true,
+      "originalTurnsUnchanged": true,
+      "writeRequests": 0,
+      "newInputs": 0,
+      "reportSha256": "ae9a0ff5d64966ee6f289bf3c475b8715515d306add931ec0bd1cad0144be7ce"
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 1,
+      "originalOwner": true,
+      "originalTurnsUnchanged": true,
+      "writeRequests": 0,
+      "newInputs": 0,
+      "reportSha256": "a2cbe95688686978c5bbf11f81ea2556f7d70ccde0465a94657ad1113c08c2af"
+    }
+  ],
+  "catalogKeysPerLanguage": 1687,
+  "sharedKeys": 1603,
+  "platformKeys": 84,
+  "checks": {
+    "androidBuild": "passed",
+    "buildLogSha256": "c0d94f78abbab0c877969fd7b9002cd0da534e0650420f3c560609c4e2c69f59",
+    "mobileParity": "passed current source",
+    "androidApprovalGuard": "passed current source 17",
+    "format": "passed",
+    "pnpmCheck": {
+      "exitCode": 0,
+      "frozenProgramInputs": 1103,
+      "programInputChanges": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDocumentRecoveryTest.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt"
+      ],
+      "programInputsUnchanged": false,
+      "logSha256": "96d9e7d6c957ca30ac071b545e32e47aeb66e34d8fbdbc879ecd8150a7f6afef",
+      "docsMayBeFinalizedAfterRunAndCheckedSeparately": true,
+      "currentNativeRevisions": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileDocumentRecoveryTest.kt": "a525aa0cc468723f095ee991ebde06373950eec2caff980e702ced123cbd75fb",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "fa11e0d4db3414affd9b10aaa56ebe2b03ab39754bc7394149736764c406a7b6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt": "f8472f764015c690680849568c020b25bdf973fb56d66de65e3c74a9b5377cc1"
+      },
+      "allOther1100ProgramInputsExact": true,
+      "scope": "Complete pnpm check command passed. Three Android Kotlin inputs were finalized during the run; final Android build, 68-per-environment cohort and current source-bound native/contract checks are separate. Do not call the whole root source fingerprint unchanged.",
+      "nonzeroSkipGroups": [1, 24, 22]
+    },
+    "ios": "Unchanged I3 source/build; no A6 execution; current native matrix pending",
+    "mobileParityLogSha256": "1c44310e4fb713f6e8daa5c6e313d99fbb692e35a1fa312f87d1843d14dcfb25",
+    "androidApprovalGuardLogSha256": "af05a201ba3162e35d19da81e4056c720765a7dc48338d4f1c4d405eb5a7735f",
+    "formatLogSha256": "85bbecd5b7da7ca55a0c1ed422db3d7095edcabeb8d0985c6d07162fdc69ef85"
+  },
+  "pending": [
+    "Actual process death while system document chooser remains foreground and positive original result/URI recovery; 4a reconstructed registry/journal cases are explicitly auxiliary",
+    "Full persisted/transient URI grant/provider/cancel/failure/natural crash and storage quota/migration/closed-receipt cleanup; selected encrypted bytes and current source handles are local only",
+    "Photo/camera original result and private output/orphans across process death; their existing Session-only result paths are not upgraded by this document checkpoint",
+    "UI07 full IME/rotation/AX/language/font matrix and API37 landscape; native system fonts/current scroll screenshot scope recorded separately",
+    "Physical first/full/limited/revoked permission and existing observer-install/cellular/VPN/manual owner gates; no new human requests",
+    "P5 real suggestion source, remaining voice/read and P8/P10; task/project business deferred; iOS A6 remains paused"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

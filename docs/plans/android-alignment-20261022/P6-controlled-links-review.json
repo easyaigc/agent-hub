@@ -1,0 +1,90 @@
+{
+  "phase": "P6-4a",
+  "sourceBase": "c19695cba6a2bc1b64d53773c701ee6469f71563",
+  "features": ["F19", "F32"],
+  "files": {
+    "apps/android/build.gradle.kts": "c145259e66c93aee83ceaff751c7a32745de0154fd72c4845739247648126ece",
+    "apps/android/localization/native-copy.json": "c182430cee1b28316236aadb6485a90b881db524cc623f5d04ae97a75a89a8b8",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "32cdf8a09d6b74767d7f710df24c9342c74ce431d25d522bd080a281b1fa24fc",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalizationTest.kt": "f8491d394549a91302733cc9fc44aef82e354448816a6edee6217bf9e5f4514c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileMessageLinkTest.kt": "756ee873ae5a757df1c6f1a8f03a9722ff46bd031f4b1bd4b2ae88fdd8aaec22",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "1b3dcb5ddada931d210ace2de55524e6a172839bd07123788fddd5104e56c155",
+    "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "688d345063101a14a51a76d53e3168cc8111ecbab5d715dae5606fe0faa395a0",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageLinkDestination.kt": "26ecb21a8f1c317a9715f980fb05067974fac7c8ec731e645fff8050898b5587",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageLinks.kt": "717354da87cedb826deafe1a080b2fa5a2e8bc8df663e7029788d0b1e11b4d99",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "1e1a7dfde2187ec21db32da251dde1e23fbb7f98396355f8362cbbc47c198e98",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "7d7ec2af4640864ceb28328493f46a0786667a9715c31de617f118052d4d48cd",
+    "apps/android/src/main/res/values/product_strings.xml": "f76bd7b4e0ae9eb73ee5d8bb50f9fb243f4b72dbb5599391edd928094c35ba0c",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "f6f9a8a9258c1ad9bd7479103bc087a2290b15f611747a2a1aba56f6a1f03261",
+    "apps/ios/Sources/MessageLinkDestination.swift": "2afb89a9446d5b80262bf4c268c5eb4eb1eae767b6545f7ff6e15618a728799e",
+    "apps/ios/Sources/MessageLinks.swift": "cf7e6885f3fece2f5d046a88e355a5189a09adaedf0eab752a45ef3ccee0932f",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/MessageLinkRules.kt": "a56e8c54c1fc9de33fab40f2496825bc7d2682b4c474ad2ae17fe252d7ec99dd",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/MessageLinkRulesTest.kt": "e6516ed79fb5601306ea5546052ff6a1325c3ba7a2cc1a34672302ddb88b2438",
+    "packages/protocol/fixtures/mobile/message-links-v1.json": "044dd083b4e350cc99e3f00cac04654d2e1dd3e85c78fb4b2e8a9f95e5e8f790",
+    "scripts/mobile/check-core.mjs": "de6ec263dd96b6e4f08d434c77585f7717425a55215e8b796fa2537eced0fb0c",
+    "scripts/mobile/verify-ios-message-links.swift": "7df592c52f83866edb28e1d3afa916aaff2126cf5a567ac9215863fd47b59c8e"
+  },
+  "scope": "Shared destination policy migrated from iOS production path; native URL parsing remains platform-specific. Android callbacks bind original message/navigation/connection; web uses Custom Tabs, external schemes use named Intents, blocked links show copyable errors. File resolution/download/preview remains next. Final Android review preserves existing block composition and horizontal code scroll while retiring stale link callbacks; unbound runtime plan Markdown retains shared-classified safe system links.",
+  "sharedCore": {
+    "newCommonTestsPerRuntime": 2,
+    "nativeParsingVectors": 35,
+    "executedRuntimes": [
+      "JVM",
+      "iOS Simulator ARM64",
+      "Android API26",
+      "Android API37",
+      "physical API33"
+    ],
+    "iosLegacyRuleRemoved": true,
+    "swiftProductionFacadeExecuted": true,
+    "reportSha256": "a01bc5afb32e9cb11d4bb5a57e4f99c705bb288eb4b12da61d1563f912b1eb8d"
+  },
+  "nativeAuxiliary": {
+    "cases": 28,
+    "messageLinkCases": 25,
+    "compiledCatalogCases": 3,
+    "keysPerLanguage": 1639,
+    "defaultStorageProofsIncludingActualRead": 29,
+    "ownedImagesReviewed": 15,
+    "appSha256": "60ca118913be00b4e54a1233f1a385f40add077c0e8828d759359659a8febd0a",
+    "runnerSha256": "cd23bd6f7e0b9583271b5483dfcb4069c5c0a87466fc54d4b2e4a3eee01a00b4",
+    "sourceSha256": "81ef6c58dab04eb67ba6a924e000f89ebd53f9a765c7c5650a4aa560b47626a0",
+    "environments": [
+      "API26 portrait default/fontScale2",
+      "API37 portrait light/dark",
+      "physical API33 portrait light"
+    ],
+    "systemLaunchScope": "Instrumentation monitors exact URI and Custom Tabs marker. Only SDK Accept-Language header/app referrer allowed; no Host auth. No actual browser load proof.",
+    "streamingAndPlanBoundary": "Actual SDK scroll remains at original code offset after message tail update; old callbacks invalidated without recreating message content. Plan text without message identity retains safe original system URL annotations; Custom Tabs proof scoped to message links."
+  },
+  "actualRead": {
+    "nativeMethods": 1,
+    "httpGetRequests": 22,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "originalOwnerAndTurnsUnchanged": true,
+    "scope": "Current App reads prior actual reply and preserves draft/files during local plan toggles; not actual-model link activation.",
+    "imagesReviewed": 3
+  },
+  "checks": {
+    "androidBuild": "passed",
+    "sharedCoreAndSwiftBoundary": "passed",
+    "iosBuild": "passed",
+    "pnpmCheck": "passed on exact JS/shared/Swift/tooling scope; final 3 Android-only review separately rebuilt and all native/read cases rerun",
+    "pnpmSkipGroups": [1, 24, 22],
+    "pnpmLogSha256": "bb2f9fb24ffc2658890945b598a25c4c43d890be4c82ad5ecaadf3dd47ceeae1",
+    "finalFormatAndParity": "passed"
+  },
+  "failuresRetained": "Three first native cohorts: wrong asset context/overstrict SDK-header assertion; wrong catalog selector; old expected count in core checker. Final entire cohorts rerun.",
+  "pending": [
+    "Resource resolution/current-version download/preview/share",
+    "Actual browser page load/error/return and missing app",
+    "Exact raw-link clipboard/full OS AX and copy",
+    "iOS app UI/physical phone",
+    "Remaining P6 tokens/render/copy"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeFeatureClosed": false
+}

@@ -1,0 +1,71 @@
+{
+  "phase": "P6-4b",
+  "sourceBase": "eaff6cd05b55b2cc7189149db19c11403e3b79c6",
+  "features": ["F19", "F32"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCommandBoundaryTest.kt": "9ba93e6caefdc59330fb4e3d2340946c63e1e315d40b9e937a9a09d6f909de98",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileResourceDownloadTest.kt": "83070976d124ee9de1e26c155911ec36d74852e21bd72ffb3f907782d509e146",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "edf3d8b09fda67769f58e9a409f3a1b6db3b4866412169e24b4b52b0673c8454",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "0a79d284a08d266313ed9fb334991ecaa83c7c2d68064a298bf286e7cc92d212",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexResources.kt": "7793d439d862b2a8125d21a41c72bffaef642f655c4188fac7a7ec84707e50e8",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageLinkDestination.kt": "b24cdd524d673b7ef6f2c92e9e957442dd4e884b08623aefe851adebc9f65113",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "8cf16e9101a32adcda2ca6ecd588f5b40a65842286d393fc3a08ccd0b66e07c9",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "5b09be996f07df05a963ff04050a8d752972f401d643f9390b9c8165402cc22f"
+  },
+  "scope": "Android Codex resource wire and native cache pipeline; original-message context captured separately from arbitrary file DTO. File UI/actual resource transfer not yet accepted.",
+  "implemented": [
+    "Named Provider resolveMessageFile; strict host/thread/message/reference/readTarget/attachment claims and canonical UUID aliases only",
+    "Only two resolve GETs omit target to match Host whitelist; binary GET and all original control routes keep original target",
+    "Resolve current source before cache; 404 only old Host exact-version fallback, 410 never cache resurrection",
+    "409 retries at most one new resolve/download read; new runtime claims reject before second binary read",
+    "Cache partitions full machine/thread/version, ignores Codex historical account metadata; basename/size/hash and bounded atomic publication",
+    "Binary cancellation removes unpublished temp; no redirects or Host credentials sent to another destination; resolution JSON limited to 1MiB",
+    "Session refuses late resolver/download result after original selection/connection/message changes; UI callback integration still pending"
+  ],
+  "nativeAuxiliary": {
+    "currentCases": 51,
+    "resourceBoundaryCases": 36,
+    "messageLinkRegressionCases": 15,
+    "environments": ["physical Android API33 portrait", "API26 portrait", "API37 portrait"],
+    "defaultStorageProofsIncludingGeneralRead": 52,
+    "resourceSizeEdges": [0, 20971520],
+    "retargetedAndMalformedClaimsRejected": true,
+    "oneSyntheticControlPostPerEnvironment": "In-memory HTTP fixture only; proves original query/body target retained and no replay. Not a real model input.",
+    "appSha256": "a8d6bd7d66a16d4516df1003a79b246db33e1198b8d3c0afff4649103b2b6261",
+    "runnerSha256": "3f4a76f86009bd3594eda849badbf02a90ef754ffd7d55de82a4c951a279df19",
+    "sourceSha256": "26ba69d2ab7858e805db9378e1f66fdc80dbe9a021ca47cdcc62bc34c192aad2",
+    "ownedRegressionImagesReviewed": 9
+  },
+  "actualGeneralReplyRead": {
+    "nativeMethods": 1,
+    "httpGetRequests": 5,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "originalOwnerAndTurnSummaryUnchanged": true,
+    "imagesReviewed": 3,
+    "scope": "Current App reads prior actual reply and changes/restores local plan choice while preserving original draft/files. No actual resource transfer or preview proof."
+  },
+  "dualEndComparison": {
+    "iosSource": "HostService.swift resolveMessageFile/currentAttachment/downloadVersion",
+    "aligned": "Original claims, current-before-cache, 404/410 and bounded 409 reads. No iOS source change in this slice.",
+    "openGap": "Current iOS binary download lacks explicit target query and cache directory lacks full machine/thread namespace. Register for follow-on hardening and dual-end checks; do not claim full F32 parity."
+  },
+  "checks": {
+    "androidBuild": "passed",
+    "rootWorkspaceIosShared": "exact source match to P6-4a, retained results only",
+    "matchedSourceSha256": "1c02e677f8e9bff9450c84c0ec96352ce75dadfe7e585af1dfbc4f76149018f6",
+    "formatAndParity": "passed"
+  },
+  "failuresRetained": "Three initial native cohorts failed only old binary target-query assertion; no methods promoted from failed cohorts. Final entire 17-method cohorts each passed.",
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeFeatureClosed": false,
+  "pending": [
+    "Original-message inline loading/highlight and file preview/share",
+    "Actual resource model-reply path and bytes with independent source/desktop check",
+    "Late resource callbacks/target changes through native UI",
+    "iOS binary target and cache namespace hardening",
+    "Full system browser/clipboard/AX and resource/appearance matrix"
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "phase": "P6-6a",
+  "sourceBase": "915e656537f8b2415ca65017bb25014841d7e3b3",
+  "features": ["F19", "F20", "F32", "F56"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "0b88ed7eaab5a02a29022620ba8b9406adca474600f1f45b14851d82c8378f77",
+    "apps/android/src/main/kotlin/com/agenthub/android/MarkdownContent.kt": "b0566c96885e94fcc775b532b86eb5c01276856858649191bc8d8e1da0303175",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageActionLayout.kt": "5f280329a581ca85b2a3850647ae8b39660a2dbeba595da401f9991b59462527",
+    "apps/android/src/main/kotlin/com/agenthub/android/MessageResourceCards.kt": "89e4db1617c3a8b69f6b95491c01a38c924fc24eb3e4d04cf1543632b1c1e505",
+    "apps/android/src/main/kotlin/com/agenthub/android/ToolContent.kt": "61457fafe12a02d8306e05edad3cd7c9504111154f3b6a9cc97ffb3b9c0bc8bf",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileMessageActionOverlapTest.kt": "82684ab9b77476d3e827cb18eae3189a0109ae17afcdc896cde54d4d4ea76b1b",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileCodeReadOnlyLiveTest.kt": "adc7937588b90fda23cfe1e308fa2f6513e39a78387c61ea23ded483b158e332"
+  },
+  "summary": "P6-6a：消息列表内代码/工具复制与资源分享预留浮动入口空间；弹层默认不留，代码语言单行省略但保留完整读屏值，复制至少48dp。67项辅助、6项实际原代码/工具资源只读整例和73份默认存储证明通过；真机/API37原代码系统复制匹配，API26空剪贴板保护性未写入，单列待验。完整P6未关闭。",
+  "checks": {
+    "androidBuild": "current passed",
+    "pnpmCheck": "matched P6-5d complete run: all 604 shared/JS/iOS/tooling inputs byte equal; Android delta built and natively checked now",
+    "rootLogSha256": "3d57e25ec5c09382c3701553dcc56f3a8dc2b17cee56167284bab422a9640bc7",
+    "matchedSourceInputs": 604,
+    "nonzeroSkipGroups": [1, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "iosBuild": "matched unchanged P6-5d simulator build; not current iOS App UI or phone acceptance",
+    "mobileParity": "current passed",
+    "format": "current passed",
+    "androidApprovalGuard": "current passed"
+  },
+  "nativeAuxiliary": {
+    "methods": 67,
+    "normal": 57,
+    "style": 10,
+    "environments": [
+      "physical API33 portrait light",
+      "API26 portrait light",
+      "API37 portrait light",
+      "API26 font scale 2",
+      "API37 portrait dark"
+    ],
+    "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+    "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+    "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+    "clipboardRecorder": "auxiliary raw payload verification; system clipboard untouched",
+    "chooser": "intercepted exact text/plain payload, not external recipient acceptance"
+  },
+  "actualOriginalReads": {
+    "methods": 6,
+    "rows": [
+      {
+        "environment": "API37 portrait",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 32,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+        "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+        "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+        "ownerTurnsUnchanged": true,
+        "newModelInputs": 0,
+        "routesRestored": true,
+        "nativeReportSha256": "97d213654a080f37c19f67fcdc0d5f178f3f3a9f18468e032189e5093ad6a1a5",
+        "hostReportSha256": "18a923e46e12be5d67aca6f04a86686d77256a50b02165f1ddac980c933d8774",
+        "proofSha256": "7799460436b6cc4b3e0112ec77610f09d7a4b6c96d1ff57b7ecc8ea180b5723f",
+        "toolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+        "resourceGets": 4
+      },
+      {
+        "environment": "physical API33",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 43,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+        "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+        "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+        "ownerTurnsUnchanged": true,
+        "newModelInputs": 0,
+        "routesRestored": true,
+        "nativeReportSha256": "3c0db968e708dc99d8d1155b9af64f42c314f55607bd69c0b4902e200ee64289",
+        "hostReportSha256": "0a7ff740198a22fa3030b2298fc45971fba134240bb0e5a56f991e1c0d613247",
+        "proofSha256": "7799460436b6cc4b3e0112ec77610f09d7a4b6c96d1ff57b7ecc8ea180b5723f",
+        "toolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+        "resourceGets": 4
+      },
+      {
+        "environment": "API37 portrait",
+        "kind": "code",
+        "http": {
+          "requests": 14,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+        "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+        "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+        "ownerTurnsUnchanged": true,
+        "newModelInputs": 0,
+        "routesRestored": true,
+        "nativeReportSha256": "772253017aa4e4c9accd4087cb19fa509cc38d9b9c01212db531a31b723be549",
+        "hostReportSha256": "4e975153141772c292d67e082a927d1d1b73fbc6746e98f5cd76f5b012144d28",
+        "systemCopyAttempted": true,
+        "systemCopyMatched": true,
+        "api26ClipboardPending": false,
+        "proofSha256": "f274c2169a4b74c17f37cd85b520f04ce4d8956e550b986f77861701cb611780"
+      },
+      {
+        "environment": "API26",
+        "kind": "tool-resource",
+        "http": {
+          "requests": 35,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+        "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+        "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+        "ownerTurnsUnchanged": true,
+        "newModelInputs": 0,
+        "routesRestored": true,
+        "nativeReportSha256": "f084df112a89f12c13dc077aeae2b0fcf381235b8c3901e607b63d5b0501b294",
+        "hostReportSha256": "68e8d34de8558318be47765387eb0253c0926a9178614118cb00dc9e24e5c564",
+        "proofSha256": "7799460436b6cc4b3e0112ec77610f09d7a4b6c96d1ff57b7ecc8ea180b5723f",
+        "toolProofSha256": "5c6805521b91729cff8f69f659326e225d76bece81880a2b6aa01947c57b044f",
+        "resourceGets": 4
+      },
+      {
+        "environment": "physical API33",
+        "kind": "code",
+        "http": {
+          "requests": 17,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+        "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+        "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+        "ownerTurnsUnchanged": true,
+        "newModelInputs": 0,
+        "routesRestored": true,
+        "nativeReportSha256": "713a30219a0125d522174f7bdfbd049191b9da87b4947d9ab333fae104af3760",
+        "hostReportSha256": "505fbb996300470d6e952b8a9c72b4464885fb8582db849910419bfbce1fa491",
+        "systemCopyAttempted": true,
+        "systemCopyMatched": true,
+        "api26ClipboardPending": false,
+        "proofSha256": "f274c2169a4b74c17f37cd85b520f04ce4d8956e550b986f77861701cb611780"
+      },
+      {
+        "environment": "API26",
+        "kind": "code",
+        "http": {
+          "requests": 20,
+          "methods": ["GET"],
+          "writeRequests": 0
+        },
+        "sourceSha256": "bc10c083f239736dc969d3c308312b97820995b0b8155b86d8d77a2b106c93c9",
+        "appSha256": "2c1fc47b6888fa5aca5740e16cfcf9f26935f0cfa0bb30a30a675ea6a7f960de",
+        "testSha256": "250a369f47398f1cf381410df6d2c0d2ae676463e1fc061b0f1f5b44bb9dc8f7",
+        "ownerTurnsUnchanged": true,
+        "newModelInputs": 0,
+        "routesRestored": true,
+        "nativeReportSha256": "955792edc78e5000261406266faabb463c2dc31b7ef60f37b85597fe9a08340b",
+        "hostReportSha256": "ba2e25e89c20450a1644590cb29e0a33197e212579555f481b8fb6ce823bd55a",
+        "systemCopyAttempted": false,
+        "systemCopyMatched": false,
+        "api26ClipboardPending": true,
+        "proofSha256": "de84345df218b73a3e47cf82cc6e818151d7654a9e4e9e44537a188c78e7f9c4"
+      }
+    ],
+    "httpRequests": 161,
+    "writeRequests": 0,
+    "newModelInputs": 0,
+    "codeSystemCopiesMatched": 2,
+    "api26CopyWithEmptyPriorClipboard": "not attempted because API26 cannot restore an empty clipboard without inventing content",
+    "codeSelectionToolbar": "not covered by whole-code-button check",
+    "resourceChooser": "intercepted, not external recipient",
+    "ownerAndTurnsUnchanged": true
+  },
+  "defaultStorageProofs": 73,
+  "failuresRetained": [
+    "Old normal-size baseline: code copy center covered by floating latest on all three platforms; tool/reply positive controls passed",
+    "Intermediate candidate API26 font scale 2: tool copy center also covered; final product adds the same list-scoped lane",
+    "Initial code examiner Elvis/if compile error corrected only in test",
+    "Two intermediate GET-only code scenes passed native UI but failed instantaneous post-owner snapshot assertion; retained as failed whole scenes. Bounded fresh read-only observer retry added to examiner, original before/after Turn hashes independently matched; no product owner relaxation"
+  ],
+  "pending": [
+    "API37 landscape",
+    "API26 system Copy when prior clipboard empty; system selection/toolbar matrix",
+    "All iOS current App/physical and complete theme/AX/token/format matrices",
+    "External actual recipients/save providers and full file formats",
+    "Natural recovery and other environmental pending remain separate"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 219,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false,
+  "visualReview": {
+    "selectedAuxiliaryImages": 10,
+    "selectedActualCodeImages": 3,
+    "scope": "bounded action positions and original code; full rendering matrix remains open"
+  }
+}

@@ -16,6 +16,7 @@ const sources = {
   'native-version': 'DesktopSuggestionDisplaySmoke.swift',
   'runtime-version': 'DesktopSuggestionDisplaySmoke.swift',
   'read-ahead': 'DesktopSuggestionReadAheadSmoke.swift',
+  'shared-vectors': 'DesktopSuggestionSharedVectors.swift',
 };
 if (check !== 'all' && !Object.hasOwn(sources, check)) throw Error('Unknown suggestion check');
 if (process.platform !== 'darwin') {
@@ -26,6 +27,22 @@ const env = {
   ...process.env,
   DEVELOPER_DIR: process.env.DEVELOPER_DIR || '/Applications/Xcode.app/Contents/Developer',
 };
+const nativeTarget = process.arch === 'arm64' ? 'MacosArm64' : 'MacosX64';
+execFileSync(
+  process.execPath,
+  ['scripts/mobile/gradle.mjs', ':mobile-core:linkDebugFramework' + nativeTarget],
+  {
+    cwd: root,
+    env,
+    stdio: 'inherit',
+  },
+);
+const framework = join(
+  root,
+  '.build/native/mobile-core/bin',
+  process.arch === 'arm64' ? 'macosArm64' : 'macosX64',
+  'debugFramework',
+);
 for (const name of check === 'all' ? Object.keys(sources) : [check]) {
   const executable = join(output, 'desktop-suggestions-' + name);
   execFileSync(
@@ -39,6 +56,10 @@ for (const name of check === 'all' ? Object.keys(sources) : [check]) {
       '-warnings-as-errors',
       '-module-cache-path',
       join(output, 'module-cache'),
+      '-F',
+      framework,
+      '-framework',
+      'MobileCore',
       'apps/ios/Sources/Localization.swift',
       'apps/ios/Sources/ThreadReading.swift',
       'apps/ios/Sources/NotificationModels.swift',
@@ -49,5 +70,9 @@ for (const name of check === 'all' ? Object.keys(sources) : [check]) {
     ],
     { cwd: root, env, stdio: 'inherit' },
   );
-  execFileSync(executable, [name], { env, stdio: 'inherit' });
+  execFileSync(
+    executable,
+    [name, join(root, 'packages/protocol/fixtures/mobile/desktop-suggestions-v1.json')],
+    { env, stdio: 'inherit' },
+  );
 }

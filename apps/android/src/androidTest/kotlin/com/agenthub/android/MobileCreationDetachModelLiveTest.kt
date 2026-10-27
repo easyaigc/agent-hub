@@ -51,8 +51,8 @@ class MobileCreationDetachModelLiveTest {
         ui.onNodeWithTag("sheet-done").performClick()
         assertEquals(fixture.getString("model"),session.generationSettings.model);assertEquals("xhigh",session.generationSettings.effort)
         assertEquals("fast",session.generationSettings.speed);assertEquals("read-only",session.generationSettings.permissionMode)
-        if(session.selectedCollaboration!="plan") { ui.onNodeWithTag("composer-add").performClick();ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick() }
-        ui.onNodeWithTag("composer-add").performClick();ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick()
+        if(session.selectedCollaboration!="plan") { ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick() }
+        ui.onNodeWithTag("toggle-plan-mode").assertIsEnabled().performClick()
         assertEquals("default",session.generationSettings.collaborationMode)
     }
     private fun focusedWindow(): android.view.Window {

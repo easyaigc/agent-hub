@@ -1,0 +1,295 @@
+{
+  "phase": "P7-5a",
+  "sourceBase": "4245595ddb024e7312f9acf1ea18828c279b5ab8",
+  "features": ["F04", "F25", "F30", "F31", "F47", "F56", "F71"],
+  "summary": "P7-5a：恢复页不再撤销已成功解密但格式错误的父草稿所对应原附件回调，先独立加密、父记录保持不可写；读取中或父密文校验失败则留原结果在系统registry，明确读取恢复后只向原草稿消费，不重开入口或发送。三环境各61项、6暗色大字号、API37系统拍摄/取消2项与三环境原回复只读通过；完整存储/迁移与系统冷异常矩阵仍开。",
+  "sourceSha256": "9c3adc3cc50437cdc8d3e02fa7d67efe7e34cd68b4337eeb1f9d6b7e8d48de8f",
+  "expandedSourceSha256": "e7c9a72b8080296063a90dc1a93fb0c9c31cefe02745067762eb89a911aac960",
+  "nativeInputFiles": 419,
+  "appSha256": "62dd66c6b51fab86c7cebf3d7de69cba37ee7a870b24a6ddb27d5e8a13f8f9f3",
+  "runnerSha256": "adebd9f706e53eec8ec908176356a3506bceb2ab70a05026493092dd40eadd77",
+  "changedFiles": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalRecoveryAttachmentTest.kt": "aeb0dbaeb3f6e74b1fd61fde24b946c8e624c3da9e3be1caf1146e307af89cce",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalRecoveryUiTest.kt": "1aee90f5eb5ddc6f731cfdf0626725faddb635008fcc713eff998ef1eee9c42c",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "85626b2a676e864125eddbf2a6c342ef1a9e683c62faf36977b8d8a11225dd57",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "881217573e57e49d4610214acc64b1d267d5b96fa1428dae619e0b6800dc7dd3"
+  },
+  "behavior": [
+    "父恢复读取期间不消费原系统回调",
+    "父元数据已解密但JSON/格式不合法时，原文件/照片/相机只进独立加密暂存，父坏密文逐字节保持",
+    "父密文AEAD校验失败时原回调留在Android registry，journal保持原launched且无新暂存；相机原输出保留",
+    "测试仅恢复自有样例的准确原密文后点击明确重试；原草稿/文件字节及代次保持，只加一次",
+    "旧相机授权拒绝在已认证格式失败下有界登记，读取恢复不重复权限或相机请求",
+    "重复回调不追加、不上传或发送"
+  ],
+  "baselineRegression": {
+    "environment": "owned-API37",
+    "failure": "correctly prepared original document result did not reach ready within 20000ms after parent recovery gate appeared",
+    "beforeAppSha256": "117456758ebcd57a36479763fbc04b31173a21edb684b113b9ff9420521757ca",
+    "initialFixedAppSha256": "1254630cb5215b128102f3ec815c74f8418efdbdaea3cfe76fcaf3746c1e6576",
+    "sameRunnerAcrossInitialLogicalFix": true,
+    "initialRunnerSha256": "05276e27c88c4340328e365e82d0f62b3ebcd024bc23f398cea1d072c4f18233",
+    "finalRunnerAddsAuthenticationAndInflightReadAssertions": true
+  },
+  "nativeCohorts": [
+    {
+      "environment": "owned-API26",
+      "methods": 61,
+      "newParentResultMethods": 7,
+      "chineseOriginalRecoveryMethod": 1,
+      "systemChooserCancelMethods": 2,
+      "groups": [
+        {
+          "methods": 8,
+          "reportSha256": "e136acff028fe583bda05eef826504c5b91beac19302c7b0ed0ba35274310fa4"
+        },
+        {
+          "methods": 17,
+          "reportSha256": "75b89db4b9de14e6c6448140c60272e5e8c0c6ef1d5d76bf55dee69af7f44a91"
+        },
+        {
+          "methods": 14,
+          "reportSha256": "cc8cd9935b19400851490758b8e8586501523d84923550df5bb3704c5861f9e0"
+        },
+        {
+          "methods": 16,
+          "reportSha256": "336589221bffeb8022abe1bb19bdead8422809b2cf0859a393c597dbc2846ee6"
+        },
+        {
+          "methods": 6,
+          "reportSha256": "a884c4e6e9a81f7982e49290dd652d710bf6ccf2d7372157aa6d93ff1adf9f92"
+        }
+      ],
+      "legacyChineseImages": [
+        {
+          "state": "unreadable-original-protected",
+          "sha256": "48c3374d0054126870071b5662bef24aed08bf06ea1f46bc575e0171f8d44a26"
+        },
+        {
+          "state": "retry-restores-original-draft",
+          "sha256": "ea581f8cac6e279e62db280a7843f340c1b3a362d77204b19eba341bcd1ece8d"
+        }
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "methods": 61,
+      "newParentResultMethods": 7,
+      "chineseOriginalRecoveryMethod": 1,
+      "systemChooserCancelMethods": 2,
+      "groups": [
+        {
+          "methods": 8,
+          "reportSha256": "541c79355becf2e8ad6413bc4d947dc740054fc7da033b1d1f0a654b443febae"
+        },
+        {
+          "methods": 17,
+          "reportSha256": "0e1e1ecb02d51b49d27355ef19333c2c993d37f64ddd417d96e0ba259e247309"
+        },
+        {
+          "methods": 14,
+          "reportSha256": "237e8cf26487f7a41eb5704ffddbc93ac1bca7d58cd936a65880df832a512531"
+        },
+        {
+          "methods": 16,
+          "reportSha256": "f1e3acd11f4232b2ae01de9f4cef8d7c71697226579f336c1829fe0e0b0dffe7"
+        },
+        {
+          "methods": 6,
+          "reportSha256": "7ef911b57cd3bc36566cc3e5bdaeea84c1c87953a819021bd703aa476e014b98"
+        }
+      ],
+      "legacyChineseImages": [
+        {
+          "state": "unreadable-original-protected",
+          "sha256": "56ecdedbed3d72bf796f773fbb8e8c6c014bf19b17af44f8dfef976ed0a31058"
+        },
+        {
+          "state": "retry-restores-original-draft",
+          "sha256": "46a58f7960ead08b967ed8cee6db376eae0f75dce386b267d3c02274ace50597"
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 61,
+      "newParentResultMethods": 7,
+      "chineseOriginalRecoveryMethod": 1,
+      "systemChooserCancelMethods": 2,
+      "groups": [
+        {
+          "methods": 8,
+          "reportSha256": "351d3dbafeb96efb75d6b09107aa3ffd2c04aa47d1204381d7c116bf6a13d82d"
+        },
+        {
+          "methods": 17,
+          "reportSha256": "7a5d59873ce257687b9133a973edd2b57084032a3730864de281efdde722bfad"
+        },
+        {
+          "methods": 14,
+          "reportSha256": "803110645a7a04dd0631c10707c76cb20119b7a280fc51f76677002d359b9586"
+        },
+        {
+          "methods": 16,
+          "reportSha256": "df8bf8189658a9c2628370732961e0d37e57a28ba56ffd08e1f13299fef91c79"
+        },
+        {
+          "methods": 6,
+          "reportSha256": "c9d943d56c8a171fb7a8dc82cbbc2336564a0a016ad1155b195b4c39c948dd42"
+        }
+      ],
+      "legacyChineseImages": [
+        {
+          "state": "unreadable-original-protected",
+          "sha256": "01efb89119b8286966a7307f696dab68ce6400a41f81a40adc6f393ffac7e87e"
+        },
+        {
+          "state": "retry-restores-original-draft",
+          "sha256": "8ab1df8642a19d96bafb1e4e5ba587b4ff896fb1e7fdf814088929a61d0ce261"
+        }
+      ]
+    }
+  ],
+  "nativeAuxiliaryMethods": 183,
+  "actualSystemMethods": 8,
+  "systemScope": "three environments file/image chooser cancel six methods; API37 emulated external camera take/cancel two, not physical camera or actual process-death under corrupt parent",
+  "darkViewport": [
+    {
+      "environment": "owned-API26",
+      "fontScale": "2",
+      "theme": "dark",
+      "methods": 3,
+      "scope": "authenticated document format failure, unauthenticated camera metadata and original camera permission denial",
+      "images": [
+        {
+          "state": "camera-parent-authentication-unreadable-original-retained",
+          "sha256": "5387def5e9a28220f770638529dfadfc29e42f971f7decf74ddf37d1bcfbbedd"
+        },
+        {
+          "state": "camera-parent-authentication-original-result-after-parent-retry",
+          "sha256": "1f359bf082e07166cd74dfaec705b1639202e598847281b341033dd781661471"
+        },
+        {
+          "state": "document-parent-format-unreadable-original-retained",
+          "sha256": "5387def5e9a28220f770638529dfadfc29e42f971f7decf74ddf37d1bcfbbedd"
+        },
+        {
+          "state": "document-parent-format-original-result-after-parent-retry",
+          "sha256": "0f166f069ceddb3fd80782f63ad7c98c7ffc9742d68d4ca015245fc98d3d4c8a"
+        }
+      ]
+    },
+    {
+      "environment": "owned-API37",
+      "fontScale": "1.3",
+      "theme": "dark",
+      "methods": 3,
+      "scope": "authenticated document format failure, unauthenticated camera metadata and original camera permission denial",
+      "images": [
+        {
+          "state": "document-parent-format-unreadable-original-retained",
+          "sha256": "30aea15ae50811cb5248b6b7aef3dd077363b781592cfaa1af8dc4dabd00ac79"
+        },
+        {
+          "state": "document-parent-format-original-result-after-parent-retry",
+          "sha256": "5f19767f6f6df821aad489a075255a371738a6d56a45edc6189568ad543b242f"
+        },
+        {
+          "state": "camera-parent-authentication-unreadable-original-retained",
+          "sha256": "30aea15ae50811cb5248b6b7aef3dd077363b781592cfaa1af8dc4dabd00ac79"
+        },
+        {
+          "state": "camera-parent-authentication-original-result-after-parent-retry",
+          "sha256": "3f4e689df60c138cc717f463b7a561284f354cb29dfc20305047567240b35506"
+        }
+      ]
+    }
+  ],
+  "readOnlyOriginalReply": [
+    {
+      "environment": "API26",
+      "methods": 1,
+      "originalOwnerAndTurnsUnchanged": true,
+      "writeRequests": 0,
+      "reportSha256": "f5d4a2cd31d2e3a9af5d9783502523d804383d811deba50a6454f94779471b9e"
+    },
+    {
+      "environment": "API37",
+      "methods": 1,
+      "originalOwnerAndTurnsUnchanged": true,
+      "writeRequests": 0,
+      "reportSha256": "3ccc02b4a2babdd33ee20d4167a1819732e7d198ad7700e4f5525ad78419e066"
+    },
+    {
+      "environment": "physical",
+      "methods": 1,
+      "originalOwnerAndTurnsUnchanged": true,
+      "writeRequests": 0,
+      "reportSha256": "459725d1050fb87dd4626db1670341efac47fb4d7570dc19237e7e061b7c773b"
+    }
+  ],
+  "totalEffectiveNativeMethods": 194,
+  "defaultStorageProofs": 191,
+  "defaultProofFields": [
+    "draftsPreserved",
+    "draftFilesPreserved",
+    "draftVersionsPreserved",
+    "attachmentImportGenerationsPreserved",
+    "recentPhotoPreferencesPreserved",
+    "photoAuthorizationPreserved",
+    "documentRequestsPreserved",
+    "photoRequestsPreserved",
+    "cameraRequestsPreserved",
+    "cameraOutputsPreserved"
+  ],
+  "defaultProofIndexSha256": "3becfa1e9738072307f4206cf22d947f021d1d40aa6f71077da299ce72115725",
+  "legacyOwnCiphertextRecoveryMethodsWithoutTenFieldDefaultProof": 3,
+  "catalog": {
+    "bilingualKeys": 1699,
+    "sharedKeys": 1603,
+    "androidOnlyKeys": 96,
+    "resourceSourceUnchanged": true
+  },
+  "rootCheckReuse": {
+    "baselineInputs": 1013,
+    "exactMatchingInputs": 1007,
+    "changedInputs": {
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java": "25f82e9e7f84e4cea24157332f02506f9a89cff140938852815496d3880eb34d",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java": "2d0aa02dfe2bb3d7fdab00f3dfb557476a0b42cf82f0fb75fb0d683678980ed3",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java": "355d7dbd7a1f1000da63f0b42c4d5d9dbe6e3a04299c4edfe818bdd29d30299e",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalRecoveryUiTest.kt": "1aee90f5eb5ddc6f731cfdf0626725faddb635008fcc713eff998ef1eee9c42c",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "85626b2a676e864125eddbf2a6c342ef1a9e683c62faf36977b8d8a11225dd57",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "881217573e57e49d4610214acc64b1d267d5b96fa1428dae619e0b6800dc7dd3"
+    },
+    "newNativeInputs": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLocalRecoveryAttachmentTest.kt"
+    ],
+    "fullCheckRerun": false
+  },
+  "iosSourceReview": {
+    "path": "apps/ios/Sources/RootView.swift",
+    "sha256": "ea30865b26d3a449b3875e8f7a0c2278fd0da49f0916d6387dedc258d2509a46",
+    "scope": "local recovery overlay, retained original data, explicit retry and no empty writes; source comparison only",
+    "iosSourceChanged": false,
+    "currentIosNativeVerification": false,
+    "iosA6Paused": true
+  },
+  "failuresRetained": [
+    "initial test helper used nonexistent adoption name; compile failed, following stale-runner/class-missing attempt is excluded from product regression proof",
+    "fixture left its owned session backgrounded before original selection, failed before parent corruption; corrected foreground preparation without changing product",
+    "valid before-fix candidate timed out waiting original document ready behind parent gate; initial callback placement fix with identical runner passed",
+    "old recovery fixture assumed Chinese while current default follows system English; fixture now explicitly owns Chinese and verifies language/dark appearance restoration; complete earlier cohorts not promoted",
+    "phone initially had foreign active instrumentation, no install or test; only after two separate clear snapshots and no foreign phone controller did final candidate install/run"
+  ],
+  "pending": [
+    "真实Keystore不可用/锁定、磁盘I/O/权限/配额、迁移/版本/回滚及完整存储矩阵；AEAD样例不是实际设备锁定证明",
+    "父资料故障时真实系统选择器/实际进程死亡与自然异常完整组合；本批回调为受控registry，不能替代",
+    "API26首次相机原调用链、原相机AX及时性、手机独立观察APK和长批原生稳定性",
+    "完整主题/字号/IME/AX/旋转/API37横屏、语音与未读生命周期",
+    "iOS当前原生恢复矩阵未重验；iOS A6与任务/项目业务继续暂停"
+  ],
+  "newRealModelInputs": 0,
+  "allPhasesCumulativeInputs": 220,
+  "p4CumulativeInputs": 205,
+  "wholeStageClosed": false
+}

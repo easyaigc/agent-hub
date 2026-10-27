@@ -1,0 +1,1110 @@
+diff --git a/apps/host-agent/src/runtime-server.ts b/apps/host-agent/src/runtime-server.ts
+index fe4f82c2..36d9b9f1 100644
+--- a/apps/host-agent/src/runtime-server.ts
++++ b/apps/host-agent/src/runtime-server.ts
+@@ -730,7 +730,8 @@ export async function startRuntimeServer() {
+               ownsFencedSlot = true;
+             }
+             active();
+-            suggestionObserver.assertBoundReadAvailable(target);
++            if (!suggestionObserver.usesFencedSourceRead)
++              suggestionObserver.assertBoundReadAvailable(target);
+             active();
+             if (suggestionObserver.usesFencedSourceRead)
+               resumeBackground = session.deferBackgroundPersistence(lifetime.signal);
+@@ -744,6 +745,11 @@ export async function startRuntimeServer() {
+             await source(); // Exact original owner and latest completed source turn.
+             let confirmed;
+             if (suggestionObserver.usesFencedSourceRead) {
++              // The required fresh owner IPC yields Main while background
++              // writes are held, so queued reader samples can be received.
++              // Check current readiness after that yield; never renew an old
++              // sample or issue Native work while the reader is unavailable.
++              suggestionObserver.assertBoundReadAvailable(target);
+               prepared = await traced('prepare', () =>
+                 within(() =>
+                   suggestionObserver.prepareBoundSourceAsync(
+diff --git a/packages/codex-adapter/src/desktop-platform.ts b/packages/codex-adapter/src/desktop-platform.ts
+index 20143c3e..5835f522 100644
+--- a/packages/codex-adapter/src/desktop-platform.ts
++++ b/packages/codex-adapter/src/desktop-platform.ts
+@@ -17,6 +17,7 @@ import {
+   statSync,
+ } from 'node:fs';
+ import { basename, dirname, join, resolve } from 'node:path';
++import { lstat } from 'node:fs/promises';
+ import { fileURLToPath } from 'node:url';
+ import { Duplex } from 'node:stream';
+ import { isMainThread, threadId } from 'node:worker_threads';
+@@ -214,6 +215,9 @@ export function windowsPrivateStateNativeExecutable(active?: () => boolean): str
+   return windowsPrivateStateExecutable('private-state', active);
+ }
+ let privateStateBackend: ReturnType<typeof createWindowsPrivateStateBackend> | undefined;
++let privateStateAsyncBackend: ReturnType<typeof createWindowsPrivateStateBackend> | undefined;
++let privateStateAsyncQueue: Promise<void> = Promise.resolve();
++let privateStateAsyncGeneration = 0;
+ function privateState(action: 'protect' | 'protect-file' | 'check', path: string): void {
+   // A later independent call may create a new channel only after confirmed child exit.
+   // Never retry this call, including when its operation may already have executed.
+@@ -222,7 +226,12 @@ function privateState(action: 'protect' | 'protect-file' | 'check', path: string
+   privateStateBackend.call(action, path);
+ }
+ export function closeWindowsPrivateStateBackend(): void {
+-  privateStateBackend?.close();
++  privateStateAsyncGeneration++;
++  try {
++    privateStateBackend?.close();
++  } finally {
++    privateStateAsyncBackend?.close();
++  }
+ }
+ 
+ /** Explicit, verified aliases for the same product's helper storage only. */
+@@ -273,6 +282,37 @@ export function protectWindowsStateFile(path: string): void {
+   if (process.platform === 'win32') privateState('protect-file', path);
+ }
+ 
++/** Independent channel: explicit synchronous barriers never share its in-flight slot. */
++export function protectWindowsStateFileAsync(path: string): Promise<void> {
++  return privateStateAsync('protect-file', path);
++}
++
++function privateStateAsync(action: 'protect-file' | 'check', path: string): Promise<void> {
++  if (process.platform !== 'win32') return Promise.resolve();
++  const generation = privateStateAsyncGeneration;
++  const call = privateStateAsyncQueue.then(async () => {
++    if (generation !== privateStateAsyncGeneration)
++      throw Object.assign(new Error('Windows private state unavailable'), {
++        code: 'WINDOWS_PRIVATE_STATE_UNAVAILABLE',
++      });
++    if (privateStateAsyncBackend?.status.gone) privateStateAsyncBackend = undefined;
++    privateStateAsyncBackend ??= createWindowsPrivateStateBackend();
++    await privateStateAsyncBackend.callAsync(action, path);
++  });
++  privateStateAsyncQueue = call.catch(() => {
++    // A later independent operation may proceed; this caller still receives its rejection.
++  });
++  return call;
++}
++
++export async function assertPrivateFileAsync(path: string): Promise<void> {
++  const stat = await lstat(path);
++  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe private file');
++  if (process.platform === 'win32') await privateStateAsync('check', path);
++  else if (stat.uid !== process.getuid?.() || stat.mode & 0o022)
++    throw new Error('Unsafe private file');
++}
++
+ /** Handle-based Windows trace read. Never uses POSIX mode bits as an ACL check. */
+ export function windowsTraceSnapshot(
+   root: string,
+diff --git a/packages/codex-adapter/src/desktop-private-state-native.ts b/packages/codex-adapter/src/desktop-private-state-native.ts
+index dc2df86c..bd8a1bd1 100644
+--- a/packages/codex-adapter/src/desktop-private-state-native.ts
++++ b/packages/codex-adapter/src/desktop-private-state-native.ts
+@@ -1,3 +1,4 @@
++/// <reference lib="es2024.sharedmemory" />
+ import {
+   Worker,
+   MessageChannel,
+@@ -510,6 +511,69 @@ export function createWindowsPrivateStateBackend(
+   process.once('beforeExit', cleanup);
+   process.once('exit', cleanup);
+   parentPort?.once('close', cleanup);
++  function* operation(
++    action: WindowsPrivateStateAction,
++    path: string,
++  ): Generator<{ index: number; expected: number; timeout: number }, void, void> {
++    if (
++      closed ||
++      busy ||
++      !['protect', 'protect-file', 'check'].includes(action) ||
++      !privateStatePath(path) ||
++      !privateStatePath(process.cwd())
++    )
++      throw unavailable();
++    busy = true;
++    try {
++      const startup = performance.now() + timeouts.startupMs;
++      while (Atomics.load(control, p.state) === p.starting) {
++        const remaining = startup - performance.now();
++        if (remaining <= 0) throw unavailable();
++        yield { index: p.state, expected: p.starting, timeout: remaining };
++      }
++      if (
++        Atomics.load(control, p.state) !== p.ready ||
++        performance.now() >= startup ||
++        nextId === 0x7fffffff
++      )
++        throw unavailable();
++      const id = ++nextId;
++      const deadline = performance.now() + timeouts.operationMs;
++      Atomics.store(control, p.request, id);
++      Atomics.store(control, p.result, p.waiting);
++      worker.postMessage({ kind: 'call', id, action, path, cwd: process.cwd(), deadline });
++      while (Atomics.load(control, p.result) === p.waiting) {
++        const remaining = deadline - performance.now();
++        if (remaining <= 0) throw unavailable();
++        yield { index: p.result, expected: p.waiting, timeout: remaining };
++      }
++      const length = Atomics.load(control, p.length);
++      if (
++        Atomics.load(control, p.state) !== p.ready ||
++        performance.now() >= deadline ||
++        Atomics.load(control, p.response) !== id ||
++        length <= 0 ||
++        length > bytes.length
++      )
++        throw unavailable();
++      const response = Buffer.from(bytes.subarray(0, length)).toString('utf8');
++      if (Atomics.load(control, p.result) === p.ok && response === 'PRIVATE_STATE_OK') return;
++      if (
++        Atomics.load(control, p.result) === p.rejected &&
++        /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}$/.exec(response)?.[0] === response
++      )
++        throw Object.assign(new Error('Windows private state rejected'), {
++          code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
++          nativeError: response,
++        });
++      throw unavailable();
++    } catch (error) {
++      if ((error as { code?: string }).code !== 'UNSAFE_WINDOWS_PRIVATE_STATE') fail();
++      throw error;
++    } finally {
++      busy = false;
++    }
++  }
+   return {
+     get status() {
+       return {
+@@ -520,64 +584,27 @@ export function createWindowsPrivateStateBackend(
+       };
+     },
+     call(action: WindowsPrivateStateAction, path: string): void {
+-      if (
+-        closed ||
+-        busy ||
+-        !['protect', 'protect-file', 'check'].includes(action) ||
+-        !privateStatePath(path) ||
+-        !privateStatePath(process.cwd())
+-      )
+-        throw unavailable();
+-      busy = true;
++      for (const wait of operation(action, path))
++        Atomics.wait(control, wait.index, wait.expected, wait.timeout);
++    },
++    async callAsync(action: WindowsPrivateStateAction, path: string): Promise<void> {
++      const iterator = operation(action, path);
++      let next = iterator.next();
++      if (next.done) return;
++      worker.ref();
+       try {
+-        const startup = performance.now() + timeouts.startupMs;
+-        while (Atomics.load(control, p.state) === p.starting) {
+-          const remaining = startup - performance.now();
+-          if (remaining <= 0) throw unavailable();
+-          Atomics.wait(control, p.state, p.starting, remaining);
++        while (!next.done) {
++          await Atomics.waitAsync(
++            control,
++            next.value.index,
++            next.value.expected,
++            next.value.timeout,
++          ).value;
++          next = iterator.next();
+         }
+-        if (
+-          Atomics.load(control, p.state) !== p.ready ||
+-          performance.now() >= startup ||
+-          nextId === 0x7fffffff
+-        )
+-          throw unavailable();
+-        const id = ++nextId;
+-        const deadline = performance.now() + timeouts.operationMs;
+-        Atomics.store(control, p.request, id);
+-        Atomics.store(control, p.result, p.waiting);
+-        worker.postMessage({ kind: 'call', id, action, path, cwd: process.cwd(), deadline });
+-        while (Atomics.load(control, p.result) === p.waiting) {
+-          const remaining = deadline - performance.now();
+-          if (remaining <= 0) throw unavailable();
+-          Atomics.wait(control, p.result, p.waiting, remaining);
+-        }
+-        const length = Atomics.load(control, p.length);
+-        if (
+-          Atomics.load(control, p.state) !== p.ready ||
+-          performance.now() >= deadline ||
+-          Atomics.load(control, p.response) !== id ||
+-          length <= 0 ||
+-          length > bytes.length
+-        )
+-          throw unavailable();
+-        const response = Buffer.from(bytes.subarray(0, length)).toString('utf8');
+-        if (Atomics.load(control, p.result) === p.ok && response === 'PRIVATE_STATE_OK') return;
+-        if (
+-          Atomics.load(control, p.result) === p.rejected &&
+-          /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}$/.exec(response)?.[0] ===
+-            response
+-        )
+-          throw Object.assign(new Error('Windows private state rejected'), {
+-            code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
+-            nativeError: response,
+-          });
+-        throw unavailable();
+-      } catch (error) {
+-        if ((error as { code?: string }).code !== 'UNSAFE_WINDOWS_PRIVATE_STATE') fail();
+-        throw error;
+       } finally {
+-        busy = false;
++        iterator.return();
++        worker.unref();
+       }
+     },
+     close,
+diff --git a/packages/codex-adapter/src/runtime-persistence.ts b/packages/codex-adapter/src/runtime-persistence.ts
+index 52601904..53da5532 100644
+--- a/packages/codex-adapter/src/runtime-persistence.ts
++++ b/packages/codex-adapter/src/runtime-persistence.ts
+@@ -12,7 +12,13 @@ import {
+   lstatSync,
+ } from 'node:fs';
+ import { join, dirname, resolve } from 'node:path';
+-import { assertPrivateFile, protectWindowsStateFile } from './desktop-platform.js';
++import { open as openFile, unlink as unlinkFile } from 'node:fs/promises';
++import {
++  assertPrivateFile,
++  assertPrivateFileAsync,
++  protectWindowsStateFile,
++  protectWindowsStateFileAsync,
++} from './desktop-platform.js';
+ import { runtimeFailure } from './runtime-diagnostics.js';
+ import { machineRuntimeTargetKey, parseNotificationTarget } from '@codex-manage/protocol';
+ 
+@@ -34,6 +40,7 @@ export class RuntimePersistenceError extends Error {
+ }
+ interface PersistenceOptions {
+   protect?: typeof protectWindowsStateFile;
++  protectAsync?: typeof protectWindowsStateFileAsync;
+   rename?: typeof renameSync;
+   retryDelays?: readonly number[];
+   cooldownMs?: number;
+@@ -100,6 +107,12 @@ export class RuntimePersistence<State extends RuntimeState> {
+   private backgroundDueAt = 0;
+   private backgroundHolds = 0;
+   private backgroundState: (() => State) | undefined;
++  private backgroundVersion = 0;
++  private writeVersion = 0;
++  private backgroundTask: Promise<void> | undefined;
++  private historyTask: Promise<void> | undefined;
++  private readonly historyVersions = new Map<string, number>();
++  private readonly publicationWaiters = new Set<() => void>();
+   private backgroundAttempt = 0;
+   private backgroundRetryAfter = 0;
+   private readonly failures = new Map<string, { attempt: number; after: number }>();
+@@ -422,7 +435,8 @@ export class RuntimePersistence<State extends RuntimeState> {
+   schedule(state: () => State): void {
+     if (this.closed) return;
+     this.backgroundState = state;
+-    if (this.backgroundTimer) return;
++    this.backgroundVersion++;
++    if (this.backgroundTimer || this.backgroundTask) return;
+     const cooling = this.backgroundAttempt >= this.delays.length;
+     const delay = cooling
+       ? Math.max(1, this.backgroundRetryAfter - Date.now())
+@@ -438,6 +452,13 @@ export class RuntimePersistence<State extends RuntimeState> {
+           this.backgroundAttempt = 0;
+           this.backgroundRetryAfter = 0;
+         }
++        if ((this.options.platform ?? process.platform) === 'win32') {
++          this.backgroundTask = this.saveBackgroundAsync().finally(() => {
++            this.backgroundTask = undefined;
++            if (!this.closed && this.backgroundState) this.schedule(this.backgroundState);
++          });
++          return;
++        }
+         try {
+           this.saveState(this.backgroundState(), true);
+         } catch (error) {
+@@ -468,11 +489,128 @@ export class RuntimePersistence<State extends RuntimeState> {
+       released = true;
+       this.backgroundHolds--;
+       if (this.closed || this.backgroundHolds) return;
++      this.wakePublications();
+       if (this.backgroundState) this.schedule(this.backgroundState);
+       this.scheduleHistory();
+     };
+   }
+ 
++  private wakePublications(): void {
++    for (const wake of this.publicationWaiters) wake();
++    this.publicationWaiters.clear();
++  }
++
++  private async publicationAllowed(current: () => boolean): Promise<boolean> {
++    while (!this.closed && this.backgroundHolds)
++      await new Promise<void>((resolve) => this.publicationWaiters.add(resolve));
++    return !this.closed && current();
++  }
++
++  /** Only replaceable Windows background I/O uses this path; command barriers stay synchronous. */
++  private async atomicWriteBackground(
++    file: string,
++    value: unknown,
++    durable: boolean,
++    current: () => boolean,
++  ): Promise<boolean> {
++    const temporary = file + '.' + randomUUID() + '.tmp';
++    let owned = false;
++    let published = false;
++    let stage = 'serialize';
++    let handle: Awaited<ReturnType<typeof openFile>> | undefined;
++    try {
++      const json = JSON.stringify(value);
++      if (file === this.file) {
++        this.assertReplyWriter();
++        if (
++          this.writer &&
++          this.durableHead !== undefined &&
++          this.ledgerHead === this.durableHead &&
++          digest(json) === this.durableHead
++        ) {
++          await assertPrivateFileAsync(file);
++          if (!(await this.publicationAllowed(current)) || this.closed || !current()) return false;
++          this.assertReplyWriter();
++          return true;
++        }
++        this.durableHead = undefined;
++      }
++      stage = 'write';
++      handle = await openFile(temporary, 'wx', 0o600);
++      owned = true;
++      await handle.writeFile(json);
++      stage = 'protect';
++      if (this.options.protectAsync) await this.options.protectAsync(temporary);
++      else if (this.options.protect) this.options.protect(temporary);
++      else await protectWindowsStateFileAsync(temporary);
++      if (durable) {
++        stage = 'file-fsync';
++        if (this.options.fsync) this.options.fsync(handle.fd);
++        else await handle.sync();
++      }
++      await handle.close();
++      handle = undefined;
++      if (!(await this.publicationAllowed(current)) || this.closed || !current()) return false;
++      // Main alone publishes. A synchronous save/read/close or newer cache
++      // version makes this temporary file obsolete before it can replace data.
++      if (file === this.file) this.assertReplyWriter();
++      stage = 'publish';
++      (this.options.rename ?? renameSync)(temporary, file);
++      published = true;
++      if (file === this.file) {
++        this.ledgerHead = digest(json);
++        this.durableHead = digest(json);
++      }
++      return true;
++    } catch (error) {
++      throw new RuntimePersistenceError(stage, error);
++    } finally {
++      await handle?.close().catch(() => {
++        // The original failure is retained; cleanup of the owned path still follows.
++      });
++      if (owned && !published) {
++        try {
++          await unlinkFile(temporary);
++        } catch (error) {
++          this.report('temporary-cleanup', new RuntimePersistenceError('cleanup', error));
++        }
++      }
++    }
++  }
++
++  private async saveBackgroundAsync(): Promise<void> {
++    const version = this.backgroundVersion;
++    const writeVersion = this.writeVersion;
++    const current = () => version === this.backgroundVersion && writeVersion === this.writeVersion;
++    try {
++      const state = this.backgroundState!();
++      this.hostId = state.hostId;
++      const threads = state.threads.map(({ id, messages }) => ({ id, messages }));
++      if (
++        !(await this.atomicWriteBackground(this.file, this.persistedState(state), true, current)) ||
++        !current()
++      )
++        return;
++      for (const thread of threads) {
++        if (this.references.get(thread.id) !== thread.messages) this.dirty(thread);
++        this.references.set(thread.id, thread.messages);
++      }
++      this.backgroundState = undefined;
++      this.backgroundAttempt = 0;
++      this.backgroundRetryAfter = 0;
++    } catch (error) {
++      if (this.closed || !current()) return;
++      this.report('background-save', error, ++this.backgroundAttempt);
++      if (this.backgroundAttempt >= this.delays.length)
++        this.backgroundRetryAfter = Date.now() + (this.options.cooldownMs ?? 60_000);
++    }
++  }
++
++  /** Wait for owned temporary I/O cleanup; does not flush or execute a command. */
++  async settleBackground(): Promise<void> {
++    await Promise.allSettled([this.backgroundTask, this.historyTask]);
++  }
++
+   load(): State | undefined {
+     if (!existsSync(this.file)) return undefined;
+     const bytes = readFileSync(this.file);
+@@ -516,35 +654,35 @@ export class RuntimePersistence<State extends RuntimeState> {
+     this.saveState(state, true);
+   }
+ 
++  private persistedState(state: State) {
++    return {
++      ...state,
++      ...(this.writer
++        ? {
++            replyLedger: {
++              version: 2,
++              contract:
++                (this.options.platform ?? process.platform) === 'win32'
++                  ? 'file-flush-only'
++                  : 'fsync-before-model-v2',
++              target: this.writer.target,
++              ledgerId: this.writer.ledgerId,
++              writerPid: this.writer.pid,
++              writerNonce: this.writer.nonce,
++            },
++          }
++        : {}),
++      historyCacheVersion: 1,
++      threads: state.threads.map((thread) => ({ ...thread, messages: [] })),
++    };
++  }
++
+   private saveState(state: State, replaceable: boolean): void {
+     if (this.closed) throw new RuntimePersistenceError('closed', undefined);
++    this.writeVersion++;
+     this.hostId = state.hostId;
+     this.assertReplyWriter();
+-    this.atomicWrite(
+-      this.file,
+-      {
+-        ...state,
+-        ...(this.writer
+-          ? {
+-              replyLedger: {
+-                version: 2,
+-                contract:
+-                  (this.options.platform ?? process.platform) === 'win32'
+-                    ? 'file-flush-only'
+-                    : 'fsync-before-model-v2',
+-                target: this.writer.target,
+-                ledgerId: this.writer.ledgerId,
+-                writerPid: this.writer.pid,
+-                writerNonce: this.writer.nonce,
+-              },
+-            }
+-          : {}),
+-        historyCacheVersion: 1,
+-        threads: state.threads.map((thread) => ({ ...thread, messages: [] })),
+-      },
+-      true,
+-      replaceable,
+-    );
++    this.atomicWrite(this.file, this.persistedState(state), true, replaceable);
+     this.ledgerHead = digest(readFileSync(this.file));
+     for (const thread of state.threads) {
+       if (this.references.get(thread.id) !== thread.messages) this.dirty(thread);
+@@ -560,13 +698,26 @@ export class RuntimePersistence<State extends RuntimeState> {
+ 
+   dirty(thread: CachedThread): void {
+     if (this.closed) return;
+-    if (!thread.messages.length && !this.references.get(thread.id)?.length) return;
++    if (
++      !thread.messages.length &&
++      !this.references.get(thread.id)?.length &&
++      !this.pending.has(thread.id)
++    )
++      return;
++    this.historyVersions.set(thread.id, (this.historyVersions.get(thread.id) ?? 0) + 1);
+     this.pending.set(thread.id, thread);
+     this.scheduleHistory(1000);
+   }
+ 
+   private scheduleHistory(delay = 0): void {
+-    if (this.closed || this.backgroundHolds || this.continuation || !this.pending.size) return;
++    if (
++      this.closed ||
++      this.backgroundHolds ||
++      this.historyTask ||
++      this.continuation ||
++      !this.pending.size
++    )
++      return;
+     const earliest = Math.min(
+       ...[...this.pending.keys()].map((id) => this.failures.get(id)?.after ?? 0),
+     );
+@@ -601,6 +752,13 @@ export class RuntimePersistence<State extends RuntimeState> {
+     });
+     if (!next) return this.scheduleHistory();
+     const [id, thread] = next;
++    if ((this.options.platform ?? process.platform) === 'win32') {
++      this.historyTask = this.writeHistoryBackground(id, thread).finally(() => {
++        this.historyTask = undefined;
++        if (!this.closed) this.scheduleHistory();
++      });
++      return;
++    }
+     try {
+       this.writeHistory(thread);
+       this.pending.delete(id);
+@@ -621,9 +779,48 @@ export class RuntimePersistence<State extends RuntimeState> {
+     if (this.pending.size) this.continuation = setImmediate(() => this.drainOne());
+   }
+ 
++  private async writeHistoryBackground(id: string, thread: CachedThread): Promise<void> {
++    const version = this.historyVersions.get(id);
++    const current = () => version === this.historyVersions.get(id);
++    try {
++      const published = await this.atomicWriteBackground(
++        this.historyFile(id),
++        {
++          version: 1,
++          hostId: this.hostId,
++          threadId: id,
++          messages: thread.messages,
++        },
++        false,
++        current,
++      );
++      if (!published || !current()) return;
++      this.pending.delete(id);
++      this.historyVersions.delete(id);
++      this.failures.delete(id);
++    } catch (error) {
++      if (this.closed || !current()) return;
++      const prior = this.failures.get(id)?.attempt ?? 0;
++      const attempt = (prior >= this.delays.length ? 0 : prior) + 1;
++      this.failures.set(id, {
++        attempt,
++        after: Date.now() + (this.delays[attempt] ?? this.options.cooldownMs ?? 60_000),
++      });
++      this.report('history-save', error, attempt);
++      // Preserve the latest pending object, including changes during I/O.
++      const latest = this.pending.get(id);
++      if (latest) {
++        this.pending.delete(id);
++        this.pending.set(id, latest);
++      }
++    }
++  }
++
+   close(replyWorkFenced = false): void {
+     if (this.closed) return;
+     this.closed = true;
++    this.writeVersion++;
++    this.wakePublications();
+     if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
+     this.backgroundTimer = undefined;
+     this.backgroundState = undefined;
+@@ -641,6 +838,7 @@ export class RuntimePersistence<State extends RuntimeState> {
+       }
+     }
+     this.pending.clear();
++    this.historyVersions.clear();
+     this.failures.clear();
+     if (this.writer) {
+       try {
+diff --git a/scripts/desktop-suggestion-observer.test.mjs b/scripts/desktop-suggestion-observer.test.mjs
+index 7465ef3b..93e8acb6 100644
+--- a/scripts/desktop-suggestion-observer.test.mjs
++++ b/scripts/desktop-suggestion-observer.test.mjs
+@@ -1507,6 +1507,11 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
+       configurable: true,
+       get: () => true,
+     });
++    // This block models the asynchronous reader transport. Its capability
++    // sample is cheap on Main; leaving the synchronous native reader here
++    // instead performs Windows process/ACL probes inside the health fixture.
++    // Actual native permissions were exercised above and by Worker tests.
++    const fencedAvailability = t.mock.method(observer, 'boundReadAvailable', () => true);
+     let phases = [];
+     observer.prepareBoundSourceAsync = async (...args) => {
+       assert.equal(args.length, 5, 'The fenced read carries no directory authorization');
+@@ -1520,6 +1525,34 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
+       };
+     };
+     try {
++      const assertAvailable = observer.assertBoundReadAvailable.bind(observer);
++      let observedReady = false;
++      const readiness = t.mock.method(observer, 'assertBoundReadAvailable', (...args) => {
++        if (!observedReady)
++          throw new hostAdapter.SuggestionObservationError(503, 'Synthetic stale capability');
++        return assertAvailable(...args);
++      });
++      try {
++        onFollow = () => {
++          // A fresh owner reply gives Main a turn to receive the actual new
++          // reader sample; it never extends or re-dates the old sample.
++          observedReady = true;
++        };
++        assert.equal(
++          (await request()).status,
++          200,
++          'A stale entry observation cannot preempt the already-required fresh owner read',
++        );
++        phases = [];
++        observedReady = false;
++        onFollow = () => {};
++        assert.equal((await request()).status, 503, 'Unavailable after fresh owner still rejects');
++        assert.equal(readCount, 1);
++        assert.deepEqual(phases, [], 'No native prepare occurs without current readiness');
++      } finally {
++        readiness.mock.restore();
++      }
++      phases = [];
+       onFollow = (count) => phases.push('source' + count);
+       assert.equal((await request()).status, 200);
+       assert.deepEqual(phases, ['source1', 'prepare', 'source2', 'commit', 'source3', 'dispose']);
+@@ -1665,6 +1698,7 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
+       assert(!phases.includes('commit'), 'Late uncancellable owner success cannot issue commit');
+       assert.equal(phases.filter((p) => p === 'dispose').length, 1);
+     } finally {
++      fencedAvailability.mock.restore();
+       delete observer.usesFencedSourceRead;
+       observer.prepareBoundSourceAsync = priorPrepare;
+       onFollow = () => {};
+@@ -1851,7 +1885,7 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
+   await writeFile(
+     stub,
+     `
+-    export {assertPrivateFile,protectWindowsStateDirectory,protectWindowsStateFile,windowsTraceInstanceReady} from ${JSON.stringify(platformURL)};
++    export {assertPrivateFile,assertPrivateFileAsync,protectWindowsStateDirectory,protectWindowsStateFile,protectWindowsStateFileAsync,windowsTraceInstanceReady} from ${JSON.stringify(platformURL)};
+     export const evidence={instance:undefined,probeFailed:false};
+     export const inspectWindowsTraceInstance=()=>{if(evidence.probeFailed)throw Error('synthetic unavailable P');return evidence.instance;};
+   `,
+diff --git a/scripts/fixtures/windows-private-state-child.mjs b/scripts/fixtures/windows-private-state-child.mjs
+index 34ce7075..eb8f0962 100644
+--- a/scripts/fixtures/windows-private-state-child.mjs
++++ b/scripts/fixtures/windows-private-state-child.mjs
+@@ -1,5 +1,5 @@
+ import assert from 'node:assert/strict';
+-import { appendFileSync, readFileSync } from 'node:fs';
++import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+ import { createInterface } from 'node:readline';
+ 
+ // Synthetic stdio only. All paths, actions and effects belong to the test fixture.
+@@ -54,6 +54,13 @@ lines.on('line', (line) => {
+   else if (config.mode === 'exit-operation') process.exit(23);
+   else if (config.mode === 'timeout') {
+     // Effect recorded above; do not acknowledge or retry it.
++  } else if (config.mode === 'async-held') {
++    const timer = setInterval(() => {
++      if (existsSync(config.log + '.release')) {
++        clearInterval(timer);
++        process.stdout.write(ok);
++      }
++    }, 10);
+   } else if (config.mode === 'late') setTimeout(() => process.stdout.write(ok), 5500);
+   else if (config.mode === 'reject-second' && count === 2)
+     process.stdout.write(`${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException\n`);
+diff --git a/scripts/runtime-persistence-smoke.mjs b/scripts/runtime-persistence-smoke.mjs
+index 1839b492..972f6031 100644
+--- a/scripts/runtime-persistence-smoke.mjs
++++ b/scripts/runtime-persistence-smoke.mjs
+@@ -6,6 +6,14 @@ import { join } from 'node:path';
+ import { tmpdir } from 'node:os';
+ import { RuntimePersistence } from '../packages/codex-adapter/dist/runtime-persistence.js';
+ import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.js';
++import { privateStateProtocol } from '../packages/codex-adapter/dist/desktop-private-state-native.js';
++
++// Background correctness waits include the existing native helper cold-start
++// budget. They are not HTTP latency assertions and do not change production limits.
++const backgroundSettleMs =
++  process.platform === 'win32'
++    ? privateStateProtocol.startupMs + privateStateProtocol.operationMs + 5000
++    : 5000;
+ 
+ const directory = await mkdtemp(join(tmpdir(), 'codex-runtime-persistence-'));
+ const file = join(directory, 'runtime.json');
+@@ -117,7 +125,9 @@ try {
+   coalescing.save(state);
+   const first = { publishes, barriers };
+   coalescing.schedule(() => state);
+-  for (let i = 0; i < 100 && coalescing.status.backgroundSave !== 'idle'; i++) await delay(5);
++  const settleDeadline = performance.now() + backgroundSettleMs;
++  while (coalescing.status.backgroundSave !== 'idle' && performance.now() < settleDeadline)
++    await delay(5);
+   assert.equal(coalescing.status.backgroundSave, 'idle');
+   assert.deepEqual({ publishes, barriers }, first, 'unchanged reads must not rewrite the head');
+   state.receipts[0].state = 'completed';
+@@ -302,7 +312,7 @@ try {
+   };
+   deferredStore.save(state);
+   const waitFor = async (check) => {
+-    const end = performance.now() + 5000;
++    const end = performance.now() + backgroundSettleMs;
+     while (!check()) {
+       assert(performance.now() < end, 'Deferred cache did not resume');
+       await delay(5);
+@@ -413,3 +423,197 @@ try {
+   deferredStore?.close();
+   await rm(deferredDirectory, { recursive: true, force: true });
+ }
++
++// Real asynchronous temp-file I/O, with only the native ACL response held by
++// this fixture. A Windows cache completion must never overwrite a newer command.
++const asyncDirectory = await mkdtemp(join(tmpdir(), 'codex-windows-background-'));
++const gates = [];
++let asyncStore;
++try {
++  const asyncFile = join(asyncDirectory, 'runtime.json');
++  const reports = [];
++  let holding = true;
++  let failNext = false;
++  asyncStore = new RuntimePersistence(asyncFile, asyncDirectory, {
++    platform: 'win32',
++    retryDelays: [5, 80],
++    cooldownMs: 120,
++    report: (...args) => reports.push(args),
++    protectAsync: async () => {
++      if (holding) await new Promise((resolve, reject) => gates.push({ resolve, reject }));
++      if (failNext) {
++        failNext = false;
++        throw new Error('owned async ACL failure');
++      }
++    },
++  });
++  const until = async (check) => {
++    const end = performance.now() + backgroundSettleMs;
++    while (!check()) {
++      assert(performance.now() < end, 'Async persistence did not settle');
++      await delay(5);
++    }
++  };
++  const state = {
++    hostId: 'async-host',
++    threads: [{ id: 'source', messages: [] }],
++    receipts: [{ id: 'original', state: 'uncertain' }],
++  };
++  asyncStore.load();
++  asyncStore.acquireReplyWriter({
++    agentId: 'codex',
++    hostId: 'async-host',
++    workspaceId: 'async-host',
++    runtimeId: 'desktop-runtime',
++  });
++  asyncStore.save(state);
++  state.receipts[0].state = 'background-old';
++  asyncStore.schedule(() => state);
++  await until(() => gates.length === 1);
++  state.receipts[0].state = 'command-new';
++  asyncStore.save(state);
++  state.receipts[0].state = 'read-new';
++  asyncStore.saveRead(state);
++  assert.equal(
++    JSON.parse(await readFile(asyncFile)).receipts[0].state,
++    'read-new',
++    'Command publication remains synchronous during async I/O',
++  );
++  holding = false;
++  gates.shift().resolve();
++  await asyncStore.settleBackground();
++  assert.equal(
++    JSON.parse(await readFile(asyncFile)).receipts[0].state,
++    'read-new',
++    'Late background completion cannot overwrite the command',
++  );
++
++  holding = true;
++  state.receipts[0].state = 'coalesced-old';
++  asyncStore.schedule(() => state);
++  await until(() => gates.length === 1);
++  for (let i = 0; i < 20; i++) {
++    state.receipts[0].state = 'latest-' + i;
++    asyncStore.schedule(() => state);
++  }
++  const release = asyncStore.deferBackground();
++  holding = false;
++  gates.shift().resolve();
++  await delay(30);
++  assert.equal(
++    JSON.parse(await readFile(asyncFile)).receipts[0].state,
++    'read-new',
++    'An in-flight write also respects the readonly publication hold',
++  );
++  release();
++  await until(() => asyncStore.status.backgroundSave === 'idle');
++  assert.equal(JSON.parse(await readFile(asyncFile)).receipts[0].state, 'latest-19');
++
++  // Adversarial microtask boundary: a valid permission/hold result has resolved,
++  // then an explicit durable read save wins before the async publisher resumes.
++  const allowed = asyncStore.publicationAllowed.bind(asyncStore);
++  let interleave = true;
++  asyncStore.publicationAllowed = async (current) => {
++    const result = await allowed(current);
++    if (interleave) {
++      interleave = false;
++      state.receipts[0].state = 'microtask-command';
++      asyncStore.saveRead(state);
++    }
++    return result;
++  };
++  state.receipts[0].state = 'obsolete-before-microtask';
++  asyncStore.schedule(() => state);
++  await until(() => asyncStore.status.backgroundSave === 'idle');
++  await asyncStore.settleBackground();
++  assert.equal(JSON.parse(await readFile(asyncFile)).receipts[0].state, 'microtask-command');
++  asyncStore.publicationAllowed = allowed;
++
++  for (const conflict of ['complete-head', 'writer-nonce']) {
++    holding = true;
++    state.receipts[0].state = conflict;
++    asyncStore.schedule(() => state);
++    await until(() => gates.length === 1);
++    const conflictFile =
++      conflict === 'complete-head' ? asyncFile : join(asyncDirectory, 'reply-writer-v2.json');
++    const original = await readFile(conflictFile);
++    const tampered =
++      conflict === 'complete-head'
++        ? Buffer.concat([original, Buffer.from(' ')])
++        : Buffer.from(JSON.stringify({ ...JSON.parse(original), nonce: 'foreign' }));
++    await writeFile(conflictFile, tampered);
++    const prior = reports.length;
++    holding = false;
++    gates.shift().resolve();
++    await until(() => reports.length > prior);
++    const pause = asyncStore.deferBackground();
++    assert.equal(reports.at(-1)[1].cause.stage, 'writer-continuity');
++    assert.deepEqual(
++      await readFile(conflictFile),
++      tampered,
++      'Async publication must not replace a foreign writer/head',
++    );
++    await writeFile(conflictFile, original);
++    pause();
++    await until(() => asyncStore.status.backgroundSave === 'idle');
++  }
++  failNext = true;
++  state.receipts[0].state = 'retry-latest';
++  asyncStore.schedule(() => state);
++  const failures = reports.length;
++  await until(() => reports.length > failures);
++  const pauseRetry = asyncStore.deferBackground();
++  await delay(100);
++  assert.equal(reports.length, failures + 1, 'A paused async failure cannot spin');
++  pauseRetry();
++  await until(() => asyncStore.status.backgroundSave === 'idle');
++  assert.equal(JSON.parse(await readFile(asyncFile)).receipts[0].state, 'retry-latest');
++
++  holding = true;
++  state.threads[0].messages = [{ text: 'obsolete failed history' }];
++  asyncStore.dirty(state.threads[0]);
++  await until(() => gates.length === 1);
++  state.threads[0].messages = [{ text: 'latest successful history' }];
++  asyncStore.dirty(state.threads[0]);
++  holding = false;
++  gates.shift().reject(new Error('owned obsolete ACL failure'));
++  await until(() => asyncStore.status.historyPending === 0);
++  assert.equal(
++    new RuntimePersistence(asyncFile, asyncDirectory).load().threads[0].messages[0].text,
++    'latest successful history',
++    'Failure of an obsolete snapshot must preserve the newer pending object',
++  );
++
++  // The first history snapshot is frozen before awaiting ACLs. Closing writes
++  // the latest empty history synchronously; late work cannot resurrect old text.
++  holding = true;
++  state.threads[0].messages = [{ text: 'old in-flight history' }];
++  asyncStore.dirty(state.threads[0]);
++  await until(() => gates.length === 1);
++  const releaseClose = asyncStore.deferBackground();
++  holding = false;
++  gates.shift().resolve();
++  await delay(30);
++  state.threads[0].messages = [];
++  asyncStore.dirty(state.threads[0]);
++  asyncStore.close();
++  await asyncStore.settleBackground();
++  releaseClose();
++  assert.deepEqual(
++    new RuntimePersistence(asyncFile, asyncDirectory).load().threads[0].messages,
++    [],
++  );
++  for (const directory of [asyncDirectory, join(asyncDirectory, 'runtime-history-v1')])
++    assert(
++      (await readdir(directory)).every((name) => !name.endsWith('.tmp')),
++      'All owned obsolete temporary files must be removed',
++    );
++  console.log(
++    'Windows async persistence passed: late command protection, latest coalescing, in-flight holds, actual writer/head fences, backoff, empty-history close and owned temp cleanup.',
++  );
++} finally {
++  asyncStore?.close();
++  for (const gate of gates) gate.resolve();
++  await asyncStore?.settleBackground();
++  await rm(asyncDirectory, { recursive: true, force: true });
++}
+diff --git a/scripts/windows-private-state-native.test.mjs b/scripts/windows-private-state-native.test.mjs
+index f7939ee7..d48fa71c 100644
+--- a/scripts/windows-private-state-native.test.mjs
++++ b/scripts/windows-private-state-native.test.mjs
+@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
+ import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
+ import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+ import { join, relative } from 'node:path';
++import { createServer, get } from 'node:http';
+ import { test } from 'node:test';
+ import { setTimeout as delay } from 'node:timers/promises';
+ import { fileURLToPath, pathToFileURL } from 'node:url';
+@@ -148,7 +149,8 @@ syncBuiltinESMExports();\n`,
+     writeFile(join(directory, 'config.json'), JSON.stringify(configuration));
+   await saveConfiguration();
+   await configureNative(executable);
+-  const backends = [],
++  const platforms = [],
++    backends = [],
+     actors = [];
+   const monitor = monitorPrivateStateWorkers(entryURL, log);
+   const events = () =>
+@@ -162,6 +164,7 @@ syncBuiltinESMExports();\n`,
+   t.after(async () => {
+     let failure;
+     for (const worker of actors) await worker.terminate();
++    for (const platform of platforms) platform.closeWindowsPrivateStateBackend();
+     for (const backend of backends) {
+       try {
+         backend.close();
+@@ -194,6 +197,17 @@ syncBuiltinESMExports();\n`,
+     gateURL,
+     events,
+     useNative: configureNative,
++    async platform() {
++      const input = await readFile(join(source, 'desktop-platform.ts'), 'utf8');
++      const output = ts.transpileModule(input, {
++        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
++      }).outputText;
++      const path = join(directory, 'desktop-platform-actual.js');
++      await writeFile(path, output);
++      const platform = await import(pathToFileURL(path).href);
++      platforms.push(platform);
++      return platform;
++    },
+     async retired(pid) {
+       const birth = events().find((event) => event.event === 'spawn' && event.pid === pid);
+       assert(birth, 'Only a recorded fixture child can be inspected');
+@@ -254,6 +268,115 @@ test('real transport reuses one child, preserves exact path/cwd framing and reti
+   assert.equal(f.events().filter((v) => v.event === 'request').length, 24);
+ });
+ 
++test('async native permission waiting keeps timers and real HTTP responsive without accepting a second intent', async (t) => {
++  const f = await fixture(t, 'async-held'),
++    backend = f.open();
++  let completed = false;
++  const operation = backend.callAsync('protect-file', 'owned-background-temporary').then(() => {
++    completed = true;
++  });
++  await until(
++    () => f.events().some((v) => v.event === 'request'),
++    'Async request never reached native',
++  );
++  await assert.rejects(backend.callAsync('check', 'must-not-be-sent'), unavailable);
++  assert.throws(() => backend.call('check', 'must-not-be-sent'), unavailable);
++  const server = createServer((_request, response) => response.end('healthy'));
++  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
++  t.after(() => new Promise((resolve) => server.close(resolve)));
++  const body = await new Promise((resolve, reject) => {
++    get(`http://127.0.0.1:${server.address().port}`, (response) => {
++      let body = '';
++      response.setEncoding('utf8');
++      response.on('data', (chunk) => (body += chunk));
++      response.on('end', () => resolve(body));
++    }).on('error', reject);
++  });
++  await delay(25);
++  assert.equal(body, 'healthy');
++  assert.equal(completed, false, 'HTTP and timers must complete while native is still held');
++  await writeFile(f.log + '.release', 'release-owned-fixture');
++  await operation;
++  await backend.callAsync('check', 'next-independent-intent');
++  assert.deepEqual(
++    f
++      .events()
++      .filter((v) => v.event === 'request')
++      .map((v) => [v.id, v.path]),
++    [
++      [1, 'owned-background-temporary'],
++      [2, 'next-independent-intent'],
++    ],
++  );
++  backend.close();
++  assert.equal(backend.status.gone, true);
++});
++
++test('async permission rejection remains correlated and preserves the same child for the next intent', async (t) => {
++  const f = await fixture(t, 'reject-second'),
++    backend = f.open();
++  await backend.callAsync('check', 'same-path');
++  const pid = backend.status.pid;
++  await assert.rejects(backend.callAsync('check', 'same-path'), rejected);
++  await backend.callAsync('protect-file', 'same-path');
++  assert.equal(backend.status.pid, pid);
++  assert.deepEqual(
++    f
++      .events()
++      .filter((v) => v.event === 'request')
++      .map((v) => v.id),
++    [1, 2, 3],
++  );
++});
++
++for (const mode of ['wrong-id', 'timeout'])
++  test(`async permission ${mode} fails closed without replay`, async (t) => {
++    const f = await fixture(t, mode),
++      backend = f.open();
++    await assert.rejects(backend.callAsync('protect-file', 'immutable-effect'), unavailable);
++    await assert.rejects(backend.callAsync('check', 'new-intent'), unavailable);
++    backend.close();
++    assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
++  });
++
++test('closing an in-flight async permission call rejects it and retires its exact child', async (t) => {
++  const f = await fixture(t, 'async-held'),
++    backend = f.open();
++  const rejection = assert.rejects(
++    backend.callAsync('protect-file', 'owned-temporary'),
++    unavailable,
++  );
++  await until(() => f.events().some((v) => v.event === 'request'), 'Native request missing');
++  const pid = backend.status.pid;
++  backend.close();
++  await rejection;
++  await f.retired(pid);
++  assert.equal(backend.status.gone, true);
++});
++
++test('platform shutdown rejects queued background permission intents without starting another helper', async (t) => {
++  const f = await fixture(t, 'async-held'),
++    platform = await f.platform();
++  const first = assert.rejects(
++    asWindows(() => platform.protectWindowsStateFileAsync('first-owned-temporary')),
++    unavailable,
++  );
++  const queued = assert.rejects(
++    asWindows(() => platform.protectWindowsStateFileAsync('queued-owned-temporary')),
++    unavailable,
++  );
++  await until(
++    () => f.events().some((v) => v.event === 'request'),
++    'First permission request missing',
++  );
++  const pid = f.events().find((v) => v.event === 'spawn').pid;
++  platform.closeWindowsPrivateStateBackend();
++  await Promise.all([first, queued]);
++  await f.retired(pid);
++  assert.equal(f.events().filter((v) => v.event === 'spawn').length, 1);
++  assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
++});
++
+ test('invalid actions and non-roundtripping/oversized paths never reach native stdin', async (t) => {
+   const f = await fixture(t),
+     backend = f.open();

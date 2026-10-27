@@ -204,6 +204,12 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer pnpm test:ios
 
 模型／推理／权限记忆和速度控制的辅助原生用例为 `node scripts/generation-settings-ios-fixture.mjs`，覆盖新建首条、设置重启保留和已有聊天隔离。真实 DEV 使用 `DEVELOPER_DIR=/path/to/Xcode.app/Contents/Developer IOS_SIMULATOR_ID=<dedicated-simulator> node scripts/generation-settings-desktop-ios-acceptance.mjs`（先 `pnpm build`）：建立独立 Host 状态，原桌面执行三次真实输入，独立 owner 核对所选模型、强度、权限及速度开启／关闭。验证配置仅用于此次 DEV，不替代正式接入证明或物理 iPhone 验收。
 
+## 源码推送与合并
+
+开发主仓库为 Gitea 的 `BCAI/agent-hub-app`，本地 `origin` 指向该仓库，主分支为 `main`。默认推送、开发分支和 PR 均以 Gitea 为目标，审查后合并到 Gitea `main`。仓库本地配置使用 `remote.pushDefault=origin` 和 `branch.main.pushRemote=origin`，`main` 跟踪 `origin/main`。
+
+GitHub 的 `easyaigc/agent-hub` 由 Gitea 主线同步工作流更新：仅同步已合并的 `main`，保留独立公开历史。开发／PR 分支不推送到 GitHub，也不在 GitHub 创建开发 PR；GitHub 页面出现建 PR 提示不表示已创建 PR。用户另行指定的公开分发任务按明确授权处理，不改变默认开发流程。
+
 ## CI
 
 `.github/workflows/ci.yml` 包含两个独立 Job：

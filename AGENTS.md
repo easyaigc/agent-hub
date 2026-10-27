@@ -6,6 +6,13 @@
 - Use pnpm exclusively. Keep `pnpm-lock.yaml` in sync with dependency changes. Do not add npm, Yarn, or Bun lockfiles.
 - Node services use ESM and workspace dependencies. Native iOS stays in `apps/ios` and builds through Xcode.
 
+## 源码推送、PR 与主线同步
+
+- Gitea 的 `BCAI/agent-hub-app` 是开发主仓库，`origin` 指向该仓库，主分支为 `main`。默认推送、开发分支、PR 创建、审查及合并全部在 Gitea 完成；不能因存在 `github` 远端或 GitHub 的 Compare & pull request 提示而改变目标。
+- GitHub 的 `easyaigc/agent-hub` 是公开同步仓库，由现有 Gitea 工作流将已合并的 `main` 同步到 GitHub `main`，保留独立公开历史。不得将开发／PR 分支推到 GitHub 或在 GitHub 创建开发 PR，也不将本地主线直接推到 GitHub 代替同步。
+- 推送及创建 PR 前核对实际远端、源分支和目标主线。本仓库默认配置为 `remote.pushDefault=origin`、`branch.main.pushRemote=origin`，`main` 跟踪 `origin/main`；使用 Gitea 工具或 API 创建 PR，不使用 GitHub PR 接口。
+- 用户另行明确指定的公开发布／分发任务仅按其授权范围执行，不改变默认 PR 与合并目标；既有分发分支先核对任务依赖，不擅自删除。
+
 ## Implementation boundaries
 
 - Host Agent owns computer-local Codex access. Relay must not run Codex or own its login credentials.

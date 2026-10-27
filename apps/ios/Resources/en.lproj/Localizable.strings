@@ -1710,6 +1710,14 @@
 
 "文件仅保存在手机，返回 Agent Hub 后添加到聊天草稿，发送时才上传。" = "Files stay on your phone. Return to Agent Hub to add them to a chat draft. They are uploaded only when you send.";
 
+"电脑当前设置" = "Current computer settings";
+
+"下次发送" = "Next message";
+
+"以下选择用于下次发送，发送前不会修改电脑当前设置。" = "These choices apply to your next message. Current computer settings stay unchanged until you send.";
+
+"同步中" = "Syncing";
+
 "点图片预览，点圆圈快速选择；添加到草稿后，发送时再上传。" = "Tap a photo to preview or its circle to select. Photos upload only when you send.";
 
 "仅添加到草稿，发送时再上传。" = "Add to the draft only. Upload when sending.";

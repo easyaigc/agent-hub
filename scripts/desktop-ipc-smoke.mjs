@@ -68,15 +68,15 @@ const state = () => ({
   cwd,
   title: 'Owner-only chat',
   resumeState: 'resumed',
-  latestModel: 'desktop-fixture-model',
-  latestReasoningEffort: 'xhigh',
+  latestModel: fixtureSettings?.model ?? 'desktop-fixture-model',
+  latestReasoningEffort: fixtureSettings?.effort !== undefined ? fixtureSettings.effort : 'xhigh',
   latestThreadSettings: fixtureSettings,
   currentPermissions: fixturePermissions,
-  latestCollaborationMode: {
+  latestCollaborationMode: fixtureSettings?.collaborationMode ?? {
     mode: 'plan',
     settings: {
-      model: 'desktop-fixture-model',
-      reasoning_effort: 'xhigh',
+      model: fixtureSettings?.model ?? 'desktop-fixture-model',
+      reasoning_effort: fixtureSettings?.effort !== undefined ? fixtureSettings.effort : 'xhigh',
       developer_instructions: null,
     },
   },
@@ -211,6 +211,27 @@ const server = createServer((connected) => {
                     error: 'no-client-found',
                   },
             );
+        } else if (message.method === 'thread-follower-read-model-settings') {
+          const current =
+            notificationOwnerFixture?.owners.get(message.params.conversationId)?.state ?? state();
+          const settings = current.latestThreadSettings ?? {};
+          write({
+            type: 'response',
+            requestId: message.requestId,
+            resultType: 'success',
+            handledByClientId: message.targetClientId,
+            method: message.method,
+            result: {
+              settings: {
+                model:
+                  settings.model ??
+                  current.latestCollaborationMode?.settings?.model ??
+                  current.latestModel,
+                reasoningEffort:
+                  settings.effort !== undefined ? settings.effort : current.latestReasoningEffort,
+              },
+            },
+          });
         } else {
           commands.push(message);
           let result = { ok: true };
@@ -445,6 +466,15 @@ async function oversizedIpcBoundaries() {
           if (id === 'oversized')
             enqueue(() => opaque(desktopFrameLimits.materializedBytes + 1, normal('healthy')));
           else send(normal(id));
+        } else if (message.method === 'thread-follower-read-model-settings') {
+          send({
+            type: 'response',
+            requestId: message.requestId,
+            resultType: 'success',
+            handledByClientId: 'bounded-owner',
+            method: message.method,
+            result: { settings: { model: 'bounded-model', reasoningEffort: 'xhigh' } },
+          });
         } else if (message.type === 'request') {
           dispatched.push(message);
           // Drop an opaque response, then deliver an unrelated verified snapshot.

@@ -558,9 +558,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val generationSettings get() = generation[targetKey] ?: GenerationSettings()
     val models get() = modelsByClient[clientKey].orEmpty()
     val selectedModel get() = models.firstOrNull { it.id==(generationSettings.model ?: runtime?.settings?.model) }
-        ?: if(generationSettings.model==null && runtime?.settings?.model==null) models.firstOrNull { it.isDefault } else null
     val modelLabel get() = selectedModel?.name ?: generationSettings.model ?: runtime?.settings?.model ?: "电脑默认"
-    val selectedEffort get() = generationSettings.effort ?: runtime?.settings?.effort ?: selectedModel?.defaultEffort
+    val selectedEffort get() = generationSettings.effort ?: runtime?.settings?.effort
+    val generationDisplay get() = SessionPolicies.generationDisplay(selectedThread != null,
+        generationSettings.model,generationSettings.effort,runtime?.settings?.model,runtime?.settings?.effort)
+    val displayedModelLabel get() = generationDisplay.model.let { id -> models.firstOrNull { it.id==id }?.name ?: id }
+        ?: if(selectedThread==null) "跟随电脑" else "同步中"
+    val displayedEffort get() = generationDisplay.effort
     val selectedSpeed get() = generationSettings.speed ?: runtime?.settings?.speed ?: selectedModel?.defaultSpeed
     val selectedPermission get() = generationSettings.permissionMode ?: runtime?.settings?.permissionMode
     val permissionOptions get()=commands.permissionOptions(selectedClient)

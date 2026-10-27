@@ -10,6 +10,24 @@ import {
   prepareDesktopFixtureIpc,
 } from './fixtures/desktop-ipc-transport.mjs';
 import { DesktopFrameDecoder } from '../packages/codex-adapter/dist/desktop-framing.js';
+import { desktopModelSettings } from '../packages/codex-adapter/dist/generation-settings.js';
+
+test('current owner model and effort supersede retained prior-turn settings, including explicit null', () => {
+  const state = {
+    latestThreadSettings: { model: 'old-model', effort: 'low' },
+    latestModel: 'old-model',
+    latestCollaborationMode: {
+      mode: 'default',
+      settings: { model: 'current-model', reasoning_effort: 'xhigh' },
+    },
+    latestReasoningEffort: 'xhigh',
+  };
+  assert.deepEqual(desktopModelSettings(state), { model: 'current-model', effort: 'xhigh' });
+  assert.deepEqual(desktopModelSettings({ ...state, latestReasoningEffort: null }), {
+    model: 'current-model',
+    effort: null,
+  });
+});
 
 const { DesktopIpc, desktopTurns } = await import('../packages/codex-adapter/dist/desktop-ipc.js');
 
@@ -47,6 +65,8 @@ async function fixture(run) {
   await chmod(root, 0o700);
   let peer,
     owner = 'owner-one',
+    settings = { model: 'fixture', reasoningEffort: 'xhigh' },
+    heldSettings,
     following = () => {};
   const executions = [],
     send = (value) => {
@@ -100,16 +120,19 @@ async function fixture(run) {
               handledByClientId: owner,
               result: { supportsUntrustedAppInput: true },
             });
-          else if (message.method === 'thread-follower-read-model-settings')
-            send({
-              type: 'response',
-              requestId: message.requestId,
-              resultType: 'success',
-              handledByClientId: owner,
-              method: message.method,
-              result: { settings: { model: 'fixture', reasoningEffort: 'xhigh' } },
-            });
-          else executions.push(message.method);
+          else if (message.method === 'thread-follower-read-model-settings') {
+            const respond = () =>
+              send({
+                type: 'response',
+                requestId: message.requestId,
+                resultType: 'success',
+                handledByClientId: owner,
+                method: message.method,
+                result: { settings },
+              });
+            if (heldSettings) heldSettings(respond);
+            else respond();
+          } else executions.push(message.method);
         } else if (message.method === 'thread-stream-following-changed') following();
       },
       {
@@ -135,6 +158,18 @@ async function fixture(run) {
       owner: (value) => {
         owner = value;
       },
+      settings: (value) => {
+        settings = value;
+      },
+      holdSettings: (fn) => {
+        heldSettings = fn;
+      },
+      disconnectOwner: () =>
+        send({
+          type: 'broadcast',
+          method: 'client-status-changed',
+          params: { clientId: owner, status: 'disconnected' },
+        }),
     });
     assert.deepEqual(executions, [], 'Reading generations must never send execution commands');
   } finally {
@@ -144,6 +179,45 @@ async function fixture(run) {
     await rm(root, { recursive: true, force: true });
   }
 }
+
+test('small exact-owner settings reads need no full snapshot and never grant execution control', () =>
+  fixture(async ({ ipc, settings }) => {
+    await ipc.refreshModelSettings(id);
+    assert.deepEqual(ipc.modelSettings(id), { model: 'fixture', effort: 'xhigh' });
+    assert.equal(ipc.hasOwner(id), false);
+    assert.equal(ipc.state(id), undefined);
+    const now = Date.now;
+    try {
+      Date.now = () => now() + 6000;
+      settings({ model: 'another-model', reasoningEffort: 'high' });
+      await ipc.refreshModelSettings(id);
+      assert.deepEqual(ipc.modelSettings(id), { model: 'another-model', effort: 'high' });
+      settings({ model: 'another-model', reasoningEffort: null });
+      Date.now = () => now() + 12000;
+      await ipc.refreshModelSettings(id);
+      assert.deepEqual(ipc.modelSettings(id), { model: 'another-model', effort: null });
+      Date.now = () => now() + 23000;
+      assert.equal(ipc.modelSettings(id), undefined, 'Expired values are not current settings');
+    } finally {
+      Date.now = now;
+    }
+  }));
+
+test('a disconnected owner cannot repopulate settings with a late read response', () =>
+  fixture(async ({ ipc, holdSettings, disconnectOwner }) => {
+    let release;
+    holdSettings((fn) => {
+      release = fn;
+    });
+    const pending = ipc.refreshModelSettings(id);
+    while (!release) await tick();
+    disconnectOwner();
+    await tick();
+    release();
+    await pending;
+    assert.equal(ipc.modelSettings(id), undefined);
+    assert.equal(ipc.hasOwner(id), false);
+  }));
 
 test('missing full snapshots still deliver bounded original-owner item updates without granting control', () =>
   fixture(async ({ ipc, patches, following, owner }) => {

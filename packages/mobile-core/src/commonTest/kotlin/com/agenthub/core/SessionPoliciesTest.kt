@@ -6,6 +6,19 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
 class SessionPoliciesTest {
+    @Test fun conversationGenerationDisplayNeverUsesDraftOrCatalogueDefaults() {
+        val actual = SessionPolicies.generationDisplay(true,"draft-model","low","owner-model","xhigh")
+        assertEquals("owner-model",actual.model)
+        assertEquals("xhigh",actual.effort)
+        val unavailable = SessionPolicies.generationDisplay(true,"draft-model","low",null,null)
+        assertNull(unavailable.model)
+        assertNull(unavailable.effort)
+        assertNull(SessionPolicies.generationDisplay(true,null,null,"owner-model",null).effort)
+        val newDraft = SessionPolicies.generationDisplay(false,"draft-model","low",null,null)
+        assertEquals("draft-model",newDraft.model)
+        assertEquals("low",newDraft.effort)
+        assertNull(SessionPolicies.generationDisplay(false,null,null,null,null).model)
+    }
     @Test fun codexDesktopRequirementsRemainAfterCapabilityReplacementWithoutGrantingExecution() {
         val readOnly=SessionPolicies.codexCapabilities(listOf("history:read"),"desktop-runtime")
         assertTrue("runtime:control-required" in readOnly && "threads:create:staged" in readOnly)

@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-10-26 F34：现有对话底部模型／强度只展示准确原 owner 设置；模型目录默认值和手机未发送覆盖项不得冒充实际值。未取得时显示同步中／跟随电脑，设置面板区分电脑当前设置与下次发送。iOS／Android 共用 KMP 展示选择规则；Host 小体积具名只读查询即使完整快照不可用也返回当前参数，不授予执行控制。源码、辅助检查、iPhone 真实验收与未验收平台分别登记于 acceptance/thread-model-settings-20261026.md，A6 保持暂停。
+
 2026-10-26 应用操作审批：Codex Adapter 将 `mcpServer/elicitation/request` 的空确认、单一 approved 布尔确认及 `item/permissions/requestApproval` 映射到手机审批卡片。原请求声明的 session／always 范围才可选择，执行绑定的确认不提供持久授权；复杂表单、URL 和用户验证提示电脑端处理，手机可拒绝／取消。响应通过原 owner 的具名接口返回，提交前核对原请求内容、完成标记及目标，重复点击合并。iOS／Android 共同消费可选按钮文案，旧命令审批保持兼容；真实结果见[专项记录](acceptance/computer-use-approvals-20261026.md)。
 
 2026-10-26 iOS 语音失败回退：用户明确选择后以手机系统文件识别读取同一已保存录音，不重录、不重放电脑请求；原操作及音频保留，本地已使用标记阻止重复恢复。回填仍核对原草稿和目标，问题回复共用；Android 文件识别适配待对齐。见[语音说明](voice-transcription.md)及[专项验收](acceptance/voice-local-fallback-20261026.md)。

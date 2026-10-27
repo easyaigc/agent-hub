@@ -819,6 +819,16 @@ struct GenerationSettings: View {
     var body: some View {
         NavigationStack {
             Form {
+                if store.selectedThreadId != nil {
+                    Section(L10n.tr("电脑当前设置")) {
+                        LabeledContent(L10n.tr("模型"), value: store.displayedModelLabel)
+                        LabeledContent(L10n.tr("推理强度"), value: store.displayedEffortLabel)
+                    }
+                    Section {
+                        Text(L10n.tr("以下选择用于下次发送，发送前不会修改电脑当前设置。"))
+                            .font(.caption).foregroundStyle(Palette.secondary)
+                    } header: { Text(L10n.tr("下次发送")) }
+                }
                 Section(L10n.tr("选择模型")) {
                     Picker(L10n.tr("模型"), selection: Binding(get: { store.draft.model ?? store.runtime?.generationSettings?.model ?? store.selectedModel?.id ?? "" }, set: { store.model = $0 })) {
                         Text(L10n.tr("跟随电脑")).tag("")

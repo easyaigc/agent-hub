@@ -263,7 +263,12 @@ try {
   assert.equal(session.history('protected').runtime.state, 'running');
   assert(
     methods.every((m) =>
-      ['initialize', 'thread-owner-discovery', 'thread-stream-following-changed'].includes(m),
+      [
+        'initialize',
+        'thread-owner-discovery',
+        'thread-stream-following-changed',
+        'thread-follower-read-model-settings',
+      ].includes(m),
     ),
   );
   session.runtime.ipc.invalidate('large');
@@ -394,6 +399,12 @@ try {
   assert.equal(completed.thread.lastTurnStatus, 'completed');
   assert.equal(completed.runtime.state, 'unknown');
   assert.equal(completed.runtime.canControl, false, 'A terminal history read grants no control');
+  assert.equal(completed.runtime.generationSettings.model, 'fixture');
+  assert.equal(
+    completed.runtime.generationSettings.effort,
+    'xhigh',
+    'Exact-owner model settings remain available without the oversized full snapshot',
+  );
   const attachment = completed.messages.at(-1).attachments[0];
   assert(attachment, 'New history links must be registered even without a live snapshot');
   assert(completed.messages.at(-1).text.includes('codex-attachment://' + attachment.id));

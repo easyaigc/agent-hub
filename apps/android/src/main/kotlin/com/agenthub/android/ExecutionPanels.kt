@@ -368,8 +368,8 @@ internal fun permissionLabel(value: String?)=when(value) { "read-only"->"请求�
                 if(session.supportsGeneration) ToolbarChip(if(compact) permissionLabel(session.selectedPermission).replace("权限","") else permissionLabel(session.selectedPermission),"permission-settings",session.canConfigureGeneration,"shield",if(session.permissionOptions.any { it.id==session.selectedPermission&&it.highPrivilege }) Color(0xFFFF9500) else colors.onSurfaceVariant,onSettings)
                 Spacer(Modifier.weight(1f))
                 if(session.supportsGeneration) {
-                    val label=if(compact) session.modelLabel.removePrefix("GPT-").take(10) else session.modelLabel
-                    ToolbarChip(label+" "+effortLabel(session.selectedEffort),"generation-settings",session.canConfigureGeneration,"bolt",if(session.selectedSpeed in listOf("fast","ultrafast")) Color(0xFF007AFF) else colors.onSurface,onSettings)
+                    val label=if(compact) session.displayedModelLabel.removePrefix("GPT-").take(10) else session.displayedModelLabel
+                    ToolbarChip(label+" "+(session.displayedEffort?.let(::effortLabel) ?: "跟随电脑"),"generation-settings",session.canConfigureGeneration,"bolt",if(session.selectedSpeed in listOf("fast","ultrafast")) Color(0xFF007AFF) else colors.onSurface,onSettings)
                 }
                 if(singleRow && showMode) ReplyModeControls(session,Modifier.width(260.dp))
             }
@@ -414,6 +414,12 @@ internal fun permissionLabel(value: String?)=when(value) { "read-only"->"请求�
                 val next=SessionPolicies.changeModel(session.selectedEffort,current.speed,latest?.supportedEfforts.orEmpty(),latest?.defaultEffort,latest?.supportedSpeeds.orEmpty())
                 current.copy(model=id,effort=next.effort,speed=next.speed)
             }
+        }
+        if(session.selectedThread!=null) {
+            GenerationSection("电脑当前设置") {
+                Text(session.displayedModelLabel+" · "+(session.displayedEffort?.let(::effortLabel) ?: "跟随电脑"),Modifier.padding(16.dp))
+            }
+            Text("下次发送：以下选择用于下次发送，发送前不会修改电脑当前设置。",Modifier.padding(16.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
         GenerationSection("选择模型") {
             val selected=settings.model ?: session.runtime?.settings?.model ?: session.selectedModel?.id ?: ""

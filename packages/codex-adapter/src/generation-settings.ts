@@ -1,5 +1,18 @@
 import { list, object, string, type WireObject } from './runtime.js';
 
+/** Match the original owner's current model read, ahead of retained prior-turn settings. */
+export function desktopModelSettings(state: WireObject): { model: string; effort: string | null } {
+  const settings = object(state.latestThreadSettings);
+  const collaboration = object(state.latestCollaborationMode ?? settings.collaborationMode);
+  const model = object(collaboration.settings).model ?? state.latestModel ?? settings.model;
+  const effort = Object.hasOwn(state, 'latestReasoningEffort')
+    ? state.latestReasoningEffort
+    : settings.effort !== undefined
+      ? settings.effort
+      : object(collaboration.settings).reasoning_effort;
+  return { model: string(model), effort: typeof effort === 'string' ? effort : null };
+}
+
 export const speeds = ['standard', 'fast', 'ultrafast'] as const;
 export function currentSpeed(tier: unknown): string | null {
   if (tier === null || tier === 'default' || tier === 'standard') return 'standard';

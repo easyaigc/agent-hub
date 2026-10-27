@@ -894,6 +894,23 @@ final class CodexManageUITests: XCTestCase {
   private var suggestionCleanupTarget: (hostId: String, originalId: String)?
   override func setUpWithError() throws {
     continueAfterFailure = false
+    if name.contains("testThreadModelSettingsPhysicalDEV") {
+      guard let raw = ProcessInfo.processInfo.environment["THREAD_MODEL_SETTINGS_FIXTURE"],
+        let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+        let bundleId = fixture["bundleId"] as? String,
+        bundleId.hasPrefix("com.easyai.agenthub.modelsettings.") else {
+        throw XCTSkip("Requires the independent model settings acceptance App")
+      }
+      XCUIDevice.shared.orientation = .portrait
+      app = XCUIApplication(bundleIdentifier: bundleId)
+      addUIInterruptionMonitor(withDescription: "Model settings acceptance network permission") { alert in
+        let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["无线局域网与蜂窝网络", "无线局域网与蜂窝数据", "允许", "Allow"])).firstMatch
+        guard allow.exists else { return false }; allow.tap(); return true
+      }
+      app.launchArguments = ["-ui-testing"]
+      app.launchChineseTest()
+      return
+    }
     if name.contains("testMobileReadingPhysicalAttachmentReplyDEV") {
       guard ProcessInfo.processInfo.environment["UNREAD_PHYSICAL_JSON"] != nil else {
         throw XCTSkip("Requires the independent unread attachment acceptance App and real desktop fixture")
@@ -8827,6 +8844,99 @@ final class CodexManageUITests: XCTestCase {
     app.buttons["generation-done"].tap()
   }
 
+  @MainActor func testThreadModelSettingsPhysicalDEV() async throws {
+    struct Fixture: Decodable {
+      let bundleId: String
+      let connection: LiveFixture
+      let second: LiveFixture
+      let alternateModelName: String
+    }
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["THREAD_MODEL_SETTINGS_FIXTURE"])
+    let fixture = try JSONDecoder().decode(Fixture.self, from: Data(raw.utf8))
+    XCTAssertTrue(fixture.bundleId.hasPrefix("com.easyai.agenthub.modelsettings."))
+    connectLive(fixture.connection, supportsCreation: false, nickname: "模型同步 DEV")
+    func openThread(_ target: LiveFixture) async throws {
+      let row = app.buttons["recent-thread-" + target.threadId]
+      for _ in 0..<5 {
+        if row.exists && row.isHittable { break }
+        let close = app.buttons["close-sidebar"]
+        if !close.exists {
+          let open = app.buttons["open-sidebar"]
+          if open.exists && open.isHittable { open.tap() }
+          try await Task.sleep(for: .seconds(1))
+        }
+        if row.exists && row.isHittable { break }
+        let search = app.textFields["sidebar-search"]
+        if !search.exists {
+          let toggle = app.buttons["sidebar-search-toggle"]
+          if toggle.exists && toggle.isHittable { toggle.tap() }
+          try await Task.sleep(for: .seconds(1))
+        }
+        if search.exists && search.isHittable {
+          search.tap()
+          let old = search.value as? String ?? ""
+          search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count) + (target.threadTitle ?? target.threadId) + "\n")
+          try await Task.sleep(for: .seconds(2))
+        }
+      }
+      XCTAssertTrue(row.isHittable, app.debugDescription)
+      row.tap()
+      try await Task.sleep(for: .seconds(1))
+    }
+    func matches(_ model: String, _ effort: String, _ phase: String) {
+      let button = app.buttons["generation-settings"]
+      XCTAssertTrue(button.waitForExistence(timeout: 25))
+      // This independent wildcard-signed DEV App has no production App Group.
+      // Close only its specific unavailable inbox notice before checking pixels.
+      let inboxNotice = app.alerts["无法完成操作"]
+      if inboxNotice.waitForExistence(timeout: 1),
+        inboxNotice.staticTexts["暂时无法读取共享文件，请稍后重试。"].exists {
+        print("MODEL_SETTINGS_DEV_INBOX_NOTICE " + phase)
+        inboxNotice.buttons["好"].tap()
+      }
+      XCTAssertFalse(app.alerts.firstMatch.exists, app.debugDescription)
+      let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format:
+        "label CONTAINS %@ AND label CONTAINS %@", model, "推理强度，" + effort), object: button)
+      XCTAssertEqual(XCTWaiter.wait(for: [expected], timeout: 35), .completed, button.label)
+      print("MODEL_SETTINGS_NATIVE_PASS " + phase + " " + button.label)
+      shot("model-settings-" + phase)
+    }
+    func control(_ phase: String) async throws {
+      // The App's real HTTPS reads remain on the phone. Desktop-only actions
+      // are triggered by the Mac driver; a separate Runner needs no network grant.
+      print("MODEL_SETTINGS_CONTROL " + phase)
+      try await Task.sleep(for: .seconds(3))
+    }
+    try await openThread(fixture.connection)
+    matches("6.1", "极高", "desktop-xhigh")
+    app.buttons["generation-settings"].tap()
+    XCTAssertTrue(app.staticTexts["电脑当前设置"].waitForExistence(timeout: 10))
+    app.descendants(matching: .any)["effort-picker"].firstMatch.tap()
+    app.buttons["低"].tap()
+    app.buttons["generation-done"].tap()
+    matches("6.1", "极高", "draft-low-does-not-replace-owner")
+    try await openThread(fixture.second)
+    matches(fixture.alternateModelName, "高", "other-thread")
+    try await openThread(fixture.connection)
+    matches("6.1", "极高", "return-keeps-owner")
+    try await control("desktop-low")
+    matches("6.1", "低", "desktop-effort-changed")
+    try await control("desktop-alternate")
+    matches(fixture.alternateModelName, "高", "desktop-model-changed")
+    try await control("desktop-xhigh")
+    matches("6.1", "极高", "desktop-restored")
+    try await control("drop-full-snapshot")
+    try await openThread(fixture.second)
+    try await openThread(fixture.connection)
+    matches("6.1", "极高", "missing-snapshot-real-owner-settings")
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-restore-testing"]
+    app.launchChineseTest()
+    matches("6.1", "极高", "restart-retains-correct-owner")
+    try await control("restore-full-snapshot")
+    matches("6.1", "极高", "reconnected")
+  }
+
   @MainActor func testOriginalDesktopPermissionDefaults() async throws {
     let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8806")!)
     let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
@@ -13005,7 +13115,7 @@ final class CodexManageUITests: XCTestCase {
   }
   @MainActor private func openDesktopSidebarSearch() -> XCUIElement {
     dismissLiveQuestionPresentation()
-    if name.contains("testOriginalDesktopReadOnlySuggestionsDEV") || name.contains("testWindowsConversationSyncReadOnlyDEV") {
+    if name.contains("testOriginalDesktopReadOnlySuggestionsDEV") || name.contains("testWindowsConversationSyncReadOnlyDEV") || name.contains("testThreadModelSettingsPhysicalDEV") {
       physicalSidebar()
     } else {
       app.buttons["open-sidebar"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()

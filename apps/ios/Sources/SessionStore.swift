@@ -1142,10 +1142,22 @@ private var userRequestedWorkspaceGeneration: UUID?
     return host.id + ":" + clientGeneration.uuidString
   }
   var canConfigureGeneration: Bool { canCompose && SessionPolicies.shared.configureGeneration(access: accessPolicy, state: submissionPolicy) }
-  var selectedModel: CodexModel? { models.first { $0.id == (draft.model ?? runtime?.generationSettings?.model) } ?? (draft.model == nil && runtime?.generationSettings?.model == nil ? models.first { $0.isDefault } : nil) }
+  var selectedModel: CodexModel? { models.first { $0.id == (draft.model ?? runtime?.generationSettings?.model) } }
   var modelLabel: String { selectedModel?.name ?? draft.model ?? runtime?.generationSettings?.model ?? L10n.tr("电脑默认") }
   var availableEfforts: [String] { selectedModel?.supportedEfforts ?? [] }
-  var selectedEffort: String? { draft.effort ?? runtime?.generationSettings?.effort ?? selectedModel?.defaultEffort }
+  var selectedEffort: String? { draft.effort ?? runtime?.generationSettings?.effort }
+  var generationDisplay: GenerationDisplay {
+    SessionPolicies.shared.generationDisplay(threadSelected: selectedThreadId != nil,
+      draftModel: draft.model, draftEffort: draft.effort,
+      runtimeModel: runtime?.generationSettings?.model, runtimeEffort: runtime?.generationSettings?.effort)
+  }
+  var displayedModelLabel: String {
+    let model = generationDisplay.model
+    return models.first { $0.id == model }?.name ?? model ?? L10n.tr(selectedThreadId == nil ? "跟随电脑" : "同步中")
+  }
+  var displayedEffortLabel: String {
+    generationDisplay.effort.map { effortLabel($0) } ?? L10n.tr("跟随电脑")
+  }
   var selectedPermissionMode: String? { draft.permissionMode ?? runtime?.generationSettings?.permissionMode }
   var permissionOptions: [AgentPermissionOption] { guard let client, let agent = try? AgentClients.resolve(client) else { return [] }; return agent.permissionOptions(client) }
   var selectedPermissionOption: AgentPermissionOption? { permissionOptions.first { $0.id == selectedPermissionMode } }

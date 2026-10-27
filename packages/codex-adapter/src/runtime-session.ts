@@ -11,6 +11,7 @@ import {
   configuredPermissionSettings,
   threadPermissionSettings,
   desktopPermissionMode,
+  desktopModelSettings,
   currentPermissionMode,
   currentSpeed,
   modelSpeedTiers,
@@ -1412,6 +1413,8 @@ export class RuntimeSession {
   }
   history(threadId: string, windowed = false, before?: string) {
     const thread = this.thread(threadId);
+    const currentModel =
+      this.runtime instanceof DesktopRuntime ? this.runtime.ipc.modelSettings(threadId) : undefined;
     const receipts = this.state.receipts.filter((value) => value.threadId === threadId);
     const recentReceipts = new Set(receipts.slice(-30).map((value) => value.clientMessageId));
     const {
@@ -1465,8 +1468,8 @@ export class RuntimeSession {
         proposedPlan: thread.proposedPlan ?? null,
         collaborationMode: thread.collaborationMode ?? null,
         generationSettings: {
-          model: thread.runtimeModel ?? null,
-          effort: thread.runtimeEffort ?? null,
+          model: currentModel?.model ?? thread.runtimeModel ?? null,
+          effort: currentModel ? currentModel.effort : (thread.runtimeEffort ?? null),
           permissionMode: thread.permissionMode ?? null,
           speed: thread.speed ?? null,
         },
@@ -2099,6 +2102,7 @@ export class RuntimeSession {
         }
       }
       this.loaded.add(threadId);
+      if (!cursor) await runtime.ipc.refreshModelSettings(threadId);
       await this.refreshNativeQueue(threadId);
       this.save();
       return this.history(threadId);
@@ -4969,6 +4973,10 @@ export class RuntimeSession {
     if (this.closed) return;
     const thread = this.state.threads.find((v) => (v.codexId ?? v.id) === params.threadId);
     if (!thread) return;
+    if (method === 'desktop/model-settings') {
+      this.emit(thread.id, method, false);
+      return;
+    }
     if (method === 'desktop/observation') {
       if (this.loaded.has(thread.id) && this.projectDesktopObservation(thread))
         this.emit(thread.id, method, false);
@@ -5348,17 +5356,9 @@ export class RuntimeSession {
       ? string(collaboration.mode)
       : undefined;
     const settings = object(state.latestThreadSettings);
-    thread.runtimeModel =
-      string(settings.model) ||
-      string(object(collaboration.settings).model) ||
-      string(state.latestModel);
-    const effort =
-      settings.effort !== undefined
-        ? settings.effort
-        : state.latestReasoningEffort !== undefined
-          ? state.latestReasoningEffort
-          : object(collaboration.settings).reasoning_effort;
-    thread.runtimeEffort = typeof effort === 'string' ? effort : null;
+    const currentModel = desktopModelSettings(state);
+    thread.runtimeModel = currentModel.model || undefined;
+    thread.runtimeEffort = currentModel.effort;
     const latest = turns.at(-1);
     thread.speed = currentSpeed(
       settings.serviceTier !== undefined
@@ -5676,6 +5676,8 @@ export class RuntimeSession {
   ) {
     if (threadId) {
       this.thread(threadId);
+      if (this.runtime instanceof DesktopRuntime)
+        await this.runtime.ipc.refreshModelSettings(threadId);
       await this.refreshNativeQueue(threadId);
     }
     const reset =
@@ -5691,7 +5693,11 @@ export class RuntimeSession {
         };
         const timer = setTimeout(finish, 15_000);
         const queueTimer = setInterval(() => {
-          if (threadId) void this.refreshNativeQueue(threadId).catch(() => undefined);
+          if (threadId) {
+            void this.refreshNativeQueue(threadId).catch(() => undefined);
+            if (this.runtime instanceof DesktopRuntime)
+              void this.runtime.ipc.refreshModelSettings(threadId).catch(() => undefined);
+          }
         }, 1000);
         this.listeners.add(finish);
         signal.addEventListener('abort', finish, { once: true });

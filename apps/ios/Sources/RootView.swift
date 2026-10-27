@@ -4312,7 +4312,7 @@ private struct ComposerView: View {
   }
 
   private var compactModelLabel: String {
-    let name = store.modelLabel.replacingOccurrences(of: "GPT-", with: "", options: [.anchored, .caseInsensitive])
+    let name = store.displayedModelLabel.replacingOccurrences(of: "GPT-", with: "", options: [.anchored, .caseInsensitive])
       .replacingOccurrences(of: "-Sol", with: " Sol").replacingOccurrences(of: "-Astra", with: " Astra")
       .replacingOccurrences(of: "-Luna", with: " Luna").replacingOccurrences(of: "-Terra", with: " Terra")
     return name.count > 10 ? String(name.prefix(9)) + "…" : name
@@ -4324,17 +4324,17 @@ private struct ComposerView: View {
         Image(systemName: store.selectedSpeed == "ultrafast" ? "bolt.badge.clock.fill" : "bolt.fill")
           .foregroundStyle(store.selectedSpeed == "fast" || store.selectedSpeed == "ultrafast" ? Color.blue : Color.primary)
         if density != .icons {
-          Text(density == .full ? store.modelLabel : density == .minimal ? String(compactModelLabel.prefix(6)) : compactModelLabel)
+          Text(density == .full ? store.displayedModelLabel : density == .minimal ? String(compactModelLabel.prefix(6)) : compactModelLabel)
             .lineLimit(1)
         }
-        if density != .icons { Text(store.effortLabel(store.selectedEffort)).foregroundStyle(Palette.secondary) }
+        if density != .icons { Text(store.displayedEffortLabel).foregroundStyle(Palette.secondary) }
         if density != .icons { Image(systemName: "chevron.down").font(.system(size: 9)) }
       }.font(density == .minimal ? .caption2 : .caption)
         .padding(.horizontal, density == .full || density == .compact ? 10 : 6).frame(minHeight: 34)
         .floatingSurface(cornerRadius: 20).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
     }.buttonStyle(.plain).fixedSize(horizontal: true, vertical: false).disabled(!store.canConfigureGeneration)
       .accessibilityIdentifier("generation-settings")
-      .accessibilityLabel(L10n.tr("模型，\(store.modelLabel)，推理强度，\(store.effortLabel(store.selectedEffort))，速度，\(store.speedLabel(store.selectedSpeed))"))
+      .accessibilityLabel(L10n.tr("模型，\(store.displayedModelLabel)，推理强度，\(store.displayedEffortLabel)，速度，\(store.speedLabel(store.selectedSpeed))"))
   }
 
   private var queuedCommands: some View {

@@ -255,11 +255,18 @@ export class DesktopIpc {
   private snapshotRetryAt = new Map<string, number>();
   private liveWindows = new Map<string, DesktopLiveWindow>();
   private observedOwners = new Map<string, number>();
+  private currentModels = new Map<
+    string,
+    { owner: string; checkedAt: number; model: string; effort: string | null }
+  >();
+  private modelReads = new Map<string, Promise<void>>();
+  private modelEpoch = 0;
   ready = false;
   onSnapshot: (id: string, state: WireObject) => void = () => {};
   onUnavailable: (id: string) => void = () => {};
   onDiscovered: (id: string) => void = () => {};
   onObservation: (id: string, observation: DesktopLiveObservation) => void = () => {};
+  onModelSettings: (id: string) => void = () => {};
   onDisconnect: () => void = () => {};
 
   constructor(
@@ -329,6 +336,8 @@ export class DesktopIpc {
       this.snapshotRetryAt.clear();
       this.liveWindows.clear();
       this.observedOwners.clear();
+      this.currentModels.clear();
+      this.modelEpoch++;
       for (const waiters of this.waiters.values()) for (const done of waiters) done();
       this.onDisconnect();
     });
@@ -420,6 +429,12 @@ export class DesktopIpc {
         return;
       }
       if (message.method === 'client-status-changed' && params.status === 'disconnected') {
+        this.modelEpoch++;
+        for (const [id, settings] of this.currentModels)
+          if (settings.owner === params.clientId) {
+            this.currentModels.delete(id);
+            this.onModelSettings(id);
+          }
         for (const [id, owner] of this.owners)
           if (owner === params.clientId) {
             this.owners.delete(id);
@@ -560,6 +575,8 @@ export class DesktopIpc {
         this.retiredStreams.set(id, streams);
       }
       this.states.set(id, { revision, state });
+      // A newer owner stream supersedes a prior small settings read.
+      this.currentModels.delete(id);
       const existingWindow = this.liveWindows.get(id);
       const window = existingWindow ?? new DesktopLiveWindow();
       if (change.type === 'snapshot' || !existingWindow) window.seed(state, revision);
@@ -626,6 +643,84 @@ export class DesktopIpc {
   state(id: string): WireObject | undefined {
     return this.states.get(id)?.state;
   }
+  modelSettings(id: string): { model: string; effort: string | null } | undefined {
+    const value = this.currentModels.get(id);
+    if (!this.ready || !value || Date.now() - value.checkedAt >= 10_000) return;
+    if (this.owners.has(id) && this.owners.get(id) !== value.owner) return;
+    return { model: value.model, effort: value.effort };
+  }
+  /** Current owner settings are readable even when its full transcript is too large.
+   * This read never opens a thread, claims execution ownership, or grants control.
+   */
+  async refreshModelSettings(id: string): Promise<void> {
+    if (!this.ready) return;
+    if (Date.now() - (this.currentModels.get(id)?.checkedAt ?? 0) < 5000) return;
+    const pending = this.modelReads.get(id);
+    if (pending) return pending;
+    const socket = this.socket;
+    const epoch = this.modelEpoch;
+    const work = (async () => {
+      try {
+        const discovery = await this.request(
+          'thread-owner-discovery',
+          { hostId: 'local', conversationId: id },
+          undefined,
+          2000,
+        );
+        const owner = string(discovery.handledByClientId);
+        if (!owner || object(discovery.result).supportsUntrustedAppInput !== true)
+          throw new Error('Model settings owner unavailable');
+        if (this.owners.has(id) && this.owners.get(id) !== owner)
+          throw new Error('Model settings owner changed');
+        const state = this.state(id);
+        const result = await this.request(
+          'thread-follower-read-model-settings',
+          { conversationId: id },
+          owner,
+          2000,
+        );
+        if (
+          !this.ready ||
+          this.socket !== socket ||
+          this.modelEpoch !== epoch ||
+          result.handledByClientId !== owner ||
+          result.method !== 'thread-follower-read-model-settings' ||
+          (this.owners.has(id) && this.owners.get(id) !== owner)
+        )
+          throw new Error('Model settings response mismatch');
+        // Do not overwrite a stream that changed while the read was pending.
+        if (this.state(id) !== state) return;
+        this.recordModelSettings(id, owner, object(object(result.result).settings));
+      } catch {
+        if (this.currentModels.delete(id)) this.onModelSettings(id);
+      }
+    })();
+    this.modelReads.set(id, work);
+    try {
+      await work;
+    } finally {
+      if (this.modelReads.get(id) === work) this.modelReads.delete(id);
+    }
+  }
+  private recordModelSettings(id: string, owner: string, settings: WireObject): void {
+    if (
+      !string(settings.model) ||
+      !(typeof settings.reasoningEffort === 'string' || settings.reasoningEffort === null)
+    )
+      throw new Error('Incomplete model settings');
+    const previous = this.modelSettings(id);
+    this.currentModels.delete(id);
+    this.currentModels.set(id, {
+      owner,
+      checkedAt: Date.now(),
+      model: string(settings.model),
+      effort: settings.reasoningEffort as string | null,
+    });
+    while (this.currentModels.size > 128)
+      this.currentModels.delete(this.currentModels.keys().next().value!);
+    if (previous?.model !== settings.model || previous?.effort !== settings.reasoningEffort)
+      this.onModelSettings(id);
+  }
   observation(id: string): DesktopLiveObservation | undefined {
     if (!this.ready || Date.now() - (this.observedOwners.get(id) ?? 0) >= 10_000) return;
     return this.liveWindows.get(id)?.observation();
@@ -666,6 +761,7 @@ export class DesktopIpc {
       )
         throw new Error('Observation owner response mismatch');
       this.observedOwners.set(id, Date.now());
+      this.recordModelSettings(id, owner, object(object(result.result).settings));
     } catch {
       this.observedOwners.delete(id);
       this.liveWindows.delete(id);
@@ -913,6 +1009,7 @@ export class DesktopRuntime {
     this.ipc.onDiscovered = (threadId) => this.onEvent('desktop/discovered', { threadId });
     this.ipc.onObservation = (threadId, observation) =>
       this.onEvent('desktop/observation', { threadId, observation });
+    this.ipc.onModelSettings = (threadId) => this.onEvent('desktop/model-settings', { threadId });
     this.ipc.onDisconnect = () => this.onDisconnect();
     this.reader.onDisconnect = () => this.ipc.close();
   }

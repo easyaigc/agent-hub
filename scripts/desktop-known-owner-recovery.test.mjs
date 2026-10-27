@@ -163,6 +163,25 @@ async function fixture(t, body) {
         if (holds.has(id)) holds.get(id).push(reply);
         else reply();
       } else if (
+        message.type === 'request' &&
+        message.method === 'thread-follower-read-model-settings'
+      ) {
+        const owner = registry.get(message.params.conversationId);
+        assert(owner && owner.clientId === message.targetClientId);
+        frame({
+          type: 'response',
+          requestId: message.requestId,
+          resultType: 'success',
+          method: message.method,
+          handledByClientId: owner.clientId,
+          result: {
+            settings: {
+              model: owner.state.latestModel ?? 'fixture-model',
+              reasoningEffort: owner.state.latestReasoningEffort ?? null,
+            },
+          },
+        });
+      } else if (
         message.type === 'broadcast' &&
         message.method === 'thread-stream-following-changed'
       ) {

@@ -1,5 +1,7 @@
 # 运行时 HTTP 协议 v1
 
+2026-10-26：`runtime.generationSettings` 的模型／强度可来自准确原 owner 的小体积具名只读参数查询，独立于完整消息快照是否可用；该查询核对原 owner 与当前 IPC 连接，拒绝迟到、错源和过期响应，不授予 `canControl` 或执行权限。未知值保持 null；手机不得将目录推荐默认值或未发送草稿当作该对话实际参数。见参数同步专项验收。
+
 2026-10-26：`runtime.approvals[]` 增加可选 `decisionLabels: Record<string,string>` 展示文案，动作仍来自 `decisions[]`，手机通过原 `/v1/approvals` 仅提交具名 decision。新版手机以 `X-Agent-Hub-Approvals: mcp-v1` 声明支持；旧客户端读取新类型时仅显示拒绝与更新提示，避免将未知动作误标为停止任务。历史与事件读取均执行此兼容投影，不改变 Host 内部原请求。Host 将 MCP 的 accept／decline／cancel、原请求允许的 session／always 与额外权限的 turn／session 响应映射到原运行时，不向手机开放任意 wire、权限对象或方法名。
 
 2026-10-24 原桌面创建恢复：准备器确认退出且官方 API 已核对准确零 Turn 元数据后，先登记只读会话，再获取原 owner。已拒绝且未写入首条输入的本机准备记录可支持该准确 ID 的显式打开；原创建回执和输入不变，不重放、不以元数据冒充运行时可控。两端共用 Host，无新增手机权限开关；原生与辅助验收分别记证。

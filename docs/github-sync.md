@@ -8,6 +8,8 @@
 
 同步使用独立 SSH 部署密钥：公钥只在 GitHub 的 `easyaigc/agent-hub` 授予仓库写入权限，私钥只保存为 Gitea 本仓库的 Actions Secret `GH_PUBLIC_SYNC_SSH_KEY`。不得保存个人 GitHub 令牌或其他电脑的身份；不得提交私钥。SSH 使用 443 端口，并通过 GitHub 的 HTTPS 元数据接口取得主机公钥、强制校验。
 
+通过 GitHub CLI 登记公钥时，先确认 `gh auth status` 包含 `repo` 和 `workflow` 权限。缺少后者时运行 `gh auth refresh --hostname github.com --scopes workflow` 完成补授权，再使用补授权后的凭据登记公钥。GitHub 会拒绝不具备 `workflow` 权限的 OAuth 授权所登记的密钥更新 `.github/workflows`；本次接入已实际验证这一限制及补授权后重新登记公钥的恢复。个人 OAuth 令牌仍只保留在登记电脑的凭据存储中。
+
 `scripts/ci/sync-github.mjs` 检查上次来源提交的祖先关系，拒绝旧版本或无关来源覆盖；目标使用普通快进推送，遇到并发提交失败而不强推。文件树相同则跳过，不创建重复提交。公开仓库的源码修改应先回到 Gitea 主线，避免被后续源码快照替换。
 
 辅助检查：`node --test scripts/ci/sync-github.test.mjs`。本地只读预览：

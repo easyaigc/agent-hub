@@ -1,0 +1,46 @@
+{
+  "format": "agent-hub-skill-document-overlay-v1",
+  "revision": "host-tool-policy-20261027-r2",
+  "canonicalSourceCommit": "1a5bbd746e4f08257f004683bb06e6d6d7a08069",
+  "entries": {
+    "SKILL.md": {
+      "beforeSha256": "312f72b67c58e20a05e92525887dd2fec0fc822e57d202b437df65a931aed2d9",
+      "afterSha256": "3ee877eeaad5d907c822cb24fb06f6c1763b488ddde771b66868a9b1bc480366",
+      "size": 32100
+    },
+    "assets/codex-manage/skills/codex-host-connect/SKILL.md": {
+      "beforeSha256": "312f72b67c58e20a05e92525887dd2fec0fc822e57d202b437df65a931aed2d9",
+      "afterSha256": "3ee877eeaad5d907c822cb24fb06f6c1763b488ddde771b66868a9b1bc480366",
+      "size": 32100
+    },
+    "references/distribution.md": {
+      "beforeSha256": "f0d72df376e60ed1763fc64b01800407bf9ff5a1759e9412ef21c468c33b2a65",
+      "afterSha256": "72b863d6b5ba95e7356e96033825552085f6c9c815fee43f943471978cc41c8a",
+      "size": 12584
+    },
+    "assets/codex-manage/skills/codex-host-connect/references/distribution.md": {
+      "beforeSha256": "f0d72df376e60ed1763fc64b01800407bf9ff5a1759e9412ef21c468c33b2a65",
+      "afterSha256": "72b863d6b5ba95e7356e96033825552085f6c9c815fee43f943471978cc41c8a",
+      "size": 12584
+    }
+  },
+  "programFilesIncluded": 0,
+  "programOrPrivateConfigurationChanges": false,
+  "referenceProgramSourceCommit": "e29914a0134bef0a484f549dd9e0dc03e5b9e493",
+  "referenceUnifiedProgramPackageSha256": "1cf056ef127380014a66e3fc850a5c8059ac735e31f60dab777bb37779cd8e2c",
+  "referenceRuntimeFingerprints": {
+    "apps/host-agent": "7ca001390119658ca587a664f113f8e806b61de9cdb162e0cf1f9137e114eb94",
+    "packages/codex-adapter": "43975fbab673cc997c6e9bc125eb37526f98328bdf4d171dd3d7347dcec0fe7b",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "referenceFingerprintsDoNotDeclareTargetProgramUpgraded": true,
+  "existingProfiler": {
+    "githubCommit": "0c92ad822dd1b36140e714a2e3b8c32197a5bc5c",
+    "path": "scripts/diagnostics/windows-host-cpu-profile-preload.mjs",
+    "sha256": "5c52ed62c55a4f237710181b60e606ec6da522cf6f4277f1ae6da3bc120e9bfd",
+    "newProfileOrRestartRequested": false
+  },
+  "scope": "Only4listed document files. Accept exact before or identical after bytes; preserve/export independent differences. No whole-directory replacement, private credentials, program change, service restart or sampling. Preserve installed program and its own acceptance fingerprints."
+}

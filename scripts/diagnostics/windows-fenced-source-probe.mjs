@@ -41,8 +41,30 @@ export async function compiledFingerprint(directory) {
   assert(Object.keys(files).length, 'Empty compiled package');
   return digest(JSON.stringify(files));
 }
-export async function runProbe(planFile) {
+export function parseProbeArguments(args) {
+  assert(Array.isArray(args) && (args.length === 1 || args.length === 2));
+  assert(typeof args[0] === 'string' && args[0].length > 0);
+  if (args.length === 2) assert.equal(args[1], '--numeric-diagnostics');
+  return { planFile: resolve(args[0]), numericDiagnostics: args.length === 2 };
+}
+
+/** Only the owned diagnostic CLI temporarily enables the existing fixed numeric summaries. */
+export async function withProbeDiagnostics(enabled, body) {
+  assert.equal(typeof enabled, 'boolean');
+  const previous = process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+  assert.notEqual(previous, '1', 'Normal initial diagnostic environment required');
+  if (enabled) process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = '1';
+  try {
+    return await body();
+  } finally {
+    if (previous === undefined) delete process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+    else process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = previous;
+  }
+}
+
+export async function runProbe(planFile, numericDiagnostics = false) {
   assert.equal(process.platform, 'win32', 'Native Windows only');
+  assert.equal(typeof numericDiagnostics, 'boolean', 'Explicit diagnostic mode required');
   assert.equal(process.versions.node.split('.')[0], '24', 'Use the installed Node 24');
   assert.notEqual(
     process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS,
@@ -128,93 +150,98 @@ export async function runProbe(planFile) {
       'Independent one-source Native client only; no Host/owner/phone acceptance, model input or source creation',
     startupLimitMs: 180000,
     callerBudgetMs: 8000,
+    numericDiagnostics,
     prepareCalls: 0,
     commitCalls: 0,
     readerStates: [],
   };
   let receipt;
   let timer;
-  try {
-    client.start();
-    const startup = performance.now();
-    while (!client.available && performance.now() - startup < result.startupLimitMs) {
-      result.readerStates.push(sample());
-      await delay(250);
+  return withProbeDiagnostics(numericDiagnostics, async () => {
+    try {
+      client.start();
+      const startup = performance.now();
+      while (!client.available && performance.now() - startup < result.startupLimitMs) {
+        result.readerStates.push(sample());
+        await delay(250);
+      }
+      result.initialAvailability = sample();
+      assert(client.available, 'Native reader did not become available');
+      const started = performance.now();
+      const abort = new AbortController();
+      timer = setTimeout(() => abort.abort(), result.callerBudgetMs);
+      result.prepareCalls++;
+      receipt = await client.prepare(
+        plan.threadId,
+        plan.sourceTurnId,
+        started + result.callerBudgetMs,
+        abort.signal,
+      );
+      result.prepareMs = performance.now() - started;
+      result.commitCalls++;
+      const committed = performance.now();
+      const value = await receipt.commit();
+      result.commitMs = performance.now() - committed;
+      result.readMs = performance.now() - started;
+      assert(result.readMs < result.callerBudgetMs);
+      assert.equal(value.schemaVersion, 1);
+      assert.equal(value.readOnly, true);
+      assert.equal(value.source, 'native-trace');
+      assert.equal(value.threadId, plan.threadId);
+      assert.equal(value.sourceTurnId, plan.sourceTurnId);
+      for (const [key, expected] of Object.entries(target))
+        assert.equal(value.target?.[key], expected);
+      assert(value.suggestion === null || value.suggestion?.validity === 'native-version');
+      const text = value.suggestion?.text;
+      if (text !== undefined) {
+        assert.equal(typeof text, 'string');
+        assert.equal(digest(text), value.suggestion.contentSha256);
+      }
+      result.native = {
+        isNull: value.suggestion === null,
+        textLength: text?.length ?? 0,
+        textSha256: text === undefined ? null : digest(text),
+      };
+      result.readPassed = true;
+    } catch (error) {
+      result.readPassed = false;
+      result.error = {
+        name: error?.name,
+        status: error?.status ?? null,
+        code: typeof error?.code === 'string' ? error.code : null,
+      };
+    } finally {
+      clearTimeout(timer);
+      receipt?.dispose();
+      sample();
+      client.close();
+      const closing = performance.now();
+      while (
+        (client.worker ||
+          client.retiring.size ||
+          [...owned.values()].some((item) => !item.exited)) &&
+        performance.now() - closing < 20000
+      )
+        await delay(100);
+      result.finalState = sample();
+      result.ownedReaders = [...owned.values()];
+      result.readerExitConfirmed =
+        !client.worker &&
+        client.retiring.size === 0 &&
+        result.ownedReaders.every((item) => item.exited);
+      result.nativeProcessClosure =
+        'Operator must separately verify this probe PID and Native descendants/stdio exited';
+      result.endedAt = new Date().toISOString();
+      const output = join(plan.output, 'probe-result.private.json');
+      await writeFile(output, JSON.stringify(result, null, 2), { mode: 0o600, flag: 'wx' });
+      platform.protectWindowsStateFile(output);
     }
-    result.initialAvailability = sample();
-    assert(client.available, 'Native reader did not become available');
-    const started = performance.now();
-    const abort = new AbortController();
-    timer = setTimeout(() => abort.abort(), result.callerBudgetMs);
-    result.prepareCalls++;
-    receipt = await client.prepare(
-      plan.threadId,
-      plan.sourceTurnId,
-      started + result.callerBudgetMs,
-      abort.signal,
-    );
-    result.prepareMs = performance.now() - started;
-    result.commitCalls++;
-    const committed = performance.now();
-    const value = await receipt.commit();
-    result.commitMs = performance.now() - committed;
-    result.readMs = performance.now() - started;
-    assert(result.readMs < result.callerBudgetMs);
-    assert.equal(value.schemaVersion, 1);
-    assert.equal(value.readOnly, true);
-    assert.equal(value.source, 'native-trace');
-    assert.equal(value.threadId, plan.threadId);
-    assert.equal(value.sourceTurnId, plan.sourceTurnId);
-    for (const [key, expected] of Object.entries(target))
-      assert.equal(value.target?.[key], expected);
-    assert(value.suggestion === null || value.suggestion?.validity === 'native-version');
-    const text = value.suggestion?.text;
-    if (text !== undefined) {
-      assert.equal(typeof text, 'string');
-      assert.equal(digest(text), value.suggestion.contentSha256);
-    }
-    result.native = {
-      isNull: value.suggestion === null,
-      textLength: text?.length ?? 0,
-      textSha256: text === undefined ? null : digest(text),
-    };
-    result.readPassed = true;
-  } catch (error) {
-    result.readPassed = false;
-    result.error = {
-      name: error?.name,
-      status: error?.status ?? null,
-      code: typeof error?.code === 'string' ? error.code : null,
-    };
-  } finally {
-    clearTimeout(timer);
-    receipt?.dispose();
-    sample();
-    client.close();
-    const closing = performance.now();
-    while (
-      (client.worker || client.retiring.size || [...owned.values()].some((item) => !item.exited)) &&
-      performance.now() - closing < 20000
-    )
-      await delay(100);
-    result.finalState = sample();
-    result.ownedReaders = [...owned.values()];
-    result.readerExitConfirmed =
-      !client.worker &&
-      client.retiring.size === 0 &&
-      result.ownedReaders.every((item) => item.exited);
-    result.nativeProcessClosure =
-      'Operator must separately verify this probe PID and Native descendants/stdio exited';
-    result.endedAt = new Date().toISOString();
-    const output = join(plan.output, 'probe-result.private.json');
-    await writeFile(output, JSON.stringify(result, null, 2), { mode: 0o600, flag: 'wx' });
-    platform.protectWindowsStateFile(output);
-  }
-  return result;
+    return result;
+  });
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  assert.equal(process.argv.length, 3, 'Expected one private plan JSON path');
-  const result = await runProbe(resolve(process.argv[2]));
+  const args = parseProbeArguments(process.argv.slice(2));
+  const result = await runProbe(args.planFile, args.numericDiagnostics);
   console.log(
     JSON.stringify({
       readPassed: result.readPassed,
@@ -224,6 +251,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       readMs: result.readMs,
       native: result.native,
       error: result.error,
+      numericDiagnostics: result.numericDiagnostics,
     }),
   );
   process.exitCode = result.readPassed && result.readerExitConfirmed ? 0 : 1;

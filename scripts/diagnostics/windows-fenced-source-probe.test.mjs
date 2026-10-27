@@ -3,7 +3,13 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { parseProbePlan, compiledFingerprint, runProbe } from './windows-fenced-source-probe.mjs';
+import {
+  parseProbePlan,
+  compiledFingerprint,
+  runProbe,
+  parseProbeArguments,
+  withProbeDiagnostics,
+} from './windows-fenced-source-probe.mjs';
 const plan = {
   format: 'windows-fenced-source-probe-v1',
   operationId: '11111111-1111-4111-8111-111111111111',
@@ -23,6 +29,70 @@ test('one-source plan is copied and rejects extra execution/transport fields', (
   assert.notEqual(value.hostId, plan.hostId);
   for (const extra of ['sources', 'command', 'method', 'token', 'deadlineMs'])
     assert.throws(() => parseProbePlan({ ...plan, [extra]: 'untrusted' }));
+});
+test('CLI keeps one private plan and permits only the explicit numeric diagnostics flag', () => {
+  assert.equal(parseProbeArguments(['plan.private.json']).numericDiagnostics, false);
+  assert.equal(
+    parseProbeArguments(['plan.private.json', '--numeric-diagnostics']).numericDiagnostics,
+    true,
+  );
+  for (const args of [
+    [],
+    [''],
+    ['plan', '--rpc'],
+    ['plan', '--numeric-diagnostics', 'extra'],
+    ['plan', '--diagnostics=1'],
+  ])
+    assert.throws(() => parseProbeArguments(args));
+});
+test('numeric diagnostics restores the exact prior environment on success and rejection', async () => {
+  const previous = process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+  try {
+    delete process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+    assert.equal(
+      await withProbeDiagnostics(
+        false,
+        async () => process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS,
+      ),
+      undefined,
+    );
+    assert.equal(
+      await withProbeDiagnostics(true, async () => process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS),
+      '1',
+    );
+    assert.equal(process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS, undefined);
+    process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = '0';
+    const failure = new Error('owned diagnostic failure');
+    await assert.rejects(
+      withProbeDiagnostics(true, async () => {
+        assert.equal(process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS, '1');
+        throw failure;
+      }),
+      (error) => error === failure,
+    );
+    assert.equal(process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS, '0');
+    await assert.rejects(withProbeDiagnostics('untrusted', () => {}));
+  } finally {
+    if (previous === undefined) delete process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+    else process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = previous;
+  }
+});
+test('inherited diagnostic enablement is rejected without invoking an action', async () => {
+  const previous = process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+  try {
+    process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = '1';
+    let called = false;
+    await assert.rejects(
+      withProbeDiagnostics(true, () => {
+        called = true;
+      }),
+    );
+    assert.equal(called, false);
+    assert.equal(process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS, '1');
+  } finally {
+    if (previous === undefined) delete process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS;
+    else process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS = previous;
+  }
 });
 test('wrong format, incomplete target and duplicate source IDs fail before imports', () => {
   for (const value of [

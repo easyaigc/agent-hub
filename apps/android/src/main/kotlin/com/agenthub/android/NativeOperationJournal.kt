@@ -126,7 +126,10 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
             val next=ThreadForkCodec.operation(result)
             require(com.agenthub.core.ThreadForkRules.mayAcceptOutcome(it.phase,prior?.forkedThreadId,prior?.projectId,next.phase,next.forkedThreadId,next.projectId)) { "终态分支回执不能回退或改写" }
         }
-        if(preservesReplyReceipt(it,phase) || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted") && it.phase!=phase) it
+        // A preparation read may finish after the first write boundary. It cannot
+        // retire the original query observer or replace evidence of that attempt.
+        if(it.kind=="creation" && it.submissionAttempted && phase=="prepared" ||
+            preservesReplyReceipt(it,phase) || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted") && it.phase!=phase) it
         else it.copy(phase=phase,result=result.toString(),error=error)
     }
     suspend fun uncertain(target: String,id: String,error: String?): SavedOperation = change(target,id) { if(preservesReplyReceipt(it,"uncertain") || it.kind in listOf("fork","chat-action") && it.phase=="rejected" || it.phase in listOf("confirmed","opened","completed","cancelled","interrupted")) it else it.copy(phase="uncertain",error=error) }
@@ -153,7 +156,18 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
     suspend fun activateConfirmedFork(target: String,id: String): SavedOperation = change(target,id) {
         require(it.kind=="fork" && it.phase=="confirmed");it.copy(detached=false)
     }
+    /** A local rejected presentation dismissal cannot notify or replay the Host. */
+    suspend fun dismissRejectedCreation(original: SavedOperation): SavedOperation = change(original.target,original.id) {
+        if(original.kind=="creation" && original.phase=="rejected" && it.kind=="creation" && it.intentSha256==original.intentSha256 && it.sourceKey==original.sourceKey &&
+            it.phase=="rejected" && !it.detached)it.copy(detached=true) else it
+    }
     suspend fun detach(target: String,id: String): SavedOperation = change(target,id) { it.copy(detached=true) }
+    /** A failed detach notification belongs to its original row; it changes no execution outcome. */
+    suspend fun detachedCreationFailure(original: SavedOperation,error: String): SavedOperation = change(original.target,original.id) {
+        require(original.kind=="creation" && original.detached && it.kind=="creation" && it.detached && it.intentSha256==original.intentSha256)
+        // A newer original receipt diagnostic wins over this earlier transport attempt.
+        if(it.error!=original.error) it else it.copy(error=error)
+    }
     private fun preservesReplyReceipt(record: SavedOperation,incoming: String): Boolean = record.kind=="reply" &&
         record.result?.let { CodexCommandCodec.receipt(JSONObject(it)) }?.let { ReplyRecoveryRules.preservesReceiptEvidence(it.state,it.queueSource,it.queuePresent,it.queueDisposition,incoming) }==true
     private fun verifyResult(record: SavedOperation,result: JSONObject) {

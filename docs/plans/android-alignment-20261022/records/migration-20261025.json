@@ -1,0 +1,331 @@
+{
+  "date": "2026-10-25",
+  "purpose": "Separate current plan from historical process without dropping source blocks.",
+  "sources": [
+    {
+      "path": "docs/plans/android-alignment-20261022/progress.md",
+      "sha256": "5e94adb6a0e1c522aae7fef1f95ac793b59a2f3b565e1fbf4a57eea0ca246036",
+      "lines": 1239
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022.md",
+      "sha256": "f1a079ca9bf9fc95353c7a9654b9d25e8b22caf15ab7a8a6f94f82a952c2f5a8",
+      "lines": 663
+    }
+  ],
+  "blocks": [
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1,
+      "endLine": 26,
+      "sourceSha256": "340535d2dbe3b0c98be63d5a7eb6ad208f2de0bb5c1b1dbac6aedd667dfefa72",
+      "destination": "dispatch-and-integration.md#progress-1-26",
+      "relocatedSha256": "792854919c513a3d2b7057296e03a8e0447088cb506217a5dc94a83792d399bd"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 27,
+      "endLine": 40,
+      "sourceSha256": "2393495c6646e4d1e2bf2463f9b8d1f350801616fbb735f245581713eb3c9428",
+      "destination": "p0-environment.md#progress-27-40",
+      "relocatedSha256": "01f98784cd3d73aba1abf854510f13bf1770ee56fe40af6ba36ede2b38f3bdcf"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 41,
+      "endLine": 59,
+      "sourceSha256": "9b301a61edc962213c7056d56cb44514a68cc76085e06fc94c9f51ad8c3f1851",
+      "destination": "p1-target-recovery.md#progress-41-59",
+      "relocatedSha256": "d524d253deb25848dde0060b37a755cbc78805191fbbf32548ac7147596e31db"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 60,
+      "endLine": 167,
+      "sourceSha256": "5233d9f9f2af755858bc3ede03ab24711c9860348e0b5f5d6067c5ea9f503dbe",
+      "destination": "p2-connection-reading.md#progress-60-167",
+      "relocatedSha256": "64116e8ef3e42d1103e0d2d51ecab500a43f4864e045827e6c11f8c33a4459b3"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 168,
+      "endLine": 265,
+      "sourceSha256": "ed8ee0d2e3f820ccb41fecf8c63dfbf1094640ce071f34c3e2966df76428479e",
+      "destination": "p3-navigation-management.md#progress-168-265",
+      "relocatedSha256": "9e8009ab7dde414af6419a6d543037e2b7e9f071ce8719b377a29d19fbaa7233"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 266,
+      "endLine": 443,
+      "sourceSha256": "dac8be8335ea4db3e81e4b8a28015ea58f489604fa588990ade22432f3e20c4d",
+      "destination": "p4-input-settings.md#progress-266-443",
+      "relocatedSha256": "1036b331dea9281d7198b96c70f7cfd536f7bc01908cd67c44926c404fdc99e0"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 444,
+      "endLine": 521,
+      "sourceSha256": "b609c7f23bbd397c8d097a018939c999ea5d17322efc7f1fe0f14838142c13d5",
+      "destination": "p4-permissions.md#progress-444-521",
+      "relocatedSha256": "34a11259c99f574fac569767f41426e3d49dba512cebe3aa083a6aba532ec6e9"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 522,
+      "endLine": 591,
+      "sourceSha256": "1a65d64fa6ea19ced86bb32d98d16721d5957ceeb033cf14986e80d7eaa1d299",
+      "destination": "p4-plans-questions.md#progress-522-591",
+      "relocatedSha256": "8a3b3473e7dd3a1c8f6eaf0320965f9633337e25f03eb417e5702e1cb85ec8b9"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 592,
+      "endLine": 705,
+      "sourceSha256": "e7c359c7a07dbd483d8150ccf672b9cc4c496acfc44f5abf6f609217aca353d0",
+      "destination": "p4-queue-controls.md#progress-592-705",
+      "relocatedSha256": "5d7b48846c6e98a1b035b852eaa99326a5c2d89600b589add125c270a2a7a192"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 706,
+      "endLine": 875,
+      "sourceSha256": "5f14f57f72f1eb65184fc1911d6986a6c9f3ab222b8e2da9234e9c6e1732a131",
+      "destination": "p4-creation-recovery.md#progress-706-875",
+      "relocatedSha256": "5addd35752f85b0d0fe4bcc07a530d5fe869bb3c1d9745f35a44fa862029407f"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 876,
+      "endLine": 915,
+      "sourceSha256": "c52a909440c3db320d45f6272451d00c346918e1e65bba34ccc1189e3b92798f",
+      "destination": "p4-tls-reading.md#progress-876-915",
+      "relocatedSha256": "5b554f7cff35e140f41dff40a1088be1f687899fd6f94b5a0c5055b6fc90c721"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 916,
+      "endLine": 967,
+      "sourceSha256": "191b8dfa77cc28597111dfa7806c652b58a634a9a12b626cc4a5268ced619065",
+      "destination": "p3-gestures.md#progress-916-967",
+      "relocatedSha256": "9d4050a1029fb7b31cce13ac10ae763d78ebe9d027ac7043b856c69bfeac444b"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 968,
+      "endLine": 977,
+      "sourceSha256": "c006603ae084e5c237b4e8d27680ff342fba965d41a931fbd4bfb90d8d9a099c",
+      "destination": "p4-history-queue-recovery.md#progress-968-977",
+      "relocatedSha256": "0766f5d6630a56c9851948fbd2e214dcf9abbb79614ac21ba52bfda39cb78857"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 978,
+      "endLine": 1001,
+      "sourceSha256": "12aa5677529f7a410b336ebbf2f07312a6e49c548e2e80819061ca01dbe29034",
+      "destination": "p3-gestures.md#progress-978-1001",
+      "relocatedSha256": "0e41c9322ef55c06912b4db8da0214274d22ebf553971f0918513c98f59ed755"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1002,
+      "endLine": 1013,
+      "sourceSha256": "e23f88ccccc69aff1ba217058620096fb07a59d563b856dcd556d0eac5470428",
+      "destination": "dispatch-and-integration.md#progress-1002-1013",
+      "relocatedSha256": "1d05f6744f14bf73a7c327b55c7f72952f8ab8281130db5838157fa64d7b0478"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1014,
+      "endLine": 1017,
+      "sourceSha256": "7fa1228c81dd6dde4c7dacead6529384469e648e54e4b0a2ff0264ee28943a2d",
+      "destination": "p3-selection-copy.md#progress-1014-1017",
+      "relocatedSha256": "af8161382d7afc0621f62d82a90d2788de46c26a478d1f38367084ca121eaaf4"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1018,
+      "endLine": 1030,
+      "sourceSha256": "1a24c9bf6775c97344db0100bc87496b85f3cf9684f132a0c4a161265c8c4631",
+      "destination": "p4-queue-controls.md#progress-1018-1030",
+      "relocatedSha256": "0ba887c433f1f9c27c401beca1f8e6874b6796969e80d3913f336cad0624e591"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1031,
+      "endLine": 1040,
+      "sourceSha256": "76e810ff25e4d0b511fa9b84c0b1a638f2ce1c952b955fb31c0118105805a617",
+      "destination": "p3-selection-copy.md#progress-1031-1040",
+      "relocatedSha256": "d32566c711eddc26313d33d025b2889fe5861c6dfb6116ac31a23762cb44c481"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1041,
+      "endLine": 1058,
+      "sourceSha256": "aeef7ae1f77f39a74c0b3f9d26db88d8b01dc1ff41e0c4d11946ae577e9777d2",
+      "destination": "p4-history-queue-recovery.md#progress-1041-1058",
+      "relocatedSha256": "7b581aef2c2c6d1027ef6d4dda8303ac4178adb18e903ea06012d62d3c9dea37"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1059,
+      "endLine": 1070,
+      "sourceSha256": "1747561d9d0f39465ebd370186022fa2f0d1519ef10dffb93103c87b31171e80",
+      "destination": "dispatch-and-integration.md#progress-1059-1070",
+      "relocatedSha256": "efc424e0837039fe6e8525ff088850eab08c11ea87eb971a43dd984b7a5e0ed0"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1071,
+      "endLine": 1090,
+      "sourceSha256": "8b3311326ecdac3b2817231f306e5fa26978db83ceeb8aa69d69d628ad9bc748",
+      "destination": "p4-history-queue-recovery.md#progress-1071-1090",
+      "relocatedSha256": "448bb9cd60eaa88cbf4efb3246715ece4956d0e2036e7de8c498834fc82ba832"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1091,
+      "endLine": 1110,
+      "sourceSha256": "6b047f5c0c4d307f3672552aeffd8868b5f93604d840b6741b0c902203ba90a9",
+      "destination": "dispatch-and-integration.md#progress-1091-1110",
+      "relocatedSha256": "7782b03d3faed4af9cd157380ed9a412a8f1dc69e17477b45d6ccd48355ef370"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1111,
+      "endLine": 1148,
+      "sourceSha256": "d4a229d8498e956ffbcf309016670ba73d767c765f5879e7f6855c5103d875f2",
+      "destination": "p4-files-late-callbacks.md#progress-1111-1148",
+      "relocatedSha256": "ace74501032c1ee4e55b5b288d3d9f8fb2e5076faef76216d7d4016aa0afc35e"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1149,
+      "endLine": 1152,
+      "sourceSha256": "4668572b3866863df17882a758d2f9824e19ac905341ca46759eef5459039393",
+      "destination": "dispatch-and-integration.md#progress-1149-1152",
+      "relocatedSha256": "f7d302937fd5f52427a9ec572c31f34c02470c371bc6b68079d66444c4425101"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1153,
+      "endLine": 1188,
+      "sourceSha256": "422d55553e7ed5e57d1f7cbdcdbb5b316c611de371a6313390364da4344beb38",
+      "destination": "p4-owner-conflicts.md#progress-1153-1188",
+      "relocatedSha256": "15b68e8e096d0bb2cd6e5fac64c3c1736d42304b2980bdf6864121dd8e9bfb04"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1189,
+      "endLine": 1204,
+      "sourceSha256": "6447f64418db84984ca0dbe1651a691df353b335fa53534dc0f5990d22ba8e86",
+      "destination": "p4-cold-receipts.md#progress-1189-1204",
+      "relocatedSha256": "837df0857b0e81975dd2cd2c5e67fb7c07f66db5fbb2a2e74c06a793a4ebd92c"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022/progress.md",
+      "startLine": 1205,
+      "endLine": 1239,
+      "sourceSha256": "86f1cd91f64c35c10edfbebf831e8137866555cf3df549ce0b394c209c90a019",
+      "destination": "p4-approval-viewport.md#progress-1205-1239",
+      "relocatedSha256": "86f1cd91f64c35c10edfbebf831e8137866555cf3df549ce0b394c209c90a019"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 1,
+      "endLine": 162,
+      "sourceSha256": "833b610d755ee01923ba896a5ada02c0a3fd555a7d5fae598415534197b6ec84",
+      "destination": "baseline-plan.md#plan-1-162",
+      "relocatedSha256": "f2fa733875a3cceedf3debf048bc9ef3587c00b0b93006b4a7ff67f293bad77f"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 163,
+      "endLine": 180,
+      "sourceSha256": "1d3083630c6a161b7811964e8d08304f3f5d86f10160e9f3a644aac02a181401",
+      "destination": "p3-navigation-management.md#plan-163-180",
+      "relocatedSha256": "a3e6730f4129f7235e1492d7c1e45abbae058b2bed0de389c9f0962bac67a9c7"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 181,
+      "endLine": 216,
+      "sourceSha256": "f3101d28bd1f31e61528f52e9a52762f04c7fb3ba489b6920f387c3e88ac1ef0",
+      "destination": "p4-input-settings.md#plan-181-216",
+      "relocatedSha256": "bf58d6559475ae3526a3747bf55645bd7c760b99c1a4939925cbf22d1936038f"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 217,
+      "endLine": 266,
+      "sourceSha256": "dee69c93e503f4090a4f5f2bfdc79d879a9b16e468dbf48f1532279071f2b318",
+      "destination": "p4-permissions.md#plan-217-266",
+      "relocatedSha256": "0f0d795064ca7dcdcca68c1a052e86e9a11196fa4aa95ef917ecc60a3016ceeb"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 267,
+      "endLine": 328,
+      "sourceSha256": "ac9303515926415f97b039f8ce4ff98c9fca2ad0d26e243fa005c47aa1f4169c",
+      "destination": "p4-plans-questions.md#plan-267-328",
+      "relocatedSha256": "98c88cf267424d35ae9be86df06dc12e0aa572bd0608b5c76580f51b57e9870c"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 329,
+      "endLine": 414,
+      "sourceSha256": "e2763c0fd53891aac6b048571fc10471692652b7018b968f57006d18576e0fc8",
+      "destination": "p4-queue-controls.md#plan-329-414",
+      "relocatedSha256": "f517c2af385cfc9a664d22b4369c32a0898735f6a0d5c0c45425d047d2f0e972"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 415,
+      "endLine": 548,
+      "sourceSha256": "dc311210cc5518b120b9e04c7170c01d1cd0fd5091d3ed9d659c664451938070",
+      "destination": "p4-creation-recovery.md#plan-415-548",
+      "relocatedSha256": "33e8565520c06de1612bd7bfeaeff242a7507709af3e4c296a2a22e395069087"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 549,
+      "endLine": 572,
+      "sourceSha256": "1e5add361e68df3e042a3e5c5a1dd1394990a3d3fb03c5e35d4699952fb2fcc8",
+      "destination": "p4-tls-reading.md#plan-549-572",
+      "relocatedSha256": "40f037f60ae4c1f45aadd3c6525c46c976f11f59ad126be0965409ff751efd1e"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 573,
+      "endLine": 580,
+      "sourceSha256": "008e4b42253823d2d38c55ee1d52359494eddc5a7a771d20fd68b7edbbeda916",
+      "destination": "p4-history-queue-recovery.md#plan-573-580",
+      "relocatedSha256": "bbd6fdad20f1fbabaf860c4a3c0fe5ba046a17bbfb49d4e6cbba7d95f9d68863"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 581,
+      "endLine": 630,
+      "sourceSha256": "d233c0cb04c09ba3f7fe02b003dd3ec234b8e7d7aa9370cb8dc9c2ed5caceada",
+      "destination": "p3-gestures.md#plan-581-630",
+      "relocatedSha256": "1c0acc27e61930a1b1e5e41d41431f943d7e647223bb163bf2a9bf49a5163960"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 631,
+      "endLine": 640,
+      "sourceSha256": "c006603ae084e5c237b4e8d27680ff342fba965d41a931fbd4bfb90d8d9a099c",
+      "destination": "p4-history-queue-recovery.md#plan-631-640",
+      "relocatedSha256": "0766f5d6630a56c9851948fbd2e214dcf9abbb79614ac21ba52bfda39cb78857"
+    },
+    {
+      "source": "docs/plans/android-alignment-20261022.md",
+      "startLine": 641,
+      "endLine": 663,
+      "sourceSha256": "0e41c9322ef55c06912b4db8da0214274d22ebf553971f0918513c98f59ed755",
+      "destination": "p3-gestures.md#plan-641-663",
+      "relocatedSha256": "0e41c9322ef55c06912b4db8da0214274d22ebf553971f0918513c98f59ed755"
+    }
+  ],
+  "sourceRevision": "b87c8960ff5ca44d7a4ea59019820ce51ead60a6"
+}

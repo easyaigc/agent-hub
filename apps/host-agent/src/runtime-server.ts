@@ -152,7 +152,6 @@ export async function startRuntimeServer() {
     process.env.CODEX_SHARED_SERVER_URL
       ? { sharedDesktopState: join(homedir(), '.config/agent-hub/shared-desktop') }
       : {}),
-    root: resolve(process.env.HOST_AGENT_ROOT ?? process.cwd()),
     codexHome:
       process.env.CODEX_HOME ??
       dirname(dirname(process.env.CODEX_SOCKET ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
@@ -739,7 +738,7 @@ export async function startRuntimeServer() {
                 if (value.threadId !== threadId || value.sourceTurnId !== sourceTurnId)
                   throw new RuntimeError(409, '建议读取期间来源轮次已变化');
               });
-            await source(); // Original before owner/source guard.
+            await source(); // Exact original owner and latest completed source turn.
             let confirmed;
             if (suggestionObserver.usesFencedSourceRead) {
               prepared = await traced('prepare', () =>
@@ -1212,7 +1211,10 @@ export async function startRuntimeServer() {
       } else throw new RuntimeError(405, '请求方法不支持');
       if (request.method === 'POST') session.commitPending();
       const projected = session.projectReadState(
-        workspaceView ? workspaceView.project(result) : result,
+        session.projectApplicationApprovals(
+          workspaceView ? workspaceView.project(result) : result,
+          request.headers['x-agent-hub-approvals'] === 'mcp-v1',
+        ),
         readerId,
       );
       if (request.method === 'GET' && ['/v1/history', '/v1/events'].includes(url.pathname))

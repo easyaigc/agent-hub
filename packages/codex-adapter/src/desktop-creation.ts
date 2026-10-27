@@ -95,6 +95,13 @@ export interface DesktopCreationPlan extends CreationInput {
   receiptPath: string;
   files: (CreationFile & { path: string })[];
 }
+/** Read-only metadata backed by this Host's released, unexecuted preparation. */
+export interface PreparedThreadMetadata {
+  id: string;
+  hostId: string;
+  projectId: string | null;
+  title: string;
+}
 export interface DesktopCreationDriver {
   readonly available: boolean;
   readonly reason: string | null;
@@ -103,6 +110,10 @@ export interface DesktopCreationDriver {
   /** Returns the exact ID copied from the active desktop chat, never the latest list entry. */
   create(plan: DesktopCreationPlan): Promise<string>;
   reconcile?(plan: DesktopCreationPlan): Promise<string | undefined>;
+  preparedThreadMetadata?(
+    plan: DesktopCreationPlan,
+    threadId: string,
+  ): Promise<PreparedThreadMetadata | undefined>;
   observe?(plan: DesktopCreationPlan): CreationObservation | undefined;
   cancel?(id: string): void;
 }
@@ -257,6 +268,40 @@ export class DesktopCreationBroker {
   status() {
     return { available: this.driver.available, reason: this.driver.reason };
   }
+  /** An explicit open may recover an owned empty target; it never resumes its first input. */
+  async preparedThreadMetadata(threadId: string): Promise<PreparedThreadMetadata | undefined> {
+    if (
+      this.closed ||
+      !this.driver.preparedThreadMetadata ||
+      !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(threadId)
+    )
+      return undefined;
+    for (const record of Object.values(this.records)) {
+      if (
+        record.hostId !== this.hostId ||
+        record.phase !== 'rejected' ||
+        !Array.isArray(record.existingThreadIds) ||
+        record.existingThreadIds.includes(threadId)
+      )
+        continue;
+      try {
+        const plan = this.plan(record);
+        if (this.driver.observe?.(plan)?.preparedThreadId !== threadId) continue;
+        const metadata = await this.driver.preparedThreadMetadata(plan, threadId);
+        if (
+          metadata?.id === threadId &&
+          metadata.hostId === this.hostId &&
+          metadata.projectId === record.projectId &&
+          typeof metadata.title === 'string'
+        )
+          return structuredClone(metadata);
+      } catch {
+        // An unreadable or changed proof gives no new thread authority.
+      }
+    }
+    return undefined;
+  }
+
   async refreshNotificationOperations(): Promise<void> {
     // Notification observation must never call driver.reconcile: some drivers
     // resume an unattempted first input there. Only verify an already-known ID.

@@ -50,6 +50,7 @@ const loadedAdapterDigest = (() => {
     'desktop-ipc.js',
     'desktop-framing.js',
     'runtime-session.js',
+    'approval-requests.js',
     'desktop-history-identity.js',
     'attachment-files.js',
     'desktop-questions.js',

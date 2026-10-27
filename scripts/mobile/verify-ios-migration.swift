@@ -510,3 +510,41 @@ do {
   }
   print("Runtime identity key cache passed: 6000 warm reuses; full-target isolation and bounded concurrent eviction")
 }
+
+// Alias choice remains the actual KMP rule. Cache every input, including the
+// candidate list and explicit selection; never cache a readiness decision.
+do {
+  let cache = RuntimePreferredKeyCache(capacity: 8)
+  var choices = 0
+  func select(_ candidates: [String], _ selected: String? = nil, canonical: String = "canonical") -> String {
+    let actual = cache.value(canonical, candidates: candidates, selected: selected) {
+      choices += 1
+      return RuntimeIdentity.shared.preferredKey(canonical: canonical, candidates: candidates, selectedLegacy: selected)
+    }
+    let expected = RuntimeIdentity.shared.preferredKey(canonical: canonical, candidates: candidates, selectedLegacy: selected)
+    precondition(Array(actual.utf8) == Array(expected.utf8) && actual.isContiguousUTF8)
+    return actual
+  }
+  precondition(select(["canonical"]) == "canonical")
+  for _ in 0..<2_000 { precondition(select(["canonical"]) == "canonical") }
+  precondition(choices == 1)
+  precondition(select(["legacy"]) == "legacy")
+  precondition(select(["legacy", "canonical"]) == "canonical")
+  precondition(select(["legacy", "canonical"], "legacy") == "legacy")
+  precondition(select(["legacy", "canonical"], "removed") == "canonical")
+  precondition(select(["one", "two"]) == "canonical")
+  precondition(select(["one", "two"], canonical: "other-runtime") == "other-runtime")
+  precondition(select([], canonical: "汉字/e\u{301}") == "汉字/e\u{301}")
+  precondition(choices == 8)
+  let tiny = RuntimePreferredKeyCache(capacity: 2)
+  var cold = 0
+  for key in ["a", "b", "c", "a"] {
+    precondition(tiny.value(key, candidates: [], selected: nil) { cold += 1; return key } == key)
+  }
+  precondition(cold == 4)
+  DispatchQueue.concurrentPerform(iterations: 200) { i in
+    let key = "target-\(i % 12)"
+    precondition(tiny.value(key, candidates: [key], selected: nil) { key } == key)
+  }
+  print("Preferred identity key cache passed: 2000 warm reuses; alias, candidate, runtime, Unicode and concurrent eviction boundaries")
+}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:net';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, mkdir, chmod, rm, writeFile, readFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -1055,7 +1055,168 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     await assert.rejects(session.open('unloaded'), /不属于当前运行时/);
     const beforeFollowing = following;
     const [opened, duplicate] = await Promise.all([session.open('thread'), session.open('thread')]);
-    assert.equal(following, beforeFollowing + 1);
+    const runningBeforeAppApprovals = running;
+    running = true;
+    // New native app approvals must reach the phone, then return through the
+    // original owner's exact MCP response command, including advertised scope.
+    for (const decision of ['accept', 'acceptForSession', 'acceptAlways', 'decline', 'cancel']) {
+      fixtureRequests = [
+        {
+          id: 'app-approval',
+          method: 'mcpServer/elicitation/request',
+          params: {
+            threadId: 'thread',
+            turnId: 'turn',
+            serverName: 'node_repl',
+            mode: 'form',
+            message: 'Allow Calculator?',
+            requestedSchema: { type: 'object', properties: {} },
+            _meta: { persist: ['session', 'always'], tool_params: { app: 'com.apple.calculator' } },
+          },
+        },
+      ];
+      revision++;
+      snapshot();
+      await settle();
+      const [approval] = session.history('thread').runtime.approvals;
+      assert(approval);
+      assert.match(approval.detail, /com.apple.calculator/);
+      assert.equal(approval.decisionLabels.cancel, '取消');
+      assert.equal(approval.responses, undefined);
+      assert.equal(session.notificationObservation('thread').requests[0].kind, 'approval');
+      const before = commands.length;
+      await assert.rejects(
+        session.answer('thread', approval.id, 'stale-turn', decision, {}),
+        /过期/,
+      );
+      await Promise.all([
+        session.answer('thread', approval.id, 'turn', decision, {}),
+        session.answer('thread', approval.id, 'turn', decision, {}),
+      ]);
+      assert.equal(commands.length, before + 1, 'Concurrent taps dispatch one original response');
+      const command = commands.at(-1);
+      assert.equal(command.method, 'thread-follower-submit-mcp-server-elicitation-response');
+      assert.equal(command.version, 1);
+      assert.equal(command.targetClientId, 'owner');
+      assert.equal(command.params.conversationId, 'thread');
+      assert.equal(command.params.requestId, 'app-approval');
+      assert.deepEqual(
+        command.params.response,
+        decision.startsWith('accept')
+          ? {
+              action: 'accept',
+              content: {},
+              ...(decision === 'accept'
+                ? {}
+                : { _meta: { persist: decision === 'acceptAlways' ? 'always' : 'session' } }),
+            }
+          : { action: decision, content: null },
+      );
+      // Fresh owner snapshots can re-register the same pending request while
+      // the response is in flight. Its accepted continuation must retire too.
+      await assert.rejects(
+        session.runtime.respond(approval.id, { action: 'accept', content: {} }),
+        /过期/,
+      );
+      await assert.rejects(session.answer('thread', approval.id, 'turn', decision, {}), /过期/);
+    }
+    // A request resolved by the desktop can remain in a retained snapshot.
+    session.runtime.ipc.state('thread').requests[0].completed = true;
+    await assert.rejects(
+      session.runtime.respond('thread:app-approval', { action: 'accept', content: {} }),
+      /过期/,
+    );
+    fixtureRequests[0].completed = true;
+    revision++;
+    snapshot();
+    await settle();
+    assert.equal(session.history('thread').runtime.approvals.length, 0);
+    assert.equal(session.notificationObservation('thread').requests.length, 0);
+    fixtureRequests = [
+      {
+        id: 42,
+        method: 'item/permissions/requestApproval',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          permissions: { network: { enabled: true } },
+          reason: 'Network required',
+        },
+      },
+    ];
+    revision++;
+    snapshot();
+    await settle();
+    const [permission] = session.history('thread').runtime.approvals;
+    await session.answer('thread', permission.id, 'turn', 'accept', {});
+    assert.equal(commands.at(-1).method, 'thread-follower-permissions-request-approval-response');
+    assert.deepEqual(commands.at(-1).params.response, {
+      permissions: { network: { enabled: true } },
+      scope: 'turn',
+    });
+    const respond = session.runtime.respond.bind(session.runtime);
+    let written, release;
+    const responseWritten = new Promise((done) => {
+      written = done;
+    });
+    const ack = new Promise((done) => {
+      release = done;
+    });
+    session.runtime.respond = async (...args) => {
+      await respond(...args);
+      written();
+      await ack;
+    };
+    fixtureRequests = [
+      {
+        id: 'late-approval',
+        method: 'mcpServer/elicitation/request',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          mode: 'form',
+          message: 'Old app',
+          requestedSchema: { type: 'object', properties: {} },
+        },
+      },
+    ];
+    revision++;
+    snapshot();
+    await settle();
+    const [oldApproval] = session.history('thread').runtime.approvals;
+    const lateAnswer = session.answer('thread', oldApproval.id, 'turn', 'accept', {});
+    await responseWritten;
+    const previousTurns = fixtureTurns;
+    fixtureTurns = [{ turnId: 'new-approval-turn', status: 'inProgress', items: [] }];
+    fixtureRequests[0].params.turnId = 'new-approval-turn';
+    fixtureRequests[0].params.message = 'New app';
+    revision++;
+    snapshot();
+    await settle();
+    release();
+    await lateAnswer;
+    assert.equal(
+      session.history('thread').runtime.approvals[0].turnId,
+      'new-approval-turn',
+      'Late old success must not remove a new request with the same ID',
+    );
+    assert.equal(session.history('thread').runtime.state, 'waiting-for-approval');
+    session.runtime.respond = respond;
+    const replacement = session.history('thread').runtime.approvals[0];
+    await session.answer('thread', replacement.id, 'new-approval-turn', 'decline', {});
+    assert.equal(commands.at(-1).params.requestId, 'late-approval');
+    assert.deepEqual(commands.at(-1).params.response, { action: 'decline', content: null });
+    fixtureTurns = previousTurns;
+    fixtureRequests = [];
+    running = runningBeforeAppApprovals;
+    revision++;
+    snapshot();
+    await settle();
+    assert.equal(
+      following,
+      beforeFollowing + 9,
+      'Open plus eight responses refresh the original owner',
+    );
     assert.equal(opened.runtime.canControl, true);
     assert.equal(opened.hostId, session.hostId);
     assert.equal(opened.thread.projectId, 'project');
@@ -1150,6 +1311,12 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       {
         turnId: 'async-turn',
         status: 'inProgress',
+        params: {
+          permissions: ':read-only',
+          sandboxPolicy: { type: 'readOnly' },
+          approvalPolicy: 'on-request',
+          approvalsReviewer: 'user',
+        },
         items: [
           {
             id: 'async-source',
@@ -1257,6 +1424,15 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       [freeform.questions[0].id]: ['中文自定义答案'],
     });
     assert.equal(commands.at(-1).method, 'thread-follower-start-turn');
+    const idleFollowupRequest = commands.at(-1).params.turnStart.request;
+    assert.equal(
+      idleFollowupRequest.permissions,
+      ':read-only',
+      'Idle asynchronous answer preserves the original question permission, not computer defaults',
+    );
+    assert.deepEqual(idleFollowupRequest.sandboxPolicy, { type: 'readOnly' });
+    assert.equal(idleFollowupRequest.approvalPolicy, 'on-request');
+    assert.equal(idleFollowupRequest.approvalsReviewer, 'user');
     assert.equal(session.history('thread').runtime.approvals.length, 0);
     assert.equal(session.history('thread').thread.pendingAsyncQuestionCount, 0);
     assert.equal(
@@ -1560,6 +1736,57 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       reply: { ...uncertainReceipt.reply, clientMessageId: 'unmatched-old-answer' },
     };
     session.state.receipts.push(unresolved);
+    // A bounded tail of completed receipts must not hide an older unresolved
+    // original. Reading this projection cannot infer acceptance or submit input.
+    const originalReceipts = session.state.receipts;
+    const oldContext = session.historicalReceiptContexts.get(unresolved.clientMessageId);
+    const completedPrefix = {
+      ...uncertainReceipt,
+      clientMessageId: 'old-known-completed',
+      state: 'completed',
+    };
+    const laterCompleted = Array.from({ length: 35 }, (_, index) => ({
+      ...completedPrefix,
+      clientMessageId: `later-completed-${index}`,
+    }));
+    try {
+      session.state.receipts = [
+        completedPrefix,
+        unresolved,
+        ...laterCompleted,
+        { ...unresolved, threadId: 'other-thread', clientMessageId: 'foreign-old-unknown' },
+      ];
+      session.historicalReceiptContexts.set(unresolved.clientMessageId, completedTurnId);
+      const writesBeforeProjection = commands.length;
+      const projected = session.history('thread').runtime.receipts;
+      const retained = projected.find(
+        (receipt) => receipt.clientMessageId === unresolved.clientMessageId,
+      );
+      assert(retained, 'Old result-unknown receipt must survive more than thirty later receipts');
+      assert.equal(retained.state, 'uncertain');
+      assert.equal(retained.noticeContext, 'historical');
+      assert.equal(projected.length, 31);
+      assert.deepEqual(
+        projected
+          .filter((receipt) => receipt.state === 'completed')
+          .map((receipt) => receipt.clientMessageId),
+        laterCompleted.slice(-30).map((receipt) => receipt.clientMessageId),
+        'Ordinary completed receipts keep their existing bounded window',
+      );
+      assert(
+        !projected.some((receipt) =>
+          ['old-known-completed', 'foreign-old-unknown'].includes(receipt.clientMessageId),
+        ),
+      );
+      assert.equal(unresolved.state, 'uncertain');
+      assert.equal(unresolved.acceptedTurnId, undefined);
+      assert.equal(commands.length, writesBeforeProjection);
+    } finally {
+      session.state.receipts = originalReceipts;
+      if (oldContext === undefined)
+        session.historicalReceiptContexts.delete(unresolved.clientMessageId);
+      else session.historicalReceiptContexts.set(unresolved.clientMessageId, oldContext);
+    }
     const sentBeforeRecovery = commands.filter((c) =>
       ['thread-follower-start-turn', 'thread-follower-steer-turn'].includes(c.method),
     ).length;
@@ -1592,6 +1819,85 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
       'completed',
       'Persisted owner acceptance survives later tail-only snapshots',
     );
+    // Unknown original permission presets must not fall back to machine defaults.
+    fixtureTurns = [
+      {
+        turnId: 'unknown-permission-idle',
+        status: 'completed',
+        params: {
+          permissions: ':unrecognized-profile',
+          approvalPolicy: 'on-request',
+          approvalsReviewer: 'user',
+        },
+        items: [
+          {
+            id: 'unknown-permission-question',
+            type: 'agentMessage',
+            questions: [{ title: 'Permission boundary', options: ['Continue'] }],
+          },
+        ],
+      },
+    ];
+    revision++;
+    snapshot();
+    await settle();
+    const unknownPermissionQuestion = session.history('thread').runtime.approvals[0];
+    assert(unknownPermissionQuestion);
+    const writeCount = () =>
+      commands.filter((c) =>
+        ['thread-follower-start-turn', 'thread-follower-steer-turn'].includes(c.method),
+      ).length;
+    const beforeUnknownPermission = writeCount();
+    const oldActionCount = Object.keys(session.state.asyncQuestionActions).length;
+    const unknownAnswers = { [unknownPermissionQuestion.questions[0].id]: ['Continue'] };
+    await assert.rejects(
+      session.answer(
+        'thread',
+        unknownPermissionQuestion.id,
+        unknownPermissionQuestion.turnId,
+        '',
+        unknownAnswers,
+      ),
+      /409|权限/,
+    );
+    assert.equal(writeCount(), beforeUnknownPermission);
+    assert.equal(Object.keys(session.state.asyncQuestionActions).length, oldActionCount);
+    assert(
+      session
+        .history('thread')
+        .runtime.approvals.some((a) => a.id === unknownPermissionQuestion.id),
+    );
+    // A pre-upgrade unsubmitted immutable reply cannot acquire new settings or execute.
+    const legacyQuestionAction = {
+      threadId: 'thread',
+      turnId: unknownPermissionQuestion.turnId,
+      decision: '',
+      answers: unknownAnswers,
+      resolved: false,
+      reply: {
+        hostId: session.hostId,
+        threadId: 'thread',
+        clientMessageId: 'legacy-question-without-permission',
+        text: 'Immutable legacy answer',
+        attachmentIds: [],
+        mode: 'next-turn',
+      },
+    };
+    session.state.asyncQuestionActions[unknownPermissionQuestion.id] = legacyQuestionAction;
+    const legacyBytes = JSON.stringify(legacyQuestionAction);
+    await assert.rejects(
+      session.answer(
+        'thread',
+        unknownPermissionQuestion.id,
+        unknownPermissionQuestion.turnId,
+        '',
+        unknownAnswers,
+      ),
+      /权限/,
+    );
+    assert.equal(JSON.stringify(legacyQuestionAction), legacyBytes);
+    assert.equal(writeCount(), beforeUnknownPermission);
+    delete session.state.asyncQuestionActions[unknownPermissionQuestion.id];
     completeFixtureTurns = undefined;
     queueFixture = false;
     queueTurn = 0;
@@ -2311,6 +2617,41 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     snapshot();
     await settle();
     const updated = await session.open('thread');
+    // A mobile reader hashes the body it actually receives, after local links
+    // have become attachment URLs. The desktop summary must keep that version
+    // across refreshes instead of reverting to the raw source Markdown hash.
+    const projectedReply = updated.messages.find((message) => message.id === 'text');
+    const contentVersion = (message) => {
+      const hash = createHash('sha256');
+      for (const value of [message.id, message.text, message.status ?? 'completed'])
+        hash.update(Buffer.byteLength(value, 'utf8') + ':' + value);
+      return hash.digest('hex');
+    };
+    const projectedHead = session.projectReadState(updated, 'c'.repeat(64)).thread.readState.latest;
+    assert.match(projectedReply.text, /codex-attachment:\/\//);
+    assert.equal(projectedHead.messageId, projectedReply.id);
+    assert.equal(
+      projectedHead.contentVersion,
+      contentVersion(projectedReply),
+      'the mobile read head must match the projected attachment body',
+    );
+    const commandCountBeforeRead = commands.length;
+    session.acknowledgeRead('thread', 'c'.repeat(64), projectedHead);
+    revision++;
+    snapshot();
+    await settle();
+    const refreshedProjection = session.projectReadState(
+      await session.open('thread'),
+      'c'.repeat(64),
+    );
+    assert.deepEqual(
+      refreshedProjection.thread.readState.latest,
+      projectedHead,
+      'the same raw desktop snapshot cannot revive unread after link projection',
+    );
+    assert.deepEqual(refreshedProjection.thread.readState.read, projectedHead);
+    assert.equal(commands.length, commandCountBeforeRead, 'reading sends no desktop command');
+    assert.equal(refreshedProjection.thread.readHeadSourceVersion, undefined);
     const files = updated.messages.flatMap((v) => v.attachments);
     assert.equal(
       files.length,
@@ -2332,6 +2673,81 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     await assert.rejects(session.download('other-thread', files[0].id), /不属于当前运行时/);
     await writeFile(join(ownerDirectory, 'owned.txt'), 'changed');
     await assert.rejects(session.download('thread', files[0].id), /发生变化/);
+    // A continuous legacy read retains the verified live body. A freshly
+    // inspected file may produce a different temporary attachment URL, but that
+    // discarded page must not publish its version as if the phone saw it.
+    const ipc = session.runtime.ipc;
+    const reader = session.runtime.reader;
+    const savedReads = {
+      follow: ipc.follow,
+      hasOwner: ipc.hasOwner,
+      observation: ipc.observation,
+      refreshObservation: ipc.refreshObservation,
+      history: reader.history,
+      receiptEvidence: reader.receiptEvidence,
+    };
+    try {
+      ipc.follow = async () => undefined;
+      ipc.hasOwner = () => false;
+      ipc.refreshObservation = async () => undefined;
+      ipc.observation = () => ({
+        seeded: true,
+        items: [
+          {
+            turnId: 'turn',
+            receivedAt: Date.now(),
+            item: {
+              id: 'legacy-live-reasoning',
+              type: 'reasoning',
+              summary: [{ type: 'summary_text', text: 'Still observing this exact turn' }],
+            },
+          },
+        ],
+      });
+      reader.receiptEvidence = async () => [];
+      reader.history = async (id, cursor) => {
+        assert.equal(id, 'thread');
+        assert.equal(cursor, undefined);
+        return {
+          messages: [
+            {
+              id: 'text',
+              role: 'assistant',
+              kind: 'agentMessage',
+              text: messageText,
+              status: 'completed',
+              detail: '',
+              files: [],
+              runId: 'turn',
+            },
+          ],
+          nextCursor: null,
+          directory: ownerDirectory,
+          historyMode: 'legacy',
+          latestTurn: { id: 'turn', status: 'completed' },
+        };
+      };
+      const retained = session.projectReadState(await session.open('thread'), 'c'.repeat(64));
+      const visible = retained.messages.find((message) => message.id === projectedReply.id);
+      assert.equal(visible.text, projectedReply.text, 'the continuous live body is retained');
+      assert.equal(
+        retained.thread.readState.latest.contentVersion,
+        contentVersion(visible),
+        'a discarded legacy page cannot publish a version that differs from the transmitted body',
+      );
+      assert.deepEqual(retained.thread.readState.latest, projectedHead);
+    } finally {
+      Object.assign(ipc, {
+        follow: savedReads.follow,
+        hasOwner: savedReads.hasOwner,
+        observation: savedReads.observation,
+        refreshObservation: savedReads.refreshObservation,
+      });
+      Object.assign(reader, {
+        history: savedReads.history,
+        receiptEvidence: savedReads.receiptEvidence,
+      });
+    }
   } finally {
     session.close();
   }

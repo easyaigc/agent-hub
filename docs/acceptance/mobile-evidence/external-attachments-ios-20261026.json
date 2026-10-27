@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "features": ["F71"],
+  "scope": "iOS external file intake, explicit attachment paste, local inbox recovery and one physical-device real desktop send. Actual WeChat and full F71 are outside the passing scope.",
+  "candidate": {
+    "bundleId": "com.easyai.agenthub.externalattachments.acceptance",
+    "uiAppExecutableSha256": "66230a2879a303f98bd7f66afb06ae058250da0c7752fcea500389ea24d33801",
+    "realSendAppExecutableSha256": "626430d9ce96d3b9f7c5d9f239060a560c67cffea15369bf98d9e1454159659d",
+    "sameWholeApp": false,
+    "productionCoreMatchesBothRuns": true,
+    "sourceFiles": {
+      "apps/ios/Sources/AttachmentFileIntake.swift": "996f01da69e2cacf76514e87bdb171268eee260b79f4224c0d57c45a90008221",
+      "apps/ios/Sources/ExternalAttachmentIntake.swift": "6047e1a35bce8de5fb2d7bc17769bd6bcc27ce3e1a5f39ffe6a3218bc7ff8fa6",
+      "apps/ios/Sources/LocalAttachmentPreparation.swift": "0eb509589e57cae85281392f1032504d7c12f87b2d24a4dd166ab98f1ee22c71",
+      "apps/ios/Sources/SessionStore.swift": "43ff05893cc5ce4d4a0f1f8b63005e9f70a51a724a80c2e17a108587a92c38b8",
+      "apps/ios/Sources/QuickAttachmentViews.swift": "d6b67baf40ec4ba84204eff5915dbbd78aeb836dfc9c72b0e6ad9f13d8f465e7",
+      "apps/ios/AttachmentAction/AttachmentActionViewController.swift": "f914fc3c5506fe5a1240625cab25bc1461a5823b9d7366f46cf3a80cc776e6ea"
+    },
+    "differences": "Dedicated display names, project identity and DEBUG test fixture reset helpers differ. Raw source/package snapshots are retained separately.",
+    "sourceAppBundleId": "com.easyai.agenthub.externalfilesource.acceptance",
+    "sourceAppExecutableSha256": "06f2ad17a4500cf4f1bc289f95d1bcd838b6b0730f129dd9aedd7401f2e4261b",
+    "sourceAppFixtureSha256": "d41dfecb48c8b627853217cd180c1e9d176a38f493d89ca8752a5e88a1a9d7d5"
+  },
+  "nativeUI": {
+    "device": "paired local physical iPhone 15 Pro Max",
+    "osVersion": "27.0.1",
+    "systemShareAndFilePaste": {
+      "status": "this_run_pass",
+      "tests": ["testQuickAttachmentExternalShareAndRecovery", "testQuickAttachmentFilePaste"],
+      "passingTests": 2,
+      "suitePassedTests": 2,
+      "suiteFailedTests": 1,
+      "suiteSkippedTests": 0,
+      "suiteScopeNote": "The same suite failed its separate direct Open In test; the whole suite is not reported passed.",
+      "assertions": [
+        "Independent source App opens the system Action extension; save then main App activation shows the exact incoming filename.",
+        "Inbox survives main App termination; confirmed draft survives another termination with exactly one attachment.",
+        "Independent source App copies an NSItemProvider file URL; main App system paste receives its original 30 controlled bytes.",
+        "A separate data-provider file is pasted; both ZIP draft records match their known source bytes.",
+        "Chinese filename and original text-file bytes are retained; ordinary text/HTTP URL are rejected as files; over-limit and tampered inbox payloads are rejected.",
+        "Image paste remains available."
+      ]
+    },
+    "directOpenIn": {
+      "status": "this_run_pass",
+      "test": "testQuickAttachmentOpenIn",
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "sameMainAppExecutableAsShareAndPaste": true,
+      "assertions": [
+        "System UIDocumentInteractionController Open In presents the app list.",
+        "Exact unique main App label is selected, excluding its Action extension and other same-name Apps.",
+        "Main App foreground is confirmed; the original ZIP filename enters its inbox and then a pending unsent draft."
+      ],
+      "visualReview": "Not verified: the app-element capture was blank. Supplemental full-screen XCTest failed in a system-menu AX query before app selection. Device Hub, after matching physical device and activating the exact bundle, returned DeviceKitError 3000 for remote notification-observation disconnection. CoreDevice confirmed app activation and the exact process. No phone lock, human concurrent operation or app white-screen cause is inferred.",
+      "supplementalCapture": {
+        "status": "this_run_fail",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "sameAppExecutable": true,
+        "stage": "system-menu AX query before app selection; not a successful file-open replay"
+      }
+    },
+    "status": "scoped_functional_pass; final direct-open render not verified"
+  },
+  "realDesktop": {
+    "status": "this_run_pass",
+    "nativeExit": 0,
+    "prepareSamples": 548,
+    "beforeSendViolation": false,
+    "creationCount": 1,
+    "owner": true,
+    "turnCount": 1,
+    "turnStatuses": ["completed"],
+    "userMessageCount": 1,
+    "actualEffort": "xhigh",
+    "attachmentCount": 2,
+    "textCodeMatchesUploadedBytes": true,
+    "originalNativeTextMatchesUploadedBytes": true,
+    "hostExit": 0
+  },
+  "auxiliary": {
+    "iosSimulatorBuild": "passed-final-production-source",
+    "signedPhysicalBuild": "passed; final build includes capture-test-only change, product executable matches passing UI run",
+    "workspaceCheck": {
+      "status": "this_run_pass",
+      "command": "pnpm check",
+      "exitCode": 0,
+      "node": "24.19.0",
+      "earlierFailure": "One approval fixture ENOENT is retained; isolated runtime retry and full rerun passed.",
+      "nativeSourceFollowUp": "Final native screenshot-test-only change is covered by its signed build and separate final parity/source-hash verification."
+    },
+    "earlySimulatorUI": "two passed at an earlier source fingerprint, not reused as current physical evidence",
+    "localization": "passed; 1603 bilingual entries and five permission prompts",
+    "mobileParity": "passed; final source hashes and generated product table, native result devices and scopes remain distinct"
+  },
+  "priorFailures": [
+    "Independent uploaded-byte audit rejected the earlier simulator model result: URL metadata archive had been uploaded instead of original text. Reply codes alone were insufficient. Physical source bytes are now independently SHA-256 matched.",
+    "Initial Action extension Debug dylib packaging did not open; direct executable fixed it.",
+    "Initial inbox bool presentation captured an empty state; immutable item snapshot fixed it.",
+    "Competing phone tests and mismatched same-name Apps were rejected; only this task own tests were stopped.",
+    "Native compact-menu accessibility and local disk-full build failure are retained, not upgraded to pass.",
+    "One final workspace run failed reading an approval fixture response with ENOENT. The same runtime boundary passed an immediate isolated rerun; full rerun remains separately recorded."
+  ],
+  "limitations": [
+    "No current actual WeChat version or original user ZIP was accessed/tested.",
+    "20 MiB per-file limit remains; the pictured 28.3 MB ZIP is rejected with a size explanation.",
+    "No Android or Windows acceptance; A6 remains paused.",
+    "No whole-F71, full permission, font or orientation acceptance.",
+    "Formal App and previous DEV data are preserved; only the separate acceptance App is installed."
+  ],
+  "privateReceiptSha256": {
+    "nativeShareAndPasteReport": "8cfa6e258efe00d9412c3f51471a7517e50ba53247dfb42dcdd88635d127a0ac",
+    "physicalRealSendReport": "da295bc59118fb87edd5a0b5e148777765373ef4601768b1da8ed5db051d2e3a",
+    "physicalNativeSendReport": "82a00f619e2546acb446fd5712a204e0dd52aaded76fcc913b11f0a4318a34e1",
+    "nativeDirectOpenInReport": "d8e2d658bef28d839cfefa4db099d778f6ec09c71cbaa53429c36367585eb9f6",
+    "supplementalCaptureReport": "c090cf6278618b3e2136af36373eebdd2b3ccdc075d19166cca13adca0579f19",
+    "previewDiagnostic": "d6d095715290f02fd24b59be960153bbc36bc731986383b1ac270438112d2a86",
+    "sourceUninstall": "459e43f77c806365fe0e91a5df44236cdac5f18fae83ba2a9c3c973a0435e7e7",
+    "runnerUninstall": "e6304d9b0f92da4849f4b8e6223d8beb3e8f2abaeb7c28e242da026943af16e8",
+    "workspaceCheck": "53a0809be586a230fce0800eea7c9a9fd849e52e8687d51339779a36b5c3dbbf",
+    "simulatorProductionBuild": "e23a175f73b3e86da7e3d470d75849f5da493fab1bcb0502f8d2ecc540361ca3",
+    "signedPhysicalBuild": "bcc7fc8e32eefb410f4c85ef88aa8027f3cc637fbec21e6945d764eb9eae6fac",
+    "appRegistryAfterCleanup": "12ac0f201c2b8ffe702337a824d2718073a10a419137f0cfef51a2963f5996c6",
+    "finalNormalModeMainLaunch": "6bc80ebb6096be761cf74092f04e769be1b5357473f4300fdf66c601caf88b75"
+  },
+  "screenshotsSha256": {
+    "system-action": "ec473c36845a72d71582a1e350d28ee6432c5ea4da2a987ff3491fe7c6d6c3f4",
+    "received-inbox": "64c9ea51289fb37308b3defffc103f6773dd2d19e21ecd3cfc33683cb31c47ec",
+    "file-url-draft": "1d76bef16da08e76c4a10d474b8decda77bbcb7a822b95e70e51d22f643114cc",
+    "direct-open-target": "78500e22840846b3b847fd736aba7702a7497bb2df0e188996a6fd31ba47a658",
+    "earlier-blank-app-capture-not-visual-pass": "335e66215bec18cd3b98618789ef1929048fbe220bb0f1d7407dd6698991c461"
+  },
+  "cleanup": {
+    "temporarySimulator": "only this task temporary device deleted after original failure source and result were saved",
+    "temporaryHost": "exited zero after confirmed desktop result",
+    "sourceFixture": "uninstalled; native device app registry absence verified",
+    "worktrees": "none created; other tasks and existing dirty work preserved",
+    "buildCache": "only completed task simulator rebuildable caches removed after disk-full; products, sources, logs and results retained",
+    "ownRunner": "uninstalled; native device app registry absence verified",
+    "acceptanceApp": "retained for review; exact bundle launched in normal mode, formal/other DEV Apps preserved"
+  },
+  "integration": {
+    "baseCommit": "d8bf85d00912072f5a8abea37a36e6c855475ab4",
+    "scope": "Attachment changes only, preserving current main approval callback hardening, native approval cases, localization keys and all other merged task records.",
+    "nativeAcceptance": "Historical sealed physical packages retain their original source and binary fingerprints. This integration does not claim a new whole-app physical or visual acceptance.",
+    "sourceEquivalence": {
+      "apps/ios/Sources/AttachmentFileIntake.swift": {
+        "sameWholeFile": true,
+        "integrationSha256": "996f01da69e2cacf76514e87bdb171268eee260b79f4224c0d57c45a90008221"
+      },
+      "apps/ios/Sources/ExternalAttachmentIntake.swift": {
+        "sameWholeFile": true,
+        "integrationSha256": "6047e1a35bce8de5fb2d7bc17769bd6bcc27ce3e1a5f39ffe6a3218bc7ff8fa6"
+      },
+      "apps/ios/Sources/LocalAttachmentPreparation.swift": {
+        "sameWholeFile": true,
+        "integrationSha256": "0eb509589e57cae85281392f1032504d7c12f87b2d24a4dd166ab98f1ee22c71"
+      },
+      "apps/ios/Sources/SessionStore.swift": {
+        "sameWholeFile": false,
+        "integrationSha256": "c20aac460798359fd92c699d2622920d41e85cc29c9397d25b0bd9553dcade9c"
+      },
+      "apps/ios/Sources/QuickAttachmentViews.swift": {
+        "sameWholeFile": true,
+        "integrationSha256": "d6b67baf40ec4ba84204eff5915dbbd78aeb836dfc9c72b0e6ad9f13d8f465e7"
+      },
+      "apps/ios/AttachmentAction/AttachmentActionViewController.swift": {
+        "sameWholeFile": true,
+        "integrationSha256": "f914fc3c5506fe5a1240625cab25bc1461a5823b9d7366f46cf3a80cc776e6ea"
+      }
+    },
+    "checks": {
+      "iosSimulatorBuild": {
+        "status": "this_run_pass",
+        "kind": "iOS Simulator build only; no new physical runtime claim",
+        "appExecutableSha256": "d307625e514920dfd376c04865fbf3e8dfdfcd89409c6f9317730ad5787e32bc",
+        "bundleId": "com.codexmanage.ios",
+        "xcode": "Xcode 27.0\nBuild version 27A266a"
+      },
+      "workspaceCheck": {
+        "status": "reported-by-immutable-PR-head-checks",
+        "scope": "The PR CI and local delivery receipt record the full integration result; this historical file does not predeclare success.",
+        "initialAttempt": "Failed while downloading locked Gradle 9.5.0 into a fresh cache because of a TLS handshake; no code assertion was bypassed. Cached-toolchain retry is recorded separately."
+      }
+    },
+    "testOnlyAdjustment": "Files picker folder selection is exact for the named acceptance bundle; no fallback to another DEV folder.",
+    "localAttachmentStoreSectionSha256": "be81f7797f25b4ec80bf4de7e4722164f12778a06b8764d566587a8d1e9f2fcd",
+    "localAttachmentStoreSectionMatchesPhysicalInput": true,
+    "buildLogSha256": "642d21e79e28b5b0d7621fe4b810a89c115eb0f811960bda788df1959a5e216c"
+  }
+}

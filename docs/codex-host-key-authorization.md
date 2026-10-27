@@ -1,3 +1,5 @@
+> 以下保留 M5 原任务的历史实现与交付记录；本次 M4 回收、兼容修正和新指纹验收见文末，旧通过不能替代本次通过。
+
 # Codex 首次连接的 Host Key 授权
 
 日期：2026-10-23。范围：F03／F57、iOS／Android 的 Codex 发现连接、Host 私网授权接口及接入 SKILL。
@@ -59,4 +61,12 @@ CLI 的完整诊断要求 macOS 管理员认证，已取消；改用 Xcode Devic
 
 正式 App 重开后显示原来选中的 Windows 对话缓存及同步失败提示；未联系或更改该电脑，也未把缓存可读记为其远端运行时通过。该远端读取问题不属于本次本机授权专项的通过范围。诊断仅在本机保存，没有代填密码或向 Apple 上传；临时握手诊断 App 与 Runner 已清理，独立验收版和原 DEV 版保留。
 
-后续 Windows 专项已取得独立真机的实际读取与两次重开通过，并发现先前仅核对 macOS VPN Connected 不足以证明 Tailscale 后台恢复；已将实际后台恢复为 Running，其他偏好保持。用户明确允许后，正式原 Windows 连接的真实正文、手动刷新和两次重开也已通过，草稿与待确认输入摘要保持，零模型输入。原失败记录保留，两组实际结果与诊断边界分别见 [Windows 同步复核](windows-conversation-sync.md)。
+## 2026-10-24 M4 回收与兼容
+
+从 M5 提交 `e5bbb73be3c2ff073f256051c7187fa03f01d9ac` 回收 Host Key 授权、双端表单与辅助检查；核验补丁 SHA-256 与原提交树，逐项合并，保留 main 新增的历史、附件和 Windows 修复。客户端同时连接 `automatic` 和 `host-key`，先核对描述及目标，再决定是否要求 Key；向旧自动接口不发送输入的 Host Key，新版失败不降级。后台 Codex 401 保留失败状态，授权仅由明确操作触发，取消后可继续选择。
+
+本次完整 `pnpm check`、iOS arm64 构建、签名 Release build 106、Android 应用／测试包构建及共享 JVM 检查通过。实际 Swift／Foundation 同时通过 automatic 与 host-key，旧接口未收到 Host Key；连续 20 次后台 Codex 401 不产生阻塞弹窗，403 与其他 Agent 的 401 仍保留原错误处理。
+
+指定 iPhone 15 Pro Max 的独立验收版通过 Bonjour 发现、空／错误 Key、取消和切换连接方式、正确授权、一个真实原桌面模型 Turn、App 重开及 Host 换端口后免重复 claim 恢复。实际 M5 已发现并授权，实际旧 M4 automatic 免 Key 连接通过；组合测试在最终重开后定位列表底部按钮失败，保留失败结果。仅续验剩余 M5 重连步骤后通过，原 owner 独立核对同一模型 Turn 且没有重放输入。正式手机 App 与原 DEV 数据未覆盖。
+
+逐机统一部署的包摘要、PID、实际 ESM 闭包和身份保留结果另存私有交付记录；不得由编译或历史包证据代替。本次 Android 未新增原生运行／真机通过，Windows 未部署，A6 保持暂停。

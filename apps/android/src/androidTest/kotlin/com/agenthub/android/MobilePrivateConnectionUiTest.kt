@@ -63,17 +63,21 @@ class MobilePrivateConnectionUiTest {
         ui.runOnIdle { session.discovery!!.offerHint(endpoint,id,"UM04 isolated computer") }
         ui.waitUntil(15_000) { ui.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     }
+    private fun awaitAuthorization() {
+        ui.waitUntil(20_000) { ui.onAllNodesWithTag("codex-host-key").fetchSemanticsNodes().isNotEmpty() }
+    }
     private fun authorize() {
+        awaitAuthorization()
         ui.onNodeWithTag("codex-host-key").performScrollTo().performTextInput("fixture-host-key-".repeat(3))
         ui.onNodeWithTag("codex-authorize-connect").performScrollTo().performClick()
     }
     @Test fun selectingAndCancellingDoesNotAuthorizeOrSaveAKey() {
-        show();form();offer();ui.onNodeWithTag(tag).performClick()
+        show();form();offer();ui.onNodeWithTag(tag).performClick();awaitAuthorization()
         ui.onNodeWithTag("codex-authorize-connect").assertIsNotEnabled()
         assertEquals(0,postCount());assertFalse(session.hasClient)
         ui.onNodeWithTag("codex-host-key").performTextInput("discard-this-key")
         ui.onNodeWithTag("codex-authorize-cancel").performScrollTo().performClick()
-        ui.onNodeWithTag(tag).performScrollTo().performClick()
+        ui.onNodeWithTag(tag).performScrollTo().performClick();awaitAuthorization()
         ui.onNodeWithTag("codex-host-key").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.EditableText,androidx.compose.ui.text.AnnotatedString("")))
         assertEquals(0,postCount());assertFalse(session.hasClient)
     }

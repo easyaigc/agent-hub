@@ -609,7 +609,7 @@ class MobileExecutionTest {
             ui.onNodeWithTag("async-question-next").performClick()
             ui.onNodeWithTag("question-custom-q2").performScrollTo().performTextInput("第二题草稿")
             hideKeyboard(); ui.onNodeWithTag("async-question-prev").performClick()
-            ui.onNodeWithTag("question-option-q1-One").assertTextContains("● One")
+            ui.onNodeWithTag("question-option-q1-One").assertIsSelected()
             ui.onNodeWithTag("close-async-questions").performClick()
             ui.onNodeWithTag("async-question-sheet").assertDoesNotExist()
             ui.onNodeWithTag("open-async-questions").performClick()
@@ -623,7 +623,7 @@ class MobileExecutionTest {
             ui.onNodeWithTag("skip-question").performScrollTo().performClick()
             ui.waitUntil(10_000) { session.runtime?.approvals?.size==1 }
             ui.onNodeWithTag("async-question-page").assertTextEquals("1 / 1")
-            ui.onNodeWithTag("question-option-q1-One").assertTextContains("● One")
+            ui.onNodeWithTag("question-option-q1-One").assertIsSelected()
             ui.onNodeWithTag("answer-question").performScrollTo().performClick()
             ui.waitUntil(10_000) { session.runtime?.approvals?.isEmpty()==true }
             ui.onNodeWithTag("async-question-sheet").assertDoesNotExist()
@@ -660,13 +660,16 @@ class MobileExecutionTest {
     }
     @Test fun runtimeChangeDuringFreshAuthorityCheckProducesNoCommand() {
         ExecutionFixture().use { f -> connect(f)
-            val original=session.selectedClient.scope;val before=f.server.requests.count { it.path=="/v1/workspace" };f.runtimeId="different-runtime"
+            val original=checkNotNull(session.selectedClient.scope);f.runtimeId="different-runtime"
             ui.runOnIdle { session.text="目标已变化" };ui.onNodeWithTag("send-message").performClick()
-            // Foreground reads may fence the changed runtime before the click;
-            // either that guard or the explicit authority check must stop input.
-            ui.waitUntil(10_000) { f.server.requests.count { it.path=="/v1/workspace" }>before && (session.error!=null || !session.selectedClient.online) && session.transferStatus==null }
+            // A still-current foreground owner proof can dispatch its original scoped HTTP request.
+            // The Host must reject that old target before any execution; background reads may fence it first.
+            ui.waitUntil(10_000) { (session.error!=null || !session.selectedClient.online) && session.transferStatus==null }
             if(!session.selectedClient.online)assertFalse(session.canCompose);assertEquals(original,session.selectedClient.scope)
-            assertTrue(f.server.requests.none { it.method=="POST" });assertEquals("目标已变化",session.text);shot("runtime-change-refuses-command")
+            val writes=f.server.requests.filter { it.method=="POST" };assertTrue(writes.size<=1)
+            writes.forEach { assertEquals(CodexCommandCodec.target(original).toString(),JSONObject(it.query.getValue("target")).toString()) }
+            assertEquals(writes.size,f.rejectedTargetWrites.get());assertEquals(0,f.acceptedReplyCount)
+            assertEquals("目标已变化",session.text);shot("runtime-change-refuses-command")
         }
     }
     @Test fun endingActiveQueryDoesNotReleaseOrReplaceANewerSubmit() {
@@ -706,11 +709,11 @@ class MobileExecutionTest {
     }
     @Test fun delayedPickerResultCannotAttachToAnotherSelection() {
         ExecutionFixture().use { f -> connect(f)
-            val original=session.attachmentDestination()
+            lateinit var original: AttachmentImportDestination;main { original=session.attachmentImportDestination() }
             ui.runOnIdle { session.newChat(); session.text="新位置草稿" }
             main { session.addAttachment("旧选择.txt","text/plain","old".toByteArray(),original) }
             assertTrue(session.attachments.isEmpty()); assertEquals("新位置草稿",session.text)
-            val current=session.attachmentDestination(); ui.runOnIdle { session.text="当前编辑" }
+            lateinit var current: AttachmentImportDestination;main { current=session.attachmentImportDestination() }; ui.runOnIdle { session.text="当前编辑" }
             main { session.addAttachment("正确选择.txt","text/plain","exact".toByteArray(),current) }
             assertEquals("正确选择.txt",session.attachments.single().manifest.name); assertEquals("当前编辑",session.text); shot("picker-target-isolated")
         }
@@ -772,7 +775,7 @@ class MobileExecutionTest {
     private fun question(id: String="approval-id",questionId: String="q",secret: Boolean=true)=JSONObject().put("id",id).put("threadId","fixture-thread").put("turnId","approval-turn").put("kind","question").put("title","合成问题").put("detail","").put("interactionMode","async").put("decisions",JSONArray()).put("questions",JSONArray().put(JSONObject().put("id",questionId).put("question","请选择或输入回复").put("custom",true).put("isSecret",secret).put("options",JSONArray().put(JSONObject().put("label","One").put("description","选项说明")))))
 }
 
-private class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=true,val streaming: Boolean=false): java.io.Closeable {
+internal class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=true,val streaming: Boolean=false): java.io.Closeable {
     @Volatile var controlled=controlled
     @Volatile var openingQueries=0
     private var opening: JSONObject?=null
@@ -785,6 +788,8 @@ private class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=tru
     @Volatile var holdReplyReceipt=false
     @Volatile var replyQueryFailureStatus: Int?=null
     private val originalReplies=java.util.concurrent.ConcurrentHashMap<String,JSONObject>()
+    val rejectedTargetWrites=java.util.concurrent.atomic.AtomicInteger()
+    val acceptedReplyCount get()=originalReplies.size
     val replyQueryStarted=CountDownLatch(1);val replyQueryRelease=CountDownLatch(1)
     @Volatile var loseReply=false
     @Volatile var holdHistoryResponse=false
@@ -796,6 +801,8 @@ private class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=tru
     @Volatile var submitPhase="confirmed"
     @Volatile var approvals=JSONArray()
     @Volatile var proposed: JSONObject?=null
+    @Volatile var planSteps=JSONArray()
+    @Volatile var planMessages=JSONArray()
     @Volatile var streamText: String?=null
     @Volatile var eventEpoch="fixture-epoch"
     @Volatile var eventCursor=0L
@@ -813,10 +820,18 @@ private class ExecutionFixture(val staged: Boolean=false,controlled: Boolean=tru
     private fun thread(id: String="fixture-thread")=JSONObject().put("id",id).put("hostId","fixture-host").put("title",if(id=="created-thread") "新建合成聊天" else "合成聊天").put("state",state).put("projectId",if(id=="created-thread") creation?.get("projectId") ?: JSONObject.NULL else JSONObject.NULL)
     private fun workspace()=JSONObject().put("hostId","fixture-host").put("name","合成电脑").put("connectionMode","desktop-runtime").put("readTarget",target()).put("projects",JSONArray().put(JSONObject().put("id","empty-project").put("hostId","fixture-host").put("name","空项目").put("roots",JSONArray()))).put("threads",JSONArray().put(thread()).apply { additionalThread?.let { put(thread(it)) };if(creations.isNotEmpty() && submitPhase=="confirmed") put(thread("created-thread")) }).put("agentConnectionState",JSONObject().put("runtimeConnected",true)).put("capabilities",JSONArray(listOf("reply","desktop:open","desktop:creations","desktop:creations:projectless","commands:target-bound:v1","queue","steer","stop","approvals","plan-mode","generation-settings","generation-speed","models:read").filter { (it!="queue"||queueAvailable)&&(it!="steer"||steerAvailable) }+if(streaming) listOf("events") else emptyList()))
     private fun receipt(data: JSONObject,phase: String=queryState)=JSONObject().put("hostId","fixture-host").put("threadId",data.getString("threadId")).put("clientMessageId",data.getString("clientMessageId")).put("state",phase).put("turnId",turn ?: JSONObject.NULL).put("error",JSONObject.NULL).put("text",data.getString("text")).put("attachmentIds",data.getJSONArray("attachmentIds"))
-    private fun history(id: String)=JSONObject().put("hostId","fixture-host").put("threadId",id).put("readTarget",target()).put("epoch",eventEpoch).put("cursor",eventCursor).put("messages",JSONArray().put(JSONObject().put("id","old-user").put("role","user").put("text","先前任务")).put(JSONObject().put("id","old-assistant").put("role","assistant").put("text",streamText ?: "先前任务完成").put("status",if(streamText=="第一段流式正文") "streaming" else "completed"))).put("runtime",JSONObject().put("state",state).put("turnId",turn ?: JSONObject.NULL).put("plan",JSONArray()).put("error",JSONObject.NULL).put("approvals",approvals).put("receipts",JSONArray().apply { cancelledReply?.takeIf { it.getString("threadId")==id }?.let { put(receipt(it,"cancelled")) }; reply?.takeIf { it.getString("threadId")==id }?.let { put(receipt(it,if(state=="running") { if(it.optString("mode")=="queue") "queued" else "submitted" } else if(state=="interrupted") "interrupted" else queryState)) } }).put("canControl",controlled).put("proposedPlan",proposed ?: JSONObject.NULL))
+    private fun history(id: String)=JSONObject().put("hostId","fixture-host").put("threadId",id).put("readTarget",target()).put("epoch",eventEpoch).put("cursor",eventCursor).put("messages",JSONArray().put(JSONObject().put("id","old-user").put("role","user").put("text","先前任务")).put(JSONObject().put("id","old-assistant").put("role","assistant").put("text",streamText ?: "先前任务完成").put("status",if(streamText=="第一段流式正文") "streaming" else "completed")).apply { planMessages.objects().forEach { put(it) } }).put("runtime",JSONObject().put("state",state).put("turnId",turn ?: JSONObject.NULL).put("plan",planSteps).put("error",JSONObject.NULL).put("approvals",approvals).put("receipts",JSONArray().apply { cancelledReply?.takeIf { it.getString("threadId")==id }?.let { put(receipt(it,"cancelled")) }; reply?.takeIf { it.getString("threadId")==id }?.let { put(receipt(it,if(state=="running") { if(it.optString("mode")=="queue") "queued" else "submitted" } else if(state=="interrupted") "interrupted" else queryState)) } }).put("canControl",controlled).put("proposedPlan",proposed ?: JSONObject.NULL))
     private fun creationResult(phase: String,data: JSONObject=creation!!)=JSONObject().put("hostId","fixture-host").put("clientOperationId",data.getString("clientOperationId")).put("projectId",data.get("projectId")).put("phase",phase).put("threadId",if(phase=="confirmed") "created-thread" else JSONObject.NULL).put("error",JSONObject.NULL).put("uploaded",JSONArray(uploaded)).put("thread",if(phase=="confirmed") thread("created-thread") else JSONObject.NULL)
     private fun response(request: WireRequest): WireResponse {
         val query=request.query
+        // Match runtime-server verifyCommandTarget before any command/upload side effect.
+        query["target"]?.let { encoded ->
+            val claimed=JSONObject(encoded);val expected=target()
+            if(listOf("agentId","hostId","workspaceId","runtimeId").any { claimed.optString(it)!=expected.optString(it) }) {
+                if(request.method=="POST")rejectedTargetWrites.incrementAndGet()
+                return WireResponse(status=409,body="{\"error\":\"运行目标已变化，请刷新连接\"}")
+            }
+        }
         val result=when(request.path) {
             "/v1/workspace"->workspace()
             "/v1/history"->{ if(holdHistoryResponse) { historyStarted.countDown();check(historyRelease.await(20,TimeUnit.SECONDS)) };history(query.getValue("threadId")) }

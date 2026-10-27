@@ -178,6 +178,7 @@ import androidx.compose.foundation.text.KeyboardOptions
             if(host.known) session.connectKnownCodex(host) else session.connectCodexDiscovered(host,hostKey)
             hostKey="";authorizationHost=null;saved()
         } catch(cancel: kotlinx.coroutines.CancellationException) { throw cancel }
+        catch(failure: CodexHostKeyRequired) { authorizationHost=host;hostKey="";error=null }
         catch(failure: Exception) { error=failure.message ?: "连接失败，原连接已保留";if(host.known)failedKnownHost=host }
         finally { connecting=false;session.connectionBusy=false } }
     }
@@ -192,28 +193,6 @@ import androidx.compose.foundation.text.KeyboardOptions
             } }
         }
         if(editing==null && method=="自动发现") {
-            if(authorizationHost==null) {
-            GroupTitle("自动发现")
-            GroupCard {
-                if(discovery?.needsPermission==true) TextButton(onClick={ localPermission.launch(CodexHostDiscovery.LOCAL_PERMISSION) },modifier=Modifier.fillMaxWidth().testTag("allow-local-network")) { Text("允许发现局域网与 VPN 电脑") }
-                val known=session.clients.filter { !it.isDemo&&it.scope?.agentId=="codex" }
-                val rows=known.map { client -> val found=discovery?.hosts?.firstOrNull { it.id==client.id }; DiscoveredCodexHost(client.id,client.name,found?.endpoint ?: client.endpoint.orEmpty(),true,found?.reachable==true,found?.networkKind,found?.target,found?.fingerprint) } + discovery?.hosts.orEmpty().filter { found -> known.none { it.id==found.id } }
-                rows.forEach { host ->
-                    val client=known.firstOrNull { it.id==host.id }
-                    val network=if(host.networkKind=="vpn") "VPN · " else ""
-                    val detail=if(client?.online==true) network+"已连接" else if(client!=null && !host.reachable) "未连接 · ${client.connectionLabel}" else network+"未连接 · 点选连接"
-                    DiscoveredComputerRow(host.name,detail,"codex-discovered-${host.id}",client?.online==true,!connecting) {
-                        if(host.known) connectDiscovered(host) else { authorizationHost=host;hostKey="";error=null }
-                    }
-                }
-                if(rows.isEmpty()) Text(discovery?.detail ?: "正在查找同一网络的电脑…",Modifier.padding(16.dp),fontSize=15.sp,color=colors.onSurfaceVariant)
-                TextButton(onClick={ discovery?.scan() },enabled=!connecting,modifier=Modifier.fillMaxWidth().testTag("codex-discovery-rescan")) { Text("重新查找") }
-            }
-            Text("自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
-            }
-            if(connecting) Row(Modifier.padding(16.dp).testTag("codex-discovery-connecting"),verticalAlignment=Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(18.dp));Text("连接中…",Modifier.padding(start=8.dp)) }
-            error?.let { Text(it,Modifier.padding(16.dp).testTag("client-form-error"),color=colors.error,fontSize=14.sp) }
-            failedKnownHost?.let { host -> TextButton(onClick={ authorizationHost=host.copy(known=false);hostKey="";failedKnownHost=null;error=null },enabled=!connecting,modifier=Modifier.testTag("codex-reauthorize")) { Text("使用 Host Key 重新授权") } }
             authorizationHost?.let { host ->
                 GroupTitle("首次连接授权")
                 GroupCard {
@@ -224,6 +203,27 @@ import androidx.compose.foundation.text.KeyboardOptions
                 }
                 Text("请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
             }
+            GroupTitle("自动发现")
+            GroupCard {
+                if(discovery?.needsPermission==true) TextButton(onClick={ localPermission.launch(CodexHostDiscovery.LOCAL_PERMISSION) },modifier=Modifier.fillMaxWidth().testTag("allow-local-network")) { Text("允许发现局域网与 VPN 电脑") }
+                val known=session.clients.filter { !it.isDemo&&it.scope?.agentId=="codex" }
+                val rows=known.map { client -> val found=discovery?.hosts?.firstOrNull { it.id==client.id }; DiscoveredCodexHost(client.id,client.name,found?.endpoint ?: client.endpoint.orEmpty(),true,found?.reachable==true,found?.networkKind,found?.target,found?.fingerprint) } + discovery?.hosts.orEmpty().filter { found -> known.none { it.id==found.id } }
+                rows.forEach { host ->
+                    val client=known.firstOrNull { it.id==host.id }
+                    val network=if(host.networkKind=="vpn") "VPN · " else ""
+                    val detail=if(client?.online==true) network+"已连接" else if(client!=null && !host.reachable) "未连接 · ${client.connectionLabel}" else network+"未连接 · 点选连接"
+                    DiscoveredComputerRow(host.name,detail,"codex-discovered-${host.id}",client?.online==true,!connecting) {
+                        authorizationHost=null;hostKey="";connectDiscovered(host)
+                    }
+                }
+                if(rows.isEmpty()) Text(discovery?.detail ?: "正在查找同一网络的电脑…",Modifier.padding(16.dp),fontSize=15.sp,color=colors.onSurfaceVariant)
+                TextButton(onClick={ discovery?.scan() },enabled=!connecting,modifier=Modifier.fillMaxWidth().testTag("codex-discovery-rescan")) { Text("重新查找") }
+            }
+            Text("自动查找同一网络的电脑；需要密钥的电脑会在首次连接时要求输入 Host Key。",Modifier.padding(16.dp),fontSize=14.sp,color=colors.onSurfaceVariant)
+            if(connecting) Row(Modifier.padding(16.dp).testTag("codex-discovery-connecting"),verticalAlignment=Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(18.dp));Text("连接中…",Modifier.padding(start=8.dp)) }
+            error?.let { Text(it,Modifier.padding(16.dp).testTag("client-form-error"),color=colors.error,fontSize=14.sp) }
+            failedKnownHost?.let { host -> TextButton(onClick={ authorizationHost=host.copy(known=false);hostKey="";failedKnownHost=null;error=null },enabled=!connecting,modifier=Modifier.testTag("codex-reauthorize")) { Text("使用 Host Key 重新授权") } }
+
         }
         if(editing==null && method=="扫码连接") {
             GroupTitle("扫码连接")

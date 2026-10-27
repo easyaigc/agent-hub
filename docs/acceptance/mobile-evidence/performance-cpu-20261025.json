@@ -1,0 +1,1478 @@
+{
+  "date": "2026-10-25",
+  "status": "native_flow_pass_cpu_gain_unproven_tail_regression_observed",
+  "scope": "iOS state publication only, layered on the IO candidate; not a total power or thermal resolution claim",
+  "baselinePolicy": "Matched reuse of original mixed-after-1 and standard-scroll-after-1; original raw variant/status never relabeled",
+  "physicalDevice": {
+    "model": "iPhone 15 Pro Max",
+    "os": "iOS 27.0.1",
+    "deviceIdentifierSha256": "f0fe65c101111e476ad9e2f7d66aee29c0bd719066b72880a59a2e7f00191505",
+    "bundleId": "com.easyai.agenthub.thermal.acceptance",
+    "controlTransport": "CoreDevice reported wired",
+    "appNetwork": "real HTTPS on Wi-Fi"
+  },
+  "sourceProof": {
+    "utc": 1792897594.00303,
+    "baseline": "source-after / mixed-after-1 (matched reuse, raw report unchanged)",
+    "candidate": "source-cpu-after",
+    "productionChanges": ["Models.swift", "SessionStore.swift"],
+    "testSourceUnchanged": true,
+    "rootOtherAttachmentChangesExcluded": true,
+    "patchSha256": "def696e045d46783cf75d69beedcccfed628ed52585b9dfbb9c941f947ae5c8d",
+    "sourceHashes": {
+      "Models.swift": "d446fc50d71da6781d98acbc3d76ed8d006d13f1d240062f9cf5b8f71beb98b9",
+      "SessionStore.swift": "ecbcb5327c29f20663dda78a51895026a2f64246958840326ae2aa0d937c4e81"
+    }
+  },
+  "runs": [
+    {
+      "label": "matched_reuse_io_candidate",
+      "privateTrialName": "mixed-after-1",
+      "originalRecordedVariant": "after",
+      "sourceSha256": "c4bd22253cdada51d9f72af9faef22f64195ba780b3bb443a537a66be462c7af",
+      "appExecutableSha256": "41313781203173e797ab524fc8c3a81933827d7670581468cd9b0f1e7fb4088d",
+      "measurementDriverSha256": "360554d4df6284eb4020851662677934d2f4bb874acc1ccd11780e9958dca46a",
+      "mixedSelectionSha256": "ce189511b4e503e27741a36765f57efd513d79b3b9d01a670293e9a235eeaf18",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "metrics": {
+        "variant": "after",
+        "test": "testThermalMixedInteractionDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "c4bd22253cdada51d9f72af9faef22f64195ba780b3bb443a537a66be462c7af",
+        "windowUTC": [1792894937.610877, 1792895410.786305],
+        "wallSeconds": 473.17542791366577,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "41313781203173e797ab524fc8c3a81933827d7670581468cd9b0f1e7fb4088d",
+        "captureMode": "native-telemetry",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 22,
+          "movingFrames": 1783,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 26.697875000536442,
+          "maxFrameMS": 45.183375012129545,
+          "framesOver50MS": 0,
+          "movingSeconds": 30.006599999789614
+        },
+        "interactionSteps": [
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792894998.54895,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "thermal": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 1,
+            "startUTC": 1792894937.6108851,
+            "elapsedSeconds": 60.93806481361389
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792895051.876276,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 2,
+            "startUTC": 1792894998.6114259,
+            "elapsedSeconds": 53.26485013961792
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792895065.915856,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 3,
+            "startUTC": 1792895051.991746,
+            "elapsedSeconds": 13.924109935760498
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792895085.0673308,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 4,
+            "startUTC": 1792895065.986641,
+            "elapsedSeconds": 19.080689907073975
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792895105.544701,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 5,
+            "startUTC": 1792895085.177857,
+            "elapsedSeconds": 20.366844177246094
+          },
+          {
+            "action": "switch-client",
+            "client": 2,
+            "endUTC": 1792895126.0482821,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 6,
+            "startUTC": 1792895105.665625,
+            "elapsedSeconds": 20.382657051086426
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792895143.5191488,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 7,
+            "startUTC": 1792895126.266094,
+            "elapsedSeconds": 17.25305485725403
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792895163.2904382,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 8,
+            "startUTC": 1792895143.6689548,
+            "elapsedSeconds": 19.621483325958252
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792895175.724652,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 9,
+            "startUTC": 1792895163.3762941,
+            "elapsedSeconds": 12.348357915878296
+          },
+          {
+            "action": "reopen-chat-and-followup-running",
+            "client": 0,
+            "endUTC": 1792895203.892271,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 4,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 10,
+            "startUTC": 1792895175.815258,
+            "elapsedSeconds": 28.07701301574707
+          },
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792895263.83291,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 11,
+            "startUTC": 1792895203.9677958,
+            "elapsedSeconds": 59.86511421203613
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792895322.3615952,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 12,
+            "startUTC": 1792895263.926173,
+            "elapsedSeconds": 58.43542218208313
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792895336.378193,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 13,
+            "startUTC": 1792895322.50212,
+            "elapsedSeconds": 13.876072883605957
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792895357.328763,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 14,
+            "startUTC": 1792895336.455406,
+            "elapsedSeconds": 20.87335705757141
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792895370.0165792,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 15,
+            "startUTC": 1792895357.439474,
+            "elapsedSeconds": 12.577105045318604
+          },
+          {
+            "action": "reopen-completed-reply",
+            "client": 0,
+            "endUTC": 1792895389.733177,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 4,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 16,
+            "startUTC": 1792895370.127015,
+            "elapsedSeconds": 19.60616183280945
+          },
+          {
+            "action": "reopen-completed-reply",
+            "client": 0,
+            "endUTC": 1792895410.6893969,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 17,
+            "startUTC": 1792895389.839149,
+            "elapsedSeconds": 20.850247859954834
+          }
+        ],
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 0,
+          "gestures": 30,
+          "markdownBodies": 137,
+          "maxFrameMS": 45.183375012129545,
+          "maxTimelineMS": 0.6144583458080888,
+          "movingFrames": 2224,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 239,
+          "totalTimelineMS": 30.11958341812715
+        },
+        "telemetry": {
+          "sampleCount": 93,
+          "sampledSeconds": 468.2628437500098,
+          "cpuSeconds": 159.448075,
+          "cpuPercentOneCore": 34.05097737909013,
+          "interruptWakeupsPerSecond": 90.26127219815125,
+          "idleWakeupsPerSecond": 0.4676860505227635,
+          "thermalStates": [0, 1, 2],
+          "initialThermalState": 0,
+          "finalThermalState": 2,
+          "batteryLevels": [1],
+          "batteryStates": [2, 3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 349,
+          "sessionWriteBytes": 403769947,
+          "sessionWriteBytesPerSecond": 862272.0174987011,
+          "sessionReads": 604,
+          "sessionReadsPerSecond": 1.2898738562362977,
+          "sessionReadBytes": 787292681,
+          "sessionReadBytesPerSecond": 1681305.0437551048,
+          "sessionClones": 604,
+          "sessionClonesPerSecond": 1.2898738562362977,
+          "sessionCloneReferencedBytes": 787292681,
+          "sessionCloneReferencedBytesPerSecond": 1681305.0437551048,
+          "sessionStateWriteBytes": 393663004,
+          "sessionStateWriteBytesPerSecond": 840688.1076606706,
+          "sessionBackupWriteBytes": 0,
+          "sessionBackupWriteBytesPerSecond": 0.0,
+          "sessionHistoryWriteBytes": 10106943,
+          "sessionHistoryWriteBytesPerSecond": 21583.909838030555,
+          "sessionOtherWriteBytes": 0,
+          "sessionOtherWriteBytesPerSecond": 0.0,
+          "sessionStateEncodeWallMS": 6315.223749552388,
+          "sessionStateEncodeWallMSPerSecond": 13.48649339541422,
+          "sessionStateValidateWallMS": 4605.893792177085,
+          "sessionStateValidateWallMSPerSecond": 9.836129117765365
+        },
+        "notesSessionIO": "Session-only logical Data.write bytes and successful APFS clone references; clones share old blocks and are not written payload bytes. Read counters include validation of cloned bytes. Excludes ledger, measurement logs and other file users; not physical flash bytes.",
+        "idleBaseline": {
+          "windowUTC": [1792894877.5791512, 1792894937.610705],
+          "wallSeconds": 60.031553745269775,
+          "telemetry": {
+            "sampleCount": 12,
+            "sampledSeconds": 56.86383162497077,
+            "cpuSeconds": 8.853470999999999,
+            "cpuPercentOneCore": 15.569599773702464,
+            "interruptWakeupsPerSecond": 37.31721798128286,
+            "idleWakeupsPerSecond": 0.3517174173542211,
+            "thermalStates": [0],
+            "initialThermalState": 0,
+            "finalThermalState": 0,
+            "batteryLevels": [1],
+            "batteryStates": [3],
+            "brightness": [0],
+            "lowPowerMode": [false],
+            "sessionWrites": 35,
+            "sessionWriteBytes": 45401605,
+            "sessionWriteBytesPerSecond": 798426.7627168245,
+            "sessionReads": 70,
+            "sessionReadsPerSecond": 1.2310109607397737,
+            "sessionReadBytes": 90803243,
+            "sessionReadBytesPerSecond": 1596854.1057673877,
+            "sessionClones": 70,
+            "sessionClonesPerSecond": 1.2310109607397737,
+            "sessionCloneReferencedBytes": 90803243,
+            "sessionCloneReferencedBytesPerSecond": 1596854.1057673877,
+            "sessionStateWriteBytes": 45401605,
+            "sessionStateWriteBytesPerSecond": 798426.7627168245,
+            "sessionBackupWriteBytes": 0,
+            "sessionBackupWriteBytesPerSecond": 0.0,
+            "sessionHistoryWriteBytes": 0,
+            "sessionHistoryWriteBytesPerSecond": 0.0,
+            "sessionOtherWriteBytes": 0,
+            "sessionOtherWriteBytesPerSecond": 0.0,
+            "sessionStateEncodeWallMS": 880.8768749586307,
+            "sessionStateEncodeWallMSPerSecond": 15.490986973375335,
+            "sessionStateValidateWallMS": 541.6657500318252,
+            "sessionStateValidateWallMSPerSecond": 9.525663933521532
+          }
+        },
+        "power": null,
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Normal App launch with in-process CPU/wakeup/logical-write and moving-frame telemetry.",
+          "No Instruments power measurement in this mixed trial; CPU is not watts or battery drain.",
+          "Public thermal state is a level, not measured degrees Celsius."
+        ]
+      },
+      "originalOwner": [
+        {
+          "threadIdSha256": "e8dc98c5a213810d684c49d4199504c1b3f1bcc2a7650ea7ddefb1dd78acde96",
+          "originalOwner": true,
+          "turnCount": 2,
+          "statuses": ["completed", "completed"],
+          "userInputs": 2,
+          "efforts": ["xhigh", "xhigh"],
+          "models": ["gpt-6.1-sol", "gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+          "allMarkersCompleted": true,
+          "numberedLines": 400,
+          "outputSha256": "96d5122ce1b4f998e28835fa89c6b3a13cd7455932e9a67c5e1fdf9c3b905bb9",
+          "outputUTF8Bytes": 24217,
+          "normalizedOutputUTF8Bytes": 24117,
+          "normalizedOutputSha256": "3c8491f672ae22b57303fa1b859f7fad9a95e967ec61ea2c8caae68110b3a9f3",
+          "numberedSequencesValid": true,
+          "allLeftWhileRunning": true
+        },
+        {
+          "threadIdSha256": "660f5c045307895e811bd0f271115b68cf1754bb147e9ea7b4bc5148399424ae",
+          "originalOwner": true,
+          "turnCount": 1,
+          "statuses": ["completed"],
+          "userInputs": 1,
+          "efforts": ["xhigh"],
+          "models": ["gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+          "allMarkersCompleted": true,
+          "numberedLines": 200,
+          "outputSha256": "cba56036c44cb89a176e4fc27a229b8a1ab99e11c4a52509a256d460afa345e5",
+          "outputUTF8Bytes": 12108,
+          "normalizedOutputUTF8Bytes": 12058,
+          "normalizedOutputSha256": "da19b290c5a10592e83bd33c594f81ade109cdd26e320c93abc0ea922cb32e73",
+          "numberedSequencesValid": true,
+          "allLeftWhileRunning": true
+        }
+      ],
+      "verifiedAppPID": 4591,
+      "installationPathMatched": true,
+      "nativeInterruptionHandlingCount": 3
+    },
+    {
+      "label": "this_run_cpu_candidate",
+      "privateTrialName": "cpu-after-1",
+      "originalRecordedVariant": "after",
+      "sourceSha256": "8d3ca78c065b1b93b660d81b8903f259c381ee70b69192f654640fa6c12a57bc",
+      "appExecutableSha256": "71e95baf9e4a18d63cbb237de7c84c63e92c453bb686aaf91adfc36006437ab2",
+      "measurementDriverSha256": "360554d4df6284eb4020851662677934d2f4bb874acc1ccd11780e9958dca46a",
+      "mixedSelectionSha256": "ce189511b4e503e27741a36765f57efd513d79b3b9d01a670293e9a235eeaf18",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "metrics": {
+        "variant": "after",
+        "test": "testThermalMixedInteractionDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "8d3ca78c065b1b93b660d81b8903f259c381ee70b69192f654640fa6c12a57bc",
+        "windowUTC": [1792899051.2948442, 1792899567.946106],
+        "wallSeconds": 516.651261806488,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "71e95baf9e4a18d63cbb237de7c84c63e92c453bb686aaf91adfc36006437ab2",
+        "captureMode": "native-telemetry",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 22,
+          "movingFrames": 1800,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 17.512249993160367,
+          "maxFrameMS": 52.34529165318236,
+          "framesOver50MS": 1,
+          "movingSeconds": 30.216634583484847
+        },
+        "interactionSteps": [
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792899110.8865619,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "thermal": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 1,
+            "startUTC": 1792899051.294859,
+            "elapsedSeconds": 59.591702938079834
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792899162.910131,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 2,
+            "startUTC": 1792899110.946786,
+            "elapsedSeconds": 51.96334505081177
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792899176.961763,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 3,
+            "startUTC": 1792899163.017932,
+            "elapsedSeconds": 13.943830966949463
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792899195.389667,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 4,
+            "startUTC": 1792899177.0335011,
+            "elapsedSeconds": 18.356165885925293
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792899215.5448852,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 5,
+            "startUTC": 1792899195.5104508,
+            "elapsedSeconds": 20.03443431854248
+          },
+          {
+            "action": "switch-client",
+            "client": 2,
+            "endUTC": 1792899229.4115438,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 6,
+            "startUTC": 1792899215.665956,
+            "elapsedSeconds": 13.745587825775146
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792899246.9858,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 7,
+            "startUTC": 1792899229.474732,
+            "elapsedSeconds": 17.511068105697632
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792899273.154263,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 8,
+            "startUTC": 1792899247.12169,
+            "elapsedSeconds": 26.032572984695435
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792899285.818915,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 9,
+            "startUTC": 1792899273.224369,
+            "elapsedSeconds": 12.594545841217041
+          },
+          {
+            "action": "reopen-chat-and-followup-running",
+            "client": 0,
+            "endUTC": 1792899313.704418,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 4,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 10,
+            "startUTC": 1792899285.904601,
+            "elapsedSeconds": 27.799816846847534
+          },
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792899379.424963,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "thermal": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 11,
+            "startUTC": 1792899313.761514,
+            "elapsedSeconds": 65.66344904899597
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792899472.03889,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 12,
+            "startUTC": 1792899379.4837499,
+            "elapsedSeconds": 92.55514001846313
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792899486.437759,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 13,
+            "startUTC": 1792899472.165547,
+            "elapsedSeconds": 14.272212028503418
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792899513.585191,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 14,
+            "startUTC": 1792899486.5150871,
+            "elapsedSeconds": 27.070103883743286
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792899526.28623,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 15,
+            "startUTC": 1792899513.703342,
+            "elapsedSeconds": 12.582888126373291
+          },
+          {
+            "action": "reopen-completed-reply",
+            "client": 0,
+            "endUTC": 1792899545.86803,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 4,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 16,
+            "startUTC": 1792899526.376504,
+            "elapsedSeconds": 19.491526126861572
+          },
+          {
+            "action": "reopen-completed-reply",
+            "client": 0,
+            "endUTC": 1792899567.8728719,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "thermal": 2,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 17,
+            "startUTC": 1792899546.0767999,
+            "elapsedSeconds": 21.796072006225586
+          }
+        ],
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 1,
+          "gestures": 30,
+          "markdownBodies": 118,
+          "maxFrameMS": 52.34529165318236,
+          "maxTimelineMS": 0.6816666573286057,
+          "movingFrames": 2218,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 415,
+          "totalTimelineMS": 39.03074940899387
+        },
+        "telemetry": {
+          "sampleCount": 102,
+          "sampledSeconds": 513.6028075416689,
+          "cpuSeconds": 171.478109,
+          "cpuPercentOneCore": 33.38729977368511,
+          "interruptWakeupsPerSecond": 98.40872997155378,
+          "idleWakeupsPerSecond": 0.38161785161989875,
+          "thermalStates": [0, 1, 2],
+          "initialThermalState": 0,
+          "finalThermalState": 2,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [
+            0.00018725557310972363, 0.00020933158521074802, 0.00025859259767457843,
+            0.0003194546152371913, 0.00034776225220412016, 0.00036973212263546884,
+            0.0003745045105461031, 0.00039058434776961803, 0.00041017303010448813,
+            0.0004304481844883412, 0.00048150841030292213, 0.0004915373865514994,
+            0.0005171818775124848, 0.0006865998730063438, 0.0006870144279673696,
+            0.0007490156567655504, 0.000833323341794312, 0.0008873020415194333,
+            0.0009273565956391394, 0.0013164932606741786, 0.0013464459916576743
+          ],
+          "lowPowerMode": [false],
+          "sessionWrites": 416,
+          "sessionWriteBytes": 468411949,
+          "sessionWriteBytesPerSecond": 912012.0492370897,
+          "sessionReads": 702,
+          "sessionReadsPerSecond": 1.3668149583529026,
+          "sessionReadBytes": 925585059,
+          "sessionReadBytesPerSecond": 1802141.743403353,
+          "sessionClones": 702,
+          "sessionClonesPerSecond": 1.3668149583529026,
+          "sessionCloneReferencedBytes": 925585059,
+          "sessionCloneReferencedBytesPerSecond": 1802141.743403353,
+          "sessionStateWriteBytes": 462807219,
+          "sessionStateWriteBytesPerSecond": 901099.4725967345,
+          "sessionBackupWriteBytes": 0,
+          "sessionBackupWriteBytesPerSecond": 0.0,
+          "sessionHistoryWriteBytes": 5604730,
+          "sessionHistoryWriteBytesPerSecond": 10912.576640355077,
+          "sessionOtherWriteBytes": 0,
+          "sessionOtherWriteBytesPerSecond": 0.0,
+          "sessionStateEncodeWallMS": 7613.3758331416175,
+          "sessionStateEncodeWallMSPerSecond": 14.823470046012044,
+          "sessionStateValidateWallMS": 5465.627250203397,
+          "sessionStateValidateWallMSPerSecond": 10.64173943356018
+        },
+        "notesSessionIO": "Session-only logical Data.write bytes and successful APFS clone references; clones share old blocks and are not written payload bytes. Read counters include validation of cloned bytes. Excludes ledger, measurement logs and other file users; not physical flash bytes.",
+        "idleBaseline": {
+          "windowUTC": [1792898991.230585, 1792899051.2947578],
+          "wallSeconds": 60.06417274475098,
+          "telemetry": {
+            "sampleCount": 11,
+            "sampledSeconds": 52.05121612502262,
+            "cpuSeconds": 7.516973999999998,
+            "cpuPercentOneCore": 14.441495433929655,
+            "interruptWakeupsPerSecond": 35.27295107937696,
+            "idleWakeupsPerSecond": 0.24975401091062116,
+            "thermalStates": [0],
+            "initialThermalState": 0,
+            "finalThermalState": 0,
+            "batteryLevels": [1],
+            "batteryStates": [3],
+            "brightness": [0.00025859259767457843],
+            "lowPowerMode": [false],
+            "sessionWrites": 30,
+            "sessionWriteBytes": 39379224,
+            "sessionWriteBytesPerSecond": 756547.6261959842,
+            "sessionReads": 60,
+            "sessionReadsPerSecond": 1.1527108195874822,
+            "sessionReadBytes": 78758481,
+            "sessionReadBytesPerSecond": 1513095.8863829193,
+            "sessionClones": 60,
+            "sessionClonesPerSecond": 1.1527108195874822,
+            "sessionCloneReferencedBytes": 78758481,
+            "sessionCloneReferencedBytesPerSecond": 1513095.8863829193,
+            "sessionStateWriteBytes": 39379224,
+            "sessionStateWriteBytesPerSecond": 756547.6261959842,
+            "sessionBackupWriteBytes": 0,
+            "sessionBackupWriteBytesPerSecond": 0.0,
+            "sessionHistoryWriteBytes": 0,
+            "sessionHistoryWriteBytesPerSecond": 0.0,
+            "sessionOtherWriteBytes": 0,
+            "sessionOtherWriteBytesPerSecond": 0.0,
+            "sessionStateEncodeWallMS": 862.2348748031072,
+            "sessionStateEncodeWallMSPerSecond": 16.565124486853332,
+            "sessionStateValidateWallMS": 487.958625133615,
+            "sessionStateValidateWallMSPerSecond": 9.374586445042507
+          }
+        },
+        "power": null,
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Normal App launch with in-process CPU/wakeup/logical-write and moving-frame telemetry.",
+          "No Instruments power measurement in this mixed trial; CPU is not watts or battery drain.",
+          "Public thermal state is a level, not measured degrees Celsius."
+        ]
+      },
+      "originalOwner": [
+        {
+          "threadIdSha256": "4ec78f213e0ae29e9c9700ea5fb46f1d3ad6a91f6ea8d1adfd663d293df63d59",
+          "originalOwner": true,
+          "turnCount": 2,
+          "statuses": ["completed", "completed"],
+          "userInputs": 2,
+          "efforts": ["xhigh", "xhigh"],
+          "models": ["gpt-6.1-sol", "gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+          "allMarkersCompleted": true,
+          "numberedLines": 400,
+          "outputSha256": "54a459886ce82b6a006ce0479d02c73885945807474a6934964b8b3685317e83",
+          "outputUTF8Bytes": 24221,
+          "normalizedOutputUTF8Bytes": 24117,
+          "normalizedOutputSha256": "3c8491f672ae22b57303fa1b859f7fad9a95e967ec61ea2c8caae68110b3a9f3",
+          "numberedSequencesValid": true,
+          "allLeftWhileRunning": true
+        },
+        {
+          "threadIdSha256": "11d9444475ad8bd7cea259ad084b4b48fa94b3b97dc19c2905b6cd904dc7f5ec",
+          "originalOwner": true,
+          "turnCount": 1,
+          "statuses": ["completed"],
+          "userInputs": 1,
+          "efforts": ["xhigh"],
+          "models": ["gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+          "allMarkersCompleted": true,
+          "numberedLines": 200,
+          "outputSha256": "41384b07742197e4aef3444ddcf86dbdf89b3945317b977504cc8b5d7635d39b",
+          "outputUTF8Bytes": 12110,
+          "normalizedOutputUTF8Bytes": 12058,
+          "normalizedOutputSha256": "da19b290c5a10592e83bd33c594f81ade109cdd26e320c93abc0ea922cb32e73",
+          "numberedSequencesValid": true,
+          "allLeftWhileRunning": true
+        }
+      ],
+      "verifiedAppPID": 4648,
+      "installationPathMatched": true,
+      "nativeInterruptionHandlingCount": 7
+    }
+  ],
+  "nativeStandardScroll": [
+    {
+      "label": "matched_reuse_io_candidate",
+      "test": "testHistoryInstalledAppReadOnlyDEV",
+      "newModelInputs": 0,
+      "runtimeNumericalProbesEnabled": false,
+      "cooling": {
+        "observedNominal": true,
+        "thermalState": 0,
+        "sampleUTC": 1792896048.959237,
+        "elapsedSeconds": 152.55599999427795,
+        "measurementNumericalProbesEnabled": false
+      },
+      "metrics": [
+        {
+          "name": "Frame Count (Scroll_Deceleration)",
+          "unit": "frames",
+          "values": [0, 0, 0],
+          "mean": 0
+        },
+        {
+          "name": "Frame Rate (Scroll_Deceleration)",
+          "unit": "fps",
+          "values": [70.00675964355469, 69.85354614257812, 70.09275817871094],
+          "mean": 69.98435465494792
+        },
+        {
+          "name": "Hitches Total Duration (Scroll_Deceleration)",
+          "unit": "ms",
+          "values": [0, 0, 8.335249],
+          "mean": 2.778416333333333
+        },
+        {
+          "name": "Duration (Scroll_Deceleration)",
+          "unit": "s",
+          "values": [1.8569635830000002, 1.83240525, 1.8404182500000001],
+          "mean": 1.843262361
+        },
+        {
+          "name": "Hitch Time Ratio (Scroll_Deceleration)",
+          "unit": "ms per s",
+          "values": [0, 0, 4.5289976884330505],
+          "mean": 1.50966589614435
+        },
+        {
+          "name": "Number of Hitches (Scroll_Deceleration)",
+          "unit": "hitches",
+          "values": [0, 0, 1],
+          "mean": 0.3333333333333333
+        }
+      ],
+      "hitchRatioMean": 1.50966589614435,
+      "hitchRatioValues": [0, 0, 4.5289976884330505],
+      "standaloneIdle": {
+        "idleLaunchUTC": 1792896157.56,
+        "idleBeginUTC": 1792896187.829,
+        "idleEndUTC": 1792896252.83,
+        "newModelInputs": 0,
+        "activeXCTest": false,
+        "uiPolling": false,
+        "scrollProbeEnabled": false,
+        "appExecutableSha256": "41313781203173e797ab524fc8c3a81933827d7670581468cd9b0f1e7fb4088d",
+        "telemetry": {
+          "sampleCount": 13,
+          "sampledSeconds": 61.2176690416527,
+          "cpuSeconds": 8.876788,
+          "cpuPercentOneCore": 14.50036915642803,
+          "interruptWakeupsPerSecond": 36.59074308229372,
+          "idleWakeupsPerSecond": 0.1633515316173827,
+          "thermalStates": [2],
+          "initialThermalState": 2,
+          "finalThermalState": 2,
+          "batteryLevels": [1],
+          "batteryStates": [2],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 36,
+          "sessionWriteBytes": 47100558,
+          "sessionWriteBytesPerSecond": 769394.8289333367,
+          "sessionReads": 72,
+          "sessionReadsPerSecond": 1.1761310276451553,
+          "sessionReadBytes": 94201116,
+          "sessionReadBytesPerSecond": 1538789.6578666733,
+          "sessionClones": 72,
+          "sessionClonesPerSecond": 1.1761310276451553,
+          "sessionCloneReferencedBytes": 94201116,
+          "sessionCloneReferencedBytesPerSecond": 1538789.6578666733,
+          "sessionStateWriteBytes": 47100558,
+          "sessionStateWriteBytesPerSecond": 769394.8289333367,
+          "sessionBackupWriteBytes": 0,
+          "sessionBackupWriteBytesPerSecond": 0.0,
+          "sessionHistoryWriteBytes": 0,
+          "sessionHistoryWriteBytesPerSecond": 0.0,
+          "sessionOtherWriteBytes": 0,
+          "sessionOtherWriteBytesPerSecond": 0.0,
+          "sessionStateEncodeWallMS": 1036.2997083575465,
+          "sessionStateEncodeWallMSPerSecond": 16.928114457485222,
+          "sessionStateValidateWallMS": 588.4119584807195,
+          "sessionStateValidateWallMSPerSecond": 9.611799463980931
+        }
+      }
+    },
+    {
+      "label": "this_run_cpu_candidate",
+      "test": "testHistoryInstalledAppReadOnlyDEV",
+      "newModelInputs": 0,
+      "runtimeNumericalProbesEnabled": false,
+      "cooling": {
+        "observedNominal": true,
+        "thermalState": 0,
+        "sampleUTC": 1792899774.947692,
+        "elapsedSeconds": 198.37299990653992,
+        "measurementNumericalProbesEnabled": false
+      },
+      "metrics": [
+        {
+          "name": "Frame Count (Scroll_Deceleration)",
+          "unit": "frames",
+          "values": [0, 0, 0],
+          "mean": 0
+        },
+        {
+          "name": "Frame Rate (Scroll_Deceleration)",
+          "unit": "fps",
+          "values": [70.69512939453125, 69.65815734863281, 70.58196258544922],
+          "mean": 70.31174977620442
+        },
+        {
+          "name": "Hitches Total Duration (Scroll_Deceleration)",
+          "unit": "ms",
+          "values": [12.502874, 16.670333, 0],
+          "mean": 9.724402333333334
+        },
+        {
+          "name": "Duration (Scroll_Deceleration)",
+          "unit": "s",
+          "values": [1.8671724580000002, 1.86625675, 1.841830292],
+          "mean": 1.8584198333333335
+        },
+        {
+          "name": "Hitch Time Ratio (Scroll_Deceleration)",
+          "unit": "ms per s",
+          "values": [6.696154361210028, 8.932497274736358, 0],
+          "mean": 5.209550545315462
+        },
+        {
+          "name": "Number of Hitches (Scroll_Deceleration)",
+          "unit": "hitches",
+          "values": [1, 1, 0],
+          "mean": 0.6666666666666666
+        }
+      ],
+      "hitchRatioMean": 5.209550545315462,
+      "hitchRatioValues": [6.696154361210028, 8.932497274736358, 0],
+      "standaloneIdle": {
+        "idleLaunchUTC": 1792899864.928,
+        "idleBeginUTC": 1792899895.187,
+        "idleEndUTC": 1792899960.191,
+        "newModelInputs": 0,
+        "activeXCTest": false,
+        "uiPolling": false,
+        "scrollProbeEnabled": false,
+        "appExecutableSha256": "71e95baf9e4a18d63cbb237de7c84c63e92c453bb686aaf91adfc36006437ab2",
+        "telemetry": {
+          "sampleCount": 13,
+          "sampledSeconds": 61.31207383336732,
+          "cpuSeconds": 7.588349000000001,
+          "cpuPercentOneCore": 12.376598156871122,
+          "interruptWakeupsPerSecond": 34.41410260782426,
+          "idleWakeupsPerSecond": 0.11417000865154968,
+          "thermalStates": [2],
+          "initialThermalState": 2,
+          "finalThermalState": 2,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [0.0009273565956391394],
+          "lowPowerMode": [false],
+          "sessionWrites": 33,
+          "sessionWriteBytes": 43642497,
+          "sessionWriteBytesPerSecond": 711809.1800093187,
+          "sessionReads": 66,
+          "sessionReadsPerSecond": 1.0764600815717542,
+          "sessionReadBytes": 87284994,
+          "sessionReadBytesPerSecond": 1423618.3600186375,
+          "sessionClones": 66,
+          "sessionClonesPerSecond": 1.0764600815717542,
+          "sessionCloneReferencedBytes": 87284994,
+          "sessionCloneReferencedBytesPerSecond": 1423618.3600186375,
+          "sessionStateWriteBytes": 43642497,
+          "sessionStateWriteBytesPerSecond": 711809.1800093187,
+          "sessionBackupWriteBytes": 0,
+          "sessionBackupWriteBytesPerSecond": 0.0,
+          "sessionHistoryWriteBytes": 0,
+          "sessionHistoryWriteBytesPerSecond": 0.0,
+          "sessionOtherWriteBytes": 0,
+          "sessionOtherWriteBytesPerSecond": 0.0,
+          "sessionStateEncodeWallMS": 987.0245833881199,
+          "sessionStateEncodeWallMSPerSecond": 16.098372174959124,
+          "sessionStateValidateWallMS": 544.1190415294841,
+          "sessionStateValidateWallMSPerSecond": 8.874582239842017
+        }
+      }
+    }
+  ],
+  "perInteractionScroll": [
+    {
+      "sequence": 2,
+      "action": "read-long-history",
+      "client": 0,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 4,
+        "movingFrames": 418,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 17.658916651271284,
+        "maxFrameMS": 38.71549997711554,
+        "framesOver50MS": 0,
+        "movingSeconds": 7.03488066670252
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 4,
+        "movingFrames": 418,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 33.446833316702396,
+        "framesOver50MS": 0,
+        "movingSeconds": 7.01821033336455
+      }
+    },
+    {
+      "sequence": 4,
+      "action": "read-existing-chat",
+      "client": 1,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 144,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 26.834333373699337,
+        "maxFrameMS": 28.340166667476296,
+        "framesOver50MS": 0,
+        "movingSeconds": 2.417198333365377
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 143,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 16.670333337970078,
+        "framesOver50MS": 0,
+        "movingSeconds": 2.383857666689437
+      }
+    },
+    {
+      "sequence": 5,
+      "action": "read-existing-chat",
+      "client": 1,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 97,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 16.670333337970078,
+        "framesOver50MS": 0,
+        "movingSeconds": 1.6170223333174363
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 101,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 16.670333337970078,
+        "framesOver50MS": 0,
+        "movingSeconds": 1.6837036666693166
+      }
+    },
+    {
+      "sequence": 7,
+      "action": "read-existing-chat",
+      "client": 2,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 70,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 16.670333337970078,
+        "framesOver50MS": 0,
+        "movingSeconds": 1.1669233333668672
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 73,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 16.670333337970078,
+        "framesOver50MS": 0,
+        "movingSeconds": 1.2169343333225697
+      }
+    },
+    {
+      "sequence": 8,
+      "action": "read-existing-chat",
+      "client": 2,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 72,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 20.712958299554884,
+        "maxFrameMS": 20.712958299554884,
+        "framesOver50MS": 0,
+        "movingSeconds": 1.200263999926392
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 73,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 16.670333337970078,
+        "framesOver50MS": 0,
+        "movingSeconds": 1.2169343333807774
+      }
+    },
+    {
+      "sequence": 12,
+      "action": "read-long-history",
+      "client": 0,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 4,
+        "movingFrames": 421,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 26.287083281204104,
+        "framesOver50MS": 0,
+        "movingSeconds": 7.018210333131719
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 4,
+        "movingFrames": 425,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 39.770333329215646,
+        "framesOver50MS": 0,
+        "movingSeconds": 7.110749708372168
+      }
+    },
+    {
+      "sequence": 14,
+      "action": "read-existing-chat",
+      "client": 1,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 139,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 22.805166663601995,
+        "maxFrameMS": 27.20583335030824,
+        "framesOver50MS": 0,
+        "movingSeconds": 2.3338466667337343
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 141,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 16.709749994333833,
+        "framesOver50MS": 0,
+        "movingSeconds": 2.3505170000717044
+      }
+    },
+    {
+      "sequence": 16,
+      "action": "reopen-completed-reply",
+      "client": 0,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 209,
+        "p95FrameMS": 21.497958339750767,
+        "p99FrameMS": 36.04108333820477,
+        "maxFrameMS": 45.183375012129545,
+        "framesOver50MS": 0,
+        "movingSeconds": 3.617462333291769
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 211,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 33.340666675940156,
+        "maxFrameMS": 38.610874966252595,
+        "framesOver50MS": 0,
+        "movingSeconds": 3.618265208264347
+      }
+    },
+    {
+      "sequence": 17,
+      "action": "reopen-completed-reply",
+      "client": 0,
+      "baseline": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 209,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 25.49562498461455,
+        "maxFrameMS": 45.01558333868161,
+        "framesOver50MS": 0,
+        "movingSeconds": 3.5341106666601263
+      },
+      "candidate": {
+        "scope": "gesture starts and moving frames wholly inside measurement window",
+        "gestures": 2,
+        "movingFrames": 212,
+        "p95FrameMS": 16.670333337970078,
+        "p99FrameMS": 16.670333337970078,
+        "maxFrameMS": 52.34529165318236,
+        "framesOver50MS": 1,
+        "movingSeconds": 3.5674513333360665
+      }
+    }
+  ],
+  "maximumFrameDiagnostics": [
+    {
+      "label": "matched_reuse_io_candidate",
+      "frame": {
+        "gesture": 28,
+        "end": 266509.29192150006,
+        "start": 266509.24673812505,
+        "ms": 45.183375012129545
+      },
+      "workProbeKeys": ["gestureTimes", "frames", "work", "slowFrames", "clock"],
+      "overlappingRecordedWork": [],
+      "recordedWorkRange": [265638.7214959167, 266528.9646858334],
+      "recordedWorkCount": 71,
+      "minimumRecordedWorkMS": 1,
+      "boundedWorkRetention": 256,
+      "limitation": "Only instrumented >=1ms intervals are covered, with bounded retention; an empty overlap does not rule out other work or prove a cause. No unique causal attribution from temporal overlap."
+    },
+    {
+      "label": "this_run_cpu_candidate",
+      "frame": {
+        "end": 270686.75389937503,
+        "start": 270686.7015540834,
+        "ms": 52.34529165318236,
+        "gesture": 30
+      },
+      "workProbeKeys": ["frames", "gestureTimes", "clock", "work", "slowFrames"],
+      "overlappingRecordedWork": [
+        {
+          "phase": 7,
+          "end": 270686.72367070836,
+          "ms": 1.5572083066217601,
+          "start": 270686.72211350006
+        },
+        {
+          "ms": 1.7096250085160136,
+          "end": 270686.72381537507,
+          "start": 270686.72210575006,
+          "phase": 2
+        }
+      ],
+      "recordedWorkRange": [270011.1360355417, 270686.72381537507],
+      "recordedWorkCount": 80,
+      "minimumRecordedWorkMS": 1,
+      "boundedWorkRetention": 256,
+      "limitation": "Only instrumented >=1ms intervals are covered, with bounded retention; an empty overlap does not rule out other work or prove a cause. No unique causal attribution from temporal overlap."
+    }
+  ],
+  "finalWorkspaceCheck": {
+    "check": "passed",
+    "exitCode": 0,
+    "iosBuild": "prior production build passed; mixed UITest revision built for both physical variants",
+    "runId": "check-7",
+    "metricBoundaries": 13,
+    "nativePersistenceBoundaries": 15,
+    "sourceFilesBefore": {
+      "apps/ios/Sources/SessionPersistence.swift": "87531a4a223c5633bd7fcadca5e052afaedb3f13713bc4a67a3935df803407fe",
+      "apps/ios/Sources/CodexManageApp.swift": "957e8390a08bee92a8271a18f5048afc73e8e458d75f44ce7463476f1ae0a091",
+      "apps/ios/Sources/RootView.swift": "52f3d94374d02e111168d81f1e59a4efa25c0c8ff94464c1cc380891f01fc435",
+      "apps/ios/Tests/CodexManageUITests.swift": "b129c43b43554b40f3dbc9663946ca82dda3a6d464762fbf3ea81a7efc5f18b9",
+      "scripts/session-persistence-smoke.swift": "5042af9844d9543d7ebbe3dafe16d3792d9db90ace40ac714255254a9cd1f7ee",
+      "scripts/mobile/thermal-ios-comparison.mjs": "360554d4df6284eb4020851662677934d2f4bb874acc1ccd11780e9958dca46a",
+      "scripts/mobile/thermal-ios-results.py": "4e70cfb415ead3b9633964c0892dedb2ed7c19811096345075c940728bb50a0e",
+      "scripts/mobile/thermal-ios-results.test.py": "c7663d40b39101f5595cfd42c8eb5a9d6a51aa34e658a4f403eacf5f1252d32f",
+      "scripts/session-persistence-smoke.mjs": "193d462ca55cd9055c7b0baf62ea997fca1fc9ec0de9e5c8320c6d2e3dd881f9",
+      "apps/ios/Sources/SessionStore.swift": "54588538ee2d5973da8954d2f868f27c58d938d6596c9e00dacc08de9441cd9f",
+      "apps/ios/Sources/Models.swift": "6a7637d6db21851f85adcc16f5c04f312a5e4c1a7feb89132696def8a998232b",
+      "scripts/mobile/check-ios-publication.mjs": "c51e3d02e706e06725b7ac805c8404478719d97b2660818b9588086134290c2c",
+      "package.json": "958924f65a21d10da3e7a900faf9888b24c3960a4e29bf757d79229e586a53fe"
+    },
+    "sourceFilesAfter": {
+      "apps/ios/Sources/SessionPersistence.swift": "87531a4a223c5633bd7fcadca5e052afaedb3f13713bc4a67a3935df803407fe",
+      "apps/ios/Sources/CodexManageApp.swift": "957e8390a08bee92a8271a18f5048afc73e8e458d75f44ce7463476f1ae0a091",
+      "apps/ios/Sources/RootView.swift": "52f3d94374d02e111168d81f1e59a4efa25c0c8ff94464c1cc380891f01fc435",
+      "apps/ios/Tests/CodexManageUITests.swift": "b129c43b43554b40f3dbc9663946ca82dda3a6d464762fbf3ea81a7efc5f18b9",
+      "scripts/session-persistence-smoke.swift": "5042af9844d9543d7ebbe3dafe16d3792d9db90ace40ac714255254a9cd1f7ee",
+      "scripts/mobile/thermal-ios-comparison.mjs": "360554d4df6284eb4020851662677934d2f4bb874acc1ccd11780e9958dca46a",
+      "scripts/mobile/thermal-ios-results.py": "4e70cfb415ead3b9633964c0892dedb2ed7c19811096345075c940728bb50a0e",
+      "scripts/mobile/thermal-ios-results.test.py": "c7663d40b39101f5595cfd42c8eb5a9d6a51aa34e658a4f403eacf5f1252d32f",
+      "scripts/session-persistence-smoke.mjs": "193d462ca55cd9055c7b0baf62ea997fca1fc9ec0de9e5c8320c6d2e3dd881f9",
+      "apps/ios/Sources/SessionStore.swift": "54588538ee2d5973da8954d2f868f27c58d938d6596c9e00dacc08de9441cd9f",
+      "apps/ios/Sources/Models.swift": "6a7637d6db21851f85adcc16f5c04f312a5e4c1a7feb89132696def8a998232b",
+      "scripts/mobile/check-ios-publication.mjs": "c51e3d02e706e06725b7ac805c8404478719d97b2660818b9588086134290c2c",
+      "package.json": "958924f65a21d10da3e7a900faf9888b24c3960a4e29bf757d79229e586a53fe"
+    },
+    "sourceFilesChangedDuringCheck": [],
+    "timestamp": "2026-10-25T03:20:59.763Z"
+  },
+  "analysisParserSha256": "4e70cfb415ead3b9633964c0892dedb2ed7c19811096345075c940728bb50a0e",
+  "checks": {
+    "workspace": "pnpm check passed",
+    "iosBuild": "pnpm build:ios passed",
+    "physicalCandidateBuild": "Release build-for-testing passed",
+    "nativePublication": "production snippets, bindings and 48 runtime field mutations passed",
+    "persistenceBoundaries": 15,
+    "metricBoundaries": 13
+  },
+  "cleanup": null,
+  "limits": [
+    "One real mixed pair, not a statistical guarantee or equal-throughput benchmark.",
+    "Existing remote histories can update; controlled model outputs match after nonce normalization.",
+    "CPU percent is one-core-equivalent, not whole-device capacity or battery use.",
+    "Logical session reads/writes exclude ledger, measurement logs and other subsystems; not physical flash bytes.",
+    "Moving display-link gaps and native scrolling hitch ratio are different metrics.",
+    "Charging retained at human request; no battery drain, watts or Celsius measurement.",
+    "No Android production changes in this phase, no new Android physical result; A6 remains paused.",
+    "Shared workspace attachment changes are excluded from the physically tested frozen source.",
+    "Formal App and shared Host were not deployed by this task."
+  ]
+}

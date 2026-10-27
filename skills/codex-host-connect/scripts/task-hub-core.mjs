@@ -401,6 +401,9 @@ export async function tlsJson(endpoint, path, registration, { connectHost } = {}
       url,
       {
         ...(connectHost ? { hostname: connectHost } : {}),
+        // A prior probe may use a different registration pin. Older Node agents
+        // can reuse its socket/session without invoking this request's verifier.
+        agent: false,
         servername: registration.domain,
         ca: registration.certificatePem,
         rejectUnauthorized: true,

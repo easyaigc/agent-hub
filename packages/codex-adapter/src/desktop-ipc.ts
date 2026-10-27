@@ -37,6 +37,8 @@ const versions: Record<string, number> = {
   'thread-follower-interrupt-turn': 4,
   'thread-follower-command-approval-decision': 1,
   'thread-follower-file-approval-decision': 1,
+  'thread-follower-permissions-request-approval-response': 1,
+  'thread-follower-submit-mcp-server-elicitation-response': 1,
   'thread-follower-submit-user-input': 1,
   'thread-follower-update-thread-settings': 2,
   'thread-follower-read-model-settings': 1,
@@ -145,6 +147,40 @@ function continuedDesktopStream(previous: WireObject, next: WireObject) {
     return prior;
 }
 
+function terminalDesktopHead(state: WireObject) {
+  const head = desktopStreamHead(state);
+  const turns = desktopTurns(state);
+  const status = string(turns.at(-1)?.status);
+  return head &&
+    ['completed', 'failed', 'interrupted'].includes(status) &&
+    ['idle', 'systemError'].includes(string(object(state.threadRuntimeStatus).type)) &&
+    !turns.some((turn) => turn.status === 'inProgress')
+    ? { ...head, status }
+    : undefined;
+}
+
+function terminalDesktopReset(previous: WireObject, next: WireObject) {
+  const prior = desktopStreamHead(previous);
+  const head = terminalDesktopHead(next);
+  return prior &&
+    head &&
+    prior.key === head.key &&
+    desktopTurns(previous).at(-1)?.status === 'inProgress'
+    ? head
+    : undefined;
+}
+
+interface TerminalDesktopReset {
+  status: string;
+  retiredRevisions: Set<number>;
+}
+
+function retireRevision(reset: TerminalDesktopReset, revision: number): void {
+  reset.retiredRevisions.add(revision);
+  while (reset.retiredRevisions.size > 64)
+    reset.retiredRevisions.delete(reset.retiredRevisions.values().next().value!);
+}
+
 export interface ProposedPlan {
   id: string;
   turnId: string;
@@ -204,6 +240,9 @@ export class DesktopIpc {
   // One owner can publish both a retired cached stream and its replacement.
   // Revisions are comparable within a stream, not across those two histories.
   private retiredStreams = new Map<string, Map<string, number>>();
+  // A stop can rebuild the same input/turn at revision 2. Its terminal
+  // evidence must also fence the old running stream, whose head ID is equal.
+  private terminalResets = new Map<string, Map<string, TerminalDesktopReset>>();
   private waiters = new Map<string, Set<() => void>>();
   private follows = new Map<
     string,
@@ -285,6 +324,7 @@ export class DesktopIpc {
       this.owners.clear();
       this.states.clear();
       this.retiredStreams.clear();
+      this.terminalResets.clear();
       this.snapshotReads.clear();
       this.snapshotRetryAt.clear();
       this.liveWindows.clear();
@@ -385,6 +425,7 @@ export class DesktopIpc {
             this.owners.delete(id);
             this.states.delete(id);
             this.retiredStreams.delete(id);
+            this.terminalResets.delete(id);
             this.liveWindows.delete(id);
             this.observedOwners.delete(id);
             this.onUnavailable(id);
@@ -413,6 +454,7 @@ export class DesktopIpc {
         return;
       }
       const old = this.states.get(id);
+      let terminalReset: ReturnType<typeof terminalDesktopReset>;
       if (change.type === 'patches' && !old) {
         const window = this.liveWindows.get(id) ?? new DesktopLiveWindow();
         this.liveWindows.set(id, window);
@@ -433,6 +475,11 @@ export class DesktopIpc {
           return;
         }
         const head = desktopStreamHead(state);
+        const reset = head && this.terminalResets.get(id)?.get(head.key);
+        if (reset && terminalDesktopHead(state)?.status !== reset.status) {
+          retireRevision(reset, revision);
+          return;
+        }
         const retired = this.retiredStreams.get(id);
         if (head && retired?.has(head.key)) {
           retired.set(head.key, Math.max(retired.get(head.key)!, revision));
@@ -442,9 +489,19 @@ export class DesktopIpc {
           // A replacement may have evicted old pages. Exact continuity through
           // the previous tip, now terminal and followed by a new input/turn,
           // proves forward progress without comparing timestamps or text.
-          if (revision < old.revision && !continuedDesktopStream(old.state, state)) return;
+          if (revision < old.revision) {
+            terminalReset = terminalDesktopReset(old.state, state);
+            if (!terminalReset && !continuedDesktopStream(old.state, state)) return;
+          }
         }
       } else if (change.type === 'patches' && old?.revision !== change.baseRevision) {
+        const reset = [...(this.terminalResets.get(id)?.values() ?? [])].find((value) =>
+          value.retiredRevisions.has(change.baseRevision as number),
+        );
+        if (reset && typeof change.baseRevision === 'number' && revision > change.baseRevision) {
+          retireRevision(reset, revision);
+          return;
+        }
         const retired = this.retiredStreams.get(id);
         const stream = [...(retired ?? [])].find(([, value]) => value === change.baseRevision);
         if (stream && typeof change.baseRevision === 'number' && revision > change.baseRevision) {
@@ -479,6 +536,22 @@ export class DesktopIpc {
       if (state.id !== id || state.hostId !== 'local') {
         this.invalidate(id);
         return;
+      }
+      const resets = this.terminalResets.get(id);
+      const head = resets && desktopStreamHead(state);
+      const reset = head && resets.get(head.key);
+      if (reset && terminalDesktopHead(state)?.status !== reset.status) {
+        retireRevision(reset, revision);
+        return;
+      }
+      if (terminalReset && old) {
+        const resets = this.terminalResets.get(id) ?? new Map<string, TerminalDesktopReset>();
+        resets.set(terminalReset.key, {
+          status: terminalReset.status,
+          retiredRevisions: new Set([old.revision]),
+        });
+        while (resets.size > 32) resets.delete(resets.keys().next().value!);
+        this.terminalResets.set(id, resets);
       }
       const continued = old && continuedDesktopStream(old.state, state);
       if (continued) {
@@ -682,6 +755,7 @@ export class DesktopIpc {
       this.liveWindows.delete(id);
       this.observedOwners.delete(id);
       this.retiredStreams.delete(id);
+      this.terminalResets.delete(id);
       this.invalidate(id);
       if (error instanceof CodexRejection && error.message === 'no-client-found') return undefined;
       // Discovery does not execute a command. No reply means no verified owner;
@@ -693,6 +767,7 @@ export class DesktopIpc {
     if (!ownerId || object(owner.result).supportsUntrustedAppInput !== true) {
       this.owners.delete(id);
       this.retiredStreams.delete(id);
+      this.terminalResets.delete(id);
       this.invalidate(id);
       throw new CodexRejection('Desktop owner profile unsupported');
     }
@@ -706,6 +781,7 @@ export class DesktopIpc {
     if (this.owners.get(id) !== ownerId) {
       this.states.delete(id);
       this.retiredStreams.delete(id);
+      this.terminalResets.delete(id);
       this.liveWindows.delete(id);
       this.observedOwners.delete(id);
     }
@@ -794,6 +870,7 @@ export class DesktopIpc {
       ) {
         this.owners.delete(id);
         this.retiredStreams.delete(id);
+        this.terminalResets.delete(id);
         this.invalidate(id);
       }
       throw error;
@@ -814,7 +891,10 @@ export class DesktopRuntime {
   onEvent: (method: string, params: WireObject) => void = () => {};
   onRequest: (id: string | number, method: string, params: WireObject) => void = () => {};
   onDisconnect: () => void = () => {};
-  private requests = new Map<string, { threadId: string; method: string; requestId: unknown }>();
+  private requests = new Map<
+    string,
+    { threadId: string; method: string; requestId: unknown; fingerprint: string }
+  >();
   constructor(
     private readonly options: RuntimeOptions,
     private readonly hostId: string,
@@ -1058,23 +1138,53 @@ export class DesktopRuntime {
       });
     throw new CodexRejection('当前桌面接入不支持此操作');
   }
-  registerApproval(id: string, threadId: string, method: string, requestId: unknown): void {
-    this.requests.set(id, { threadId, method, requestId });
+  registerApproval(
+    id: string,
+    threadId: string,
+    method: string,
+    requestId: unknown,
+    params: WireObject,
+  ): void {
+    this.requests.set(id, { threadId, method, requestId, fingerprint: JSON.stringify(params) });
   }
   async respond(id: string | number, response: WireObject): Promise<void> {
     const request = this.requests.get(String(id));
     if (!request) throw new CodexRejection('审批已处理或已过期');
-    if (
-      !list(this.ipc.state(request.threadId)?.requests).some(
-        (value) => object(value).id === request.requestId,
+    const validate = () => {
+      if (
+        !list(this.ipc.state(request.threadId)?.requests).some(
+          (value) =>
+            object(value).id === request.requestId &&
+            object(value).completed !== true &&
+            JSON.stringify(object(value).params) === request.fingerprint,
+        )
       )
+        throw new CodexRejection('审批已在桌面处理或已过期');
+    };
+    validate();
+    await this.ipc.command(
+      request.threadId,
+      request.method,
+      {
+        requestId: request.requestId,
+        ...([
+          'thread-follower-submit-user-input',
+          'thread-follower-submit-mcp-server-elicitation-response',
+          'thread-follower-permissions-request-approval-response',
+        ].includes(request.method)
+          ? { response }
+          : response),
+      },
+      validate,
+    );
+    const current = this.requests.get(String(id));
+    if (
+      current?.threadId === request.threadId &&
+      current.method === request.method &&
+      current.requestId === request.requestId &&
+      current.fingerprint === request.fingerprint
     )
-      throw new CodexRejection('审批已在桌面处理或已过期');
-    await this.ipc.command(request.threadId, request.method, {
-      requestId: request.requestId,
-      ...(request.method.endsWith('submit-user-input') ? { response } : response),
-    });
-    this.requests.delete(String(id));
+      this.requests.delete(String(id));
   }
   rejectRequest(): void {
     /* Desktop retains all unsupported approvals. */

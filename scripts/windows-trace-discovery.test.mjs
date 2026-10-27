@@ -65,13 +65,12 @@ for (const batch of [true, false]) {
 }
 
 test('current-instance source recovery uses manifest receipts and preserves exact committed prediction', () =>
-  preparedTraceFixture(({ reader, root, create, calls, reset }) => {
+  preparedTraceFixture(({ reader, root: _root, create, calls, reset }) => {
     const f = create();
     for (let i = 0; i < 8; i++) create();
     const expected = reader.readSourcePredictions(
       f.fixture.sourceThreadId,
       f.fixture.sourceTurnId,
-      root,
       1,
       true,
     );
@@ -80,7 +79,6 @@ test('current-instance source recovery uses manifest receipts and preserves exac
     const pending = reader.prepareSourcePredictions(
       f.fixture.sourceThreadId,
       f.fixture.sourceTurnId,
-      root,
       1,
       true,
     );

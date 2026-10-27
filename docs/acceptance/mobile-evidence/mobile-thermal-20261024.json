@@ -1,0 +1,598 @@
+{
+  "date": "2026-10-24",
+  "features": ["F17", "F18", "F56", "F68", "F49", "F50"],
+  "sourceSha256": "380b956630ce403540d35bc735aa7fdceec72aadd71671b8a80d1f40a8953218",
+  "productStatus": "Implemented; four exact-install physical native trials passed. App resource/power-impact comparison verified; no formal rollout or battery-life/temperature-in-degrees claim.",
+  "conditions": {
+    "physicalModel": "iPhone 15 Pro Max",
+    "os": "iOS 27.0.1",
+    "controlTransport": "CoreDevice reported wired",
+    "externalPowerKept": true,
+    "userChoice": "Keep current charging conditions; compare App power first",
+    "batteryLevel": 1,
+    "brightness": 0,
+    "lowPowerMode": false,
+    "refreshRate": "system natural policy; no forced 120Hz"
+  },
+  "networkRecovery": {
+    "status": "this_run_pass",
+    "preflightRounds": 4,
+    "unauthenticatedHostHttp": 401,
+    "internetHttp": 200,
+    "nwPath": "satisfied, Wi-Fi observed",
+    "authenticatedRealHistoryAndModelTrials": 4,
+    "initialMinus1009Retained": true,
+    "cause": "Recovered with current separately identified App/Runner and existing build UUID isolation. This older failure was not uniquely attributed to a single cause."
+  },
+  "physicalComparisons": {
+    "stream": {
+      "before": {
+        "variant": "before",
+        "test": "testThermalSustainedRepliesDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "092d566bf148856bd726e919f914429b0ea00fbb4a6b22eef223ec5ce0c71756",
+        "windowUTC": [1792836136.359778, 1792836174.8899012],
+        "wallSeconds": 38.530123233795166,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "efa03dc4ff102878d85226b16e760c9b255b0087713e82336a6cd1c0bb68e6e0",
+        "telemetry": {
+          "sampleCount": 7,
+          "sampledSeconds": 30.876427541661542,
+          "cpuSeconds": 16.495061999999997,
+          "cpuPercentOneCore": 53.42283195730213,
+          "interruptWakeupsPerSecond": 40.419183803439516,
+          "idleWakeupsPerSecond": 0.35625883160082905,
+          "thermalStates": [1],
+          "initialThermalState": 1,
+          "finalThermalState": 1,
+          "batteryLevels": [1],
+          "batteryStates": [2],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 460,
+          "sessionWriteBytes": 228096232,
+          "sessionWriteBytesPerSecond": 7387390.645897422
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 11.432532444824211,
+            "coveredSeconds": 38.20428043693358,
+            "coverage": 0.9915431675397346
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 1.6119685977540625,
+            "coveredSeconds": 37.745077269933574,
+            "coverage": 0.9796251374775511
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.014651771910917205,
+            "coveredSeconds": 34.21927472993359,
+            "coverage": 0.8881174483220835
+          },
+          "display-impact": {
+            "meanImpactUnits": 1.6860532394321759,
+            "coveredSeconds": 38.20428043693358,
+            "coverage": 0.9915431675397346
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ],
+        "nativeTests": {
+          "passedTests": 1,
+          "failedTests": 0,
+          "skippedTests": 0
+        },
+        "artifactProof": {
+          "mainUUID": "AD0F6954-8BB1-3A6E-A4D3-E5C468C21674",
+          "installationReceiptSha256": "2d5ffcecbd4283ba6c888904b184573cf4f9b38977fd463536b3187821027c39",
+          "installedPathMatchedTrace": true,
+          "physicalDeviceMatched": true
+        },
+        "observedAcrossWholeTrace": {
+          "wifiBytes": 1951283.0,
+          "cellularBytes": 0
+        }
+      },
+      "after": {
+        "variant": "after",
+        "test": "testThermalSustainedRepliesDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "664dbb61ef3175096f3a8651dd005f802145c302819728be3a036b0af5f7e5d6",
+        "windowUTC": [1792835969.635459, 1792836016.962913],
+        "wallSeconds": 47.32745409011841,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "ed7f1db812d824f621e0fc2d302cbcfffaeb1a41209794855811701477f072fa",
+        "telemetry": {
+          "sampleCount": 9,
+          "sampledSeconds": 40.79164829166257,
+          "cpuSeconds": 13.283351999999999,
+          "cpuPercentOneCore": 32.56390108343573,
+          "interruptWakeupsPerSecond": 27.87335269882664,
+          "idleWakeupsPerSecond": 0.1961185765968453,
+          "thermalStates": [1, 2],
+          "initialThermalState": 2,
+          "finalThermalState": 1,
+          "batteryLevels": [1],
+          "batteryStates": [2],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 89,
+          "sessionWriteBytes": 44978380,
+          "sessionWriteBytesPerSecond": 1102636.982904002
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 6.554770838835084,
+            "coveredSeconds": 47.32745213311841,
+            "coverage": 0.9999999586497936
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 0.4161327679445553,
+            "coveredSeconds": 46.26800520743652,
+            "coverage": 0.9776144966373103
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.04018038654586669,
+            "coveredSeconds": 44.76840766443651,
+            "coverage": 0.9459289227599461
+          },
+          "display-impact": {
+            "meanImpactUnits": 1.781601733428506,
+            "coveredSeconds": 47.32745213311841,
+            "coverage": 0.9999999586497936
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ],
+        "nativeTests": {
+          "passedTests": 1,
+          "failedTests": 0,
+          "skippedTests": 0
+        },
+        "artifactProof": {
+          "mainUUID": "E4122917-66D0-370E-BE06-D3835002A15F",
+          "installationReceiptSha256": "659c2df38842e43d1ea573290c987dc3ece137e5c4613e09f4e2fa47c9c4d543",
+          "installedPathMatchedTrace": true,
+          "physicalDeviceMatched": true
+        },
+        "observedAcrossWholeTrace": {
+          "wifiBytes": 2559710.0,
+          "cellularBytes": 0
+        }
+      },
+      "reductionsPercent": {
+        "meanCpuOneCore": 39.04497404880701,
+        "sessionLogicalBytesPerSecond": 85.07406693706729,
+        "meanCpuPowerImpact": 42.66562661886353
+      }
+    },
+    "history": {
+      "before": {
+        "variant": "before",
+        "test": "testThermalRealHistoryComparisonDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "092d566bf148856bd726e919f914429b0ea00fbb4a6b22eef223ec5ce0c71756",
+        "windowUTC": [1792836360.1330261, 1792836446.68042],
+        "wallSeconds": 86.54739379882812,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "efa03dc4ff102878d85226b16e760c9b255b0087713e82336a6cd1c0bb68e6e0",
+        "scroll": {
+          "framesOver50MS": 29,
+          "gestures": 26,
+          "markdownBodies": 4,
+          "maxFrameMS": 87.40941667929292,
+          "maxTimelineMS": 0.5457916704472154,
+          "movingFrames": 2608,
+          "p95FrameMS": 20.416625018697232,
+          "timelineBuilds": 2,
+          "totalTimelineMS": 0.9865416795946658
+        },
+        "telemetry": {
+          "sampleCount": 17,
+          "sampledSeconds": 81.54803362500388,
+          "cpuSeconds": 38.045392,
+          "cpuPercentOneCore": 46.653966145830765,
+          "interruptWakeupsPerSecond": 128.1821220615545,
+          "idleWakeupsPerSecond": 0.6867118373143646,
+          "thermalStates": [2],
+          "initialThermalState": 2,
+          "finalThermalState": 2,
+          "batteryLevels": [1],
+          "batteryStates": [2, 3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 432,
+          "sessionWriteBytes": 242981454,
+          "sessionWriteBytesPerSecond": 2979611.441243853
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 6.508622817423912,
+            "coveredSeconds": 86.54739021882804,
+            "coverage": 0.9999999586353797
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 2.8479296585000444,
+            "coveredSeconds": 86.17479318532685,
+            "coverage": 0.9956948372776268
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.055661848623220475,
+            "coveredSeconds": 85.67744385232692,
+            "coverage": 0.9899482825730913
+          },
+          "display-impact": {
+            "meanImpactUnits": 2.2806262616153314,
+            "coveredSeconds": 86.54739021882804,
+            "coverage": 0.9999999586353797
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ],
+        "nativeTests": {
+          "passedTests": 1,
+          "failedTests": 0,
+          "skippedTests": 0
+        },
+        "artifactProof": {
+          "mainUUID": "AD0F6954-8BB1-3A6E-A4D3-E5C468C21674",
+          "installationReceiptSha256": "90fb1059f7fb3546a90998a9b4e619ad5db6ae3b80ebf5fb10182d86db155a37",
+          "installedPathMatchedTrace": true,
+          "physicalDeviceMatched": true
+        },
+        "observedAcrossWholeTrace": {
+          "wifiBytes": 12206768.0,
+          "cellularBytes": 1578.0
+        }
+      },
+      "after": {
+        "variant": "after",
+        "test": "testThermalRealHistoryComparisonDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "664dbb61ef3175096f3a8651dd005f802145c302819728be3a036b0af5f7e5d6",
+        "windowUTC": [1792836603.0822492, 1792836682.082897],
+        "wallSeconds": 79.00064778327942,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "ed7f1db812d824f621e0fc2d302cbcfffaeb1a41209794855811701477f072fa",
+        "scroll": {
+          "framesOver50MS": 14,
+          "gestures": 25,
+          "markdownBodies": 3,
+          "maxFrameMS": 115.01345832948573,
+          "maxTimelineMS": 0.4136666830163449,
+          "movingFrames": 2465,
+          "p95FrameMS": 19.11741666845046,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.4136666830163449
+        },
+        "telemetry": {
+          "sampleCount": 16,
+          "sampledSeconds": 77.25631691666786,
+          "cpuSeconds": 27.504098000000003,
+          "cpuPercentOneCore": 35.601099169233194,
+          "interruptWakeupsPerSecond": 135.0180854628541,
+          "idleWakeupsPerSecond": 0.8025233725143278,
+          "thermalStates": [2],
+          "initialThermalState": 2,
+          "finalThermalState": 2,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 105,
+          "sessionWriteBytes": 63402030,
+          "sessionWriteBytesPerSecond": 820671.1441912029
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 6.344172864557757,
+            "coveredSeconds": 79.00064448727946,
+            "coverage": 0.9999999582788236
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 2.8488818595393353,
+            "coveredSeconds": 79.00064448627946,
+            "coverage": 0.9999999582661655
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.04315416521849477,
+            "coveredSeconds": 75.6478136529906,
+            "coverage": 0.957559409645772
+          },
+          "display-impact": {
+            "meanImpactUnits": 2.294941300697379,
+            "coveredSeconds": 79.00064448727946,
+            "coverage": 0.9999999582788236
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ],
+        "nativeTests": {
+          "passedTests": 1,
+          "failedTests": 0,
+          "skippedTests": 0
+        },
+        "artifactProof": {
+          "mainUUID": "E4122917-66D0-370E-BE06-D3835002A15F",
+          "installationReceiptSha256": "2084813abd54a95e05a144172ee2b5386c8161bf736b903bdb64cfe7fb8074f8",
+          "installedPathMatchedTrace": true,
+          "physicalDeviceMatched": true
+        },
+        "observedAcrossWholeTrace": {
+          "wifiBytes": 9592760.0,
+          "cellularBytes": 0
+        }
+      },
+      "reductionsPercent": {
+        "meanCpuOneCore": 23.69116259494116,
+        "sessionLogicalBytesPerSecond": 72.4571085735726,
+        "meanCpuPowerImpact": 2.526647456446751
+      }
+    }
+  },
+  "independentOriginalElectronWitness": {
+    "before": {
+      "variant": "before",
+      "originalOwner": true,
+      "turnCount": 1,
+      "statuses": ["completed"],
+      "userInputs": 1,
+      "efforts": ["xhigh"],
+      "models": ["gpt-6.1-sol"],
+      "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+      "agentMessages": 1,
+      "startsCorrectly": true,
+      "endsCorrectly": true,
+      "numberedLines": 200,
+      "characters": 4646,
+      "outputSha256": "fc77ec3c5d78e2dbb33d0ad78e13451fdec963070a0329aabe0775ce2da712f3",
+      "threadIdSha256": "6bf36cf0ad4671600d92cf37461b4d7451f19abefaa2acf027ff6565e2135a1b"
+    },
+    "after": {
+      "variant": "after",
+      "originalOwner": true,
+      "turnCount": 1,
+      "statuses": ["completed"],
+      "userInputs": 1,
+      "efforts": ["xhigh"],
+      "models": ["gpt-6.1-sol"],
+      "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+      "agentMessages": 1,
+      "startsCorrectly": true,
+      "endsCorrectly": true,
+      "numberedLines": 200,
+      "characters": 4644,
+      "outputSha256": "45be81a3e8af7015e20a0fc863f1beb69578d4b486658522f7b4600a962f7584",
+      "threadIdSha256": "e7694568d84e7c2baeda19d1a7e07f2ccb1a8a4386d54244b1abf063a11e5f3e"
+    }
+  },
+  "android": {
+    "status": "this_run_pass",
+    "tests": 13,
+    "failures": 0,
+    "runtime": "dedicated Android API 36 emulator",
+    "sourceSha256": {
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeHistoryCache.kt": "2e1c57ab1a8f3fb9cd29ca43764faa88fb210e81d035d4c9b6872b96e0fae77c",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "e676ba718a7bc8287c2a9af9480135c0009244f4dc9f7a3d36eb653259493691",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileHistoryBoundaryTest.kt": "dea261070a97054c8a2188d42f0bf89814abe656a31ffb6d9335d5d514aaf241",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileIdlePerformanceTest.kt": "29925b89e22ffb5dc593ed602c8d0779eab4fe0367dbd9eff1a168e8a0cabf28",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkEventSignal.kt": "a53a1eabd7104d3f573aa872e4863884ce1934ec0935ea413d6cf8b0e5485f19",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "f8fba5f3e730d538be0cfd760e2430d77ee7d01ce0cced8fc3470924ef960513",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "0d0518393f26c3cb048984acc8029cd3a6131fcf3afef1a7bc8c84c62f122626"
+    },
+    "unchangedHistoryComparison": {
+      "messages": 70,
+      "beforeEncryptedFilesWritten": 4,
+      "afterEncryptedFilesWritten": 1,
+      "beforeEncryptedBytesWritten": 569089,
+      "afterEncryptedBytesWritten": 504
+    },
+    "scope": "Native Android Keystore storage, adapter and encrypted synthetic peer; no physical Android power or real model claim",
+    "temporaryEmulatorRemoved": true,
+    "temporaryEmulatorRegistrationRemoved": true
+  },
+  "workspaceChecks": {
+    "pnpmCheck": {
+      "status": "this_run_pass",
+      "exitCode": 0,
+      "node": "24.19.0",
+      "logSha256": "e1d0c18f7416a39d1df628e0b0b0326dc65bbf8ad6b50450f516fa002b75c5b6"
+    },
+    "iosBuild": {
+      "status": "this_run_pass",
+      "exitCode": 0,
+      "logSha256": "5ea977d59a0c72094c34ba69325538c627b9240dad5877f86e97316de0ce81ca"
+    },
+    "androidBuild": {
+      "status": "this_run_pass",
+      "exitCode": 0
+    },
+    "persistenceAuxiliary": {
+      "status": "this_run_pass",
+      "checks": 11
+    },
+    "measurementParser": {
+      "status": "this_run_pass",
+      "checks": 3
+    },
+    "priorCheckFailure": "One Windows reader source changed while testing; original failure retained. Separate rerun and subsequent complete check passed."
+  },
+  "cleanup": {
+    "independentIOSAppAndRunnerRemoved": true,
+    "dedicatedAndroidAvdRemoved": true,
+    "existingAppInstallationsPreserved": true,
+    "temporaryGitWorktreesCreated": 0,
+    "formalAppsOrHostDeployed": false
+  },
+  "retainedPilotModel": {
+    "variant": "before",
+    "originalOwner": true,
+    "turnCount": 1,
+    "statuses": ["completed"],
+    "userInputs": 1,
+    "efforts": ["xhigh"],
+    "models": ["gpt-6.1-sol"],
+    "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+    "agentMessages": 1,
+    "startsCorrectly": true,
+    "endsCorrectly": true,
+    "numberedLines": 200,
+    "characters": 4644,
+    "outputSha256": "4ac4c649dd59b11eb8471ccf109ea90fbcc10bf2ac9a105112fd541a8a5e0def",
+    "threadIdSha256": "3680e22e8d0e5cd1fd85ad76a43949edc1e477391d87095c889638510133a34d"
+  },
+  "invalidEarlierComparisons": {
+    "status": "invalid_for_before_after_code_comparison",
+    "reason": "External Instruments launch did not cause XCTest to install each main App; all trace targets shared the prior installation path despite different intended binaries. Original native and raw measurement results retained, no optimization conclusion permitted.",
+    "affected": [
+      "pair4-history-before",
+      "pair4-history-after",
+      "pair5-stream-before",
+      "pair6-stream-after"
+    ],
+    "correction": "Explicit exact signed App installation, bind CoreDevice installation URL to actual trace process, preserve executable SHA256 and UUID."
+  },
+  "initialPhase": {
+    "date": "2026-10-24",
+    "features": ["F17", "F18", "F56", "F68"],
+    "scope": "idle polling, history catch-up, retained text digest reuse and history cache writes",
+    "productStatus": "implemented; formal app not replaced; physical temperature/battery comparison not performed",
+    "sourceSha256": "5a783e06091239efb7f289c003c260f639ef21281cd898011509450f51d2dcd4",
+    "iosUITestSha256": "b4c4945bd3a9065f708c946f29c6da9672571e3af1b2976d77ffd42577aa8dcd",
+    "nativeAuxiliary": {
+      "status": "this_run_pass",
+      "quietSeconds": 12,
+      "baselineLoopIterations": 117,
+      "currentLoopIterations": 1,
+      "syntheticHistoryMergeMs": 83.426875,
+      "baselineSyntheticHistoryMergeMs": 140.24525,
+      "scope": "production Swift functions, synthetic state, wall-clock sample; no physical power claim"
+    },
+    "sharedCoreJvm": {
+      "status": "this_run_pass",
+      "tests": 80,
+      "failures": 0
+    },
+    "android": {
+      "status": "this_run_pass",
+      "nativeTests": 5,
+      "environment": "dedicated Android API 36 emulator",
+      "scope": "production signal, encrypted session and actual adapter with independent synthetic peer; no physical Android energy or real model claim",
+      "physicalDevice": "not_verified",
+      "temporaryEmulatorRemoved": true
+    },
+    "ios": {
+      "build": "this_run_pass",
+      "physicalModel": "iPhone 15 Pro Max",
+      "controlTransport": "CoreDevice reported wired; no wireless claim",
+      "firstPhysicalRun": {
+        "status": "this_run_fail",
+        "passed": 1,
+        "failed": 1,
+        "reason": "Only six gestures issued; assertion required eight; frame samples p95 16.67ms/max 33.34ms; original result retained"
+      },
+      "currentPhysicalRun": {
+        "status": "this_run_pass",
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "scope": "synthetic 2400-message native scrolling and short-history prepend; not real network or power",
+        "metrics": {
+          "framesOver50MS": 0,
+          "gestures": 10,
+          "markdownBodies": 14,
+          "maxFrameMS": 16.70316664967686,
+          "maxTimelineMS": 9.818250022362918,
+          "movingFrames": 1074,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 9.818250022362918
+        },
+        "testSourceSha256": "b4c4945bd3a9065f708c946f29c6da9672571e3af1b2976d77ffd42577aa8dcd",
+        "targetReactivationsDuringMeasurement": 0
+      },
+      "realDesktopRead": "this_run_fail: iOS reports no usable network (-1009) before history read; independent App and Runner UUIDs verified; no physical network/CPU/temperature success",
+      "appUUIDComparedWithOtherIndependentApp": "distinct"
+    },
+    "workspaceChecks": {
+      "firstRun": "failed: Node 22 instead of required Node 24; Task Hub checks",
+      "node24Attempt": "failed: change manifest read before later UI test digest update",
+      "currentNode24Run": "this_run_pass: complete pnpm check, Node 24.19.0",
+      "iosSimulatorBuild": "this_run_pass",
+      "iosPhysicalBuildForTesting": "this_run_pass: independent Release App/Kotlin core with opt-in Swift DEBUG probes",
+      "androidAppAndInstrumentationBuild": "this_run_pass"
+    },
+    "proofDirectory": ".local/mobile-thermal-20261024/",
+    "notes": [
+      "Existing uncommitted work preserved.",
+      "No formal app or Host deployment.",
+      "No cross-computer Agent coordination.",
+      "Actual temperature/battery improvement remains unverified.",
+      "A6 remains paused."
+    ],
+    "independentDesktop": {
+      "currentLocalOwner": {
+        "scope": "independent read-only current local Electron owner; no mobile input or new turn submitted",
+        "desktopConnected": true,
+        "ownerAvailable": true,
+        "turnCount": 1,
+        "lastStatus": "inProgress",
+        "turnIdsSha256": "4e8b66d5381f2ea755586a0766beed62a33efa549fd1c2c42590f08e992df3ec"
+      },
+      "archivedHistoryOwner": "unavailable; historical content does not prove execution control"
+    },
+    "persistenceAuxiliary": {
+      "status": "this_run_pass",
+      "checks": 10,
+      "scope": "production Swift writer with 104 MiB synthetic history; not physical phone power"
+    },
+    "cleanup": {
+      "independentIOSAppAndRunnerRemoved": true,
+      "dedicatedAndroidAvdRemoved": true,
+      "existingAppInstallationsPreserved": true,
+      "temporaryGitWorktreesCreated": 0
+    },
+    "limitations": [
+      "Physical network read failed with iOS -1009 before history page; not a thermal result.",
+      "No paired physical temperature or battery measurement.",
+      "No formal iOS/Android app rollout.",
+      "Android native encrypted-peer tests used a dedicated API 36 emulator, not a physical phone or real model."
+    ]
+  },
+  "limitations": [
+    "One measured pair per scene, not a statistical or long-duration battery study.",
+    "Streaming task duration and initial thermal levels differed; full durations, sample counts and all subsystem impact values are retained.",
+    "Power impact units are relative same-device metrics, not watts or battery percentage. Thermal state is a level, not degrees Celsius.",
+    "Session IO counts successful logical atomic writes including backup generations, excludes ledger/probe logs, and does not measure physical flash traffic.",
+    "Network/display impact did not uniformly improve; network coverage and whole-trace cellular bytes are retained without a network-efficiency claim.",
+    "History issued the same 26 gesture commands, but recognized 26/25; the maximum moving frame regressed. This is not a complete smoothness result.",
+    "History CPU power impact decreased only about 2.5%, while thermal state remained serious (2); no significant history energy or heat improvement is established.",
+    "Android native tests used an API36 emulator and a synthetic encrypted peer; physical Android CPU/energy remains unverified.",
+    "Formal iOS/Android apps and Host were not deployed; A6 remains paused."
+  ],
+  "proofDirectory": ".local/mobile-thermal-20261024/"
+}

@@ -11518,5 +11518,130 @@
     "date": "2026-10-23",
     "instruction": "蜂窝/VPN单列待验收，继续 P3/P4 等本机开发",
     "scope": "Subsequent local development only; no full P2/cellular/VPN pass. Existing human deferrals and A6/P7 pause retained."
+  },
+  "currentLongOwnerReadRecheck": {
+    "phase": "P4-4l.1",
+    "status": "bounded original-owner long-history read checkpoint passed; >30 Turn/revision receipts and controls open",
+    "features": ["F17", "F18", "F22", "F24", "F25", "F57", "F63", "F68"],
+    "sourceNodes": ["O012", "O016", "O038", "O070"],
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileLargeOwnerReadLiveTest.kt": "ae00cf163593af742b6ee0297691dc15f63554ca5c0ddbddefc121e6d5d0b093"
+    },
+    "nativeMethods": 3,
+    "nativeGroups": [1, 1, 1],
+    "runs": [
+      {
+        "sourceSha256": "8188b8815e00530f7aceffb55e9380962825614d10fe9702a6aad88d500f5402",
+        "reportSha256": "63fdf9d648d8fbd36cdd1b642ff277e1acbed1b38a72af10fded32b21e8a6a48",
+        "appSha256": "62e358c7521b342334b233ab6d1c756f609a721022d63eac1620e123bc13e7fa",
+        "runnerSha256": "887ec462bc5c8a33df7f5ad442fdeb86f99fc0ce6450a815eb2d48ac396b3c60",
+        "beforeTurns": 9,
+        "beforeItems": 3060,
+        "beforeBytes": 7883428,
+        "native": {
+          "firstMessages": 100,
+          "finalMessages": 201,
+          "actualEarlierPages": 1,
+          "nativeEarlierWireResponses": [
+            {
+              "windowed": true,
+              "kind": "earlier",
+              "messages": 100
+            }
+          ],
+          "historyRevisionPresent": false,
+          "initialLimit": 20,
+          "expandedLimit": 240,
+          "anchorTopBefore": 389.0909,
+          "anchorTopAfter": 389.0909,
+          "scrollBefore": 7406,
+          "scrollAfter": 7406,
+          "allExpandedIdsPreserved": true,
+          "diskCacheIdsPreserved": true,
+          "draftPreserved": true,
+          "newOperations": 0,
+          "compactionIdSha256": "bf757cd837df9b7eb2ba38377e7df45e0af8e49a836b962e9f1eb7073c6242e1"
+        },
+        "platform": "physical API33"
+      },
+      {
+        "sourceSha256": "8188b8815e00530f7aceffb55e9380962825614d10fe9702a6aad88d500f5402",
+        "reportSha256": "58002819b7fc131c167cd36dbe3834af8eff291804a6ee74ff0c60f38ba44494",
+        "appSha256": "62e358c7521b342334b233ab6d1c756f609a721022d63eac1620e123bc13e7fa",
+        "runnerSha256": "887ec462bc5c8a33df7f5ad442fdeb86f99fc0ce6450a815eb2d48ac396b3c60",
+        "beforeTurns": 9,
+        "beforeItems": 3081,
+        "beforeBytes": 7920174,
+        "native": {
+          "firstMessages": 100,
+          "finalMessages": 200,
+          "actualEarlierPages": 1,
+          "nativeEarlierWireResponses": [
+            {
+              "windowed": true,
+              "kind": "earlier",
+              "messages": 100
+            }
+          ],
+          "historyRevisionPresent": false,
+          "initialLimit": 20,
+          "expandedLimit": 240,
+          "anchorTopBefore": 331.0476,
+          "anchorTopAfter": 331.0476,
+          "scrollBefore": 5515,
+          "scrollAfter": 5515,
+          "allExpandedIdsPreserved": true,
+          "diskCacheIdsPreserved": true,
+          "draftPreserved": true,
+          "newOperations": 0,
+          "compactionIdSha256": "bf757cd837df9b7eb2ba38377e7df45e0af8e49a836b962e9f1eb7073c6242e1"
+        },
+        "platform": "emulator API26"
+      },
+      {
+        "sourceSha256": "8188b8815e00530f7aceffb55e9380962825614d10fe9702a6aad88d500f5402",
+        "reportSha256": "8352feca8b7b1a1c3ffe50a773bc12aff5debe7a0012bdeb512278d7bdf42912",
+        "appSha256": "62e358c7521b342334b233ab6d1c756f609a721022d63eac1620e123bc13e7fa",
+        "runnerSha256": "887ec462bc5c8a33df7f5ad442fdeb86f99fc0ce6450a815eb2d48ac396b3c60",
+        "beforeTurns": 9,
+        "beforeItems": 3082,
+        "beforeBytes": 7921467,
+        "native": {
+          "firstMessages": 100,
+          "finalMessages": 200,
+          "actualEarlierPages": 1,
+          "nativeEarlierWireResponses": [
+            {
+              "windowed": true,
+              "kind": "earlier",
+              "messages": 100
+            }
+          ],
+          "historyRevisionPresent": false,
+          "initialLimit": 20,
+          "expandedLimit": 240,
+          "anchorTopBefore": 427.8095,
+          "anchorTopAfter": 427.8095,
+          "scrollBefore": 5342,
+          "scrollAfter": 5342,
+          "allExpandedIdsPreserved": true,
+          "diskCacheIdsPreserved": true,
+          "draftPreserved": true,
+          "newOperations": 0,
+          "compactionIdSha256": "bf757cd837df9b7eb2ba38377e7df45e0af8e49a836b962e9f1eb7073c6242e1"
+        },
+        "platform": "emulator API37"
+      }
+    ],
+    "ownedMainImages": 9,
+    "historyRevision": "absent in actual legacy Host response; not claimed",
+    "over30TurnReceipts": "not verified; actual original owner has9 Turns",
+    "newInputs": 0,
+    "totalInputs": 65,
+    "p4Inputs": 51,
+    "fullPhasePassed": false,
+    "fullVisualPassed": false,
+    "summary": "2026-10-24 P4-4l.1：Diff检查点ba78675c先提交推送后，重做准确原owner真实超长历史只读验收。承载改为生产MainActivity、独立加密Session、默认真实草稿/附件/版本保护及仅自有Window PixelCopy；分页验收以单次SDK点击观察请求开始，修正旧验收器等响应完成期间可能再点下一页，原真机失败保留。相同App/runner在API33真机、API26、API37各1方法/独立Host通过，来源各9个Turn、3060/3081/3082条目、约7.88–7.92MB；真实最新100条、实际更早页、20起始窗口/每次60展开、原ID并集与去重、已压缩上下文锚点刷新前后位置和滚动值不变、加密磁盘缓存与独立草稿保持。九份自有Main图已核对并查看；三次均0业务POST/0操作记录/0新增模型，准确owner用户输入ID前后保持，来源冻结且各Host正常关闭。当前legacy响应不提供可选historyRevision；这9个Turn不代表超过30个Turn的原回执对账，O012的revision/acceptedTurnId冷恢复和其余控制仍待验。产品包仍62e358c7，程序未改；LAN/TLS/真实WiFi切换旧证据按旧指纹保留，本次USB只读不冒充重跑，iOS/Windows、完整P2/P4/P6不关闭。累计65条验收输入封存不变，任务/项目管理暂缓，蜂窝/VPN/人工归档待验，A6/P7暂停。",
+    "nextDependency": "Isolated source/build and native session required next for remaining original native queue controls; historical submitted intents remain sealed."
   }
 }

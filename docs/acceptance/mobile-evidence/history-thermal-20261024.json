@@ -1,0 +1,1981 @@
+{
+  "date": "2026-10-24",
+  "features": ["F17", "F19", "F20", "F56", "F68"],
+  "status": "this_run_pass_scoped_with_baseline_mixed_navigation_failure",
+  "scope": "Physical iPhone long-history and mixed interactions; Android native presentation boundaries and UI only",
+  "physicalDevice": {
+    "model": "iPhone 15 Pro Max",
+    "os": "iOS 27.0.1",
+    "deviceIdentifierSha256": "f0fe65c101111e476ad9e2f7d66aee29c0bd719066b72880a59a2e7f00191505",
+    "bundleId": "com.easyai.agenthub.thermal.acceptance",
+    "controlTransport": "CoreDevice reported wired; no Wi-Fi debugging claim",
+    "appNetwork": "HTTPS on Wi-Fi",
+    "batteryDrainMeasured": false
+  },
+  "strictScrollAggregate": {
+    "before": {
+      "runs": ["window-before-1", "window-before-2"],
+      "cpuPercentOneCore": 33.98326181161265,
+      "cpuImpactUnits": 11.810568856444554,
+      "maxFrameMS": 66.5678333316464,
+      "framesOver50MS": 18,
+      "movingFrames": 4886,
+      "sessionWriteBytesPerSecond": 769589.7714365028
+    },
+    "after": {
+      "runs": ["window-final-after-1", "window-final-after-2"],
+      "cpuPercentOneCore": 31.81807075229393,
+      "cpuImpactUnits": 11.312448121437923,
+      "maxFrameMS": 40.58387500117533,
+      "framesOver50MS": 0,
+      "movingFrames": 5026,
+      "sessionWriteBytesPerSecond": 809508.6469692984
+    },
+    "relativePercent": {
+      "cpuPercentOneCore": -6.371345609263546,
+      "cpuImpactUnits": -4.217584614773462,
+      "maxFrameMS": -39.033805112774,
+      "sessionWriteBytesPerSecond": 5.187033016081233
+    }
+  },
+  "strictRuns": [
+    {
+      "name": "window-before-1",
+      "role": "baseline",
+      "nativeStatus": "this_run_pass",
+      "status": "this_run_pass",
+      "sourceSha256": "8b9771619d4cb2008dd417caee47c041b8b367133f7e8c96b01d4781f323b792",
+      "appExecutableSha256": "c7036005fcdb9a990b1d1451766358c97624e26421d50c75f0a21959edfe203d",
+      "mainExecutableUUID": "UUID: 6E16E50B-6CF6-3529-A296-D55B16F2747D",
+      "measurementDriverSha256": "6ca586032e1f367b456bb47eb704e3542fcea68ecba56d772754f591742e055c",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "traceTarget": {
+        "bundleId": "com.easyai.agenthub.thermal.acceptance",
+        "installationPathMatched": true,
+        "mode": "launch",
+        "pid": 3874
+      },
+      "metrics": {
+        "variant": "before",
+        "test": "testThermalRealHistoryComparisonDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "8b9771619d4cb2008dd417caee47c041b8b367133f7e8c96b01d4781f323b792",
+        "windowUTC": [1792840794.297374, 1792840873.7321591],
+        "wallSeconds": 79.43478512763977,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "c7036005fcdb9a990b1d1451766358c97624e26421d50c75f0a21959edfe203d",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 24,
+          "movingFrames": 2444,
+          "p95FrameMS": 22.277458338066936,
+          "p99FrameMS": 40.142749989172444,
+          "maxFrameMS": 66.5678333316464,
+          "framesOver50MS": 11,
+          "movingSeconds": 42.96365587471519
+        },
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 12,
+          "gestures": 26,
+          "markdownBodies": 3,
+          "maxFrameMS": 66.5678333316464,
+          "maxTimelineMS": 0.2772083389572799,
+          "movingFrames": 2650,
+          "p95FrameMS": 22.007833351381123,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.2772083389572799
+        },
+        "telemetry": {
+          "sampleCount": 16,
+          "sampledSeconds": 76.59438662501634,
+          "cpuSeconds": 25.687587,
+          "cpuPercentOneCore": 33.53716653644463,
+          "interruptWakeupsPerSecond": 135.75407360993123,
+          "idleWakeupsPerSecond": 0.7572356481415667,
+          "thermalStates": [0, 1],
+          "initialThermalState": 0,
+          "finalThermalState": 1,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 105,
+          "sessionWriteBytes": 62504910,
+          "sessionWriteBytesPerSecond": 816050.7937220741
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 11.647318499341752,
+            "coveredSeconds": 79.43478178563977,
+            "coverage": 0.9999999579277518
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 3.7816445587239667,
+            "coveredSeconds": 79.43478182763974,
+            "coverage": 0.9999999584564869
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.043377653119430856,
+            "coveredSeconds": 79.43478454163979,
+            "coverage": 0.9999999926228794
+          },
+          "display-impact": {
+            "meanImpactUnits": 2.3876904170873265,
+            "coveredSeconds": 79.43478178563977,
+            "coverage": 0.9999999579277518
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ]
+      }
+    },
+    {
+      "name": "window-before-2",
+      "role": "baseline",
+      "nativeStatus": "this_run_pass",
+      "status": "this_run_pass",
+      "sourceSha256": "8b9771619d4cb2008dd417caee47c041b8b367133f7e8c96b01d4781f323b792",
+      "appExecutableSha256": "c7036005fcdb9a990b1d1451766358c97624e26421d50c75f0a21959edfe203d",
+      "mainExecutableUUID": "UUID: 6E16E50B-6CF6-3529-A296-D55B16F2747D",
+      "measurementDriverSha256": "6ca586032e1f367b456bb47eb704e3542fcea68ecba56d772754f591742e055c",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "traceTarget": {
+        "bundleId": "com.easyai.agenthub.thermal.acceptance",
+        "installationPathMatched": true,
+        "mode": "launch",
+        "pid": 3897
+      },
+      "metrics": {
+        "variant": "before",
+        "test": "testThermalRealHistoryComparisonDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "8b9771619d4cb2008dd417caee47c041b8b367133f7e8c96b01d4781f323b792",
+        "windowUTC": [1792841544.303343, 1792841616.307581],
+        "wallSeconds": 72.00423789024353,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "c7036005fcdb9a990b1d1451766358c97624e26421d50c75f0a21959edfe203d",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 24,
+          "movingFrames": 2442,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 38.274041668046266,
+          "maxFrameMS": 56.80395834497176,
+          "framesOver50MS": 7,
+          "movingSeconds": 42.40922325014253
+        },
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 8,
+          "gestures": 26,
+          "markdownBodies": 3,
+          "maxFrameMS": 56.80395834497176,
+          "maxTimelineMS": 0.32500000088475645,
+          "movingFrames": 2652,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.32500000088475645
+        },
+        "telemetry": {
+          "sampleCount": 14,
+          "sampledSeconds": 67.28222024999559,
+          "cpuSeconds": 23.206377,
+          "cpuPercentOneCore": 34.4910987089513,
+          "interruptWakeupsPerSecond": 149.47485327671924,
+          "idleWakeupsPerSecond": 0.772863912736343,
+          "thermalStates": [0, 1],
+          "initialThermalState": 0,
+          "finalThermalState": 1,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 81,
+          "sessionWriteBytes": 48221055,
+          "sessionWriteBytesPerSecond": 716698.3316072
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 11.990665992571001,
+            "coveredSeconds": 72.0042348912435,
+            "coverage": 0.9999999583496733
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 4.137409527247009,
+            "coveredSeconds": 72.00423489124348,
+            "coverage": 0.9999999583496731
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.05216073763148131,
+            "coveredSeconds": 70.91022811701295,
+            "coverage": 0.984806314110314
+          },
+          "display-impact": {
+            "meanImpactUnits": 2.314683441994672,
+            "coveredSeconds": 72.0042348912435,
+            "coverage": 0.9999999583496733
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ]
+      }
+    },
+    {
+      "name": "window-after-1",
+      "role": "intermediate-key-only",
+      "nativeStatus": "this_run_pass",
+      "status": "this_run_pass",
+      "sourceSha256": "debfa33187cf8efec9255706a0793c18713ce73881454c8117f903db87a87789",
+      "appExecutableSha256": "2061a0346b95527f5265715d3b6f2c0b4ea8bad763d85e6bd8ea2256c68e6973",
+      "mainExecutableUUID": "UUID: 53128700-C1E4-3789-8329-12C73B162909",
+      "measurementDriverSha256": "6ca586032e1f367b456bb47eb704e3542fcea68ecba56d772754f591742e055c",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "traceTarget": {
+        "bundleId": "com.easyai.agenthub.thermal.acceptance",
+        "installationPathMatched": true,
+        "mode": "launch",
+        "pid": 3882
+      },
+      "metrics": {
+        "variant": "after",
+        "test": "testThermalRealHistoryComparisonDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "debfa33187cf8efec9255706a0793c18713ce73881454c8117f903db87a87789",
+        "windowUTC": [1792841052.972249, 1792841126.066752],
+        "wallSeconds": 73.0945029258728,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "2061a0346b95527f5265715d3b6f2c0b4ea8bad763d85e6bd8ea2256c68e6973",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 24,
+          "movingFrames": 2518,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 29.038250009762123,
+          "maxFrameMS": 60.8814166917,
+          "framesOver50MS": 5,
+          "movingSeconds": 42.69339345837943
+        },
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 5,
+          "gestures": 26,
+          "markdownBodies": 3,
+          "maxFrameMS": 60.8814166917,
+          "maxTimelineMS": 0.3306666621938348,
+          "movingFrames": 2724,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.3306666621938348
+        },
+        "telemetry": {
+          "sampleCount": 14,
+          "sampledSeconds": 67.10705158332712,
+          "cpuSeconds": 21.948403999999996,
+          "cpuPercentOneCore": 32.706553904765975,
+          "interruptWakeupsPerSecond": 148.83681765690238,
+          "idleWakeupsPerSecond": 0.9537000730918854,
+          "thermalStates": [0, 1],
+          "initialThermalState": 0,
+          "finalThermalState": 1,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 69,
+          "sessionWriteBytes": 41076180,
+          "sessionWriteBytesPerSecond": 612099.3104427413
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 11.806062277195062,
+            "coveredSeconds": 73.09449988887283,
+            "coverage": 0.9999999584510483
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 4.423129729891163,
+            "coveredSeconds": 72.94155173624623,
+            "coverage": 0.9979074871090964
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.006906889983533546,
+            "coveredSeconds": 72.45399236024622,
+            "coverage": 0.9912372266040834
+          },
+          "display-impact": {
+            "meanImpactUnits": 2.534333150625273,
+            "coveredSeconds": 73.09449988887283,
+            "coverage": 0.9999999584510483
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ]
+      }
+    },
+    {
+      "name": "window-final-after-1",
+      "role": "final",
+      "nativeStatus": "this_run_pass",
+      "status": "this_run_pass",
+      "sourceSha256": "c4cb896dd4d43c12e2ad4e88056b4d33b04b3c58c1055879f1f270a5ba291db6",
+      "appExecutableSha256": "1587aaa4925ebb4039c066a899d7df8460c48d4679331770397f0b9c08b9a590",
+      "mainExecutableUUID": "UUID: 3A83EB1A-4DB9-39C8-B44F-FFA6EBFE9546",
+      "measurementDriverSha256": "6ca586032e1f367b456bb47eb704e3542fcea68ecba56d772754f591742e055c",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "traceTarget": {
+        "bundleId": "com.easyai.agenthub.thermal.acceptance",
+        "installationPathMatched": true,
+        "mode": "launch",
+        "pid": 3910
+      },
+      "metrics": {
+        "variant": "after",
+        "test": "testThermalRealHistoryComparisonDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "c4cb896dd4d43c12e2ad4e88056b4d33b04b3c58c1055879f1f270a5ba291db6",
+        "windowUTC": [1792842181.133429, 1792842253.52266],
+        "wallSeconds": 72.389230966568,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "1587aaa4925ebb4039c066a899d7df8460c48d4679331770397f0b9c08b9a590",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 24,
+          "movingFrames": 2525,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 16.670333337970078,
+          "maxFrameMS": 37.71475001121871,
+          "framesOver50MS": 0,
+          "movingSeconds": 42.29495004165801
+        },
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 0,
+          "gestures": 26,
+          "markdownBodies": 3,
+          "maxFrameMS": 37.71475001121871,
+          "maxTimelineMS": 0.31341667636297643,
+          "movingFrames": 2733,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.31341667636297643
+        },
+        "telemetry": {
+          "sampleCount": 14,
+          "sampledSeconds": 66.67345104165724,
+          "cpuSeconds": 21.755429999999997,
+          "cpuPercentOneCore": 32.629824405530336,
+          "interruptWakeupsPerSecond": 153.41938718019819,
+          "idleWakeupsPerSecond": 1.1248855253216212,
+          "thermalStates": [0, 1],
+          "initialThermalState": 0,
+          "finalThermalState": 1,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 90,
+          "sessionWriteBytes": 53790993,
+          "sessionWriteBytesPerSecond": 806782.7922450219
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 11.68526205437154,
+            "coveredSeconds": 72.38922796456802,
+            "coverage": 0.9999999585297435
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 4.05132555009257,
+            "coveredSeconds": 72.38922792356801,
+            "coverage": 0.9999999579633608
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.05387583280183803,
+            "coveredSeconds": 72.38923042256799,
+            "coverage": 0.99999999248507
+          },
+          "display-impact": {
+            "meanImpactUnits": 2.440647790699095,
+            "coveredSeconds": 72.38922796456802,
+            "coverage": 0.9999999585297435
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ]
+      }
+    },
+    {
+      "name": "window-final-after-2",
+      "role": "final",
+      "nativeStatus": "this_run_pass",
+      "status": "this_run_pass",
+      "sourceSha256": "c4cb896dd4d43c12e2ad4e88056b4d33b04b3c58c1055879f1f270a5ba291db6",
+      "appExecutableSha256": "1587aaa4925ebb4039c066a899d7df8460c48d4679331770397f0b9c08b9a590",
+      "mainExecutableUUID": "UUID: 3A83EB1A-4DB9-39C8-B44F-FFA6EBFE9546",
+      "measurementDriverSha256": "6ca586032e1f367b456bb47eb704e3542fcea68ecba56d772754f591742e055c",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "traceTarget": {
+        "bundleId": "com.easyai.agenthub.thermal.acceptance",
+        "installationPathMatched": true,
+        "mode": "launch",
+        "pid": 3916
+      },
+      "metrics": {
+        "variant": "after",
+        "test": "testThermalRealHistoryComparisonDEV",
+        "status": "this_run_pass",
+        "sourceSha256": "c4cb896dd4d43c12e2ad4e88056b4d33b04b3c58c1055879f1f270a5ba291db6",
+        "windowUTC": [1792842523.784316, 1792842602.7214851],
+        "wallSeconds": 78.9371690750122,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "1587aaa4925ebb4039c066a899d7df8460c48d4679331770397f0b9c08b9a590",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 24,
+          "movingFrames": 2501,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 26.9459166447632,
+          "maxFrameMS": 40.58387500117533,
+          "framesOver50MS": 0,
+          "movingSeconds": 42.14277758335811
+        },
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 0,
+          "gestures": 26,
+          "markdownBodies": 3,
+          "maxFrameMS": 40.58387500117533,
+          "maxTimelineMS": 0.30062501900829375,
+          "movingFrames": 2709,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 1,
+          "totalTimelineMS": 0.30062501900829375
+        },
+        "telemetry": {
+          "sampleCount": 16,
+          "sampledSeconds": 77.2999103749753,
+          "cpuSeconds": 24.054116,
+          "cpuPercentOneCore": 31.117909300690684,
+          "interruptWakeupsPerSecond": 144.64441091538035,
+          "idleWakeupsPerSecond": 0.8926271669046816,
+          "thermalStates": [0, 1],
+          "initialThermalState": 0,
+          "finalThermalState": 1,
+          "batteryLevels": [1],
+          "batteryStates": [3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 105,
+          "sessionWriteBytes": 62756688,
+          "sessionWriteBytesPerSecond": 811859.7770110293
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "power": {
+          "cpu-impact": {
+            "meanImpactUnits": 10.970559576174601,
+            "coveredSeconds": 78.93716579101219,
+            "coverage": 0.9999999583972917
+          },
+          "gpu-impact": {
+            "meanImpactUnits": 4.001054106964022,
+            "coveredSeconds": 78.93716579101222,
+            "coverage": 0.999999958397292
+          },
+          "networking-impact": {
+            "meanImpactUnits": 0.050186824425104505,
+            "coveredSeconds": 78.17996445427723,
+            "coverage": 0.9904075021994337
+          },
+          "display-impact": {
+            "meanImpactUnits": 2.3380721011365924,
+            "coveredSeconds": 78.93716579101219,
+            "coverage": 0.9999999583972917
+          }
+        },
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Power impact units are relative metrics on this same device, not watts or battery percentage.",
+          "Public thermal state is a level, not measured degrees Celsius.",
+          "CPU/wakeup sampling excludes up to five seconds at each measurement boundary."
+        ]
+      }
+    }
+  ],
+  "mixedRuns": [
+    {
+      "name": "mixed-v7-before-1",
+      "nativeStatus": "this_run_fail",
+      "status": "this_run_fail",
+      "fullFlowMetrics": null,
+      "matchedPrefixMetrics": {
+        "automationBannerWaits": 1,
+        "name": "mixed-v7-before-1",
+        "scope": "completed common prefix steps 1-11; not full-flow success",
+        "fullNativeStatus": "this_run_fail",
+        "rawCaptureStatus": "this_run_fail",
+        "identityReconciliation": {
+          "method": "original Xcode action launch section plus frozen xctestrun artifact and AX PID",
+          "bundleId": "com.easyai.agenthub.thermal.acceptance",
+          "pid": 4016,
+          "installationURLSha256": "8ab476f2493525bb8910350f318a6f99b58c936d0c0e45d822105e940ecc6317",
+          "installationURLChangedByXCTest": true,
+          "appExecutableSha256Matched": true,
+          "originalReportPreserved": true
+        },
+        "windowUTC": [1792847892.274519, 1792848221.391652],
+        "wallSeconds": 329.11713314056396,
+        "interactionSteps": [
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792847954.867481,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 1,
+            "startUTC": 1792847892.2745461
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792848014.5615191,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 2,
+            "startUTC": 1792847954.956281
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792848029.05057,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 3,
+            "startUTC": 1792848014.722161
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848044.775208,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 4,
+            "startUTC": 1792848029.135666
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848063.86304,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 5,
+            "startUTC": 1792848044.944768
+          },
+          {
+            "action": "switch-client",
+            "client": 2,
+            "endUTC": 1792848077.8709378,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 6,
+            "startUTC": 1792848063.993367
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848093.74916,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 7,
+            "startUTC": 1792848077.92164
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848110.1976619,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 8,
+            "startUTC": 1792848093.851996
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792848123.469064,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 9,
+            "startUTC": 1792848110.379148
+          },
+          {
+            "action": "reopen-chat-and-followup-running",
+            "client": 0,
+            "endUTC": 1792848151.420092,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 4,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 10,
+            "startUTC": 1792848123.5684419
+          },
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848221.391652,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 11,
+            "startUTC": 1792848151.4864469
+          }
+        ],
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 12,
+          "movingFrames": 797,
+          "p95FrameMS": 26.745124981971458,
+          "p99FrameMS": 62.433666666038334,
+          "maxFrameMS": 81.01762499427423,
+          "framesOver50MS": 16,
+          "movingSeconds": 14.59643916672212
+        },
+        "telemetry": {
+          "sampleCount": 65,
+          "sampledSeconds": 326.70874679167173,
+          "cpuSeconds": 150.39660400000002,
+          "cpuPercentOneCore": 46.03384680603656,
+          "sessionWriteBytes": 805444438,
+          "sessionWriteBytesPerSecond": 2465328.663250016,
+          "initialThermalState": 1,
+          "finalThermalState": 2,
+          "thermalStates": [1, 2],
+          "batteryStates": [3],
+          "batteryLevels": [1],
+          "brightness": [0],
+          "lowPowerMode": [false]
+        },
+        "power": null,
+        "sourceSha256": "7062ba9424fb4f7230268deee9f643c6bca75e02fae4cecf0ee50699237fedeb",
+        "appExecutableSha256": "1228a57f4e1bb6e708f66ae56e60b1041ca4a80d14c3e2ec3bae5c9a580ab316",
+        "measurementDriverSha256": "3a9bdfda13afc51590830879d79c3063f224944728819b7fb2033d1312c41b51"
+      },
+      "desktopOwnerProof": [
+        {
+          "threadIdSha256": "716bf8824dbe8d762f15a4ca03e8e738daddbfb580f07ed3b9ad7853fad546cf",
+          "originalOwner": true,
+          "turnCount": 2,
+          "statuses": ["completed", "completed"],
+          "userInputs": 2,
+          "efforts": ["xhigh", "xhigh"],
+          "models": ["gpt-6.1-sol", "gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+          "allMarkersCompleted": true,
+          "numberedLines": 400,
+          "outputSha256": "0857301463c81a4efcdc32b974cb091480b4dc078d588f6036b8164e573f4cb5",
+          "allLeftWhileRunning": true
+        },
+        {
+          "threadIdSha256": "d16d88f60180769a7e1f2eea8bb0dca4ce5472bbdf01a99302b69d0794b60f01",
+          "originalOwner": true,
+          "turnCount": 1,
+          "statuses": ["completed"],
+          "userInputs": 1,
+          "efforts": ["xhigh"],
+          "models": ["gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+          "allMarkersCompleted": true,
+          "numberedLines": 200,
+          "outputSha256": "f825c0373d1f13c427d9129c9ed12d1cfd4e69c82d1bcf83f465871a4b532620",
+          "allLeftWhileRunning": true
+        }
+      ],
+      "sourceSha256": "7062ba9424fb4f7230268deee9f643c6bca75e02fae4cecf0ee50699237fedeb",
+      "appExecutableSha256": "1228a57f4e1bb6e708f66ae56e60b1041ca4a80d14c3e2ec3bae5c9a580ab316",
+      "measurementDriverSha256": "3a9bdfda13afc51590830879d79c3063f224944728819b7fb2033d1312c41b51",
+      "mixedSelectionSha256": "7cbb009cb13960d294683daa1e2313da991fd124750e484c3837505481a5885e",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "workload": {
+        "clients": 3,
+        "existingRemoteChats": 4,
+        "newLocalChats": 2,
+        "originalModelInputs": 3,
+        "scrollCommands": 22,
+        "remoteHistoryBulkExported": false,
+        "remoteCredentialsPersistedByDriver": false,
+        "privateXCTestUIEvidenceMayContainViewedText": true
+      }
+    },
+    {
+      "name": "mixed-v7-after-1",
+      "nativeStatus": "this_run_pass",
+      "status": "this_run_fail",
+      "fullFlowMetrics": {
+        "variant": "after",
+        "test": "testThermalMixedInteractionDEV",
+        "status": "native_flow_pass_identity_reconciled",
+        "sourceSha256": "e102d9726db7604d61c2bf308546b14ef36ddd03ec489765506bad39d8a94b80",
+        "windowUTC": [1792848598.2757668, 1792849052.364097],
+        "wallSeconds": 454.08833026885986,
+        "warmupWindowsDiscarded": 0,
+        "variantAssignmentVerified": true,
+        "appExecutableSha256": "95b8905359996fcac73c2af06180bc37c24016db5df62e6b35ed625cabf09d97",
+        "captureMode": "native-telemetry",
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 22,
+          "movingFrames": 1739,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 33.340666675940156,
+          "maxFrameMS": 49.03458332410082,
+          "framesOver50MS": 0,
+          "movingSeconds": 29.54962841660017
+        },
+        "interactionSteps": [
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848655.744266,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 3,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 1,
+            "startUTC": 1792848598.275801,
+            "elapsedSeconds": 57.468465089797974
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792848712.346667,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 2,
+            "startUTC": 1792848655.805824,
+            "elapsedSeconds": 56.54084300994873
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792848726.447386,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 3,
+            "startUTC": 1792848712.489574,
+            "elapsedSeconds": 13.957812070846558
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848742.5587,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 4,
+            "startUTC": 1792848726.533482,
+            "elapsedSeconds": 16.02521800994873
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848762.392964,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 5,
+            "startUTC": 1792848742.7375169,
+            "elapsedSeconds": 19.655447006225586
+          },
+          {
+            "action": "switch-client",
+            "client": 2,
+            "endUTC": 1792848776.336601,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 6,
+            "startUTC": 1792848762.54443,
+            "elapsedSeconds": 13.792171001434326
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848792.271678,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 7,
+            "startUTC": 1792848776.393724,
+            "elapsedSeconds": 15.877954006195068
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848808.222427,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 8,
+            "startUTC": 1792848792.392789,
+            "elapsedSeconds": 15.829638004302979
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792848820.748104,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 9,
+            "startUTC": 1792848808.3059258,
+            "elapsedSeconds": 12.44217824935913
+          },
+          {
+            "action": "reopen-chat-and-followup-running",
+            "client": 0,
+            "endUTC": 1792848848.5369558,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 6,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 10,
+            "startUTC": 1792848820.831794,
+            "elapsedSeconds": 27.705161809921265
+          },
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848914.0128698,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 11,
+            "startUTC": 1792848848.599158,
+            "elapsedSeconds": 65.41371178627014
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792848966.6915011,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 12,
+            "startUTC": 1792848914.062986,
+            "elapsedSeconds": 52.62851524353027
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792848980.8244328,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 13,
+            "startUTC": 1792848966.8216019,
+            "elapsedSeconds": 14.002830982208252
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848996.323662,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 14,
+            "startUTC": 1792848980.9051008,
+            "elapsedSeconds": 15.418561220169067
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792849009.7151752,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 15,
+            "startUTC": 1792848996.454107,
+            "elapsedSeconds": 13.261068105697632
+          },
+          {
+            "action": "reopen-completed-reply",
+            "client": 0,
+            "endUTC": 1792849027.711843,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 6,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 16,
+            "startUTC": 1792849009.8122191,
+            "elapsedSeconds": 17.89962387084961
+          },
+          {
+            "action": "reopen-completed-reply",
+            "client": 0,
+            "endUTC": 1792849052.269833,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 17,
+            "startUTC": 1792849027.832796,
+            "elapsedSeconds": 24.437036991119385
+          }
+        ],
+        "scrollCumulativeIncludingNavigationAndWarmup": {
+          "framesOver50MS": 0,
+          "gestures": 30,
+          "markdownBodies": 180,
+          "maxFrameMS": 49.03458332410082,
+          "maxTimelineMS": 0.7890416600275785,
+          "movingFrames": 2169,
+          "p95FrameMS": 16.670333337970078,
+          "timelineBuilds": 258,
+          "totalTimelineMS": 30.998124624602497
+        },
+        "telemetry": {
+          "sampleCount": 89,
+          "sampledSeconds": 450.1910269166692,
+          "cpuSeconds": 164.728522,
+          "cpuPercentOneCore": 36.59080526953537,
+          "interruptWakeupsPerSecond": 91.5011573689692,
+          "idleWakeupsPerSecond": 0.45091969378051483,
+          "thermalStates": [2],
+          "initialThermalState": 2,
+          "finalThermalState": 2,
+          "batteryLevels": [1],
+          "batteryStates": [2, 3],
+          "brightness": [0],
+          "lowPowerMode": [false],
+          "sessionWrites": 981,
+          "sessionWriteBytes": 1163322191,
+          "sessionWriteBytesPerSecond": 2584063.4784916136
+        },
+        "notesSessionIO": "Successful logical bytes submitted to atomic session state/history/backup writes; excludes ledger and measurement logs, not physical flash writes.",
+        "identityReconciliation": {
+          "method": "original Xcode action launch section plus frozen xctestrun artifact and AX PID",
+          "bundleId": "com.easyai.agenthub.thermal.acceptance",
+          "pid": 4026,
+          "installationURLSha256": "be09b06c1c9629b6180b48a529d6014c4e3bf6a3bb86940569a0b5d77e3c663f",
+          "installationURLChangedByXCTest": true,
+          "appExecutableSha256Matched": true,
+          "originalReportPreserved": true
+        },
+        "rawCaptureStatus": "this_run_fail",
+        "power": null,
+        "systemBatteryDrainValid": false,
+        "notes": [
+          "Normal App launch with in-process CPU/wakeup/logical-write and moving-frame telemetry.",
+          "No Instruments power measurement in this mixed trial; CPU is not watts or battery drain.",
+          "Public thermal state is a level, not measured degrees Celsius."
+        ]
+      },
+      "matchedPrefixMetrics": {
+        "automationBannerWaits": 2,
+        "name": "mixed-v7-after-1",
+        "scope": "completed common prefix steps 1-11; not full-flow success",
+        "fullNativeStatus": "this_run_pass",
+        "rawCaptureStatus": "this_run_fail",
+        "identityReconciliation": {
+          "method": "original Xcode action launch section plus frozen xctestrun artifact and AX PID",
+          "bundleId": "com.easyai.agenthub.thermal.acceptance",
+          "pid": 4026,
+          "installationURLSha256": "be09b06c1c9629b6180b48a529d6014c4e3bf6a3bb86940569a0b5d77e3c663f",
+          "installationURLChangedByXCTest": true,
+          "appExecutableSha256Matched": true,
+          "originalReportPreserved": true
+        },
+        "windowUTC": [1792848598.2757668, 1792848914.0128698],
+        "wallSeconds": 315.7371029853821,
+        "interactionSteps": [
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848655.744266,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 3,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 1,
+            "startUTC": 1792848598.275801
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792848712.346667,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 2,
+            "startUTC": 1792848655.805824
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792848726.447386,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 3,
+            "startUTC": 1792848712.489574
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848742.5587,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 4,
+            "startUTC": 1792848726.533482
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848762.392964,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 5,
+            "startUTC": 1792848742.7375169
+          },
+          {
+            "action": "switch-client",
+            "client": 2,
+            "endUTC": 1792848776.336601,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 6,
+            "startUTC": 1792848762.54443
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848792.271678,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 7,
+            "startUTC": 1792848776.393724
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848808.222427,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 8,
+            "startUTC": 1792848792.392789
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792848820.748104,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 9,
+            "startUTC": 1792848808.3059258
+          },
+          {
+            "action": "reopen-chat-and-followup-running",
+            "client": 0,
+            "endUTC": 1792848848.5369558,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 6,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 10,
+            "startUTC": 1792848820.831794
+          },
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848914.0128698,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 11,
+            "startUTC": 1792848848.599158
+          }
+        ],
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 12,
+          "movingFrames": 841,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 25.005499977851287,
+          "maxFrameMS": 35.32533333054744,
+          "framesOver50MS": 0,
+          "movingSeconds": 14.136442666611401
+        },
+        "telemetry": {
+          "sampleCount": 63,
+          "sampledSeconds": 314.42502308334224,
+          "cpuSeconds": 112.802616,
+          "cpuPercentOneCore": 35.87583929988303,
+          "sessionWriteBytes": 813189430,
+          "sessionWriteBytesPerSecond": 2586274.533832042,
+          "initialThermalState": 2,
+          "finalThermalState": 2,
+          "thermalStates": [2],
+          "batteryStates": [2, 3],
+          "batteryLevels": [1],
+          "brightness": [0],
+          "lowPowerMode": [false]
+        },
+        "power": null,
+        "sourceSha256": "e102d9726db7604d61c2bf308546b14ef36ddd03ec489765506bad39d8a94b80",
+        "appExecutableSha256": "95b8905359996fcac73c2af06180bc37c24016db5df62e6b35ed625cabf09d97",
+        "measurementDriverSha256": "3a9bdfda13afc51590830879d79c3063f224944728819b7fb2033d1312c41b51"
+      },
+      "desktopOwnerProof": [
+        {
+          "threadIdSha256": "90b1715dac501f1326191eb0e768f2a84394103bf357b8d47e8c92fdda1db3d4",
+          "originalOwner": true,
+          "turnCount": 2,
+          "statuses": ["completed", "completed"],
+          "userInputs": 2,
+          "efforts": ["xhigh", "xhigh"],
+          "models": ["gpt-6.1-sol", "gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "agentMessage", "reasoning"],
+          "allMarkersCompleted": true,
+          "numberedLines": 400,
+          "outputSha256": "11fd30782353d51928b162af023d85b9101d5531067dadb8478e4823c60559c9",
+          "allLeftWhileRunning": true
+        },
+        {
+          "threadIdSha256": "42e6d92ee26bdcfe30f0d2570bacbb4530d692c8f8308bbad8907f7411c9b053",
+          "originalOwner": true,
+          "turnCount": 1,
+          "statuses": ["completed"],
+          "userInputs": 1,
+          "efforts": ["xhigh"],
+          "models": ["gpt-6.1-sol"],
+          "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+          "allMarkersCompleted": true,
+          "numberedLines": 200,
+          "outputSha256": "cd59338aeb0af7106db85777ef6a81c9c78950417290dd1554e8d693c2966908",
+          "allLeftWhileRunning": true
+        }
+      ],
+      "sourceSha256": "e102d9726db7604d61c2bf308546b14ef36ddd03ec489765506bad39d8a94b80",
+      "appExecutableSha256": "95b8905359996fcac73c2af06180bc37c24016db5df62e6b35ed625cabf09d97",
+      "measurementDriverSha256": "3a9bdfda13afc51590830879d79c3063f224944728819b7fb2033d1312c41b51",
+      "mixedSelectionSha256": "7cbb009cb13960d294683daa1e2313da991fd124750e484c3837505481a5885e",
+      "readOnlyWorkload": {
+        "targetMatched": true,
+        "messages": 1709,
+        "messageBytesUTF8": 733626,
+        "messagesSha256": "13e6704b757a70c62afa6ab2fd9c03fe36005c2c423f2de213847a2cbdbe4052"
+      },
+      "workload": {
+        "clients": 3,
+        "existingRemoteChats": 4,
+        "newLocalChats": 2,
+        "originalModelInputs": 3,
+        "scrollCommands": 22,
+        "remoteHistoryBulkExported": false,
+        "remoteCredentialsPersistedByDriver": false,
+        "privateXCTestUIEvidenceMayContainViewedText": true
+      }
+    }
+  ],
+  "mixedIdentityCaptureReconciliation": "Original driver reports remain failed because XCTest reinstalled target to a new URL. Original XCResult action launch section binds exact Bundle ID, new installation URL and AX PID; frozen xctestrun artifact SHA matches. After full native flow independently passed; only separate metrics-reconciled.json is accepted.",
+  "mixedComparison": {
+    "scope": "First 11 actually completed steps in each run; full baseline failed at step 12; original capture path failures retained for both",
+    "commonActionsAndClients": [
+      ["new-chat-and-reply-running", 0],
+      ["read-long-history", 0],
+      ["switch-client", 1],
+      ["read-existing-chat", 1],
+      ["read-existing-chat", 1],
+      ["switch-client", 2],
+      ["read-existing-chat", 2],
+      ["read-existing-chat", 2],
+      ["switch-client", 0],
+      ["reopen-chat-and-followup-running", 0],
+      ["new-chat-and-reply-running", 0]
+    ],
+    "expectedGestures": 12,
+    "runs": [
+      {
+        "automationBannerWaits": 1,
+        "name": "mixed-v7-before-1",
+        "scope": "completed common prefix steps 1-11; not full-flow success",
+        "fullNativeStatus": "this_run_fail",
+        "rawCaptureStatus": "this_run_fail",
+        "identityReconciliation": {
+          "method": "original Xcode action launch section plus frozen xctestrun artifact and AX PID",
+          "bundleId": "com.easyai.agenthub.thermal.acceptance",
+          "pid": 4016,
+          "installationURLSha256": "8ab476f2493525bb8910350f318a6f99b58c936d0c0e45d822105e940ecc6317",
+          "installationURLChangedByXCTest": true,
+          "appExecutableSha256Matched": true,
+          "originalReportPreserved": true
+        },
+        "windowUTC": [1792847892.274519, 1792848221.391652],
+        "wallSeconds": 329.11713314056396,
+        "interactionSteps": [
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792847954.867481,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 1,
+            "startUTC": 1792847892.2745461
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792848014.5615191,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 2,
+            "startUTC": 1792847954.956281
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792848029.05057,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 3,
+            "startUTC": 1792848014.722161
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848044.775208,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 4,
+            "startUTC": 1792848029.135666
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848063.86304,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 5,
+            "startUTC": 1792848044.944768
+          },
+          {
+            "action": "switch-client",
+            "client": 2,
+            "endUTC": 1792848077.8709378,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 6,
+            "startUTC": 1792848063.993367
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848093.74916,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 7,
+            "startUTC": 1792848077.92164
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848110.1976619,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 8,
+            "startUTC": 1792848093.851996
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792848123.469064,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 9,
+            "startUTC": 1792848110.379148
+          },
+          {
+            "action": "reopen-chat-and-followup-running",
+            "client": 0,
+            "endUTC": 1792848151.420092,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 4,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 10,
+            "startUTC": 1792848123.5684419
+          },
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848221.391652,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 11,
+            "startUTC": 1792848151.4864469
+          }
+        ],
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 12,
+          "movingFrames": 797,
+          "p95FrameMS": 26.745124981971458,
+          "p99FrameMS": 62.433666666038334,
+          "maxFrameMS": 81.01762499427423,
+          "framesOver50MS": 16,
+          "movingSeconds": 14.59643916672212
+        },
+        "telemetry": {
+          "sampleCount": 65,
+          "sampledSeconds": 326.70874679167173,
+          "cpuSeconds": 150.39660400000002,
+          "cpuPercentOneCore": 46.03384680603656,
+          "sessionWriteBytes": 805444438,
+          "sessionWriteBytesPerSecond": 2465328.663250016,
+          "initialThermalState": 1,
+          "finalThermalState": 2,
+          "thermalStates": [1, 2],
+          "batteryStates": [3],
+          "batteryLevels": [1],
+          "brightness": [0],
+          "lowPowerMode": [false]
+        },
+        "power": null,
+        "sourceSha256": "7062ba9424fb4f7230268deee9f643c6bca75e02fae4cecf0ee50699237fedeb",
+        "appExecutableSha256": "1228a57f4e1bb6e708f66ae56e60b1041ca4a80d14c3e2ec3bae5c9a580ab316",
+        "measurementDriverSha256": "3a9bdfda13afc51590830879d79c3063f224944728819b7fb2033d1312c41b51"
+      },
+      {
+        "automationBannerWaits": 2,
+        "name": "mixed-v7-after-1",
+        "scope": "completed common prefix steps 1-11; not full-flow success",
+        "fullNativeStatus": "this_run_pass",
+        "rawCaptureStatus": "this_run_fail",
+        "identityReconciliation": {
+          "method": "original Xcode action launch section plus frozen xctestrun artifact and AX PID",
+          "bundleId": "com.easyai.agenthub.thermal.acceptance",
+          "pid": 4026,
+          "installationURLSha256": "be09b06c1c9629b6180b48a529d6014c4e3bf6a3bb86940569a0b5d77e3c663f",
+          "installationURLChangedByXCTest": true,
+          "appExecutableSha256Matched": true,
+          "originalReportPreserved": true
+        },
+        "windowUTC": [1792848598.2757668, 1792848914.0128698],
+        "wallSeconds": 315.7371029853821,
+        "interactionSteps": [
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848655.744266,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 3,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 1,
+            "startUTC": 1792848598.275801
+          },
+          {
+            "action": "read-long-history",
+            "client": 0,
+            "endUTC": 1792848712.346667,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 2,
+            "startUTC": 1792848655.805824
+          },
+          {
+            "action": "switch-client",
+            "client": 1,
+            "endUTC": 1792848726.447386,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 3,
+            "startUTC": 1792848712.489574
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848742.5587,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 4,
+            "startUTC": 1792848726.533482
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 1,
+            "endUTC": 1792848762.392964,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 5,
+            "startUTC": 1792848742.7375169
+          },
+          {
+            "action": "switch-client",
+            "client": 2,
+            "endUTC": 1792848776.336601,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 6,
+            "startUTC": 1792848762.54443
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848792.271678,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 7,
+            "startUTC": 1792848776.393724
+          },
+          {
+            "action": "read-existing-chat",
+            "client": 2,
+            "endUTC": 1792848808.222427,
+            "nativeHistory": {
+              "host": 0,
+              "messages": 100,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 80
+            },
+            "sequence": 8,
+            "startUTC": 1792848792.392789
+          },
+          {
+            "action": "switch-client",
+            "client": 0,
+            "endUTC": 1792848820.748104,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 100,
+              "target": 1,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 9,
+            "startUTC": 1792848808.3059258
+          },
+          {
+            "action": "reopen-chat-and-followup-running",
+            "client": 0,
+            "endUTC": 1792848848.5369558,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 6,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 10,
+            "startUTC": 1792848820.831794
+          },
+          {
+            "action": "new-chat-and-reply-running",
+            "client": 0,
+            "endUTC": 1792848914.0128698,
+            "nativeHistory": {
+              "host": 1,
+              "messages": 2,
+              "target": 0,
+              "threadSelected": 1,
+              "window": 20
+            },
+            "sequence": 11,
+            "startUTC": 1792848848.599158
+          }
+        ],
+        "scroll": {
+          "scope": "gesture starts and moving frames wholly inside measurement window",
+          "gestures": 12,
+          "movingFrames": 841,
+          "p95FrameMS": 16.670333337970078,
+          "p99FrameMS": 25.005499977851287,
+          "maxFrameMS": 35.32533333054744,
+          "framesOver50MS": 0,
+          "movingSeconds": 14.136442666611401
+        },
+        "telemetry": {
+          "sampleCount": 63,
+          "sampledSeconds": 314.42502308334224,
+          "cpuSeconds": 112.802616,
+          "cpuPercentOneCore": 35.87583929988303,
+          "sessionWriteBytes": 813189430,
+          "sessionWriteBytesPerSecond": 2586274.533832042,
+          "initialThermalState": 2,
+          "finalThermalState": 2,
+          "thermalStates": [2],
+          "batteryStates": [2, 3],
+          "batteryLevels": [1],
+          "brightness": [0],
+          "lowPowerMode": [false]
+        },
+        "power": null,
+        "sourceSha256": "e102d9726db7604d61c2bf308546b14ef36ddd03ec489765506bad39d8a94b80",
+        "appExecutableSha256": "95b8905359996fcac73c2af06180bc37c24016db5df62e6b35ed625cabf09d97",
+        "measurementDriverSha256": "3a9bdfda13afc51590830879d79c3063f224944728819b7fb2033d1312c41b51"
+      }
+    ],
+    "limits": [
+      "One pair, real network/model timing varies; no causal battery or temperature claim.",
+      "Frames cover message history movement only, not navigation transitions.",
+      "Baseline full workflow remains failed; no synthetic END marker or altered raw evidence."
+    ]
+  },
+  "realEarlierPagePhysical": {
+    "passed": 1,
+    "cachedPages": 2,
+    "remotePages": 1,
+    "remoteMessagesAdded": 100,
+    "maxAnchorDeltaPt": 3.979039320256561e-13
+  },
+  "failedTrialOriginalOwners": [
+    {
+      "case": "mixed-v3-before-1",
+      "proof": {
+        "originalOwner": true,
+        "turns": 1,
+        "statuses": ["completed"],
+        "userInputs": 1,
+        "efforts": ["xhigh"],
+        "numberedLines": 200,
+        "completeMarkers": true,
+        "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+        "outputSha256": "0531a0a48e950c0e70a81c0006c49b6134e21138ad5f487aa592ad6f17bde8d5",
+        "inputResubmitted": false
+      }
+    },
+    {
+      "case": "mixed-v4-before-1",
+      "proof": {
+        "originalOwner": true,
+        "turns": 1,
+        "statuses": ["completed"],
+        "userInputs": 1,
+        "efforts": ["xhigh"],
+        "numberedLines": 200,
+        "completeMarkers": true,
+        "itemTypes": ["userMessage", "reasoning", "agentMessage"],
+        "outputSha256": "14346cb89885476916891c30833c88283504abca2ea2374f9cd5b783a633e491",
+        "inputResubmitted": false
+      }
+    },
+    {
+      "case": "mixed-v6-before-1",
+      "proof": {
+        "originalOwner": true,
+        "turns": 1,
+        "statuses": ["completed"],
+        "userInputs": 1,
+        "efforts": ["xhigh"],
+        "numberedLines": 200,
+        "completeMarkers": true,
+        "itemTypes": ["userMessage", "agentMessage", "reasoning"],
+        "outputSha256": "74e2aca7c695ca4c75b0c4be9e0e963a519f0da3c05d4a235632d24ffef0fc57",
+        "inputResubmitted": false
+      }
+    }
+  ],
+  "android": {
+    "environment": "dedicated API 36 emulator; no physical Android power measurement",
+    "nativeHistoryPresentation": {
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    },
+    "nativeReadUI": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "hiddenDrawerAnimation": {
+      "passed": 1,
+      "oldInactiveIndeterminate": 2,
+      "newInactiveIndeterminate": 0,
+      "reopenedIndeterminateAsserted": 2
+    },
+    "finalArtifacts": {
+      "appApkSha256": "da7dd478100521e04c4797eecd076250a16e1406ab8aa04377c03af8f0eba9d1",
+      "testApkSha256": "1bb0c8a8ef0e50405786bfeafd41638b37db42522a53685f8d06bcb5e88631c8",
+      "sourceSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "9c200054a932c7fcf818ee9c7a364defe960ad56ce4b645ee2d05e1bf654bb1d",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileReadTest.kt": "5de30b282c3113fae5c4d0449c466391039e6dae5d6031bb941b9e50dd98457c"
+      }
+    },
+    "syntheticThreadCPU": {
+      "kind": "synthetic-native-presentation",
+      "messages": 1000,
+      "reads": 1000,
+      "baselineBuilds": 1000,
+      "cachedBuilds": 1,
+      "keyBaselineMedianThreadCPUNanosPer200": 2610709,
+      "keyCachedMedianThreadCPUNanosPer200": 63500,
+      "baselineMedianThreadCPUNanosPer200": 222539752,
+      "cachedMedianThreadCPUNanosPer200": 530958
+    }
+  },
+  "checks": {
+    "workspace": "pnpm check passed; final production code; subsequent mixed-only tooling uses targeted parser, parity, syntax and physical test builds",
+    "ios": "pnpm build:ios passed; Release physical baseline/final builds separately bound",
+    "iosSharedState": "Swift/KMP native checks passed including preferred aliases, identity, eviction and concurrency",
+    "numericEvidenceTests": 9,
+    "drawerReopenPhysical": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "limits": [
+    "The historical 115.01ms maximum has no timestamp or corresponding stack; its unique cause cannot be established retrospectively.",
+    "CPU power impact units are relative, not watts. Public thermal state is not degrees Celsius.",
+    "Mixed comparison starts at different thermal levels (baseline 1, final 2) and includes 1 versus 2 native banner waits; its observed CPU/frame difference is not a controlled causal estimate.",
+    "All strict runs started at thermal state 0 and ended at 1; heat elimination is not demonstrated.",
+    "Phone kept charging at human request; no battery-percent or battery-life claim.",
+    "Two strict rounds and one matched mixed-prefix pair are scoped trials, not a statistical performance guarantee. Baseline full mixed flow failed at second archive navigation, after 11 completed steps; final candidate full flow is verified separately.",
+    "Mixed frame samples cover moving message history only; action timings include native automation and network/model waiting.",
+    "Android microbenchmarks are synthetic native presentation CPU; they do not establish physical Android heat or full-App power.",
+    "Formal App and shared Host services were not deployed by this task.",
+    "Automatic approval rejected bulk remote-history/key export. Revised driver passes selected connection keys only in memory, uses ordinary App navigation, and does not export remote message bodies."
+  ],
+  "retainedFailures": [
+    "mixed-v7 both capture drivers: stale pre-XCTest install URL produced no exact PID match. Original reports remain failed; original Xcode action logs, AX PID and frozen test-target binary separately reconcile identity without replay.",
+    "mixed-v7-before-1: 11 completed steps, 3 original model inputs independently completed; second archive navigation readiness failed, no measurement END. Full flow remains failed; numeric comparison covers only actual completed common prefix.",
+    "diagnostic-v3: -1009; XCTest default alert handler denied wireless data; exact-own-App permission recovered",
+    "diagnostic-connected: archive menu navigation did not complete",
+    "diagnostic-navigation2: existing asynchronous question presentation blocked toolbar; dismiss-only helper reused",
+    "mixed-v6-before-1: all client preflights passed, original A started; archive menu transition failed; original owner reconciled, read-only navigation bounded retries added",
+    "mixed-v5-before-1: no model input; client picker transition not confirmed; native modal/row dismissal fences added",
+    "mixed-v4-before-1: M5 target was pinned, recent-only test selector failed; single original A reconciled; preflight and exact-ID row placements added",
+    "mixed-v3-before-1: original A input started; Runner own HTTP failed -1009; original reconciled without replay, later lookup uses native sidebar",
+    "mixed-v2-before-1: no model input; blank draft had no numeric probe; probe-only coverage repaired",
+    "mixed-before-1: no model input submitted; settings UI had not settled; retained failure, revised native readiness checks",
+    "window-after-1: intermediate pure-key optimization still had 60.88ms/5 slow frames and no CPU impact improvement",
+    "initial Android test assertions incorrectly compared non-data projection instances; corrected public-field assertions; original failures retained"
+  ],
+  "rawEvidenceRoot": ".local/history-thermal-20261024",
+  "cleanup": {
+    "phone": {
+      "ownTestBundlesRemoved": [
+        "com.easyai.agenthub.thermal.acceptance",
+        "com.easyai.agenthub.thermal.acceptance.uitests.xctrunner"
+      ],
+      "protectedInstalledAppCount": 38,
+      "allOtherDeveloperAppsPresentUnchanged": true,
+      "noKeychainDeletionClaim": true,
+      "worktreesCreated": 0,
+      "temporaryBranchesCreated": 0,
+      "timestamp": "2026-10-24T13:40:37.342Z"
+    },
+    "simulators": {
+      "androidAVDRemoved": true,
+      "androidAVD": "HistoryThermal20261024",
+      "androidEvidencePNGs": 8,
+      "iosSimulatorRemoved": true,
+      "iosSimulatorUDID": "774DFAAB-9342-473A-8D33-75133C72CE8A"
+    },
+    "androidAnimationAVD": {
+      "removed": true
+    },
+    "worktreesCreated": 0,
+    "temporaryBranchesCreated": 0
+  }
+}

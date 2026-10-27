@@ -78,12 +78,16 @@ class ThreadSyncTest {
         val bad=listOf(frame(emptyList(),head=tooMany),frame(listOf(a),head=listOf(badLength)),frame(listOf(nonText),head=listOf(version(a,text="A😀中文e\u0301"))),JsonObject(frame(listOf(a))+("reset" to JsonPrimitive("true"))),JsonObject(frame(listOf(a))+("branchRevision" to JsonPrimitive(-1))))
         for(value in bad)assertNull(ThreadSyncRules.merging(empty,value.toString(),"thread"))
     }
-    @Test fun unchangedVersionsReuseCompleteMessagesAndStillRequirePlatformDigestCheck() {
+    @Test fun verifiedUnchangedContentSkipsHashingButChangedMetadataAndReplacementCannot() {
         val a=message();val head=version(a,text="A😀中文e\u0301")
         val initial=merge(ThreadSyncRules.empty(),frame(listOf(a),head=listOf(head)))
         val result=merge(initial.next,frame(emptyList(),head=listOf(head),reset=false))
         assertEquals(listOf(a),wire(result).getValue("messages").jsonArray.toList())
-        assertEquals("A😀中文e\u0301",result.textChecks.single().text)
-        assertEquals("platform-check",result.textChecks.single().sha256)
+        assertTrue(result.textChecks.isEmpty())
+        val metadata=JsonObject(head+("textHash" to JsonPrimitive("changed-platform-digest")))
+        assertEquals("changed-platform-digest",merge(initial.next,
+            frame(emptyList(),head=listOf(metadata),reset=false)).textChecks.single().sha256)
+        assertEquals(1,merge(initial.next,frame(listOf(a),head=listOf(head),reset=false)).textChecks.size)
+        assertEquals(1,merge(initial.next,frame(listOf(a),head=listOf(head),reset=true)).textChecks.size)
     }
 }

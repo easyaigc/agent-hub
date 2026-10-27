@@ -210,7 +210,7 @@ test('prepared parser failures, disposal, and nonprepared reads retain their ori
 
 for (const count of [1, 4, 16])
   test(`request-local index decodes each log event once for ${count} inferences, retaining every guard`, (t) =>
-    preparedTraceFixture(({ TraceSnapshot, reader, root, create, prepare }) => {
+    preparedTraceFixture(({ TraceSnapshot, reader, root: _root, create, prepare }) => {
       const f = create();
       sameBundleHistory(f, count);
       const lengths = [];
@@ -226,13 +226,7 @@ for (const count of [1, 4, 16])
         return release.call(this);
       };
       const legacy = countEventDecodes(() =>
-        reader.readSourcePredictions(
-          f.fixture.sourceThreadId,
-          f.fixture.sourceTurnId,
-          root,
-          0,
-          true,
-        ),
+        reader.readSourcePredictions(f.fixture.sourceThreadId, f.fixture.sourceTurnId, 0, true),
       );
       const indexed = countEventDecodes(() => prepare(reader, f.fixture));
       assert(indexed.value);
@@ -261,7 +255,7 @@ for (const count of [1, 4, 16])
     }));
 
 test('a later same-thread bundle stays indexed and charged after each binding budget is released', () =>
-  preparedTraceFixture(({ TraceSnapshot, reader, root, local, create, prepare, data }) => {
+  preparedTraceFixture(({ TraceSnapshot, reader, root: _root, local, create, prepare, data }) => {
     const f = create();
     sameBundleHistory(f, 4);
     const other = create(
@@ -280,7 +274,6 @@ test('a later same-thread bundle stays indexed and charged after each binding bu
     const legacy = reader.readSourcePredictions(
       f.fixture.sourceThreadId,
       f.fixture.sourceTurnId,
-      root,
       0,
       true,
     );
@@ -306,7 +299,7 @@ test('a later same-thread bundle stays indexed and charged after each binding bu
   }));
 
 test('binding accepts a single line BOM in a same-thread bundle beyond the discovery prefix', () =>
-  preparedTraceFixture(({ reader, root, create, prepare, data }) => {
+  preparedTraceFixture(({ reader, root: _root, create, prepare, data }) => {
     const a = create();
     const b = create(
       data.execution({
@@ -324,7 +317,6 @@ test('binding accepts a single line BOM in a same-thread bundle beyond the disco
     const legacy = reader.readSourcePredictions(
       a.fixture.sourceThreadId,
       a.fixture.sourceTurnId,
-      root,
       0,
       true,
     );
@@ -335,7 +327,7 @@ test('binding accepts a single line BOM in a same-thread bundle beyond the disco
   }));
 
 test('a binding-cached BOM record still fails a later classified bundle full discovery', () =>
-  preparedTraceFixture(({ reader, root, remote, create, prepare, data }) => {
+  preparedTraceFixture(({ reader, root: _root, remote, create, prepare, data }) => {
     const first = create();
     const second = create(
       data.execution({
@@ -358,7 +350,7 @@ test('a binding-cached BOM record still fails a later classified bundle full dis
     fs.writeFileSync(b.fixture.logPath, lines.join('\n'));
     assert(Buffer.byteLength(lines.slice(0, 2).join('\n') + '\n') < 16384);
     assert.equal(
-      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, root, 0, true),
+      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, 0, true),
       null,
       'Legacy full discovery rejects the BOM even though binding can decode it',
     );
@@ -408,20 +400,14 @@ test(
   'macOS source recovery keeps its original decoder and POSIX guard path',
   { skip: process.platform !== 'darwin' },
   () =>
-    preparedTraceFixture(({ reader, root, create, calls }) => {
+    preparedTraceFixture(({ reader, root: _root, create, calls }) => {
       const f = create();
       sameBundleHistory(f, 4);
       const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
       Object.defineProperty(process, 'platform', { value: 'darwin' });
       try {
         const read = countEventDecodes(() =>
-          reader.readSourcePredictions(
-            f.fixture.sourceThreadId,
-            f.fixture.sourceTurnId,
-            root,
-            0,
-            true,
-          ),
+          reader.readSourcePredictions(f.fixture.sourceThreadId, f.fixture.sourceTurnId, 0, true),
         );
         assert.equal(read.value?.length, 1);
         assert.equal(read.events, 6 * f.fixture.events.length + 2);
@@ -506,7 +492,7 @@ test('same-stat log rewrite is caught by commit full-body guards even after inde
   }));
 
 test('nonprepared reads retain their original decode path and do not retain an index', () =>
-  preparedTraceFixture(({ TraceSnapshot, reader, root, create }) => {
+  preparedTraceFixture(({ TraceSnapshot, reader, root: _root, create }) => {
     const f = create();
     sameBundleHistory(f, 4);
     const verify = TraceSnapshot.prototype.verify;
@@ -516,7 +502,7 @@ test('nonprepared reads retain their original decode path and do not retain an i
       return Reflect.apply(verify, this, args);
     };
     const result = countEventDecodes(() =>
-      reader.readSourcePredictions(f.fixture.sourceThreadId, f.fixture.sourceTurnId, root, 0, true),
+      reader.readSourcePredictions(f.fixture.sourceThreadId, f.fixture.sourceTurnId, 0, true),
     );
     assert.equal(result.value?.length, 1);
     assert.equal(result.events, 6 * f.fixture.events.length + 2);
@@ -535,12 +521,11 @@ test(
 
 test('opaque prepare defers final verify, drops bodies, commits once without parsing another projection', () =>
   preparedTraceFixture(
-    ({ TraceSnapshot, reader, root, create, prepare, remote, calls, canonical, reset }) => {
+    ({ TraceSnapshot, reader, root: _root, create, prepare, remote, calls, canonical, reset }) => {
       const f = create();
       const expected = reader.readSourcePredictions(
         f.fixture.sourceThreadId,
         f.fixture.sourceTurnId,
-        root,
         0,
         true,
       );
@@ -585,8 +570,8 @@ test('opaque prepare defers final verify, drops bodies, commits once without par
   ));
 
 test('dispose is idempotent; valid empty commits [], while failed/unsupported prepare is null', () =>
-  preparedTraceFixture(({ reader, root, create, prepare, reset, calls }) => {
-    const empty = reader.prepareSourcePredictions(randomUUID(), randomUUID(), root);
+  preparedTraceFixture(({ reader, root: _root, create, prepare, reset, calls }) => {
+    const empty = reader.prepareSourcePredictions(randomUUID(), randomUUID());
     assert.deepEqual(empty.commit(), []);
     const f = create(),
       pending = prepare(reader, f.fixture);
@@ -595,7 +580,7 @@ test('dispose is idempotent; valid empty commits [], while failed/unsupported pr
     pending.dispose();
     assert.equal(pending.commit(), null);
     assert.equal(calls.length, 0);
-    assert.equal(reader.prepareSourcePredictions('invalid', randomUUID(), root), null);
+    assert.equal(reader.prepareSourcePredictions('invalid', randomUUID()), null);
     const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
     Object.defineProperty(process, 'platform', { value: 'darwin' });
     try {
@@ -747,7 +732,7 @@ for (const mode of ['short-grow', 'window-rewrite', 'closed-tail-append', 'full-
       },
     ));
 
-test('configured cwd retarget outside authorized root is rejected with unchanged payload and leaf data', () =>
+test('project cwd retarget does not invalidate unchanged private Trace evidence', () =>
   preparedTraceFixture(({ reader, root, local, remote, create, prepare, data }) => {
     const f = create(),
       inside = join(local(root), 'inside'),
@@ -764,7 +749,7 @@ test('configured cwd retarget outside authorized root is rejected with unchanged
     fs.unlinkSync(alias);
     fs.symlinkSync(outside, alias, 'junction');
     assert.deepEqual(fs.readFileSync(f.configured.path), bytes);
-    assert.equal(pending.commit(), null);
+    assert.equal(pending.commit().length, 1);
   }));
 
 test('negative short prefix growth into a newer incomplete prediction cannot revive old suggestion', () =>
@@ -789,7 +774,7 @@ test('negative short prefix growth into a newer incomplete prediction cannot rev
     b.saveEvents();
     assert.equal(pending.commit(), null);
     assert.equal(
-      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, root, 0, true),
+      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, 0, true),
       null,
       'Original second projection also rejects new incomplete latest',
     );
@@ -935,7 +920,7 @@ test('prepared still rejects more than 64MiB of distinct request bytes within on
 
 for (const failure of ['failed', 'incomplete', 'empty'])
   test(`latest ${failure} preserves original no-fallback decision`, () =>
-    preparedTraceFixture(({ reader, root, create, prepare, data }) => {
+    preparedTraceFixture(({ reader, root: _root, create, prepare, data }) => {
       const a = create(),
         b = create(
           data.execution({
@@ -961,7 +946,6 @@ for (const failure of ['failed', 'incomplete', 'empty'])
       const expected = reader.readSourcePredictions(
         a.fixture.sourceThreadId,
         a.fixture.sourceTurnId,
-        root,
         0,
         true,
       );
@@ -988,7 +972,6 @@ test(
           reader.prepareSourcePredictions(
             f.fixture.sourceThreadId,
             f.fixture.sourceTurnId,
-            root,
             0,
             true,
           );
@@ -1011,11 +994,11 @@ test(
 );
 
 test('layered discovery keeps every native item/result while reducing ordered S round trips to bounded B8', () =>
-  preparedTraceFixture(({ reader, root, local, remote, create, calls, batch, reset }) => {
+  preparedTraceFixture(({ reader, root: _root, local, remote, create, calls, batch, reset }) => {
     const values = Array.from({ length: 8 }, () => create());
     const target = values[0].fixture;
     const read = () =>
-      reader.prepareSourcePredictions(target.sourceThreadId, target.sourceTurnId, root, 1, true);
+      reader.prepareSourcePredictions(target.sourceThreadId, target.sourceTurnId, 1, true);
     batch(false);
     reset();
     const scalar = read();
@@ -1078,7 +1061,7 @@ test('layered discovery keeps every native item/result while reducing ordered S 
   }));
 
 test('manifest dependency skips an old bundle prefix but retains its full manifest receipt', () =>
-  preparedTraceFixture(({ reader, root, create, data, remote, calls }) => {
+  preparedTraceFixture(({ reader, root: _root, create, data, remote, calls }) => {
     const old = create(),
       current = create();
     const path = join(old.fixture.directory, 'manifest.json');
@@ -1087,7 +1070,6 @@ test('manifest dependency skips an old bundle prefix but retains its full manife
     const pending = reader.prepareSourcePredictions(
       current.fixture.sourceThreadId,
       current.fixture.sourceTurnId,
-      root,
       1,
       true,
     );
@@ -1102,7 +1084,7 @@ test('manifest dependency skips an old bundle prefix but retains its full manife
   }));
 
 test('a malformed configured reference cannot prefetch outside its validated payload path', () =>
-  preparedTraceFixture(({ reader, root, create, calls }) => {
+  preparedTraceFixture(({ reader, root: _root, create, calls }) => {
     const f = create();
     create();
     const event = f.fixture.events.find(
@@ -1111,13 +1093,7 @@ test('a malformed configured reference cannot prefetch outside its validated pay
     event.payload.event_payload.path = '../unrelated.json';
     f.fixture.saveEvents();
     assert.equal(
-      reader.prepareSourcePredictions(
-        f.fixture.sourceThreadId,
-        f.fixture.sourceTurnId,
-        root,
-        1,
-        true,
-      ),
+      reader.prepareSourcePredictions(f.fixture.sourceThreadId, f.fixture.sourceTurnId, 1, true),
       null,
     );
     const items = calls.flatMap((call) => (call.kind === 'B' ? call.items : [call]));

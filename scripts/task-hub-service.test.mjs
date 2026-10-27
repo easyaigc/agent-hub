@@ -449,7 +449,9 @@ test('TLS same-origin gateway streams SSE and uploads; certificate mismatch and 
       { stdio: 'ignore' },
     );
     const cert = await readFile(join(root, 'cert.pem'));
+    let serviceProbes = 0;
     api = createServer((req, res) => {
+      if (req.url === '/api/v1/service') serviceProbes++;
       if (req.url === '/api/v1/events') {
         res.writeHead(200, { 'Content-Type': 'text/event-stream' });
         res.write('id: ' + req.headers['last-event-id'] + '\ndata: first\n\n');
@@ -508,6 +510,24 @@ test('TLS same-origin gateway streams SSE and uploads; certificate mismatch and 
       ),
       /HTTPS identity/,
     );
+    assert.equal(serviceProbes, 1, 'a rejected pin must not reach the upstream API');
+    assert.equal(
+      (await tlsJson(origin, '/api/v1/service', registration, { connectHost: '127.0.0.1' }))
+        .version,
+      1,
+      'a rejected registration must not poison a later valid probe',
+    );
+    const wrongName = 'https://wrong-task-test.local:' + tls.address().port;
+    await assert.rejects(
+      tlsJson(
+        wrongName,
+        '/api/v1/service',
+        { ...registration, domain: 'wrong-task-test.local', endpoints: [wrongName] },
+        { connectHost: '127.0.0.1' },
+      ),
+      /HTTPS identity/,
+    );
+    assert.equal(serviceProbes, 2, 'hostname verification must still reject before HTTP');
     const call = (path, headers = {}, data) =>
       new Promise((resolve, reject) => {
         const req = request(

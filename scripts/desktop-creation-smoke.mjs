@@ -614,6 +614,7 @@ process.stdin.on('end',()=>process.exit(0));\n`,
         ready: true,
         close() {},
         registerOwnerThread() {},
+        registerCatalogThread() {},
         async read(method) {
           if (method === 'thread/read') return { thread: metadata };
           if (method === 'model/list') {
@@ -929,6 +930,102 @@ process.stdin.on('end',()=>process.exit(0));\n`,
     } finally {
       child.kill('SIGKILL');
       await closed;
+    }
+  });
+  await test('explicit open recovers only a rejected owned preparation without executing its input', async () => {
+    const stateDir = join(root, 'owned-preparation-open');
+    const session = new RuntimeSession({
+      directory: stateDir,
+      root,
+      name: 'Prepared open fixture',
+      mode: 'desktop-runtime',
+    });
+    session.desktopCreation.close();
+    const hostId = session.hostId,
+      threadId = randomUUID(),
+      projectId = randomUUID();
+    const runtime = session.runtime,
+      registered = new Set();
+    runtime.reader = {
+      ready: true,
+      registerCatalogThread(id) {
+        registered.add(id);
+      },
+      close() {},
+    };
+    runtime.ipc.ready = true;
+    runtime.ipc.follow = async () => undefined;
+    let opened = 0,
+      created = 0,
+      proof = 'valid';
+    const driver = {
+      available: true,
+      reason: null,
+      independentTargets: true,
+      create: async () => {
+        created++;
+        throw new BeforeDesktopSubmit('Owner unavailable before first input');
+      },
+      observe: () => ({ preparedThreadId: threadId, preparationPhase: 'released' }),
+      preparedThreadMetadata: async (plan, id) => ({
+        id,
+        hostId: proof === 'host' ? 'other-host' : plan.hostId,
+        projectId: proof === 'project' ? 'other-project' : plan.projectId,
+        title: 'Owned empty thread',
+      }),
+      open: async (id) => {
+        assert.equal(id, threadId);
+        opened++;
+        return false;
+      },
+      close() {},
+    };
+    const broker = new DesktopCreationBroker(join(stateDir, 'owned-creations'), hostId, driver);
+    session.desktopCreation = broker;
+    session.desktopCreationDriver = driver;
+    const operationId = randomUUID();
+    const intent = {
+      hostId,
+      projectId,
+      clientOperationId: operationId,
+      text: 'Do not replay me',
+      attachments: [],
+    };
+    broker.prepare(intent, { hostId, projectId, directory: root, existingThreadIds: [] });
+    assert.equal((await broker.submit(operationId)).phase, 'rejected');
+    try {
+      await assert.rejects(
+        () => session.activateDesktopThread(randomUUID(), randomUUID()),
+        (e) => e.status === 404,
+      );
+      for (proof of ['host', 'project'])
+        await assert.rejects(
+          () => session.activateDesktopThread(threadId, randomUUID()),
+          (e) => e.status === 404,
+        );
+      assert.equal(opened, 0);
+      assert.equal(registered.size, 0);
+      proof = 'valid';
+      const openId = randomUUID();
+      const result = await session.activateDesktopThread(threadId, openId);
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(result.threadId, threadId);
+      assert.equal(opened, 1);
+      assert.equal(registered.has(threadId), true);
+      assert.equal(session.state.threads.find((t) => t.id === threadId).state, 'unknown');
+      assert.equal(runtime.ipc.hasOwner(threadId), false);
+      assert.equal((await session.desktopOpenStatus(threadId, openId)).phase, 'outcome-unknown');
+      assert.equal(opened, 1, 'status queries never repeat navigation');
+      await assert.rejects(
+        () => session.activateDesktopThread(randomUUID(), openId),
+        (e) => e.status === 409,
+      );
+      const receipt = await broker.query(operationId);
+      assert.equal(receipt.phase, 'rejected');
+      assert.equal(receipt.text, intent.text);
+      assert.equal(created, 1, 'open and status never resume the rejected create');
+    } finally {
+      session.close();
     }
   });
   console.log(

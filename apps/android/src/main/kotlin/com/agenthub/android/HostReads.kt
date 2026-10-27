@@ -218,7 +218,7 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
         return result
     }
     override suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String?): MobileHistory {
-        val query=buildMap { put("threadId",threadId);cursor?.let { put("cursor",it) };client.readerId?.let { put("readerId",nativeReaderId(it)) } }
+        val query=buildMap { put("hostId",client.id);put("threadId",threadId);cursor?.let { put("cursor",it) } }
         val result=readResponse(client,"v1/threads/search-history",query,decode=NativeHistoryWire::history)
         if(result.hostId!=client.id||result.threadId!=threadId||client.requiresReadTarget&&result.scope==null||
             client.scope!=null&&result.scope!=null&&!sameScope(client.scope,result.scope))throw HostReadError("电脑或对话身份不匹配")

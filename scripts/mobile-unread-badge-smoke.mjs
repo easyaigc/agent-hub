@@ -71,6 +71,7 @@ await Promise.all(
 assert.equal(Number(execFileSync(executable, ['count'], { env, encoding: 'utf8' })), 26);
 execFileSync(executable, ['locked-read'], { env, timeout: 2000, stdio: 'inherit' });
 execFileSync(executable, ['locked-visible'], { env, timeout: 15000, stdio: 'inherit' });
+execFileSync(executable, ['cache-invalidation'], { env, timeout: 15000, stdio: 'inherit' });
 await writeFile(
   join(directory, 'report.json'),
   JSON.stringify(
@@ -83,6 +84,7 @@ await writeFile(
         'visible-read-lock-retry',
         '100-coalesced-visible-reads',
         'corrupt-ledger-preserved',
+        'warm-cache-cross-process-replacement-same-generation-and-mtime',
       ],
       count: 26,
     },

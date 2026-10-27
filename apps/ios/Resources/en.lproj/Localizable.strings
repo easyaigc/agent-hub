@@ -1504,6 +1504,8 @@
 "立即执行第 %@ 条排队指令" = "Run queued instruction %@ now";
 
 "正在打开文件…" = "Opening file…";
+"正在下载并打开文件…" = "Downloading and opening file…";
+"正在准备文件…" = "Preparing file…";
 
 "无法打开链接" = "Unable to Open Link";
 
@@ -1619,3 +1621,91 @@
 "当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。" = "This connection does not support message file resolution. Update the computer connection service and retry.";
 
 "未取得这条消息对应的电脑或聊天，请重新打开原对话后重试。" = "The computer or chat for this message is unavailable. Reopen the original chat and retry.";
+
+"Host Key" = "Host Key";
+"请输入这台电脑的 Host Key" = "Enter the Host Key for this computer";
+"Host Key 不正确，请在电脑端核对后重试" = "Incorrect Host Key. Check it on the computer and try again.";
+"可扫描包含密钥的连接信息，或自动发现后输入 Host Key 授权。" = "Scan connection details containing the key, or discover a computer and enter its Host Key to authorize.";
+"自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。" = "Find computers on the same network. Enter the computer’s Host Key to authorize the first connection.";
+"授权并连接" = "Authorize and connect";
+"首次连接授权" = "Authorize first connection";
+"请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。" = "Read the Host Key from this computer’s private key file. After authorization, device credentials are stored securely for automatic reconnection.";
+"使用 Host Key 重新授权" = "Reauthorize with Host Key";
+
+"自动查找同一网络的电脑；需要密钥的电脑会在首次连接时要求输入 Host Key。" = "Find computers on the same network. Computers requiring a key ask for their Host Key on the first connection.";
+"预览最近图片" = "Preview recent photo";
+"要添加这张图片吗？" = "Add this photo?";
+"最近新增的图片" = "Recently added photo";
+"忽略这张图片" = "Dismiss this photo";
+"添加后保存在手机，发送消息时再上传。" = "Attachments stay on your phone until you send the message.";
+"添加到当前草稿" = "Add to current draft";
+"最近图片" = "Recent photos";
+"添加最近图片" = "Add recent photo";
+"点选加入草稿，发送时再上传。" = "Tap to add to your draft. Upload starts when you send.";
+"拍照" = "Take photo";
+"粘贴图片" = "Paste image";
+"最近图片提醒" = "Recent photo suggestions";
+"允许读取照片后可显示最近图片，也可以继续使用系统选图器。" = "Allow photo access to show recent photos, or continue using the system photo picker.";
+"部分照片授权仅提供手动快选，可管理允许访问的照片。" = "Limited photo access supports manual selection. You can manage the photos available to this app.";
+"管理可访问的照片" = "Manage accessible photos";
+"仅在你添加后保存在手机，点击发送才上传。" = "Added attachments stay on your phone. Upload starts only when you send.";
+"添加附件" = "Add attachment";
+"当前设备无法使用相机。" = "The camera is unavailable on this device.";
+"已添加 · 待发送" = "Added · Not sent";
+"添加" = "Add";
+
+"始终允许" = "Always allow";
+
+"允许本轮" = "Allow for this turn";
+
+"本地转写超时，录音已保留，请重试。" = "Local transcription timed out. Your recording is preserved. Try again.";
+
+" 录音和原草稿已保留，可再次选择转写方式。" = " Your recording and original draft are preserved. You can choose a transcription method again.";
+
+"准备本地转写…" = "Preparing local transcription…";
+
+"正在本地转写…" = "Transcribing locally…";
+
+"电脑转写暂不可用" = "Computer transcription is unavailable";
+
+"转写失败" = "Transcription failed";
+
+"使用本地转写" = "Use local transcription";
+
+"录音已保留，可重试转写，或使用手机本地转写。" = "Your recording is preserved. Retry transcription or use local transcription on your phone.";
+
+"添加图片或文件" = "Add images or files";
+
+"计划 · 开" = "Plan · On";
+
+"计划 · 关" = "Plan · Off";
+
+"已开启" = "On";
+
+"暂无可访问的图片" = "No accessible photos";
+
+"粘贴图片或文件" = "Paste images or files";
+
+"复制文件或图片后点粘贴；若来源应用未提供文件，请使用分享或用其他应用打开。" = "Copy a file or image, then tap Paste. If the source app does not provide the file, use Share or Open in Another App.";
+
+"剪贴板中没有可读取的文件或图片。请在来源应用中选择分享或用其他应用打开。" = "No readable file or image is available. Use Share or Open in Another App in the source app.";
+
+"附件为空或超过 20 MB，无法添加。" = "The attachment is empty or exceeds 20 MB and cannot be added.";
+
+"暂时无法读取共享文件，请稍后重试。" = "Shared files are temporarily unavailable. Please try again later.";
+
+"共享文件已变化或不可读取，请重新分享。" = "The shared file has changed or is unavailable. Please share it again.";
+
+"选择好聊天后添加到当前草稿，发送消息时才上传。" = "Select a chat, then add to its draft. Files are uploaded only when you send.";
+
+"丢弃共享文件" = "Discard shared files";
+
+"来自其他应用的附件" = "Files from other apps";
+
+"稍后添加" = "Add later";
+
+"添加到 Agent Hub" = "Add to Agent Hub";
+
+"已保存。返回 Agent Hub，选择聊天后添加到草稿。" = "Saved. Return to Agent Hub, select a chat, and add the files to its draft.";
+
+"文件仅保存在手机，返回 Agent Hub 后添加到聊天草稿，发送时才上传。" = "Files stay on your phone. Return to Agent Hub to add them to a chat draft. They are uploaded only when you send.";

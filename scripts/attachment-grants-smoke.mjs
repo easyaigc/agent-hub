@@ -8,6 +8,7 @@ import {
   realpath,
   readFile,
   chmod,
+  rename,
 } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -74,6 +75,13 @@ try {
     (await session.download('authorized', first.id)).data.toString(),
     'CURRENT_REPORT_ONE',
   );
+  await rename(root, root + '-moved');
+  assert.equal(
+    (await session.download('authorized', first.id)).data.toString(),
+    'CURRENT_REPORT_ONE',
+    'An obsolete global root cannot disable an exact registered resource',
+  );
+  await rename(root + '-moved', root);
   await assert.rejects(session.download('other', first.id), (error) => error.status === 404);
   await assert.rejects(
     session.resolveMessageFile('other', 'original-report', report),

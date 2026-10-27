@@ -2,6 +2,112 @@ import AVFoundation
 import Speech
 import SwiftUI
 
+/// Recognizes an existing recording without opening the microphone again.
+@MainActor
+final class LocalRecordingTranscriber {
+  private var recognitionTask: SFSpeechRecognitionTask?
+  private var work: Task<Void, Never>?
+  private var timeout: Task<Void, Never>?
+  private var continuation: CheckedContinuation<String, Error>?
+
+  func transcribe(_ url: URL, onReady: () -> Void) async throws -> String {
+    let permission = await withCheckedContinuation { continuation in
+      SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
+    }
+    try Task.checkCancellation()
+    guard permission == .authorized else {
+      throw HostServiceError.message(L10n.tr("语音识别权限未开启，请在系统设置中允许语音识别。"))
+    }
+    onReady()
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        self.continuation = continuation
+        work = Task {
+          do {
+            try Task.checkCancellation()
+            let locale = Locale(identifier: Locale.preferredLanguages.first ?? "zh-CN")
+            if #available(iOS 26, *),
+              let supported = await DictationTranscriber.supportedLocale(equivalentTo: locale) {
+              try Task.checkCancellation()
+              complete(.success(try await recognizeFile(url, locale: supported)))
+            } else {
+              try Task.checkCancellation()
+              guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
+                throw HostServiceError.message(L10n.tr("当前语言的语音识别暂不可用，请稍后重试。"))
+              }
+              let request = SFSpeechURLRecognitionRequest(url: url)
+              request.shouldReportPartialResults = false
+              request.taskHint = .dictation
+              request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
+              recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
+                let text = result?.isFinal == true ? result?.bestTranscription.formattedString : nil
+                Task { @MainActor [weak self] in
+                  if let text { self?.complete(.success(text)) }
+                  else if let error { self?.complete(.failure(error)) }
+                }
+              }
+            }
+          } catch { complete(.failure(error)) }
+        }
+        timeout = Task {
+          do { try await Task.sleep(for: .seconds(120)) } catch { return }
+          complete(.failure(HostServiceError.message(L10n.tr("本地转写超时，录音已保留，请重试。"))))
+        }
+      }
+    } onCancel: {
+      Task { @MainActor in self.complete(.failure(CancellationError())) }
+    }
+  }
+
+  @available(iOS 26, *)
+  private func recognizeFile(_ url: URL, locale: Locale) async throws -> String {
+    let transcriber = DictationTranscriber(locale: locale, preset: .progressiveLongDictation)
+    if let installation = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
+      try await installation.downloadAndInstall()
+    }
+    try Task.checkCancellation()
+    let analyzer = SpeechAnalyzer(modules: [transcriber])
+    let results = Task {
+      var committed = ""
+      var latest = ""
+      for try await result in transcriber.results {
+        try Task.checkCancellation()
+        latest = committed + String(result.text.characters)
+        if result.isFinal { committed = latest }
+      }
+      return latest
+    }
+    return try await withTaskCancellationHandler {
+      do {
+        let file = try AVAudioFile(forReading: url)
+        try await analyzer.start(inputAudioFile: file, finishAfterFile: true)
+        let text = try await results.value
+        try Task.checkCancellation()
+        return text
+      } catch {
+        results.cancel()
+        await analyzer.cancelAndFinishNow()
+        throw error
+      }
+    } onCancel: {
+      results.cancel()
+      Task { await analyzer.cancelAndFinishNow() }
+    }
+  }
+
+  private func complete(_ result: Result<String, Error>) {
+    guard let continuation else { return }
+    self.continuation = nil
+    timeout?.cancel(); timeout = nil
+    work?.cancel(); work = nil
+    recognitionTask?.cancel(); recognitionTask = nil
+    continuation.resume(with: result.flatMap { text in
+      text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        ? .failure(HostServiceError.message(L10n.tr("没有识别到语音，请重新录音。"))) : .success(text)
+    })
+  }
+}
+
 @MainActor
 final class LocalVoiceInputController: ObservableObject {
   enum Phase { case idle, requesting, listening, finishing }

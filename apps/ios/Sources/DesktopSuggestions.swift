@@ -12,6 +12,7 @@ struct DesktopSuggestionScope: Equatable, Sendable {
   // Production display reads must not silently fall back to legacy trace output.
   var requiresDisplayedSource: Bool = false
   var requiresNativeSource: Bool = false
+  var requiresRuntimeSource: Bool = false
 }
 
 struct DesktopSuggestion: Decodable, Equatable, Sendable {
@@ -23,7 +24,8 @@ struct DesktopSuggestion: Decodable, Equatable, Sendable {
 
   var isDisplayBound: Bool { validity == "desktop-display" }
   var isNativeBound: Bool { validity == "native-version" }
-  var isRefreshBound: Bool { isDisplayBound || isNativeBound }
+  var isRuntimeBound: Bool { validity == "runtime-version" }
+  var isRefreshBound: Bool { isDisplayBound || isNativeBound || isRuntimeBound }
 
   var isSourceBound: Bool { validity == "source-turn" }
 
@@ -62,9 +64,13 @@ struct DesktopSuggestionResponse: Decodable, Sendable {
   func matches(_ scope: DesktopSuggestionScope) -> Bool {
     schemaVersion == 1 && readOnly && target == scope.target
       && threadId == scope.threadId && sourceTurnId == scope.sourceTurnId
-      && (source == nil || source == "desktop-display" || source == "native-trace")
+      && (source == nil || source == "desktop-display" || source == "native-trace" || source == "runtime")
       && (!scope.requiresDisplayedSource || source == "desktop-display")
       && (!scope.requiresNativeSource || source == "native-trace")
+      && (!scope.requiresRuntimeSource || source == "runtime")
+      && (source != "runtime" || scope.target.agentId == "easywork")
+      && (source != "runtime" || suggestion == nil || suggestion?.isRuntimeBound == true)
+      && (suggestion?.isRuntimeBound != true || source == "runtime")
       && (source != "native-trace" || suggestion == nil || suggestion?.isNativeBound == true)
       && (suggestion?.isNativeBound != true || source == "native-trace")
       && (source != "desktop-display" || suggestion == nil || suggestion?.isDisplayBound == true)
@@ -314,7 +320,7 @@ final class DesktopSuggestionReader: ObservableObject {
   /// Publish without waiting for SwiftUI to schedule the reader's view task.
   func seed(_ response: DesktopSuggestionResponse, for expected: DesktopSuggestionScope) {
     guard response.matches(expected), let value = response.suggestion, value.isValid(at: Date()) else { return }
-    if (response.source == "desktop-display" || response.source == "native-trace"), scope == expected, refreshingReadGeneration == generation { return }
+    if (response.source == "desktop-display" || response.source == "native-trace" || response.source == "runtime"), scope == expected, refreshingReadGeneration == generation { return }
     guard scope != expected || suggestion != value || value.isRefreshBound else { return }
     scope = expected
     suggestion = value
@@ -373,7 +379,7 @@ final class DesktopSuggestionReader: ObservableObject {
     generation = UUID()
     scope = next
     let current = generation
-    if next.requiresDisplayedSource || next.requiresNativeSource || suggestion?.isRefreshBound == true {
+    if next.requiresDisplayedSource || next.requiresNativeSource || next.requiresRuntimeSource || suggestion?.isRefreshBound == true {
       await readRefreshing(next, generation: current, initial: nil, fetch: fetch)
       return
     }
@@ -440,7 +446,7 @@ final class DesktopSuggestionReader: ObservableObject {
         if let first = pending { response = first; pending = nil }
         else { response = try await fetch() }
         guard !Task.isCancelled, generation == current, scope == expected else { return }
-        guard response.matches(expected), (response.source == "desktop-display" || response.source == "native-trace") else {
+        guard response.matches(expected), (response.source == "desktop-display" || response.source == "native-trace" || response.source == "runtime") else {
           suggestion = nil; return
         }
         suspendedExpiration?.cancel(); suspendedExpiration = nil

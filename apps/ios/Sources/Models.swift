@@ -137,6 +137,7 @@ final class ChatTimelineCache {
 struct Draft: Codable, Equatable {
   var text = ""
   var attachments: [LocalAttachment] = []
+  var attachmentImportGeneration: String?
   var operationId: String?
   var desktopOpenOperationId: String?
   var collaborationMode: String? = nil
@@ -286,7 +287,7 @@ struct PendingThreadFork: Identifiable, Codable {
   }
 }
 
-struct LocalAttachment: Identifiable, Codable, Equatable {
+struct LocalAttachment: Identifiable, Codable, Equatable, Sendable {
   let id: String
   let name: String
   let size: Int
@@ -430,7 +431,7 @@ struct RemoteAttachment: Identifiable, Codable, Equatable {
   var resourceId: String? = nil
   var resourceIdentity: String { resourceId ?? id }
 }
-struct PlanStep: Codable {
+struct PlanStep: Codable, Equatable {
   let step: String
   let status: String
 }
@@ -439,7 +440,7 @@ struct ProposedPlan: Identifiable, Codable, Equatable {
   let turnId: String
   let text: String
 }
-struct ApprovalQuestion: Identifiable, Codable {
+struct ApprovalQuestion: Identifiable, Codable, Equatable {
   let id: String
   let question: String
   var options: [QuestionOption]?
@@ -447,11 +448,11 @@ struct ApprovalQuestion: Identifiable, Codable {
   var multiple: Bool? = nil
   var custom: Bool? = nil
 }
-struct QuestionOption: Codable {
+struct QuestionOption: Codable, Equatable {
   let label: String
   let description: String
 }
-struct Approval: Identifiable, Codable {
+struct Approval: Identifiable, Codable, Equatable {
   let id: String
   let threadId: String
   let turnId: String
@@ -463,8 +464,9 @@ struct Approval: Identifiable, Codable {
   var notificationRequestId: String? = nil
   var interactionMode: String? = nil
   var sourceItemId: String? = nil
+  var decisionLabels: [String: String]? = nil
 }
-struct DeliveryReceipt: Identifiable, Codable {
+struct DeliveryReceipt: Identifiable, Codable, Equatable {
   var id: String { clientMessageId }
   let clientMessageId: String
   let hostId: String
@@ -486,7 +488,7 @@ struct DeliveryReceipt: Identifiable, Codable {
     turnId?.isEmpty == false ? L10n.tr("任务执行失败") : L10n.tr("消息提交失败")
   }
 }
-struct ThreadRuntime: Codable {
+struct ThreadRuntime: Codable, Equatable {
   var state: String
   var turnId: String?
   var plan: [PlanStep]
@@ -643,7 +645,7 @@ struct CodexModel: Identifiable, Decodable {
   var defaultSpeed: String? = nil
   var supportedSpeeds: [String]? = nil
 }
-struct GenerationOptions: Codable {
+struct GenerationOptions: Codable, Equatable {
   var model: String?
   var effort: String?
   var permissionMode: String?

@@ -1,4 +1,5 @@
-"NSCameraUsageDescription" = "Scan a computer's pairing QR code.";
+"NSCameraUsageDescription" = "Scan a computer pairing QR code or take a photo to add to a message draft.";
 "NSLocalNetworkUsageDescription" = "Discover and connect to your local task service and computers to manage projects, tasks, Agent conversations, and attachments.";
 "NSMicrophoneUsageDescription" = "Record audio for transcription on your selected computer or phone, then return the text to your message draft.";
 "NSSpeechRecognitionUsageDescription" = "Turn speech into draft text using system recognition when local transcription is selected or computer transcription is unavailable.";
+"NSPhotoLibraryUsageDescription" = "Show recent photos for quick selection. Photos stay on your phone until you send the message.";

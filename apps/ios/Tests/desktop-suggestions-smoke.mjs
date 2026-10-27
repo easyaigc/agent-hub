@@ -14,6 +14,7 @@ const sources = {
   'source-validity': 'DesktopSuggestionSourceValiditySmoke.swift',
   display: 'DesktopSuggestionDisplaySmoke.swift',
   'native-version': 'DesktopSuggestionDisplaySmoke.swift',
+  'runtime-version': 'DesktopSuggestionDisplaySmoke.swift',
   'read-ahead': 'DesktopSuggestionReadAheadSmoke.swift',
 };
 if (check !== 'all' && !Object.hasOwn(sources, check)) throw Error('Unknown suggestion check');

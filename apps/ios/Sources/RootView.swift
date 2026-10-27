@@ -66,7 +66,7 @@ private struct ComposerActionAppearance: ViewModifier {
   }
 }
 
-private extension View {
+extension View {
   func floatingSurface(cornerRadius: CGFloat = MobileDesignGeometry.floatingRadius) -> some View {
     modifier(FloatingSurface(cornerRadius: cornerRadius))
   }
@@ -544,6 +544,9 @@ private final class EarlierHistoryPullView: UIView {
     guard let expectedHost = expectedTarget.host, let expectedThread = expectedTarget.thread else { return false }
     return expectedHost == host && expectedThread == thread
   }
+  static func matchesHost(_ host: String?) -> Bool {
+    expectedTarget.host != nil && expectedTarget.host == host
+  }
   @Published private(set) var evidence = "{}"
   var timelineMS: [Double] = []
   var markdownBodies = 0
@@ -555,6 +558,9 @@ private final class EarlierHistoryPullView: UIView {
   private var gestures = 0
   private var work: [[String: Double]] = []
   private var slowFrames: [[String: Double]] = []
+  private var frames: [[String: Double]] = []
+  private var gestureTimes: [[String: Double]] = []
+  private let evidenceWriter = DispatchQueue(label: "history-scroll-probe-evidence", qos: .utility)
 
   static func workStart() -> Double? {
     guard workEnabled, shared.link != nil else { return nil }
@@ -571,12 +577,17 @@ private final class EarlierHistoryPullView: UIView {
   func begin(_ scroll: UIScrollView) {
     guard Self.enabled else { return }
     gestures += 1
+    if Self.workEnabled { gestureTimes.append(["at": CACurrentMediaTime(), "id": Double(gestures)]) }
     self.scroll = scroll
     previousTimestamp = nil
     previousOffset = scroll.contentOffset.y
     if link == nil {
       let link = CADisplayLink(target: self, selector: #selector(frame))
-      link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
+      // Frame-budget stress regressions explicitly request ProMotion. Power
+      // comparisons must observe the system's natural refresh policy.
+      if !ProcessInfo.processInfo.arguments.contains("-thermal-performance-probe") {
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
+      }
       link.add(to: .main, forMode: .common)
       self.link = link
     }
@@ -587,8 +598,10 @@ private final class EarlierHistoryPullView: UIView {
     if let previousTimestamp, abs(scroll.contentOffset.y - previousOffset) > 0.5 {
       let interval = (link.timestamp - previousTimestamp) * 1000
       frameMS.append(interval)
-      if Self.workEnabled, interval > 40 {
-        slowFrames.append(["start": previousTimestamp, "end": link.timestamp, "ms": interval])
+      if Self.workEnabled {
+        let sample = ["start": previousTimestamp, "end": link.timestamp, "ms": interval, "gesture": Double(gestures)]
+        frames.append(sample)
+        if interval > 40 { slowFrames.append(sample) }
       }
     }
     previousTimestamp = link.timestamp
@@ -608,11 +621,16 @@ private final class EarlierHistoryPullView: UIView {
       .appendingPathComponent("history-scroll-metrics.json")
     if let data = try? JSONSerialization.data(withJSONObject: values, options: [.sortedKeys]) {
       evidence = String(decoding: data, as: UTF8.self)
-      try? data.write(to: url, options: .atomic)
+      evidenceWriter.async { try? data.write(to: url, options: .atomic) }
     }
-    if Self.workEnabled,
-      let data = try? JSONSerialization.data(withJSONObject: ["work": work, "slowFrames": slowFrames]) {
-      try? data.write(to: url.deletingLastPathComponent().appendingPathComponent("history-work-metrics.json"), options: .atomic)
+    if Self.workEnabled {
+      let snapshot = ["work": work, "slowFrames": slowFrames, "frames": frames, "gestureTimes": gestureTimes,
+        "clock": [["utc": Date().timeIntervalSince1970, "uptime": CACurrentMediaTime()]]]
+      evidenceWriter.async {
+        if let data = try? JSONSerialization.data(withJSONObject: snapshot) {
+          try? data.write(to: url.deletingLastPathComponent().appendingPathComponent("history-work-metrics.json"), options: .atomic)
+        }
+      }
     }
   }
 }
@@ -622,10 +640,21 @@ private struct HistoryScrollEvidenceView: View {
   let availableMessages: Int
   let messageLimit: Int
   let targetMatches: Bool
+  let hostMatches: Bool
+  let threadSelected: Bool
+  let selectedThreadId: String?
   var body: some View {
-    Text(probe.evidence).font(.system(size: 1)).frame(width: 1, height: 1).clipped()
+    ZStack(alignment: .topLeading) {
+      Text(probe.evidence).font(.system(size: 1)).frame(width: 1, height: 1).clipped()
       .accessibilityIdentifier("history-scroll-evidence").allowsHitTesting(false)
-      .accessibilityValue("{\"messages\":\(availableMessages),\"window\":\(messageLimit),\"target\":\(targetMatches ? 1 : 0)}")
+      .accessibilityValue("{\"messages\":\(availableMessages),\"window\":\(messageLimit),\"target\":\(targetMatches ? 1 : 0),\"host\":\(hostMatches ? 1 : 0),\"threadSelected\":\(threadSelected ? 1 : 0),\"thermal\":\(ProcessInfo.processInfo.thermalState.rawValue)}")
+      // Opt-in DEV identity read only: never persisted with numeric metrics.
+      if ProcessInfo.processInfo.arguments.contains("-thermal-thread-identity-probe") {
+        Text("selected-thread").font(.system(size: 1))
+          .accessibilityIdentifier("thermal-selected-thread")
+          .accessibilityValue(selectedThreadId ?? "none")
+      }
+    }.frame(width: 1, height: 1).clipped().allowsHitTesting(false)
   }
 }
 
@@ -904,7 +933,7 @@ private struct SidebarDrawer<Content: View>: UIViewControllerRepresentable {
   let isOpen: Bool
   let isEnabled: Bool
   let width: CGFloat
-  let content: Content
+  let content: @MainActor () -> Content
   let commands: SidebarDrawerCommands
   let onBegin: () -> Void
   let onSettle: (Bool) -> Void
@@ -912,13 +941,13 @@ private struct SidebarDrawer<Content: View>: UIViewControllerRepresentable {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   func makeUIViewController(context: Context) -> SidebarDrawerController {
-    let controller = SidebarDrawerController(content: AnyView(content), width: width, isOpen: isOpen)
+    let controller = SidebarDrawerController(content: { AnyView(content()) }, width: width, isOpen: isOpen)
     commands.controller = controller
     return controller
   }
 
   func updateUIViewController(_ controller: SidebarDrawerController, context: Context) {
-    controller.update(content: AnyView(content), width: width, isOpen: isOpen,
+    controller.update(content: { AnyView(content()) }, width: width, isOpen: isOpen,
       isEnabled: isEnabled, reduceMotion: reduceMotion, onBegin: {
         commands.setInteracting(true)
         onBegin()
@@ -946,7 +975,8 @@ private final class SidebarDrawerController: UIViewController {
   private let panelBackground = UIView()
   private let backdrop = UIControl()
   private let gestures = SidebarPanGestureView()
-  private var latestContent: AnyView
+  private var latestContent: @MainActor () -> AnyView
+  private var contentPending = false
   private var panelWidth: CGFloat
   private var position: CGFloat
   private var targetOpen: Bool
@@ -965,8 +995,8 @@ private final class SidebarDrawerController: UIViewController {
   private let animationProbe = SidebarAnimationProbe()
   #endif
 
-  init(content: AnyView, width: CGFloat, isOpen: Bool) {
-    panel = UIHostingController(rootView: content)
+  init(content: @escaping @MainActor () -> AnyView, width: CGFloat, isOpen: Bool) {
+    panel = UIHostingController(rootView: content())
     latestContent = content
     panelWidth = width
     targetOpen = isOpen
@@ -1022,14 +1052,17 @@ private final class SidebarDrawerController: UIViewController {
     gestures.frame = view.bounds
   }
 
-  func update(content: AnyView, width: CGFloat, isOpen: Bool, isEnabled: Bool,
+  func update(content: @escaping @MainActor () -> AnyView, width: CGFloat, isOpen: Bool, isEnabled: Bool,
     reduceMotion: Bool, onBegin: @escaping () -> Void, onSettle: @escaping (Bool) -> Void,
     onInteractionEnd: @escaping () -> Void) {
     self.onBegin = onBegin
     self.onSettle = onSettle
     self.onInteractionEnd = onInteractionEnd
     self.reduceMotion = reduceMotion
+    // A hidden hosting tree must not rebuild for every chat scroll/geometry
+    // update. Keep the newest builder, then apply it before opening the panel.
     latestContent = content
+    contentPending = true
     loadViewIfNeeded()
     let externalChanged = externalOpen != isOpen
     externalOpen = isOpen
@@ -1053,9 +1086,15 @@ private final class SidebarDrawerController: UIViewController {
     } else if !dragging && externalChanged && targetOpen != isOpen {
       pendingSettlement = nil
       settle(open: isOpen, animated: isEnabled && !reduceMotion)
-    } else if !interacting {
-      panel.rootView = content
+    } else if !interacting && (targetOpen || externalChanged) {
+      refreshContent()
     }
+  }
+
+  private func refreshContent() {
+    guard contentPending else { return }
+    contentPending = false
+    panel.rootView = latestContent()
   }
 
   func requestOpen(_ open: Bool) {
@@ -1071,6 +1110,7 @@ private final class SidebarDrawerController: UIViewController {
 
   private func beginDrag() {
     freezeAnimation()
+    refreshContent()
     startedOpen = targetOpen
     dragOrigin = position
     dragging = true
@@ -1107,6 +1147,7 @@ private final class SidebarDrawerController: UIViewController {
 
   private func settle(open: Bool, animated: Bool) {
     freezeAnimation()
+    if open { refreshContent() }
     targetOpen = open
     let destination: CGFloat = open ? panelWidth : 0
     guard animated, abs(destination - position) > 0.5, view.window != nil else {
@@ -1168,7 +1209,9 @@ private final class SidebarDrawerController: UIViewController {
     interacting = false
     updateInteraction()
     // Content/workspace updates resume after the visual motion has finished.
-    panel.rootView = latestContent
+    // Apply closure state once at settlement as well: running indicators must
+    // receive drawerOpen=false and pause after the panel becomes hidden.
+    refreshContent()
     let settled = pendingSettlement
     pendingSettlement = nil
     if let settled { onSettle?(settled) }
@@ -1246,12 +1289,8 @@ struct RootView: View {
   @StateObject private var sidebarMotion = SidebarDrawerCommands()
   @ObservedObject private var notifications = TaskNotificationController.shared
   @ObservedObject private var businessNotifications = TaskHubBusinessNotifications.shared
-  @State private var photos: [PhotosPickerItem] = []
-  @State private var photoTarget = ""
-  @State private var showPhotos = false
-  @State private var showFiles = false
   @State private var showComposerActions = false
-  @State private var fileTarget = ""
+  @State private var attachmentModalPresented = false
   @State private var voiceDEVPairingApplied = false
   @State private var followsLatest = true
   @State private var latestMessageVisibility: ChatBottomVisibility?
@@ -1303,8 +1342,8 @@ struct RootView: View {
         }.equatable()
         .accessibilityHidden(store.drawerOpen).allowsHitTesting(!store.drawerOpen)
         SidebarDrawer(isOpen: store.drawerOpen,
-          isEnabled: scenePhase == .active && store.sheet == nil && !showPhotos && !showFiles,
-          width: max(0, min(geometry.size.width - 44, 350)), content: sidebar, commands: sidebarMotion,
+          isEnabled: scenePhase == .active && store.sheet == nil && !attachmentModalPresented,
+          width: max(0, min(geometry.size.width - 44, 350)), content: { sidebar }, commands: sidebarMotion,
           onBegin: {
             store.sidebarInteracting = true
             composerFocused = false
@@ -1376,7 +1415,7 @@ struct RootView: View {
     }
     .tint(.primary)
     .environmentObject(voice)
-    .onOpenURL { AgentConfigurationViews.open($0, store: store) }
+    .modifier(ExternalAttachmentIntake(store: store, modalPresented: attachmentModalPresented))
       .confirmationDialog(L10n.tr("结束等待？"), isPresented: Binding(get: { endChatActionTarget != nil }, set: { if !$0 { endChatActionTarget = nil } }), titleVisibility: .visible) {
         Button(L10n.tr("结束等待")) { if let receipt = endChatActionTarget { store.endChatActionWaiting(receipt) }; endChatActionTarget = nil }
         Button(L10n.tr("取消"), role: .cancel) { endChatActionTarget = nil }
@@ -1395,46 +1434,20 @@ struct RootView: View {
         if let jump = store.chatSearchJump, jump.targetKey == store.targetKey, jump.token != readySearchJump { readySearchJump = jump.token }
       }) { route in sheets(route).presentationDragIndicator(.visible) }
     .alert(
-      store.errorTitle,
+      voice.canUseLocalTranscription && store.error == voice.error ? L10n.tr("转写失败") : store.errorTitle,
       isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })
     ) {
-      Button(L10n.tr("好"), role: .cancel) { store.error = nil }
+      if voice.canUseLocalTranscription && store.error == voice.error {
+        VoiceTranscriptionFailureActions(voice: voice)
+      } else {
+        Button(L10n.tr("好"), role: .cancel) { store.error = nil }
+      }
     } message: {
-      Text(store.error ?? "")
-    }
-    .photosPicker(
-      isPresented: $showPhotos, selection: $photos, maxSelectionCount: 5, matching: .images
-    )
-    .onChange(of: photos) { _, items in
-      guard !items.isEmpty else { return }
-      let target = photoTarget
-      store.beginImport(target)
-      Task {
-        defer { store.endImport(target) }
-        for item in items {
-          do {
-            guard let data = try await item.loadTransferable(type: Data.self) else {
-              continue
-            }
-            try store.importData(
-              data,
-              name:
-                L10n.tr("图片.\(item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg")"),
-              isImage: true, target: target)
-          } catch { store.presentError(error) }
-        }
-        photos = []
-      }
-    }
-    .fileImporter(
-      isPresented: $showFiles, allowedContentTypes: [.item], allowsMultipleSelection: true
-    ) { result in
-      switch result {
-      case .success(let urls): for url in urls { store.importFile(url, target: fileTarget) }
-      case .failure(let error): store.presentError(error)
-      }
+      Text(voice.canUseLocalTranscription && store.error == voice.error
+        ? L10n.tr("录音已保留，可重试转写，或使用手机本地转写。") : store.error ?? "")
     }
     .task {
+      await store.recoverLocalAttachmentImports()
       if store.client?.isDemo == false { await store.refresh() }
     }
     .task(id: scenePhase == .active) {
@@ -1662,6 +1675,16 @@ struct RootView: View {
         }
         Spacer()
       }.frame(maxWidth: .infinity).padding(16).accessibilityIdentifier("empty-chat")
+      #if DEBUG
+      .overlay(alignment: .topLeading) {
+        if HistoryScrollProbe.enabled {
+          HistoryScrollEvidenceView(availableMessages: store.messages.count, messageLimit: visibleMessageLimit,
+            targetMatches: HistoryScrollProbe.matches(host: store.client?.id, thread: store.selectedThreadId),
+            hostMatches: HistoryScrollProbe.matchesHost(store.client?.id), threadSelected: store.selectedThreadId != nil,
+            selectedThreadId: store.selectedThreadId)
+        }
+      }
+      #endif
     } else {
       ScrollViewReader { proxy in
         GeometryReader { viewport in
@@ -1889,7 +1912,9 @@ struct RootView: View {
             .overlay(alignment: .topLeading) {
               if HistoryScrollProbe.enabled {
                 HistoryScrollEvidenceView(availableMessages: store.messages.count, messageLimit: visibleMessageLimit,
-                  targetMatches: HistoryScrollProbe.matches(host: store.client?.id, thread: store.selectedThreadId))
+                  targetMatches: HistoryScrollProbe.matches(host: store.client?.id, thread: store.selectedThreadId),
+                  hostMatches: HistoryScrollProbe.matchesHost(store.client?.id), threadSelected: store.selectedThreadId != nil,
+            selectedThreadId: store.selectedThreadId)
               }
             }
             #endif
@@ -1980,8 +2005,7 @@ struct RootView: View {
         }.id(store.targetKey).padding(.horizontal, 16)
       }
       ComposerView(suggestionReader: store.desktopSuggestionReader, store: store, drafts: store.drafts, voice: voice,
-        photoTarget: $photoTarget, showPhotos: $showPhotos,
-        fileTarget: $fileTarget, showFiles: $showFiles,
+        attachmentModalPresented: $attachmentModalPresented,
         showComposerActions: $showComposerActions, composerFocused: $composerFocused)
     }
   }
@@ -2254,7 +2278,8 @@ struct RootView: View {
   }
   // Mapping only: mobile-core has already selected and ordered valid IDs.
   private func orderedThreads(_ ids: [String]) -> [Conversation] {
-    let threads = Dictionary(store.threads.filter { $0.hostId == store.client?.id }.map { ($0.id, $0) },
+    let hostId = store.client?.id
+    let threads = Dictionary(store.threads.filter { $0.hostId == hostId }.map { ($0.id, $0) },
       uniquingKeysWith: { first, _ in first })
     return ids.compactMap { threads[$0] }
   }
@@ -2336,7 +2361,8 @@ struct RootView: View {
   }
 
   private func sidebarFilteredProjects(_ order: SidebarDisplayOrder) -> [Project] {
-    let byId = Dictionary(store.projects.filter { $0.hostId == store.client?.id }.map { ($0.id, $0) },
+    let hostId = store.client?.id
+    let byId = Dictionary(store.projects.filter { $0.hostId == hostId }.map { ($0.id, $0) },
       uniquingKeysWith: { first, _ in first })
     return order.projectIds.compactMap { byId[$0] }.filter { project in
       matches(project.name) || projectThreads(project, order: order).contains { matches($0.title) }
@@ -3050,12 +3076,30 @@ private struct MarkdownBlockView: View {
 
 struct MarkdownParagraph: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
+  @Environment(\.openingMessageLink) private var openingLink
+  @Environment(\.openingMessageLinkAnchor) private var openingAnchor
+  @Environment(\.messageLinkOpen) private var messageLinkOpen
+  @Environment(\.openURL) private var openURL
   let text: String
   @State private var formatted: AttributedString?
+  @State private var linkAnchor = UUID()
   var body: some View {
-    Group {
-      if let formatted { Text(formatted) } else { Text(verbatim: text) }
-    }.textSelection(.enabled).lineSpacing(4).tint(Palette.link)
+    VStack(alignment: .leading, spacing: 6) {
+      Group {
+        if let formatted { Text(highlighted(formatted)) } else { Text(verbatim: text) }
+      }.textSelection(.enabled).lineSpacing(4).tint(Palette.link)
+      if containsOpeningLink {
+        HStack(spacing: 8) {
+          ProgressView().controlSize(.small)
+          Text(L10n.tr("正在下载并打开文件…")).font(.caption).foregroundStyle(Palette.secondary)
+        }.accessibilityIdentifier("message-link-loading")
+      }
+    }
+      .environment(\.openURL, OpenURLAction { url in
+        if let messageLinkOpen { messageLinkOpen(url, linkAnchor) }
+        else { openURL(url) }
+        return .handled
+      })
       .task(id: text) {
         // Partial streams stay plain; completed Markdown is parsed away from the UI thread.
         let input = text
@@ -3067,53 +3111,77 @@ struct MarkdownParagraph: View {
         if !Task.isCancelled { formatted = parsed }
       }
   }
+  private var containsOpeningLink: Bool {
+    guard openingAnchor == linkAnchor, let openingLink, let formatted else { return false }
+    return formatted.runs.contains { $0.link == openingLink }
+  }
+  private func highlighted(_ input: AttributedString) -> AttributedString {
+    guard openingAnchor == linkAnchor, let openingLink else { return input }
+    var result = input
+    for run in input.runs where run.link == openingLink {
+      result[run.range].backgroundColor = Palette.link.opacity(0.16)
+      result[run.range].underlineStyle = .single
+    }
+    return result
+  }
 }
 
 struct RemoteFileView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let client: Client
   let file: RemoteAttachment
-  @State private var localURL: URL?
   @State private var previewURL: URL?
+  @State private var share: PreparedFileShare?
   @State private var image: UIImage?
   @State private var loading = false
   @State private var error: String?
+  @State private var downloadTask: Task<Void, Never>?
+  @State private var downloadGeneration = UUID()
   var body: some View {
     VStack(alignment: .leading, spacing: 5) {
       if let image {
         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 220)
           .clipShape(RoundedRectangle(cornerRadius: 12)).onTapGesture {
-            Task { await download(preview: true) }
+            prepare(.preview)
           }
           .accessibilityIdentifier("received-image-\(file.name)")
       }
-      if localURL == nil && !loading {
-        Button { Task { await download() } } label: {
+      HStack(spacing: 8) {
+        Button { prepare(.preview) } label: {
           HStack(spacing: 8) {
             fileSummary
             Spacer()
-            Text(L10n.tr("下载")).font(.caption)
-          }.frame(minHeight: 44).frame(maxWidth: .infinity).contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityIdentifier("download-\(file.name)")
-      } else {
-        HStack(spacing: 8) {
-          fileSummary
-          Spacer()
-          if loading { ProgressView() }
-          else if let localURL {
-            Button { Task { await download(preview: true) } } label: {
-              Text(L10n.tr("预览")).font(.caption).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityIdentifier("preview-\(file.name)")
-            ShareLink(item: localURL) {
-              Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44)
-            }.accessibilityLabel(L10n.tr("保存或分享文件"))
-          }
+            Text(L10n.tr("预览")).font(.caption)
+          }.frame(minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain).disabled(loading).accessibilityIdentifier("preview-\(file.name)")
+        Button { prepare(.share) } label: {
+          Group {
+            if loading { ProgressView() }
+            else { Image(systemName: "square.and.arrow.up") }
+          }.frame(width: 44, height: 44).contentShape(Rectangle())
         }
+        .buttonStyle(.plain).disabled(loading)
+        .accessibilityLabel(L10n.tr("保存或分享文件"))
+        .accessibilityIdentifier("share-\(file.name)")
+      }
+      if loading {
+        Text(L10n.tr("正在准备文件…")).font(.caption).foregroundStyle(Palette.secondary)
+          .accessibilityIdentifier("file-preparation-loading")
       }
       if let error { Text(error).font(.caption2).foregroundStyle(.red) }
     }.padding(10).background(Palette.sidebar, in: RoundedRectangle(cornerRadius: 12))
       .quickLookPreview($previewURL)
-      .task(id: file.id) { if file.mediaType.hasPrefix("image/") { await download() } }
+      .sheet(item: $share) { FileShareSheet(url: $0.url) }
+      .task(id: file.id) {
+        if file.mediaType.hasPrefix("image/"), !loading {
+          loading = true
+          await download(.image)
+        }
+      }
+      .onDisappear { downloadTask?.cancel(); downloadTask = nil; loading = false; downloadGeneration = UUID() }
+      .onChange(of: client.id) { _, _ in reset() }
+      .onChange(of: client.readingTarget) { _, _ in reset() }
+      .onChange(of: client.agentConnection?.target) { _, _ in reset() }
   }
   private var fileSummary: some View {
     HStack(spacing: 8) {
@@ -3125,20 +3193,38 @@ struct RemoteFileView: View {
       }
     }
   }
-  private func download(preview: Bool = false) async {
+  private enum FileAction { case image, preview, share }
+  private func reset() {
+    downloadTask?.cancel(); downloadTask = nil; loading = false
+    downloadGeneration = UUID()
+    previewURL = nil; share = nil; image = nil; error = nil
+  }
+  private func prepare(_ action: FileAction) {
     guard !loading else { return }
     loading = true
-    defer { loading = false }
+    error = nil
+    UISelectionFeedbackGenerator().selectionChanged()
+    downloadTask = Task { await download(action) }
+  }
+  private func download(_ action: FileAction) async {
+    let generation = downloadGeneration
+    error = nil
+    defer { if !Task.isCancelled && generation == downloadGeneration { loading = false; downloadTask = nil } }
     do {
       let downloaded = try await AgentClients.resolve(client).download(client, file: file)
-      guard !Task.isCancelled else { return }
-      localURL = downloaded
-      if let localURL, file.mediaType.hasPrefix("image/") {
-        image = UIImage(contentsOfFile: localURL.path)
+      guard !Task.isCancelled, generation == downloadGeneration else { return }
+      if file.mediaType.hasPrefix("image/") {
+        image = UIImage(contentsOfFile: downloaded.path)
       }
-      error = nil
-      if preview { previewURL = downloaded }
-    } catch { self.error = error.localizedDescription }
+      switch action {
+      case .image: break
+      case .preview: previewURL = downloaded
+      case .share: share = PreparedFileShare(url: downloaded)
+      }
+    } catch {
+      guard !Task.isCancelled, generation == downloadGeneration else { return }
+      self.error = error.localizedDescription
+    }
   }
 }
 
@@ -3368,8 +3454,12 @@ private struct AsyncQuestionDeck: View {
         selectedId = approvals.first?.id
         if store.sheet == nil && !store.drawerOpen { present() }
       }
-      .onChange(of: approvals.map(\.id)) { previous, updated in
-        drafts = drafts.filter { updated.contains($0.key) }
+      .onChange(of: approvals) { old, new in
+        let previous = old.map(\.id), updated = new.map(\.id)
+        drafts = drafts.filter { key, _ in
+          guard let before = old.first(where: { $0.id == key }), let after = new.first(where: { $0.id == key }) else { return false }
+          return before == after
+        }
         if let selectedId, updated.contains(selectedId) { return }
         let previousIndex = previous.firstIndex(of: selectedId ?? "") ?? 0
         selectedId = updated.isEmpty ? nil : updated[min(previousIndex, updated.count - 1)]
@@ -3429,6 +3519,7 @@ struct ApprovalCard: View {
   let approval: Approval
   let targetKey: String
   let scrollsContent: Bool
+  private let actionContext: SessionStore.ApprovalActionContext
   fileprivate var externalDraft: Binding<ApprovalAnswerDraft>? = nil
   @State private var localDraft = ApprovalAnswerDraft()
   @State private var contentHeight: CGFloat = 1000
@@ -3439,6 +3530,7 @@ struct ApprovalCard: View {
     self.approval = approval
     self.targetKey = targetKey
     self.scrollsContent = scrollsContent
+    self.actionContext = store.approvalActionContext
     self.externalDraft = externalDraft
   }
   private var draft: Binding<ApprovalAnswerDraft> { externalDraft ?? $localDraft }
@@ -3464,7 +3556,8 @@ struct ApprovalCard: View {
         questionContent(includeAnswerFields: true)
       }
       answerActions.fixedSize(horizontal: false, vertical: true)
-    }.disabled(store.isAnswering(approval)).modifier(ApprovalSurface())
+    }.disabled(!store.canEditApproval(approval, context: actionContext)).modifier(ApprovalSurface())
+      .onChange(of: approval) { _, _ in draft.wrappedValue = ApprovalAnswerDraft() }
   }
 
   private func questionContent(includeAnswerFields: Bool) -> some View {
@@ -3519,7 +3612,7 @@ struct ApprovalCard: View {
 
   @ViewBuilder private func answerField(_ question: ApprovalQuestion) -> some View {
     if question.custom != false {
-      QuestionAnswerField(store: store, approval: approval, question: question, targetKey: targetKey,
+      QuestionAnswerField(store: store, approval: approval, question: question, targetKey: targetKey, actionContext: actionContext,
         text: Binding(get: { draft.wrappedValue.customAnswers[question.id] ?? "" },
           set: { draft.wrappedValue.customAnswers[question.id] = $0 }),
         recordingQuestionId: $recordingQuestionId)
@@ -3532,32 +3625,42 @@ struct ApprovalCard: View {
       if approval.kind == "question" {
         HStack(spacing: 12) {
         if isAsync {
-          Button(L10n.tr("跳过")) { store.answer(approval, decision: "skip", expectedTargetKey: targetKey) }
+          Button(L10n.tr("跳过")) { store.answer(approval, decision: "skip", expectedTargetKey: targetKey, expectedContext: actionContext) }
             .font(.subheadline).frame(minWidth: 44, minHeight: 44).accessibilityIdentifier("skip-question")
         }
         Button {
-          store.answer(approval, decision: "", answers: submittedAnswers, expectedTargetKey: targetKey)
+          store.answer(approval, decision: "", answers: submittedAnswers, expectedTargetKey: targetKey, expectedContext: actionContext)
         } label: { Text(L10n.tr("提交回复")).frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle()) }
         .buttonStyle(ApprovalSubmitButtonStyle())
         .disabled(!approval.questions.allSatisfy { !(submittedAnswers[$0.id] ?? []).isEmpty })
         .accessibilityIdentifier("answer-question")
         }
       } else {
-        HStack {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), alignment: .leading)], alignment: .leading) {
           ForEach(approval.decisions, id: \.self) { decision in
             Button(
-              decision == "accept" || decision == "approve"
+              (approval.decisionLabels?[decision]).map { label in
+                switch label {
+                case "始终允许": return L10n.tr("始终允许")
+                case "允许本轮": return L10n.tr("允许本轮")
+                case "本会话允许": return L10n.tr("本会话允许")
+                case "允许一次": return L10n.tr("允许一次")
+                case "拒绝": return L10n.tr("拒绝")
+                case "取消": return L10n.tr("取消")
+                default: return label
+                }
+              } ?? (decision == "accept" || decision == "approve"
                 ? L10n.tr("允许一次")
                 : decision == "acceptForSession"
-                  ? L10n.tr("本会话允许") : decision == "decline" || decision == "deny" ? L10n.tr("拒绝") : L10n.tr("停止任务")
+                  ? L10n.tr("本会话允许") : decision == "decline" || decision == "deny" ? L10n.tr("拒绝") : L10n.tr("停止任务"))
             ) {
-              store.answer(approval, decision: decision, expectedTargetKey: targetKey)
+              store.answer(approval, decision: decision, expectedTargetKey: targetKey, expectedContext: actionContext)
             }.font(.caption).frame(minHeight: 44).accessibilityIdentifier(
               "approval-\(decision)")
           }
         }
       }
-    }.disabled(recordingQuestionId != nil)
+    }.disabled(recordingQuestionId != nil || !store.canAnswer(approval, context: actionContext))
   }
 }
 
@@ -3567,6 +3670,7 @@ private struct QuestionAnswerField: View {
   let approval: Approval
   let question: ApprovalQuestion
   let targetKey: String
+  let actionContext: SessionStore.ApprovalActionContext
   @Binding var text: String
   @Binding var recordingQuestionId: String?
   @StateObject private var voice = VoiceInputController()
@@ -3589,40 +3693,24 @@ private struct QuestionAnswerField: View {
           .disabled(voice.isActive).padding(.leading, 10).padding(.vertical, 10)
           .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
           .accessibilityIdentifier("question-custom-\(question.id)")
-        if question.isSecret != true {
-          IconButton(symbol: voice.isActive ? "stop.fill" : "mic",
-            label: voice.phase == .failed ? L10n.tr("重试转写") : voice.isActive ? L10n.tr("结束录音并转写") : L10n.tr("语音输入回复"),
+        if question.isSecret != true && !voice.isActive {
+          IconButton(symbol: "mic", label: L10n.tr("语音输入回复"),
             id: "question-voice-\(question.id)") {
-            if voice.isActive {
-              Task { _ = await voice.finish() }
-            } else {
-              focused = false
-              guard let provider = store.voiceProvider(draftId: voiceTarget) else { return }
-              voice.start(target: voiceTarget, text: text, provider: provider) { target, value in
-                guard target == voiceTarget, store.targetKey == targetKey,
-                  text == voice.originalText,
-                  store.runtime?.approvals.contains(where: { $0.id == approval.id }) == true,
-                  !store.isAnswering(approval) else { return false }
-                text = value
-                return true
-              }
+            focused = false
+            guard let provider = store.voiceProvider(draftId: voiceTarget) else { return }
+            voice.start(target: voiceTarget, text: text, provider: provider) { target, value in
+              guard target == voiceTarget, store.targetKey == targetKey,
+                text == voice.originalText,
+                store.canEditApproval(approval, context: actionContext) else { return false }
+              text = value
+              return true
             }
-          }.disabled(voice.phase == .requesting || voice.phase == .finishing || composerVoice.isActive
+          }.disabled(composerVoice.isActive
             || (recordingQuestionId != nil && recordingQuestionId != question.id))
         }
       }
       if voice.isActive {
-        HStack(spacing: 8) {
-          IconButton(symbol: "xmark", label: voice.phase == .listening || voice.phase == .requesting ? L10n.tr("取消录音") : L10n.tr("结束等待"), id: "question-cancel-dictation-\(question.id)") {
-            voice.cancel()
-          }
-          VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity, maxHeight: 32)
-            .accessibilityLabel(voice.status).accessibilityIdentifier("question-dictation-\(question.id)")
-          if voice.phase == .failed {
-            Button(L10n.tr("重新录音")) { voice.recordAgain(text: text) }
-              .frame(minHeight: 44).accessibilityIdentifier("question-record-again-\(question.id)")
-          }
-        }.padding(.trailing, 12)
+        VoiceInputControls(voice: voice, text: text, questionId: question.id).padding(4)
       }
     }.background(Palette.sidebar, in: RoundedRectangle(cornerRadius: 10))
       .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.12)))
@@ -3636,15 +3724,24 @@ private struct QuestionAnswerField: View {
         if phase == .background || (phase == .inactive && voice.phase != .requesting) { voice.suspend() }
       }
       .onChange(of: store.targetKey) { _, _ in voice.cancel() }
+      .onChange(of: approval) { _, _ in voice.cancel() }
+      .onChange(of: store.approvalActionContext) { _, _ in voice.cancel() }
       .onDisappear {
         voice.cancel()
         if recordingQuestionId == question.id { recordingQuestionId = nil }
         UIApplication.shared.isIdleTimerDisabled = composerVoice.isActive && scenePhase == .active
       }
-      .alert(L10n.tr("无法完成听写"), isPresented: Binding(get: { voice.error != nil },
+      .alert(voice.canUseLocalTranscription ? L10n.tr("转写失败") : L10n.tr("无法完成听写"), isPresented: Binding(get: { voice.error != nil },
         set: { if !$0 { voice.error = nil } })) {
-        Button(L10n.tr("好")) { voice.error = nil }
-      } message: { Text(voice.error ?? "") }
+        if voice.canUseLocalTranscription {
+          VoiceTranscriptionFailureActions(voice: voice)
+        } else {
+          Button(L10n.tr("好")) { voice.error = nil }
+        }
+      } message: {
+        Text(voice.canUseLocalTranscription
+          ? L10n.tr("录音已保留，可重试转写，或使用手机本地转写。") : voice.error ?? "")
+      }
   }
 }
 
@@ -3741,17 +3838,25 @@ private struct ComposerView: View {
   @ObservedObject var store: SessionStore
   @ObservedObject var drafts: ComposerDraftStore
   @ObservedObject var voice: VoiceInputController
-  @Binding var photoTarget: String
-  @Binding var showPhotos: Bool
-  @Binding var fileTarget: String
-  @Binding var showFiles: Bool
+  @StateObject private var attachmentPhotos = RecentAttachmentPhotos()
+  @State private var attachmentRequest: QuickAttachmentRequest?
+  @Binding var attachmentModalPresented: Bool
   @Binding var showComposerActions: Bool
   @FocusState.Binding var composerFocused: Bool
   @Environment(\.scenePhase) private var scenePhase
 
   var body: some View {
-    composer
-      .task(id: suggestionReadContext) {
+    // Presentation values live for this render only. User actions still recheck live state.
+    let context = suggestionReadContext
+    let available = voice.isActive ? nil : availableSuggestion(in: context)
+    let presentation = SuggestionPresentation(context: context, available: available,
+      showsGhost: store.draft.text.isEmpty && available != nil)
+    return composer(presentation)
+      .modifier(QuickAttachmentPresentation(store: store, library: attachmentPhotos,
+        request: attachmentRequest, isPresenting: $attachmentModalPresented))
+      .task { attachmentPhotos.setActive(scenePhase == .active) }
+      .onChange(of: scenePhase) { _, phase in attachmentPhotos.setActive(phase == .active) }
+      .task(id: context) {
         // A cancelled nil-scope task must not erase a value that history has
         // already confirmed while SwiftUI was laying out the new conversation.
         guard !Task.isCancelled else { return }
@@ -3770,7 +3875,7 @@ private struct ComposerView: View {
         guard suggestionReadContext.enabled else { suggestionReader.suspend(keeping: scope); return }
         await suggestionReader.read(scope) { try await store.readNextTurnSuggestion(client, scope: scope) }
       }
-      .onChange(of: suggestionReadScope) { _, _ in suggestionPreview = nil; focusAfterSuggestionSheet = false }
+      .onChange(of: presentation.readScope) { _, _ in suggestionPreview = nil; focusAfterSuggestionSheet = false }
       .onChange(of: store.suggestionDraftSnapshot) { previous, current in
         if let action = suggestionPreview, action.draft != current { suggestionPreview = nil }
         // Explicit clears and local deletion advance the edit revision. The
@@ -3784,6 +3889,7 @@ private struct ComposerView: View {
         if let action = suggestionPreview, current != action.suggestion { suggestionPreview = nil }
       }
       .onDisappear {
+        attachmentPhotos.setActive(false)
         if let scope = suggestionReadContext.scope, suggestionReader.scope == scope { suggestionReader.suspend(keeping: scope) }
         suggestionPreview = nil
       }
@@ -3801,14 +3907,21 @@ private struct ComposerView: View {
       }
   }
 
+  private struct SuggestionPresentation {
+    let context: SuggestionReadContext
+    let available: DesktopSuggestion?
+    let showsGhost: Bool
+    var readScope: DesktopSuggestionScope? { context.enabled ? context.scope : nil }
+  }
   private struct SuggestionReadContext: Equatable {
     let scope: DesktopSuggestionScope?
     let enabled: Bool
   }
   private var suggestionReadContext: SuggestionReadContext {
-    SuggestionReadContext(scope: scenePhase == .active ? store.nextTurnSuggestionPresentationScope : nil,
-      enabled: store.nextTurnSuggestionScope != nil && !voice.isActive && !store.drawerOpen
-        && store.sheet == nil && !showPhotos && !showFiles)
+    let liveScope = store.nextTurnSuggestionScope
+    return SuggestionReadContext(scope: scenePhase == .active ? (liveScope ?? store.nextTurnSuggestionPresentationScope) : nil,
+      enabled: liveScope != nil && !voice.isActive && !store.drawerOpen
+        && store.sheet == nil && !attachmentModalPresented)
   }
   private var suggestionReadScope: DesktopSuggestionScope? {
     suggestionReadContext.enabled ? suggestionReadContext.scope : nil
@@ -3817,11 +3930,16 @@ private struct ComposerView: View {
     HandledSuggestion(target: store.targetKey, sourceTurnId: scope.sourceTurnId, id: id)
   }
   private var availableSuggestion: DesktopSuggestion? {
-    guard let scope = suggestionReadContext.scope, let suggestion = suggestionReader.visibleSuggestion(for: scope),
+    // No payload means no presentation scope to resolve. Nonempty values keep all original checks.
+    guard suggestionReader.suggestion != nil else { return nil }
+    return availableSuggestion(in: suggestionReadContext)
+  }
+  private func availableSuggestion(in context: SuggestionReadContext) -> DesktopSuggestion? {
+    guard let scope = context.scope, let suggestion = suggestionReader.visibleSuggestion(for: scope),
       !handledSuggestions.contains(suggestionKey(scope, suggestion.id)) else { return nil }
     return suggestion
   }
-  private var showsGhostSuggestion: Bool { availableSuggestion != nil && store.draft.text.isEmpty }
+  private var showsGhostSuggestion: Bool { store.draft.text.isEmpty && availableSuggestion != nil }
   private var validSuggestionUndo: DesktopSuggestionDraftUndo? {
     guard let undo = drafts.suggestionUndo,
       undo.restoredText(currentDraft: store.suggestionDraftSnapshot) != nil else { return nil }
@@ -3844,7 +3962,7 @@ private struct ComposerView: View {
     suggestionPreview = nil
     if !focusAfterSuggestionSheet { composerFocused = true; insertionRequest = UUID() }
   }
-  private var suggestionDraftControls: some View {
+  private func suggestionDraftControls(_ presentation: SuggestionPresentation) -> some View {
     HStack {
       if let undo = validSuggestionUndo {
         Text(L10n.tr("已填入输入框")).font(.caption).foregroundStyle(Palette.secondary)
@@ -3856,11 +3974,11 @@ private struct ComposerView: View {
         } label: {
           Text(L10n.tr("撤销")).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
         }.accessibilityIdentifier("suggestion-undo")
-      } else if availableSuggestion != nil && !store.draft.text.isEmpty {
+      } else if presentation.available != nil && !store.draft.text.isEmpty {
         Button { composerFocused = false; suggestionPreview = suggestionIntent() } label: {
           Label(L10n.tr("下一步建议"), systemImage: "sparkles").font(.caption)
             .frame(minHeight: 44).contentShape(Rectangle())
-        }.accessibilityIdentifier("suggestion-entry").disabled(suggestionReadScope == nil)
+        }.accessibilityIdentifier("suggestion-entry").disabled(presentation.readScope == nil)
         Spacer()
       }
     }.padding(.horizontal, 6).buttonStyle(.plain)
@@ -3955,6 +4073,7 @@ private struct ComposerView: View {
                 }
                 VStack(alignment: .leading) {
                   Text(file.name).font(.caption).lineLimit(1)
+                  Text(L10n.tr("已添加 · 待发送")).font(.caption2).foregroundStyle(Palette.secondary)
                   Text(
                     ByteCountFormatter.string(
                       fromByteCount: Int64(file.size), countStyle: .file)
@@ -3982,8 +4101,12 @@ private struct ComposerView: View {
       || !store.queuedReplies.isEmpty
   }
 
-  private var composer: some View {
+  private func composer(_ presentation: SuggestionPresentation) -> some View {
     VStack(spacing: 6) {
+      if !voice.isActive && !store.drawerOpen && store.sheet == nil && !attachmentModalPresented {
+        RecentAttachmentHint(store: store, library: attachmentPhotos)
+          .padding(.horizontal, -12)
+      }
       if let conflict = store.codexStorageConflictMessage {
         Text(conflict).font(.caption).foregroundStyle(Palette.secondary).textSelection(.enabled)
       }
@@ -3998,22 +4121,22 @@ private struct ComposerView: View {
       if hasComposerDetails {
         composerDetails.padding(10).floatingSurface(cornerRadius: 16)
       }
-      if !voice.isActive && (store.supportsGenerationSettings || store.selectedCollaborationMode == "plan") {
+      if !voice.isActive && (store.supportsGenerationSettings || store.supportsPlanMode || store.selectedCollaborationMode == "plan") {
         GeometryReader { geometry in
           composerSettings(toolbarDensity(width: geometry.size.width))
             .frame(width: geometry.size.width, height: 44)
         }.frame(height: 44)
       }
-      if !voice.isActive && (validSuggestionUndo != nil || (availableSuggestion != nil && !store.draft.text.isEmpty)) {
-        suggestionDraftControls
+      if !voice.isActive && (validSuggestionUndo != nil || (presentation.available != nil && !store.draft.text.isEmpty)) {
+        suggestionDraftControls(presentation)
       }
       Group {
-        if voice.isActive { dictationInput } else { textInput }
+        if voice.isActive { dictationInput } else { textInput(presentation) }
       }.padding(4).floatingSurface(cornerRadius: 27)
     }.padding(.horizontal, 12).padding(.vertical, 4)
   }
 
-  private var textInput: some View {
+  private func textInput(_ presentation: SuggestionPresentation) -> some View {
     VStack(alignment: .leading, spacing: 0) {
         #if DEBUG
         if store.typingFixture {
@@ -4044,9 +4167,9 @@ private struct ComposerView: View {
         }
         #endif
       HStack(alignment: .bottom, spacing: 0) {
-        if !showsGhostSuggestion { attachmentMenu }
+        if !presentation.showsGhost { attachmentMenu }
         ZStack(alignment: .topLeading) {
-          if showsGhostSuggestion, let suggestion = availableSuggestion {
+          if presentation.showsGhost, let suggestion = presentation.available {
             Text(suggestion.text).font(.body).foregroundStyle(Palette.secondary).lineLimit(2)
               .padding(.horizontal, 6).padding(.vertical, 8).allowsHitTesting(false)
               .accessibilityIdentifier("suggestion-text")
@@ -4056,20 +4179,20 @@ private struct ComposerView: View {
                 #endif
               }
           }
-          composerTextField
-            .font(.body).lineLimit(showsGhostSuggestion ? 2...6 : 1...6)
+          composerTextField(showsGhost: presentation.showsGhost)
+            .font(.body).lineLimit(presentation.showsGhost ? 2...6 : 1...6)
             .padding(.horizontal, 6).padding(.vertical, 8)
-            .frame(maxWidth: .infinity, minHeight: showsGhostSuggestion ? 62 : 44)
+            .frame(maxWidth: .infinity, minHeight: presentation.showsGhost ? 62 : 44)
             .accessibilityIdentifier("composer-input").accessibilityLabel(L10n.tr("发送给当前客户端的消息"))
             .onKeyPress(.tab, phases: .down) { press in
               guard press.modifiers.isEmpty, composerFocused, showsGhostSuggestion,
                 let action = suggestionIntent() else { return .ignored }
               applySuggestion(action, mode: .fill); return .handled
             }
-        }.padding(.horizontal, showsGhostSuggestion ? 8 : 0)
-        if !showsGhostSuggestion { voiceInputButton; composerActionButton }
+        }.padding(.horizontal, presentation.showsGhost ? 8 : 0)
+        if !presentation.showsGhost { voiceInputButton; composerActionButton }
       }
-      if showsGhostSuggestion {
+      if presentation.showsGhost {
         HStack(spacing: 0) {
           attachmentMenu
           Button {
@@ -4077,11 +4200,11 @@ private struct ComposerView: View {
             applySuggestion(action, mode: .fill)
           } label: {
             Text(L10n.tr("采用")).font(.subheadline).frame(minWidth: 56, minHeight: 44).contentShape(Rectangle())
-          }.accessibilityIdentifier("suggestion-adopt").disabled(suggestionReadScope == nil)
+          }.accessibilityIdentifier("suggestion-adopt").disabled(presentation.readScope == nil)
           Button { composerFocused = false; suggestionPreview = suggestionIntent() } label: {
             Text(L10n.tr("全文")).font(.caption).foregroundStyle(Palette.secondary)
               .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
-          }.accessibilityIdentifier("suggestion-details").disabled(suggestionReadScope == nil)
+          }.accessibilityIdentifier("suggestion-details").disabled(presentation.readScope == nil)
           Spacer(minLength: 0)
           voiceInputButton
           composerActionButton
@@ -4090,8 +4213,8 @@ private struct ComposerView: View {
     }
   }
 
-  @ViewBuilder private var composerTextField: some View {
-    let prompt = showsGhostSuggestion ? "" : L10n.tr("询问 \(store.clientTypeName)")
+  @ViewBuilder private func composerTextField(showsGhost: Bool) -> some View {
+    let prompt = showsGhost ? "" : L10n.tr("询问 \(store.clientTypeName)")
     let text = Binding(get: { store.draft.text }, set: { store.setText($0) })
     if #available(iOS 18.0, *) {
       SuggestionSelectableTextField(prompt: prompt, text: text, focused: $composerFocused, insertionRequest: insertionRequest)
@@ -4105,7 +4228,7 @@ private struct ComposerView: View {
   // Build one toolbar. Multiple proposed layouts can leave duplicate action
   // accessibility elements with stale frames after keyboard/sheet transitions.
   private func toolbarDensity(width: CGFloat) -> ToolbarDensity {
-    let plan = store.selectedCollaborationMode == "plan"
+    let plan = store.supportsPlanMode || store.selectedCollaborationMode == "plan"
     if width >= (plan ? 480 : 420) { return .full }
     if width >= (plan ? 330 : 280) { return .compact }
     if width >= 220 { return .minimal }
@@ -4113,33 +4236,12 @@ private struct ComposerView: View {
   }
 
   private var attachmentMenu: some View {
-      Menu {
-        Button(L10n.tr("清空草稿"), systemImage: "trash", role: .destructive) {
-          store.clearDraft(target: store.targetKey)
-        }.accessibilityIdentifier("clear-composer-draft")
-        Button(L10n.tr("选择图片"), systemImage: "photo") {
-          photoTarget = store.targetKey
-          showPhotos = true
-        }
-        Button(L10n.tr("选择文件"), systemImage: "doc") {
-          fileTarget = store.targetKey
-          showFiles = true
-        }
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-easywork-local-dev") {
-          Button(L10n.tr("导入 DEV 验收附件")) { store.importEasyWorkDEVInputs() }.accessibilityIdentifier("easywork-dev-inputs")
-          Button(L10n.tr("双通道重复创建")) { store.devReplayAgentOperation(.create) }.accessibilityIdentifier("agent-dev-duplicate-create")
-          Button(L10n.tr("双通道重复发送")) { store.devReplayAgentOperation(.reply) }.accessibilityIdentifier("agent-dev-duplicate-reply")
-        }
-        #endif
-        if store.supportsPlanMode {
-          Divider()
-          Button(store.selectedCollaborationMode == "plan" ? L10n.tr("关闭计划模式") : L10n.tr("计划模式"), systemImage: "lightbulb") {
-            store.setPlanMode(store.selectedCollaborationMode != "plan")
-          }.disabled(!store.canSelectPlanMode).accessibilityIdentifier("select-plan-mode")
-        }
-      } label: { Image(systemName: "plus").frame(width: 44, height: 44) }
-        .accessibilityLabel(L10n.tr("添加图片、文件或计划模式")).accessibilityIdentifier("attachment-menu")
+    Button {
+      composerFocused = false
+      attachmentRequest = QuickAttachmentRequest(destination: store.attachmentDestination())
+    } label: { Image(systemName: "plus").frame(width: 44, height: 44) }
+      .accessibilityLabel(L10n.tr("添加图片或文件"))
+      .accessibilityIdentifier("attachment-menu")
   }
 
   private var voiceInputButton: some View {
@@ -4156,25 +4258,25 @@ private struct ComposerView: View {
 
   private func composerSettings(_ density: ToolbarDensity) -> some View {
     HStack(spacing: 6) {
-      if store.selectedCollaborationMode == "plan" { toolbarPlanBadge(density) }
       if store.supportsGenerationSettings { toolbarPermissionButton(density) }
+      if store.supportsPlanMode || store.selectedCollaborationMode == "plan" { toolbarPlanToggle(density) }
       Spacer(minLength: 0)
       if store.supportsGenerationSettings { toolbarGenerationButton(density) }
     }
   }
 
-  private func toolbarPlanBadge(_ density: ToolbarDensity) -> some View {
-    Button { store.setPlanMode(false) } label: {
+  private func toolbarPlanToggle(_ density: ToolbarDensity) -> some View {
+    let enabled = store.selectedCollaborationMode == "plan"
+    return Button { store.setPlanMode(!enabled) } label: {
       HStack(spacing: 4) {
-        Image(systemName: "lightbulb")
-        if density == .full {
-          Text(L10n.tr("计划模式"))
-          Image(systemName: "xmark").font(.system(size: 9, weight: .semibold))
-        } else if density == .compact { Text(L10n.tr("计划")) }
+        Image(systemName: enabled ? "lightbulb.fill" : "lightbulb")
+        if density != .icons { Text(enabled ? L10n.tr("计划 · 开") : L10n.tr("计划 · 关")).lineLimit(1) }
       }.font(.caption).padding(.horizontal, 9).frame(minHeight: 30)
+        .foregroundStyle(enabled ? Color.blue : Palette.secondary)
         .floatingSurface(cornerRadius: 20).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
     }.buttonStyle(.plain).fixedSize(horizontal: true, vertical: false).disabled(!store.canSelectPlanMode)
-      .accessibilityIdentifier("plan-mode-badge").accessibilityLabel(L10n.tr("计划模式，点击关闭"))
+      .accessibilityIdentifier("plan-mode-toggle").accessibilityLabel(L10n.tr("计划模式"))
+      .accessibilityValue(enabled ? L10n.tr("已开启") : L10n.tr("已关闭"))
   }
 
   private func toolbarPermissionButton(_ density: ToolbarDensity) -> some View {
@@ -4307,23 +4409,7 @@ private struct ComposerView: View {
         .font(.body).lineLimit(1...6).frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14).padding(.top, 10)
         .accessibilityIdentifier("dictation-transcript")
-      HStack(spacing: 3) {
-        IconButton(symbol: "xmark", label: voice.phase == .listening || voice.phase == .requesting ? L10n.tr("取消录音") : L10n.tr("结束等待"), id: "cancel-dictation") {
-          voice.cancel()
-        }.background(Color.primary.opacity(0.06), in: Circle())
-        VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity)
-          .accessibilityLabel(voice.status).accessibilityIdentifier("dictation-waveform")
-          .accessibilityValue(voice.diagnosticInfo)
-        IconButton(symbol: voice.phase == .failed ? "arrow.clockwise" : "stop.fill", label: voice.phase == .failed ? L10n.tr("重试转写") : L10n.tr("结束录音并转写"), id: "stop-dictation") {
-          Task { _ = await voice.finish() }
-        }.background(Color.primary.opacity(0.06), in: Circle())
-          .disabled(voice.phase != .listening && voice.phase != .failed)
-      }
-      Text(voice.status).font(.caption).foregroundStyle(Palette.secondary).padding(.horizontal, 14)
-      if voice.phase == .failed {
-        Button(L10n.tr("重新录音")) { voice.recordAgain(text: store.draft.text) }
-          .frame(minHeight: 44).padding(.horizontal, 14).accessibilityIdentifier("voice-record-again")
-      }
+      VoiceInputControls(voice: voice, text: store.draft.text)
     }.padding(4)
   }
 

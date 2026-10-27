@@ -31,12 +31,77 @@ import { startRuntimeServer } from '../apps/host-agent/dist/runtime-server.js';
 import { PrivateConnections } from '../apps/host-agent/dist/private-connections.js';
 import { codexPrivateConnectionContext } from '../packages/protocol/dist/index.js';
 import { RuntimePersistenceError } from '../packages/codex-adapter/dist/runtime-persistence.js';
+import { approvalRequest } from '../packages/codex-adapter/dist/approval-requests.js';
 import {
   RuntimeSession,
   replyIntentFingerprint,
 } from '../packages/codex-adapter/dist/runtime-session.js';
 
 const directory = await mkdtemp(join(tmpdir(), 'codex-manage-runtime-'));
+const appForm = {
+  mode: 'form',
+  serverName: 'node_repl',
+  message: 'Allow Calculator?',
+  requestedSchema: { type: 'object', properties: {} },
+  _meta: {
+    codex_approval_kind: 'mcp_tool_call',
+    connector_id: 'computer-use',
+    persist: ['session', 'always'],
+    tool_params: { app: 'Calculator' },
+  },
+};
+const projectApp = (params) => approvalRequest('mcpServer/elicitation/request', params);
+assert.equal(projectApp(appForm).decisionLabels.accept, '本会话允许');
+assert.deepEqual(projectApp(appForm).decisions, ['accept', 'acceptAlways', 'decline', 'cancel']);
+assert.deepEqual(projectApp(appForm).responses.accept, {
+  action: 'accept',
+  content: {},
+  _meta: { persist: 'session' },
+});
+assert.match(projectApp(appForm).detail, /截屏/);
+assert.deepEqual(projectApp({ ...appForm, _meta: {} }).decisions, ['accept', 'decline', 'cancel']);
+assert.deepEqual(
+  projectApp({ ...appForm, _meta: { persist: 'always', tool_params: { plan_token: 'bound' } } })
+    .decisions,
+  ['accept', 'decline', 'cancel'],
+);
+for (const schema of [
+  { type: 'object', properties: { approved: { type: 'boolean', const: false } } },
+  { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] },
+  { type: 'object', properties: {}, required: 'invalid' },
+  { type: 'object', properties: {}, allOf: [{ minProperties: 1 }] },
+])
+  assert.deepEqual(projectApp({ ...appForm, requestedSchema: schema }).decisions, [
+    'decline',
+    'cancel',
+  ]);
+assert.deepEqual(
+  projectApp({ ...appForm, mode: 'url', url: 'https://example.invalid' }).decisions,
+  ['decline', 'cancel'],
+);
+assert.deepEqual(projectApp({ ...appForm, mode: 'openai/userVerification' }).decisions, [
+  'decline',
+  'cancel',
+]);
+assert.deepEqual(
+  projectApp({
+    ...appForm,
+    requestedSchema: {
+      type: 'object',
+      properties: { approved: { type: 'boolean' } },
+      required: ['approved'],
+    },
+  }).responses.accept,
+  { action: 'accept', content: { approved: true }, _meta: { persist: 'session' } },
+);
+const permissions = approvalRequest('item/permissions/requestApproval', {
+  permissions: { fileSystem: { write: ['/fixture'] } },
+});
+assert.deepEqual(permissions.responses.accept, {
+  permissions: { fileSystem: { write: ['/fixture'] } },
+  scope: 'turn',
+});
+assert.deepEqual(permissions.responses.decline, { permissions: {}, scope: 'turn' });
 const root = join(directory, 'workspace');
 await mkdir(root);
 await mkdir(join(root, 'child'));
@@ -56,7 +121,7 @@ const planWire=${JSON.stringify(join(directory, 'plan-wire'))};
 const complete=(threadId,id)=>{const thread=threads.get(threadId);if(thread?.active!==id)return;thread.active=null;event('turn/completed',{threadId,turn:{id,status:'completed',items:[]}});};
 readline.createInterface({input:process.stdin}).on('line', line=>{
  const m=JSON.parse(line), p=m.params||{}; let result={};
- if(!m.method){if(pendingApproval){const a=pendingApproval;pendingApproval=null;event('serverRequest/resolved',{threadId:a.threadId,requestId:m.id});complete(a.threadId,a.turnId);}return;}
+ if(!m.method){if(pendingApproval){fs.writeFileSync(${JSON.stringify(join(directory, 'approval-response'))},JSON.stringify(m));const a=pendingApproval;pendingApproval=null;event('serverRequest/resolved',{threadId:a.threadId,requestId:m.id});complete(a.threadId,a.turnId);}return;}
  if(m.method==='initialize') result={userAgent:'fixture'};
  else if(m.method==='config/read') result={config:fs.existsSync(${JSON.stringify(join(directory, 'permissions.json'))})?JSON.parse(fs.readFileSync(${JSON.stringify(join(directory, 'permissions.json'))},'utf8')):{}};
  else if(m.method==='thread/start'){fs.writeFileSync(${JSON.stringify(join(directory, 'start-wire'))},JSON.stringify(p));const id='thread-'+process.pid+'-'+(++count);const t={id,turns:[],historyMode:path.basename(p.cwd)==='child'?'paginated':'legacy'};threads.set(id,t);if(path.basename(p.cwd)==='child')fs.writeFileSync(emptyFile,id);result={thread:t};}
@@ -80,6 +145,8 @@ readline.createInterface({input:process.stdin}).on('line', line=>{
    event('turn/plan/updated',{threadId,plan:[{step:'Read input',status:'in_progress'}]});
    if(text==='approve'){
     pendingApproval={threadId,turnId:id};send({id:'approval-'+id,method:'item/commandExecution/requestApproval',params:{threadId,turnId:id,itemId:'cmd',command:'fixture command',availableDecisions:['accept','decline','cancel']}});
+   } else if(text==='approve-app'){
+    pendingApproval={threadId,turnId:id};send({id:'app-'+id,method:'mcpServer/elicitation/request',params:{threadId,turnId:id,serverName:'node_repl',mode:'form',message:'Allow Calculator?',requestedSchema:{type:'object',properties:{}},_meta:{persist:'always',tool_params:{app:'com.apple.calculator'}}}});
    } else if(text==='question'){
     pendingApproval={threadId,turnId:id};send({id:'question-'+id,method:'item/tool/requestUserInput',params:{threadId,turnId:id,itemId:'input',isBlocking:true,questions:[{id:'choice',header:'Choice',question:'Choose',options:[{label:'A',description:'a'}]}]}});
    } else if(text.startsWith('disconnect'))setTimeout(()=>process.exit(0),30);
@@ -136,7 +203,11 @@ let epoch = '',
 async function api(path, payload, status = 200, authorization = token) {
   const response = await fetch(endpoint + path, {
     method: payload ? 'POST' : 'GET',
-    headers: { Authorization: 'Bearer ' + authorization, 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: 'Bearer ' + authorization,
+      'Content-Type': 'application/json',
+      'X-Agent-Hub-Approvals': 'mcp-v1',
+    },
     body: payload ? JSON.stringify(payload) : undefined,
   });
   assert.equal(response.status, status, path);
@@ -896,6 +967,45 @@ try {
   );
   await api('/v1/stop', { hostId, threadId: thread.id, turnId: 'stale' }, 409);
   await api('/v1/stop', { hostId, threadId: thread.id, turnId: receipt.turnId });
+  await until(thread.id, (s) => s.runtime.state === 'idle');
+  await api('/v1/replies', {
+    ...request,
+    clientMessageId: randomUUID(),
+    text: 'approve-app',
+    attachmentIds: [],
+  });
+  const appWaiting = await until(thread.id, (s) => s.runtime.approvals.length > 0);
+  const appApproval = appWaiting.runtime.approvals[0];
+  assert.equal(appApproval.title, 'Allow Calculator?');
+  assert.match(appApproval.detail, /com.apple.calculator/);
+  assert.equal(appApproval.decisionLabels.acceptAlways, '始终允许');
+  assert.equal(appApproval.responses, undefined, 'Private response mapping stays on Host');
+  assert.equal(appApproval.desktopMethod, undefined);
+  const legacy = await fetch(
+    endpoint + '/v1/history?' + new URLSearchParams({ hostId, threadId: thread.id }),
+    { headers: { Authorization: 'Bearer ' + token } },
+  ).then((r) => r.json());
+  assert.deepEqual(legacy.runtime.approvals[0].decisions, ['decline']);
+  assert.match(legacy.runtime.approvals[0].detail, /更新手机/);
+  assert.deepEqual(
+    appWaiting.runtime.approvals[0].decisions,
+    ['accept', 'acceptAlways', 'decline', 'cancel'],
+    'Legacy projection cannot mutate current or other clients',
+  );
+  const appAnswer = {
+    hostId,
+    threadId: thread.id,
+    approvalId: appApproval.id,
+    turnId: appApproval.turnId,
+    decision: 'acceptAlways',
+  };
+  await api('/v1/approvals', { ...appAnswer, decision: 'acceptForSession' }, 400);
+  await api('/v1/approvals', appAnswer);
+  assert.deepEqual(
+    JSON.parse(await readFile(join(directory, 'approval-response'), 'utf8')).result,
+    { action: 'accept', content: {}, _meta: { persist: 'always' } },
+  );
+  await api('/v1/approvals', appAnswer, 409);
   await until(thread.id, (s) => s.runtime.state === 'idle');
   await api('/v1/replies', {
     ...request,

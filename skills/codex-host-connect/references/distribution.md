@@ -28,13 +28,15 @@ node --input-type=module -e "await import('./apps/host-agent/dist/runtime-server
 
 主开发电脑的规范仓库统一维护 SKILL、Host Agent、Adapter 和桥接工具。各电脑的安装副本仅用于部署与诊断，不独立维护源码；所有修复先在规范仓库合并、检查、构建，再由同一本机接入包分发给 macOS 与 Windows。远端已有改动先导出无凭据、无运行数据的差异，在规范仓库逐项审查回归，不能覆盖本机已有未提交工作。
 
-每次部署核对并记录接入包 SHA-256，同步程序与 SKILL，保留目标自身 Host ID、令牌、授权目录、Node 与服务路径、端口和控制聊天。核对原 Node 从正式入口实际解析到的全部运行组件：使用随包 `scripts/verify-host-runtime.mjs --entry <实际 Host dist/runtime-entry.js> --bundle <本包 bundle.json>`，读取真实 ESM 依赖闭包并比对包内指纹，不启动 Host，也不证明旧进程内存已更新；文件变化后仍核对必要重启后的新 PID 与正式入口。嵌套 `dist/node_modules` 可能遮蔽工作区中的新版，不能只核对名义 `packages` 目录；结果不匹配时保留差异并部署同一包的实际运行副本后复验。通常只重启本产品 Host；首次开启建议所需的原 Codex 正常重启另按 [建议流程](desktop-suggestions.md) 执行。逐机核对实际运行 Adapter 指纹、桌面 owner 与专项证明；不分发或复用其他电脑的私有配置、历史和通过记录。完整开发顺序见随包仓库的 `docs/development.md`。
+每次部署核对并记录接入包 SHA-256，同步程序与 SKILL，保留目标自身 Host ID、令牌、原目录配置、Node 与服务路径、端口和控制聊天。核对原 Node 从正式入口实际解析到的全部运行组件：使用随包 `scripts/verify-host-runtime.mjs --entry <实际 Host dist/runtime-entry.js> --bundle <本包 bundle.json>`，读取真实 ESM 依赖闭包并比对包内指纹，不启动 Host，也不证明旧进程内存已更新；文件变化后仍核对必要重启后的新 PID 与正式入口。嵌套 `dist/node_modules` 可能遮蔽工作区中的新版，不能只核对名义 `packages` 目录；结果不匹配时保留差异并部署同一包的实际运行副本后复验。通常只重启本产品 Host；首次开启建议所需的原 Codex 正常重启另按 [建议流程](desktop-suggestions.md) 执行。逐机核对实际运行 Adapter 指纹、桌面 owner 与专项证明；不分发或复用其他电脑的私有配置、历史和通过记录。完整开发顺序见随包仓库的 `docs/development.md`。
 
 发现指纹不一致时，先核对其他已授权部署的任务、包摘要和源码差异。正在验证的新修复必须保留，不为匹配旧 `bundle.json` 回滚；各现场分别记录实际指纹及归属，统一源码和产物完成后再复核，不能将不同版本写成同包通过。
 
 分派完整安装／升级时同时要求 [Trace 配置与收尾](desktop-suggestions.md#每次安装与升级的收尾)：先说明原生建议同步的用途，macOS 和原生 x64 Windows 默认完成各平台持久环境和 Host 观察器，保留用户明确选择，不反复询问日志、目录或环境授权；核对就绪后给出正常重开动作。Windows 当前实例、新记录与手机效果按本机实际结果报告。只同步文档时保留运行程序、配置与匹配证明，不借此改变采集设置、重启 Host 或重跑模型验收。
 
 接入默认按 [完整功能清单](full-functions.md) 配置新建、主动打开及全部适用能力，核对实际服务、身份和真实运行时就绪，不以 Xcode、手机在场或报告为安装门禁。真实 DEV 清单仍实际执行，配置、能力启用和实测结果分别记录，不能用健康检查代替场景通过。只同步 SKILL/文档时保留已验证程序、配置和证明，记录文档文件摘要；运行 Adapter 与客户端未变时复用匹配证据，无需重启 Host 或重跑模型。
+
+macOS 默认完整接入还必须执行 [单实例共享通道配置](host.md#默认配置原桌面单实例共享通道macos)：随包 v2 环境工具、私有 launcher、Host 持久 `CODEX_SHARED_SERVER_URL` 与用户正常重开后的服务核对；已完成仍加载聊天的归档／删除不能留作用户报错后的可选修复。共享环境和 Trace 一次准备，保留原图标、云端与远程连接，不自动重开或中断原任务。同步顶层 SKILL、随包 `assets/codex-manage/skills/codex-host-connect` 及实际安装副本，核对文件摘要；文档修订包保留原程序字节／运行指纹及历史验收范围，记录新 ZIP SHA-256，不能把新文档当作目标配置已生效。Windows 共享安装路径尚未实现时准确报告限制，不能宣称两平台全功能。
 
 ## Windows 的准确范围
 

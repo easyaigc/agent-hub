@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "date": "2026-10-24",
+  "features": ["F03", "F04", "F32"],
+  "ui": ["UI05", "UI12"],
+  "scenarios": ["S04"],
+  "status": "passed-for-requested-physical-ios-file-interactions-and-formal-device-update",
+  "behavior": [
+    "Artifact cards expose preview and save/share before download; preparation opens the requested native sheet after integrity checks.",
+    "Selected message file links highlight immediately with haptic feedback and a spinner beside their own paragraph.",
+    "Busy actions reject repeated taps; leaving or changing the target cancels local waiting and suppresses late presentations."
+  ],
+  "scope": {
+    "ios": "implemented",
+    "android": "pending-interaction-alignment; A6 remains paused",
+    "hostProtocolKmp": "unchanged",
+    "concurrentWork": "Later unrelated iOS/Android/KMP and Host work remains in the primary workspace; it was excluded from the frozen candidate and is not covered by this delivery."
+  },
+  "auxiliary": {
+    "iosBuild": "pnpm build:ios passed with the final App UUID/module build settings",
+    "signedPhysicalTestBuild": "frozen candidate passed; formal build 106 signing, keychain and application groups verified",
+    "localization": "1555 bilingual entries passed",
+    "productionSwiftDownloadBoundaries": "passed",
+    "mobileParity": "final source change coverage and generated contracts passed; final documentation recheck recorded separately",
+    "pnpmCheck": "full pnpm check passed for the captured primary-workspace run; later concurrent changes were not revalidated or included in the frozen release",
+    "simulatorNativeUI": {
+      "status": "passed",
+      "environment": "iPhone 17 Pro / iOS 26.0 / arm64 simulator, authenticated HTTP loopback to an independent real Host reading an existing model artifact",
+      "tests": 1,
+      "assertions": [
+        "initial direct save and preview actions without a download control",
+        "visible preparing state and disabled repeated share action",
+        "native Save to Files activity and dismiss return",
+        "selected paragraph highlight and exactly one visible loading caption for duplicate URLs in other paragraphs",
+        "current real file content in Quick Look",
+        "missing-file alert and loading cleanup"
+      ],
+      "appSha256": "69a99c8f67644f6bad1009dcc3997f4340c11be30e51ea9c750846f39917e0d4",
+      "images": "Six screenshots retained; artifact actions, preparation, save sheet, selected-link state and real preview visually reviewed; final selected-link screenshot confirms only one paragraph is highlighted.",
+      "latency": "Five-second waits injected in the independent acceptance Host method wrappers only; production download code unchanged.",
+      "priorAttempts": [
+        "TLS pairing failed before product scenarios",
+        "two native test selectors failed on iOS 26 Save to Files cell semantics; real save sheet was present and selectors were corrected",
+        "intermediate XCTest passed but screenshot review found duplicate loading for the same URL across paragraphs; final UI anchored to the clicked paragraph and new assertion passed"
+      ]
+    }
+  },
+  "modelEvidence": {
+    "newInputs": 0,
+    "source": "Read-only reuse of an existing real model artifact and its original Electron/xhigh owner record.",
+    "currentOwner": "unloaded; current independent IPC follower returned no owner turns; not claimed as current live owner validation"
+  },
+  "physical": {
+    "device": "paired physical iPhone 15 Pro Max; CoreDevice reported wired control transport for this run, so Wi-Fi debugging is not claimed",
+    "app": "independent acceptance bundle; formal and prior DEV installations retained",
+    "status": "passed-on-exact-paired-device",
+    "attempts": [
+      {
+        "attempt": 1,
+        "result": "failed-before-product-scenarios",
+        "reason": "First-run network permission prompt consumed the Settings wireless-data tap; own-bundle Settings navigation adjusted; original result retained."
+      },
+      {
+        "attempt": 2,
+        "result": "failed-before-product-scenarios",
+        "reason": "XCTest default handler denied the independent App wireless-data alert; actual discovery request returned network-unavailable. Scoped network interruption handling and own-App data settings corrected."
+      },
+      {
+        "attempt": 3,
+        "result": "failed-before-product-scenarios",
+        "reason": "Acceptance Settings selector used a different cellular-data label than the actual iOS page; corrected from native hierarchy."
+      },
+      {
+        "attempt": 4,
+        "result": "failed-before-product-scenarios",
+        "reason": "Bonjour host read still returned network-unavailable despite own-App network permissions; switched the acceptance fixture to the same local Host VPN routes. No model or business input was submitted."
+      },
+      {
+        "attempt": 6,
+        "result": "failed-before-product-scenarios",
+        "reason": "Own-App local-network permission was verified on and wireless data allowed; both Bonjour and same-Host VPN connection attempts returned network-unavailable. No file action or model input was reached."
+      },
+      {
+        "attempt": 7,
+        "result": "failed-before-product-scenarios",
+        "reason": "Diagnostic App read failed in 3.071ms with NSURLErrorDomain -1009 while own permissions were enabled. Its Debug main executable UUID matched another separately installed App."
+      },
+      {
+        "attempt": 8,
+        "result": "passed",
+        "reason": "Disabling the shared Debug dylib launch stub restored pinned LAN HTTPS; first descriptor response 124.201ms. All requested native UI assertions passed in the diagnostic build."
+      },
+      {
+        "attempt": 9,
+        "result": "passed",
+        "reason": "Final frozen candidate without temporary product diagnostics; independent Bundle-specific module and main executable UUID. One native test, zero failed/skipped; same real file bytes, with cache reuse after current metadata resolution."
+      }
+    ],
+    "appSha256ForFailedConnectionAttempt": "cfea10521542a5e0ab0cc1928abc37c97c166f64d9f11e9a10ef790f5547c907",
+    "currentProductUiValidation": "Frozen candidate: 1 native test passed, 0 failed, 0 skipped; selected-link state, preparation, native Save to Files action, current Quick Look bytes and missing-file error verified. Six screenshots retained; selected-link and native save panel visually inspected.",
+    "frozenCandidate": {
+      "baseCommit": "9cfacafcac7da66a6490bc6e7cd74dd7374a5057",
+      "sourceSha256": "7365e453c25d7df6f717bfa4297c8694f4b8fc6fc447978737638f7c11ff5353",
+      "mainExecutableSha256": "1a1ed3720f26f977eb781d018c4bfe9678d667a1717fb5ea21a5fd1bd81aa691",
+      "unrelatedUncommittedProductionExcluded": true,
+      "temporaryDiagnosticsExcluded": true
+    },
+    "realFile": {
+      "bytes": 28,
+      "sha256": "356057b6cdc17e3d238a6683b6cff17920f96b0015c4e77a6c8b5b42acac9ee5",
+      "phoneAndMacExact": true
+    }
+  },
+  "sourceSha256": {
+    "apps/ios/Sources/MessageLinks.swift": "e968a4e659ae55173214c1a4a286b2c3390e1c914988a51a9f16870b4624f051",
+    "apps/ios/Sources/RootView.swift": "f796dbcf61b8b268b1de953ceb042a0d3a7d38faa12015b7b6b649186f8dceb4",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "c8f763e58d927b106b4789054eaaddafaecaa30548431f08beac608cf5375c0f",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "04a78c21aacc3774c6812a990402c930c4045d62aa94ce3a28655738fa8d65c5",
+    "apps/ios/Tests/CodexManageUITests.swift": "f56d35b0ef28bedde53fb312bea10d2665dedca312ace2c5e1f46769380b4f49",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "1bfcde2ad365a5d3010509bc5adc2f7fa1e0a35b239af175b56d10451e0344c2"
+  },
+  "cleanup": {
+    "ownedHostStopped": true,
+    "ownedHostPortsClosed": true,
+    "dedicatedSimulatorRemoved": true,
+    "temporaryWorktreesCreated": 0,
+    "formalAppAndOriginalDevData": "Formal build 105 updated in place to 106; original encrypted state and preferences byte-identical across installation; normal startup passed. Other DEV bundles/data retained.",
+    "privateEvidence": "retained outside Git in the task private directory"
+  },
+  "connectionFix": {
+    "sharedMainUUID": "38EB2CAB-71EC-34F4-B78A-F4F301B311B0",
+    "candidateMainUUID": "FFC75E75-4055-3F63-8A95-117967E282B8",
+    "formalMainUUID": "353675A0-8D35-393C-B2D1-EE8B674ED33E",
+    "change": "App target disables Debug dylib and includes Bundle ID in the Swift module name; Runner remains separately isolated. TLS pinning, target checks and existing permissions remain enforced.",
+    "reference": "https://developer.apple.com/documentation/technotes/tn3178-checking-for-and-resolving-build-uuid-problems",
+    "scope": "iOS Mach-O build identity only; Android has no corresponding build change; A6 remains paused"
+  },
+  "deployment": {
+    "status": "installed-and-native-launch-verified",
+    "bundleId": "com.easyai.agenthub",
+    "previousBuild": "105",
+    "build": "106",
+    "version": "0.1.0",
+    "mainExecutableSha256": "80b7db81989100390e18c56a0d3893f96f1785c078163a12a679979f311c8d06",
+    "sourceSha256": "7365e453c25d7df6f717bfa4297c8694f4b8fc6fc447978737638f7c11ff5353",
+    "stateExactAcrossInstallation": true,
+    "preferencesExactAcrossInstallation": true,
+    "sameTeamBundleKeychainAndApplicationGroups": true,
+    "preflightBefore": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ordinaryLaunchAfter": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scope": "Original installed formal App updated in place on this paired iPhone; no App Store/TestFlight publication or other-device deployment."
+  },
+  "checkedAt": "2026-10-24T06:52:55.046Z",
+  "prIntegration": {
+    "baseCommit": "d09c2ee89df373b878584b8afe25ad0ffae58db3",
+    "scope": "Only the file card, selected-link feedback, App executable identity settings and necessary tests/documentation are new PR changes. Existing upstream EasyWork and Android changes are preserved as baseline.",
+    "historicalPhysicalEvidence": "Physical UX and formal build 106 deployment above remain bound to the original frozen candidate; they do not claim a fresh physical run of the PR integration.",
+    "auxiliary": "Isolated checks and remote CI for the integration are tracked against the exact PR head. Original physical results remain deployment evidence for their frozen candidate.",
+    "upstreamSync": "Rebased the same task changes onto main after its metadata-fixture and TLS probe fixes. Native iOS production inputs are unchanged by this rebase. The earlier failed CI and original local check remain historical attempts."
+  }
+}

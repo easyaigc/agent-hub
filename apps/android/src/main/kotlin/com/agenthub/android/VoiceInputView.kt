@@ -3,6 +3,11 @@ package com.agenthub.android
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
@@ -18,9 +23,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.sin
 
 @Composable internal fun VoicePermission(controller: VoiceInputController?) {
     var launched by remember { mutableStateOf<String?>(null) }
@@ -39,7 +47,9 @@ import androidx.compose.ui.unit.sp
         Text(text.ifEmpty { "随心输入" },Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(text.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(3.dp)) {
             Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "结束等待","cancel-dictation",onClick=voice::cancel) }
-            Canvas(Modifier.weight(1f).height(44.dp).testTag("dictation-waveform").semantics { contentDescription=voice.status }) {
+            if(voice.phase==VoiceInputController.Phase.FINISHING) {
+                VoiceTranscriptionActivity(voice.status,Modifier.weight(1f))
+            } else Canvas(Modifier.weight(1f).height(44.dp).testTag("dictation-waveform").semantics { contentDescription=voice.status }) {
                 val count=maxOf(1,(size.width/8.dp.toPx()).toInt());val center=count/2
                 repeat(count) { index->
                     val sample=index-center+voice.levels.size/2;val bar=sample in voice.levels.indices
@@ -47,9 +57,41 @@ import androidx.compose.ui.unit.sp
                     drawRoundRect(colors.onSurfaceVariant.copy(alpha=if(bar) 0.85f else 0.4f),Offset((index+0.5f)*size.width/count-1.5.dp.toPx(),(size.height-height)/2),Size(3.dp.toPx(),height),CornerRadius(1.5.dp.toPx()))
                 }
             }
-            Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction(if(voice.phase==VoiceInputController.Phase.FAILED) "refresh" else "stop",if(voice.phase==VoiceInputController.Phase.FAILED) "重试转写" else "结束录音并转写","stop-dictation",voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.FAILED),voice::finish) }
+            Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) {
+                if(voice.phase==VoiceInputController.Phase.FINISHING) {
+                    IconButton(onClick=voice::finish,enabled=false,modifier=Modifier.size(48.dp).testTag("stop-dictation").semantics { contentDescription=voice.status }) {
+                        CircularProgressIndicator(Modifier.size(18.dp),color=colors.onSurfaceVariant,strokeWidth=2.dp)
+                    }
+                } else IconAction(if(voice.phase==VoiceInputController.Phase.FAILED) "refresh" else "stop",if(voice.phase==VoiceInputController.Phase.FAILED) "重试转写" else "结束录音并转写","stop-dictation",voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.FAILED),voice::finish)
+            }
         }
-        Text(voice.status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
+        if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(voice.status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
         if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text("重新录音",fontSize=17.sp,color=Color(0xFF007AFF)) }
+    }
+}
+
+@Composable internal fun VoiceTranscriptionActivity(status: String,modifier: Modifier=Modifier) {
+    // Compose's animation clock respects the system animator duration scale.
+    val transition=rememberInfiniteTransition(label="transcription")
+    val phase by transition.animateFloat(0f,(Math.PI*2).toFloat(),infiniteRepeatable(tween(1200,easing=LinearEasing)),label="transcription-pulse")
+    val color=MaterialTheme.colorScheme.onSurfaceVariant
+    val pulse: @Composable (Modifier,Boolean)->Unit = { pulseModifier,mirrored->
+        Canvas(pulseModifier.height(20.dp).clearAndSetSemantics {}) {
+            val count=maxOf(1,minOf(12,(size.width/6.dp.toPx()).toInt()))
+            val spacing=minOf(6.dp.toPx(),size.width/count)
+            repeat(count) { index->
+                val wave=(sin(phase-index*0.6f)+1)/2
+                val strength=wave*wave
+                val height=(3+12*strength).dp.toPx()
+                val offset=(index-(count-1)/2f)*spacing
+                val x=size.width/2+if(mirrored) -offset else offset
+                drawRoundRect(color.copy(alpha=0.3f+0.5f*strength),Offset(x-1.5.dp.toPx(),(size.height-height)/2),Size(3.dp.toPx(),height),CornerRadius(1.5.dp.toPx()))
+            }
+        }
+    }
+    Row(modifier.heightIn(min=44.dp).testTag("dictation-waveform").clearAndSetSemantics { contentDescription=status },verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+        pulse(Modifier.weight(1f),false)
+        Text(status,fontSize=12.sp,color=color,textAlign=TextAlign.Center)
+        pulse(Modifier.weight(1f),true)
     }
 }

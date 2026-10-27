@@ -31,7 +31,7 @@ export interface DesktopNextTurnSuggestionResponse {
   sourceTurnId: string;
   readOnly: true;
   /** Trace identifies generated text; only desktop-display proves renderer state. */
-  source?: 'desktop-display' | 'native-trace';
+  source?: 'desktop-display' | 'native-trace' | 'runtime';
   suggestion: {
     id: string;
     text: string;
@@ -39,6 +39,6 @@ export interface DesktopNextTurnSuggestionResponse {
     /** Legacy readers use this limit. Source-aware readers use validity instead. */
     expiresAt: string;
     /** Valid while the exact latest completed source remains owner-confirmed. */
-    validity?: 'source-turn' | 'desktop-display' | 'native-version';
+    validity?: 'source-turn' | 'desktop-display' | 'native-version' | 'runtime-version';
   } | null;
 }

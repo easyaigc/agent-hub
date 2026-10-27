@@ -4,6 +4,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
+import androidx.activity.compose.setContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -102,6 +103,36 @@ class MobileReadTest {
         shot("drawer-before-system-back")
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("input keyevent 4").close()
         ui.onNodeWithTag("message-input").assertIsDisplayed().assertTextEquals("抽屉后保留的草稿🙂")
+    }
+    @Test fun hiddenDrawerStopsIndeterminateIndicatorsAndReopeningResumesThem() {
+        val reader=object: HostReads {
+            override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=fixtureWorkspace(state="running")
+            override suspend fun history(client: MobileClient,threadId: String,cursor: String?)=fixtureHistory(threadId)
+        }
+        ui.runOnIdle { session.resetAcceptance(reader) }
+        main { session.connect("合成运行目录","https://fixture.invalid","") }
+        ui.waitUntil(10_000) { session.hasClient && !session.loading }
+        // Keep the component mounted and measurable. A translated parent's
+        // accessibility visibility must not hide an animation leak from this check.
+        val active=androidx.compose.runtime.mutableStateOf(true)
+        ui.runOnUiThread { activity.setContent {
+            androidx.compose.material3.MaterialTheme {
+                Sidebar(session,close={},clients={},newChat={},settings={},active=active.value)
+            }
+        } }
+        ui.waitForIdle()
+        val indeterminate=SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.ProgressBarRangeInfo,
+            androidx.compose.ui.semantics.ProgressBarRangeInfo.Indeterminate) and hasAnyAncestor(hasTestTag("sidebar"))
+        fun count()=ui.onAllNodes(indeterminate,useUnmergedTree=true).fetchSemanticsNodes().size
+        val open=count();assertTrue("Visible running rows must animate",open>0)
+        ui.runOnIdle { active.value=false };ui.waitForIdle()
+        val hidden=count()
+        val folder=File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null),"acceptance/A3").apply { mkdirs() }
+        File(folder,"hidden-drawer-animations.json").writeText(JSONObject().put("openIndeterminate",open).put("hiddenIndeterminate",hidden).toString())
+        assertEquals("A mounted hidden drawer must not retain infinite progress animations",0,hidden)
+        ui.runOnIdle { active.value=true };ui.waitForIdle();assertEquals(open,count())
+        ui.onNodeWithTag("recent-thread-old",useUnmergedTree=true).assertExists()
+        shot("drawer-animation-resumes-after-reopen")
     }
     @Test fun sidebarFoldAndProjectStateStayWithClientAcrossRotation() {
         demo(); ui.onNodeWithTag("open-sidebar").performClick()
@@ -524,6 +555,6 @@ class MobileReadTest {
         ui.onNodeWithTag("settings-done").performClick(); ui.onNodeWithTag("open-sidebar").performClick(); ui.onNodeWithTag("sidebar-search-toggle").performClick(); ui.onNodeWithTag("sidebar-search").performTextInput("绝不存在的合成内容")
         ui.onNodeWithText("没有找到相关内容").assertIsDisplayed(); shot("drawer-empty-search-dark")
     }
-    private fun fixtureWorkspace(name: String="boundary-workspace"): MobileWorkspace=HostReadCodec.workspace(JSONObject().put("hostId","boundary-host").put("name",name).put("connectionMode","history-only").put("projects",org.json.JSONArray()).put("threads",org.json.JSONArray(listOf("old","new").map { JSONObject().put("id",it).put("hostId","boundary-host").put("title",it).put("state","idle") })).toString())
+    private fun fixtureWorkspace(name: String="boundary-workspace",state: String="idle"): MobileWorkspace=HostReadCodec.workspace(JSONObject().put("hostId","boundary-host").put("name",name).put("connectionMode","history-only").put("projects",org.json.JSONArray()).put("threads",org.json.JSONArray(listOf("old","new").map { JSONObject().put("id",it).put("hostId","boundary-host").put("title",it).put("state",state) })).toString())
     private fun fixtureHistory(thread: String): MobileHistory=HostReadCodec.history(JSONObject().put("hostId","boundary-host").put("threadId",thread).put("messages",org.json.JSONArray(listOf(JSONObject().put("id","$thread-message").put("role","assistant").put("text","$thread 回复").put("status","completed")))).toString())
 }

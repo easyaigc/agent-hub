@@ -1,5 +1,11 @@
 # 运行时 HTTP 协议 v1
 
+2026-10-26：`runtime.approvals[]` 增加可选 `decisionLabels: Record<string,string>` 展示文案，动作仍来自 `decisions[]`，手机通过原 `/v1/approvals` 仅提交具名 decision。新版手机以 `X-Agent-Hub-Approvals: mcp-v1` 声明支持；旧客户端读取新类型时仅显示拒绝与更新提示，避免将未知动作误标为停止任务。历史与事件读取均执行此兼容投影，不改变 Host 内部原请求。Host 将 MCP 的 accept／decline／cancel、原请求允许的 session／always 与额外权限的 turn／session 响应映射到原运行时，不向手机开放任意 wire、权限对象或方法名。
+
+2026-10-24 原桌面创建恢复：准备器确认退出且官方 API 已核对准确零 Turn 元数据后，先登记只读会话，再获取原 owner。已拒绝且未写入首条输入的本机准备记录可支持该准确 ID 的显式打开；原创建回执和输入不变，不重放、不以元数据冒充运行时可控。两端共用 Host，无新增手机权限开关；原生与辅助验收分别记证。
+
+2026-10-24 原桌面目录策略简化：desktop-runtime 不再使用 HOST_AGENT_ROOT 作为建议、附件下载或服务就绪的全局授权范围。该旧配置仅保留默认 cwd 兼容语义；托管／共享模式的显式边界和原 Agent 执行权限保持。建议按原 owner、当前实例和准确完成轮验证私有 Trace，不要求项目目录存在；文件下载按本会话已登记资源授权，原消息引用、目标变化、大小与摘要检查保持。iOS／Android 共用 Host 行为，无新增权限界面；实际桌面、模型、实体手机及 Windows 结果分别记证。 详见 [目录策略](adr/0003-desktop-resource-authorization.md)。
+
 ## 大对话最近页与同步失败（2026-10-18）
 
 已实现可选 `window=latest-v1`，适用于 `GET /v1/history` 与指定 thread 的 `GET /v1/events`。原桌面响应增加 `historyWindow: { version: 1, kind: latest | earlier }` 与 `synchronization: { state: live | live-window | history | unavailable, checkedAt?: string }`。最近页最多 100 条消息，以 2 MiB 为分页目标；单条消息不截断，超过目标时单独一页。`nextCursor` 不透明，绑定准确 Host、Thread 与前一页首消息；继续读取较早消息不刷新原 owner 或执行任务。省略参数保持旧完整快照语义，旧 Host 忽略该参数仍可兼容。
@@ -358,3 +364,13 @@ UM04 客户端迁移补充：`codex-host-discovery-v1.schema.json` 新增具名 
 `GET /v1/attachments/resolve-link` 已实现，仅接受 hostId、threadId、messageId、reference 各一次。reference 必须匹配该原桌面助手消息的实际本地 Markdown 链接或此前登记的同消息来源证明；它不是任意文件读取参数。返回准确 Host／thread／message／原引用／readTarget 及当前版本附件。原消息资源可位于项目根外，仍绑定首次规范真实路径；用户消息、跨聊天资源、未引用文件与符号链接改指向均拒绝。`attachments:resolve-message-link` 只在相应桌面运行时声明。
 
 附件失败响应保留 error，并增加稳定 code 与本次 requestId；例如 ENOENT/410、EACCES/403、NOT_REGULAR_FILE/422、FILE_TOO_LARGE/413、FILE_CHANGED/409。手机展示真实原因及诊断编号；旧 Host 未提供该接口时显示实际兼容错误。Host 私有有界诊断包含同一 requestId、路由（不含查询和凭据）、Host/thread/message/resource、阶段、原生错误码及堆栈位置。注册失败也记录，不再静默丢弃；日志不包含请求正文、认证头或文件内容。
+
+## Codex 发现授权兼容（2026-10-24）
+
+2026-10-24：回收 M5 e5bbb73 的 Host Key 修复。新版首次点选需 Key，正确授权后自动重连；兼容旧 automatic 的发现与连接。取消可切换，后台 Codex 401 不重复弹出阻塞提示；新版拒绝不降级。iOS／Android 源码同步，本次原生和逐机部署验收待记录，A6保持暂停。
+
+### 附件元数据漂移与稳定快照
+
+`attachments:resolve-current`、原消息解析和下载继续使用现有路径／来源授权与 SHA-256 契约，不添加新写操作。仅 ctime 改变导致的快照失配允许 Host 最多三次重新授权并完整读取，重试固定首次文件身份；同大小改写并恢复 mtime 仍须重新哈希，不得复用旧缓存或放行旧摘要。持续元数据漂移返回 HTTP 409、`FILE_METADATA_UNSTABLE` 和现有 requestId；它表示未取得稳定快照，不宣称文件内容已变化。实际摘要不符仍返回 `FILE_CHANGED`，目标替换、越权、删除及系统读取错误保持原拒绝。私有日志可核对 `fileChange` 的固定 stat 字段与重试阶段，公共错误不输出这些内部字段。
+
+2026-10-26 阅读版本补充：`contentVersion`校验的是手机实际收到的最终正文，包含`codex-attachment://`链接改写后的内容。原桌面原文与传输正文不同时，Adapter在完整投影原子发布时更新最新版本，以内部持久原文摘要防止后续同一摘要将版本回退。协议字段不变；同ID新内容、旧版本冲突和按阅读者隔离保持。

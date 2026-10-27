@@ -1,10 +1,13 @@
 # 文档索引
 
-Android 已获准按计划分阶段实施，当前专用分支、验收门槛与提交记录见[分步进度](plans/android-alignment-20261022/progress.md)。
+Android 的当前范围、已完成/未完成、优先级与待验项统一见[开发计划与进度总表](plans/android-alignment-20261022/progress.md)；详细过程按主题保存在[分阶段档案](plans/android-alignment-20261022/records/README.md)，总表不再追加运行流水。
 
+手机附件快捷入口见 [详细执行计划](plans/mobile-quick-attachments-20261024.md)：iOS 首批已接入最近图片轻提示、加号快选、拍照、选图、文件与系统粘贴，均先加入本地草稿，点击发送后才上传。辅助检查与真实 DEV 分别记录；外部分享为后续批次，Android A6 暂停要求保持。
+
+Android 已获准按计划分阶段实施，当前专用分支、验收门槛与提交记录见[分步进度](plans/android-alignment-20261022/progress.md)。
 Windows 已有对话的本轮恢复与独立真机结果见 [Windows 同步复核](windows-conversation-sync.md)，正式原连接验收与独立安装的结果分别登记。
 
-Android 当前后续安排见 [2026-10-22 开发与验收计划](plans/android-alignment-20261022.md)、[217 条逐提交对照](plans/android-alignment-20261022/commits.md)和[完整功能/UI/场景矩阵](plans/android-alignment-20261022/parity.md)。业务项目/任务管理暂缓，A6 保持暂停。[更换后的 Android 真机环境结果](acceptance/android-environment-20261021.md)单列开发通路与产品验收边界。
+Android 的原始依据见[217 条逐提交对照](plans/android-alignment-20261022/commits.md)和[冻结功能/UI/场景矩阵](plans/android-alignment-20261022/parity.md)。业务项目/任务管理暂缓，A6 保持暂停。[更换后的 Android 真机环境结果](acceptance/android-environment-20261021.md)保留为当时的环境证据，当前阶段结果以总表和对应档案为准。
 
 本轮问题与收敛顺序见 [Windows Trace、桌面接管与 iPhone 验收问题梳理](plans/windows-trace-convergence-review-20261022.md)。P0 生命周期、P1 原 owner 恢复和 P2 Trace 预算已分别闭环；各项证据、历史失败，以及 P3、手机和正式发布的剩余范围在计划中单列。
 

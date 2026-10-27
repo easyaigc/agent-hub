@@ -24,7 +24,7 @@ const dialog = (row: HistoryRow) =>
 const identity = (row: HistoryRow) =>
   JSON.stringify([row.runId, row.role, row.kind, row.replyPhase ?? null, row.text]);
 
-/** Preserve missing history while replacing only matched provisional dialog rows, one for one. */
+/** Preserve missing history while reconciling matched provisional dialog identities one for one. */
 export function retainedDesktopHistory<T extends HistoryRow>(
   previous: readonly T[],
   incoming: readonly T[],
@@ -36,8 +36,20 @@ export function retainedDesktopHistory<T extends HistoryRow>(
     previous.filter((row) => !provisional(row.id)).map((row) => row.id),
   );
   const replacements = new Map<string, number>();
+  const restartedOwnerReplacements = new Map<string, number>();
   for (const row of incoming) {
-    if (!dialog(row) || provisional(row.id)) continue;
+    if (!dialog(row)) continue;
+    if (provisional(row.id)) {
+      // After a desktop restart the completed owner may reconstruct ordinal
+      // IDs for previously stable dialog. Require positive completed-Turn
+      // evidence and consume each replacement only once, preserving true
+      // same-text multiplicity and all unmatched history/tools/attachments.
+      if (completedTurns.has(row.runId!)) {
+        const key = identity(row);
+        restartedOwnerReplacements.set(key, (restartedOwnerReplacements.get(key) ?? 0) + 1);
+      }
+      continue;
+    }
     // A partial snapshot repeating an already known real item is not evidence
     // that a distinct older provisional item disappeared.
     if (priorStableIds.has(row.id) && !completedTurns.has(row.runId!)) continue;
@@ -48,11 +60,12 @@ export function retainedDesktopHistory<T extends HistoryRow>(
     .filter((row) => {
       if (visible.has(row.id) || initializationIds.has(row.id) || row.kind === 'planImplementation')
         return false;
-      if (!dialog(row) || !provisional(row.id)) return true;
+      if (!dialog(row)) return true;
       const key = identity(row);
-      const remaining = replacements.get(key) ?? 0;
+      const candidates = provisional(row.id) ? replacements : restartedOwnerReplacements;
+      const remaining = candidates.get(key) ?? 0;
       if (!remaining) return true;
-      replacements.set(key, remaining - 1);
+      candidates.set(key, remaining - 1);
       return false;
     })
     .map((row) =>

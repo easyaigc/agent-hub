@@ -54,7 +54,13 @@ for (const language of ['en', 'zh-Hans']) {
       { encoding: 'utf8' },
     ),
   );
-  for (const permission of ['Camera', 'LocalNetwork', 'Microphone', 'SpeechRecognition'])
+  for (const permission of [
+    'Camera',
+    'PhotoLibrary',
+    'LocalNetwork',
+    'Microphone',
+    'SpeechRecognition',
+  ])
     assert.ok(descriptions['NS' + permission + 'UsageDescription']);
 }
 const project = await readFile('apps/ios/CodexManage.xcodeproj/project.pbxproj', 'utf8');
@@ -85,5 +91,5 @@ execFileSync(
 );
 console.log(execFileSync(executable, { env, encoding: 'utf8' }).trim());
 console.log(
-  `Verified ${Object.keys(tables.en).length} bilingual entries and four permission prompts.`,
+  `Verified ${Object.keys(tables.en).length} bilingual entries and five permission prompts.`,
 );

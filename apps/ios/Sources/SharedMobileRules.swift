@@ -37,7 +37,10 @@ final class RuntimeIdentityKeyCache: @unchecked Sendable {
     lock.unlock()
     // Encoding is pure. Concurrent misses may compute twice; never hold a
     // native lock across the Kotlin bridge or an encoder callback.
-    let value = encode()
+    var value = encode()
+    // Kotlin returns an NSString-backed String. Materialize UTF-8 once before
+    // these long identity keys become hot Swift Dictionary lookup keys.
+    value.makeContiguousUTF8()
     lock.lock()
     defer { lock.unlock() }
     if let existing = values[key] { return existing }
@@ -51,9 +54,43 @@ final class RuntimeIdentityKeyCache: @unchecked Sendable {
   }
 }
 
+/// Memoize the shared pure choice using every input, including current aliases.
+/// This holds no runtime readiness, authorization or command result.
+final class RuntimePreferredKeyCache: @unchecked Sendable {
+  private struct Input: Hashable {
+    let canonical: String
+    let candidates: [String]
+    let selected: String?
+  }
+  private let lock = NSLock()
+  private let capacity: Int
+  private var values: [Input: String] = [:]
+  private var order: [Input] = []
+  private var oldest = 0
+  init(capacity: Int = 256) { self.capacity = max(1, capacity) }
+  func value(_ canonical: String, candidates: [String], selected: String?, choose: () -> String) -> String {
+    let input = Input(canonical: canonical, candidates: candidates, selected: selected)
+    lock.lock()
+    if let value = values[input] { lock.unlock(); return value }
+    lock.unlock()
+    var result = choose()
+    result.makeContiguousUTF8()
+    lock.lock()
+    defer { lock.unlock() }
+    if let value = values[input] { return value }
+    if order.count == capacity {
+      values.removeValue(forKey: order[oldest]); order[oldest] = input
+      oldest = (oldest + 1) % capacity
+    } else { order.append(input) }
+    values[input] = result
+    return result
+  }
+}
+
 // Maps platform DTOs only. The identity and composer rules live in mobile-core.
 enum SharedMobileRules {
   private static let identityKeys = RuntimeIdentityKeyCache()
+  private static let preferredKeys = RuntimePreferredKeyCache()
   static func scope(_ target: AgentRuntimeTarget) -> TargetScope {
     TargetScope(agentId: target.agentId, accountAuthority: target.account?.authority, accountSubject: target.account?.subject,
       hostId: target.hostId, workspaceId: target.workspaceId, runtimeId: target.runtimeId)
@@ -76,7 +113,9 @@ enum SharedMobileRules {
     }
   }
   static func preferredRuntimeKey(_ canonical: String, candidates: [String], selectedLegacy: String? = nil) -> String {
-    RuntimeIdentity.shared.preferredKey(canonical: canonical, candidates: candidates, selectedLegacy: selectedLegacy)
+    preferredKeys.value(canonical, candidates: candidates, selected: selectedLegacy) {
+      RuntimeIdentity.shared.preferredKey(canonical: canonical, candidates: candidates, selectedLegacy: selectedLegacy)
+    }
   }
   static func timelineMessage(_ message: ChatMessage) -> TimelineMessage {
     TimelineMessage(id: message.id, role: message.role, text: message.text, kind: message.kind, status: message.status,

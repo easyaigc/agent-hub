@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import { readFile, writeFile, mkdtemp, rm, mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { startDirectDiscovery } from '../apps/host-agent/dist/direct-discovery.js';
+import { createServer } from 'node:https';
 import { PrivateConnections } from '../apps/host-agent/dist/private-connections.js';
 
 assert.equal(process.platform, 'darwin');
@@ -99,6 +100,42 @@ const service = await startDirectDiscovery({
     );
   },
 });
+let legacyClaims = 0;
+const legacyServer = createServer(
+  {
+    cert: await readFile(join(directory, 'direct-discovery/cert.pem')),
+    key: await readFile(join(directory, 'direct-discovery/key.pem')),
+  },
+  async (req, res) => {
+    if (req.method === 'GET' && req.url === '/host') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          ...service.descriptor(),
+          connectionMode: 'automatic',
+          endpoints: [legacyEndpoint],
+          endpointHints: [],
+        }),
+      );
+    } else if (req.method === 'POST' && req.url === '/connection/claim') {
+      assert.equal(
+        req.headers.authorization,
+        undefined,
+        'Host Key must not be sent to a legacy automatic endpoint',
+      );
+      legacyClaims++;
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const reply = privateConnections.claim(JSON.parse(Buffer.concat(chunks).toString()), target);
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(reply));
+    } else {
+      service.server.listeners('request')[0](req, res);
+    }
+  },
+);
+await new Promise((done) => legacyServer.listen(0, '127.0.0.1', done));
+const legacyEndpoint = 'https://127.0.0.1:' + legacyServer.address().port;
 const descriptor = service.descriptor();
 descriptor.endpoints.push(
   'https://100.64.0.1:8796',
@@ -140,7 +177,7 @@ import CryptoKit
 import Darwin
 import MobileCore
 ${declarations}
-enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable, wrongHost, message(String) }
+enum HostServiceError: Error { case invalidAddress, invalidResponse, unavailable, wrongHost, hostKeyRequired, message(String) }
 enum TaskNotificationValidation { static func target(_ target: AgentRuntimeTarget) -> Bool { target.agentId == "codex" && !target.hostId.isEmpty && !target.workspaceId.isEmpty && !target.runtimeId.isEmpty } }
 struct Client: Sendable { var id: String; var name: String; var endpoint: String?; var isDemo: Bool; var online: Bool; var codexDirect: CodexDirectConnection? }
 struct WorkspaceSnapshot: Decodable { var hostId: String; var readTarget: AgentRuntimeTarget?; var connectionMode: String }
@@ -150,7 +187,6 @@ ${block(host, '  static func baseURL(')}
 ${block(host, '  static func request(')}
 ${block(host, '  static func hash(')}
 }
-${block(host, 'enum NativeReadAcceptanceTiming {')}
 @main struct Check {
 static func main() async throws {
 let offer = try CodexHostDescriptor.parse(${JSON.stringify(uri)})
@@ -183,6 +219,9 @@ do { _ = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.t
 precondition(automatic.1.codexDirect!.systemEndpoints == ["https://fixture.tail.ts.net:8443"])
 let recovered = try await CodexDiscoveryAPI.connectDiscovered(endpoint, hostId: offer.target.hostId, name: "Authorized", hostKey: offer.token!)
 precondition(recovered.0.token == automatic.0.token)
+let legacy = try await CodexDiscoveryAPI.connectDiscovered(${JSON.stringify(legacyEndpoint)}, hostId: offer.target.hostId, name: "Legacy", hostKey: offer.token!)
+precondition(legacy.2.readTarget == offer.target && legacy.0.token == automatic.0.token)
+
 do { _ = try await CodexDiscoveryAPI.read(endpoint, fingerprint: String(repeating: "0", count: 64), target: offer.target); fatalError("Wrong pin accepted") } catch {}
 var other = offer.target; other.runtimeId = "wrong"
 do { _ = try await CodexDiscoveryAPI.read(endpoint, fingerprint: offer.fingerprint, target: other); fatalError("Wrong target accepted") } catch {}
@@ -235,7 +274,8 @@ print("Codex native QR, all paths, pins, identity, URL boundary and one submitte
   );
   const result = await execute(binary, [], { timeout: 60000 });
   assert.equal(writes, 1);
-  assert.equal(reads, 6);
+  assert.equal(reads, 8);
+  assert.equal(legacyClaims, 1);
   console.log(
     JSON.stringify({
       passed: true,
@@ -246,6 +286,7 @@ print("Codex native QR, all paths, pins, identity, URL boundary and one submitte
     }),
   );
 } finally {
+  legacyServer.close();
   service.close();
   await rm(directory, { recursive: true, force: true });
 }

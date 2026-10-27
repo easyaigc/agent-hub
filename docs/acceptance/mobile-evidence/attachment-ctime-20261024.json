@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "date": "2026-10-24",
+  "features": ["F19", "F32"],
+  "status": "passed-targeted-macbook-and-same-physical-iphone-scope",
+  "mechanism": "ctime-only drift rejects an otherwise identical snapshot; keep ctime invalidation and retry full authorized scans at most three times",
+  "auxiliary": {
+    "beforeFix": "5 original-code filesystem boundaries executed: 3 metadata recovery/exhaustion assertions failed as expected; content/target negative controls passed",
+    "afterFix": "7 deterministic filesystem boundaries passed; pnpm check passed on Node24 with explicit Xcode; pnpm build:ios and isolated signed physical test build passed"
+  },
+  "macbook": "Same installed old implementation reproduces ctime-only FILE_CHANGED; uniform candidate 8 original and 7 new boundaries passed, all runtime copies and actual ESM closure match package; transient read/inspect recover after two complete scans, persistent drift rejects after three",
+  "physicalIPhone": {
+    "baseline": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "exactPairedDeviceMatched": true,
+      "model": "iPhone 15 Pro Max",
+      "os": "27.0.1",
+      "transientRead": "409/FILE_CHANGED",
+      "transientInspect": "409/FILE_CHANGED",
+      "continuousMetadata": "409/FILE_CHANGED",
+      "unchangedControl": "QuickLook content matched"
+    },
+    "candidate": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "exactPairedDeviceMatched": true,
+      "model": "iPhone 15 Pro Max",
+      "os": "27.0.1",
+      "transientRead": "exact QuickLook marker matched; actual read completed after two scans",
+      "transientInspect": "exact QuickLook marker matched; actual inspect recovered after two scans",
+      "continuousMetadata": "409/FILE_METADATA_UNSTABLE after three scans per call",
+      "unchangedControl": "exact QuickLook marker matched; no fresh read observed in candidate window",
+      "comparison": "same script/config/files/owner-generated message and isolated App; test navigation only refined after two pre-download navigation failures, both failures retained"
+    },
+    "ordinaryPreviousPass": "not reused as trigger acceptance"
+  },
+  "limits": [
+    "Historical original metadata writer not proven; no positive iCloud evidence",
+    "No new Android or Windows native acceptance",
+    "A6 remains paused"
+  ],
+  "checks": {
+    "pnpm check": "passed",
+    "pnpm build:ios": "passed",
+    "first check without DEVELOPER_DIR": "failed at KMP xcrun selection; retained, rerun passed"
+  },
+  "commit": "4a1e16cff7faaf64a5d716025fb2fa70fa16cded",
+  "packageSha256": "eefa86febbb911ca238b79be6caf0b98b11e4c8b3e7c34561b87e27fa4f7714d",
+  "adapterFingerprint": "9ca157cb81198de80926d617b77b00f3248a63affd1cd96e40769aaaf6c5e5da",
+  "formalOriginalFiles": {
+    "http": "five files over both authenticated HTTPS and pinned direct TLS: ten downloads 200, bytes and hashes match original",
+    "physical": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "exactPairedDeviceMatched": true,
+      "originalLinkAndAllFiveQuickLookMarkersMatched": true,
+      "phoneBytesMatchOriginalHashes": true,
+      "cacheBoundary": "Valid cache may be reused; fresh authenticated HTTP checked separately"
+    }
+  },
+  "independentVerification": {
+    "ctimeOnlyRawInjectionsChecked": 58,
+    "allOtherStatFieldsAndModeIdentical": true,
+    "originalFixtureInodesMatchBaseline": true,
+    "transientRecoveryAndThreeScanRefusalVerified": true,
+    "phoneFiles": {
+      "originalFiveMatchBothLiveRoutes": true,
+      "transientReadAndInspectExactBytes": true,
+      "unchangedControlExactBytes": true,
+      "continuousNoDownloadedFile": true
+    },
+    "counterBoundary": "Includes background registration; inspect counts are not phone click counts; no new ordinary read observed"
+  },
+  "retainedFailures": {
+    "candidateNavigation": 2,
+    "originalFileRegressionNavigation": 1,
+    "stage": "before download assertions; only test navigation refined",
+    "baselineRuntimeWarning": "Invalid frame dimension warning retained; baseline passed",
+    "candidateRuntimeWarnings": 0
+  },
+  "cleanup": {
+    "temporarySidecar": "identity verified, stopped, loopback listener exited",
+    "temporaryHttpsMapping": "removed; independent source probe returned ECONNREFUSED",
+    "preexistingServeConfiguration": "target reports restored exactly to prior snapshot",
+    "formalHost": "same post-deploy process, authenticated desktop-runtime/live/canControl; runtime fingerprints, protected configuration and original five hashes preserved",
+    "localTemporaryGitWorktrees": "none created"
+  },
+  "distribution": {
+    "date": "2026-10-24",
+    "sourceCommit": "ae35ff13df7fa244eb2fc51881fed7d028271a46",
+    "standardArchive": ".local/skill-distribution/codex-host-connect-complete.zip",
+    "sha256": "8972a733bd9ec1645499eb9c2ab7a905674da96b095aa8c79e9ce594e518f38e",
+    "archiveBytes": 50295645,
+    "build": "git archive; independent frozen-lockfile install; six initially absent dist compiled in dependency order; explicit current packager",
+    "packagedChecks": {
+      "metadataBoundaryTests": {
+        "passed": 7,
+        "failed": 0
+      },
+      "actualEsmClosure": "matches bundle fingerprints",
+      "allRuntimeFingerprintsMatchMacBookAcceptedPackage": true,
+      "attachmentModuleSha256": "b44914668c6018412ed8daf89d03174e83ea36b0161b2df202a904d6072dfaf6",
+      "zipCrc": "passed"
+    },
+    "defaultArchive": "promoted to canonical complete.zip with re-read SHA256 and prior archive backup",
+    "installedSkill": {
+      "updated": true,
+      "differenceFiles": 249,
+      "added": 124,
+      "deleted": 0,
+      "oldChangedFilesBackedUp": true,
+      "taskHubUnchanged": true,
+      "privateAndUnknownFilesPreserved": true,
+      "activeProgramUse": false,
+      "serviceRestart": false,
+      "sourceAndBothRuntimeCopiesMatch": true,
+      "metadataTestsPassed": 7
+    },
+    "mergeChecks": {
+      "iosBuild": "passed",
+      "androidBuild": "passed",
+      "packagerBoundaries": {
+        "passed": 13,
+        "failed": 0
+      },
+      "fullCheck": "passed with canonical main baseline and complete Xcode; initial sandbox loopback EPERM retained, authorized rerun passed",
+      "sourceFormattingAndLint": "passed; packager-specific checks rerun after the packaging change"
+    },
+    "scope": "Runtime evidence reused only where exact compiled fingerprints match; no new remote deployment, phone, Android native or full-product acceptance from this publishing step"
+  }
+}

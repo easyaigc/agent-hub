@@ -1,5 +1,7 @@
 # 独立空会话桥接
 
+已准备但尚未获得原 owner 的准确空会话，需保留原创建操作和输入边界。新版 Host 在官方零 Turn 元数据核对后先作只读登记；对既有已拒绝、已释放且无首条输入写入的本机准备记录，显式打开仅恢复导航与 owner，不重放创建、不自动发原正文。未确认退出、非空或目标不匹配仍拒绝。
+
 默认采用独立桥接：Host 通过官方 API 准备零 Turn 空会话，准备进程正常退出后，原桌面按准确 ID 接管并独占执行。不依赖安装聊天或控制聊天的 owner，不发送初始化模型轮。`CodexHistoryReader` 继续只读，准备器不接受任意 RPC、shell 或工具调用。
 
 当前实现为 `DesktopThreadPreparer` 和 `DesktopPreparedBridge`。当前统一构建在三台目标通过六项原桌面门槛、归档与重启恢复，普通正式 iPhone 的三个连接通过新建、回复和草稿恢复；范围见随包 `docs/acceptance/desktop-prepared-current.md`。新接入或升级仍须按实际目标和指纹逐项验收。旧 controller 场景证明不能换字段充当新证明。
@@ -18,7 +20,7 @@
 
 通过 `CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG=<absolute-local-config>` 加载；它优先于旧 controller 配置。该配置没有 threadId。CLI 固定为当前官方桌面附带的绝对路径，Codex Home 固定为同一原桌面用户的目录；不得用其他用户、其他电脑或隔离 probe 的 Home 接入正式运行时。只重启本产品 Host，不改变官方启动。
 
-macOS 服务自动发现原状态目录的 `prepared-bridge.json`；Windows 启动／重启时传入该配置路径，并保留既有服务环境。正常安装省略 `validationOnly` 或设为 false；旧 `verification` 字段与报告可保留为证据，缺失、过期、不可读取均不关闭独立桥接。升级核对遗留验证限制的用途，保留用户明确选择的 `validationOnly=true`，不删除身份、密钥、授权目录、附件或操作日志。
+macOS 服务自动发现原状态目录的 `prepared-bridge.json`；Windows 启动／重启时传入该配置路径，并保留既有服务环境。正常安装省略 `validationOnly` 或设为 false；旧 `verification` 字段与报告可保留为证据，缺失、过期、不可读取均不关闭独立桥接。升级核对遗留验证限制的用途，保留用户明确选择的 `validationOnly=true`，不删除身份、密钥、原目录配置、附件或操作日志。
 
 私有配置匹配本 Host 且真实 IPC 就绪后，声明正式 `desktop:creations`、`desktop:creations:projectless`、`desktop:open`。`desktopVersion` 可省略，旧值无需校正且不影响能力；升级保留身份、证明引用及其他配置，不改写旧验收结论。普通安装无需 Xcode、手机在场、控制聊天或测试报告；每次实际创建仍须确认准备进程退出，打开及首条输入仍须核对准确原 owner。配置和能力启用不能替代真实验收。
 

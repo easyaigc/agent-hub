@@ -97,6 +97,7 @@ async function fixture(name, attachments = []) {
     ready: true,
     close() {},
     registerOwnerThread() {},
+    registerCatalogThread() {},
     async read(method) {
       if (method === 'thread/read') return { thread: metadata };
       if (method === 'model/list') {

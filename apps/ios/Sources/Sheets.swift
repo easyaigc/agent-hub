@@ -238,12 +238,27 @@ struct CodexConnectionForm: View {
     }
 
     @ViewBuilder private var discoveredHosts: some View {
-        if authorizationHost == nil {
+        if let host = authorizationHost {
+            Section {
+                Text(host.name)
+                SecureField(L10n.tr("Host Key"), text: $hostKey)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .accessibilityIdentifier("codex-host-key")
+                if let formError { Text(formError).foregroundStyle(.red).accessibilityIdentifier("client-form-error") }
+                Button(L10n.tr("授权并连接")) { connectDiscovered(host) }
+                    .disabled(hostKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("codex-authorize-connect")
+                Button(L10n.tr("取消")) { authorizationHost = nil; hostKey = ""; formError = nil }
+                    .accessibilityIdentifier("codex-authorize-cancel")
+            } header: { Text(L10n.tr("首次连接授权")) } footer: {
+                Text(L10n.tr("请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。"))
+            }
+        }
         Section {
             ForEach(discoveryRows) { host in
                 Button {
-                    if host.known { connectDiscovered(host) }
-                    else { authorizationHost = host; hostKey = ""; formError = nil; failedKnownHost = nil }
+                    authorizationHost = nil; hostKey = ""
+                    connectDiscovered(host)
                 } label: {
                     HStack {
                         Image(systemName: "desktopcomputer")
@@ -266,24 +281,7 @@ struct CodexConnectionForm: View {
             }
             Button(L10n.tr("重新查找"), systemImage: "arrow.clockwise") { Task { await discovery.scan(store); await vpnDiscovery.scan(store) } }
         } header: { Text(L10n.tr("自动发现")) } footer: {
-            Text(L10n.tr("自动查找同一网络的电脑，首次连接需输入电脑端的 Host Key 授权。"))
-        }
-        }
-        if let host = authorizationHost {
-            Section {
-                Text(host.name)
-                SecureField(L10n.tr("Host Key"), text: $hostKey)
-                    .textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .accessibilityIdentifier("codex-host-key")
-                if let formError { Text(formError).foregroundStyle(.red).accessibilityIdentifier("client-form-error") }
-                Button(L10n.tr("授权并连接")) { connectDiscovered(host) }
-                    .disabled(hostKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .accessibilityIdentifier("codex-authorize-connect")
-                Button(L10n.tr("取消")) { authorizationHost = nil; hostKey = ""; formError = nil }
-                    .accessibilityIdentifier("codex-authorize-cancel")
-            } header: { Text(L10n.tr("首次连接授权")) } footer: {
-                Text(L10n.tr("请从这台电脑的私有密钥文件读取 Host Key。授权后将安全保存设备凭据，后续自动重连。"))
-            }
+            Text(L10n.tr("自动查找同一网络的电脑；需要密钥的电脑会在首次连接时要求输入 Host Key。"))
         }
         if authorizationHost == nil, let formError { Section {
             Text(formError).foregroundStyle(.red).accessibilityIdentifier("client-form-error")
@@ -337,8 +335,12 @@ struct CodexConnectionForm: View {
                 dismiss()
             } catch {
                 NativeReadAcceptanceTiming.record("connection-failed", hostId: host.id)
-                formError = error.userFacingDescription
-                if host.known { failedKnownHost = host }
+                if case HostServiceError.hostKeyRequired = error {
+                    authorizationHost = host; hostKey = ""; formError = nil
+                } else {
+                    formError = error.userFacingDescription
+                    if host.known { failedKnownHost = host }
+                }
             }
             connecting = false
         }

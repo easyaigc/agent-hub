@@ -152,8 +152,11 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         return MobileSnapshotCodec.history(wire.toString())
     }
     override suspend fun events(client: MobileClient,threadId: String,epoch: String,cursor: Long): EventBatch {
-        val c=channel(client);val eventEpoch=c.target.runtimeId;val next=c.events(threadId,if(epoch==eventEpoch)cursor else 0)
-        return EventBatch(client.id,eventEpoch,next,epoch!=eventEpoch,true,null,listOf(history(client,threadId,null)))
+        val c=channel(client);val eventEpoch=c.target.runtimeId+":"+c.epoch;val next=c.events(threadId,if(epoch==eventEpoch)cursor else 0)
+        val receivedEpoch=c.target.runtimeId+":"+c.epoch
+        if(!com.agenthub.core.OperationPolicies.eventNeedsHistory(epoch,receivedEpoch,cursor,next))
+            return EventBatch(client.id,receivedEpoch,next,false,true,null,emptyList())
+        return EventBatch(client.id,receivedEpoch,next,epoch!=receivedEpoch,true,null,listOf(history(client,threadId,null)))
     }
     override fun creationOperationId(client: MobileClient,parent: String)="create-$parent"
     override suspend fun createThread(client: MobileClient,projectId: String?,operationId: String): MobileThread=conversation(client,channel(client).request("thread/create",JSONObject().put("clientRequestId",operationId).apply { projectId?.let { put("projectId",it) } },operationId).getJSONObject("thread"))

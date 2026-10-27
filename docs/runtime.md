@@ -57,9 +57,9 @@ CODEX_DESKTOP_CONTROLLER_CONFIG=/path/to/private/controller.json pnpm service:de
 
 此前 UI 路线的真实验收被电脑操作工具访问原桌面的安全限制阻止；未执行原生 driver 控制该 App。当前控制聊天通道通过原桌面自己的内置工具工作，没有采用该 UI 路线，二者的验收记录分开保存。
 
-## 原桌面单实例共享服务（macOS，显式配置）
+## 原桌面单实例共享服务（macOS，默认完整接入）
 
-`scripts/desktop-shared-environment.mjs` 提供 `install/status/apply/disable`。用户明确选择该接入时，版本 2 安装器只设置当前用户的 `CODEX_CLI_PATH`，并注册恢复该本机路径的登录任务；不启用全局 `CODEX_APP_SERVER_FORCE_CLI`，以保留原 durable／云端与远程连接。迁移时仅移除私有清单及摘要证明属于旧版配置器的全局强制开关，后续用户设置保持；它不启动、退出或复制 ChatGPT。用户从原 Dock、Spotlight 或原应用正常重开后，原 Electron 通过本机窄启动适配器启动唯一官方执行服务，保留真实原生工具环境，Host 以第二条连接管理相同会话。正式使用保持一个原应用实例、一个 Dock 图标。
+`scripts/desktop-shared-environment.mjs` 提供 `install/status/apply/disable`。macOS 首次接入、增加电脑、完整修复及升级由 [codex-host-connect Skill](../skills/codex-host-connect/SKILL.md) 默认配置此路径，不要求用户再次选择；明确缩小范围或 CLI 配置冲突时保留原选择并报告限制，只同步文档不改变现有配置。版本 2 安装器只设置当前用户的 `CODEX_CLI_PATH`，并注册恢复该本机路径的登录任务；不启用全局 `CODEX_APP_SERVER_FORCE_CLI`，以保留原 durable／云端与远程连接。迁移时仅移除私有清单及摘要证明属于旧版配置器的全局强制开关，后续用户设置保持；它不启动、退出或复制 ChatGPT。用户从原 Dock、Spotlight 或原应用正常重开后，原 Electron 通过本机窄启动适配器启动唯一官方执行服务，保留真实原生工具环境，Host 以第二条连接管理相同会话。正式使用保持一个原应用实例、一个 Dock 图标。
 
 ```bash
 node scripts/desktop-shared-environment.mjs install \

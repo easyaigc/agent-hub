@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import com.agenthub.core.*
 
@@ -101,6 +102,7 @@ import com.agenthub.core.*
                 val density = LocalDensity.current
                 val widthPx = with(density) { width.toPx() }
                 val executionMaxHeight = (maxHeight-220.dp).coerceIn(80.dp,320.dp)
+                val inlineToolApprovals=(maxWidth>maxHeight || density.fontScale>1.3f) && session.selectedThread.isNotEmpty()
                 var drag by remember { mutableStateOf<Float?>(null) }
                 val settled by animateFloatAsState(if(sidebar) 0f else -widthPx,label="sidebar")
                 val offset = drag ?: settled
@@ -114,18 +116,41 @@ import com.agenthub.core.*
                     else {
                         if (!session.selectedClient.isDemo && !session.selectedClient.online) Text(session.selectedClient.connectionLabel,Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp).testTag("offline-cache"),fontSize=12.sp,color=colors.onSurfaceVariant)
                         ConversationSyncBanner(session)
-                        if (session.selectedThread.isEmpty()) Column(Modifier.weight(1f).fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) { Text("开始一段新对话",fontSize=22.sp,fontWeight=FontWeight.SemiBold); Text("从侧栏选择项目或继续对话。",Modifier.padding(top=10.dp),color=colors.onSurfaceVariant,fontSize=14.sp) }
-                        else ChatMessages(session,dark,Modifier.weight(1f))
-                        if (!session.selectedClient.isDemo && !session.canCompose) Text(if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。",Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
-                        if(!session.selectedClient.isDemo) { ExecutionPanels(session,executionMaxHeight,autoPresentQuestions=effectiveSheet==null && !sidebar && session.error==null); GenerationControls(session) { openSheet("generation") } }
-                        QueuedCommands(session,interactive=!sidebar && effectiveSheet==null && session.error==null)
-                        StorageIdentityNotice(session)
-                        Composer(session,interactive=!sidebar && effectiveSheet==null && session.error==null) { composerFocused=it }
+                        if (session.selectedThread.isEmpty() && session.pendingCreationMessage==null) Column(Modifier.weight(1f).fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) { Text("开始一段新对话",fontSize=22.sp,fontWeight=FontWeight.SemiBold); Text("从侧栏选择项目或继续对话。",Modifier.padding(top=10.dp),color=colors.onSurfaceVariant,fontSize=14.sp) }
+                        else ChatMessages(session,dark,Modifier.weight(1f),inlineToolApprovals)
+                        val bottomScroll=rememberScrollState()
+                        LaunchedEffect(session.targetKey) { bottomScroll.scrollTo(0) }
+                        // Keep natural control heights when the IME leaves a short
+                        // viewport; every control can then be scrolled into view.
+                        Column(Modifier.fillMaxWidth().verticalScroll(bottomScroll).testTag("bottom-controls")) {
+                            if (!session.selectedClient.isDemo && !session.canCompose) Text(if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。",Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                            if(!session.selectedClient.isDemo) { ExecutionPanels(session,executionMaxHeight,autoPresentQuestions=effectiveSheet==null && !sidebar && session.error==null,inlineToolApprovals=inlineToolApprovals); GenerationControls(session,compactLayout=inlineToolApprovals) { openSheet("generation") } }
+                            QueuedCommands(session,interactive=!sidebar && effectiveSheet==null && session.error==null)
+                            StorageIdentityNotice(session)
+                            Composer(session,interactive=!sidebar && effectiveSheet==null && session.error==null) { composerFocused=it }
+                        }
                     }
                 }
                 // Keep the drawer/list mounted: position changes do not destroy scroll/search state.
-                if (sidebar || drag != null) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=MobileDesign.sidebarBackdropAlpha*((offset+widthPx)/widthPx))).clickable { focus.clearFocus(); sidebar=false }.testTag("sidebar-backdrop"))
-                Box(Modifier.width(width).fillMaxHeight().offset { IntOffset(offset.toInt(),0) }.semantics { if(!sidebar && drag==null) hideFromAccessibility() }.pointerInput(widthPx) {
+                val interactiveDrawer=sidebar || drag!=null
+                val closingDrawer=!interactiveDrawer && offset > -widthPx+.5f
+                // Retain the dimming surface for the same motion as the panel, as on iOS.
+                // Its closing-only hits are absorbed until the visible transition finishes.
+                if (interactiveDrawer || closingDrawer) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=MobileDesign.sidebarBackdropAlpha*((offset+widthPx)/widthPx).coerceIn(0f,1f))).clickable { focus.clearFocus(); sidebar=false }.testTag(if(interactiveDrawer) "sidebar-backdrop" else "sidebar-closing-backdrop").semantics { if(closingDrawer) hideFromAccessibility() })
+                Box(Modifier.width(width).fillMaxHeight().offset { IntOffset(offset.toInt(),0) }.semantics { if(!sidebar && drag==null) hideFromAccessibility() }.pointerInput(sidebar,drag!=null) {
+                    // The kept-mounted panel still draws while closing. Like iOS's disabled
+                    // panel during settlement, consume its remaining hits before child controls.
+                    awaitEachGesture {
+                        val down=awaitFirstDown(requireUnconsumed=false,pass=PointerEventPass.Initial)
+                        if(!sidebar && drag==null) {
+                            down.consume()
+                            do {
+                                val event=awaitPointerEvent(PointerEventPass.Initial)
+                                event.changes.forEach { it.consume() }
+                            } while(event.changes.any { it.pressed })
+                        }
+                    }
+                }.pointerInput(widthPx) {
                     detectHorizontalDragGestures(onDragStart={ focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
                     Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },active=sidebar&&effectiveSheet==null&&session.error==null)
@@ -256,51 +281,54 @@ import com.agenthub.core.*
 }
 @Composable private fun Composer(session: MobileSession,interactive: Boolean,onFocus: (Boolean) -> Unit) {
     val colors=MaterialTheme.colorScheme; val decision=session.decision
+    val actionContext=session.composerActionContext()
     val voice=session.voice
     if(voice?.active==true) { VoiceInputStrip(voice,session.text);return }
     val context=LocalContext.current; val tasks=rememberCoroutineScope()
-    var destination by remember { mutableStateOf<DraftDestination?>(null) }
+    var destination by remember { mutableStateOf<AttachmentImportDestination?>(null) }
     var addMenu by remember { mutableStateOf(false) }
-    var actions by remember { mutableStateOf(false) }
+    var actions by remember { mutableStateOf<ComposerActionContext?>(null) }
+    val resolver=context.applicationContext.contentResolver
+    LaunchedEffect(actionContext) { if(actions?.let { !session.composerActionCurrent(it) }==true) actions=null }
     val document=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        val original=destination
-        if(original!=null && session.isCurrent(original)) tasks.launch {
-            try { uris.forEach { uri ->
-                val file= kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val name=context.contentResolver.query(uri,arrayOf(OpenableColumns.DISPLAY_NAME),null,null,null)?.use { cursor -> if(cursor.moveToFirst()) cursor.getString(0) else null } ?: "附件"
-                    val media=context.contentResolver.getType(uri) ?: "application/octet-stream"
-                    val bytes=context.contentResolver.openInputStream(uri)?.use { input ->
-                        val out=java.io.ByteArrayOutputStream(); val buffer=ByteArray(16_384)
-                        while(true) { val n=input.read(buffer); if(n<0) break; require(out.size()+n<=20*1024*1024) { "单个附件不能超过 20 MiB" }; out.write(buffer,0,n) }; out.toByteArray()
+        val original=destination;destination=null
+        if(original!=null&&uris.isNotEmpty()) {
+            val loaders=uris.map { uri ->
+                val load: suspend ()->LocalAttachmentInput = {
+                    val name=resolver.query(uri,arrayOf(OpenableColumns.DISPLAY_NAME),null,null,null)?.use { cursor -> if(cursor.moveToFirst()) cursor.getString(0) else null } ?: "附件"
+                    val media=resolver.getType(uri) ?: "application/octet-stream"
+                    val bytes=resolver.openInputStream(uri)?.use { input ->
+                        val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(16_384)
+                        while(true) { kotlinx.coroutines.currentCoroutineContext().ensureActive();val n=input.read(buffer);if(n<0)break;require(out.size()+n<=20*1024*1024) { "单个附件不能超过 20 MiB" };out.write(buffer,0,n) };out.toByteArray()
                     } ?: error("无法读取所选附件")
-                    Triple(name,media,bytes)
-                }
-                session.addAttachment(file.first,file.second,file.third,original)
-            } } catch(failure: Exception) { if(session.isCurrent(original)) session.error=failure.message ?: "附件读取失败，原草稿已保留" }
+                    LocalAttachmentInput(name,media,bytes)
+                };load
+            }
+            session.importAttachments(original,loaders)
         }
     }
-    if(actions) DropdownMenu(true,{ actions=false }) {
-        if(decision.action=="stop") DropdownMenuItem(text={ Text("停止任务") },onClick={ actions=false; session.performAction() },modifier=Modifier.testTag("action-stop"))
+    actions?.let { original -> DropdownMenu(true,{ actions=null }) {
+        if(session.canStop) DropdownMenuItem(text={ Text("停止任务") },onClick={ actions=null; session.stopTask(original) },modifier=Modifier.testTag("action-stop"))
         if(session.canRunAgain) {
-            DropdownMenuItem(text={ Text("继续任务") },onClick={ actions=false; session.runAgain(false) },modifier=Modifier.testTag("action-resume"))
-            DropdownMenuItem(text={ Text("重新运行上一任务") },onClick={ actions=false; session.runAgain(true) },modifier=Modifier.testTag("action-restart"))
+            DropdownMenuItem(text={ Text("继续任务") },onClick={ actions=null; session.runAgain(false,original) },modifier=Modifier.testTag("action-resume"))
+            DropdownMenuItem(text={ Text("重新运行上一任务") },onClick={ actions=null; session.runAgain(true,original) },modifier=Modifier.testTag("action-restart"))
         }
-    }
+    } }
     val label=when(decision.action) { "stop"->"停止任务"; "resume"->"继续任务"; "busy"->"正在处理"; else->"发送消息" }
     val tag=when(decision.action) { "stop"->"stop-turn"; "resume"->"resume-task"; "busy"->"composer-busy"; else->"send-message" }
     Column {
-    if(session.attachments.isNotEmpty()) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal=16.dp)) { session.attachments.forEach { file -> InputChip(selected=false,onClick={ session.removeAttachment(file.manifest.id) },label={ Text(file.manifest.name) },trailingIcon={ Text("×") },modifier=Modifier.padding(end=4.dp).testTag("draft-attachment-${file.manifest.id}")) } }
+    if(session.attachments.isNotEmpty()) DraftAttachmentStrip(session,interactive)
     Row(Modifier.fillMaxWidth().padding(horizontal=MobileDesign.composerHorizontalInset.dp,vertical=MobileDesign.composerVerticalInset.dp).floatingProduct(MobileDesign.composerRadius).padding(4.dp).testTag("composer"),verticalAlignment=Alignment.CenterVertically) {
         Box {
             IconAction("plus","添加附件","composer-add",interactive && session.canCompose && !session.importing && session.transferStatus==null) { addMenu=true }
             DropdownMenu(addMenu,{ addMenu=false }) {
-                DropdownMenuItem(text={ Text("添加文件") },onClick={ addMenu=false; destination=session.attachmentDestination(); document.launch(arrayOf("*/*")) },modifier=Modifier.testTag("choose-files"))
+                DropdownMenuItem(text={ Text("添加文件") },onClick={ addMenu=false; destination=session.attachmentImportDestination(); document.launch(arrayOf("*/*")) },modifier=Modifier.testTag("choose-files"))
                 DropdownMenuItem(text={ Text(if(session.selectedCollaboration=="plan") "关闭计划模式" else "计划模式") },enabled=session.canSelectPlan,onClick={ addMenu=false; session.setPlanMode(session.selectedCollaboration!="plan") },modifier=Modifier.testTag("toggle-plan-mode"))
             }
         }
         BasicTextField(session.text,{ session.text=it },Modifier.weight(1f).heightIn(min=40.dp,max=144.dp).padding(vertical=10.dp).onFocusChanged { onFocus(it.isFocused) }.testTag("message-input"),enabled=interactive,maxLines=6,textStyle=TextStyle(color=colors.onSurface,fontSize=16.sp,lineHeight=22.sp),decorationBox={ inner -> if(session.text.isEmpty()) Text("询问 ${session.agentTitle}",color=colors.onSurfaceVariant.copy(alpha=.6f),fontSize=16.sp); inner() })
         IconAction("mic","语音输入","voice-input",interactive && session.canUseVoice && session.voice?.active==false) { session.beginVoice() }
-        Surface(shape=CircleShape,color=if(decision.enabled) colors.onSurface else colors.onSurface.copy(alpha=.12f),modifier=Modifier.size(48.dp).testTag(tag).semantics { contentDescription=label; role=Role.Button; if(!decision.enabled) disabled() }.combinedClickable(enabled=decision.enabled || session.canRunAgain,onClick={ if(decision.enabled && (session.voice?.active!=true || decision.action=="stop")) session.performAction() },onLongClick={ if(decision.action=="stop" || session.canRunAgain) actions=true })) {
+        Surface(shape=CircleShape,color=if(decision.enabled) colors.onSurface else colors.onSurface.copy(alpha=.12f),modifier=Modifier.size(48.dp).testTag(tag).semantics { contentDescription=label; role=Role.Button; if(!decision.enabled) disabled() }.combinedClickable(enabled=decision.enabled || session.canStop || session.canRunAgain,onClick={ if(decision.enabled && (session.voice?.active!=true || decision.action=="stop")) session.performAction(actionContext) },onLongClick={ if(session.composerActionCurrent(actionContext) && (session.canStop || session.canRunAgain)) actions=actionContext })) {
             Box(contentAlignment=Alignment.Center) { ProductIcon(if(decision.action=="busy") "more" else decision.action,color=if(decision.enabled) colors.background else colors.onSurface.copy(alpha=.3f)) }
         }
     }
@@ -324,9 +352,13 @@ import com.agenthub.core.*
     }
 }
 
-@Composable private fun ChatMessages(session: MobileSession,dark: Boolean,modifier: Modifier) {
+@Composable private fun ChatMessages(session: MobileSession,dark: Boolean,modifier: Modifier,inlineToolApprovals: Boolean=false) {
     val list=rememberLazyListState(); val scope=rememberCoroutineScope()
-    val timeline=session.timeline; val messages=session.messages
+    val timeline=session.timeline; val messages=session.messages; val pending=session.pendingCreationMessage
+    // In compact landscape, use the same history viewport as iOS instead of a
+    // second capped scroller that clips the approval heading on button focus.
+    val toolApprovals=if(inlineToolApprovals) session.runtime?.approvals.orEmpty().filter { it.kind!="question" } else emptyList()
+    val messageCount=timeline.rows.size+(if(pending!=null)1 else 0)+toolApprovals.size
     var initiallyLoaded by remember(session.targetKey) { mutableStateOf(false) }
     var appliedSearchToken by remember(session.targetKey) { mutableStateOf<String?>(null) }
     var paging by remember(session.targetKey) { mutableStateOf(false) }
@@ -347,7 +379,7 @@ import com.agenthub.core.*
                 if(anchor>=0) {
                     withFrameNanos { }
                     kotlinx.coroutines.withTimeoutOrNull(10_000) {
-                        snapshotFlow { session.targetKey!=target || list.layoutInfo.totalItemsCount>=updated.rows.size+control }.first { it }
+                        snapshotFlow { session.targetKey!=target || list.layoutInfo.totalItemsCount>=updated.rows.size+control+toolApprovals.size+1 }.first { it }
                     } ?: return@launch
                     if(session.targetKey==target) list.requestScrollToItem(anchor+control)
                 }
@@ -357,17 +389,17 @@ import com.agenthub.core.*
     val earlierAction by rememberUpdatedState(::loadEarlier)
     val density=LocalDensity.current
     LaunchedEffect(session.scrollToLatestRevision) {
-        if(session.scrollToLatestRevision>0 && timeline.rows.isNotEmpty()) {
+        if(session.scrollToLatestRevision>0 && messageCount>0) {
             withFrameNanos { }
             val historyControl=if(timeline.hasEarlierMessages || session.historyCursor!=null || paging || session.revealedEarlier) 1 else 0
-            list.requestScrollToItem(timeline.rows.lastIndex+historyControl)
+            list.requestScrollToItem(messageCount+historyControl)
         }
     }
-    LaunchedEffect(session.targetKey,messages.size,messages.lastOrNull()?.text) {
-        if(!paging && timeline.rows.isNotEmpty() && (session.chatSearchJump==null||session.chatSearchJump?.token==appliedSearchToken) && (!initiallyLoaded || !list.canScrollForward)) {
+    LaunchedEffect(session.targetKey,messages.size,messages.lastOrNull()?.text,pending?.message?.id,toolApprovals) {
+        if(!paging && messageCount>0 && (session.chatSearchJump==null||session.chatSearchJump?.token==appliedSearchToken) && (!initiallyLoaded || !list.canScrollForward)) {
             // BoxWithConstraints may subcompose this effect during measurement.
             // Request the next layout instead of forcing a nested measure pass.
-            list.requestScrollToItem(timeline.rows.lastIndex+if(timeline.hasEarlierMessages || session.historyCursor!=null || paging || session.revealedEarlier) 1 else 0)
+            list.requestScrollToItem(messageCount+if(timeline.hasEarlierMessages || session.historyCursor!=null || paging || session.revealedEarlier) 1 else 0)
             initiallyLoaded=true
         }
     }
@@ -404,7 +436,7 @@ import com.agenthub.core.*
                 val delta=change.position-down.position
                 if(!change.pressed && single && startedAtTop && !list.canScrollBackward && delta.y>=with(density) { 60.dp.toPx() } && delta.y>kotlin.math.abs(delta.x)) earlierAction()
             }
-        },state=list,contentPadding=PaddingValues(start=16.dp,end=16.dp,top=10.dp,bottom=12.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+        },state=list,contentPadding=PaddingValues(start=16.dp,end=16.dp,top=if(inlineToolApprovals)0.dp else 10.dp,bottom=if(inlineToolApprovals)0.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
             if(timeline.hasEarlierMessages || session.historyCursor != null || paging) item(key="history-more") { TextButton(onClick=::loadEarlier,enabled=!session.historyLoading && !paging,modifier=Modifier.fillMaxWidth().testTag(if(timeline.hasEarlierMessages) "history-local-more" else "history-more")) { if(paging) { CircularProgressIndicator(Modifier.size(12.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(6.dp)) }; Text(if(paging) "正在加载更早消息…" else "显示更早消息",fontSize=12.sp) } }
             else if(session.revealedEarlier) item { Text("已显示全部消息",Modifier.fillMaxWidth().testTag("history-start"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) }
             items(timeline.rows,key={ session.targetKey+":"+it.kind+":"+it.id }) { row ->
@@ -416,6 +448,17 @@ import com.agenthub.core.*
                 "compaction" -> Text(ToolPresentation.compaction(messages[row.indices.first()].status, session.running),Modifier.fillMaxWidth().testTag("compaction-${row.id}"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> row.indices.forEach { MessageContent(messages[it],dark,session.targetKey) }
             } }
+            pending?.let { original -> item(key=session.targetKey+":pending-creation:"+original.message.id) {
+                PendingCreationMessageBubble(original,session.targetKey,dark)
+            } }
+            items(toolApprovals,key={ session.targetKey+":approval:"+it.turnId+":"+it.id }) { approval ->
+                // Keep the48dp return-to-latest target plus its inset outside
+                // the approval card, including when reading a tall large-text card.
+                Box(Modifier.padding(end=56.dp)) { InlineToolApproval(session,approval) }
+            }
+            // Like the iOS bottom anchor, target the true end even when the last
+            // message or approval is taller than the viewport.
+            item(key=session.targetKey+":history-bottom") { Spacer(Modifier.height(1.dp).testTag("history-bottom")) }
         }
         if(!atBottom && maxHeight>=72.dp) Surface(shape=CircleShape,color=MaterialTheme.colorScheme.surface,shadowElevation=2.dp,modifier=Modifier.align(Alignment.BottomEnd).padding(12.dp)) { IconAction("down","回到最新","scroll-latest") { scope.launch { list.animateScrollToItem(list.layoutInfo.totalItemsCount-1) } } }
     }
@@ -429,7 +472,8 @@ import com.agenthub.core.*
             Text("任务失败记录",fontSize=12.sp,color=colors.onSurfaceVariant)
             SelectionContainer { Text(message.text,fontSize=12.sp,color=colors.onSurfaceVariant) }
         }
-        else if(message.kind in listOf("plan","planImplementation")) Surface(shape=RoundedCornerShape(16.dp),color=colors.surface) { Column(Modifier.padding(12.dp)) { Text(if(message.kind=="plan") "执行计划" else "正在执行计划",fontWeight=FontWeight.SemiBold,fontSize=14.sp); MarkdownContent(message.text,"markdown-${message.id}") } }
+        else if(message.kind=="plan") ProposedPlanMessage(message,targetKey)
+        else if(message.kind=="planImplementation") Surface(shape=RoundedCornerShape(16.dp),color=colors.surface) { Column(Modifier.padding(12.dp)) { Text(if(message.kind=="plan") "执行计划" else "正在执行计划",fontWeight=FontWeight.SemiBold,fontSize=14.sp); MarkdownContent(message.text,"markdown-${message.id}") } }
         else MarkdownContent(message.text,"markdown-${message.id}")
         AttachmentNames(message)
     }

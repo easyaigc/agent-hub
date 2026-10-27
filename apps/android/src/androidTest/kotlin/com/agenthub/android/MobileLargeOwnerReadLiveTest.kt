@@ -4,7 +4,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.activity.compose.setContent
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -24,40 +25,58 @@ class MobileLargeOwnerReadLiveTest {
     private val instrumentation get()=InstrumentationRegistry.getInstrumentation()
     private val config by lazy { JSONObject(File(instrumentation.targetContext.filesDir,"large-owner-live.json").readText()) }
     private val folder by lazy { File(instrumentation.targetContext.filesDir,"acceptance/P2-large-owner/"+config.getString("run")).apply { mkdirs() } }
-    @get:Rule(order=0) val foreground=object: ExternalResource() {
-        override fun before() {
-            require(BuildConfig.DEBUG&&BuildConfig.APPLICATION_ID=="com.easyai.agenthub.android.acceptance")
-            require(InstrumentationRegistry.getArguments().getString("nativeLargeOwnerRead")=="1")
-            ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("am start -W -n ${instrumentation.targetContext.packageName}/androidx.activity.ComponentActivity")).bufferedReader().use { assertTrue(it.readText().contains("Status: ok")) }
+    @get:Rule(order=-1) val viewport: org.junit.rules.TestRule=NativeApprovalViewportRule({config.optString("viewportOrientation")},{folder},{"long-owner"})
+    @get:Rule(order=0) val diagnostics: org.junit.rules.TestRule=NativeTestDiagnostics()
+    @get:Rule(order=1) val foreground: org.junit.rules.TestRule=NativeTestForeground()
+    @get:Rule(order=2) val ui=createAndroidComposeRule<MainActivity>()
+    private var defaultDrafts=emptyMap<String,String?>()
+    @Before fun preserveDefaultSession() {
+        require(instrumentation.targetContext.packageName=="com.easyai.agenthub.android.acceptance")
+        require(InstrumentationRegistry.getArguments().getString("nativeLargeOwnerRead")=="1")
+        ui.waitUntil(30_000) { !ui.activity.session.restoring }
+        ui.runOnIdle {
+            ui.activity.readNetworkMonitor.stop();ui.activity.session.discovery?.stop();ui.activity.session.easyWorkDiscovery?.stop();ui.activity.session.leaveForeground()
+            val m=NativeSessionStorage(instrumentation.targetContext).metadata();defaultDrafts=listOf("drafts","draftFiles","draftVersions").associateWith { m?.opt(it)?.toString() }
         }
     }
-    @get:Rule(order=1) val ui=createComposeRule()
-    @get:Rule(order=2) val limit=org.junit.rules.Timeout.seconds(600)
+    @get:Rule(order=3) val limit=org.junit.rules.Timeout.seconds(600)
     private data class EarlierResponse(val host: String,val thread: String,val windowed: Boolean,val kind: String?,val ids: List<String>)
     private val earlierResponses=java.util.concurrent.CopyOnWriteArrayList<EarlierResponse>()
+    private val earlierStarted=java.util.concurrent.CopyOnWriteArrayList<String>()
     private lateinit var session: MobileSession
     private lateinit var storage: NativeSessionStorage
     private var radioMonitor: NativeReadNetworkMonitor?=null
     private fun main(block: suspend ()->Unit)=runBlocking { withContext(Dispatchers.Main) { block() } }
     @Suppress("UNCHECKED_CAST") private fun page(): MobileHistory?=(MobileSession::class.java.getDeclaredField("historyPages").apply { isAccessible=true }.get(session) as Map<String,MobileHistory>)[session.targetKey]
     private fun shot(name: String) {
-        ui.waitForIdle();val bitmap=instrumentation.uiAutomation.takeScreenshot()
-        try { File(folder,"$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) } } finally { bitmap.recycle() }
+        ui.waitForIdle();val i=instrumentation;i.waitForIdleSync();val window=ui.activity.window
+        val frames=java.util.concurrent.CountDownLatch(1);i.runOnMainSync { window.decorView.postOnAnimation { window.decorView.postOnAnimation { frames.countDown() } } };assertTrue(frames.await(5,java.util.concurrent.TimeUnit.SECONDS))
+        var bitmap: Bitmap?=null;i.runOnMainSync { assertTrue(window.decorView.hasWindowFocus());assertEquals(i.targetContext.packageName,window.decorView.context.packageName);bitmap=Bitmap.createBitmap(window.decorView.width,window.decorView.height,Bitmap.Config.ARGB_8888) }
+        val image=checkNotNull(bitmap);val done=java.util.concurrent.CountDownLatch(1);var result=-1
+        try {
+            i.runOnMainSync { android.view.PixelCopy.request(window,image,{ result=it;done.countDown() },android.os.Handler(android.os.Looper.getMainLooper())) }
+            assertTrue(done.await(10,java.util.concurrent.TimeUnit.SECONDS));assertEquals(android.view.PixelCopy.SUCCESS,result)
+            File(folder,"$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG,100,it) }
+            File(folder,"$name-window.json").writeText(JSONObject().put("method","PixelCopy.owned-main-window").put("package",i.targetContext.packageName).put("pixelCopyResult",result).put("isolatedStorage",true).put("threadId",session.selectedThread).toString())
+        }finally{image.recycle()}
     }
     private fun tapEarlier(tag: String) {
-        val limit=session.visibleMessageLimit;val responses=earlierResponses.size
-        val deadline=android.os.SystemClock.uptimeMillis()+15_000
-        while(android.os.SystemClock.uptimeMillis()<deadline) {
+        // Latest background GETs can begin between rendered enabled state and input.
+        // Retry a read-only tap only after proving no limit change or earlier START.
+        val attempts=JSONArray()
+        repeat(8) { attempt ->
+            val limit=session.visibleMessageLimit;val starts=earlierStarted.size
             ui.onNodeWithTag("message-list").performScrollToNode(hasTestTag(tag))
-            ui.waitUntil((deadline-android.os.SystemClock.uptimeMillis()).coerceAtLeast(1)) { ui.onAllNodes(hasTestTag(tag) and isEnabled()).fetchSemanticsNodes().size==1 }
-            // A legitimate latest GET can disable the button between observation
-            // and native touch. Retry only an unaccepted touch, never a started page.
-            ui.onNodeWithTag(tag).performClick();ui.waitForIdle()
-            if(session.visibleMessageLimit!=limit||earlierResponses.size!=responses||
-                ui.onAllNodes(hasTestTag(tag) and hasText("正在加载更早消息…")).fetchSemanticsNodes().isNotEmpty())return
-            assertNull("An actual earlier failure must not be retried by the examiner",session.error)
+            ui.waitUntil(30_000) {ui.onAllNodes(hasTestTag(tag) and isEnabled()).fetchSemanticsNodes().size==1&&!session.historyLoading}
+            ui.onNodeWithTag(tag).performTouchInput {click(center)}
+            val accepted=runCatching {ui.waitUntil(2_000) {session.visibleMessageLimit!=limit||earlierStarted.size>starts}}.isSuccess
+            attempts.put(JSONObject().put("attempt",attempt).put("limitBefore",limit).put("limitAfter",session.visibleMessageLimit).put("earlierStartsBefore",starts).put("earlierStartsAfter",earlierStarted.size).put("accepted",accepted).put("historyLoading",session.historyLoading))
+            File(folder,"earlier-tap-attempts-$tag-$limit.json").writeText(attempts.toString())
+            assertNull(session.error)
+            if(accepted)return
+            assertEquals(limit,session.visibleMessageLimit);assertEquals(starts,earlierStarted.size)
         }
-        throw AssertionError("No earlier action accepted within the original15-second readiness budget")
+        shot("earlier-read-tap-not-accepted");fail("Eight read-only coordinate taps had no local expansion or earlier request START")
     }
     @After fun preserve() {
         if(!::session.isInitialized)return
@@ -65,6 +84,8 @@ class MobileLargeOwnerReadLiveTest {
         runCatching { File(folder,"semantics.txt").writeText(ui.onRoot(useUnmergedTree=true).printToString().take(262144)) }
         runCatching { if(instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString()==instrumentation.targetContext.packageName)shot("final-state") }
         main { radioMonitor?.stop();session.leaveForeground() };NativeReadAcceptanceTiming.configure(instrumentation.targetContext,Intent())
+        val now=NativeSessionStorage(instrumentation.targetContext).metadata()
+        for((key,value)in defaultDrafts)assertEquals("Long original history preserves default $key",value,now?.opt(key)?.toString())
     }
     private fun actualRadioRecovery(draft: String) {
         require(config.getString("transport")=="physical-lan")
@@ -98,12 +119,13 @@ class MobileLargeOwnerReadLiveTest {
         val native=NativeHostReads { config.getString("token") }
         val observer=object: HostReads by native {
             override suspend fun history(client: MobileClient,threadId: String,cursor: String?): MobileHistory {
+                if(cursor!=null)earlierStarted.add(cursor)
                 val incoming=native.history(client,threadId,cursor)
                 if(cursor!=null)earlierResponses.add(EarlierResponse(incoming.hostId,incoming.threadId,incoming.windowed,incoming.historyWindowKind,incoming.messages.map { it.id }))
                 return incoming
             }
         }
-        session=MobileSession(storage,reader=observer);ui.setContent { AgentHubApp(session) };main {
+        session=MobileSession(storage,reader=observer);ui.runOnIdle { ui.activity.setContent { AgentHubApp(session) } };main {
             session.resetAcceptance(reader=observer)
             if(config.optString("transport")=="physical-lan") {
                 require(android.os.Build.VERSION.SDK_INT==33&&java.net.URI(config.getString("endpoint")).scheme=="https")

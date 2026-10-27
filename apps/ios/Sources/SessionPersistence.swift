@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 
 enum SessionPersistenceError: Error { case recoveryRequired, notLoaded }
@@ -27,16 +28,21 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
   private let previousURL: URL
   private var writesAuthorized = false // Accessed only on stateQueue.
   private var lastGoodBytes: Data?
+  private var validatedBackupBytes: Data?
   private var loadedDigest: String?
   private let encodeState: @Sendable (State) throws -> Data
   private let decodeState: @Sendable (Data) throws -> State
   private let encodePage: @Sendable (Page) throws -> Data
   private let decodePage: @Sendable (Data) throws -> Page
+  private let cloneFile: @Sendable (URL, URL) -> Bool
 
   init(legacyURL: URL, encodeState: @escaping @Sendable (State) throws -> Data,
     decodeState: @escaping @Sendable (Data) throws -> State,
     encodePage: @escaping @Sendable (Page) throws -> Data,
-    decodePage: @escaping @Sendable (Data) throws -> Page) {
+    decodePage: @escaping @Sendable (Data) throws -> Page,
+    cloneFile: @escaping @Sendable (URL, URL) -> Bool = {
+      Darwin.clonefile($0.path, $1.path, UInt32(CLONE_NOFOLLOW)) == 0
+    }) {
     self.legacyURL = legacyURL
     stateURL = legacyURL.deletingLastPathComponent().appendingPathComponent("session-state-v1.json")
     historyURL = legacyURL.deletingLastPathComponent().appendingPathComponent("History-v1", isDirectory: true)
@@ -44,9 +50,10 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
     previousURL = legacyURL.deletingLastPathComponent().appendingPathComponent("session-state-v1.previous.json")
     self.encodeState = encodeState; self.decodeState = decodeState
     self.encodePage = encodePage; self.decodePage = decodePage
+    self.cloneFile = cloneFile
   }
 
-  func loadState() throws -> State { try decodeState(Data(contentsOf: stateURL)) }
+  func loadState() throws -> State { try decodeState(readData(stateURL)) }
   /// Only an absent store is a new installation. An unreadable store never authorizes writes.
   func loadInitialState() throws -> State? {
     try stateQueue.sync {
@@ -55,7 +62,7 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
       var damaged: [(URL, Data)] = []
       for url in [stateURL, backupURL, previousURL, legacyURL] {
         let bytes: Data
-        do { bytes = try Data(contentsOf: url) }
+        do { bytes = try readData(url) }
         catch {
           let failure = error as NSError
           if failure.domain == NSCocoaErrorDomain && failure.code == NSFileReadNoSuchFileError { continue }
@@ -109,7 +116,7 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
   }
   func loadHistory(_ id: String) throws -> Page {
     let url = pageURL(id)
-    let page = try decodePage(Data(contentsOf: url))
+    let page = try decodePage(readData(url))
     try migrateProtection(url)
     return page
   }
@@ -120,7 +127,7 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
     var recovered: [String: Page] = [:]
     for url in files where url.pathExtension == "json" && !known.contains(url.lastPathComponent) {
       do {
-        let page = try decodePage(Data(contentsOf: url))
+        let page = try decodePage(readData(url))
         let target = key(page)
         guard pageURL(namespace + ":" + target).lastPathComponent == url.lastPathComponent else { continue }
         try migrateProtection(url)
@@ -154,12 +161,57 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
     let name = SHA256.hash(data: Data(id.utf8)).map { String(format: "%02x", $0) }.joined()
     return historyURL.appendingPathComponent(name + ".json")
   }
+  private func readData(_ url: URL) throws -> Data {
+    let bytes = try Data(contentsOf: url)
+    #if DEBUG && os(iOS)
+    NativeThermalIOCounters.recordRead(bytes: bytes.count)
+    #endif
+    return bytes
+  }
+  private func measured<T>(_ stage: String, _ body: () throws -> T) rethrows -> T {
+    #if DEBUG && os(iOS)
+    return try NativeThermalIOCounters.measure(stage, body)
+    #else
+    return try body()
+    #endif
+  }
+
   private func atomicWrite(_ data: Data, to url: URL) throws {
     #if os(iOS)
     try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     #else
     try data.write(to: url, options: [.atomic])
     #endif
+    #if DEBUG && os(iOS)
+    let kind = url == stateURL ? "State" : (url == backupURL || url == previousURL) ? "Backup" : url.deletingLastPathComponent() == historyURL ? "History" : "Other"
+    NativeThermalIOCounters.recordWrite(bytes: data.count, kind: kind)
+    #endif
+  }
+
+  // A validated APFS clone shares the old encrypted blocks until either copy
+  // changes. Publish the private staging file atomically, keeping the primary
+  // and the previous generation intact if cloning/validation/publication fails.
+  // Unsupported filesystems use the original byte-write path.
+  private func preserveGeneration(from source: URL, to destination: URL,
+    expected: Data? = nil, valid: (Data) -> Bool) throws {
+    let staging = destination.deletingLastPathComponent()
+      .appendingPathComponent(".session-generation-" + UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: staging) }
+    if cloneFile(source, staging), let bytes = try? readData(staging), valid(bytes) {
+      try migrateProtection(staging)
+      guard Darwin.rename(staging.path, destination.path) == 0 else {
+        throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+      }
+      #if DEBUG && os(iOS)
+      NativeThermalIOCounters.recordClone(bytes: bytes.count)
+      #endif
+      return
+    }
+    // A changed primary must not displace its known-good in-memory bytes.
+    // A corrupt backup has no such fallback and must leave previous untouched.
+    if let bytes = expected ?? (try? readData(source)), valid(bytes) {
+      try atomicWrite(bytes, to: destination)
+    }
   }
 
   func write(_ snapshot: SessionPersistenceSnapshot<State, Page>, flushHistory: Bool = false,
@@ -167,14 +219,17 @@ final class SessionPersistenceWriter<State, Page>: @unchecked Sendable {
     stateQueue.async { [self] in
       let result = Result<Void, Error> {
         guard writesAuthorized else { throw SessionPersistenceError.notLoaded }
-        let data = try encodeState(snapshot.state)
+        let data = try measured("StateEncode") { try encodeState(snapshot.state) }
         // Validate before touching either the primary or its known-good generations.
-        _ = try decodeState(data)
+        _ = try measured("StateValidate") { try decodeState(data) }
         if let lastGoodBytes {
-          if let prior = try? Data(contentsOf: backupURL), (try? decodeState(prior)) != nil {
-            try atomicWrite(prior, to: previousURL)
+          try preserveGeneration(from: backupURL, to: previousURL) { prior in
+            prior == validatedBackupBytes || (try? decodeState(prior)) != nil
           }
-          try atomicWrite(lastGoodBytes, to: backupURL)
+          try preserveGeneration(from: stateURL, to: backupURL, expected: lastGoodBytes) {
+            $0 == lastGoodBytes
+          }
+          validatedBackupBytes = lastGoodBytes
         }
         try atomicWrite(data, to: stateURL)
         lastGoodBytes = data

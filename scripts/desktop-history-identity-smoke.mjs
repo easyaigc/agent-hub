@@ -81,6 +81,48 @@ assert.equal(
   0,
   'Completed original-owner dialog repairs the observed legacy cached duplicate',
 );
+for (const fallback of ['item-4', historyIdentity('item-4', 'run')]) {
+  const completed = (previous, incoming) =>
+    retainedDesktopHistory(previous, incoming, new Set(), new Set(['run']));
+  assert.deepEqual(
+    completed([row('msg-before-restart')], [row(fallback)]),
+    [],
+    'A completed original owner can expose ordinal identity after restart without duplicating a prior stable dialog',
+  );
+  assert.equal(
+    retained([row('msg-before-restart')], [row(fallback)]).length,
+    1,
+    'A provisional partial/live snapshot cannot retire an existing stable message',
+  );
+  assert.deepEqual(
+    completed([row('msg-one'), row('msg-two')], [row(fallback)]).map((v) => v.id),
+    ['msg-two'],
+    'One ordinal replacement retires at most one equal historical dialog',
+  );
+  assert.equal(
+    completed([row('msg-one'), row('msg-two')], [row(fallback), row('item-5')]).length,
+    0,
+    'Two identical completed dialog items remain two incoming messages',
+  );
+  assert.equal(
+    completed([row('msg-one'), row(fallback)], [row(fallback)]).length,
+    0,
+    'Repair an already persisted stable plus ordinal duplicate without clearing history',
+  );
+  for (const prior of [
+    row('msg-other-turn', 'other'),
+    { ...row('msg-commentary'), replyPhase: 'commentary' },
+    row('msg-tool', 'run', 'commandExecution'),
+    { ...row('msg-file'), files: ['original.pdf'] },
+    { ...row('msg-attachment'), attachments: [{ id: 'original-file' }] },
+  ])
+    assert.deepEqual(completed([prior], [row(fallback)]), [prior]);
+  assert.equal(
+    completed([row('msg-one')], [{ ...row(fallback), attachments: [{ id: 'new-file' }] }]).length,
+    1,
+    'Incoming attachment identity cannot be inferred from equal dialog text',
+  );
+}
 assert.equal(
   retained([{ ...row('item-1'), files: ['historical file'] }], [row('msg-owner')]).length,
   1,

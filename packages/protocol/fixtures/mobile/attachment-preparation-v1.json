@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "last-free-slot",
+      "kind": "reserve",
+      "existing": 8,
+      "reserved": 1,
+      "requested": 1,
+      "expected": true
+    },
+    {
+      "name": "concurrent-slots-count",
+      "kind": "reserve",
+      "existing": 8,
+      "reserved": 1,
+      "requested": 2,
+      "expected": false
+    },
+    {
+      "name": "huge-reservation",
+      "kind": "reserve",
+      "existing": 0,
+      "reserved": 2147483647,
+      "requested": 1,
+      "expected": false
+    },
+    {
+      "name": "empty-batch",
+      "kind": "reserve",
+      "existing": 0,
+      "reserved": 0,
+      "requested": 0,
+      "expected": false
+    },
+    {
+      "name": "original-draft",
+      "kind": "commit",
+      "target": "host-a/thread",
+      "currentTarget": "host-a/thread",
+      "generation": "draft-1",
+      "currentGeneration": "draft-1",
+      "completed": false,
+      "expected": true
+    },
+    {
+      "name": "same-title-other-host",
+      "kind": "commit",
+      "target": "host-a/thread",
+      "currentTarget": "host-b/thread",
+      "generation": "draft-1",
+      "currentGeneration": "draft-1",
+      "completed": false,
+      "expected": false
+    },
+    {
+      "name": "cleared-draft",
+      "kind": "commit",
+      "target": "host-a/thread",
+      "currentTarget": "host-a/thread",
+      "generation": "draft-1",
+      "currentGeneration": "draft-2",
+      "completed": false,
+      "expected": false
+    },
+    {
+      "name": "missing-draft",
+      "kind": "commit",
+      "target": "host-a/thread",
+      "currentTarget": "host-a/thread",
+      "generation": "draft-1",
+      "currentGeneration": null,
+      "completed": false,
+      "expected": false
+    },
+    {
+      "name": "duplicate-callback",
+      "kind": "commit",
+      "target": "host-a/thread",
+      "currentTarget": "host-a/thread",
+      "generation": "draft-1",
+      "currentGeneration": "draft-1",
+      "completed": true,
+      "expected": false
+    },
+    {
+      "name": "recent-addition",
+      "kind": "suggest",
+      "enabled": true,
+      "readable": true,
+      "baseline": true,
+      "ignored": false,
+      "added": 999,
+      "now": 1000,
+      "expected": true
+    },
+    {
+      "name": "cold-start-baseline",
+      "kind": "suggest",
+      "enabled": true,
+      "readable": true,
+      "baseline": false,
+      "ignored": false,
+      "added": 999,
+      "now": 1000,
+      "expected": false
+    },
+    {
+      "name": "expired-addition",
+      "kind": "suggest",
+      "enabled": true,
+      "readable": true,
+      "baseline": true,
+      "ignored": false,
+      "added": 399,
+      "now": 1000,
+      "expected": false
+    },
+    {
+      "name": "no-added-time",
+      "kind": "suggest",
+      "enabled": true,
+      "readable": true,
+      "baseline": true,
+      "ignored": false,
+      "added": null,
+      "now": 1000,
+      "expected": false
+    },
+    {
+      "name": "ignored-image",
+      "kind": "suggest",
+      "enabled": true,
+      "readable": true,
+      "baseline": true,
+      "ignored": true,
+      "added": 999,
+      "now": 1000,
+      "expected": false
+    },
+    {
+      "name": "permission-revoked",
+      "kind": "suggest",
+      "enabled": true,
+      "readable": false,
+      "baseline": true,
+      "ignored": false,
+      "added": 999,
+      "now": 1000,
+      "expected": false
+    },
+    {
+      "name": "future-clock",
+      "kind": "suggest",
+      "enabled": true,
+      "readable": true,
+      "baseline": true,
+      "ignored": false,
+      "added": 1001,
+      "now": 1000,
+      "expected": false
+    }
+  ]
+}

@@ -10,6 +10,7 @@ const hostId = 'question-ui-fixture';
 const threadId = 'question-ui-thread';
 const token = randomBytes(32).toString('base64url');
 const answers = new Map();
+let submissions = 0;
 let cursor = 1;
 let activated = false;
 const questions = [
@@ -94,6 +95,7 @@ const server = createServer(async (request, response) => {
   if (request.headers.authorization !== 'Bearer ' + token)
     return json(response, { error: 'Fixture auth required' }, 401);
   if (url.pathname === '/activate') {
+    if (url.searchParams.get('reset') === 'true') answers.clear();
     activated = true;
     cursor++;
     return json(response, { ok: true });
@@ -103,7 +105,7 @@ const server = createServer(async (request, response) => {
       hostId,
       name: 'Question UI fixture',
       connectionMode: 'desktop-runtime',
-      capabilities: ['history:read', 'events', 'approvals:respond'],
+      capabilities: ['reply', 'history:read', 'events', 'approvals'],
       projects: [{ id: thread.projectId, hostId, name: 'Question UI fixture', roots: [] }],
       threads: [thread],
       nextProjectCursor: null,
@@ -122,6 +124,7 @@ const server = createServer(async (request, response) => {
     if (body.approvalId === 'long') assert(body.answers.long[0].includes('语音输入测试'));
     if (body.approvalId === 'other') assert.equal(body.decision, 'skip');
     answers.set(body.approvalId, body);
+    submissions++;
     cursor++;
     return json(response, { ok: true });
   }
@@ -166,7 +169,9 @@ const child = spawn(
     '-collect-test-diagnostics',
     'never',
     '-only-testing:CodexManageUITests/CodexManageUITests/testQuestionPanelLayoutAndDictation',
+    '-only-testing:CodexManageUITests/CodexManageUITests/testQuestionVoiceFailureMatchesComposerRecovery',
     '-only-testing:CodexManageUITests/CodexManageUITests/testDictationCancelFinishAndSend',
+    '-only-testing:CodexManageUITests/CodexManageUITests/testDictationFailureOffersRetryAndLocalTranscription',
     'CODE_SIGNING_ALLOWED=YES',
     'CODE_SIGN_IDENTITY=-',
     'test',
@@ -179,7 +184,7 @@ try {
     child.once('error', reject);
   });
   assert.equal(code, 0);
-  assert.equal(answers.size, 3);
+  assert.equal(submissions, 3);
   console.log(
     'Native question visibility, dictation draft isolation and single submissions passed (fixture).',
   );

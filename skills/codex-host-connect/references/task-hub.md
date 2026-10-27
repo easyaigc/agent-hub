@@ -65,6 +65,10 @@ node scripts/task-hub-service.mjs upgrade \
 
 重复安装复用实例、证书、密钥和数据库；不同候选升级前须明确 stop 此 Task Hub，安装器不会自动重启共享服务。保留旧 releases 供核对；数据库迁移由源 API 处理，未经备份/逆向迁移验证不能盲目回退旧 API。升级不改变 PG major；跨 major 迁移需专门方案。主机迁移/primary 提升没有实现自动路径，旧主 fencing 不明始终拒绝，不以离线推断旧主失权。
 
+## HTTPS 身份探针
+
+每次 `tlsJson` 探针使用独立的一次性 HTTPS Agent，避免旧版 Node 复用上一份登记的连接或 TLS session 后跳过新的证书指纹检查。证书链、登记域名和 SHA-256 指纹仍须全部通过；错误指纹或主机名必须在 HTTP 请求到达 API 前被拒绝，失败不能污染后续正确登记。该边界由 `scripts/task-hub-service.test.mjs` 的真实回环 TLS 网关测试覆盖，并在 Node 24.16 与当前 CI 基线分别验证；这不代替正式部署或真机验收。Node Agent 行为参见 [官方 HTTPS 文档](https://nodejs.org/download/release/v24.18.1/docs/api/https.html#class-httpsagent)。
+
 ## 可选业务通知私有配置与持久 key
 
 `install` 或已停止原 primary 的 `upgrade` 可明确传入 `--business-notifications-config "/path/to/private/business/publisher.json"`。未配置时不注入环境变量；空路径不表示关闭。安装器把同一路径记录在 runtime 与私有 env 的 `TASK_HUB_BUSINESS_NOTIFICATIONS_CONFIG`，API 的规范 async factory 只读取该文件。启用要求完整冻结包包含 canonical business-crypto、源摘要及 Node 24 清单。

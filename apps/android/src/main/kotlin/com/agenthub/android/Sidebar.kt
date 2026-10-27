@@ -31,7 +31,8 @@ import com.agenthub.core.WorkspaceSidebarRules
     val colors=MaterialTheme.colorScheme
     var searchVisible by remember { mutableStateOf(false) }
     val display=session.sidebarDisplay
-    val searching=session.search.isNotEmpty()
+    val query=session.search
+    val searching=query.isNotEmpty()
     val list=rememberLazyListState()
     val focus=LocalFocusManager.current
     val keyboard=LocalSoftwareKeyboardController.current
@@ -44,15 +45,16 @@ import com.agenthub.core.WorkspaceSidebarRules
         keyboard?.hide();nativeKeyboard.hide()
     }
     LaunchedEffect(active) { if(active&&searchVisible)finishSearchEditing() }
+    val client=session.selectedClient
     val threads=session.threads
     val projects=session.projects
-    val order=remember(session.selectedClient.cacheKey(null),threads,projects,session.workspace?.pinnedThreadIds,session.workspace?.sidebar) {
-        mobileSidebarOrder(session.selectedClient,threads,projects,session.workspace)
+    val order=remember(client.cacheKey(null),threads,projects,session.workspace?.pinnedThreadIds,session.workspace?.sidebar) {
+        mobileSidebarOrder(client,threads,projects,session.workspace)
     }
-    val byThread=threads.filter { it.hostId==session.selectedClient.id }.distinctBy { it.id }.associateBy { it.id }
-    val byProject=projects.filter { it.hostId==session.selectedClient.id }.distinctBy { it.id }.associateBy { it.id }
-    val children=order.projectThreads.associate { it.projectId to it.threadIds.mapNotNull(byThread::get) }
-    fun matches(text: String)=!searching||text.contains(session.search,ignoreCase=true)
+    val byThread=remember(client.id,threads) { threads.filter { it.hostId==client.id }.distinctBy { it.id }.associateBy { it.id } }
+    val byProject=remember(client.id,projects) { projects.filter { it.hostId==client.id }.distinctBy { it.id }.associateBy { it.id } }
+    val children=remember(order,byThread) { order.projectThreads.associate { it.projectId to it.threadIds.mapNotNull(byThread::get) } }
+    fun matches(text: String)=!searching||text.contains(query,ignoreCase=true)
     fun projectMatches(project: MobileProject)=matches(project.name)||children[project.id].orEmpty().any { matches(it.title) }
     fun projectChildren(project: MobileProject)=children[project.id].orEmpty().filter { matches(it.title)||matches(project.name) }
     val pinned=order.pinned.filter { item -> if(item.kind=="thread")byThread[item.id]?.let { matches(it.title) }==true else byProject[item.id]?.let(::projectMatches)==true }
@@ -91,8 +93,8 @@ import com.agenthub.core.WorkspaceSidebarRules
                     val expanded=WorkspaceSidebarRules.expanded(display.pinnedSectionExpanded,searching)
                     item(key="pinned-section") { SidebarSection("置顶",expanded,!searching,"sidebar-pinned-toggle",session::toggleSidebarPinnedSection) }
                     if(expanded)pinned.forEach { pin ->
-                        if(pin.kind=="thread")item(key="pinned-thread-${pin.id}") { ThreadRow(byThread.getValue(pin.id),session,"pinned-thread",close) }
-                        else sidebarProjectRows(byProject.getValue(pin.id),projectChildren(byProject.getValue(pin.id)),session,searching,close)
+                        if(pin.kind=="thread")item(key="pinned-thread-${pin.id}") { ThreadRow(byThread.getValue(pin.id),session,"pinned-thread",close,active) }
+                        else sidebarProjectRows(byProject.getValue(pin.id),projectChildren(byProject.getValue(pin.id)),session,searching,close,active)
                     }
                 }
                 if(recent.isNotEmpty()) {
@@ -100,7 +102,7 @@ import com.agenthub.core.WorkspaceSidebarRules
                     item(key="recent-section") { SidebarSection("最近",expanded,!searching,"sidebar-recent-toggle",session::toggleSidebarRecentSection) }
                     if(expanded) {
                         val visible=WorkspaceSidebarRules.visibleIds(recent.map { it.id },display.recentExpanded,searching)
-                        items(visible,key={ "recent-$it" }) { ThreadRow(byThread.getValue(it),session,"recent-thread",close) }
+                        items(visible,key={ "recent-$it" }) { ThreadRow(byThread.getValue(it),session,"recent-thread",close,active) }
                         if(!searching&&recent.size>5)item { TextButton(onClick=session::toggleSidebarRecent,modifier=Modifier.testTag("sidebar-more-recent")) { Text(if(display.recentExpanded) "收起显示" else "展开显示",color=colors.onSurfaceVariant) } }
                     }
                 }
@@ -110,7 +112,7 @@ import com.agenthub.core.WorkspaceSidebarRules
                         Box(Modifier.weight(1f)) { SidebarSection("项目",expanded,!searching,"sidebar-projects-toggle",session::toggleSidebarProjects) }
                         if(session.canCreateProject)IconAction("plus","添加项目","add-project",onClick=addProject)
                     } }
-                    if(expanded)folders.forEach { project -> sidebarProjectRows(project,projectChildren(project),session,searching,close) }
+                    if(expanded)folders.forEach { project -> sidebarProjectRows(project,projectChildren(project),session,searching,close,active) }
                 }
                 if(folders.isEmpty()&&recent.isEmpty()&&pinned.isEmpty())item { Text(if(!searching) "还没有项目或对话" else "没有找到相关内容",Modifier.padding(vertical=24.dp,horizontal=9.dp),fontSize=14.sp,color=colors.onSurfaceVariant) }
                 if(session.workspace?.nextProjectCursor!=null||session.workspace?.nextThreadCursor!=null)item { TextButton(onClick={ session.refresh(more=true,userInitiated=true) },enabled=!session.loading,modifier=Modifier.testTag("sidebar-load-more")) { Text("加载更多",color=colors.onSurfaceVariant) } }
@@ -138,7 +140,7 @@ import com.agenthub.core.WorkspaceSidebarRules
     }
 }
 
-private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: List<MobileThread>,session: MobileSession,searching: Boolean,close: ()->Unit) {
+private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: List<MobileThread>,session: MobileSession,searching: Boolean,close: ()->Unit,active: Boolean) {
     val expanded=WorkspaceSidebarRules.expanded(session.projectExpanded(project.id),searching)
     val all=project.id in session.sidebarDisplay.expandedLists
     item(key="project-${project.id}") {
@@ -154,16 +156,17 @@ private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: Li
     }
     if(expanded) {
         val byId=children.associateBy { it.id }
-        items(WorkspaceSidebarRules.visibleIds(children.map { it.id },all,searching),key={ "project-${project.id}-$it" }) { id -> Box(Modifier.padding(start=24.dp)) { ThreadRow(byId.getValue(id),session,"project-thread-${project.id}",close) } }
+        items(WorkspaceSidebarRules.visibleIds(children.map { it.id },all,searching),key={ "project-${project.id}-$it" }) { id -> Box(Modifier.padding(start=24.dp)) { ThreadRow(byId.getValue(id),session,"project-thread-${project.id}",close,active) } }
         if(children.size>5&&!searching)item { TextButton(onClick={ session.toggleSidebarList(project.id) },modifier=Modifier.padding(start=24.dp).testTag("project-more-${project.id}")) { Text(if(all) "收起显示" else "展开显示",color=MaterialTheme.colorScheme.onSurfaceVariant) } }
     }
 }
 
-@Composable private fun ThreadRow(thread: MobileThread,session: MobileSession,prefix: String,close: () -> Unit) {
+@Composable private fun ThreadRow(thread: MobileThread,session: MobileSession,prefix: String,close: () -> Unit,active: Boolean) {
     val colors=MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(10.dp)).background(if(thread.id==session.selectedThread) colors.onSurface.copy(alpha=.06f) else Color.Transparent).testTag("$prefix-${thread.id}").semantics { contentDescription="${thread.title}，${when(thread.state) { "running"->"运行中"; "waiting-for-approval"->"待处理"; else->if(thread.showsUnread) "未读" else "已读" }}" }.clickable { session.selectThread(thread);close() }.padding(horizontal=9.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically) {
         Text(thread.title,Modifier.weight(1f),fontSize=16.sp,maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-        when { thread.state=="running" -> CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp)
+        when { thread.state=="running" -> if(active) CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp)
+                else CircularProgressIndicator(progress={ .25f },modifier=Modifier.size(14.dp),strokeWidth=1.5.dp)
             thread.state=="waiting-for-approval" -> Text("待处理",fontSize=11.sp,color=Color(0xFFD68B00))
             thread.showsUnread -> Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF007AFF)).testTag("unread-${thread.id}")) }
     }

@@ -1405,6 +1405,10 @@
             }
           ]
         },
+        "decisionLabels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
         "sourceItemId": {
           "oneOf": [
             {

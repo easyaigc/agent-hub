@@ -1,6 +1,6 @@
 # Host Agent 部署
 
-显式选择原桌面单实例共享服务时，按 docs/runtime.md 的“原桌面单实例共享服务”配置。使用统一包内 desktop-shared-environment.mjs 只设置本机 CODEX_CLI_PATH；版本 2 保留原 durable／云端及远程连接，按私有旧清单迁移移除本产品曾设置的全局强制 CLI 开关，保持原 Dock／Spotlight 图标；Host 继续 desktop-runtime，仅聊天管理配置 CODEX_SHARED_SERVER_URL。配置器不启动或强退桌面，已有任务完成后正常重开，再核对服务 owner 与手机功能。未经此选择的既有安装保持原路径；未来启动环境就绪不能代替当前进程已切换或正式验收。
+macOS 首次接入、增加电脑、完整修复和升级默认配置 [原桌面单实例共享通道](#默认配置原桌面单实例共享通道macos)，无需用户另行选择。它是已完成但仍加载聊天归档／删除的必要配置；只启用 Host、创建桥接或 Trace 会遗漏这条管理路径。用户明确选择子集时保留并交付限制；只同步文档时不改变运行配置。
 
 仓库当前依赖 Node.js 24.x / pnpm 11.19.0。macOS 已有构建 26.930.61225、26.1002.52244 的原桌面证据；2026-10-09 联合验收在构建 26.1002.52244 的目标 Mac 和 Windows 分别完成原生核心场景、普通 App 新建及用户真实 iPhone 新建/回复，目标原 owner 独立核对。该记录不代表其他电脑或所有功能自动通过，首次接入仍执行完整清单。不检查 Codex 应用版本或对照构建清单，实际 IPC/owner 决定运行时是否可用；历史构建记录只说明当时的验收环境。Linux 尚未实现。
 
@@ -12,7 +12,7 @@
 
 ```bash
 CONNECT_REPO='/path/to/codex-manage'
-CONNECT_ROOT='/path/to/authorized/projects'
+CONNECT_ROOT='/path/to/default/workspace'
 CONNECT_NAME='办公 Mac'
 cd "$CONNECT_REPO"
 node --version
@@ -33,6 +33,8 @@ pnpm build
 
 ## 启动
 
+原桌面模式不设置全局目录授权。`HOST_AGENT_ROOT` 仅兼容默认 cwd，原有值可保留，目录失效不影响建议、已登记文件、新建或运行时就绪。执行由原 Agent 权限决定，文件按准确会话资源授权。
+
 首次安装、修复及升级默认使用本产品 launchd 服务并注册登录自启，无需额外询问；默认回环端口 8794：
 
 ```bash
@@ -48,7 +50,7 @@ pnpm service:desktop status
 
 安装后核对注册文件的 Label、程序路径、`RunAtLoad`、`KeepAlive` 和 0600 权限，不输出 EnvironmentVariables 中的秘密；检查 `status` 的 `running: true`、`loginAutostart: true`，再执行回环／HTTPS 身份探测。终端关闭不应停止 Host，意外退出由 launchd 恢复。普通安装无需用户注销或重启电脑，核对当前注册、系统启用和在线状态；真实注销／重启恢复仍在可用窗口实际验收，未执行时记录未验收，不能用注册文件存在代替恢复证据。
 
-`start` 不会重新加载已运行的 job，更改配置后用 `restart`。每次 restart 都显式传入原有名称、授权根目录、端口和控制配置，防止默认值覆盖；先从本机私有 plist 核对，避免打印环境中的秘密。默认端口冲突时选空闲端口并同时更新 Serve、探测及手机地址。
+`start` 不会重新加载已运行的 job，更改配置后用 `restart`。每次 restart 都显式传入原有名称、默认工作目录、端口和控制配置，防止默认值覆盖；先从本机私有 plist 核对，避免打印环境中的秘密。默认端口冲突时选空闲端口并同时更新 Serve、探测及手机地址。
 
 ```bash
 HOST_AGENT_NAME="$CONNECT_NAME" \
@@ -59,6 +61,26 @@ pnpm service:desktop restart
 ```
 
 首次启动取得本机身份后，按 [独立桥接配置](prepared-bridge.md) 写入私有 `prepared-bridge.json` 并重启。正式新建／主动打开按本机身份、私有权限与真实运行时就绪开放，无需 controller.json 或验收证明。保留已有私有配置和明确的 validationOnly；旧控制聊天仅作兼容，默认安装使用独立桥接。
+
+## 默认配置原桌面单实例共享通道（macOS）
+
+在稳定程序目录使用随包 `scripts/desktop-shared-environment.mjs`，先读 `docs/runtime.md` 的“原桌面单实例共享服务”。核对本机原官方 CLI 的实际绝对路径、Node 路径及一个空闲回环端口；下面 57443 是示例，不能占用他人服务。已有 v2 配置时复用其 URL／路径并核对 `status`；不要创建第二套服务。v1 按同工具迁移。
+
+```bash
+node scripts/desktop-shared-environment.mjs install \
+  --program "$CONNECT_REPO" \
+  --executable /path/to/original/codex \
+  --url ws://127.0.0.1:57443
+node scripts/desktop-shared-environment.mjs status
+```
+
+安装器持久设置当前用户的 `CODEX_CLI_PATH`，生成私有可执行 launcher，并注册登录恢复环境的 LaunchAgent；v2 不启用全局 `CODEX_APP_SERVER_FORCE_CLI`，保留原 durable／云端及远程连接。只移除私有旧清单及摘要证明属于本产品的 v1 强制开关；其他 CLI 配置冲突时保留原值、报告阻塞，不覆盖来制造就绪。工具本身不启动桌面或额外模型执行器。
+
+将工具返回的同一实际回环 URL 作为 `CODEX_SHARED_SERVER_URL`，连同原 Host 名称、根目录、状态目录、端口、网络、创建桥接、Trace 等已有设置，通过 `pnpm service:desktop start`（首次）／`restart`（已运行）持久保存。它不是只在终端临时 export；从实际 Host LaunchAgent 私有环境读回确认 URL，避免输出其他凭据。Host 保持 `desktop-runtime`，共享 URL 只负责固定聊天管理操作，回复、创建和控制仍走原桌面链路。既有配置冲突或脚本失败时保留原状态并报告具体原因，不能静默省略此项。
+
+共享环境与持久 Trace 一起准备好后，提示用户保存工作、待现有任务完成，正常退出并从原 Dock／Spotlight 图标打开 Codex 一次；不强退、不安排自动重开，不要求重启系统。只重启本产品 Host 不会改变当前原桌面的执行服务。等待用户重开时标为“配置就绪，待正常重开”。
+
+重开后独立核对一个原应用实例、唯一官方执行服务及其准确父链，共享 launcher 的私有 owner 记录与实际 PID／启动时间，Host 配置 URL 与该服务一致。用同一服务的 `thread/loaded/list` 和准确原 owner 新鲜完整快照证明专用已完成聊天仍被加载，不能用历史可读代替。再按 [手机聊天管理验收](acceptance.md#共享通道与已完成仍加载聊天管理) 覆盖归档／恢复、删除确认与取消、实际删除及原回执。未来环境、当前服务生效和真实手机结果分别记录；缺少任一层不得报告全功能实测通过。
 
 ## 身份与本机检查
 
@@ -78,15 +100,18 @@ node skills/codex-host-connect/scripts/probe-host.mjs \
 
 原回环 Host 及已有 Tailscale Serve 继续保留；Tailscale 可选，没有安装时局域网独立工作。默认双通道按 [网络配置](network.md) 将实际 Serve 根地址持久保存到 `HOST_AGENT_HTTPS_ENDPOINTS`，供新版手机学习远程备用入口。`desktop-runtime` 默认另开私网 HTTPS 直连入口（8796，IPv4/IPv6 双栈），发布 `_codex-host._tcp`，每 15 秒刷新系统私网和 Tailscale 本机地址。Mac 使用系统 OpenSSL 生成并持久保存直连证书；Windows 默认寻找 Git for Windows 的 OpenSSL，也可通过 `HOST_AGENT_OPENSSL` 指定，或同时提供 `HOST_AGENT_DISCOVERY_TLS_CERT` / `HOST_AGENT_DISCOVERY_TLS_KEY`。缺少证书工具或端口冲突时保留原入口并明确报告自动发现不可用，不能冒充配置成功。
 
-默认首次接入在手机“添加客户端 → Codex → 自动发现”中点选电脑，再输入该电脑 Host Key 完成首次授权，成功后读取真实工作区并保存设备凭据；之后自动重连，无需反复输入。Bonjour 能列出未保存电脑，并提供无凭据 VPN 目录来源；手机经公开 `/discovery/peers?hostId=<来源电脑>` 获取在线电脑提示，再独立读取各目标的公开 `/host`，不传递其他电脑的密钥、不扫描整个网段。首次只有纯跨网 VPN、没有 Bonjour 或已缓存目录入口时，仍需可定位的来源；非标准端口和其他 VPN 的目录范围按实际实现单列，不承诺任意 VPN 都能枚举全部设备。
+默认首次接入在手机“添加客户端 → Codex → 自动发现”中点选电脑。新版 `host-key` 会要求输入这台电脑的 Host Key；正确授权后只保存独立设备凭据并自动重连。发现列表继续包含旧 `automatic`，客户端按描述兼容其原连接协议，不向旧入口发送另一台电脑的密钥，不把新版授权失败降级为免密申请。授权卡片可以取消，电脑列表和连接方式仍可切换；发现刷新和后台 401 不重复弹出阻塞提示，重新授权须由用户主动选择。
 
-安装和升级必须检查实际私网直连入口，而不只检查回环／Tailscale Serve：
+Bonjour 能列出未保存电脑，并提供无凭据 VPN 目录来源；公开 `/discovery/peers?hostId=<来源电脑>` 只返回在线电脑提示，手机再独立读取目标 `/host`。首次只有纯 VPN 且没有 Bonjour 或已缓存入口时，仍需可定位的目录来源；不承诺任意 VPN 都能枚举全部设备。
 
-1. 无凭据读取 `/host`，核对发现契约 v1、准确完整目标、实际 TLS 证书与描述指纹一致、`connectionMode: host-key`、有效直连地址；这里的契约版本不是 Codex 应用版本。公开响应不得含原密钥、项目或聊天内容。`/discovery/peers` 返回准确来源目标和有界电脑提示；未配置 VPN 时可为空，局域网连接继续可用。
-2. 先验证不带 Host Key、错误 Host Key 均返回 401 且无新绑定；已有设备凭据也不能替其他设备授权。再使用手机身份或专用验收 X25519 公钥，在 `Authorization: Bearer <Host Key>` 中提供从本机私有文件读取的有效密钥，向 `/connection/claim` 提交严格 v1 和完整目标，通过 X25519/HKDF-SHA256/AES-GCM 解密；取得的是该公钥的独立凭据，不是原 Host 密钥。使用正确 Host Key 的同一公钥重试应取得同一凭据，复用验收公钥，不在每次检查时新增设备绑定。错误目标被拒绝；原身份、密钥、证书与服务配置保留。
-3. 用新凭据访问真实 `/v1/workspace`，核对同一完整目标、Host ID 和 `desktop-runtime`，并逐项核对全部适用功能。手机在场时核对点选仅显示密钥表单，取消／切换目标清空输入，错误密钥不保存连接，正确密钥授权后普通重开不再申请凭据；缺手机只标这部分未验收，不将协议检查写成真机通过。`probe-host.mjs` 仅检查原鉴权入口；它和 fixture 不能替代此真实密钥授权检查。
+安装和升级分别核对：
 
-旧 Host 能被发现但仍声明 `automatic`、或没有密钥鉴权 claim 时，必须部署规范仓库的统一新版；仅补描述字段不能实现授权。二维码和手动地址保留为补充入口：本机 `direct-discovery/connect.html` 含原客户端密钥，只在私有目录保存，不上传、提交或打印；不把扫码作为默认接入或修复前提。旧鉴权 HTTPS `/host` 仍可补齐直连证书与地址。
+1. 无凭据读取真实私网 `/host`，校验 v1、完整机器目标、实际证书与描述指纹一致。新版必须声明 `host-key`；手机契约兼容 `automatic`，未知模式继续拒绝。公开描述和目录不含密钥、项目或聊天。回环或 Serve 可读不替代实际私网入口。
+2. 对新版 `/connection/claim` 验证无密钥、错误 Host Key 和设备令牌均返回 401 且不新增绑定；正确 Host Key 通过 Bearer 头提交严格 v1、准确目标与手机 X25519 公钥，返回加密独立凭据。不要打印密钥。相同公钥显式授权仍复用原凭据，已撤销设备不得恢复。
+3. 使用设备凭据读取 `/v1/workspace`，核对同一目标和 `desktop-runtime`。旧免密绑定只保留记录，升级后需用户补做一次授权，不自动迁移为可信绑定。已完成 Host Key 授权的连接重开、地址变化和 Host 重启无需再次输入。
+4. 实际点选、取消、切换以及 App/Host 重开分别验收；缺手机只记未验收。`probe-host.mjs` 仅检查既有鉴权入口，不代替授权与原生交互。
+
+二维码和手动地址继续作为补充入口。私有 `direct-discovery/connect.html` 包含原客户端密钥，只向自己的手机展示，不上传或提交。已有鉴权 HTTPS `/host` 可补齐直连证书和地址。升级程序时保留原证书、身份、路由和私有配置。
 
 `service:desktop` 与 `service:windows` 保留并透传 `HOST_AGENT_DISCOVERY`、`HOST_AGENT_DISCOVERY_BIND`、`HOST_AGENT_DISCOVERY_PORT`、`HOST_AGENT_DISCOVERY_TLS_CERT`、`HOST_AGENT_DISCOVERY_TLS_KEY`、`HOST_AGENT_OPENSSL`。原桌面模式默认启用发现；`HOST_AGENT_DISCOVERY=0` 显式关闭。遗留关闭设置先核对是否为用户明确选择，普通完整接入恢复默认，用户明确关闭则保留并报告子集。私网入口接受原客户端密钥及按公钥持久保存的独立凭据，控制继续使用鉴权与具名接口；公开发现不表示原 owner 已可控。
 

@@ -4,11 +4,12 @@ import Foundation
 @main
 struct DesktopSuggestionDisplaySmoke {
   @MainActor static func main() async throws {
-    let target = AgentRuntimeTarget(agentId: "codex", hostId: "host", workspaceId: "workspace", runtimeId: "runtime")
+    let runtime = CommandLine.arguments.contains("runtime-version")
+    let target = AgentRuntimeTarget(agentId: runtime ? "easywork" : "codex", hostId: "host", workspaceId: "workspace", runtimeId: "runtime")
     let native = CommandLine.arguments.contains("native-version")
-    let source = native ? "native-trace" : "desktop-display"
-    let validity = native ? "native-version" : "desktop-display"
-    let scope = DesktopSuggestionScope(target: target, threadId: "thread", sourceTurnId: "same-turn", navigation: "current", connection: "paired", requiresDisplayedSource: !native, requiresNativeSource: native)
+    let source = runtime ? "runtime" : native ? "native-trace" : "desktop-display"
+    let validity = runtime ? "runtime-version" : native ? "native-version" : "desktop-display"
+    let scope = DesktopSuggestionScope(target: target, threadId: "thread", sourceTurnId: "same-turn", navigation: "current", connection: "paired", requiresDisplayedSource: !native && !runtime, requiresNativeSource: native, requiresRuntimeSource: runtime)
     func value(_ text: String) -> DesktopSuggestion {
       DesktopSuggestion(id: text, text: text,
         contentSha256: SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined(),

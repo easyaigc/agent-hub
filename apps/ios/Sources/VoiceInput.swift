@@ -76,6 +76,7 @@ private enum PendingVoiceStore {
   struct Metadata: Codable {
     let target: String; let scopeKey: String; let originalText: String; let operationId: String
     let sha256: String; let durationMs: Int; let sizeBytes: Int; let createdAt: Date
+    var locallyResolvedAt: Date?
   }
   static func directory() throws -> URL {
     let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
@@ -105,7 +106,7 @@ private enum PendingVoiceStore {
         UUID(uuidString: record.operationId)?.uuidString.lowercased() == record.operationId,
         file.lastPathComponent == record.operationId + ".json" else { continue }
       if Date().timeIntervalSince(record.createdAt) >= 24 * 3600 { remove(record.operationId); continue }
-      if record.target == target && record.scopeKey == scopeKey && record.originalText == text { candidates.append(record) }
+      if record.locallyResolvedAt == nil, record.target == target && record.scopeKey == scopeKey && record.originalText == text { candidates.append(record) }
     }
     // Partial local saves contain no submitted operation. Remove old orphan audio only.
     for file in files where file.pathExtension == "wav" {
@@ -125,6 +126,16 @@ private enum PendingVoiceStore {
   static func remove(_ id: String) {
     guard let root = try? directory() else { return }
     for suffix in [".json", ".wav"] { try? FileManager.default.removeItem(at: root.appendingPathComponent(id + suffix)) }
+  }
+  static func resolveLocally(_ id: String) {
+    // Keep the original operation and audio until expiry, without offering it again.
+    guard let root = try? directory() else { return }
+    let url = root.appendingPathComponent(id + ".json")
+    guard let data = try? Data(contentsOf: url), var record = try? JSONDecoder().decode(Metadata.self, from: data) else { return }
+    record.locallyResolvedAt = Date()
+    guard let updated = try? JSONEncoder().encode(record) else { return }
+    try? updated.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
   }
 }
 
@@ -146,6 +157,7 @@ final class VoiceInputController: ObservableObject {
   private var provider: VoiceTranscriptionProvider?
   private var usesLocalRecognition = false
   private var usesLocalFallback = false
+  private var usesSavedLocalRecognition = false
   private var localRecognition: LocalVoiceInputController?
   private var localObservation: AnyCancellable?
   private var setupTask: Task<Void, Never>?
@@ -160,6 +172,12 @@ final class VoiceInputController: ObservableObject {
     return args.contains("-ui-testing") && args.contains("-voice-input-fixture")
   }
   var isActive: Bool { phase != .idle }
+  var canUseLocalTranscription: Bool {
+    phase == .failed && !usesLocalRecognition && (recording != nil || simulatesTranscriptionFailure)
+  }
+  private var simulatesTranscriptionFailure: Bool {
+    isFixture && ProcessInfo.processInfo.arguments.contains("-voice-transcription-failed")
+  }
   var draftText: String {
     guard !transcript.isEmpty else { return originalText }
     let separator = originalText.isEmpty || originalText.last?.isWhitespace == true ? "" : "\n"
@@ -167,11 +185,11 @@ final class VoiceInputController: ObservableObject {
   }
   var status: String {
     switch phase {
-    case .requesting: return usesLocalRecognition ? L10n.tr("准备本地听写…") : L10n.tr("准备录音…")
+    case .requesting: return usesSavedLocalRecognition ? L10n.tr("准备本地转写…") : usesLocalRecognition ? L10n.tr("准备本地听写…") : L10n.tr("准备录音…")
     case .listening:
       if usesLocalFallback { return L10n.tr("电脑转写暂不可用，正在本地听写") }
       return usesLocalRecognition ? L10n.tr("正在本地听写") : L10n.tr("正在录音，结束后由电脑转写")
-    case .finishing: return usesLocalRecognition ? L10n.tr("正在完成本地听写…") : L10n.tr("电脑正在转写…")
+    case .finishing: return usesSavedLocalRecognition ? L10n.tr("正在本地转写…") : usesLocalRecognition ? L10n.tr("正在完成本地听写…") : L10n.tr("电脑正在转写…")
     case .failed: return error ?? (usesLocalRecognition ? L10n.tr("本地听写已结束，点击完成以填入草稿") : L10n.tr("录音已保留，点击重试查询转写"))
     case .idle: return ""
     }
@@ -183,6 +201,7 @@ final class VoiceInputController: ObservableObject {
     transcript = ""; error = nil; diagnosticInfo = ""; recording = nil
     usesLocalRecognition = VoiceTranscriptionPreference.current == .local
     usesLocalFallback = false
+    usesSavedLocalRecognition = false
     levels = Array(repeating: 0, count: 9)
     generation = UUID(); let id = generation
     phase = .requesting
@@ -272,17 +291,32 @@ final class VoiceInputController: ObservableObject {
       }
     }
   }
-  func finish() async -> Bool {
+  func transcribeLocally() async -> Bool {
+    guard canUseLocalTranscription else { return false }
+    return await finish(usingLocalRecording: true)
+  }
+  func finish(usingLocalRecording: Bool = false) async -> Bool {
     if let finishTask { return await finishTask.value }
     guard phase == .listening || phase == .failed else { return phase == .idle && error == nil }
     let id = generation
-    phase = .finishing; error = nil
+    usesSavedLocalRecognition = usingLocalRecording
+    phase = usingLocalRecording ? .requesting : .finishing; error = nil
     let task = Task<Bool, Never> {
       do {
         let text: String
         if isFixture {
           try await Task.sleep(for: .milliseconds(300))
+          if simulatesTranscriptionFailure && !usingLocalRecording {
+            throw HostServiceError.message(L10n.tr("电脑转写暂不可用"))
+          }
           text = "语音输入测试"
+        } else if usingLocalRecording {
+          guard let recording, let fileURL, try Data(contentsOf: fileURL) == recording.data else {
+            throw HostServiceError.message(L10n.tr("保存的原录音不完整，已停止转写"))
+          }
+          text = try await LocalRecordingTranscriber().transcribe(fileURL) {
+            if generation == id { phase = .finishing }
+          }
         } else if usesLocalRecognition {
           guard let localRecognition else { throw HostServiceError.unavailable }
           guard await localRecognition.finish() else {
@@ -317,14 +351,17 @@ final class VoiceInputController: ObservableObject {
           phase = .failed; error = L10n.tr("草稿或目标已变化，转写已保留，未覆盖当前输入。")
           return false
         }
-        if let recording { PendingVoiceStore.remove(recording.operationId) }
-        reset(discard: true)
+        if let recording {
+          if usingLocalRecording { PendingVoiceStore.resolveLocally(recording.operationId) }
+          else { PendingVoiceStore.remove(recording.operationId) }
+        }
+        reset(discard: true, preservePending: usingLocalRecording)
         return true
       } catch {
         guard generation == id, !Task.isCancelled else { return false }
         stopCapture()
         phase = .failed
-        self.error = error.localizedDescription + (usesLocalRecognition ? L10n.tr(" 原草稿已保留。") : L10n.tr(" 录音已保留；重试只查询或补齐原操作。"))
+        self.error = error.localizedDescription + (usesLocalRecognition ? L10n.tr(" 原草稿已保留。") : usingLocalRecording ? L10n.tr(" 录音和原草稿已保留，可再次选择转写方式。") : L10n.tr(" 录音已保留；重试只查询或补齐原操作。"))
         return false
       }
     }
@@ -489,6 +526,116 @@ final class VoiceAudioSession: @unchecked Sendable {
       try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
       owner = nil
     }
+  }
+}
+
+struct VoiceInputControls: View {
+  @ObservedObject var voice: VoiceInputController
+  let text: String
+  var questionId: String? = nil
+
+  private func identifier(_ composer: String, question: String) -> String {
+    questionId.map { question + $0 } ?? composer
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 3) {
+        IconButton(symbol: "xmark", label: voice.phase == .listening || voice.phase == .requesting ? L10n.tr("取消录音") : L10n.tr("结束等待"),
+          id: identifier("cancel-dictation", question: "question-cancel-dictation-")) {
+          voice.cancel()
+        }.background(Color.primary.opacity(0.06), in: Circle())
+        Group {
+          if voice.phase == .finishing {
+            VoiceTranscriptionActivity(status: voice.status)
+          } else {
+            VoiceWaveform(levels: voice.levels)
+          }
+        }.frame(maxWidth: .infinity, minHeight: 44)
+          .accessibilityElement(children: .ignore)
+          .accessibilityLabel(voice.status)
+          .accessibilityIdentifier(identifier("dictation-waveform", question: "question-dictation-"))
+          .accessibilityValue(voice.diagnosticInfo)
+        Button {
+          Task { _ = await voice.finish() }
+        } label: {
+          Group {
+            if voice.phase == .finishing {
+              ProgressView().tint(.primary)
+            } else {
+              Image(systemName: voice.phase == .failed ? "arrow.clockwise" : "stop.fill")
+                .font(.system(size: 17))
+            }
+          }.frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+          .accessibilityLabel(voice.phase == .finishing ? voice.status : voice.phase == .failed ? L10n.tr("重试转写") : L10n.tr("结束录音并转写"))
+          .accessibilityIdentifier(identifier("stop-dictation", question: "question-voice-"))
+          .background(Color.primary.opacity(0.06), in: Circle())
+          .disabled(voice.phase != .listening && voice.phase != .failed)
+      }
+      if voice.phase != .finishing {
+        Text(voice.status).font(.caption).foregroundStyle(Palette.secondary).padding(.horizontal, 14)
+      }
+      if voice.phase == .failed {
+        HStack(spacing: 16) {
+          if voice.canUseLocalTranscription {
+            Button(L10n.tr("使用本地转写")) { Task { _ = await voice.transcribeLocally() } }
+              .accessibilityIdentifier(identifier("voice-local-transcription-inline", question: "question-local-transcription-"))
+          }
+          Button(L10n.tr("重新录音")) { voice.recordAgain(text: text) }
+            .accessibilityIdentifier(identifier("voice-record-again", question: "question-record-again-"))
+        }.frame(minHeight: 44).padding(.horizontal, 14)
+      }
+    }
+  }
+}
+
+struct VoiceTranscriptionFailureActions: View {
+  @ObservedObject var voice: VoiceInputController
+
+  var body: some View {
+    Button(L10n.tr("重试转写")) { Task { _ = await voice.finish() } }
+      .accessibilityIdentifier("voice-retry-transcription")
+    Button(L10n.tr("使用本地转写")) { Task { _ = await voice.transcribeLocally() } }
+      .accessibilityIdentifier("voice-local-transcription")
+  }
+}
+
+struct VoiceTranscriptionActivity: View {
+  let status: String
+
+  var body: some View {
+    HStack(spacing: 10) {
+      VoiceTranscriptionPulse()
+      Text(status).font(.caption).foregroundStyle(Palette.secondary)
+        .multilineTextAlignment(.center).layoutPriority(1)
+      VoiceTranscriptionPulse().scaleEffect(x: -1, y: 1)
+    }
+  }
+}
+
+private struct VoiceTranscriptionPulse: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.scenePhase) private var scenePhase
+
+  var body: some View {
+    TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || scenePhase != .active)) { timeline in
+      Canvas { context, size in
+        // A looping processing pulse, independent of microphone levels or progress.
+        let phase = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate * .pi * 2 / 1.2
+        let count = max(1, min(12, Int(size.width / 6)))
+        let spacing = min(6, size.width / CGFloat(count))
+        for index in 0..<count {
+          let wave = (sin(phase - Double(index) * 0.6) + 1) / 2
+          let pulse = wave * wave
+          let height = 3 + 12 * pulse
+          let x = size.width / 2 + (CGFloat(index) - CGFloat(count - 1) / 2) * spacing
+          let rect = CGRect(x: x - 1.5, y: (size.height - height) / 2, width: 3, height: height)
+          context.fill(Path(roundedRect: rect, cornerRadius: 1.5),
+            with: .color(Palette.secondary.opacity(0.3 + 0.5 * pulse)))
+        }
+      }
+    }.frame(maxWidth: .infinity).frame(height: 20).clipped().accessibilityHidden(true)
   }
 }
 

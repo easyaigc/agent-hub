@@ -1,4 +1,5 @@
 import Foundation
+import MobileCore
 import UniformTypeIdentifiers
 
 enum EasyWorkReceiptNormalization {
@@ -17,6 +18,20 @@ enum EasyWorkReceiptNormalization {
 }
 
 struct EasyWorkAgentClient: AgentClient {
+  func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse {
+    guard scope.target.agentId == "easywork", client.agentConnection?.target == scope.target else { throw HostServiceError.wrongHost }
+    let channel = try await session(client)
+    guard channel.target.desktopDeviceId == scope.target.hostId,
+      channel.target.workspaceId == scope.target.workspaceId,
+      channel.target.runtimeId == scope.target.runtimeId,
+      channel.target.account == scope.target.account else { throw HostServiceError.wrongHost }
+    var value = try object(await channel.request("thread/suggestion/read", ["threadId": scope.threadId, "sourceTurnId": scope.sourceTurnId]))
+    // The encrypted session has already verified the exact response-envelope target.
+    value["target"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(scope.target))
+    let response = try JSONDecoder().decode(DesktopSuggestionResponse.self, from: easyWorkJSON(value))
+    guard response.matches(scope) else { throw HostServiceError.invalidResponse }
+    return response
+  }
   func updateNotificationPreferences(_ client: Client, deviceId: String, target: AgentRuntimeTarget, preferences: TaskNotificationPreferences) async throws -> TaskNotificationStatus {
     let prefs = try JSONSerialization.jsonObject(with: JSONEncoder().encode(preferences))
     let identity = try JSONSerialization.jsonObject(with: JSONEncoder().encode(target))
@@ -101,7 +116,10 @@ struct EasyWorkAgentClient: AgentClient {
       projects: projects.map { Project(id: $0["id"] as? String ?? "", hostId: client.id, name: $0["name"] as? String ?? L10n.tr("项目"), roots: ($0["workspacePath"] as? String).map { [$0] } ?? []) },
       threads: (threads["threads"] as? [[String: Any]] ?? []).map { conversation(client, $0) }, nextProjectCursor: nil, nextThreadCursor: threads["nextCursor"] as? String,
       capabilities: context["capabilities"] as? [String] ?? [], clientType: ClientType(id: "easywork", name: "EasyWork"), agentConnectionState: connectionState,
-      pinnedThreadIds: threads["pinnedThreadIds"] as? [String])
+      readTarget: readingTarget(confirmed), pinnedThreadIds: threads["pinnedThreadIds"] as? [String])
+  }
+  private func readingTarget(_ target: EasyWorkTarget) -> AgentRuntimeTarget {
+    AgentRuntimeTarget(agentId: "easywork", hostId: target.desktopDeviceId, workspaceId: target.workspaceId, runtimeId: target.runtimeId, account: target.account)
   }
   private func conversation(_ client: Client, _ value: [String: Any]) -> Conversation {
     let active = value["activeRun"] as? [String: Any]
@@ -271,9 +289,9 @@ struct EasyWorkAgentClient: AgentClient {
     var receipts = try JSONDecoder().decode([DeliveryReceipt].self, from: easyWorkJSON((snapshot["queueReceipts"] as? [[String: Any]] ?? []).map { value in var receipt = value; receipt["hostId"] = client.id; return receipt }))
     if let latest = snapshot["latestRun"] as? [String: Any], let status = latest["status"] as? String, ["failed", "cancelled", "interrupted"].contains(status), active == nil { receipts.append(DeliveryReceipt(clientMessageId: latest["id"] as? String ?? "", hostId: client.id, threadId: threadId, state: status, turnId: latest["id"] as? String, error: latest["error"] as? String)) }
     let controlTurn = ["paused", "pausing", "resuming"].contains(control?["phase"] as? String ?? "") ? control?["runId"] as? String : nil
-    let runtime = cursor == nil ? ThreadRuntime(state: state, turnId: active?["runId"] as? String ?? active?["id"] as? String ?? controlTurn, plan: steps, error: active == nil ? latest?["error"] as? String : nil, approvals: approvals, receipts: receipts, canControl: true, collaborationMode: (active?["agentRunMode"] as? String ?? preferences["agentRunMode"] as? String) == "plan" ? "plan" : "default", proposedPlan: proposed, generationSettings: settings) : nil
+    let runtime = cursor == nil ? ThreadRuntime(state: state, turnId: active?["runId"] as? String ?? active?["id"] as? String ?? controlTurn, plan: steps, error: active == nil ? latest?["error"] as? String : nil, approvals: approvals, receipts: receipts, canControl: true, collaborationMode: (active?["agentRunMode"] as? String ?? preferences["agentRunMode"] as? String) == "plan" ? "plan" : "default", proposedPlan: proposed, generationSettings: settings, suggestionSourceTurnId: state == "idle" ? snapshot["suggestionSourceTurnId"] as? String : nil) : nil
     var summary = conversation(client, thread); summary.state = state
-    return HistorySnapshot(hostId: client.id, threadId: threadId, thread: summary, messages: messages, nextCursor: value["hasEarlier"] as? Bool == true ? value["before"] as? String : nil, runtime: runtime, epoch: await channel.epoch, cursor: await channel.eventSequence, historyWindow: HistoryWindow(version: 1, kind: cursor == nil ? "latest" : "earlier"), historyRevision: revision)
+    return HistorySnapshot(readTarget: readingTarget(channel.target), hostId: client.id, threadId: threadId, thread: summary, messages: messages, nextCursor: value["hasEarlier"] as? Bool == true ? value["before"] as? String : nil, runtime: runtime, epoch: await channel.epoch, cursor: await channel.eventSequence, historyWindow: HistoryWindow(version: 1, kind: cursor == nil ? "latest" : "earlier"), historyRevision: revision)
   }
   func send(_ client: Client, reply: PendingReply) async throws -> DeliveryReceipt {
     guard reply.hostId == client.id, ["next-turn", "queue", "steer"].contains(reply.mode) else { throw HostServiceError.message(L10n.tr("此客户端未开放此发送方式")) }
@@ -334,11 +352,16 @@ struct EasyWorkAgentClient: AgentClient {
   }
   func events(_ client: Client, epoch: String, after: Int, threadId: String) async throws -> EventBatch {
     let channel = try await session(client)
-    let eventEpoch = channel.target.runtimeId
+    let eventEpoch = channel.target.runtimeId + ":" + (await channel.epoch)
     let cursor = try await channel.pollEvents(threadId: threadId, after: epoch == eventEpoch ? after : 0)
+    let receivedEpoch = channel.target.runtimeId + ":" + (await channel.epoch)
+    guard OperationPolicies.shared.eventNeedsHistory(previousEpoch: epoch, epoch: receivedEpoch,
+      previousCursor: Int64(after), cursor: Int64(cursor)) else {
+      return EventBatch(hostId: client.id, epoch: receivedEpoch, cursor: cursor, reset: false, events: [], ready: true)
+    }
     // Coalesced deltas or unavailable older events are repaired by canonical history.
     let snapshot = try await history(client, threadId: threadId, cursor: nil)
-    return EventBatch(hostId: client.id, epoch: eventEpoch, cursor: cursor, reset: epoch != eventEpoch, events: [HostEvent(threadId: threadId, snapshot: snapshot)], ready: true)
+    return EventBatch(hostId: client.id, epoch: receivedEpoch, cursor: cursor, reset: epoch != receivedEpoch, events: [HostEvent(threadId: threadId, snapshot: snapshot)], ready: true)
   }
   func stop(_ client: Client, threadId: String, turnId: String) async throws -> CommandResult {
     let response = try object(await session(client).request("turn/cancel", ["threadId": threadId, "turnId": turnId]))

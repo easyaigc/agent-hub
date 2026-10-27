@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-25",
+  "previousIndex": "upstream-20261025-evening.json",
+  "baseMain": "9b4b326591307fd314669636ef9bd9c59ea6d672",
+  "currentMain": "8c7e37162f2cd97c9c85c1b795b067086314089b",
+  "frozenSourceNodes": 217,
+  "previousPostFreezeNodes": 27,
+  "newPostFreezeNodes": [
+    {
+      "recordId": "N028",
+      "sha": "9849b8d03692a03fb10a2e0514fb2089faa0f85c",
+      "parents": ["db2bd5b56f7cc659b27ee4e1e550609a454d3055"],
+      "title": "test(ios): retain gated loaded-chat lifecycle acceptance scaffold",
+      "kind": "implementation-or-documentation",
+      "firstParentPatchSha256": "f3b8780c2e24b19cbe6340d790c852d9a641e0cc3d98d00e95fe52564a738ea8",
+      "paths": [
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/mobile-evidence/macbook128-loaded-lifecycle-20261025.json",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md"
+      ],
+      "androidImpact": "Preserve gated iOS loaded-chat lifecycle scaffold and review docs. It grants no new Android/physical/Windows acceptance; existing task/project business deferral and unrelated iOS A6 pause remain.",
+      "wholeNodeClosed": false
+    },
+    {
+      "recordId": "N029",
+      "sha": "42ec1612d74bce480fb0f295f539811a97012e95",
+      "parents": [
+        "9849b8d03692a03fb10a2e0514fb2089faa0f85c",
+        "c573f127a575c94222fc1f245690f7323860f007"
+      ],
+      "title": "Merge remote-tracking branch 'origin/codex/android-p4-owner-menu-controls-20261025' into codex/remainder-finalize-20261025",
+      "kind": "merge",
+      "firstParentPatchSha256": "9e6fbcacc8b055bf95ac5d2529b55e716845b4ed1a6e0c790d7b6524254adb37",
+      "paths": [
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileApprovalUiTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileControlCallbackTest.kt",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedMenuTouch.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "docs/acceptance/mobile-evidence/android-alignment-P4.json",
+        "docs/acceptance/mobile-parity.md",
+        "docs/design/mobile-parity.md",
+        "docs/plans/android-alignment-20261022/P4-remaining-20261024.json",
+        "docs/plans/android-alignment-20261022/P4-scope.json",
+        "docs/plans/android-alignment-20261022/P4-source-review.json",
+        "docs/plans/android-alignment-20261022/progress.md",
+        "docs/plans/android-alignment-20261022/records/dispatch-and-integration.md",
+        "docs/plans/android-alignment-20261022/records/p4-main-increments.md",
+        "docs/plans/android-alignment-20261022/records/p4-plans-questions.md",
+        "docs/plans/android-alignment-20261022/records/p4-queue-controls.md",
+        "docs/plans/android-alignment-20261022/upstream-20261025-evening.json",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md"
+      ],
+      "androidImpact": "Preserve gated iOS loaded-chat lifecycle scaffold and review docs. It grants no new Android/physical/Windows acceptance; existing task/project business deferral and unrelated iOS A6 pause remain.",
+      "wholeNodeClosed": false
+    },
+    {
+      "recordId": "N030",
+      "sha": "3b8abd2b206b6153e5dba3505c77a482fd01379c",
+      "parents": ["42ec1612d74bce480fb0f295f539811a97012e95"],
+      "title": "docs: review retained features and acceptance boundaries",
+      "kind": "implementation-or-documentation",
+      "firstParentPatchSha256": "ed0d9439c036117c28e75a45edb075b909a32b7793149fe7ede696df0ea9956d",
+      "paths": ["docs/acceptance/repository-remainder-20261025.md"],
+      "androidImpact": "Preserve gated iOS loaded-chat lifecycle scaffold and review docs. It grants no new Android/physical/Windows acceptance; existing task/project business deferral and unrelated iOS A6 pause remain.",
+      "wholeNodeClosed": false
+    },
+    {
+      "recordId": "N031",
+      "sha": "8c7e37162f2cd97c9c85c1b795b067086314089b",
+      "parents": [
+        "9b4b326591307fd314669636ef9bd9c59ea6d672",
+        "3b8abd2b206b6153e5dba3505c77a482fd01379c"
+      ],
+      "title": "Merge pull request '补齐已完成聊天的独立实体机验收入口与收尾清单' (#28) from codex/remainder-finalize-20261025 into main",
+      "kind": "merge",
+      "firstParentPatchSha256": "c4c0c2d1e4b11149792c65ed4554fd1edae99dc0fe63adc759521f85e0206347",
+      "paths": [
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/mobile-evidence/macbook128-loaded-lifecycle-20261025.json",
+        "docs/acceptance/repository-remainder-20261025.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md"
+      ],
+      "androidImpact": "Preserve gated iOS loaded-chat lifecycle scaffold and review docs. It grants no new Android/physical/Windows acceptance; existing task/project business deferral and unrelated iOS A6 pause remain.",
+      "wholeNodeClosed": false
+    }
+  ],
+  "totalCurrentFeatures": 71,
+  "ownAndroidIntegrationOutsideUpstreamCounter": "PR27 main9b4b3265 and accepted Android checkpoints are independently linked in progress/evidence, not counted as new iOS feature nodes",
+  "wholeStageClosed": false
+}

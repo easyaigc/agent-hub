@@ -239,6 +239,70 @@ try {
   await assert.rejects(() => uncertain.create(unknownPlan));
   assert.equal((await readFile(calls, 'utf8')).length, before);
   uncertain.close();
+  const recoveryJournal = join(directory, 'open-recovery-journal');
+  let recoveryInputs = 0;
+  const recovery = new DesktopPreparedBridge(
+    config,
+    hostId,
+    runtime,
+    recoveryJournal,
+    executable,
+    home,
+    async () => {
+      recoveryInputs++;
+      throw Error('Must never execute recovery input');
+    },
+  );
+  recovery.open = async () => false;
+  const recoveryPlan = { ...plan, clientOperationId: randomUUID() };
+  await recovery.refresh();
+  await assert.rejects(() => recovery.create(recoveryPlan), /接管结果待确认/);
+  const recoveryFile = join(recoveryJournal, recoveryPlan.clientOperationId + '.json');
+  const proofBytes = await readFile(recoveryFile),
+    proofRecord = JSON.parse(proofBytes);
+  assert.equal(proofRecord.phase, 'released');
+  assert.equal(proofRecord.exitCode, 0);
+  assert.equal(proofRecord.inputBoundary, undefined);
+  const callsBeforeRecovery = await readFile(calls, 'utf8');
+  const metadata = await recovery.preparedThreadMetadata(recoveryPlan, threadId);
+  assert.equal(metadata.id, threadId);
+  assert.equal(metadata.hostId, hostId);
+  assert.equal(metadata.projectId, projectId);
+  assert.equal(await recovery.preparedThreadMetadata(recoveryPlan, randomUUID()), undefined);
+  for (const changed of [
+    { phase: 'materialized' },
+    { exitCode: null },
+    { hostId: randomUUID() },
+    { fingerprint: 'f'.repeat(64) },
+    { inputBoundary: { state: 'may-have-written' } },
+  ]) {
+    await writeFile(recoveryFile, JSON.stringify({ ...proofRecord, ...changed }));
+    assert.equal(
+      await recovery.preparedThreadMetadata(recoveryPlan, threadId).catch(() => undefined),
+      undefined,
+    );
+    await writeFile(recoveryFile, proofBytes);
+  }
+  const originalRead = runtime.reader.read,
+    emptyMetadata = JSON.parse(await readFile(output, 'utf8'));
+  for (const changed of [
+    { id: randomUUID() },
+    { projectId: randomUUID() },
+    { cwd: home },
+    { turns: [{ id: randomUUID(), status: 'completed', items: [] }] },
+    { archived: true },
+  ]) {
+    runtime.reader.read = async () => ({ thread: { ...emptyMetadata, ...changed } });
+    assert.equal(await recovery.preparedThreadMetadata(recoveryPlan, threadId), undefined);
+  }
+  runtime.reader.read = originalRead;
+  assert.equal(
+    await readFile(calls, 'utf8'),
+    callsBeforeRecovery,
+    'recovery never starts another preparer',
+  );
+  assert.equal(recoveryInputs, 0);
+  recovery.close();
   assert.throws(() => new DesktopThreadPreparer('relative-cli', home));
   console.log(
     'Production readiness without acceptance reports, target/private-config checks, empty metadata preparation, process-exit handoff and no replay: passed',

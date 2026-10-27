@@ -203,6 +203,12 @@ test(
       }
       await mkdir(join(repository, 'packages/codex-adapter/windows'));
       await write('scripts/desktop-completion-notify-observer.py', '# synthetic fixture\n');
+      const ciSources = {
+        'scripts/ci/Dockerfile': 'FROM scratch\n',
+        'scripts/ci/legacy-bootstrap.bash': '# synthetic bootstrap\n',
+        'scripts/ci/legacy-sdkmanager.bash': '# synthetic sdk compatibility\n',
+      };
+      for (const [name, body] of Object.entries(ciSources)) await write(name, body);
       await write('skills/codex-host-connect/SKILL.md', 'Synthetic packaging fixture.\n');
       for (const name of ['bonjour-service', 'qrcode']) {
         await write(
@@ -229,6 +235,15 @@ test(
         output: join(tmp, 'valid.zip'),
       });
       assert.match(valid.sha256, /^[a-f0-9]{64}$/);
+      for (const [name, body] of Object.entries(ciSources))
+        assert.equal(
+          execFileSync(
+            '/usr/bin/unzip',
+            ['-p', valid.archive, 'codex-host-connect/assets/codex-manage/' + name],
+            { encoding: 'utf8' },
+          ),
+          body,
+        );
       for (const location of ['packages/codex-adapter', 'node_modules/@codex-manage/codex-adapter'])
         assert.equal(
           execFileSync(

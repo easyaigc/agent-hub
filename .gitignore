@@ -1,4 +1,5 @@
 node_modules/
+.pnpm-store/
 dist/
 .turbo/
 .build/
@@ -36,5 +37,15 @@ packages/mobile-core/build/
 !/docs/acceptance/android-stages.md
 !/docs/acceptance/android-environment-20261021.md
 !/docs/acceptance/mobile-parity.md
+!/docs/acceptance/voice-local-fallback-20261026.md
+!/docs/acceptance/voice-transcribing-animation-20261026.md
+!/docs/acceptance/question-voice-recovery-20261026.md
 !/docs/acceptance/mobile-evidence/
 !/docs/acceptance/mobile-evidence/*.json
+
+# Sanitized paused-state regression and deployment evidence.
+!/docs/acceptance/paused-state-sync-20261024.md
+
+!/docs/acceptance/unread-attachment-projection-20261026.md
+
+!/docs/acceptance/external-attachments-ios-20261026.md

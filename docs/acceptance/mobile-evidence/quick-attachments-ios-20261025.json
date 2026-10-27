@@ -1,0 +1,468 @@
+{
+  "schemaVersion": 1,
+  "feature": "F71",
+  "date": "2026-10-25",
+  "status": "ios-first-batch-core-pass-with-matched-reuse",
+  "scope": "iOS first batch local preparation. Upload remains exclusively behind explicit Send. Android A6 and external share extension remain pending.",
+  "inputCommit": "9cfacafcac7da66a6490bc6e7cd74dd7374a5057",
+  "sourceFiles": {
+    "apps/ios/Sources/RootView.swift": "256424f0aed188573651df679831fdd5d2908510b9c8102a3b1750c79e1eba10",
+    "apps/ios/Sources/Models.swift": "38040ca7f8e8e25d6f97d21528aec5b3f67ceb411f697e041785d46d9874258f",
+    "apps/ios/Sources/SessionStore.swift": "b84f43f5e1a87892da59f381adf8a503d629fcb088fe013437142954f4316676",
+    "apps/ios/Sources/LocalAttachmentPreparation.swift": "c026910202a4bbe6293efbf3fa60487151ddf7e05a9e0a6bbb2f2e7ae12ca919",
+    "apps/ios/Sources/RecentAttachmentPhotos.swift": "b76932fbf5baa7e7ad2b97acf1ebd72b876dcf537ddd1ef25da113697a1af124",
+    "apps/ios/Sources/QuickAttachmentViews.swift": "cbdc2cbeb4de1c3bb5ac961a107b9549dbcafc99d99f5b88181d7afc22b1ac28",
+    "apps/ios/Sources/QuickAttachmentAcceptance.swift": "5887bdb3f1c7a330fb5ade1bf27603728e90cbf548c4b9db336c10d867b4562f",
+    "apps/ios/Info.plist": "3d5eb8ea050d4fdfb7a8111ed6a77b9d90103fe50574bc2ce9a7bfe4f384cff6",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9a2ed5f3089dd4672f1d9fc16d5e713754e6c463a690ac7304b470525c5638f5",
+    "apps/ios/Resources/en.lproj/InfoPlist.strings": "b0b503d4c4ac0559b927ef7b33b5d7028e7c71fa4d657552a28e5b4c77508185",
+    "apps/ios/Resources/zh-Hans.lproj/InfoPlist.strings": "d924059922c6323582cf85ca091e7b1c8c40a9d5073cfd1e7ca3177abe405738",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "f2d2d2ade1216dd32f9437830d5c04d0f4c0e258a9f92f210030333152be881d",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "c29c98667fb6214bd8a4888b8fb9f7ceda13d8c4fe499a525bee20453f91d870",
+    "apps/ios/Tests/CodexManageUITests.swift": "4d2c1ae7f71e183891e0d44ef4fa8dad8c102d9f2b787b026af08e22b1d6a2c7",
+    "packages/mobile-core/build.gradle.kts": "514e981695b96286ff29b16458e37b2fe18a4ac0c31d69f7550a655be20315b7",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/AttachmentPreparationRules.kt": "820b2ca68c30e45b56e3b4d455c4cc903b69fc5cfd1320cf3caf2704e7d99212",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/AttachmentPreparationRulesTest.kt": "dd6722b5237b904faf0d2aec75076c0d564cebecd26080ecf07b7e60ee137d31",
+    "packages/protocol/fixtures/mobile/attachment-preparation-v1.json": "77685de4f56d9f096c7091a47d43f6ce4185ebc56b32b7c87eb35dc86804174b",
+    "scripts/mobile/verify-ios-attachments.swift": "6f200590fb520e986c686f9ea202814f26f89ec219d31052660388ba63ee712a",
+    "scripts/mobile/check-core.mjs": "159c3e5c89270d77a8df791247fdcc709819ced4f575cd12d9f291e2a620c7bf",
+    "scripts/mobile/quick-attachments-ios-acceptance.mjs": "9b682be45d86d2fcf511c9af9ea0fa76d366c498636cf1710486f1ebbf1c5f8c",
+    "scripts/localization-smoke.mjs": "9bac78cb8f4d96ffa99c28839f15979bcd3a465cb577909c9e43526eafca2dc3"
+  },
+  "auxiliary": {
+    "sharedCore": {
+      "status": "passed",
+      "sourceSha256": "52a81cf0655953ec074a764e93ca335767b8e5c0beca4de47074f2a4bc72e131",
+      "suiteRecords": 32,
+      "attachmentVectors": 16,
+      "actualRuntimes": ["JVM", "iOS Simulator ARM64 Kotlin Native", "Swift to Kotlin framework"],
+      "reportSha256": "a8c3fdb9b8d72d0da36ec8209c54c37d3903d620205caea91748b99ed1029a23",
+      "physicalDeviceVerified": false
+    },
+    "workspaceCheck": {
+      "status": "passed",
+      "environment": "Node24 and explicit full Xcode DEVELOPER_DIR",
+      "priorFailure": "First complete run reached macOS framework linking with Command Line Tools selected; retained as environment failure and rerun with full Xcode.",
+      "logSha256": "529b73f17d8a0dfc32d3199dc63b73694ea8e6705a27cb3b3d69fbead16f0939",
+      "candidateScope": "Full pnpm check passed before later native-only UI/acceptance changes; current task JS/KMP behavior unchanged. Final native compilation and targeted parity/localization checks are separate."
+    },
+    "nativeBuild": {
+      "simulator": "passed",
+      "signedPhysicalBuild": "passed-final-source-build-for-testing",
+      "pnpmBuildIOS": "passed after stable presentation fix on unchanged production sources; later strict DEBUG fixture and UI-test input route rebuilt through signed build-for-testing",
+      "buildLogSha256": "1efc7b131fd1062b11b8b917df4938086bc3437eb6e7fb084e4c464b6afd6166",
+      "signedPhysicalApp": {
+        "bundleId": "com.easyai.agenthub.quickattachments.acceptance",
+        "executableSha256": "94675aaa33116b771f81dbd84b36f7420a5f6dff4dc1d396162931fa2bece9a8",
+        "scope": "latest controlled-file Send passed; four unchanged-production core cases matched reused"
+      },
+      "simulatorApp": {
+        "bundleId": "com.easyai.agenthub.quickattachments.acceptance",
+        "executableSha256": "ef5099e91fb4ead70633c4115e8a50a1d6feb74ecf3377fd46ddc46ca52100b1"
+      },
+      "finalNativeTestReady": {
+        "ready": true,
+        "appSha256": "94675aaa33116b771f81dbd84b36f7420a5f6dff4dc1d396162931fa2bece9a8",
+        "testSha256": "3074afba2c9e37272539efbc8fe8ddbb607cf8a34a68aa30104a961d2d54c582",
+        "buildLog": "build-physical-final-send.log"
+      },
+      "latestPhysicalBuildLogSha256": "1efc7b131fd1062b11b8b917df4938086bc3437eb6e7fb084e4c464b6afd6166",
+      "latestTestSuiteReady": "final Send passed; four core cases explicitly matched reused on identical production source hashes",
+      "priorSignedPhysicalApp": {
+        "bundleId": "com.easyai.agenthub.quickattachments.acceptance",
+        "executableSha256": "93da968917f923c3a6351ab3b057729f54e1a9e170c97560de6583bae96d759f"
+      },
+      "earlierBuildLogSha256": "a7a1f8e2eb9db12f31618d16949d4a7540d2868067598d32e557c668fd7709af"
+    },
+    "nativeUI": {
+      "systemPhotoAndFilePickerPresentation": "passed-on-iOS26-simulator",
+      "localDraftRecoveryAndRecentPhoto": "passed-on-final-iOS26-simulator-v8",
+      "cameraAndPasteOnPhysicalDevice": "matched_reuse; identical production sources, passing prior frozen candidate",
+      "finalRun": {
+        "passedTests": 2,
+        "failedTests": 0,
+        "skippedTests": 0,
+        "summarySha256": "89f3ae07cbad62371e031683d0521327edfbf93139487dfcb9c07d6d1f1107f9",
+        "logSha256": "af2c02416a8c331ef8169fc9efe80c99bf9d26e37c076702d1fb41116bac9535"
+      }
+    },
+    "realDesktopLive": {
+      "status": "passed-as-simulator-to-real-desktop-auxiliary",
+      "physicalDeviceVerified": false,
+      "candidate": "simulator-live-v1; source build v7; final recent-thumbnail quality adjustment is covered separately by simulator UI v8",
+      "originalDesktopOwnerVerified": true,
+      "turns": 1,
+      "userMessages": 1,
+      "turnStatus": "completed",
+      "model": "gpt-6.1-sol",
+      "requestedEffort": "xhigh",
+      "actualEffort": "xhigh",
+      "writesBeforeFirstNativeSendTap": 0,
+      "minimumPostDelayFromNativeSendMilliseconds": 4808.0,
+      "creationRequests": 1,
+      "uploadedAttachments": [
+        {
+          "mediaType": "image/png",
+          "bytes": 70108,
+          "sha256": "722a46a1f922c333b4cbd055d882eb0337836548635b15cc4e4e69c12f80c68e"
+        },
+        {
+          "mediaType": "text/plain",
+          "bytes": 36,
+          "sha256": "cca31a509459af9e4c9636aed06954f6e04faae597393882de1b740ca6bed563"
+        }
+      ],
+      "submitRequests": 1,
+      "codeAbsentFromPromptAndPresentInFinalReply": true,
+      "finalCodeOccurrences": 2,
+      "desktopStateSha256": "80c6cf0acdd32849b498331a8874f2f363c6d6f1d6431b10207cde73207c5675",
+      "nativeLogSha256": "4e41b0c3af3254a235916d9ab605d84655eca712880a1d1af0fced58f5cd7f03"
+    },
+    "localization": {
+      "status": "passed",
+      "bilingualEntries": 1575,
+      "permissionPrompts": 5
+    },
+    "composerRegression": {
+      "status": "passed",
+      "passedTests": 5,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "scope": "target draft isolation, offline editing, floating composer with multiline keyboard/plan/light-dark/landscape, local controlled-photo and recovery, system picker presentation",
+      "summarySha256": "c28208d2aa02edc447d9c430a1bc2fa210555273cd6cb0bf751477a4117b1a2e"
+    },
+    "systemPhotoSelection": {
+      "status": "this_run_pass_on_dedicated_simulator",
+      "actualSystemPickerSelectionAndTransfer": true,
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "controlledLibraryOnly": true,
+      "physicalDeviceSelectionNotClaimed": true,
+      "summarySha256": "4f95e96a70eb63b7ad880d62bd10d8a3db3760cee890985b1aa1730e2974a058",
+      "priorHarnessFailures": [
+        "v1 used cell rather than native image accessibility type",
+        "v2 native image reported not hittable; v3 used its observed image frame for native tap"
+      ]
+    },
+    "stablePresenterRegression": {
+      "status": "this_run_pass_on_dedicated_simulator",
+      "passedTests": 7,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "scope": "original-target draft isolation, offline editing, floating composer, controlled recent-photo/local recovery, actual PhotosPicker transfer, system picker presentation, paired real Host local-only preparation",
+      "summarySha256": "098d9894d9151702decbdefa55bc1d16ba30fc36ac41a2c5be1c6da2798589b5",
+      "appSha256": "2f0bd8b34bc11c815e79edc87ac936cd2d75efaa151e8a6996e4aaef0f03900f",
+      "testSha256": "a9aeca3a8d70b34944dbfa60eaee63219fe7a4c84fccf38803bbe38f68e00ab4",
+      "newAttachmentCreationOrInputWrites": 0,
+      "newCreations": 0,
+      "readAcknowledgementsCountedSeparately": true,
+      "physicalDeviceVerified": false
+    }
+  },
+  "physical": {
+    "device": "paired local physical iPhone 15 Pro Max",
+    "os": "iOS27.0.1",
+    "bundleId": "com.easyai.agenthub.quickattachments.acceptance",
+    "attempts": [
+      {
+        "id": "physical-native-v1",
+        "status": "runner-initialization-failed",
+        "executedFeatureTests": 0,
+        "error": "Timed out while enabling automation mode"
+      },
+      {
+        "id": "physical-native-v2",
+        "status": "runner-initialization-failed",
+        "executedFeatureTests": 0,
+        "error": "Timed out while enabling automation mode"
+      },
+      {
+        "id": "physical-native-v3",
+        "status": "runner-initialization-failed",
+        "executedFeatureTests": 0,
+        "error": "Timed out while enabling automation mode"
+      }
+    ],
+    "currentStatus": "Four native cases matched reused on identical production sources; final controlled-file real Send, phone/Host/original Electron owner/model witness passed. Complete cross-platform and permission/theme/accessibility matrix remains open.",
+    "screenshotObservation": "Independent acceptance App local-network permission prompt overlaps a system authorization sheet. No device-lock claim is inferred from preview.",
+    "uploadBeforeSend": "this_run_pass; zero attachment, creation, open or input writes before first native Send",
+    "realModelAndIndependentDesktopOwner": "this_run_pass",
+    "finalCandidateInstalled": true,
+    "userRequestedNoReboot": true,
+    "nativeCore": {
+      "status": "this_run_pass",
+      "passedTests": 3,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "appSha256": "246389898636772b68dc84007ddeb48995ad5e02157c87f1f6486547523846f5",
+      "reportSha256": "632267db844351eee830ca0581f538f8fb4874f07d1a90e01495723930777d47",
+      "scope": "real camera, explicit system paste, controlled old-photo suggestion and local add, duplicate/clear/edit byte limits, crash local recovery and system picker presentation",
+      "candidateScope": "earlier candidate, retained as historical subset; latest matchedReuse and finalCandidate give closing scope"
+    },
+    "liveAttempts": [
+      {
+        "id": "physical-live-final",
+        "status": "test-harness-precondition-failed",
+        "newHostWrites": 0,
+        "inputSubmissions": 0,
+        "reason": "Inherited HOST_KEY_DEV_APP_BUNDLE_ID preparation helper did not apply to this exact independent App. Replaced only this test call with actual pending local-network permission handling; retained exact bundle verification in setup and runner."
+      }
+    ],
+    "latestTrials": [
+      {
+        "id": "physical-full-final",
+        "passedTests": 2,
+        "failedTests": 2,
+        "scope": "local recovery and real Send passed; generic image representation and offscreen picker test failed",
+        "originalOwnerCompletedTurns": 1,
+        "userMessages": 1,
+        "unknownInput": false
+      },
+      {
+        "id": "physical-full-final-v2",
+        "status": "interrupted-by-this-task-during-local-only-case",
+        "newAttachmentOrExecutionWrites": 0,
+        "newInputSubmissions": 0
+      },
+      {
+        "id": "physical-paste-fix-v1",
+        "status": "generic-image-representation-failed",
+        "newInputSubmissions": 0
+      },
+      {
+        "id": "physical-paste-fix-v2",
+        "status": "generic-image-representation-failed",
+        "newInputSubmissions": 0
+      },
+      {
+        "id": "physical-paste-fix-v3",
+        "status": "this_run_pass",
+        "passedTests": 1,
+        "failedTests": 0,
+        "scope": "camera and native paste, prior to stable presenter move"
+      },
+      {
+        "id": "physical-candidate-final",
+        "passedTests": 2,
+        "failedTests": 1,
+        "scope": "controlled recent photo/recovery and system pickers passed; paired local paste did not finish within test timeout",
+        "newAttachmentOrExecutionWrites": 0,
+        "readAcknowledgements": 1,
+        "newInputSubmissions": 0
+      }
+    ],
+    "writeObservationScope": "Attachment bytes, creation, open and model input operations are gated by Send. Existing POST /v1/threads/read only updates read position, accepts no attachment fields, and is counted separately.",
+    "matchedReuse": {
+      "status": "matched_reuse",
+      "productionSourcesUnchanged": true,
+      "productionSourceFiles": {
+        "apps/ios/Sources/RootView.swift": "256424f0aed188573651df679831fdd5d2908510b9c8102a3b1750c79e1eba10",
+        "apps/ios/Sources/Models.swift": "38040ca7f8e8e25d6f97d21528aec5b3f67ceb411f697e041785d46d9874258f",
+        "apps/ios/Sources/SessionStore.swift": "b84f43f5e1a87892da59f381adf8a503d629fcb088fe013437142954f4316676",
+        "apps/ios/Sources/LocalAttachmentPreparation.swift": "c026910202a4bbe6293efbf3fa60487151ddf7e05a9e0a6bbb2f2e7ae12ca919",
+        "apps/ios/Sources/RecentAttachmentPhotos.swift": "b76932fbf5baa7e7ad2b97acf1ebd72b876dcf537ddd1ef25da113697a1af124",
+        "apps/ios/Sources/QuickAttachmentViews.swift": "cbdc2cbeb4de1c3bb5ac961a107b9549dbcafc99d99f5b88181d7afc22b1ac28",
+        "apps/ios/Info.plist": "3d5eb8ea050d4fdfb7a8111ed6a77b9d90103fe50574bc2ce9a7bfe4f384cff6",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9a2ed5f3089dd4672f1d9fc16d5e713754e6c463a690ac7304b470525c5638f5",
+        "apps/ios/Resources/en.lproj/InfoPlist.strings": "b0b503d4c4ac0559b927ef7b33b5d7028e7c71fa4d657552a28e5b4c77508185",
+        "apps/ios/Resources/zh-Hans.lproj/InfoPlist.strings": "d924059922c6323582cf85ca091e7b1c8c40a9d5073cfd1e7ca3177abe405738",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "f2d2d2ade1216dd32f9437830d5c04d0f4c0e258a9f92f210030333152be881d",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "c29c98667fb6214bd8a4888b8fb9f7ceda13d8c4fe499a525bee20453f91d870",
+        "packages/mobile-core/build.gradle.kts": "514e981695b96286ff29b16458e37b2fe18a4ac0c31d69f7550a655be20315b7",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/AttachmentPreparationRules.kt": "820b2ca68c30e45b56e3b4d455c4cc903b69fc5cfd1320cf3caf2704e7d99212",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/AttachmentPreparationRulesTest.kt": "dd6722b5237b904faf0d2aec75076c0d564cebecd26080ecf07b7e60ee137d31",
+        "packages/protocol/fixtures/mobile/attachment-preparation-v1.json": "77685de4f56d9f096c7091a47d43f6ce4185ebc56b32b7c87eb35dc86804174b",
+        "scripts/mobile/verify-ios-attachments.swift": "6f200590fb520e986c686f9ea202814f26f89ec219d31052660388ba63ee712a",
+        "scripts/mobile/check-core.mjs": "159c3e5c89270d77a8df791247fdcc709819ced4f575cd12d9f291e2a620c7bf",
+        "scripts/mobile/quick-attachments-ios-acceptance.mjs": "9b682be45d86d2fcf511c9af9ea0fa76d366c498636cf1710486f1ebbf1c5f8c",
+        "scripts/localization-smoke.mjs": "9bac78cb8f4d96ffa99c28839f15979bcd3a465cb577909c9e43526eafca2dc3"
+      },
+      "changedAcceptanceOnlySources": [
+        "apps/ios/Sources/QuickAttachmentAcceptance.swift",
+        "apps/ios/Tests/CodexManageUITests.swift"
+      ],
+      "reusedTests": [
+        "testQuickAttachmentCameraAndPaste",
+        "testQuickAttachmentLocalDraftAndRecovery",
+        "testQuickAttachmentPairedLocalPreparationDEV",
+        "testSystemAttachmentPickers"
+      ],
+      "priorAppSha256": "443de52c919dfb49b4b7896706bc7c82fb32dfd5b9471765af75b928f0809ad0",
+      "priorReportSha256": "737a02e4e1516b332dd9b2678a7e97f5619b185bf6c7e5f7a14e946aa3944f0f",
+      "priorTestBinaries": {
+        "signedTestBundleBinarySha256": "e9fd9f24dfa30ab53c06f9dc516385046675369495a6b9068ab127b0b94c4c15",
+        "sourceBuildTestBundleBinarySha256": "e9fd9f24dfa30ab53c06f9dc516385046675369495a6b9068ab127b0b94c4c15",
+        "runnerLauncherOriginalSha256": "0fa4155a682551d0d29de2ddc5fdd360226ff0037ca5d2fcaf3574bcb2ba11fa",
+        "runnerLauncherSignedSha256": "0eb5830e6fdc29d4b54d7d42a2dac2dcd048018357e0536abc337f370379d464"
+      },
+      "reason": "Only strict independent-bundle DEBUG clipboard fixture and UI-test input route changed after four passes. Actual production attachment preparation, stable UI presentation and Send coordinator sources are identical. Final live case will use controlled PNG and TXT from native Files picker; failed remote-clipboard Send trial is retained."
+    },
+    "finalCandidate": {
+      "status": "this_run_pass",
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "appSha256": "94675aaa33116b771f81dbd84b36f7420a5f6dff4dc1d396162931fa2bece9a8",
+      "testBinaries": {
+        "signedTestBundleBinarySha256": "3074afba2c9e37272539efbc8fe8ddbb607cf8a34a68aa30104a961d2d54c582",
+        "sourceBuildTestBundleBinarySha256": "3074afba2c9e37272539efbc8fe8ddbb607cf8a34a68aa30104a961d2d54c582",
+        "runnerLauncherOriginalSha256": "2bc7a9d179ab34d309787561a1df41be1ed26c405c7ea0d83c8b1e8fa4ebcefd",
+        "runnerLauncherSignedSha256": "7e84231c178fd01ba6bdeca133081a3b5ec3c3fa0bd8992dd4949f2b34a6a5cd"
+      },
+      "reportSha256": "7a6f409e0ae0636af08a37c1f764652b8b775d6df9b721b8a9f589cc5a2772e7",
+      "witnessSha256": "64671ce2c2d89d891cbd22f6ac075ed415c0c338286e19714cc98de5384dafe0",
+      "tests": ["testQuickAttachmentSendOnDemandDEV"],
+      "realDesktopLive": {
+        "status": "this_run_pass",
+        "physicalDeviceVerified": true,
+        "originalDesktopOwnerVerified": true,
+        "appSha256": "94675aaa33116b771f81dbd84b36f7420a5f6dff4dc1d396162931fa2bece9a8",
+        "nativePassedTests": 1,
+        "turns": 1,
+        "userMessages": 1,
+        "turnStatus": "completed",
+        "model": "gpt-6.1-sol",
+        "requestedEffort": "xhigh",
+        "actualEffort": "xhigh",
+        "writesBeforeFirstNativeSendTap": 0,
+        "writeScope": "attachment preparation/upload, creation and input submission; existing read acknowledgements are counted separately",
+        "readAcknowledgementsBeforeFirstSend": 1,
+        "minimumPostDelayFromNativeSendMilliseconds": 6836,
+        "creationRequests": 1,
+        "uploadedAttachments": [
+          {
+            "mediaType": "image/png",
+            "bytes": 68967,
+            "sha256": "77db1f3886e71eefb436a7f4957ffd3933a018cc3f2a993093f2a678887271ff"
+          },
+          {
+            "mediaType": "text/plain",
+            "bytes": 39,
+            "sha256": "18ede6b08e051677d3a2c8eb97512c637c5c6ec0ed307d0a7ced056c42d19804"
+          }
+        ],
+        "submitRequests": 1,
+        "codeAbsentFromPromptAndPresentInFinalReply": true,
+        "distinctImageAndTextCodesVerified": true,
+        "textCodeOccurrences": 1,
+        "imageCodeOccurrences": 1,
+        "desktopStateSha256": "abb3200be898a2425da9cadc43439174f503bef0e1c3d2fbebbf37ccc5e22884",
+        "nativeLogSha256": "215219261942d21d51f3a413336377815f37f6528044a312f829b44a8829aa90"
+      },
+      "environmentFingerprints": {
+        "xcode": "Xcode 27.0\nBuild version 27A266a",
+        "node": "24.19.0",
+        "hostAndAdapterCompiledFiles": {
+          "apps/host-agent/dist/runtime-server.js": "ec4759e8d262041c178291ce689cfc02ba5dc6e936873e6768399c5b757a8fa4",
+          "packages/codex-adapter/dist/desktop-ipc.js": "e7289b4d0139bfb4e7a4f2831e5531979f19bbb39851d4410ddd500d209c0daf",
+          "packages/codex-adapter/dist/desktop-creation.js": "e697be91e24d478fb9d2a6adc1eda1abcee7def08639cc41c0f70fae8c74f3c8",
+          "packages/codex-adapter/dist/desktop-prepared-bridge.js": "81f24d5370151c5dcc7b2178f199705a23af25c424d7b82d0537388d8059eefe",
+          "packages/codex-adapter/dist/runtime-session.js": "11375bae5bdc4b92b904e81d19c9745788dcf4d63900ad13581cf9297757fc50",
+          "packages/codex-adapter/dist/attachment-files.js": "ff9bc3da756ced3fb66534cdbd18d47a8d9f4904f59db01cb76ba3640f082ae4"
+        },
+        "linkedFrameworks": {},
+        "desktopVersion": "26.1013.40934",
+        "desktopBuild": "20770",
+        "desktopCodexExecutableSha256": "1afb28c01d7d49e892bd75f11076b10f1451e34e0ee308a95e5ab7f69f9c84fe"
+      }
+    },
+    "clipboardFixtureFinding": {
+      "observedRemoteProviderMarkers": ["dyn.com.rustdesk.owner", "com.apple.is-remote-clipboard"],
+      "payloadContentsNotRecorded": true,
+      "failingAttemptNewInputSubmissions": 0,
+      "acceptanceOnlyFix": "local-only PNG, final Send via native Files-generated PNG and TXT",
+      "remoteControlServicesUnchanged": true
+    }
+  },
+  "limitations": [
+    "No real WeChat UI automation or external share extension was executed.",
+    "Simulator, compilation and synthetic boundary results are auxiliary and do not replace physical iPhone, original Electron owner and real model acceptance.",
+    "No Android or Windows result is claimed."
+  ],
+  "artifacts": {
+    "storage": "Private local acceptance directory; no credentials, device IDs or raw conversations are exported into this document.",
+    "uiScreenshots": [
+      "quick-attachment-recent-old-photo-final.png",
+      "quick-attachment-panel-final.png",
+      "quick-attachment-recovered-local-only-final.png"
+    ]
+  },
+  "integrationSourceFiles": {
+    "apps/ios/Sources/RootView.swift": "e6466d327c757abc8efc0b49f1f3a5fc4a7f12265684b029d07d3cc28c7cb002",
+    "apps/ios/Sources/Models.swift": "6a7637d6db21851f85adcc16f5c04f312a5e4c1a7feb89132696def8a998232b",
+    "apps/ios/Sources/SessionStore.swift": "10a138b0f8774d982028a48caf140a44f3620e36386952f3109097cda0774a42",
+    "apps/ios/Sources/LocalAttachmentPreparation.swift": "c026910202a4bbe6293efbf3fa60487151ddf7e05a9e0a6bbb2f2e7ae12ca919",
+    "apps/ios/Sources/RecentAttachmentPhotos.swift": "b76932fbf5baa7e7ad2b97acf1ebd72b876dcf537ddd1ef25da113697a1af124",
+    "apps/ios/Sources/QuickAttachmentViews.swift": "3363e5e3a94ae9fa8b154b7bc01f4a80d7d9d656b751a61a68fa6369eac2dffa",
+    "apps/ios/Sources/QuickAttachmentAcceptance.swift": "5887bdb3f1c7a330fb5ade1bf27603728e90cbf548c4b9db336c10d867b4562f",
+    "apps/ios/Info.plist": "3d5eb8ea050d4fdfb7a8111ed6a77b9d90103fe50574bc2ce9a7bfe4f384cff6",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9a2ed5f3089dd4672f1d9fc16d5e713754e6c463a690ac7304b470525c5638f5",
+    "apps/ios/Resources/en.lproj/InfoPlist.strings": "b0b503d4c4ac0559b927ef7b33b5d7028e7c71fa4d657552a28e5b4c77508185",
+    "apps/ios/Resources/zh-Hans.lproj/InfoPlist.strings": "d924059922c6323582cf85ca091e7b1c8c40a9d5073cfd1e7ca3177abe405738",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "f2d2d2ade1216dd32f9437830d5c04d0f4c0e258a9f92f210030333152be881d",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "c29c98667fb6214bd8a4888b8fb9f7ceda13d8c4fe499a525bee20453f91d870",
+    "apps/ios/Tests/CodexManageUITests.swift": "f16a539154d105d4dcd6b475bde505db8d59dc258744b5c22c3574fe5757bde1",
+    "packages/mobile-core/build.gradle.kts": "514e981695b96286ff29b16458e37b2fe18a4ac0c31d69f7550a655be20315b7",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/AttachmentPreparationRules.kt": "820b2ca68c30e45b56e3b4d455c4cc903b69fc5cfd1320cf3caf2704e7d99212",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/AttachmentPreparationRulesTest.kt": "dd6722b5237b904faf0d2aec75076c0d564cebecd26080ecf07b7e60ee137d31",
+    "packages/protocol/fixtures/mobile/attachment-preparation-v1.json": "77685de4f56d9f096c7091a47d43f6ce4185ebc56b32b7c87eb35dc86804174b",
+    "scripts/mobile/verify-ios-attachments.swift": "6f200590fb520e986c686f9ea202814f26f89ec219d31052660388ba63ee712a",
+    "scripts/mobile/check-core.mjs": "159c3e5c89270d77a8df791247fdcc709819ced4f575cd12d9f291e2a620c7bf",
+    "scripts/mobile/quick-attachments-ios-acceptance.mjs": "9b682be45d86d2fcf511c9af9ea0fa76d366c498636cf1710486f1ebbf1c5f8c",
+    "scripts/localization-smoke.mjs": "9bac78cb8f4d96ffa99c28839f15979bcd3a465cb577909c9e43526eafca2dc3"
+  },
+  "integrationNote": "Physical proof belongs to the isolated frozen candidate in sourceFiles. IntegrationSourceFiles is the merged primary workspace snapshot, preserving concurrent changes; its iOS build passed. The isolated physical pass is not presented as a new full-product pass for unrelated concurrent changes.",
+  "retainedEnvironment": {
+    "managedWorktree": "Implementation-stage archive was protected-rejected; that historical receipt is preserved. PR-stage cleanup is verified separately after the authorized merge.",
+    "compiledPhysicalApp": "saved in private acceptance directory",
+    "noPhoneReboot": true,
+    "temporaryHostActive": false,
+    "temporaryHostIdentityAndReceiptsPreserved": true,
+    "dedicatedGradleDaemonsStopped": true,
+    "dedicatedSimulator": "deleted; own device registry absence verified",
+    "crossThreadMessageSent": true,
+    "humanAuthorizedScheduling": true,
+    "temporaryAcceptanceAppAndRunnerRemoved": true,
+    "formalAndOtherDEVAppsUntouched": true,
+    "phoneReleasedToPerformanceTask": true,
+    "managedArchiveAttempt": {
+      "status": "protected-rejected",
+      "sourceAndEvidencePreserved": true,
+      "manualDeletionNotAttempted": true
+    }
+  },
+  "inputSnapshotSha256": "5186d81f096d629b5b1bde44ac066e7af01f215c2d420a6f8a850d823d37777a",
+  "inputPatchSha256": "1e5c06716a0ed33272f880c69991d4ece08537b9a0c45d0c1c98dcfc86b79ff0",
+  "pullRequestIntegration": {
+    "baseCommit": "01245003a928c7b86f7495d8ac4a244c9ae5b08c",
+    "sourceFiles": {
+      "apps/ios/Sources/RootView.swift": "e6466d327c757abc8efc0b49f1f3a5fc4a7f12265684b029d07d3cc28c7cb002",
+      "apps/ios/Sources/Models.swift": "6a7637d6db21851f85adcc16f5c04f312a5e4c1a7feb89132696def8a998232b",
+      "apps/ios/Sources/SessionStore.swift": "10a138b0f8774d982028a48caf140a44f3620e36386952f3109097cda0774a42",
+      "apps/ios/Sources/LocalAttachmentPreparation.swift": "c026910202a4bbe6293efbf3fa60487151ddf7e05a9e0a6bbb2f2e7ae12ca919",
+      "apps/ios/Sources/RecentAttachmentPhotos.swift": "b76932fbf5baa7e7ad2b97acf1ebd72b876dcf537ddd1ef25da113697a1af124",
+      "apps/ios/Sources/QuickAttachmentViews.swift": "cbdc2cbeb4de1c3bb5ac961a107b9549dbcafc99d99f5b88181d7afc22b1ac28",
+      "apps/ios/Sources/QuickAttachmentAcceptance.swift": "5887bdb3f1c7a330fb5ade1bf27603728e90cbf548c4b9db336c10d867b4562f",
+      "apps/ios/Info.plist": "3d5eb8ea050d4fdfb7a8111ed6a77b9d90103fe50574bc2ce9a7bfe4f384cff6",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9a2ed5f3089dd4672f1d9fc16d5e713754e6c463a690ac7304b470525c5638f5",
+      "apps/ios/Resources/en.lproj/InfoPlist.strings": "b0b503d4c4ac0559b927ef7b33b5d7028e7c71fa4d657552a28e5b4c77508185",
+      "apps/ios/Resources/zh-Hans.lproj/InfoPlist.strings": "d924059922c6323582cf85ca091e7b1c8c40a9d5073cfd1e7ca3177abe405738",
+      "apps/ios/Resources/en.lproj/Localizable.strings": "f2d2d2ade1216dd32f9437830d5c04d0f4c0e258a9f92f210030333152be881d",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "c29c98667fb6214bd8a4888b8fb9f7ceda13d8c4fe499a525bee20453f91d870",
+      "apps/ios/Tests/CodexManageUITests.swift": "aea55bded6f0b831d365782e90ba8091fe3b0c5354ae783f1c0eb0a13d4c25d0",
+      "packages/mobile-core/build.gradle.kts": "514e981695b96286ff29b16458e37b2fe18a4ac0c31d69f7550a655be20315b7",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/AttachmentPreparationRules.kt": "820b2ca68c30e45b56e3b4d455c4cc903b69fc5cfd1320cf3caf2704e7d99212",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/AttachmentPreparationRulesTest.kt": "dd6722b5237b904faf0d2aec75076c0d564cebecd26080ecf07b7e60ee137d31",
+      "packages/protocol/fixtures/mobile/attachment-preparation-v1.json": "77685de4f56d9f096c7091a47d43f6ce4185ebc56b32b7c87eb35dc86804174b",
+      "scripts/mobile/verify-ios-attachments.swift": "6f200590fb520e986c686f9ea202814f26f89ec219d31052660388ba63ee712a",
+      "scripts/mobile/check-core.mjs": "159c3e5c89270d77a8df791247fdcc709819ced4f575cd12d9f291e2a620c7bf",
+      "scripts/mobile/quick-attachments-ios-acceptance.mjs": "9b682be45d86d2fcf511c9af9ea0fa76d366c498636cf1710486f1ebbf1c5f8c",
+      "scripts/localization-smoke.mjs": "9bac78cb8f4d96ffa99c28839f15979bcd3a465cb577909c9e43526eafca2dc3"
+    },
+    "scope": "Task-only delta applied to current remote main. Existing main changes are preserved; no performance, Host, Android product or other task changes are included.",
+    "validation": "PR-source build and checks are recorded separately from the original physical candidate; no new physical-device pass is claimed for this integration.",
+    "previousBaseCommit": "fd9bb721ad6541a4a0fb4508f385e2b08b54acd4",
+    "upstreamIntegration": "Main advanced through performance PR #22 during CI. Resolved composer presentation, live suggestion snapshot and parity records by preserving both changes. Original physical evidence remains unchanged."
+  }
+}

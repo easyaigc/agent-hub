@@ -43,6 +43,56 @@ class MobileHistoryBoundaryTest {
         c.save("target",client,"history-thread",p,p.messages.take(34));assertEquals(p.messages.take(34),c.read("target")!!.messages)
         JSONObject(index!!).getJSONArray("parts").strings().forEach { assertNull(s.read(it)) }
     }
+    @Test fun unchangedAuthenticatedFragmentsOnlyWriteTheFreshHeader() {
+        val namespace="history-reuse-"+UUID.randomUUID()
+        val s=NativeSessionStorage(context,namespace);val c=NativeHistoryCache(s)
+        val client=MobileClient("history-host","history");val p=decode(wire().toString())
+        c.save("target",client,"history-thread",p,p.messages)
+        val root=java.io.File(context.noBackupFilesDir,namespace)
+        val first=root.listFiles()!!.associate { it.name to it.readBytes() }
+        // Exercise the original full-rewrite path with the same unchanged page.
+        c.save("target",client,"history-thread",p,p.messages)
+        val original=JSONObject(s.read("history:target")!!)
+        val before=root.listFiles()!!.associate { it.name to it.readBytes() }
+        val baselineWrites=before.filter { (name,bytes)-> first[name]?.contentEquals(bytes)!=true }
+        assertEquals(4,baselineWrites.size)
+        val fresh=decode(wire().put("cursor",9).put("epoch","fresh").put("nextCursor","older").toString())
+        c.save("target",client,"history-thread",fresh,fresh.messages,reuseUnchangedFragments=true)
+        val current=JSONObject(s.read("history:target")!!)
+        assertEquals(original.getString("generation"),current.getString("generation"))
+        assertEquals(original.getJSONArray("parts").toString(),current.getJSONArray("parts").toString())
+        val after=root.listFiles()!!.associate { it.name to it.readBytes() }
+        assertEquals(before.keys,after.keys)
+        val currentWrites=after.filter { (name,bytes)-> !bytes.contentEquals(before.getValue(name)) }
+        assertEquals(1,currentWrites.size)
+        println("THERMAL_CACHE_STATS "+JSONObject().put("messages",p.messages.size)
+            .put("beforeEncryptedFilesWritten",baselineWrites.size).put("afterEncryptedFilesWritten",currentWrites.size)
+            .put("beforeEncryptedBytesWritten",baselineWrites.values.sumOf { it.size }).put("afterEncryptedBytesWritten",currentWrites.values.sumOf { it.size }))
+        val restored=c.read("target")!!
+        assertEquals(fresh.messages,restored.messages);assertEquals(9L,restored.cursor);assertEquals("older",restored.nextCursor)
+        // A caller's hint is never sufficient when actual authenticated content differs.
+        val changed=fresh.messages.toMutableList().apply { this[0]=this[0].copy(text="changed") }
+        c.save("target",client,"history-thread",fresh,changed,reuseUnchangedFragments=true)
+        assertNotEquals(current.getString("generation"),JSONObject(s.read("history:target")!!).getString("generation"))
+        assertEquals(changed,c.read("target")!!.messages)
+    }
+    @Test fun unchangedHintRepairsMissingOrAlteredFragmentsWithoutCrossTargetReuse() {
+        val s=storage();val c=NativeHistoryCache(s);val p=decode(wire(34).toString());val client=MobileClient("history-host","history")
+        c.save("target",client,"history-thread",p,p.messages)
+        val original=JSONObject(s.read("history:target")!!)
+        s.remove(original.getJSONArray("parts").getString(1))
+        c.save("target",client,"history-thread",p,p.messages,reuseUnchangedFragments=true)
+        val repaired=JSONObject(s.read("history:target")!!)
+        assertNotEquals(original.getString("generation"),repaired.getString("generation"));assertEquals(p.messages,c.read("target")!!.messages)
+        // Even valid GCM bytes with different contents invalidate reuse.
+        s.write(repaired.getJSONArray("parts").getString(0),"[]")
+        c.save("target",client,"history-thread",p,p.messages,reuseUnchangedFragments=true)
+        assertEquals(p.messages,c.read("target")!!.messages)
+        c.save("other",client,"history-thread",p,p.messages,reuseUnchangedFragments=true)
+        val other=JSONObject(s.read("history:other")!!)
+        assertNotEquals(repaired.getString("generation"),other.getString("generation"))
+        assertEquals(p.messages,c.read("target")!!.messages);assertEquals(p.messages,c.read("other")!!.messages)
+    }
     @Test fun legacyCacheAndFragmentTargetChecksPreserveEvidence() {
         val s=storage();val c=NativeHistoryCache(s);val original=wire(2)
         val longName="long:"+"x".repeat(1024);s.write(longName,original.toString());assertEquals(original.toString(),s.read(longName))

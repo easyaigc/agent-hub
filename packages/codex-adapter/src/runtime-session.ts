@@ -27,6 +27,7 @@ import {
   renderItem,
   type RenderItem,
   type RuntimeOptions,
+  type WireObject,
 } from './runtime.js';
 import {
   DesktopRuntime,
@@ -37,6 +38,7 @@ import {
 } from './desktop-ipc.js';
 import { codexClientType } from './history-reader.js';
 import { retainedDesktopHistory } from './desktop-history-identity.js';
+import { approvalRequest } from './approval-requests.js';
 import { DesktopPreparedBridge } from './desktop-prepared-bridge.js';
 import { DesktopForkBroker, type ForkSource } from './desktop-forks.js';
 import { inspectForkWorktree } from './fork-worktree.js';
@@ -128,7 +130,8 @@ function notificationRequestSummary(params: Record<string, unknown>): string | u
     string(question?.question) ||
       string(question?.header) ||
       string(params.reason) ||
-      string(params.command),
+      string(params.command) ||
+      string(params.message),
   );
 }
 
@@ -165,6 +168,9 @@ interface Thread {
   state: string;
   hasUnreadTurn?: boolean | undefined;
   readHead?: ReadPosition;
+  // Canonical desktop body behind readHead, whose body may contain projected
+  // attachment URLs. Persist this fence so summary refreshes cannot revert it.
+  readHeadSourceVersion?: string;
   mobileReaders?: Record<string, ReadPosition>;
   turnId: string | null;
   notificationLastTurn?: { id: string; outcome: string };
@@ -325,6 +331,9 @@ interface Approval {
   detail: string;
   questions: unknown[];
   decisions: string[];
+  decisionLabels?: Record<string, string>;
+  responses?: Record<string, WireObject>;
+  requestFingerprint?: string;
   wireId: string | number;
   notificationRequestId?: string;
   taskSummary?: string;
@@ -405,7 +414,19 @@ export class RuntimeSession {
     string,
     { fingerprint: string; work: Promise<{ ok: boolean }> }
   >();
-  private attachmentFiles = new AttachmentFiles();
+  private attachmentFiles = new AttachmentFiles(2048, ({ path, operation, attempt, change }) => {
+    appendRuntimeDiagnostic(
+      this.options.directory,
+      {
+        scope: 'attachment',
+        stage: `${operation}-metadata-retry`,
+        hostId: this.hostId,
+        path,
+        attempt,
+      },
+      new AttachmentFileError(409, '附件元数据变化后重新校验', 'FILE_CHANGED', change),
+    );
+  });
   private attachmentResourceIds = new Map<string, string>();
   private desktopProjections = new Map<
     string,
@@ -546,6 +567,10 @@ export class RuntimeSession {
               : dirname(dirname(options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
             (plan, id, boundary, fingerprint) =>
               this.submitCreationInput(plan, id, boundary, fingerprint),
+            (metadata) => {
+              this.rememberDesktopThread(metadata);
+              this.save();
+            },
           )
         : options.desktopController
           ? new DesktopControllerBridge(
@@ -598,11 +623,13 @@ export class RuntimeSession {
         return;
       }
       const threadId = target.id;
+      const projection = approvalRequest(method, params);
       const kind =
         method === 'item/tool/requestUserInput'
           ? 'question'
           : method === 'item/commandExecution/requestApproval' ||
-              method === 'item/fileChange/requestApproval'
+              method === 'item/fileChange/requestApproval' ||
+              projection
             ? 'approval'
             : '';
       if (!kind) {
@@ -616,8 +643,9 @@ export class RuntimeSession {
         id: randomUUID(),
         wireId: id,
         notificationRequestId: String(id),
+        requestFingerprint: JSON.stringify([method, params]),
         threadId,
-        turnId: string(params.turnId),
+        turnId: string(params.turnId) || target.turnId || '',
         kind,
         title:
           string(params.command) ||
@@ -627,6 +655,10 @@ export class RuntimeSession {
         decisions:
           kind === 'question' ? [] : available.length ? available : ['accept', 'decline', 'cancel'],
       };
+      if (projection) {
+        const { desktopMethod: _desktopMethod, ...fields } = projection;
+        Object.assign(approval, fields);
+      }
       this.approvals.set(approval.id, approval);
       const taskSummary = notificationRequestSummary(params);
       if (taskSummary) approval.taskSummary = taskSummary;
@@ -921,18 +953,20 @@ export class RuntimeSession {
           params = object(request.params),
           method = string(request.method);
         if (
+          request.completed === true ||
           params.threadId !== threadId ||
-          !params.turnId ||
-          params.turnId !== base.runId ||
+          (params.turnId ? params.turnId !== base.runId : base.outcome !== 'inProgress') ||
           (typeof request.id !== 'string' && typeof request.id !== 'number')
         )
           return [];
         const kind =
           method === 'item/tool/requestUserInput'
             ? 'question'
-            : ['item/commandExecution/requestApproval', 'item/fileChange/requestApproval'].includes(
-                  method,
-                )
+            : approvalRequest(method, params) ||
+                [
+                  'item/commandExecution/requestApproval',
+                  'item/fileChange/requestApproval',
+                ].includes(method)
               ? 'approval'
               : undefined;
         const taskSummary = notificationRequestSummary(params);
@@ -940,7 +974,7 @@ export class RuntimeSession {
           ? [
               {
                 id: String(request.id),
-                runId: string(params.turnId),
+                runId: string(params.turnId) || base.runId!,
                 kind: kind as 'approval' | 'question',
                 ...(taskSummary ? { taskSummary } : {}),
               },
@@ -1027,7 +1061,7 @@ export class RuntimeSession {
   async refreshNotificationCreations(): Promise<void> {
     await this.desktopCreation?.refreshNotificationOperations();
   }
-  /** Internal catalog projection from the adapter's official read-only desktop list. */
+  /** Internal projection from the official list or a validated owned empty preparation. */
   rememberDesktopThread(metadata: {
     id: string;
     hostId: string;
@@ -1100,13 +1134,16 @@ export class RuntimeSession {
     return { ...result, resourceId: this.attachmentResourceIds.get(key)! };
   }
 
-  private updateReadHead(thread: Thread, reply: Pick<RenderItem, 'id' | 'text' | 'status'>): void {
-    if (!reply.id) return;
+  private readContentVersion(reply: Pick<RenderItem, 'id' | 'text' | 'status'>): string {
     // UTF-8 length framing is shared with iOS; clocks and transport epochs are irrelevant.
     const hash = createHash('sha256');
     for (const value of [reply.id, reply.text, reply.status])
       hash.update(Buffer.byteLength(value, 'utf8') + ':' + value);
-    const contentVersion = hash.digest('hex');
+    return hash.digest('hex');
+  }
+  private updateReadHead(thread: Thread, reply: Pick<RenderItem, 'id' | 'text' | 'status'>): void {
+    if (!reply.id) return;
+    const contentVersion = this.readContentVersion(reply);
     if (thread.readHead?.contentVersion === contentVersion) return;
     thread.readHead = {
       revision: (thread.readHead?.revision ?? 0) + 1,
@@ -1247,6 +1284,49 @@ export class RuntimeSession {
     } as T;
   }
 
+  /** Older phones label unknown decisions as Stop. Never send them a grant button. */
+  projectApplicationApprovals<T>(value: T, supported: boolean): T {
+    if (supported || !value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const row = value as Record<string, unknown>;
+    const runtime = object(row.runtime);
+    return {
+      ...row,
+      ...(Array.isArray(runtime.approvals)
+        ? {
+            runtime: {
+              ...runtime,
+              approvals: runtime.approvals.map((value) => {
+                const approval = object(value);
+                return approval.decisionLabels
+                  ? {
+                      ...approval,
+                      decisions: ['decline'],
+                      detail: [
+                        string(approval.detail),
+                        '请更新手机 App 后允许此操作；当前版本可以拒绝。',
+                      ]
+                        .filter(Boolean)
+                        .join('\n'),
+                    }
+                  : value;
+              }),
+            },
+          }
+        : {}),
+      ...(Array.isArray(row.events)
+        ? {
+            events: row.events.map((value) => {
+              const event = object(value);
+              return {
+                ...event,
+                snapshot: this.projectApplicationApprovals(event.snapshot, false),
+              };
+            }),
+          }
+        : {}),
+    } as T;
+  }
+
   acknowledgeRead(threadId: string, readerId: string, position: ReadPosition) {
     if (!/^[a-f0-9]{64}$/.test(readerId)) throw new RuntimeError(400, '无效阅读身份');
     const thread = this.thread(threadId);
@@ -1351,6 +1431,7 @@ export class RuntimeSession {
       desktopCreationProjectId: _creationProject,
       notificationLastTurn: _notificationTurn,
       readHead: _readHead,
+      readHeadSourceVersion: _readHeadSourceVersion,
       mobileReaders: _mobileReaders,
       ...summary
     } = thread;
@@ -1392,10 +1473,17 @@ export class RuntimeSession {
         error: thread.error,
         approvals: [...this.approvals.values()]
           .filter((v) => v.threadId === threadId)
-          .map(({ wireId, ...rest }) => ({
-            ...rest,
-            notificationRequestId: rest.notificationRequestId ?? String(wireId),
-          })),
+          .map(
+            ({
+              wireId,
+              responses: _responses,
+              requestFingerprint: _requestFingerprint,
+              ...rest
+            }) => ({
+              ...rest,
+              notificationRequestId: rest.notificationRequestId ?? String(wireId),
+            }),
+          ),
         receipts: this.queueReceipts(threadId, receipts, recentReceipts),
       },
       epoch: this.epoch,
@@ -1617,6 +1705,7 @@ export class RuntimeSession {
             desktopCreationProjectId: _creationProject,
             notificationLastTurn: _notificationTurn,
             readHead: _readHead,
+            readHeadSourceVersion: _readHeadSourceVersion,
             mobileReaders: _mobileReaders,
             ...rest
           }) => ({
@@ -2003,6 +2092,11 @@ export class RuntimeSession {
         // Reapply that verified owner instead of letting the fallback erase it.
         const current = !cursor && runtime.ipc.hasOwner(threadId) && runtime.ipc.state(threadId);
         if (current) await this.desktopSnapshot(thread, current);
+        // Legacy live rows and a late owner select the body actually returned.
+        if (!cursor) {
+          const source = page.messages.find((message) => message.id === thread.readHead?.messageId);
+          if (source) this.projectReadHead(thread, source);
+        }
       }
       this.loaded.add(threadId);
       await this.refreshNativeQueue(threadId);
@@ -2608,12 +2702,19 @@ export class RuntimeSession {
     );
   }
   async activateDesktopThread(threadId: string, id: string) {
-    this.thread(threadId);
     const bridge = this.desktopCreationDriver;
     if (!bridge?.open) throw new RuntimeError(409, '当前连接未提供 Codex 打开入口');
     if (!/^[a-zA-Z0-9_-]{8,100}$/.test(id)) throw new RuntimeError(400, '操作 ID 无效');
     const old = this.openOperations.get(id);
     if (old && old.threadId !== threadId) throw new RuntimeError(409, '操作 ID 已用于其他对话');
+    if (!this.state.threads.some((thread) => thread.id === threadId)) {
+      const prepared = await this.desktopCreation?.preparedThreadMetadata(threadId);
+      if (prepared) {
+        this.rememberDesktopThread(prepared);
+        this.save();
+      }
+    }
+    this.thread(threadId);
     if (old && ['opening', 'opened'].includes(old.phase)) return old;
     const operation = old ?? {
       hostId: this.hostId,
@@ -2995,12 +3096,9 @@ export class RuntimeSession {
     return true;
   }
 
-  private allowedPath(path: string, thread?: Thread): string {
+  private allowedPath(path: string): string {
     const actual = realpathSync(path);
     const roots = [realpathSync(this.options.root), realpathSync(this.options.directory)];
-    // Only the original owner's actual cwd can extend download access for this thread.
-    if (this.runtime instanceof DesktopRuntime && thread?.desktopDirectory)
-      roots.push(realpathSync(thread.desktopDirectory));
     if (
       !roots.some((root) => {
         const rel = relative(root, actual);
@@ -3046,18 +3144,16 @@ export class RuntimeSession {
     this.save();
     return this.cleanAttachment(attachment);
   }
-  private attachmentRoots(thread: Thread): string[] {
-    return [
-      this.options.root,
-      this.options.directory,
-      ...(this.runtime instanceof DesktopRuntime && thread.desktopDirectory
-        ? [thread.desktopDirectory]
-        : []),
-    ];
+  private attachmentRoots(_thread: Thread): string[] {
+    // Original-desktop downloads use only this thread's registered resources.
+    // The legacy root remains an explicit boundary for managed/shared runtimes.
+    return this.runtime instanceof DesktopRuntime
+      ? []
+      : [this.options.root, this.options.directory];
   }
   private attachmentExactPaths(threadId: string): string[] {
     return this.state.attachments
-      .filter((file) => file.threadId === threadId && file.desktopMessageLinks?.length)
+      .filter((file) => file.threadId === threadId)
       .map((file) => file.path);
   }
   async download(threadId: string, id: string) {
@@ -3254,7 +3350,13 @@ export class RuntimeSession {
             'RESOURCE_TARGET_CHANGED',
           );
       }
-      const metadata = await this.attachmentFiles.inspect(requested, this.attachmentRoots(thread), [
+      const registrationRoots =
+        this.runtime instanceof DesktopRuntime
+          ? thread.desktopDirectory
+            ? [thread.desktopDirectory]
+            : []
+          : this.attachmentRoots(thread);
+      const metadata = await this.attachmentFiles.inspect(requested, registrationRoots, [
         ...this.attachmentExactPaths(thread.id),
         ...(exactPath ? [exactPath] : []),
       ]);
@@ -3864,7 +3966,11 @@ export class RuntimeSession {
         .filter(
           (receipt) =>
             !ids.has(receipt.clientMessageId) &&
-            (receipt.state === 'queued' || recent.has(receipt.clientMessageId)),
+            // A completed tail cannot retire an unresolved original input.
+            // Keep it queryable/visible without changing its acceptance state.
+            (receipt.state === 'queued' ||
+              receipt.state === 'uncertain' ||
+              recent.has(receipt.clientMessageId)),
         )
         .map((receipt) => this.publicReceipt(receipt)),
     ];
@@ -4604,25 +4710,34 @@ export class RuntimeSession {
     answers: Record<string, string[]>,
   ) {
     this.requireReady();
+    const fingerprint = JSON.stringify([threadId, turnId, decision, answers]);
+    const pending = this.questionSubmissions.get(id);
+    if (pending) {
+      if (pending.fingerprint !== fingerprint)
+        throw new RuntimeError(409, '此请求正在提交不同的回复');
+      return pending.work;
+    }
+    const work = this.answerRequest(threadId, id, turnId, decision, answers);
+    this.questionSubmissions.set(id, { fingerprint, work });
+    try {
+      return await work;
+    } finally {
+      this.questionSubmissions.delete(id);
+    }
+  }
+  private async answerRequest(
+    threadId: string,
+    id: string,
+    turnId: string,
+    decision: string,
+    answers: Record<string, string[]>,
+  ) {
     if (
       this.runtime instanceof DesktopRuntime &&
       (this.approvals.get(id)?.interactionMode === 'async' ||
         Object.hasOwn(this.state.asyncQuestionActions ?? {}, id))
     ) {
-      const fingerprint = JSON.stringify([threadId, turnId, decision, answers]);
-      const pending = this.questionSubmissions.get(id);
-      if (pending) {
-        if (pending.fingerprint !== fingerprint)
-          throw new RuntimeError(409, '此问题正在提交不同的回复');
-        return pending.work;
-      }
-      const work = this.answerAsyncQuestion(threadId, id, turnId, decision, answers);
-      this.questionSubmissions.set(id, { fingerprint, work });
-      try {
-        return await work;
-      } finally {
-        this.questionSubmissions.delete(id);
-      }
+      return this.answerAsyncQuestion(threadId, id, turnId, decision, answers);
     }
     const approval = this.approvals.get(id);
     if (
@@ -4646,10 +4761,20 @@ export class RuntimeSession {
               Object.entries(answers).map(([key, value]) => [key, { answers: value }]),
             ),
           }
-        : { decision },
+        : (approval.responses?.[decision] ?? { decision }),
     );
-    this.approvals.delete(id);
-    this.thread(threadId).state = 'running';
+    const current = this.approvals.get(id);
+    if (current?.turnId === turnId && current.requestFingerprint === approval.requestFingerprint)
+      this.approvals.delete(id);
+    const thread = this.thread(threadId);
+    if (
+      thread.turnId === turnId &&
+      thread.state === 'waiting-for-approval' &&
+      ![...this.approvals.values()].some(
+        (pending) => pending.threadId === threadId && pending.interactionMode !== 'async',
+      )
+    )
+      thread.state = 'running';
     this.emit(threadId, 'approval-resolved');
     return { ok: true };
   }
@@ -4724,6 +4849,9 @@ export class RuntimeSession {
             selected.length > 10
       )
         throw new RuntimeError(400, '请填写有效回复');
+      const originalPermissionMode = currentPermissionMode(object(latest.params));
+      if (decision !== 'skip' && latest.status !== 'inProgress' && !originalPermissionMode)
+        throw new RuntimeError(409, '无法确认原问题的权限设置，回复未发送；请在桌面确认后刷新');
       action = {
         threadId,
         turnId,
@@ -4740,7 +4868,9 @@ export class RuntimeSession {
                 text: desktopQuestionReply(question, selected!),
                 attachmentIds: [],
                 mode: latest.status === 'inProgress' ? ('steer' as const) : ('next-turn' as const),
-                ...(latest.status === 'inProgress' ? { expectedTurnId: turnId } : {}),
+                ...(latest.status === 'inProgress'
+                  ? { expectedTurnId: turnId }
+                  : { permissionMode: originalPermissionMode! }),
               },
             }),
       };
@@ -4748,6 +4878,14 @@ export class RuntimeSession {
       this.save();
     }
     if (action.reply && !this.asyncQuestionResolved(id)) {
+      if (
+        action.reply.mode === 'next-turn' &&
+        !action.reply.permissionMode &&
+        !this.state.receipts.some(
+          (receipt) => receipt.clientMessageId === action.reply!.clientMessageId,
+        )
+      )
+        throw new RuntimeError(409, '原问题回复未固定权限，保留原操作且不会重新发送；请在桌面核对');
       const receipt = await this.submit(action.reply);
       if (!['submitted', 'completed', 'interrupted'].includes(receipt.state))
         throw new RuntimeError(
@@ -5044,19 +5182,14 @@ export class RuntimeSession {
     )
       ? latestStatus
       : undefined;
-    const finished = turns.findLast(
-      (turn) => turn.turnId !== thread.desktopInitializationTurnId && turn.status !== 'inProgress',
-    );
-    const reply = list(finished?.items)
-      .map(object)
-      .findLast((item) => item.type === 'agentMessage');
-    if (reply)
-      this.updateReadHead(thread, {
-        ...renderItem(reply),
-        status: ['interrupted', 'failed'].includes(string(finished?.status))
-          ? string(finished?.status)
-          : 'completed',
-      });
+    const reply = this.desktopReadReply(thread, state);
+    if (reply) {
+      const sourceVersion = this.readContentVersion(reply);
+      if (thread.readHeadSourceVersion !== sourceVersion) {
+        this.updateReadHead(thread, reply);
+        thread.readHeadSourceVersion = sourceVersion;
+      }
+    }
     const active = turns.findLast((v) => v.status === 'inProgress');
     const priorTurn = thread.turnId;
     thread.turnId = active ? string(active.turnId) || null : null;
@@ -5088,6 +5221,41 @@ export class RuntimeSession {
     return { turns, active, priorTurn };
   }
 
+  private desktopReadReply(thread: Thread, state: Record<string, unknown>) {
+    const finished = desktopTurns(state).findLast(
+      (turn) => turn.turnId !== thread.desktopInitializationTurnId && turn.status !== 'inProgress',
+    );
+    const reply = list(finished?.items)
+      .map(object)
+      .findLast((item) => item.type === 'agentMessage');
+    return reply
+      ? {
+          ...renderItem(reply),
+          status: ['interrupted', 'failed'].includes(string(finished?.status))
+            ? string(finished?.status)
+            : 'completed',
+        }
+      : undefined;
+  }
+  private projectReadHead(
+    thread: Thread,
+    source: Pick<RenderItem, 'id' | 'text' | 'status'>,
+  ): void {
+    // Only a projection of the exact canonical latest reply can move its read
+    // position. Older pages and superseded asynchronous projections cannot.
+    if (
+      thread.readHead?.messageId !== source.id ||
+      thread.readHeadSourceVersion !== this.readContentVersion(source)
+    )
+      return;
+    const projected = thread.messages.find(
+      (message) =>
+        message.id === source.id &&
+        message.role === 'assistant' &&
+        message.status === source.status,
+    );
+    if (projected) this.updateReadHead(thread, projected);
+  }
   private projectDesktopObservation(thread: Thread): boolean {
     if (!(this.runtime instanceof DesktopRuntime) || this.runtime.ipc.hasOwner(thread.id))
       return false;
@@ -5202,7 +5370,7 @@ export class RuntimeSession {
     thread.permissionMode = desktopPermissionMode({ ...state, turns });
     const cwd = string(state.cwd);
     if (isAbsolute(cwd) && state.id === thread.id && this.runtime.ipc.hasOwner(thread.id))
-      thread.desktopDirectory = realpathSync(cwd);
+      thread.desktopDirectory = resolve(cwd);
     if (thread.turnId) this.startedTurns.add(thread.turnId);
     thread.plan = list(
       list((active ?? turns.at(-1))?.items)
@@ -5215,6 +5383,7 @@ export class RuntimeSession {
       const request = object(value),
         params = object(request.params);
       const method = string(request.method);
+      const projection = approvalRequest(method, params);
       const target =
         method === 'item/commandExecution/requestApproval'
           ? 'thread-follower-command-approval-decision'
@@ -5222,18 +5391,25 @@ export class RuntimeSession {
             ? 'thread-follower-file-approval-decision'
             : method === 'item/tool/requestUserInput'
               ? 'thread-follower-submit-user-input'
-              : '';
-      if (!target || params.threadId !== thread.id || params.turnId !== thread.turnId) continue;
+              : (projection?.desktopMethod ?? '');
+      if (request.completed === true) continue;
+      if (
+        !target ||
+        params.threadId !== thread.id ||
+        (params.turnId ? params.turnId !== thread.turnId : !active)
+      )
+        continue;
       if (!(typeof request.id === 'string' || typeof request.id === 'number')) continue;
       const id = `${thread.id}:${String(request.id)}`;
       pendingIds.add(id);
-      this.runtime.registerApproval(id, thread.id, target, request.id);
+      this.runtime.registerApproval(id, thread.id, target, request.id, params);
       this.approvals.set(id, {
         id,
         wireId: id,
         notificationRequestId: String(request.id),
+        requestFingerprint: JSON.stringify([method, params]),
         threadId: thread.id,
-        turnId: string(params.turnId),
+        turnId: string(params.turnId) || thread.turnId!,
         kind: target.endsWith('submit-user-input') ? 'question' : 'approval',
         title: string(params.command) || 'Codex 需要你的审批',
         detail: string(params.reason),
@@ -5243,6 +5419,10 @@ export class RuntimeSession {
         ),
       });
       const approval = this.approvals.get(id)!;
+      if (projection) {
+        const { desktopMethod: _desktopMethod, ...fields } = projection;
+        Object.assign(approval, fields);
+      }
       if (approval.kind === 'approval' && !approval.decisions.length)
         approval.decisions = ['accept', 'decline', 'cancel'];
     }
@@ -5372,6 +5552,8 @@ export class RuntimeSession {
             if (version !== job.version) continue;
             if (this.runtime instanceof DesktopRuntime && this.runtime.ipc.hasOwner(id)) {
               original.messages = thread.messages;
+              const source = this.desktopReadReply(original, job.state);
+              if (source) this.projectReadHead(original, source);
               this.verifiedDesktopMessageIds.set(id, new Set(thread.messages.map((v) => v.id)));
               while (this.verifiedDesktopMessageIds.size > 32)
                 this.verifiedDesktopMessageIds.delete(

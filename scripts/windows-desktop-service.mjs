@@ -81,9 +81,8 @@ if (['preflight', 'start', 'restart'].includes(action)) {
     previousConfiguration = JSON.parse(readFileSync(jobConfig, 'utf8'));
     previous = previousConfiguration.environment;
   }
-  const root = process.env.HOST_AGENT_ROOT ?? previous.HOST_AGENT_ROOT;
-  if (!root || !existsSync(root))
-    throw new Error('Set HOST_AGENT_ROOT to the authorized existing project directory');
+  // Compatibility default cwd only; original desktop projects own their paths.
+  const root = process.env.HOST_AGENT_ROOT ?? previous.HOST_AGENT_ROOT ?? process.cwd();
   const environment = {
     ...previous,
     CODEX_RUNTIME_MODE: 'desktop-runtime',

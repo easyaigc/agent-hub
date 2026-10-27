@@ -4,6 +4,17 @@ class CreationIdentity(val hostId: String, val operationId: String, val projectI
 class EventDecision(val apply: Boolean, val reload: Boolean, val epoch: String, val cursor: Long)
 
 object OperationPolicies {
+    /** A quiet subscription is a heartbeat, not a reason to rebuild canonical history. */
+    fun eventNeedsHistory(previousEpoch: String, epoch: String, previousCursor: Long, cursor: Long): Boolean =
+        previousEpoch != epoch || previousCursor != cursor
+
+    /** Failed/stale reads consume the same budget as successful catch-up attempts. */
+    fun historyCatchUpDue(now: Long, lastUseful: Long, lastAttempt: Long, active: Boolean, graceUntil: Long): Boolean {
+        val interval = if (active) 2_000L else 10_000L
+        return now >= graceUntil && (lastUseful < 0 || now - lastUseful >= interval) &&
+            (lastAttempt < 0 || now - lastAttempt >= interval)
+    }
+
     fun sameCreation(expected: CreationIdentity, received: CreationIdentity): Boolean =
         expected.hostId == received.hostId && expected.operationId == received.operationId && expected.projectId == received.projectId
 

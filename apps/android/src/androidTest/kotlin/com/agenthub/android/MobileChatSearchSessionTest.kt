@@ -35,6 +35,28 @@ class MobileChatSearchSessionTest {
         withContext(Dispatchers.Main) { session.leaveForeground() }
         assertTrue("Search cannot send execution or management writes",server.requests.all { it.method=="GET" })
     }
+    @Test fun completeSearchUsesStrictHostQueryWhileLiveHistoryKeepsReaderWindow()=runBlocking {
+        CommandFixture { request -> when(request.path) {
+            "/v1/history" -> WireResponse(body=page(listOf("live"),window=true).toString())
+            "/v1/threads/search-history" -> {
+                val query=java.net.URI("http://fixture"+request.pathWithQuery).rawQuery.orEmpty().split("&").filter { it.isNotEmpty() }.map { it.substringBefore("=") }
+                val hosts=java.net.URI("http://fixture"+request.pathWithQuery).rawQuery.orEmpty().split("&").filter { it.substringBefore("=")=="hostId" }.map { java.net.URLDecoder.decode(it.substringAfter("="),"UTF-8") }
+                if(hosts!=listOf(target.hostId))WireResponse(status=403,body="{\"error\":\"Host identity mismatch\"}")
+                else if(query.any { it !in setOf("hostId","threadId","cursor") }||query.toSet().size!=query.size)WireResponse(status=400,body="{\"error\":\"Invalid complete search request\"}")
+                else WireResponse(body=if("cursor=" in request.pathWithQuery)page(listOf("older")).toString() else page(listOf("latest"),"next-search-page").toString())
+            }
+            else -> WireResponse(status=404)
+        } }.use { server ->
+            val client=MobileClient(target.hostId,"strict search contract",target,server.endpoint,requiresReadTarget=true,readerId="synthetic-complete-history-reader")
+            val reads=NativeHostReads { "" }
+            assertEquals(listOf("live"),reads.history(client,"thread").messages.map { it.id })
+            assertEquals(listOf("latest"),reads.searchHistory(client,"thread").messages.map { it.id })
+            assertEquals(listOf("older"),reads.searchHistory(client,"thread","next-search-page").messages.map { it.id })
+            val latest=server.requests.single { it.path=="/v1/history" };assertTrue("Live reads retain reader identity",latest.pathWithQuery.contains("readerId="));assertTrue(latest.pathWithQuery.contains("window=latest-v1"))
+            val search=server.requests.filter { it.path=="/v1/threads/search-history" };assertEquals(2,search.size)
+            assertTrue(search.all { it.pathWithQuery.contains("hostId="+target.hostId) });assertTrue(search.none { it.pathWithQuery.contains("readerId=")||it.pathWithQuery.contains("window=") });assertTrue(server.requests.all { it.method=="GET" })
+        }
+    }
     @Test fun fullReadUsesIndependentEndpointAndSelectionPersistsWithoutChangingDraftOrAuthority()=runBlocking {
         val namespace="search-session-"+UUID.randomUUID()
         val context=InstrumentationRegistry.getInstrumentation().targetContext

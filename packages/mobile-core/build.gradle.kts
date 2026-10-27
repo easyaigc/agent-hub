@@ -30,6 +30,8 @@ val generateContracts by tasks.registering {
     }
 }
 val generateTestVectors by tasks.registering {
+    val attachmentVectors = rootProject.file("packages/protocol/fixtures/mobile/attachment-preparation-v1.json")
+    inputs.file(attachmentVectors)
     val vectors = rootProject.file("packages/protocol/fixtures/mobile/core-v1.json")
     val stateVectors = rootProject.file("packages/protocol/fixtures/mobile/state-v1.json")
     val replyVectors = rootProject.file("packages/protocol/fixtures/mobile/reply-recovery-v2.json")
@@ -44,6 +46,11 @@ val generateTestVectors by tasks.registering {
     inputs.file(sharingVoiceVectors)
     outputs.dir(generatedTests)
     doLast {
+        generatedTests.get().file("AttachmentPreparationTestVectors.kt").asFile.apply {
+            parentFile.mkdirs()
+            val encoded = JavaBase64.getEncoder().encodeToString(attachmentVectors.readBytes())
+            writeText("package com.agenthub.core\ninternal const val attachmentPreparationVectorBase64 = \"$encoded\"\n")
+        }
         generatedTests.get().file("TaskHubTestVectors.kt").asFile.apply {
             parentFile.mkdirs()
             val chunks = JavaBase64.getEncoder().encodeToString(taskHubVectors.readBytes()).chunked(8192).joinToString(",") { "\"$it\"" }

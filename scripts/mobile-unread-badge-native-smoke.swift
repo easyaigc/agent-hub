@@ -8,6 +8,42 @@ import Darwin
       print(try MobileUnreadBadge.receive(event)); return
     }
     if CommandLine.arguments.contains("count") { print(MobileUnreadBadge.count); return }
+    if CommandLine.arguments.contains("cache-invalidation") {
+      try MobileUnreadBadge.reset()
+      let target = AgentRuntimeTarget(agentId: "codex", hostId: "cached-host", workspaceId: "space", runtimeId: "runtime")
+      try MobileUnreadBadge.reconcile(scopes: [target], snapshots: [])
+      let before = MobileUnreadBadge.snapshot()
+      precondition(before.count == 0)
+      let url = TaskNotificationShared.directory.appendingPathComponent("mobile-unread-v1.json")
+      let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+      let event = TaskNotificationEvent(version: 1, id: String(repeating: "f", count: 64), target: target,
+        kind: .approval, occurredAt: "2026-10-24T00:00:00Z", threadId: "external-update", requestId: "new-request")
+      let process = Process(), input = Pipe()
+      process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+      process.arguments = ["receive"]; process.standardInput = input; process.standardOutput = Pipe()
+      try process.run()
+      try input.fileHandleForWriting.write(contentsOf: JSONEncoder().encode(event))
+      try input.fileHandleForWriting.close(); process.waitUntilExit()
+      precondition(process.terminationStatus == 0)
+      var changed = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+      changed["generation"] = Int(before.revision)!
+      try JSONSerialization.data(withJSONObject: changed).write(to: url, options: .atomic)
+      try FileManager.default.setAttributes([.modificationDate: attributes[.modificationDate]!], ofItemAtPath: url.path)
+      let retained = try Data(contentsOf: url)
+      // A live process must see an extension's replacement even when revision
+      // and modification time are unchanged, and readers must not rewrite it.
+      for _ in 0..<100 {
+        let snapshot = MobileUnreadBadge.snapshot()
+        precondition(snapshot.count == 1 && snapshot.revision == before.revision)
+        precondition(snapshot.isUnread(target: target, threadId: "external-update"))
+        var anotherRuntime = target; anotherRuntime.runtimeId = "another-runtime"
+        precondition(!snapshot.isUnread(target: anotherRuntime, threadId: "external-update"))
+      }
+      let afterReads = try Data(contentsOf: url)
+      precondition(afterReads == retained)
+      print("Warm ledger cache: cross-process replacement, unchanged generation/mtime, runtime isolation and 100 read-only projections passed")
+      return
+    }
     if CommandLine.arguments.contains("locked-visible") {
       let target = AgentRuntimeTarget(agentId: "codex", hostId: "host-a", workspaceId: "space", runtimeId: "desktop-runtime")
       var other = target; other.hostId = "host-b"

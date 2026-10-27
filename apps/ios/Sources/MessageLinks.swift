@@ -2,6 +2,31 @@ import SwiftUI
 import SafariServices
 import QuickLook
 
+private struct OpeningMessageLinkKey: EnvironmentKey {
+  static let defaultValue: URL? = nil
+}
+private struct OpeningMessageLinkAnchorKey: EnvironmentKey {
+  static let defaultValue: UUID? = nil
+}
+private struct MessageLinkOpenKey: EnvironmentKey {
+  static let defaultValue: (@MainActor @Sendable (URL, UUID) -> Void)? = nil
+}
+
+extension EnvironmentValues {
+  var openingMessageLink: URL? {
+    get { self[OpeningMessageLinkKey.self] }
+    set { self[OpeningMessageLinkKey.self] = newValue }
+  }
+  var openingMessageLinkAnchor: UUID? {
+    get { self[OpeningMessageLinkAnchorKey.self] }
+    set { self[OpeningMessageLinkAnchorKey.self] = newValue }
+  }
+  var messageLinkOpen: (@MainActor @Sendable (URL, UUID) -> Void)? {
+    get { self[MessageLinkOpenKey.self] }
+    set { self[MessageLinkOpenKey.self] = newValue }
+  }
+}
+
 enum MessageLinkDestination: Equatable {
   case attachment(String), web(URL), external(URL), computerFile, computerWeb, unsupported
 
@@ -42,19 +67,15 @@ struct MessageLinkOpening: ViewModifier {
   @State private var webURL: BrowserLink?
   @State private var error: String?
   @State private var selectedURL: URL?
+  @State private var selectedAnchor: UUID?
   @State private var loading = false
   @State private var download: Task<Void, Never>?
 
   func body(content: Content) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
-      content
-      if loading {
-        HStack(spacing: 8) {
-          ProgressView().controlSize(.small)
-          Text(L10n.tr("正在打开文件…")).font(.caption).foregroundStyle(Palette.secondary)
-        }.accessibilityIdentifier("message-link-loading")
-      }
-    }
+    content
+    .environment(\.openingMessageLink, loading ? selectedURL : nil)
+    .environment(\.openingMessageLinkAnchor, loading ? selectedAnchor : nil)
+    .environment(\.messageLinkOpen, { url, anchor in open(url, anchor: anchor) })
     .environment(\.openURL, OpenURLAction { url in open(url); return .handled })
     .quickLookPreview($previewURL)
     .sheet(item: $webURL) { link in MessageWebPreview(url: link.url) }
@@ -79,12 +100,14 @@ struct MessageLinkOpening: ViewModifier {
 
   private func reset() {
     download?.cancel(); download = nil; loading = false
-    previewURL = nil; webURL = nil; error = nil; selectedURL = nil
+    previewURL = nil; webURL = nil; error = nil; selectedURL = nil; selectedAnchor = nil
   }
 
-  private func open(_ url: URL) {
+  private func open(_ url: URL, anchor: UUID? = nil) {
     guard !loading else { return }
     selectedURL = url
+    selectedAnchor = anchor
+    UISelectionFeedbackGenerator().selectionChanged()
     switch MessageLinkDestination.resolve(url) {
     case .attachment(let id):
       guard let client,
@@ -136,6 +159,19 @@ struct MessageLinkOpening: ViewModifier {
       error = L10n.tr("手机暂不支持此类链接，可复制后在对应应用中打开。")
     }
   }
+}
+
+struct PreparedFileShare: Identifiable {
+  let url: URL
+  var id: String { url.absoluteString }
+}
+
+struct FileShareSheet: UIViewControllerRepresentable {
+  let url: URL
+  func makeUIViewController(context: Context) -> UIActivityViewController {
+    UIActivityViewController(activityItems: [url], applicationActivities: nil)
+  }
+  func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
 private struct BrowserLink: Identifiable {

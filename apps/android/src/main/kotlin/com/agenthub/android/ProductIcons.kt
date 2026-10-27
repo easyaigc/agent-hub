@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
             "keyboard" -> { drawRoundRect(color,Offset(2f*u,3f*u),Size(20f*u,13f*u),style=stroke); for(y in listOf(7f,10f)) for(x in listOf(6f,10f,14f,18f)) drawCircle(color,.6f*u,Offset(x*u,y*u)); line(7f,13f,17f,13f); path(8f,19f,12f,22f,16f,19f) }
             "mic" -> { drawRoundRect(color,Offset(9f*u,2f*u),Size(6f*u,13f*u),androidx.compose.ui.geometry.CornerRadius(3f*u),style=stroke); path(5f,11f,5f,14f,8f,18f,16f,18f,19f,14f,19f,11f); line(12f,18f,12f,22f) }
             "fork" -> { line(7f,20f,7f,5f); path(7f,14f,17f,9f,17f,4f); drawCircle(color,2f*u,Offset(7f*u,3f*u),style=stroke); drawCircle(color,2f*u,Offset(17f*u,2f*u),style=stroke); drawCircle(color,2f*u,Offset(7f*u,22f*u),style=stroke) }
+            "pencil" -> { path(3f,17f,3f,22f,8f,21f,22f,7f,17f,2f,3f,17f);line(14f,5f,19f,10f) }
             "copy" -> { drawRoundRect(color,Offset(7f*u,7f*u),Size(13f*u,14f*u),style=stroke); path(15f,3f,3f,3f,3f,16f) }
             "share" -> { path(5f,10f,5f,21f,19f,21f,19f,10f); line(12f,15f,12f,2f); path(7f,7f,12f,2f,17f,7f) }
             "history" -> { drawArc(color,-90f,285f,false,Offset(3f*u,3f*u),Size(18f*u,18f*u),style=stroke);path(2f,10f,3f,15f,8f,14f);path(12f,6f,12f,12f,16f,14f) }

@@ -57,7 +57,7 @@ enum NativeReadAcceptanceTiming {
 }
 
 enum HostServiceError: LocalizedError {
-  case invalidAddress, invalidResponse, unavailable, wrongHost
+  case invalidAddress, invalidResponse, unavailable, wrongHost, hostKeyRequired
   case message(String)
   case rejected(Int, String)
   var errorDescription: String? {
@@ -66,6 +66,7 @@ enum HostServiceError: LocalizedError {
     case .invalidResponse: return L10n.tr("连接程序返回了不兼容的数据。")
     case .unavailable: return L10n.tr("无法连接电脑，请检查地址和连接程序。")
     case .wrongHost: return L10n.tr("电脑身份不一致，已停止操作。请重新添加客户端。")
+    case .hostKeyRequired: return L10n.tr("请输入这台电脑的 Host Key")
     case .message(let text): return text
     case .rejected(_, let text): return text
     }
@@ -156,6 +157,7 @@ struct HostService {
     request.cachePolicy = .reloadIgnoringLocalCacheData
     request.httpMethod = method
     request.httpBody = body
+    request.setValue("mcp-v1", forHTTPHeaderField: "X-Agent-Hub-Approvals")
     if !token.isEmpty {
       request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     }

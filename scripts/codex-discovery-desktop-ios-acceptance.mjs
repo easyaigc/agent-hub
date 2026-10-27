@@ -72,8 +72,32 @@ const fixture = {
     'codex-host://pair?descriptor=' +
     Buffer.from(JSON.stringify({ ...host.direct.descriptor(), token })).toString('base64url'),
 };
+const remoteId = process.env.HOST_KEY_REMOTE_HOST_ID;
+if (remoteId) {
+  const inventory = JSON.parse(
+    await readFile(join(process.env.HOME, '.config/agent-hub/hosts.json'), 'utf8'),
+  );
+  const remote = inventory.hosts.find((row) => row.hostId === remoteId);
+  assert(
+    remote && remoteId !== inventory.ownerHostId,
+    'Select the explicitly authorized remote target distinct from this Host',
+  );
+  fixture.remoteHostId = remoteId;
+  fixture.remoteHostKey = remote.clientKey;
+  const local = inventory.hosts.find((row) => row.hostId === inventory.ownerHostId);
+  const descriptor = await fetch(local.endpoint + '/host', {
+    headers: { Authorization: 'Bearer ' + local.clientKey },
+    redirect: 'error',
+  }).then((r) => r.json());
+  if (descriptor.connectionMode === 'automatic') fixture.legacyHostId = local.hostId;
+}
 const originalFingerprint = host.direct.descriptor().fingerprint;
 const originalPort = host.direct.server.address().port;
+fixture.originalDiscoveryPort = String(originalPort);
+fixture.stageNonce = randomUUID();
+const observedStages = new Set();
+let restartPromise;
+let stageFailure;
 const reader = new DesktopRuntime(
   { mode: 'desktop-runtime', directory, executable, root: process.cwd() },
   hostId,
@@ -123,7 +147,8 @@ try {
     const prepared = await prepareIsolatedIOSRunner({
       template: process.env.HOST_KEY_PHYSICAL_XCTESTRUN,
       directory: join(directory, 'native-runner'),
-      expectedAppBundleId: 'com.easyai.agenthub.hostkeydev',
+      expectedAppBundleId:
+        process.env.HOST_KEY_PHYSICAL_BUNDLE_ID ?? 'com.easyai.agenthub.hostkeydev',
     });
     const template = prepared.template;
     runner = join(resolve(template, '..'), 'HostKey-' + randomUUID() + '.xctestrun');
@@ -133,6 +158,9 @@ try {
       JSON.stringify({
         HOST_KEY_DEV_CONTROL_URL: 'http://' + controlBind + ':8797',
         HOST_KEY_DEV_CONTROL_TOKEN: controlToken,
+        HOST_KEY_DEV_APP_BUNDLE_ID:
+          process.env.HOST_KEY_PHYSICAL_BUNDLE_ID ?? 'com.easyai.agenthub.hostkeydev',
+        HOST_KEY_DEV_FIXTURE: Buffer.from(JSON.stringify(fixture)).toString('base64'),
       }),
       { mode: 0o600 },
     );
@@ -144,7 +172,7 @@ for key,target in p.items():
  if key!='__xctestrun_metadata__' and isinstance(target,dict):
   app=target.get('UITargetAppPath','').replace('__TESTROOT__',os.path.dirname(sys.argv[1]))
   info=plistlib.load(open(os.path.join(app,'Info.plist'),'rb'))
-  assert info.get('CFBundleIdentifier')=='com.easyai.agenthub.hostkeydev','Require the isolated Host Key App'
+  assert info.get('CFBundleIdentifier')==sys.argv[4],'Require the isolated Host Key App'
   target.setdefault('EnvironmentVariables',{}).update(e);count+=1
 assert count==1
 with open(sys.argv[3],'wb') as f:plistlib.dump(p,f)
@@ -153,6 +181,7 @@ os.chmod(sys.argv[3],0o600)
       template,
       input,
       runner,
+      process.env.HOST_KEY_PHYSICAL_BUNDLE_ID ?? 'com.easyai.agenthub.hostkeydev',
     ]);
   }
   const resultBundle = join(directory, 'native.xcresult');
@@ -177,6 +206,11 @@ os.chmod(sys.argv[3],0o600)
       '-collect-test-diagnostics',
       'never',
       '-only-testing:CodexManageUITests/CodexManageUITests/testCodexDirectDiscoveryRealDEV',
+      ...(remoteId
+        ? [
+            '-only-testing:CodexManageUITests/CodexManageUITests/testCodexM5AndLegacyDiscoveryRealDEV',
+          ]
+        : []),
       ...(physical ? ['test-without-building'] : ['CODE_SIGN_IDENTITY=-', 'test']),
     ],
     {
@@ -186,11 +220,47 @@ os.chmod(sys.argv[3],0o600)
   );
   child.stdout.pipe(log);
   child.stderr.pipe(log);
+  if (physical) {
+    let pending = '';
+    const observeStages = (chunk) => {
+      pending = (pending + chunk.toString()).slice(-65536);
+      for (const stage of ['NO_CLAIM', 'RESTART']) {
+        if (
+          observedStages.has(stage) ||
+          !pending.includes('HOST_KEY_DEV_' + fixture.stageNonce + '_' + stage)
+        )
+          continue;
+        observedStages.add(stage);
+        try {
+          if (stage === 'NO_CLAIM')
+            assert.equal(claimPosts, 0, 'No device claim before explicit key submission');
+          else {
+            restartPromise = (async () => {
+              host.close();
+              host = await startRuntimeServer();
+              observe();
+              assert.equal(host.direct.descriptor().fingerprint, originalFingerprint);
+              assert.notEqual(host.direct.server.address().port, originalPort);
+            })().catch((error) => {
+              stageFailure = error;
+            });
+          }
+        } catch (error) {
+          stageFailure = error;
+        }
+      }
+    };
+    child.stdout.on('data', observeStages);
+    child.stderr.on('data', observeStages);
+  }
   const code = await new Promise((done, reject) => {
     child.once('exit', done);
     child.once('error', reject);
   });
+  await restartPromise;
+  if (stageFailure) throw stageFailure;
   assert.equal(code, 0, 'Native acceptance failed: ' + join(directory, 'native.log'));
+  if (physical) assert.deepEqual([...observedStages].sort(), ['NO_CLAIM', 'RESTART']);
   let physicalDevices;
   if (physical) {
     const summary = JSON.parse(
@@ -205,7 +275,11 @@ os.chmod(sys.argv[3],0o600)
     });
     physicalDevices = verifyIOSResultDevice(summary, physical);
     assert.equal(summary.result, 'Passed');
-    assert.equal(summary.passedTests, 1, 'The selected physical test must actually run');
+    assert.equal(
+      summary.passedTests,
+      remoteId ? 2 : 1,
+      'All selected physical tests must actually run',
+    );
     assert.equal(summary.failedTests, 0);
     assert.equal(summary.skippedTests, 0);
   }

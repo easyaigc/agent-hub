@@ -5,9 +5,17 @@
   <key>UIBackgroundModes</key><array><string>remote-notification</string></array>
   <key>UIFileSharingEnabled</key><true/>
   <key>LSSupportsOpeningDocumentsInPlace</key><true/>
+  <key>CFBundleDocumentTypes</key><array><dict>
+    <key>CFBundleTypeName</key><string>Attachments</string>
+    <key>CFBundleTypeRole</key><string>Viewer</string>
+    <key>LSHandlerRank</key><string>Alternate</string>
+    <key>LSItemContentTypes</key><array><string>public.data</string><string>public.content</string></array>
+  </dict></array>
   <key>NSBonjourServices</key><array><string>_easywork-host._tcp</string><string>_codex-host._tcp</string><string>_agenthub-task._tcp</string></array>
   <key>CFBundleURLTypes</key><array><dict><key>CFBundleURLSchemes</key><array><string>com.easyai.codexmanage</string><string>com.easyai.remote</string><string>easywork-host</string><string>easywork</string><string>codex-host</string></array></dict></array>
-  <key>NSCameraUsageDescription</key><string>扫描电脑的配对二维码。</string>
+  <key>NSPhotoLibraryUsageDescription</key><string>显示最近图片快捷入口，仅在你添加后保存在手机，发送时才上传。</string>
+  <key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key><true/>
+  <key>NSCameraUsageDescription</key><string>扫描电脑配对二维码，或拍照添加到消息草稿。</string>
   <key>NSLocalNetworkUsageDescription</key><string>发现并连接局域网任务主服务及你添加的电脑，管理项目、任务和 Agent 对话并传输附件。</string>
   <key>NSMicrophoneUsageDescription</key><string>录制语音，由所选电脑或手机系统转写，文字返回消息草稿。</string>
   <key>NSSpeechRecognitionUsageDescription</key><string>使用手机系统将语音转成文字草稿；选择本地转写或电脑端转写不可用时启用。</string>

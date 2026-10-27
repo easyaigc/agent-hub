@@ -220,7 +220,23 @@ enum MobileUnreadBadge {
     }.count }
   }
   private static let filename = "mobile-unread-v1.json"
+  private struct StorageKey: Hashable {
+    var agentId: String, hostId: String, workspaceId: String, runtimeId: String, threadId: String
+    var authority: String?, subject: String?
+  }
+  private final class KeyCache: @unchecked Sendable {
+    let lock = NSLock()
+    var values: [StorageKey: String] = [:]
+  }
+  private static let keyCache = KeyCache()
   private static func key(_ target: AgentRuntimeTarget, _ threadId: String) -> String {
+    let input = StorageKey(agentId: target.agentId, hostId: target.hostId,
+      workspaceId: target.workspaceId, runtimeId: target.runtimeId, threadId: threadId,
+      authority: target.account?.authority, subject: target.account?.subject)
+    keyCache.lock.lock()
+    let cached = keyCache.values[input]
+    keyCache.lock.unlock()
+    if let cached { return cached }
     let identity = ReadingIdentity.key(agentId: target.agentId, authority: target.account?.authority,
       subject: target.account?.subject, hostId: target.hostId, workspaceId: target.workspaceId,
       runtimeId: target.runtimeId, threadId: threadId)
@@ -230,7 +246,12 @@ enum MobileUnreadBadge {
     let bytes = SHA256.hash(data: Data(identity.utf8)).flatMap {
       [digits[Int($0 >> 4)], digits[Int($0 & 15)]]
     }
-    return String(decoding: bytes, as: UTF8.self)
+    let result = String(decoding: bytes, as: UTF8.self)
+    keyCache.lock.lock()
+    if keyCache.values.count >= 16_384 { keyCache.values.removeAll(keepingCapacity: true) }
+    keyCache.values[input] = result
+    keyCache.lock.unlock()
+    return result
   }
   // Read-view migration only: preserve every old ledger row, materialize one
   // machine projection, and count that projection once across account metadata.
@@ -258,20 +279,39 @@ enum MobileUnreadBadge {
       ledger.threads[id] = combined
     }
   }
-  private static func loadLedger() throws -> Ledger {
+  private struct LoadedLedger {
+    var stored: Ledger
+    var view: Ledger
+  }
+  private final class LedgerCache: @unchecked Sendable {
+    let lock = NSLock()
+    var url: URL?
+    var bytes: Data?
+    var value: LoadedLedger?
+  }
+  private static let ledgerCache = LedgerCache()
+  private static func loadLedger() throws -> LoadedLedger {
     do {
-      let bytes = try Data(contentsOf: TaskNotificationShared.directory.appendingPathComponent(filename))
-      return try JSONDecoder().decode(Ledger.self, from: bytes)
+      let url = TaskNotificationShared.directory.appendingPathComponent(filename)
+      // Read the actual atomic file on every access. File timestamps and ledger
+      // generation alone cannot detect another process replacing its contents.
+      let bytes = try Data(contentsOf: url)
+      ledgerCache.lock.lock(); defer { ledgerCache.lock.unlock() }
+      if ledgerCache.url == url, ledgerCache.bytes == bytes, let value = ledgerCache.value { return value }
+      let stored = try JSONDecoder().decode(Ledger.self, from: bytes)
+      var view = stored
+      normalizeCodexRows(&view)
+      let value = LoadedLedger(stored: stored, view: view)
+      ledgerCache.url = url; ledgerCache.bytes = bytes; ledgerCache.value = value
+      return value
     } catch {
       let failure = error as NSError
-      if failure.domain == NSCocoaErrorDomain && failure.code == NSFileReadNoSuchFileError { return Ledger() }
+      if failure.domain == NSCocoaErrorDomain && failure.code == NSFileReadNoSuchFileError { return LoadedLedger(stored: Ledger(), view: Ledger()) }
       throw error
     }
   }
   private static func readOnly<T>(_ read: (Ledger) -> T) throws -> T {
-    var ledger = try loadLedger()
-    normalizeCodexRows(&ledger)
-    return read(ledger)
+    return read(try loadLedger().view)
   }
   private static func transaction<T>(_ change: (inout Ledger) throws -> T) throws -> T {
     func stage<V>(_ phase: String, _ action: () throws -> V) throws -> V {
@@ -296,9 +336,9 @@ enum MobileUnreadBadge {
       Foundation.Thread.sleep(forTimeInterval: 0.005)
     }
     defer { flock(descriptor, LOCK_UN) }
-    var ledger = try stage("decode") { try loadLedger() }
-    let before = ledger
-    normalizeCodexRows(&ledger)
+    let loaded = try stage("decode") { try loadLedger() }
+    let before = loaded.stored
+    var ledger = loaded.view
     let result = try change(&ledger)
     try stage("lifetime") { try lifetime.check() }
     if before != ledger {

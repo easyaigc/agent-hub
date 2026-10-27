@@ -1,0 +1,217 @@
+{
+  "frozenSourceNodes": 217,
+  "postFreezeMainNodes": [
+    {
+      "recordId": "N001",
+      "sha": "f82b6d012a2cd4c7c080d3aea480cba76d8a5ed4",
+      "firstParent": "e71721836d627b13c7f6ee0a7d5fb80d5f11203f",
+      "kind": "implementation",
+      "firstParentPatchSha256": "588a2a66e8dae104214058dbdb511abdfd8aa05d8ed8a8c84a0c747815f957e1",
+      "paths": [
+        "apps/ios/Sources/DesktopSuggestions.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "apps/ios/Tests/DesktopSuggestionDisplaySmoke.swift",
+        "apps/ios/Tests/desktop-suggestions-smoke.mjs",
+        "docs/acceptance/easywork-suggestions-20261024.md",
+        "docs/acceptance/mobile-parity.md",
+        "docs/architecture.md",
+        "docs/design/mobile-parity.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "docs/product/mobile-parity.template.md",
+        "packages/protocol/src/desktop-suggestion-observations.ts",
+        "scripts/mobile/easywork-suggestions-ios-acceptance.mjs"
+      ],
+      "features": ["F69"],
+      "androidImpact": "F69 remains P5; main iOS implementation preserved, Android suggestion UI/real acceptance not claimed",
+      "acceptance": "PR #8 evidence preserved, no new iOS or Android suggestion acceptance"
+    },
+    {
+      "recordId": "N002",
+      "sha": "181e377bcf1d1eefbff7f754e1f2d9c8606b2968",
+      "firstParent": "e71721836d627b13c7f6ee0a7d5fb80d5f11203f",
+      "kind": "merge",
+      "firstParentPatchSha256": "588a2a66e8dae104214058dbdb511abdfd8aa05d8ed8a8c84a0c747815f957e1",
+      "paths": [
+        "apps/ios/Sources/DesktopSuggestions.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "apps/ios/Tests/DesktopSuggestionDisplaySmoke.swift",
+        "apps/ios/Tests/desktop-suggestions-smoke.mjs",
+        "docs/acceptance/easywork-suggestions-20261024.md",
+        "docs/acceptance/mobile-parity.md",
+        "docs/architecture.md",
+        "docs/design/mobile-parity.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "docs/product/mobile-parity.template.md",
+        "packages/protocol/src/desktop-suggestion-observations.ts",
+        "scripts/mobile/easywork-suggestions-ios-acceptance.mjs"
+      ],
+      "features": ["F69"],
+      "androidImpact": "F69 remains P5; main iOS implementation preserved, Android suggestion UI/real acceptance not claimed",
+      "acceptance": "PR #8 evidence preserved, no new iOS or Android suggestion acceptance"
+    },
+    {
+      "recordId": "N003",
+      "sha": "049a7ecd9991eafa7eafa1926c68744a5d0a9b33",
+      "firstParent": "e71721836d627b13c7f6ee0a7d5fb80d5f11203f",
+      "kind": "ci-test",
+      "firstParentPatchSha256": "4c989cbb36f544ec468c907f2f2628c4d7c63187d378e57be9c9283785c448c2",
+      "paths": ["scripts/attachment-metadata.test.mjs"],
+      "features": [],
+      "androidImpact": "CI metadata-only fixture synchronization, no product behavior change",
+      "acceptance": "PR #7 workspace/iOS CI independently verified and merged"
+    },
+    {
+      "recordId": "N004",
+      "sha": "534a5e223e7feb17d781cd0188370a42a4715997",
+      "firstParent": "181e377bcf1d1eefbff7f754e1f2d9c8606b2968",
+      "kind": "merge-ci",
+      "firstParentPatchSha256": "4c989cbb36f544ec468c907f2f2628c4d7c63187d378e57be9c9283785c448c2",
+      "paths": ["scripts/attachment-metadata.test.mjs"],
+      "features": [],
+      "androidImpact": "CI metadata-only fixture synchronization, no product behavior change",
+      "acceptance": "PR #7 workspace/iOS CI independently verified and merged"
+    },
+    {
+      "recordId": "N005",
+      "sha": "ebc467b64365a8ce2cf0dd6a536bb440cd52124e",
+      "firstParent": "21754e45b77f12b678f35f323f56de93149971a5",
+      "kind": "implementation",
+      "firstParentPatchSha256": "f3f20e863ea881234aa4159f0b6c6631f2f562d4d8a55a0c1913ef06340a54e8",
+      "paths": [
+        "scripts/task-hub-service.test.mjs",
+        "skills/codex-host-connect/references/task-hub.md",
+        "skills/codex-host-connect/scripts/task-hub-core.mjs"
+      ],
+      "features": [],
+      "androidImpact": "Preserve upstream fixture timing and TLS probe isolation; no Android task/project management development or iOS feature added. Native P4 source unaffected.",
+      "acceptance": "Current changed Node22, skill and lint checks passed; final combined PR CI remains separate."
+    },
+    {
+      "recordId": "N006",
+      "sha": "3c439fa514738371b63d727f2f7bc0bbff82d171",
+      "firstParent": "ebc467b64365a8ce2cf0dd6a536bb440cd52124e",
+      "kind": "implementation",
+      "firstParentPatchSha256": "812d6110ea451e2366b925555100a0faf67f3a9792bb30fcf524a511716e9001",
+      "paths": ["scripts/attachment-metadata.test.mjs"],
+      "features": [],
+      "androidImpact": "Preserve upstream fixture timing and TLS probe isolation; no Android task/project management development or iOS feature added. Native P4 source unaffected.",
+      "acceptance": "Current changed Node22, skill and lint checks passed; final combined PR CI remains separate."
+    },
+    {
+      "recordId": "N007",
+      "sha": "d09c2ee89df373b878584b8afe25ad0ffae58db3",
+      "firstParent": "21754e45b77f12b678f35f323f56de93149971a5",
+      "kind": "merge",
+      "firstParentPatchSha256": "6a71f9887fe36c6456c22a0b3cea9ab0bcc58061298bd09c00600cd1f641ffc6",
+      "paths": [
+        "scripts/attachment-metadata.test.mjs",
+        "scripts/task-hub-service.test.mjs",
+        "skills/codex-host-connect/references/task-hub.md",
+        "skills/codex-host-connect/scripts/task-hub-core.mjs"
+      ],
+      "features": [],
+      "androidImpact": "Preserve upstream fixture timing and TLS probe isolation; no Android task/project management development or iOS feature added. Native P4 source unaffected.",
+      "acceptance": "Current changed Node22, skill and lint checks passed; final combined PR CI remains separate."
+    },
+    {
+      "recordId": "N008",
+      "sha": "cf451d014d3dbd1fcc9b419b4106b27a41f5e973",
+      "firstParent": "d09c2ee89df373b878584b8afe25ad0ffae58db3",
+      "kind": "implementation",
+      "firstParentPatchSha256": "17996a25045500a7e3a4f95cb5f7dbe188ce36a962c860a9518093bee9db968f",
+      "paths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/MessageLinks.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/mobile-evidence/file-interaction-20261024.json",
+        "docs/acceptance/mobile-parity.md",
+        "docs/design/mobile-parity.md",
+        "docs/development.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md"
+      ],
+      "features": ["F03", "F04", "F32"],
+      "androidImpact": "F32 direct preview/share, per-paragraph link highlight/loading, no double clicks and late-target cancellation require Android alignment in the applicable future phase; A6 remains paused. iOS Mach-O/module UUID isolation is platform-specific, no Android build identity change.",
+      "acceptance": "Preserve exact upstream iPhone file-interaction evidence; no Android or iOS physical pass added by merge. Current combined iOS simulator build and parity checked separately."
+    },
+    {
+      "recordId": "N009",
+      "sha": "6b3b42007ed8ab9d08f1b56145ae67984a9441dd",
+      "firstParent": "d09c2ee89df373b878584b8afe25ad0ffae58db3",
+      "kind": "merge",
+      "firstParentPatchSha256": "17996a25045500a7e3a4f95cb5f7dbe188ce36a962c860a9518093bee9db968f",
+      "paths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/MessageLinks.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/mobile-evidence/file-interaction-20261024.json",
+        "docs/acceptance/mobile-parity.md",
+        "docs/design/mobile-parity.md",
+        "docs/development.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md"
+      ],
+      "features": ["F03", "F04", "F32"],
+      "androidImpact": "F32 direct preview/share, per-paragraph link highlight/loading, no double clicks and late-target cancellation require Android alignment in the applicable future phase; A6 remains paused. iOS Mach-O/module UUID isolation is platform-specific, no Android build identity change.",
+      "acceptance": "Preserve exact upstream iPhone file-interaction evidence; no Android or iOS physical pass added by merge. Current combined iOS simulator build and parity checked separately."
+    },
+    {
+      "recordId": "N010",
+      "sha": "e231e24d5cf64497b4a5f7d4c5ce795b90b07adb",
+      "firstParent": "dd0c2a8f53d1263e888a3e168b24827c9c6d4951",
+      "kind": "implementation",
+      "firstParentPatchSha256": "25e3f389bd10c0654e69fe229cc74bae11403ed3487e3ecc28ff6c46ea9aa034",
+      "paths": [
+        ".gitignore",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/mobile-parity.md",
+        "docs/acceptance/paused-state-sync-20261024.md",
+        "docs/architecture.md",
+        "docs/design/mobile-parity.md",
+        "docs/feasibility.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "packages/codex-adapter/src/desktop-ipc.ts",
+        "scripts/desktop-known-owner-recovery.test.mjs"
+      ],
+      "features": ["F39"],
+      "androidImpact": "Shared desktop adapter terminal revision reset and retired-stream fencing apply to Android. Upstream evidence remains independent; current merged-source native recovery acceptance is separate.",
+      "acceptance": "Preserve upstream paused-state evidence; do not infer whole Android/P4 acceptance from merge."
+    },
+    {
+      "recordId": "N011",
+      "sha": "7a01cda9f11ccbe19a3949d7409a3e154e72ae09",
+      "firstParent": "dd0c2a8f53d1263e888a3e168b24827c9c6d4951",
+      "kind": "merge",
+      "firstParentPatchSha256": "25e3f389bd10c0654e69fe229cc74bae11403ed3487e3ecc28ff6c46ea9aa034",
+      "paths": [
+        ".gitignore",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "docs/acceptance/mobile-parity.md",
+        "docs/acceptance/paused-state-sync-20261024.md",
+        "docs/architecture.md",
+        "docs/design/mobile-parity.md",
+        "docs/feasibility.md",
+        "docs/product/mobile-parity.manifest.json",
+        "docs/product/mobile-parity.md",
+        "packages/codex-adapter/src/desktop-ipc.ts",
+        "scripts/desktop-known-owner-recovery.test.mjs"
+      ],
+      "features": ["F39"],
+      "androidImpact": "Shared desktop adapter terminal revision reset and retired-stream fencing apply to Android. Upstream evidence remains independent; current merged-source native recovery acceptance is separate.",
+      "acceptance": "Preserve upstream paused-state evidence; do not infer whole Android/P4 acceptance from merge."
+    }
+  ]
+}

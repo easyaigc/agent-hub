@@ -51,6 +51,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
                     connection.connectTimeout=10_000; connection.readTimeout=35_000
                     connection.requestMethod=if(post) "POST" else "GET"
                     connection.setRequestProperty("Accept","application/json")
+                    connection.setRequestProperty("X-Agent-Hub-Approvals","mcp-v1")
                     token(client.id).takeIf { it.isNotEmpty() }?.let { connection.setRequestProperty("Authorization","Bearer $it") }
                     if(post) {
                         val content=bytes ?: body!!.toString().toByteArray(Charsets.UTF_8)

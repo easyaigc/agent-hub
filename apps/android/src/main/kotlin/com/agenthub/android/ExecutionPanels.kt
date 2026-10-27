@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -23,6 +24,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -88,32 +91,19 @@ fun StorageIdentityNotice(session: MobileSession) {
         } }
     }
 }
-@Composable internal fun ExecutionPanels(session: MobileSession,maxHeight: androidx.compose.ui.unit.Dp=320.dp,autoPresentQuestions: Boolean=true) {
+@Composable internal fun ExecutionPanels(session: MobileSession,maxHeight: androidx.compose.ui.unit.Dp=320.dp,autoPresentQuestions: Boolean=true,inlineToolApprovals: Boolean=false) {
     val key=session.targetKey
+    val request=session.creationWaitRequest
     Column(Modifier.fillMaxWidth().heightIn(max=maxHeight).verticalScroll(rememberScrollState()).padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         session.transferStatus?.let { Row(Modifier.testTag("transfer-status")) { CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(8.dp)); Text(it,fontSize=12.sp) } }
-        session.runtime?.plan?.takeIf { it.isNotEmpty() }?.let { steps ->
-            ExecutionCard("任务进度","runtime-plan") { steps.forEach { Text((if(it.status=="completed") "✓ " else if(it.status=="in-progress") "◉ " else "○ ")+it.step,fontSize=13.sp) } }
-        }
-        session.runtime?.proposedPlan?.let { plan ->
-            var revising by remember(key,plan.id) { mutableStateOf(false) }
-            var feedback by remember(key,plan.id) { mutableStateOf("") }
-            ExecutionCard("执行计划","proposed-plan-${plan.id}") {
-                MarkdownContent(plan.text,"proposed-plan-text")
-                Row {
-                    TextButton(onClick={ session.implementPlan(plan) },enabled=session.canRespondToPlan(plan),modifier=Modifier.testTag("implement-plan")) { Text("实施计划") }
-                    TextButton(onClick={ revising=!revising },enabled=session.canRespondToPlan(plan),modifier=Modifier.testTag("revise-plan")) { Text("修改计划") }
-                }
-                if(revising) {
-                    OutlinedTextField(feedback,{ feedback=it },label={ Text("修改建议") },modifier=Modifier.fillMaxWidth().testTag("plan-feedback"))
-                    TextButton(onClick={ session.revisePlan(plan,feedback) },enabled=feedback.isNotBlank() && session.canRespondToPlan(plan),modifier=Modifier.testTag("send-plan-feedback")) { Text("提交修改建议") }
-                }
-            }
-        }
+        session.runtime?.plan?.takeIf { it.isNotEmpty() }?.let { RuntimePlanProgress(it,key) }
+        if(!session.running)session.runtime?.proposedPlan?.let { ProposedPlanReview(session,it) }
         val approvals=session.runtime?.approvals.orEmpty()
         val async=approvals.filter { it.kind=="question" && it.interactionMode=="async" }
-        if(async.isNotEmpty()) key(key) { AsyncQuestionDeck(session,async,key,autoPresentQuestions) }
-        approvals.filterNot { it.kind=="question" && it.interactionMode=="async" }.forEach { approval -> key(key,approval.id,approval.turnId) { ApprovalPanel(session,approval,key) } }
+        key(session.approvalActionDestination()) {
+        if(async.isNotEmpty()) key(key) { AsyncQuestionDeck(session,async,key,autoPresentQuestions&&request==null) }
+        approvals.filterNot { it.kind=="question" && it.interactionMode=="async" || inlineToolApprovals && it.kind!="question" }.forEach { approval -> key(key,approval.id,approval.turnId) { ApprovalPanel(session,approval,key) } }
+        }
         session.receiptNotices.forEach { receipt -> ReceiptNotice(receipt,key) { session.dismissReceiptFailure(receipt,key) } }
         session.forkRecords.forEach { ThreadForkReceipt(session,it) }
         session.activeOperationRecords.takeLast(12).forEach { record ->
@@ -126,15 +116,29 @@ fun StorageIdentityNotice(session: MobileSession) {
                 FlowRow {
                     if(notSubmitted) TextButton(onClick={ session.detachOperation(record) },modifier=Modifier.testTag("dismiss-operation-${record.id}")) { Text("关闭提示") }
                     else TextButton(onClick={ session.queryOperation(record) },enabled=session.transferStatus==null,modifier=Modifier.testTag("query-operation-${record.id}")) { Text("查询记录") }
+                    if(record.kind=="creation" && record.phase=="rejected") {
+                        val original=session.creationWaitContext(record)
+                        TextButton(onClick={ original?.let(session::returnRejectedCreation) },enabled=original!=null&&session.transferStatus==null,
+                            modifier=Modifier.testTag("return-rejected-creation-${record.id}")) { Text("返回草稿") }
+                    }
                     if(canRetry) TextButton(onClick={ session.retryReply(record) },modifier=Modifier.testTag("retry-operation-${record.id}")) { Text("重试原消息") }
                     if(canRetry) TextButton(onClick={ session.editOriginalReply(record) },modifier=Modifier.testTag("edit-operation-${record.id}")) { Text("修改原消息") }
                     if(session.mayContinueCreation(record)) TextButton(onClick={ session.continueCreation(record) },enabled=session.transferStatus==null,modifier=Modifier.testTag("continue-creation-${record.id}")) { Text("提交原内容") }
-                    if(!record.detached && record.phase !in listOf("failed","rejected")) TextButton(onClick={ session.detachOperation(record) },modifier=Modifier.testTag("detach-operation-${record.id}")) { Text("结束等待") }
+                    if(!record.detached && record.phase!="failed" && (record.phase!="rejected" || record.kind=="creation")) TextButton(onClick={ if(record.kind=="creation")session.requestCreationWait(record) else session.detachOperation(record) },enabled=record.kind!="creation" || session.creationWaitContext(record)!=null,modifier=Modifier.testTag("detach-operation-${record.id}")) { Text("结束等待") }
                 }
                 if(!record.detached && !notSubmitted) Text("结束等待保留原操作与附件，不代表电脑任务已取消。",fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         session.runtime?.error?.let { Text(it,color=MaterialTheme.colorScheme.error,fontSize=13.sp,modifier=Modifier.testTag("runtime-error")) }
+    }
+    request?.let { original ->
+        AlertDialog(modifier=Modifier.testTag("creation-end-wait-dialog"),
+            onDismissRequest={ session.continueCreationWaiting(original) },
+            title={ Text("结束等待？") },
+            text={ Text("结束等待不会撤销可能已执行的请求。原记录仍可查询；再次发送将是一条新请求。") },
+            confirmButton={ TextButton(onClick={ session.endCreationWait(original) },
+                enabled=session.mayEndCreationWait(original),modifier=Modifier.testTag("creation-end-wait-confirm")) { Text("保留记录并返回编辑") } },
+            dismissButton={ TextButton(onClick={ session.continueCreationWaiting(original) },modifier=Modifier.testTag("creation-end-wait-cancel")) { Text("继续等待") } })
     }
 }
 
@@ -162,9 +166,9 @@ fun StorageIdentityNotice(session: MobileSession) {
     }
 }
 
-@Composable private fun ExecutionCard(title: String,tag: String,content: @Composable ColumnScope.()->Unit) {
+@Composable private fun ExecutionCard(title: String,tag: String,compact: Boolean=false,content: @Composable ColumnScope.()->Unit) {
     Surface(shape=androidx.compose.foundation.shape.RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surface,modifier=Modifier.fillMaxWidth().testTag(tag)) {
-        Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) { if(title.isNotEmpty()) Text(title,fontSize=14.sp,fontWeight=FontWeight.SemiBold); content() }
+        Column(Modifier.padding(if(compact)8.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(if(compact)4.dp else 6.dp)) { if(title.isNotEmpty()) Text(title,fontSize=14.sp,fontWeight=FontWeight.SemiBold); content() }
     }
 }
 
@@ -172,8 +176,8 @@ private class ApprovalDraft {
     val selected=mutableStateMapOf<String,List<String>>()
     val custom=mutableStateMapOf<String,String>()
 }
-private data class ApprovalIdentity(val id: String,val turnId: String)
-private val MobileApproval.identity get()=ApprovalIdentity(id,turnId)
+private data class ApprovalIdentity(val original: MobileApproval)
+private val MobileApproval.identity get()=ApprovalIdentity(this)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun AsyncQuestionDeck(session: MobileSession,approvals: List<MobileApproval>,target: String,autoPresent: Boolean) {
@@ -200,14 +204,24 @@ private val MobileApproval.identity get()=ApprovalIdentity(id,turnId)
         }
     }
     if(presented) {
-        val state=rememberModalBottomSheetState(skipPartiallyExpanded=false)
+        val state=rememberModalBottomSheetState(skipPartiallyExpanded=true)
         ModalBottomSheet(onDismissRequest={ presented=false },sheetState=state,containerColor=MaterialTheme.colorScheme.background,
-            shape=RoundedCornerShape(topStart=24.dp,topEnd=24.dp),contentWindowInsets={ WindowInsets.safeDrawing },
+            shape=RoundedCornerShape(topStart=24.dp,topEnd=24.dp),contentWindowInsets={ WindowInsets.safeDrawing },dragHandle=null,
             properties=ModalBottomSheetProperties(isAppearanceLightStatusBars=MaterialTheme.colorScheme.background!=Color.Black,isAppearanceLightNavigationBars=MaterialTheme.colorScheme.background!=Color.Black)) {
             SheetSystemBars()
             val focus=LocalFocusManager.current; val keyboard=LocalSoftwareKeyboardController.current
             DisposableEffect(Unit) { onDispose { focus.clearFocus(force=true); keyboard?.hide() } }
-            Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).testTag("async-question-sheet")) {
+            val keyboardVisible=WindowInsets.ime.getBottom(LocalDensity.current)>0
+            Box(Modifier.fillMaxWidth().height(if(keyboardVisible)0.dp else 24.dp).semantics { hideFromAccessibility() },contentAlignment=Alignment.Center) {
+                Box(Modifier.width(36.dp).height(4.dp).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=.4f),RoundedCornerShape(2.dp)))
+            }
+            BoxWithConstraints(Modifier.fillMaxWidth().fillMaxHeight().testTag("async-question-sheet").semantics { dismiss { presented=false;true } }) {
+            // Keep a finite inner reader while short IME viewports can scroll the whole panel.
+            // Reparenting focused answer fields when the keyboard appears would lose their focus.
+            val answerViewportHeight=maxHeight
+            val contentHeight=maxOf(maxHeight,200.dp)
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag("async-question-outer-scroll")) {
+            Column(Modifier.fillMaxWidth().height(contentHeight)) {
                 Row(Modifier.fillMaxWidth().padding(start=16.dp,end=4.dp),verticalAlignment=Alignment.CenterVertically) {
                     ProductIcon("question",Modifier.size(18.dp),orange)
                     Text("问题",Modifier.weight(1f).padding(start=6.dp),fontSize=14.sp,fontWeight=FontWeight.SemiBold,color=orange)
@@ -233,17 +247,29 @@ private val MobileApproval.identity get()=ApprovalIdentity(id,turnId)
                             if(!change.pressed && single && kotlin.math.abs(delta.x)>with(density) { 60.dp.toPx() } && kotlin.math.abs(delta.x)>kotlin.math.abs(delta.y)*1.5f) move(if(delta.x<0) 1 else -1)
                         }
                     }.padding(horizontal=16.dp).padding(bottom=16.dp)) {
-                        ApprovalPanel(session,current,target,drafts.getOrPut(current.identity) { ApprovalDraft() },onQuestionFocus={ state.expand() })
+                        ApprovalPanel(session,current,target,drafts.getOrPut(current.identity) { ApprovalDraft() },onQuestionFocus={ state.expand() },answerViewportHeight=answerViewportHeight)
                     }
                 }
+            }
+            }
             }
         }
     }
 }
 
+@Composable internal fun InlineToolApproval(session: MobileSession,approval: MobileApproval) {
+    ApprovalPanel(session,approval,session.targetKey,compact=true)
+}
 @OptIn(ExperimentalFoundationApi::class)
-@Composable private fun ApprovalPanel(session: MobileSession,approval: MobileApproval,target: String,externalDraft: ApprovalDraft?=null,onQuestionFocus: suspend ()->Unit={}) {
-    val local=remember(target,approval.id,approval.turnId) { ApprovalDraft() }
+@Composable private fun ApprovalPanel(session: MobileSession,approval: MobileApproval,target: String,externalDraft: ApprovalDraft?=null,onQuestionFocus: suspend ()->Unit={},compact: Boolean=false,answerViewportHeight: androidx.compose.ui.unit.Dp?=null) {
+    val destination=session.approvalActionDestination()
+    if(destination.key!=target)return
+    key(destination,approval) { ApprovalPanelContent(session,approval,destination,externalDraft,onQuestionFocus,compact,answerViewportHeight) }
+}
+@Composable private fun ApprovalPanelContent(session: MobileSession,approval: MobileApproval,destination: DraftDestination,externalDraft: ApprovalDraft?,onQuestionFocus: suspend ()->Unit,compact: Boolean,answerViewportHeight: androidx.compose.ui.unit.Dp?) {
+    val local=remember { ApprovalDraft() }
+    val editable=session.canEditApproval(approval,destination)
+    val enabled=session.canAnswer(approval,destination)
     val selected=(externalDraft ?: local).selected
     val custom=(externalDraft ?: local).custom
     val async=approval.interactionMode=="async"
@@ -251,43 +277,75 @@ private val MobileApproval.identity get()=ApprovalIdentity(id,turnId)
         val extra=custom[question.id].orEmpty().trim()
         question.id to if(async && extra.isNotEmpty()) listOf(extra) else selected[question.id].orEmpty()+if(extra.isEmpty()) emptyList() else listOf(extra)
     }
-    ExecutionCard(if(async) "" else if(approval.kind=="question") "需要回复" else "需要审批","approval-${approval.id}") {
+    ExecutionCard(if(async) "" else if(approval.kind=="question") "需要回复" else "需要审批","approval-${approval.id}",compact=compact) {
         if(async) Text(if(session.runtime?.turnId==approval.turnId) "任务仍在继续，可随时回答或跳过" else "任务已结束，回答将继续此对话",fontSize=12.sp,modifier=Modifier.testTag("async-question-status"))
-        else Text(approval.title,fontSize=14.sp)
+        else SelectionContainer { Text(approval.title,fontSize=14.sp,modifier=Modifier.fillMaxWidth()) }
         if(approval.detail.isNotEmpty()) Text(approval.detail,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
-        if(session.isAnswering(approval)) Text("正在提交…",fontSize=12.sp,modifier=Modifier.testTag("approval-pending"))
+        if(session.isAnswering(approval)) Row(Modifier.testTag("approval-pending"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+            CircularProgressIndicator(Modifier.size(14.dp).testTag("approval-pending-progress"),strokeWidth=1.5.dp);Text("正在提交…",fontSize=12.sp)
+        }
         approval.questions.forEach { question ->
             Text(question.question,fontSize=14.sp,modifier=Modifier.testTag("question-title-${question.id}"))
             question.options.forEach { option ->
                 val chosen=option.label in selected[question.id].orEmpty()
-                TextButton(onClick={
+                val select={
                     selected[question.id]=if(question.multiple) { if(chosen) selected[question.id].orEmpty()-option.label else selected[question.id].orEmpty()+option.label } else listOf(option.label)
                     if(async) custom[question.id]=""
-                },enabled=session.canAnswer(approval),modifier=Modifier.fillMaxWidth().testTag("question-option-${question.id}-${option.label}")) {
-                    Text((if(chosen) "● " else "○ ")+option.label,Modifier.weight(1f))
                 }
-                if(option.description.isNotEmpty()) Text(option.description,fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                val choice=if(question.multiple) Modifier.toggleable(chosen,enabled=editable,role=Role.Checkbox) { select() }
+                    else Modifier.selectable(chosen,enabled=editable,role=Role.RadioButton,onClick=select)
+                Row(Modifier.fillMaxWidth().heightIn(min=44.dp).testTag("question-option-${question.id}-${option.label}")
+                    .then(choice).semantics(mergeDescendants=true) { stateDescription=if(chosen)"已选择" else "未选择" }.padding(vertical=6.dp),
+                    verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    if(question.multiple) Checkbox(chosen,onCheckedChange=null,enabled=editable,modifier=Modifier.size(20.dp).clearAndSetSemantics {})
+                    else RadioButton(chosen,onClick=null,enabled=editable,modifier=Modifier.size(20.dp).clearAndSetSemantics {})
+                    Column(Modifier.weight(1f)) {
+                        Text(option.label,fontSize=14.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(editable)1f else .38f))
+                        if(option.description.isNotEmpty()) Text(option.description,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(editable)1f else .38f))
+                    }
+                }
             }
             if(question.custom) {
                 val requester=remember { BringIntoViewRequester() }
                 var focused by remember { mutableStateOf(false) }
                 val imeBottom=WindowInsets.ime.getBottom(LocalDensity.current)
+                LaunchedEffect(focused) { if(focused) onQuestionFocus() }
                 LaunchedEffect(focused,imeBottom) {
-                    if(focused) { onQuestionFocus(); withFrameNanos { }; requester.bringIntoView() }
+                    // The async reader already propagates the native TextField focus request
+                    // through both scrollers. A second request races page disposal on API26.
+                    if(focused && !async) { withFrameNanos { }; requester.bringIntoView() }
                 }
-                OutlinedTextField(custom[question.id].orEmpty(),{ custom[question.id]=it },
-                    label={ Text(if(question.secret) "输入回复" else "输入回复或补充说明") },enabled=session.canAnswer(approval),
+                val value=custom[question.id].orEmpty()
+                val hint=if(question.secret) "输入回复" else "输入回复或补充说明"
+                val density=LocalDensity.current
+                // The whole field remains reachable while its text scrolls inside the line budget.
+                val lines=if(question.secret)1 else answerViewportHeight?.let { ((it.value-52f)/(20f*density.fontScale)).toInt().coerceIn(1,4) } ?: 4
+                val shape=RoundedCornerShape(10.dp)
+                BasicTextField(value,{ custom[question.id]=it },enabled=editable,
+                    textStyle=TextStyle(fontSize=15.sp,lineHeight=20.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(editable)1f else .38f)),
                     visualTransformation=if(question.secret) PasswordVisualTransformation() else VisualTransformation.None,
-                    modifier=Modifier.fillMaxWidth().bringIntoViewRequester(requester).onFocusChanged { focused=it.isFocused }.testTag("question-custom-${question.id}"))
+                    singleLine=question.secret,maxLines=lines,
+                    keyboardOptions=if(question.secret) KeyboardOptions(autoCorrectEnabled=false,keyboardType=KeyboardType.Password,imeAction=ImeAction.Done) else KeyboardOptions.Default,
+                    modifier=Modifier.fillMaxWidth().bringIntoViewRequester(requester).onFocusChanged { focused=it.isFocused }.semantics { contentDescription=hint }.testTag("question-custom-${question.id}"),
+                    decorationBox={ inner ->
+                        Box(Modifier.fillMaxWidth().heightIn(min=44.dp).background(MaterialTheme.colorScheme.surface,shape)
+                            .border(1.dp,MaterialTheme.colorScheme.onSurface.copy(alpha=.12f),shape).padding(horizontal=10.dp,vertical=10.dp),contentAlignment=Alignment.CenterStart) {
+                            if(value.isEmpty()) Text(hint,fontSize=15.sp,lineHeight=20.sp,color=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(editable).6f else .38f))
+                            inner()
+                        }
+                    })
             }
         }
-        Row {
-            if(approval.kind=="question") {
-                if(async) TextButton(onClick={ session.answer(approval,"skip",emptyMap(),target) },enabled=session.canAnswer(approval),modifier=Modifier.testTag("skip-question")) { Text("跳过") }
-                TextButton(onClick={ session.answer(approval,"",answers,target) },enabled=answers.isNotEmpty() && answers.values.all { it.isNotEmpty() } && session.canAnswer(approval),modifier=Modifier.testTag("answer-question")) { Text("提交回复") }
-            } else approval.decisions.forEach { decision ->
-                TextButton(onClick={ session.answer(approval,decision,emptyMap(),target) },enabled=session.canAnswer(approval),modifier=Modifier.testTag("approval-$decision")) {
-                    Text(when(decision) { "accept","approve"->"允许一次"; "acceptForSession"->"本会话允许"; "decline","deny"->"拒绝"; else->"停止任务" },fontSize=12.sp)
+        if(approval.kind=="question") Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {
+            if(async) TextButton(onClick={ session.answer(approval,"skip",emptyMap(),destination) },enabled=enabled,modifier=Modifier.defaultMinSize(minWidth=44.dp,minHeight=44.dp).testTag("skip-question")) { Text("跳过") }
+            Button(onClick={ session.answer(approval,"",answers,destination) },enabled=answers.isNotEmpty() && answers.values.all { it.isNotEmpty() } && enabled,
+                modifier=Modifier.weight(1f).heightIn(min=44.dp).testTag("answer-question"),shape=RoundedCornerShape(10.dp),contentPadding=PaddingValues(horizontal=14.dp,vertical=8.dp),
+                colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.onSurface,contentColor=MaterialTheme.colorScheme.background,
+                    disabledContainerColor=MaterialTheme.colorScheme.onSurface.copy(alpha=.12f),disabledContentColor=MaterialTheme.colorScheme.onSurfaceVariant)) { Text("提交回复",fontSize=14.sp,fontWeight=FontWeight.SemiBold) }
+        } else FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+            approval.decisions.forEach { decision ->
+                TextButton(onClick={ session.answer(approval,decision,emptyMap(),destination) },enabled=enabled,modifier=Modifier.heightIn(min=44.dp).testTag("approval-$decision")) {
+                    Text(approval.decisionLabels[decision] ?: when(decision) { "accept","approve"->"允许一次"; "acceptForSession"->"本会话允许"; "decline","deny"->"拒绝"; else->"停止任务" },fontSize=12.sp)
                 }
             }
         }
@@ -298,31 +356,33 @@ internal fun effortLabel(value: String?)=when(value) { "none"->"无"; "minimal"-
 internal fun speedLabel(value: String?)=when(value) { "fast"->"快速"; "ultrafast"->"极速"; "standard"->"标准"; else->"跟随电脑" }
 internal fun permissionLabel(value: String?)=when(value) { "read-only"->"请求批准"; "guardian-approvals"->"帮我批准"; "full-access"->"完全访问权限"; "confirm_every_operation"->"逐项确认"; "confirm_high_risk"->"高风险确认"; "allow_all"->"允许已授权操作"; else->"跟随电脑权限" }
 
-@Composable internal fun GenerationControls(session: MobileSession,onSettings: ()->Unit) {
+@Composable internal fun GenerationControls(session: MobileSession,compactLayout: Boolean=false,onSettings: ()->Unit) {
     val colors=MaterialTheme.colorScheme
+    val showMode=com.agenthub.core.MobileRules.showsReplyMode(session.running,session.canCompose,session.replyModes.isNotEmpty(),session.text,session.attachments.size)
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal=16.dp)) {
         val compact=maxWidth<370.dp
-        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            if(session.selectedCollaboration=="plan") ToolbarChip("计划模式","plan-mode-badge",session.canSelectPlan,"lightbulb") { session.setPlanMode(false) }
-            if(session.supportsGeneration) ToolbarChip(if(compact) permissionLabel(session.selectedPermission).replace("权限","") else permissionLabel(session.selectedPermission),"permission-settings",session.canConfigureGeneration,"shield",if(session.permissionOptions.any { it.id==session.selectedPermission&&it.highPrivilege }) Color(0xFFFF9500) else colors.onSurfaceVariant,onSettings)
-            Spacer(Modifier.weight(1f))
-            if(session.supportsGeneration) {
-                val label=if(compact) session.modelLabel.removePrefix("GPT-").take(10) else session.modelLabel
-                ToolbarChip(label+" "+effortLabel(session.selectedEffort),"generation-settings",session.canConfigureGeneration,"bolt",if(session.selectedSpeed in listOf("fast","ultrafast")) Color(0xFF007AFF) else colors.onSurface,onSettings)
+        val singleRow=compactLayout && maxWidth>=600.dp
+        Column {
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                if(session.selectedCollaboration=="plan") ToolbarChip("计划模式","plan-mode-badge",session.canSelectPlan,"lightbulb") { session.setPlanMode(false) }
+                if(session.supportsGeneration) ToolbarChip(if(compact) permissionLabel(session.selectedPermission).replace("权限","") else permissionLabel(session.selectedPermission),"permission-settings",session.canConfigureGeneration,"shield",if(session.permissionOptions.any { it.id==session.selectedPermission&&it.highPrivilege }) Color(0xFFFF9500) else colors.onSurfaceVariant,onSettings)
+                Spacer(Modifier.weight(1f))
+                if(session.supportsGeneration) {
+                    val label=if(compact) session.modelLabel.removePrefix("GPT-").take(10) else session.modelLabel
+                    ToolbarChip(label+" "+effortLabel(session.selectedEffort),"generation-settings",session.canConfigureGeneration,"bolt",if(session.selectedSpeed in listOf("fast","ultrafast")) Color(0xFF007AFF) else colors.onSurface,onSettings)
+                }
+                if(singleRow && showMode) ReplyModeControls(session,Modifier.width(260.dp))
             }
+            if(!singleRow && showMode) ReplyModeControls(session,Modifier.fillMaxWidth())
+            if(showMode && session.replyMode=="queue"&&"queue" !in session.replyModes) Text("客户端队列不可用，消息未提交。可保留草稿，或自行选择立即追加。",fontSize=12.sp,color=colors.onSurfaceVariant,modifier=Modifier.testTag("client-queue-unavailable"))
         }
     }
-    if(com.agenthub.core.MobileRules.showsReplyMode(session.running, session.canCompose, session.replyModes.isNotEmpty(), session.text, session.attachments.size)) {
-        val target=session.targetKey;val modes=session.replyModes
-        Column(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-            Row(Modifier.fillMaxWidth().background(colors.onSurface.copy(alpha=.08f),RoundedCornerShape(8.dp)).padding(3.dp)
-                .selectableGroup().testTag("reply-mode")) {
-                ReplyModeSegment("排队执行","queue",session.replyMode=="queue",session.canSelectReplyMode&&"queue" in modes) { session.setReplyMode("queue",target) }
-                if("steer" in modes)ReplyModeSegment("立即追加","steer",session.replyMode=="steer",session.canSelectReplyMode) { session.setReplyMode("steer",target) }
-            }
-            if(session.replyMode=="queue"&&"queue" !in modes)Text("客户端队列不可用，消息未提交。可保留草稿，或自行选择立即追加。",
-                fontSize=12.sp,color=colors.onSurfaceVariant,modifier=Modifier.testTag("client-queue-unavailable"))
-        }
+}
+@Composable private fun ReplyModeControls(session: MobileSession,modifier: Modifier) {
+    val target=session.targetKey;val modes=session.replyModes;val colors=MaterialTheme.colorScheme
+    Row(modifier.background(colors.onSurface.copy(alpha=.08f),RoundedCornerShape(8.dp)).padding(3.dp).selectableGroup().testTag("reply-mode")) {
+        ReplyModeSegment("排队执行","queue",session.replyMode=="queue",session.canSelectReplyMode&&"queue" in modes) {session.setReplyMode("queue",target)}
+        if("steer" in modes) ReplyModeSegment("立即追加","steer",session.replyMode=="steer",session.canSelectReplyMode) {session.setReplyMode("steer",target)}
     }
 }
 @Composable private fun RowScope.ReplyModeSegment(label: String,mode: String,selected: Boolean,enabled: Boolean,choose: ()->Unit) {

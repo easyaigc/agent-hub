@@ -539,6 +539,7 @@ export function windowsAdapterDigest(): string {
     'desktop-ipc.js',
     'desktop-framing.js',
     'runtime-session.js',
+    'approval-requests.js',
     'runtime-persistence.js',
     'runtime-diagnostics.js',
     'attachment-files.js',

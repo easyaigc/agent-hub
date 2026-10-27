@@ -9,7 +9,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { isAbsolute, join, relative } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   machineRuntimeTargetKey,
@@ -61,8 +61,6 @@ export class DesktopSuggestionObserver {
   private conflicts = new Set<string>();
   private phase: DesktopSuggestionObservations['collector'];
   private readonly stateFile: string;
-  private readonly authorizedRoot: string;
-  private readonly rootIdentity?: string;
   private readonly predictionReader?: DesktopPredictionTraceReader;
   private traceIdentity?: string;
   private desktopStartedAtUnixMs: number | undefined;
@@ -74,7 +72,6 @@ export class DesktopSuggestionObserver {
       directory: string;
       target: () => RuntimeTarget;
       enabled: boolean;
-      root: string;
       codexHome?: string;
       applicationPath?: string;
       traceRoot?: string;
@@ -86,18 +83,17 @@ export class DesktopSuggestionObserver {
     this.phase = options.enabled ? 'starting' : 'disabled';
     const directory = join(options.directory, 'desktop-suggestion-observations');
     this.stateFile = join(directory, 'observations.json');
-    this.authorizedRoot = options.root;
     if (!options.enabled) return;
     if (process.platform === 'win32' && !options.nativeWorker) {
       this.workerClient = this.createWindowsReader();
       return;
     }
     try {
-      this.authorizedRoot = realpathSync(options.root);
-      this.rootIdentity = this.readRootIdentity();
       if (options.traceRoot)
         this.predictionReader = new DesktopPredictionTraceReader(options.traceRoot);
-      const scope = createHash('sha256').update(this.authorizedRoot).digest('hex');
+      const scope = createHash('sha256')
+        .update(machineRuntimeTargetKey(options.target()))
+        .digest('hex');
       this.stateFile = join(directory, 'observations-' + scope + '.json');
       mkdirSync(directory, { recursive: true, mode: 0o700 });
       protectWindowsStateDirectory(directory);
@@ -131,26 +127,9 @@ export class DesktopSuggestionObserver {
   private createWindowsReader(): DesktopSuggestionWorkerClient {
     return new DesktopSuggestionWorkerClient({
       directory: this.options.directory,
-      root: this.options.root,
       traceRoot: this.options.traceRoot,
       target: structuredClone(this.options.target()),
     });
-  }
-
-  private readRootIdentity(): string {
-    const path = realpathSync(this.options.root);
-    const info = statSync(path);
-    if (path !== this.authorizedRoot || !info.isDirectory())
-      throw new SuggestionObservationError(409, '建议授权目录已变化');
-    return JSON.stringify([path, info.dev, info.ino]);
-  }
-
-  private rootStable(): boolean {
-    try {
-      return this.rootIdentity === this.readRootIdentity();
-    } catch {
-      return false;
-    }
   }
 
   private boundReadAvailable(instance?: WindowsTraceInstance): boolean {
@@ -158,7 +137,6 @@ export class DesktopSuggestionObserver {
     if (
       this.phase !== 'listening' ||
       this.desktopStartedAtUnixMs === undefined ||
-      !this.rootStable() ||
       this.predictionReader?.isAvailable() !== true
     )
       return false;
@@ -207,7 +185,6 @@ export class DesktopSuggestionObserver {
     }
     if (this.phase !== 'listening')
       throw new SuggestionObservationError(503, '原桌面建议读取暂不可用');
-    if (!this.rootStable()) throw new SuggestionObservationError(409, '建议授权目录已变化');
     if (this.traceIdentity) {
       let identity;
       try {
@@ -222,7 +199,6 @@ export class DesktopSuggestionObserver {
       throw new SuggestionObservationError(503, '原桌面建议读取暂不可用');
   }
 
-  /** Re-read native evidence on every request; never persist a derived source binding. */
   readBoundSource(
     target: RuntimeTarget,
     threadId: string,
@@ -241,7 +217,6 @@ export class DesktopSuggestionObserver {
     const recovered = this.predictionReader!.readSourcePredictions(
       threadId,
       sourceTurnId,
-      this.authorizedRoot,
       this.desktopStartedAtUnixMs!,
       true,
     );
@@ -317,8 +292,8 @@ export class DesktopSuggestionObserver {
         validity: 'native-version',
       };
     }
-    if (key !== machineRuntimeTargetKey(this.options.target()) || !this.rootStable())
-      throw new SuggestionObservationError(409, '建议读取期间运行目标或授权目录已变化');
+    if (key !== machineRuntimeTargetKey(this.options.target()))
+      throw new SuggestionObservationError(409, '建议读取期间运行目标已变化');
     const available = this.boundReadAvailable();
     if (!available) suggestion = null;
     // Internal reader delivery reuses this exact fresh guard, without another
@@ -464,7 +439,6 @@ export class DesktopSuggestionObserver {
     const epoch = this.collectorEpoch;
     const instance = this.windowsInstanceIdentity;
     const startedAt = this.desktopStartedAtUnixMs!;
-    const root = this.rootIdentity;
     const trace = this.traceIdentity;
     const preparedAt = Date.now();
     const observations = structuredClone([...this.observations.values()]);
@@ -472,7 +446,6 @@ export class DesktopSuggestionObserver {
     const receipt = this.predictionReader!.prepareSourcePredictions(
       threadId,
       sourceTurnId,
-      this.authorizedRoot,
       startedAt,
       true,
     );
@@ -491,7 +464,6 @@ export class DesktopSuggestionObserver {
         epoch !== this.collectorEpoch ||
         instance !== this.windowsInstanceIdentity ||
         startedAt !== this.desktopStartedAtUnixMs ||
-        root !== this.rootIdentity ||
         trace !== this.traceIdentity ||
         key !== machineRuntimeTargetKey(this.options.target())
       )
@@ -499,7 +471,6 @@ export class DesktopSuggestionObserver {
     };
     try {
       stable();
-      if (!this.rootStable()) throw new SuggestionObservationError(409, '建议授权目录已变化');
       const available = this.boundReadAvailable();
       onPreparedAvailability(available);
       if (!available) throw new SuggestionObservationError(503, '原桌面建议准备失去就绪状态');
@@ -574,12 +545,11 @@ export class DesktopSuggestionObserver {
             };
           }
           stable();
-          if (!this.rootStable()) throw new SuggestionObservationError(409, '建议授权目录已变化');
           const available = this.boundReadAvailable();
           onFinalAvailability(available);
           stable();
           if (!available) throw new SuggestionObservationError(503, '原桌面建议提交失去就绪状态');
-          // Only a committed parser receipt and the final real P/root guard can start a lease.
+          // Only a committed parser receipt and the final real runtime/Trace guard can start a lease.
           if (suggestion) suggestion.expiresAt = new Date(Date.now() + 6000).toISOString();
           return {
             schemaVersion: 1,
@@ -615,7 +585,6 @@ export class DesktopSuggestionObserver {
         if (
           windowsTraceInstanceReady(instance, this.options.traceRoot ?? '') &&
           this.predictionReader?.isAvailable() &&
-          this.rootStable() &&
           (this.traceIdentity === undefined || this.traceIdentity === this.readTraceIdentity())
         ) {
           const identity = JSON.stringify(instance);
@@ -779,13 +748,7 @@ export class DesktopSuggestionObserver {
       typeof v.cwd !== 'string'
     )
       return;
-    const inside = relative(this.authorizedRoot, realpathSync(v.cwd));
-    if (
-      inside === '..' ||
-      inside.startsWith('..' + (process.platform === 'win32' ? '\\' : '/')) ||
-      isAbsolute(inside)
-    )
-      return;
+    if (!isAbsolute(v.cwd)) return;
     const time = Date.parse(v.observedAt);
     if (!Number.isFinite(time) || Math.abs(Date.now() - time) > 60_000) return;
     const id = createHash('sha256')

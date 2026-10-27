@@ -334,7 +334,13 @@ export class DesktopSuggestionWorkerClient {
         diagnostics,
         endPhase: diagnostics?.begin('prepare'),
       };
-      worker.postMessage({ kind: 'read', id, threadId, sourceTurnId, deadlineAt });
+      worker.postMessage({
+        kind: 'read',
+        id,
+        threadId,
+        sourceTurnId,
+        deadlineAt,
+      });
     });
   }
   /** One reserved logical operation; no body leaves the Worker before commit. */
@@ -391,7 +397,11 @@ export class DesktopSuggestionWorkerClient {
       pending.endPhase = pending.diagnostics?.begin('prepare');
       this.prepared = pending;
       signal?.addEventListener('abort', abort, { once: true });
-      worker.postMessage({ kind: 'prepare', ...this.fenceIdentity(pending), deadlineAt });
+      worker.postMessage({
+        kind: 'prepare',
+        ...this.fenceIdentity(pending),
+        deadlineAt,
+      });
     });
   }
   private deadlineFields(p: FencedPending) {

@@ -43,7 +43,6 @@ function recoverSource(root, fixture) {
   return new DesktopPredictionTraceReader(root).readSourcePredictions(
     fixture.sourceThreadId,
     fixture.sourceTurnId,
-    root,
     1,
     true,
   );

@@ -214,14 +214,17 @@ enum CodexDiscoveryAPI {
       return snapshot
     }
   }
-  static func connectDiscovered(_ endpoint: String, hostId: String, name: String, hostKey: String, expected: CodexDirectConnection? = nil) async throws -> (CodexHostDescriptor, Client, WorkspaceSnapshot) {
+  static func connectDiscovered(_ endpoint: String, hostId: String, name: String, hostKey: String = "", expected: CodexDirectConnection? = nil) async throws -> (CodexHostDescriptor, Client, WorkspaceSnapshot) {
     let hostKey = hostKey.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard (32...512).contains(hostKey.count), !hostKey.contains(where: \.isWhitespace) else { throw HostServiceError.message(L10n.tr("请输入这台电脑的 Host Key")) }
     // An explicit connection must tolerate a cold VPN/TLS handshake. Keep the
     // short background scan independent from this user-initiated read budget.
     var host = try await read(endpoint, fingerprint: expected?.fingerprint, target: expected?.target, discover: expected == nil, timeout: 8)
     guard host.target.hostId == hostId else { throw HostServiceError.wrongHost }
-    guard host.connectionMode == "host-key" else { throw HostServiceError.message(L10n.tr("请更新这台电脑的 Host 后使用密钥授权连接")) }
+    guard host.connectionMode == "host-key" || host.connectionMode == "automatic" else { throw HostServiceError.message(L10n.tr("请更新这台电脑的 Host 后使用密钥授权连接")) }
+    if host.connectionMode == "host-key" {
+      guard !hostKey.isEmpty else { throw HostServiceError.hostKeyRequired }
+      guard (32...512).contains(hostKey.count), !hostKey.contains(where: \.isWhitespace) else { throw HostServiceError.message(L10n.tr("请输入这台电脑的 Host Key")) }
+    }
     let identity = try EasyWorkIdentity.load()
     struct Claim: Encodable { var version = 1; var target: AgentRuntimeTarget; var publicKey: String }
     let configuration = URLSessionConfiguration.ephemeral
@@ -230,7 +233,7 @@ enum CodexDiscoveryAPI {
     defer { session.invalidateAndCancel() }
     let base = try EasyWorkPairing.localEndpoint(endpoint)
     let claimTarget = host.target
-    let request = HostService.request(base.appendingPathComponent("connection/claim"), token: hostKey, method: "POST", body: try JSONEncoder().encode(Claim(target: claimTarget, publicKey: identity.publicKey)))
+    let request = HostService.request(base.appendingPathComponent("connection/claim"), token: host.connectionMode == "host-key" ? hostKey : "", method: "POST", body: try JSONEncoder().encode(Claim(target: claimTarget, publicKey: identity.publicKey)))
     let (data, response) = try await session.data(for: request)
     if (response as? HTTPURLResponse)?.statusCode == 401 { throw HostServiceError.message(L10n.tr("Host Key 不正确，请在电脑端核对后重试")) }
     guard (response as? HTTPURLResponse)?.statusCode == 200, data.count <= 8192 else { throw HostServiceError.message(L10n.tr("无法连接这台电脑，请检查 Host 的直连访问设置")) }

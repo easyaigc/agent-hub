@@ -3,4 +3,5 @@
 <plist version="1.0"><dict>
   <key>application-identifier</key><string>com.codexmanage.ios</string>
   <key>keychain-access-groups</key><array><string>com.codexmanage.ios</string></array>
+<key>com.apple.security.application-groups</key><array><string>group.$(NOTIFICATION_APP_BUNDLE_ID).notifications</string></array>
 </dict></plist>

@@ -70,6 +70,42 @@ actor EasyWorkSessions {
     if let (_, session) = sessions.removeValue(forKey: clientId) { await session.close() }
   }
 }
+/// Wake subscriptions on actual frames, disconnects or their single deadline.
+/// Keeping the revision closes the gap between inspecting state and suspending.
+actor EasyWorkEventSignal {
+  private var revision: UInt64 = 0
+  private var waiters: [UUID: (CheckedContinuation<Void, Error>, Task<Void, Never>)] = [:]
+
+  func current() -> UInt64 { revision }
+  func signal() {
+    revision &+= 1
+    for id in Array(waiters.keys) { finish(id) }
+  }
+  private func finish(_ id: UUID, cancelled: Bool = false) {
+    guard let (continuation, timeout) = waiters.removeValue(forKey: id) else { return }
+    timeout.cancel()
+    if cancelled { continuation.resume(throwing: CancellationError()) }
+    else { continuation.resume() }
+  }
+  func wait(after observed: UInt64, for duration: Duration) async throws {
+    try Task.checkCancellation()
+    guard revision == observed, duration > .zero else { return }
+    let id = UUID()
+    try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        guard !Task.isCancelled else { continuation.resume(throwing: CancellationError()); return }
+        let timeout = Task {
+          do { try await Task.sleep(for: duration) } catch { return }
+          finish(id)
+        }
+        waiters[id] = (continuation, timeout)
+      }
+    } onCancel: {
+      Task { await self.finish(id, cancelled: true) }
+    }
+  }
+}
+
 /// Owns request correlation, encryption and recovery; transports only carry frames.
 actor EasyWorkRemoteSession {
   let target: EasyWorkTarget
@@ -85,7 +121,11 @@ actor EasyWorkRemoteSession {
   private var pendingRequestIds: Set<String> = []
   private var events: [[String: Any]] = []
   private var threadSequences: [String: Int] = [:]
+  private let eventSignal = EasyWorkEventSignal()
   private var subscriptions: [String: String] = [:]
+  // Include in-flight subscribe intents: cancellation can follow a server-side
+  // subscription but precede its response. The next reader still retires it.
+  private var subscribedThreads: Set<String> = []
   private var threadSyncs: [String: EasyWorkThreadSync] = [:]
   private var syncingThreads: Set<String> = []
   private var threadSyncOrder: [String] = []
@@ -137,6 +177,7 @@ actor EasyWorkRemoteSession {
     let previous = transport
     receiveTask?.cancel(); receiveTask = nil; transport = nil; crypto = nil; keyConfirmed = false
     threadSyncs.removeAll(); threadSyncOrder.removeAll()
+    await eventSignal.signal()
     await previous?.close()
   }
   private func connect(excluding: String? = nil) async throws {
@@ -244,6 +285,7 @@ actor EasyWorkRemoteSession {
             guard eventTarget == target else { throw HostServiceError.wrongHost }
             guard let payload = message["payload"] as? [String: Any], let threadId = payload["threadId"] as? String, let cursor = message["sequence"] as? Int, cursor >= 0 else { throw HostServiceError.invalidResponse }
             threadSequences[threadId] = max(threadSequences[threadId] ?? 0, cursor)
+            await eventSignal.signal()
             events.append(message); eventSequence += 1
             if events.count > 512 { events.removeFirst(events.count - 512) }
           }
@@ -259,6 +301,7 @@ actor EasyWorkRemoteSession {
       if !Task.isCancelled && !closed && epoch == pumpEpoch {
         lastError = (error as? URLError)?.code == .cancelled ? HostServiceError.message(error.localizedDescription) : error
         keyConfirmed = false; transport = nil; await route.close()
+        await eventSignal.signal()
       }
     }
   }
@@ -361,18 +404,30 @@ actor EasyWorkRemoteSession {
     return next.1
   }
   func pollEvents(threadId: String, after: Int) async throws -> Int {
-    let deadline = Date().addingTimeInterval(12)
+    let clock = ContinuousClock()
+    let deadline = clock.now.advanced(by: .seconds(12))
     repeat {
       try Task.checkCancellation()
+      guard !closed else { throw CancellationError() }
+      let observed = await eventSignal.current()
       if transport == nil || lastError != nil { try await connect() }
+      for previous in Array(subscribedThreads) where previous != threadId {
+        _ = try await request("thread/unsubscribe", ["threadId": previous])
+        try Task.checkCancellation()
+        subscribedThreads.remove(previous)
+        subscriptions.removeValue(forKey: previous)
+        threadSequences.removeValue(forKey: previous)
+      }
       if subscriptions[threadId] != epoch {
+        subscribedThreads.insert(threadId)
         _ = try await request("thread/subscribe", ["threadId": threadId, "afterSequence": after])
+        try Task.checkCancellation()
         subscriptions[threadId] = epoch
         threadSequences[threadId] = max(after, threadSequences[threadId] ?? 0)
       }
       if (threadSequences[threadId] ?? after) > after { break }
-      try await Task.sleep(for: .milliseconds(100))
-    } while Date() < deadline
+      try await eventSignal.wait(after: observed, for: clock.now.duration(to: deadline))
+    } while clock.now < deadline
     return threadSequences[threadId] ?? after
   }
   func activeTransportTitle() -> String { activeCandidateInfo?.transportId == "lan-wss" ? (activeCandidateInfo?.networkKind == .vpn ? "VPN" : L10n.tr("直连")) : L10n.tr("中继") }

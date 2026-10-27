@@ -622,7 +622,6 @@ test(
     const result = new DesktopPredictionTraceReader(directory).readSourcePredictions(
       f.sourceThreadId,
       f.sourceTurnId,
-      directory,
       1,
       true,
     );

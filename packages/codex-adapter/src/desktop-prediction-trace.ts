@@ -11,7 +11,7 @@ import {
   realpathSync,
   type BigIntStats,
 } from 'node:fs';
-import { dirname, isAbsolute, join, parse, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, parse, resolve } from 'node:path';
 import {
   windowsTraceSnapshot,
   windowsTraceSnapshotMany,
@@ -238,14 +238,6 @@ class TraceSnapshot {
     string,
     { root: string; threadId: string | undefined; names: string[] }
   >();
-  private cwds: {
-    path: string;
-    canonical: string;
-    stat: BigIntStats;
-    authorizedRoot: string;
-    authorizedStat: BigIntStats;
-  }[] = [];
-
   constructor(private readonly prepared = false) {
     if (
       prepared &&
@@ -311,20 +303,6 @@ class TraceSnapshot {
     this.directories.clear();
     this.nativeNodes.clear();
     this.catalogs.clear();
-    this.cwds = [];
-  }
-
-  configuredCwd(authorizedRoot: string, path: string): void {
-    const canonical = realpathSync(path);
-    const inside = relative(authorizedRoot, canonical);
-    requireValue(inside !== '..' && !/^\.\.[\\/]/.test(inside) && !isAbsolute(inside));
-    if (!this.prepared) return;
-    requireValue(realpathSync(authorizedRoot) === authorizedRoot);
-    const stat = lstatSync(canonical, { bigint: true });
-    const authorizedStat = lstatSync(authorizedRoot, { bigint: true });
-    requireValue(stat.isDirectory() && !stat.isSymbolicLink());
-    requireValue(authorizedStat.isDirectory() && !authorizedStat.isSymbolicLink());
-    this.cwds.push({ path, canonical, stat, authorizedRoot, authorizedStat });
   }
 
   closeDiscoveryPrefix(path: string): void {
@@ -358,19 +336,6 @@ class TraceSnapshot {
         JSON.stringify(this.catalog(receipt.root, receipt.threadId)) ===
           JSON.stringify(receipt.names),
       );
-    for (const receipt of this.cwds) {
-      requireValue(realpathSync(receipt.authorizedRoot) === receipt.authorizedRoot);
-      requireValue(realpathSync(receipt.path) === receipt.canonical);
-      requireValue(
-        sameNode(
-          receipt.authorizedStat,
-          lstatSync(receipt.authorizedRoot, { bigint: true }),
-          true,
-        ) && sameNode(receipt.stat, lstatSync(receipt.canonical, { bigint: true }), true),
-      );
-      const inside = relative(receipt.authorizedRoot, receipt.canonical);
-      requireValue(inside !== '..' && !/^\.\.[\\/]/.test(inside) && !isAbsolute(inside));
-    }
   }
 
   commit(): void {
@@ -1250,23 +1215,15 @@ export class DesktopPredictionTraceReader {
   readSourcePredictions(
     sourceThreadId: string,
     sourceTurnId: string,
-    authorizedRoot: string,
     notBeforeUnixMs = 0,
     latestOnly = false,
   ): DesktopPredictionTracePrediction[] | null {
-    return this.scanSourcePredictions(
-      sourceThreadId,
-      sourceTurnId,
-      authorizedRoot,
-      notBeforeUnixMs,
-      latestOnly,
-    );
+    return this.scanSourcePredictions(sourceThreadId, sourceTurnId, notBeforeUnixMs, latestOnly);
   }
 
   prepareSourcePredictions(
     sourceThreadId: string,
     sourceTurnId: string,
-    authorizedRoot: string,
     notBeforeUnixMs = 0,
     latestOnly = false,
   ): PreparedDesktopPredictionTraceRead | null {
@@ -1277,7 +1234,6 @@ export class DesktopPredictionTraceReader {
       this.scanSourcePredictions(
         sourceThreadId,
         sourceTurnId,
-        authorizedRoot,
         notBeforeUnixMs,
         latestOnly,
         capture,
@@ -1422,7 +1378,6 @@ export class DesktopPredictionTraceReader {
   private scanSourcePredictions(
     sourceThreadId: string,
     sourceTurnId: string,
-    authorizedRoot: string,
     notBeforeUnixMs: number,
     latestOnly: boolean,
     preparedSnapshot?: TraceSnapshot,
@@ -1460,7 +1415,6 @@ export class DesktopPredictionTraceReader {
             configured.thread_id === predictionThreadId &&
             typeof configured.cwd === 'string',
         );
-        snapshot.configuredCwd(authorizedRoot, configured.cwd);
         const log = snapshot.file(join(directory, 'trace.jsonl'), limits.eventLog);
         requireValue(log.length === 0 || log.at(-1) === 10);
         const indexed = snapshot.preparedLog(

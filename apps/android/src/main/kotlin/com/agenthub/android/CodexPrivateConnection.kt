@@ -27,6 +27,7 @@ import kotlin.coroutines.resumeWithException
 
 internal data class CodexPrivateAuthorization(val descriptor: CodexDescriptor, val token: String, val workspace: MobileWorkspace)
 internal data class CodexPublicSource(val target: TargetScope, val fingerprint: String, val endpoints: List<String>)
+internal class CodexHostKeyRequired : IllegalStateException("请输入这台电脑的 Host Key")
 
 /** No caller credential enters an unpaired probe. A first certificate is bound to the returned descriptor. */
 internal object CodexDiscoveryAPI {
@@ -118,13 +119,16 @@ internal object CodexDiscoveryAPI {
             it.getString("name") to addresses
         }
     }
-    suspend fun authorize(host: DiscoveredCodexHost, identity: EasyWorkIdentity, storage: NativeSessionStorage, hostKey: String, accept: (CodexDescriptor)->Unit = {}): CodexPrivateAuthorization {
+    suspend fun authorize(host: DiscoveredCodexHost, identity: EasyWorkIdentity, storage: NativeSessionStorage, hostKey: String = "", accept: (CodexDescriptor)->Unit = {}): CodexPrivateAuthorization {
         val hostKey = hostKey.trim()
-        require(hostKey.length in 32..512 && hostKey.none(Char::isWhitespace)) { "请输入这台电脑的 Host Key" }
         val endpoint = CodexEndpoints.local(host.endpoint)
         val descriptor = discoverForConnection(endpoint)
         require(descriptor.target.hostId == host.id && (host.target == null || sameScope(host.target, descriptor.target)) && (host.fingerprint == null || host.fingerprint == descriptor.fingerprint)) { "电脑身份已变化，请重新查找；原连接已保留" }
-        require(descriptor.connectionMode == "host-key") { "请更新这台电脑的 Host 后使用密钥授权连接" }
+        require(descriptor.connectionMode in listOf("automatic", "host-key")) { "请更新这台电脑的 Host 后使用密钥授权连接" }
+        if(descriptor.connectionMode == "host-key") {
+            if(hostKey.isEmpty()) throw CodexHostKeyRequired()
+            require(hostKey.length in 32..512 && hostKey.none(Char::isWhitespace)) { "请输入这台电脑的 Host Key" }
+        }
         accept(descriptor)
         val target = descriptor.target
         val claim = JSONObject().put("version", 1).put("target", encodeTarget(target)).put("publicKey", identity.publicKey)
@@ -137,7 +141,7 @@ internal object CodexDiscoveryAPI {
             if(saved==null) storage.write("codex-private-claim:$intentId",intent)
             else require(saved==intent) { "原连接申请记录不一致，未重新提交" }
         }
-        val response = request(endpoint, "connection/claim", descriptor.fingerprint, body = claim, token = hostKey, maximum = 8192)
+        val response = request(endpoint, "connection/claim", descriptor.fingerprint, body = claim, token = if(descriptor.connectionMode == "host-key") hostKey else "", maximum = 8192)
         val token = try { CodexPrivateCrypto.open(response.wire, target, identity) }
         catch (failure: Exception) { throw HostReadError("电脑凭据校验失败，原连接已保留",failure) }
         val client = MobileClient(host.id, host.name, target, endpoint, false, "desktop-runtime", false, null, true, PairedCodexConnection(target, descriptor.fingerprint, (listOf(CodexRoute(endpoint)) + descriptor.routes).distinctBy { it.endpoint }.take(32)))

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "date": "2026-10-25",
+  "features": ["F70"],
+  "status": "configuration-ready-awaiting-human-desktop-reopen",
+  "finding": "The target installed release lacked the shared-desktop environment and CODEX_SHARED_SERVER_URL. Two earlier archive attempts were explicitly rejected by the active-writer boundary. A later source-approved unified package is delivered for program update; configuration is being prepared and desktop reopening is reserved for the human user.",
+  "packageSha256": "a1dc7582467e4f987f6ecdcfa1ef85c3a5f26627b069be3e38e40b1ee5e45840",
+  "auxiliary": {
+    "samePackageCRCAndRuntimeClosure": "passed",
+    "chatActionsAndSharedRuntime": "passed",
+    "sharedEnvironmentBoundaries": {
+      "passed": 7,
+      "failed": 0
+    },
+    "physicalBuild": "passed",
+    "simulatorBuild": "passed",
+    "freshSourceESMClosureMatchesLatestPackage": "passed",
+    "fullPnpmCheck": "passed on a frozen source tree with independent dependencies and initially empty dist outputs"
+  },
+  "physical": {
+    "deviceModel": "iPhone 15 Pro Max",
+    "nativeApp": "independent acceptance bundle",
+    "completedLoadedArchive": "not-yet-run",
+    "completedLoadedDelete": "not-yet-run",
+    "debugTransport": "CoreDevice currently reports wired; Wi-Fi debugging not verified"
+  },
+  "limits": [
+    "No new Android or Windows native result",
+    "Running-turn management is outside this completed-turn task",
+    "A6 remains paused"
+  ],
+  "retainedFailures": [
+    "Initial isolated build omitted protocol schema inputs; inputs added, subsequent builds passed.",
+    "Initial workspace format scan encountered an inaccessible unrelated test fixture; the frozen-source check passed without changing that fixture.",
+    "Initial clean check lacked generated protocol output; dependency-ordered builds completed and the full check passed."
+  ],
+  "previousPackageSha256": "3d013e35b4a1abb6b95a9dd0a62a9d46f5a0432db37f0bc01cd453c5f3e64eed",
+  "deployment": {
+    "latestPackageTransfer": "completed",
+    "programInstallation": "passed: latest unified package and five ESM component closures match source",
+    "sharedPersistentConfiguration": "passed: v2 GUI environment, launcher, login LaunchAgent and Host shared URL are prepared",
+    "desktopReopen": "reserved for the human user; not executed by this task",
+    "sharedCurrentInstance": "not activated; requires original desktop to be normally reopened",
+    "hostServiceRestart": "passed; original Electron and executor process identities/start times unchanged",
+    "automaticDesktopReopen": "disabled; no pending helper action",
+    "authenticatedLANAndTailscaleHTTPS": "passed: original target identity, authenticated 200 and unauthenticated 401",
+    "traceObservation": "pending desktop reopen; current old desktop has not created the shared launcher owner record",
+    "dataPreservation": "passed: original identities/keys, 12 device bindings, drafts, original conversations and 378 submitted input intents retained; 2 earlier management rejections unchanged, 0 unknown management receipts"
+  },
+  "distributionNotes": [
+    "Final paused-state acceptance document was completed after the A1dc archive. It was separately transferred with SHA-256 e79da2213ce67bd130c1312781a9bd68ae2ad6d67030e35fa763e812c2b6094f; runtime archive remains unchanged."
+  ],
+  "mainIntegration": {
+    "scope": "Acceptance entrypoint and truthful partial evidence only; production Host and mobile behavior unchanged by this F70 slice.",
+    "physicalAcceptance": "not-yet-run; original human-controlled desktop reopen remains a prerequisite",
+    "originalPausedStateReadOnlyTest": "retained alongside the new independently gated physical entrypoint",
+    "currentTestSourceSha256": "6bcbd0a669b347607b4a70c08007108e74d7ce08df15373d79e42359d3e7531b"
+  }
+}

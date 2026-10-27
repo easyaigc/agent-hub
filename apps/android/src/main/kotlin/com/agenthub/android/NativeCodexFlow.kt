@@ -8,6 +8,7 @@ import com.agenthub.core.ReplyRecoveryRules
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,14 +24,42 @@ data class CodexFlowResult(val record: SavedOperation,val thread: MobileThread? 
 
 /** Platform storage holds source bytes; submitted snapshots never follow later draft edits. */
 class NativeDraftFiles(private val storage: NativeSessionStorage) {
-    suspend fun import(name: String,mediaType: String,bytes: ByteArray): LocalDraftFile = withContext(Dispatchers.IO) {
+    suspend fun import(name: String,mediaType: String,bytes: ByteArray): LocalDraftFile {
+      val prepared=java.util.concurrent.atomic.AtomicReference<LocalDraftFile?>()
+      return try { withContext(Dispatchers.IO) {
         require(name.isNotBlank() && name.length<=512 && mediaType.isNotBlank()) { "附件名称或类型无效" }
         require(bytes.size<=20*1024*1024) { "单个附件不能超过 20 MiB" }
         val file=CreationFile(UUID.randomUUID().toString(),name,mediaType,bytes.size.toLong(),sha(bytes))
         CodexCommandCodec.validate(file.body(),"creationFile")
+        prepared.set(LocalDraftFile(file))
         storage.write("draft-file:${file.id}",JSONObject().put("file",file.body())
             .put("bytes",android.util.Base64.encodeToString(bytes,android.util.Base64.NO_WRAP)).toString())
+        DraftAttachmentThumbnails.storeIfMissing(storage,file,bytes)
         LocalDraftFile(file)
+      } } catch(failure: Exception) {
+        withContext(NonCancellable+Dispatchers.IO) { prepared.get()?.let { runCatching { discardPrepared(it) } } }
+        throw failure
+      } catch(failure: OutOfMemoryError) {
+        withContext(NonCancellable+Dispatchers.IO) { prepared.get()?.let { runCatching { discardPrepared(it) } } }
+        throw IllegalStateException("手机内存不足，未能准备附件；原草稿已保留",failure)
+      }
+    }
+    /** Called only for a freshly prepared file that has never entered a draft or operation. */
+    internal fun discardPrepared(file: LocalDraftFile) {
+        val raw=storage.read("draft-file:${file.manifest.id}")
+        if(raw!=null)require(JSONObject(raw).getJSONObject("file").toString()==file.manifest.body().toString()) { "准备中的附件清单已变化" }
+        DraftAttachmentThumbnails.discardPrepared(storage,file.manifest)
+        storage.remove("draft-file:${file.manifest.id}")
+    }
+    suspend fun thumbnail(file: CreationFile): ByteArray? = withContext(Dispatchers.IO) {
+        if(!file.mediaType.startsWith("image/"))return@withContext null
+        val cached=DraftAttachmentThumbnails.read(storage,file)
+        if(cached.found)return@withContext cached.png
+        // Legacy large sources are never decrypted just to draw a row. The next explicit
+        // verified source read can populate their optional display cache without another read.
+        if(file.sizeBytes>DraftAttachmentThumbnails.MAX_LEGACY_SOURCE)return@withContext null
+        bytes(file)
+        DraftAttachmentThumbnails.read(storage,file).png
     }
     suspend fun bytes(file: CreationFile): ByteArray = withContext(Dispatchers.IO) {
         val saved=JSONObject(storage.read("draft-file:${file.id}") ?: error("原附件不存在，未提交"))
@@ -38,6 +67,7 @@ class NativeDraftFiles(private val storage: NativeSessionStorage) {
         require(original.toString()==file.body().toString()) { "原附件清单已改变" }
         android.util.Base64.decode(saved.getString("bytes"),android.util.Base64.NO_WRAP).also {
             require(it.size.toLong()==file.sizeBytes && sha(it)==file.sha256) { "原附件内容已改变，未提交" }
+            DraftAttachmentThumbnails.storeIfMissing(storage,file,it)
         }
     }
     companion object { private fun sha(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) } }
@@ -323,7 +353,13 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
     suspend fun detach(client: MobileClient,record: SavedOperation): SavedOperation {
         // Local persistence releases waiting even when the Host cannot acknowledge it.
         val detached=journal.detach(record.target,record.id)
-        if(record.kind=="creation") try { val result=commands.detachCreation(client,record.id); return journal.observed(record.target,record.id,result.phase,encodeCreation(result),result.error) } catch(_: Exception) { }
+        if(record.kind=="creation") try {
+            val result=commands.detachCreation(client,record.id)
+            return journal.observed(record.target,record.id,result.phase,encodeCreation(result),result.error)
+        } catch(cancel: CancellationException) { throw cancel }
+        catch(failure: Exception) {
+            return journal.detachedCreationFailure(detached,failure.message ?: "结束等待通知未确认，原操作仍保留")
+        }
         return detached
     }
 }

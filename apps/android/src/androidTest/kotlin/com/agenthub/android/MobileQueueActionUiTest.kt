@@ -1,6 +1,9 @@
 package com.agenthub.android
 
 import android.graphics.Bitmap
+import androidx.activity.compose.setContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -17,11 +20,29 @@ import java.util.concurrent.TimeUnit
 
 /** Actual native UI/session/HTTP with only synthetic, original client queue items. */
 class MobileQueueActionUiTest {
-    @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
-    @get:Rule(order=1) val ui=createAndroidComposeRule<MainActivity>()
-    private val session get()=ui.activity.session
+    @get:Rule(order=0) val diagnostics: org.junit.rules.TestRule=NativeTestDiagnostics()
+    @get:Rule(order=1) val foreground: org.junit.rules.TestRule=NativeTestForeground()
+    @get:Rule(order=2) val ui=createAndroidComposeRule<MainActivity>()
+    private lateinit var isolated: MobileSession
+    private val session get()=isolated
+    private var originalDraftMetadata: Map<String,String?> = emptyMap()
     private fun main(block: suspend ()->Unit)=runBlocking { withContext(Dispatchers.Main) { block() } }
-    @Before fun reset() { ui.runOnIdle { session.resetAcceptance() } }
+    @Before fun reset() {
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        require(context.packageName=="com.easyai.agenthub.android.acceptance")
+        ui.waitUntil(30_000) { !ui.activity.session.restoring }
+        ui.runOnIdle {
+            ui.activity.readNetworkMonitor.stop();ui.activity.session.discovery?.stop();ui.activity.session.easyWorkDiscovery?.stop();ui.activity.session.leaveForeground()
+            val prior=NativeSessionStorage(context).metadata();originalDraftMetadata=listOf("drafts","draftFiles","draftVersions").associateWith { prior?.opt(it)?.toString() }
+            isolated=MobileSession(NativeSessionStorage(context,"P4-queue-actions-"+UUID.randomUUID()));isolated.resetAcceptance()
+            ui.activity.setContent { AgentHubApp(isolated) { } }
+        }
+    }
+    @After fun preserveDefaultRealDraft() {
+        if(::isolated.isInitialized)main { isolated.leaveForeground() }
+        val current=NativeSessionStorage(InstrumentationRegistry.getInstrumentation().targetContext).metadata()
+        for((key,value)in originalDraftMetadata)assertEquals("Queue controls preserve default $key",value,current?.opt(key)?.toString())
+    }
     private fun connect(f: QueueActionFixture,sharing: Boolean=true) {
         main { session.connect("queue actions fixture",f.server.endpoint,"") }
         ui.waitUntil(10_000) { session.hasClient&&!session.loading }
@@ -33,16 +54,22 @@ class MobileQueueActionUiTest {
         main { session.loadHistory() };ui.waitUntil(10_000) { !session.historyLoading&&session.messages.singleOrNull()?.text==f.marker }
     }
     private fun actions(f: QueueActionFixture)=f.server.requests.filter { it.method=="POST" }
-    private fun shot(name: String) {
-        val i=InstrumentationRegistry.getInstrumentation();ui.waitForIdle();i.waitForIdleSync()
-        val frame=CountDownLatch(1);ui.runOnUiThread { ui.activity.window.decorView.postOnAnimation { ui.activity.window.decorView.postOnAnimation { frame.countDown() } } }
-        assertTrue(frame.await(5,TimeUnit.SECONDS));i.uiAutomation.waitForIdle(300,5_000)
-        assertEquals(i.targetContext.packageName,i.uiAutomation.rootInActiveWindow?.packageName?.toString())
-        val run=InstrumentationRegistry.getArguments().getString("managementRunId") ?: UUID.randomUUID().toString()
+    private fun folder(): File {
+        val run=InstrumentationRegistry.getArguments().getString("managementRunId")?:"queue-actions-local"
         require(run.matches(Regex("[a-zA-Z0-9_-]{1,80}")))
-        val folder=File(i.targetContext.filesDir,"acceptance/P4-queue-controls/$run").apply { mkdirs() }
-        val image=i.uiAutomation.takeScreenshot()
-        try { File(folder,"$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG,100,it) } } finally { image.recycle() }
+        return File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir,"acceptance/P4-queue-controls/$run").apply { mkdirs() }
+    }
+    private fun shot(name: String) {
+        ui.waitForIdle();val i=InstrumentationRegistry.getInstrumentation();i.waitForIdleSync();val window=ui.activity.window
+        val frames=CountDownLatch(1);i.runOnMainSync { window.decorView.postOnAnimation { window.decorView.postOnAnimation { frames.countDown() } } };assertTrue(frames.await(5,TimeUnit.SECONDS))
+        var bitmap: Bitmap?=null;i.runOnMainSync { assertTrue(window.decorView.hasWindowFocus());assertEquals(i.targetContext.packageName,window.decorView.context.packageName);bitmap=Bitmap.createBitmap(window.decorView.width,window.decorView.height,Bitmap.Config.ARGB_8888) }
+        val image=checkNotNull(bitmap);val copied=CountDownLatch(1);var result=-1
+        try {
+            i.runOnMainSync { android.view.PixelCopy.request(window,image,{ result=it;copied.countDown() },android.os.Handler(android.os.Looper.getMainLooper())) }
+            assertTrue(copied.await(10,TimeUnit.SECONDS));assertEquals(android.view.PixelCopy.SUCCESS,result)
+            File(folder(),"$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG,100,it) }
+            File(folder(),"$name-window.json").writeText(JSONObject().put("method","PixelCopy.owned-main-window").put("package",i.targetContext.packageName).put("pixelCopyResult",result).put("isolatedStorage",true).toString())
+        }finally{image.recycle()}
     }
     @Test fun independentOriginalActionsDeduplicateWithoutLockingOrClearingTheDraft() {
         QueueActionFixture().use { f ->
@@ -151,6 +178,37 @@ class MobileQueueActionUiTest {
             f.capability=false;main { session.refresh() };ui.waitUntil(5_000) { !session.loading&&!session.historyLoading&&!session.supportsQueueExecution }
             ui.onNodeWithTag("execute-queued-q1").assertDoesNotExist();ui.onNodeWithTag("cancel-queued-q1").assertIsEnabled()
             assertTrue(actions(f).isEmpty());main { session.leaveForeground() }
+        }
+    }
+    @Test fun sdkEdgeVerticalQueueScrollReachesAndCancelsOnlyTheLastOriginal() {
+        QueueActionFixture().use { f ->
+            connect(f,sharing=false)
+            val original=session.queuedReplies.map { it.operationId };assertEquals(12,original.size)
+            ui.runOnIdle { session.text="Independent SDK queue gesture draft" }
+            val viewport=ui.onNodeWithTag("queued-commands")
+            fun range()=viewport.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange]
+            fun position()=range().value()
+            assertEquals(0f,position(),1f);shot("queue-before-sdk-scroll")
+            val density=ui.activity.resources.displayMetrics.density
+            val edgeX=viewport.fetchSemanticsNode().boundsInRoot.left+2f
+            val productLeft=ui.onNodeWithTag("product-surface").fetchSemanticsNode().boundsInRoot.left
+            assertTrue("Use the actual drawer edge band",edgeX>=productLeft&&edgeX-productLeft<24f*density)
+            repeat(12) {
+                if(position()<range().maxValue()-1f)viewport.performTouchInput { swipe(Offset(2f,height*.85f),Offset(2f,height*.15f),400) }
+            }
+            ui.waitUntil(10_000) { position()>=range().maxValue()-1f }
+            ui.onNodeWithTag("sidebar-backdrop").assertDoesNotExist()
+            ui.onNodeWithTag("queued-number-q10").assertTextEquals("12")
+            ui.onNodeWithTag("cancel-queued-q10").assertIsDisplayed();shot("queue-sdk-last-original")
+            assertEquals(original,session.queuedReplies.map { it.operationId });assertTrue(actions(f).isEmpty())
+            ui.onNodeWithTag("cancel-queued-q10").performClick()
+            ui.waitUntil(10_000) { actions(f).size==1&&!session.historyLoading&&session.queuedReplies.none { it.operationId=="q10" } }
+            val command=actions(f).single();assertEquals("/v1/queue/cancel",command.path)
+            val body=JSONObject(String(command.body,Charsets.UTF_8));assertEquals("q10",body.getString("clientMessageId"));assertEquals("original-thread",body.getString("threadId"))
+            assertEquals(original.dropLast(1),session.queuedReplies.map { it.operationId })
+            assertEquals("Independent SDK queue gesture draft",session.text);assertNull(session.aiSharingRequest);assertTrue(session.operationRecords.isEmpty())
+            assertTrue(actions(f).none { it.path=="/v1/replies" });shot("queue-last-only-cancelled")
+            File(folder(),"queue-sdk-pointer-proof.json").writeText(JSONObject().put("originalCount",12).put("sdkVerticalSwipes",true).put("edgeBandPx",24f*density).put("edgeDownX",edgeX).put("productLeft",productLeft).put("cancelledOriginal","q10").put("syntheticQueueCommands",1).put("newInputs",0).toString())
         }
     }
 }

@@ -14,7 +14,6 @@ type DiagnosticReason = Parameters<ReturnType<typeof createWindowsTraceDiagnosti
 
 export type SuggestionWorkerScope = {
   directory: string;
-  root: string;
   traceRoot?: string | undefined;
   target: RuntimeTarget;
 };

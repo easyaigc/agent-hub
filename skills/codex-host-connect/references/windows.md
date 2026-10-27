@@ -8,6 +8,8 @@ Windows 同样默认完整接入自动发现和首次密钥授权连接，按 [H
 
 ## 预检与启动
 
+macOS 默认完整接入使用的 v2 单实例共享服务安装路径，目前未提供 Windows 安装适配；不要执行 macOS 的 launchctl 工具或把 `CODEX_SHARED_SERVER_URL` 指向另一台电脑。已加载聊天的归档／删除须按本机官方服务实际结果核对，writer 拒绝属于未解决限制，不能以已有聊天回复或未加载管理成功宣称全功能接入。继续完成 Windows 当前全部适用配置与验收，并在交付中单列共享管理限制；源码实现与其他电脑的通过记录不能代替 Windows 验收。
+
 在 Windows 原生 PowerShell/Node 环境执行，使用 Windows 原桌面的用户身份。[官方 Windows 说明](https://learn.chatgpt.com/docs/windows/windows-app) 区分原生和 WSL 环境，不用 WSL 的 Linux HOME 代替桌面目录。
 
 定位当前 Skill 的 `assets/codex-manage`，复用或安装 Node.js 24.x、pnpm 11.19.0，保持原 Codex 正常启动并登录。已编译程序无需重新安装依赖或构建：
@@ -24,7 +26,7 @@ pnpm service:windows preflight
 
 ```powershell
 $env:HOST_AGENT_NAME = '办公 Windows'
-$env:HOST_AGENT_ROOT = 'C:\path\to\authorized\projects'
+$env:HOST_AGENT_ROOT = 'C:\path\to\default\workspace'
 pnpm service:windows start
 pnpm service:windows status
 ```

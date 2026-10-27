@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 private struct State: Codable { let operation: String; let draft: String }
 private struct Page: Codable { let revision: Int; let body: String }
@@ -13,6 +14,78 @@ private final class Metrics: @unchecked Sendable {
 @main struct PersistenceSmoke {
   static func wait(_ semaphore: DispatchSemaphore, seconds: Double = 10) {
     precondition(semaphore.wait(timeout: .now() + seconds) == .success, "Persistence boundary timed out")
+  }
+  static func verifyCloneFailures(_ directory: URL) throws {
+    func writer(_ name: String, clone: @escaping @Sendable (URL, URL) -> Bool) throws -> SessionPersistenceWriter<State, Page> {
+      let root = directory.appendingPathComponent(name, isDirectory: true)
+      try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+      let value = SessionPersistenceWriter<State, Page>(legacyURL: root.appendingPathComponent("session.json"),
+        encodeState: { try JSONEncoder().encode($0) }, decodeState: { try JSONDecoder().decode(State.self, from: $0) },
+        encodePage: { try JSONEncoder().encode($0) }, decodePage: { try JSONDecoder().decode(Page.self, from: $0) }, cloneFile: clone)
+      _ = try value.loadInitialState()
+      return value
+    }
+    func save(_ writer: SessionPersistenceWriter<State, Page>, _ operation: String, succeeds: Bool = true) {
+      let done = DispatchSemaphore(value: 0)
+      writer.write(SessionPersistenceSnapshot(state: State(operation: operation, draft: "same durable fence"), histories: [:])) { result, _ in
+        switch result {
+        case .success: precondition(succeeds)
+        case .failure: precondition(!succeeds)
+        }
+        done.signal()
+      }
+      wait(done)
+    }
+    func operation(_ name: String, _ file: String) throws -> String {
+      try JSONDecoder().decode(State.self, from: Data(contentsOf: directory.appendingPathComponent(name).appendingPathComponent(file))).operation
+    }
+    func expectOperation(_ name: String, _ file: String, _ expected: String, _ message: String = "Unexpected generation") throws {
+      let actual = try operation(name, file)
+      precondition(actual == expected, message)
+    }
+    let primary = "session-state-v1.json", backup = "session-state-v1.backup.json", previous = "session-state-v1.previous.json"
+    let unsupported = try writer("unsupported-clone") { _, _ in false }
+    for op in ["A", "B", "C"] { save(unsupported, op) }
+    try expectOperation("unsupported-clone", primary, "C")
+    try expectOperation("unsupported-clone", backup, "B")
+    try expectOperation("unsupported-clone", previous, "A")
+
+    let primaryChanged = try writer("changed-primary-clone") { source, destination in
+      if source.lastPathComponent == primary {
+        try? Data("changed between clone and verification".utf8).write(to: destination)
+        return true
+      }
+      return Darwin.clonefile(source.path, destination.path, UInt32(CLONE_NOFOLLOW)) == 0
+    }
+    for op in ["A", "B", "C"] { save(primaryChanged, op) }
+    try expectOperation("changed-primary-clone", backup, "B", "Changed clone displaced authenticated in-memory state")
+    try expectOperation("changed-primary-clone", previous, "A")
+
+    let backupChanged = try writer("changed-backup-clone") { source, destination in
+      if source.lastPathComponent == backup {
+        try? Data("unauthenticated source".utf8).write(to: source)
+        try? Data("unauthenticated clone".utf8).write(to: destination)
+        return true
+      }
+      return Darwin.clonefile(source.path, destination.path, UInt32(CLONE_NOFOLLOW)) == 0
+    }
+    let preserved = try JSONEncoder().encode(State(operation: "preserved-previous", draft: "keep"))
+    try preserved.write(to: directory.appendingPathComponent("changed-backup-clone").appendingPathComponent(previous))
+    for op in ["A", "B", "C"] { save(backupChanged, op) }
+    try expectOperation("changed-backup-clone", previous, "preserved-previous", "Corrupt clone replaced previous")
+
+    let publication = try writer("failed-publication") {
+      Darwin.clonefile($0.path, $1.path, UInt32(CLONE_NOFOLLOW)) == 0
+    }
+    save(publication, "A"); save(publication, "B")
+    let blockedDestination = directory.appendingPathComponent("failed-publication").appendingPathComponent(previous)
+    try FileManager.default.createDirectory(at: blockedDestination, withIntermediateDirectories: false)
+    save(publication, "must-fail", succeeds: false)
+    try expectOperation("failed-publication", primary, "B", "Failed publication changed the durable primary")
+    try expectOperation("failed-publication", backup, "A")
+    try FileManager.default.removeItem(at: blockedDestination)
+    save(publication, "C")
+    try expectOperation("failed-publication", primary, "C")
   }
   static func main() throws {
     let directory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
@@ -131,7 +204,9 @@ private final class Metrics: @unchecked Sendable {
     precondition(recoveredPages["missed"]?.revision == 1)
     let otherEpoch = try recovering.recoverUnindexedHistory(namespace: "other", indexed: [], key: { $0.body })
     precondition(otherEpoch.isEmpty, "Another cache epoch was imported")
-    let denied = directory.appendingPathComponent("unreadable-directory", isDirectory: true)
+    let denied = CommandLine.arguments.count > 2
+      ? URL(fileURLWithPath: CommandLine.arguments[2], isDirectory: true)
+      : directory.appendingPathComponent("unreadable-directory", isDirectory: true)
     let deniedHistory = denied.appendingPathComponent("History-v1", isDirectory: true)
     try FileManager.default.createDirectory(at: deniedHistory, withIntermediateDirectories: true)
     try Data("preserved".utf8).write(to: deniedHistory.appendingPathComponent("page.json"))
@@ -149,6 +224,39 @@ private final class Metrics: @unchecked Sendable {
     }
     wait(deniedSave)
     precondition(!FileManager.default.fileExists(atPath: denied.appendingPathComponent("session-state-v1.json").path))
-    print("{\"suite\":\"session-persistence-boundary\",\"passed\":10,\"failed\":0,\"historyBytes\":109051904,\"criticalWriteMS\":\(criticalMS),\"coalescedUpdates\":80,\"historyEncodes\":\(metrics.encodes),\"physicalPhoneVerified\":false}")
+    let backupDirectory = directory.appendingPathComponent("backup-validation", isDirectory: true)
+    try FileManager.default.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
+    let decodes = Metrics()
+    let cached = SessionPersistenceWriter<State, Page>(legacyURL: backupDirectory.appendingPathComponent("session.json"),
+      encodeState: { try JSONEncoder().encode($0) }, decodeState: { bytes in decodes.encoded(); return try JSONDecoder().decode(State.self, from: bytes) },
+      encodePage: { try JSONEncoder().encode($0) }, decodePage: { try JSONDecoder().decode(Page.self, from: $0) })
+    _ = try cached.loadInitialState()
+    func saveCheckpoint(_ operation: String) {
+      let done = DispatchSemaphore(value: 0)
+      cached.write(SessionPersistenceSnapshot(state: State(operation: operation, draft: "keep"), histories: [:])) { result, _ in
+        precondition((try? result.get()) != nil); done.signal()
+      }
+      wait(done)
+    }
+    for index in 0..<20 { saveCheckpoint("checkpoint-\(index)") }
+    precondition(decodes.encodes == 20, "Identical authenticated backup bytes were repeatedly decoded")
+    let backup = backupDirectory.appendingPathComponent("session-state-v1.backup.json")
+    let previous = backupDirectory.appendingPathComponent("session-state-v1.previous.json")
+    let external = try JSONEncoder().encode(State(operation: "external-valid", draft: "backup"))
+    try external.write(to: backup, options: .atomic)
+    saveCheckpoint("changed-backup")
+    let changedPrevious = try Data(contentsOf: previous)
+    precondition(changedPrevious == external, "Changed backup bytes did not invalidate validation cache")
+    let corrupt = Data(repeating: 0x78, count: external.count)
+    try corrupt.write(to: backup, options: .atomic)
+    saveCheckpoint("corrupt-backup")
+    let protectedPrevious = try Data(contentsOf: previous)
+    precondition(protectedPrevious == external, "Invalid backup replaced the known-good previous generation")
+    try corrupt.write(to: backupDirectory.appendingPathComponent("session-state-v1.json"), options: .atomic)
+    try corrupt.write(to: backup, options: .atomic)
+    let recoveredPrevious = try cached.loadInitialState()
+    precondition(recoveredPrevious?.operation == "external-valid", "Previous generation could not recover after backup corruption")
+    try verifyCloneFailures(directory)
+    print("{\"suite\":\"session-persistence-boundary\",\"passed\":15,\"failed\":0,\"historyBytes\":109051904,\"criticalWriteMS\":\(criticalMS),\"coalescedUpdates\":80,\"historyEncodes\":\(metrics.encodes),\"unchangedBackupCheckpoints\":20,\"checkpointDecodeCount\":20,\"physicalPhoneVerified\":false}")
   }
 }

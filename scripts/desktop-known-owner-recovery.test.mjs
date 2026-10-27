@@ -313,6 +313,138 @@ async function fixture(t, body) {
   }
 }
 
+test('terminal reset requires the exact original input, tip and inactive runtime', async (t) =>
+  fixture(t, async (f) => {
+    const id = randomUUID();
+    const running = state(id, 'tip', 'inProgress', 'running');
+    running.latestTurnStartMessageId = 'input';
+    await f.seed(id, 'owner-A', running);
+    const terminal = structuredClone(running);
+    terminal.threadRuntimeStatus = { type: 'idle' };
+    terminal.turns[0].status = 'interrupted';
+    const missingInput = structuredClone(terminal);
+    delete missingInput.latestTurnStartMessageId;
+    const differentTip = structuredClone(terminal);
+    differentTip.turns[0].turnId = 'another-tip';
+    const unfinishedAncestor = structuredClone(terminal);
+    unfinishedAncestor.turns.unshift(state(id, 'ancestor', 'inProgress', 'other work').turns[0]);
+    for (const candidate of [
+      missingInput,
+      differentTip,
+      unfinishedAncestor,
+      { ...terminal, latestTurnStartMessageId: 'other-input' },
+      { ...terminal, threadRuntimeStatus: { type: 'active' } },
+      { ...terminal, threadRuntimeStatus: { type: 'notLoaded' } },
+    ]) {
+      f.snapshot(id, 'owner-A', candidate, {
+        params: {
+          hostId: 'local',
+          conversationId: id,
+          change: { type: 'snapshot', revision: 2, conversationState: candidate },
+        },
+      });
+      await f.flush();
+      assert.equal(f.rows(id).state, 'running');
+      assert.equal(f.rows(id).turnId, 'tip');
+      assert.equal(f.ipc.hasOwner(id), true);
+    }
+  }));
+
+for (const outcome of ['interrupted', 'completed', 'failed']) {
+  test(`same input/turn ${outcome} survives a revision reset and late running stream`, async (t) =>
+    fixture(t, async (f) => {
+      const id = randomUUID();
+      const running = state(id, 'same-turn', 'inProgress', 'before stop');
+      running.latestTurnStartMessageId = 'same-input';
+      running.turns[0].items.push({
+        id: 'unfinished-tool',
+        type: 'commandExecution',
+        status: 'inProgress',
+        command: 'fixture',
+      });
+      await f.seed(id, 'owner-A', running);
+      const oldRevision = f.ipc.states.get(id).revision;
+      const terminal = structuredClone(running);
+      terminal.threadRuntimeStatus = { type: 'idle' };
+      terminal.turns[0].status = outcome;
+      // Match the real desktop's paged canonical history, including a tool
+      // whose individual status has not received its own completion patch.
+      terminal.turnHistory = {
+        kind: 'canonical',
+        history: {
+          entitiesByKey: { tip: terminal.turns[0] },
+          islands: [{ entries: [{ value: 'tip' }] }],
+        },
+      };
+      terminal.turns = [];
+      const publish = (value, revision, owner = 'owner-A') =>
+        f.snapshot(id, owner, value, {
+          params: {
+            hostId: 'local',
+            conversationId: id,
+            change: { type: 'snapshot', revision, conversationState: value },
+          },
+        });
+      publish(terminal, 2, 'untrusted');
+      await f.flush();
+      assert.equal(f.rows(id).state, 'running', 'A foreign source is never terminal evidence');
+      // Foreign-source discovery may have refreshed the still-running owner.
+      const retiredRevision = f.ipc.states.get(id).revision;
+      publish(terminal, 2);
+      await f.flush();
+      await f.wait(() => f.rows(id).lastTurnStatus === outcome, 'Terminal reset must converge');
+      assert.equal(f.rows(id).turnId, null);
+      assert.equal(f.rows(id).state, outcome === 'failed' ? 'failed' : 'idle');
+      assert.equal(f.ipc.hasOwner(id), true);
+      await f.wait(
+        () => f.rows(id).messages.find((m) => m.id === 'unfinished-tool')?.status === outcome,
+        'Tool progress must finish with its original turn',
+      );
+      // A late high-revision snapshot and its patch chain cannot resurrect it.
+      publish(running, retiredRevision + 10);
+      const patch = (baseRevision, revision, patches) =>
+        f.snapshot(id, 'owner-A', running, {
+          params: {
+            hostId: 'local',
+            conversationId: id,
+            change: { type: 'patches', baseRevision, revision, patches },
+          },
+        });
+      patch(retiredRevision, retiredRevision + 1, []);
+      patch(retiredRevision + 1, retiredRevision + 2, []);
+      patch(2, 3, [
+        { op: 'replace', path: ['threadRuntimeStatus'], value: { type: 'active' } },
+        {
+          op: 'replace',
+          path: ['turnHistory', 'history', 'entitiesByKey', 'tip', 'status'],
+          value: 'inProgress',
+        },
+      ]);
+      await f.flush();
+      assert.equal(f.ipc.hasOwner(id), true, 'Retired patches do not revoke the current owner');
+      assert.equal(f.ipc.states.get(id).revision, 2);
+      assert.equal(f.rows(id).turnId, null);
+      const batch = await f.session.poll(0, '', new AbortController().signal, id);
+      assert.equal(batch.events.at(-1).snapshot.runtime.turnId, null);
+      assert.equal(batch.events.at(-1).snapshot.thread.lastTurnStatus, outcome);
+      assert(oldRevision > 2);
+      const next = structuredClone(terminal);
+      next.latestTurnStartMessageId = 'next-input';
+      next.threadRuntimeStatus = { type: 'active' };
+      next.turns = [
+        ...Object.values(terminal.turnHistory.history.entitiesByKey),
+        state(id, 'next-turn', 'inProgress', 'new work').turns[0],
+      ];
+      delete next.turnHistory;
+      publish(next, 1);
+      await f.flush();
+      assert.equal(f.rows(id).turnId, 'next-turn', 'An actual new input can run normally');
+      publish(running, retiredRevision + 20);
+      await f.flush();
+      assert.equal(f.rows(id).turnId, 'next-turn');
+    }));
+}
+
 test(
   'loaded owner A transfers to B with notifications disabled; fresh discovery coalesces and messages finish',
   { concurrency: false },

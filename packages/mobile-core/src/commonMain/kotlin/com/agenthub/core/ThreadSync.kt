@@ -98,7 +98,8 @@ object ThreadSyncRules {
         val ordered = head.map { version ->
             val message = resolved.getValue(version.id)
             require(version.id in changedIds || oldVersions[version.id]?.hash == version.hash)
-            version.wire["textLength"]?.takeUnless { it is JsonNull }?.let { length ->
+            val verifiedUnchanged = !reset && version.id !in changedIds && oldVersions[version.id] == version
+            version.wire["textLength"]?.takeUnless { it is JsonNull || verifiedUnchanged }?.let { length ->
                 val parts = message.getValue("content").jsonArray
                 require(parts.size == 1)
                 val part = parts.single().jsonObject

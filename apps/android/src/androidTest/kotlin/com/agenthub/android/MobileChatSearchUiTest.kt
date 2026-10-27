@@ -1,6 +1,7 @@
 package com.agenthub.android
 
 import android.graphics.Bitmap
+import androidx.activity.compose.setContent
 import androidx.activity.findViewTreeOnBackPressedDispatcherOwner
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -30,13 +31,29 @@ class MobileChatSearchUiTest {
     private val target=TargetScope("codex",null,null,"search-ui","workspace","runtime")
     private val longText="original start "+"0123456789 中文🚀 ".repeat(4500)+" LONG_NEEDLE original end"
     private val activity: MainActivity get() { var value: MainActivity?=null;ui.activityRule.scenario.onActivity { value=it };return checkNotNull(value) }
-    private val session get()=activity.session
+    private lateinit var isolated: MobileSession
+    private val session get()=isolated
+    private var originalDraftMetadata: Map<String,String?> = emptyMap()
     private fun main(block: suspend ()->Unit)=runBlocking { withContext(Dispatchers.Main) { block() } }
-    @Before fun fresh() { ui.runOnIdle { session.resetAcceptance() } }
+    @Before fun fresh() {
+        require(InstrumentationRegistry.getInstrumentation().targetContext.packageName=="com.easyai.agenthub.android.acceptance")
+        ui.waitUntil(30_000) { !activity.session.restoring }
+        ui.runOnIdle {
+            activity.readNetworkMonitor.stop();activity.session.discovery?.stop();activity.session.easyWorkDiscovery?.stop();activity.session.leaveForeground()
+            val context=InstrumentationRegistry.getInstrumentation().targetContext;val prior=NativeSessionStorage(context).metadata()
+            originalDraftMetadata=listOf("drafts","draftFiles","draftVersions").associateWith { prior?.opt(it)?.toString() }
+            isolated=MobileSession(NativeSessionStorage(context,"P3-search-ui-"+UUID.randomUUID()));isolated.resetAcceptance()
+            activity.setContent { AgentHubApp(isolated) { } }
+        }
+    }
     @After fun finish() {
         releases.forEach { it.countDown() }
         try { fixtures.forEach { server -> assertTrue("Search UI dispatches GET only",server.requests.all { it.method=="GET" }) } }
-        finally { ui.runOnIdle { session.leaveForeground() };fixtures.forEach { it.close() } }
+        finally {
+            if(::isolated.isInitialized)ui.runOnIdle { session.leaveForeground() };fixtures.forEach { it.close() }
+            val current=NativeSessionStorage(InstrumentationRegistry.getInstrumentation().targetContext).metadata()
+            for((key,value)in originalDraftMetadata)assertEquals("Synthetic search UI cannot replace default real draft metadata: $key",value,current?.opt(key)?.toString())
+        }
     }
     private fun message(index: Int): JSONObject {
         val result=JSONObject().put("id","m$index").put("role","assistant").put("text",if(index==79)"CACHE_NEEDLE latest original" else "original message $index")
@@ -101,8 +118,27 @@ class MobileChatSearchUiTest {
         val run=InstrumentationRegistry.getArguments().getString("searchRunId") ?: UUID.randomUUID().toString()
         require(run.matches(Regex("[a-zA-Z0-9_-]{1,80}")))
         val folder=File(instrumentation.targetContext.filesDir,"acceptance/P3-search/$run").apply { mkdirs() }
-        val image=instrumentation.uiAutomation.takeScreenshot()
-        try { File(folder,"$name.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG,100,it) } } finally { image.recycle() }
+        var window: android.view.Window?=null
+        instrumentation.runOnMainSync { if(activity.window.decorView.hasWindowFocus())window=activity.window }
+        if(window==null)Espresso.onView(isRoot()).inRoot(isDialog()).check { view,error ->
+            if(error!=null)throw error
+            assertEquals(instrumentation.targetContext.packageName,view.context.packageName)
+            fun find(v: android.view.View) {
+                if(v is androidx.compose.ui.window.DialogWindowProvider)window=v.window
+                if(v is android.view.ViewGroup)for(index in 0 until v.childCount)find(v.getChildAt(index))
+            }
+            find(view.rootView);assertNotNull(window);assertTrue(window!!.decorView.rootView===view.rootView)
+        }
+        val owned=checkNotNull(window);var image: Bitmap?=null
+        instrumentation.runOnMainSync { assertTrue(owned.decorView.hasWindowFocus());image=Bitmap.createBitmap(owned.decorView.width,owned.decorView.height,Bitmap.Config.ARGB_8888) }
+        val bitmap=checkNotNull(image);val copied=CountDownLatch(1);var result=-1
+        try {
+            instrumentation.runOnMainSync { android.view.PixelCopy.request(owned,bitmap,{ result=it;copied.countDown() },android.os.Handler(android.os.Looper.getMainLooper())) }
+            assertTrue(copied.await(10,TimeUnit.SECONDS));assertEquals(android.view.PixelCopy.SUCCESS,result)
+            File(folder,"$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+            File(folder,"$name-window.json").writeText(JSONObject().put("method","PixelCopy.owned-focused-window").put("window",if(owned===activity.window)"main" else "dialog").put("package",instrumentation.targetContext.packageName).put("pixelCopyResult",result).put("isolatedStorage",true).toString())
+        }finally{bitmap.recycle()}
+
     }
     @Test fun completeHistoryToolAndCompactionHitsJumpOnlyAfterNativeSheetDismissal() {
         connect();search("TOOL_NEEDLE");result("m0")

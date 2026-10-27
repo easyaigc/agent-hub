@@ -4,7 +4,15 @@ import MobileCore
 
 @MainActor
 final class SessionStore: ObservableObject {
-  @Published var saved = SavedSession()
+  // A Published getter copies this large value, including all cache dictionaries,
+  // even when a view only reads one member. Keep mutation notifications while
+  // allowing ordinary stored-property reads and immutable persistence snapshots.
+  // BEGIN: saved-state-publication
+  private var updatingCursorMetadata = false
+  var saved = SavedSession() {
+    willSet { if !updatingCursorMetadata { objectWillChange.send() } }
+  }
+  // END: saved-state-publication
   @Published private(set) var managementBusy = false
   private var managementRevisions: [String: UUID] = [:]
   @Published private(set) var localRecoveryRequired = false
@@ -36,8 +44,15 @@ final class SessionStore: ObservableObject {
   @Published private var stoppingKeys: Set<String> = []
   @Published private var transfers: [String: String] = [:]
   @Published private var imports: [String: Int] = [:]
+  private var localImportJobs: Set<String> = []
+  private var localImportTargets: [String: AttachmentDraftDestination] = [:]
+  private var localImportCancellations: [String: () -> Void] = [:]
+  private var recoveringAttachmentKeys: Set<String> = []
+  private var completedLocalImportJobs: [String] = []
+  private var attachmentSlots: [String: Int] = [:]
+  private var recoveredLocalAttachments = false
   @Published private var detachingCreationKeys: Set<String> = []
-  @Published private var answeringApprovals: Set<String> = []
+  @Published private var answeringApprovals: [UUID: ApprovalAnswerFlight] = [:]
   @Published private var queueActionOwners: [String: UUID] = [:]
   #if DEBUG
   @Published private var devQueueActionTrace = "none"
@@ -69,7 +84,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   private var replyRecoveryGeneration: UUID?
   private var replyRecoveryHostId: String?
   private var lastSnapshotAt: [String: Double] = [:]
-  private struct ConversationSyncIssue { var message: String; var historyFresh = false; var liveWindow = false }
+  private struct ConversationSyncIssue: Equatable { var message: String; var historyFresh = false; var liveWindow = false }
   @Published private var conversationSyncFailures: [String: ConversationSyncIssue] = [:]
   private var historySyncChecks: [String: String] = [:]
   var conversationSyncFailure: String? {
@@ -601,9 +616,9 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard pendingConnection == nil else { return "pending-connection" }
     guard selectedThreadId != nil else { return "no-thread" }
     guard let workspace = saved.workspaces[host.id] else { return "no-workspace" }
-    guard workspace.connectionMode == "desktop-runtime" else { return "runtime-mode" }
-    guard (workspace.capabilities?.contains("desktop:suggestions:native-version:v1") == true || workspace.capabilities?.contains("desktop:suggestions:displayed:v1") == true) else { return "capability" }
-    guard let target = workspace.readTarget, target.agentId == "codex",
+    guard ["desktop-runtime", "easywork-runtime"].contains(workspace.connectionMode) else { return "runtime-mode" }
+    guard supportsSuggestionSource(workspace) else { return "capability" }
+    guard let target = workspace.readTarget,
       target == mobileReadingTarget(host) else { return "target" }
     guard let runtime else { return "no-runtime" }
     guard runtime.state == "idle" else { return "runtime-not-idle" }
@@ -613,19 +628,27 @@ private var userRequestedWorkspaceGeneration: UUID?
     return suggestionNeedsFreshHistory ? "history-revalidating" : "available"
   }
   #endif
+  private func supportsSuggestionSource(_ workspace: WorkspaceSnapshot) -> Bool {
+    let capabilities = workspace.capabilities ?? []
+    if workspace.connectionMode == "easywork-runtime", workspace.readTarget?.agentId == "easywork" {
+      return capabilities.contains("desktop:suggestions:runtime-version:v1")
+    }
+    return workspace.connectionMode == "desktop-runtime" && workspace.readTarget?.agentId == "codex"
+      && (capabilities.contains("desktop:suggestions:native-version:v1") || capabilities.contains("desktop:suggestions:displayed:v1"))
+  }
   private func suggestionScope(requiringOnline: Bool) -> DesktopSuggestionScope? {
     guard let host = client, !host.isDemo, (!requiringOnline || host.online), pendingConnection == nil,
       let threadId = selectedThreadId,
-      let workspace = saved.workspaces[host.id], workspace.connectionMode == "desktop-runtime",
-      (workspace.capabilities?.contains("desktop:suggestions:native-version:v1") == true || workspace.capabilities?.contains("desktop:suggestions:displayed:v1") == true),
-      let target = workspace.readTarget, target.agentId == "codex", target == mobileReadingTarget(host),
+      let workspace = saved.workspaces[host.id], supportsSuggestionSource(workspace),
+      let target = workspace.readTarget, target == mobileReadingTarget(host),
       let runtime, runtime.state == "idle", runtime.canControl == true,
       let sourceTurnId = runtime.suggestionSourceTurnId, !sourceTurnId.isEmpty else { return nil }
     return DesktopSuggestionScope(target: target, threadId: threadId, sourceTurnId: sourceTurnId,
       navigation: clientGeneration.uuidString + ":" + historyGeneration.uuidString,
       connection: (host.endpoint ?? "") + ":" + (host.codexDirect?.fingerprint ?? ""),
       requiresDisplayedSource: workspace.capabilities?.contains("desktop:suggestions:displayed:v1") == true,
-      requiresNativeSource: workspace.capabilities?.contains("desktop:suggestions:displayed:v1") != true)
+      requiresNativeSource: workspace.connectionMode == "desktop-runtime" && workspace.capabilities?.contains("desktop:suggestions:displayed:v1") != true,
+      requiresRuntimeSource: workspace.connectionMode == "easywork-runtime")
   }
   func readNextTurnSuggestion(_ host: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse {
     try await suggestionReadAhead.read(scope) {
@@ -735,6 +758,10 @@ private var userRequestedWorkspaceGeneration: UUID?
         visible: desktopSuggestionReader.suggestion != nil)
     }
     #endif
+    // A saved keyless binding can require authorization after a Host upgrade.
+    // Background reads must not reopen a blocking alert every scan/retry.
+    // Explicit connection attempts keep their own inline reauthorization action.
+    if case HostServiceError.rejected(401, _) = failure, host.agentConnection == nil { return }
     if !transient && displayError && client?.id == host.id { presentError(failure) }
   }
   private func mobileUnreadSnapshots() async throws -> (scopes: [AgentRuntimeTarget], snapshots: [MobileUnreadSnapshot]) {
@@ -1509,7 +1536,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   var runningReplyModes: [String] { SessionPolicies.shared.replyModes(access: accessPolicy) }
   var activeReplyMode: String { SessionPolicies.shared.activeReplyMode(access: accessPolicy, preferred: replyMode) }
   private func canSubmit(_ content: Draft) -> Bool {
-    guard canCompose else { return false }
+    guard canCompose, !isImporting else { return false }
     return SessionPolicies.shared.submit(access: accessPolicy, state: submissionPolicy,
       text: content.text, attachmentCount: Int32(content.attachments.count))
   }
@@ -1542,7 +1569,11 @@ private var userRequestedWorkspaceGeneration: UUID?
     // Both actions are explicit new turns in the selected Host/Thread.
     send(content: Draft(text: L10n.tr(LocalizedText(stringLiteral: SharedMobileRules.runAgainText(restart: restart)))))
   }
-  var isImporting: Bool { imports[targetKey, default: 0] > 0 }
+  var isImporting: Bool {
+    recoveringAttachmentKeys.contains(targetKey) || localImportTargets.values.contains {
+      $0.key == targetKey && $0.generation == draft.attachmentImportGeneration
+    }
+  }
   func beginImport(_ target: String) { imports[target, default: 0] += 1 }
   func endImport(_ target: String) { imports[target] = max(0, imports[target, default: 0] - 1) }
   var colorScheme: ColorScheme? {
@@ -2020,6 +2051,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     persist()
   }
   func clearDraft(target: String) {
+    for (id, destination) in localImportTargets where destination.key == target { localImportCancellations[id]?() }
     drafts.textRevisions[target, default: 0] &+= 1
     if drafts.suggestionUndo?.applied.targetKey == target { drafts.suggestionUndo = nil }
     let files = drafts.values[target]?.attachments ?? []
@@ -2040,42 +2072,196 @@ private var userRequestedWorkspaceGeneration: UUID?
       "Attachments", isDirectory: true
     ).appendingPathComponent(file.fileName)
   }
-  func importData(_ data: Data, name: String, isImage: Bool, target: String) throws {
-    guard (drafts.values[target]?.attachments.count ?? 0) < 10 else { throw AttachmentError.tooMany }
-    guard !data.isEmpty, data.count <= 20 * 1024 * 1024 else { throw AttachmentError.tooLarge }
-    var bytes = data
-    var fileName = name
-    if isImage {
-      guard let image = UIImage(data: data) else { throw AttachmentError.unsupportedImage }
-      let isPNG = (name as NSString).pathExtension.lowercased() == "png"
-      guard
-        let normalized = isPNG ? image.pngData() : image.jpegData(compressionQuality: 0.92)
-      else { throw AttachmentError.unsupportedImage }
-      bytes = normalized
-      fileName = (name as NSString).deletingPathExtension + (isPNG ? ".png" : ".jpg")
-      guard bytes.count <= 20 * 1024 * 1024 else { throw AttachmentError.tooLarge }
+  func attachmentDestination() -> AttachmentDraftDestination {
+    let key = targetKey
+    if drafts.values[key]?.attachmentImportGeneration == nil {
+      drafts.values[key, default: Draft()].attachmentImportGeneration = UUID().uuidString
     }
-    let file = LocalAttachment(
-      id: UUID().uuidString, name: fileName, size: bytes.count, fileName: UUID().uuidString,
-      isImage: isImage)
-    let url = attachmentURL(file)
-    try FileManager.default.createDirectory(
-      at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-    try bytes.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
-    drafts.values[target, default: Draft()].attachments.append(file)
-    persist()
+    return AttachmentDraftDestination(key: key, generation: drafts.values[key]!.attachmentImportGeneration!)
   }
-  func importFile(_ url: URL, target: String) {
-    let accessed = url.startAccessingSecurityScopedResource()
-    defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+
+  /// Every entry point ends here. This method has no AgentClient/Host dependency.
+  func addLocalAttachments(to destination: AttachmentDraftDestination, importId: String = UUID().uuidString,
+    attachmentIds: [String]? = nil, loaders: [() async throws -> LocalAttachmentInput]) async {
+    guard attachmentIds == nil || (attachmentIds?.count == loaders.count && attachmentIds?.allSatisfy({ UUID(uuidString: $0) != nil }) == true) else { return }
+    guard !localImportJobs.contains(importId), !completedLocalImportJobs.contains(importId) else { return }
+    guard !localRecoveryRequired,
+      AttachmentPreparationRules.shared.canCommit(capturedTarget: destination.key, currentTarget: destination.key,
+        capturedGeneration: destination.generation, currentGeneration: drafts.values[destination.key]?.attachmentImportGeneration,
+        alreadyCompleted: false) else { return }
+    guard AttachmentPreparationRules.shared.canReserve(existing: Int32(drafts.values[destination.key]?.attachments.count ?? 0),
+      reserved: Int32(attachmentSlots[destination.generation, default: 0]), requested: Int32(loaders.count)) else {
+      presentError(AttachmentError.tooMany); return
+    }
+    localImportJobs.insert(importId)
+    localImportTargets[importId] = destination
+    attachmentSlots[destination.generation, default: 0] += loaders.count
+    beginImport(destination.key)
+    defer {
+      localImportJobs.remove(importId)
+      localImportTargets.removeValue(forKey: importId)
+      localImportCancellations.removeValue(forKey: importId)
+      completedLocalImportJobs.append(importId)
+      if completedLocalImportJobs.count > 256 { completedLocalImportJobs.removeFirst() }
+      attachmentSlots[destination.generation, default: 0] -= loaders.count
+      if attachmentSlots[destination.generation] == 0 { attachmentSlots.removeValue(forKey: destination.generation) }
+      endImport(destination.key)
+    }
     do {
-      let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-      guard size <= 20 * 1024 * 1024 else { throw AttachmentError.tooLarge }
-      let type = UTType(filenameExtension: url.pathExtension)
-      try importData(
-        Data(contentsOf: url), name: url.lastPathComponent,
-        isImage: type?.conforms(to: .image) == true, target: target)
-    } catch { self.presentError(error) }
+      // Persist the draft generation before an asynchronous provider can return.
+      LocalAttachmentDiagnostics.trace("persist-generation-start")
+      try await persistBeforeCommand()
+      LocalAttachmentDiagnostics.trace("persist-generation-complete")
+      let directory = persistenceURL.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+      for (index, loader) in loaders.enumerated() {
+        do {
+          guard !localRecoveryRequired else { throw SessionPersistenceError.recoveryRequired }
+          try Task.checkCancellation()
+          guard drafts.values[destination.key]?.attachmentImportGeneration == destination.generation else { break }
+          let loading = Task { try await loader() }
+          LocalAttachmentDiagnostics.trace("provider-start")
+          localImportCancellations[importId] = { loading.cancel() }
+          let input = try await loading.value
+          LocalAttachmentDiagnostics.trace("provider-complete")
+          let worker = Task.detached(priority: .userInitiated) {
+            try LocalAttachmentPreparation.prepare(input, directory: directory, destination: destination,
+              attachmentId: attachmentIds?[index])
+          }
+          localImportCancellations[importId] = { worker.cancel() }
+          let prepared = try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
+          LocalAttachmentDiagnostics.trace("prepare-complete")
+          guard !localRecoveryRequired else { throw SessionPersistenceError.recoveryRequired }
+          guard AttachmentPreparationRules.shared.canCommit(capturedTarget: destination.key, currentTarget: destination.key,
+            capturedGeneration: destination.generation, currentGeneration: drafts.values[destination.key]?.attachmentImportGeneration,
+            alreadyCompleted: false) else {
+            try? FileManager.default.removeItem(at: prepared.journal ?? prepared.url)
+            removeUnreferencedAttachment(prepared.file)
+            continue
+          }
+          if let existing = drafts.values[destination.key]?.attachments.first(where: { $0.id == prepared.file.id }) {
+            if existing.fileName != prepared.file.fileName { try? FileManager.default.removeItem(at: prepared.url) }
+            if let journal = prepared.journal { try? FileManager.default.removeItem(at: journal) }
+            continue
+          }
+          drafts.values[destination.key, default: Draft()].attachments.append(prepared.file)
+          try await persistBeforeCommand()
+          if let journal = prepared.journal { try? FileManager.default.removeItem(at: journal) }
+        } catch {
+          if destination.key == targetKey,
+            drafts.values[destination.key]?.attachmentImportGeneration == destination.generation { presentError(error) }
+        }
+      }
+    } catch { presentError(error) }
+  }
+
+  /// A shared inbox may be consumed only after the exact attachment IDs are durable.
+  func confirmLocalAttachmentImport(_ ids: [String], to destination: AttachmentDraftDestination) async throws -> Bool {
+    func matches() -> Bool {
+      !localRecoveryRequired && drafts.values[destination.key]?.attachmentImportGeneration == destination.generation
+        && ids.allSatisfy { id in drafts.values[destination.key]?.attachments.contains { $0.id == id } == true }
+    }
+    guard matches() else { return false }
+    try await persistBeforeCommand()
+    return matches()
+  }
+
+  func recoverLocalAttachmentImports() async {
+    guard !recoveredLocalAttachments, !localRecoveryRequired else { return }
+    recoveredLocalAttachments = true
+    let directory = persistenceURL.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+    let journals = directory.appendingPathComponent("Prepared", isDirectory: true)
+    let paths = (try? FileManager.default.contentsOfDirectory(at: journals, includingPropertiesForKeys: nil)) ?? []
+    for path in paths where path.pathExtension == "json" {
+      do {
+        let record = try JSONDecoder().decode(PreparedAttachmentRecord.self, from: Data(contentsOf: path))
+        guard UUID(uuidString: record.file.fileName) != nil,
+          record.file.size > 0, record.file.size <= LocalAttachmentPreparation.maximumBytes else { continue }
+        let url = directory.appendingPathComponent(record.file.fileName)
+        let valid = try await Task.detached(priority: .utility) {
+          let data = try LocalAttachmentPreparation.read(url)
+          return data.count == record.file.size && HostService.hash(data) == record.sha256
+        }.value
+        guard valid else { continue }
+        if let existing = drafts.values[record.destination.key]?.attachments.first(where: { $0.id == record.file.id }) {
+          if existing.fileName != record.file.fileName { try? FileManager.default.removeItem(at: url) }
+          try FileManager.default.removeItem(at: path); continue
+        }
+        guard AttachmentPreparationRules.shared.canCommit(capturedTarget: record.destination.key, currentTarget: record.destination.key,
+          capturedGeneration: record.destination.generation,
+          currentGeneration: drafts.values[record.destination.key]?.attachmentImportGeneration, alreadyCompleted: false),
+          (drafts.values[record.destination.key]?.attachments.count ?? 0) < 10 else {
+          removeUnreferencedAttachment(record.file)
+          try FileManager.default.removeItem(at: path); continue
+        }
+        recoveringAttachmentKeys.insert(record.destination.key)
+        beginImport(record.destination.key)
+        drafts.values[record.destination.key, default: Draft()].attachments.append(record.file)
+        do { try await persistBeforeCommand(); try FileManager.default.removeItem(at: path) }
+        catch { presentError(error) }
+        recoveringAttachmentKeys.remove(record.destination.key)
+        endImport(record.destination.key)
+      } catch { presentError(error) }
+    }
+  }
+
+  #if DEBUG
+  func checkAttachmentImportAcceptance() async throws {
+    guard QuickAttachmentAcceptance.enabled, client?.isDemo == true else { throw AttachmentError.unsupportedImage }
+    let key = targetKey
+    clearDraft(target: key)
+    let destination = attachmentDestination()
+    let job = UUID().uuidString
+    let input = LocalAttachmentInput.data(Data("local-only".utf8), name: "boundary.txt", image: false)
+    await addLocalAttachments(to: destination, importId: job, loaders: [{ input }])
+    await addLocalAttachments(to: destination, importId: job, loaders: [{ input }])
+    guard drafts.values[key]?.attachments.count == 1 else { throw AttachmentError.tooMany }
+    let delayed = Task {
+      await addLocalAttachments(to: destination, loaders: [{
+        try await Task.sleep(for: .milliseconds(250)); return input
+      }])
+    }
+    try await Task.sleep(for: .milliseconds(80))
+    clearDraft(target: key)
+    await delayed.value
+    guard drafts.values[key]?.attachments.isEmpty == true else { throw AttachmentError.tooMany }
+    let edited = attachmentDestination()
+    let pending = Task {
+      await addLocalAttachments(to: edited, loaders: [{
+        try await Task.sleep(for: .milliseconds(250)); return input
+      }])
+    }
+    try await Task.sleep(for: .milliseconds(80))
+    setText("edited-during-import", target: key)
+    await pending.value
+    guard drafts.values[key]?.text == "edited-during-import", drafts.values[key]?.attachments.count == 1 else {
+      throw AttachmentError.unsupportedImage
+    }
+    do {
+      _ = try LocalAttachmentPreparation.normalize(Data(count: LocalAttachmentPreparation.maximumBytes + 1), name: "large.txt", image: false)
+      throw AttachmentError.unsupportedImage
+    } catch AttachmentError.tooLarge { /* Actual byte boundary must reject. */ }
+    clearDraft(target: key)
+  }
+
+  func prepareAttachmentRecoveryAcceptance() async throws {
+    guard QuickAttachmentAcceptance.enabled else { throw AttachmentError.unsupportedImage }
+    let destination = attachmentDestination()
+    try await persistBeforeCommand()
+    let directory = persistenceURL.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+    _ = try await Task.detached {
+      try LocalAttachmentPreparation.prepare(.data(Data("recover-local-only".utf8), name: "recovered-local.txt", image: false),
+        directory: directory, destination: destination)
+    }.value
+  }
+  #endif
+
+  func importData(_ data: Data, name: String, isImage: Bool, target: String) throws {
+    guard AttachmentPreparationRules.shared.canReserve(existing: Int32(drafts.values[target]?.attachments.count ?? 0),
+      reserved: Int32((drafts.values[target]?.attachmentImportGeneration).map { attachmentSlots[$0, default: 0] } ?? 0), requested: 1) else { throw AttachmentError.tooMany }
+    let directory = persistenceURL.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+    let prepared = try LocalAttachmentPreparation.prepare(.data(data, name: name, image: isImage), directory: directory)
+    drafts.values[target, default: Draft()].attachments.append(prepared.file)
+    persist()
   }
 
   func sendDemo(content override: Draft? = nil) {
@@ -2178,7 +2364,7 @@ private var userRequestedWorkspaceGeneration: UUID?
     let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connect(text, name: name)
     try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: name)
   }
-  func addCodexDiscovered(_ host: CodexHostDiscovery.Host, hostKey: String) async throws {
+  func addCodexDiscovered(_ host: CodexHostDiscovery.Host, hostKey: String = "") async throws {
     let expected = saved.clients.first(where: { $0.id == host.id })?.codexDirect
     let (offer, incoming, rawSnapshot) = try await CodexDiscoveryAPI.connectDiscovered(host.endpoint, hostId: host.id, name: "", hostKey: hostKey, expected: expected)
     try saveCodexConnection(offer, incoming: incoming, rawSnapshot: rawSnapshot, name: "")
@@ -2731,16 +2917,21 @@ private var userRequestedWorkspaceGeneration: UUID?
     eventRecoveryTask?.cancel()
     let initialCatchUpAfter = ProcessInfo.processInfo.systemUptime + initialReadGrace
     eventRecoveryTask = Task {
+      var lastAttempt = initialReadGrace > 0 ? -1 : Int64(ProcessInfo.processInfo.systemUptime * 1000)
+      var attemptThread = selectedThreadId
       // This read is independent of the long poll, so a silently stalled event
       // connection cannot prevent the selected conversation from catching up.
       while !Task.isCancelled && clientGeneration == generation && client?.id == host.id {
         if let id = selectedThreadId {
+          if attemptThread != id { attemptThread = id; lastAttempt = -1 }
           let key = cacheKey(host, threadId: id)
           let active = saved.runtimes?[key]?.state == "running" || saved.outbox?[key] != nil || conversationSyncFailures[key] != nil
-          let interval = active ? 2.0 : 10.0
-          if ProcessInfo.processInfo.systemUptime >= initialCatchUpAfter,
-            ProcessInfo.processInfo.systemUptime - (lastSnapshotAt[key] ?? 0) >= interval,
+          let now = Int64(ProcessInfo.processInfo.systemUptime * 1000)
+          if OperationPolicies.shared.historyCatchUpDue(now: now,
+            lastUseful: lastSnapshotAt[key].map { Int64($0 * 1000) } ?? -1,
+            lastAttempt: lastAttempt, active: active, graceUntil: Int64(initialCatchUpAfter * 1000)),
             loadingHistoryRequests[key, default: 0] == 0 {
+            lastAttempt = now
             await loadHistory(threadId: id)
           }
         }
@@ -2781,7 +2972,7 @@ private var userRequestedWorkspaceGeneration: UUID?
           try await waitForSidebarInteraction()
           try Task.checkCancellation()
           guard clientGeneration == generation, client?.id == host.id, selectedThreadId == threadId else { continue }
-          connectionRoutes[host.id] = route
+          if connectionRoutes[host.id] != route { connectionRoutes[host.id] = route }
           guard batch.hostId == host.id else { throw HostServiceError.wrongHost }
           guard batch.cursor >= 0 else { throw HostServiceError.invalidResponse }
           if let rawCapabilities = batch.capabilities {
@@ -2804,11 +2995,12 @@ private var userRequestedWorkspaceGeneration: UUID?
           cursor = Int(decision.cursor)
           if decision.apply {
             let target = mobileReadingTarget(host)
-            if saved.agentEventCursors == nil { saved.agentEventCursors = [:] }
-            saved.agentEventCursors?[targetKey] = AgentEventCursor(target: target, threadId: threadId, epoch: epoch, sequence: cursor)
-            // Applying a snapshot schedules its own unread reconciliation.
-            // A cursor-only update must not rescan every computer's workspace.
-            persist(reconcileUnread: false)
+            storeEventCursor(AgentEventCursor(target: target, threadId: threadId, epoch: epoch, sequence: cursor), key: targetKey)
+            // apply already checkpoints the latest state/history and unread
+            // projection on the bounded snapshot checkpoint. A second immediate save for
+            // every streaming batch doubled metadata encode/decode and I/O.
+            // Cursor-only batches have no apply task and still need a checkpoint.
+            if batch.events.isEmpty { scheduleSnapshotPersistence() }
           }
           delay = 1
           recordConnectionSuccess(host)
@@ -2841,6 +3033,40 @@ private var userRequestedWorkspaceGeneration: UUID?
     if let id = selectedThreadId { lastSnapshotAt.removeValue(forKey: cacheKey(host, threadId: id)) }
     startEvents()
   }
+  // BEGIN: history-state-publication
+  // Cursor progress is durable transport metadata. Updating an existing full
+  // target/thread cannot change its storage aliases or any presentation value.
+  private func storeEventCursor(_ cursor: AgentEventCursor, key: String) {
+    let previous = saved.agentEventCursors?[key]
+    guard previous != cursor else { return }
+    let wasUpdating = updatingCursorMetadata
+    updatingCursorMetadata = wasUpdating || (previous?.target == cursor.target && previous?.threadId == cursor.threadId)
+    defer { updatingCursorMetadata = wasUpdating }
+    if saved.agentEventCursors == nil { saved.agentEventCursors = [:] }
+    saved.agentEventCursors?[key] = cursor
+  }
+
+  private func storeRuntime(_ runtime: ThreadRuntime, key: String) {
+    if saved.runtimes?[key] != runtime { saved.runtimes?[key] = runtime }
+  }
+
+  private func storeConversationSyncIssue(_ issue: ConversationSyncIssue?, key: String) {
+    guard conversationSyncFailures[key] != issue else { return }
+    if let issue { conversationSyncFailures[key] = issue }
+    else { conversationSyncFailures.removeValue(forKey: key) }
+  }
+
+  // These non-published fields used to rely on an unrelated saved-value write
+  // to refresh controls. Publish their real changes explicitly before removing
+  // no-op runtime/summary publications.
+  private func confirmSelectedHistory(runtimePresent: Bool) {
+    guard loadedHistoryGeneration != historyGeneration || (runtimePresent && suggestionNeedsFreshHistory) else { return }
+    objectWillChange.send()
+    loadedHistoryGeneration = historyGeneration
+    if runtimePresent { suggestionNeedsFreshHistory = false }
+  }
+  // END: history-state-publication
+
   private func apply(_ snapshot: HistorySnapshot, historyPage: Bool = false,
     beforePrepend: (@MainActor (Int) -> Void)? = nil) {
     #if DEBUG
@@ -2871,10 +3097,10 @@ private var userRequestedWorkspaceGeneration: UUID?
       if archivedHistory || finishedHistory {
         // A freshly verified terminal turn needs no active stream. This does
         // not grant execution control or hide failures of actual history reads.
-        conversationSyncFailures.removeValue(forKey: key)
+        storeConversationSyncIssue(nil, key: key)
       } else {
-        conversationSyncFailures[key] = ConversationSyncIssue(
-          message: liveWindow ? L10n.tr("当前进度正从电脑实时同步；完整桌面状态暂不可用，较早历史按需加载。") : L10n.tr("已从电脑同步最新历史进度，正在重试实时连接。"), historyFresh: true, liveWindow: liveWindow)
+        storeConversationSyncIssue(ConversationSyncIssue(
+          message: liveWindow ? L10n.tr("当前进度正从电脑实时同步；完整桌面状态暂不可用，较早历史按需加载。") : L10n.tr("已从电脑同步最新历史进度，正在重试实时连接。"), historyFresh: true, liveWindow: liveWindow), key: key)
       }
       // Repeated cached events do not postpone the next actual history read.
       if historySyncChecks[key].map({ checkedAt > $0 }) ?? true {
@@ -2885,16 +3111,15 @@ private var userRequestedWorkspaceGeneration: UUID?
       // An old event's missing owner is expected for an archived chat. A real
       // history request failure is still retained until a fresh read succeeds.
       if !archivedHistory && (conversationSyncFailures[key] == nil || conversationSyncFailures[key]?.historyFresh == true) {
-        conversationSyncFailures[key] = ConversationSyncIssue(
-          message: L10n.tr("未能取得此对话的最新进度，当前显示缓存。正在自动重试。"))
+        storeConversationSyncIssue(ConversationSyncIssue(
+          message: L10n.tr("未能取得此对话的最新进度，当前显示缓存。正在自动重试。")), key: key)
       }
     } else {
       lastSnapshotAt[key] = ProcessInfo.processInfo.systemUptime
-      conversationSyncFailures.removeValue(forKey: key)
+      storeConversationSyncIssue(nil, key: key)
     }
     if snapshot.hostId == client?.id, snapshot.threadId == selectedThreadId {
-      loadedHistoryGeneration = historyGeneration
-      if snapshot.runtime != nil { suggestionNeedsFreshHistory = false }
+      confirmSelectedHistory(runtimePresent: snapshot.runtime != nil)
     }
     if let summary = snapshot.thread, summary.hostId == snapshot.hostId,
       summary.id == snapshot.threadId,
@@ -2902,7 +3127,10 @@ private var userRequestedWorkspaceGeneration: UUID?
         $0.id == summary.id
       })
     {
-      saved.workspaces[snapshot.hostId]?.threads[index] = mergeReadingSummary(summary, prior: saved.workspaces[snapshot.hostId]?.threads[index])
+      let merged = mergeReadingSummary(summary, prior: saved.workspaces[snapshot.hostId]?.threads[index])
+      if saved.workspaces[snapshot.hostId]?.threads[index] != merged {
+        saved.workspaces[snapshot.hostId]?.threads[index] = merged
+      }
     }
     let isWindow = snapshot.historyWindow?.isWindowed == true
     let earlier = isWindow && (historyPage || snapshot.historyWindow?.kind == "earlier")
@@ -2926,30 +3154,41 @@ private var userRequestedWorkspaceGeneration: UUID?
       }
       historyWindowRevisions[key] = snapshot.historyRevision
     }
+    let updatedMessages: [ChatMessage]
     if earlier {
       let existingIds = Set(previous.map(\.id))
       let replacements = Dictionary(snapshot.messages.map { ($0.id, $0) }, uniquingKeysWith: { _, newest in newest })
       let prefix = snapshot.messages.filter { !existingIds.contains($0.id) }
       beforePrepend?(prefix.count)
-      saved.history[key] = prefix
+      updatedMessages = prefix
         + previous.map { replacements[$0.id] ?? $0 }
     } else if preserve || preserveLegacyV9 {
       let ids = Set(snapshot.messages.map(\.id))
       let boundary = previous.firstIndex { ids.contains($0.id) } ?? previous.endIndex
-      saved.history[key] = Array(previous[..<boundary]) + snapshot.messages
-    } else { saved.history[key] = snapshot.messages }
-    dirtyHistoryKeys.insert(key)
+      updatedMessages = Array(previous[..<boundary]) + snapshot.messages
+    } else { updatedMessages = snapshot.messages }
+    // Freshness/runtime metadata may change without any message changing.
+    // Do not invalidate the timeline or re-encrypt/rewrite an identical history page.
+    if saved.history[key] == nil || updatedMessages != previous {
+      saved.history[key] = updatedMessages
+      dirtyHistoryKeys.insert(key)
+    }
     if let host = saved.clients.first(where: { $0.id == snapshot.hostId }) { reconcileReading(host, updatedThreadId: snapshot.threadId) }
     if let runtime = snapshot.runtime {
-      saved.runtimes?[key] = runtime
+      storeRuntime(runtime, key: key)
       if let index = saved.workspaces[snapshot.hostId]?.threads.firstIndex(where: {
         $0.id == snapshot.threadId
       }) {
-        saved.workspaces[snapshot.hostId]?.threads[index].state = runtime.state
+        if saved.workspaces[snapshot.hostId]?.threads[index].state != runtime.state {
+          saved.workspaces[snapshot.hostId]?.threads[index].state = runtime.state
+        }
         if runtime.state != "unknown" {
-          saved.workspaces[snapshot.hostId]?.threads[index].pendingAsyncQuestionCount = runtime.approvals.filter {
+          let count = runtime.approvals.filter {
             $0.threadId == snapshot.threadId && $0.interactionMode == "async"
           }.count
+          if saved.workspaces[snapshot.hostId]?.threads[index].pendingAsyncQuestionCount != count {
+            saved.workspaces[snapshot.hostId]?.threads[index].pendingAsyncQuestionCount = count
+          }
         }
       }
       if let pending = saved.outbox?[key],
@@ -2967,10 +3206,17 @@ private var userRequestedWorkspaceGeneration: UUID?
         }
       }
     }
+    scheduleSnapshotPersistence()
+  }
+
+  private func scheduleSnapshotPersistence() {
     if !persistScheduled {
       persistScheduled = true
       Task {
-        try? await Task.sleep(for: .milliseconds(600))
+        // Stream/freshness snapshots are replaceable and already visible.
+        // Bound checkpoints to two seconds even under a continuous stream;
+        // command intents, drafts and background flushes keep their own fences.
+        try? await Task.sleep(for: .seconds(2))
         persistScheduled = false
         persist()
       }
@@ -3811,25 +4057,77 @@ private var userRequestedWorkspaceGeneration: UUID?
       }
     }
   }
-  func isAnswering(_ approval: Approval) -> Bool { answeringApprovals.contains(targetKey + ":" + approval.id) }
-  func answer(_ approval: Approval, decision: String, answers: [String: [String]] = [:], expectedTargetKey: String? = nil) {
-    guard let host = client, expectedTargetKey == nil || expectedTargetKey == targetKey,
-      approval.threadId == selectedThreadId,
-      runtime?.approvals.contains(where: { $0.id == approval.id && $0.turnId == approval.turnId }) == true else { return }
-    if AISharingRules.shared.requiresContentGrant(decision: decision), !requireAISharing(host, model: runtime?.generationSettings?.model) { return }
-    let target = targetKey
-    let pendingId = target + ":" + approval.id
-    guard !answeringApprovals.contains(pendingId) else { return }
-    answeringApprovals.insert(pendingId)
-    Task {
-      defer { answeringApprovals.remove(pendingId) }
-      do {
-        let result = try await AgentClients.resolve(host).approve(host, approval: approval, decision: decision, answers: answers)
-        guard result.ok else { throw HostServiceError.message(L10n.tr("此请求已被处理，请刷新审批状态。")) }
-        if targetKey == target { await loadHistory(threadId: approval.threadId) }
-      } catch { if targetKey == target { self.presentError(error) } }
+  // BEGIN: approval-callback-boundary
+  struct ApprovalActionContext: Equatable {
+    let target: String
+    let navigation: UUID
+    let connection: UUID
+  }
+  private struct ApprovalAnswerFlight {
+    let target: String
+    let approval: Approval
+  }
+  var approvalActionContext: ApprovalActionContext {
+    ApprovalActionContext(target: targetKey, navigation: historyGeneration, connection: clientGeneration)
+  }
+  private func knowsApproval(_ approval: Approval, context: ApprovalActionContext) -> Bool {
+    context == approvalActionContext && approval.threadId == selectedThreadId
+      && runtime?.approvals.contains(approval) == true
+  }
+  func isAnswering(_ approval: Approval) -> Bool {
+    answeringApprovals.values.contains {
+      $0.target == targetKey && $0.approval.threadId == approval.threadId
+        && $0.approval.turnId == approval.turnId && $0.approval.id == approval.id
     }
   }
+  func canEditApproval(_ approval: Approval, context: ApprovalActionContext) -> Bool {
+    knowsApproval(approval, context: context) && !isAnswering(approval)
+  }
+  func canAnswer(_ approval: Approval, context: ApprovalActionContext) -> Bool {
+    canEditApproval(approval, context: context) && loadedHistoryGeneration == historyGeneration
+      && client?.online == true && isWritable && SessionPolicies.shared.supports(access: accessPolicy, capability: "approvals")
+  }
+  func answer(_ approval: Approval, decision: String, answers: [String: [String]] = [:], expectedTargetKey: String? = nil,
+    expectedContext: ApprovalActionContext? = nil
+  ) {
+    let context = expectedContext ?? approvalActionContext
+    guard let host = client, expectedTargetKey == nil || expectedTargetKey == targetKey,
+      canAnswer(approval, context: context) else { return }
+    if approval.kind == "question" {
+      if decision == "skip" {
+        guard approval.interactionMode == "async" else { return }
+      } else {
+        guard decision.isEmpty, Set(answers.keys) == Set(approval.questions.map(\.id)),
+          answers.values.allSatisfy({ !$0.isEmpty && $0.allSatisfy { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }) else { return }
+      }
+    } else if !approval.decisions.contains(decision) { return }
+    let sharing = AISharingRules.shared.requiresContentGrant(decision: decision)
+      ? aiSharingScope(host, model: runtime?.generationSettings?.model) : nil
+    if let sharing, !requireAISharing(host, scope: sharing) { return }
+    let owner = UUID(), errorAtStart = errorRevision, boundHost = readingClient(host)
+    let capturedAnswers = answers
+    answeringApprovals[owner] = ApprovalAnswerFlight(target: context.target, approval: approval)
+    func current() -> Bool {
+      knowsApproval(approval, context: context) && answeringApprovals[owner] != nil
+        && client?.endpoint == host.endpoint && client?.codexDirect?.fingerprint == host.codexDirect?.fingerprint
+        && client.map { mobileReadingTarget($0) } == mobileReadingTarget(boundHost)
+        && UIApplication.shared.applicationState == .active
+    }
+    Task {
+      // Each invocation owns its own wait; an older callback cannot release a replacement request.
+      defer { answeringApprovals.removeValue(forKey: owner) }
+      do {
+        guard current() else { return }
+        if let sharing { try validateAISharing(host, scope: sharing) }
+        let result = try await AgentClients.resolve(boundHost).approve(boundHost, approval: approval, decision: decision, answers: capturedAnswers)
+        guard result.ok else { throw HostServiceError.message(L10n.tr("此请求已被处理，请刷新审批状态。")) }
+        if current() { await loadHistory(threadId: approval.threadId) }
+      } catch {
+        if current() && errorRevision == errorAtStart { self.presentError(error) }
+      }
+    }
+  }
+  // END: approval-callback-boundary
   var workspaceManagementTarget: AgentRuntimeTarget? { client.map { mobileReadingTarget($0) } }
   var workspaceManagementOperations: [WorkspaceManagementOperation] {
     guard let host = client else { return [] }

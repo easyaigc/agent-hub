@@ -26,7 +26,7 @@ test('source recovery excludes previous desktop bundles before candidate ambigui
     b.fixture.manifest.started_at_unix_ms = 2;
     writeJson(join(b.fixture.directory, 'manifest.json'), b.fixture.manifest);
     const reader = new DesktopPredictionTraceReader(root);
-    const ids = [a.fixture.sourceThreadId, a.fixture.sourceTurnId, root];
+    const ids = [a.fixture.sourceThreadId, a.fixture.sourceTurnId];
     assert.equal(reader.readSourcePredictions(...ids).length, 2);
     assert.equal(reader.readSourcePredictions(...ids, 2).length, 1);
     assert.equal(
@@ -43,18 +43,15 @@ test('source recovery reads durable native completion without a notifier and rec
     const b = recoverableFixture(root);
     const reader = new DesktopPredictionTraceReader(root);
     const read = () =>
-      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, root);
+      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId);
     assert.equal(read().length, 1);
     assert.equal(read()[0].text, 'Synthetic follow-up suggestion.');
     assert.equal(read()[0].binding.predictionThreadId, a.fixture.predictionThreadId);
     assert.equal(
-      reader.readSourcePredictions(b.fixture.sourceThreadId, b.fixture.sourceTurnId, root).length,
+      reader.readSourcePredictions(b.fixture.sourceThreadId, b.fixture.sourceTurnId).length,
       1,
     );
-    assert.equal(
-      reader.readSourcePredictions(a.fixture.sourceThreadId, randomUUID(), root).length,
-      0,
-    );
+    assert.equal(reader.readSourcePredictions(a.fixture.sourceThreadId, randomUUID()).length, 0);
     a.terminal.value.last_agent_message = '{"suggestion":"contradiction"}';
     writeJson(a.terminal.path, a.terminal.value);
     assert.equal(read(), null);
@@ -82,7 +79,6 @@ test('discovery filesystem validation grows linearly with unrelated trace bundle
         const result = new DesktopPredictionTraceReader(root).readSourcePredictions(
           a.fixture.sourceThreadId,
           a.fixture.sourceTurnId,
-          root,
         );
         assert.equal(result?.length, 1);
         return calls;
@@ -108,7 +104,7 @@ test('recovery preserves all same-source candidates and rejects forged markers, 
     );
     const reader = new DesktopPredictionTraceReader(root);
     const read = () =>
-      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, root);
+      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId);
     assert.equal(read().length, 2, 'The caller must suppress ambiguous predictions');
     a.request.request.input[0].content[0].text = 'Ordinary user request';
     writeJson(a.request.requestPath, a.request.request);
@@ -116,9 +112,9 @@ test('recovery preserves all same-source candidates and rejects forged markers, 
     a.request.request.input[0].content[0].text =
       'This is an app-generated request for a suggested next user message. Synthetic fixture.';
     writeJson(a.request.requestPath, a.request.request);
-    a.configured.value.cwd = tmpdir();
+    a.configured.value.cwd = join(tmpdir(), 'not-present-project');
     writeJson(a.configured.path, a.configured.value);
-    assert.equal(read(), null);
+    assert.equal(read().length, 2, 'Bound native data does not grant or read project files');
     a.configured.value.cwd = root;
     writeJson(a.configured.path, a.configured.value);
     fs.appendFileSync(a.fixture.logPath, '{"incomplete":');
@@ -152,7 +148,7 @@ test('recovery tolerates an unrelated large log appending, but detects changed d
     syncBuiltinESMExports();
     try {
       assert.equal(
-        reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, root).length,
+        reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId).length,
         1,
       );
       assert(changed);
@@ -166,7 +162,7 @@ test('recovery tolerates an unrelated large log appending, but detects changed d
         }
       };
       assert.equal(
-        reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, root),
+        reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId),
         null,
       );
       assert(changed);
@@ -1021,13 +1017,7 @@ test('latest native source uses request order, ignores old completion order and 
     next.fixture.saveEvents();
     const reader = new DesktopPredictionTraceReader(root);
     const read = () =>
-      reader.readSourcePredictions(
-        old.fixture.sourceThreadId,
-        old.fixture.sourceTurnId,
-        root,
-        0,
-        true,
-      );
+      reader.readSourcePredictions(old.fixture.sourceThreadId, old.fixture.sourceTurnId, 0, true);
     assert.equal(read()[0].binding.predictionThreadId, next.fixture.predictionThreadId);
     // Superseded executions need not have completed; their proven request binding is sufficient.
     old.fixture.events.splice(3);

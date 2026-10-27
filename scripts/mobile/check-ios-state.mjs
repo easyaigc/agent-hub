@@ -174,6 +174,11 @@ assert(
 );
 assert(
   result.includes(
+    'Preferred identity key cache passed: 2000 warm reuses; alias, candidate, runtime, Unicode and concurrent eviction boundaries',
+  ),
+);
+assert(
+  result.includes(
     'Runtime identity key cache passed: 6000 warm reuses; full-target isolation and bounded concurrent eviction',
   ),
 );

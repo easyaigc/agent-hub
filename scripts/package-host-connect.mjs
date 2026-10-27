@@ -36,11 +36,14 @@ const sourceRoots = [
   '.github',
   'gradle',
 ];
-// Only the reviewed wrapper is distributable; never allow JARs or properties
-// by extension. Its fixed distribution checksum remains in wrapper properties.
+// Nonstandard source paths require explicit review, rather than permitting all
+// JARs, properties, Dockerfiles or Bash scripts. The wrapper checksum stays fixed.
 const fixedSourceFiles = new Set([
   'gradle/wrapper/gradle-wrapper.jar',
   'gradle/wrapper/gradle-wrapper.properties',
+  'scripts/ci/Dockerfile',
+  'scripts/ci/legacy-bootstrap.bash',
+  'scripts/ci/legacy-sdkmanager.bash',
 ]);
 const runtimePackages = ['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime'];
 const excluded = new Set([

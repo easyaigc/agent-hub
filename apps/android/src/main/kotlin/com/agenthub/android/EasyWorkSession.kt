@@ -25,7 +25,9 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     private val sequence=AtomicLong(1)
     private val pending=ConcurrentHashMap<String,CompletableDeferred<JSONObject>>()
     private val threadSequences=ConcurrentHashMap<String,Long>()
+    private val eventChanges=EasyWorkEventSignal()
     private val subscriptions=ConcurrentHashMap<String,String>()
+    private val subscribedThreads=ConcurrentHashMap.newKeySet<String>()
     private val syncReads=Mutex()
     private val threadSyncs=linkedMapOf<String,EasyWorkThreadSync>()
     private val received=mutableMapOf<String,Pair<Long,MutableSet<Long>>>()
@@ -34,6 +36,7 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     private fun disconnect() {
         val previous=route;route=null;crypto=null;confirmed=false;pump?.cancel();pump=null;previous?.close()
         synchronized(threadSyncs) { threadSyncs.clear() }
+        eventChanges.signal()
     }
     fun close() { closed=true;disconnect();tasks.cancel();pending.values.forEach { it.cancel() };pending.clear() }
     private suspend fun connect(excluding: String? = null) = connecting.withLock {
@@ -97,6 +100,7 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                                 require(EasyWorkTarget.decode(message.getJSONObject("target"))==target)
                                 val thread=message.getJSONObject("payload").getString("threadId");val cursor=message.getLong("sequence")
                                 require(cursor in 0..9007199254740991L);threadSequences.merge(thread,cursor,::maxOf)
+                                eventChanges.signal()
                             }
                             else -> error("电脑返回消息类型无效")
                         }
@@ -107,7 +111,7 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
             }
         } catch(cancel: CancellationException) { throw cancel }
         catch(e: Exception) {
-            if(!closed&&epoch==pumpEpoch) { lastError=e;confirmed=false;route=null;transport.close() }
+            if(!closed&&epoch==pumpEpoch) { lastError=e;confirmed=false;route=null;transport.close();eventChanges.signal() }
         }
     }
     suspend fun synchronizedThread(threadId: String): JSONObject = syncReads.withLock {
@@ -186,13 +190,24 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     suspend fun events(threadId: String,after: Long): Long {
         val deadline=System.nanoTime()+12_000_000_000L
         do {
+            currentCoroutineContext().ensureActive()
+            if(closed)throw CancellationException("Session closed")
+            val observed=eventChanges.revision
             if(route==null||lastError!=null)connect()
+            for(previous in subscribedThreads.toList().filter { it!=threadId }) {
+                request("thread/unsubscribe",JSONObject().put("threadId",previous))
+                currentCoroutineContext().ensureActive()
+                subscribedThreads.remove(previous);subscriptions.remove(previous);threadSequences.remove(previous)
+            }
             if(subscriptions[threadId]!=epoch) {
-                request("thread/subscribe",JSONObject().put("threadId",threadId).put("afterSequence",after));subscriptions[threadId]=epoch
+                subscribedThreads.add(threadId)
+                request("thread/subscribe",JSONObject().put("threadId",threadId).put("afterSequence",after))
+                currentCoroutineContext().ensureActive();subscriptions[threadId]=epoch
                 threadSequences.merge(threadId,after,::maxOf)
             }
             if((threadSequences[threadId]?:after)>after)break
-            delay(100)
+            val remaining=(deadline-System.nanoTime())/1_000_000L
+            eventChanges.awaitChange(observed,remaining)
         } while(System.nanoTime()<deadline&&!closed)
         return threadSequences[threadId]?:after
     }

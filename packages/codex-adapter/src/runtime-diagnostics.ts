@@ -46,6 +46,7 @@ export function appendRuntimeDiagnostic(
     method?: string | undefined;
     status?: number | undefined;
     elapsedMs?: number | undefined;
+    attempt?: number | undefined;
   },
   error: unknown,
 ): void {
@@ -56,9 +57,24 @@ export function appendRuntimeDiagnostic(
     syscall?: unknown;
     stack?: unknown;
     cause?: { code?: unknown; syscall?: unknown };
+    fileChange?: unknown;
   };
   const identifier = (value: unknown) =>
     typeof value === 'string' && /^[A-Za-z0-9_.:-]{1,200}$/.test(value) ? value : undefined;
+  // Only our fixed stat fields are persisted, never an arbitrary error payload.
+  const change = value?.fileChange as Record<string, unknown> | undefined;
+  const stamp = (input: unknown) => {
+    if (!input || typeof input !== 'object') return undefined;
+    const source = input as Record<string, unknown>;
+    return Object.fromEntries(
+      ['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs', 'birthtimeNs'].map((key) => [
+        key,
+        typeof source[key] === 'string' && /^-?\d{1,40}$/.test(source[key])
+          ? source[key]
+          : undefined,
+      ]),
+    );
+  };
   const row = {
     at: new Date().toISOString(),
     ...context,
@@ -67,6 +83,15 @@ export function appendRuntimeDiagnostic(
     syscall: identifier(value?.syscall ?? value?.cause?.syscall),
     nativeCode: Number.isSafeInteger(value?.code) ? value.code : undefined,
     status: context.status ?? (Number.isInteger(value?.status) ? value.status : undefined),
+    fileChange:
+      change && ['metadata-only', 'content-or-target'].includes(String(change.kind))
+        ? {
+            stage: identifier(change.stage),
+            kind: change.kind,
+            before: stamp(change.before),
+            after: stamp(change.after),
+          }
+        : undefined,
     stack:
       typeof value?.stack === 'string'
         ? value.stack

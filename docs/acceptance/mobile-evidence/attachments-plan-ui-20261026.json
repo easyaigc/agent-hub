@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "features": ["F40", "F71"],
+  "scope": "iOS recent-photo horizontal selection, permission-on-panel-open and composer plan toggle only. Full plan approval and all F71 integrations remain separately scoped.",
+  "candidate": {
+    "bundleId": "com.easyai.agenthub.attachmentsplan.acceptance",
+    "appExecutableSha256": "c22bf49971cb92c0666656b5bf05f4a0cb13e642ff94171e9300688fc3e411bb",
+    "sourceFiles": {
+      "apps/ios/Sources/RootView.swift": "f53ec404c44ae111ffc28c76d67953f96fae8f24860ed295d5919a2d395fb759",
+      "apps/ios/Sources/QuickAttachmentViews.swift": "f71cde6951055b1a6050da905d26fe2ec2348252b73536972d0e84853760b0e9",
+      "apps/ios/Sources/RecentAttachmentPhotos.swift": "a04ddf9cfaf98b348ff6e0e5942f6045ab919bc5f82411ba9dc2f61b1e3349f4",
+      "apps/ios/Sources/QuickAttachmentAcceptance.swift": "2830123ec6869bd81e14c4334b144ba7c3abf70378121d7486f3fead0dfbeffa",
+      "apps/ios/Tests/CodexManageUITests.swift": "cf119affd8ede36165b22e6c47c0f2bd4d71bcfa36af3580bf17d66446fcb28e"
+    },
+    "scopeNote": "Frozen candidate includes contemporaneous approval, voice and external-file changes. This result is not a blanket verification of those parallel tasks or of later main-workspace changes."
+  },
+  "nativeUI": {
+    "status": "this_run_pass",
+    "device": "paired local physical iPhone 15 Pro Max",
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "tests": ["testQuickAttachmentRecentCarouselAndPlanToggle"],
+    "assertions": [
+      "Fresh PhotoKit authorization is requested by opening the attachment panel.",
+      "At least three recent thumbnails are visible by default. No expand, reminder or plan control remains in the attachment panel.",
+      "Native horizontal drag changes visible thumbnails; rightward navigation and tapping a controlled photo preserve a local unsent attachment.",
+      "Plan on/off remains visible after permissions, before generation settings, with 44pt controls.",
+      "Only photos owned by this dedicated acceptance bundle are deleted by the passing cleanup."
+    ],
+    "screenshotsSha256": {
+      "plan-toggle-after-permission": "70fa14d0695450636403f3d4c6f3bd8f0ff48cbe84f93e1e24a494ce044154f8",
+      "scrolled-photo-carousel": "a3d37c9cfd9cf19691db502f2846d80d20cd6cde28f2396a7d2181660e678be7",
+      "default-photo-carousel": "ba6e4c1f655a5b7153d7f79713952d4e8d104e69a9e30f7c7bd009c6fdc665c1"
+    }
+  },
+  "realDesktop": {
+    "status": "this_run_pass",
+    "nativeExit": 0,
+    "prepareSamples": 634,
+    "beforeSendViolation": false,
+    "creationCount": 1,
+    "phase": "confirmed",
+    "owner": true,
+    "turnCount": 1,
+    "turnStatuses": ["completed"],
+    "userMessageCount": 1,
+    "actualEffort": "xhigh",
+    "attachmentCount": 2,
+    "attachmentCodesVerified": true,
+    "hostExit": 0,
+    "nativePassedTests": 1,
+    "nativeFailedTests": 0,
+    "nativeSkippedTests": 0,
+    "sameSignedAppAsNativeUI": true,
+    "node": "24.19.0",
+    "bothActualAttachmentCodesIndependentlyConfirmed": true,
+    "scope": "Physical iPhone sends one fresh image-and-text input through an isolated local Host to the original desktop owner. Both actual random attachment codes are absent from the submitted prompt and confirmed in the original reply.",
+    "actualModel": "gpt-6.1-sol"
+  },
+  "auxiliary": {
+    "iosSimulatorBuild": {
+      "status": "passed-earlier-task-candidate",
+      "scope": "pnpm build:ios v2 before later DEBUG fixture and parallel workspace changes."
+    },
+    "signedPhysicalBuild": "passed-frozen-dedicated-bundle",
+    "localization": "passed",
+    "workspaceCheck": {
+      "status": "failed",
+      "node": "24.19.0",
+      "latestFailure": "Unregistered or stale fingerprint for parallel scripts/computer-use-approval-ios-acceptance.mjs; format and lint passed in that run.",
+      "earlierFailure": "Swift receipt-normalization fixture compilation exceeded its existing 30-second timeout; preserved as failure."
+    }
+  },
+  "earlierNativeAttempts": {
+    "status": "preserved-failures-not-upgraded",
+    "observations": [
+      "High-velocity swipe skipped the controlled six-photo span.",
+      "Long DEBUG metadata and one-direction search prevented locating fixture status or cleanup controls.",
+      "An acceptance build without its own App Group showed an external-intake error after activation.",
+      "A native event explicitly referenced another acceptance bundle; that run is not accepted.",
+      "Unique signed Runner identity initially disagreed with cached Xcode template metadata; metadata was aligned with the actual signed bundle before the passing run."
+    ]
+  },
+  "limitations": [
+    "Formal App and other DEV data are not updated.",
+    "No Android, Windows, full denied/limited-permission native matrix, all-font/theme/orientation matrix, or complete F40/F71 product acceptance is claimed.",
+    "Prior raw failures and private source/build/native/desktop artifacts are retained."
+  ],
+  "cleanup": {
+    "controlledPhotos": "passed-in-native-case",
+    "temporaryHost": "exited-zero; both listeners closed; private identities and immutable receipts retained",
+    "app": "dedicated app and Runner uninstalled; device registry absence verified",
+    "earlierSharedAcceptanceBundle": "Earlier quick-attachment bundle retained because concurrent acceptance work used that identifier; no other DEV or formal App is removed.",
+    "formalAppStillInstalled": true
+  },
+  "pullRequestIntegration": {
+    "baseCommit": "3e600c17ddeaffbdfbacde7f68ff6b1cbb7480ad",
+    "scope": "Task-only delta applied to the current remote main. Other shared-workspace approval, voice fallback, external-file and unread changes are excluded.",
+    "originalPhysicalEvidence": "Retained under its original full-source and app fingerprints. Matching scoped functions are component reuse, not a fresh full-App or real-model pass on the PR candidate.",
+    "matchedComponents": {
+      "private func toolbarDensity": {
+        "matchesOriginalPhysicalCandidate": true,
+        "sha256": "cb39055b8adca95b22ffe030950f687e9a40cb702c8afb0616f5b7302216e1c8"
+      },
+      "private var attachmentMenu": {
+        "matchesOriginalPhysicalCandidate": true,
+        "sha256": "3b3761df50414a30d858fab5906928317f0864afa18f0c45403601e1a0b8e869"
+      },
+      "private func composerSettings": {
+        "matchesOriginalPhysicalCandidate": true,
+        "sha256": "c1c2caf381b93fb943e944e27537ac2d5074fd94087c859285bce79729ee7cf5"
+      },
+      "private func toolbarPlanToggle": {
+        "matchesOriginalPhysicalCandidate": true,
+        "sha256": "4b167dfe59143120c6b1f9a1c05cb9c25c280d40f955a2d1c5dac3d91b987853"
+      },
+      "recentPhotoLibrary": {
+        "matchesOriginalPhysicalCandidate": true,
+        "sha256": "a04ddf9cfaf98b348ff6e0e5942f6045ab919bc5f82411ba9dc2f61b1e3349f4"
+      },
+      "nativeScenario": {
+        "matchesOriginalPhysicalCandidate": true,
+        "sha256": "aa05216d62ea56d36933278f6f94a2a34f6577aa8bab582fb01f89ab90a4114e"
+      },
+      "recentPhotoStrip": {
+        "matchesOriginalPhysicalCandidate": true,
+        "sha256": "1b8ebf9b82bf8d752198f95dfbe328d9c0dbdd264e59c4642f93844ff5af85d6"
+      },
+      "permissionRequestOnPanelTask": {
+        "matchesOriginalPhysicalCandidate": true
+      }
+    },
+    "checks": "Current branch build/check outcomes are recorded separately in the pull request; original physical and model evidence above retains its original fingerprints and scope.",
+    "originalBaseCommit": "fa2f14dbde37535dee6db2353ae619325c26b589",
+    "upstreamMerge": "Main advanced through independently merged local-transcription fallback, application-approval and unread-projection PRs. All source deltas, translations and feature records are preserved; generated tables are rebuilt."
+  }
+}

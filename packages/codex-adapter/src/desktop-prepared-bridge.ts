@@ -23,6 +23,7 @@ import {
   type CreationInputCheckpoint,
   type DesktopCreationBridge,
   type DesktopCreationPlan,
+  type PreparedThreadMetadata,
 } from './desktop-creation.js';
 import { DesktopRuntime } from './desktop-ipc.js';
 import { DesktopThreadPreparer } from './desktop-thread-preparer.js';
@@ -110,6 +111,7 @@ const loadedDigest = (() => {
     'desktop-framing.js',
     'desktop-creation.js',
     'runtime-session.js',
+    'approval-requests.js',
     'desktop-history-identity.js',
     'attachment-files.js',
     'desktop-questions.js',
@@ -260,6 +262,7 @@ export class DesktopPreparedBridge implements DesktopCreationBridge {
       boundary: CreationInputBoundary,
       preparationFingerprint: string,
     ) => Promise<void>,
+    private readonly rememberPrepared?: (metadata: PreparedThreadMetadata) => void,
   ) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     protectWindowsStateDirectory(directory);
@@ -340,6 +343,52 @@ export class DesktopPreparedBridge implements DesktopCreationBridge {
     )
       throw new Error('空会话准备回执目标不一致');
     return record;
+  }
+  private threadMetadata(
+    plan: DesktopCreationPlan,
+    metadata: Record<string, unknown>,
+  ): PreparedThreadMetadata {
+    return {
+      id: String(metadata.id),
+      hostId: this.hostId,
+      projectId: plan.projectId,
+      title:
+        typeof metadata.name === 'string' && metadata.name.trim()
+          ? metadata.name.trim().slice(0, 160)
+          : '新对话',
+    };
+  }
+  async preparedThreadMetadata(
+    plan: DesktopCreationPlan,
+    threadId: string,
+  ): Promise<PreparedThreadMetadata | undefined> {
+    if (this.closed || plan.hostId !== this.hostId || !validId(threadId)) return undefined;
+    const record = this.record(plan);
+    if (
+      !record ||
+      record.threadId !== threadId ||
+      record.phase !== 'released' ||
+      record.exitCode !== 0 ||
+      record.inputBoundary ||
+      this.work.has(plan.clientOperationId)
+    )
+      return undefined;
+    // Only the official API's fresh empty metadata may extend this Host's catalog.
+    // This says nothing about a live owner and does not consume the original intent.
+    const metadata = object(
+      (await this.runtime.reader.read('thread/read', { threadId, includeTurns: true })).thread,
+    );
+    if (
+      metadata.id !== threadId ||
+      (metadata.projectId ?? null) !== plan.projectId ||
+      metadata.archived === true ||
+      !Array.isArray(metadata.turns) ||
+      metadata.turns.length !== 0 ||
+      typeof metadata.cwd !== 'string' ||
+      realpathSync(metadata.cwd) !== realpathSync(record.cwd)
+    )
+      return undefined;
+    return this.threadMetadata(plan, metadata);
   }
   async create(plan: DesktopCreationPlan): Promise<string> {
     plan = structuredClone(plan);
@@ -484,6 +533,7 @@ export class DesktopPreparedBridge implements DesktopCreationBridge {
         realpathSync(metadata.cwd) !== realpathSync(record.cwd)
       )
         throw new Error('独立只读核对未确认空会话目标');
+      this.rememberPrepared?.(this.threadMetadata(plan, metadata));
       stage = 'owner';
       const opened = await this.open(id, plan.clientOperationId);
       assertOpen();

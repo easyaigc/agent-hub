@@ -5,7 +5,7 @@ enum EasyWorkSyncError: Error { case invalidDelta }
 
 /// Session-local wire cache. Server versions are opaque; JSON key order is not rehashed in Swift.
 struct EasyWorkThreadSync {
-  struct Version: Codable {
+  struct Version: Codable, Equatable {
     let id: String
     let hash: String
     let textLength: Int?
@@ -71,7 +71,10 @@ struct EasyWorkThreadSync {
       guard let message = resolved[version.id],
         changedIds.contains(version.id) || previousVersions[version.id]?.hash == version.hash
       else { throw EasyWorkSyncError.invalidDelta }
-      if let length = version.textLength {
+      // Retained content was already verified before this cache was committed.
+      // Recheck any changed message or metadata, even if its opaque hash is reused.
+      let verifiedUnchanged = !reset && !changedIds.contains(version.id) && previousVersions[version.id] == version
+      if let length = version.textLength, !verifiedUnchanged {
         guard let parts = message["content"] as? [[String: Any]], parts.count == 1,
           parts[0]["type"] as? String == "text", let text = parts[0]["text"] as? String,
           length == text.utf16.count,

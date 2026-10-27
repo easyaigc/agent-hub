@@ -160,13 +160,7 @@ export const protectWindowsStateDirectory=()=>{};export const protectWindowsStat
       canonical,
       catalogs,
       prepare(reader, f, latestOnly = true) {
-        return reader.prepareSourcePredictions(
-          f.sourceThreadId,
-          f.sourceTurnId,
-          root,
-          0,
-          latestOnly,
-        );
+        return reader.prepareSourcePredictions(f.sourceThreadId, f.sourceTurnId, 0, latestOnly);
       },
       reset() {
         calls.length = 0;

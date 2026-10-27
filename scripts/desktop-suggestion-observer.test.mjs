@@ -21,6 +21,7 @@ import { Duplex } from 'node:stream';
 import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import { recoverableFixture, writeJson } from './fixtures/desktop-trace.mjs';
 import { machineRuntimeTargetKey } from '../packages/protocol/dist/index.js';
 // Resolve the Host's actual ESM import condition without executing dependencies
 // in the resolver process. Flat bundles may also contain a byte-identical but
@@ -116,6 +117,14 @@ const target = {
   workspaceId: 'workspace-a',
   runtimeId: 'desktop-runtime',
 };
+
+function assertSourceScope(value, threadId, sourceTurnId, _cwd) {
+  assert.deepEqual(
+    { threadId: value.threadId, sourceTurnId: value.sourceTurnId },
+    { threadId, sourceTurnId },
+  );
+  assert.equal(value.cwd, undefined, 'Content reads do not return directory authority');
+}
 
 test(
   'an installed node_modules adapter starts its package-local helper without a repository scripts directory',
@@ -248,7 +257,7 @@ test('conflicting same-execution content stays quarantined across restart', () =
     }
   }));
 
-test('ordinary output, untrusted request markers, old timestamps and out-of-root observations are rejected', () =>
+test('ordinary output, untrusted request markers, old timestamps and nonabsolute metadata are rejected', () =>
   setup(async ({ root, observer }) => {
     for (const changes of [
       { appGeneratedPredictionRequest: false },
@@ -256,13 +265,13 @@ test('ordinary output, untrusted request markers, old timestamps and out-of-root
       { sourceBindingVerified: true },
       { threadId: 'not-an-id' },
       { observedAt: new Date(0).toISOString() },
-      { cwd: tmpdir() },
+      { cwd: 'relative-path' },
     ])
       observer.accept(event(root, changes), target, randomUUID());
     assert.equal(observer.read(target).observations.length, 0);
   }));
 
-test('complete target and authorized-root changes cannot expose earlier observations', () =>
+test('complete target changes cannot expose earlier observations', () =>
   setup(async ({ root, observer, options, switchTarget }) => {
     observer.accept(event(root), target, randomUUID());
     const changed = { ...target, hostId: 'host-b' };
@@ -309,7 +318,7 @@ test('corrupt private records disable only this collector and are not overwritte
     }
   }));
 
-test('disabled observation does not require a root; symlink retargeting cannot expand a live scope', () =>
+test('an obsolete directory alias does not constrain native observation collection', () =>
   setup(async ({ root, options }) => {
     const disabled = syntheticReaderObserver({
       ...options,
@@ -331,7 +340,7 @@ test('disabled observation does not require a root; symlink retargeting cannot e
       await unlink(link);
       await symlink(outside, link, linkType);
       scoped.accept(event(link), target, randomUUID());
-      assert.equal(scoped.read(target).observations.length, 0);
+      assert.equal(scoped.read(target).observations.length, 1);
     } finally {
       scoped.close();
       await unlink(link);
@@ -384,6 +393,40 @@ async function boundSetup(run) {
     }
   });
 }
+
+test('native source recovery ignores obsolete global roots and project folder existence', () =>
+  setup(async ({ root, options }) => {
+    const native = recoverableFixture(root);
+    native.configured.value.cwd = join(root, 'not-created-project');
+    writeJson(native.configured.path, native.configured.value);
+    const observer = syntheticReaderObserver({
+      ...options,
+      root: join(root, 'obsolete-root'),
+      traceRoot: root,
+    });
+    observer.phase = 'listening';
+    observer.desktopStartedAtUnixMs = 1;
+    const ids = [target, native.fixture.sourceThreadId, native.fixture.sourceTurnId];
+    try {
+      assert.equal(
+        (await observer.readBoundSourceAsync(...ids)).suggestion.text,
+        'Synthetic follow-up suggestion.',
+      );
+      await mkdir(native.configured.value.cwd);
+      await rename(native.configured.value.cwd, native.configured.value.cwd + '-moved');
+      assert.equal(
+        (await observer.readBoundSourceAsync(...ids)).suggestion.text,
+        'Synthetic follow-up suggestion.',
+      );
+      assert.equal(
+        (await observer.readBoundSourceAsync(target, native.fixture.sourceThreadId, randomUUID()))
+          .suggestion,
+        null,
+      );
+    } finally {
+      observer.close();
+    }
+  }));
 
 test('bound projection joins only the observed execution IDs and preserves exact native text', () =>
   boundSetup(async ({ root, observer, reads, add, options, traceRoot }) => {
@@ -441,7 +484,7 @@ test('desktop restart excludes old trace output even when source turn is unchang
       turnId: source[2],
     });
     next.completedAt = new Date(observer.desktopStartedAtUnixMs + 1).toISOString();
-    observer.predictionReader.readSourcePredictions = (_thread, _turn, _root, notBefore) => {
+    observer.predictionReader.readSourcePredictions = (_thread, _turn, notBefore) => {
       assert.equal(notBefore, observer.desktopStartedAtUnixMs);
       return [old, next];
     };
@@ -770,13 +813,23 @@ test(
       ipc.clientId = initialized.result.clientId;
       ipc.ready = true;
       await session.open(threadId);
-      assert.deepEqual(await session.desktopSuggestionSource(threadId), {
+      assertSourceScope(
+        await session.desktopSuggestionSource(threadId),
         threadId,
         sourceTurnId,
-      });
+        root,
+      );
       assert.equal(session.history(threadId).runtime.suggestionSourceTurnId, sourceTurnId);
       const baseline = structuredClone(session.history(threadId).messages);
       assert.equal(baseline[0].id, itemId);
+
+      // The original owner remains authoritative even after its project folder
+      // disappears. Content projection must not turn cwd metadata into a gate.
+      snapshot.cwd = join(root, 'project-folder-not-created');
+      await session.desktopSnapshot(session.state.threads[0], structuredClone(snapshot));
+      assert.equal(session.history(threadId).runtime.canControl, true);
+      assert.equal(session.history(threadId).runtime.suggestionSourceTurnId, sourceTurnId);
+      assert.equal(session.state.threads[0].desktopDirectory, snapshot.cwd);
 
       // Lose only the full snapshot, retaining its verified owner and seeded
       // bounded window, as in the missing-base stream-generation regression.
@@ -842,7 +895,12 @@ test(
 
       // Only a fresh complete original-owner snapshot restores authority.
       publishSnapshot = true;
-      assert.deepEqual(await session.desktopSuggestionSource(threadId), { threadId, sourceTurnId });
+      assertSourceScope(
+        await session.desktopSuggestionSource(threadId),
+        threadId,
+        sourceTurnId,
+        root,
+      );
       assert.equal(ipc.hasOwner(threadId), true);
       assert.equal(session.history(threadId).runtime.canControl, true);
       assert.equal(session.history(threadId).runtime.suggestionSourceTurnId, sourceTurnId);
@@ -881,6 +939,7 @@ test('pending source revalidation preserves confirmed snapshots without retainin
   const snapshot = {
     id: threadId,
     hostId: 'local',
+    cwd: root,
     threadRuntimeStatus: { type: 'idle' },
     turns: [{ turnId: sourceTurnId, status: 'completed', items: [] }],
     requests: [],
@@ -954,6 +1013,7 @@ test('pending source revalidation preserves confirmed snapshots without retainin
 
 test('production HTTP suggestion read fences both owner snapshots and target; runtime events clear the source', async (t) => {
   const root = await privateRoot('suggestion-host-');
+  const sourceRoot = await privateRoot('suggestion-http-source-project-');
   const originals = {
     domRead: DesktopDomBridge.prototype.readExisting,
     connect: RuntimeSession.prototype.connect,
@@ -969,7 +1029,7 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
   const snapshot = {
     id: threadId,
     hostId: 'local',
-    cwd: root,
+    cwd: sourceRoot,
     threadRuntimeStatus: { type: 'idle' },
     turns: [{ turnId: sourceTurnId, status: 'completed', items: [] }],
     requests: [],
@@ -1057,7 +1117,14 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
       collector.current = this;
       this.phase = 'listening';
       this.desktopStartedAtUnixMs = 1;
-      this.predictionReader.readSourcePredictions = () => (onPrediction() ? [onPrediction()] : []);
+      this.predictionReader.readSourcePredictions = (_thread, _turn, startedAt) => {
+        assert.equal(
+          startedAt,
+          1,
+          'Native reads bind the original runtime without directory authority',
+        );
+        return onPrediction() ? [onPrediction()] : [];
+      };
       this.predictionReader.readPrediction = (predictionThreadId, predictionTurnId) => {
         assert.equal(predictionThreadId, predictionEvent.threadId);
         assert.equal(predictionTurnId, predictionEvent.turnId);
@@ -1231,6 +1298,13 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
     const extra = parameters();
     extra.set('generate', '1');
     assert.equal((await request(extra)).status, 400);
+    const callerDirectory = parameters();
+    callerDirectory.set('sourceCwd', sourceRoot);
+    assert.equal(
+      (await request(callerDirectory)).status,
+      400,
+      'Callers cannot supply a filesystem scope',
+    );
     const account = parameters();
     account.set(
       'target',
@@ -1300,6 +1374,15 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
     assert.equal(nativeResult.body.suggestion.validity, 'native-version');
     assert.equal(nativeResult.body.suggestion.text, prediction.text);
     assert.equal(readCount, 3);
+    for (const cwd of ['', 'relative-project', join(sourceRoot, 'missing')]) {
+      snapshot.cwd = cwd;
+      assert.equal(
+        (await request()).status,
+        200,
+        'Pure content reads do not depend on physical project directory metadata',
+      );
+    }
+    snapshot.cwd = sourceRoot;
     const observer = collector.current;
     const nativeRead = observer.readBoundSourceAsync.bind(observer);
     // Use the real clock to cross the first lease; the binding and native text
@@ -1346,7 +1429,7 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
     const wrongSource = parameters();
     wrongSource.set('sourceTurnId', randomUUID());
     assert.equal((await request(wrongSource)).status, 409);
-    for (const change of ['turn', 'active', 'owner']) {
+    for (const change of ['turn', 'active', 'owner', 'directory', 'directory-replaced']) {
       let reads = 0;
       observer.readBoundSourceAsync = async (...args) => {
         const response = await nativeRead(...args);
@@ -1356,16 +1439,26 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
           if (change === 'turn') snapshot.turns[0].turnId = randomUUID();
           if (change === 'active') snapshot.threadRuntimeStatus.type = 'active';
           if (change === 'owner') owner = false;
+          if (change === 'directory') snapshot.cwd = root;
+          if (change === 'directory-replaced') {
+            await rename(sourceRoot, sourceRoot + '-old');
+            await mkdir(sourceRoot, { mode: 0o700 });
+          }
         }
         return response;
       };
       assert.equal(
         (await request()).status,
-        change === 'owner' ? 503 : 409,
+        change.startsWith('directory') ? 200 : change === 'owner' ? 503 : 409,
         'A source/owner change during the final async projection must reject old evidence',
       );
       snapshot.turns[0].turnId = sourceTurnId;
       snapshot.threadRuntimeStatus.type = 'idle';
+      snapshot.cwd = sourceRoot;
+      if (change === 'directory-replaced') {
+        await rm(sourceRoot, { recursive: true });
+        await rename(sourceRoot + '-old', sourceRoot);
+      }
       owner = true;
     }
     observer.readBoundSourceAsync = nativeRead;
@@ -1414,7 +1507,8 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
       get: () => true,
     });
     let phases = [];
-    observer.prepareBoundSourceAsync = async () => {
+    observer.prepareBoundSourceAsync = async (...args) => {
+      assert.equal(args.length, 5, 'The fenced read carries no directory authorization');
       phases.push('prepare');
       return {
         commit: async () => {
@@ -1526,6 +1620,7 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
     for (const key of Object.keys(process.env)) if (!(key in environment)) delete process.env[key];
     Object.assign(process.env, environment);
     await rm(root, { recursive: true, force: true });
+    await rm(sourceRoot, { recursive: true, force: true });
   }
 });
 
@@ -1709,7 +1804,7 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
   const { DesktopSuggestionObserver: FrozenObserver } = await import(pathToFileURL(copied).href);
   const { evidence } = await import(pathToFileURL(stub).href);
   try {
-    for (const mode of ['healthy', 'instance', 'start', 'root-unavailable', 'probe-unavailable'])
+    for (const mode of ['healthy', 'instance', 'start', 'probe-unavailable'])
       await t.test(mode, () => {
         evidence.instance = {
           pid: 1,
@@ -1725,8 +1820,7 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
           ],
         };
         evidence.probeFailed = false;
-        let rootReady = true,
-          commits = 0,
+        let commits = 0,
           disposes = 0;
         const observer = Object.create(FrozenObserver.prototype);
         Object.assign(observer, {
@@ -1736,9 +1830,7 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
           collectorEpoch: 1,
           windowsInstanceIdentity: JSON.stringify(evidence.instance),
           desktopStartedAtUnixMs: 100,
-          rootIdentity: 'fixed-root',
           traceIdentity: 'fixed-trace',
-          authorizedRoot: 'synthetic-root',
           observations: new Map(),
           conflicts: new Set(),
           options: { nativeWorker: true, target: () => target, traceRoot: 'synthetic-trace' },
@@ -1755,7 +1847,6 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
             }),
           },
           assertBoundReadAvailable: () => {},
-          rootStable: () => rootReady,
           readTraceIdentity: () => 'fixed-trace',
           boundReadAvailable: () => true,
         });
@@ -1770,12 +1861,10 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
           Object.defineProperty(process, 'platform', { value: 'win32' });
           if (mode === 'instance') evidence.instance.pid = 3;
           if (mode === 'start') evidence.instance.executors[0].startedAtUnixMs = 200;
-          if (mode === 'root-unavailable') rootReady = false;
           if (mode === 'probe-unavailable') evidence.probeFailed = true;
           resample(); // Exactly the method called after the unchanged 30s timer.
-          if (mode === 'root-unavailable' || mode === 'probe-unavailable') {
+          if (mode === 'probe-unavailable') {
             assert.equal(observer.phase, 'unavailable');
-            rootReady = true;
             evidence.probeFailed = false;
             resample(); // Recovery to the same identity cannot revive the old receipt.
           }

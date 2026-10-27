@@ -1,0 +1,55 @@
+{
+  "format": "agent-hub-compiled-overlay-v1",
+  "version": "host-repair-20261027-v26",
+  "sourceCommit": "b5f20d69b91e69368b746dfe123ef2e262f4b65e",
+  "baseSourceCommit": "ca016538e379597b792975bfeea18f3f455afc47",
+  "baseUnifiedPackageSha256": "d681bad0de3eb7d52a45e443387a6f03e3acef2bfb3bfcb213fb76f8a155765a",
+  "unifiedPackageSha256": "2653db57ec867b87fa4a788af841250d1e4f1ec990f0985e8e106e8341932210",
+  "baseRuntimeFingerprints": {
+    "apps/host-agent": "704272cfbacff467a8bb56e6d3116a384a24538a21b13eedb1298f28d8186b7d",
+    "packages/codex-adapter": "31a392170153b58591a44fcd05d12851dfb82eda79349625a6d1e4d604539ff1",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "runtimeFingerprints": {
+    "apps/host-agent": "23f24e53e017fcfa3ab33a4f0d3be336e6e81cfef66b0f119d7dc9ee3ca01c6b",
+    "packages/codex-adapter": "31a392170153b58591a44fcd05d12851dfb82eda79349625a6d1e4d604539ff1",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "entries": {
+    "bundle.json": {
+      "beforeSha256": "55f5a2e4dd36a21db978729aacd4186aeeacb35f23ba4f78e33c73d7b98d1f00",
+      "afterSha256": "1894d0ad7a5cb49fc3ef95733f7d76e62a0a88c3e6889c425d6425223d2e6322",
+      "size": 2567
+    },
+    "assets/codex-manage/scripts/desktop-suggestion-observer.test.mjs": {
+      "beforeSha256": "08fcbbfda9bfeb657d949bb3421ba321c7b3b02c8df2f431d299200564046aea",
+      "afterSha256": "871dd1236b5db11f4af3b2c570c504bc9a66d755ede12259fb17a9f44df55660",
+      "size": 79417
+    },
+    "assets/codex-manage/apps/host-agent/dist/runtime-server.js": {
+      "beforeSha256": "9bb361d27574b070ba797231bf9f1c52ef344a8722629616de82be0f5ee2f977",
+      "afterSha256": "97df2832eeba4c91da49df0e1c1af469e5b0378674c0d4f22b3ed7cf50abd720",
+      "size": 63098
+    }
+  },
+  "sourcePatch": {
+    "name": "host-repair-v26-source.patch",
+    "sha256": "b5b99ddf660246658adb3344c67eb9ab66a407b9967a4d6f2bece765d1eafabe",
+    "files": {
+      "apps/host-agent/src/runtime-server.ts": {
+        "beforeSha256": "92b01ca8d772a00fe5c333742d5505ffd6fd7911feb29c8386a4c0e859c39dfd",
+        "afterSha256": "3455f5ca0efd02b3d2c00406a4cfb16088db75562767dd37f12b362beda4a466"
+      },
+      "scripts/desktop-suggestion-observer.test.mjs": {
+        "beforeSha256": "08fcbbfda9bfeb657d949bb3421ba321c7b3b02c8df2f431d299200564046aea",
+        "afterSha256": "871dd1236b5db11f4af3b2c570c504bc9a66d755ede12259fb17a9f44df55660"
+      }
+    }
+  },
+  "scope": "Three exact unified-package files; preserve credentials, configuration, original desktop/executors and unrelated source work. An independently changed installed regression script is retained; run the supplied test in a verified private stage.",
+  "verification": "Local checks and independent build are auxiliary. Current per-host Native, stable connection and physical-phone acceptance remain separate and pending."
+}

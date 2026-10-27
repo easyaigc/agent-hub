@@ -1,0 +1,85 @@
+diff --git a/apps/host-agent/src/runtime-server.ts b/apps/host-agent/src/runtime-server.ts
+index fe4f82c2..36d9b9f1 100644
+--- a/apps/host-agent/src/runtime-server.ts
++++ b/apps/host-agent/src/runtime-server.ts
+@@ -730,7 +730,8 @@ export async function startRuntimeServer() {
+               ownsFencedSlot = true;
+             }
+             active();
+-            suggestionObserver.assertBoundReadAvailable(target);
++            if (!suggestionObserver.usesFencedSourceRead)
++              suggestionObserver.assertBoundReadAvailable(target);
+             active();
+             if (suggestionObserver.usesFencedSourceRead)
+               resumeBackground = session.deferBackgroundPersistence(lifetime.signal);
+@@ -744,6 +745,11 @@ export async function startRuntimeServer() {
+             await source(); // Exact original owner and latest completed source turn.
+             let confirmed;
+             if (suggestionObserver.usesFencedSourceRead) {
++              // The required fresh owner IPC yields Main while background
++              // writes are held, so queued reader samples can be received.
++              // Check current readiness after that yield; never renew an old
++              // sample or issue Native work while the reader is unavailable.
++              suggestionObserver.assertBoundReadAvailable(target);
+               prepared = await traced('prepare', () =>
+                 within(() =>
+                   suggestionObserver.prepareBoundSourceAsync(
+diff --git a/scripts/desktop-suggestion-observer.test.mjs b/scripts/desktop-suggestion-observer.test.mjs
+index 7465ef3b..32ac03c0 100644
+--- a/scripts/desktop-suggestion-observer.test.mjs
++++ b/scripts/desktop-suggestion-observer.test.mjs
+@@ -1507,6 +1507,11 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
+       configurable: true,
+       get: () => true,
+     });
++    // This block models the asynchronous reader transport. Its capability
++    // sample is cheap on Main; leaving the synchronous native reader here
++    // instead performs Windows process/ACL probes inside the health fixture.
++    // Actual native permissions were exercised above and by Worker tests.
++    const fencedAvailability = t.mock.method(observer, 'boundReadAvailable', () => true);
+     let phases = [];
+     observer.prepareBoundSourceAsync = async (...args) => {
+       assert.equal(args.length, 5, 'The fenced read carries no directory authorization');
+@@ -1520,6 +1525,34 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
+       };
+     };
+     try {
++      const assertAvailable = observer.assertBoundReadAvailable.bind(observer);
++      let observedReady = false;
++      const readiness = t.mock.method(observer, 'assertBoundReadAvailable', (...args) => {
++        if (!observedReady)
++          throw new hostAdapter.SuggestionObservationError(503, 'Synthetic stale capability');
++        return assertAvailable(...args);
++      });
++      try {
++        onFollow = () => {
++          // A fresh owner reply gives Main a turn to receive the actual new
++          // reader sample; it never extends or re-dates the old sample.
++          observedReady = true;
++        };
++        assert.equal(
++          (await request()).status,
++          200,
++          'A stale entry observation cannot preempt the already-required fresh owner read',
++        );
++        phases = [];
++        observedReady = false;
++        onFollow = () => {};
++        assert.equal((await request()).status, 503, 'Unavailable after fresh owner still rejects');
++        assert.equal(readCount, 1);
++        assert.deepEqual(phases, [], 'No native prepare occurs without current readiness');
++      } finally {
++        readiness.mock.restore();
++      }
++      phases = [];
+       onFollow = (count) => phases.push('source' + count);
+       assert.equal((await request()).status, 200);
+       assert.deepEqual(phases, ['source1', 'prepare', 'source2', 'commit', 'source3', 'dispose']);
+@@ -1665,6 +1698,7 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
+       assert(!phases.includes('commit'), 'Late uncancellable owner success cannot issue commit');
+       assert.equal(phases.filter((p) => p === 'dispose').length, 1);
+     } finally {
++      fencedAvailability.mock.restore();
+       delete observer.usesFencedSourceRead;
+       observer.prepareBoundSourceAsync = priorPrepare;
+       onFollow = () => {};

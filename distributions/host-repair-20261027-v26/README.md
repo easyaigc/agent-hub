@@ -1,0 +1,7 @@
+# Host repair candidate V26
+
+Generated overlay for the exact V22 runtime closure. Verify the complete closure and each before/after file hash, preserve machine configuration and original work, and update only listed files. Preserve an independently changed installed test script; execute the supplied test from a private stage with identical compiled runtime bytes. The included source patch targets the exact V22 file hashes, is review material and is not for target machines to edit source.
+
+Windows now performs its already-required fresh owner fence while replaceable background cache writes are deferred, then samples current reader readiness before Native preparation. It adds no owner reads, retries, waits, TTL extensions or budget changes. Native readiness, source and target checks remain required. macOS behavior is unchanged. The synthetic transport fixture uses a cheap capability sample rather than executing synchronous native probes on Main; its health deadline stays intact.
+
+The independent one-source diagnostic tool is separately reviewed in the same public branch. It does not change formal Host behavior and cannot prove formal HTTP or phone acceptance. Failed earlier results remain retained; this release does not claim current remote or physical acceptance. No private development history, credentials, actual source IDs, mobile binaries or unrelated Android work are published.

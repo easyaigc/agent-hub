@@ -19,16 +19,15 @@ struct RecentAttachmentHint: View {
           .disabled(store.isImporting || store.localRecoveryRequired).accessibilityIdentifier("recent-attachment-add")
         IconButton(symbol: "xmark", label: L10n.tr("忽略这张图片"), id: "recent-attachment-dismiss") { library.dismiss(photo) }
       }.padding(8).floatingSurface(cornerRadius: 16).padding(.horizontal, 12)
-        .sheet(item: $preview) { photo in
-          NavigationStack {
-            VStack(spacing: 20) {
-              AttachmentPhotoThumbnail(photo: photo).frame(maxWidth: .infinity, maxHeight: 320)
-              Text(L10n.tr("添加后保存在手机，发送消息时再上传。"))
-                .font(.subheadline).foregroundStyle(Palette.secondary)
+        .fullScreenCover(item: $preview) { photo in
+          AttachmentImageViewer(items: [AttachmentPreviewItem(photo: photo)], selection: .constant(photo.id),
+            close: { preview = nil }) {
+            HStack {
+              Text(L10n.tr("仅添加到草稿，发送时再上传。")).font(.caption)
+              Spacer()
               Button(L10n.tr("添加到当前草稿")) { preview = nil; add(photo) }
-                .buttonStyle(.borderedProminent).disabled(store.isImporting)
-            }.padding().navigationTitle(L10n.tr("最近图片"))
-              .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.tr("关闭")) { preview = nil } } }
+                .buttonStyle(.borderedProminent).controlSize(.large).disabled(store.isImporting)
+            }
           }
         }
     }
@@ -40,16 +39,6 @@ struct RecentAttachmentHint: View {
       await store.addLocalAttachments(to: destination, loaders: [{ try await library.input(for: photo) }])
       if (store.drafts.values[destination.key]?.attachments.count ?? 0) > count { library.dismiss(photo) }
     }
-  }
-}
-
-private struct AttachmentPhotoThumbnail: View {
-  let photo: RecentAttachmentPhoto
-  var body: some View {
-    Group {
-      if let image = photo.thumbnail { Image(uiImage: image).resizable().scaledToFill() }
-      else { ZStack { Palette.sidebar; Image(systemName: "photo").foregroundStyle(Palette.secondary) } }
-    }.clipped().clipShape(RoundedRectangle(cornerRadius: 10)).accessibilityHidden(true)
   }
 }
 
@@ -74,13 +63,23 @@ struct QuickAttachmentPresentation: ViewModifier {
   @State private var importId = UUID().uuidString
   @State private var nextAction: Action?
   @State private var pasting = false
-  private enum Action { case photos, files, camera, received, shareTest(URL), recent(RecentAttachmentPhoto) }
+  @State private var browsingPhotos = false
+  @State private var addingPhotos = false
+  @State private var previewPhotos: AttachmentPhotoPreviewRequest?
+  @StateObject private var photoSelection = AttachmentPhotoSelection()
+  @StateObject private var photoCatalog = AttachmentPhotoCatalog()
+  private enum Action { case photos, files, camera, received, shareTest(URL) }
   func body(content: Content) -> some View {
     content
       .onChange(of: request) { _, request in
         guard let request else { return }
         destination = request.destination
         importId = request.id
+        photoSelection.photos = []
+        photoSelection.error = nil
+        addingPhotos = false
+        previewPhotos = nil
+        browsingPhotos = false
         isPresenting = true
         panel = true
       }
@@ -144,13 +143,10 @@ struct QuickAttachmentPresentation: ViewModifier {
               ScrollView(.horizontal) {
                 LazyHStack(spacing: 10) {
                   ForEach(library.recent) { photo in
-                    Button { nextAction = .recent(photo); panel = false } label: {
-                      AttachmentPhotoThumbnail(photo: photo).frame(width: 88, height: 88)
-                    }.buttonStyle(.plain).accessibilityLabel(L10n.tr("添加最近图片"))
-                      .accessibilityIdentifier("recent-photo-\(photo.id)")
+                    photoTile(photo, in: library.recent).frame(width: 96, height: 96)
                   }
                 }
-              }.frame(height: 88).scrollIndicators(.hidden)
+              }.frame(height: 96).scrollIndicators(.hidden)
                 .accessibilityIdentifier("recent-attachments-strip")
             } else if library.baselineEstablished {
               Text(L10n.tr("暂无可访问的图片")).foregroundStyle(Palette.secondary)
@@ -169,7 +165,7 @@ struct QuickAttachmentPresentation: ViewModifier {
           if library.authorization == .limited {
             Button(L10n.tr("管理可访问的照片")) { library.manageLimitedAccess() }
           }
-        } header: { Text(L10n.tr("最近图片")) } footer: { Text(L10n.tr("点选加入草稿，发送时再上传。")) }
+        } header: { Text(L10n.tr("最近图片")) } footer: { Text(L10n.tr("点图片预览，点圆圈快速选择；添加到草稿后，发送时再上传。")) }
         Section {
           if ((try? AttachmentInbox.pending()) ?? []).isEmpty == false {
             Button(L10n.tr("来自其他应用的附件"), systemImage: "tray.and.arrow.down") { nextAction = .received; panel = false }
@@ -177,7 +173,10 @@ struct QuickAttachmentPresentation: ViewModifier {
           }
           Button(L10n.tr("拍照"), systemImage: "camera") { nextAction = .camera; panel = false }
             .accessibilityIdentifier("attachment-camera")
-          Button(L10n.tr("选择图片"), systemImage: "photo") { nextAction = .photos; panel = false }
+          Button(L10n.tr("选择图片"), systemImage: "photo") {
+            if library.readable { browsingPhotos = true }
+            else { nextAction = .photos; panel = false }
+          }.accessibilityIdentifier("attachment-photo-library")
           Button(L10n.tr("选择文件"), systemImage: "doc") { nextAction = .files; panel = false }
           HStack {
           Text(L10n.tr("粘贴图片或文件"))
@@ -222,9 +221,91 @@ struct QuickAttachmentPresentation: ViewModifier {
           #endif
         }
       }.navigationTitle(L10n.tr("添加附件")).navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .cancellationAction) { Button(L10n.tr("关闭")) { panel = false } } }
+        .toolbar {
+          if !browsingPhotos {
+            ToolbarItem(placement: .cancellationAction) { Button(L10n.tr("关闭")) { panel = false } }
+          }
+        }
+        .safeAreaInset(edge: .bottom) { photoSelectionFooter }
+        .navigationDestination(isPresented: $browsingPhotos) { photoLibrary }
+        .fullScreenCover(item: $previewPhotos) { request in
+          AttachmentPhotoSelectionPreview(request: request, selection: photoSelection,
+            alreadyAdded: addedPhotoIds, maximum: remainingPhotoCount, adding: addingPhotos,
+            add: addSelectedPhotos)
+        }
     }.presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
       .task { await library.requestAccess() }
+  }
+
+  private var addedPhotoIds: Set<String> {
+    guard let destination else { return [] }
+    return Set((store.drafts.values[destination.key]?.attachments ?? []).compactMap(\.photoAssetId))
+  }
+  private var remainingPhotoCount: Int {
+    guard let destination else { return 0 }
+    return max(0, 5 - (store.drafts.values[destination.key]?.attachments.count ?? 0))
+  }
+  private func photoTile(_ photo: RecentAttachmentPhoto, in photos: [RecentAttachmentPhoto]) -> some View {
+    AttachmentPhotoTile(photo: photo, order: photoSelection.photos.firstIndex(where: { $0.id == photo.id }).map { $0 + 1 },
+      alreadyAdded: addedPhotoIds.contains(photo.id), preview: {
+        previewPhotos = AttachmentPhotoPreviewRequest(photos: photos, initialId: photo.id)
+      }, select: { photoSelection.toggle(photo, maximum: remainingPhotoCount) })
+      .disabled(addingPhotos)
+  }
+  private var photoLibrary: some View {
+    ScrollView {
+      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 3), spacing: 3) {
+        ForEach(photoCatalog.photos) { photo in
+          photoTile(photo, in: photoCatalog.photos).aspectRatio(1, contentMode: .fit)
+        }
+        if photoCatalog.hasMore {
+          ProgressView().frame(height: 44).onAppear { photoCatalog.loadMore() }
+        }
+      }.padding(3)
+      if photoCatalog.photos.isEmpty {
+        Text(L10n.tr("暂无可访问的图片")).foregroundStyle(Palette.secondary).padding()
+      }
+      if library.authorization == .limited {
+        Button(L10n.tr("管理可访问的照片")) { library.manageLimitedAccess() }.frame(minHeight: 44)
+      }
+    }.navigationTitle(L10n.tr("选择图片")).navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button(L10n.tr("返回")) { browsingPhotos = false }.accessibilityIdentifier("attachment-photo-library-back")
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          Button(L10n.tr("取消")) { panel = false }.accessibilityIdentifier("attachment-photo-library-cancel")
+        }
+      }
+      .accessibilityIdentifier("attachment-photo-grid")
+      .safeAreaInset(edge: .bottom) { photoSelectionFooter }
+      .task { photoCatalog.load() }
+      .onChange(of: library.recent.map(\.id)) { _, _ in photoCatalog.load() }
+  }
+  private var photoSelectionFooter: some View {
+    AttachmentPhotoSelectionFooter(selection: photoSelection, adding: addingPhotos, add: addSelectedPhotos)
+      .background(Palette.background)
+  }
+  private func addSelectedPhotos() {
+    guard !addingPhotos, !photoSelection.photos.isEmpty, let target = destination else { return }
+    let photos = photoSelection.photos
+    let requestID = importId
+    addingPhotos = true
+    Task {
+      await store.addLocalAttachments(to: target, importId: UUID().uuidString,
+        loaders: photos.map { photo in { try await library.input(for: photo) } })
+      // An older import may finish after a new picker/target is opened.
+      // Its original draft remains authoritative; it must not dismiss or edit
+      // the new picker selection.
+      guard importId == requestID, destination == target else { return }
+      let saved = Set((store.drafts.values[target.key]?.attachments ?? []).compactMap(\.photoAssetId))
+      for photo in photos where saved.contains(photo.id) { library.dismiss(photo) }
+      photoSelection.photos = photos.filter { !saved.contains($0.id) }
+      addingPhotos = false
+      if photoSelection.photos.isEmpty { previewPhotos = nil; panel = false }
+      else { photoSelection.error = L10n.tr("部分图片未能添加，请重试。") }
+    }
   }
 
   private func performPendingAction() {
@@ -242,15 +323,7 @@ struct QuickAttachmentPresentation: ViewModifier {
     case .camera:
       if UIImagePickerController.isSourceTypeAvailable(.camera) { showCamera = true }
       else { isPresenting = false; store.error = L10n.tr("当前设备无法使用相机。") }
-    case .recent(let photo):
-      isPresenting = false
-      guard let target = destination else { return }
-      let count = store.drafts.values[target.key]?.attachments.count ?? 0
-      let operation = importId
-      Task {
-        await store.addLocalAttachments(to: target, importId: operation, loaders: [{ try await library.input(for: photo) }])
-        if (store.drafts.values[target.key]?.attachments.count ?? 0) > count { library.dismiss(photo) }
-      }
+
     }
   }
 }

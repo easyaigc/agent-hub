@@ -3840,6 +3840,7 @@ private struct ComposerView: View {
   @ObservedObject var voice: VoiceInputController
   @StateObject private var attachmentPhotos = RecentAttachmentPhotos()
   @State private var attachmentRequest: QuickAttachmentRequest?
+  @State private var draftImagePreview: DraftAttachmentPreviewRequest?
   @Binding var attachmentModalPresented: Bool
   @Binding var showComposerActions: Bool
   @FocusState.Binding var composerFocused: Bool
@@ -3854,6 +3855,10 @@ private struct ComposerView: View {
     return composer(presentation)
       .modifier(QuickAttachmentPresentation(store: store, library: attachmentPhotos,
         request: attachmentRequest, isPresenting: $attachmentModalPresented))
+      .fullScreenCover(item: $draftImagePreview, onDismiss: { attachmentModalPresented = false }) { request in
+        DraftAttachmentImagePreview(store: store, drafts: drafts, request: request)
+      }
+      .onChange(of: store.targetKey) { _, _ in draftImagePreview = nil }
       .task { attachmentPhotos.setActive(scenePhase == .active) }
       .onChange(of: scenePhase) { _, phase in attachmentPhotos.setActive(phase == .active) }
       .task(id: context) {
@@ -4061,6 +4066,13 @@ private struct ComposerView: View {
           HStack(spacing: 8) {
             ForEach(store.draft.attachments) { file in
               HStack(spacing: 6) {
+                Button {
+                  guard file.isImage else { return }
+                  composerFocused = false
+                  attachmentModalPresented = true
+                  draftImagePreview = DraftAttachmentPreviewRequest(destination: store.attachmentDestination(), initialId: file.id)
+                } label: {
+                  HStack(spacing: 6) {
                 if file.isImage,
                   let image = UIImage(
                     contentsOfFile: store.attachmentURL(file).path)
@@ -4079,6 +4091,10 @@ private struct ComposerView: View {
                       fromByteCount: Int64(file.size), countStyle: .file)
                   ).font(.caption2).foregroundStyle(Palette.secondary)
                 }
+                  }
+                }.buttonStyle(.plain).disabled(!file.isImage)
+                  .accessibilityLabel(L10n.tr("预览图片") + " " + file.name)
+                  .accessibilityIdentifier("preview-draft-attachment-" + file.id)
                 IconButton(
                   symbol: "xmark", label: L10n.tr("移除 \(file.name)"),
                   id: "remove-attachment"

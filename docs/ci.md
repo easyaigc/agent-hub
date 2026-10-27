@@ -42,3 +42,7 @@ Android SDK Platform 37 的实际包 ID 是 `platforms;android-37.0`，旧工作
 3. 运行器上线后，从任务日志区分下载 action、准备工具、依赖安装、构建和断言失败。下载或工具链失败先修复环境，再重跑原任务；保持失败尝试和日志可读。
 4. 仅取消已被新提交取代且尚未执行的本仓库旧任务，不打断其他项目或正在运行的任务，不删除历史。Gitea 1.27 的 runs DELETE 接口实际删除运行；`tea actions runs delete` 的 cancel 别名也不是保留记录的取消。取消应使用平台提供的取消操作。
 5. 以服务器实际运行日志、执行时间、运行器和 success 结论验收，记录 run/job 链接。`pnpm check` 与 iOS Simulator 构建分别保留结果；模拟器编译不代表真机验收或发布成功。
+
+## GitHub 公开主线同步
+
+Gitea `main` 推送后由独立工作流发布到 GitHub `main`，每小时补查，保留独立公开历史。部署密钥、来源指纹和核验方法见 [GitHub 同步指南](github-sync.md)。工作流与源码检查分别记录结果。

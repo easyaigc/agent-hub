@@ -40,6 +40,7 @@ packages/mobile-core/build/
 !/docs/acceptance/voice-local-fallback-20261026.md
 !/docs/acceptance/voice-transcribing-animation-20261026.md
 !/docs/acceptance/question-voice-recovery-20261026.md
+!/docs/acceptance/image-preview-selection-20261027.md
 !/docs/acceptance/mobile-evidence/
 !/docs/acceptance/mobile-evidence/*.json
 

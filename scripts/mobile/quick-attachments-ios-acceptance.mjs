@@ -24,6 +24,7 @@ assert(
     'com.easyai.agenthub.quickattachments.acceptance',
     'com.easyai.agenthub.externalattachments.acceptance',
     'com.easyai.agenthub.attachmentsplan.acceptance',
+    'com.easyai.agenthub.imagepreview.acceptance',
   ].includes(bundleId),
   'Use an independent attachment acceptance App',
 );

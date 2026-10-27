@@ -15,12 +15,13 @@ enum LocalAttachmentInput: @unchecked Sendable {
   case data(Data, name: String, image: Bool)
   case file(URL, name: String? = nil)
   case image(UIImage)
+  case photo(Data, name: String, identifier: String)
 }
 
 enum LocalAttachmentDiagnostics {
   static func trace(_ message: String) {
     #if DEBUG
-    guard Bundle.main.bundleIdentifier == "com.easyai.agenthub.quickattachments.acceptance",
+    guard ["com.easyai.agenthub.quickattachments.acceptance", "com.easyai.agenthub.imagepreview.acceptance"].contains(Bundle.main.bundleIdentifier ?? ""),
       ProcessInfo.processInfo.arguments.contains("-quick-attachments-acceptance"),
       let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
     let url = documents.appendingPathComponent("qa-import-stages.json")
@@ -85,8 +86,10 @@ enum LocalAttachmentPreparation {
     destination: AttachmentDraftDestination? = nil, attachmentId: String? = nil) throws -> PreparedLocalAttachment {
     try Task.checkCancellation()
     let raw: Data, name: String, image: Bool
+    var photoAssetId: String? = nil
     var alreadyNormalized = false
     switch input {
+    case let .photo(value, title, identifier): raw = value; name = title; image = true; photoAssetId = identifier
     case let .data(value, title, isImage): raw = value; name = title; image = isImage
     case let .file(url, title):
       raw = try read(url); name = title ?? url.lastPathComponent
@@ -101,7 +104,7 @@ enum LocalAttachmentPreparation {
     let (bytes, normalizedName) = alreadyNormalized ? (raw, name) : try normalize(raw, name: name, image: image)
     try Task.checkCancellation()
     let file = LocalAttachment(id: attachmentId ?? UUID().uuidString, name: normalizedName, size: bytes.count,
-      fileName: UUID().uuidString, isImage: image)
+      fileName: UUID().uuidString, isImage: image, photoAssetId: photoAssetId)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let url = directory.appendingPathComponent(file.fileName)
     try bytes.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])

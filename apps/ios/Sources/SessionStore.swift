@@ -1126,8 +1126,15 @@ private var userRequestedWorkspaceGeneration: UUID?
     guard SessionPolicies.shared.inheritDefaults(threadSelected: selectedThreadId != nil, replyPending: pending != nil,
       creationPending: pendingDesktopCreation != nil, text: current.text, attachmentCount: Int32(current.attachments.count),
       operationId: current.operationId) else { return }
-    drafts.values[targetKey] = Draft(collaborationMode: current.collaborationMode,
-      model: preference.model, effort: preference.effort, permissionMode: preference.permissionMode, speed: preference.speed)
+    // Workspace refreshes may reapply defaults while an empty draft's photo
+    // picker is open. Preserve its import generation so that the captured
+    // picker still commits only to that original draft.
+    var updated = current
+    updated.model = preference.model
+    updated.effort = preference.effort
+    updated.permissionMode = preference.permissionMode
+    updated.speed = preference.speed
+    drafts.values[targetKey] = updated
   }
   var supportsGenerationSettings: Bool { client?.isDemo == true || saved.workspaces[client?.id ?? ""]?.capabilities?.contains("generation-settings") == true }
   var modelLoadingKey: String? {
@@ -2083,6 +2090,7 @@ private var userRequestedWorkspaceGeneration: UUID?
   /// Every entry point ends here. This method has no AgentClient/Host dependency.
   func addLocalAttachments(to destination: AttachmentDraftDestination, importId: String = UUID().uuidString,
     attachmentIds: [String]? = nil, loaders: [() async throws -> LocalAttachmentInput]) async {
+    LocalAttachmentDiagnostics.trace("import-request recovery=\(localRecoveryRequired) generation=\(drafts.values[destination.key]?.attachmentImportGeneration == destination.generation) current=\(destination.key == targetKey)")
     guard attachmentIds == nil || (attachmentIds?.count == loaders.count && attachmentIds?.allSatisfy({ UUID(uuidString: $0) != nil }) == true) else { return }
     guard !localImportJobs.contains(importId), !completedLocalImportJobs.contains(importId) else { return }
     guard !localRecoveryRequired,

@@ -155,7 +155,7 @@ struct RecentAttachmentPhoto: Identifiable, @unchecked Sendable {
       throw AttachmentError.unsupportedImage
     }
     let data = try await PhotoAttachmentBytes.read(resource)
-    return .data(data, name: resource.originalFilename, image: true)
+    return .photo(data, name: resource.originalFilename, identifier: photo.id)
   }
 }
 

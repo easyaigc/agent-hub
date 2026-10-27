@@ -151,7 +151,24 @@ extension CodexManageUITests {
   @MainActor private func quickAttachmentControl(_ id: String) -> XCUIElement {
     XCTAssertEqual(app.state, .runningForeground, "The independent attachment App must own the foreground before input")
     let button = app.buttons[id]
-    for step in 0..<12 where !button.isHittable {
+    func fullyVisible() -> Bool {
+      guard button.exists, button.isHittable else { return false }
+      let frame = button.frame
+      var viewport = app.collectionViews.firstMatch.exists ? app.collectionViews.firstMatch.frame : app.frame
+      let bar = app.navigationBars.firstMatch
+      if bar.exists {
+        let top = max(viewport.minY, bar.frame.maxY)
+        viewport = CGRect(x: viewport.minX, y: top, width: viewport.width, height: max(0, viewport.maxY - top))
+      }
+      let footer = app.buttons["attachment-add-selected"]
+      if footer.exists, id != "attachment-add-selected", footer.frame.minY > viewport.minY {
+        viewport.size.height = min(viewport.height, max(0, footer.frame.minY - 12 - viewport.minY))
+      }
+      let visible = frame.intersection(viewport).intersection(app.frame)
+      return visible.height >= min(44, frame.height) * 0.9 && visible.width >= min(44, frame.width) * 0.9
+    }
+    for step in 0..<12 {
+      if fullyVisible() { break }
       let above = button.exists ? button.frame.maxY < app.frame.midY : step >= 4
       if app.collectionViews.firstMatch.exists {
         if above { app.collectionViews.firstMatch.swipeDown() } else { app.collectionViews.firstMatch.swipeUp() }
@@ -160,7 +177,7 @@ extension CodexManageUITests {
       } else { if above { app.swipeDown() } else { app.swipeUp() } }
     }
     XCTAssertTrue(button.waitForExistence(timeout: 10), app.debugDescription)
-    XCTAssertTrue(button.isHittable, app.debugDescription)
+    XCTAssertTrue(fullyVisible(), app.debugDescription)
     return button
   }
   @MainActor private func quickAttachmentPanel() {
@@ -293,6 +310,9 @@ extension CodexManageUITests {
     for _ in 0..<8 where !first.isHittable { strip.swipeRight() }
     XCTAssertTrue(first.isHittable)
     first.tap()
+    XCTAssertTrue(app.buttons["attachment-preview-select"].waitForExistence(timeout: 15))
+    app.buttons["attachment-preview-select"].tap()
+    app.buttons["attachment-preview-add-selected"].tap()
     XCTAssertTrue(app.staticTexts["已添加 · 待发送"].firstMatch.waitForExistence(timeout: 15))
     setComposerPlanMode(true)
     shot("quick-attachment-plan-toggle-after-permission")
@@ -302,6 +322,141 @@ extension CodexManageUITests {
     quickAttachmentControl("quick-attachment-test-cleanup").tap()
     quickAttachmentAllowPermission(deletingOwnTestPhotos: true)
     _ = quickAttachmentControl("quick-attachment-test-files")
+    XCTAssertTrue(app.staticTexts["photos-cleaned"].waitForExistence(timeout: 15))
+    quickAttachmentClosePanel()
+  }
+
+  @MainActor private func quickAttachmentGridSelection(_ id: String) -> XCUIElement {
+    XCTAssertEqual(app.state, .runningForeground)
+    let bar = app.navigationBars["选择图片"]
+    XCTAssertTrue(bar.waitForExistence(timeout: 10))
+    let circle = app.buttons["select-photo-" + id]
+    let origin = app.coordinate(withNormalizedOffset: .zero)
+    for step in 0..<10 {
+      let top = bar.frame.maxY + 6
+      let bottom = app.buttons["attachment-add-selected"].frame.minY - 16
+      let visible = CGRect(x: 0, y: top, width: app.frame.width, height: max(0, bottom - top))
+      if circle.exists {
+        let frame = circle.frame
+        if !frame.isEmpty, visible.contains(CGPoint(x: frame.midX, y: frame.midY)),
+          frame.intersection(visible).height >= min(44, frame.height) * 0.9 { return circle }
+      }
+      let above = circle.exists ? circle.frame.midY < top : step < 2
+      let start = origin.withOffset(CGVector(dx: app.frame.midX, dy: above ? top + 35 : bottom - 35))
+      let end = origin.withOffset(CGVector(dx: app.frame.midX, dy: above ? bottom - 35 : top + 35))
+      start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+    }
+    XCTFail("The exact owned photo must be visible above the fixed footer: " + id)
+    return circle
+  }
+
+  @MainActor private func quickAttachmentPreparePreviewPhotos() throws -> [String] {
+    quickAttachmentControl("quick-attachment-test-photo-strip").tap()
+    // Status and ownership rows are at the top of the DEBUG controls; the
+    // native List virtualizes them after scrolling down to the prepare button.
+    for _ in 0..<5 where !app.staticTexts["photo-strip-ready"].isHittable {
+      app.collectionViews.firstMatch.swipeDown()
+    }
+    XCTAssertTrue(app.staticTexts["photo-strip-ready"].waitForExistence(timeout: 40), app.debugDescription)
+    let owned = app.staticTexts["quick-attachment-owned-photos"]
+    let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+      owned.label.components(separatedBy: "|").count >= 6
+    }, object: owned)
+    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 25), .completed)
+    let ids = owned.label.components(separatedBy: "|")
+    XCTAssertGreaterThanOrEqual(ids.count, 6)
+    return ids
+  }
+
+  @MainActor func testQuickAttachmentImagePreviewCleanup() throws {
+    quickAttachmentPanel()
+    quickAttachmentControl("quick-attachment-test-cleanup").tap()
+    quickAttachmentAllowPermission(deletingOwnTestPhotos: true)
+    for _ in 0..<5 where !app.staticTexts["photos-cleaned"].isHittable { app.collectionViews.firstMatch.swipeDown() }
+    XCTAssertTrue(app.staticTexts["photos-cleaned"].waitForExistence(timeout: 20))
+    quickAttachmentClosePanel()
+  }
+
+  @MainActor func testQuickAttachmentImagePreviewSelection() throws {
+    quickAttachmentPanel()
+    quickAttachmentControl("quick-attachment-test-preview-metadata").tap()
+    XCTAssertTrue(app.staticTexts["preview-metadata-passed"].waitForExistence(timeout: 15))
+    let ids = try quickAttachmentPreparePreviewPhotos()
+    quickAttachmentControl("recent-photo-" + ids[0]).tap()
+    let choose = app.buttons["attachment-preview-select"]
+    XCTAssertTrue(choose.waitForExistence(timeout: 15))
+    XCTAssertEqual(choose.value as? String, "0")
+    choose.tap()
+    XCTAssertEqual(choose.value as? String, "1")
+    app.buttons["attachment-preview-back"].tap()
+    XCTAssertEqual(app.buttons["select-photo-" + ids[0]].value as? String, "1")
+    quickAttachmentControl("select-photo-" + ids[1]).tap()
+    quickAttachmentControl("attachment-photo-library").tap()
+    XCTAssertTrue(app.scrollViews["attachment-photo-grid"].waitForExistence(timeout: 10))
+    XCTAssertEqual(app.buttons["select-photo-" + ids[1]].value as? String, "2")
+    app.buttons["recent-photo-" + ids[2]].tap()
+    XCTAssertTrue(choose.waitForExistence(timeout: 10)); choose.tap()
+    shot("image-preview-select-in-fullscreen")
+    app.buttons["attachment-preview-back"].tap()
+    shot("image-preview-grid-selection-preserved")
+    app.buttons["attachment-add-selected"].tap()
+    let added = app.staticTexts.matching(NSPredicate(format: "label == %@", "已添加 · 待发送"))
+    let three = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in added.count == 3 }, object: nil)
+    XCTAssertEqual(XCTWaiter.wait(for: [three], timeout: 25), .completed)
+    let open = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "preview-draft-attachment-")).firstMatch
+    XCTAssertTrue(open.waitForExistence(timeout: 10)); open.tap()
+    let zoom = app.staticTexts["attachment-preview-zoom-value"]
+    XCTAssertTrue(zoom.waitForExistence(timeout: 15))
+    XCTAssertTrue(app.images["图片预览"].waitForExistence(timeout: 20))
+    app.images["图片预览"].doubleTap()
+    let enlarged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in zoom.label != "100%" }, object: zoom)
+    XCTAssertEqual(XCTWaiter.wait(for: [enlarged], timeout: 10), .completed)
+    shot("image-preview-draft-double-tap-zoom")
+    app.images["图片预览"].doubleTap()
+    let reset = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in zoom.label == "100%" }, object: zoom)
+    XCTAssertEqual(XCTWaiter.wait(for: [reset], timeout: 10), .completed)
+    let before = app.staticTexts["attachment-preview-current"].value as? String
+    app.images["图片预览"].swipeLeft()
+    let paged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+      (self.app.staticTexts["attachment-preview-current"].value as? String) != before
+    }, object: nil)
+    XCTAssertEqual(XCTWaiter.wait(for: [paged], timeout: 10), .completed)
+    app.images["图片预览"].pinch(withScale: 1.7, velocity: 1)
+    let pinched = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in zoom.label != "100%" }, object: zoom)
+    XCTAssertEqual(XCTWaiter.wait(for: [pinched], timeout: 10), .completed)
+    shot("image-preview-draft-pinch-and-remove")
+    let original = try XCTUnwrap(before)
+    app.buttons["preview-page-" + original].tap()
+    XCTAssertEqual(app.staticTexts["attachment-preview-current"].value as? String, original)
+    XCTAssertEqual(zoom.label, "100%", "Thumbnail navigation resets the previous page's zoom")
+    app.buttons["attachment-preview-remove"].tap()
+    app.buttons["attachment-preview-finish"].tap()
+    let two = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in added.count == 2 }, object: nil)
+    XCTAssertEqual(XCTWaiter.wait(for: [two], timeout: 15), .completed)
+    app.terminate(); app.launchArguments.append("-restore-testing"); app.launchChineseTest()
+    XCTAssertTrue(added.firstMatch.waitForExistence(timeout: 15))
+    XCTAssertEqual(added.count, 2)
+    quickAttachmentPanel()
+    quickAttachmentControl("attachment-photo-library").tap()
+    let unadded = ids.filter { app.buttons["select-photo-" + $0].isEnabled }
+    XCTAssertGreaterThanOrEqual(unadded.count, 4)
+    for (index, id) in unadded.prefix(3).enumerated() {
+      let circle = quickAttachmentGridSelection(id)
+      circle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      XCTAssertEqual(circle.value as? String, String(index + 1))
+    }
+    let extra = quickAttachmentGridSelection(unadded[3])
+    extra.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    XCTAssertTrue(app.staticTexts["最多添加 5 个附件，请先移除部分附件。"].waitForExistence(timeout: 5))
+    shot("image-preview-remaining-slots-limit")
+    app.buttons["attachment-photo-library-back"].tap()
+    quickAttachmentClosePanel()
+    XCTAssertEqual(added.count, 2, "Closing selection must preserve the existing draft")
+    quickAttachmentPanel()
+    XCTAssertFalse(app.buttons["attachment-add-selected"].isEnabled)
+    quickAttachmentControl("quick-attachment-test-cleanup").tap()
+    quickAttachmentAllowPermission(deletingOwnTestPhotos: true)
+    for _ in 0..<5 where !app.staticTexts["photos-cleaned"].isHittable { app.collectionViews.firstMatch.swipeDown() }
     XCTAssertTrue(app.staticTexts["photos-cleaned"].waitForExistence(timeout: 15))
     quickAttachmentClosePanel()
   }
@@ -336,6 +491,14 @@ extension CodexManageUITests {
     #else
     quickAttachmentPanel()
     quickAttachmentControl("选择图片").tap()
+    if app.scrollViews["attachment-photo-grid"].waitForExistence(timeout: 3) {
+      let select = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "select-photo-")).firstMatch
+      XCTAssertTrue(select.waitForExistence(timeout: 10)); select.tap()
+      app.buttons["attachment-add-selected"].tap()
+      XCTAssertTrue(app.staticTexts["已添加 · 待发送"].firstMatch.waitForExistence(timeout: 20))
+      shot("quick-attachment-photo-grid-import")
+      return
+    }
     XCTAssertTrue(app.buttons["照片"].firstMatch.waitForExistence(timeout: 15), app.debugDescription)
     let photo = app.images["PXGGridLayout-Info"].firstMatch
     XCTAssertTrue(photo.waitForExistence(timeout: 10), app.debugDescription)
@@ -356,6 +519,7 @@ extension CodexManageUITests {
     let folders: [String]
     switch ProcessInfo.processInfo.environment["QUICK_ATTACHMENT_BUNDLE_ID"] {
     case "com.easyai.agenthub.attachmentsplan.acceptance": folders = ["Agent Hub Photos Plan DEV"]
+    case "com.easyai.agenthub.imagepreview.acceptance": folders = ["Agent Hub Image Preview DEV"]
     case "com.easyai.agenthub.externalattachments.acceptance": folders = ["Agent Hub External DEV"]
     default: folders = ["Agent Hub Attachments DEV"]
     }
@@ -367,7 +531,7 @@ extension CodexManageUITests {
     if open.waitForExistence(timeout: 2) { open.tap() }
   }
 
-  @MainActor private func quickAttachmentPrepareLiveDraft(pasteImage: Bool = true, pasteFile: Bool = false) throws -> LiveFixture {
+  @MainActor private func quickAttachmentPrepareLiveDraft(pasteImage: Bool = true, pasteFile: Bool = false, photoPreview: Bool = false) throws -> LiveFixture {
     struct Fixture: Decodable { let connection: LiveFixture; let pairingUri: String }
     let fixture = try JSONDecoder().decode(Fixture.self, from: Data(XCTUnwrap(
       ProcessInfo.processInfo.environment["QUICK_ATTACHMENT_FIXTURE"]).utf8))
@@ -394,6 +558,16 @@ extension CodexManageUITests {
     quickAttachmentPanel()
     quickAttachmentControl("quick-attachment-test-files").tap()
     XCTAssertTrue(app.staticTexts["files-ready"].waitForExistence(timeout: 10))
+    if photoPreview {
+      let ids = try quickAttachmentPreparePreviewPhotos()
+      quickAttachmentControl("recent-photo-" + ids[0]).tap()
+      XCTAssertTrue(app.buttons["attachment-preview-select"].waitForExistence(timeout: 15))
+      app.buttons["attachment-preview-select"].tap()
+      shot("image-preview-live-selected-before-add")
+      app.buttons["attachment-preview-add-selected"].tap()
+      XCTAssertTrue(app.staticTexts["已添加 · 待发送"].firstMatch.waitForExistence(timeout: 20))
+      quickAttachmentPanel()
+    }
     if pasteImage || pasteFile {
       quickAttachmentControl("quick-attachment-test-copy").tap()
       quickAttachmentControl("attachment-paste").tap()
@@ -406,9 +580,9 @@ extension CodexManageUITests {
       quickAttachmentControl("attachment-paste").tap()
     } else {
       quickAttachmentControl("选择文件").tap()
-      quickAttachmentSelectFile(pasteImage ? "qa-input" : "qa-attachment")
+      quickAttachmentSelectFile(pasteImage || photoPreview ? "qa-input" : "qa-attachment")
     }
-    if !pasteImage && !pasteFile {
+    if !pasteImage && !pasteFile && !photoPreview {
       XCTAssertTrue(app.staticTexts["已添加 · 待发送"].firstMatch.waitForExistence(timeout: 20), app.debugDescription)
       quickAttachmentPanel()
       quickAttachmentControl("选择文件").tap()
@@ -432,10 +606,15 @@ extension CodexManageUITests {
   @MainActor func testQuickAttachmentFilePasteSendDEV() async throws {
     try await quickAttachmentSendOnDemandDEV(pasteFile: true)
   }
-  @MainActor private func quickAttachmentSendOnDemandDEV(pasteFile: Bool) async throws {
-    let connection = try quickAttachmentPrepareLiveDraft(pasteImage: false, pasteFile: pasteFile)
-    focusLiveComposer()
-    composer.typeText("读取图片和文本附件，分别报告其中的校验码。只输出这两个校验码，不执行其他操作。")
+  @MainActor func testQuickAttachmentImagePreviewSendDEV() async throws {
+    try await quickAttachmentSendOnDemandDEV(pasteFile: false, photoPreview: true)
+  }
+  @MainActor private func quickAttachmentSendOnDemandDEV(pasteFile: Bool, photoPreview: Bool = false) async throws {
+    let connection = try quickAttachmentPrepareLiveDraft(pasteImage: false, pasteFile: pasteFile, photoPreview: photoPreview)
+    focusLiveComposer(requireSoftwareKeyboard: !photoPreview)
+    let prompt = "读取图片和文本附件，分别报告其中的校验码。只输出这两个校验码，不执行其他操作。"
+    composer.typeText(prompt)
+    XCTAssertTrue((composer.value as? String)?.contains(prompt) == true)
     XCTAssertTrue(app.staticTexts["已添加 · 待发送"].firstMatch.exists)
     shot("quick-attachment-live-before-send")
     print("QUICK_ATTACHMENT_SEND_AUTHORIZED " + connection.nonce); fflush(stdout)
@@ -772,7 +951,7 @@ final class CodexManageUITests: XCTestCase {
     }
     if name.contains("testQuickAttachment") {
       let bundleId = ProcessInfo.processInfo.environment["QUICK_ATTACHMENT_BUNDLE_ID"] ?? ""
-      guard ["com.easyai.agenthub.quickattachments.acceptance", "com.easyai.agenthub.externalattachments.acceptance", "com.easyai.agenthub.attachmentsplan.acceptance"].contains(bundleId) else {
+      guard ["com.easyai.agenthub.quickattachments.acceptance", "com.easyai.agenthub.externalattachments.acceptance", "com.easyai.agenthub.attachmentsplan.acceptance", "com.easyai.agenthub.imagepreview.acceptance"].contains(bundleId) else {
         throw XCTSkip("Requires the independent quick attachment acceptance App")
       }
       XCUIDevice.shared.orientation = .portrait
@@ -783,7 +962,7 @@ final class CodexManageUITests: XCTestCase {
       }
       app.launchEnvironment["QUICK_ATTACHMENT_CODE"] = ProcessInfo.processInfo.environment["QUICK_ATTACHMENT_CODE"]
       addUIInterruptionMonitor(withDescription: "Quick attachment permission") { alert in
-        if alert.label.contains("Agent Hub Attachments DEV") && (alert.label.contains("delete") || alert.label.contains("删除")) {
+        if (alert.label.contains("Agent Hub Attachments DEV") || alert.label.contains("Agent Hub Image Preview DEV")) && (alert.label.contains("delete") || alert.label.contains("删除")) {
           let remove = alert.buttons.matching(NSPredicate(format: "label IN %@", ["Delete", "删除", "Delete Photos", "删除照片"])).firstMatch
           if remove.exists { remove.tap(); return true }
         }
@@ -7984,6 +8163,12 @@ final class CodexManageUITests: XCTestCase {
     cancel.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     quickAttachmentPanel()
     quickAttachmentControl("选择图片").tap()
+    if app.scrollViews["attachment-photo-grid"].waitForExistence(timeout: 3) {
+      shot("native-photo-grid")
+      app.buttons["attachment-photo-library-back"].tap()
+      quickAttachmentClosePanel()
+      return
+    }
     let photoCancel = app.buttons.matching(
       NSPredicate(format: "identifier == 'Cancel' OR label == '取消'")
     ).firstMatch
@@ -9736,12 +9921,14 @@ final class CodexManageUITests: XCTestCase {
     }
   }
 
-  @MainActor private func focusLiveComposer() {
+  @MainActor private func focusLiveComposer(requireSoftwareKeyboard: Bool = true) {
     let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true AND isHittable == true"), object: composer)
     XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 60), .completed, app.debugDescription)
     composer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-    if !app.keyboards.firstMatch.waitForExistence(timeout: 5) { composer.tap() }
-    XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10), app.debugDescription)
+    if requireSoftwareKeyboard {
+      if !app.keyboards.firstMatch.waitForExistence(timeout: 5) { composer.tap() }
+      XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10), app.debugDescription)
+    }
   }
   @MainActor private func sendLiveComposer(attachmentNonce: String? = nil) {
     let send = app.buttons["send-message"]

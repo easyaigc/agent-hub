@@ -293,6 +293,7 @@ struct LocalAttachment: Identifiable, Codable, Equatable, Sendable {
   let size: Int
   let fileName: String
   let isImage: Bool
+  var photoAssetId: String? = nil
 }
 
 struct ClientType: Codable {

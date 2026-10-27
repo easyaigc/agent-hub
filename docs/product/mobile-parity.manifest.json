@@ -1251,7 +1251,8 @@
       "apps/ios/Sources/LocalAttachmentPreparation.swift",
       "apps/ios/Sources/RecentAttachmentPhotos.swift",
       "apps/ios/Sources/QuickAttachmentViews.swift",
-      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/AttachmentPreparationRules.kt"
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/AttachmentPreparationRules.kt",
+      "apps/ios/Sources/AttachmentImagePreview.swift"
     ],
     "MobileIdlePerformance": [
       "apps/ios/Sources/SessionStore.swift",
@@ -4190,7 +4191,7 @@
     {
       "id": "F71",
       "group": "草稿、创建与附件",
-      "assertion": "打开附件面板按需请求相册权限，多张最近图片默认横向滑动快选，无展开或提醒开关；拍照与显式粘贴仅准备原本地草稿，点击发送才上传，前台有界读取及草稿代次隔离；外部文件打开/系统操作扩展与显式粘贴图片或文件进入本地收件箱或准确草稿，不自动上传，20 MiB上限与固定文件ID防重",
+      "assertion": "打开附件面板按需请求相册权限，多张最近图片默认横向滑动快选，无展开或提醒开关；拍照与显式粘贴仅准备原本地草稿，点击发送才上传，前台有界读取及草稿代次隔离；外部文件打开/系统操作扩展与显式粘贴图片或文件进入本地收件箱或准确草稿，不自动上传，20 MiB上限与固定文件ID防重；图片主体预览、独立圆圈多选、全屏选择添加，草稿图片预览缩放与移除，关闭暂存选择不修改原草稿",
       "sourceAliases": [
         "QuickAttachments",
         "State",
@@ -4201,7 +4202,7 @@
       "androidStages": ["A6"],
       "scenarios": ["S04", "S05", "S11", "S13", "S18"],
       "ui": ["UI04", "UI07", "UI12"],
-      "revision": 5,
+      "revision": 6,
       "implementation": {
         "ios": "code-present",
         "android": "planned"
@@ -4217,7 +4218,7 @@
           "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/AttachmentPreparationRules.kt"
         ]
       },
-      "sourceNotes": "2026-10-25 iOS 首批核心验收通过：四项真机场景按未变化的生产源码匹配复用，最新候选真实混合发送本次通过，覆盖拍照/显式粘贴、受控最近新增旧照片、本地边界与恢复、配对后不发送和系统选择器/真实混合发送。真实 Host 的发送前附件/创建/输入写入为零，阅读回执单列；原桌面独立确认一次输入、一个完成轮次、实际 xhigh，图片和 TXT 两个独立随机码均来自附件而非正文。模拟器七项、共同核心16向量及构建/检查分别登记。完整权限/字体/未知回执组合矩阵仍未验收；Android A6 暂停，外部分享后续。正式版未替换。详见 docs/acceptance/mobile-evidence/quick-attachments-ios-20261025.json。 2026-10-25 用户要求“＋”最近项默认只显示最新1项，支持显式展开/收起，重开收起；仅点选加入原草稿。iOS构建与物理验收分别记录，未改变Android尚未实现该入口的状态。；P4-4o.25：同步7条主线性能/附件增量并逐提交登记；F71加入总表且Android保持A6暂停；当前P4新包有界复验，首轮API37提交禁用仍列稳定性缺口；过程见docs/plans/android-alignment-20261022/records/p4-main-increments.md 2026-10-26 附件与计划入口调整：iOS打开加号面板时按需请求相册权限，移除最近图片提醒开关及展开收起；最近30张可访问图片以88pt缩略图默认横向排列、左右滑动快选。计划开关常驻输入框上方审批之后、模型之前，明确显示开关状态，沿用原草稿及提交门禁。Android相册快选仍待A6，计划入口需后续同步，当前不启动暂停阶段；本次iOS结果见docs/acceptance/mobile-parity.md的2026-10-26记录。 2026-10-26 外部附件接入：iOS注册文件打开并新增系统“添加到 Agent Hub”操作扩展，共享文件先原子保存本地收件箱，回到App后确认准确草稿；系统粘贴支持文件URL与文件字节，普通文本和网页链接不转成附件。临时URL在回调内复制，保留名称/字节/摘要，落盘后才消费收件箱，重开/部分导入按固定文件ID防重。20 MiB上限保持，28.3 MB ZIP明确拒绝。Android对应分享接收与文件粘贴仍待A6，当前不启动暂停阶段。实现、辅助与真机/WeChat实际来源结果分别见docs/acceptance/external-attachments-ios-20261026.md。 补验修复系统NSURL引用被当作文件字节：使用原生URL读取，失败不把URL归档降级为附件；原文件字节与Host上传摘要分别核对。收件箱使用展示批次快照，修复首次空列表；Action采用独立可直接加载的执行文件。跨App来源用独立受控App验证，不宣称实际微信通过。"
+      "sourceNotes": "2026-10-25 iOS 首批核心验收通过：四项真机场景按未变化的生产源码匹配复用，最新候选真实混合发送本次通过，覆盖拍照/显式粘贴、受控最近新增旧照片、本地边界与恢复、配对后不发送和系统选择器/真实混合发送。真实 Host 的发送前附件/创建/输入写入为零，阅读回执单列；原桌面独立确认一次输入、一个完成轮次、实际 xhigh，图片和 TXT 两个独立随机码均来自附件而非正文。模拟器七项、共同核心16向量及构建/检查分别登记。完整权限/字体/未知回执组合矩阵仍未验收；Android A6 暂停，外部分享后续。正式版未替换。详见 docs/acceptance/mobile-evidence/quick-attachments-ios-20261025.json。 2026-10-25 用户要求“＋”最近项默认只显示最新1项，支持显式展开/收起，重开收起；仅点选加入原草稿。iOS构建与物理验收分别记录，未改变Android尚未实现该入口的状态。；P4-4o.25：同步7条主线性能/附件增量并逐提交登记；F71加入总表且Android保持A6暂停；当前P4新包有界复验，首轮API37提交禁用仍列稳定性缺口；过程见docs/plans/android-alignment-20261022/records/p4-main-increments.md 2026-10-26 附件与计划入口调整：iOS打开加号面板时按需请求相册权限，移除最近图片提醒开关及展开收起；最近30张可访问图片以88pt缩略图默认横向排列、左右滑动快选。计划开关常驻输入框上方审批之后、模型之前，明确显示开关状态，沿用原草稿及提交门禁。Android相册快选仍待A6，计划入口需后续同步，当前不启动暂停阶段；本次iOS结果见docs/acceptance/mobile-parity.md的2026-10-26记录。 2026-10-26 外部附件接入：iOS注册文件打开并新增系统“添加到 Agent Hub”操作扩展，共享文件先原子保存本地收件箱，回到App后确认准确草稿；系统粘贴支持文件URL与文件字节，普通文本和网页链接不转成附件。临时URL在回调内复制，保留名称/字节/摘要，落盘后才消费收件箱，重开/部分导入按固定文件ID防重。20 MiB上限保持，28.3 MB ZIP明确拒绝。Android对应分享接收与文件粘贴仍待A6，当前不启动暂停阶段。实现、辅助与真机/WeChat实际来源结果分别见docs/acceptance/external-attachments-ios-20261026.md。 补验修复系统NSURL引用被当作文件字节：使用原生URL读取，失败不把URL归档降级为附件；原文件字节与Host上传摘要分别核对。收件箱使用展示批次快照，修复首次空列表；Action采用独立可直接加载的执行文件。跨App来源用独立受控App验证，不宣称实际微信通过。 2026-10-26 F71／UI07／UI12 图片预览与多选：iOS采用点图片预览、点独立圆圈选择；最近图片与可访问相册共用按选择顺序排列的暂存选择，统一添加后才保存原草稿，关闭不修改已有草稿。全屏支持选择、左右切换、双击／双指缩放、清晰图片加载失败重试；草稿图片支持预览与移除。已添加标记按本地照片来源保存，旧草稿兼容，仍受五个附件、20 MiB及原目标／草稿代次限制。Android对应UI待A6且保持暂停；实现、辅助检查与物理iPhone／真实模型结果分别登记，完整F71不据此关闭。"
     }
   ],
   "changes": [
@@ -9902,6 +9903,27 @@
         "scripts/mobile/quick-attachments-ios-acceptance.mjs": "134a4e67da0f780d79346bf2a94c46b0113fbbb297600208bfd448814caa2acf",
         "apps/ios/Sources/CodexManageApp.swift": "810b979168f4770be9244cb13b83c990158717e2352f04b3f4539964fe660163",
         "apps/ios/Tests/ExternalAttachmentSourceApp.swift": "d41dfecb48c8b627853217cd180c1e9d176a38f493d89ca8752a5e88a1a9d7d5"
+      }
+    },
+    {
+      "id": "image-preview-selection-ios-20261026",
+      "baseCommit": "69e7e09b966e2db7c7755ee23431eeff4d162303",
+      "features": ["F71"],
+      "summary": "2026-10-26 F71／UI07／UI12 图片预览与多选：iOS采用点图片预览、点独立圆圈选择；最近图片与可访问相册共用按选择顺序排列的暂存选择，统一添加后才保存原草稿，关闭不修改已有草稿。全屏支持选择、左右切换、双击／双指缩放、清晰图片加载失败重试；草稿图片支持预览与移除。已添加标记按本地照片来源保存，旧草稿兼容，仍受五个附件、20 MiB及原目标／草稿代次限制。Android对应UI待A6且保持暂停；实现、辅助检查与物理iPhone／真实模型结果分别登记，完整F71不据此关闭。",
+      "files": {
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "1feda7b9830905aa5a71f8afbbd8d351af16f47ce216c68a93a52a762ad09055",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "f55523b0ed1a16ce3563d8925fdced57f7ec9313aa2c48b4ef62b6cecc8011a3",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "966c9160470b565d48ec18edb798d708f7285e56c7d12d56f69aeee273256075",
+        "apps/ios/Sources/LocalAttachmentPreparation.swift": "432eaddc0bfa9d54c3cd82796ca39646c61a162f70d16e40c01d1be312c5cc69",
+        "apps/ios/Sources/Models.swift": "71552f93b594644d0d78f1866d5736c355cda4e40862dc8ecc48fd2284e692bd",
+        "apps/ios/Sources/QuickAttachmentAcceptance.swift": "92c3de0ab24c915d34a6277762eec472d1e5cdb1514c3c0a13c63f0abf72a84e",
+        "apps/ios/Sources/QuickAttachmentViews.swift": "18d1dbb2e37e75149a02e1eb5c6f79c670fb66d1de80b75e6ddac4013ed651f9",
+        "apps/ios/Sources/RecentAttachmentPhotos.swift": "d2d1947a20a3ca5459bf430e568951d0a780a136f2f1b8599ce03757039c678b",
+        "apps/ios/Sources/RootView.swift": "5f0cc3a7d9d9f575a27ab2ba0a848447bfda46fd0857768d431c67f3fa7839ea",
+        "apps/ios/Sources/SessionStore.swift": "a5e85e2f9eab226d604680897dea9b890cbc3c555e06a3e665ff1245311bec2a",
+        "apps/ios/Tests/CodexManageUITests.swift": "1649edc8ce05d369c13847745ec4e4920241dbd01620a35391a57f53c21f954c",
+        "scripts/mobile/quick-attachments-ios-acceptance.mjs": "87377c809faeb3b655ab990f7560b77fd30eb5aeb95d5f82a46d45dc6ea7a258",
+        "apps/ios/Sources/AttachmentImagePreview.swift": "a2726bc94a6e967e56d987597ca8f027a2847b48e2d021e1312b8ca7e7562c38"
       }
     },
     {

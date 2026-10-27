@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 @MainActor enum QuickAttachmentAcceptance {
   static var enabled: Bool {
     ProcessInfo.processInfo.arguments.contains("-quick-attachments-acceptance") &&
-      ["com.easyai.agenthub.quickattachments.acceptance", "com.easyai.agenthub.externalattachments.acceptance", "com.easyai.agenthub.attachmentsplan.acceptance"].contains(Bundle.main.bundleIdentifier ?? "")
+      ["com.easyai.agenthub.quickattachments.acceptance", "com.easyai.agenthub.externalattachments.acceptance", "com.easyai.agenthub.attachmentsplan.acceptance", "com.easyai.agenthub.imagepreview.acceptance"].contains(Bundle.main.bundleIdentifier ?? "")
   }
   static var code: String { ProcessInfo.processInfo.environment["QUICK_ATTACHMENT_CODE"] ?? "LOCAL-ATTACHMENT-TEST" }
   private static var resetOwnedInboxDone = false
@@ -91,6 +91,23 @@ import UniformTypeIdentifiers
     do { _ = try AttachmentFileIntake.read(oversized); throw AttachmentError.unsupportedImage }
     catch AttachmentIntakeError.tooLarge { }
   }
+  static func checkPreviewMetadata() throws {
+    guard enabled else { return }
+    let old = Data(#"{"id":"legacy","name":"old.png","size":1,"fileName":"local","isImage":true}"#.utf8)
+    guard try JSONDecoder().decode(LocalAttachment.self, from: old).photoAssetId == nil else {
+      throw AttachmentError.unsupportedImage
+    }
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let destination = AttachmentDraftDestination(key: "owned-preview-test", generation: UUID().uuidString)
+    let prepared = try LocalAttachmentPreparation.prepare(.photo(image().pngData()!, name: "owned.png", identifier: "owned-photo"),
+      directory: directory, destination: destination)
+    guard let journal = prepared.journal,
+      prepared.file.photoAssetId == "owned-photo",
+      try JSONDecoder().decode(PreparedAttachmentRecord.self, from: Data(contentsOf: journal)).file.photoAssetId == "owned-photo" else {
+      throw AttachmentError.unsupportedImage
+    }
+  }
   static func image() -> UIImage {
     let renderer = UIGraphicsImageRenderer(size: CGSize(width: 900, height: 500))
     return renderer.image { context in
@@ -151,6 +168,8 @@ struct QuickAttachmentAcceptanceControls: View {
         }.map(\.id).joined(separator: "|"))
           .lineLimit(1)
           .accessibilityIdentifier("quick-attachment-owned-photos")
+        Button("Check image preview metadata") { run { try QuickAttachmentAcceptance.checkPreviewMetadata(); return "preview-metadata-passed" } }
+          .accessibilityIdentifier("quick-attachment-test-preview-metadata")
         Button("Prepare test files") { run { try QuickAttachmentAcceptance.prepareDocuments(); return "files-ready" } }
           .accessibilityIdentifier("quick-attachment-test-files")
         Button("Copy test image") { QuickAttachmentAcceptance.copyLocalImage(); status = "clipboard-ready" }

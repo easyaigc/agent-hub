@@ -1,0 +1,54 @@
+name: Sync GitHub main
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-github-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    if: github.server_url == 'https://git.51easyai.com'
+    runs-on: agent-hub-linux
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Publish source snapshot to GitHub
+        shell: bash
+        env:
+          GH_PUBLIC_SYNC_SSH_KEY: ${{ secrets.GH_PUBLIC_SYNC_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          : "${GH_PUBLIC_SYNC_SSH_KEY:?Missing repository deploy-key secret}"
+          umask 077
+          sync_dir=$(mktemp -d)
+          trap 'rm -f "$sync_dir/key" "$sync_dir/known_hosts" "$sync_dir/meta.json"; rmdir "$sync_dir"' EXIT
+          printf '%s\n' "$GH_PUBLIC_SYNC_SSH_KEY" > "$sync_dir/key"
+          unset GH_PUBLIC_SYNC_SSH_KEY
+          curl --fail --silent --show-error --retry 3 https://api.github.com/meta > "$sync_dir/meta.json"
+          node --input-type=module - "$sync_dir" <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const dir = process.argv[2];
+          const keys = JSON.parse(readFileSync(`${dir}/meta.json`, 'utf8')).ssh_keys;
+          if (!Array.isArray(keys) || !keys.length || keys.some(key => !/^ssh-(ed25519|rsa) |^ecdsa-sha2-nistp256 /.test(key))) {
+            throw new Error('Invalid GitHub SSH host keys');
+          }
+          writeFileSync(`${dir}/known_hosts`, keys.map(key => `[ssh.github.com]:443 ${key}\n`).join(''), { mode: 0o600 });
+          NODE
+          export GIT_SSH_COMMAND="ssh -i '$sync_dir/key' -p 443 -o Hostname=ssh.github.com -o IdentitiesOnly=yes -o UserKnownHostsFile='$sync_dir/known_hosts' -o StrictHostKeyChecking=yes -o BatchMode=yes"
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          node scripts/ci/sync-github.mjs

@@ -1,0 +1,219 @@
+diff --git a/scripts/host-lifecycle-smoke.mjs b/scripts/host-lifecycle-smoke.mjs
+index 7bb55159..0c4f1fab 100644
+--- a/scripts/host-lifecycle-smoke.mjs
++++ b/scripts/host-lifecycle-smoke.mjs
+@@ -25,6 +25,7 @@ let fault;
+ let protectedFiles = 0;
+ let store;
+ let supervisor;
++let nativeFatalModesPassed = 0;
+ const state = {
+   hostId: 'isolated-fixture-host',
+   threads: [],
+@@ -263,6 +264,94 @@ process.once('disconnect', () => process.exit(1));
+   await delay(100);
+   assert.equal(await readFile(marker, 'utf8'), '3', 'Stopping cannot launch a fourth child');
+ 
++  // Native fatal output is not JSON. Real pipes exercise split/CRLF lines,
++  // duplicate suppression, an unterminated tail and the existing size bound.
++  const fatalChild = join(directory, 'fatal-stderr-child.mjs');
++  const fatalSecret = 'PRIVATE_FATAL_FIXTURE_TOKEN_AND_PATH_MUST_NOT_BE_LOGGED';
++  const fatalFirst =
++    'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory ' +
++    fatalSecret +
++    '\n';
++  await writeFile(
++    fatalChild,
++    `
++import {writeFileSync} from 'node:fs';
++import {setTimeout as delay} from 'node:timers/promises';
++const [mode, marker] = process.argv.slice(2);
++process.on('message', message => { if (message.command === 'host-worker-stop') process.exit(0); });
++const write = text => new Promise((resolve, reject) => process.stderr.write(text, error => error ? reject(error) : resolve()));
++if (mode === 'oversized') {
++  await write('FATAL ERROR: ' + ${JSON.stringify(fatalSecret)}.repeat(600));
++} else {
++  await write(JSON.stringify({message: 'FATAL ERROR: ' + ${JSON.stringify(fatalSecret)}}) + '\\n');
++  const first = ${JSON.stringify(fatalFirst)};
++  await write(first.slice(0, 17));
++  await delay(20);
++  await write(first.slice(17));
++  await write(first);
++  await write(${JSON.stringify('Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file C:\\private\\' + fatalSecret + '\\async.c, line 94\r\n')});
++  await write(${JSON.stringify('Assertion failed: false, file C:\\private\\' + fatalSecret + '\\node_worker.cc, line 2\n')});
++  await write('FATAL ERROR: ' + ${JSON.stringify(fatalSecret)});
++}
++writeFileSync(marker, 'ready');
++`,
++  );
++  for (const mode of ['split-and-tail', 'report-fault', 'oversized']) {
++    const fatalMarker = join(directory, 'fatal-ready-' + mode);
++    const reports = [],
++      warnings = [];
++    const originalError = console.error;
++    if (mode === 'report-fault') console.error = (value) => warnings.push(value);
++    try {
++      supervisor = superviseWorker({
++        executable: process.execPath,
++        args: [fatalChild, mode, fatalMarker],
++        report(entry) {
++          reports.push(entry);
++          if (mode === 'report-fault' && entry.event === 'native-runtime-stderr')
++            throw Error(fatalSecret);
++        },
++        delays: [10],
++      });
++      await waitUntil(async () => (await readdir(directory)).includes('fatal-ready-' + mode));
++      await supervisor.stop();
++      const projected = reports.filter((entry) => entry.event === 'native-runtime-stderr');
++      assert.deepEqual(
++        projected.map((entry) => entry.reason),
++        mode === 'oversized'
++          ? []
++          : [
++              'javascript-heap-exhausted',
++              'libuv-async-handle-closing',
++              'native-assertion',
++              'node-fatal',
++            ],
++      );
++      const pid = reports.find((entry) => entry.event === 'started').childPid;
++      for (const entry of projected) {
++        assert.deepEqual(Object.keys(entry).sort(), ['childPid', 'event', 'reason']);
++        assert.equal(entry.childPid, pid);
++      }
++      assert(!JSON.stringify(reports).includes(fatalSecret));
++      assert(!JSON.stringify(reports).includes('C:\\private'));
++      assert.equal(
++        reports.filter((entry) => entry.event === 'exited' && entry.exitCode === 0).length,
++        1,
++      );
++      await delay(50);
++      assert.equal(reports.filter((entry) => entry.event === 'started').length, 1);
++      assert(!reports.some((entry) => entry.event === 'retry'));
++      assert.deepEqual(
++        warnings,
++        mode === 'report-fault' ? Array(4).fill('HOST_DIAGNOSTICS_UNAVAILABLE') : [],
++      );
++      nativeFatalModesPassed++;
++    } finally {
++      await supervisor?.stop();
++      console.error = originalError;
++    }
++  }
++
+   // Real factory records travel through real child stderr, including split lines.
+   // Subscriber-only capture avoids emitting fixture records from this parent.
+   const traceChannel = channel('agent-hub.windows-trace.summary');
+@@ -480,6 +569,8 @@ if (mode === 'report-fault' && count === 1) process.exit(7);
+       windowsTraceForwarded: forwardedTraceRecords,
+       windowsTraceModes: 5,
+       windowsTraceReporterFailureRecovered: true,
++      nativeFatalModesPassed,
++      nativeFatalRawContentExcluded: true,
+       idlePersistenceRecovery: true,
+       cooldownStoppedWithoutWrites: true,
+       evidence:
+diff --git a/scripts/host-worker-supervisor.mjs b/scripts/host-worker-supervisor.mjs
+index 22c9b7dd..610280f3 100644
+--- a/scripts/host-worker-supervisor.mjs
++++ b/scripts/host-worker-supervisor.mjs
+@@ -2,6 +2,17 @@ import { spawn } from 'node:child_process';
+ 
+ const identifier = (value) =>
+   typeof value === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : undefined;
++// Native aborts can bypass JS diagnostics. Preserve only a fixed classification;
++// neither the fatal text, paths, payloads nor an untrusted JSON object is logged.
++function nativeStderrReason(line) {
++  if (/^FATAL ERROR: .*JavaScript heap out of memory/.test(line))
++    return 'javascript-heap-exhausted';
++  if (/^Assertion failed: .*UV_HANDLE_CLOSING.*async\.c\b/.test(line))
++    return 'libuv-async-handle-closing';
++  if (/^Assertion failed: .*\bfile\b.*\.[ch](?:c|pp)?, line \d+/.test(line))
++    return 'native-assertion';
++  if (/^FATAL ERROR: /.test(line)) return 'node-fatal';
++}
+ export function safeWorkerFailure(error) {
+   const frames = new Set([
+     'runtime-persistence.js',
+@@ -241,43 +252,53 @@ export function superviseWorker({
+     if (probe) probeTimer = setTimeout(checkHealth, probeIntervalMs);
+     diagnostic({ event: 'started', childPid: child.pid });
+     let buffer = '';
++    const nativeReasons = new Set();
++    const consumeLine = (line) => {
++      const reason = nativeStderrReason(line);
++      if (reason && !nativeReasons.has(reason)) {
++        nativeReasons.add(reason);
++        diagnostic({ event: 'native-runtime-stderr', childPid: launched.pid, reason });
++      }
++      try {
++        const value = JSON.parse(line);
++        if (value.diagnostic !== 'host-runtime-failure') {
++          if (process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1') {
++            const summary = windowsTraceSummary(value.windowsTrace);
++            if (summary)
++              diagnostic({
++                event: 'windows-trace-summary',
++                childPid: launched.pid,
++                windowsTrace: summary,
++              });
++          }
++          return;
++        }
++        diagnostic({
++          event: 'runtime-failure',
++          childPid: launched.pid,
++          scope: identifier(value.scope),
++          recoveryState: workerRecoveryState(value.scope, value.code),
++          ...safeWorkerFailure(value),
++          attempt: Number.isSafeInteger(value.attempt) ? value.attempt : undefined,
++        });
++      } catch {
++        // Raw stdout, stderr, exception messages and configuration never enter logs.
++      }
++    };
+     child.stderr.on('data', (chunk) => {
+       buffer += chunk.toString('utf8');
+       if (buffer.length > 16_384) buffer = '';
+       const lines = buffer.split('\n');
+       buffer = lines.pop();
+-      for (const line of lines) {
+-        try {
+-          const value = JSON.parse(line);
+-          if (value.diagnostic !== 'host-runtime-failure') {
+-            if (process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1') {
+-              const summary = windowsTraceSummary(value.windowsTrace);
+-              if (summary)
+-                diagnostic({
+-                  event: 'windows-trace-summary',
+-                  childPid: launched.pid,
+-                  windowsTrace: summary,
+-                });
+-            }
+-            continue;
+-          }
+-          diagnostic({
+-            event: 'runtime-failure',
+-            childPid: child.pid,
+-            scope: identifier(value.scope),
+-            recoveryState: workerRecoveryState(value.scope, value.code),
+-            ...safeWorkerFailure(value),
+-            attempt: Number.isSafeInteger(value.attempt) ? value.attempt : undefined,
+-          });
+-        } catch {
+-          // Raw stdout, stderr, exception messages and configuration never enter logs.
+-        }
+-      }
++      for (const line of lines) consumeLine(line.replace(/\r$/, ''));
+     });
+     child.on('error', (error) =>
+       diagnostic({ event: 'spawn-failure', ...safeWorkerFailure(error) }),
+     );
+     child.once('close', (code, signal) => {
++      // close follows stdio closure, including a fatal tail without a newline.
++      if (buffer) consumeLine(buffer.replace(/\r$/, ''));
++      buffer = '';
+       diagnostic({
+         event: 'exited',
+         childPid: child.pid,

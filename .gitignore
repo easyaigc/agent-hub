@@ -50,3 +50,8 @@ packages/mobile-core/build/
 !/docs/acceptance/unread-attachment-projection-20261026.md
 
 !/docs/acceptance/external-attachments-ios-20261026.md
+
+# Native preview package local state; dependency locks remain versioned.
+apps/ios/FilePreviewKit/.build/
+apps/ios/FilePreviewKit/.swiftpm/
+!/docs/acceptance/file-preview-20261026.md

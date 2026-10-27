@@ -1718,6 +1718,25 @@
 
 "同步中" = "Syncing";
 
+// Built-in document preview
+"上一个结果" = "Previous result";
+"下一个结果" = "Next result";
+"使用系统预览" = "Use system preview";
+"原始文本" = "Original text";
+"复制源码" = "Copy source";
+"左右滑动查看完整表格" = "Swipe horizontally to see the full table";
+"引用" = "Quote";
+"搜索文件" = "Search file";
+"文件较大，请使用系统预览或保存原文件。" = "This file is large. Use system preview or save the original file.";
+"文档中没有找到此章节。" = "This section was not found in the document.";
+"文档结构较复杂，请使用系统预览或保存原文件。" = "This document is too complex to render. Use system preview or save the original file.";
+"暂不支持此文件的文本编码，请使用系统预览或保存原文件。" = "This text encoding is not supported. Use system preview or save the original file.";
+"暂时无法排版此文件" = "Unable to format this file";
+"查看图片" = "View image";
+"正在准备预览…" = "Preparing preview…";
+"此引用尚未由电脑提供为可访问资源，可在源码中查看原链接。" = "The computer has not provided this reference as an accessible resource. View its original link in Source.";
+"源码" = "Source";
+
 "点图片预览，点圆圈快速选择；添加到草稿后，发送时再上传。" = "Tap a photo to preview or its circle to select. Photos upload only when you send.";
 
 "仅添加到草稿，发送时再上传。" = "Add to the draft only. Upload when sending.";

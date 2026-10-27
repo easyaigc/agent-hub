@@ -63,7 +63,7 @@ struct MessageLinkOpening: ViewModifier {
   let threadId: String?
   let client: Client?
   let attachments: [RemoteAttachment]
-  @State private var previewURL: URL?
+  @State private var preview: FilePreviewItem?
   @State private var webURL: BrowserLink?
   @State private var error: String?
   @State private var selectedURL: URL?
@@ -77,7 +77,7 @@ struct MessageLinkOpening: ViewModifier {
     .environment(\.openingMessageLinkAnchor, loading ? selectedAnchor : nil)
     .environment(\.messageLinkOpen, { url, anchor in open(url, anchor: anchor) })
     .environment(\.openURL, OpenURLAction { url in open(url); return .handled })
-    .quickLookPreview($previewURL)
+    .filePreview($preview)
     .sheet(item: $webURL) { link in MessageWebPreview(url: link.url) }
     .alert(L10n.tr("无法打开链接"), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
       if let selectedURL {
@@ -100,7 +100,7 @@ struct MessageLinkOpening: ViewModifier {
 
   private func reset() {
     download?.cancel(); download = nil; loading = false
-    previewURL = nil; webURL = nil; error = nil; selectedURL = nil; selectedAnchor = nil
+    preview = nil; webURL = nil; error = nil; selectedURL = nil; selectedAnchor = nil
   }
 
   private func open(_ url: URL, anchor: UUID? = nil) {
@@ -123,7 +123,7 @@ struct MessageLinkOpening: ViewModifier {
         do {
           let local = try await AgentClients.resolve(client).download(client, file: file)
           guard !Task.isCancelled else { return }
-          previewURL = local
+          preview = FilePreviewItem(url: local, file: file, client: client)
         } catch {
           guard !Task.isCancelled else { return }
           self.error = error.localizedDescription
@@ -147,7 +147,7 @@ struct MessageLinkOpening: ViewModifier {
           let file = try await service.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: url.absoluteString)
           let local = try await service.download(client, file: file)
           guard !Task.isCancelled else { return }
-          previewURL = local
+          preview = FilePreviewItem(url: local, file: file, client: client)
         } catch {
           guard !Task.isCancelled else { return }
           self.error = error.localizedDescription
@@ -179,7 +179,7 @@ private struct BrowserLink: Identifiable {
   var id: String { url.absoluteString }
 }
 
-private struct MessageWebPreview: View {
+struct MessageWebPreview: View {
   let url: URL
   @State private var failed = false
   var body: some View {

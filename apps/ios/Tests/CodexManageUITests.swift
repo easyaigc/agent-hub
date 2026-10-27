@@ -894,6 +894,23 @@ final class CodexManageUITests: XCTestCase {
   private var suggestionCleanupTarget: (hostId: String, originalId: String)?
   override func setUpWithError() throws {
     continueAfterFailure = false
+    if name.contains("testMarkdownFilePreviewPhysicalDEV") {
+      guard let raw = ProcessInfo.processInfo.environment["FILE_PREVIEW_FIXTURE"],
+        let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+        let bundleId = fixture["bundleId"] as? String,
+        bundleId.hasPrefix("com.easyai.agenthub.filepreview.") else {
+        throw XCTSkip("Requires the independent file preview acceptance App")
+      }
+      XCUIDevice.shared.orientation = .portrait
+      app = XCUIApplication(bundleIdentifier: bundleId)
+      addUIInterruptionMonitor(withDescription: "File preview acceptance network permission") { alert in
+        let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["无线局域网与蜂窝网络", "无线局域网与蜂窝数据", "允许", "Allow"])).firstMatch
+        guard allow.exists else { return false }; allow.tap(); return true
+      }
+      app.launchArguments = ["-ui-testing"]
+      app.launchChineseTest()
+      return
+    }
     if name.contains("testThreadModelSettingsPhysicalDEV") {
       guard let raw = ProcessInfo.processInfo.environment["THREAD_MODEL_SETTINGS_FIXTURE"],
         let fixture = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
@@ -15631,5 +15648,111 @@ extension CodexManageUITests {
     XCTAssertEqual(row.value as? String, "")
     pullSidebarRefresh(); XCTAssertEqual(row.value as? String, "")
     shot("physical-attachment-reply-relaunch-stays-read")
+  }
+}
+
+extension CodexManageUITests {
+  @MainActor func testMarkdownFilePreviewPhysicalDEV() async throws {
+    struct Fixture: Decodable {
+      let bundleId: String
+      let connection: LiveFixture
+      let markdownLabel: String
+      let plainLabel: String
+      let sourceSha256: String
+    }
+    let raw = try XCTUnwrap(ProcessInfo.processInfo.environment["FILE_PREVIEW_FIXTURE"])
+    let fixture = try JSONDecoder().decode(Fixture.self, from: Data(raw.utf8))
+    XCTAssertTrue(fixture.bundleId.hasPrefix("com.easyai.agenthub.filepreview."))
+    connectLive(fixture.connection, supportsCreation: false, nickname: "Markdown DEV")
+    openDesktopTestConversation(fixture.connection)
+    let timeline = app.scrollViews["message-list"]
+    func tapLink(_ label: String) {
+      let link = app.links.matching(NSPredicate(format: "label == %@", label)).firstMatch
+      let fallback = app.staticTexts.matching(NSPredicate(format: "label == %@", label)).firstMatch
+      for _ in 0..<10 where !link.isHittable && !fallback.isHittable { timeline.swipeUp() }
+      if link.isHittable { link.tap() }
+      else { XCTAssertTrue(fallback.isHittable, app.debugDescription); fallback.tap() }
+    }
+    func section(_ title: String) {
+      app.buttons["file-preview-outline"].tap()
+      let entry = app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
+      XCTAssertTrue(entry.waitForExistence(timeout: 10), app.debugDescription); entry.tap()
+    }
+    tapLink(fixture.markdownLabel)
+    XCTAssertTrue(app.buttons["file-preview-close"].waitForExistence(timeout: 30), app.debugDescription)
+    XCTAssertTrue(app.staticTexts["Markdown 验收"].waitForExistence(timeout: 15), app.debugDescription)
+    XCTAssertFalse(app.staticTexts["file-preview-error"].exists)
+    shot("markdown-preview-native-opening")
+    section("工具清单")
+    let horizontal = app.scrollViews["file-preview-table-5"]
+    XCTAssertTrue(horizontal.waitForExistence(timeout: 10), app.debugDescription)
+    let visibleTable = horizontal.frame.intersection(app.scrollViews["file-preview-content"].frame).insetBy(dx: 20, dy: 20)
+    XCTAssertGreaterThan(visibleTable.width, 100); XCTAssertGreaterThan(visibleTable.height, 60)
+    let origin = app.coordinate(withNormalizedOffset: .zero)
+    for _ in 0..<2 {
+      origin.withOffset(CGVector(dx: visibleTable.maxX - 12, dy: visibleTable.minY + 30))
+        .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(dx: visibleTable.minX + 12, dy: visibleTable.minY + 30)))
+    }
+    XCTAssertTrue(app.staticTexts["完整说明"].isHittable, app.debugDescription)
+    shot("markdown-preview-table-horizontal")
+    // Restore a position inside a tall table, not just its top-level block ID.
+    for _ in 0..<2 {
+      origin.withOffset(CGVector(dx: visibleTable.minX + 12, dy: visibleTable.minY + 30))
+        .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(dx: visibleTable.maxX - 12, dy: visibleTable.minY + 30)))
+    }
+    let twentieth = app.staticTexts["tool-20"]
+    let contentFrame = app.scrollViews["file-preview-content"].frame
+    for _ in 0..<10 where !twentieth.isHittable {
+      origin.withOffset(CGVector(dx: contentFrame.midX, dy: contentFrame.minY + contentFrame.height * 0.75))
+        .press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: contentFrame.midX, dy: contentFrame.minY + contentFrame.height * 0.5)))
+    }
+    XCTAssertTrue(twentieth.isHittable, app.debugDescription)
+    app.buttons["file-preview-close"].tap()
+    tapLink(fixture.markdownLabel)
+    XCTAssertTrue(app.buttons["file-preview-close"].waitForExistence(timeout: 20))
+    let tableRestored = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: twentieth)
+    XCTAssertEqual(XCTWaiter.wait(for: [tableRestored], timeout: 10), .completed, app.debugDescription)
+    shot("markdown-preview-table-offset-restored")
+    section("末尾章节")
+    let ending = app.staticTexts["END_" + fixture.connection.nonce]
+    XCTAssertTrue(ending.waitForExistence(timeout: 10), app.debugDescription)
+    shot("markdown-preview-outline-end")
+    app.buttons["file-preview-search"].tap()
+    let query = app.textFields["file-preview-query"]
+    XCTAssertTrue(query.waitForExistence(timeout: 5)); query.tap()
+    query.typeText("BEGIN_" + fixture.connection.nonce + "\n")
+    let beginning = app.staticTexts["BEGIN_" + fixture.connection.nonce]
+    let visible = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: beginning)
+    XCTAssertEqual(XCTWaiter.wait(for: [visible], timeout: 15), .completed, app.debugDescription)
+    XCTAssertEqual(app.staticTexts["file-preview-match-count"].label, "1/1")
+    shot("markdown-preview-search-position")
+    app.buttons["file-preview-search"].tap()
+    app.segmentedControls["file-preview-mode"].buttons["源码"].tap()
+    let source = app.textViews["file-preview-source"]
+    XCTAssertTrue(source.waitForExistence(timeout: 10), app.debugDescription)
+    let value = try XCTUnwrap(source.value as? String)
+    XCTAssertEqual(SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined(), fixture.sourceSha256)
+    shot("markdown-preview-original-source")
+    app.segmentedControls["file-preview-mode"].buttons["预览"].tap()
+    section("末尾章节")
+    tapLink("未授权相对文件")
+    XCTAssertTrue(app.alerts["无法打开链接"].waitForExistence(timeout: 5), app.debugDescription)
+    shot("markdown-preview-relative-reference-denied")
+    app.alerts["无法打开链接"].buttons["好"].tap()
+    app.buttons["file-preview-close"].tap()
+    tapLink(fixture.markdownLabel)
+    XCTAssertTrue(app.buttons["file-preview-close"].waitForExistence(timeout: 20))
+    XCTAssertTrue(ending.waitForExistence(timeout: 10))
+    let endRestored = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: ending)
+    XCTAssertEqual(XCTWaiter.wait(for: [endRestored], timeout: 10), .completed,
+      "Reopening the same snapshot restores its reading position")
+    shot("markdown-preview-reading-position-restored")
+    app.buttons["file-preview-close"].tap()
+    tapLink(fixture.plainLabel)
+    let done = app.buttons.matching(NSPredicate(format: "identifier IN %@ OR label IN %@", ["QLOverlayDoneButtonAccessibilityIdentifier", "QLDoneButton"], ["关闭", "Close", "Done", "完成"])).firstMatch
+    XCTAssertTrue(done.waitForExistence(timeout: 20), app.debugDescription)
+    XCTAssertFalse(app.buttons["file-preview-close"].exists, "Other file types retain system preview")
+    shot("markdown-preview-plain-file-system-fallback")
+    done.tap()
   }
 }

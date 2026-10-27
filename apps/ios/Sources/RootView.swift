@@ -3130,7 +3130,7 @@ struct RemoteFileView: View {
   @AppStorage(L10n.storageKey) private var appLanguage = AppLanguage.system.rawValue
   let client: Client
   let file: RemoteAttachment
-  @State private var previewURL: URL?
+  @State private var preview: FilePreviewItem?
   @State private var share: PreparedFileShare?
   @State private var image: UIImage?
   @State private var loading = false
@@ -3170,7 +3170,7 @@ struct RemoteFileView: View {
       }
       if let error { Text(error).font(.caption2).foregroundStyle(.red) }
     }.padding(10).background(Palette.sidebar, in: RoundedRectangle(cornerRadius: 12))
-      .quickLookPreview($previewURL)
+      .filePreview($preview)
       .sheet(item: $share) { FileShareSheet(url: $0.url) }
       .task(id: file.id) {
         if file.mediaType.hasPrefix("image/"), !loading {
@@ -3197,7 +3197,7 @@ struct RemoteFileView: View {
   private func reset() {
     downloadTask?.cancel(); downloadTask = nil; loading = false
     downloadGeneration = UUID()
-    previewURL = nil; share = nil; image = nil; error = nil
+    preview = nil; share = nil; image = nil; error = nil
   }
   private func prepare(_ action: FileAction) {
     guard !loading else { return }
@@ -3218,7 +3218,7 @@ struct RemoteFileView: View {
       }
       switch action {
       case .image: break
-      case .preview: previewURL = downloaded
+      case .preview: preview = FilePreviewItem(url: downloaded, file: file, client: client)
       case .share: share = PreparedFileShare(url: downloaded)
       }
     } catch {

@@ -446,7 +446,7 @@ import com.agenthub.core.*
                 "tools" -> ToolGroup(row.id,row.indices.map { messages[it] })
                 "errors" -> Column { row.indices.forEach { Text(messages[it].text,color=MaterialTheme.colorScheme.error,fontSize=14.sp) } }
                 "compaction" -> Text(ToolPresentation.compaction(messages[row.indices.first()].status, session.running),Modifier.fillMaxWidth().testTag("compaction-${row.id}"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                else -> row.indices.forEach { MessageContent(messages[it],dark,session.targetKey) }
+                else -> row.indices.forEach { MessageContent(messages[it],dark,session) }
             } }
             pending?.let { original -> item(key=session.targetKey+":pending-creation:"+original.message.id) {
                 PendingCreationMessageBubble(original,session.targetKey,dark)
@@ -463,10 +463,11 @@ import com.agenthub.core.*
         if(!atBottom && maxHeight>=72.dp) Surface(shape=CircleShape,color=MaterialTheme.colorScheme.surface,shadowElevation=2.dp,modifier=Modifier.align(Alignment.BottomEnd).padding(12.dp)) { IconAction("down","回到最新","scroll-latest") { scope.launch { list.animateScrollToItem(list.layoutInfo.totalItemsCount-1) } } }
     }
 }
-@Composable private fun MessageContent(message: MobileMessage,dark: Boolean,targetKey: String) {
+@Composable private fun MessageContent(message: MobileMessage,dark: Boolean,session: MobileSession) {
+    val targetKey=session.targetKey
     val colors=MaterialTheme.colorScheme
     if(message.role=="user") Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End) {
-        UserMessageBubble(message,targetKey,dark) { AttachmentNames(message) }
+        UserMessageBubble(message,targetKey,dark) { AttachmentNames(message,session) }
     } else Column(Modifier.fillMaxWidth().testTag("message-${message.id}")) {
         if(message.kind=="turnFailure") Column(Modifier.testTag("task-failure-history-${message.id}"),verticalArrangement=Arrangement.spacedBy(4.dp)) {
             Text("任务失败记录",fontSize=12.sp,color=colors.onSurfaceVariant)
@@ -475,10 +476,18 @@ import com.agenthub.core.*
         else if(message.kind=="plan") ProposedPlanMessage(message,targetKey)
         else if(message.kind=="planImplementation") Surface(shape=RoundedCornerShape(16.dp),color=colors.surface) { Column(Modifier.padding(12.dp)) { Text(if(message.kind=="plan") "执行计划" else "正在执行计划",fontWeight=FontWeight.SemiBold,fontSize=14.sp); MarkdownContent(message.text,"markdown-${message.id}") } }
         else MarkdownContent(message.text,"markdown-${message.id}")
-        AttachmentNames(message)
+        AttachmentNames(message,session)
     }
 }
-@Composable private fun AttachmentNames(message: MobileMessage) { (message.files + message.attachments.map { it.name }).distinct().forEach { Text("文件 · $it",Modifier.padding(top=6.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) } }
+@Composable private fun AttachmentNames(message: MobileMessage,session: MobileSession) {
+    var preview by remember(session.targetKey,message.id) { mutableStateOf<MobileFile?>(null) }
+    val named=message.attachments.map { it.name }.toSet()
+    message.files.filter { it !in named }.distinct().forEach { Text("文件 · $it",Modifier.padding(top=6.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant) }
+    message.attachments.forEach { file ->
+        TextButton(onClick={preview=file},modifier=Modifier.testTag("preview-${file.name}")) { Text("文件 · ${file.name}",maxLines=2,overflow=TextOverflow.Ellipsis) }
+    }
+    preview?.let { selected -> key(session.targetKey,selected) { RemoteFilePreview(session,selected) { preview=null } } }
+}
 @Composable private fun ReplyActions(session: MobileSession,id: String,text: String,turnId: String?) {
     val clipboard=LocalClipboardManager.current; val context=LocalContext.current
     Row(Modifier.testTag("reply-actions-$id")) {

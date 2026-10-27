@@ -26,6 +26,8 @@ import org.commonmark.parser.IncludeSourceSpans
 import org.commonmark.ext.gfm.tables.*
 import org.commonmark.ext.gfm.strikethrough.*
 
+internal val LocalMarkdownLinkHandler = staticCompositionLocalOf<((String) -> Unit)?> { null }
+
 internal object NativeMarkdown {
     private val parser = Parser.builder().includeSourceSpans(IncludeSourceSpans.BLOCKS).extensions(listOf(TablesExtension.create(), StrikethroughExtension.create())).build()
     fun parse(source: String): Node = parser.parse(source)
@@ -46,7 +48,7 @@ internal object NativeMarkdown {
         return source.substring(start, end)
     }
     fun children(node: Node): List<Node> = buildList { var child = node.firstChild; while (child != null) { add(child); child = child.next } }
-    fun inline(node: Node, linkColor: Color): AnnotatedString = buildAnnotatedString {
+    fun inline(node: Node, linkColor: Color, onLink: ((String) -> Unit)? = null): AnnotatedString = buildAnnotatedString {
         fun visit(n: Node) {
             fun nested() { children(n).forEach(::visit) }
             when (n) {
@@ -58,11 +60,16 @@ internal object NativeMarkdown {
                 is SoftLineBreak, is HardLineBreak -> append("\n")
                 is Link -> {
                     val uri = runCatching { java.net.URI(n.destination) }.getOrNull()
-                    if (uri?.scheme?.lowercase() in listOf("https", "http", "mailto")) {
+                    if(onLink != null) {
+                        withLink(LinkAnnotation.Clickable(n.destination, TextLinkStyles(style=SpanStyle(color=linkColor, textDecoration=TextDecoration.Underline))) { onLink(n.destination) }) { nested() }
+                    } else if (uri?.scheme?.lowercase() in listOf("https", "http", "mailto")) {
                         withLink(LinkAnnotation.Url(n.destination, TextLinkStyles(style = SpanStyle(color=linkColor, textDecoration=TextDecoration.Underline)))) { nested() }
                     } else nested()
                 }
-                is Image -> { append("图片："); nested() }
+                is Image -> {
+                    if(onLink != null) withLink(LinkAnnotation.Clickable(n.destination,TextLinkStyles(style=SpanStyle(color=linkColor))) { onLink(n.destination) }) { append("查看图片："); nested() }
+                    else { append("图片："); nested() }
+                }
                 is HtmlInline -> append(n.literal)
                 else -> nested()
             }
@@ -88,7 +95,7 @@ private data class ParsedMarkdown(val source: String, val document: Node)
     }
 }
 
-@Composable private fun MarkdownBlock(node: Node, tag: String, source: String) {
+@Composable internal fun MarkdownBlock(node: Node, tag: String, source: String) {
     val colors = MaterialTheme.colorScheme
     when (node) {
         is Heading -> Text(rememberInline(node), fontSize = when (node.level) { 1 -> 22.sp; 2 -> 20.sp; else -> 17.sp }, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, modifier = Modifier.padding(top=4.dp).testTag(tag))
@@ -111,8 +118,9 @@ private data class ParsedMarkdown(val source: String, val document: Node)
 }
 // Container blocks render their children and must not first flatten the entire
 // subtree. Parsed nodes are immutable after publication to the composition.
-@Composable private fun rememberInline(node: Node): AnnotatedString = remember(node) {
-    NativeMarkdown.inline(node, Color(0xFF007AFF))
+@Composable private fun rememberInline(node: Node): AnnotatedString {
+    val handler=LocalMarkdownLinkHandler.current
+    return remember(node,handler) { NativeMarkdown.inline(node, Color(0xFF007AFF),handler) }
 }
 @Composable private fun MarkdownTable(node: TableBlock, tag: String) {
     val colors = MaterialTheme.colorScheme

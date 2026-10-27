@@ -1,6 +1,7 @@
 package com.agenthub.android
 
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.ensureActive
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -198,7 +199,43 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         val v=CodexCommandCodec.validate(request(client,"v1/desktop/creation-attachments",mapOf("id" to operationId,"attachmentId" to file.id),bytes=bytes,mediaType=file.mediaType),"creationUpload")
         require(v.getString("hostId")==client.id && v.getString("clientOperationId")==operationId && v.getString("id")==file.id && v.getString("sha256")==file.sha256 && v.getLong("sizeBytes")==file.sizeBytes) { "首条附件回执不匹配" }
     }
+    override suspend fun downloadResource(client: MobileClient,file: MobileFile,cache: java.io.File): java.io.File {
+        require(file.hostId==client.id && file.sizeBytes in 0..20L*1024*1024)
+        for(attempt in 0..1) {
+            val current = try {
+                val response=request(client,"v1/attachments/resolve",mapOf("threadId" to file.threadId,"id" to file.id))
+                require(response.getString("hostId")==client.id && response.getString("threadId")==file.threadId &&
+                    response.getString("sourceAttachmentId")==file.id && sameScope(HostReadCodec.target(response.getJSONObject("readTarget")),client.scope)) { "文件目标不匹配" }
+                val a=CodexCommandCodec.validate(response.getJSONObject("attachment"),"attachment")
+                MobileFile(a.getString("id"),a.getString("name"),a.getString("mediaType"),a.getLong("sizeBytes"),a.getString("hostId"),a.getString("threadId"),a.getString("sha256"))
+            } catch(error: CodexCommandError) { if(error.status==404) file else throw error }
+            require(current.hostId==client.id && current.threadId==file.threadId && current.name==file.name && current.mediaType==file.mediaType &&
+                current.sizeBytes in 0..20L*1024*1024 && current.sha256.matches(Regex("[a-f0-9]{64}"))) { "文件版本不匹配" }
+            try {
+                return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val scope=hash(com.agenthub.core.RuntimeIdentity.readingKey(client.scope!!,file.threadId).toByteArray())
+                    val directory=java.io.File(cache,"file-preview/$scope/${hash(current.id.toByteArray())}/${current.sha256}").apply { mkdirs() }
+                    require(current.name.isNotBlank() && current.name !in listOf(".","..") && java.io.File(current.name).name==current.name && !current.name.contains('\\'))
+                    val destination=java.io.File(directory,current.name)
+                    if(destination.isFile && destination.length()==current.sizeBytes && hash(destination.readBytes())==current.sha256) return@withContext destination
+                    val data=exchange(client,"v1/attachments",mapOf("threadId" to file.threadId,"id" to current.id)) { input,active ->
+                        val output=java.io.ByteArrayOutputStream(); val buffer=ByteArray(16_384)
+                        while(true) { if(!active()) throw kotlinx.coroutines.CancellationException(); val count=input.read(buffer);if(count<0)break
+                            require(output.size()+count<=20*1024*1024) { "文件超过读取预算" };output.write(buffer,0,count) }
+                        output.toByteArray()
+                    }
+                    require(data.size.toLong()==current.sizeBytes && hash(data)==current.sha256) { "下载文件完整性校验失败" }
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                    val temp=java.io.File(directory,".${java.util.UUID.randomUUID()}.tmp")
+                    try { temp.writeBytes(data); require(temp.renameTo(destination)) { "无法保存下载文件" } } finally { temp.delete() }
+                    destination
+                }
+            } catch(error: CodexCommandError) { if(error.status!=409 || attempt!=0) throw error }
+        }
+        error("文件已变化，请重新打开")
+    }
+
 }
 private fun hash(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 private val POST_ROUTES=setOf("v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
-private val ROUTES=POST_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")
+private val ROUTES=POST_ROUTES+setOf("v1/attachments/resolve","v1/threads/fork-options","v1/models","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")

@@ -1,0 +1,30 @@
+{
+  "format": "agent-hub-canonical-fixture-inputs-v1",
+  "canonicalSourceCommit": "b1b933c55deb03ff42a8943251428a03e14d8801",
+  "productionArtifactVersion": "host-repair-20261027-v28",
+  "adapterFingerprint": "140ea56fb6ff9554aaa54b8a5917bbf0bbb19e65ab760c5e32d4b37eba79e57a",
+  "compiler": {
+    "name": "typescript",
+    "version": "6.0.3",
+    "lockfileReference": "pnpm-lock.yaml from public baseline; use exact integrity-verified existing package only"
+  },
+  "entries": {
+    "packages/codex-adapter/src/desktop-private-state-native.ts": {
+      "sha256": "277a6cdccccc46097bcedf8a83f5b7902f5a86085369df62d4c94f60e6c066d7",
+      "size": 21322
+    },
+    "packages/codex-adapter/src/desktop-private-state-native-worker.ts": {
+      "sha256": "6e5046bca8ca4c85a6f6daa4d7f07c573bde14e0f17f38f7b0d8cacf56f0febc",
+      "size": 6679
+    },
+    "packages/codex-adapter/src/windows-process.ts": {
+      "sha256": "bc7a5155824999391d7fd641ee5464cacfc782825f3ad407a19f9b6ed6e8c586",
+      "size": 4543
+    },
+    "packages/codex-adapter/src/desktop-platform.ts": {
+      "sha256": "0d78c09dd0e060b69cd8280cfb7131a1a05f88cca14dbbf140aefc570548a32a",
+      "size": 30372
+    }
+  },
+  "scope": "Exact four canonical TS inputs for private transport fixtures only. No production installation/source patching, new dependency install, restart, model input or source creation. If already identical, skip. Independently verify fixture exit and retire all owned processes; does not assert formal Host or phone acceptance."
+}

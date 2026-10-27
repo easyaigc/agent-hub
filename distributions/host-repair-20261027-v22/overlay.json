@@ -1,0 +1,130 @@
+{
+  "format": "agent-hub-compiled-overlay-v1",
+  "version": "host-repair-20261027-v22-r2",
+  "sourceCommit": "ca016538e379597b792975bfeea18f3f455afc47",
+  "baseSourceCommit": "b0b16d196005e2a7917ae738fdc6e869e4b34075",
+  "baseUnifiedPackageSha256": "15b309fad6564ea297b0c0fa0951f69d37d77cc29ab36ff3cd1b321d774f4836",
+  "unifiedPackageSha256": "d681bad0de3eb7d52a45e443387a6f03e3acef2bfb3bfcb213fb76f8a155765a",
+  "baseRuntimeFingerprints": {
+    "apps/host-agent": "540e069de0ac0e033895fa081988b5b07704a51ad7cd658e0eb3bd1a2cb66e22",
+    "packages/codex-adapter": "bd9cbb159a6d04f199598e6c85743461967d3ed460d3beed45a0f81606d537e5",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "runtimeFingerprints": {
+    "apps/host-agent": "704272cfbacff467a8bb56e6d3116a384a24538a21b13eedb1298f28d8186b7d",
+    "packages/codex-adapter": "31a392170153b58591a44fcd05d12851dfb82eda79349625a6d1e4d604539ff1",
+    "packages/protocol": "bad13321335a198539651253a1e6675b4a4cdb04641755886e495e21926e5856",
+    "packages/service-runtime": "eca1c42b64af136678ec18d653089f9d25b366ca7ddcdb22f0f4936097c9ee12",
+    "packages/notification-runtime": "34ebfcd5b614488962a1e3dbf9d26d5a94f56301aab1c55403cab53d54ac0d41"
+  },
+  "entries": {
+    "references/distribution.md": {
+      "beforeSha256": "f2973bfaf9590b739b6cab6eadb4813893212081df08bc3ce2ca623e9233221d",
+      "afterSha256": "f0d72df376e60ed1763fc64b01800407bf9ff5a1759e9412ef21c468c33b2a65",
+      "size": 10663
+    },
+    "bundle.json": {
+      "beforeSha256": "65d4e06ce71d2573ff7f23abeec1a5029aedca07ff12271bd9545eff0fd3a980",
+      "afterSha256": "55f5a2e4dd36a21db978729aacd4186aeeacb35f23ba4f78e33c73d7b98d1f00",
+      "size": 2567
+    },
+    "SKILL.md": {
+      "beforeSha256": "c37b122cec396a9ea448d4de23b8bc034fe14d661e7fc193a36e3484892e310a",
+      "afterSha256": "312f72b67c58e20a05e92525887dd2fec0fc822e57d202b437df65a931aed2d9",
+      "size": 31507
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/runtime-persistence.js": {
+      "beforeSha256": "b4b9b7ad6f4efd9253dea64dc36a53df374bf7d868b13c8fcca5cf194ac60483",
+      "afterSha256": "d374634e907734952103067b6488c40fa1573b297ef57a104c4a9ececd0083bc",
+      "size": 25799
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/desktop-suggestion-worker-client.js": {
+      "beforeSha256": "c746bf3941dcbc99fcffc84bd43b08ee94b4f7b6ef9cfeb20c9cfc7ee4c9c39a",
+      "afterSha256": "60435c0aa1a738b354a2f3fe150f1ea0825b73e32dfbbe3b613f3cc03409eeb5",
+      "size": 22531
+    },
+    "assets/codex-manage/node_modules/@codex-manage/codex-adapter/dist/runtime-session.js": {
+      "beforeSha256": "cbc537f2483cf0ba83cad02d5e0faf5b1d8057e18cb4b7306fd0d58966f254de",
+      "afterSha256": "7268a94946499c0792b60bb68cd983e54979ab13594a9f201440e296f5e280b1",
+      "size": 237264
+    },
+    "assets/codex-manage/scripts/desktop-suggestion-observer.test.mjs": {
+      "beforeSha256": "99e6894426ec6b2e96ad5eb3b211f8a8c64da8c110478eeab76e5603f32f32e3",
+      "afterSha256": "08fcbbfda9bfeb657d949bb3421ba321c7b3b02c8df2f431d299200564046aea",
+      "size": 77809
+    },
+    "assets/codex-manage/scripts/runtime-persistence-smoke.mjs": {
+      "beforeSha256": "e24fbf5f68a22aa75ec6de409a5e5e140893cae92f47cb1ad25b7ba0862f968c",
+      "afterSha256": "f9291ec283920e453bca4dd23a16b81729525ec9a6b96d285baade01bbef1364",
+      "size": 16457
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/runtime-persistence.js": {
+      "beforeSha256": "b4b9b7ad6f4efd9253dea64dc36a53df374bf7d868b13c8fcca5cf194ac60483",
+      "afterSha256": "d374634e907734952103067b6488c40fa1573b297ef57a104c4a9ececd0083bc",
+      "size": 25799
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/desktop-suggestion-worker-client.js": {
+      "beforeSha256": "c746bf3941dcbc99fcffc84bd43b08ee94b4f7b6ef9cfeb20c9cfc7ee4c9c39a",
+      "afterSha256": "60435c0aa1a738b354a2f3fe150f1ea0825b73e32dfbbe3b613f3cc03409eeb5",
+      "size": 22531
+    },
+    "assets/codex-manage/packages/codex-adapter/dist/runtime-session.js": {
+      "beforeSha256": "cbc537f2483cf0ba83cad02d5e0faf5b1d8057e18cb4b7306fd0d58966f254de",
+      "afterSha256": "7268a94946499c0792b60bb68cd983e54979ab13594a9f201440e296f5e280b1",
+      "size": 237264
+    },
+    "assets/codex-manage/skills/codex-host-connect/references/distribution.md": {
+      "beforeSha256": "f2973bfaf9590b739b6cab6eadb4813893212081df08bc3ce2ca623e9233221d",
+      "afterSha256": "f0d72df376e60ed1763fc64b01800407bf9ff5a1759e9412ef21c468c33b2a65",
+      "size": 10663
+    },
+    "assets/codex-manage/skills/codex-host-connect/SKILL.md": {
+      "beforeSha256": "c37b122cec396a9ea448d4de23b8bc034fe14d661e7fc193a36e3484892e310a",
+      "afterSha256": "312f72b67c58e20a05e92525887dd2fec0fc822e57d202b437df65a931aed2d9",
+      "size": 31507
+    },
+    "assets/codex-manage/apps/host-agent/dist/runtime-server.js": {
+      "beforeSha256": "ec4759e8d262041c178291ce689cfc02ba5dc6e936873e6768399c5b757a8fa4",
+      "afterSha256": "9bb361d27574b070ba797231bf9f1c52ef344a8722629616de82be0f5ee2f977",
+      "size": 62580
+    }
+  },
+  "sourcePatch": {
+    "name": "host-repair-v22-source.patch",
+    "sha256": "dca030596f9c52422770cad8c1047e61a114cd184c5c5027b7d7c759c741c223",
+    "files": {
+      "apps/host-agent/src/runtime-server.ts": {
+        "beforeSha256": "58fb4309d8aa7161a9dd83962c1c021fb192edbe8cff45f63b8056b273d562a8",
+        "afterSha256": "92b01ca8d772a00fe5c333742d5505ffd6fd7911feb29c8386a4c0e859c39dfd"
+      },
+      "packages/codex-adapter/src/desktop-suggestion-worker-client.ts": {
+        "beforeSha256": "acbb6fb143a68aa9eb0a0903ccb5d70993f649a2c1ca526384729965f05cb709",
+        "afterSha256": "a95e847bbad7bf2be4341c682d4ca6943cdeee47992ddd5b6013a223218e5a0c"
+      },
+      "packages/codex-adapter/src/runtime-persistence.ts": {
+        "beforeSha256": "8d43e1883856b51b6aa22971cbc8db3d72f622be19210d5d43bae6aa010b7955",
+        "afterSha256": "e567763201002921b882b93c19e6ff226a4df3f051ab5abf107d8c0b12334d0c"
+      },
+      "packages/codex-adapter/src/runtime-session.ts": {
+        "beforeSha256": "8159763d39b55ca621cf77eb9c5ffd938fb71c71acaa0b8ff6d49f9f2e9d59f4",
+        "afterSha256": "923ed1b1cc0b6952275a366c9620e1e586656fce8ad025b25b7dcb5fc49cb67c"
+      },
+      "scripts/runtime-persistence-smoke.mjs": {
+        "beforeSha256": "e24fbf5f68a22aa75ec6de409a5e5e140893cae92f47cb1ad25b7ba0862f968c",
+        "afterSha256": "f9291ec283920e453bca4dd23a16b81729525ec9a6b96d285baade01bbef1364"
+      },
+      "scripts/desktop-suggestion-observer.test.mjs": {
+        "beforeSha256": "99e6894426ec6b2e96ad5eb3b211f8a8c64da8c110478eeab76e5603f32f32e3",
+        "afterSha256": "08fcbbfda9bfeb657d949bb3421ba321c7b3b02c8df2f431d299200564046aea"
+      },
+      "scripts/windows-trace-diagnostics.test.mjs": {
+        "beforeSha256": "abb8ccece5225bde3251a688db2f274a21256c0e42e427f5c986b81736df96b3",
+        "afterSha256": "4df0b6d2da5ffe23e0a350d62cd271bf097a635aede1fc14b3186f57df00ca76"
+      }
+    }
+  },
+  "scope": "Compiled Host/Adapter and existing SKILL docs from one clean unified package. No machine configuration, credentials, runtime history, mobile binaries, private acceptance data or internal Git history.",
+  "verification": "Frozen local workspace checks and independent clean build are auxiliary; current per-host and physical-phone acceptance remains pending."
+}

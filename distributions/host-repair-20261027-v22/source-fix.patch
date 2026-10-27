@@ -1,0 +1,443 @@
+diff --git a/apps/host-agent/src/runtime-server.ts b/apps/host-agent/src/runtime-server.ts
+index ff3a3ee4..fe4f82c2 100644
+--- a/apps/host-agent/src/runtime-server.ts
++++ b/apps/host-agent/src/runtime-server.ts
+@@ -722,6 +722,7 @@ export async function startRuntimeServer() {
+           let prepared:
+             Awaited<ReturnType<DesktopSuggestionObserver['prepareBoundSourceAsync']>> | undefined;
+           let ownsFencedSlot = false;
++          let resumeBackground: (() => void) | undefined;
+           try {
+             if (suggestionObserver.usesFencedSourceRead) {
+               if (fencedSuggestionPending) throw new RuntimeError(503, '原桌面建议读取忙碌');
+@@ -731,6 +732,8 @@ export async function startRuntimeServer() {
+             active();
+             suggestionObserver.assertBoundReadAvailable(target);
+             active();
++            if (suggestionObserver.usesFencedSourceRead)
++              resumeBackground = session.deferBackgroundPersistence(lifetime.signal);
+             const sourceTurnId = url.searchParams.get('sourceTurnId')!;
+             const source = async () =>
+               traced('source_fence', async () => {
+@@ -795,6 +798,7 @@ export async function startRuntimeServer() {
+               prepared?.dispose();
+             } finally {
+               if (ownsFencedSlot) fencedSuggestionPending = false;
++              resumeBackground?.();
+               lifetime.abort();
+               clearTimeout(timer);
+               response.removeListener('close', disconnected);
+diff --git a/packages/codex-adapter/src/desktop-suggestion-worker-client.ts b/packages/codex-adapter/src/desktop-suggestion-worker-client.ts
+index 4d30eec5..7bfafcfe 100644
+--- a/packages/codex-adapter/src/desktop-suggestion-worker-client.ts
++++ b/packages/codex-adapter/src/desktop-suggestion-worker-client.ts
+@@ -467,7 +467,14 @@ export class DesktopSuggestionWorkerClient {
+       !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(message.nonce) ||
+       (p.nonce !== undefined && p.nonce !== message.nonce)
+     ) {
+-      this.fail(worker);
++      // A delayed Main dispatch can see a valid identity after its phase
++      // boundary, before the timer callback runs. Keep rejecting it, but do
++      // not describe this known deadline as a physical transport failure.
++      this.fail(
++        worker,
++        this.error(),
++        p && identity && performance.now() >= phaseDeadline ? 'phase_deadline' : 'transport_lost',
++      );
+       return;
+     }
+     if (Object.hasOwn(message, 'error')) {
+diff --git a/packages/codex-adapter/src/runtime-persistence.ts b/packages/codex-adapter/src/runtime-persistence.ts
+index 22ffd2d9..52601904 100644
+--- a/packages/codex-adapter/src/runtime-persistence.ts
++++ b/packages/codex-adapter/src/runtime-persistence.ts
+@@ -97,6 +97,8 @@ export class RuntimePersistence<State extends RuntimeState> {
+   private hostId = '';
+   private closed = false;
+   private backgroundTimer: NodeJS.Timeout | undefined;
++  private backgroundDueAt = 0;
++  private backgroundHolds = 0;
+   private backgroundState: (() => State) | undefined;
+   private backgroundAttempt = 0;
+   private backgroundRetryAfter = 0;
+@@ -422,10 +424,16 @@ export class RuntimePersistence<State extends RuntimeState> {
+     this.backgroundState = state;
+     if (this.backgroundTimer) return;
+     const cooling = this.backgroundAttempt >= this.delays.length;
++    const delay = cooling
++      ? Math.max(1, this.backgroundRetryAfter - Date.now())
++      : this.delays[this.backgroundAttempt]!;
++    this.backgroundDueAt ||= Date.now() + delay;
++    if (this.backgroundHolds) return;
+     this.backgroundTimer = setTimeout(
+       () => {
+         this.backgroundTimer = undefined;
+-        if (this.closed || !this.backgroundState) return;
++        if (this.closed || this.backgroundHolds || !this.backgroundState) return;
++        this.backgroundDueAt = 0;
+         if (cooling) {
+           this.backgroundAttempt = 0;
+           this.backgroundRetryAfter = 0;
+@@ -439,12 +447,32 @@ export class RuntimePersistence<State extends RuntimeState> {
+           this.schedule(this.backgroundState);
+         }
+       },
+-      cooling
+-        ? Math.max(1, this.backgroundRetryAfter - Date.now())
+-        : this.delays[this.backgroundAttempt],
++      Math.max(0, this.backgroundDueAt - Date.now()),
+     );
+   }
+ 
++  /** Defer only scheduled cache writes; explicit save/read/close barriers still run. */
++  deferBackground(): () => void {
++    if (this.closed) return () => {};
++    this.backgroundHolds++;
++    if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
++    if (this.timer) clearTimeout(this.timer);
++    if (this.continuation) clearImmediate(this.continuation);
++    this.backgroundTimer = undefined;
++    this.timer = undefined;
++    this.continuation = undefined;
++    this.historyDueAt = 0;
++    let released = false;
++    return () => {
++      if (released) return;
++      released = true;
++      this.backgroundHolds--;
++      if (this.closed || this.backgroundHolds) return;
++      if (this.backgroundState) this.schedule(this.backgroundState);
++      this.scheduleHistory();
++    };
++  }
++
+   load(): State | undefined {
+     if (!existsSync(this.file)) return undefined;
+     const bytes = readFileSync(this.file);
+@@ -524,6 +552,7 @@ export class RuntimePersistence<State extends RuntimeState> {
+     }
+     if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
+     this.backgroundTimer = undefined;
++    this.backgroundDueAt = 0;
+     this.backgroundState = undefined;
+     this.backgroundAttempt = 0;
+     this.backgroundRetryAfter = 0;
+@@ -537,7 +566,7 @@ export class RuntimePersistence<State extends RuntimeState> {
+   }
+ 
+   private scheduleHistory(delay = 0): void {
+-    if (this.closed || this.continuation || !this.pending.size) return;
++    if (this.closed || this.backgroundHolds || this.continuation || !this.pending.size) return;
+     const earliest = Math.min(
+       ...[...this.pending.keys()].map((id) => this.failures.get(id)?.after ?? 0),
+     );
+@@ -565,7 +594,7 @@ export class RuntimePersistence<State extends RuntimeState> {
+ 
+   private drainOne(): void {
+     this.continuation = undefined;
+-    if (this.closed) return;
++    if (this.closed || this.backgroundHolds) return;
+     const next = [...this.pending.entries()].find(([id]) => {
+       const failure = this.failures.get(id);
+       return !failure || failure.after <= Date.now();
+diff --git a/packages/codex-adapter/src/runtime-session.ts b/packages/codex-adapter/src/runtime-session.ts
+index a8ffc9fd..57cf94d8 100644
+--- a/packages/codex-adapter/src/runtime-session.ts
++++ b/packages/codex-adapter/src/runtime-session.ts
+@@ -806,6 +806,18 @@ export class RuntimeSession {
+   private saveBackground(): void {
+     this.persistence.schedule(() => this.state);
+   }
++
++  /** A bounded readonly operation can yield Main to its owner/worker replies. */
++  deferBackgroundPersistence(signal: AbortSignal): () => void {
++    const resume = this.persistence.deferBackground();
++    const release = () => {
++      signal.removeEventListener('abort', release);
++      resume();
++    };
++    if (signal.aborted) release();
++    else signal.addEventListener('abort', release, { once: true });
++    return release;
++  }
+   private emit(threadId: string, kind: string, notify = true, historyChanged = true): void {
+     if (this.closed) return;
+     if (this.options?.mode === 'shared-runtime')
+diff --git a/scripts/desktop-suggestion-observer.test.mjs b/scripts/desktop-suggestion-observer.test.mjs
+index 8dc3b58c..7465ef3b 100644
+--- a/scripts/desktop-suggestion-observer.test.mjs
++++ b/scripts/desktop-suggestion-observer.test.mjs
+@@ -1,6 +1,7 @@
+ import assert from 'node:assert/strict';
+ import { execFile, execFileSync } from 'node:child_process';
+ import { createHash, randomUUID } from 'node:crypto';
++import { renameSync } from 'node:fs';
+ import {
+   chmod,
+   cp,
+@@ -1522,6 +1523,78 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
+       onFollow = (count) => phases.push('source' + count);
+       assert.equal((await request()).status, 200);
+       assert.deepEqual(phases, ['source1', 'prepare', 'source2', 'commit', 'source3', 'dispose']);
++      // Exercise the actual Host -> Session -> Persistence path with real
++      // overdue atomic writes, rather than asserting that a scheduling hook ran.
++      const activeSession = service.session;
++      const persistence = activeSession.persistence;
++      const priorRename = persistence.options.rename;
++      const fencedPrepare = observer.prepareBoundSourceAsync;
++      const publications = [];
++      const cacheThread = { id: randomUUID(), messages: [{ text: 'latest cached history' }] };
++      const historyFile = join(
++        persistence.historyDirectory,
++        createHash('sha256')
++          .update(activeSession.hostId + '\0' + cacheThread.id)
++          .digest('hex') + '.json',
++      );
++      persistence.options.rename = (from, to) => {
++        publications.push(to);
++        return renameSync(from, to);
++      };
++      try {
++        phases = [];
++        activeSession.state.cacheSchedulingFixture = 'latest state';
++        onFollow = (count) => {
++          phases.push('source' + count);
++          if (count === 1) {
++            activeSession.saveBackground();
++            persistence.dirty(cacheThread);
++          }
++          assert.deepEqual(publications, [], 'Owner replies must precede background publication');
++        };
++        observer.prepareBoundSourceAsync = async (...args) => {
++          await new Promise((done) => setTimeout(done, 1100));
++          assert.deepEqual(
++            publications,
++            [],
++            'Overdue state and history stay deferred during prepare',
++          );
++          const receipt = await fencedPrepare(...args);
++          return {
++            commit: receipt.commit,
++            dispose() {
++              assert.deepEqual(
++                publications,
++                [],
++                'Final source/disposal still has no background I/O',
++              );
++              receipt.dispose();
++            },
++          };
++        };
++        assert.equal((await request()).status, 200);
++        assert.deepEqual(phases, ['source1', 'prepare', 'source2', 'commit', 'source3', 'dispose']);
++        const drainedBy = performance.now() + 3000;
++        while (
++          (persistence.status.backgroundSave !== 'idle' || persistence.status.historyPending) &&
++          performance.now() < drainedBy
++        )
++          await new Promise((done) => setTimeout(done, 20));
++        assert(publications.includes(persistence.file), 'State resumes after HTTP completion');
++        assert(publications.includes(historyFile), 'History resumes after HTTP completion');
++        assert.equal(
++          JSON.parse(await readFile(persistence.file, 'utf8')).cacheSchedulingFixture,
++          'latest state',
++        );
++        assert.deepEqual(
++          JSON.parse(await readFile(historyFile, 'utf8')).messages,
++          cacheThread.messages,
++        );
++      } finally {
++        delete activeSession.state.cacheSchedulingFixture;
++        persistence.options.rename = priorRename;
++        observer.prepareBoundSourceAsync = fencedPrepare;
++      }
+       for (const boundary of [2, 3]) {
+         phases = [];
+         onFollow = (count) => {
+diff --git a/scripts/runtime-persistence-smoke.mjs b/scripts/runtime-persistence-smoke.mjs
+index ad82bb7f..1839b492 100644
+--- a/scripts/runtime-persistence-smoke.mjs
++++ b/scripts/runtime-persistence-smoke.mjs
+@@ -266,3 +266,150 @@ try {
+   session?.close();
+   await rm(projectionDirectory, { recursive: true, force: true });
+ }
++
++// A readonly deadline must not compete with scheduled cache writes on Main.
++// Explicit command/read barriers and the real writer/head guards remain active.
++const deferredDirectory = await mkdtemp(join(tmpdir(), 'codex-deferred-cache-'));
++let deferredStore;
++try {
++  const deferredFile = join(deferredDirectory, 'runtime.json');
++  const publications = [];
++  const failures = [];
++  let failNext = false;
++  deferredStore = new RuntimePersistence(deferredFile, deferredDirectory, {
++    retryDelays: [5, 60],
++    report: (...args) => failures.push(args),
++    rename: (from, to) => {
++      if (failNext && to === deferredFile) {
++        failNext = false;
++        throw new Error('owned deferred-cache publication failure');
++      }
++      renameSync(from, to);
++      publications.push(to);
++    },
++  });
++  deferredStore.load();
++  deferredStore.acquireReplyWriter({
++    agentId: 'codex',
++    hostId: 'deferred-host',
++    workspaceId: 'deferred-host',
++    runtimeId: 'desktop-runtime',
++  });
++  const state = {
++    hostId: 'deferred-host',
++    threads: [{ id: 'source', messages: [{ id: 'one', text: 'before' }] }],
++    receipts: [{ id: 'original', state: 'uncertain' }],
++  };
++  deferredStore.save(state);
++  const waitFor = async (check) => {
++    const end = performance.now() + 5000;
++    while (!check()) {
++      assert(performance.now() < end, 'Deferred cache did not resume');
++      await delay(5);
++    }
++  };
++  const first = deferredStore.deferBackground();
++  const second = deferredStore.deferBackground();
++  const count = publications.length;
++  state.receipts[0].state = 'completed';
++  state.threads[0].messages[0].text = 'latest held history';
++  deferredStore.dirty(state.threads[0]);
++  deferredStore.schedule(() => state);
++  await delay(1100); // Both the old state timer and the real history timer are overdue.
++  assert.equal(publications.length, count);
++  assert.equal(deferredStore.status.backgroundSave, 'pending');
++  assert.equal(deferredStore.status.historyPending, 1);
++  first();
++  first();
++  await delay(20);
++  assert.equal(publications.length, count, 'One nested release cannot drain another hold');
++  second();
++  await waitFor(
++    () =>
++      deferredStore.status.backgroundSave === 'idle' && deferredStore.status.historyPending === 0,
++  );
++  const resumed = new RuntimePersistence(deferredFile, deferredDirectory).load();
++  assert.equal(resumed.receipts[0].state, 'completed');
++  assert.equal(resumed.threads[0].messages[0].text, 'latest held history');
++
++  const releaseCommand = deferredStore.deferBackground();
++  state.receipts.push({ id: 'new-command', state: 'received' });
++  const beforeCommand = publications.length;
++  deferredStore.save(state);
++  assert.equal(
++    publications.length,
++    beforeCommand + 1,
++    'An explicit command still publishes immediately',
++  );
++  assert.equal(JSON.parse(await readFile(deferredFile)).receipts.at(-1).id, 'new-command');
++  state.receipts.at(-1).state = 'submitted';
++  deferredStore.saveRead(state);
++  assert.equal(JSON.parse(await readFile(deferredFile)).receipts.at(-1).state, 'submitted');
++  const leaseFile = join(deferredDirectory, 'reply-writer-v2.json');
++  const lease = await readFile(leaseFile);
++  await writeFile(
++    leaseFile,
++    JSON.stringify({ ...JSON.parse(lease), nonce: 'owned changed nonce' }),
++    { mode: 0o600 },
++  );
++  assert.throws(
++    () => deferredStore.save(state),
++    (error) => error.stage === 'writer-continuity',
++  );
++  assert.throws(
++    () => deferredStore.saveRead(state),
++    (error) => error.stage === 'writer-continuity',
++  );
++  await writeFile(leaseFile, lease, { mode: 0o600 });
++  const head = await readFile(deferredFile);
++  await writeFile(deferredFile, Buffer.concat([head, Buffer.from('\n')]), { mode: 0o600 });
++  assert.throws(
++    () => deferredStore.saveRead(state),
++    (error) => error.stage === 'writer-continuity',
++  );
++  await writeFile(deferredFile, head, { mode: 0o600 });
++  releaseCommand();
++
++  const receiver = Object.create(RuntimeSession.prototype);
++  receiver.persistence = deferredStore;
++  const cancelled = new AbortController();
++  const releaseAbort = receiver.deferBackgroundPersistence(cancelled.signal);
++  state.receipts.push({ id: 'after-abort', state: 'completed' });
++  deferredStore.schedule(() => state);
++  const beforeAbort = publications.length;
++  await delay(20);
++  assert.equal(publications.length, beforeAbort);
++  cancelled.abort();
++  await waitFor(() => deferredStore.status.backgroundSave === 'idle');
++  assert.equal(JSON.parse(await readFile(deferredFile)).receipts.at(-1).id, 'after-abort');
++  releaseAbort();
++
++  failNext = true;
++  state.receipts.push({ id: 'retry-after-hold', state: 'completed' });
++  deferredStore.schedule(() => state);
++  await waitFor(() => failures.length === 1);
++  const releaseRetry = deferredStore.deferBackground();
++  await delay(100);
++  assert.equal(failures.length, 1, 'A deferred retry cannot spin or lose its pending state');
++  releaseRetry();
++  await waitFor(() => deferredStore.status.backgroundSave === 'idle');
++  assert.equal(JSON.parse(await readFile(deferredFile)).receipts.at(-1).id, 'retry-after-hold');
++
++  const releaseClose = deferredStore.deferBackground();
++  state.threads[0].messages[0].text = 'latest before close';
++  deferredStore.dirty(state.threads[0]);
++  deferredStore.save(state);
++  deferredStore.close();
++  releaseClose();
++  releaseClose();
++  assert.equal(
++    new RuntimePersistence(deferredFile, deferredDirectory).load().threads[0].messages[0].text,
++    'latest before close',
++  );
++  console.log(
++    'Readonly cache scheduling passed: overdue state/history deferral, nested release, latest bytes, explicit barriers, real writer/head fences, abort, retry and close.',
++  );
++} finally {
++  deferredStore?.close();
++  await rm(deferredDirectory, { recursive: true, force: true });
++}
+diff --git a/scripts/windows-trace-diagnostics.test.mjs b/scripts/windows-trace-diagnostics.test.mjs
+index ab2b970c..2bc87f0b 100644
+--- a/scripts/windows-trace-diagnostics.test.mjs
++++ b/scripts/windows-trace-diagnostics.test.mjs
+@@ -405,6 +405,27 @@ test('actual client phase timeout and prepared wait keep different deadline owne
+   });
+ });
+ 
++test('a real prepared reply delayed on Main is rejected as a phase deadline, not transport loss', async () => {
++  await withClient('normal', async (client, events) => {
++    client.worker.prependListener('message', (message) => {
++      if (message.kind === 'prepared')
++        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 4150);
++    });
++    await assert.rejects(
++      client.prepare('thread', 'turn', performance.now() + 20000),
++      (error) => error.status === 503,
++    );
++    const failure = events.find((event) => event.operation === 'read');
++    assert.equal(failure.reason, 'phase_deadline');
++    assert.equal(failure.deadlineKind, 'phase');
++    assert.equal(failure.deadlineTriggered, true);
++    assert(failure.phaseRemainingMs < 0);
++    assert(failure.remainingMs > 0, 'The shared RPC boundary has not expired');
++    assert(!events.some((event) => ['prepared', 'committed'].includes(event.stage)));
++    assert.equal(client.available, false, 'Late evidence never renews capability');
++  });
++});
++
+ test('actual Reader-side calls account P S T B, typed batch decode, failures and per-phase isolation', async () => {
+   const events = [],
+     c = channel('agent-hub.windows-trace.summary'),

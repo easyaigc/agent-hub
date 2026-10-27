@@ -89,7 +89,9 @@ process.send?.({fixtureReady:true,pid:process.pid});const hold=setInterval(()=>{
     let initial;
     try {
       initial = JSON.parse(await readFile(meta, 'utf8'));
-    } catch {}
+    } catch {
+      // Rejected preload fixtures intentionally produce no profile metadata.
+    }
     if (initial) {
       await writeFile(
         join(directory, 'host-cpu-profile-stop.private.json'),

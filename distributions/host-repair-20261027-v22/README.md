@@ -1,0 +1,7 @@
+# Host repair candidate 20261027 V22
+
+Generated delivery from the canonical Host source commit named in overlay.json. This is a compiled overlay for the previously verified V20 unified package; it is not a fresh installation. Preserve each machine identity, credentials, device grants and private configuration. Verify the complete current runtime closure and each before/after hash, then deploy only listed files through the existing service procedure. Matching after bytes are already applied; unknown bytes require reconciliation.
+
+The included source patch targets the exact V20 file hashes recorded in overlay.json. It is review material, not an instruction for target computers to edit source. Public repository files and unrelated development are preserved. The compiled files come byte-for-byte from the independently built unified package with the recorded SHA-256. The complete canonical source archive is retained by the maintainer; private development history and acceptance records are not published.
+
+The change defers replaceable background state/history writes during bounded Windows native suggestion reads. Explicit durable saves and owner/target/native receipt checks retain their existing behavior and deadlines. Late prepared replies remain rejected and receive accurate deadline diagnostics. Deployment, normal Host acceptance and physical iPhone acceptance are separate; this candidate does not declare them passed.

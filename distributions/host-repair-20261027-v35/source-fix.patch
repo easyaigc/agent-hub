@@ -1,0 +1,878 @@
+diff --git a/apps/host-agent/src/direct-discovery-recovery.ts b/apps/host-agent/src/direct-discovery-recovery.ts
+new file mode 100644
+index 00000000..860c6802
+--- /dev/null
++++ b/apps/host-agent/src/direct-discovery-recovery.ts
+@@ -0,0 +1,67 @@
++/** Retry only failed startup. An established listener remains owned by its service. */
++export class DirectDiscoveryRecovery<T extends { close(): void }> {
++  private closed = false;
++  private current: T | undefined;
++  private initial: Promise<void> | undefined;
++  private timer: ReturnType<typeof setTimeout> | undefined;
++  private failures = 0;
++
++  constructor(
++    private readonly open: () => Promise<T>,
++    private readonly ready: (value: T) => void,
++    private readonly failed: (error: unknown, attempt: number) => void,
++  ) {}
++
++  start(): Promise<void> {
++    return (this.initial ??= this.attempt());
++  }
++
++  private async attempt(): Promise<void> {
++    if (this.closed) return;
++    let value: T;
++    try {
++      value = await this.open();
++    } catch (error) {
++      if (this.closed) return;
++      this.failures++;
++      // Diagnostic sinks cannot prevent recovery or create concurrent attempts.
++      try {
++        this.failed(error, this.failures);
++      } catch {
++        /* The next startup attempt still owns recovery. */
++      }
++      if (this.closed) return;
++      const delay = Math.min(30_000, 1000 * 2 ** Math.min(this.failures - 1, 5));
++      this.timer = setTimeout(() => {
++        this.timer = undefined;
++        void this.attempt();
++      }, delay);
++      this.timer.unref();
++      return;
++    }
++    if (this.closed) {
++      try {
++        value.close();
++      } catch {
++        /* Shutdown has already detached this late result. */
++      }
++      return;
++    }
++    this.current = value;
++    try {
++      this.ready(value);
++    } catch {
++      /* An unavailable diagnostic sink does not invalidate the live listener. */
++    }
++  }
++
++  close(): void {
++    if (this.closed) return;
++    this.closed = true;
++    clearTimeout(this.timer);
++    this.timer = undefined;
++    const current = this.current;
++    this.current = undefined;
++    current?.close();
++  }
++}
+diff --git a/apps/host-agent/src/direct-discovery.ts b/apps/host-agent/src/direct-discovery.ts
+index a1017815..95353c66 100644
+--- a/apps/host-agent/src/direct-discovery.ts
++++ b/apps/host-agent/src/direct-discovery.ts
+@@ -236,123 +236,140 @@ export async function startDirectDiscovery(options: {
+   });
+   server.requestTimeout = 40000;
+   server.headersTimeout = 10000;
+-  let bind = options.bind ?? process.env.HOST_AGENT_DISCOVERY_BIND ?? '::';
+-  const port = options.port ?? Number(process.env.HOST_AGENT_DISCOVERY_PORT ?? 8796);
+-  const listen = () =>
+-    new Promise<void>((done, reject) => {
+-      const error = (error: Error) => {
+-        server.removeListener('listening', ready);
+-        reject(error);
+-      };
+-      const ready = () => {
+-        server.removeListener('error', error);
+-        done();
+-      };
+-      server.once('error', error);
+-      server.once('listening', ready);
+-      server.listen({ port, host: bind, ipv6Only: false });
+-    });
+-  try {
+-    await listen();
+-  } catch (error) {
+-    if (
+-      bind !== '::' ||
+-      !['EAFNOSUPPORT', 'EPROTONOSUPPORT', 'EINVAL', 'EADDRNOTAVAIL'].includes(
+-        (error as NodeJS.ErrnoException).code ?? '',
+-      )
+-    )
+-      throw error;
+-    bind = '0.0.0.0';
+-    await listen();
+-  }
+-  const actual = server.address();
+-  if (!actual || typeof actual === 'string') throw Error('Missing discovery listener');
+-  const registry = options.registry ?? new DirectEndpointRegistry();
+-  const pagePath = join(directory, 'connect.html');
+   let closed = false,
+     refreshing = false;
+-  const refresh = async () => {
+-    if (closed || refreshing) return;
+-    refreshing = true;
++  let timer: ReturnType<typeof setInterval> | undefined;
++  let bonjour: Bonjour | undefined;
++  const close = () => {
++    if (closed) return;
++    closed = true;
++    clearInterval(timer);
+     try {
+-      const next = await registry.resolve({
+-        port: actual.port,
+-        ipv6: bind === '::',
+-        bindAddress: bind,
+-      });
+-      if (closed) return;
+-      endpoints = next;
+-      const offer = { ...descriptor(), token: options.token };
+-      const encode = () =>
+-        'codex-host://pair?descriptor=' + Buffer.from(JSON.stringify(offer)).toString('base64url');
+-      let uri = encode();
+-      // Preserve a LAN and a VPN bootstrap path when the full address snapshot
+-      // exceeds QR capacity. A pinned /host read then supplies every address.
+-      if (Buffer.byteLength(uri) > 2800) {
+-        offer.endpointHints = [];
+-        const firstVPN = endpoints.find((item) => item.networkKind === 'vpn')?.endpoint;
+-        offer.endpoints = [
+-          ...new Set([
+-            ...(offer.endpoints[0] ? [offer.endpoints[0]] : []),
+-            ...(firstVPN ? [firstVPN] : []),
+-            ...offer.endpoints,
+-          ]),
+-        ];
+-        uri = encode();
+-        while (Buffer.byteLength(uri) > 2800 && offer.endpoints.length > 2) {
+-          offer.endpoints.pop();
+-          uri = encode();
+-        }
+-      }
+-      const svg = await QRCode.toString(uri, { type: 'svg', errorCorrectionLevel: 'L' });
+-      if (closed) return;
+-      // Local private file only: credentials never enter DNS, /host, console or logs.
+-      const temp = join(directory, 'connect.html.tmp');
+-      await writeFile(
+-        temp,
+-        '<!doctype html><meta charset="utf-8"><title>连接 Codex</title><h1>扫描连接 Codex</h1><p>首次扫码，之后自动发现局域网和 VPN 地址。二维码包含本机客户端密钥，请仅向自己的手机展示。</p>' +
+-          svg +
+-          '<p>地址变化时重新打开此文件查看最新二维码。</p>',
+-        { mode: 0o600 },
+-      );
+-      protectWindowsStateFile(temp);
+-      await rename(temp, pagePath);
++      bonjour?.unpublishAll(() => bonjour?.destroy());
+     } finally {
+-      refreshing = false;
++      server.close();
++      server.closeAllConnections();
+     }
+   };
+   try {
++    let bind = options.bind ?? process.env.HOST_AGENT_DISCOVERY_BIND ?? '::';
++    const port = options.port ?? Number(process.env.HOST_AGENT_DISCOVERY_PORT ?? 8796);
++    const listen = () =>
++      new Promise<void>((done, reject) => {
++        const error = (error: Error) => {
++          server.removeListener('listening', ready);
++          reject(error);
++        };
++        const ready = () => {
++          server.removeListener('error', error);
++          done();
++        };
++        server.once('error', error);
++        server.once('listening', ready);
++        server.listen({ port, host: bind, ipv6Only: false });
++      });
++    try {
++      await listen();
++    } catch (error) {
++      if (
++        bind !== '::' ||
++        !['EAFNOSUPPORT', 'EPROTONOSUPPORT', 'EINVAL', 'EADDRNOTAVAIL'].includes(
++          (error as NodeJS.ErrnoException).code ?? '',
++        )
++      )
++        throw error;
++      bind = '0.0.0.0';
++      await listen();
++    }
++    const actual = server.address();
++    if (!actual || typeof actual === 'string') throw Error('Missing discovery listener');
++    const registry = options.registry ?? new DirectEndpointRegistry();
++    const pagePath = join(directory, 'connect.html');
++    const refresh = async () => {
++      if (closed || refreshing) return;
++      refreshing = true;
++      try {
++        const next = await registry.resolve({
++          port: actual.port,
++          ipv6: bind === '::',
++          bindAddress: bind,
++        });
++        if (closed) return;
++        endpoints = next;
++        const offer = { ...descriptor(), token: options.token };
++        const encode = () =>
++          'codex-host://pair?descriptor=' +
++          Buffer.from(JSON.stringify(offer)).toString('base64url');
++        let uri = encode();
++        // Preserve a LAN and a VPN bootstrap path when the full address snapshot
++        // exceeds QR capacity. A pinned /host read then supplies every address.
++        if (Buffer.byteLength(uri) > 2800) {
++          offer.endpointHints = [];
++          const firstVPN = endpoints.find((item) => item.networkKind === 'vpn')?.endpoint;
++          offer.endpoints = [
++            ...new Set([
++              ...(offer.endpoints[0] ? [offer.endpoints[0]] : []),
++              ...(firstVPN ? [firstVPN] : []),
++              ...offer.endpoints,
++            ]),
++          ];
++          uri = encode();
++          while (Buffer.byteLength(uri) > 2800 && offer.endpoints.length > 2) {
++            offer.endpoints.pop();
++            uri = encode();
++          }
++        }
++        const svg = await QRCode.toString(uri, { type: 'svg', errorCorrectionLevel: 'L' });
++        if (closed) return;
++        // Local private file only: credentials never enter DNS, /host, console or logs.
++        const temp = join(directory, 'connect.html.tmp');
++        await writeFile(
++          temp,
++          '<!doctype html><meta charset="utf-8"><title>连接 Codex</title><h1>扫描连接 Codex</h1><p>首次扫码，之后自动发现局域网和 VPN 地址。二维码包含本机客户端密钥，请仅向自己的手机展示。</p>' +
++            svg +
++            '<p>地址变化时重新打开此文件查看最新二维码。</p>',
++          { mode: 0o600 },
++        );
++        protectWindowsStateFile(temp);
++        await rename(temp, pagePath);
++      } finally {
++        refreshing = false;
++      }
++    };
+     await refresh();
++    timer = setInterval(() => {
++      void refresh().catch(() => {
++        /* Keep the last identity snapshot. */
++      });
++    }, 15000);
++    timer.unref();
++    if (process.env.HOST_AGENT_DISCOVERY_BONJOUR !== '0') {
++      bonjour = new Bonjour(undefined, () => {
++        /* DNS failure must not disable pinned direct reads. */
++      });
++      bonjour.publish({
++        name:
++          options.name.slice(0, 35) + '-' + options.target().hostId.slice(-8) + '-' + actual.port,
++        host: 'codex-' + options.target().hostId + '.local',
++        type: 'codex-host',
++        port: actual.port,
++        txt: { hostId: options.target().hostId, version: '1', port: String(actual.port) },
++      });
++    }
++    return { server: server as Server, descriptor, pagePath, close, refresh };
+   } catch (error) {
+-    server.close();
+-    server.closeAllConnections();
+-    throw error;
+-  }
+-  const timer = setInterval(() => {
+-    void refresh().catch(() => {
+-      /* Keep the last identity snapshot. */
+-    });
+-  }, 15000);
+-  timer.unref();
+-  let bonjour: Bonjour | undefined;
+-  if (process.env.HOST_AGENT_DISCOVERY_BONJOUR !== '0') {
+-    bonjour = new Bonjour(undefined, () => {
+-      /* DNS failure must not disable pinned direct reads. */
+-    });
+-    bonjour.publish({
+-      name: options.name.slice(0, 35) + '-' + options.target().hostId.slice(-8) + '-' + actual.port,
+-      host: 'codex-' + options.target().hostId + '.local',
+-      type: 'codex-host',
+-      port: actual.port,
+-      txt: { hostId: options.target().hostId, version: '1', port: String(actual.port) },
+-    });
+-  }
+-  const close = () => {
++    // A failed QR/advertisement step may already own the HTTPS port. Retire it
++    // before the recovery controller is allowed to start another generation.
+     closed = true;
+     clearInterval(timer);
+-    bonjour?.unpublishAll(() => bonjour?.destroy());
+-    server.close();
+-    server.closeAllConnections();
+-  };
+-  return { server: server as Server, descriptor, pagePath, close, refresh };
++    try {
++      bonjour?.destroy();
++    } finally {
++      await new Promise<void>((done) => {
++        server.close(() => done());
++        server.closeAllConnections();
++      });
++    }
++    throw error;
++  }
+ }
+diff --git a/apps/host-agent/src/runtime-server.ts b/apps/host-agent/src/runtime-server.ts
+index 36d9b9f1..4b6828f4 100644
+--- a/apps/host-agent/src/runtime-server.ts
++++ b/apps/host-agent/src/runtime-server.ts
+@@ -23,6 +23,7 @@ import {
+ } from '@codex-manage/codex-adapter';
+ import { NotificationPublisher } from '@codex-manage/notification-runtime';
+ import { startDirectDiscovery } from './direct-discovery.js';
++import { DirectDiscoveryRecovery } from './direct-discovery-recovery.js';
+ import { VPNPeerDirectory } from './direct-endpoints.js';
+ import { PrivateConnections } from './private-connections.js';
+ import { FileTransfers } from './file-transfers.js';
+@@ -1300,33 +1301,56 @@ export async function startRuntimeServer() {
+       ready: session.ready,
+     }),
+   );
+-  if (
++  const discoveryEnabled =
+     process.env.HOST_AGENT_DISCOVERY === '1' ||
+-    (mode === 'desktop-runtime' && process.env.HOST_AGENT_DISCOVERY !== '0')
+-  ) {
+-    try {
+-      direct = await startDirectDiscovery({
+-        directory,
+-        name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
+-        token,
+-        target: () => session.readingTarget(),
+-        handler,
+-        peers: () => vpnDirectory.peers(),
+-        claim: (input) => privateConnections.claim(input, session.readingTarget()),
+-      });
+-      console.log(
+-        JSON.stringify({
+-          service: 'host-agent-discovery',
+-          address: direct.server.address(),
+-          pagePath: direct.pagePath,
+-        }),
+-      );
+-    } catch {
+-      console.error(
+-        'Host direct discovery unavailable; check private TLS files, OpenSSL and discovery port. Existing Host routes remain active.',
+-      );
+-    }
+-  }
++    (mode === 'desktop-runtime' && process.env.HOST_AGENT_DISCOVERY !== '0');
++  const directRecovery = discoveryEnabled
++    ? new DirectDiscoveryRecovery(
++        () =>
++          startDirectDiscovery({
++            directory,
++            name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
++            token,
++            target: () => session.readingTarget(),
++            handler,
++            peers: () => vpnDirectory.peers(),
++            claim: (input) => privateConnections.claim(input, session.readingTarget()),
++          }),
++        (value) => {
++          direct = value;
++          console.log(
++            JSON.stringify({
++              service: 'host-agent-discovery',
++              address: direct.server.address(),
++              pagePath: direct.pagePath,
++            }),
++          );
++        },
++        (error, attempt) => {
++          appendRuntimeDiagnostic(
++            directory,
++            {
++              scope: 'direct-discovery',
++              stage: 'startup',
++              hostId: session.readingTarget().hostId,
++              attempt,
++            },
++            error,
++          );
++          const code = (error as NodeJS.ErrnoException)?.code;
++          console.error(
++            JSON.stringify({
++              diagnostic: 'host-runtime-failure',
++              scope: 'direct-discovery',
++              stage: 'startup',
++              attempt,
++              code:
++                typeof code === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(code) ? code : undefined,
++            }),
++          );
++        },
++      )
++    : undefined;
+   const close = () => {
+     process.removeListener('SIGINT', close);
+     process.removeListener('SIGTERM', close);
+@@ -1336,7 +1360,7 @@ export async function startRuntimeServer() {
+     for (const dispose of [
+       unsubscribeNotifications,
+       () => notifications.close(),
+-      () => direct?.close(),
++      () => directRecovery?.close(),
+       () => workspaceView?.close(),
+       () => chatActions?.close(),
+       () => desktopTranscription?.close(),
+@@ -1355,5 +1379,13 @@ export async function startRuntimeServer() {
+   };
+   process.once('SIGINT', close);
+   process.once('SIGTERM', close);
+-  return { server, session, close, direct };
++  await directRecovery?.start();
++  return {
++    server,
++    session,
++    close,
++    get direct() {
++      return direct;
++    },
++  };
+ }
+diff --git a/package.json b/package.json
+index 1adb5270..e291cf78 100644
+--- a/package.json
++++ b/package.json
+@@ -37,7 +37,7 @@
+     "format": "prettier --write .",
+     "format:check": "prettier --check .",
+     "smoke": "pnpm build && node scripts/smoke.mjs",
+-    "check": "pnpm format:check && pnpm lint && pnpm check:mobile-parity && node --test scripts/mobile/ios-result-device.test.mjs scripts/mobile/isolated-ios-runner.test.mjs && pnpm check:ios:suggestions && pnpm typecheck && pnpm smoke && node scripts/history-smoke.mjs && node scripts/runtime-smoke.mjs && node --test scripts/codex-connection-routes.test.mjs && node scripts/read-json-smoke.mjs && node scripts/easywork-receive-native-smoke.mjs && node scripts/easywork-relay-transport-native-smoke.mjs && node --test --test-concurrency=1 scripts/easywork-client-queue-evidence.test.mjs scripts/easywork-receipt-normalization.test.mjs && node scripts/file-transfers-smoke.mjs && node scripts/runtime-persistence-smoke.mjs && node --test scripts/verify-host-runtime.test.mjs && node --test --test-concurrency=1 scripts/windows-suggestion-timing-import.test.mjs scripts/windows-realpath-native-benchmark.test.mjs && node --test --test-concurrency=1 scripts/windows-private-state-native.test.mjs && node --test --test-concurrency=1 scripts/windows-trace-diagnostics.test.mjs scripts/windows-trace-planning.test.mjs scripts/desktop-trace-lifecycle.test.mjs scripts/windows-suggestion-heartbeat.test.mjs && node scripts/host-lifecycle-smoke.mjs && node scripts/windows-host-recovery-smoke.mjs && node scripts/windows-powershell-smoke.mjs && node scripts/message-links-smoke.mjs && node scripts/attachment-download-native-smoke.mjs && node scripts/attachment-performance-smoke.mjs && node scripts/attachment-grants-smoke.mjs && node --test scripts/attachment-metadata.test.mjs && node scripts/desktop-framing-smoke.mjs && node scripts/large-conversation-sync-smoke.mjs && node scripts/desktop-ipc-smoke.mjs && node --test --test-concurrency=1 scripts/desktop-known-owner-recovery.test.mjs && node scripts/desktop-history-identity-smoke.mjs && node scripts/desktop-platform-smoke.mjs && node --test scripts/desktop-archive-bounds.test.mjs && node scripts/windows-native-helper-path-smoke.mjs && node scripts/windows-host-launcher-smoke.mjs && node scripts/windows-control-smoke.mjs && node scripts/desktop-creation-smoke.mjs && node scripts/desktop-controller-smoke.mjs && node scripts/desktop-prepared-bridge-smoke.mjs && node scripts/desktop-first-input-boundary-smoke.mjs && node scripts/desktop-stdio-smoke.mjs && node scripts/desktop-stdio-entry-fixture.mjs && pnpm check:skill && pnpm check:agent-contract && node scripts/history-error-native-smoke.mjs && node scripts/notification-contract.mjs && node --test scripts/notifications-smoke.mjs && node --test scripts/host-permission-takeover-evidence.test.mjs && node scripts/workspace-management-smoke.mjs && node scripts/thread-fork-smoke.mjs && node scripts/fork-worktree-smoke.mjs && node scripts/thread-fork-recovery-smoke.mjs && node --test scripts/voice-transcription-smoke.mjs && node --test scripts/desktop-suggestion-observer.test.mjs && node --test scripts/windows-prediction-trace.test.mjs scripts/windows-trace-worker.test.mjs scripts/windows-prepared-trace.test.mjs scripts/windows-trace-discovery.test.mjs scripts/windows-trace-buffer-native.test.mjs scripts/windows-trace-process-native.test.mjs && node --test scripts/desktop-suggestion-trace-environment.test.mjs && pnpm test:task-hub:deployment && node scripts/chat-actions-smoke.mjs && node scripts/shared-runtime-smoke.mjs && node --test scripts/desktop-shared-environment.test.mjs && node --test scripts/desktop-prediction-trace.test.mjs && node --test scripts/desktop-stream-generation.test.mjs scripts/desktop-live-window.test.mjs && node --test scripts/desktop-sidebar.test.mjs && pnpm check:weak-network-proxy && node --test --test-concurrency=1 scripts/desktop-trace-lifecycle.test.mjs && node --test scripts/host-permission-takeover-evidence.test.mjs scripts/mobile/android-approval-command-guard.test.mjs && node --test scripts/windows-prediction-trace.test.mjs scripts/windows-trace-worker.test.mjs scripts/windows-prepared-trace.test.mjs && pnpm check:ios:publication",
++    "check": "pnpm format:check && pnpm lint && pnpm check:mobile-parity && node --test scripts/mobile/ios-result-device.test.mjs scripts/mobile/isolated-ios-runner.test.mjs && pnpm check:ios:suggestions && pnpm typecheck && pnpm smoke && node scripts/history-smoke.mjs && node scripts/runtime-smoke.mjs && node --test scripts/codex-connection-routes.test.mjs && node scripts/read-json-smoke.mjs && node scripts/easywork-receive-native-smoke.mjs && node scripts/easywork-relay-transport-native-smoke.mjs && node --test --test-concurrency=1 scripts/easywork-client-queue-evidence.test.mjs scripts/easywork-receipt-normalization.test.mjs && node scripts/file-transfers-smoke.mjs && node scripts/runtime-persistence-smoke.mjs && node --test scripts/verify-host-runtime.test.mjs && node --test --test-concurrency=1 scripts/windows-suggestion-timing-import.test.mjs scripts/windows-realpath-native-benchmark.test.mjs && node --test --test-concurrency=1 scripts/windows-private-state-native.test.mjs && node --test --test-concurrency=1 scripts/windows-trace-diagnostics.test.mjs scripts/windows-trace-planning.test.mjs scripts/desktop-trace-lifecycle.test.mjs scripts/windows-suggestion-heartbeat.test.mjs && node scripts/host-lifecycle-smoke.mjs && node --test scripts/direct-discovery-recovery.test.mjs && node scripts/windows-host-recovery-smoke.mjs && node scripts/windows-powershell-smoke.mjs && node scripts/message-links-smoke.mjs && node scripts/attachment-download-native-smoke.mjs && node scripts/attachment-performance-smoke.mjs && node scripts/attachment-grants-smoke.mjs && node --test scripts/attachment-metadata.test.mjs && node scripts/desktop-framing-smoke.mjs && node scripts/large-conversation-sync-smoke.mjs && node scripts/desktop-ipc-smoke.mjs && node --test --test-concurrency=1 scripts/desktop-known-owner-recovery.test.mjs && node scripts/desktop-history-identity-smoke.mjs && node scripts/desktop-platform-smoke.mjs && node --test scripts/desktop-archive-bounds.test.mjs && node scripts/windows-native-helper-path-smoke.mjs && node scripts/windows-host-launcher-smoke.mjs && node scripts/windows-control-smoke.mjs && node scripts/desktop-creation-smoke.mjs && node scripts/desktop-controller-smoke.mjs && node scripts/desktop-prepared-bridge-smoke.mjs && node scripts/desktop-first-input-boundary-smoke.mjs && node scripts/desktop-stdio-smoke.mjs && node scripts/desktop-stdio-entry-fixture.mjs && pnpm check:skill && pnpm check:agent-contract && node scripts/history-error-native-smoke.mjs && node scripts/notification-contract.mjs && node --test scripts/notifications-smoke.mjs && node --test scripts/host-permission-takeover-evidence.test.mjs && node scripts/workspace-management-smoke.mjs && node scripts/thread-fork-smoke.mjs && node scripts/fork-worktree-smoke.mjs && node scripts/thread-fork-recovery-smoke.mjs && node --test scripts/voice-transcription-smoke.mjs && node --test scripts/desktop-suggestion-observer.test.mjs && node --test scripts/windows-prediction-trace.test.mjs scripts/windows-trace-worker.test.mjs scripts/windows-prepared-trace.test.mjs scripts/windows-trace-discovery.test.mjs scripts/windows-trace-buffer-native.test.mjs scripts/windows-trace-process-native.test.mjs && node --test scripts/desktop-suggestion-trace-environment.test.mjs && pnpm test:task-hub:deployment && node scripts/chat-actions-smoke.mjs && node scripts/shared-runtime-smoke.mjs && node --test scripts/desktop-shared-environment.test.mjs && node --test scripts/desktop-prediction-trace.test.mjs && node --test scripts/desktop-stream-generation.test.mjs scripts/desktop-live-window.test.mjs && node --test scripts/desktop-sidebar.test.mjs && pnpm check:weak-network-proxy && node --test --test-concurrency=1 scripts/desktop-trace-lifecycle.test.mjs && node --test scripts/host-permission-takeover-evidence.test.mjs scripts/mobile/android-approval-command-guard.test.mjs && node --test scripts/windows-prediction-trace.test.mjs scripts/windows-trace-worker.test.mjs scripts/windows-prepared-trace.test.mjs && pnpm check:ios:publication",
+     "check:windows-native": "node --input-type=module --eval \"import assert from 'node:assert/strict'; assert.equal(process.platform, 'win32', 'check:windows-native requires native Windows');\" && pnpm format:check && pnpm lint && pnpm typecheck && pnpm build && node --test --test-concurrency=1 scripts/verify-host-runtime.test.mjs && node --test --test-concurrency=1 scripts/windows-suggestion-timing-import.test.mjs scripts/windows-realpath-native-benchmark.test.mjs && node --test --test-concurrency=1 scripts/windows-private-state-native.test.mjs && node --test --test-concurrency=1 scripts/windows-trace-diagnostics.test.mjs scripts/desktop-trace-lifecycle.test.mjs scripts/windows-suggestion-heartbeat.test.mjs && node scripts/windows-private-state-acceptance.mjs && node scripts/history-smoke.mjs && node scripts/runtime-persistence-smoke.mjs && node scripts/runtime-smoke.mjs && node scripts/desktop-framing-smoke.mjs && node --test scripts/desktop-archive-bounds.test.mjs && node scripts/windows-native-helper-path-smoke.mjs && node scripts/windows-host-launcher-smoke.mjs && node scripts/windows-control-smoke.mjs && node scripts/desktop-ipc-smoke.mjs && node --test --test-concurrency=1 scripts/desktop-known-owner-recovery.test.mjs && node --test --test-concurrency=1 scripts/desktop-stream-generation.test.mjs scripts/desktop-live-window.test.mjs && node scripts/large-conversation-sync-smoke.mjs && node --test --test-concurrency=1 scripts/desktop-suggestion-observer.test.mjs && node --test --test-concurrency=1 scripts/voice-transcription-smoke.mjs && node --test --test-concurrency=1 scripts/windows-prediction-trace.test.mjs scripts/windows-trace-worker.test.mjs scripts/windows-prepared-trace.test.mjs scripts/windows-trace-discovery.test.mjs scripts/windows-trace-buffer-native.test.mjs scripts/windows-trace-process-native.test.mjs",
+     "check:notifications": "pnpm build && node scripts/notification-contract.mjs && node --test scripts/notifications-smoke.mjs",
+     "check:notifications:native": "pnpm build && node scripts/notifications-native-smoke.mjs",
+@@ -72,7 +72,7 @@
+     "acceptance:desktop:prepared": "node scripts/desktop-prepared-acceptance.mjs",
+     "acceptance:desktop:prepared-lifecycle": "node scripts/desktop-prepared-lifecycle-acceptance.mjs",
+     "proof:desktop:prepared": "node scripts/desktop-prepared-proof.mjs",
+-    "check:codex-discovery": "pnpm build && HOST_AGENT_DISCOVERY_BONJOUR=0 node scripts/codex-discovery-smoke.mjs && node scripts/codex-discovery-native-smoke.mjs && node scripts/mobile/codex-discovery-scheduling.mjs && node scripts/codex-authorization-alert-native-smoke.mjs",
++    "check:codex-discovery": "pnpm build && node --test scripts/direct-discovery-recovery.test.mjs && HOST_AGENT_DISCOVERY_BONJOUR=0 node scripts/codex-discovery-smoke.mjs && node scripts/codex-discovery-native-smoke.mjs && node scripts/mobile/codex-discovery-scheduling.mjs && node scripts/codex-authorization-alert-native-smoke.mjs",
+     "generate:mobile-parity": "node scripts/mobile/parity.mjs --write",
+     "check:mobile-parity": "node scripts/mobile/parity.mjs && node --test scripts/mobile/parity.test.mjs && node scripts/mobile/generate-reading-policy.mjs && node scripts/mobile/check-contract.mjs && node scripts/mobile/private-connection-vectors.mjs && node scripts/mobile/generate-design-tokens.mjs && node scripts/mobile/generate-failure-copy.mjs",
+     "check:ios-state": "node scripts/mobile/check-ios-state.mjs",
+diff --git a/scripts/direct-discovery-recovery.test.mjs b/scripts/direct-discovery-recovery.test.mjs
+new file mode 100644
+index 00000000..287653f9
+--- /dev/null
++++ b/scripts/direct-discovery-recovery.test.mjs
+@@ -0,0 +1,186 @@
++import assert from 'node:assert/strict';
++import { test } from 'node:test';
++import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { createServer } from 'node:net';
++import https from 'node:https';
++import { X509Certificate } from 'node:crypto';
++import { setTimeout as delay } from 'node:timers/promises';
++import { DirectDiscoveryRecovery } from '../apps/host-agent/dist/direct-discovery-recovery.js';
++import { startDirectDiscovery } from '../apps/host-agent/dist/direct-discovery.js';
++import { DirectEndpointRegistry } from '../apps/host-agent/dist/direct-endpoints.js';
++
++process.env.HOST_AGENT_DISCOVERY_BONJOUR = '0';
++const listen = (server, port = 0) =>
++  new Promise((done, reject) => {
++    server.once('error', reject);
++    server.listen(port, '127.0.0.1', done);
++  });
++const stop = (server) => new Promise((done) => server.close(done));
++const until = async (check) => {
++  for (let i = 0; i < 200; i++) {
++    if (check()) return;
++    await delay(25);
++  }
++  assert.fail('Recovery did not finish');
++};
++
++test('occupied TLS port recovers once with the original identity and strict TLS', async () => {
++  const directory = await mkdtemp(join(tmpdir(), 'host-direct-recovery-'));
++  const blocker = createServer();
++  let service;
++  let recovery;
++  try {
++    const target = {
++      agentId: 'codex',
++      hostId: 'fixture',
++      workspaceId: 'workspace',
++      runtimeId: 'desktop-runtime',
++    };
++    const options = {
++      directory,
++      name: 'Recovery fixture',
++      token: 'a'.repeat(48),
++      target: () => target,
++      bind: '127.0.0.1',
++      port: 0,
++      registry: new DirectEndpointRegistry([{ id: 'fixture', addresses: async () => [] }]),
++      handler: async (_request, response) => {
++        response.writeHead(401);
++        response.end();
++      },
++    };
++    service = await startDirectDiscovery(options);
++    const original = service.descriptor();
++    const cert = await readFile(join(directory, 'direct-discovery/cert.pem'));
++    const key = await readFile(join(directory, 'direct-discovery/key.pem'));
++    const port = service.server.address().port;
++    const closed = new Promise((done) => service.server.once('close', done));
++    service.close();
++    await closed;
++    await listen(blocker, port);
++    let attempts = 0;
++    const errors = [];
++    let recovered;
++    recovery = new DirectDiscoveryRecovery(
++      async () => {
++        attempts++;
++        return startDirectDiscovery({ ...options, port });
++      },
++      (value) => {
++        recovered = value;
++      },
++      (error, attempt) => errors.push({ code: error.code, attempt }),
++    );
++    await recovery.start();
++    await recovery.start();
++    assert.equal(attempts, 1);
++    assert.deepEqual(errors, [{ code: 'EADDRINUSE', attempt: 1 }]);
++    await stop(blocker);
++    await until(() => recovered);
++    assert.equal(attempts, 2);
++    assert.equal(recovered.server.address().port, port);
++    assert.deepEqual(recovered.descriptor().target, original.target);
++    assert.equal(recovered.descriptor().fingerprint, original.fingerprint);
++    assert.deepEqual(await readFile(join(directory, 'direct-discovery/cert.pem')), cert);
++    assert.deepEqual(await readFile(join(directory, 'direct-discovery/key.pem')), key);
++    const read = (path) =>
++      new Promise((done, reject) => {
++        https
++          .get(
++            {
++              hostname: '127.0.0.1',
++              port,
++              path,
++              ca: cert,
++              rejectUnauthorized: true,
++              checkServerIdentity: (_host, peer) => {
++                assert.deepEqual(peer.raw, new X509Certificate(cert).raw);
++              },
++            },
++            (response) => {
++              const chunks = [];
++              response.on('data', (chunk) => chunks.push(chunk));
++              response.on('end', () =>
++                done({ status: response.statusCode, bytes: Buffer.concat(chunks) }),
++              );
++            },
++          )
++          .on('error', reject);
++      });
++    const descriptor = await read('/host');
++    assert.equal(descriptor.status, 200);
++    assert.equal(JSON.parse(descriptor.bytes).target.hostId, target.hostId);
++    assert.equal(descriptor.bytes.includes(options.token), false);
++    assert.equal((await read('/v1/workspace')).status, 401);
++    const recoveredClosed = new Promise((done) => recovered.server.once('close', done));
++    recovery.close();
++    recovery.close();
++    await recoveredClosed;
++
++    // Fail after the listener has bound: the failed startup must relinquish its
++    // port before it rejects, rather than racing the next recovery generation.
++    const page = join(directory, 'direct-discovery/connect.html');
++    await rm(page);
++    await mkdir(page);
++    await assert.rejects(startDirectDiscovery({ ...options, port }));
++    await listen(blocker, port);
++    await stop(blocker);
++    await rm(page, { recursive: true });
++    service = await startDirectDiscovery({ ...options, port });
++    assert.equal(service.descriptor().fingerprint, original.fingerprint);
++  } finally {
++    recovery?.close();
++    service?.close();
++    if (blocker.listening) await stop(blocker);
++    await rm(directory, { recursive: true, force: true });
++  }
++});
++
++test('shutdown cancels a pending retry even if failure reporting throws', async () => {
++  let calls = 0;
++  const recovery = new DirectDiscoveryRecovery(
++    async () => {
++      calls++;
++      throw Object.assign(Error('private text'), { code: 'EADDRINUSE' });
++    },
++    () => assert.fail('Must not become ready'),
++    () => {
++      throw Error('unavailable diagnostic sink');
++    },
++  );
++  await recovery.start();
++  recovery.close();
++  await delay(1200);
++  await recovery.start();
++  assert.equal(calls, 1);
++});
++
++test('shutdown during startup retires a late result without publishing or retrying', async () => {
++  let finish;
++  let closed = 0;
++  let published = 0;
++  const recovery = new DirectDiscoveryRecovery(
++    () =>
++      new Promise((done) => {
++        finish = done;
++      }),
++    () => {
++      published++;
++    },
++    () => assert.fail('No failure expected'),
++  );
++  const initial = recovery.start();
++  recovery.close();
++  finish({
++    close: () => {
++      closed++;
++    },
++  });
++  await initial;
++  await recovery.start();
++  recovery.close();
++  assert.equal(closed, 1);
++  assert.equal(published, 0);
++});
+diff --git a/scripts/host-lifecycle-smoke.mjs b/scripts/host-lifecycle-smoke.mjs
+index 7bb55159..0c4f1fab 100644
+--- a/scripts/host-lifecycle-smoke.mjs
++++ b/scripts/host-lifecycle-smoke.mjs
+@@ -25,6 +25,7 @@ let fault;
+ let protectedFiles = 0;
+ let store;
+ let supervisor;
++let nativeFatalModesPassed = 0;
+ const state = {
+   hostId: 'isolated-fixture-host',
+   threads: [],
+@@ -263,6 +264,94 @@ process.once('disconnect', () => process.exit(1));
+   await delay(100);
+   assert.equal(await readFile(marker, 'utf8'), '3', 'Stopping cannot launch a fourth child');
+ 
++  // Native fatal output is not JSON. Real pipes exercise split/CRLF lines,
++  // duplicate suppression, an unterminated tail and the existing size bound.
++  const fatalChild = join(directory, 'fatal-stderr-child.mjs');
++  const fatalSecret = 'PRIVATE_FATAL_FIXTURE_TOKEN_AND_PATH_MUST_NOT_BE_LOGGED';
++  const fatalFirst =
++    'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory ' +
++    fatalSecret +
++    '\n';
++  await writeFile(
++    fatalChild,
++    `
++import {writeFileSync} from 'node:fs';
++import {setTimeout as delay} from 'node:timers/promises';
++const [mode, marker] = process.argv.slice(2);
++process.on('message', message => { if (message.command === 'host-worker-stop') process.exit(0); });
++const write = text => new Promise((resolve, reject) => process.stderr.write(text, error => error ? reject(error) : resolve()));
++if (mode === 'oversized') {
++  await write('FATAL ERROR: ' + ${JSON.stringify(fatalSecret)}.repeat(600));
++} else {
++  await write(JSON.stringify({message: 'FATAL ERROR: ' + ${JSON.stringify(fatalSecret)}}) + '\\n');
++  const first = ${JSON.stringify(fatalFirst)};
++  await write(first.slice(0, 17));
++  await delay(20);
++  await write(first.slice(17));
++  await write(first);
++  await write(${JSON.stringify('Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file C:\\private\\' + fatalSecret + '\\async.c, line 94\r\n')});
++  await write(${JSON.stringify('Assertion failed: false, file C:\\private\\' + fatalSecret + '\\node_worker.cc, line 2\n')});
++  await write('FATAL ERROR: ' + ${JSON.stringify(fatalSecret)});
++}
++writeFileSync(marker, 'ready');
++`,
++  );
++  for (const mode of ['split-and-tail', 'report-fault', 'oversized']) {
++    const fatalMarker = join(directory, 'fatal-ready-' + mode);
++    const reports = [],
++      warnings = [];
++    const originalError = console.error;
++    if (mode === 'report-fault') console.error = (value) => warnings.push(value);
++    try {
++      supervisor = superviseWorker({
++        executable: process.execPath,
++        args: [fatalChild, mode, fatalMarker],
++        report(entry) {
++          reports.push(entry);
++          if (mode === 'report-fault' && entry.event === 'native-runtime-stderr')
++            throw Error(fatalSecret);
++        },
++        delays: [10],
++      });
++      await waitUntil(async () => (await readdir(directory)).includes('fatal-ready-' + mode));
++      await supervisor.stop();
++      const projected = reports.filter((entry) => entry.event === 'native-runtime-stderr');
++      assert.deepEqual(
++        projected.map((entry) => entry.reason),
++        mode === 'oversized'
++          ? []
++          : [
++              'javascript-heap-exhausted',
++              'libuv-async-handle-closing',
++              'native-assertion',
++              'node-fatal',
++            ],
++      );
++      const pid = reports.find((entry) => entry.event === 'started').childPid;
++      for (const entry of projected) {
++        assert.deepEqual(Object.keys(entry).sort(), ['childPid', 'event', 'reason']);
++        assert.equal(entry.childPid, pid);
++      }
++      assert(!JSON.stringify(reports).includes(fatalSecret));
++      assert(!JSON.stringify(reports).includes('C:\\private'));
++      assert.equal(
++        reports.filter((entry) => entry.event === 'exited' && entry.exitCode === 0).length,
++        1,
++      );
++      await delay(50);
++      assert.equal(reports.filter((entry) => entry.event === 'started').length, 1);
++      assert(!reports.some((entry) => entry.event === 'retry'));
++      assert.deepEqual(
++        warnings,
++        mode === 'report-fault' ? Array(4).fill('HOST_DIAGNOSTICS_UNAVAILABLE') : [],
++      );
++      nativeFatalModesPassed++;
++    } finally {
++      await supervisor?.stop();
++      console.error = originalError;
++    }
++  }
++
+   // Real factory records travel through real child stderr, including split lines.
+   // Subscriber-only capture avoids emitting fixture records from this parent.
+   const traceChannel = channel('agent-hub.windows-trace.summary');
+@@ -480,6 +569,8 @@ if (mode === 'report-fault' && count === 1) process.exit(7);
+       windowsTraceForwarded: forwardedTraceRecords,
+       windowsTraceModes: 5,
+       windowsTraceReporterFailureRecovered: true,
++      nativeFatalModesPassed,
++      nativeFatalRawContentExcluded: true,
+       idlePersistenceRecovery: true,
+       cooldownStoppedWithoutWrites: true,
+       evidence:
+diff --git a/scripts/host-worker-supervisor.mjs b/scripts/host-worker-supervisor.mjs
+index 22c9b7dd..610280f3 100644
+--- a/scripts/host-worker-supervisor.mjs
++++ b/scripts/host-worker-supervisor.mjs
+@@ -2,6 +2,17 @@ import { spawn } from 'node:child_process';
+ 
+ const identifier = (value) =>
+   typeof value === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : undefined;
++// Native aborts can bypass JS diagnostics. Preserve only a fixed classification;
++// neither the fatal text, paths, payloads nor an untrusted JSON object is logged.
++function nativeStderrReason(line) {
++  if (/^FATAL ERROR: .*JavaScript heap out of memory/.test(line))
++    return 'javascript-heap-exhausted';
++  if (/^Assertion failed: .*UV_HANDLE_CLOSING.*async\.c\b/.test(line))
++    return 'libuv-async-handle-closing';
++  if (/^Assertion failed: .*\bfile\b.*\.[ch](?:c|pp)?, line \d+/.test(line))
++    return 'native-assertion';
++  if (/^FATAL ERROR: /.test(line)) return 'node-fatal';
++}
+ export function safeWorkerFailure(error) {
+   const frames = new Set([
+     'runtime-persistence.js',
+@@ -241,43 +252,53 @@ export function superviseWorker({
+     if (probe) probeTimer = setTimeout(checkHealth, probeIntervalMs);
+     diagnostic({ event: 'started', childPid: child.pid });
+     let buffer = '';
++    const nativeReasons = new Set();
++    const consumeLine = (line) => {
++      const reason = nativeStderrReason(line);
++      if (reason && !nativeReasons.has(reason)) {
++        nativeReasons.add(reason);
++        diagnostic({ event: 'native-runtime-stderr', childPid: launched.pid, reason });
++      }
++      try {
++        const value = JSON.parse(line);
++        if (value.diagnostic !== 'host-runtime-failure') {
++          if (process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1') {
++            const summary = windowsTraceSummary(value.windowsTrace);
++            if (summary)
++              diagnostic({
++                event: 'windows-trace-summary',
++                childPid: launched.pid,
++                windowsTrace: summary,
++              });
++          }
++          return;
++        }
++        diagnostic({
++          event: 'runtime-failure',
++          childPid: launched.pid,
++          scope: identifier(value.scope),
++          recoveryState: workerRecoveryState(value.scope, value.code),
++          ...safeWorkerFailure(value),
++          attempt: Number.isSafeInteger(value.attempt) ? value.attempt : undefined,
++        });
++      } catch {
++        // Raw stdout, stderr, exception messages and configuration never enter logs.
++      }
++    };
+     child.stderr.on('data', (chunk) => {
+       buffer += chunk.toString('utf8');
+       if (buffer.length > 16_384) buffer = '';
+       const lines = buffer.split('\n');
+       buffer = lines.pop();
+-      for (const line of lines) {
+-        try {
+-          const value = JSON.parse(line);
+-          if (value.diagnostic !== 'host-runtime-failure') {
+-            if (process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1') {
+-              const summary = windowsTraceSummary(value.windowsTrace);
+-              if (summary)
+-                diagnostic({
+-                  event: 'windows-trace-summary',
+-                  childPid: launched.pid,
+-                  windowsTrace: summary,
+-                });
+-            }
+-            continue;
+-          }
+-          diagnostic({
+-            event: 'runtime-failure',
+-            childPid: child.pid,
+-            scope: identifier(value.scope),
+-            recoveryState: workerRecoveryState(value.scope, value.code),
+-            ...safeWorkerFailure(value),
+-            attempt: Number.isSafeInteger(value.attempt) ? value.attempt : undefined,
+-          });
+-        } catch {
+-          // Raw stdout, stderr, exception messages and configuration never enter logs.
+-        }
+-      }
++      for (const line of lines) consumeLine(line.replace(/\r$/, ''));
+     });
+     child.on('error', (error) =>
+       diagnostic({ event: 'spawn-failure', ...safeWorkerFailure(error) }),
+     );
+     child.once('close', (code, signal) => {
++      // close follows stdio closure, including a fatal tail without a newline.
++      if (buffer) consumeLine(buffer.replace(/\r$/, ''));
++      buffer = '';
+       diagnostic({
+         event: 'exited',
+         childPid: child.pid,

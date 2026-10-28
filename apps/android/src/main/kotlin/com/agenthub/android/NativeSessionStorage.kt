@@ -220,41 +220,77 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias)
     // Audio stays binary and bounded in memory. Each chunk authenticates its name,
     // total length and position, so truncation/reordering cannot publish plaintext.
+    // Binary format4 authenticates an encrypted logical name and length before chunks.
+    // The non-UTF-8 domain cannot be a legacy name; format2 stays read-only compatible.
+    private val binaryContext=byteArrayOf(0xff.toByte(),4)+"agent-hub/android-local-binary/v4".toByteArray(Charsets.UTF_8)
+    private data class BinaryHeader(val name: String,val size: Int,val nonce: ByteArray?)
+    private fun binaryName(name: String): ByteArray {
+        val bytes=strictBytes(name)
+        require(name.isNotEmpty()&&name.length<=16384&&bytes.size<=65536)
+        return bytes
+    }
+    private fun binaryHeader(input: java.io.DataInputStream,name: String,expectedSize: Int): BinaryHeader {
+        val version=input.readInt()
+        if(version==2) {require(input.readInt()==expectedSize);return BinaryHeader(name,expectedSize,null)}
+        require(version==4) {"录音文件格式已变化"}
+        val length=input.readInt();require(length in 25..65560)
+        val iv=ByteArray(12);input.readFully(iv);val encrypted=ByteArray(length);input.readFully(encrypted)
+        val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.DECRYPT_MODE,key,GCMParameterSpec(128,iv));updateAAD(binaryContext)}
+        val clear=crypt(cipher,encrypted)
+        try {
+            val frame=java.nio.ByteBuffer.wrap(clear);val count=frame.int
+            require(count in 1..65536&&frame.remaining()==count+4)
+            val encoded=ByteArray(count);frame.get(encoded)
+            val actual=Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(encoded)).toString()
+            require(binaryName(actual).contentEquals(encoded)&&actual==name&&frame.int==expectedSize)
+            return BinaryHeader(actual,expectedSize,iv)
+        }finally {clear.fill(0)}
+    }
+    private fun writeBinaryHeader(out: java.io.DataOutputStream,name: String,size: Int): ByteArray {
+        val encoded=binaryName(name);val clear=java.nio.ByteBuffer.allocate(encoded.size+8).putInt(encoded.size).put(encoded).putInt(size).array()
+        val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key);updateAAD(binaryContext)}
+        val encrypted=try {crypt(cipher,clear)}finally {clear.fill(0)}
+        out.writeInt(4);out.writeInt(encrypted.size);out.write(cipher.iv);out.write(encrypted);return cipher.iv
+    }
     internal fun writeBinary(name: String, source: File, maximumBytes: Int=12*1024*1024) = ioLock.withLock {
-        requireWritable()
+        requireWritable();binaryName(name)
         require(maximumBytes in 1..21*1024*1024)
         val size=source.length();require(size in 1..maximumBytes.toLong())
         val atomic=file(name);val stream=atomic.startWrite()
         try {
-            val out=java.io.DataOutputStream(stream);out.writeInt(2);out.writeInt(size.toInt())
+            val out=java.io.DataOutputStream(stream);val nonce=writeBinaryHeader(out,name,size.toInt())
             source.inputStream().use { input->
                 val buffer=ByteArray(65536);var offset=0;var index=0
                 while(offset<size) {
                     val count=minOf(buffer.size,size.toInt()-offset);java.io.DataInputStream(input).readFully(buffer,0,count)
-                    val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE,key);updateAAD(binaryAAD(name,size.toInt(),index++)) }
+                    val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key);updateAAD(binaryAAD(name,size.toInt(),index++,nonce))}
                     out.write(cipher.iv);out.write(crypt(cipher,buffer.copyOf(count)));offset+=count
                 }
-                require(input.read()==-1) { "录音在保存期间发生变化" }
+                require(input.read()==-1) {"录音在保存期间发生变化"}
             }
             out.flush();atomic.finishWrite(stream)
-        } catch(error: Throwable) { atomic.failWrite(stream);throw error }
+        }catch(error: Throwable) {atomic.failWrite(stream);throw error}
     }
     internal fun readBinary(name: String, expectedSize: Int, maximumBytes: Int=12*1024*1024): ByteArray = ioLock.withLock {
-        checkMigrationAccess()
-        require(maximumBytes in 1..21*1024*1024 && expectedSize in 1..maximumBytes)
+        checkMigrationAccess();binaryName(name)
+        require(maximumBytes in 1..21*1024*1024&&expectedSize in 1..maximumBytes)
         java.io.DataInputStream(file(name).openRead()).use { input->
-            require(input.readInt()==2 && input.readInt()==expectedSize) { "录音文件格式或长度已变化" }
+            val header=binaryHeader(input,name,expectedSize)
             val result=ByteArray(expectedSize);var offset=0;var index=0
-            while(offset<expectedSize) {
-                val count=minOf(65536,expectedSize-offset);val iv=ByteArray(12);input.readFully(iv)
-                val encrypted=ByteArray(count+16);input.readFully(encrypted)
-                val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.DECRYPT_MODE,key,GCMParameterSpec(128,iv));updateAAD(binaryAAD(name,expectedSize,index++)) }
-                val clear=crypt(cipher,encrypted);require(clear.size==count);System.arraycopy(clear,0,result,offset,count);offset+=count
-            }
-            require(input.read()==-1) { "录音文件含多余内容" };result
+            try {
+                while(offset<expectedSize) {
+                    val count=minOf(65536,expectedSize-offset);val iv=ByteArray(12);input.readFully(iv)
+                    val encrypted=ByteArray(count+16);input.readFully(encrypted)
+                    val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.DECRYPT_MODE,key,GCMParameterSpec(128,iv));updateAAD(binaryAAD(name,expectedSize,index++,header.nonce))}
+                    val clear=crypt(cipher,encrypted)
+                    try {require(clear.size==count);System.arraycopy(clear,0,result,offset,count);offset+=count}finally {clear.fill(0)}
+                }
+                require(input.read()==-1) {"录音文件含多余内容"};result
+            }catch(failure: Throwable) {result.fill(0);throw failure}
         }
     }
-    private fun binaryAAD(name: String,size: Int,index: Int)=name.toByteArray(Charsets.UTF_8)+byteArrayOf(0)+java.nio.ByteBuffer.allocate(8).putInt(size).putInt(index).array()
+    private fun binaryAAD(name: String,size: Int,index: Int,nonce: ByteArray?)=
+        (if(nonce==null)byteArrayOf()else binaryContext+nonce+byteArrayOf(0))+strictBytes(name)+byteArrayOf(0)+java.nio.ByteBuffer.allocate(8).putInt(size).putInt(index).array()
     // Feed bounded updates to Keystore on older Android providers as well.
     // Decryption is published only after the final GCM authentication succeeds.
     private fun crypt(cipher: Cipher,bytes: ByteArray,start: Int=0,prefix: ByteArray?=null): ByteArray {

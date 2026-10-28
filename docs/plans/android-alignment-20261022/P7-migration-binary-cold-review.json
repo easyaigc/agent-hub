@@ -1,0 +1,104 @@
+{
+  "phase": "P7-5m",
+  "sourceBase": "8e9d9af6dbef15f1b2038bd9616940d34962e42e",
+  "summary": "P7-5m：API26/新手机各先写入并结束原进程，再由不同PID读同一Keystore录音；原音频、清单/操作ID、准备/上传尝试标记及全部密文保持，错误证书/新草稿不匹配，0远端写入。共4原生辅助、4默认11字段保护；生产APK与5l准确相同，旧46项保留为该包匹配复用，未冒充重跑。",
+  "features": ["F47", "F55", "F64"],
+  "sourceSha256": "c4a7b63bd0490660dc470f49856dd5212029ee29752423f7489d84fb7ca035f6",
+  "appSha256": "b973f2cce6366a1a2b4573d14131eb35075c9115eeb16cea429e73d8aa2d1f50",
+  "runnerSha256": "27880cf7f648145e183a9e901c4d9ca75abb6c2ee42ac7eef85b52e1916fad0f",
+  "nativeAuxiliary": 4,
+  "defaultElevenFieldProofs": 4,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "writerProcessConfirmedExitedBeforeReader": true,
+      "writerPid": 18272,
+      "readerPid": 18411,
+      "assertions": {
+        "writerPid": 18272,
+        "readerPid": 18411,
+        "differentProcess": true,
+        "sameDeviceKeystore": true,
+        "exactOriginalAudio": true,
+        "sameManifestAndOperationId": true,
+        "attemptFencesPreserved": true,
+        "wrongCertificateAndDraftRejected": true,
+        "allOriginalCiphertextUnchanged": true,
+        "remoteWrites": 0
+      },
+      "groups": [
+        {
+          "batch": "writer",
+          "reportSha256": "0686d9d46ddf7e72d93b2ff1cbc26ea8a670e4a1de91dc81032c255119a11177",
+          "nativeAuxiliaryMethods": 1,
+          "defaultElevenFieldProofs": 1,
+          "proofSha256": "32091f62f770152e6d34bf659c0b5d43e54d2ad9ebbfaf4a2f95171a89af911e"
+        },
+        {
+          "batch": "reader",
+          "reportSha256": "86d971fb9b47d90edae664b0b1d5b1b23bad44e95deb8213326220ffaa36907c",
+          "nativeAuxiliaryMethods": 1,
+          "defaultElevenFieldProofs": 1,
+          "proofSha256": "b7e9f3f48a6ce1ea51da5fba6c4d743f7cf3402413d0b850d600737b0cefd417"
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "writerProcessConfirmedExitedBeforeReader": true,
+      "writerPid": 20591,
+      "readerPid": 21130,
+      "assertions": {
+        "writerPid": 20591,
+        "readerPid": 21130,
+        "differentProcess": true,
+        "sameDeviceKeystore": true,
+        "exactOriginalAudio": true,
+        "sameManifestAndOperationId": true,
+        "attemptFencesPreserved": true,
+        "wrongCertificateAndDraftRejected": true,
+        "allOriginalCiphertextUnchanged": true,
+        "remoteWrites": 0
+      },
+      "groups": [
+        {
+          "batch": "writer",
+          "reportSha256": "3ac06365b1cc6c7bf5094c24de43a50e6c2b9b956ac7e9afa3781bb112d52d2c",
+          "nativeAuxiliaryMethods": 1,
+          "defaultElevenFieldProofs": 1,
+          "proofSha256": "59821b874efc47c1622a5f009407fb4370d65ee9b12524dbfd046697c7927514"
+        },
+        {
+          "batch": "reader",
+          "reportSha256": "cf7a5ccd0fea42eda049b3f99fa9dc681155a0effc691dde8b50d8bf4fe321b8",
+          "nativeAuxiliaryMethods": 1,
+          "defaultElevenFieldProofs": 1,
+          "proofSha256": "38458df1e5e9d21864043cd9c77845bcdd0d197c88d5906195b88393ff339b6c"
+        }
+      ]
+    }
+  ],
+  "matchedReuse": {
+    "phase": "P7-5l",
+    "productionApkExactlyEqual": true,
+    "allPriorSourceFilesExactlyEqual": true,
+    "onlyAddedFile": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceBinaryColdTest.kt",
+    "priorNativeAuxiliary": 46,
+    "priorDefaultElevenFieldProofs": 36,
+    "priorReviewSha256": "bfc1b921eb7c477218ce582beae10c202cbc4ed7d9e778de76d7c3827c7b3ae1",
+    "currentRerunClaim": false
+  },
+  "bounds": "Synthetic original PCM sealed by production store, real writer exit and new reader process; no microphone/real Host/model, typed archive activation, OS permission migration or system UI acceptance. No source reset, data clear or original operation replay. Imported voice and full migration remain separate open gates.",
+  "iosImpact": "Common exact original audio/target/draft/receipt and no-replay assertions preserved; current iOS source/device not changed or revalidated. Independent voice-directory migration gap remains open for both platforms.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "unknownOperationsReplayed": false,
+  "pending": [
+    "Typed full voice/binary archive/candidate/activation/quota and provisional ownership",
+    "Nested result/inbox/camera originals and provider/device/notification schema",
+    "Native migration system UI and cold session replacement, then voice/unread/lifecycle",
+    "Existing environment and original-owner pending matrix; task/project business and iOS A6 paused"
+  ]
+}

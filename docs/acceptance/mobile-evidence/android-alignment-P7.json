@@ -10084,5 +10084,221 @@
       "API37 landscape/ADB, original owner, old candidate groups and cellular/VPN",
       "Business task/project management and iOS A6 paused"
     ]
+  },
+  "migrationBinaryCheckpoint": {
+    "phase": "P7-5l",
+    "sourceBase": "d5b85fede32d3bc290daaa7d134dcea0b945d927",
+    "summary": "P7-5l：录音二进制新格式4将逻辑名/长度加密认证，各分块绑定本次文件头随机标识及原名/长度/位置；拒绝跨次拼接、换序、改名、篡改与截断。格式2原字节只读兼容，明确新写入才替换；失败保留原密文。两环境46辅助、36默认11字段保护通过；完整录音档案/候选/激活和系统迁移UI仍未关闭。",
+    "features": ["F47", "F55", "F64"],
+    "sourceSha256": "8376fcb82d6e7561ac8abfe9a80d6378cb8ae5ae7de507890f50a47be06954f0",
+    "appSha256": "b973f2cce6366a1a2b4573d14131eb35075c9115eeb16cea429e73d8aa2d1f50",
+    "runnerSha256": "a3f08e4215c84182cac1b02095dd8f5519c6d9ea9e82aa9d2cc0d0cc23a4fc30",
+    "nativeAuxiliary": 46,
+    "defaultElevenFieldProofs": 36,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "batch": "binary",
+        "nativeAuxiliaryMethods": 18,
+        "reportSha256": "819cd6a9677bb5a071f2a69214be30457bae2dc9cb983bc99983d2474e3aad6b",
+        "defaultElevenFieldProofs": 18,
+        "proofSha256s": [
+          "c424462f23fef152aacfad0038051dee0f45b63edc72e42b44226c24a02d0362",
+          "0fad947d1e614a2c8435f16ac8e61c9f647431565dd713ee36ad0f4fa3e73ede",
+          "9af29e4f8248de4e48f99a1130feebaa4f8667af76784ec89b6edc1351a3514e",
+          "2d365b4ef75c41d504bb9234a4582410f20d7c2e26719404d6caa4dca337fd70",
+          "49df5fe650f21fe9e78c17fd489994e83485bf8d58f4d16ed822a75d4293238f",
+          "8267d4e469d9977ceee528b48b29658b1d7348cb1b8cdc131f1a9d719b88bf70",
+          "34ac0c877617e91f6b1294c1c5665c012161032672f84e0f8ea5b664721ef9be",
+          "0fe1912c3b6addcfb0f4c2a9cfe2eb464abaec9b4103cb8282cf43ecd00b4873",
+          "3927209ebeeebd353fade4ea573d84d4d08c4296f7d5a6e82f00f4a3b1d40574",
+          "d5da136aa3d2d1abd08e1181b0fab796d3792c7a3f34820f96ea03cbf95cad3a",
+          "562cd466b65e7d144463d0a64bf6c1c381f13d50cf97f1de70b74140271c6f7c",
+          "31c98601dbcad5053654407c4e12ae20f2c799f5fba2210ea8d9b136e4412fe0",
+          "caf6536447733138d7c3d1e5780a3cbb25c1cdfbb8e23fa6cdc79fb432bfc7ee",
+          "c4da95398a91f08fe25a5fe753f3aaf5151bd737df53bbf4c1e97a6d9b3a9f11",
+          "985cae6d9de4ce382b681fca29614c32ae612751e98c0026beb5563fbe92e98c",
+          "f16784352666abdf63f7733adb65e5cd8fac552e2906a70c18b7086b36d3b870",
+          "df67281588fb0c819d8462c112f31a87ee7a4460f27789d4ec84305789a1b65f",
+          "f6c6a97d4cd9670cceb0cd4ece73709594973920b7d3670ff6edbeb0f942fc0f"
+        ]
+      },
+      {
+        "environment": "owned-API26",
+        "batch": "voice",
+        "nativeAuxiliaryMethods": 5,
+        "reportSha256": "2e78e6c595a5b1a4076f31ee58b9bb7d66b6ed05bf197aaed966f584ee974568",
+        "defaultElevenFieldProofs": 0,
+        "proofSha256s": []
+      },
+      {
+        "environment": "physical-API33",
+        "batch": "binary",
+        "nativeAuxiliaryMethods": 18,
+        "reportSha256": "18a3dbbb198e593cc3b2f88f6cec2a10a0c6b97d0aa68f1bda2eb333da0b3629",
+        "defaultElevenFieldProofs": 18,
+        "proofSha256s": [
+          "d068899d0dd5befb1f013858fe6b218f5ba4b654c950dccbf7574da1970078dd",
+          "c5cfe7eadac243f58b610e86a91373bf608b64e6041b3bc1982c02213fa9e0d6",
+          "1956ecbfc4e7221bd8c5bb6ccc6e0c50d88e930df9e2e0ee9c515b600202db16",
+          "f4035d688fe9280a73c416d6b87409d23e0c39c2a12efc9259578cba9e6bccbf",
+          "a7f2dcff80bffde88f1200df441ddf8269548221de553d262d943e132468beaa",
+          "5c1c06b0f0bcaf239d5f31aacb0025e24b211160544b3277c9ce8438ebe07ea1",
+          "57e430640decd93088bb0c67e054e91755297c10390c0916794f9aab302602f5",
+          "c8400ab73886f9079c7477359317a4dffec36b0ec8a6ea3337cca3c4e205d280",
+          "be5a665d6b679a6f340804bf9e3c8b21f41fd5ec0cb9ddb32503731ba519cf46",
+          "b6421440bd851576a8634602f681ddbd932100514d039082c10a3971780eb092",
+          "356e0f55955dd518c4f5cb526bda5326affd3f4a1f22d6b7c0f3ee0e017574a6",
+          "b3bd8d38da166aa1766612de6ff34c2ab44a8be521bf3a803a8eae076cc0986a",
+          "800972473a6355e97ed96a8e774f9104a0406468b02ac7e4ead1f6eb2ceef696",
+          "741da7e1f37a00c09f673cc7456e9bade4a630a9fb5cc44c0fba97941e0b11e8",
+          "b22c15db7cca6b911793cc522963fb13a1312823df1b0822825feb301544e625",
+          "98769f4ee0c04c91e879ce76d7a1384f7d0876f8dd14610f8ad23c83bf7b4491",
+          "d947970da421fa62ac83c9ce2925148bb0928c833a7d8f7fc78fb45bcf94125e",
+          "5644f31fdf567ec5b5f4cf9d37f4905823cb2a6bd519bcde9ec707a03a1f20d6"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "batch": "voice",
+        "nativeAuxiliaryMethods": 5,
+        "reportSha256": "01a95bf4d103d6a6249e34fb1ba475651e0ab3604700e96443da2cd702d5dfea",
+        "defaultElevenFieldProofs": 0,
+        "proofSha256s": []
+      }
+    ],
+    "binaryFormat": "4: encrypted authenticated name+length header, non-UTF8 domain separated from legacy2, file-header nonce in every chunk AAD, exact name/size/index/EOF; clear buffers erased on failed read. Existing binary-chunks-v1 logical voice marker remains compatible.",
+    "legacyPolicy": "Read original format2 with exact original name/size/chunk AAD, no read-time rewrite; only explicit new write emits4. Existing source file and original ciphertext stay intact on invalid name/quota/empty source.",
+    "nativeCoverage": [
+      "Three-chunk arbitrary binary exact round-trip and fresh handle",
+      "Legacy2 original ciphertext unchanged, explicit replacement uses4",
+      "Header/tag/length/version downgrade corruption",
+      "Missing/repeated/reordered/trailing/corrupt/cross-write chunks",
+      "Invalid UTF16/quota/empty writes preserve original",
+      "Sealed voice manifest and persisted prepare/audio-attempt fences",
+      "Existing text name/inventory failure and publication boundaries",
+      "Original voice recovery/provisional PCM/returned text/lost upload404/cancel-seal race"
+    ],
+    "bounds": "Binary storage foundation only: text archive discovery/export/candidate still reject binary and unsupported records explicitly. No typed binary archive, generation publication, product migration UI, microphone/model transcription or complete real DEV claim. Existing voice tests are synthetic HTTP/private namespace; fresh-handle tests are not OS process death.",
+    "iosImpact": "Same original audio/manifest/failure preservation and no replay assertions; iOS source unchanged and A6 paused. Static migrationPayload inspection does not include independent PendingVoiceStore directory; common full voice-migration assertion remains open for both ends, not an iOS native pass.",
+    "uiImpact": "No new product UI; waveform, controls and status unchanged. Native system migration password/file-picker/cancel/busy/error/success and full theme/font/AX matrix remain pending.",
+    "inventory": "P7-migration-storage-inventory.json is a source-only checklist, not a native capability/pass. OS permission/URI/callback authority is installation-local; original bytes and receipts need independent portable schema.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false,
+    "pending": [
+      "Typed voice/binary full candidate/import/generation/quota and provisional-file ownership",
+      "Result/inbox children and separate camera output originals; provider/device/OIDC schema",
+      "System migration UI, cold session replacement and explicit revalidated recovery",
+      "P9 notification dependencies and voice/unread/lifecycle matrices",
+      "API37, original-owner and cellular/VPN pending matrices",
+      "Task/project business and iOS A6 paused"
+    ]
+  },
+  "migrationVoiceBinaryColdCheckpoint": {
+    "phase": "P7-5m",
+    "sourceBase": "8e9d9af6dbef15f1b2038bd9616940d34962e42e",
+    "summary": "P7-5m：API26/新手机各先写入并结束原进程，再由不同PID读同一Keystore录音；原音频、清单/操作ID、准备/上传尝试标记及全部密文保持，错误证书/新草稿不匹配，0远端写入。共4原生辅助、4默认11字段保护；生产APK与5l准确相同，旧46项保留为该包匹配复用，未冒充重跑。",
+    "features": ["F47", "F55", "F64"],
+    "sourceSha256": "c4a7b63bd0490660dc470f49856dd5212029ee29752423f7489d84fb7ca035f6",
+    "appSha256": "b973f2cce6366a1a2b4573d14131eb35075c9115eeb16cea429e73d8aa2d1f50",
+    "runnerSha256": "27880cf7f648145e183a9e901c4d9ca75abb6c2ee42ac7eef85b52e1916fad0f",
+    "nativeAuxiliary": 4,
+    "defaultElevenFieldProofs": 4,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "writerProcessConfirmedExitedBeforeReader": true,
+        "writerPid": 18272,
+        "readerPid": 18411,
+        "assertions": {
+          "writerPid": 18272,
+          "readerPid": 18411,
+          "differentProcess": true,
+          "sameDeviceKeystore": true,
+          "exactOriginalAudio": true,
+          "sameManifestAndOperationId": true,
+          "attemptFencesPreserved": true,
+          "wrongCertificateAndDraftRejected": true,
+          "allOriginalCiphertextUnchanged": true,
+          "remoteWrites": 0
+        },
+        "groups": [
+          {
+            "batch": "writer",
+            "reportSha256": "0686d9d46ddf7e72d93b2ff1cbc26ea8a670e4a1de91dc81032c255119a11177",
+            "nativeAuxiliaryMethods": 1,
+            "defaultElevenFieldProofs": 1,
+            "proofSha256": "32091f62f770152e6d34bf659c0b5d43e54d2ad9ebbfaf4a2f95171a89af911e"
+          },
+          {
+            "batch": "reader",
+            "reportSha256": "86d971fb9b47d90edae664b0b1d5b1b23bad44e95deb8213326220ffaa36907c",
+            "nativeAuxiliaryMethods": 1,
+            "defaultElevenFieldProofs": 1,
+            "proofSha256": "b7e9f3f48a6ce1ea51da5fba6c4d743f7cf3402413d0b850d600737b0cefd417"
+          }
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "writerProcessConfirmedExitedBeforeReader": true,
+        "writerPid": 20591,
+        "readerPid": 21130,
+        "assertions": {
+          "writerPid": 20591,
+          "readerPid": 21130,
+          "differentProcess": true,
+          "sameDeviceKeystore": true,
+          "exactOriginalAudio": true,
+          "sameManifestAndOperationId": true,
+          "attemptFencesPreserved": true,
+          "wrongCertificateAndDraftRejected": true,
+          "allOriginalCiphertextUnchanged": true,
+          "remoteWrites": 0
+        },
+        "groups": [
+          {
+            "batch": "writer",
+            "reportSha256": "3ac06365b1cc6c7bf5094c24de43a50e6c2b9b956ac7e9afa3781bb112d52d2c",
+            "nativeAuxiliaryMethods": 1,
+            "defaultElevenFieldProofs": 1,
+            "proofSha256": "59821b874efc47c1622a5f009407fb4370d65ee9b12524dbfd046697c7927514"
+          },
+          {
+            "batch": "reader",
+            "reportSha256": "cf7a5ccd0fea42eda049b3f99fa9dc681155a0effc691dde8b50d8bf4fe321b8",
+            "nativeAuxiliaryMethods": 1,
+            "defaultElevenFieldProofs": 1,
+            "proofSha256": "38458df1e5e9d21864043cd9c77845bcdd0d197c88d5906195b88393ff339b6c"
+          }
+        ]
+      }
+    ],
+    "matchedReuse": {
+      "phase": "P7-5l",
+      "productionApkExactlyEqual": true,
+      "allPriorSourceFilesExactlyEqual": true,
+      "onlyAddedFile": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceBinaryColdTest.kt",
+      "priorNativeAuxiliary": 46,
+      "priorDefaultElevenFieldProofs": 36,
+      "priorReviewSha256": "bfc1b921eb7c477218ce582beae10c202cbc4ed7d9e778de76d7c3827c7b3ae1",
+      "currentRerunClaim": false
+    },
+    "bounds": "Synthetic original PCM sealed by production store, real writer exit and new reader process; no microphone/real Host/model, typed archive activation, OS permission migration or system UI acceptance. No source reset, data clear or original operation replay. Imported voice and full migration remain separate open gates.",
+    "iosImpact": "Common exact original audio/target/draft/receipt and no-replay assertions preserved; current iOS source/device not changed or revalidated. Independent voice-directory migration gap remains open for both platforms.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false,
+    "pending": [
+      "Typed full voice/binary archive/candidate/activation/quota and provisional ownership",
+      "Nested result/inbox/camera originals and provider/device/notification schema",
+      "Native migration system UI and cold session replacement, then voice/unread/lifecycle",
+      "Existing environment and original-owner pending matrix; task/project business and iOS A6 paused"
+    ]
   }
 }

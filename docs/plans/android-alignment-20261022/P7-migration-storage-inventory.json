@@ -1,0 +1,121 @@
+{
+  "phase": "P7-followup-storage-inventory",
+  "sourceBase": "8666a29dfefcaf65aa77671d85f6291968951b93",
+  "basis": "Read-only source inventory; not runtime capability or native pass",
+  "entries": [
+    {
+      "id": "root-text",
+      "actualStorage": "metadata; Codex Vault; original operations/submissions; draft-file; history index/parts; thumbnails; old AI grants",
+      "status": "supported within internal text archive",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
+      "sourceSha256": "31fb3123752eb437b6234dd3502d4f304d0adf6daad759144d6b42e2afb6f42b",
+      "boundary": "Retain exact immutable intent/result and manifests; imported grants reset and operations observe-only"
+    },
+    {
+      "id": "sealed-voice",
+      "actualStorage": "voice-index-v1; voice-recording:<uuid>; voice-audio:<uuid>",
+      "status": "binary archive and schema still open",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt",
+      "sourceSha256": "128c5103712b479613391bf84e1b43c99975e5ce7c5b5465fa04b9c7146e022a",
+      "boundary": "Retain original ID/target/certificate/manifest/prepareAttempted/audioAttempted/receipt; never prepare/upload unknown imported originals"
+    },
+    {
+      "id": "provisional-voice",
+      "actualStorage": "noBackupFilesDir/voice-recordings-v1/<uuid>.wav",
+      "status": "separate global raw directory; not covered by root archive",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt",
+      "sourceSha256": "128c5103712b479613391bf84e1b43c99975e5ce7c5b5465fa04b9c7146e022a",
+      "boundary": "Need owner/namespace inventory, capture synchronization and explicit pending/corrupt policy; no deletion or implicit seal/upload during export"
+    },
+    {
+      "id": "recent-photo-preferences",
+      "actualStorage": "recent-photos child: preferences(version1,ignored)",
+      "status": "child not covered by root archive",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentPhotoLibrary.kt",
+      "sourceSha256": "e6ce99ecc6af1e6259726345357050ca009401fe8f08e448098f5735fb070670",
+      "boundary": "Media content URIs are device-local; do not copy OS access or attach another local image under an old URI"
+    },
+    {
+      "id": "photo-permission",
+      "actualStorage": "photo-permission child: attempt-external/images/selected",
+      "status": "installation-local authority; not portable",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoAuthorization.kt",
+      "sourceSha256": "aa8c8a3dd8631fd453a661e0e11d45df25501ad51230587ffaae1fafb1a23c4a",
+      "boundary": "Archive audit separately; new installation OS permission remains independent"
+    },
+    {
+      "id": "document-photo-camera-results",
+      "actualStorage": "document-results/photo-results/camera-results children: document-requests-v1(version1/2)",
+      "status": "child schema not covered",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentJournal.kt",
+      "sourceSha256": "d42dffff545d5d164ca58bbb96c9699dba214b9c7377a008f440ed9a884a1255",
+      "boundary": "Retain original IDs/destination/quota/status for audit; old ActivityResultRegistry requests and content URI grants never relaunched/inherited"
+    },
+    {
+      "id": "selected-payloads",
+      "actualStorage": "each results child/payloads: external-inbox-index-v1(version1/2) and draft-file:<uuid>",
+      "status": "nested child not covered",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt",
+      "sourceSha256": "851b0162b9332d9669b43c21a2595c9cbba46ff447d2a4a75c12a16afdc7a285",
+      "boundary": "Preserve already-read original bytes/order/hash; do not query another device content URI or automatically attach to a changed draft"
+    },
+    {
+      "id": "camera-outputs",
+      "actualStorage": "camera-results/outputs output-v1-<uuid> claims and filesDir/camera-output-v1/<scope>/photo-<uuid>.jpg",
+      "status": "encrypted claims and separate raw files not covered",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraOutputs.kt",
+      "sourceSha256": "f656dcfbaa06c959f0f168a304452877c7807819de9ff21623c7ce469e3e19d6",
+      "boundary": "Claim must prove ownership; old URI grant not portable; retain unresolved owned output; no sweep of unclaimed files"
+    },
+    {
+      "id": "external-inbox",
+      "actualStorage": "external-inbox child: external-inbox-index-v1 and draft-file:<uuid>",
+      "status": "child not covered",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentInboxStore.kt",
+      "sourceSha256": "34a33188bc2ad53a0b5aea40954f53bc2e74e90d1aa052c585e041ed3162a85f",
+      "boundary": "Preserve maximum5/legacy10, partial slots, consumed status, destination binding and exact manifests; unknown source is not replayed"
+    },
+    {
+      "id": "easywork-device",
+      "actualStorage": "easywork-device-identity; easywork-credential:<ref>",
+      "status": "root provider schema not supported by current Codex candidate",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt",
+      "sourceSha256": "e6e48453741aa3d5fd10a059f5325910a1e0dd34451d74507a1955d2258ba091",
+      "boundary": "Provider device identity and EWDAP authorization use separate protocol rules; do not inherit Codex account policy"
+    },
+    {
+      "id": "easywork-oidc",
+      "actualStorage": "easywork-oidc:<issuer/subject hash>; easywork-oidc-last; easywork-oidc-pending",
+      "status": "root provider schema not covered",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkLogin.kt",
+      "sourceSha256": "0b63f3f51435986be1f9b6f413a26a31dbf9a7ce6fb25789e81f183d4a0db99d",
+      "boundary": "Issuer/subject/device scopes stay exact; pending browser nonce/callback is local authority, never relaunch/complete automatically"
+    },
+    {
+      "id": "ordinary-chat-notifications",
+      "actualStorage": "No native Android NotificationManager/FirebaseMessaging/POST_NOTIFICATIONS implementation found by current Android/core source scan",
+      "status": "P9 dependency and implementation still open",
+      "source": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "sourceSha256": "4e188173006145ca5fed55be663917e57fb66f372073304250dc710c7edb02aa",
+      "boundary": "Do not claim iOS notification key/binding/sound/seen/revocation payload coverage; task/project notification business remains paused"
+    }
+  ],
+  "iosComparison": {
+    "sources": [
+      "apps/ios/Sources/EncryptedMigration.swift",
+      "apps/ios/Sources/SessionStore.swift",
+      "apps/ios/Sources/VoiceInput.swift"
+    ],
+    "finding": "iOS migrationPayload explicitly snapshots saved state/attachments/credentials/notification records; independent PendingVoiceStore directory is not included there. This is a dual-end gap requiring an explicit common assertion, not existing iOS native pass."
+  },
+  "sequence": [
+    "P7-5l: authenticated self-describing binary storage with exact legacy2 compatibility and cross-write chunk binding",
+    "Typed voice payload/candidate/generation publication and quotas; imported original receipts query-only",
+    "Child snapshots and raw-file ownership; classify portable original bytes versus installation-only OS authority",
+    "EasyWork/provider/device/OIDC schema and notification dependency; business task/project features paused",
+    "Native system file export/import and cold session replacement, then voice/unread/lifecycle matrix"
+  ],
+  "productionMigrationUi": false,
+  "newModelInputs": 0,
+  "unknownOperationsReplayed": false
+}

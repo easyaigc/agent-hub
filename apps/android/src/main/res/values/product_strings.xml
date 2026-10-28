@@ -1833,4 +1833,11 @@
     <string name="product_242be9c6c003dac15a7151a5" formatted="false">"A newer state has replaced the original authorization refresh. The original record is preserved."</string>
     <string name="product_90b73b868aafb085f5b02ccc" formatted="false">"Device authorization has changed. Check the original operation again."</string>
     <string name="product_de03ac3961a6c18db3b3693b" formatted="false">"The target of the device authorization record has changed. The original record is preserved."</string>
+    <string name="product_f29d6f49e38905816b1b8f72" formatted="false">"Original notification records checked."</string>
+    <string name="product_e71d8c9c366201d733c82088" formatted="false">"Original notification records are preserved. You can check the original operations."</string>
+    <string name="product_fec74a52d3b32acfe1bc412b" formatted="false">"Check original notification records"</string>
+    <string name="product_90245371007d0406c039883e" formatted="false">"Restoring the original notification. Please wait."</string>
+    <string name="product_5ed827555505f493823b40e4" formatted="false">"The original notification cannot be opened. Its chat or connection is unavailable."</string>
+    <string name="product_e403ba5798ba13a472bf187c" formatted="false">"Current connection"</string>
+    <string name="product_70b6e15f481b00a5fb359758" formatted="false">"Original connection records"</string>
 </resources>

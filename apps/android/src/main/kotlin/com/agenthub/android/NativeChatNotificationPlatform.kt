@@ -23,22 +23,29 @@ internal data class NativeChatNotificationChannelState(val id: String, val name:
     val sound: String?, val showBadge: Boolean)
 
 /** API26+ platform implementation. Never registers a vendor or claims remote push readiness. */
-internal class NativeChatNotificationPlatform(private val context: Context, private val text: NativeL10n,
-    val sounds: NativeChatNotificationSoundLibrary = NativeChatNotificationSoundLibrary(context, NativeSessionStorage(context))) {
+internal class NativeChatNotificationPlatform(private val context: Context, private var text: NativeL10n,
+    override val sounds: NativeChatNotificationSoundLibrary = NativeChatNotificationSoundLibrary(context, NativeSessionStorage(context))) : NativeChatNotificationSystem {
     companion object {
         const val ACTION = "com.agenthub.android.action.OPEN_CHAT_NOTIFICATION_V1"
         const val TICKET = "chat-notification-ticket-v1"
         private const val PREFIX = "native-chat-v1."
+        fun openIntent(context: Context, ticket: String): Intent {
+            NativeChatNotificationWire.uuid(ticket)
+            return Intent(context, MainActivity::class.java).setAction(ACTION)
+                .setData(Uri.Builder().scheme("agenthub-chat-notice").authority(context.packageName).appendPath(ticket).build())
+                .putExtra(TICKET, ticket).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
     }
     private val manager = context.getSystemService(NotificationManager::class.java)
-    fun permission(): NativeChatNotificationPermission {
+    override fun languageChanged(selection: String) { text = NativeL10n(context, selection) }
+    override fun permission(): NativeChatNotificationPermission {
         @Suppress("DEPRECATION")
         val declared = Build.VERSION.SDK_INT < 33 || context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS)
             .requestedPermissions.orEmpty().contains(Manifest.permission.POST_NOTIFICATIONS)
         return NativeChatNotificationPermission(declared, Build.VERSION.SDK_INT < 33 ||
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED, manager.areNotificationsEnabled())
     }
-    fun settings(channel: String? = null): Intent = Intent(if (channel == null) Settings.ACTION_APP_NOTIFICATION_SETTINGS else Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+    override fun settings(channel: String?): Intent = Intent(if (channel == null) Settings.ACTION_APP_NOTIFICATION_SETTINGS else Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
         .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName).apply { if (channel != null) putExtra(Settings.EXTRA_CHANNEL_ID, channel) }
     private fun channelId(kind: NativeChatNoticeKind, sound: String, badge: Boolean) = PREFIX + kind.wire + "." + sound + if (badge) ".badge" else ".no-badge"
     private fun ensure(kind: NativeChatNoticeKind, sound: String, badge: Boolean, item: NativeChatNotificationSound?): String {
@@ -55,14 +62,14 @@ internal class NativeChatNotificationPlatform(private val context: Context, priv
         }
         return id
     }
-    fun channels(): List<NativeChatNotificationChannelState> = manager.notificationChannels.filter { it.id.startsWith(PREFIX) }.map {
+    override fun channels(): List<NativeChatNotificationChannelState> = manager.notificationChannels.filter { it.id.startsWith(PREFIX) }.map {
         NativeChatNotificationChannelState(it.id, it.name.toString(), it.importance != NotificationManager.IMPORTANCE_NONE, it.importance, it.sound?.toString(), it.canShowBadge())
     }
-    fun soundProviderRegistered(): Boolean {
+    override fun soundProviderRegistered(): Boolean {
         val provider = context.packageManager.resolveContentProvider(context.packageName + ".chat-notification-sounds", 0)
         return provider?.enabled == true && !provider.exported && provider.grantUriPermissions && provider.name == NativeChatNotificationSoundProvider::class.java.name
     }
-    fun channelSoundTitle(channel: NativeChatNotificationChannelState): String {
+    override fun channelSoundTitle(channel: NativeChatNotificationChannelState): String {
         val value = channel.sound ?: return text.tr("静音")
         if (value == RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION).toString()) return text.tr("系统默认")
         val item = runCatching { sounds.byHash(NativeChatNotificationSoundProvider.hash(Uri.parse(value), context.packageName + ".chat-notification-sounds")) }.getOrNull()
@@ -82,7 +89,7 @@ internal class NativeChatNotificationPlatform(private val context: Context, priv
         return ensure(kind, sound, badge, item).takeIf { manager.getNotificationChannel(it)?.importance != NotificationManager.IMPORTANCE_NONE }
     }
     /** Storage/authentication on IO, system channel access on Main, checked again after suspension. */
-    suspend fun prepareAsync(kind: NativeChatNoticeKind, sound: String, badge: Boolean, current: () -> Boolean): String? {
+    override suspend fun prepareAsync(kind: NativeChatNoticeKind, sound: String, badge: Boolean, current: () -> Boolean): String? {
         if (!current() || !chatNoticeSound(sound)) return null
         val custom = sound !in setOf("default", "none")
         val item = if (!custom) null else withContext(Dispatchers.IO) {
@@ -96,22 +103,20 @@ internal class NativeChatNotificationPlatform(private val context: Context, priv
             ensure(kind, sound, badge, item).takeIf { manager.getNotificationChannel(it)?.importance != NotificationManager.IMPORTANCE_NONE }
         }
     }
-    fun cancelOwned(target: NativeChatNoticeTarget? = null) {
+    override fun cancelOwned(target: NativeChatNoticeTarget?) {
         val targetPrefix = target?.let { tagPrefix(it) }
         manager.activeNotifications.filter { it.tag?.startsWith(PREFIX) == true && (targetPrefix == null || it.tag.startsWith(targetPrefix)) }
             .forEach { manager.cancel(it.tag, it.id) }
     }
-    fun cancelEvents(target: NativeChatNoticeTarget, ids: Set<String>) {
+    override fun cancelEvents(target: NativeChatNoticeTarget, ids: Set<String>) {
         require(ids.all(::chatNoticeHash))
         ids.forEach { manager.cancel(tagPrefix(target) + it, 1) }
     }
     private fun tagPrefix(target: NativeChatNoticeTarget): String = PREFIX + digest(NativeChatNotificationCodec.target(target).toString()) + "."
     private fun digest(value: String) = java.security.MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
-    fun post(receipt: NativeChatNoticeReceipt, preferences: NativeChatNotificationPreferences, computer: String, unread: Int, channel: String) {
+    override fun post(receipt: NativeChatNoticeReceipt, preferences: NativeChatNotificationPreferences, computer: String, unread: Int, channel: String) {
         val event = receipt.event
-        val intent = Intent(context, MainActivity::class.java).setAction(ACTION)
-            .setData(Uri.Builder().scheme("agenthub-chat-notice").authority(context.packageName).appendPath(receipt.ticket).build())
-            .putExtra(TICKET, receipt.ticket).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val intent = openIntent(context, receipt.ticket)
         val tap = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val presentation = NativeChatNoticePresentation.create(event, computer, preferences.showThreadTitle) { text.tr(it) }
         val public = Notification.Builder(context, channel).setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -132,7 +137,7 @@ internal class NativeChatNotificationPlatform(private val context: Context, priv
             .setVisibility(Notification.VISIBILITY_PRIVATE).setAutoCancel(true).build()
         manager.notify(PREFIX + "test", 1, notice); return true
     }
-    suspend fun testAsync(preferences: NativeChatNotificationPreferences, current: () -> Boolean): Boolean {
+    override suspend fun testAsync(preferences: NativeChatNotificationPreferences, current: () -> Boolean): Boolean {
         if (!preferences.enabled) return false
         val channel = prepareAsync(NativeChatNoticeKind.CONNECTION, if (preferences.soundEnabled) preferences.sound else "none", false, current) ?: return false
         return withContext(Dispatchers.Main.immediate) {

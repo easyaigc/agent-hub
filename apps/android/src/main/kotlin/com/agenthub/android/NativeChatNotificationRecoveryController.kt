@@ -52,6 +52,21 @@ internal class NativeChatNotificationRecoveryController(private val storage: Nat
         catch (_: Exception) { return }
         withContext(NonCancellable + Dispatchers.IO) { journal.settle(identity, snapshot.target, original, receipt) }
     }
+    /** Explicit read-only recovery. Never negotiates a new subscription, posts an intent or processes a feed. */
+    suspend fun queryOriginals(snapshot: NativeChatNotificationSnapshot, current: () -> Boolean): NativeChatNotificationMonitorReport = gate.withLock {
+        if (!current()) return@withLock report(snapshot, "stale-target-or-generation")
+        if (!io { journal.exists() }) return@withLock report(snapshot, "original-query-complete")
+        val identity = NativeChatNotificationIdentity.load(storage)
+        var view = io { journal.view(identity, snapshot.target) }
+        legacyUnknown[snapshot.target] = io { legacy.view(identity, snapshot.target).unknown?.id }
+        for (operation in view.operations.filter { it.state in setOf("unknown", "reserved") && it.authorization == snapshot.authorizationFingerprint }) {
+            if (!current()) return@withLock report(snapshot, "stale-target-or-generation", view)
+            query(snapshot, identity, operation)
+        }
+        view = io { journal.view(identity, snapshot.target) }
+        report(snapshot, if (view.operations.any { it.state in setOf("unknown", "reserved") } || legacyUnknown[snapshot.target] != null)
+            "mutation-unknown-original-query" else "original-query-complete", view)
+    }
     /** null permits the unchanged v1 path only before any v2 adoption/attempt. */
     suspend fun synchronize(snapshot: NativeChatNotificationSnapshot, current: () -> Boolean): NativeChatNotificationMonitorReport? = gate.withLock {
         if (!current()) return@withLock report(snapshot, "stale-target-or-generation")

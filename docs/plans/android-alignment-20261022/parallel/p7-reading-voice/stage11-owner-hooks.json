@@ -1,0 +1,57 @@
+{
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "status": "optional UI port implemented; shared Session/store/lifecycle integration NOT applied",
+  "ports": [
+    "ExecutionPanels(..., noticeVisibility: NativePanelNoticeVisibility? = null)",
+    "InlineToolApproval(..., noticeVisibility: NativePanelNoticeVisibility? = null)",
+    "ProposedPlanReview(..., noticeVisibility: NativePanelNoticeVisibility? = null)"
+  ],
+  "default": "inert; no ledger write or second event consumer",
+  "sharedThreadReadingProposal": {
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/ThreadReading.kt",
+    "sourceSha256": "b55f09555ac2a09217663a26c8358faca0dc1ed8cea9b666c7fa3100769c74c3",
+    "proposedFullTargetSha256": "15aa9d73e90c6efd64468352d6f64e219c97693199ed2143ec4721ba3aeda9e0",
+    "artifactPathRelativeToDeliveryRoot": "stage11-notice-visibility/shared-hook-proposal/ThreadReading.patch",
+    "status": "not applied/compiled as shared overlay; owner review and regression required",
+    "required": "optional in-memory notice guard and empty body-lease notice IDs"
+  },
+  "sharedOwners": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativePhoneReadingStore.kt",
+      "observedParentSourceSha256": "dff58b52c2567c2badcebe06f2603896379ede8fe1586f4d8a9d08084c0a5c63",
+      "proposedFullTargetSha256": null,
+      "proposedHookTextSha256": "f26405135c6c83aa2618a5bae94888089c33989f7613916c8e768d4b3732d745",
+      "reason": "owner implementation boundary; exact named hook/ordering in stage11 contract, no invented full-file edit"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "observedParentSourceSha256": "7114d585613ab30f0244723fc253ad2820b276257b3d83edab2e4fa69c0aab5e",
+      "proposedFullTargetSha256": null,
+      "proposedHookTextSha256": "f26405135c6c83aa2618a5bae94888089c33989f7613916c8e768d4b3732d745",
+      "reason": "owner implementation boundary; exact named hook/ordering in stage11 contract, no invented full-file edit"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "observedParentSourceSha256": "b7e409678175de405ce9f057c202cf3d649cb4b597136f95c4f82a6f1f1ace21",
+      "proposedFullTargetSha256": null,
+      "proposedHookTextSha256": "f26405135c6c83aa2618a5bae94888089c33989f7613916c8e768d4b3732d745",
+      "reason": "owner implementation boundary; exact named hook/ordering in stage11 contract, no invented full-file edit"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "observedParentSourceSha256": "9f29c2c78c7287e61d361a98250d46b1eb29c4ba596168a9c796a0a9143405c1",
+      "proposedFullTargetSha256": null,
+      "proposedHookTextSha256": "f26405135c6c83aa2618a5bae94888089c33989f7613916c8e768d4b3732d745",
+      "reason": "owner implementation boundary; exact named hook/ordering in stage11 contract, no invented full-file edit"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt",
+      "observedParentSourceSha256": "bb648c75d9d46724688d272c7665a5913131594ef6bdee6fd1104a94b5e2b672",
+      "proposedFullTargetSha256": null,
+      "proposedHookTextSha256": "f26405135c6c83aa2618a5bae94888089c33989f7613916c8e768d4b3732d745",
+      "reason": "owner implementation boundary; exact named hook/ordering in stage11 contract, no invented full-file edit"
+    }
+  ],
+  "hookContract": "stage11-shared-owner-hooks.md",
+  "forbidden": "No second ledger, event stream, selected-chat acknowledgement, task/approval/plan command, or unknown-input replay"
+}

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-authorization-fence-inventory-20261029-1",
+  "sourceCommit": "eb09a56b335e5ec34740eb2f639f51bca69b2b81",
+  "definition": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt",
+  "record": "easywork-authorization-fence:<sha256(ref)>",
+  "versionSupportedByProducer": 1,
+  "semantics": [
+    "ref/epoch fence independent of live grant",
+    "pending/confirmed revoke retains original saved grant/token/body/operation/intent hash/localReceipt",
+    "refreshResults audit retains originalPending opaque unknown fields without exposing original token"
+  ],
+  "migrationStatus": "unsupported-whole-archive-refusal",
+  "reason": "Existing migration supports Codex connections only. Copying live EasyWork grant while omitting a pending/confirmed fence could resurrect revoked authority; copying fence must never create destination device authority. No authorized new migration policy or cross-device identity mapping is supplied in this narrow task.",
+  "inventory": "Every active encrypted record is captured by NativeSessionStorage inventory. New header names are read exactly then fail closed graph allowlist. Unsupported legacy unnamed entries also refuse inventory. No alias is added to silently omit or reinterpret fence.",
+  "regression": "NativeVoiceDiscardStorageTest.easyWorkAuthorizationFencesAreAnExplicitWholeArchiveGapAndNeverDropped: pending/confirmed/future source export and candidate replacement refuse with original/candidate ciphertext unchanged; compiled, not device-executed.",
+  "remaining": [
+    "Define versioned lossless audit-only portability graph for all EasyWork keys/grants/fences before accepting any EasyWork archive.",
+    "Preserve all unknown/unsupported fields and original pending/confirmed IDs; no grant resurrection or automatic revoke replay.",
+    "Independently execute Android/iOS native/device migration before claiming full migration."
+  ]
+}

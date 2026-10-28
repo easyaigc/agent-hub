@@ -35,7 +35,13 @@ const java = resolve(process.env.JAVA_HOME || local.javaHome, 'bin/java');
 const directory = resolve(root, '.build/p9-notification-recovery-host-vectors');
 mkdirSync(directory, { recursive: true });
 function run(args) {
-  const result = spawnSync(java, args, { cwd: root, encoding: 'utf8', stdio: 'inherit' });
+  const result = spawnSync(java, args, {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: 'inherit',
+    timeout: 120_000,
+    killSignal: 'SIGTERM',
+  });
   assert.equal(
     result.status,
     0,
@@ -52,6 +58,7 @@ const core = resolve(
 );
 const android = resolve(local.androidSdk, 'platforms/android-37.0/android.jar');
 const runtime = [
+  directory,
   stdlib,
   jar('org.jetbrains.kotlinx', 'kotlinx-coroutines-core-jvm', '1.11.0'),
   jar('org.json', 'json', '20250517'),
@@ -93,6 +100,10 @@ run([
   'apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt',
   'apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationIdentity.kt',
   'apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt',
+  'apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSessionPort.kt',
+  'apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAuthorizations.kt',
+  'apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryFixture.kt',
+  'scripts/mobile/fixtures/CoordinatorVectors.kt',
   'scripts/mobile/fixtures/RecoveryStorage.kt',
   'scripts/mobile/fixtures/RecoveryVectors.kt',
 ]);

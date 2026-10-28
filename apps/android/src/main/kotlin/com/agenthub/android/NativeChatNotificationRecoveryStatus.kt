@@ -21,6 +21,8 @@ import java.util.UUID
         "waiting-host-confirmation" -> "正在等待电脑确认待处理事项，恢复后继续核对。"
         "feed-gap-acceptance-required" -> "部分通知历史已不可恢复，需要确认后刷新现有通知。"
         "foreground-synchronized" -> "前台通知已同步，后台推送尚未就绪。"
+        "original-query-complete" -> "原通知记录已核对。"
+        "original-records-retained" -> "原通知记录已保留，可核对原操作。"
         "foreground-outcome-unknown" -> "部分通知的显示结果待确认，不会重复显示。"
         "epoch-recovery-required" -> "电脑的通知资料已更换，请先确认关闭，再重新开启通知。"
         "original-credential-recovery-required", "original-credential-revocation-required" -> "请使用原连接核对通知设置。"

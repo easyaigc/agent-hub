@@ -12,7 +12,7 @@ internal interface NativeChatNotificationForegroundPort {
 
 /** Production adapter: ledger/claims/large JSON on IO; channel/post/navigation on Main. */
 internal class NativeChatNotificationForegroundDelivery(private val store: NativeChatNotificationStore,
-    private val platform: NativeChatNotificationPlatform, private val reading: NativeChatNotificationReading,
+    private val platform: NativeChatNotificationSystem, private val reading: NativeChatNotificationReading,
     private val reconcile: suspend (NativeChatNoticeTarget, Set<String>, () -> Boolean) -> Unit,
     private val now: () -> Long = System::currentTimeMillis) : NativeChatNotificationForegroundPort {
     override suspend fun receive(event: NativeChatNotificationEvent, lease: NativeChatNoticeLease, computer: String, current: () -> Boolean): String {

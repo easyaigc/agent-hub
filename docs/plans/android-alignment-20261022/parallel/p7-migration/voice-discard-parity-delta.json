@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-N069-durable-local-voice-discard",
+  "sourceId": "N069",
+  "features": ["F47", "F55", "F56", "F64"],
+  "pages": ["UI12", "UI21"],
+  "commonAssertions": [
+    "Explicit discard requires durable acknowledgement of exact immutable original before replacement.",
+    "Background/navigation alone retains recoverability; malformed terminal fails closed.",
+    "No local old offer after reopen/activation/import; original unknown ID/manifest/audio/audit retained.",
+    "Late original phase/expiresAt cannot erase terminal; no remote prepare/upload/cancel/replay.",
+    "Unified migration closes exact terminal/original/audit/raw graph or rejects entire archive."
+  ],
+  "dualEndImpact": {
+    "android": "New encrypted port backend, restore filtering and unified migration graph; owner binding pending.",
+    "ios": "Reference N069 implementation compared in previous source intake; no iOS code or result changed. Android retains original audio evidence rather than deleting it; this local evidence policy is explicit, UI remains owner scope."
+  },
+  "design": {
+    "productUi": "No changes in this backend; owner keeps explicit discard/failure/waiting, prevents replacement on failure and owns copy/AX/bilingual states.",
+    "systemDifference": "No new OS permission, capability or recognition request; no same-file system transcription claimed."
+  },
+  "verification": {
+    "native": "10 storage/migration + 2 cold methods compiled; zero instrumentation execution here",
+    "build": "Final app/runner passed with 529 input pre/post SHA match",
+    "sourceFingerprint": "b50e0a902dcff59a5cc8920b045e6c6ab388a4c78abd13e3ccb89dcd64c0a507",
+    "realDev": "not run",
+    "centralCatalog": "Parent owns central registration and exact combined-candidate native acceptance; do not remove pending rows."
+  },
+  "contracts": [
+    "voice-discard-contract-v1.json",
+    "voice-discard-catalog-v1.schema.json",
+    "easywork-authorization-fence-intake.json"
+  ]
+}

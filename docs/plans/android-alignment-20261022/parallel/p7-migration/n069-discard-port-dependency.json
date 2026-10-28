@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "source": "a7bb5b5f265b9bcfd7b242db8c512230574cd527",
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceDiscard.kt": "62ffde4d99adf9ff0a6b687680b30afc37488b421ceb68d12850638156f6468a",
+    "stage7-discard-owner-hook.json": "92cd88dd49451e5f635e6b29f0513e154c8210a46bc9eb9f19230e188aa24f72"
+  },
+  "import": "exact narrow port only; no Controller/Session/UI merge",
+  "parentDedup": "Parent coordinates duplicate port with original owner commit"
+}

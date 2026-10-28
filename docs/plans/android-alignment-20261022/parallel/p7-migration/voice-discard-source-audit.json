@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "baseline": "a10e706b62109d80b3aff32929c306bc10d69140",
+  "portDependency": "a7bb5b5f265b9bcfd7b242db8c512230574cd527",
+  "sourceFingerprint": "b50e0a902dcff59a5cc8920b045e6c6ab388a4c78abd13e3ccb89dcd64c0a507",
+  "frozenNativeInputs": 529,
+  "prePostMatch": true,
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceDiscard.kt": "62ffde4d99adf9ff0a6b687680b30afc37488b421ceb68d12850638156f6468a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceDiscardStorage.kt": "a3bfd1429d88bd84af204eaa922aacc1fc6d79b16edc6620bcf561ecc22eebbb",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "d6b89136c01e05bc34be4717c67952ea3dee3c1db846d3f09ecfd23d4d002990",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationVoice.kt": "87cdab2178d974e7f01e540c57a06d194eed365beb1c3a330d4e44253a349334",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "1170d648dfc3073d64244d79b02c1b777551afbe0d4568f8e3e92150ea4c727a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "236f1a5ad83f1cb84bcc4aeeee242c65a5314ccfb982c3479b5d31cb9ca92ac2",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceDiscardStorageTest.kt": "8174d165c7ebbafab2d7e8212a14984c2587e39774fe0a08d2427a6442846870",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceDiscardColdTest.kt": "393da0509980e1385479f7a594c6cfaedde9ed5d51c07b6a16f6d316b43bb404"
+  },
+  "exactPortCopy": true,
+  "protectedOriginalFilesUnchanged": true,
+  "scope": "Only new tests, narrow port, storage/migration files and own docs. Controller/MobileSession/UI/Manifest/central parity and old tests unchanged.",
+  "packages": {
+    "app.apk": {
+      "bytes": 24747519,
+      "sha256": "c9db0f18001a9913fbeb8389f72ec2340070510a51a58cb9f67bda94342be9fa"
+    },
+    "runner.apk": {
+      "bytes": 8643286,
+      "sha256": "54dbe5b5394de35bce72e535e4bb4106dba54a295e25a7c9e37b8723afbad954"
+    }
+  },
+  "methods": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceDiscardStorageTest.kt": [
+      "unknownSealedOriginalSurvivesDiscardReopenLateReceiptAndRemoval",
+      "incompleteOddRawAbsentAndEmptyOriginalsAreTerminalWithoutSealingOrDeleting",
+      "provisionalRequestCanMatchAnAlreadySealedSameOriginalWithoutChangingItsIntent",
+      "everyImmutableMismatchRejectsWithoutPublishingOrChangingOriginalEvidence",
+      "precommitInterruptionsLeaveOriginalOfferableAndLostAcknowledgementRetriesReadOnly",
+      "corruptCatalogPendingFilesAndChangedAuditFailClosedWithoutRepair",
+      "sealedAndRawTerminalsMigrateTogetherWithExactAuditsAndNeverBecomeAnOffer",
+      "malformedTerminalGraphsCannotReplaceAnExistingCandidate",
+      "terminalRowsReleaseActiveCapacityWhileRemainingInTheMigrationGraph",
+      "easyWorkAuthorizationFencesAreAnExplicitWholeArchiveGapAndNeverDropped"
+    ],
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceDiscardColdTest.kt": [
+      "stageDiscardedOriginalAndActivateForIndependentProcessRead",
+      "originalTerminalSurvivesIndependentPidAndIdempotentAcknowledgementWithoutCiphertextRewrite"
+    ]
+  },
+  "checks": {
+    "appAndRunner": "passed final-build.log; new methods compiled only",
+    "format": "pnpm format:check passed before final own audit/parity JSON addition; repeated at delivery",
+    "diff": "git diff --check passed"
+  },
+  "nativeExecution": "not run; independent writer/reader and owner binding remain coordinator responsibility",
+  "devicesHostsModels": "none",
+  "priorFailures": [
+    "build.log: two public test return types exposed internal NativeMigrationRecords; invalid TargetScope.copy test construction",
+    "build-2.log: remaining TargetScope.copy error; corrected via strict scope decode"
+  ],
+  "limitations": [
+    "No full migration: EasyWork grant/fence and nonempty foreground v1 journal refuse.",
+    "No system same-original-file transcription, visual or real DEV assertion.",
+    "A6 remains paused."
+  ]
+}

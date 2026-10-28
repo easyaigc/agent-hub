@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "stage": "P9-coordinator-session-hooks",
+  "baseCommit": "b77e1bfd6d85b72757cc83366063cdd06cc2ee37",
+  "features": [
+    {
+      "id": "F52",
+      "commonAssertion": "普通通知绑定完整原目标/当前保存授权；默认关闭不造设备；原未知只查原ID；P7同一账本与原子逐事件复核；冷暖opaque票据不损草稿",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "Android coordinator/native hook source only; iOS wire/product unchanged; no iOS or vendor proof",
+      "sourceSha256": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "951f9378ea78bef5af8ed3758b73a885585a5681fdd8ff9793c8c441ed1c4b80",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryTest.kt": "ead4354c4c346e4cba75a974369df3714ff30ad5ba30dcc523448b119ab58448",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAuthorizations.kt": "1adb14aa1952c1fd2390aa06a23ff7872fe1a2dcef804f1fa187725ce1d377b5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": "1a442f2832236243f609d717df0f96353b24b4eedd9e68d04aba607ad519d449",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundDelivery.kt": "190f6cc74a55b905354b354f2c393775b5a7556aa1c160877eaf6e78c6cc2deb",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt": "e8941c44c80af7fa8eb6e4235d2eec765904f709ff425d3e362e5c0b9eb03794",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundStore.kt": "0624cab48fe7c227e65461cbf8fbe4e270c8fc553520795a7eeee544d10d27eb",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "4abfb4e61c2889e04fb50def1c688c92f505e7976f6ff3f896153e1fb450153a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryController.kt": "f0c0fd913a0ab8c14b7322731f939f03d2a05b7d8d7cf2209fa42a0bb10a0206",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStatus.kt": "b7473264138dba410629f02b4edeacb7d632f738d538fbe58e0487a582205d0a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt": "27c55bb993a4b7e5ab8499126afbccbea7e1027ea4c4f1b5c9be83139474f309",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSessionPort.kt": "11af09a4eed9ffc94f723e40f1948d2660c8e383c7024b9461feae37ae8d47f6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "59d02092cb8e770c8c0f1d1765d1aed9b306e5fdbeeab1bc822719a031268b3b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "f9a371bae96954acc8965449a62756aef95795c5959855d107245d0008bd06e1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt": "a939b70dd8b65a45de682cdac0dd023bd3258da61389360adce2c787392ae31b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsState.kt": "fd396813c5dfb8b3b545563b1bdc882e186c65e7b4e82acdcdfd00a448d26d58",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "e4937ce892cd308c3ba733c9e26d8996fb398659169bc6beed13652e5a704b25",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSystem.kt": "8c9d472ee5c3b6d53248482f6d841584cc0a8a298589b1f3b2caae25508508d1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationsPage.kt": "0e0766999fe4740658de8aa39f884732e851d24bfc262810cd62061ebec13976",
+        "scripts/mobile/check-chat-notification-recovery.mjs": "1f98816ff230a527df97b5e5c4ee6d81c6e232ec3824fb86741d7b3bcf34043b",
+        "scripts/mobile/fixtures/CoordinatorVectors.kt": "85990b3de4399ccf4fed30e372dc1c3dd88ec4346b9a025d2f0f1b40c7c56b77",
+        "scripts/mobile/fixtures/RecoveryVectors.kt": "7bed2361486224c17c6e22077e79377c630c71d0a42a9af124b0a5371fa9f7f9"
+      }
+    },
+    {
+      "id": "F53",
+      "commonAssertion": "铃声与系统权限保持原私有声音/渠道规则；新系统窄接口使用同一Session存储，实际URI授权/可听结果独立验收",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "Android coordinator/native hook source only; iOS wire/product unchanged; no iOS or vendor proof",
+      "sourceSha256": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "951f9378ea78bef5af8ed3758b73a885585a5681fdd8ff9793c8c441ed1c4b80",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryTest.kt": "ead4354c4c346e4cba75a974369df3714ff30ad5ba30dcc523448b119ab58448",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAuthorizations.kt": "1adb14aa1952c1fd2390aa06a23ff7872fe1a2dcef804f1fa187725ce1d377b5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": "1a442f2832236243f609d717df0f96353b24b4eedd9e68d04aba607ad519d449",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundDelivery.kt": "190f6cc74a55b905354b354f2c393775b5a7556aa1c160877eaf6e78c6cc2deb",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt": "e8941c44c80af7fa8eb6e4235d2eec765904f709ff425d3e362e5c0b9eb03794",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundStore.kt": "0624cab48fe7c227e65461cbf8fbe4e270c8fc553520795a7eeee544d10d27eb",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "4abfb4e61c2889e04fb50def1c688c92f505e7976f6ff3f896153e1fb450153a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryController.kt": "f0c0fd913a0ab8c14b7322731f939f03d2a05b7d8d7cf2209fa42a0bb10a0206",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStatus.kt": "b7473264138dba410629f02b4edeacb7d632f738d538fbe58e0487a582205d0a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt": "27c55bb993a4b7e5ab8499126afbccbea7e1027ea4c4f1b5c9be83139474f309",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSessionPort.kt": "11af09a4eed9ffc94f723e40f1948d2660c8e383c7024b9461feae37ae8d47f6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "59d02092cb8e770c8c0f1d1765d1aed9b306e5fdbeeab1bc822719a031268b3b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "f9a371bae96954acc8965449a62756aef95795c5959855d107245d0008bd06e1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt": "a939b70dd8b65a45de682cdac0dd023bd3258da61389360adce2c787392ae31b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsState.kt": "fd396813c5dfb8b3b545563b1bdc882e186c65e7b4e82acdcdfd00a448d26d58",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "e4937ce892cd308c3ba733c9e26d8996fb398659169bc6beed13652e5a704b25",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSystem.kt": "8c9d472ee5c3b6d53248482f6d841584cc0a8a298589b1f3b2caae25508508d1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationsPage.kt": "0e0766999fe4740658de8aa39f884732e851d24bfc262810cd62061ebec13976",
+        "scripts/mobile/check-chat-notification-recovery.mjs": "1f98816ff230a527df97b5e5c4ee6d81c6e232ec3824fb86741d7b3bcf34043b",
+        "scripts/mobile/fixtures/CoordinatorVectors.kt": "85990b3de4399ccf4fed30e372dc1c3dd88ec4346b9a025d2f0f1b40c7c56b77",
+        "scripts/mobile/fixtures/RecoveryVectors.kt": "7bed2361486224c17c6e22077e79377c630c71d0a42a9af124b0a5371fa9f7f9"
+      }
+    }
+  ],
+  "sourceFiles": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "951f9378ea78bef5af8ed3758b73a885585a5681fdd8ff9793c8c441ed1c4b80",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryTest.kt": "ead4354c4c346e4cba75a974369df3714ff30ad5ba30dcc523448b119ab58448",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAuthorizations.kt": "1adb14aa1952c1fd2390aa06a23ff7872fe1a2dcef804f1fa187725ce1d377b5",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": "1a442f2832236243f609d717df0f96353b24b4eedd9e68d04aba607ad519d449",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundDelivery.kt": "190f6cc74a55b905354b354f2c393775b5a7556aa1c160877eaf6e78c6cc2deb",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt": "e8941c44c80af7fa8eb6e4235d2eec765904f709ff425d3e362e5c0b9eb03794",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundStore.kt": "0624cab48fe7c227e65461cbf8fbe4e270c8fc553520795a7eeee544d10d27eb",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "4abfb4e61c2889e04fb50def1c688c92f505e7976f6ff3f896153e1fb450153a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryController.kt": "f0c0fd913a0ab8c14b7322731f939f03d2a05b7d8d7cf2209fa42a0bb10a0206",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStatus.kt": "b7473264138dba410629f02b4edeacb7d632f738d538fbe58e0487a582205d0a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt": "27c55bb993a4b7e5ab8499126afbccbea7e1027ea4c4f1b5c9be83139474f309",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSessionPort.kt": "11af09a4eed9ffc94f723e40f1948d2660c8e383c7024b9461feae37ae8d47f6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "59d02092cb8e770c8c0f1d1765d1aed9b306e5fdbeeab1bc822719a031268b3b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "f9a371bae96954acc8965449a62756aef95795c5959855d107245d0008bd06e1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt": "a939b70dd8b65a45de682cdac0dd023bd3258da61389360adce2c787392ae31b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsState.kt": "fd396813c5dfb8b3b545563b1bdc882e186c65e7b4e82acdcdfd00a448d26d58",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "e4937ce892cd308c3ba733c9e26d8996fb398659169bc6beed13652e5a704b25",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSystem.kt": "8c9d472ee5c3b6d53248482f6d841584cc0a8a298589b1f3b2caae25508508d1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationsPage.kt": "0e0766999fe4740658de8aa39f884732e851d24bfc262810cd62061ebec13976",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "1f98816ff230a527df97b5e5c4ee6d81c6e232ec3824fb86741d7b3bcf34043b",
+    "scripts/mobile/fixtures/CoordinatorVectors.kt": "85990b3de4399ccf4fed30e372dc1c3dd88ec4346b9a025d2f0f1b40c7c56b77",
+    "scripts/mobile/fixtures/RecoveryVectors.kt": "7bed2361486224c17c6e22077e79377c630c71d0a42a9af124b0a5371fa9f7f9"
+  },
+  "centralTablesEdited": false,
+  "sharedFilesEdited": false,
+  "proposal": {
+    "patch": "coordinator-hooks.patch",
+    "manifest": "coordinator-hooks.json",
+    "status": "not-applied",
+    "readOnlyApplyCheck": "passed against exact inspected parent working files; recheck before application",
+    "parentBaseCommit": "e0cf4f98fae9e56e4bdcebd63db8c42a07e6310f",
+    "preservedVoiceDiscardAndPreferencePairs": 3
+  },
+  "requiredP7": "Use same storage and session.phoneReading.ledger; preserve MigrationTombstones and atomic mayPresent; P7 active-set method supplied as proposal; actual visible pending-panel IDs still require explicit P7 lease integration",
+  "privateRecords": [
+    {
+      "record": "native-chat-notification-authorizations-v1",
+      "version": 1,
+      "limits": "128 retained authorities / 1 MiB",
+      "policy": "installation-local encrypted full credential+saved-client; archive validator only, never silently drop or activate in migration; missing original authorization is visible recovery, not replacement ID"
+    }
+  ],
+  "localizationAdditions": {
+    "原通知记录已核对。": "Original notification records checked.",
+    "原通知记录已保留，可核对原操作。": "Original notification records are preserved. You can check the original operations.",
+    "核对原通知记录": "Check original notification records",
+    "正在恢复原通知，请稍候。": "Restoring the original notification. Please wait.",
+    "无法打开原通知，对话或连接暂不可用。": "The original notification cannot be opened. Its chat or connection is unavailable.",
+    "当前连接": "Current connection",
+    "原连接记录": "Original connection records"
+  },
+  "checks": {
+    "recoveryJvm": "59 passed after bounded runner fix; shipping source with explicit JVM memory/Looper/loopback ports",
+    "legacyJvm": "45 passed; shipping v1 wire and fixed loopback HTTP",
+    "androidBuild": "assembleDebug + assembleDebugAndroidTest acceptance variant passed; 21 new coordinator Owned MainActivity/Session scenarios compiled only",
+    "nativeAndRealDev": "not-run, parent lease only",
+    "format": "final check follows",
+    "lint": "passed",
+    "githubSyncUnit": "5 passed",
+    "pnpmCheck": "stopped at unchanged parent-owned stale/missing prior synthetic-tone.m4a feature record; no gate weakened"
+  },
+  "actualNotVerified": [
+    "shared dispatcher hook application/compilation as full integrated App",
+    "real MainActivity cold/warm lifecycle after shared patch (base fixture uses explicit setIntent/handoff)",
+    "actual P7 rendered-notice visibility and migration entry",
+    "OS emission / permissions / sound URI grant / audible playback",
+    "actual Host subscription/model/vendor arrival/formal deployment"
+  ],
+  "handoff": "coordinator.md",
+  "relatedFeatureProposals": [
+    {
+      "id": "F61",
+      "status": "proposed-not-applied",
+      "assertion": "Use same phoneReading.ledger; initialize it before feed, publish its own count, clear only exact inactive actionable IDs; preserve real visible-notice lease and atomic mayPresent",
+      "patch": "coordinator-hooks.patch",
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt"
+    }
+  ]
+}

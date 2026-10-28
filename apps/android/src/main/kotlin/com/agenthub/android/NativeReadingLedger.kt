@@ -229,6 +229,17 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
             if(row.read==original.position && row.pendingReader==original.readerId)row.pendingReader=null
         }
     }
+    /** P9's authenticated complete active set only; terminal/completion reading is unchanged. */
+    fun reconcileNotificationActive(target: TargetScope, activeIds: Set<String>, current: ()->Boolean): NativeUnreadSnapshot {
+        require(activeIds.size<=2048 && activeIds.all {it.matches(Regex("[a-f0-9]{64}"))})
+        return transaction {ledger ->
+            if(!current() || ThreadReadingIdentity.scopeKey(target) !in ledger.scopes)return@transaction
+            for(row in ledger.rows.values)if(RuntimeIdentity.matches(row.target,target)) {
+                for((id,notice)in row.notices.toMap())if(!notice.seen && notice.kind in setOf("approval","question","plan","uncertain","paused") && id !in activeIds)
+                    row.notices[id]=notice.copy(seen=true)
+            }
+        }
+    }
     fun pendingReads(): List<NativePendingRead> = storage.operationTransaction {
         load().let { ledger -> ledger.rows.values.mapNotNull { row -> row.pendingReader?.takeIf {
             ThreadReadingIdentity.scopeKey(row.target) in ledger.scopes

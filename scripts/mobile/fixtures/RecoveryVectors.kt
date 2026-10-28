@@ -120,7 +120,7 @@ private class RecoveryFixture {
     }
 }
 
-fun main() { runBlocking<Unit> {
+fun main() { try { runBlocking<Unit> {
     var passed = 0
     suspend fun test(name: String, action: suspend () -> Unit) { action(); passed++; println("PASS $name") }
     fun reject(action: () -> Unit) { check(runCatching(action).isFailure) }
@@ -319,6 +319,43 @@ fun main() { runBlocking<Unit> {
         NativeChatNotificationRecoveryStore.validateEncoded(raw); val fresh = NativeSessionStorage()
         check(fresh.read(NativeChatNotificationRecoveryStore.RECORD) == null && fresh.read(NativeChatNotificationIdentity.RECORD) == null)
     }
+    test("native fake transport accepts Main caller and reaches applied feed on IO") {
+        val f=withContext(kotlinx.coroutines.Dispatchers.IO){RecoveryNativeFixture(NativeSessionStorage())}
+        f.events.add(f.event())
+        val source=f.snapshot()
+        val original=withContext(kotlinx.coroutines.Dispatchers.IO) {f.journal.reserve(f.identity(),source,f.epoch,f.notices.preferences(),"register",{true})}
+        android.os.Looper.setMainForTest(true)
+        try {
+            val receipt=f.commands.recoverySubmit(source,original)
+            check(receipt.stage=="applied")
+            withContext(kotlinx.coroutines.Dispatchers.IO) {f.journal.settle(f.identity(),f.target,original,receipt)}
+            val result=f.sync()
+            check(result?.state=="foreground-synchronized") { "Native fixture Main path stopped at ${result?.state}; submitted=${f.submitted.size}, feed=${f.queries.size}" }
+            check(f.submitted.size==1&&f.queries.size==1&&f.delivered.size==1)
+        } finally {android.os.Looper.setMainForTest(false)}
+    }
+    test("original inventory remains readable without current connection or mutation replay") {
+        val f=RecoveryFixture();f.loseAck=true;f.sync();val operation=f.view().operations.single()
+        val inventory=f.journal.pendingByTarget();check(inventory.keys==setOf(f.target)&&inventory[f.target]==listOf(operation.authorization)&&f.submitted.size==1)
+    }
+    test("empty journal inventory does not create installation identity") {
+        val storage=NativeSessionStorage();check(NativeChatNotificationRecoveryStore(storage).pendingByTarget().isEmpty()&&NativeChatNotificationForegroundStore(storage).pendingByTarget().isEmpty())
+        check(storage.read(NativeChatNotificationIdentity.RECORD)==null&&storage.read(NativeChatNotificationRecoveryStore.RECORD)==null)
+    }
+    test("explicit original recovery reads do not submit or process a feed") {
+        val f=RecoveryFixture();f.loseAck=true;f.sync();val original=f.submitted.single();f.queried.clear()
+        f.controller().queryOriginals(f.snapshot()){true}
+        check(f.submitted.size==1&&f.queries.isEmpty()&&f.queried.single().encoded()==original.encoded()&&f.view().operations.single().state=="applied")
+    }
+    test("read-only original recovery with absent new epoch preserves unknown") {
+        val f=RecoveryFixture();f.loseAck=true;f.saveReceipt=false;f.sync();f.epoch=UUID.randomUUID().toString();f.absent=true
+        f.controller().queryOriginals(f.snapshot()){true};check(f.submitted.size==1&&f.queries.isEmpty()&&f.view().operations.single().state=="unknown")
+    }
+    test("read-only recovery never substitutes changed authorization") {
+        val f=RecoveryFixture();f.loseAck=true;f.sync();f.queried.clear()
+        f.controller().queryOriginals(f.snapshot(credentialEpoch="rotated")){true}
+        check(f.queried.isEmpty()&&f.submitted.size==1&&f.view().operations.single().state=="unknown")
+    }
     test("real fixed HTTP operations target original ID/epoch and never retry POST") {
         val f = RecoveryFixture(); val identity = f.identity(); val original = NativeChatRecoveryIntent.create(identity, f.target, f.notices.preferences(), f.epoch, 1, "register")
         val server = HttpServer.create(InetSocketAddress("127.0.0.1",0),0); val requests = mutableListOf<Pair<String,Map<String,String>>>()
@@ -348,5 +385,6 @@ fun main() { runBlocking<Unit> {
             failPost=true;check(runCatching{http.recoverySubmit(snapshot,original)}.isFailure && postCount==2)
         } finally {server.stop(0)}
     }
+    passed += coordinatorVectors()
     println("$passed shipping Kotlin recovery auxiliary vectors passed; native/real DEV not run")
-}; exitProcess(0) }
+}; exitProcess(0) } catch (failure: Throwable) { failure.printStackTrace(); exitProcess(1) } }

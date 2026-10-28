@@ -180,9 +180,9 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         val deviceNames = NativeMigrationDeviceState.validate(records,clients)
         val voicePreferenceNames = NativeVoicePreferenceRecord.validate(records)
         val soundBinaries = NativeMigrationSounds.validate(records,binaries,streams,verifySoundBytes)
-        val voiceBinaries=binaries.filterKeys {it.startsWith("voice-audio:")}
-        val voiceStreams=streams?.filterKeys {it.startsWith("voice-audio:")}
-        val voiceNames=if(streams==null)NativeMigrationVoice.validate(allValues,voiceBinaries,clients)else NativeMigrationVoice.validateStreams(allValues,voiceStreams!!,clients)
+        val voiceBinaries=binaries.filterKeys {it.startsWith("voice-audio:")||it.startsWith(NativeVoiceDiscardCatalog.RAW_PREFIX)}
+        val voiceStreams=streams?.filterKeys {it.startsWith("voice-audio:")||it.startsWith(NativeVoiceDiscardCatalog.RAW_PREFIX)}
+        val voiceNames=if(streams==null)NativeMigrationVoice.validate(allValues,voiceBinaries,clients,records)else NativeMigrationVoice.validateStreams(allValues,voiceStreams!!,clients,records)
         val attachmentBinaries=mutableSetOf<String>()
         require(allValues.keys.all { it in parsed || it in historyNames || it in voiceNames })
         val operations = mutableListOf<SavedOperation>()

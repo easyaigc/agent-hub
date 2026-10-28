@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 /** No default preferences stand in for an unreadable record. All storage work stays off Main. */
 internal class NativeChatNotificationSettingsState(private val scope: CoroutineScope,
-    private val store: NativeChatNotificationStore, private val platform: NativeChatNotificationPlatform) {
+    private val store: NativeChatNotificationStore, private val platform: NativeChatNotificationSystem) {
     var preferences by mutableStateOf<NativeChatNotificationPreferences?>(null)
         private set
     var permission by mutableStateOf<NativeChatNotificationPermission?>(null)

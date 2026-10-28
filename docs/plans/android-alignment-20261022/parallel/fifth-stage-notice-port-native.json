@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "checkpoint": "PAR5-notice-component-port",
+  "date": "2026-10-29",
+  "status": "12 native component/rule methods passed; global ledger binding not applied",
+  "sourceSha256": "18e61df7db3c420e51d801667a8677d371208a8b9f6f9c98d7ef00f9096e3b0c",
+  "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+  "runnerSha256": "5ac713212eadbe826fa0d8a474aa7c8133e783f8441e0f0ca1cc8ebc54253005",
+  "nativeMethods": 12,
+  "geometryUiMethods": 9,
+  "pureRules": 3,
+  "defaultStorageElevenFieldProofs": 9,
+  "fixtureLanguage": "en",
+  "fixtureColors": "MaterialTheme default light; wrapper dark flag is not consumed by this test",
+  "geometry": "330x240dp viewport on physical API33, actual owned-window PixelCopy, whole-panel gate and expanded original plan body",
+  "imagesReviewed": [
+    {
+      "name": "expanded-original-plan.png",
+      "sha256": "0973197d9f280fa87d55d4658d8297a68230ca7a8df9edb749e55231d0f94d42"
+    },
+    {
+      "name": "question-exact-original.png",
+      "sha256": "c6013bb01c6e2321aec371efe86f32fe3e5d3437261cd0c042a3679d95620a29"
+    },
+    {
+      "name": "oversized-card-unread.png",
+      "sha256": "2970fc2f2b7ed5346046d144bdde62c66f1ad320a679ee86d802599a6a2ac384"
+    },
+    {
+      "name": "first-panel.png",
+      "sha256": "2c55f514f7c3a32d5baa77501b3974d4cb0a9d695244cfa8032c74be7575c720"
+    },
+    {
+      "name": "last-panel.png",
+      "sha256": "0f337f46c1ed9fed85e4ce693ee8d42a4a00650823cac7fde349f77894df0637"
+    }
+  ],
+  "reviewFinding": "Actual plan toggle still shows Chinese 查看计划 under English fixture; reported to P7 UI owner for correction. Read/geometry assertions remain valid, English UI matrix not closed.",
+  "instrumentationSha256": "6442167c36fe6494b06547a609e8b19001de408d69300d1507b906aa44c0e5b1",
+  "limits": [
+    "Fixture bridge uses one isolated ledger; production Session/atomic guard/shared writer and expanded message callers pending",
+    "Five reviewed windows cover component geometry, not full system composite/theme/language/IME/accessibility matrix",
+    "Oversized cards conservatively stay unread; not full iOS-equivalent long-card reading"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

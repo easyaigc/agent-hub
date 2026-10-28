@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "checkpoint": "PAR5-durable-discard-binding",
+  "date": "2026-10-29",
+  "environment": "Current physical Android phone / API33 / independent acceptance package",
+  "verificationKind": "native synthetic encrypted-storage/migration and actual Activity binding; not full acoustic/Host DEV",
+  "source": "25092e2a3949b05672b29cb475022fd5d9514aed",
+  "acceptedMethods": 37,
+  "defaultStorageElevenFieldProofs": 26,
+  "groups": [
+    {
+      "label": "discard-storage-first",
+      "status": "passed",
+      "sourceSha256": "26bf5999093f858a550c2d2b69348796bec2c7ca0a1deca6997dd255ab1fd427",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "59a053b61b1192b0a3863acd195aba0596ce13452483dc507dbd38835e1af493",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#unknownSealedOriginalSurvivesDiscardReopenLateReceiptAndRemoval",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#everyImmutableMismatchRejectsWithoutPublishingOrChangingOriginalEvidence",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#precommitInterruptionsLeaveOriginalOfferableAndLostAcknowledgementRetriesReadOnly",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#provisionalRequestCanMatchAnAlreadySealedSameOriginalWithoutChangingItsIntent",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#incompleteOddRawAbsentAndEmptyOriginalsAreTerminalWithoutSealingOrDeleting"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "0e914cf387a5d4d0c6ca2983de69a5426606029e909cdfd2973d1d086608c484"
+    },
+    {
+      "label": "discard-storage-migration",
+      "status": "failed",
+      "sourceSha256": "26bf5999093f858a550c2d2b69348796bec2c7ca0a1deca6997dd255ab1fd427",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "59a053b61b1192b0a3863acd195aba0596ce13452483dc507dbd38835e1af493",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#malformedTerminalGraphsCannotReplaceAnExistingCandidate",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#corruptCatalogPendingFilesAndChangedAuditFailClosedWithoutRepair",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#sealedAndRawTerminalsMigrateTogetherWithExactAuditsAndNeverBecomeAnOffer",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#easyWorkAuthorizationFencesAreAnExplicitWholeArchiveGapAndNeverDropped"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#terminalRowsReleaseActiveCapacityWhileRemainingInTheMigrationGraph"
+      ],
+      "instrumentationSha256": "fdff8bbc58bca6d3a7ded5646b946ce265f1e9a09e0f9702ae6bbdc171e3a457"
+    },
+    {
+      "label": "actual-activity-binding",
+      "status": "passed",
+      "sourceSha256": "26bf5999093f858a550c2d2b69348796bec2c7ca0a1deca6997dd255ab1fd427",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "59a053b61b1192b0a3863acd195aba0596ce13452483dc507dbd38835e1af493",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardAppIntegrationTest#bothControllersUseOnlyTheirRestoredStorageAndRetainTheSameTerminalPortAfterRecreation"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "c7b536b414d04bc70d3e2d8ce90af8bb1e42815b08a659480f6d80076fa6ae49"
+    },
+    {
+      "label": "discard-cold-writer",
+      "status": "passed",
+      "sourceSha256": "26bf5999093f858a550c2d2b69348796bec2c7ca0a1deca6997dd255ab1fd427",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "59a053b61b1192b0a3863acd195aba0596ce13452483dc507dbd38835e1af493",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardColdTest#stageDiscardedOriginalAndActivateForIndependentProcessRead"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "7a8785d789b1f0f103832379ec094be9918e953735265d764ff2430eabf112d3"
+    },
+    {
+      "label": "discard-cold-reader",
+      "status": "passed",
+      "sourceSha256": "26bf5999093f858a550c2d2b69348796bec2c7ca0a1deca6997dd255ab1fd427",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "59a053b61b1192b0a3863acd195aba0596ce13452483dc507dbd38835e1af493",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardColdTest#originalTerminalSurvivesIndependentPidAndIdempotentAcknowledgementWithoutCiphertextRewrite"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "e613d802b645904a80f1b460e72da52724cd7f4e852b9f603b6caf1013a4d06f"
+    },
+    {
+      "label": "voice-regression",
+      "status": "passed",
+      "sourceSha256": "26bf5999093f858a550c2d2b69348796bec2c7ca0a1deca6997dd255ab1fd427",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "59a053b61b1192b0a3863acd195aba0596ce13452483dc507dbd38835e1af493",
+      "passedMethods": [
+        "com.agenthub.android.NativeSystemVoiceTest#recognizerErrorPreservesPartialButChangedDraftRejectsExplicitFill",
+        "com.agenthub.android.NativeSystemVoiceTest#backgroundPartialTextNeedsExplicitCurrentDraftActionAndLateFinalCannotOverwriteIt",
+        "com.agenthub.android.NativeSystemVoiceTest#localSpeechOnlyFillsOriginalDraftAndFinishIsSingleShot",
+        "com.agenthub.android.NativeSystemVoiceTest#cancelledOldResultCannotAffectANewCapture",
+        "com.agenthub.android.NativeSystemVoiceTest#backgroundAndChangedDraftFencePartialFinalAndOldErrors",
+        "com.agenthub.android.NativeSystemVoiceTest#knownProductFailureIsLocalizedButLiteralServiceErrorsAreNot",
+        "com.agenthub.android.NativeVoiceCapabilityTest#installedModelDoesNotMakeTheGeneralSystemServiceOfflineGuaranteed",
+        "com.agenthub.android.NativeVoiceCapabilityTest#exactLanguageAndRouteCannotBorrowAnotherRegionOrOnlineFallback",
+        "com.agenthub.android.NativeVoiceRecoveryTest#explicitNewSystemCapturePreservesTheUnknownOriginalRecordingAndNeverTranscribesIt",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#discardFingerprintBindsImmutableOriginalAndIgnoresMutableReceiptAttemptFlags",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#navigationDuringAFailedTerminalOnlyDetachesPresentationAndKeepsTheOriginalRecoverable",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#explicitCloseWaitsForTheMatchingTerminalBeforeClearingWithoutTouchingOriginalEvidence",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#explicitRerecordCannotOpenTheNewSystemProviderUntilTerminalAcknowledgement",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#lateOriginalReceiptCannotFillTheDraftAndDiscardDoesNotReplayItsQueryOrAudio",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#backgroundOrNavigationRevokesDelayedRerecordEvenAfterReturningToTheSameDraft",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#missingFailedOrForeignTerminalNeverClosesOrStartsANewCapture"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "256b30a9483b60b0a14e1186fcd0b675508180f4c5e33ee0714fec0d260d12cb"
+    },
+    {
+      "label": "voice-migration-regression",
+      "status": "passed",
+      "sourceSha256": "26bf5999093f858a550c2d2b69348796bec2c7ca0a1deca6997dd255ab1fd427",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "59a053b61b1192b0a3863acd195aba0596ce13452483dc507dbd38835e1af493",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationVoiceTest#incompleteProvisionalVoiceAndCorruptOriginalBinaryFailWithoutDeletingOrSealing",
+        "com.agenthub.android.NativeMigrationVoiceTest#typedExportImportsExactOriginalAudioAndIdempotentActivationPreservesLaterEdits",
+        "com.agenthub.android.NativeMigrationVoiceTest#binaryWriteAndFinalPointerFailurePreserveInstallationAndOriginalStagedArchive",
+        "com.agenthub.android.NativeMigrationVoiceTest#legacyInlineAndChunkedAudioKeepExactOriginalsWithoutReadTimeRewrite",
+        "com.agenthub.android.NativeMigrationVoiceTest#concurrentVoiceRegistrationAndSealCannotExportMixedOriginals",
+        "com.agenthub.android.NativeMigrationVoiceTest#missingOrChangedAudioNoncanonicalBase64AndUnsupportedBinaryNeverBecomePartialSuccess",
+        "com.agenthub.android.NativeMigrationVoiceTest#strictIndexMetadataTargetAndPermissionTypesRejectWithoutChangingOriginalCandidate",
+        "com.agenthub.android.NativeMigrationVoiceTest#importedVoiceNeverPreparesOrUploadsEvenWhenOriginalReceiptIsMissingOrAwaitingAudio"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "b9374faa8e1823b0c89b51af8e2e004578f77b41e556fc0100575c6dd51f4dab"
+    },
+    {
+      "label": "storage-capacity-recheck",
+      "status": "passed",
+      "sourceSha256": "ef9fe0afb97b2718a85b692528d37cc8425ef008e8aaf4a23201d40fd5d110e1",
+      "appSha256": "e372e27958bb865b42418408a3307588ec1117ee010001a0a3f656019c96cbfe",
+      "runnerSha256": "d9875301c979e78a250a09ee75faa9cd44f22676a6cf13c6dac06b90c04952cd",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#malformedTerminalGraphsCannotReplaceAnExistingCandidate",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#corruptCatalogPendingFilesAndChangedAuditFailClosedWithoutRepair",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#sealedAndRawTerminalsMigrateTogetherWithExactAuditsAndNeverBecomeAnOffer",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#terminalRowsReleaseActiveCapacityWhileRemainingInTheMigrationGraph",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#easyWorkAuthorizationFencesAreAnExplicitWholeArchiveGapAndNeverDropped"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "89be96ab0e3a8c1e36355d5eb600f265250b6343af72c5a54a5dd91f9fc9c51b"
+    }
+  ],
+  "coldPair": {
+    "differentProcesses": true,
+    "sameOriginalTerminal": true,
+    "exactAuditAndAudio": true,
+    "noOffer": true,
+    "readOnlyRetry": true,
+    "prepareUploadCancelReplay": 0,
+    "proofSha256": "e48c496d89896ec417eee0473e5ddbfe2f47acc0129fd182405b546b7a7da971"
+  },
+  "actualBinding": "Both retained actual Activity controllers share the Session-owned real encrypted port, original audio/unknown manifest retained, default voice index/catalog unchanged",
+  "failureHistory": "Original second storage batch had four passes and one wrong-null capacity assertion. Restore is keyed by draft/text; the legitimate new sealed capture must be returned. Corrected fixture asserts its exact new ID and exclusion of all32 terminal IDs. Same App bytes; new runner five methods passed. Original failure and method outcomes remain.",
+  "limits": [
+    "Full migration still rejects EasyWork authorization fences and nonempty notification journals; neither gap is a pass",
+    "Global P9/actual visible-notice/migration entry/real acoustic and Host DEV remain open",
+    "Android retains original immutable audio/audit after explicit local discard; this differs from iOS local file deletion",
+    "Task/project business and iOS A6 paused"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

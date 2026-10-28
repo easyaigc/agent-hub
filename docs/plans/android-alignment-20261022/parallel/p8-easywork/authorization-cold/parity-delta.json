@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "id": "android-p8-authorization-cold-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "eb09a56b335e5ec34740eb2f639f51bca69b2b81",
+  "features": ["F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationColdTest.kt": "334ea435f113bf287e13fbb0258e17308cce749dbe40623934456c957eaf0ed2"
+  },
+  "summary": "Prepare two separately invoked Android writer/reader methods and a single-lifetime synthetic sidecar contract for original unknown revoke recovery after independently observed force-stop/new PID. Production and UI unchanged; compilation and four pure Node checks only.",
+  "commonAssertion": "An old frozen authorization intent survives actual process death without key/identity reseeding, replacement input, fixture reconstruction, or stale-save grant resurrection",
+  "dualPlatformImpact": {
+    "android": "Native process-death scenario prepared and compiled; actual device execution pending parent lease",
+    "ios": "No code or UI change; no iOS process-death result claimed"
+  },
+  "uiCopyDelta": [],
+  "acceptanceStatus": "unverified; no cold device run",
+  "integratorAction": "Register exact integrated files in central parity/manifest, run writer and reader individually under a single device/sidecar lease, retain original baseline and writer proof unchanged, and record actual outcomes",
+  "integrationChangeRecord": {
+    "id": "android-p8-authorization-cold-20261029",
+    "baseCommit": "eb09a56b335e5ec34740eb2f639f51bca69b2b81",
+    "features": ["F43", "F44", "F46"],
+    "summary": "Prepare native cold authorization writer/reader and fixed same-sidecar contract; compile-only, actual process-death execution pending",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationColdTest.kt": "334ea435f113bf287e13fbb0258e17308cce749dbe40623934456c957eaf0ed2"
+    }
+  }
+}

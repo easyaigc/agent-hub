@@ -49,6 +49,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
         fun value(name: String)=read(name)?.let{StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))}
         add(NativeMigrationForeground.IDENTITY);add(NativeMigrationForeground.JOURNAL)
         add(NativeVoicePreferenceRecord.RECORD)
+        add(NativeVoiceDiscardCatalog.RECORD)
         read(NativeMigrationSounds.RECORD)?.let {raw->NativeChatNotificationSoundLibrary.binaryInventory(raw).keys.forEach(::add)}
         val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata)
         val keys=mutableSetOf<String>()
@@ -77,10 +78,17 @@ internal class NativeMigrationExport(private val context: Context,private val st
             val history="history:$key";add(history)
             value(history)?.takeIf{it.get("version")==2}?.getJSONArray("parts")?.strings()?.forEach(::add)
         }
+        val voiceIds=mutableSetOf<String>()
         read("voice-index-v1")?.let {raw->
             val ids=StrictMigrationJson.value(raw.toByteArray(Charsets.UTF_8)) as JSONArray;require(ids.length()<=32)
-            for(n in 0 until ids.length()){val id=ids.get(n) as String;require(java.util.UUID.fromString(id).toString()==id);add("voice-recording:$id");add("voice-audio:$id")}
+            for(n in 0 until ids.length()){val id=ids.get(n) as String;require(java.util.UUID.fromString(id).toString()==id);voiceIds.add(id)}
         }
+        read(NativeVoiceDiscardCatalog.RECORD)?.let {raw->NativeVoiceDiscardCatalog.decode(raw).values.forEach {marker->
+            voiceIds.add(marker.id);add(marker.auditName);if(marker.evidence.kind=="raw")add(marker.rawName)
+        }}
+        voiceIds.forEach {id->val name="voice-recording:$id";add(name);value(name)?.let {row->
+            if(row.optString("audioStorage")=="binary-chunks-v1")add("voice-audio:$id")
+        }}
         fileIds.forEach {id->
             val record="draft-file:$id";add(record);add("draft-thumbnail-v1:$id")
             value(record)?.let {body->NativeDraftFiles.record(body).payload?.let(::add)}

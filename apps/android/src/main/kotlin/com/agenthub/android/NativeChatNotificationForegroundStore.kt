@@ -128,6 +128,12 @@ internal class NativeChatNotificationForegroundStore(private val storage: Native
         ?: NativeChatNotificationSubscription(target, null, null, true, "", emptyList(), null, emptyList())
     private fun State.replace(record: NativeChatNotificationSubscription) = copy(subscriptions = subscriptions.filterNot { it.target == record.target } + record)
     fun exists(): Boolean { io(); return storage.read(RECORD) != null }
+    /** Read-only settings inventory; decoding never creates an identity or changes an original. */
+    fun pendingByTarget(): Map<NativeChatNoticeTarget, List<String>> {
+        io(); return storage.snapshotTransaction { load()?.subscriptions?.associate { row ->
+            row.target to row.mutations.filter { it.state == "unknown" }.map { it.authorization }
+        }.orEmpty() }
+    }
     fun view(identity: NativeChatNotificationIdentity, target: NativeChatNoticeTarget) = transaction(identity) { it.record(target) }
     fun beginMutation(identity: NativeChatNotificationIdentity, snapshot: NativeChatNotificationSnapshot, kind: String,
         preferences: NativeChatNotificationPreferences?, now: Long): NativeChatNotificationMutation = transaction(identity) { state ->

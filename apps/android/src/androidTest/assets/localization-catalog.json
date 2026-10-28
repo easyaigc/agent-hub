@@ -1832,7 +1832,14 @@
     "设备授权保存记录无效，原记录已保留": "The saved device authorization record is invalid. The original record is preserved.",
     "原设备授权刷新已被新的状态替代，原记录已保留": "A newer state has replaced the original authorization refresh. The original record is preserved.",
     "设备授权已更新，请重新核对原操作": "Device authorization has changed. Check the original operation again.",
-    "设备授权记录目标已变化，原记录已保留": "The target of the device authorization record has changed. The original record is preserved."
+    "设备授权记录目标已变化，原记录已保留": "The target of the device authorization record has changed. The original record is preserved.",
+    "原通知记录已核对。": "Original notification records checked.",
+    "原通知记录已保留，可核对原操作。": "Original notification records are preserved. You can check the original operations.",
+    "核对原通知记录": "Check original notification records",
+    "正在恢复原通知，请稍候。": "Restoring the original notification. Please wait.",
+    "无法打开原通知，对话或连接暂不可用。": "The original notification cannot be opened. Its chat or connection is unavailable.",
+    "当前连接": "Current connection",
+    "原连接记录": "Original connection records"
   },
   "zh-Hans": {
     "\n请查询原回执；不会再次提交。": "\n请查询原回执；不会再次提交。",
@@ -3667,6 +3674,13 @@
     "设备授权保存记录无效，原记录已保留": "设备授权保存记录无效，原记录已保留",
     "原设备授权刷新已被新的状态替代，原记录已保留": "原设备授权刷新已被新的状态替代，原记录已保留",
     "设备授权已更新，请重新核对原操作": "设备授权已更新，请重新核对原操作",
-    "设备授权记录目标已变化，原记录已保留": "设备授权记录目标已变化，原记录已保留"
+    "设备授权记录目标已变化，原记录已保留": "设备授权记录目标已变化，原记录已保留",
+    "原通知记录已核对。": "原通知记录已核对。",
+    "原通知记录已保留，可核对原操作。": "原通知记录已保留，可核对原操作。",
+    "核对原通知记录": "核对原通知记录",
+    "正在恢复原通知，请稍候。": "正在恢复原通知，请稍候。",
+    "无法打开原通知，对话或连接暂不可用。": "无法打开原通知，对话或连接暂不可用。",
+    "当前连接": "当前连接",
+    "原连接记录": "原连接记录"
   }
 }

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 /** IO-only catalog/preferences work, with a Main-only page projection and preview. No default-on-error. */
 internal class NativeChatNotificationSoundSettingsState(private val scope: CoroutineScope,
-    private val store: NativeChatNotificationStore, private val platform: NativeChatNotificationPlatform,
+    private val store: NativeChatNotificationStore, private val platform: NativeChatNotificationSystem,
     private val kind: NativeChatNoticeKind?, val preview: NativeChatNotificationSoundPreview) {
     var preferences by mutableStateOf<NativeChatNotificationPreferences?>(null)
         private set

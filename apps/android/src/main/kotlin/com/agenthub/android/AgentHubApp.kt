@@ -90,7 +90,7 @@ import com.agenthub.core.*
                 mainPaneFocus.requestFocus();keyboard?.hide();nativeKeyboard.hide()
             }
         }
-        val openSheet: (String) -> Unit = { focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
+        val openSheet: (String) -> Unit = { session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
         LaunchedEffect(effectiveSheet,session.pendingChatSearchToken) {
             if(effectiveSheet==null&&session.pendingChatSearchToken!=null) { withFrameNanos { };session.applyPendingChatSearch() }
         }
@@ -111,7 +111,7 @@ import com.agenthub.core.*
             if(inbox!=null&&mainWindowFocused&&!sidebar&&effectiveSheet==null&&session.error==null&&session.voice?.active!=true&&!attachmentPreview&&!session.importing&&(inbox.presentation!=null||inbox.presentIfWanted(inboxSurface)))openSheet("external-attachments")
         }
         LaunchedEffect(session.incomingEasyWorkLink) { if(session.incomingEasyWorkLink!=null) { editing=null;openSheet("add") } }
-        BackHandler(sidebar && sheet == null && session.error == null) { sidebar=false; focus.clearFocus() }
+        BackHandler(sidebar && sheet == null && session.error == null) { session.chatNotifications?.navigationWillChange();sidebar=false; focus.clearFocus() }
         Surface(Modifier.fillMaxSize().focusRequester(mainPaneFocus).focusable(enabled=!sidebar&&effectiveSheet==null&&session.error==null), color=colors.background) {
             // Consume system/IME insets once for the entire product surface. The fixed header
             // stays in the resized viewport on API 26 as well as edge-to-edge API 37.
@@ -126,12 +126,13 @@ import com.agenthub.core.*
                 val offset = drag ?: settled
                 Column(Modifier.fillMaxSize().pointerInput(sidebar,widthPx) {
                     var allowed=false
-                    detectHorizontalDragGestures(onDragStart={ start -> allowed=sidebar || start.x < with(density) { 24.dp.toPx() }; if(allowed) { focus.clearFocus(); keyboard?.hide(); drag=if(sidebar) 0f else -widthPx } },onHorizontalDrag={ change,amount -> if(allowed) { change.consume(); drag=((drag ?: settled)+amount).coerceIn(-widthPx,0f) } },onDragEnd={ if(allowed) sidebar=(drag ?: settled)>-widthPx/2; drag=null },onDragCancel={ drag=null })
+                    detectHorizontalDragGestures(onDragStart={ start -> allowed=sidebar || start.x < with(density) { 24.dp.toPx() }; if(allowed) { session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=if(sidebar) 0f else -widthPx } },onHorizontalDrag={ change,amount -> if(allowed) { change.consume(); drag=((drag ?: settled)+amount).coerceIn(-widthPx,0f) } },onDragEnd={ if(allowed) sidebar=(drag ?: settled)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
                     if(inbox?.receiving==true)Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=6.dp).testTag("external-attachment-receiving"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp);Text(productText("正在导入附件…"),fontSize=12.sp,color=colors.onSurfaceVariant)
                     }
-                    ChatHeader(session, openSidebar={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
+                    ChatHeader(session, openSidebar={ session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
+                    NativeChatNotificationOpenStatus(session.chatNotifications)
                     if (session.restoring) Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
                     else if (!session.hasClient) Onboarding { openSheet("add") }
                     else {
@@ -182,11 +183,11 @@ import com.agenthub.core.*
                         }
                     }
                 }.pointerInput(widthPx) {
-                    detectHorizontalDragGestures(onDragStart={ focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
+                    detectHorizontalDragGestures(onDragStart={ session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
                     Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },active=sidebar&&effectiveSheet==null&&session.error==null)
                 }
-                if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> editing=client; sheet="add" }) }
+                if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ session.chatNotifications?.navigationWillChange();if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> session.chatNotifications?.navigationWillChange();if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> session.chatNotifications?.navigationWillChange();editing=client; sheet="add" }) }
                 session.error?.let { failure ->
                     androidx.compose.ui.window.Dialog(onDismissRequest={ session.error=null },properties=androidx.compose.ui.window.DialogProperties(dismissOnClickOutside=false)) {
                         Surface(shape=RoundedCornerShape(28.dp),color=colors.surface,modifier=Modifier.widthIn(max=320.dp)) {

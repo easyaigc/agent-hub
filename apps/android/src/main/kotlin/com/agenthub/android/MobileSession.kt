@@ -90,6 +90,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(localReady && foreground)voiceSettings.resumePreferences()
         return attached
     }
+    internal fun bindStoredVoiceDiscardIfReady(context: android.content.Context): Boolean {
+        val currentStorage=storage ?: return false
+        if(!localReady || !foreground)return false
+        return bindVoiceDiscardIfMissing { NativeEncryptedVoiceDiscardPort(VoiceRecordingStore(context.applicationContext,currentStorage)) }
+    }
     internal fun bindStoredVoicePreferencesIfReady(): Boolean {
         val currentStorage=storage ?: return false
         return bindVoicePreferencesIfMissing { NativeEncryptedVoicePreferenceStore(currentStorage) }
@@ -277,7 +282,76 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var foreground=true
     val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
     internal val attachmentRecoveryBusy: Boolean get()=documentPicker?.recovery?.let { it.loading||it.busy }==true||photoPicker?.recovery?.let { it.loading||it.busy }==true||cameraCapture?.recovery?.let { it.loading||it.busy }==true
-    internal val phoneReading=NativePhoneReadingStore(storage,tasks,::syncPhoneReadAcknowledgements)
+    internal val phoneReading=NativePhoneReadingStore(storage,tasks) {syncPhoneReadAcknowledgements();chatNotifications?.reconcile()}
+    internal var chatNotifications by mutableStateOf<NativeChatNotificationCoordinator?>(null)
+        private set
+    internal fun configureChatNotifications(context: android.content.Context) {
+        if(chatNotifications!=null)return
+        val store=storage ?: return
+        val ledger=phoneReading.ledger ?: return
+        val port=object:NativeChatNotificationSessionPort {
+            override val storage=store
+            override val reading=object:NativeChatNotificationReading {
+                override suspend fun receive(event:NativeChatNotificationEvent):NativeChatNoticeReadingResult {
+                    phoneReading.awaitReconciliation()
+                    val original=chatNotificationReadingEvent(event)
+                    if(original==null)return withContext(Dispatchers.Main.immediate) {
+                        NativeChatNoticeReadingResult(event.kind==NativeChatNoticeKind.CONNECTION,phoneReading.snapshot.count)
+                    }
+                    val value=withContext(Dispatchers.IO) {ledger.receive(original)}
+                    withContext(Dispatchers.Main.immediate) {phoneReading.publish(value)}
+                    return NativeChatNoticeReadingResult(withContext(Dispatchers.IO) {ledger.mayPresent(original)},value.count)
+                }
+                override fun mayPresent(event:NativeChatNotificationEvent):Boolean =
+                    chatNotificationReadingEvent(event)?.let(ledger::mayPresent) ?: (event.kind==NativeChatNoticeKind.CONNECTION && phoneReading.ready)
+            }
+            override fun state()=NativeChatNotificationSessionState(localReady,foreground,
+                "$clientNavigationRevision:$selectionRevision:$phoneReadingEpoch",phoneReadingUncovered,
+                phoneReading.ready && phoneReading.failure==null)
+            override suspend fun savedConnections():List<NativeChatNotificationSavedConnection> {
+                check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+                val candidates=realClients.filter {!it.isDemo && it.scope?.agentId=="codex" && it.agentConnection==null && it.endpoint!=null}.toList()
+                val generations=candidates.associate {it.id to (revisions[it.id] ?: 0L)}
+                val saved=withContext(Dispatchers.IO) {store.snapshotTransaction {
+                    candidates.map {NativeChatNotificationSavedConnection.capture(it,store.token(it.id))}
+                }}
+                check(localReady && foreground && candidates.all {source ->
+                    (revisions[source.id] ?: 0L)==generations[source.id] &&
+                    realClients.any {current -> current.id==source.id && sameScope(current.scope,source.scope) &&
+                        current.endpoint==source.endpoint && current.codexDirect?.fingerprint==source.codexDirect?.fingerprint}
+                }) {"Notification connection capture changed"}
+                return saved
+            }
+            override suspend fun reconcileActive(target:NativeChatNoticeTarget,ids:Set<String>,current:()->Boolean) {
+                val scope=TargetScope("codex",null,null,target.hostId,target.workspaceId,target.runtimeId)
+                val value=withContext(Dispatchers.IO) {ledger.reconcileNotificationActive(scope,ids,current)}
+                withContext(Dispatchers.Main.immediate) {if(current())phoneReading.publish(value)}
+            }
+            override fun openExistingThread(location:NativeChatNotificationLocation,current:()->Boolean):Boolean {
+                check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+                if(!localReady || !foreground || !current())return false
+                val saved=realClients.singleOrNull(location.connection::matches) ?: return false
+                if(location.workspace.scope?.let {NativeChatNoticeTarget.from(it)}!=location.connection.target ||
+                    location.workspace.threads.none {it===location.thread} || location.thread.hostId!=saved.id)return false
+                chatNotifications?.navigationWillChange()
+                workspaces[saved.cacheKey(null)]=location.workspace
+                selectVerifiedClient(saved)
+                selectThread(location.thread)
+                return selectedThread==location.thread.id && sameScope(selectedClient.scope,saved.scope)
+            }
+        }
+        chatNotifications=NativeChatNotificationCoordinator.create(context,tasks,port,language).also {
+            it.updateComputers(realClients.toList());it.reconcile()
+        }
+    }
+    private fun chatNotificationReadingEvent(event:NativeChatNotificationEvent):NativeReadingEvent? {
+        if(event.kind==NativeChatNoticeKind.CONNECTION)return null
+        val thread=event.threadId ?: return null
+        val target=TargetScope("codex",null,null,event.target.hostId,event.target.workspaceId,event.target.runtimeId)
+        val position=event.readPosition?.let {ThreadReadPosition(it.revision,it.messageId,it.contentVersion)}
+        return NativeReadingEvent(event.id,target,thread,event.kind.wire,position,event.runId,event.requestId,event.operationId)
+    }
+
     private var phoneReadingProof by mutableStateOf<NativeReadingProof?>(null)
     private val phoneReadingFingerprint=NativeLegacyReadingFingerprint()
     private var phoneReadingEpoch=0L
@@ -304,8 +378,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             thread.hostId==selectedClient.id && phoneReading.snapshot.isUnread(it,thread.id)
         }==true
     internal fun setPhoneReadingSurface(uncovered: Boolean) {
+        val notificationSurfaceChanged=phoneReadingUncovered!=uncovered
+        if(notificationSurfaceChanged)chatNotifications?.invalidateBeforeChange()
         phoneReadingUncovered=uncovered;phoneReading.lifecycle.foreground(foreground);phoneReading.lifecycle.uncovered(uncovered)
         if(!uncovered) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear() }
+        if(notificationSurfaceChanged)chatNotifications?.reconcile()
     }
     internal fun retryPhoneReading() { attemptedPhoneReading=null;phoneReadingRetry++;reconcilePhoneReading() }
     internal val visiblePhoneReading: NativeVisiblePhoneReading? get() {
@@ -328,10 +405,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     internal fun observeVisiblePhoneReading(content: NativeVisiblePhoneReading,visible: Boolean) {
         if(visiblePhoneReading!=content)return
-        if(!visible) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;return }
+        if(!visible) { if(attemptedPhoneReading!=null)chatNotifications?.invalidateBeforeChange();phoneReading.lifecycle.leave();attemptedPhoneReading=null;return }
         if(attemptedPhoneReading==content)return
         val reader=content.client.readerId?.let(::nativeReaderId) ?: return
-        attemptedPhoneReading=content;phoneReading.visible(content,reader)
+        chatNotifications?.invalidateBeforeChange();attemptedPhoneReading=content;phoneReading.visible(content,reader)
     }
     private fun reconcilePhoneReading() {
         if(!localReady)return
@@ -525,8 +602,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var workspaceJob: Job? = null
     private var foregroundJob: Job? = null
     fun enterForeground() {
+        chatNotifications?.navigationWillChange()
         tasks.launch { easyWorkLogin?.foreground() }
-        foreground=true;if(localReady)voiceSettings.resumePreferences();phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
+        foreground=true;chatNotifications?.reconcile();if(localReady)voiceSettings.resumePreferences();phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
         realClients.toList().forEach { replaceClient(it.copy(online=false,connectionPhase=ConnectionPhase.CONNECTING)) }
         if(localReady) { refresh(); loadHistory() }
         foregroundJob?.cancel()
@@ -561,7 +639,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -572,7 +650,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun synchronizeReadingPresentation() {
         val key=targetKey
         if(presentationTargetKey!=key) { releasePhoneReadingProof();presentationTargetKey=key;visibleMessageLimit=ReadingPolicy.initialMessageLimit().toInt();revealedEarlier=false }
-        phoneReading.focus(selectedClient.scope?.takeIf { selectedThread.isNotEmpty() }?.let { ThreadReadingIdentity.key(it,selectedThread) })
+        phoneReading.focus(selectedClient.scope?.takeIf { selectedThread.isNotEmpty() }?.let { ThreadReadingIdentity.key(it,selectedThread) });chatNotifications?.reconcile()
     }
     private val clientKey get() = selectedClient.cacheKey(null)
     val sidebarDisplay get() = sidebarStates[clientKey] ?: SidebarDisplayState()
@@ -1107,7 +1185,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun projectExpanded(id: String) = id in expandedProjects[clientKey].orEmpty()
     fun toggleProject(id: String) { expandedProjects[clientKey] = expandedProjects[clientKey].orEmpty().let { if (id in it) it - id else it + id }; persistMetadata() }
-    fun changeLanguage(value: String) { require(NativeAppLanguage.entries.any { it.value==value });language=value;persistMetadata() }
+    fun changeLanguage(value: String) { require(NativeAppLanguage.entries.any { it.value==value });language=value;chatNotifications?.languageChanged(value);persistMetadata() }
     fun changeAppearance(value: String) { require(value in listOf("system", "light", "dark")); appearance = value; persistMetadata() }
     fun setDemoMode(value: Boolean) {
         demo = value
@@ -1116,6 +1194,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun select(client: MobileClient)=selectClient(client,refreshAutomatically=true)
     private fun selectClient(client: MobileClient,refreshAutomatically: Boolean) {
+        chatNotifications?.navigationWillChange()
         releasePhoneReadingProof()
         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         clientNavigationRevision++;selectionRevision++;networkRecoveryJob?.cancel();networkRecoveryJob=null; workspaceJob?.cancel(); historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
@@ -1135,6 +1214,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         loadModels()
     }
     fun selectThread(thread: MobileThread) {
+        chatNotifications?.navigationWillChange()
         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         require(thread.hostId == selectedClient.id && threads.any { it.id == thread.id })
         if(selectedThread==thread.id) {
@@ -1973,6 +2053,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val prior = realClients.firstOrNull { it.id == result.hostId && sameScope(it.scope, scope) }
         val client = candidate.copy(id = result.hostId, scope = scope, online = true, mode = result.mode,
             readerId = editing?.readerId ?: prior?.readerId ?: UUID.randomUUID().toString(), requiresReadTarget=result.scope != null)
+        chatNotifications?.connectionsWillChange()
         withContext(Dispatchers.IO) { storage?.setToken(client.id, secret) }
         revisions[client.id] = (revisions[client.id] ?: 0) + 1
         val remembered = replaceClient(client); workspaces[remembered.cacheKey(null)] = result
@@ -1984,6 +2065,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val remembered=if(client.storageIdentity==null && prior?.storageIdentity!=null && sameScope(client.scope,prior.scope)) client.copy(storageIdentity=prior.storageIdentity) else client
         if (index < 0) realClients.add(remembered) else realClients[index] = remembered
         if (selectedClient.id == client.id) { selectedClient = remembered;synchronizeReadingPresentation() }
+        chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile()
         if(prior!=remembered)reconcilePhoneReading()
         return remembered
     }
@@ -2162,6 +2244,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             codexDirect=PairedCodexConnection(target, authorized.descriptor.fingerprint, (routes + prior?.codexDirect?.routes.orEmpty()).distinctBy { it.endpoint }.take(32),
                 com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), authorized.descriptor.systemEndpoints, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })), storageIdentity=prior?.storageIdentity)
         // No suspension between the final generation check, atomic credential/client publication and UI commit.
+        chatNotifications?.connectionsWillChange()
         CodexConnectionVault(store).save(client, authorized.token)
         revisions[host.id] = revision + 1
         val remembered = replaceClient(client)
@@ -2189,6 +2272,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), supplied, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })))
                 require(snapshot.mode == "desktop-runtime" && sameScope(snapshot.scope, offer.target)) { "电脑运行时身份不匹配" }
                 require((revisions[client.id] ?: 0) == revision) { "连接已改变，请重试" }
+                chatNotifications?.connectionsWillChange()
                 withContext(Dispatchers.IO) { storage?.setToken(client.id, offer.token!!) }
                 client = client.copy(online = true)
                 revisions[client.id] = revision + 1; client = replaceClient(client)
@@ -2212,6 +2296,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val transportChanged=endpoint != current.endpoint
         val updated=current.copy(endpoint=endpoint,codexDirect=direct)
         if(changed) {
+            if(transportChanged)chatNotifications?.connectionsWillChange()
             try { storage?.let { CodexConnectionVault(it).updateClient(updated) } } catch(_: Exception) { storageFailure();return false }
             // Verified address hints do not change the authenticated transport or invalidate its in-flight reply.
             if(transportChanged) revisions[current.id] = (revisions[current.id] ?: 0) + 1
@@ -2227,13 +2312,14 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun removeClient(id: String) {
         val removed=realClients.firstOrNull { it.id==id } ?: return
+        chatNotifications?.connectionsWillChange()
         // A removed private client must not be recovered from its atomic credential record after a crash.
         if(removed.agentConnection==null) try { storage?.setToken(id,"") } catch(_: Exception) { storageFailure();return }
         revisions[id] = (revisions[id] ?: 0) + 1
         connectionSuccesses.remove(removed.cacheKey(null))
         phoneReading.lifecycle.leave();attemptedPhoneReading=null
         phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
-        realClients.removeAll { it.id == id };reconcilePhoneReading()
+        realClients.removeAll { it.id == id };reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile()
         if (selectedClient.id == id) select(realClients.firstOrNull() ?: DemoMobileData.clients.first())
         tasks.launch(Dispatchers.IO) {
             easyWorkSessions?.remove(id)
@@ -2279,6 +2365,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun retryLocalRecovery() { if(localRecoveryRequired&&!restoring) restore() }
     fun restore() {
+        chatNotifications?.connectionsWillChange()
         val storage=storage ?: return
         if(restoreJob?.isActive==true) return
         voiceSettings.pausePreferences();voice?.suspendRecording();questionVoice?.suspendRecording();stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
@@ -2377,11 +2464,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 localRecoveryAllowsAttachmentStaging=authenticatedParentRead&&(failure is org.json.JSONException||failure is IllegalArgumentException)
                 localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
             }
-            finally { restoring=false;synchronizeReadingPresentation();reconcilePhoneReading();if(localReady && foreground)voiceSettings.resumePreferences() }
+            finally { restoring=false;chatNotifications?.languageChanged(language);synchronizeReadingPresentation();reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile();if(localReady && foreground)voiceSettings.resumePreferences() }
             if (localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
         }
     }
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
+        chatNotifications?.dispose();chatNotifications=null
         voiceSettings.pausePreferences();voice?.cancel();questionVoice?.cancel();questionVoiceKey=null
         stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null

@@ -12,6 +12,7 @@ class MainActivity : ComponentActivity() {
     private var systemBarsDark: Boolean? = null
     private var externalOperationId=java.util.UUID.randomUUID().toString()
     private fun receive(intent: android.content.Intent) {
+        if(intent.action==NativeChatNotificationPlatform.ACTION) {session.chatNotifications?.receiveIntent(intent);return}
         if(session.externalInbox?.receive(intent,externalOperationId)!=true)intent.data?.let(session::receiveLink)
     }
     internal lateinit var readNetworkMonitor: NativeReadNetworkMonitor
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity() {
         val storage=NativeSessionStorage(applicationContext)
         session = retained ?: MobileSession(storage)
         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
+        session.configureChatNotifications(applicationContext)
         session.configureVoice(applicationContext)
         session.discovery = CodexHostDiscovery(applicationContext, session, storage)
         session.easyWorkDiscovery=EasyWorkDiscovery(applicationContext,session,storage)
@@ -40,7 +42,7 @@ class MainActivity : ComponentActivity() {
     }
     private fun renderSession() {
         setContent {
-            LaunchedEffect(session,session.restoring) { session.bindStoredVoicePreferencesIfReady() }
+            LaunchedEffect(session,session.restoring) { session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext) }
             AgentHubApp(session) { dark ->
                 if (systemBarsDark != dark) {
                     systemBarsDark = dark
@@ -70,9 +72,9 @@ class MainActivity : ComponentActivity() {
     private fun activateAcceptanceSession(replacement: MobileSession) {
         check(!replacement.restoring)
         readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop();session.leaveForeground()
-        session=replacement;session.configureVoice(applicationContext);session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext)
+        session=replacement;session.configureChatNotifications(applicationContext);session.configureVoice(applicationContext);session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext)
         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
-        renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();readNetworkMonitor.start()
+        renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext);readNetworkMonitor.start()
     }
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent)
@@ -80,7 +82,7 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("agentHubExternalOperationId",externalOperationId);super.onSaveInstanceState(outState)
     }
-    override fun onStart() { super.onStart(); session.enterForeground();session.bindStoredVoicePreferencesIfReady();readNetworkMonitor.start(); session.discovery?.start();session.easyWorkDiscovery?.start() }
+    override fun onStart() { super.onStart(); session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext);readNetworkMonitor.start(); session.discovery?.start();session.easyWorkDiscovery?.start() }
     override fun onStop() { readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop(); session.leaveForeground(); super.onStop() }
     @Deprecated("Native retained state until the repository-backed ViewModel is introduced")
     override fun onRetainCustomNonConfigurationInstance(): Any = session

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "iosReference": "d0c645354f284b3ccca350a26bb61a38976289c1",
+  "sessionHook": "bindVoiceDiscardIfMissing { storage-owner NativeVoiceDiscardPort }",
+  "controllerProperty": "discardPort",
+  "method": "suspend discard(request: NativeVoiceDiscardRequest): NativeVoiceDiscardReceipt",
+  "request": {
+    "recordingId": "request.recordingId / request.original.id",
+    "fingerprint": "request.fingerprint; stable local intent SHA-256, not a new stored Schema",
+    "immutableFields": [
+      "normalized complete target",
+      "model",
+      "certificate",
+      "draftKey",
+      "draftId",
+      "threadId",
+      "createdAt",
+      "originalTextSha256",
+      "known manifest"
+    ],
+    "mutableFieldsExcluded": ["prepareAttempted", "audioAttempted", "receipt outcome"],
+    "validation": "request.matches(current); known manifest exact; provisional may seal only for the same immutable original"
+  },
+  "success": "Only after durable local no-offer terminal return NativeVoiceDiscardReceipt(request.recordingId, request.fingerprint, true)",
+  "failure": "Throw or return nonmatching/false acknowledgement; Controller retains failed state and does not open replacement capture",
+  "backendAcceptance": [
+    "idempotent retry of exact intent",
+    "no old original offer after app reopen/activation/migration",
+    "marker survives late receipt merge",
+    "original unknown operation, bytes/attachments and receipts retained according to owner policy",
+    "no remote cancel/prepare/upload/replay"
+  ],
+  "notImplementedHere": [
+    "production terminal writer or restore filter",
+    "new record/Schema/migration",
+    "same-original-file system transcription"
+  ],
+  "fixtureBoundary": "Injected matching port receipts validate Controller ordering only; no fake claim of durable backend terminal"
+}

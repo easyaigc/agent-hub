@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "status": "proposal-not-applied",
+  "parentBaseCommit": "e0cf4f98fae9e56e4bdcebd63db8c42a07e6310f",
+  "parentWorkingFilesIncludeUncommittedOwnerChanges": true,
+  "baseSourceSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "7114d585613ab30f0244723fc253ad2820b276257b3d83edab2e4fa69c0aab5e",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "536f4d67e3e461f9707c0de77c2cf2f03847927341d9162a860aee086f4ea8c0",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "9f29c2c78c7287e61d361a98250d46b1eb29c4ba596168a9c796a0a9143405c1",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "b7e409678175de405ce9f057c202cf3d649cb4b597136f95c4f82a6f1f1ace21",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt": "bb648c75d9d46724688d272c7665a5913131594ef6bdee6fd1104a94b5e2b672"
+  },
+  "proposedSourceSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "056ef8f7393386a090242bd28c2d788e7ac932fb82a1b6b778a696398779b6a1",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "d7537bd104967f5a3a383de6b1cec742439bae40aa3c74a9f596699a14336eda",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "3144730347b4429f545530439bb6e0adfa24419dd5016fd4a267e6b7d769ec02",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "878b430841447c1b6ecdb0c137752b2ec086b24c1e1ac700d544d01cdfe98d16",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt": "480cd4fcd0658091310cbd1f621abf0f08b1ece5e0f77b7a7889b3274058ffa4"
+  },
+  "patchSha256": "8f86f5bb41606025f136428a9a4378e80fee07f4bb49cdd567c0441ad7763066",
+  "mustPreserve": [
+    "P7 mayPresent and MigrationTombstones inside atomic claim",
+    "all concurrent voice preference/session fragments",
+    "existing exact owner/unknown-operation/draft controls"
+  ],
+  "notApplied": [
+    "Actual product dispatcher/native hooks",
+    "Archive-only classification of native-chat-notification-authorizations-v1",
+    "Actual approval/question/plan panel visible-notice IDs to P7 visibleNotices; do not mark seen on selection",
+    "Migration activation must dispose/rebind new Session/storage/ledger before input allowed"
+  ],
+  "nativeAndProductIntegration": "Not applied or executed by this workline; parent-only shared-file ownership and device lease",
+  "manifestRequirements": {
+    "POST_NOTIFICATIONS": "Already present in the inspected parent working tree; absent from this old isolated baseline; use parent acceptance build for real integration",
+    "soundProvider": "Parent has nonexported grantUriPermissions .NativeChatNotificationSoundProvider at ${applicationId}.chat-notification-sounds; real grant/playback separate"
+  },
+  "operationsNote": "Patch and exact base/proposed SHA are authoritative; presentation/read visibility and navigation have separate fences; token/removal invalidation is immediately before actual mutation.",
+  "preservedOwnerBindings": {
+    "NativeVoiceDiscardCatalog": "New owner source retained",
+    "MobileSession.bindStoredVoiceDiscardIfReady": "retained byte-for-byte outside notification insertion hunks",
+    "MainActivity.bindStoredVoiceDiscardIfReadyCalls": 3,
+    "MainActivity.bindStoredVoicePreferencesIfReadyCalls": 3,
+    "visiblePendingNotices": "P7 reading owner only, no second consumer or ledger"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "nativeCompile": {
+    "status": "passed",
+    "logSha256": "6f526b52a1a385f0a03b6e0f3552a6c44548b79f60028f73d9b3467a6607ca1b",
+    "methodCount": 2,
+    "execution": "not-performed",
+    "earlierHoldEditCompileFailure": "Explicit Unit return added after IMPLICIT_NOTHING_RETURN_TYPE; failed log retained independently"
+  },
+  "nodeContract": {
+    "status": "passed",
+    "cases": 4,
+    "logSha256": "223c725de24d676fd47d8974d1fdb7b624613b41a36d0928d33e70a95420669f",
+    "fakePidsOnly": true,
+    "listenersStarted": false
+  },
+  "eslint": {
+    "status": "passed",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "pnpmCheck": {
+    "status": "integration-pending-central-registration",
+    "exitCode": 1,
+    "logSha256": "b4cda8bf07855daca4d1c4ff79c6aeb98ea83f4384b2a51084ee8ee15493504e",
+    "passedBeforeStop": ["format:check", "check:github-sync (5 tests)", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationBoundaryTest.kt",
+    "action": "Parent merges exact delta, owns central product/design/acceptance/manifest registration, reruns complete root check; no guard bypass"
+  },
+  "history": {
+    "all461PriorNativeInputsUnchanged": true,
+    "old16And12And19And12MethodClasses": "unchanged",
+    "oldCheckpointArchives": "unchanged"
+  },
+  "artifactVerification": {
+    "packages": "Actual SHA-256, expected acceptance IDs and same signer verified",
+    "runner": "Exact AndroidJUnitRunner target manifest, all 61 class/method names and frozen crypto asset verified"
+  },
+  "deviceLease": null,
+  "realDev": "No device, ADB, real Host, Desktop, issuer or model actions",
+  "hostJvmTests": "Not rerun: production source unchanged from eb09a56b; prior 18 host checks remain auxiliary history",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

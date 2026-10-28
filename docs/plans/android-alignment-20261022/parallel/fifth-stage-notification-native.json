@@ -1,0 +1,272 @@
+{
+  "version": 1,
+  "checkpoint": "PAR5-notification-global-native",
+  "date": "2026-10-29",
+  "status": "48 current native methods passed; full real Host/OS/vendor DEV remains open",
+  "verificationKind": "Actual owned MainActivity/Session/storage and dispatcher; synthetic Host/reading/system ports for coordinator and recovery",
+  "currentAcceptedMethods": 48,
+  "currentDefaultStorageElevenFieldProofs": 33,
+  "currentGroups": [
+    {
+      "label": "actual-app-ingress",
+      "status": "passed",
+      "sourceSha256": "ce9dc7aebeee0fa84367f35da1ad11a43794a70e0c382a858392b56ab3407998",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "4d4dba385665da05b0a19ae26fd9197d0f7abf3467f8a33006e5b3181e9e5daa",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualUnknownOpaqueTicketAndActivityRecreationKeepTheSameCoordinatorAndDraft",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualWarmDispatcherConsumesInvalidNotificationBeforeAnyPairingOrAttachmentRoute",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualSettingsEntryKeepsDefaultOffWithoutMakingIdentityJournalOrAuthority"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 3,
+      "instrumentationSha256": "5057e8f3dc70dd094506e453168e676240ac85c55d19b86b1d11d3525f70b186"
+    },
+    {
+      "label": "coordinator-first",
+      "status": "passed",
+      "sourceSha256": "ce9dc7aebeee0fa84367f35da1ad11a43794a70e0c382a858392b56ab3407998",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "4d4dba385665da05b0a19ae26fd9197d0f7abf3467f8a33006e5b3181e9e5daa",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#oldCallbackCannotPostAfterNavigation",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#permissionDenialAndRecoveryShowOnlyNewEventThroughRequiredReadingPort",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#settingsEntryRoutesActualPageAndDefaultOffCreatesNoIdentity",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#warmIntentAndDuplicateTicketOpenExactlyOnce",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unavailableOriginalThreadIsNotSynthesized",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#backgroundInvalidatesSuspendedPresentationBeforeSystemPost",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foregroundPresentationUsesOpaqueIntentAndP7UnreadCount",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#stableSnapshotPublicationDoesNotRestartOrAcceleratePoll",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#readingRecheckAfterChannelPreparationPreventsOldBanner",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#coldIntentWaitsForRealSessionReadyThenPreservesOtherDraft",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foreignTargetAndCredentialNeverUseAnotherConnection"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 11,
+      "instrumentationSha256": "654f793a88d89aff6ea081825d7a5cd719c3952abdfd072e3253b9b3f590e763"
+    },
+    {
+      "label": "coordinator-second",
+      "status": "passed",
+      "sourceSha256": "ce9dc7aebeee0fa84367f35da1ad11a43794a70e0c382a858392b56ab3407998",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "4d4dba385665da05b0a19ae26fd9197d0f7abf3467f8a33006e5b3181e9e5daa",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#navigationDuringOriginalLookupDoesNotConsumeOrOpenTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#wrongFullTargetTicketNeverSelectsKnownHostWithDifferentRuntime",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#newerIntentSupersedesOldLookupWithoutConsumingOldTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#invalidOpaqueIntentIsRecognizedAndNeverBecomesPairingLink",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#removedConnectionKeepsOriginalTargetAndRetainedQueryVisible",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#missingRetainedAuthorityShowsRecoveryInsteadOfNewId",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#queryButtonOnDefaultOffDoesNotCreateIdentityOrRegister",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unknownQueryButtonUsesRetainedOriginalAndNeverPostsAgain",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#expiredTicketCannotReadOrNavigate",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#restoredOriginalAuthoritySurvivesCredentialRotation"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 10,
+      "instrumentationSha256": "47eda382030d364ab95539ce49996193a0ed7f408974954cfe8818fc74ebb5be"
+    },
+    {
+      "label": "recovery-rules",
+      "status": "passed",
+      "sourceSha256": "ce9dc7aebeee0fa84367f35da1ad11a43794a70e0c382a858392b56ab3407998",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "4d4dba385665da05b0a19ae26fd9197d0f7abf3467f8a33006e5b3181e9e5daa",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#journalIdentityAndOriginalRemainEncrypted",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#actionableStaleWaitsWithoutAdvancing",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#frozenCrossLanguageCanonicalVectors",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#duplicateHumanOffUsesOneOriginalId",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#oldCredentialAndNewEpochCannotResubmit",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#separateOffPreservesUnknownV1Record",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#lostAckColdRestartQueriesOriginalOnly",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#acceptedGapPagedResetKeepsOldCursorUntilComplete",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#unknownSchemaIsPreservedAndNotActivated",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#interruptedPortOutcomeIsNeverReplayed",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#filteredOriginalStillUsesP7Port",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#paginationKeepsCapturedHighWater",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#restoredOwnerRefreshesOnceWithFreshActiveSet",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#absentDoesNotAuthorizeNewWrite",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#snapshotHashMismatchDoesNotPublishBaseline"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "810b8913e45967508c8434dc1b575df8c0db65d5aab5738212b0b094dd662bae"
+    },
+    {
+      "label": "recovery-ui",
+      "status": "passed",
+      "sourceSha256": "ce9dc7aebeee0fa84367f35da1ad11a43794a70e0c382a858392b56ab3407998",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "4d4dba385665da05b0a19ae26fd9197d0f7abf3467f8a33006e5b3181e9e5daa",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#gapHasNoAutomaticAcceptance",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#originalUnknownRemainsVisibleAfterKnownOff",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#explicitOffCallbackIsSeparateAndCannotDoubleSubmit",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#acceptedGapRequiresSeparateConfirmationAndStableUuid"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 4,
+      "instrumentationSha256": "d89441ec55982300274b64740529f535c0445c7d4eacc22039651079b3648d9a"
+    },
+    {
+      "label": "phone-reading-session",
+      "status": "passed",
+      "sourceSha256": "ce9dc7aebeee0fa84367f35da1ad11a43794a70e0c382a858392b56ab3407998",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "4d4dba385665da05b0a19ae26fd9197d0f7abf3467f8a33006e5b3181e9e5daa",
+      "passedMethods": [
+        "com.agenthub.android.NativePhoneReadingSessionTest#coveredSurfaceAndEarlierPageDoNotProduceALease",
+        "com.agenthub.android.NativePhoneReadingSessionTest#countsIncludeOtherSavedComputerAndRemovingOnePreservesItsReadTombstone",
+        "com.agenthub.android.NativePhoneReadingSessionTest#newerHeadOldPageForeignReadAndBackgroundCannotClearPhone",
+        "com.agenthub.android.NativePhoneReadingSessionTest#staleHost409SettlesOnlyOriginalPositionAndKeepsTheNewReplyUnread",
+        "com.agenthub.android.NativePhoneReadingSessionTest#actualVisibleBodyRecordsPhoneReadAndOnlyMetadataAcknowledgement"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 5,
+      "instrumentationSha256": "9cbc7834ee2bbe4673f5cf52fab73901dcfbaa0aab959e8f50e8a63bd8c170c4"
+    }
+  ],
+  "priorRetakeGroups": [
+    {
+      "label": "actual-app-ingress",
+      "status": "passed",
+      "sourceSha256": "368b2f2426ef4c0ad75f4b363f048b31201df13ff87e1bf5c261c4e3a8adcb6a",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "45a28740d412e55abf3cd00e81b1220b25d50e9fcdf8ae55e35ff15ff7b30ab2",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualUnknownOpaqueTicketAndActivityRecreationKeepTheSameCoordinatorAndDraft",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualWarmDispatcherConsumesInvalidNotificationBeforeAnyPairingOrAttachmentRoute",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualSettingsEntryKeepsDefaultOffWithoutMakingIdentityJournalOrAuthority"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 3,
+      "instrumentationSha256": "10030cfbe7f15b81f22391ed878059fbe0e6ba15ed1f6c5a9b62ec7240c54b1a"
+    },
+    {
+      "label": "coordinator-first",
+      "status": "failed",
+      "sourceSha256": "368b2f2426ef4c0ad75f4b363f048b31201df13ff87e1bf5c261c4e3a8adcb6a",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "45a28740d412e55abf3cd00e81b1220b25d50e9fcdf8ae55e35ff15ff7b30ab2",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#permissionDenialAndRecoveryShowOnlyNewEventThroughRequiredReadingPort",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#settingsEntryRoutesActualPageAndDefaultOffCreatesNoIdentity",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#warmIntentAndDuplicateTicketOpenExactlyOnce",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unavailableOriginalThreadIsNotSynthesized",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#backgroundInvalidatesSuspendedPresentationBeforeSystemPost",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foregroundPresentationUsesOpaqueIntentAndP7UnreadCount",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#stableSnapshotPublicationDoesNotRestartOrAcceleratePoll",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#readingRecheckAfterChannelPreparationPreventsOldBanner",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#coldIntentWaitsForRealSessionReadyThenPreservesOtherDraft",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foreignTargetAndCredentialNeverUseAnotherConnection"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#oldCallbackCannotPostAfterNavigation"
+      ],
+      "defaultStorageElevenFieldProofs": 11,
+      "instrumentationSha256": "55e39cb95e0ae6f4adfe4660a90949bdc97e2555b5f65e7fe5e343820a1a6525"
+    },
+    {
+      "label": "coordinator-second",
+      "status": "passed",
+      "sourceSha256": "368b2f2426ef4c0ad75f4b363f048b31201df13ff87e1bf5c261c4e3a8adcb6a",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "45a28740d412e55abf3cd00e81b1220b25d50e9fcdf8ae55e35ff15ff7b30ab2",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#navigationDuringOriginalLookupDoesNotConsumeOrOpenTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#wrongFullTargetTicketNeverSelectsKnownHostWithDifferentRuntime",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#newerIntentSupersedesOldLookupWithoutConsumingOldTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#invalidOpaqueIntentIsRecognizedAndNeverBecomesPairingLink",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#removedConnectionKeepsOriginalTargetAndRetainedQueryVisible",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#missingRetainedAuthorityShowsRecoveryInsteadOfNewId",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#queryButtonOnDefaultOffDoesNotCreateIdentityOrRegister",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unknownQueryButtonUsesRetainedOriginalAndNeverPostsAgain",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#expiredTicketCannotReadOrNavigate",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#restoredOriginalAuthoritySurvivesCredentialRotation"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 10,
+      "instrumentationSha256": "5a7bff0f512b59cbe9df48b50bb6085727636d2bb846b7a751808b30ab6945ca"
+    },
+    {
+      "label": "recovery-rules",
+      "status": "passed",
+      "sourceSha256": "368b2f2426ef4c0ad75f4b363f048b31201df13ff87e1bf5c261c4e3a8adcb6a",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "45a28740d412e55abf3cd00e81b1220b25d50e9fcdf8ae55e35ff15ff7b30ab2",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#journalIdentityAndOriginalRemainEncrypted",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#actionableStaleWaitsWithoutAdvancing",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#frozenCrossLanguageCanonicalVectors",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#duplicateHumanOffUsesOneOriginalId",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#oldCredentialAndNewEpochCannotResubmit",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#separateOffPreservesUnknownV1Record",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#lostAckColdRestartQueriesOriginalOnly",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#acceptedGapPagedResetKeepsOldCursorUntilComplete",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#unknownSchemaIsPreservedAndNotActivated",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#interruptedPortOutcomeIsNeverReplayed",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#filteredOriginalStillUsesP7Port",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#paginationKeepsCapturedHighWater",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#restoredOwnerRefreshesOnceWithFreshActiveSet",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#absentDoesNotAuthorizeNewWrite",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#snapshotHashMismatchDoesNotPublishBaseline"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "59b28ae5821113bf85da41fdf52009b26a569e86b481c494b2a9707e8289ae50"
+    },
+    {
+      "label": "recovery-ui",
+      "status": "passed",
+      "sourceSha256": "368b2f2426ef4c0ad75f4b363f048b31201df13ff87e1bf5c261c4e3a8adcb6a",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "45a28740d412e55abf3cd00e81b1220b25d50e9fcdf8ae55e35ff15ff7b30ab2",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#gapHasNoAutomaticAcceptance",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#originalUnknownRemainsVisibleAfterKnownOff",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#explicitOffCallbackIsSeparateAndCannotDoubleSubmit",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#acceptedGapRequiresSeparateConfirmationAndStableUuid"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 4,
+      "instrumentationSha256": "69a0acecc082aedcdb682674b648403e92789b9f024315467575441db8d3d700"
+    },
+    {
+      "label": "phone-reading-session",
+      "status": "passed",
+      "sourceSha256": "368b2f2426ef4c0ad75f4b363f048b31201df13ff87e1bf5c261c4e3a8adcb6a",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "45a28740d412e55abf3cd00e81b1220b25d50e9fcdf8ae55e35ff15ff7b30ab2",
+      "passedMethods": [
+        "com.agenthub.android.NativePhoneReadingSessionTest#coveredSurfaceAndEarlierPageDoNotProduceALease",
+        "com.agenthub.android.NativePhoneReadingSessionTest#countsIncludeOtherSavedComputerAndRemovingOnePreservesItsReadTombstone",
+        "com.agenthub.android.NativePhoneReadingSessionTest#newerHeadOldPageForeignReadAndBackgroundCannotClearPhone",
+        "com.agenthub.android.NativePhoneReadingSessionTest#staleHost409SettlesOnlyOriginalPositionAndKeepsTheNewReplyUnread",
+        "com.agenthub.android.NativePhoneReadingSessionTest#actualVisibleBodyRecordsPhoneReadAndOnlyMetadataAcknowledgement"
+      ],
+      "failedMethods": [],
+      "defaultStorageElevenFieldProofs": 5,
+      "instrumentationSha256": "1360c8460f3285aae73a3d4e5dccca2c361e0f879fb0a96a5384014dd587d80c"
+    }
+  ],
+  "auxiliaryShippingKotlinRules": 60,
+  "originalFailureRecord": "fifth-stage-notification-intake.json",
+  "observations": [
+    "Original six failures shared a fake transport main-thread journal read; production IO guards retained",
+    "After IO fix first11 ten passed/one failed; navigation revoked old lease correctly refused old report. Final test awaits held prepare return plus original durable terminal outcome instead of stale report publication",
+    "Navigation scenario verifies zero posts/intents/old reports, exactly one original submit/feed, unchanged new draft/target and recovered original draft",
+    "Actual app default-off, malformed dispatch, warm opaque ticket and true Activity recreation pass on same current candidate",
+    "Original fixture/native failures remain immutable; current pass does not retroactively change old results"
+  ],
+  "remaining": [
+    "Actual original positive-ticket initial process cold launch and live Host subscription/end-to-end",
+    "Actual notification OS permission/channel/sound/provider delivery/background vendor matrix",
+    "P7 actual visible-notice same-ledger binding and full migration lifecycle; component12 proof is separate",
+    "Known English plan toggle copy gap queued to UI owner",
+    "Task/project business and iOS A6 paused"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

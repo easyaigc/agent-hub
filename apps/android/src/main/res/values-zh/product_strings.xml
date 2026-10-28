@@ -1833,4 +1833,11 @@
     <string name="product_242be9c6c003dac15a7151a5" formatted="false">"原设备授权刷新已被新的状态替代，原记录已保留"</string>
     <string name="product_90b73b868aafb085f5b02ccc" formatted="false">"设备授权已更新，请重新核对原操作"</string>
     <string name="product_de03ac3961a6c18db3b3693b" formatted="false">"设备授权记录目标已变化，原记录已保留"</string>
+    <string name="product_f29d6f49e38905816b1b8f72" formatted="false">"原通知记录已核对。"</string>
+    <string name="product_e71d8c9c366201d733c82088" formatted="false">"原通知记录已保留，可核对原操作。"</string>
+    <string name="product_fec74a52d3b32acfe1bc412b" formatted="false">"核对原通知记录"</string>
+    <string name="product_90245371007d0406c039883e" formatted="false">"正在恢复原通知，请稍候。"</string>
+    <string name="product_5ed827555505f493823b40e4" formatted="false">"无法打开原通知，对话或连接暂不可用。"</string>
+    <string name="product_e403ba5798ba13a472bf187c" formatted="false">"当前连接"</string>
+    <string name="product_70b6e15f481b00a5fb359758" formatted="false">"原连接记录"</string>
 </resources>

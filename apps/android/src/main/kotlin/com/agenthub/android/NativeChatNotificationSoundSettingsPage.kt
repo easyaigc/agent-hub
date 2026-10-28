@@ -23,7 +23,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /** Default/category choices use one real library. Only an explicit preview action opens an audio player. */
 @Composable internal fun NativeChatNotificationSoundSettingsPage(store: NativeChatNotificationStore,
-    platform: NativeChatNotificationPlatform, kind: NativeChatNoticeKind?, back: () -> Unit) {
+    platform: NativeChatNotificationSystem, kind: NativeChatNoticeKind?, back: () -> Unit) {
     val context = LocalContext.current; val tasks = rememberCoroutineScope(); val lifecycle = LocalLifecycleOwner.current
     val library = platform.sounds
     val preview = remember(library) { NativeChatNotificationSoundPreview(context, library) }

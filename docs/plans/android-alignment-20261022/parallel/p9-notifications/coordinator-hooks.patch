@@ -1,0 +1,363 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -282,7 +282,76 @@
+     private var foreground=true
+     val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
+     internal val attachmentRecoveryBusy: Boolean get()=documentPicker?.recovery?.let { it.loading||it.busy }==true||photoPicker?.recovery?.let { it.loading||it.busy }==true||cameraCapture?.recovery?.let { it.loading||it.busy }==true
+-    internal val phoneReading=NativePhoneReadingStore(storage,tasks,::syncPhoneReadAcknowledgements)
++    internal val phoneReading=NativePhoneReadingStore(storage,tasks) {syncPhoneReadAcknowledgements();chatNotifications?.reconcile()}
++    internal var chatNotifications by mutableStateOf<NativeChatNotificationCoordinator?>(null)
++        private set
++    internal fun configureChatNotifications(context: android.content.Context) {
++        if(chatNotifications!=null)return
++        val store=storage ?: return
++        val ledger=phoneReading.ledger ?: return
++        val port=object:NativeChatNotificationSessionPort {
++            override val storage=store
++            override val reading=object:NativeChatNotificationReading {
++                override suspend fun receive(event:NativeChatNotificationEvent):NativeChatNoticeReadingResult {
++                    phoneReading.awaitReconciliation()
++                    val original=chatNotificationReadingEvent(event)
++                    if(original==null)return withContext(Dispatchers.Main.immediate) {
++                        NativeChatNoticeReadingResult(event.kind==NativeChatNoticeKind.CONNECTION,phoneReading.snapshot.count)
++                    }
++                    val value=withContext(Dispatchers.IO) {ledger.receive(original)}
++                    withContext(Dispatchers.Main.immediate) {phoneReading.publish(value)}
++                    return NativeChatNoticeReadingResult(withContext(Dispatchers.IO) {ledger.mayPresent(original)},value.count)
++                }
++                override fun mayPresent(event:NativeChatNotificationEvent):Boolean =
++                    chatNotificationReadingEvent(event)?.let(ledger::mayPresent) ?: (event.kind==NativeChatNoticeKind.CONNECTION && phoneReading.ready)
++            }
++            override fun state()=NativeChatNotificationSessionState(localReady,foreground,
++                "$clientNavigationRevision:$selectionRevision:$phoneReadingEpoch",phoneReadingUncovered,
++                phoneReading.ready && phoneReading.failure==null)
++            override suspend fun savedConnections():List<NativeChatNotificationSavedConnection> {
++                check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
++                val candidates=realClients.filter {!it.isDemo && it.scope?.agentId=="codex" && it.agentConnection==null && it.endpoint!=null}.toList()
++                val generations=candidates.associate {it.id to (revisions[it.id] ?: 0L)}
++                val saved=withContext(Dispatchers.IO) {store.snapshotTransaction {
++                    candidates.map {NativeChatNotificationSavedConnection.capture(it,store.token(it.id))}
++                }}
++                check(localReady && foreground && candidates.all {source ->
++                    (revisions[source.id] ?: 0L)==generations[source.id] &&
++                    realClients.any {current -> current.id==source.id && sameScope(current.scope,source.scope) &&
++                        current.endpoint==source.endpoint && current.codexDirect?.fingerprint==source.codexDirect?.fingerprint}
++                }) {"Notification connection capture changed"}
++                return saved
++            }
++            override suspend fun reconcileActive(target:NativeChatNoticeTarget,ids:Set<String>,current:()->Boolean) {
++                val scope=TargetScope("codex",null,null,target.hostId,target.workspaceId,target.runtimeId)
++                val value=withContext(Dispatchers.IO) {ledger.reconcileNotificationActive(scope,ids,current)}
++                withContext(Dispatchers.Main.immediate) {if(current())phoneReading.publish(value)}
++            }
++            override fun openExistingThread(location:NativeChatNotificationLocation,current:()->Boolean):Boolean {
++                check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
++                if(!localReady || !foreground || !current())return false
++                val saved=realClients.singleOrNull(location.connection::matches) ?: return false
++                if(location.workspace.scope?.let {NativeChatNoticeTarget.from(it)}!=location.connection.target ||
++                    location.workspace.threads.none {it===location.thread} || location.thread.hostId!=saved.id)return false
++                chatNotifications?.navigationWillChange()
++                workspaces[saved.cacheKey(null)]=location.workspace
++                selectVerifiedClient(saved)
++                selectThread(location.thread)
++                return selectedThread==location.thread.id && sameScope(selectedClient.scope,saved.scope)
++            }
++        }
++        chatNotifications=NativeChatNotificationCoordinator.create(context,tasks,port,language).also {
++            it.updateComputers(realClients.toList());it.reconcile()
++        }
++    }
++    private fun chatNotificationReadingEvent(event:NativeChatNotificationEvent):NativeReadingEvent? {
++        if(event.kind==NativeChatNoticeKind.CONNECTION)return null
++        val thread=event.threadId ?: return null
++        val target=TargetScope("codex",null,null,event.target.hostId,event.target.workspaceId,event.target.runtimeId)
++        val position=event.readPosition?.let {ThreadReadPosition(it.revision,it.messageId,it.contentVersion)}
++        return NativeReadingEvent(event.id,target,thread,event.kind.wire,position,event.runId,event.requestId,event.operationId)
++    }
++
+     private var phoneReadingProof by mutableStateOf<NativeReadingProof?>(null)
+     private val phoneReadingFingerprint=NativeLegacyReadingFingerprint()
+     private var phoneReadingEpoch=0L
+@@ -309,8 +378,11 @@
+             thread.hostId==selectedClient.id && phoneReading.snapshot.isUnread(it,thread.id)
+         }==true
+     internal fun setPhoneReadingSurface(uncovered: Boolean) {
++        val notificationSurfaceChanged=phoneReadingUncovered!=uncovered
++        if(notificationSurfaceChanged)chatNotifications?.invalidateBeforeChange()
+         phoneReadingUncovered=uncovered;phoneReading.lifecycle.foreground(foreground);phoneReading.lifecycle.uncovered(uncovered)
+         if(!uncovered) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear() }
++        if(notificationSurfaceChanged)chatNotifications?.reconcile()
+     }
+     internal fun retryPhoneReading() { attemptedPhoneReading=null;phoneReadingRetry++;reconcilePhoneReading() }
+     internal val visiblePhoneReading: NativeVisiblePhoneReading? get() {
+@@ -333,10 +405,10 @@
+     }
+     internal fun observeVisiblePhoneReading(content: NativeVisiblePhoneReading,visible: Boolean) {
+         if(visiblePhoneReading!=content)return
+-        if(!visible) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;return }
++        if(!visible) { if(attemptedPhoneReading!=null)chatNotifications?.invalidateBeforeChange();phoneReading.lifecycle.leave();attemptedPhoneReading=null;return }
+         if(attemptedPhoneReading==content)return
+         val reader=content.client.readerId?.let(::nativeReaderId) ?: return
+-        attemptedPhoneReading=content;phoneReading.visible(content,reader)
++        chatNotifications?.invalidateBeforeChange();attemptedPhoneReading=content;phoneReading.visible(content,reader)
+     }
+     private fun reconcilePhoneReading() {
+         if(!localReady)return
+@@ -530,8 +602,9 @@
+     private var workspaceJob: Job? = null
+     private var foregroundJob: Job? = null
+     fun enterForeground() {
++        chatNotifications?.navigationWillChange()
+         tasks.launch { easyWorkLogin?.foreground() }
+-        foreground=true;if(localReady)voiceSettings.resumePreferences();phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
++        foreground=true;chatNotifications?.reconcile();if(localReady)voiceSettings.resumePreferences();phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
+         realClients.toList().forEach { replaceClient(it.copy(online=false,connectionPhase=ConnectionPhase.CONNECTING)) }
+         if(localReady) { refresh(); loadHistory() }
+         foregroundJob?.cancel()
+@@ -566,7 +639,7 @@
+             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
+         }
+     }
+-    fun leaveForeground() { voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
++    fun leaveForeground() { chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
+         private set
+     var revealedEarlier by mutableStateOf(false)
+@@ -577,7 +650,7 @@
+     private fun synchronizeReadingPresentation() {
+         val key=targetKey
+         if(presentationTargetKey!=key) { releasePhoneReadingProof();presentationTargetKey=key;visibleMessageLimit=ReadingPolicy.initialMessageLimit().toInt();revealedEarlier=false }
+-        phoneReading.focus(selectedClient.scope?.takeIf { selectedThread.isNotEmpty() }?.let { ThreadReadingIdentity.key(it,selectedThread) })
++        phoneReading.focus(selectedClient.scope?.takeIf { selectedThread.isNotEmpty() }?.let { ThreadReadingIdentity.key(it,selectedThread) });chatNotifications?.reconcile()
+     }
+     private val clientKey get() = selectedClient.cacheKey(null)
+     val sidebarDisplay get() = sidebarStates[clientKey] ?: SidebarDisplayState()
+@@ -1112,7 +1185,7 @@
+     }
+     fun projectExpanded(id: String) = id in expandedProjects[clientKey].orEmpty()
+     fun toggleProject(id: String) { expandedProjects[clientKey] = expandedProjects[clientKey].orEmpty().let { if (id in it) it - id else it + id }; persistMetadata() }
+-    fun changeLanguage(value: String) { require(NativeAppLanguage.entries.any { it.value==value });language=value;persistMetadata() }
++    fun changeLanguage(value: String) { require(NativeAppLanguage.entries.any { it.value==value });language=value;chatNotifications?.languageChanged(value);persistMetadata() }
+     fun changeAppearance(value: String) { require(value in listOf("system", "light", "dark")); appearance = value; persistMetadata() }
+     fun setDemoMode(value: Boolean) {
+         demo = value
+@@ -1121,6 +1194,7 @@
+     }
+     fun select(client: MobileClient)=selectClient(client,refreshAutomatically=true)
+     private fun selectClient(client: MobileClient,refreshAutomatically: Boolean) {
++        chatNotifications?.navigationWillChange()
+         releasePhoneReadingProof()
+         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
+         clientNavigationRevision++;selectionRevision++;networkRecoveryJob?.cancel();networkRecoveryJob=null; workspaceJob?.cancel(); historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
+@@ -1140,6 +1214,7 @@
+         loadModels()
+     }
+     fun selectThread(thread: MobileThread) {
++        chatNotifications?.navigationWillChange()
+         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
+         require(thread.hostId == selectedClient.id && threads.any { it.id == thread.id })
+         if(selectedThread==thread.id) {
+@@ -1978,6 +2053,7 @@
+         val prior = realClients.firstOrNull { it.id == result.hostId && sameScope(it.scope, scope) }
+         val client = candidate.copy(id = result.hostId, scope = scope, online = true, mode = result.mode,
+             readerId = editing?.readerId ?: prior?.readerId ?: UUID.randomUUID().toString(), requiresReadTarget=result.scope != null)
++        chatNotifications?.connectionsWillChange()
+         withContext(Dispatchers.IO) { storage?.setToken(client.id, secret) }
+         revisions[client.id] = (revisions[client.id] ?: 0) + 1
+         val remembered = replaceClient(client); workspaces[remembered.cacheKey(null)] = result
+@@ -1989,6 +2065,7 @@
+         val remembered=if(client.storageIdentity==null && prior?.storageIdentity!=null && sameScope(client.scope,prior.scope)) client.copy(storageIdentity=prior.storageIdentity) else client
+         if (index < 0) realClients.add(remembered) else realClients[index] = remembered
+         if (selectedClient.id == client.id) { selectedClient = remembered;synchronizeReadingPresentation() }
++        chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile()
+         if(prior!=remembered)reconcilePhoneReading()
+         return remembered
+     }
+@@ -2167,6 +2244,7 @@
+             codexDirect=PairedCodexConnection(target, authorized.descriptor.fingerprint, (routes + prior?.codexDirect?.routes.orEmpty()).distinctBy { it.endpoint }.take(32),
+                 com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), authorized.descriptor.systemEndpoints, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })), storageIdentity=prior?.storageIdentity)
+         // No suspension between the final generation check, atomic credential/client publication and UI commit.
++        chatNotifications?.connectionsWillChange()
+         CodexConnectionVault(store).save(client, authorized.token)
+         revisions[host.id] = revision + 1
+         val remembered = replaceClient(client)
+@@ -2194,6 +2272,7 @@
+                     com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), supplied, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })))
+                 require(snapshot.mode == "desktop-runtime" && sameScope(snapshot.scope, offer.target)) { "电脑运行时身份不匹配" }
+                 require((revisions[client.id] ?: 0) == revision) { "连接已改变，请重试" }
++                chatNotifications?.connectionsWillChange()
+                 withContext(Dispatchers.IO) { storage?.setToken(client.id, offer.token!!) }
+                 client = client.copy(online = true)
+                 revisions[client.id] = revision + 1; client = replaceClient(client)
+@@ -2217,6 +2296,7 @@
+         val transportChanged=endpoint != current.endpoint
+         val updated=current.copy(endpoint=endpoint,codexDirect=direct)
+         if(changed) {
++            if(transportChanged)chatNotifications?.connectionsWillChange()
+             try { storage?.let { CodexConnectionVault(it).updateClient(updated) } } catch(_: Exception) { storageFailure();return false }
+             // Verified address hints do not change the authenticated transport or invalidate its in-flight reply.
+             if(transportChanged) revisions[current.id] = (revisions[current.id] ?: 0) + 1
+@@ -2232,13 +2312,14 @@
+     }
+     fun removeClient(id: String) {
+         val removed=realClients.firstOrNull { it.id==id } ?: return
++        chatNotifications?.connectionsWillChange()
+         // A removed private client must not be recovered from its atomic credential record after a crash.
+         if(removed.agentConnection==null) try { storage?.setToken(id,"") } catch(_: Exception) { storageFailure();return }
+         revisions[id] = (revisions[id] ?: 0) + 1
+         connectionSuccesses.remove(removed.cacheKey(null))
+         phoneReading.lifecycle.leave();attemptedPhoneReading=null
+         phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
+-        realClients.removeAll { it.id == id };reconcilePhoneReading()
++        realClients.removeAll { it.id == id };reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile()
+         if (selectedClient.id == id) select(realClients.firstOrNull() ?: DemoMobileData.clients.first())
+         tasks.launch(Dispatchers.IO) {
+             easyWorkSessions?.remove(id)
+@@ -2284,6 +2365,7 @@
+     }
+     fun retryLocalRecovery() { if(localRecoveryRequired&&!restoring) restore() }
+     fun restore() {
++        chatNotifications?.connectionsWillChange()
+         val storage=storage ?: return
+         if(restoreJob?.isActive==true) return
+         voiceSettings.pausePreferences();voice?.suspendRecording();questionVoice?.suspendRecording();stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
+@@ -2382,11 +2464,12 @@
+                 localRecoveryAllowsAttachmentStaging=authenticatedParentRead&&(failure is org.json.JSONException||failure is IllegalArgumentException)
+                 localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
+             }
+-            finally { restoring=false;synchronizeReadingPresentation();reconcilePhoneReading();if(localReady && foreground)voiceSettings.resumePreferences() }
++            finally { restoring=false;chatNotifications?.languageChanged(language);synchronizeReadingPresentation();reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile();if(localReady && foreground)voiceSettings.resumePreferences() }
+             if (localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
+         }
+     }
+     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
++        chatNotifications?.dispose();chatNotifications=null
+         voiceSettings.pausePreferences();voice?.cancel();questionVoice?.cancel();questionVoiceKey=null
+         stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false
+         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt
+@@ -12,6 +12,7 @@
+     private var systemBarsDark: Boolean? = null
+     private var externalOperationId=java.util.UUID.randomUUID().toString()
+     private fun receive(intent: android.content.Intent) {
++        if(intent.action==NativeChatNotificationPlatform.ACTION) {session.chatNotifications?.receiveIntent(intent);return}
+         if(session.externalInbox?.receive(intent,externalOperationId)!=true)intent.data?.let(session::receiveLink)
+     }
+     internal lateinit var readNetworkMonitor: NativeReadNetworkMonitor
+@@ -28,6 +29,7 @@
+         val storage=NativeSessionStorage(applicationContext)
+         session = retained ?: MobileSession(storage)
+         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
++        session.configureChatNotifications(applicationContext)
+         session.configureVoice(applicationContext)
+         session.discovery = CodexHostDiscovery(applicationContext, session, storage)
+         session.easyWorkDiscovery=EasyWorkDiscovery(applicationContext,session,storage)
+@@ -70,7 +72,7 @@
+     private fun activateAcceptanceSession(replacement: MobileSession) {
+         check(!replacement.restoring)
+         readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop();session.leaveForeground()
+-        session=replacement;session.configureVoice(applicationContext);session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext)
++        session=replacement;session.configureChatNotifications(applicationContext);session.configureVoice(applicationContext);session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext)
+         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
+         renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext);readNetworkMonitor.start()
+     }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt
+@@ -60,8 +60,8 @@
+         DisposableEffect(page) { onDispose { focus.clearFocus(force=true); keyboard?.hide() } }
+         LaunchedEffect(page) { focus.clearFocus(force=true); keyboard?.hide() }
+         Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).testTag("sheet-$page")) {
+-            val title=t.tr(when(page) { "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
+-            val back=page in listOf("appearance","language","ai-sharing-settings","voice")
++            val title=t.tr(when(page) { "chat-notifications"->"通知"; "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
++            val back=page in listOf("appearance","language","ai-sharing-settings","voice","chat-notifications")
+             val action=t.tr(if(page=="external-attachments") "稍后添加" else if(page=="ai-sharing" || page=="add" && editing==null) "取消" else "完成")
+             val titleStyle=LocalTextStyle.current.copy(fontSize=17.sp,lineHeight=24.sp,fontWeight=FontWeight.SemiBold)
+             val measure=androidx.compose.ui.text.rememberTextMeasurer();val density=androidx.compose.ui.platform.LocalDensity.current
+@@ -96,6 +96,7 @@
+                 "add-project" -> AddProjectPage(session,close)
+                 "appearance" -> AppearancePage(session)
+                 "language" -> LanguagePage(session)
++                "chat-notifications" -> NativeChatNotificationsPage(session.chatNotifications)
+                 "voice" -> NativeVoiceSettingsPage(session)
+                 "generation" -> GenerationPage(session)
+                 "reply-records" -> ReplyDeliveryRecordsPage(session,close)
+@@ -125,6 +126,7 @@
+         GroupCard { SettingsRow(t.tr("语言"),languageTitle(session.language,t),"language-picker") { navigate("language") } }
+         Text(t.tr("跟随系统，或选择中文和英文。更改会立即生效。"),Modifier.padding(horizontal=32.dp,vertical=8.dp),fontSize=12.sp,color=colors.onSurfaceVariant)
+         NativeVoiceSettingsEntry(session,navigate)
++        NativeChatNotificationSettingsEntry(session.chatNotifications,navigate)
+         GroupTitle("")
+         GroupCard { SettingsRow(t.tr("AI 数据共享"),"","settings-ai-sharing") { navigate("ai-sharing-settings") } }
+         GroupTitle(t.tr("本地体验"))
+--- a/apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt
+@@ -90,7 +90,7 @@
+                 mainPaneFocus.requestFocus();keyboard?.hide();nativeKeyboard.hide()
+             }
+         }
+-        val openSheet: (String) -> Unit = { focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
++        val openSheet: (String) -> Unit = { session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
+         LaunchedEffect(effectiveSheet,session.pendingChatSearchToken) {
+             if(effectiveSheet==null&&session.pendingChatSearchToken!=null) { withFrameNanos { };session.applyPendingChatSearch() }
+         }
+@@ -111,7 +111,7 @@
+             if(inbox!=null&&mainWindowFocused&&!sidebar&&effectiveSheet==null&&session.error==null&&session.voice?.active!=true&&!attachmentPreview&&!session.importing&&(inbox.presentation!=null||inbox.presentIfWanted(inboxSurface)))openSheet("external-attachments")
+         }
+         LaunchedEffect(session.incomingEasyWorkLink) { if(session.incomingEasyWorkLink!=null) { editing=null;openSheet("add") } }
+-        BackHandler(sidebar && sheet == null && session.error == null) { sidebar=false; focus.clearFocus() }
++        BackHandler(sidebar && sheet == null && session.error == null) { session.chatNotifications?.navigationWillChange();sidebar=false; focus.clearFocus() }
+         Surface(Modifier.fillMaxSize().focusRequester(mainPaneFocus).focusable(enabled=!sidebar&&effectiveSheet==null&&session.error==null), color=colors.background) {
+             // Consume system/IME insets once for the entire product surface. The fixed header
+             // stays in the resized viewport on API 26 as well as edge-to-edge API 37.
+@@ -126,12 +126,13 @@
+                 val offset = drag ?: settled
+                 Column(Modifier.fillMaxSize().pointerInput(sidebar,widthPx) {
+                     var allowed=false
+-                    detectHorizontalDragGestures(onDragStart={ start -> allowed=sidebar || start.x < with(density) { 24.dp.toPx() }; if(allowed) { focus.clearFocus(); keyboard?.hide(); drag=if(sidebar) 0f else -widthPx } },onHorizontalDrag={ change,amount -> if(allowed) { change.consume(); drag=((drag ?: settled)+amount).coerceIn(-widthPx,0f) } },onDragEnd={ if(allowed) sidebar=(drag ?: settled)>-widthPx/2; drag=null },onDragCancel={ drag=null })
++                    detectHorizontalDragGestures(onDragStart={ start -> allowed=sidebar || start.x < with(density) { 24.dp.toPx() }; if(allowed) { session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=if(sidebar) 0f else -widthPx } },onHorizontalDrag={ change,amount -> if(allowed) { change.consume(); drag=((drag ?: settled)+amount).coerceIn(-widthPx,0f) } },onDragEnd={ if(allowed) sidebar=(drag ?: settled)>-widthPx/2; drag=null },onDragCancel={ drag=null })
+                 }) {
+                     if(inbox?.receiving==true)Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=6.dp).testTag("external-attachment-receiving"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
+                         CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp);Text(productText("正在导入附件…"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                     }
+-                    ChatHeader(session, openSidebar={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
++                    ChatHeader(session, openSidebar={ session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
++                    NativeChatNotificationOpenStatus(session.chatNotifications)
+                     if (session.restoring) Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
+                     else if (!session.hasClient) Onboarding { openSheet("add") }
+                     else {
+@@ -182,11 +183,11 @@
+                         }
+                     }
+                 }.pointerInput(widthPx) {
+-                    detectHorizontalDragGestures(onDragStart={ focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
++                    detectHorizontalDragGestures(onDragStart={ session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
+                 }) {
+                     Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },active=sidebar&&effectiveSheet==null&&session.error==null)
+                 }
+-                if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> editing=client; sheet="add" }) }
++                if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ session.chatNotifications?.navigationWillChange();if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> session.chatNotifications?.navigationWillChange();if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> session.chatNotifications?.navigationWillChange();editing=client; sheet="add" }) }
+                 session.error?.let { failure ->
+                     androidx.compose.ui.window.Dialog(onDismissRequest={ session.error=null },properties=androidx.compose.ui.window.DialogProperties(dismissOnClickOutside=false)) {
+                         Surface(shape=RoundedCornerShape(28.dp),color=colors.surface,modifier=Modifier.widthIn(max=320.dp)) {
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt
+@@ -229,6 +229,17 @@
+             if(row.read==original.position && row.pendingReader==original.readerId)row.pendingReader=null
+         }
+     }
++    /** P9's authenticated complete active set only; terminal/completion reading is unchanged. */
++    fun reconcileNotificationActive(target: TargetScope, activeIds: Set<String>, current: ()->Boolean): NativeUnreadSnapshot {
++        require(activeIds.size<=2048 && activeIds.all {it.matches(Regex("[a-f0-9]{64}"))})
++        return transaction {ledger ->
++            if(!current() || ThreadReadingIdentity.scopeKey(target) !in ledger.scopes)return@transaction
++            for(row in ledger.rows.values)if(RuntimeIdentity.matches(row.target,target)) {
++                for((id,notice)in row.notices.toMap())if(!notice.seen && notice.kind in setOf("approval","question","plan","uncertain","paused") && id !in activeIds)
++                    row.notices[id]=notice.copy(seen=true)
++            }
++        }
++    }
+     fun pendingReads(): List<NativePendingRead> = storage.operationTransaction {
+         load().let { ledger -> ledger.rows.values.mapNotNull { row -> row.pendingReader?.takeIf {
+             ThreadReadingIdentity.scopeKey(row.target) in ledger.scopes

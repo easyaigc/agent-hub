@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "kind": "p8-synthetic-authorization-cold-v1",
+  "phases": ["writer-active", "writer-frozen", "reader-active", "complete"],
+  "lifetime": "one Node process, one issuer, one case; no reset or reconstruction",
+  "serviceListener": "127.0.0.1 ephemeral port; Android exact same-port reverse owned by parent",
+  "controlListener": "different 127.0.0.1 ephemeral port",
+  "controlOperations": [
+    "GET /health",
+    "GET /stats",
+    "POST /freeze-writer",
+    "POST /reader-begin",
+    "GET /late-delivery",
+    "POST /finish-reader"
+  ],
+  "configImmutable": [
+    "caseId",
+    "instanceId",
+    "sidecarPid",
+    "sidecarStartedAt",
+    "sourceGraphSha256",
+    "sourceFixtureSha256",
+    "origin",
+    "controlOrigin"
+  ],
+  "writerFreeze": [
+    "original unknown pending revoke ID/body/Authorization hash and signer",
+    "actual held refresh request and exact encrypted reply",
+    "native encrypted writer receipt, acknowledgement, original attempt",
+    "writer PID and process start plus installed app/runner hashes"
+  ],
+  "writerReady": "separate public marker after encrypted acknowledgement; old PID must still be alive before force-stop",
+  "readerRequires": [
+    "new PID and later actual Process start",
+    "same installed app and runner bytes and source assertion",
+    "same existing namespace, AES/DPoP keys, identity and immutable writer receipt",
+    "old held socket closed and same sidecar process/instance",
+    "exact original DELETE only, fresh DPoP jti"
+  ],
+  "counts": {
+    "writerRequests": 4,
+    "readerRequests": 1,
+    "fixtureErrors": 0,
+    "realDesktopRequests": 0,
+    "realModelInputs": 0
+  },
+  "readerForbidden": [
+    "pair",
+    "claim",
+    "refresh request",
+    "new authorization ID",
+    "key or identity recreation",
+    "new native namespace",
+    "fixture restart or reset",
+    "business input replay"
+  ],
+  "lateSaveProbe": "writer-captured attempt plus native opening of exact held encrypted reply, not dead-thread resumption",
+  "publicProofRelativeDirectory": "files/acceptance/p8-auth-cold/<caseId>",
+  "proofFiles": ["writer-proof.json (immutable)", "writer-ready.json", "reader-proof.json"],
+  "failurePolicy": "Preserve original proof and unknown intent; no reset/reseed/replay of the same case",
+  "cleanupOwner": "parent device lease owner; close own sidecar and remove only two exact reverse mappings after freezing evidence"
+}

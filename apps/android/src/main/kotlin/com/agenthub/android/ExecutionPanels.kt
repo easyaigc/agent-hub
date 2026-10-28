@@ -92,18 +92,19 @@ fun StorageIdentityNotice(session: MobileSession) {
         } }
     }
 }
-@Composable internal fun ExecutionPanels(session: MobileSession,maxHeight: androidx.compose.ui.unit.Dp=320.dp,autoPresentQuestions: Boolean=true,inlineToolApprovals: Boolean=false) {
+@Composable internal fun ExecutionPanels(session: MobileSession,maxHeight: androidx.compose.ui.unit.Dp=320.dp,autoPresentQuestions: Boolean=true,inlineToolApprovals: Boolean=false,noticeVisibility: NativePanelNoticeVisibility?=null) {
     val key=session.targetKey
+    val reading=noticeVisibility?.forTarget(session.selectedClient.scope,session.selectedThread)
     val request=session.creationWaitRequest
     Column(Modifier.fillMaxWidth().heightIn(max=maxHeight).verticalScroll(rememberScrollState()).padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         session.transferStatus?.let { Row(Modifier.testTag("transfer-status")) { CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(8.dp)); Text(it,fontSize=12.sp) } }
         session.runtime?.plan?.takeIf { it.isNotEmpty() }?.let { RuntimePlanProgress(it,key) }
-        if(!session.running)session.runtime?.proposedPlan?.let { ProposedPlanReview(session,it) }
+        if(!session.running)session.runtime?.proposedPlan?.let { ProposedPlanReview(session,it,reading) }
         val approvals=session.runtime?.approvals.orEmpty()
         val async=approvals.filter { it.kind=="question" && it.interactionMode=="async" }
         key(session.approvalActionDestination()) {
-        if(async.isNotEmpty()) key(key) { AsyncQuestionDeck(session,async,key,autoPresentQuestions&&request==null) }
-        approvals.filterNot { it.kind=="question" && it.interactionMode=="async" || inlineToolApprovals && it.kind!="question" }.forEach { approval -> key(key,approval.id,approval.turnId) { ApprovalPanel(session,approval,key) } }
+        if(async.isNotEmpty()) key(key) { AsyncQuestionDeck(session,async,key,autoPresentQuestions&&request==null,reading) }
+        approvals.filterNot { it.kind=="question" && it.interactionMode=="async" || inlineToolApprovals && it.kind!="question" }.forEach { approval -> key(key,approval.id,approval.turnId) { ApprovalPanel(session,approval,key,noticeVisibility=reading) } }
         }
         session.receiptNotices.forEach { receipt -> ReceiptNotice(receipt,key) { session.dismissReceiptFailure(receipt,key) } }
         session.forkRecords.forEach { ThreadForkReceipt(session,it) }
@@ -200,7 +201,7 @@ private data class ApprovalIdentity(val original: MobileApproval)
 private val MobileApproval.identity get()=ApprovalIdentity(this)
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun AsyncQuestionDeck(session: MobileSession,approvals: List<MobileApproval>,target: String,autoPresent: Boolean) {
+@Composable private fun AsyncQuestionDeck(session: MobileSession,approvals: List<MobileApproval>,target: String,autoPresent: Boolean,noticeVisibility: NativePanelNoticeVisibility?=null) {
     val t=currentProductText()
     val ids=approvals.map { it.identity }
     var previousIds by remember { mutableStateOf(ids) }
@@ -268,7 +269,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                             if(!change.pressed && single && kotlin.math.abs(delta.x)>with(density) { 60.dp.toPx() } && kotlin.math.abs(delta.x)>kotlin.math.abs(delta.y)*1.5f) move(if(delta.x<0) 1 else -1)
                         }
                     }.padding(horizontal=16.dp).padding(bottom=16.dp)) {
-                        ApprovalPanel(session,current,target,drafts.getOrPut(current.identity) { ApprovalDraft() },onQuestionFocus={ state.expand() },answerViewportHeight=answerViewportHeight)
+                        ApprovalPanel(session,current,target,drafts.getOrPut(current.identity) { ApprovalDraft() },onQuestionFocus={ state.expand() },answerViewportHeight=answerViewportHeight,noticeVisibility=noticeVisibility)
                     }
                 }
             }
@@ -278,14 +279,18 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
     }
 }
 
-@Composable internal fun InlineToolApproval(session: MobileSession,approval: MobileApproval) {
-    ApprovalPanel(session,approval,session.targetKey,compact=true)
+@Composable internal fun InlineToolApproval(session: MobileSession,approval: MobileApproval,noticeVisibility: NativePanelNoticeVisibility?=null) {
+    ApprovalPanel(session,approval,session.targetKey,compact=true,noticeVisibility=noticeVisibility)
 }
 @OptIn(ExperimentalFoundationApi::class)
-@Composable private fun ApprovalPanel(session: MobileSession,approval: MobileApproval,target: String,externalDraft: ApprovalDraft?=null,onQuestionFocus: suspend ()->Unit={},compact: Boolean=false,answerViewportHeight: androidx.compose.ui.unit.Dp?=null) {
+@Composable private fun ApprovalPanel(session: MobileSession,approval: MobileApproval,target: String,externalDraft: ApprovalDraft?=null,onQuestionFocus: suspend ()->Unit={},compact: Boolean=false,answerViewportHeight: androidx.compose.ui.unit.Dp?=null,noticeVisibility: NativePanelNoticeVisibility?=null) {
     val destination=session.approvalActionDestination()
     if(destination.key!=target)return
-    key(destination,approval) { ApprovalPanelContent(session,approval,destination,externalDraft,onQuestionFocus,compact,answerViewportHeight) }
+    key(destination,approval) {
+        NativeNoticeVisibilityPanel(noticeVisibility?.forTarget(session.selectedClient.scope,session.selectedThread),NativeNoticePanelOriginal.Approval(approval)) {
+            ApprovalPanelContent(session,approval,destination,externalDraft,onQuestionFocus,compact,answerViewportHeight)
+        }
+    }
 }
 @Composable private fun ApprovalPanelContent(session: MobileSession,approval: MobileApproval,destination: DraftDestination,externalDraft: ApprovalDraft?,onQuestionFocus: suspend ()->Unit,compact: Boolean,answerViewportHeight: androidx.compose.ui.unit.Dp?) {
     val local=remember { ApprovalDraft() }

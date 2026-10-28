@@ -188,4 +188,18 @@ internal class NativeChatNotificationForegroundMonitor(private val scope: Corout
         val value = requireNotNull(recovery).acceptGap(snapshot, offer, actionId, current)
         if (current()) value else value.copy(state = "stale-target-or-generation")
     }
+    /** Uses the retained snapshot only. A v1 status read still cannot confirm its unknown original. */
+    suspend fun queryOriginals(snapshot: NativeChatNotificationSnapshot, fence: NativeChatNotificationPresentationFence.Lease): NativeChatNotificationMonitorReport = mutex.withLock {
+        val exists = withContext(Dispatchers.IO) { journal.exists() || NativeChatNotificationRecoveryStore(storage).exists() }
+        if (!exists) return@withLock NativeChatNotificationMonitorReport("original-query-complete", snapshot.target)
+        val identity = NativeChatNotificationIdentity.load(storage)
+        val old = withContext(Dispatchers.IO) { journal.view(identity, snapshot.target) }
+        old.unknown?.let {
+            if (it.authorization == snapshot.authorizationFingerprint && fence.current()) commands.status(snapshot, identity.deviceId)
+        }
+        val value = recovery?.queryOriginals(snapshot, fence::current) ?: NativeChatNotificationMonitorReport(
+            if (old.unknown != null) "mutation-unknown-status-only" else "original-query-complete", snapshot.target, old.unknown?.id,
+            unconfirmedOperations = if (old.unknown != null) 1 else 0)
+        if (fence.current()) value else value.copy(state = "stale-target-or-generation")
+    }
 }

@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "sourceId": "N069",
+  "ownerPortCommit": "a7bb5b5f265b9bcfd7b242db8c512230574cd527",
+  "records": {
+    "terminal": {
+      "name": "voice-discard-catalog-v1",
+      "version": 1,
+      "maximumEntries": 256,
+      "maximumUtf8Bytes": 262144
+    },
+    "originalAudit": "voice-discard-original-v1:<recordingId>:<attemptUuid>",
+    "provisionalEvidence": "voice-discard-raw-v1:<recordingId>:<payloadUuid>",
+    "activeIndex": {
+      "name": "voice-index-v1",
+      "maximumEntries": 32,
+      "policy": "New begin compacts validated terminal IDs; catalog independently retains terminal rows."
+    }
+  },
+  "commit": [
+    "Root operation transaction verifies exact immutable request/current match and existing terminal.",
+    "Stage exact original JSON snapshot and verify encrypted readback; verify existing sealed audio or encrypt exact provisional raw bytes without repairing header or creating manifest.",
+    "Ensure caller active immediately before sole catalog publication; acknowledge only after catalog and original audit readback.",
+    "Precommit known failure cleans only this attempt unpublished staging; unknown/postcommit failure preserves possible committed data; retry verifies original and returns checked acknowledgement without ciphertext writes."
+  ],
+  "invariants": [
+    "Original ID, target, certificate, model, draft, text, creation time and known manifest cannot be retargeted. Codex historical account metadata follows existing RuntimeIdentity rules.",
+    "First terminal intent/audit/raw evidence is immutable; mutable attempt flags and later phase/expiresAt may update current original only. Existing store never persisted full returned transcript/error in its recording row; no reconstruction is claimed.",
+    "Restore filters valid terminal; invalid catalog/original audit throws instead of offering. Seal rejects terminal before touching raw file. Terminal remove does nothing.",
+    "Original encrypted WAV or inline audio, pending phase/expiry, exact audit text and provisional raw file remain retained; no prepare/upload/cancel/replay or replacement recording occurs in this adapter.",
+    "A provisional request can match the same original sealed before the owner obtains backend lock; marker retains the first request fingerprint/manifestKnown.",
+    "Absent/empty/raw provisional evidence is portable only behind a terminal and with no prepare/audio attempt or remote phase; active provisional remains unsupported."
+  ],
+  "migration": {
+    "pipeline": "Existing encrypted export, graph validation, candidate and generation activation only",
+    "voiceRows": "Union of active index and terminal catalog; orphan audit/raw/missing/mismatch rejects entire archive",
+    "activation": "Original audit/catalog/binary stay exact; current voice row gets existing migrationReadOnly flag; no terminal is executable authority",
+    "limits": "Existing 8MiB text, 21MiB blob, 192MiB aggregate and 256MiB envelope limits unchanged; 256 terminals does not promise 256 maximum-size audio files fit."
+  },
+  "hook": "session.bindVoiceDiscardIfMissing { NativeEncryptedVoiceDiscardPort(VoiceRecordingStore(context, storage)) }",
+  "scope": "Storage only; parent binds exact current restored session/store and deduplicates narrow port. Owner must stop/join old work before calling; failed/timeout acknowledgement cannot start replacement. No Controller/MobileSession/UI changes here.",
+  "status": {
+    "implementation": "storage and unified graph implemented",
+    "native": "12 methods compiled only, device/PID execution remains coordinator responsibility",
+    "realDev": "not executed",
+    "fullMigration": "open: EasyWork device authority/fence and nonempty foreground v1 journal are unsupported; no best-effort omission"
+  }
+}

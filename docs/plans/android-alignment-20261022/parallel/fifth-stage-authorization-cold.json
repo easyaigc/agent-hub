@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "checkpoint": "PAR5-EWDAP-real-process-cold",
+  "date": "2026-10-29",
+  "verificationKind": "Android Keystore/encrypted store and actual process termination/restart against one synthetic loopback issuer; no real Desktop/model",
+  "status": "bounded pass",
+  "build": {
+    "sourceSha256": "a51b374da58bdb6a79f861719388166462a17e98f7c0e16155c66e3d37d6eb2b",
+    "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+    "runnerSha256": "0c7d5438f5cc6ff0000b3723e10e9fd51d1a3c65f1f6f5dfc01aef45bfe44ce8"
+  },
+  "writer": {
+    "pid": 27848,
+    "result": "immutable checkpoint then independently verified force-stop; intentionally no ordinary JUnit pass"
+  },
+  "reader": {
+    "pid": 27995,
+    "passedNativeMethods": 1
+  },
+  "systemObservations": {
+    "independentSystemProcessEvents": {
+      "writer": {
+        "pid": 27848,
+        "activityManagerStartElapsedMs": 400640744.0,
+        "nativeStartElapsedMs": 400640814
+      },
+      "reader": {
+        "pid": 27995,
+        "activityManagerStartElapsedMs": 400647997.0,
+        "nativeStartElapsedMs": 400648061
+      }
+    },
+    "originalWriterKillObserved": true,
+    "readerStartAfterOriginalWriter": true
+  },
+  "sameOriginalIntent": true,
+  "sameLocalKeysAndSigner": true,
+  "sameSidecarLifetime": true,
+  "originalRequests": 4,
+  "originalNamedDeleteRecovery": 1,
+  "freshBusinessInputReplay": 0,
+  "pendingAndConfirmedLateSaveBothRejected": true,
+  "grantRemainsAbsent": true,
+  "oldWriterProofUnchanged": true,
+  "sidecarStoppedAndOnlyOwnPortsRemoved": true,
+  "privateEvidenceSha256": {
+    "original-writer-proof.json": "d3e6accce11d113c93c512dd686c67e9a8ce9132995622466a544aecf1d784ab",
+    "reader-proof.json": "9d3c38024703f7d357b8c9c422f892503f2a94f732bd9e2431b7664198d13d6f",
+    "force-stop-intent.json": "c9b30cdfe7457741e2a9db138e11ffd68412eaafc7d43a00e9d19c30155a0191",
+    "force-stop-receipt.json": "4292056a467cbd42c797ef43f04d1dd714c15086085101f80db313f463c966f7",
+    "independent-process-proof.json": "85e1ba7159b5b26235d9322237fcf4aace4e80d21fba5bb96028c57d8c860978",
+    "independent-process-events.txt": "c88a5ff31b41ab5d5de688fb5873841d723d97559280932bd24cee693b077657",
+    "final-stats.json": "1eebef47b526966d6e7db9498ed2d99b610b5a0e752ccea1e79fa63dcadd2246",
+    "cleanup.json": "7a7e2f5af5ef8679242dc7cf902def524836fc32897fa6a7033ce9a0f47f3e60"
+  },
+  "limits": [
+    "Late-save probe rehydrates only the writer-captured original after decrypting exact held reply; no dead thread callback revival claimed",
+    "No real issuer/Desktop, system-trusted HTTPS or cross-process concurrent locking verification",
+    "A5 seven groups remain open; task/project business and iOS A6 remain paused"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-native-accepted-cold-next-20261029-1",
+  "date": "2026-10-29",
+  "baseCommit": "eb09a56b335e5ec34740eb2f639f51bca69b2b81",
+  "phase": "cold-process-test-preparation",
+  "productionChanges": [],
+  "storageApiChanges": false,
+  "previous461NativeInputsUnchanged": true,
+  "nativeInputFiles": 462,
+  "nativeInputSetSha256": "3b80329b0a652ec51c88da8ddd5458f1345bd8b5808ae2c8422833ef7f02cf96",
+  "sourceHashAlgorithm": "canonical sorted path-to-SHA256 JSON; parent must recompute its integrated input set",
+  "nativeTest": {
+    "class": "com.agenthub.android.NativeEasyWorkAuthorizationColdTest",
+    "source": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationColdTest.kt",
+    "sha256": "334ea435f113bf287e13fbb0258e17308cce749dbe40623934456c957eaf0ed2",
+    "methods": [
+      "writeFrozenUnknownRevokeForColdRestart",
+      "readOriginalFenceAndResumeOnlyAfterNewProcessStarts"
+    ],
+    "selectSeparately": true,
+    "writerSetupMillis": 12000,
+    "writerHoldMillis": 45000,
+    "writerJUnitLimitMillis": 60000,
+    "readerScenarioMillis": 12000,
+    "readerJUnitLimitMillis": 20000,
+    "outerDeadlineSecondsPerInvocation": 240,
+    "writerSuccess": "frozen proof plus independent controller force-stop of still-live exact PID; ordinary JUnit pass not expected",
+    "arguments": ["p8ColdPhase", "p8ColdConfig", "p8ColdBuild", "p8ColdWriterProof (reader only)"],
+    "execution": "not-performed",
+    "deviceLease": null
+  },
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "6ad6a15fba19fa2d9bbe8c8a6388299b4d24bb249c38cb979eca5a163c3ba7c1",
+      "bytes": 24226746,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "5b128e8bc3f7437f7b6d64e1caed5a6de84bf65016df9c0f1d2ac3ef9cab1f07",
+      "bytes": 8080405,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "parentReportedPriorFenceAcceptance": {
+    "source": "parent operation parent-p8-native-accepted-cold-next-20261029-1; not independently rerun here",
+    "platform": "physical API 33",
+    "coreMethods": 18,
+    "fenceMethods": 12,
+    "result": "passed",
+    "sourceSha256": "77fe4e1b93cb46c3d365e392f7be0f6748b794b50f5a65a8b3af9284a6cd07d3",
+    "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+    "runnerSha256": "3c21dd08075812765c68e5d88c28449eb55e3193a7e363200359cf7bea79ceaa",
+    "evidenceFolders": [
+      "stage4-fence-localized-native/queue.json",
+      "p8-core-localized-run1",
+      "p8-fence-localized-run1"
+    ],
+    "originalBaselineFailurePreserved": true,
+    "coldScenarioPassed": false
+  },
+  "auxiliaryChecks": {
+    "nodePureContractCases": 4,
+    "nativeCompile": "passed",
+    "frozenPreviousMethodCount": 59,
+    "totalMethodNamesInRunner": 61,
+    "networkListenersStarted": false,
+    "realDeviceOrHostOrDesktopOrModelUsed": false,
+    "nodeLogSha256": "223c725de24d676fd47d8974d1fdb7b624613b41a36d0928d33e70a95420669f",
+    "nativeCompileLogSha256": "6f526b52a1a385f0a03b6e0f3552a6c44548b79f60028f73d9b3467a6607ca1b"
+  },
+  "limitations": [
+    "Cold-process device scenario not performed here",
+    "Stale-save probe rehydrates the persisted original attempt plus exact held encrypted reply; it is not a revived dead thread",
+    "No simultaneous multi-OS-process file locking proof",
+    "Loopback synthetic HTTP only; no real issuer or system trust proof",
+    "iOS unchanged and not verified"
+  ],
+  "centralRegistration": "parent-owned; exact delta supplied separately",
+  "a5GroupClosure": "none",
+  "a6": "paused",
+  "fixture": {
+    "kind": "p8-synthetic-authorization-cold-v1",
+    "sourceFilesSha256": {
+      "cold": "55013caa783206cec11d8ab02cd0b0d2cf9840f85fdfacc729cd2a1399447032",
+      "issuer": "b91aff98e2f40cce295086dae2d0190540481a4314f6b98c7c7b81e31fe7fe7c",
+      "crypto": "cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a",
+      "asset": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104"
+    },
+    "sourceGraphSha256": "91b63d238f23edc55af2ffd577fdcbf15fb183f595f49d3fcadd64a98e21aa07",
+    "pureTestSourceSha256": "0d1753166343034007babfdb113229df52a29b6fd78c66acff3b9b6d6fbb2cc8",
+    "contractSha256": "f529c6d2fb418e591e78a6aaa5844d328d80a48938bef14e41d3d5da27326a76",
+    "transport": "synthetic HTTP 127.0.0.1 only",
+    "listenerStarted": false
+  }
+}

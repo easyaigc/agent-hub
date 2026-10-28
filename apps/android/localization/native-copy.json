@@ -950,6 +950,41 @@
       "key": "设备授权记录目标已变化，原记录已保留",
       "en": "The target of the device authorization record has changed. The original record is preserved.",
       "zhHans": "设备授权记录目标已变化，原记录已保留"
+    },
+    {
+      "key": "原通知记录已核对。",
+      "en": "Original notification records checked.",
+      "zhHans": "原通知记录已核对。"
+    },
+    {
+      "key": "原通知记录已保留，可核对原操作。",
+      "en": "Original notification records are preserved. You can check the original operations.",
+      "zhHans": "原通知记录已保留，可核对原操作。"
+    },
+    {
+      "key": "核对原通知记录",
+      "en": "Check original notification records",
+      "zhHans": "核对原通知记录"
+    },
+    {
+      "key": "正在恢复原通知，请稍候。",
+      "en": "Restoring the original notification. Please wait.",
+      "zhHans": "正在恢复原通知，请稍候。"
+    },
+    {
+      "key": "无法打开原通知，对话或连接暂不可用。",
+      "en": "The original notification cannot be opened. Its chat or connection is unavailable.",
+      "zhHans": "无法打开原通知，对话或连接暂不可用。"
+    },
+    {
+      "key": "当前连接",
+      "en": "Current connection",
+      "zhHans": "当前连接"
+    },
+    {
+      "key": "原连接记录",
+      "en": "Original connection records",
+      "zhHans": "原连接记录"
     }
   ]
 }

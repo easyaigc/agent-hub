@@ -100,6 +100,17 @@ internal class NativeChatNotificationRecoveryStore(private val storage: NativeSe
     }
     private fun io() = check(Looper.myLooper() != Looper.getMainLooper()) { "Recovery journal requires IO" }
     fun exists(): Boolean { io(); return storage.read(RECORD) != null }
+    fun pendingByTarget(): Map<NativeChatNoticeTarget, List<String>> {
+        io(); return storage.snapshotTransaction {
+            val state = storage.read(RECORD)?.let(::decode) ?: return@snapshotTransaction emptyMap()
+            val rows = state.getJSONArray("targets")
+            (0 until rows.length()).associate { index ->
+                val row = rows.getJSONObject(index); val operations = row.getJSONArray("operations")
+                NativeChatNotificationCodec.target(row.getJSONObject("target")) to (0 until operations.length()).map { operations.getJSONObject(it) }
+                    .filter { it.getString("state") in setOf("unknown", "reserved") }.map { it.getString("authorization") }
+            }
+        }
+    }
     private fun <T> transaction(identity: NativeChatNotificationIdentity, target: NativeChatNoticeTarget, write: Boolean = false, action: (JSONObject, JSONObject) -> T): T {
         io(); return storage.snapshotTransaction { storage.operationTransaction {
             val state = storage.read(RECORD)?.let(::decode) ?: JSONObject().put("version", 2).put("deviceId", identity.deviceId).put("identity", identity.fingerprint).put("targets", JSONArray())

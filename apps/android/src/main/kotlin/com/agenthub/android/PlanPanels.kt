@@ -80,7 +80,7 @@ import androidx.compose.ui.unit.sp
     }
 }
 
-@Composable internal fun ProposedPlanReview(session: MobileSession,plan: MobileProposedPlan) {
+@Composable internal fun ProposedPlanReview(session: MobileSession,plan: MobileProposedPlan,noticeVisibility: NativePanelNoticeVisibility?=null) {
     val destination=session.planActionDestination()
     key(destination,plan) {
         var adjusting by remember { mutableStateOf(false) };var feedback by remember { mutableStateOf("") }
@@ -90,7 +90,11 @@ import androidx.compose.ui.unit.sp
             Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 Text(productText("实施此计划？"),fontSize=14.sp,fontWeight=FontWeight.SemiBold)
                 if(session.messages.none { it.kind=="plan"&&it.text==plan.text }) {
-                    PlanDisclosure("查看计划","review-plan-toggle",destination to plan) { MarkdownContent(plan.text,"proposed-plan-text") }
+                    PlanDisclosure("查看计划","review-plan-toggle",destination to plan) {
+                        NativeNoticeVisibilityPanel(noticeVisibility?.forTarget(session.selectedClient.scope,session.selectedThread),NativeNoticePanelOriginal.Plan(plan)) {
+                            MarkdownContent(plan.text,"proposed-plan-text")
+                        }
+                    }
                 }
                 Row(Modifier.fillMaxWidth().heightIn(min=48.dp).background(colors.surface,RoundedCornerShape(12.dp))
                     .clickable(enabled=enabled,role=Role.Button) { session.implementPlan(plan,destination) }

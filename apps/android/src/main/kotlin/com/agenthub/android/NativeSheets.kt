@@ -60,8 +60,8 @@ import androidx.compose.foundation.text.KeyboardOptions
         DisposableEffect(page) { onDispose { focus.clearFocus(force=true); keyboard?.hide() } }
         LaunchedEffect(page) { focus.clearFocus(force=true); keyboard?.hide() }
         Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).testTag("sheet-$page")) {
-            val title=t.tr(when(page) { "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
-            val back=page in listOf("appearance","language","ai-sharing-settings","voice")
+            val title=t.tr(when(page) { "chat-notifications"->"通知"; "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
+            val back=page in listOf("appearance","language","ai-sharing-settings","voice","chat-notifications")
             val action=t.tr(if(page=="external-attachments") "稍后添加" else if(page=="ai-sharing" || page=="add" && editing==null) "取消" else "完成")
             val titleStyle=LocalTextStyle.current.copy(fontSize=17.sp,lineHeight=24.sp,fontWeight=FontWeight.SemiBold)
             val measure=androidx.compose.ui.text.rememberTextMeasurer();val density=androidx.compose.ui.platform.LocalDensity.current
@@ -96,6 +96,7 @@ import androidx.compose.foundation.text.KeyboardOptions
                 "add-project" -> AddProjectPage(session,close)
                 "appearance" -> AppearancePage(session)
                 "language" -> LanguagePage(session)
+                "chat-notifications" -> NativeChatNotificationsPage(session.chatNotifications)
                 "voice" -> NativeVoiceSettingsPage(session)
                 "generation" -> GenerationPage(session)
                 "reply-records" -> ReplyDeliveryRecordsPage(session,close)
@@ -125,6 +126,7 @@ import androidx.compose.foundation.text.KeyboardOptions
         GroupCard { SettingsRow(t.tr("语言"),languageTitle(session.language,t),"language-picker") { navigate("language") } }
         Text(t.tr("跟随系统，或选择中文和英文。更改会立即生效。"),Modifier.padding(horizontal=32.dp,vertical=8.dp),fontSize=12.sp,color=colors.onSurfaceVariant)
         NativeVoiceSettingsEntry(session,navigate)
+        NativeChatNotificationSettingsEntry(session.chatNotifications,navigate)
         GroupTitle("")
         GroupCard { SettingsRow(t.tr("AI 数据共享"),"","settings-ai-sharing") { navigate("ai-sharing-settings") } }
         GroupTitle(t.tr("本地体验"))

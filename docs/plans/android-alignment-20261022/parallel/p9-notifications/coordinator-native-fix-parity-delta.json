@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "stage": "P9-coordinator-native-fixture-main-io",
+  "baseCommit": "8bd012d6147308d4ff17a6907b74a23ec3eae5d4",
+  "parentOperationId": "parent-p9-coordinator-native-failures-20261029-1",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "同一 Session/P7 账本、原目标与不可变原 ID；真实 transport 的调用线程契约在 native fixture 中保持一致；权限、可见性和过期回调断言不变",
+      "androidImplementation": "production-unchanged; native fixture corrected",
+      "androidVerification": "auxiliary-pass; native-rerun-pending",
+      "iosImpact": "test-only Android correction; no iOS source or verification change"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryFixture.kt": "8252bcc5fa9e96af3931422b19bf405e48f10ad0fe6131087f01aa2bcf42f9b3",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryTest.kt": "26beb050a0d9d8338e6c20749bb190ba48eb32095365597ab79aa5896c6b4818",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "3bcc566e41b12160c4fa0b2f5128724aa2a178fbb04132007ced8c451de7d21f",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "9c96cd1bd38ed378731c71a3100c6c40b4e4e35b407f6e5c68a39aad4f16f0b0",
+    "scripts/mobile/fixtures/RecoveryStorage.kt": "1d27a400d64421f5bbf2b56688911dede2a1bc23bd37027f23227572552c870c",
+    "scripts/mobile/fixtures/RecoveryVectors.kt": "bf7a79e26e3843c157d82712bcd6c88ffd41c073ccc5ef2119efc6397dbcff0e",
+    "scripts/mobile/fixtures/android/os/Looper.java": "1e6c89083f21de5262afa63b440eaa0578f9a5516d53eaa8ef7a65ba46a443e6"
+  },
+  "checks": {
+    "recoveryJvm": {
+      "before": "expected failure: Recovery journal requires IO in shared native fixture recoverySubmit",
+      "after": "60 passed; memory storage/synthetic Looper and loopback ports are auxiliary only"
+    },
+    "nativeMethodCounts": {
+      "coordinator": 21,
+      "recovery": 15,
+      "recoveryStatusUi": 4
+    },
+    "parentReportedNative": {
+      "coordinatorFirst11": {
+        "pass": 5,
+        "fail": 6
+      },
+      "coordinatorSecond10": {
+        "pass": 10,
+        "fail": 0
+      },
+      "failedMethods": [
+        "oldCallbackCannotPostAfterNavigation",
+        "permissionDenialAndRecoveryShowOnlyNewEventThroughRequiredReadingPort",
+        "backgroundInvalidatesSuspendedPresentationBeforeSystemPost",
+        "foregroundPresentationUsesOpaqueIntentAndP7UnreadCount",
+        "stableSnapshotPublicationDoesNotRestartOrAcceleratePoll",
+        "readingRecheckAfterChannelPreparationPreventsOldBanner"
+      ],
+      "newNativeResult": "not-run; original failures preserved"
+    },
+    "androidBuild": "assembleDebug and assembleDebugAndroidTest acceptance variant passed; compiled only",
+    "legacyJvm": "45 passed; synthetic loopback only",
+    "pnpmCheck": {
+      "format": "passed",
+      "githubSyncTests": "5 passed",
+      "lint": "passed",
+      "stop": "unchanged parent-owned parity record missing/stale for prior synthetic-tone.m4a; central gate not changed"
+    }
+  },
+  "sharedHookImpact": {
+    "changedFiles": [],
+    "replacementPatchRequired": false,
+    "globalOwnersUnchanged": true
+  },
+  "bindingRestorationReview": "coordinator-native-fix.md; proposed focused scope only"
+}

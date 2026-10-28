@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "checkpoint": "PAR5-actual-notification-ingress-observation",
+  "date": "2026-10-29",
+  "verificationKind": "Actual MainActivity dispatcher/default-off settings and retained Session; synthetic invalid/unknown tickets, no real Host/system post",
+  "status": "all3 corrected scenarios passed on current physical API33",
+  "currentAcceptedMethods": 3,
+  "groups": [
+    {
+      "label": "stage5-ingress-lifecycle-native",
+      "status": "failed",
+      "sourceSha256": "e647a5e9e465fd760de0de095022a6181afeee00fd8875b84bfc2fda80e3825c",
+      "appSha256": "80fa6c98ef4673804cfe2e23c194de2f26e2849d7635745aa252f0b16909aa8f",
+      "runnerSha256": "3672a3360eb7682cd37a32ad874ca98ce498a7b9d50bf9986c162cc331a7a9ae",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualUnknownOpaqueTicketAndActivityRecreationKeepTheSameCoordinatorAndDraft"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualWarmDispatcherConsumesInvalidNotificationBeforeAnyPairingOrAttachmentRoute",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualSettingsEntryKeepsDefaultOffWithoutMakingIdentityJournalOrAuthority"
+      ],
+      "instrumentationSha256": "75cb2e07a104fd3dd04194f16e308ff9d7f4aa2c857b9e5a450081cb447f465c"
+    },
+    {
+      "label": "stage5-ingress-root-native",
+      "status": "passed",
+      "sourceSha256": "18e61df7db3c420e51d801667a8677d371208a8b9f6f9c98d7ef00f9096e3b0c",
+      "appSha256": "39cf403c428dc587203fc995cb41589b72c70c7878193801154dec31ed9e9920",
+      "runnerSha256": "5ac713212eadbe826fa0d8a474aa7c8133e783f8441e0f0ca1cc8ebc54253005",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualUnknownOpaqueTicketAndActivityRecreationKeepTheSameCoordinatorAndDraft",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualWarmDispatcherConsumesInvalidNotificationBeforeAnyPairingOrAttachmentRoute",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualSettingsEntryKeepsDefaultOffWithoutMakingIdentityJournalOrAuthority"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "7a113e890a6f17f3933e93a8ed663d8687cd21f82ad7f5fbb3ed912df6da5ad1"
+    }
+  ],
+  "failureHistory": [
+    "Original ActivityScenario lifecycle-filter failure retained in fifth-stage-notification-intake.json",
+    "First ActivityLifecycleMonitor retake passed recreation but two UI methods had a Compose root older than the empty rule; neither counted as pass",
+    "Final setup recreates the activated Activity after the rule starts, then observes real RESUMED replacement and original ticket/session/coordinator after the tested warm handoff; no production changes"
+  ],
+  "limits": [
+    "Positive original ticket initial process launch and real OS notification are separate pending gates",
+    "Component/source/integration checks do not close full P7/P9 DEV",
+    "Task/project business and iOS A6 paused"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

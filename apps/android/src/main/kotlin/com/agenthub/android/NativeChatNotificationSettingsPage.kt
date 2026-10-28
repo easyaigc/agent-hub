@@ -25,9 +25,10 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
 /** Independent ordinary-chat settings page; navigation/manifest registration belongs to the integrator. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun NativeChatNotificationSettingsPage(
-    store: NativeChatNotificationStore, platform: NativeChatNotificationPlatform,
+    store: NativeChatNotificationStore, platform: NativeChatNotificationSystem,
     computers: List<NativeChatNotificationComputer>,
     onExplicitDisable: ((hostId: String?, savedRevision: String, actionId: String) -> Unit)? = null,
+    onChanged: () -> Unit = {}, status: @Composable (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val tasks = rememberCoroutineScope()
@@ -36,7 +37,7 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
     var soundPage by remember { mutableStateOf<String?>(null) }
     val lifecycle = LocalLifecycleOwner.current
     val request = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { state.reload() }
-    fun change(update: (NativeChatNotificationPreferences) -> NativeChatNotificationPreferences) = state.update(update)
+    fun change(update: (NativeChatNotificationPreferences) -> NativeChatNotificationPreferences) = state.update(update) { onChanged() }
     DisposableEffect(state, lifecycle) {
         if (lifecycle.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) state.resume() else state.pause()
         val observer = LifecycleEventObserver { _, event ->
@@ -59,7 +60,7 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
     }
     if (soundPage != null) {
         key(soundPage) { NativeChatNotificationSoundSettingsPage(store, platform,
-            soundPage?.takeUnless { it == "default" }?.let(NativeChatNoticeKind::from)) { soundPage = null; state.reload() } }
+            soundPage?.takeUnless { it == "default" }?.let(NativeChatNoticeKind::from)) { soundPage = null; state.reload(); onChanged() } }
         return
     }
     val preferences = requireNotNull(state.preferences)
@@ -69,10 +70,11 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
     }
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(productText("通知"), style = MaterialTheme.typography.titleLarge)
+        status?.invoke()
         ChatNoticeToggle("消息通知", preferences.enabled, "chat-notifications-enabled", enabled = writable) { enabled ->
             val actionId = java.util.UUID.randomUUID().toString()
             state.update({ it.copy(enabled = enabled) }) { saved ->
-                if (!enabled) onExplicitDisable?.invoke(null, saved.revision, actionId)
+                if (!enabled && onExplicitDisable != null) onExplicitDisable(null, saved.revision, actionId) else onChanged()
                 val permission = platform.permission()
                 if (enabled && permission.declared && !permission.granted && Build.VERSION.SDK_INT >= 33) request.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
@@ -96,7 +98,7 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
                 "chat-notification-host-" + computer.target.hostId, literal = true, enabled = writable) { enabled ->
                 val actionId = java.util.UUID.randomUUID().toString()
                 state.update({ it.copy(excludedHosts = if (enabled) it.excludedHosts - computer.target.hostId else it.excludedHosts + computer.target.hostId) }) { saved ->
-                    if (!enabled) onExplicitDisable?.invoke(computer.target.hostId, saved.revision, actionId)
+                    if (!enabled && onExplicitDisable != null) onExplicitDisable(computer.target.hostId, saved.revision, actionId) else onChanged()
                 }
             }
         }

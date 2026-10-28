@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Encrypted local voice discard catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "entries"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "entries": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/marker"
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "marker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordingId",
+        "fingerprint",
+        "manifestKnown",
+        "auditId",
+        "originalSha256",
+        "discardedAt",
+        "evidence"
+      ],
+      "properties": {
+        "recordingId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/sha"
+        },
+        "manifestKnown": {
+          "type": "boolean"
+        },
+        "auditId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "originalSha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "discardedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind"],
+              "properties": {
+                "kind": {
+                  "enum": ["sealed", "absent", "empty"]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "payloadId", "sizeBytes", "sha256"],
+              "properties": {
+                "kind": {
+                  "const": "raw"
+                },
+                "payloadId": {
+                  "$ref": "#/$defs/uuid"
+                },
+                "sizeBytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12582912
+                },
+                "sha256": {
+                  "$ref": "#/$defs/sha"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "description": "Native decoder additionally enforces <=256KiB UTF8, strict duplicate/depth/UTF8 parsing, integer tokens and unique recording IDs. Each marker must resolve an exact original row, immutable raw-text snapshot SHA, request fingerprint and manifest/target. This catalog only prevents local recovery offers; it conveys no remote command authority."
+}

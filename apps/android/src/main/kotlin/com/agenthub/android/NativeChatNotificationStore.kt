@@ -116,8 +116,9 @@ internal class NativeChatNotificationStore(private val storage: NativeSessionSto
     fun ticket(ticket: String, now: Long): NativeChatNoticeReceipt? = storage.snapshotTransaction {
         load().receipts.singleOrNull { it.ticket == ticket && !it.consumed && it.expiresAt > now && current(it.lease) }
     }
-    fun consume(ticket: String, now: Long): NativeChatNoticeReceipt? = storage.snapshotTransaction {
+    fun consume(ticket: String, now: Long, current: () -> Boolean = { true }): NativeChatNoticeReceipt? = storage.snapshotTransaction {
         val receipt = ticket(ticket, now) ?: return@snapshotTransaction null
-        val old = load(); save(old.copy(receipts = old.receipts.map { if (it.ticket == ticket) it.copy(consumed = true) else it })); receipt
+        val old = load(); if (!current()) return@snapshotTransaction null
+        save(old.copy(receipts = old.receipts.map { if (it.ticket == ticket) it.copy(consumed = true) else it })); receipt
     }
 }

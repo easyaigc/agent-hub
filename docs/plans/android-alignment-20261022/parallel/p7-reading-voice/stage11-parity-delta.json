@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "11-visible-notice-port",
+  "baseCommit": "e6ea5683ab93525fea29345eee1422eb0e0e19c0",
+  "featureIds": ["F49", "F50", "F56"],
+  "commonAssertions": [
+    "Only actual fully visible original panels with exact target/thread/run/request/kind join may report notice visibility",
+    "Background/cover/native focus/scroll/replacement/disposal invalidate old callbacks before an atomic guarded ledger mutation",
+    "The same ledger separates reply-end reading from notice reading and suppresses the same old event; reading never sends a command"
+  ],
+  "bothPlatforms": {
+    "ios": "existing bottom-geometry/scene/sidebar guard and original-notice matching read; unchanged; it is not per-panel geometry proof",
+    "android": "optional whole-panel/expanded-plan-body native UI port and revocable guard implemented; shared adapter and applied lifecycle guard pending"
+  },
+  "design": {
+    "default": "null/inert",
+    "geometry": "whole wrapped content, clipped native/visible-window bounds, two current frames, focus/RESUMED plus explicit foreground/uncovered",
+    "knownGaps": [
+      "oversized approvals/questions stay unread",
+      "expanded message-rendered plan path still needs owner hook",
+      "same-window overlays/alpha require parent uncovered/settlement truth",
+      "inline actual message caller must explicitly pass binding"
+    ]
+  },
+  "implementation": "partial; component ports only, no production ledger consumer/write binding",
+  "verification": "App/runner compilation; 3 new pure helper rules host-JVM passed; 9 native UI methods compiled only; shared proposal not applied",
+  "sources": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "sha256": "6628529308afc1633e413f7c877c163895d318182d068341c1503fccad0a1082"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+      "sha256": "3e025852ed07238231765b4042486c5fe158a93526aca3a13d4c4588c3c3879c"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeNoticeVisibility.kt",
+      "sha256": "9d2dada38fd8f0cfb61c8859efad7926bae0930a575e357a08e8f1f5783ba8de"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeNoticeVisibilityView.kt",
+      "sha256": "98d282ebca8aae0873b320a091345f3b0c21a793ac65ad788050de304d2e0013"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNoticeVisibilityUiTest.kt",
+      "sha256": "f7570ed4fd7061001e94413b807544df93761ed899626f5dea3a470bb9f8fb12"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNoticeVisibilityRulesTest.kt",
+      "sha256": "e26fdb9559f540d1584614d6c950f391d2d994a89742db5ad628af0be6109bca"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage11-visible-notice-contract.md",
+  "ownerHooks": "parallel/p7-reading-voice/stage11-owner-hooks.json",
+  "remaining": [
+    "same phoneReading.ledger metadata/frame producer and current original validation",
+    "optional atomic notice guard plus body-lease empty notice IDs",
+    "shared store writer/publication and P9 atomic mayPresent integration",
+    "leased native/race/geometry/DEV and existing body/P9 regression"
+  ]
+}

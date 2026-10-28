@@ -6562,7 +6562,13 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertEqual(composer.value as? String, "original-draft")
     app.buttons["voice-input"].tap()
     XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: app.buttons["stop-dictation"])], timeout: 5), .completed)
-    app.buttons["stop-dictation"].tap()
+    let tapStop = app.buttons["dictation-waveform"]
+    XCTAssertEqual(tapStop.label, "轻触停止录音")
+    XCTAssertTrue(tapStop.isHittable)
+    XCTAssertGreaterThanOrEqual(tapStop.frame.height, 44)
+    XCTAssertFalse(tapStop.frame.intersects(app.buttons["cancel-dictation"].frame))
+    XCTAssertFalse(tapStop.frame.intersects(app.buttons["stop-dictation"].frame))
+    tapStop.tap()
     XCTAssertTrue(composer.waitForExistence(timeout: 5))
     XCTAssertEqual(composer.value as? String, "original-draft\n语音输入测试")
     XCTAssertFalse(app.staticTexts["original-draft\n语音输入测试"].exists)
@@ -6574,6 +6580,25 @@ final class CodexManageUITests: XCTestCase {
     app.buttons["send-message"].tap()
     XCTAssertTrue(app.staticTexts["original-draft\n语音输入测试\n语音输入测试"].waitForExistence(timeout: 5))
     XCTAssertFalse((composer.value as? String ?? "").contains("original-draft"))
+  }
+
+  func testDictationStopHintEnglish() {
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-voice-input-fixture", "-app-language", "en", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    app.launch()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    composer.tap(); typeComposerText("retained-English-draft")
+    app.buttons["voice-input"].tap()
+    let tapStop = app.buttons["dictation-waveform"]
+    XCTAssertTrue(tapStop.waitForExistence(timeout: 5))
+    XCTAssertEqual(tapStop.label, "Tap to stop recording")
+    XCTAssertTrue(tapStop.isHittable)
+    shot("dictation-tap-stop-english")
+    tapStop.tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    XCTAssertEqual(composer.value as? String, "retained-English-draft\n语音输入测试")
+    XCTAssertFalse(app.buttons["dictation-waveform"].exists)
+    XCTAssertFalse(app.staticTexts["retained-English-draft\n语音输入测试"].exists)
   }
 
   func testDictationSwitchAndBackgroundKeepOriginalTarget() {
@@ -6619,8 +6644,14 @@ final class CodexManageUITests: XCTestCase {
     app.buttons["完成"].tap()
     app.buttons["voice-input"].tap()
     XCTAssertTrue(app.staticTexts["dictation-transcript"].waitForExistence(timeout: 3))
+    let tapStop = app.buttons["dictation-waveform"]
+    XCTAssertTrue(tapStop.waitForExistence(timeout: 5))
+    XCTAssertEqual(tapStop.label, "轻触停止录音")
+    XCTAssertTrue(tapStop.isHittable)
     shot("dictation-listening-dark")
-    app.buttons["cancel-dictation"].tap()
+    tapStop.tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    XCTAssertEqual(composer.value as? String, "语音输入测试")
   }
 
   func testDictationUnavailableAutomaticallyUsesLocal() {
@@ -13110,7 +13141,7 @@ final class CodexManageUITests: XCTestCase {
       if app.buttons["open-async-questions"].exists { app.buttons["open-async-questions"].tap() }
       XCTAssertTrue(mic.waitForExistence(timeout: 5)); mic.tap()
     }
-    let waveform = app.otherElements["question-dictation-long"]
+    let waveform = app.descendants(matching: .any)["question-dictation-long"].firstMatch
     XCTAssertTrue(waveform.waitForExistence(timeout: 5))
     XCTAssertEqual(field.value as? String, "保留草稿", "Recording leaves the original answer unchanged until remote transcription completes")
     XCTAssertFalse(submit.isEnabled, "Finish dictation before submitting the answer")
@@ -13118,7 +13149,8 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertEqual(field.value as? String, "保留草稿")
     mic.tap()
     XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", "结束录音并转写"), object: mic)], timeout: 5), .completed)
-    mic.tap()
+    XCTAssertEqual(waveform.label, "轻触停止录音")
+    app.buttons["question-dictation-long"].tap()
     XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", "语音输入回复"), object: mic)], timeout: 5), .completed)
     XCTAssertEqual(field.value as? String, "保留草稿\n语音输入测试")
     XCTAssertGreaterThanOrEqual(field.frame.height, 38, "Two lines of draft text must remain visible")

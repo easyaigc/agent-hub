@@ -548,12 +548,26 @@ struct VoiceInputControls: View {
         Group {
           if voice.phase == .finishing {
             VoiceTranscriptionActivity(status: voice.status)
+              .accessibilityElement(children: .ignore)
+          } else if voice.phase == .listening {
+            Button {
+              Task { _ = await voice.finish() }
+            } label: {
+              HStack(spacing: 10) {
+                VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity).accessibilityHidden(true)
+                Text(L10n.tr("轻触停止录音")).font(.caption).foregroundStyle(Palette.secondary)
+                  .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity)
+                  .scaleEffect(x: -1, y: 1).accessibilityHidden(true)
+              }.frame(minHeight: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain)
           } else {
             VoiceWaveform(levels: voice.levels)
+              .accessibilityElement(children: .ignore)
           }
         }.frame(maxWidth: .infinity, minHeight: 44)
-          .accessibilityElement(children: .ignore)
-          .accessibilityLabel(voice.status)
+          .accessibilityLabel(voice.phase == .listening ? L10n.tr("轻触停止录音") : voice.status)
+          .accessibilityHint(voice.phase == .listening ? voice.status : "")
           .accessibilityIdentifier(identifier("dictation-waveform", question: "question-dictation-"))
           .accessibilityValue(voice.diagnosticInfo)
         Button {

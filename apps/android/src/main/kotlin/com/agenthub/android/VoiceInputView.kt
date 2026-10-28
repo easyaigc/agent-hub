@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +26,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,20 +46,23 @@ import kotlin.math.sin
 }
 @Composable internal fun VoiceInputStrip(voice: VoiceInputController,text: String) {
     val colors=MaterialTheme.colorScheme
+    val stopHint=productText("轻触停止录音")
     Column(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp).floatingProduct(MobileDesign.composerRadius).padding(4.dp).testTag("voice-panel"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         Text(if(text.isEmpty())productText("随心输入") else text,Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(text.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(3.dp)) {
             Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",productText(if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "结束等待"),"cancel-dictation",onClick=voice::cancel) }
             if(voice.phase==VoiceInputController.Phase.FINISHING) {
                 VoiceTranscriptionActivity(voice.status,Modifier.weight(1f))
-            } else Canvas(Modifier.weight(1f).height(44.dp).testTag("dictation-waveform").semantics { contentDescription=voice.status }) {
-                val count=maxOf(1,(size.width/8.dp.toPx()).toInt());val center=count/2
-                repeat(count) { index->
-                    val sample=index-center+voice.levels.size/2;val bar=sample in voice.levels.indices
-                    val height=if(bar) (4+voice.levels[sample].coerceIn(0f,1f)*32).dp.toPx() else 3.dp.toPx()
-                    drawRoundRect(colors.onSurfaceVariant.copy(alpha=if(bar) 0.85f else 0.4f),Offset((index+0.5f)*size.width/count-1.5.dp.toPx(),(size.height-height)/2),Size(3.dp.toPx(),height),CornerRadius(1.5.dp.toPx()))
+            } else if(voice.phase==VoiceInputController.Phase.LISTENING) {
+                Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("dictation-waveform")
+                    .clickable(role=Role.Button,onClick=voice::finish)
+                    .semantics { contentDescription=stopHint;stateDescription=voice.status },
+                    verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                    VoiceWaveform(voice.levels,Modifier.weight(1f).clearAndSetSemantics {})
+                    Text(stopHint,Modifier.clearAndSetSemantics {},fontSize=12.sp,color=colors.onSurfaceVariant,textAlign=TextAlign.Center)
+                    VoiceWaveform(voice.levels,Modifier.weight(1f).clearAndSetSemantics {},mirrored=true)
                 }
-            }
+            } else VoiceWaveform(voice.levels,Modifier.weight(1f).testTag("dictation-waveform").semantics { contentDescription=voice.status })
             Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) {
                 if(voice.phase==VoiceInputController.Phase.FINISHING) {
                     IconButton(onClick=voice::finish,enabled=false,modifier=Modifier.size(48.dp).testTag("stop-dictation").semantics { contentDescription=voice.status }) {
@@ -67,6 +73,19 @@ import kotlin.math.sin
         }
         if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(voice.status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
         if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text(productText("重新录音"),fontSize=17.sp,color=Color(0xFF007AFF)) }
+    }
+}
+
+@Composable private fun VoiceWaveform(levels: List<Float>,modifier: Modifier=Modifier,mirrored: Boolean=false) {
+    val color=MaterialTheme.colorScheme.onSurfaceVariant
+    Canvas(modifier.height(44.dp)) {
+        val count=maxOf(1,(size.width/8.dp.toPx()).toInt());val center=count/2
+        repeat(count) { index->
+            val sample=index-center+levels.size/2;val bar=sample in levels.indices
+            val height=if(bar) (4+levels[sample].coerceIn(0f,1f)*32).dp.toPx() else 3.dp.toPx()
+            val x=(index+0.5f)*size.width/count
+            drawRoundRect(color.copy(alpha=if(bar) 0.85f else 0.4f),Offset((if(mirrored) size.width-x else x)-1.5.dp.toPx(),(size.height-height)/2),Size(3.dp.toPx(),height),CornerRadius(1.5.dp.toPx()))
+        }
     }
 }
 

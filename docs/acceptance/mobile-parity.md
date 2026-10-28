@@ -1229,3 +1229,7 @@ I4-3b：F30/F47/F55/F56/F71最终两SDK62辅助、22存储实现限定复用、�
 I4-3c：F30/F47/F56/F59/F71的57原生辅助与1真实MediaStore元数据、52默认11字段保护通过；旧短视口裁切基线失败保留，最终完整触达/实际触摸与三环境继承通过。图库UI合成源与真实元数据分证，未新增模型输入；完整权限/系统/进程和多图模型仍开。见[图片档案](../plans/android-alignment-20261022/records/p7-image-selection.md)。
 
 I4-3d1：可读态系统入口16原生辅助/16默认11字段通过；外部Intent被monitor接管取消，未计真实系统UI/Provider。无新模型输入，配额/冷恢复接续；见[图片档案](../plans/android-alignment-20261022/records/p7-image-selection.md)。
+
+### F64 录音轻触停止（2026-10-28）
+
+关联 S04／S11／S17／S18、UI06／UI21。双端 listening 显示两侧实时声纹与居中“轻触停止录音”，点击中间区域沿原 finish 转写并保留原草稿边界；准备、转写和失败态不提供该动作。iOS 主输入和问题回复共用，Android 同步现有主输入录音条。实现、构建、原生 UI 及未验范围分项见[专项记录](voice-recording-stop-hint-20261028.md)。不将合成 UI 转写记为真实采音或 ASR，不恢复 A6 其他暂停项。

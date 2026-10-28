@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-10-28：Host bridge 的速度能力只按模型目录的稳定 ID 解析，保留 standard／fast／ultrafast，fast 在桌面 wire 边界统一为 priority；未知 ID 不按展示名称猜测能力。原 owner 当前 service tier 优先于保留的旧轮次设置，明确 null 表示标准。iOS 多档选择使用原生菜单；实现、模拟器真实任务与未验收平台见[本次记录](acceptance/host-ultrafast-20261028.md)。
+
 2026-10-28 Windows 安装与连接：按用户要求移除桌面与 CLI 的 Publisher／签名文案／Store 包身份门禁；同一管道句柄、当前用户与登录会话、准确路径／摘要及真实 IPC 方法检查继续执行。私有状态 bootstrap 与常驻 worker 共用文件句柄实现，只读所有者与 DACL、只写受保护 DACL，保留 SACL，不提权或接管他人文件。源码与辅助检查不代表目标 Windows／手机功能通过，见[专项记录](acceptance/windows-install-20261028.md)。
 
 内置 Markdown 与可注册原生预览器；iPhone 真实原桌面文件核心阅读闭环通过，Android 编译及共享规则通过，完整双端与正式发布待验

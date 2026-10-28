@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-10-28 F36／S06／UI08：Host bridge 超快模式的本轮范围为本机真实 Electron、独立 iOS 模拟器和模型任务，覆盖 ultrafast、偏好重启／项目继承、fast／standard 切回和独立原 owner 唯一输入／serviceTier 核对。辅助检查、真实结果和原失败分别记录于[专项记录](host-ultrafast-20261028.md)；物理 iPhone、Android、Windows及正式 Host 部署不由模拟器结果代验，A6 保持暂停。
+
 2026-10-28 F03／F69：Windows Host 去除 Publisher 安装门禁并统一普通用户 DACL 保护；iOS／Android 连接到该 Host 时共同受益，页面、状态、文案与 token 不变。macOS 路径不受影响；本次不新增双端或 Windows 真机通过，A6 继续暂停。见[专项记录](windows-install-20261028.md)。
 
 内置 Markdown 与可注册原生预览器；iPhone 真实原桌面文件核心阅读闭环通过，Android 编译及共享规则通过，完整双端与正式发布待验

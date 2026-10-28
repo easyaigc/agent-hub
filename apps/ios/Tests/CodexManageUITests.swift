@@ -8794,6 +8794,8 @@ final class CodexManageUITests: XCTestCase {
   @MainActor func testOriginalDesktopGenerationPreferences() async throws {
     let (data, _) = try await URLSession.shared.data(from: URL(string: "http://127.0.0.1:8805")!)
     let fixture = try JSONDecoder().decode(LiveFixture.self, from: data)
+    let ultra = fixture.generationUltrafast == true
+    let modelName = ultra ? "GPT-6.1-Sol" : "GPT-6-Sol"
     connectLive(fixture)
     chooseDesktopProject(nil)
     let settings = app.buttons["generation-settings"]
@@ -8807,16 +8809,26 @@ final class CodexManageUITests: XCTestCase {
     let model = app.descendants(matching: .any)["model-picker"].firstMatch
     XCTAssertTrue(model.waitForExistence(timeout: 15))
     model.tap()
-    let chosen = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "GPT-6-Sol")).firstMatch
+    let chosen = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", modelName)).firstMatch
     XCTAssertTrue(chosen.waitForExistence(timeout: 15))
     chosen.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     app.descendants(matching: .any)["effort-picker"].firstMatch.tap()
     app.buttons["低"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     let fast = app.switches["fast-mode-toggle"]
-    XCTAssertTrue(fast.waitForExistence(timeout: 10))
-    if !fast.isHittable { app.swipeUp() }
-    fast.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
-    XCTAssertEqual(fast.value as? String, "1")
+    func selectSpeed(_ label: String) {
+      let picker = app.descendants(matching: .any)["speed-picker"].firstMatch
+      XCTAssertTrue(picker.waitForExistence(timeout: 10))
+      if !picker.isHittable { app.swipeUp() }
+      picker.tap()
+      app.buttons[label].tap()
+    }
+    if ultra { selectSpeed("极速") }
+    else {
+      XCTAssertTrue(fast.waitForExistence(timeout: 10))
+      if !fast.isHittable { app.swipeUp() }
+      fast.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+      XCTAssertEqual(fast.value as? String, "1")
+    }
     let full = app.buttons["permission-full-access"]
     if !full.isHittable { app.swipeUp() }
     full.tap()
@@ -8830,33 +8842,60 @@ final class CodexManageUITests: XCTestCase {
       let finished = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["stop-turn"])
       XCTAssertEqual(XCTWaiter.wait(for: [finished], timeout: 45), .completed)
     }
-    sendMarker("GEN_FAST_ONE_" + fixture.nonce)
+    sendMarker((ultra ? "GEN_ULTRA_ONE_" : "GEN_FAST_ONE_") + fixture.nonce)
     chooseDesktopProject(try XCTUnwrap(fixture.creationProjectId))
-    XCTAssertTrue(settings.label.contains("GPT-6-Sol"))
+    XCTAssertTrue(settings.label.contains(modelName))
     XCTAssertTrue(settings.label.contains("低"))
     XCTAssertTrue(app.buttons["permission-settings"].label.contains("完全访问"))
     app.terminate()
     app.launchArguments = ["-ui-testing", "-restore-testing"]
     app.launchChineseTest()
     XCTAssertTrue(settings.waitForExistence(timeout: 20))
-    XCTAssertTrue(settings.label.contains("GPT-6-Sol"))
+    XCTAssertTrue(settings.label.contains(modelName))
     openSettings()
-    XCTAssertTrue(fast.waitForExistence(timeout: 10))
-    XCTAssertEqual(fast.value as? String, "1")
+    if ultra {
+      let picker = app.descendants(matching: .any)["speed-picker"].firstMatch
+      XCTAssertTrue(picker.waitForExistence(timeout: 10))
+      XCTAssertTrue(picker.label.contains("极速") || (picker.value as? String)?.contains("极速") == true)
+    } else {
+      XCTAssertTrue(fast.waitForExistence(timeout: 10))
+      XCTAssertEqual(fast.value as? String, "1")
+    }
     app.buttons["generation-done"].tap()
-    sendMarker("GEN_FAST_TWO_" + fixture.nonce)
+    sendMarker((ultra ? "GEN_ULTRA_TWO_" : "GEN_FAST_TWO_") + fixture.nonce)
     chooseDesktopProject(nil)
     openSettings()
-    XCTAssertTrue(fast.waitForExistence(timeout: 10))
-    XCTAssertEqual(fast.value as? String, "1")
-    if !fast.isHittable { app.swipeUp() }
-    fast.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+    if ultra {
+      let picker = app.descendants(matching: .any)["speed-picker"].firstMatch
+      XCTAssertTrue(picker.waitForExistence(timeout: 10))
+      XCTAssertTrue(picker.label.contains("极速") || (picker.value as? String)?.contains("极速") == true)
+    } else {
+      XCTAssertTrue(fast.waitForExistence(timeout: 10))
+      XCTAssertEqual(fast.value as? String, "1")
+    }
+    if ultra {
+      selectSpeed("快速")
+      app.buttons["generation-done"].tap()
+      sendMarker("GEN_FAST_" + fixture.nonce)
+      chooseDesktopProject(nil)
+      openSettings()
+      selectSpeed("标准")
+    } else {
+      if !fast.isHittable { app.swipeUp() }
+      fast.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+    }
     app.buttons["generation-done"].tap()
     sendMarker("GEN_STANDARD_" + fixture.nonce)
     chooseDesktopProject(nil)
     openSettings()
-    XCTAssertTrue(fast.waitForExistence(timeout: 10))
-    XCTAssertEqual(fast.value as? String, "0")
+    if ultra {
+      let picker = app.descendants(matching: .any)["speed-picker"].firstMatch
+      XCTAssertTrue(picker.waitForExistence(timeout: 10))
+      XCTAssertTrue(picker.label.contains("标准") || (picker.value as? String)?.contains("标准") == true)
+    } else {
+      XCTAssertTrue(fast.waitForExistence(timeout: 10))
+      XCTAssertEqual(fast.value as? String, "0")
+    }
     shot("original-desktop-speed-standard-remembered")
     app.buttons["generation-done"].tap()
   }
@@ -9608,6 +9647,7 @@ final class CodexManageUITests: XCTestCase {
     var notificationKind: String?
     var reuseDeliveredNotification: Bool?
     var suggestionText: String?
+    var generationUltrafast: Bool?
     var originalReplyId: String?
     var sharedExistingOutcome: String?
     var sharedLifecycleDone: Bool?

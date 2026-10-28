@@ -12,6 +12,7 @@ import {
   threadPermissionSettings,
   desktopPermissionMode,
   desktopModelSettings,
+  desktopSpeed,
   currentPermissionMode,
   currentSpeed,
   modelSpeedTiers,
@@ -5373,18 +5374,11 @@ export class RuntimeSession {
     thread.collaborationMode = ['plan', 'default'].includes(string(collaboration.mode))
       ? string(collaboration.mode)
       : undefined;
-    const settings = object(state.latestThreadSettings);
     const currentModel = desktopModelSettings(state);
     thread.runtimeModel = currentModel.model || undefined;
     thread.runtimeEffort = currentModel.effort;
     const latest = turns.at(-1);
-    thread.speed = currentSpeed(
-      settings.serviceTier !== undefined
-        ? settings.serviceTier
-        : state.latestServiceTier !== undefined
-          ? state.latestServiceTier
-          : object(latest?.params).serviceTier,
-    );
+    thread.speed = desktopSpeed(state, latest);
     thread.permissionMode = desktopPermissionMode({ ...state, turns });
     const cwd = string(state.cwd);
     if (isAbsolute(cwd) && state.id === thread.id && this.runtime.ipc.hasOwner(thread.id))

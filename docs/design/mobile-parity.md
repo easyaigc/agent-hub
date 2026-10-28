@@ -1,5 +1,7 @@
 # 双端 UI 一致性规格
 
+2026-10-28 F36／UI08：模型提供 ultrafast 时，iOS 速度菜单列出“跟随电脑／标准／快速／极速”，使用原生菜单选择；仅提供 fast 的模型沿用开关，不支持的档位不显示。选择保存在当前目标草稿并用于下次发送，实际速度由原 owner 回读。Android 继续按相同能力呈现，平台原生实现及本次验收单列，见[专项记录](../acceptance/host-ultrafast-20261028.md)。
+
 2026-10-28 F03／F69：Windows Host 去除 Publisher 安装门禁并统一普通用户 DACL 保护；iOS／Android 连接到该 Host 时共同受益，页面、状态、文案与 token 不变。macOS 路径不受影响；本次不新增双端或 Windows 真机通过，A6 继续暂停。见[专项记录](../acceptance/windows-install-20261028.md)。
 
 内置 Markdown 与可注册原生预览器；iPhone 真实原桌面文件核心阅读闭环通过，Android 编译及共享规则通过，完整双端与正式发布待验

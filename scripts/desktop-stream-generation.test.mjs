@@ -10,7 +10,48 @@ import {
   prepareDesktopFixtureIpc,
 } from './fixtures/desktop-ipc-transport.mjs';
 import { DesktopFrameDecoder } from '../packages/codex-adapter/dist/desktop-framing.js';
-import { desktopModelSettings } from '../packages/codex-adapter/dist/generation-settings.js';
+import {
+  desktopModelSettings,
+  desktopSpeed,
+  modelSpeedTiers,
+} from '../packages/codex-adapter/dist/generation-settings.js';
+
+test('speed capabilities map legacy aliases to canonical desktop tiers without guessing names', () => {
+  assert.deepEqual(
+    [...modelSpeedTiers({ additionalSpeedTiers: ['fast', 'ultrafast'] })],
+    [
+      ['standard', 'default'],
+      ['fast', 'priority'],
+      ['ultrafast', 'ultrafast'],
+    ],
+  );
+  const tiers = modelSpeedTiers({
+    serviceTiers: [
+      { id: 'priority', name: '快速' },
+      { id: 'ultrafast', name: '超快' },
+      { id: 'future-tier', name: 'Ultrafast' },
+    ],
+  });
+  assert.equal(tiers.get('ultrafast'), 'ultrafast');
+  assert.equal(tiers.get('fast'), 'priority');
+  assert.deepEqual(
+    [...modelSpeedTiers({ serviceTiers: [{ id: 'future-tier', name: 'Ultrafast' }] }).keys()],
+    ['standard'],
+  );
+});
+
+test('current desktop speed supersedes retained settings; explicit standard and unknown remain distinct', () => {
+  const state = {
+    latestServiceTier: 'ultrafast',
+    latestThreadSettings: { serviceTier: 'priority' },
+  };
+  assert.equal(desktopSpeed(state), 'ultrafast');
+  assert.equal(desktopSpeed({ ...state, latestServiceTier: null }), 'standard');
+  assert.equal(desktopSpeed({ ...state, latestServiceTier: 'future-tier' }), null);
+  assert.equal(desktopSpeed({ latestThreadSettings: { serviceTier: 'ultrafast' } }), 'ultrafast');
+  assert.equal(desktopSpeed({}, { params: { serviceTier: 'ultrafast' } }), 'ultrafast');
+  assert.equal(desktopSpeed({}), null);
+});
 
 test('current owner model and effort supersede retained prior-turn settings, including explicit null', () => {
   const state = {

@@ -1034,7 +1034,7 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
   if (request.method === 'initialize') result = {};
   else if (request.method === 'project/list') result = { data: JSON.parse(fs.readFileSync(${JSON.stringify(catalogFile)}, 'utf8')).projects, nextCursor: null };
   else if (request.method === 'thread/list') result = { data: JSON.parse(fs.readFileSync(${JSON.stringify(catalogFile)}, 'utf8')).threads.filter(t => request.params.archived === true ? t.archived === true : t.archived !== true).filter(t => !request.params.sectionId || t.section?.id === request.params.sectionId), nextCursor: null };
-  else if (request.method === 'model/list') result = { data: [{id:'desktop-fixture-model',displayName:'Desktop Model',isDefault:true,defaultReasoningEffort:'xhigh',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'xhigh'}]}, {id:'desktop-fast',serviceTiers:[{id:'priority',name:'Fast'}],displayName:'Desktop Fast',isDefault:false,defaultReasoningEffort:'low',supportedReasoningEfforts:[{reasoningEffort:'low'}]}] };
+  else if (request.method === 'model/list') result = { data: [{id:'desktop-fixture-model',displayName:'Desktop Model',isDefault:true,defaultReasoningEffort:'xhigh',supportedReasoningEfforts:[{reasoningEffort:'low'},{reasoningEffort:'xhigh'}]}, {id:'desktop-fast',serviceTiers:[{id:'priority',name:'Fast'},{id:'ultrafast',name:'Ultrafast'}],displayName:'Desktop Fast',isDefault:false,defaultReasoningEffort:'low',supportedReasoningEfforts:[{reasoningEffort:'low'}]}] };
   else if (request.method === 'config/read') result = { config: {} };
   else if (request.method === 'thread/read')
     result = { thread: { id: request.params.threadId, historyMode: 'paginated' } };
@@ -2455,6 +2455,26 @@ readline.createInterface({ input: process.stdin }).on('line', line => {
     assert.equal(settingsWire.approvalPolicy, 'on-request');
     assert.equal(settingsWire.approvalsReviewer, 'user');
     assert(!('permissionMode' in settingsWire));
+    fixtureTurns.at(-1).status = 'completed';
+    running = false;
+    const ultrafast = { ...configured, clientMessageId: 'speed-ultrafast', speed: 'ultrafast' };
+    const ultraReceipt = await session.submit(ultrafast);
+    assert.equal(ultraReceipt.state, 'submitted');
+    assert.equal(commands.at(-1).params.turnStart.request.serviceTier, 'ultrafast');
+    const afterUltra = commands.length;
+    assert.equal((await session.submit(ultrafast)).turnId, ultraReceipt.turnId);
+    assert.equal(commands.length, afterUltra, 'Same ultrafast intent must execute once');
+    await assert.rejects(session.submit({ ...ultrafast, speed: 'fast' }), (e) => e.status === 409);
+    await assert.rejects(
+      session.submit({
+        ...configured,
+        clientMessageId: 'unsupported-ultrafast',
+        model: 'desktop-fixture-model',
+        speed: 'ultrafast',
+      }),
+      /不支持此速度/,
+    );
+    assert.equal(commands.length, afterUltra, 'Unsupported speed must not reach the owner');
     fixtureTurns.at(-1).status = 'completed';
     running = false;
     const standard = { ...configured, clientMessageId: 'speed-standard', speed: 'standard' };

@@ -21,16 +21,31 @@ export function currentSpeed(tier: unknown): string | null {
 }
 export function modelSpeedTiers(model: WireObject): Map<string, string> {
   const tiers = new Map<string, string>([['standard', 'default']]);
+  const wireTier = (speed: string) =>
+    speed === 'fast' ? 'priority' : speed === 'standard' ? 'default' : speed;
   for (const value of list(model.serviceTiers)) {
     const tier = object(value);
-    const speed = currentSpeed(tier.id) ?? currentSpeed(string(tier.name).toLowerCase());
-    if (speed && string(tier.id)) tiers.set(speed, string(tier.id));
+    // Capability IDs are authoritative; localized display names are not wire values.
+    const speed = currentSpeed(tier.id);
+    if (speed) tiers.set(speed, wireTier(speed));
   }
   for (const value of list(model.additionalSpeedTiers)) {
     const speed = currentSpeed(value);
-    if (speed && !tiers.has(speed)) tiers.set(speed, string(value));
+    if (speed && !tiers.has(speed)) tiers.set(speed, wireTier(speed));
   }
   return tiers;
+}
+
+/** Current owner selection supersedes retained prior-turn settings, including null. */
+export function desktopSpeed(state: WireObject, latestTurn?: WireObject): string | null {
+  const settings = object(state.latestThreadSettings);
+  return currentSpeed(
+    state.latestServiceTier !== undefined
+      ? state.latestServiceTier
+      : settings.serviceTier !== undefined
+        ? settings.serviceTier
+        : object(latestTurn?.params).serviceTier,
+  );
 }
 
 // Desktop 26.1002 presets. Keep version-specific permission policies in the adapter.

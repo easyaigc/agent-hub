@@ -859,7 +859,7 @@ struct GenerationSettings: View {
                             Picker(L10n.tr("速度模式"), selection: Binding(get: { store.selectedSpeed ?? "" }, set: { store.speed = $0 })) {
                                 Text(L10n.tr("跟随电脑")).tag("")
                                 ForEach(store.availableSpeeds, id: \.self) { Text(store.speedLabel($0)).tag($0) }
-                            }.accessibilityIdentifier("speed-picker")
+                            }.pickerStyle(.menu).accessibilityIdentifier("speed-picker")
                         } else {
                             Toggle(L10n.tr("快速模式"), isOn: Binding(get: { store.selectedSpeed == "fast" }, set: { store.speed = $0 ? "fast" : "standard" }))
                                 .disabled(!store.availableSpeeds.contains("fast"))

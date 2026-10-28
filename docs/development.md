@@ -838,3 +838,7 @@ iOS对照SidebarDrawer.updateInteraction：过渡期间panelSurface禁用交互�
 `thermal-ios-comparison.mjs`对准确独立App、签名产物、物理设备和当前安装路径取证；使用私有`--fixture`，不上传连接凭据或原对话。`--native-only --work-profile`只允许`testThermalMixedInteractionDEV`和`testThermalStreamingHistorySwitchDEV`；其他场景须Instruments启动。`--cpu-profile --work-profile`记录准确PID栈；持续回复原生测试支持`THERMAL_EXTERNAL_LAUNCH`，防止采样期间二次启动App。完整混合为3客户端、17步、22手势、3次400行原输入；严格实际切离时序失败保留，800行旧历史+600行新原回复的补充场景独立核对原owner运行区间。仅具名专用性能对话可输入；未知结果先核对、不重放，远端已有业务对话只读。
 
 CPU百分比是单核等价；帧间隔不是系统hitch，充电不能用于电池放电结论。公开报告只含指标与摘要，私有XCTest界面记录留本机。详见[完整对照与负向结果](research/mobile-performance-cpu-20261025.md)。
+
+超快模式专项：先 `pnpm build`，为独立模拟器设置 `IOS_SIMULATOR_ID`、`GENERATION_ULTRAFAST=1`，运行 `node scripts/generation-settings-desktop-ios-acceptance.mjs`。隔离工作树可用 `GENERATION_PROJECT_ROOT` 指定真实已保存项目的根目录，`GENERATION_ACCEPTANCE_DIRECTORY` 将私有记录保存到树外。核对两条 ultrafast 首条（含重启与项目继承）、快速与标准切回，以及原 owner 的唯一输入和实际 serviceTier；不支持的模型由辅助 IPC 边界拒绝。模拟器不代替真机或其他 Host 部署，见[本轮验收](acceptance/host-ultrafast-20261028.md)。
+
+生成设置的原生测试已通过、仅独立核对需要恢复时，使用 `GENERATION_VERIFY_DIRECTORY=<original-run-directory> GENERATION_PROJECT_ROOT=<saved-project-root> node scripts/generation-settings-desktop-ios-acceptance.mjs`。该入口保留原报告，要求相同 Adapter／原生源码／断言与准确模拟器证据，只查询原 owner 和回执，不再次启动 UI 测试或提交模型输入；标准速度接受桌面规范化的 null，未知档位保持拒绝。

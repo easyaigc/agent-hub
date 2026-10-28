@@ -49,7 +49,9 @@ internal class NativeMigrationStreamCandidate(private val context: Context, pare
                 val digest = MessageDigest.getInstance("SHA-256")
                 val records = envelope.inputStream().buffered().use { source -> NativeMigrationStreamCrypto.read(source, password) { clear ->
                     val input = DigestInputStream(clear, digest); val header = NativeMigrationStreamArchive.readHeader(input, context.packageName)
-                    legacy.validateStreamRecords(header)
+                    // Header readers intentionally cannot supply bytes. Validate the graph now, then
+                    // validate actual normalized sound bytes before the sole candidate publication.
+                    legacy.validateStreamRecords(header, verifySoundBytes = false)
                     header.binary.toSortedMap().entries.forEachIndexed { index, (_, blob) ->
                         if (sameId) NativeMigrationStreamArchive.transfer(input, blob, nullOutputStreamCompat())
                         else {
@@ -62,6 +64,13 @@ internal class NativeMigrationStreamCandidate(private val context: Context, pare
                     }
                     require(input.read() == -1); header
                 } }
+                if (!sameId) {
+                    val names = records.binary.keys.sorted()
+                    val local = records.binary.mapValues { (logical, blob) -> blob.copy(copy = { output ->
+                        storage.copyBinaryTo(name(generation, names.indexOf(logical)), blob.size, output)
+                    }) }
+                    NativeMigrationSounds.validate(records.text, emptyMap(), local)
+                }
                 val receipt = NativeMigrationCandidateStore.Receipt(id, digest.digest().joinToString("") { "%02x".format(it) }, records.size)
                 if (sameId) {
                     require(prior!!.getString("sha256") == receipt.sha256 && prior.get("version") == 3)

@@ -154,12 +154,12 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         return archive
     }
 
-    internal fun validateStreamRecords(archive: NativeMigrationStreamRecords) {
+    internal fun validateStreamRecords(archive: NativeMigrationStreamRecords, verifySoundBytes: Boolean = true) {
         require(archive.size<=1024)
-        validateRecordGraph(archive.text, emptyMap(), archive.binary)
+        validateRecordGraph(archive.text, emptyMap(), archive.binary, verifySoundBytes)
     }
 
-    private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?) {
+    private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
         require("metadata" in records)
         // Parse every record with duplicate/depth/UTF-8 checks, preserving its exact original text for later activation.
         val allValues = records.mapValues { StrictMigrationJson.value(it.value.toByteArray(Charsets.UTF_8)) }
@@ -176,7 +176,12 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         require(clients.all { it.scope?.agentId == "codex" }) // EasyWork device re-pairing is not an identity copy.
         val historyNames = NativeMigrationHistory.validate(allValues,clients)
         val ancillaryNames = NativeMigrationAncillary.validate(parsed)
-        val voiceNames=if(streams==null)NativeMigrationVoice.validate(allValues,binaries,clients)else NativeMigrationVoice.validateStreams(allValues,streams,clients)
+        val deviceNames = NativeMigrationDeviceState.validate(records,clients)
+        val soundBinaries = NativeMigrationSounds.validate(records,binaries,streams,verifySoundBytes)
+        val voiceBinaries=binaries.filterKeys {it.startsWith("voice-audio:")}
+        val voiceStreams=streams?.filterKeys {it.startsWith("voice-audio:")}
+        val voiceNames=if(streams==null)NativeMigrationVoice.validate(allValues,voiceBinaries,clients)else NativeMigrationVoice.validateStreams(allValues,voiceStreams!!,clients)
+        val attachmentBinaries=mutableSetOf<String>()
         require(allValues.keys.all { it in parsed || it in historyNames || it in voiceNames })
         val operations = mutableListOf<SavedOperation>()
         val manifests = mutableMapOf<String, JSONObject>()
@@ -192,16 +197,13 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             name == "metadata" -> Unit
             name in historyNames -> Unit
             name in ancillaryNames -> Unit
+            name in deviceNames -> Unit
+            name == NativeMigrationSounds.RECORD -> Unit
             name in voiceNames -> Unit
             name == "codex-private-connections-v1" -> CodexConnectionVault.validateRows(body)
             name.startsWith("draft-file:") -> {
-                exact(body, setOf("file", "bytes")); val file = body.getJSONObject("file"); manifest(file)
-                require(name == "draft-file:" + file.getString("id"))
-                val encoded = body.getString("bytes"); val bytes = Base64.getDecoder().decode(encoded)
-                try {
-                    require(Base64.getEncoder().encodeToString(bytes) == encoded && bytes.size <= 20 * 1024 * 1024)
-                    require(file.getLong("sizeBytes") == bytes.size.toLong() && file.getString("sha256") == sha(bytes))
-                } finally { bytes.fill(0) }
+                manifest(body.getJSONObject("file"))
+                NativeMigrationAttachments.validate(name,body,binaries,streams)?.let {require(attachmentBinaries.add(it))}
             }
             name.startsWith("operations:") -> {
                 val target = name.removePrefix("operations:")
@@ -225,6 +227,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             }
             else -> error("Unsupported migration record")
         }
+        require((streams?.keys?:binaries.keys)==(voiceStreams?.keys?:voiceBinaries.keys)+attachmentBinaries+soundBinaries)
         NativeMigrationReferences.validate(parsed,clients,operations)
         // Only verified Codex credentials are supported here. Device keys, grants, push bindings
         // and other provider re-pairing remain explicit boundaries, never silently discarded.

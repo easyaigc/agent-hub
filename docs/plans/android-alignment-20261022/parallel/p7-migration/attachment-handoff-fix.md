@@ -1,0 +1,9 @@
+# 附件取消回归：单次IO与原成功回执
+
+父线在API26 ownership/recovery17方法组保留了 `MobileAttachmentImportOwnershipTest#cancellationAfterEncryptedWriteDiscardsOnlyTheUnpublishedFile` 的10秒未见bin失败；其余16项不能据此算整组通过。根因是7f1eb842先在一次IO中计算probe，然后回Main，再进入prepareSource的另一次IO。旧测试为观察真实加密写入而占住Main，导致第二次IO一直无法启动。这是新增中间调度与既有取消验收的交互，不据此认定产品Main必然卡住。
+
+修复把扫描/probe改为supplier，在prepareSource原有的同一IO内执行，再校验/写入/读回/发布。固定IDlease仍先取得；handedOff、准确committed回执和NonCancellable finally仍在调用者上下文拥有，等结果真正交回才转移custody。取消阻止交回时，只清理已明确成功、metadata仍相同且尚未引用的新记录；未知写入回执仍保留原件。File和ByteArray两入口共用这个边界。
+
+没有给prepare再套外层IO，没有改测试的10秒等待、取消或清理断言，也没有更换原UUID/manifest/摘要或改发送/队列/日志。父线原失败保留；新指纹须独立复验，编译不算修复已过原生。
+
+主统筹优先复验原方法，再跑ownership/recovery整组，以及NativeMigrationAttachmentTest中的取消/中断、固定ID和满额/冷恢复。源码只改NativeDraftFiles类；其余NativeCodexFlow前后缀与7f1eb842一致。设备/Host/模型均由主统筹租约执行。本工作线未自行执行。

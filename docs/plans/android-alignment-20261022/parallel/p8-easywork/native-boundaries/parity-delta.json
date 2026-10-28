@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "id": "android-p8-native-protocol-boundaries-20261028",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "64b0e00e008db42627e2f2dc9928902dcd518059",
+  "features": ["F07", "F08", "F09", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt": "f450a6b77770ebd3a0f83b690cc363d4f90572f79d516343b112819394902479"
+  },
+  "productionFilesChanged": [],
+  "commonAssertions": {
+    "F07": "Device authorization stays scoped and never falls back to a legacy account token; local system signing keys remain device-owned",
+    "F08": "Read retry preserves original request across in-memory LAN/relay candidates; explicit path preference does not change target",
+    "F09": "Independent Node ciphertext authenticates recipient/binding/header and EWDAP delivery key; malformed numeric envelope must reject before normalization",
+    "F43": "Write intent ID/method/target/hash remains immutable; lost reply queries exactly the original operation",
+    "F44": "Unknown original result cannot replay a write; explicit receipt rejection cannot be satisfied by a harness timeout",
+    "F46": "Target mismatch and wrong recipient/keys cannot contaminate another target or operation"
+  },
+  "dualPlatformImpact": {
+    "android": "15 instrumentation methods compiled, not executed. Numeric sequence coercion reproduced on host compatibility JSON and prepared as an unsuppressed native regression.",
+    "ios": "Unchanged. Numeric envelope validation/AAD framing should be independently reviewed if parent implements a shared protocol correction; no iOS defect/pass asserted."
+  },
+  "implementation": "auxiliary instrumentation checkpoint; no production fix",
+  "verification": {
+    "native": "not-performed",
+    "compile": "passed",
+    "hostProbe": "known numeric coercion defect reproduced; not a correctness pass"
+  },
+  "a5GroupsSealed": false,
+  "integratorAction": "Cherry-pick only this checkpoint; preserve old seven-group audit. Review numeric coercion before treating the whole native class as green. Freeze a combined candidate and run each group under exact leased device/package/time with <=240s cap.",
+  "integrationChangeRecord": {
+    "id": "android-p8-native-protocol-boundaries-20261028",
+    "baseCommit": "64b0e00e008db42627e2f2dc9928902dcd518059",
+    "features": ["F07", "F08", "F09", "F43", "F44", "F46"],
+    "summary": "Prepare 15 bounded Android instrumentation protocol/EWDAP/receipt methods; compile only. Host probe reproduces numeric sequence coercion and native regression remains unsuppressed. No production fix or A5 closure.",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt": "f450a6b77770ebd3a0f83b690cc363d4f90572f79d516343b112819394902479"
+    }
+  }
+}

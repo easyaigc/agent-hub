@@ -1,0 +1,40 @@
+# 阅读账本与普通通知共性迁移
+
+依赖为明确授权的父线 `6f4413f55960ce08d8df210f1a3df4b7bc2c0734`，通过merge提交1b9ac6a6导入；保留之前附件、旧封套与取消修复，未rebase或覆盖WIP。三处合并冲突中，NativeMigrationStreamTest使用父线精确文件（已修独立草稿fixture）；两个迁移/存储文件在父线与7fc712d4完全相同，保留本线后续窄增量。阅读及P9生产模块与6f源文件逐字核对相同。中央表仅随指定依赖导入，本阶段未再编辑。
+
+同一现有迁移器增加NativeMigrationDeviceState helper；当前写入本审计v1/policy3和独立墓碑索引v1，继续只读接受原policy2来源。reading-ledger与ordinary-notification-store仍为生产v1。调用实际生产validateEncoded，再冻结本阶段已知字段、事件/目标与声音引用形状。已知根记录参与严格库存和完整图验证；来源、目标、线程、同ID原通知元数据、相同revision内容冲突会明确拒绝。历史已移除目标的行/回执只保留为无活动作用域资料，不猜造新目标。后续冻结F53声音扩展见sounds-migration.md。
+
+## 数据与安装权威分开
+
+阅读保留latest/read水位、原replyUnread、原notice元数据及seen墓碑；清空计数scopes，移除pendingReader并递增有界revision。正确保存目标完成重新对账后才计数。没有复制旧reader身份来自动ACK；已见旧通知不会因同聊天还有新未读而复活，未见/未知通知也不会被假读。
+
+通知保留偏好选择，但enabled=false、generation递增并换新revision；活动lease和receipts都为空。原事件、state、ticket、凭据/注册历史与未知结果完整保存在原文审计。独立的`migration-notification-tombstones-v1`只保存按完整Codex机器/runtime目标与事件ID计算的有域分隔、UTF-8长度前缀SHA-256指纹，没有ticket或执行权威。原OS点击ticket没有活动记录可以consume/open；没有真实注册、系统permission或发声操作。
+
+原`77458db4`的policy2曾把永久墓碑放入活动receipts。主统筹评审发现：合法来源恰好2048条时，新安装永久没有新事件槽位；这是旧候选的容量缺陷，不算满额成功，旧提交/证据保留。policy3将去重与活动槽分开。获准的生产变化只有claim中的一行只读窄查询，在同根事务内检查索引并保留原mayPresent重查。墓碑跨绑定、偏好代次、正常24小时TTL和再次迁移继续阻止旧事件，包括同ID伪装新occurredAt。新事件保有正常2048活动槽及原TTL规则，超过上限仍拒绝；不扩大或静默裁剪原记录。
+
+`migration-device-audit-v1`以policyVersion3保存每次原候选ID/摘要和完整源reading/notification文本，含原未知回执/历史标识。独立索引在导出/候选校验时必须精确等于全部审计原收据所派生的集合，漏项、额外项、重复、未知版本或policy3缺失索引均拒绝。审计最多16次；索引最多16×2048条、3 MiB，聚合仍受原8 MiB文本/记录边界约束，超额不裁剪。正常claim只读独立索引；旧policy2没有索引时，窄查询只读验证旧审计派生集合以保留兼容。它不会整理旧活动收据；旧policy2来源经新候选迁入时才原子升级。相同已激活回执仍只返回原结果，不偷偷改写旧安装。来源旧注册/读者字段没有成为新安装身份。
+
+## 原子发布与原回执
+
+首次迁入增加审计与独立索引，实际发布记录数比原候选多2；已有审计/索引时按实际差额计算。存储prepared发布接口保持原形状；仅需要区分两种计数时采用generation-pointer v2，records仍是实际文件数，sourceRecords绑定原不可变Receipt。v1继续可读，等数量调用仍发布v1。实际全部准备记录/二进制均在内容摘要和同一原子指针保护内；任一precommit失败回滚整个未发布代次。重复激活先查原回执，不再次重置当前偏好、读水位、后来草稿或新lease。
+
+## iOS源码对照与差异
+
+iOS `EncryptedMigration.Payload`实际导出saved state、通知偏好/seen/notices及key/device/binding资料；`SessionStore.restoreMigration`关闭通知并递增代次/换revision，恢复seen/notices，并以新的readingDeviceId/清空codexReaderScopeIds防止旧读者冒用。当前源码同时清空mobileReads/baselines，并保留原notification key/device/bindings用于其既有恢复/撤销流程。
+
+本Android子阶段遵守当前明确范围：保留水位/seen，活动注册/读者权威重置，旧事件去重保留；不照搬iOS设备key/binding，不改iOS源或A6。上述差异显式保留为双端后续设计/验收项，未宣称iOS或全双端迁移一致通过。
+
+## 原生验收入口
+
+`com.agenthub.android.NativeMigrationDeviceStateTest`当前6项：
+
+1. activationPreservesWatermarksAndSeenUnknownAuditWhileResettingAllLocalAuthority
+2. futureSchemasForeignScopesAndConflictingNoticeIntentRejectWithoutReplacingOriginalCandidate
+3. eachPrecommitFailureKeepsSourceAndAddedAuditAtomicThenOriginalReceiptIsIdempotent
+4. repeatedMigrationPreservesPriorAuditAndPermanentSeenDedupWithoutOldAuthority
+5. unseenUnknownNoticeRemainsUnreadButItsOriginalAlertAndTicketCannotReplay
+6. fullAuditCapacityRejectsWithoutPruningPriorOriginalsOrPublishingPartialState
+
+使用实际NativeReadingLedger/NativeChatNotificationStore、Keystore与原迁移链。验证已见/未见/未知、旧票据/读者清除、新注册后同ID两天后不重响、新事件可claim、原审计/原密文、跨代二次迁移及失败全回滚。原6项断言随policy3更新，独立`NativeMigrationNotificationCapacityTest`再提供4项：合法2048源迁入后新事件容量、旧policy2失败复现及新候选升级、正常2048槽/TTL与再次迁移、索引Schema/原文集合一致性拒绝。仅claim元数据，不调用系统post、Host或模型。默认11字段保护继续；旧容量失败不是新候选通过证明。
+
+当前app/runner编译为辅助证据。上述原生方法及pointer v1/附件/语音/冻结F53回归待主统筹按准确包/设备/时间租约执行；没有本线设备或真实DEV结果。全子存储、系统UI/冷会话替换、旧满额inline限制及普通上传ByteArray分别保留。当前契约见common-device-migration-contract-v3.json；v2文件是被取代的旧候选契约。

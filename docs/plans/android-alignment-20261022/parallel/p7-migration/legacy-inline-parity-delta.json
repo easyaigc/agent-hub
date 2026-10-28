@@ -1,0 +1,42 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-legacy-inline-authentication-audit",
+  "base": "7f1eb8426f75826e63d6b1364bcca1c1d12c6da7",
+  "features": ["F30", "F47", "F55"],
+  "commonAssertions": [
+    "Historical<=20MiB inline attachments were legal ordinary writes; migration8/12MiB limits did not restrict ordinary stored source size. Their low-heap migration remains incomplete.",
+    "Historical crypto1/3 each authenticate a whole GCM message; version3 encrypted logical-name frame does not create independently authenticated blocks.",
+    "Oversize whole-tag records reject before decryption, whole String/Base64 allocation or destination/candidate publication, with source authenticity explicitly unestablished.",
+    "Preserve exact source ciphertext, UUID/manifest/checksum, immutable submitted intent/result and unknown receipt; do not repair, replay, upload or treat refusal as migration success."
+  ],
+  "implementation": "specific protection/diagnostic plus reproducible native scenarios; no safe full legacy20MiB streaming decoder exists in this candidate",
+  "verification": {
+    "build": "passed acceptance app and runner, legacy-gcm-final-build.log",
+    "hostPolicy": "compiled production limit calculations passed in48MiB JVM; no native crypto performed and fullLegacyMigrationPassed=false",
+    "native": "five scenarios compiled only; coordinator device lease required",
+    "fullLegacyMigration": "not passed; source-audited whole-authentication boundary remains",
+    "historicalActualUserFiles": "not inspected; legal code boundary audited at6commits, no claim an old48MiB process wrote a full file",
+    "format": "pnpm format:check passed; status fields formatted separately",
+    "centralParity": "integration pending; central tables untouched"
+  },
+  "dualEndImpact": {
+    "android": "Specific migration inventory subtype and bounded metadata preflight; ordinary reads/writes,8/12MiB string APIs and new binary flow unchanged.",
+    "ios": "No source/UI/device changes; no platform pass inferred; A6 paused."
+  },
+  "sourceAudit": [
+    {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r1/keystore/java/android/security/keystore/AndroidKeyStoreAuthenticatedAESCipherSpi.java",
+      "sha256": "05e53102d24f27f3cd0558910cb1d79557edcafa0fd47a5c151d3059b29c7d1b"
+    },
+    {
+      "scope": "local Android37 SDK provider source",
+      "sha256": "e60d8cf25ccfe4e44735e513460c870be4249383f0b3ec0fe18a590731dc3da2"
+    }
+  ],
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "e5dc318cac35123358b1d6778ab33d581166281877d670c8936f75064dc49b0a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLegacyGcm.kt": "b2a3a3e98e05187c047e5a5f2ba28f02faa57475409eb4d55425bdab43992417",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationLegacyGcmTest.kt": "6f1b8dac3ad9ffe5b53a5713807698c6f0a6cf28f29c8e5ccfa40f38744f0599"
+  },
+  "nextDependency": "Clean commit then explicitly merge parent6f4413f55960ce08d8df210f1a3df4b7bc2c0734 for reading/ordinary-notification schema; unknown new sound schema remains closed."
+}

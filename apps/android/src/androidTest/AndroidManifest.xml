@@ -19,5 +19,8 @@
             android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS">
             <intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER" /></intent-filter>
         </provider>
+        <provider android:name="com.agenthub.android.NativeSoundForeignWitnessProvider"
+            android:authorities="${applicationId}.sound-witness"
+            android:exported="true" android:process=":soundWitness" />
     </application>
 </manifest>

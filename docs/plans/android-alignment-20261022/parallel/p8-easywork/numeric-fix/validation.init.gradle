@@ -1,0 +1,19 @@
+// Explicit host validation of the fixed production crypto plus the original safety suite.
+// The old defect-reproduction probe is intentionally not on this source set.
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.project(':android')
+    def root = gradle.rootProject.projectDir
+    def shim = new File(root, 'docs/plans/android-alignment-20261022/parallel/p8-easywork/jvm')
+    def current = new File(root, 'docs/plans/android-alignment-20261022/parallel/p8-easywork/numeric-fix/jvm')
+    app.android.sourceSets.getByName('test').java.srcDirs(shim, current)
+    app.android.sourceSets.getByName('test').kotlin.srcDirs(shim, current)
+    app.dependencies.add('testImplementation', 'junit:junit:4.13.2')
+    app.dependencies.add('testImplementation', 'org.json:json:20250517')
+    app.tasks.withType(Test).configureEach {
+        systemProperty 'p8.root', root.absolutePath
+        def output = System.getenv('P8_NUMERIC_VALIDATION_OUTPUT')
+        if (!output) throw new GradleException('Set P8_NUMERIC_VALIDATION_OUTPUT to a private file outside the checkout')
+        systemProperty 'p8.numeric.output', output
+        testLogging { events 'passed', 'failed'; exceptionFormat 'full' }
+    }
+}

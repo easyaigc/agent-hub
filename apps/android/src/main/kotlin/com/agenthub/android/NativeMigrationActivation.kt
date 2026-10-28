@@ -14,10 +14,10 @@ internal class NativeMigrationActivation(private val context: Context,private va
         if(metadata?.getJSONArray("clients")?.length()?.let{it>0}==true||CodexConnectionVault(storage).clients().isNotEmpty())throw ExistingInstallation()
         val stream=NativeMigrationStreamCandidate(context,storage)
         if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
-            storage.publishStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text),records.binary),checkpoint)
+            storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text),records.binary),receipt.recordCount,checkpoint)
         }
         val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
-        storage.publishMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text),records.binary),checkpoint)
+        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text),records.binary),receipt.recordCount,checkpoint)
     }
     private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>): Map<String,String> {
         val records=original.toMutableMap();val metadata=JSONObject(records.getValue("metadata"))
@@ -46,6 +46,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
         // Archived AI grants are audit material, never authority on the new installation.
         // OS/device callbacks are not accepted; generation-scoped children start empty.
         // Immutable intent/result strings stay exact.
+        NativeMigrationDeviceState.prepare(receipt,original,records)
         return records
     }
 }

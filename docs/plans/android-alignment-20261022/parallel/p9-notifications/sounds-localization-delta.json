@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "baseStage": "400bb57c",
+  "destination": "apps/android/localization/native-copy.json",
+  "entries": [
+    {
+      "key": "此音频的采样率或声道暂不支持。",
+      "zh-Hans": "此音频的采样率或声道暂不支持。",
+      "en": "This sample rate or channel layout is not supported."
+    },
+    {
+      "key": "此音频编码暂不支持，请选择 PCM 音频或系统可解码的 M4A、MP3。",
+      "zh-Hans": "此音频编码暂不支持，请选择 PCM 音频或系统可解码的 M4A、MP3。",
+      "en": "This audio encoding is not supported. Choose PCM audio, or M4A or MP3 that this device can decode."
+    },
+    {
+      "key": "系统自定义铃声",
+      "zh-Hans": "系统自定义铃声",
+      "en": "Custom system sound"
+    },
+    {
+      "key": "铃声数量已达上限，请先删除不再使用的铃声。",
+      "zh-Hans": "铃声数量已达上限，请先删除不再使用的铃声。",
+      "en": "The sound library is full. Delete an unused sound first."
+    },
+    {
+      "key": "无法读取所选音频，请重新选择并授予读取权限。",
+      "zh-Hans": "无法读取所选音频，请重新选择并授予读取权限。",
+      "en": "The selected audio cannot be read. Select it again and allow read access."
+    },
+    {
+      "key": "所选音频已不可用，请重新选择。",
+      "zh-Hans": "所选音频已不可用，请重新选择。",
+      "en": "The selected audio is no longer available. Select it again."
+    },
+    {
+      "key": "此设备无法解码这段音频，请选择其他格式或编码。",
+      "zh-Hans": "此设备无法解码这段音频，请选择其他格式或编码。",
+      "en": "This device cannot decode this audio. Choose another format or encoding."
+    },
+    {
+      "key": "无法保存铃声设置。",
+      "zh-Hans": "无法保存铃声设置。",
+      "en": "Sound settings could not be saved."
+    },
+    {
+      "key": "铃声已导入，当前选择已保留。",
+      "zh-Hans": "铃声已导入，当前选择已保留。",
+      "en": "The sound was imported. Your newer selection was kept."
+    },
+    {
+      "key": "无法读取本机铃声资料，原文件已保留。",
+      "zh-Hans": "无法读取本机铃声资料，原文件已保留。",
+      "en": "The local sound library could not be read. The original files were preserved."
+    },
+    {
+      "key": "停止试听",
+      "zh-Hans": "停止试听",
+      "en": "Stop preview"
+    },
+    {
+      "key": "试听",
+      "zh-Hans": "试听",
+      "en": "Preview sound"
+    },
+    {
+      "key": "无法打开系统文件选择器。",
+      "zh-Hans": "无法打开系统文件选择器。",
+      "en": "The system file picker could not be opened."
+    },
+    {
+      "key": "部分音频编码取决于系统支持；无法解码时会明确提示。",
+      "zh-Hans": "部分音频编码取决于系统支持；无法解码时会明确提示。",
+      "en": "Some audio encodings depend on system support. You will be told if a file cannot be decoded."
+    },
+    {
+      "key": "本机通知声音入口尚未就绪；可以先导入与试听。",
+      "zh-Hans": "本机通知声音入口尚未就绪；可以先导入与试听。",
+      "en": "The local notification sound provider is not ready. You can still import and preview sounds."
+    }
+  ],
+  "existingPhase1Delta": "localization-delta.json remains separate and unchanged"
+}

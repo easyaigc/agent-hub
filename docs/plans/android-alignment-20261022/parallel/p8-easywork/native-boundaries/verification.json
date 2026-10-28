@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "checkpoint": "native-protocol-boundaries",
+  "checks": {
+    "nativeCompile": {
+      "status": "passed",
+      "command": "node scripts/mobile/gradle.mjs :android:assembleDebug :android:assembleDebugAndroidTest -PagentHubAcceptance=true",
+      "tasks": 82,
+      "executed": 5,
+      "logSha256": "2acac082d25a4038c85dd0d042639134b9ff6d301fe526835ef9586b20cae6db",
+      "dexClassAndAll15MethodNamesPresent": true,
+      "testSourceSha256": "f450a6b77770ebd3a0f83b690cc363d4f90572f79d516343b112819394902479",
+      "packages": {
+        "app": {
+          "applicationId": "com.easyai.agenthub.android.acceptance",
+          "sha256": "ff614d36bed8a901a61b6546c939e4d27dba6f2552c0aa59476e45973919b5ce",
+          "bytes": 24210362,
+          "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+        },
+        "runner": {
+          "applicationId": "com.easyai.agenthub.android.acceptance.test",
+          "sha256": "7d7d5f518c1425673595950efd8d9b70ee92eccc7ad7d577004e09690d4b575d",
+          "bytes": 7800188,
+          "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+        }
+      }
+    },
+    "hostNumericProbe": {
+      "status": "defect-reproduced-on-host-json",
+      "tests": 1,
+      "nativeAndroidExecuted": false,
+      "logSha256": "186b8feb760711b07e4a6105839604f07a6789d186384a0e78ec786ffbb61166",
+      "resultSha256": "eda946ee224bd315f90a7b6ce18ce253bca15faf80c17f23b1d63b90af5ea739",
+      "meaning": "Probe success confirms current host coercion defect; it is not a correctness pass"
+    },
+    "originalSevenGroupAudit": {
+      "status": "passed immutable check",
+      "files": 16,
+      "auditLogSha256": "e6dc528ffbadef7b31d5917352f8c3e22b16be6ad1667e1b1be66ac1fad83eeb"
+    },
+    "pnpmCheck": {
+      "status": "integration-pending-central-delta",
+      "exitCode": 1,
+      "logSha256": "1095fe677d07f0a1c6b3d8ee18fab6c1db31d1661ab3e2e5685834392b3b6285",
+      "passedBeforeStop": ["format:check", "check:github-sync", "lint"],
+      "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt",
+      "requiredAction": "Parent merges native-boundaries/parity-delta.json into central manifest and reruns full root check; no guard weakened or central files edited"
+    },
+    "nativeInstrumentation": {
+      "status": "not-performed",
+      "methodsPrepared": 15,
+      "deviceLease": null,
+      "networkDesktopRealModel": "not-used"
+    }
+  },
+  "knownDefect": "P8-NATIVE-NUMERIC-001; native regression unsuppressed, native result pending; production fix not included"
+}

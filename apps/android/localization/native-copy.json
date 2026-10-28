@@ -590,6 +590,131 @@
       "key": "Android 不支持及时通知。",
       "en": "Time Sensitive notifications are not supported on Android.",
       "zhHans": "Android 不支持及时通知。"
+    },
+    {
+      "key": "此音频的采样率或声道暂不支持。",
+      "en": "This sample rate or channel layout is not supported.",
+      "zhHans": "此音频的采样率或声道暂不支持。"
+    },
+    {
+      "key": "此音频编码暂不支持，请选择 PCM 音频或系统可解码的 M4A、MP3。",
+      "en": "This audio encoding is not supported. Choose PCM audio, or M4A or MP3 that this device can decode.",
+      "zhHans": "此音频编码暂不支持，请选择 PCM 音频或系统可解码的 M4A、MP3。"
+    },
+    {
+      "key": "系统自定义铃声",
+      "en": "Custom system sound",
+      "zhHans": "系统自定义铃声"
+    },
+    {
+      "key": "铃声数量已达上限，请先删除不再使用的铃声。",
+      "en": "The sound library is full. Delete an unused sound first.",
+      "zhHans": "铃声数量已达上限，请先删除不再使用的铃声。"
+    },
+    {
+      "key": "无法读取所选音频，请重新选择并授予读取权限。",
+      "en": "The selected audio cannot be read. Select it again and allow read access.",
+      "zhHans": "无法读取所选音频，请重新选择并授予读取权限。"
+    },
+    {
+      "key": "所选音频已不可用，请重新选择。",
+      "en": "The selected audio is no longer available. Select it again.",
+      "zhHans": "所选音频已不可用，请重新选择。"
+    },
+    {
+      "key": "此设备无法解码这段音频，请选择其他格式或编码。",
+      "en": "This device cannot decode this audio. Choose another format or encoding.",
+      "zhHans": "此设备无法解码这段音频，请选择其他格式或编码。"
+    },
+    {
+      "key": "无法保存铃声设置。",
+      "en": "Sound settings could not be saved.",
+      "zhHans": "无法保存铃声设置。"
+    },
+    {
+      "key": "铃声已导入，当前选择已保留。",
+      "en": "The sound was imported. Your newer selection was kept.",
+      "zhHans": "铃声已导入，当前选择已保留。"
+    },
+    {
+      "key": "无法读取本机铃声资料，原文件已保留。",
+      "en": "The local sound library could not be read. The original files were preserved.",
+      "zhHans": "无法读取本机铃声资料，原文件已保留。"
+    },
+    {
+      "key": "停止试听",
+      "en": "Stop preview",
+      "zhHans": "停止试听"
+    },
+    {
+      "key": "试听",
+      "en": "Preview sound",
+      "zhHans": "试听"
+    },
+    {
+      "key": "无法打开系统文件选择器。",
+      "en": "The system file picker could not be opened.",
+      "zhHans": "无法打开系统文件选择器。"
+    },
+    {
+      "key": "部分音频编码取决于系统支持；无法解码时会明确提示。",
+      "en": "Some audio encodings depend on system support. You will be told if a file cannot be decoded.",
+      "zhHans": "部分音频编码取决于系统支持；无法解码时会明确提示。"
+    },
+    {
+      "key": "本机通知声音入口尚未就绪；可以先导入与试听。",
+      "en": "The local notification sound provider is not ready. You can still import and preview sounds.",
+      "zhHans": "本机通知声音入口尚未就绪；可以先导入与试听。"
+    },
+    {
+      "key": "无法读取通知资料，原文件已保留。",
+      "en": "Notification data could not be read. The original files were preserved.",
+      "zhHans": "无法读取通知资料，原文件已保留。"
+    },
+    {
+      "key": "无法保存通知设置，请重新读取资料。",
+      "en": "Notification settings could not be saved. Reload the data and try again.",
+      "zhHans": "无法保存通知设置，请重新读取资料。"
+    },
+    {
+      "key": "前台通知已同步",
+      "en": "Foreground notifications are synchronized.",
+      "zhHans": "前台通知已同步"
+    },
+    {
+      "key": "通知注册或更新结果待确认，正在核对原设备状态。",
+      "en": "The notification change is unconfirmed. Checking the original device status.",
+      "zhHans": "通知注册或更新结果待确认，正在核对原设备状态。"
+    },
+    {
+      "key": "原电脑连接需要先完成通知撤销。",
+      "en": "Notifications for the original computer connection must be revoked first.",
+      "zhHans": "原电脑连接需要先完成通知撤销。"
+    },
+    {
+      "key": "当前电脑未提供可用的前台通知。",
+      "en": "Foreground notifications are unavailable for this computer.",
+      "zhHans": "当前电脑未提供可用的前台通知。"
+    },
+    {
+      "key": "通知资料暂不可用，原文件已保留。",
+      "en": "Notification data is unavailable. The original files were preserved.",
+      "zhHans": "通知资料暂不可用，原文件已保留。"
+    },
+    {
+      "key": "远端通知撤销仍待确认。",
+      "en": "Remote notification revocation is still unconfirmed.",
+      "zhHans": "远端通知撤销仍待确认。"
+    },
+    {
+      "key": "通知已撤销，重新开启通知后会恢复同步。",
+      "en": "Notifications were revoked. Turn them on again to resume synchronization.",
+      "zhHans": "通知已撤销，重新开启通知后会恢复同步。"
+    },
+    {
+      "key": "部分通知的处理结果待确认，不会重复提醒。",
+      "en": "Some notification results are unconfirmed. They will not alert again.",
+      "zhHans": "部分通知的处理结果待确认，不会重复提醒。"
     }
   ]
 }

@@ -1,0 +1,19 @@
+// Reproduces a suspected envelope coercion issue on the JVM compatibility runtime.
+// It does not execute instrumentation, network, Desktop, native Keystore or a model.
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.project(':android')
+    def root = gradle.rootProject.projectDir
+    def oldShim = new File(root, 'docs/plans/android-alignment-20261022/parallel/p8-easywork/jvm')
+    def probe = new File(root, 'docs/plans/android-alignment-20261022/parallel/p8-easywork/native-boundaries/probe')
+    app.android.sourceSets.getByName('test').java.srcDirs(oldShim, probe)
+    app.android.sourceSets.getByName('test').kotlin.srcDirs(oldShim, probe)
+    app.dependencies.add('testImplementation', 'junit:junit:4.13.2')
+    app.dependencies.add('testImplementation', 'org.json:json:20250517')
+    app.tasks.withType(Test).configureEach {
+        systemProperty 'p8.root', root.absolutePath
+        def output = System.getenv('P8_NATIVE_PROBE_OUTPUT')
+        if (!output) throw new GradleException('Set P8_NATIVE_PROBE_OUTPUT to a private output file outside the checkout')
+        systemProperty 'p8.probe.output', output
+        testLogging { events 'passed', 'failed'; exceptionFormat 'full' }
+    }
+}

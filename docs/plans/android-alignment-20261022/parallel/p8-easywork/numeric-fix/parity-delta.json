@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "id": "android-p8-strict-envelope-numeric-fix-20261028",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "bf5d1a7aeaaea4623078973f8e58ca70e288e7ab",
+  "features": ["F08", "F09", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt": "634d513b079c46587e68477d6fdf842113ec17fa48c6e1f0ade61bee39a7e795",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt": "84c6f3e018aea26e7c55c2d1020234167cbc85cf815846b289b109fd2b8f4d9b"
+  },
+  "productionFilesChanged": ["apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt"],
+  "summary": "Validate decoded raw sequence/version Number before AAD/replay identity; preserve canonical v1/legacy valid frames and original 15 native methods; add one bounded numeric method and independent Node/host vectors. Native execution pending.",
+  "commonAssertions": {
+    "F09": "Inbound envelope version/sequence must be numeric, finite, integral and within safe range before normalization/AAD/replay identity; version remains 1",
+    "F08": "LAN/relay use the same checked envelope without changing target identity or wire version",
+    "F43": "Validated numeric framing does not alter original operation ID/hash/target",
+    "F44": "Unknown write intents remain query-only; no replay introduced",
+    "F46": "Malformed encrypted envelopes cannot alias another replay sequence through lossy conversion"
+  },
+  "dualPlatformImpact": {
+    "android": "Production strict number validation implemented; 12 host tests pass and 16 native methods compiled, not executed",
+    "ios": "Product unchanged. Read-only macOS Foundation numeric guard comparison has four policy differences (Boolean and safe upper bound); full-envelope/iOS device behavior not verified"
+  },
+  "uiCopyDelta": [],
+  "verification": {
+    "host": "passed-current-narrow-candidate",
+    "native": "not-performed",
+    "pnpmCheck": "pending central delta integration"
+  },
+  "integratorAction": "Register exact file hashes centrally, preserve baseline native failure, rebuild combined candidate and run numeric/core groups under leased devices. iOS differences require its owner review; A6 remains paused.",
+  "integrationChangeRecord": {
+    "id": "android-p8-strict-envelope-numeric-fix-20261028",
+    "baseCommit": "bf5d1a7aeaaea4623078973f8e58ca70e288e7ab",
+    "features": ["F08", "F09", "F43", "F44", "F46"],
+    "summary": "Validate decoded raw sequence/version Number before AAD/replay identity; preserve canonical v1/legacy valid frames and original 15 native methods; add one bounded numeric method and independent Node/host vectors. Native execution pending.",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt": "634d513b079c46587e68477d6fdf842113ec17fa48c6e1f0ade61bee39a7e795",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt": "84c6f3e018aea26e7c55c2d1020234167cbc85cf815846b289b109fd2b8f4d9b"
+    }
+  }
+}

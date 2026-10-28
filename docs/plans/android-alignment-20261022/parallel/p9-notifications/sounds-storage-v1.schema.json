@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ordinary Codex normalized sound catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "items", "staged", "retired"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "staged": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "retired": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "sha256", "bytes", "frames", "sourceExtension"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.caf$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Unicode scalar count, stripped control/format characters and trimmed, no source URI/path semantics"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 46,
+          "maximum": 1278944
+        },
+        "frames": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 639450
+        },
+        "sourceExtension": {
+          "enum": ["wav", "aiff", "aif", "caf", "m4a", "mp3"]
+        }
+      }
+    }
+  },
+  "description": "Production validator also enforces total <=256 descriptors, unique IDs across lists, bytes=44+2*frames, UTF-8 catalog <=256KiB. Each binary is canonical mono 22050Hz signed16 little-endian WAV with exact descriptor size/frame count/SHA."
+}

@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "supersedes": "common-device-migration-contract-v2.json (77458db4 old failed capacity candidate; immutable history retained)",
+  "records": {
+    "native-chat-notifications-v1": {
+      "schemaVersion": 1,
+      "activeReset": "enabled=false, fresh revision/generation, leases=[], receipts=[]",
+      "normalCapacity": 2048,
+      "normalTTLMillis": 86400000,
+      "unchanged": "Decoder, claim cap, TTL, mayPresent and F53 methods retain existing behavior; claim adds exactly one read-only migration index query."
+    },
+    "migration-device-audit-v1": {
+      "schemaVersion": 1,
+      "readPolicyVersions": [2, 3],
+      "writePolicyVersion": 3,
+      "maxEntries": 16,
+      "preserve": "Exact original reading/notifications text and candidate UUID/archive SHA, including every original receipt/unknown state/ticket/legacy identity. Existing entries unchanged."
+    },
+    "migration-notification-tombstones-v1": {
+      "schemaVersion": 1,
+      "schema": "migration-notification-tombstones-v1.schema.json",
+      "maxEventKeys": 32768,
+      "maxUtf8Bytes": 3145728,
+      "identity": "SHA256 of fixed domain followed by strict UTF8 length-prefixed codex + hostId + workspaceId + runtimeId + original event ID; account excluded under Codex policy",
+      "validation": "Sorted unique 64-lowercase-hex keys must exactly equal all original audit notification receipt identities; policy3 missing index rejects; no prune.",
+      "authority": "Read-only dedup only; no tickets, credentials, registration or OS delivery authority. No active receipt slots used."
+    }
+  },
+  "compatibility": {
+    "policy2Source": "Read-only accepted; new candidate activation preserves prior original entries and upgrades to3 with independent index.",
+    "policy2Active": "Read-only legacy-audit query; does not compact old2048 sentinel slots. Existing same activated Receipt returns original result, not implicit rewrite/replay.",
+    "unknownVersions": "reject without changing originals/candidate"
+  },
+  "publication": "Existing common generation pointer1/2, sourceRecords unchanged and all prepared records covered atomically; first import adds audit+index=2. No existing record/quota increase.",
+  "dualEnd": "Android change only; iOS/A6 untouched; actual native/OS/real DEV gates separate."
+}

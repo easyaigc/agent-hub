@@ -10,6 +10,7 @@ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands
         return providers[id]?:error("未注册此 Agent")
     }
     fun initialCodexReads(secret: String): AgentReads=if(codexReads is NativeHostReads)NativeHostReads { secret } else codexReads
+    override suspend fun acknowledgeRead(client: MobileClient,request: NativePendingRead)=provider(client).second.acknowledgeRead(client,request)
     override suspend fun archiveWorkspace(client: MobileClient,request: WorkspaceArchiveRequest)=provider(client).second.archiveWorkspace(client,request)
     override suspend fun workspaceArchiveStatus(client: MobileClient,request: WorkspaceArchiveRequest)=provider(client).second.workspaceArchiveStatus(client,request)
     override suspend fun chatAction(client: MobileClient,request: ChatActionRequest)=provider(client).second.chatAction(client,request)

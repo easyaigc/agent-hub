@@ -1759,4 +1759,29 @@
     <string name="product_faf506ec5efb2a446e45856b" formatted="false">"Notification channels are managed by Android. Sound and badges follow the actual system settings."</string>
     <string name="product_c108aeed14b7435e5798c520" formatted="false">"Built-in and imported sounds are not ready"</string>
     <string name="product_c8a0c8ae567390bcdf06c34b" formatted="false">"Time Sensitive notifications are not supported on Android."</string>
+    <string name="product_d918c995c61d6fdb82ac443f" formatted="false">"This sample rate or channel layout is not supported."</string>
+    <string name="product_8017ff001f00c1e42da5f3ca" formatted="false">"This audio encoding is not supported. Choose PCM audio, or M4A or MP3 that this device can decode."</string>
+    <string name="product_20eff4371124952a87b58b00" formatted="false">"Custom system sound"</string>
+    <string name="product_c425213950ec0027451b873d" formatted="false">"The sound library is full. Delete an unused sound first."</string>
+    <string name="product_dee80402e5962ba2826f57f3" formatted="false">"The selected audio cannot be read. Select it again and allow read access."</string>
+    <string name="product_c6324bb94c7691af0dfcadbe" formatted="false">"The selected audio is no longer available. Select it again."</string>
+    <string name="product_db5a160b6d6de20657d3f2be" formatted="false">"This device cannot decode this audio. Choose another format or encoding."</string>
+    <string name="product_5d598532904b19ed6cbb8aa4" formatted="false">"Sound settings could not be saved."</string>
+    <string name="product_bae4673684f1b3f6e383df06" formatted="false">"The sound was imported. Your newer selection was kept."</string>
+    <string name="product_c1164c254977c32f53e26d45" formatted="false">"The local sound library could not be read. The original files were preserved."</string>
+    <string name="product_51443cd5a28851617800f06f" formatted="false">"Stop preview"</string>
+    <string name="product_7f0a0fda741c62205f1ec52b" formatted="false">"Preview sound"</string>
+    <string name="product_b4d918c9e458321f1c17e5f7" formatted="false">"The system file picker could not be opened."</string>
+    <string name="product_b04b397a1078a2121300c96f" formatted="false">"Some audio encodings depend on system support. You will be told if a file cannot be decoded."</string>
+    <string name="product_d97930304924cced749f1727" formatted="false">"The local notification sound provider is not ready. You can still import and preview sounds."</string>
+    <string name="product_ea5bf07f94c1a4bf6adcb70c" formatted="false">"Notification data could not be read. The original files were preserved."</string>
+    <string name="product_794cfcbd489f5bdc5d3cec85" formatted="false">"Notification settings could not be saved. Reload the data and try again."</string>
+    <string name="product_6053c9629a77081c9c20bbeb" formatted="false">"Foreground notifications are synchronized."</string>
+    <string name="product_5cff3d2d80fdf9eef8c91a11" formatted="false">"The notification change is unconfirmed. Checking the original device status."</string>
+    <string name="product_16b43ce2857ac1918e7b74bd" formatted="false">"Notifications for the original computer connection must be revoked first."</string>
+    <string name="product_d616cb2953c56321fea3a756" formatted="false">"Foreground notifications are unavailable for this computer."</string>
+    <string name="product_50496d27de0ac633b3430e41" formatted="false">"Notification data is unavailable. The original files were preserved."</string>
+    <string name="product_3ce43bf7e5d47e5afd18f803" formatted="false">"Remote notification revocation is still unconfirmed."</string>
+    <string name="product_83c08d39d66aa37337500214" formatted="false">"Notifications were revoked. Turn them on again to resume synchronization."</string>
+    <string name="product_401191d0ded2f688a2bbd515" formatted="false">"Some notification results are unconfirmed. They will not alert again."</string>
 </resources>

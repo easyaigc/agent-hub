@@ -33,3 +33,7 @@ This is an implemented, compilable local substage. It does not close P9/F51–F5
 After exact shared registration/P7 integration, freeze source/APK/runner/Host fingerprints. First run the 17 local methods on API26/API37/physical acceptance identity, then current UI settings/navigation/permission/channel cases. Separately exercise an authenticated ordinary chat event from original Electron/model, late/current versions, foreground/banner/preview toggles, preserved nonempty draft on click, once-only/cold/removed/credential-rotated tickets and no extra model input. Retain original operation IDs; do not replay unknown submissions. Stage OS submission, actual display, sound, vendor acceptance and device arrival are different evidence. Remote supplier/GMS/non-GMS scenarios remain separately pending.
 
 The branch is for coordinator cherry-pick/integration only; this workline creates no PR and does not merge main. Source recovery bundle, APKs and logs are saved outside the worktree. Cleanup/retention result and exact commit/remote SHA are recorded in the final handoff receipt, not inferred from a queued build or push.
+
+P9-2/F53 声音后续见 [本地声音阶段](sounds.md)。上文保留 P9-1 的原范围与证据，后续结果不倒填为原阶段通过。
+
+设置读取失败的独立检查点见 [设置恢复](settings-recovery.md)（`8b3af30d`）。P9-3 的前台注册、原事件批次、未知操作和异步声音设置见 [前台通知阶段](foreground.md) 与 [Host 契约缺口](foreground-contract.md)。分阶段哈希与证据分别保留；后续不倒填任何原生或真实 DEV 通过。

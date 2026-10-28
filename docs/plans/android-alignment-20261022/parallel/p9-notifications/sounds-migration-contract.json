@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "stage": "P9-2/F53",
+  "notificationRecordCompatibility": "native-chat-notifications-v1 and preference/event/receipt codecs unchanged; sound IDs retain existing default|none|*.caf syntax",
+  "catalogRecord": "native-chat-notification-sounds-v1",
+  "schema": "sounds-storage-v1.schema.json",
+  "validator": "NativeChatNotificationSoundLibrary.validateEncoded(raw)",
+  "binaryNames": "native-chat-notification-sound-v1:<canonical-UUID>.caf",
+  "inventory": "NativeChatNotificationSoundLibrary.binaryInventory(raw) maps all active/staged/retired descriptors; requiredBinaries(raw) names active mandatory binaries",
+  "binaryValidator": "NativeChatNotificationSoundLibrary.validateBinary(item, bytes) validates exact SHA, byte size, normalized WAV shape and frame count",
+  "storage": "Existing NativeSessionStorage encrypted binary v4 and authenticated text v3; no extra key or plaintext persistent library",
+  "bounds": {
+    "sourceBytes": 10485760,
+    "durationSeconds": 29,
+    "normalizedRate": 22050,
+    "channels": 1,
+    "sampleBits": 16,
+    "normalizedBytes": 1278944,
+    "catalogUtf8Bytes": 262144,
+    "activeImported": 128,
+    "allDescriptors": 256
+  },
+  "export": {
+    "active": "Every required binary must exist and match descriptor; never skip unknown/damaged audio",
+    "stagedRetired": "Keep exact descriptors. Their bytes may be absent only because an uncommitted import/deletion has not completed. Existing bytes must validate; corrupt/unknown bytes reject and remain untouched. Do not promote staged items or reselect retired items.",
+    "builtins": "Versioned immutable v1 APK assets; do not export runtime-generated samples or a second device key"
+  },
+  "import": {
+    "owner": "P7 migration only; P9 supplies schema and validators, not another migrator",
+    "idsAndBytes": "Retain imported IDs, descriptors and normalized SHA/bytes, re-encrypt with destination installation key through existing migration publication",
+    "permissions": "Do not restore source URI, URI grants, source provider identity, player/focus state, system sound URI overrides or Android notification permission/channels as app-owned truth",
+    "notificationReset": "Existing migration contract still forces notifications off/new registration generation. Preserve original events/receipts as immutable archive, never re-post. Sound reference repair must touch only sound references and preserve those receipts.",
+    "provider": "Build stable URI from destination applicationId plus validated local normalized hash; register non-exported grant-only provider locally and verify real system read. No source absolute paths.",
+    "pending": "Keep index/binary relation until exact validated cleanup; pending descriptors do not become active sounds on import or cold read",
+    "missingReferences": "Missing or unsupported imported references require explicit repair/reset to default/inherit through the migration owner; current runtime fails unavailable rather than silently substituting a sound"
+  },
+  "implemented": "Local library/read/import/delete/staged settlement only. Full migration integration and cross-install permission/URI/system tests remain parent-owned."
+}

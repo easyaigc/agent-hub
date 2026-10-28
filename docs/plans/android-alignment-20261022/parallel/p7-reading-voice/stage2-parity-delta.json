@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": 2,
+  "baseCommit": "e2caa06cd7aaf2170e2a2cae8d9697321950607c",
+  "features": [
+    {
+      "id": "F49",
+      "commonAssertion": "手机独立已读：实际最新内容可见才确认版本；桌面／另一手机阅读不清除本机，新版本冲突不误清",
+      "bothPlatforms": {
+        "ios": "existing reading/visibility/typed Host acknowledgement used as reference; no iOS changes or new iOS verification",
+        "android": "production session/body-marker/sidebar/client count wiring candidate"
+      },
+      "implementation": "in-progress; native and real DEV gates open",
+      "verification": "build and host-JVM auxiliary only",
+      "acceptance": "parallel/p7-reading-voice/stage2-reading-wiring.md"
+    },
+    {
+      "id": "F50",
+      "commonAssertion": "全部真实电脑汇总未读对话，一目标最多一；阅读不审批，角标关闭不删账本，迟到推送不恢复旧未读",
+      "bothPlatforms": {
+        "ios": "existing reading/visibility/typed Host acknowledgement used as reference; no iOS changes or new iOS verification",
+        "android": "production session/body-marker/sidebar/client count wiring candidate"
+      },
+      "implementation": "in-progress; native and real DEV gates open",
+      "verification": "build and host-JVM auxiliary only",
+      "acceptance": "parallel/p7-reading-voice/stage2-reading-wiring.md"
+    },
+    {
+      "id": "F56",
+      "commonAssertion": "中文/英文/跟随系统语言、外观/隐私与支持；深浅色与系统跟随、原生键盘／返回／旋转／后台／重启、无障碍与减少动画；输入／长历史性能、更新保留数据",
+      "bothPlatforms": {
+        "ios": "existing reading/visibility/typed Host acknowledgement used as reference; no iOS changes or new iOS verification",
+        "android": "production session/body-marker/sidebar/client count wiring candidate"
+      },
+      "implementation": "in-progress; native and real DEV gates open",
+      "verification": "build and host-JVM auxiliary only",
+      "acceptance": "parallel/p7-reading-voice/stage2-reading-wiring.md"
+    }
+  ],
+  "ui": ["UI02", "UI05", "UI11", "UI12"],
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePhoneReadingRulesTest.kt",
+      "sha256": "12f455591c5a082cbab8021efd3d05c059c22ea0a26a0f4d110d31e6487be513"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePhoneReadingSessionTest.kt",
+      "sha256": "546518297bb7a14fda3060dfe1ef3ad78b20907ef38e01434d01893516d6a1a4"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeThreadReadingWireTest.kt",
+      "sha256": "6f00721d8ac2be8f50247abbee76797b5673cd1207f84ddb1658a04ed4a514f3"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "sha256": "dd8bb256a8b016401916f51ad6cd61bafab93cfc6222ec11c8cef3925f7ca516"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+      "sha256": "d327caf3d653946a5b6912ecd4ceb2bfff1358dddd32c784cb12d738dd9b3521"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt",
+      "sha256": "ca92daf054c913ac8dcfae859abfb86fb97284ee8c49832dc87ded88b721da41"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+      "sha256": "98ce8662ee4567622d2c8bfe9e254f9842197ca99edeb1b355d0dd8e0e94dd98"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "40b49003f40cf48efea231c0a11910639cb2a464a93eb719fb49d09bd73e4ed3"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileWorkspaceMetadata.kt",
+      "sha256": "e6e981f8f54021340d0af48e3c3afba27374d5eb3e94725e60ffb523a6b17ad4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt",
+      "sha256": "2a359acff63eaa96e54e123e0bc4fab2287927955d53e717c590e3250af035c0"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt",
+      "sha256": "14edabdc0bb449208bf313c576cfb69f26fbef1100b9277a667503baa02301d7"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativePhoneReadingStore.kt",
+      "sha256": "f28907ed63dff7f76da12d5b86e5add65383c2cf45a1f85805a59ef07887072d"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt",
+      "sha256": "cee5d2d66ec6d5171f27b9d4235fbbbde81667ad164f7c555de908aa40dca713"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "sha256": "fc68d7208ff14592788944a5f49d379043f5ab9a38084443aebd5b359f5c8ddd"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeThreadReadingWire.kt",
+      "sha256": "69376350387f794903cb78e8798ae14e889fb71462f9ef82eaaa28244c77c7f6"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt",
+      "sha256": "0486516c7484f79792e8366450a8320bb5d000fd1a292b55e1d1cac9c2e275de"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/ThreadReading.kt",
+      "sha256": "b55f09555ac2a09217663a26c8358faca0dc1ed8cea9b666c7fa3100769c74c3"
+    }
+  ],
+  "centralIntegration": "Parent owns final manifest/source alias/central document union; do not replace the preserved first-stage evidence",
+  "remaining": [
+    "P9 exact notice visibility and delivery adapter",
+    "native API26/API37/physical and real Host/DEV",
+    "full localization/theme/AX/window/cold restore matrix",
+    "complete unread-directory pagination for previously unseen server pages"
+  ]
+}

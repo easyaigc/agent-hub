@@ -203,10 +203,12 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
             session.clients.forEach { client ->
                 Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically) {
                     Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("client-${client.id}").clickable { session.select(client); close() },verticalAlignment=Alignment.CenterVertically) { ProductIcon("laptop"); Column(Modifier.weight(1f).padding(horizontal=12.dp)) { Text(client.name,fontSize=16.sp); Text(clientSourceText(client),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant); val running=session.runningConversationCount(client)
+                        val unread=session.unreadConversationCount(client)
                         val runningDescription=clientRunningDescription(client,running)
                         Text(clientRunningText(client,running),Modifier.testTag("client-running-${client.id}").semantics {
                             contentDescription=runningDescription
-                        },fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,style=LocalTextStyle.current.copy(fontFeatureSettings="tnum")) }; if(client.isConnecting) CircularProgressIndicator(Modifier.size(16.dp),strokeWidth=2.dp); if(session.hasClient && session.selectedClient.id==client.id) ProductIcon("check",Modifier.size(16.dp)) }
+                        },fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,style=LocalTextStyle.current.copy(fontFeatureSettings="tnum"))
+                        Text(productText("未读 %@",unread?.toString() ?: "—"),Modifier.testTag("client-unread-${client.id}"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,style=LocalTextStyle.current.copy(fontFeatureSettings="tnum")) }; if(client.isConnecting) CircularProgressIndicator(Modifier.size(16.dp),strokeWidth=2.dp); if(session.hasClient && session.selectedClient.id==client.id) ProductIcon("check",Modifier.size(16.dp)) }
                     if(!client.isDemo) Column { TextButton(onClick={ edit(client) },modifier=Modifier.testTag("edit-client-${client.id}")) { Text(productText("编辑")) }; TextButton(onClick={ removing=client },modifier=Modifier.testTag("remove-client-${client.id}")) { Text(productText("移除"),color=MaterialTheme.colorScheme.error) } }
                 }
             }

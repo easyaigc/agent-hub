@@ -1,0 +1,34 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-common-reading-notification-migration",
+  "base": "1b9ac6a6 dependency merge of exact parent6f4413f55960ce08d8df210f1a3df4b7bc2c0734",
+  "features": ["F47", "F49", "F50", "F51", "F52", "F53", "F54", "F55"],
+  "commonAssertions": [
+    "Strict source/audit schemas and complete target/notice/revision cross-check; unknown new sounds or other schema reject.",
+    "Retain latest/read/seen/unseen/unknown originals while clearing pending old reader and active scopes.",
+    "Disable notifications/reset preference revision+generation; no active old leases/permissions/device keys/registration epochs/tickets.",
+    "Keep exact original raw audit plus consumed inert permanent event-ID tombstones so re-registration/TTL cannot re-alert old IDs; never silently prune on capacity.",
+    "Atomic prepare/validate/publish/rollback with pointer2 actual/source count split; original receipt retry preserves later state."
+  ],
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt": "4f336d86786ab307ee937b6ac4230e83507cee0c7e1ce2030d7e5ff7877b74cb",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "da550704e3082835a6cd46d213f8ef495dcbcb66fbf83d48ad9d84f960990aba",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "8b1a09a3ed6e47ac8609ebd25f7d6813f855d08c1b1077ee618e471c61b8c33f",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "ced23103541ce50d0fd01dcf14293eb778a9af9e5dc601f309b8c35e6741d450",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "41d8208380a4fe55421e00d49b3cf97896aeea6fa02aff230ce1508eb234354e",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationDeviceStateTest.kt": "bfe870709e309f57ab867b7dc0f05c373568ce8192ec48a77a2e7d48459517be"
+  },
+  "dualEndImpact": {
+    "android": "same existing migrator, new device-state helper/audit and conditional pointer2; producer modules unchanged",
+    "ios": "source comparison only; current watermarks reset and device binding recovery differ; no iOS edits/pass and A6 remains paused"
+  },
+  "verification": {
+    "build": "passed final acceptance app/runner compile: device-schema-publish-build.log",
+    "native": "6scenarios compiled only pending coordinator lease",
+    "format": "pnpm format:check passed; status-only fields formatted separately",
+    "centralParity": "integration pending; no central edit or check relaxation",
+    "realDev": "none; zero device/Host/model operations"
+  },
+  "limits": "existing text/raw budgets plus16audit entries and2048live receipt/tombstone capacity fail closed; old full inline remains unsupported",
+  "contract": "common-device-migration-contract-v2.json"
+}

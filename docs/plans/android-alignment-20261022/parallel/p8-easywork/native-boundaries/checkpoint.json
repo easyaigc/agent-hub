@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "checkpoint": "native-protocol-boundaries",
+  "sourceBase": "64b0e00e008db42627e2f2dc9928902dcd518059",
+  "parentIntegrationReference": "a1c0ac21 (parent report; not adopted into this branch)",
+  "date": "2026-10-28",
+  "testClass": "com.agenthub.android.NativeEasyWorkProtocolBoundaryTest",
+  "testSource": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt",
+  "testSourceSha256": "f450a6b77770ebd3a0f83b690cc363d4f90572f79d516343b112819394902479",
+  "nativeRuntimeExecution": "not-performed; no device lease/commands",
+  "methodTimeoutMillis": 12000,
+  "wholeInvocationTimeoutSeconds": 240,
+  "maxWholeClassJUnitTimeoutMillis": 180000,
+  "methods": [
+    "independentNodeFramesAndAuthenticatedHeaders",
+    "independentEwdapJweDeliveryRefusesTamperingAndWrongRecipient",
+    "bindingRequiresEveryTargetCoordinateAndDeviceKey",
+    "authorizedBindingCannotFallBackToLegacyAccountToken",
+    "lostWriteReplyUsesOriginalReceiptWithoutReplayingInput",
+    "unknownWriteReceiptRemainsUnknownWithoutReplay",
+    "recoveredReceiptRejectsChangedOperationId",
+    "recoveredReceiptRejectsChangedMethod",
+    "recoveredReceiptRejectsChangedTarget",
+    "recoveredReceiptRejectsChangedInputHash",
+    "readRetryPreservesExactRequestAndUsesSecondChannel",
+    "pathPreferencesUseOnlyTheSelectedTransport",
+    "arbitraryWireMethodIsRejectedBeforeOpeningAnyTransport",
+    "nonIntegralSequenceCannotReuseAuthenticatedIntegerHeader",
+    "dedicatedSystemDpopKeyPersistsAndBindsMethodUrlTokenAndBody"
+  ],
+  "groups": [
+    {
+      "id": "P8-native-core",
+      "methodCount": 14,
+      "methods": [
+        "independentNodeFramesAndAuthenticatedHeaders",
+        "independentEwdapJweDeliveryRefusesTamperingAndWrongRecipient",
+        "bindingRequiresEveryTargetCoordinateAndDeviceKey",
+        "authorizedBindingCannotFallBackToLegacyAccountToken",
+        "lostWriteReplyUsesOriginalReceiptWithoutReplayingInput",
+        "unknownWriteReceiptRemainsUnknownWithoutReplay",
+        "recoveredReceiptRejectsChangedOperationId",
+        "recoveredReceiptRejectsChangedMethod",
+        "recoveredReceiptRejectsChangedTarget",
+        "recoveredReceiptRejectsChangedInputHash",
+        "readRetryPreservesExactRequestAndUsesSecondChannel",
+        "pathPreferencesUseOnlyTheSelectedTransport",
+        "arbitraryWireMethodIsRejectedBeforeOpeningAnyTransport",
+        "dedicatedSystemDpopKeyPersistsAndBindsMethodUrlTokenAndBody"
+      ],
+      "outerTimeoutSeconds": 240,
+      "status": "compiled-only-not-executed",
+      "runnerClassSelector": "com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#independentNodeFramesAndAuthenticatedHeaders,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#independentEwdapJweDeliveryRefusesTamperingAndWrongRecipient,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#bindingRequiresEveryTargetCoordinateAndDeviceKey,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#authorizedBindingCannotFallBackToLegacyAccountToken,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#lostWriteReplyUsesOriginalReceiptWithoutReplayingInput,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#unknownWriteReceiptRemainsUnknownWithoutReplay,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#recoveredReceiptRejectsChangedOperationId,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#recoveredReceiptRejectsChangedMethod,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#recoveredReceiptRejectsChangedTarget,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#recoveredReceiptRejectsChangedInputHash,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#readRetryPreservesExactRequestAndUsesSecondChannel,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#pathPreferencesUseOnlyTheSelectedTransport,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#arbitraryWireMethodIsRejectedBeforeOpeningAnyTransport,com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#dedicatedSystemDpopKeyPersistsAndBindsMethodUrlTokenAndBody",
+      "requiresExactDevicePackageTimeLease": true
+    },
+    {
+      "id": "P8-native-numeric-regression",
+      "methodCount": 1,
+      "methods": ["nonIntegralSequenceCannotReuseAuthenticatedIntegerHeader"],
+      "outerTimeoutSeconds": 240,
+      "status": "compiled; unmodified source expected to fail if Android JSON coerces like the reproduced host runtime; retain actual failure",
+      "runnerClassSelector": "com.agenthub.android.NativeEasyWorkProtocolBoundaryTest#nonIntegralSequenceCannotReuseAuthenticatedIntegerHeader",
+      "requiresExactDevicePackageTimeLease": true
+    }
+  ],
+  "resourceBoundary": {
+    "network": "No network or Desktop transports; both registered transport factories replaced with in-memory encrypted peers, LAN preflight disabled by absent synthetic pin",
+    "activity": "No ActivityScenario/MainActivity launch",
+    "model": "No real model requests",
+    "storage": "No NativeSessionStorage/default identity loading; EWDAP keys only from fixed public fixtures",
+    "dpopDeviceNamespace": "p8-native-protocol-boundary-v1-synthetic-only",
+    "dpopOriginalKeys": "Not loaded, enumerated, modified or deleted; dedicated stable test alias may be created/reused in the leased acceptance app"
+  },
+  "priorSevenGroupAudit": "All files from 64b0e00e kept immutable; no A5 group closure",
+  "features": ["F07", "F08", "F09", "F43", "F44", "F46"],
+  "realAndroidRequired": [
+    "org.json.JSONObject/JSONArray",
+    "android.util.Base64",
+    "Android AES/GCM provider",
+    "BouncyCastle API26 X25519 binding",
+    "AndroidKeyStore ES256 dedicated alias"
+  ],
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "ff614d36bed8a901a61b6546c939e4d27dba6f2552c0aa59476e45973919b5ce",
+      "bytes": 24210362,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "7d7d5f518c1425673595950efd8d9b70ee92eccc7ad7d577004e09690d4b575d",
+      "bytes": 7800188,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "nativeInputSetSha256": "e7bf4a04b3a6c9e97a9f464752e4a976e1ac57ba7e555cfde73ea3ccb0475022",
+  "nativeInputFiles": 457,
+  "productionSourcesSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkModels.kt": "b8b5012f1e5d09a421f5a033c41357331d33b238644b45aa29a9cdf2887aae0c",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt": "e6e48453741aa3d5fd10a059f5325910a1e0dd34451d74507a1955d2258ba091",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceDelivery.kt": "5df81fb9bc5846a8550bed5e20ed529aec3529a21a2be25dc1e835866200c686",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDPoP.kt": "255db62be9e99719c7f2c2a3bdcac8b9ac29b5f5a90edf44de6862e5ff6e03ba",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "3977703c145c283cd643e3cd20df709a2a81378fd625e8fff8728767c331ad58",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": "43d25b9209c2e1bfd729d188115950fadde1423eaa652c7e9d8745f608912491",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkPairing.kt": "ccf9ec5439bc431ff129a35954ef1fe4b92a879ba46fa10a594a15f7d72859e0"
+  },
+  "independentFixtures": {
+    "existingCryptoAsset": "apps/android/src/androidTest/assets/easywork-crypto-vector.json",
+    "existingCryptoAssetSha256": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104",
+    "embeddedEwdapSource": "docs/plans/android-alignment-20261022/parallel/p8-easywork/ewdap-vector.json",
+    "embeddedEwdapSourceSha256": "69f276be49727e3a47863de1e4388aaa09a2287bdb62c498a8fd7f0a14808b36",
+    "embeddedEwdapDeepEqual": true
+  },
+  "knownDefects": [
+    {
+      "id": "P8-NATIVE-NUMERIC-001",
+      "status": "host-JSON-reproduced; native-Android-pending",
+      "nativeMethod": "nonIntegralSequenceCannotReuseAuthenticatedIntegerHeader",
+      "outerSequence": 42.5,
+      "coercedAuthenticatedSequence": 42,
+      "productionFix": "None in this checkpoint; exact repro and recommendation handed to parent"
+    }
+  ],
+  "cipherTamperAssertions": "Both malformed framing and same-length nonce/ciphertext/tag mutations; the latter must fail GeneralSecurityException to prove authentication was reached",
+  "fixtureNamespace": "Public fixed Node content keys only; dedicated DPoP alias derived from synthetic-only device ID"
+}

@@ -98,6 +98,7 @@ object CodexCommandCodec {
 
 /** Commands have specific names and immutable target arguments; no arbitrary route or method API. */
 interface AgentCommands {
+    suspend fun acknowledgeRead(client: MobileClient,request: NativePendingRead): JSONObject = throw UnsupportedOperationException("Reading acknowledgement is unavailable")
     suspend fun archiveWorkspace(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt = error("此客户端尚未支持批量归档")
     suspend fun workspaceArchiveStatus(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt = error("此客户端尚未支持批量归档")
     suspend fun chatAction(client: MobileClient,request: ChatActionRequest): ChatActionReceipt = error("此客户端尚未支持聊天管理")

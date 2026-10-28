@@ -13,6 +13,8 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal data class NativeChatNotificationPermission(val declared: Boolean, val granted: Boolean, val appEnabled: Boolean) {
     val canPost get() = declared && granted && appEnabled
@@ -21,7 +23,8 @@ internal data class NativeChatNotificationChannelState(val id: String, val name:
     val sound: String?, val showBadge: Boolean)
 
 /** API26+ platform implementation. Never registers a vendor or claims remote push readiness. */
-internal class NativeChatNotificationPlatform(private val context: Context, private val text: NativeL10n) {
+internal class NativeChatNotificationPlatform(private val context: Context, private val text: NativeL10n,
+    val sounds: NativeChatNotificationSoundLibrary = NativeChatNotificationSoundLibrary(context, NativeSessionStorage(context))) {
     companion object {
         const val ACTION = "com.agenthub.android.action.OPEN_CHAT_NOTIFICATION_V1"
         const val TICKET = "chat-notification-ticket-v1"
@@ -38,15 +41,16 @@ internal class NativeChatNotificationPlatform(private val context: Context, priv
     fun settings(channel: String? = null): Intent = Intent(if (channel == null) Settings.ACTION_APP_NOTIFICATION_SETTINGS else Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
         .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName).apply { if (channel != null) putExtra(Settings.EXTRA_CHANNEL_ID, channel) }
     private fun channelId(kind: NativeChatNoticeKind, sound: String, badge: Boolean) = PREFIX + kind.wire + "." + sound + if (badge) ".badge" else ".no-badge"
-    private fun ensure(kind: NativeChatNoticeKind, sound: String, badge: Boolean): String {
-        require(sound in setOf("default", "none")) { "Custom chat notification sounds are not implemented" }
-        val id = channelId(kind, sound, badge)
+    private fun ensure(kind: NativeChatNoticeKind, sound: String, badge: Boolean, item: NativeChatNotificationSound?): String {
+        val id = channelId(kind, item?.let { "clip." + it.sha256 } ?: sound, badge)
         if (manager.getNotificationChannel(id) == null) {
-            val channel = NotificationChannel(id, text.tr(kind.title) + " · " + text.tr(if (sound == "none") "静音" else "系统默认") +
-                " · " + text.tr(if (badge) "显示 App 图标角标" else "已关闭"), NotificationManager.IMPORTANCE_HIGH)
-            channel.setSound(if (sound == "none") null else RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            val title = if (item != null) (if (item.imported) item.title else text.tr(item.title)) else text.tr(if (sound == "none") "静音" else "系统默认")
+            val previous = channels().filter { it.id.startsWith(PREFIX + kind.wire + ".") }
+            val importance = minOf(NotificationManager.IMPORTANCE_HIGH, previous.minOfOrNull { it.importance } ?: NotificationManager.IMPORTANCE_HIGH)
+            val channel = NotificationChannel(id, text.tr(kind.title) + " · " + title + " · " + text.tr(if (badge) "显示 App 图标角标" else "已关闭"), importance)
+            channel.setSound(if (item != null) sounds.uri(item) else if (sound == "none") null else RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
                 AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build())
-            channel.setShowBadge(badge); channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            channel.setShowBadge(badge && previous.none { !it.showBadge && !it.id.endsWith(".no-badge") }); channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             manager.createNotificationChannel(channel)
         }
         return id
@@ -54,16 +58,52 @@ internal class NativeChatNotificationPlatform(private val context: Context, priv
     fun channels(): List<NativeChatNotificationChannelState> = manager.notificationChannels.filter { it.id.startsWith(PREFIX) }.map {
         NativeChatNotificationChannelState(it.id, it.name.toString(), it.importance != NotificationManager.IMPORTANCE_NONE, it.importance, it.sound?.toString(), it.canShowBadge())
     }
+    fun soundProviderRegistered(): Boolean {
+        val provider = context.packageManager.resolveContentProvider(context.packageName + ".chat-notification-sounds", 0)
+        return provider?.enabled == true && !provider.exported && provider.grantUriPermissions && provider.name == NativeChatNotificationSoundProvider::class.java.name
+    }
+    fun channelSoundTitle(channel: NativeChatNotificationChannelState): String {
+        val value = channel.sound ?: return text.tr("静音")
+        if (value == RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION).toString()) return text.tr("系统默认")
+        val item = runCatching { sounds.byHash(NativeChatNotificationSoundProvider.hash(Uri.parse(value), context.packageName + ".chat-notification-sounds")) }.getOrNull()
+        return if (item == null) text.tr("系统自定义铃声") else if (item.imported) item.title else text.tr(item.title)
+    }
     fun prepare(kind: NativeChatNoticeKind, sound: String, badge: Boolean): String? {
-        if (!permission().canPost || sound !in setOf("default", "none")) return null
+        if (!permission().canPost || !chatNoticeSound(sound)) return null
+        var item: NativeChatNotificationSound? = null
+        if (sound !in setOf("default", "none")) {
+            item = sounds.find(sound) ?: return null
+            if (!soundProviderRegistered()) return null
+            // Verify the exact immutable bytes before publication; an absent/corrupt sound never silently becomes default.
+            sounds.read(item.id).fill(0)
+        }
         // A new sound/badge variant must not bypass a system block for this category.
         if (channels().any { it.id.startsWith(PREFIX + kind.wire + ".") && !it.enabled }) return null
-        return ensure(kind, sound, badge).takeIf { manager.getNotificationChannel(it)?.importance != NotificationManager.IMPORTANCE_NONE }
+        return ensure(kind, sound, badge, item).takeIf { manager.getNotificationChannel(it)?.importance != NotificationManager.IMPORTANCE_NONE }
+    }
+    /** Storage/authentication on IO, system channel access on Main, checked again after suspension. */
+    suspend fun prepareAsync(kind: NativeChatNoticeKind, sound: String, badge: Boolean, current: () -> Boolean): String? {
+        if (!current() || !chatNoticeSound(sound)) return null
+        val custom = sound !in setOf("default", "none")
+        val item = if (!custom) null else withContext(Dispatchers.IO) {
+            if (!current()) return@withContext null
+            sounds.find(sound)?.also { sounds.read(it.id).fill(0) }
+        }
+        if (custom && item == null) return null
+        return withContext(Dispatchers.Main.immediate) {
+            if (!current() || !permission().canPost || item != null && !soundProviderRegistered()) return@withContext null
+            if (channels().any { it.id.startsWith(PREFIX + kind.wire + ".") && !it.enabled }) return@withContext null
+            ensure(kind, sound, badge, item).takeIf { manager.getNotificationChannel(it)?.importance != NotificationManager.IMPORTANCE_NONE }
+        }
     }
     fun cancelOwned(target: NativeChatNoticeTarget? = null) {
         val targetPrefix = target?.let { tagPrefix(it) }
         manager.activeNotifications.filter { it.tag?.startsWith(PREFIX) == true && (targetPrefix == null || it.tag.startsWith(targetPrefix)) }
             .forEach { manager.cancel(it.tag, it.id) }
+    }
+    fun cancelEvents(target: NativeChatNoticeTarget, ids: Set<String>) {
+        require(ids.all(::chatNoticeHash))
+        ids.forEach { manager.cancel(tagPrefix(target) + it, 1) }
     }
     private fun tagPrefix(target: NativeChatNoticeTarget): String = PREFIX + digest(NativeChatNotificationCodec.target(target).toString()) + "."
     private fun digest(value: String) = java.security.MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
@@ -91,5 +131,16 @@ internal class NativeChatNotificationPlatform(private val context: Context, priv
             .setContentTitle(text.tr("通知")).setContentText(text.tr("发送测试通知"))
             .setVisibility(Notification.VISIBILITY_PRIVATE).setAutoCancel(true).build()
         manager.notify(PREFIX + "test", 1, notice); return true
+    }
+    suspend fun testAsync(preferences: NativeChatNotificationPreferences, current: () -> Boolean): Boolean {
+        if (!preferences.enabled) return false
+        val channel = prepareAsync(NativeChatNoticeKind.CONNECTION, if (preferences.soundEnabled) preferences.sound else "none", false, current) ?: return false
+        return withContext(Dispatchers.Main.immediate) {
+            if (!current()) return@withContext false
+            val notice = Notification.Builder(context, channel).setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(text.tr("通知")).setContentText(text.tr("发送测试通知"))
+                .setVisibility(Notification.VISIBILITY_PRIVATE).setAutoCancel(true).build()
+            manager.notify(PREFIX + "test", 1, notice); true
+        }
     }
 }

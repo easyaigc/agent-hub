@@ -27,6 +27,8 @@
 
 原未知业务操作保持封存，只查原回执；零新模型输入、零ADB/安装/instrument/force-stop/Xcode/原桌面操作。
 
+后续阶段分别见 [附件](attachments.md)、[旧单条 GCM 边界](legacy-inline.md)、[附件取消交接修复](attachment-handoff-fix.md)、[共同阅读与通知迁移](common-device-migration.md) 和 [冻结 F53 声音迁移](sounds-migration.md)。各阶段仅以对应指纹和验收记录判断；本文早期范围不倒填为后续通过。
+
 ## 第二子阶段：范围清单与原始 WAV 归属栅栏
 
 新文件导出在写入前及原子提交前核对已知非空系统子存储：external-inbox、recent-photos、photo-permission、document-results、photo-results、camera-results，以及这些前缀下的嵌套payloads/outputs。只读目录清单，不调用AtomicFile恢复，不打开content URI或重启回调；存在资料即以具名scope明确拒绝，旧导出文件和原子存储不变。根索引中未封口录音另以provisional-voice拒绝，原始数据不读入内存、不修复、不seal。

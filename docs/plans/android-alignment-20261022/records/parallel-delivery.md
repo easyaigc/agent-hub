@@ -23,3 +23,13 @@ Android验收包/runner与iOS模拟器编译通过。两环境各中英×内容�
 P8首批七组/28功能、40来源对账及10项JVM/Node密文/3项Schema辅助已交付；集成时39/40来源相符，存储因P7变化不同，未沿用旧1/7或3/7。现有EasyWork真实DEV与WIP仍留原任务。父线完整pnpm check退出0；P8当前源辅助重跑通过，最终中央登记另核。
 
 全部真实模型/原桌面写入为0，未知原操作不重放。系统导出导入、全部子存储/Provider/通知Schema、阅读页面/Host确认、通知全局入口/认证事件、声音与后台供应商继续分线推进，不把窄模块验收写成完整P7/P8/P9通过。准确指纹、原失败与分环境结果见[PAR1](../parallel/first-stage.json)。
+
+## PAR1 主线交付与 PAR2 待验接入
+
+PR45的6f4413f5在Workspace/iOS两项CI通过后以merge commit合入main0ebbc9ba；API和远端祖先关系均核对，旧父集成分支本地/远端均已清理。四个工作分支均有后续未合工作，继续保留。父线改用codex/android-parallel-stage2-20261028并合入新main，不触碰其他任务的主检出WIP。
+
+PAR2将附件、实际阅读接线/窗口与P8原生边界分候选冻结。[待验接入记录](../parallel/second-stage-intake.json)保留准确源码/App/runner及通过、失败、未开始。20MiB/40MiB和原候选跨PID恢复通过，但新附件prepare多一次中间Main恢复，使旧取消交接回归失败；迁移线负责保护原成功回执的修复。阅读线接入发现旧历史正文额外引用与earlier响应沿用原proof，正在一并修正；基线9方法有1失败，不计整组通过。
+
+P8数字序号回归在API26和真机均失败，证实原42.5被规范化为42接纳；14项核心原生边界在API26通过。真机核心组在安装前被另一个EasyWork runner占用预检拒绝，0安装/0启动/0中断。P8线修复严格数值后继续对照原基线。
+
+新前台/Owned MainActivity监听hint窗口在两环境各1方法通过，中英/内容浅深色8张PixelCopy已逐图检查；48dp、真实中心点击、单一语义、默认资料/麦克风权限保护通过。真机字体/触摸ripple及系统栏差异仍按实际范围保留，不能据此关闭完整视觉矩阵或真实ASR。原超时最终instrumentation.log已保存，保留4个回调成功和hint started的原事实；早期对子目录无日志的观察只是尚未结束时点。

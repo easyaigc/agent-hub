@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "2-reading-retention",
+  "baseCommit": "70bcbb5973e5706d122b12c0b962ce004b387548",
+  "featureIds": ["F49", "F50", "F56"],
+  "commonAssertions": [
+    "Only current visible reading proof may own a body; old targets retain small metadata only",
+    "Freeing display references preserves device unread/read watermarks/pending acknowledgement and offline counts",
+    "No whole-history hashing or extra execution/network loop",
+    "An earlier/cache replacement revokes old latest proof without clearing durable reading or pending ACK; only accepted latest restores it"
+  ],
+  "bothPlatforms": {
+    "ios": "reference unchanged; no iOS execution",
+    "android": "reading reference-retention source fix; native heap/DEV gates open"
+  },
+  "implementation": "code-present",
+  "verification": "Android compile and 11 host-JVM auxiliary tests; new native Session retention case not run",
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePhoneReadingSessionTest.kt",
+      "sha256": "0912afb79dae01da0cb51f8fa389ae946990c5c828acb75e5701eef469eb4e82"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeReadingRetentionSessionTest.kt",
+      "sha256": "b76e04bb2fa1ebc96ed232e1ee976f011e3a9981b4170d9489fafa06a783188a"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeReadingRetentionTest.kt",
+      "sha256": "60d24c3f71ff39aa66509f048b8268935ebbfefef3b4caa864a03a2ed046e197"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "sha256": "6a033b4828adce96d7fea7d251feee2c6eb4e9c6355c71deba0d05cd5793391b"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "8a734298568835f3d0166c80ccd290907f71854f1b5c7b6b679d25227398d2f6"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativePhoneReadingStore.kt",
+      "sha256": "dff58b52c2567c2badcebe06f2603896379ede8fe1586f4d8a9d08084c0a5c63"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt",
+      "sha256": "bb648c75d9d46724688d272c7665a5913131594ef6bdee6fd1104a94b5e2b672"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingRetention.kt",
+      "sha256": "91d353014bc5ca079091046cf8b352351977d2ebbb686c513c7a5e86b58b27ce"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage2-reading-retention.md",
+  "remaining": [
+    "leased native retention/heap and revised Session tests",
+    "P9 exact notice visibility",
+    "full unseen directory pagination",
+    "real Host/DEV",
+    "real microphone/acoustic and full physical custom-font/system-bar acceptance"
+  ]
+}

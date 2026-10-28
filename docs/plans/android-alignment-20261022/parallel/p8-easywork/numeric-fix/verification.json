@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "checkpoint": "strict-envelope-numeric-fix",
+  "checks": {
+    "hostValidation": {
+      "status": "passed",
+      "tests": 12,
+      "suites": [
+        {
+          "name": "NumericEnvelopeValidationTest",
+          "tests": 2,
+          "resultSha256": "a8a9bb8dcf9e31eb1d8df2c257d230c2491ae85c7251641950d7b53dec746e17"
+        },
+        {
+          "name": "P8EasyWorkBoundaryTest",
+          "tests": 10,
+          "resultSha256": "22ea30aff2b7f36793f96b748cd63e5aa4a42812f53571a492f2066885e7d612"
+        }
+      ],
+      "logSha256": "336437e1df390239b81383ccca592088d13b4202f5cb452b4e17649707c838cb",
+      "numericResultSha256": "eae58a39ba46274642a35d5b82d7e411a6ac55619eec098bc570e4504683d8b3",
+      "runtime": "Host org.json:json:20250517 and JDK Base64 compatibility only; no native claim"
+    },
+    "nativeCompile": {
+      "status": "passed",
+      "tasks": 82,
+      "executed": 4,
+      "logSha256": "7b289475b794c9a1414339c18e0fa3a268dd418cd2c58854041f6d4c8cfb2a94",
+      "packages": {
+        "app": {
+          "applicationId": "com.easyai.agenthub.android.acceptance",
+          "sha256": "ca2fb0c8e6b6ec66d6199eacd99d199c99bc62873e8a754fcb24f406f5565b79",
+          "bytes": 26418961,
+          "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+        },
+        "runner": {
+          "applicationId": "com.easyai.agenthub.android.acceptance.test",
+          "sha256": "e3bef954fba214ff3113abd8aa27f1fa7ccabdff21809cee80789655f7f2bad2",
+          "bytes": 7802811,
+          "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+        }
+      },
+      "execution": "not-performed"
+    },
+    "nodeVectors": {
+      "status": "passed",
+      "independentFrames": 2,
+      "numericCases": 33,
+      "logSha256": "ed6b0df0f58d6411ad101b86668d565c66f55d5971e656d10787e81e7bbe8b6f"
+    },
+    "foundationReadOnly": {
+      "status": "completed-with-four-numeric-guard-differences",
+      "sourceSha256": "95ee7c04e1382b78daa063d92d0d2bce68cb4aa2ca02fa8d59a350f3c861a45b",
+      "resultSha256": "126ef0ffeb4387ef9ca9f8b9a696c50aa0e0c442530cc5754963d4ed53f4ec3a",
+      "logSha256": "9be29620835b7e741bc3721e6afbb15f3fe7f4d4095ffcfbcc4c7ae20570ca24",
+      "nativeIOSOrGcm": false,
+      "numericCases": 35,
+      "numericTokenCases": 33,
+      "positiveBoundaryControls": 2
+    },
+    "priorHistory": {
+      "status": "unchanged",
+      "docs": 23,
+      "nativeMethodBodies": 15,
+      "oldDefectProbeExecutedForFix": false
+    },
+    "pnpmCheck": {
+      "status": "integration-pending-central-delta",
+      "exitCode": 1,
+      "logSha256": "fafd8cbc6f2683e3e57c2e601a14f304abaa1d2988e774eabd74833148dc4f72",
+      "passedBeforeStop": ["format:check", "check:github-sync", "lint"],
+      "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt",
+      "action": "Parent merges numeric-fix/parity-delta.json exact file hashes centrally and reruns full root check. Guards and historical evidence are not rewritten."
+    },
+    "nativeRealDev": {
+      "status": "not-performed",
+      "deviceLease": null
+    }
+  },
+  "scope": "Only Android inbound sequence/version raw numeric validation, additive native method and this new checkpoint; no iOS production change"
+}

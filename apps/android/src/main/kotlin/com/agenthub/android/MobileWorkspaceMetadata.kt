@@ -57,7 +57,8 @@ internal object MobileWorkspaceMetadata {
         .put("threads",JSONArray(workspace.threads.map { JSONObject().put("id",it.id).put("hostId",it.hostId)
             .put("title",it.title).put("state",it.state).put("projectId",it.projectId).put("projectIds",JSONArray(it.projectIds))
             .put("hasUnreadTurn",it.unread).put("archived",it.archived).put("lastTurnStatus",it.lastTurnStatus)
-            .put("pendingAsyncQuestionCount",it.pendingAsyncQuestionCount).put("archiveUnavailableReason",it.archiveUnavailableReason) }))
+            .put("pendingAsyncQuestionCount",it.pendingAsyncQuestionCount).put("archiveUnavailableReason",it.archiveUnavailableReason)
+            .put("readState",it.readState?.json()) }))
         .put("pinnedThreadIds",workspace.pinnedThreadIds?.let(::JSONArray))
         .put("sidebar",workspace.sidebar?.let { JSONObject(it.wire) })
 }

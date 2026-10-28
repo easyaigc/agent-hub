@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "checkpoint": "strict-envelope-numeric-fix",
+  "baseCommit": "bf5d1a7aeaaea4623078973f8e58ca70e288e7ab",
+  "date": "2026-10-28",
+  "productionFilesChanged": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt": "634d513b079c46587e68477d6fdf842113ec17fa48c6e1f0ade61bee39a7e795"
+  },
+  "nativeTest": {
+    "class": "com.agenthub.android.NativeEasyWorkProtocolBoundaryTest",
+    "source": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt",
+    "sha256": "84c6f3e018aea26e7c55c2d1020234167cbc85cf815846b289b109fd2b8f4d9b",
+    "previous15MethodBodiesUnchanged": true,
+    "newMethod": "strictInboundNumbersRejectWrongTypesBoundsAndVersion",
+    "newNumericGroupMethods": [
+      "nonIntegralSequenceCannotReuseAuthenticatedIntegerHeader",
+      "strictInboundNumbersRejectWrongTypesBoundsAndVersion"
+    ],
+    "wholeClassMethods": 16,
+    "methodTimeoutMillis": 12000,
+    "wholeInvocationTimeoutSeconds": 240,
+    "wholeClassTimeoutSumMillis": 192000,
+    "execution": "not-performed"
+  },
+  "frozenPriorDocs": {
+    "files": 23,
+    "unchanged": true,
+    "originalSevenGroupDocs": 16,
+    "priorNativeCheckpointDocs": 7
+  },
+  "fixtures": {
+    "numericVectorsSha256": "5fa14a3d0439bcae40600d697f7a7ffcc4dbd8b22a4978cb1402da629a9e3456",
+    "embeddedDeepEqual": true,
+    "independentNodeBoundaryFrames": 2,
+    "numericCases": 33,
+    "validCases": 6,
+    "rejectedCases": 27,
+    "missingFields": 2
+  },
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "ca2fb0c8e6b6ec66d6199eacd99d199c99bc62873e8a754fcb24f406f5565b79",
+      "bytes": 26418961,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "e3bef954fba214ff3113abd8aa27f1fa7ccabdff21809cee80789655f7f2bad2",
+      "bytes": 7802811,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "nativeInputSetSha256": "581a27035d8c108ecbbca0e2b1470d6806f31a524957de465fe7a451f0d69781",
+  "nativeInputFiles": 457,
+  "hostSuites": [
+    {
+      "name": "NumericEnvelopeValidationTest",
+      "tests": 2,
+      "resultSha256": "a8a9bb8dcf9e31eb1d8df2c257d230c2491ae85c7251641950d7b53dec746e17"
+    },
+    {
+      "name": "P8EasyWorkBoundaryTest",
+      "tests": 10,
+      "resultSha256": "22ea30aff2b7f36793f96b748cd63e5aa4a42812f53571a492f2066885e7d612"
+    }
+  ],
+  "iosReadOnlyReview": {
+    "source": "apps/ios/Sources/EasyWorkTransport.swift",
+    "sha256": "95ee7c04e1382b78daa063d92d0d2bce68cb4aa2ca02fa8d59a350f3c861a45b",
+    "unchanged": true,
+    "cases": 35,
+    "differences": ["sequence-true", "sequence-above-safe", "sequence-long-max", "version-true"],
+    "deviceOrGcmExecuted": false,
+    "boundaryControls": 2,
+    "numericTokenCases": 33
+  },
+  "oldDefectProbe": "Historical only; not compiled or executed as current fix validation",
+  "a5GroupClosure": "none"
+}

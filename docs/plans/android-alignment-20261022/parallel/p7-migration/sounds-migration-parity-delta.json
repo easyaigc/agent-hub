@@ -1,0 +1,44 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-frozen-F53-sound-migration",
+  "dependency": "f9e935b37f3f49e5a689f34397163a63ab13dc82",
+  "features": ["F47", "F53", "F55"],
+  "commonAssertions": [
+    "Closed producer catalog/binary validators and active mandatory binary relation; unknown versions/keys/orphan/corrupt bytes reject without rewriting source.",
+    "Retain exact active/staged/retired descriptors; absent pending bytes allowed; existing bytes valid; never promote staged/reselect retired.",
+    "Only supported builtin or active imported preference references; explicit source sound choice required for missing/retired/unknown reference, preserving original receipts.",
+    "Notifications disabled/reset through same policy; no source URI/grant/provider/player/channel/permission restore; destination URI uses app ID+validated hash.",
+    "Same candidate/atomic activation/rollback/idempotency; validate encrypted staged audio before candidate publication; one bounded normalized clip held at a time."
+  ],
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSounds.kt": "3d48debf69c5af1aa3c9102c193b9ea55217bdbee846bba201a5f5d32e1d2fe4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "de9a0e06e27cfe34e7bba30a630b53e14cc7e59447981a8e2e4443e295a1dbc2",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "7df3dd640b3e322355dbc309cf474d162b1daf7d0725a8c8f9d201de79b03293",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt": "577f52aa24e8868fcc625ea3f8665e4a47c8e921ed1948a039e859d0349eedd7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSoundTest.kt": "66664aad4bb778a833e19fb9a6a531e74295c27822044361e593562a23d47be9"
+  },
+  "dualEndImpact": {
+    "android": "same P7 migration graph; frozen F53 producer dependency; no manifest/UI/runtime custom edits",
+    "ios": "no changes; format/permission/system-provider behavior remains separately verified; A6 paused"
+  },
+  "design": {
+    "page": "UI12 migration; F53 existing sound settings is frozen dependency",
+    "newUi": "none; missing references fail closed and require an explicit valid source choice"
+  },
+  "verification": {
+    "build": "acceptance app and runner compiled successfully; sounds-build.log",
+    "native": "7 scenarios compiled only, pending coordinator device lease",
+    "providerSystemRead": "not verified; destination URI construction only",
+    "realDev": "not executed; zero device/OS post/player/Host/model operations",
+    "centralParity": "coordinator integration pending; no central manifest/docs edits",
+    "format": "pnpm format:check passed",
+    "hostPcm": "31 shipping PCM vectors passed on JVM; not Android codecs/Keystore/provider proof"
+  },
+  "limits": {
+    "perNormalizedClipBytes": 1278944,
+    "rawAggregateBytes": 201326592,
+    "textHeaderBytes": 8388608,
+    "outerFileBytes": 268435456,
+    "legacyFullInline": "still unsupported on48MiB, see legacy-inline.md"
+  }
+}

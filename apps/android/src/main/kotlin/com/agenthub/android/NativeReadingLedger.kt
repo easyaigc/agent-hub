@@ -157,8 +157,10 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
     }
     /** Old-host fallback: caller must pass the actual latest reply, not an earlier paged prefix. */
     fun localPosition(target: TargetScope, threadId: String, messageId: String, text: String, status: String): ThreadReadPosition = storage.operationTransaction {
+        localPositionVersion(target,threadId,messageId,ThreadReadPosition.contentVersion(messageId,text,status))
+    }
+    internal fun localPositionVersion(target: TargetScope,threadId: String,messageId: String,version: String): ThreadReadPosition = storage.operationTransaction {
         val latest = load().rows[ThreadReadingIdentity.key(target, threadId)]?.latest
-        val version = ThreadReadPosition.contentVersion(messageId, text, status)
         ThreadReadPosition(ReadingPolicy.nextRevision(latest?.revision ?: 0, latest?.contentVersion == version), messageId, version)
     }
     fun receive(event: NativeReadingEvent): NativeUnreadSnapshot = transaction { ledger ->
@@ -219,6 +221,12 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
             ledger.rows[ThreadReadingIdentity.key(original.target,original.threadId)]?.let { row ->
                 if(row.read==original.position && row.pendingReader==original.readerId)row.pendingReader=null
             }
+        }
+    }
+    /** A 409 settles only this old metadata attempt, following iOS; the local read and newer unread remain. */
+    fun settleStaleAcknowledgement(original: NativePendingRead): NativeUnreadSnapshot = transaction { ledger ->
+        ledger.rows[ThreadReadingIdentity.key(original.target,original.threadId)]?.let { row ->
+            if(row.read==original.position && row.pendingReader==original.readerId)row.pendingReader=null
         }
     }
     fun pendingReads(): List<NativePendingRead> = storage.operationTransaction {

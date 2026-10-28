@@ -1,0 +1,56 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-parallel-migration-attachments",
+  "sourceBase": "7fc712d48b43581f07e10113e8ff0c99b0665eac",
+  "features": ["F25", "F29", "F30", "F31", "F47", "F55", "F71"],
+  "uiImpact": "No screen/localization changes; existing thumbnails retained on byte-entry; file-only large images have no new thumbnail generator. System file-source and upload streaming hooks remain integration work.",
+  "commonAssertions": [
+    "New files use an explicit version2 small manifest record and an immutable authenticated binary original, with stable UUID, size and SHA256. Never inline a large Base64 value.",
+    "File entry, verification, export, staged candidate and atomic activation transfer bounded chunks; 20MiB full and two-file40MiB aggregate native scenarios are prepared.",
+    "Same UUID and exact manifest returns the original ciphertext after verifying its bytes; legacy inline records are read without replacement or rewrite.",
+    "Interrupted unpublished payloads are retired only when metadata is proven absent; ambiguous metadata acknowledgement retains possibly committed originals. Cancellation before handoff may retire only its acknowledged fresh commit and releases fixed-ID lease.",
+    "Closed graph validation claims every binary by a sealed voice or exact attachment pointer; missing/orphan/malformed/corrupt payloads reject and preserve original encrypted state.",
+    "Original immutable operation intent/result/unknown receipt/attempt flags and imported observe-only fences remain; activation retry preserves later drafts; no upload, prepare or model replay."
+  ],
+  "dualEndImpact": {
+    "android": "NativeDraftFiles class only plus shared migration validators/export discovery; stream publication/activation backend unchanged.",
+    "ios": "No source/device/UI changes. Android local record v2 is independent of iOS. Existing iOS migration/20MiB/voice gaps remain separate; A6 remains paused."
+  },
+  "implementation": "implemented candidate; new file API available, no whole-payload allocation or plaintext scratch in new file storage/migration path",
+  "verification": {
+    "build": "passed final acceptance app/runner compilation: attachment-publish-build.log",
+    "format": "pnpm format:check passed; final status-only fields formatted separately",
+    "centralParity": "integration pending: exact stale change-record rejection retained in parity.log; no central table edit",
+    "nativeAndroid": "not executed; exact device/bundle/time leases reserved to coordinator",
+    "realDev": "not executed; zero network/model/device operations",
+    "legacyLargeFiles": "read-only compatibility retained; maximum legacy inline file not claimed to migrate under48MiB; old8/12MiB preflight still refuses oversized text",
+    "envelopeAuxiliary": "matched reuse only: five compiled production envelope/KDF class files identical to prior executed32MiB+17bytes/48MiB JVM probe; not attachment or Android evidence"
+  },
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "8a997ce9c8ece52c69dcf751103bcfc06a70de4b3d9668555ce3611d86d1d3c8",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "488ae9f6ea86177926ceb227236a61e1b4dfe87f287cd569bdd36477b4d3ea35",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "c9c98647e4a5dee18699069ec025d50c4c1e4f02a483cbca5fdba86ab5236892",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationAttachments.kt": "c1e8cfffdfa5f6b9da8676752001fd300bc8853fcf9a471b29e4b00120015dc7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationAttachmentTest.kt": "194d453fcb624b3e32d86365d7615fe4f82e00d6aec36ce9fdf4c96599c9e4b3"
+  },
+  "classScopeProof": {
+    "base": "7fc712d48b43581f07e10113e8ff0c99b0665eac",
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt",
+    "onlyNativeDraftFilesChanged": true,
+    "unchangedPrefixSha256": "a00a26f0053f33d09c13af1e406a550965a245f61f4cb3cd9a5f8578b54d1e3e",
+    "unchangedSendQueueJournalSuffixSha256": "4d8f645a29ff5fe47cd6022602e529c08c633ce3bb987e53021f4c6cf8d634db"
+  },
+  "remaining": [
+    "Coordinator native API26 actual48MiB/full20MiB, physical/API37 and process-cold execution",
+    "Picker/URI intake still initially materializes bytes unless coordinator connects a private file to prepareFile",
+    "Normal uploads still call bytes(CreationFile) and require a whole ByteArray; no streaming upload or real send claim",
+    "Legacy maximum inline Base64 archives need a distinct read-only streaming transition; not rewritten to create a pass",
+    "Provisional WAV ownership/capture synchronization and all system/provider/reading/notification schemas remain open; existing refusal retained"
+  ],
+  "parentFixtureDelta": {
+    "owner": "parent coordinator",
+    "oldTest": "NativeMigrationStreamTest.voice/threeMaximumWavsUseAggregateRawQuotaWithoutBase64OrWholeAudioAllocation",
+    "finding": "Parent reports full9,600,044-byte voice passed on API26 actual48MiB and physical device; aggregate fixture selected same draft across3voices, manifest mismatch, not OOM. Parent alone will assign distinct synthetic thread IDs and rerun; original failure retained.",
+    "localSource": "unchanged from7fc712d4; parent delta is not imported here; no aggregate success claim"
+  }
+}

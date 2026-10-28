@@ -22,6 +22,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
@@ -68,6 +71,7 @@ import com.agenthub.core.*
         var composerFocused by remember { mutableStateOf(false) }
         var attachmentPreview by remember { mutableStateOf(false) }
         val effectiveSheet=if(session.aiSharingRequest!=null) "ai-sharing" else sheet
+        DisposableEffect(session) { onDispose { session.setPhoneReadingSurface(false) } }
         VoicePermission(session.voice)
         NativePhotoAuthorizationResult(session)
         NativeRecentPhotoLifecycle(session.recentPhotos)
@@ -132,6 +136,13 @@ import com.agenthub.core.*
                     else {
                         if (!session.selectedClient.isDemo && !session.selectedClient.online) Text(session.selectedClient.connectionLabel,Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=4.dp).testTag("offline-cache"),fontSize=12.sp,color=colors.onSurfaceVariant)
                         ConversationSyncBanner(session)
+                        session.phoneReadingError?.let { original ->
+                            Column(Modifier.fillMaxWidth().padding(horizontal=16.dp).testTag("phone-reading-error")) {
+                                Text(productText("无法保存手机阅读状态，已有记录已保留，请稍后重试。"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                                Text(original,fontSize=12.sp,color=colors.onSurfaceVariant)
+                                TextButton(onClick=session::retryPhoneReading,modifier=Modifier.testTag("phone-reading-retry")) { Text(productText("重试")) }
+                            }
+                        }
                         if (session.selectedThread.isEmpty() && session.pendingCreationMessage==null) Column(Modifier.weight(1f).fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) { Text(productText("开始一段新对话"),fontSize=22.sp,fontWeight=FontWeight.SemiBold); Text(productText("从侧栏选择项目或继续对话。"),Modifier.padding(top=10.dp),color=colors.onSurfaceVariant,fontSize=14.sp) }
                         else ChatMessages(session,dark,Modifier.weight(1f),inlineToolApprovals)
                         val bottomScroll=rememberScrollState()
@@ -150,6 +161,9 @@ import com.agenthub.core.*
                 // Keep the drawer/list mounted: position changes do not destroy scroll/search state.
                 val interactiveDrawer=sidebar || drag!=null
                 val closingDrawer=!interactiveDrawer && offset > -widthPx+.5f
+                SideEffect { session.setPhoneReadingSurface(mainWindowFocused && !interactiveDrawer && !closingDrawer &&
+                    effectiveSheet==null && session.error==null && !attachmentPreview && session.voice?.active!=true &&
+                    session.incomingEasyWorkLink==null && !session.importing && inbox?.presentation==null) }
                 // Retain the dimming surface for the same motion as the panel, as on iOS.
                 // Its closing-only hits are absorbed until the visible transition finishes.
                 if (interactiveDrawer || closingDrawer) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=MobileDesign.sidebarBackdropAlpha*((offset+widthPx)/widthPx).coerceIn(0f,1f))).clickable { focus.clearFocus(); sidebar=false }.testTag(if(interactiveDrawer) "sidebar-backdrop" else "sidebar-closing-backdrop").semantics { if(closingDrawer) hideFromAccessibility() })
@@ -493,6 +507,19 @@ import com.agenthub.core.*
 @Composable private fun ChatMessages(session: MobileSession,dark: Boolean,modifier: Modifier,inlineToolApprovals: Boolean=false) {
     val list=rememberLazyListState(); val scope=rememberCoroutineScope()
     val timeline=session.timeline; val messages=session.messages; val pending=session.pendingCreationMessage
+    val reading=session.visiblePhoneReading
+    var readingViewport by remember(session.targetKey) { mutableStateOf<Rect?>(null) }
+    var readingMarker by remember(reading) { mutableStateOf<Rect?>(null) }
+    LaunchedEffect(reading,readingViewport,readingMarker) {
+        val content=reading ?: return@LaunchedEffect
+        val viewport=readingViewport;val marker=readingMarker
+        val visible=viewport!=null && marker!=null && NativePhoneReadingRules.visible(viewport.left,viewport.top,viewport.right,viewport.bottom,
+            marker.left,marker.top,marker.right,marker.bottom)
+        // A layout callback from the old body is not a reading acknowledgement for its replacement.
+        withFrameNanos { }
+        session.observeVisiblePhoneReading(content,visible)
+    }
+    DisposableEffect(session.targetKey) { onDispose { session.phoneReading.lifecycle.leave() } }
     // In compact landscape, use the same history viewport as iOS instead of a
     // second capped scroller that clips the approval heading on button focus.
     val toolApprovals=if(inlineToolApprovals) session.runtime?.approvals.orEmpty().filter { it.kind!="question" } else emptyList()
@@ -554,7 +581,7 @@ import com.agenthub.core.*
     val atBottom by remember { derivedStateOf { !list.canScrollForward } }
     BoxWithConstraints(modifier.fillMaxWidth()) {
         CompositionLocalProvider(LocalMessageActionEndInset provides 56.dp) {
-        LazyColumn(Modifier.fillMaxSize().testTag("message-list").pointerInput(session.targetKey,density) {
+        LazyColumn(Modifier.fillMaxSize().onGloballyPositioned { readingViewport=it.boundsInRoot() }.testTag("message-list").pointerInput(session.targetKey,density) {
             // Observe the native list gesture without consuming it. A gesture must
             // begin at the actual top and finish beyond 60dp, like the iOS scroll pan.
             awaitEachGesture {
@@ -585,7 +612,10 @@ import com.agenthub.core.*
                 "tools" -> ToolGroup(row.id,row.indices.map { messages[it] })
                 "errors" -> Column { row.indices.forEach { Text(messages[it].text,color=MaterialTheme.colorScheme.error,fontSize=14.sp) } }
                 "compaction" -> Text(productText(ToolPresentation.compaction(messages[row.indices.first()].status, session.running)),Modifier.fillMaxWidth().testTag("compaction-${row.id}"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                else -> row.indices.forEach { MessageContent(session,messages[it],dark,session.targetKey) }
+                else -> row.indices.forEach { index ->
+                    val message=messages[index]
+                    MessageContent(session,message,dark,session.targetKey,reading?.takeIf { it.body.matches(message) }) { readingMarker=it }
+                }
             } }
             pending?.let { original -> item(key=session.targetKey+":pending-creation:"+original.message.id) {
                 PendingCreationMessageBubble(original,session.targetKey,dark)
@@ -603,7 +633,7 @@ import com.agenthub.core.*
         if(!atBottom && maxHeight>=72.dp) Surface(shape=CircleShape,color=MaterialTheme.colorScheme.surface,shadowElevation=2.dp,modifier=Modifier.align(Alignment.BottomEnd).padding(12.dp)) { IconAction("down",productText("回到最新"),"scroll-latest") { scope.launch { list.animateScrollToItem(list.layoutInfo.totalItemsCount-1) } } }
     }
 }
-@Composable private fun MessageContent(session: MobileSession,message: MobileMessage,dark: Boolean,targetKey: String) = MessageLinkOpening(session,message) {
+@Composable private fun MessageContent(session: MobileSession,message: MobileMessage,dark: Boolean,targetKey: String,reading: NativeVisiblePhoneReading?=null,onReadingMarker: (Rect)->Unit={}) = MessageLinkOpening(session,message) {
     val colors=MaterialTheme.colorScheme
     if(message.role=="user") Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End) {
         UserMessageBubble(message,targetKey,dark) { AttachmentNames(message) }
@@ -615,6 +645,8 @@ import com.agenthub.core.*
         else if(message.kind=="plan") ProposedPlanMessage(message,targetKey)
         else if(message.kind=="planImplementation") Surface(shape=RoundedCornerShape(16.dp),color=colors.surface) { Column(Modifier.padding(12.dp)) { Text(productText(if(message.kind=="plan") "执行计划" else "正在执行计划"),fontWeight=FontWeight.SemiBold,fontSize=14.sp); MarkdownContent(message.text,"markdown-${message.id}") } }
         else MarkdownContent(message.text,"markdown-${message.id}")
+        if(reading!=null) Box(Modifier.fillMaxWidth().height(1.dp).testTag("phone-reading-content-end")
+            .onGloballyPositioned { onReadingMarker(it.boundsInRoot()) })
         AttachmentNames(message)
     }
 }

@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ordinary Codex local foreground notification journal v1",
+  "description": "Validate with NativeChatNotificationForegroundStore.validateEncoded as well. Production checks UTF-8 4MiB, 64 targets, global 2048 outcomes/256 operations, cross-object target/auth/revision/cursor bindings, immutable fingerprints and uniqueness. Archive only; do not activate on migration.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "deviceId", "identity", "subscriptions"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "deviceId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,128}$",
+      "not": {
+        "enum": ["__proto__", "prototype", "constructor"]
+      }
+    },
+    "identity": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "subscriptions": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/subscription"
+      }
+    }
+  },
+  "$defs": {
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "authorization", "preferences", "state", "at", "fingerprint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[a-f0-9-]{36}$"
+        },
+        "kind": {
+          "enum": ["register", "preferences", "unregister"]
+        },
+        "authorization": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "preferences": {
+          "anyOf": [
+            {
+              "$ref": "notification-storage-v1.schema.json#/$defs/preferences"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "enum": ["unknown", "confirmed"]
+        },
+        "at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "responseState": {
+          "enum": ["disabled", "ready", "pending", "unavailable"]
+        },
+        "responseDelivery": {
+          "enum": ["foreground-only", "apns"]
+        }
+      }
+    },
+    "batch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "before", "after", "revision", "authorization", "ids", "activeIds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[a-f0-9-]{36}$"
+        },
+        "before": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "after": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "authorization": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "ids": {
+          "type": "array",
+          "maxItems": 2048,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "activeIds": {
+          "type": "array",
+          "maxItems": 2048,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event", "fingerprint", "state", "at"],
+      "properties": {
+        "event": {
+          "$ref": "notification-storage-v1.schema.json#/$defs/event"
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "processing",
+            "suppressed",
+            "system-unavailable",
+            "submitted-to-system",
+            "unknown-no-replay",
+            "unknown-interrupted-no-replay",
+            "stale-target-or-generation",
+            "expired-or-future",
+            "duplicate-expired-or-read"
+          ]
+        },
+        "at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "subscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "authorization",
+        "preferences",
+        "revoked",
+        "cursor",
+        "mutations",
+        "batch",
+        "outcomes"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "notification-storage-v1.schema.json#/$defs/target"
+        },
+        "authorization": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferences": {
+          "anyOf": [
+            {
+              "$ref": "notification-storage-v1.schema.json#/$defs/preferences"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revoked": {
+          "type": "boolean"
+        },
+        "cursor": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{64})?$"
+        },
+        "mutations": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/mutation"
+          }
+        },
+        "batch": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/batch"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcomes": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": {
+            "$ref": "#/$defs/outcome"
+          }
+        }
+      }
+    }
+  }
+}

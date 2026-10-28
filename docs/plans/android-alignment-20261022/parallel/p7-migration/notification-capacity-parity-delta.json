@@ -1,0 +1,39 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-migration-notification-capacity-policy3",
+  "base": "5bbcb87b0e8b9697d046498f065e2fc9fbd9f1a9",
+  "failedPreviousCandidate": "77458db4ce68501df868c5c23976dff2a197736a",
+  "features": ["F47", "F49", "F50", "F51", "F52", "F53", "F54", "F55"],
+  "commonAssertions": [
+    "A legal2048-receipt source keeps all exact originals and old-event dedup while leaving all2048 normal active slots available after migration.",
+    "Separate version1 migration index equals original audit event identities; old/full/expired/unknown receipts never silently prune or replay.",
+    "Same-root claim has exactly one read-only narrow hook; current mayPresent/F53 paths and normal v1 record bounds/TTL remain unchanged.",
+    "Index/audit atomically publish and rollback; repeated receipt activation preserves later state; second migration preserves prior originals and dedup.",
+    "Unknown/missing/truncated/extra/duplicate index fails closed; legacy policy2 source upgrades only via new candidate, old active receipt is never silently rewritten."
+  ],
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationTombstones.kt": "5675eab3cbd0be6437e3547e447eaa03d803a94d7ea5c7ad4066ad3ed7bc6b90",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt": "31c51e917d2ac098038514e2253bf0ad60429278cfa6e6b46a07b929c215ebb1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "abacd1610b4576be4564ff1b8f48dffb49736baec2ce4822216410a10e3ebabe",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "08a24c30c34430df2d45b5262a4691100c8e44353f0be945c95ee70c3fa12c97",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNotificationCapacityTest.kt": "9a78291063d5839c6103e9ef7ed567e8274b9043033d99c81d277afa00200ce8",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationDeviceStateTest.kt": "bbae08c8fdca9cd25a45654726454c69b892bb23d223cb5bea0fbd128194baee",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSoundTest.kt": "e08682fb0cfe5a2e671af95089692888c69addeed510f828c754153ad26a5214"
+  },
+  "contract": "common-device-migration-contract-v3.json",
+  "dualEndImpact": {
+    "android": "Migration records and the expressly authorized one-line claim query; no Page/monitor/transport/manifest edits",
+    "ios": "No changes; separate implementation/native gates; A6 paused"
+  },
+  "design": {
+    "newUi": "none",
+    "page": "UI12 migration retains existing atomic completion/failure behavior"
+  },
+  "verification": {
+    "build": "passed final assembleDebug/assembleDebugAndroidTest acceptance=true; pre/post source hashes match",
+    "native": "4 new +6 updated scenarios compiled only, pending coordinator execution",
+    "centralParity": "coordinator owns source coverage integration; not weakened",
+    "realDev": "none; zero device/Host/model operations",
+    "format": "pnpm format:check passed"
+  }
+}

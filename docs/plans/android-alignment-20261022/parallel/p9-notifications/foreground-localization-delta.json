@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "destination": "apps/android/localization/native-copy.json",
+  "implementation": "Suggested coordinator mapping for typed monitor state; not mounted UI in P9. Keep Host reason literal; do not expose fingerprint/operation internals as user-facing copy.",
+  "entries": [
+    {
+      "key": "前台通知已同步",
+      "zh-Hans": "前台通知已同步",
+      "en": "Foreground notifications are synchronized."
+    },
+    {
+      "key": "通知注册或更新结果待确认，正在核对原设备状态。",
+      "zh-Hans": "通知注册或更新结果待确认，正在核对原设备状态。",
+      "en": "The notification change is unconfirmed. Checking the original device status."
+    },
+    {
+      "key": "原电脑连接需要先完成通知撤销。",
+      "zh-Hans": "原电脑连接需要先完成通知撤销。",
+      "en": "Notifications for the original computer connection must be revoked first."
+    },
+    {
+      "key": "当前电脑未提供可用的前台通知。",
+      "zh-Hans": "当前电脑未提供可用的前台通知。",
+      "en": "Foreground notifications are unavailable for this computer."
+    },
+    {
+      "key": "通知资料暂不可用，原文件已保留。",
+      "zh-Hans": "通知资料暂不可用，原文件已保留。",
+      "en": "Notification data is unavailable. The original files were preserved."
+    },
+    {
+      "key": "远端通知撤销仍待确认。",
+      "zh-Hans": "远端通知撤销仍待确认。",
+      "en": "Remote notification revocation is still unconfirmed."
+    },
+    {
+      "key": "通知已撤销，重新开启通知后会恢复同步。",
+      "zh-Hans": "通知已撤销，重新开启通知后会恢复同步。",
+      "en": "Notifications were revoked. Turn them on again to resume synchronization."
+    },
+    {
+      "key": "部分通知的处理结果待确认，不会重复提醒。",
+      "zh-Hans": "部分通知的处理结果待确认，不会重复提醒。",
+      "en": "Some notification results are unconfirmed. They will not alert again."
+    }
+  ],
+  "stateMapping": {
+    "foreground-synchronized": "前台通知已同步",
+    "mutation-unknown-status-only": "通知注册或更新结果待确认，正在核对原设备状态。",
+    "mutation-unknown-status-unavailable": "通知注册或更新结果待确认，正在核对原设备状态。",
+    "original-credential-recovery-required": "原电脑连接需要先完成通知撤销。",
+    "original-credential-revocation-required": "原电脑连接需要先完成通知撤销。",
+    "foreground-feed-unavailable": "当前电脑未提供可用的前台通知。",
+    "subscription-status-mismatch": "当前电脑未提供可用的前台通知。",
+    "read-unavailable": "通知资料暂不可用，原文件已保留。",
+    "revocation-remote-pending": "远端通知撤销仍待确认。",
+    "reenable-preferences-required": "通知已撤销，重新开启通知后会恢复同步。",
+    "foreground-outcome-unknown": "部分通知的处理结果待确认，不会重复提醒。"
+  }
+}

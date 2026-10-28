@@ -1,0 +1,21 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-attachment-handoff-supplier-fix",
+  "base": "b842fd884d9a41858f4346d7db1a53c7b083649c",
+  "features": ["F25", "F30", "F47", "F71"],
+  "commonAssertions": [
+    "No intermediate Main resume between probe and encrypted preparation.",
+    "Caller-context handedOff/committed receipt/finally owns cancellation until actual handoff; only acknowledged fresh unreferenced original may be retired; unknown acknowledgement retained.",
+    "Fixed original ID/manifest/hash/ciphertext reuse and lease semantics preserved; no immutable input replay."
+  ],
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "31e17a2db8327c931a96d844633553bb81421ebb4f9d75565bde9f20db992e7f"
+  },
+  "verification": {
+    "native": "parent failure retained; original10second test and full group pending coordinator native rerun",
+    "testSource": "unchanged; no timeout/assertion relaxation",
+    "build": "passed acceptance app/runner compile; native original cancellation test pending coordinator",
+    "ios": "untouched; A6 paused",
+    "centralParity": "pending coordinator exact delta integration"
+  }
+}

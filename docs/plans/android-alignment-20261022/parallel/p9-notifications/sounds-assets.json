@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "path": "apps/android/src/main/assets/chat-notification-sounds/v1/attention.wav",
+      "sha256": "6ea2939f779d5a29b1d65f811f29811704cfa6cc58ac576a9a55e05a491fdb7f",
+      "bytes": 31796,
+      "kind": "builtin-immutable-v1"
+    },
+    {
+      "path": "apps/android/src/main/assets/chat-notification-sounds/v1/chime.wav",
+      "sha256": "153716aeb2da8febad6e5a4ce79c7d5f268ccc0753c706864edcd9941132c3ec",
+      "bytes": 21212,
+      "kind": "builtin-immutable-v1"
+    },
+    {
+      "path": "apps/android/src/main/assets/chat-notification-sounds/v1/soft.wav",
+      "sha256": "3579f427ab553b0fa3e71b1433a376b98acab91cae2d5a1247d9fa9ba4fab926",
+      "bytes": 10628,
+      "kind": "builtin-immutable-v1"
+    },
+    {
+      "path": "apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.m4a",
+      "sha256": "231cfa219204bfa34a3768c092c5e6b19c73eb48af3405e933da535eb694e850",
+      "bytes": 4019,
+      "kind": "synthetic-native-decoder-fixture"
+    },
+    {
+      "path": "apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.mp3",
+      "sha256": "db476aba2e89eff735bbf4434d915b8ce22ec501d83ea4c6c307cc66db4d207a",
+      "bytes": 3805,
+      "kind": "synthetic-native-decoder-fixture"
+    }
+  ],
+  "builtinGeneration": "scripts/mobile/check-chat-notification-sounds.mjs --write-builtins; refuses to overwrite differing bytes",
+  "fixtures": "ffmpeg generated sine 0.25s/44100Hz; m4a AAC96k/2channels660Hz, mp3 libmp3lame96k/1channel880Hz",
+  "generationTool": "ffmpeg 9.0.2",
+  "sensitivity": "Synthetic tones only, no recording/user attachment; never uploaded"
+}

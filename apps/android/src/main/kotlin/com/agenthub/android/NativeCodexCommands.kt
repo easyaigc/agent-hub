@@ -20,7 +20,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     companion object { private val executor=Executors.newFixedThreadPool(4) }
     private suspend fun request(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null): JSONObject =
-        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
+        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path=="v1/threads/read") 32*1024 else if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
     private suspend fun <T> exchange(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null,decode: (java.io.InputStream,()->Boolean)->T): T {
         require(!client.isDemo && client.id.isNotBlank() && client.scope?.hostId==client.id) { "未绑定真实电脑目标" }
@@ -29,7 +29,9 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         require(!post || path in POST_ROUTES) { "此接口仅可读取" }
         if(body!=null) {
             require(body.getString("hostId")==client.id) { "操作电脑身份不匹配" }
-            require(definition!=null); CodexCommandCodec.validate(body,definition)
+            require(definition!=null)
+            if(path=="v1/threads/read") { require(definition=="phoneReadRequest");NativeThreadReadingWire.validateRequest(body) }
+            else CodexCommandCodec.validate(body,definition)
         }
         val base=NativeHostReads.baseAddress(client.endpoint ?: throw CodexCommandError("尚未配置电脑地址")).toString().trimEnd('/')
         val parameters=mapOf("hostId" to client.id)+query+if(path.startsWith("v1/voice/") || !post&&path in RESOURCE_QUERYLESS_ROUTES) emptyMap() else mapOf("target" to CodexCommandCodec.target(client.scope!!).toString())
@@ -85,6 +87,11 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
             }
             continuation.invokeOnCancellation { active.getAndSet(null)?.disconnect(); future.cancel(true) }
         }
+    }
+    override suspend fun acknowledgeRead(client: MobileClient,request: NativePendingRead): JSONObject {
+        require(sameScope(client.scope,request.target) && client.id==request.target.hostId &&
+            client.readerId?.let(::nativeReaderId)==request.readerId)
+        return NativeThreadReadingWire.acknowledgement(request,this.request(client,"v1/threads/read",body=NativeThreadReadingWire.request(request),definition="phoneReadRequest"))
     }
     override suspend fun archiveWorkspace(client: MobileClient,request: WorkspaceArchiveRequest): WorkspaceArchiveReceipt {
         require(request.hostId==client.id&&sameScope(request.target,client.scope))
@@ -217,7 +224,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
 
 }
 private fun hash(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-private val POST_ROUTES=setOf("v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
+private val POST_ROUTES=setOf("v1/threads/read","v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
 private val RESOURCE_QUERYLESS_ROUTES=setOf("v1/attachments/resolve","v1/attachments/resolve-link")
 private val RESOURCE_READ_ROUTES=setOf("v1/attachments","v1/attachments/resolve","v1/attachments/resolve-link")
 private val ROUTES=POST_ROUTES+RESOURCE_READ_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")

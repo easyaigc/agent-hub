@@ -57,10 +57,28 @@ class EasyWorkCrypto(credential: EasyWorkCredential,val binding: EasyWorkBinding
         confirmation=easyBase64(hkdf(secret,binding.id.toByteArray(),"easyai-remote:key-confirmation:v1",16))
         secret.fill(0)
     }
-    private fun header(v: JSONObject): ByteArray {
-        val a=JSONArray().put(1).put(v.getString("bindingId")).put(v.getString("senderDeviceId"))
+    private data class EnvelopeNumbers(val version: Long,val sequence: Long)
+    /** Validate the original Number before any Long coercion, AAD or replay identity. */
+    private fun envelopeInteger(value: Any?): Long {
+        val error="加密消息设备或序号不匹配"
+        require(value is Number) { error }
+        val number=value.toDouble()
+        require(number.isFinite()&&number>=1.0&&number<=MAX_SAFE_INTEGER.toDouble()&&number%1.0==0.0) { error }
+        // Host JSON can retain BigDecimal; never truncate its fractional part through Double.
+        val decimal=value.toString().toBigDecimalOrNull()?:throw IllegalArgumentException(error)
+        val integer=try { decimal.longValueExact() } catch(_: ArithmeticException) { throw IllegalArgumentException(error) }
+        require(integer in 1..MAX_SAFE_INTEGER&&integer.toDouble()==number) { error }
+        return integer
+    }
+    private fun envelopeNumbers(v: JSONObject): EnvelopeNumbers {
+        val version=envelopeInteger(v.opt("version"))
+        require(version==1L) { "加密消息设备或序号不匹配" }
+        return EnvelopeNumbers(version,envelopeInteger(v.opt("sequence")))
+    }
+    private fun header(v: JSONObject,numbers: EnvelopeNumbers=envelopeNumbers(v)): ByteArray {
+        val a=JSONArray().put(numbers.version).put(v.getString("bindingId")).put(v.getString("senderDeviceId"))
         v.optional("senderSessionId")?.let { a.put(it) }
-        a.put(v.getString("recipientDeviceId")).put(v.getLong("sequence")).put(v.getString("sentAt"))
+        a.put(v.getString("recipientDeviceId")).put(numbers.sequence).put(v.getString("sentAt"))
         return easyCanonical(a).toByteArray(Charsets.UTF_8)
     }
     fun seal(payload: JSONObject,sequence: Long): ByteArray {
@@ -79,16 +97,17 @@ class EasyWorkCrypto(credential: EasyWorkCredential,val binding: EasyWorkBinding
     fun open(bytes: ByteArray): Opened {
         require(bytes.size<=32*1024*1024) { "电脑消息超过接收上限" }
         val v=JSONObject(String(bytes,Charsets.UTF_8))
-        val sequence=v.getLong("sequence")
-        require(v.getInt("version")==1&&v.getString("bindingId")==binding.id&&v.getString("senderDeviceId")==binding.desktopId&&v.getString("recipientDeviceId")==binding.mobileId&&sequence in 1..9007199254740991L&&v.getString("sentAt").isNotBlank()) { "加密消息设备或序号不匹配" }
+        val numbers=envelopeNumbers(v);val sequence=numbers.sequence
+        require(v.getString("bindingId")==binding.id&&v.getString("senderDeviceId")==binding.desktopId&&v.getString("recipientDeviceId")==binding.mobileId&&v.getString("sentAt").isNotBlank()) { "加密消息设备或序号不匹配" }
         val nonce=easyBytes(v.getString("nonce"));val ciphertext=easyBytes(v.getString("ciphertext"))
         require(nonce.size==12&&ciphertext.size>=16) { "加密消息格式无效" }
         val cipher=Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE,SecretKeySpec(inbound,"AES"),GCMParameterSpec(128,nonce));cipher.updateAAD(header(v))
+        cipher.init(Cipher.DECRYPT_MODE,SecretKeySpec(inbound,"AES"),GCMParameterSpec(128,nonce));cipher.updateAAD(header(v,numbers))
         val payload=JSONObject(String(cipher.doFinal(ciphertext),Charsets.UTF_8))
         return Opened(payload,binding.id+":"+(v.optional("senderSessionId")?:"legacy"),sequence)
     }
     companion object {
+        private const val MAX_SAFE_INTEGER=9007199254740991L
         private fun hkdf(secret: ByteArray,salt: ByteArray,info: String,size: Int): ByteArray {
             fun hmac(key: ByteArray,bytes: ByteArray)=Mac.getInstance("HmacSHA256").run { init(SecretKeySpec(key,"HmacSHA256"));doFinal(bytes) }
             val prk=hmac(salt,secret);val result=hmac(prk,info.toByteArray()+byteArrayOf(1)).copyOf(size);prk.fill(0);return result

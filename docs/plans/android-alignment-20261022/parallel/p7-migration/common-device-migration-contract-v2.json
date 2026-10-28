@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "dependency": "6f4413f55960ce08d8df210f1a3df4b7bc2c0734",
+  "owner": "P7 common migration",
+  "records": {
+    "mobile-reading-ledger-v1": {
+      "schemaVersion": 1,
+      "validator": "NativeReadingLedger.validateEncoded",
+      "preserve": [
+        "target/thread",
+        "latest/read watermarks",
+        "replyUnread",
+        "notice original metadata and seen tombstones"
+      ],
+      "activeReset": [
+        "clear scopes until exact saved target reconciliation",
+        "remove every pendingReader",
+        "increment bounded revision"
+      ],
+      "historicalRows": "Removed-target rows remain dormant; never map them to another runtime or account. Current active scope hashes must belong to saved clients."
+    },
+    "native-chat-notifications-v1": {
+      "schemaVersion": 1,
+      "validator": "NativeChatNotificationStore.validateEncoded plus frozen v1 field/sound guard",
+      "preferences": "retain choices; enabled=false; increment generation; deterministic fresh revision per import receipt",
+      "leases": "active list empty; original epochs/registration identities exist only in read-only audit",
+      "receipts": "original event/state retained; fresh inert ticket/lease placeholders, consumed=true, expiresAt marker=9007199254740991",
+      "dedup": "existing claim() exact target/event-ID check sees marker tombstones after rebind, preference rotation and normal TTL cleanup; markers count toward2048 cap and cannot be silently pruned",
+      "originalClickTickets": "not copied to active record; both original and inert tickets cannot open",
+      "soundBoundary": "The initial common-device phase accepted v1 default/none/.caf syntax only. The subsequent frozen F53 extension is defined by sounds-migration.md and sounds-migration-parity-delta.json; OS channels/grants/provider identity remain outside migration."
+    },
+    "migration-device-audit-v1": {
+      "schemaVersion": 1,
+      "policyVersion": 2,
+      "maxEntries": 16,
+      "contents": "exact original encoded reading/notification strings + original candidate UUID/archiveSHA per migration",
+      "authority": "none; production reading/notification modules never consume this record",
+      "unknown": "reject future version/keys, never discard audit/tombstones at capacity"
+    }
+  },
+  "crossValidation": [
+    "saved current lease targets and preference revision must agree",
+    "overlapping notice ID kind/run/request/operation agree",
+    "equal-revision reply positions agree",
+    "strict duplicate/depth/UTF8 and production parsers validate originals/audit entries"
+  ],
+  "publication": {
+    "generationPointer": 2,
+    "when": "only if prepared installation adds audit record beyond source record count",
+    "records": "actual published files",
+    "sourceRecords": "original immutable candidate receipt count",
+    "compatibility": "read pointer1; ordinary equal-count publication still uses pointer1; complete prepared content digest and existing atomic rollback retained"
+  },
+  "notMigrated": [
+    "OS notification/photo/microphone permissions",
+    "active readers or pending acknowledgements",
+    "active notification registration/key/token/channel",
+    "click tickets",
+    "unknown provider/reading/sound schema"
+  ],
+  "limits": "existing8MiB text/12MiB string envelope and192MiB raw binary unchanged; audit quoting/prepared total bounds fail closed; capacity protection is not a full-limit success claim"
+}

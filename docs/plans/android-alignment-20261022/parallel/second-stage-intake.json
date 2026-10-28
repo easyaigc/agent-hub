@@ -1,0 +1,580 @@
+{
+  "version": 1,
+  "checkpoint": "PAR2-intake",
+  "codeBase": "0c6f0b6c1f56f7a51ce510c4240429e8b62b4073",
+  "state": "in-progress-not-approved-for-merge",
+  "mergedPriorStage": {
+    "pullRequest": 45,
+    "main": "0ebbc9ba31cb078536d8b1b9d755be3d1785f86b",
+    "head": "6f4413f55960ce08d8df210f1a3df4b7bc2c0734",
+    "branchRemovedLocalAndRemote": true
+  },
+  "attachmentCandidate": {
+    "candidate": {
+      "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+      "expandedSourceSha256": "9d5340685457d8c0a578845ccc8f1ff93eae1dce718b22bda48d303d481942fd",
+      "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+      "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5"
+    },
+    "executions": [
+      {
+        "label": "twoMaximumAttachmentsRespectAggregateStreamingAndPreserveOriginalOrderedManifests",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "d308ef879147d99db11433b0bb86abccdea6592bbea1984d8ebe044190f578ef",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "prepareInterruptionRemovesOnlyItsUnpublishedPayloadAndKeepsAllPriorOriginals",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "f0f5eab676b27f9121a5c5e92c994ea75b70f073194910e3e1467ff528993cec",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "cancellationBeforeHandoffRetiresOnlyKnownFreshCommitAndReleasesFixedIdLease",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "8abf6a55665a70ce0719b0bac7c44d863821e837bfb24330afddd2e29c1f7e33",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "corruptPayloadAndUnclaimedPayloadRefuseReadOrExportWithoutRepairingOriginals",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "15c8ea6330c447e912a8ba556f212122c7a8426389df2da866171f7efd627df9",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "legacyInlineSourceReadsExactOriginalWithoutRewriteAndNewByteEntryUsesVersionTwo",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "fb2e21a0a92c9411e244c89fb580fbc60cf4d58531b919fd9eaf3b39e35ee675",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "explicitPreparedCleanupRetiresOnlyItsExactVersionTwoPayload",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "045bb690b621807a7461bbeee50b859f4d23eb0e43b1693a3b473eb17aba1793",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "attachmentCandidateAndActivationFailuresPreserveOriginalSlotAndInstallation",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "f6dd8579ef99935bb97570fecb33edc6ab1c04addde6da6ad1bb906b49a2804f",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "cold-writer",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "2cf96fef50366cb57174ca7b2de01402ea762cbd4b5bf04c571f07903e4e0df2",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "cold-reader",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "5955d0d6884010886e1d2fb9d95ed3f74d9feb64ef045558a91c47b1f02467a3",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "inbox-documents",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 16,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "b01570a69d5ab088f1f3db684ac6630e998bf2579aa53f8bad6a99d7f06b85a5",
+        "defaultProtection": {
+          "records": 16,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "ownership-recovery",
+        "serial": "emulator-5560",
+        "status": "failed",
+        "nativeMethods": 0,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "8b4eb2df9ab0f7bdf2fe5fb2804bab89aaa7ab046e4cf215466384163403d949",
+        "defaultProtection": {
+          "records": 17,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "twoMaximumAttachmentsRespectAggregateStreamingAndPreserveOriginalOrderedManifests",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "6d1c3c9df8449c3c8abdb73b8ddfe8c558c1e43958e26356a63778e8b6b099c2",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "prepareInterruptionRemovesOnlyItsUnpublishedPayloadAndKeepsAllPriorOriginals",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "b0d385c3c302915a7b686eeddd3a9b89f80ac5d7a3aa98a3bb53e02e81763740",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "cancellationBeforeHandoffRetiresOnlyKnownFreshCommitAndReleasesFixedIdLease",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "c5f79166a6102827d634f54df988d2c9e2533711fa15c060d39ce47a04507660",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "corruptPayloadAndUnclaimedPayloadRefuseReadOrExportWithoutRepairingOriginals",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "c14908f83815ef11b595901c3298c2b3e1cc000a6be00931e60b438064d50cd5",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "legacyInlineSourceReadsExactOriginalWithoutRewriteAndNewByteEntryUsesVersionTwo",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "ee7cd36c27885a4d1872a207b790fb501b4bcc4eec8a7f9fcf3ec4707e6ab258",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "explicitPreparedCleanupRetiresOnlyItsExactVersionTwoPayload",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "41116bbc2b430fc3562352b09256433bd83abad26db99ed8404868d390f6a00e",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "attachmentCandidateAndActivationFailuresPreserveOriginalSlotAndInstallation",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "9dead15811586bb8e99ab99c214c35d0ac7e418a41cd9887d8f55d528eaf81e3",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "cold-writer",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "5ab8eee55b7468e37c7d11bd07cc8fce922d132619d18698ee06dbfb6544896c",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "cold-reader",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "ee609f92e386ff5f8995bf5980e3d3a8b7c1b31f74bbb65abb1c408157236e76",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "inbox-documents",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 16,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "82e0fb4444097b5e94ae2b2d8f1f826ba472bbdc6e751ce73d01bbe98729738e",
+        "defaultProtection": {
+          "records": 16,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "ownership-recovery",
+        "serial": "d3c0b38d",
+        "status": "failed",
+        "nativeMethods": 0,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "861c4d99bf9d2c62226a535b82726052ef9ef43fac907f5ac7914ab668996823",
+        "defaultProtection": {
+          "records": 17,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "maximum20MiB",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "b2499f3be5ccc6fcf35db5dd2225415365aeae87352a0b7922b02d52be01b13b",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "maximum20MiB",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "fcc1780817d677a2a3d32716cbf588f3b80fb319db292ba518cd572599abd4cf",
+        "appSha256": "b7eebdcadb0508a5b2092fd92379250672b10f99711b9454db7898916375632c",
+        "testSha256": "3bbf551a5f3d8afe6b9f18d7a9aca40137c538824159928b0ba0e8c120e9e3c5",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "571538ad98069aaf3c466edaddc030e1ebc25d5d0ff87797b5f9524c799a8606",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      }
+    ],
+    "nativeAuxiliaryPassed": 52
+  },
+  "registrationAndProtocolBaseline": {
+    "candidate": {
+      "sourceSha256": "17c761d025de23373d0170a919498df5a757066bdb5d83c1a96fac6bc065a704",
+      "expandedSourceSha256": "1255f26a7ca5473c408945fb0496b0f1406594336894394f6e84302f0ee1a14c",
+      "appSha256": "8190d24e9ed29e85d257a407b93f52613a25c072668d141a501c117ad82b3edb",
+      "testSha256": "2c3de120b36739b1e96a650bd61b13f5d2ae545342dcb0b38aa43919f97c46ea"
+    },
+    "executions": [
+      {
+        "label": "numeric-baseline-regression",
+        "serial": "emulator-5560",
+        "status": "failed",
+        "nativeMethods": 0,
+        "sourceSha256": "17c761d025de23373d0170a919498df5a757066bdb5d83c1a96fac6bc065a704",
+        "appSha256": "8190d24e9ed29e85d257a407b93f52613a25c072668d141a501c117ad82b3edb",
+        "testSha256": "2c3de120b36739b1e96a650bd61b13f5d2ae545342dcb0b38aa43919f97c46ea",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "cd676ea8a1caa6185ebe874c67cb36af9d193949dec78243bd539d44416568ae",
+        "defaultProtection": {
+          "records": 0,
+          "allElevenFields": null
+        }
+      },
+      {
+        "label": "numeric-baseline-regression",
+        "serial": "d3c0b38d",
+        "status": "failed",
+        "nativeMethods": 0,
+        "sourceSha256": "17c761d025de23373d0170a919498df5a757066bdb5d83c1a96fac6bc065a704",
+        "appSha256": "8190d24e9ed29e85d257a407b93f52613a25c072668d141a501c117ad82b3edb",
+        "testSha256": "2c3de120b36739b1e96a650bd61b13f5d2ae545342dcb0b38aa43919f97c46ea",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "91033a30da89c446e3491dbfd0f3994c8667e3d1e4073866ccd70d54dc3efab5",
+        "defaultProtection": {
+          "records": 0,
+          "allElevenFields": null
+        }
+      },
+      {
+        "label": "core-protocol",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 14,
+        "sourceSha256": "17c761d025de23373d0170a919498df5a757066bdb5d83c1a96fac6bc065a704",
+        "appSha256": "8190d24e9ed29e85d257a407b93f52613a25c072668d141a501c117ad82b3edb",
+        "testSha256": "2c3de120b36739b1e96a650bd61b13f5d2ae545342dcb0b38aa43919f97c46ea",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "344c8e13d8b303dfdf832e56e93fa318faa0b4bae31fbbe333ce6cacff52b0fa",
+        "defaultProtection": {
+          "records": 0,
+          "allElevenFields": null
+        }
+      },
+      {
+        "label": "listening-hint-window",
+        "serial": "emulator-5560",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "17c761d025de23373d0170a919498df5a757066bdb5d83c1a96fac6bc065a704",
+        "appSha256": "8190d24e9ed29e85d257a407b93f52613a25c072668d141a501c117ad82b3edb",
+        "testSha256": "2c3de120b36739b1e96a650bd61b13f5d2ae545342dcb0b38aa43919f97c46ea",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "0cf5e54c7b10120c14776cc38fae437991e40542462b6294913b3dadf6d8dd2c",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "listening-hint-window",
+        "serial": "d3c0b38d",
+        "status": "passed",
+        "nativeMethods": 1,
+        "sourceSha256": "17c761d025de23373d0170a919498df5a757066bdb5d83c1a96fac6bc065a704",
+        "appSha256": "8190d24e9ed29e85d257a407b93f52613a25c072668d141a501c117ad82b3edb",
+        "testSha256": "2c3de120b36739b1e96a650bd61b13f5d2ae545342dcb0b38aa43919f97c46ea",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "f43255f97045341eb6b426e0dde4be3058b8270709cd6100f1c7f20c33b3b65f",
+        "defaultProtection": {
+          "records": 1,
+          "allElevenFields": true
+        }
+      },
+      {
+        "label": "reading-registration",
+        "serial": "emulator-5560",
+        "status": "failed",
+        "nativeMethods": 0,
+        "sourceSha256": "17c761d025de23373d0170a919498df5a757066bdb5d83c1a96fac6bc065a704",
+        "appSha256": "8190d24e9ed29e85d257a407b93f52613a25c072668d141a501c117ad82b3edb",
+        "testSha256": "2c3de120b36739b1e96a650bd61b13f5d2ae545342dcb0b38aa43919f97c46ea",
+        "appSourceCheckpoint": "immutable-frozen-candidate",
+        "fontRestored": true,
+        "modelInputs": 0,
+        "logSha256": "453677e1932cbe68782cb6a2603a8d8d6567075345ea96d6ea043ef5014d4eaf",
+        "defaultProtection": {
+          "records": 5,
+          "allElevenFields": true
+        }
+      }
+    ],
+    "nativeAuxiliaryPassed": 16
+  },
+  "failuresAndOwnership": [
+    {
+      "id": "attachment-cancel-handoff",
+      "scope": "Existing cancellationAfterEncryptedWriteDiscardsOnlyTheUnpublishedFile fails on both environments; 17-method batches not passed",
+      "finding": "New probe IO returns through occupied Main before write IO; migration workline owns supplier/receipt/handoff correction; no blanket actual product hang claim"
+    },
+    {
+      "id": "reading-earlier-proof",
+      "scope": "One failure among 9 API26 registration methods; batch not passed",
+      "finding": "Earlier response retained previous current-page proof; reading workline owns review/correction with bounded-body retention"
+    },
+    {
+      "id": "easywork-numeric-envelope",
+      "scope": "Original42.5 rejection regression failed on API26 and physical",
+      "finding": "Original42 ciphertext is accepted after numeric coercion; P8 workline owns strict sequence/version correction; legacy/Node vectors must remain valid"
+    },
+    {
+      "id": "phone-core-lease",
+      "scope": "Physical P8 core not started; preflight found active acceptance.easywork instrumentation",
+      "finding": "No installation/launch/stop performed; preserve other owner and retry only after slot is free"
+    },
+    {
+      "id": "old-phone-listening-timeout",
+      "scope": "Original PAR1 timeout preserved; new owned-window fixture passed on API26/physical",
+      "finding": "8 actual PixelCopy windows inspected; centered hint and equal waveform, 48dp/real center click/default protection/mic permission held; device font/ripple/system-bar differences remain outside whole visual closure"
+    }
+  ],
+  "concurrentWork": {
+    "migration": "legacy inline oldGCM heap limits/original protection, cancellation regression, then common reading/notification Schema",
+    "readingVoice": "bounded current-body/position caches, earlier proof correction; full unread directory and remaining voice lifecycle later",
+    "p8": "strict numeric envelope production fix and native counterpart validation",
+    "p9": "F53 sound library/import/convert/preview/delete and OS URI integration still independent workline"
+  },
+  "acceptanceLimit": "Separate frozen candidates, not a combined current-product pass. Synthetic native/Host-JVM are not Desktop/model/remote vendor delivery. Task/project business and iOS A6 paused; original unknown operations never replayed.",
+  "newModelInputs": 0,
+  "artifacts": "Immutable tree-external APK/runner/frozen sources, original fixture bytes, raw instrumentation, original failed and not-started preflights, 8 PixelCopy windows; registry carries private paths"
+}

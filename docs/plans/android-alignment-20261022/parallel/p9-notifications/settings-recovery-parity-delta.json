@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p9-notifications-20261028",
+  "stage": "P9-settings-recovery",
+  "baseCommit": "f9e935b37f3f49e5a689f34397163a63ab13dc82",
+  "status": "implemented-auxiliary-only",
+  "features": [
+    {
+      "id": "F51",
+      "commonAssertion": "通知总开关、分类及声音设置读取失败保留原资料，明确不可用并可重试；不得显示可编辑假默认值",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "No iOS implementation change; Android encrypted preferences recovery only. Existing iOS proof is not reused.",
+      "sourceSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "cacd65aee6a5a5352198cbb65817c81835d9730c9100bc4fce7d20f9e43206c6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "65e3d6bf596b20802412ee72c1ee6e28fe1a0e6f08b2b667f443a6604f7709df",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "25dd8fac10ee7ddc28d57750860f3a77bc96ec9a49349b17073ce3f5f3eb528c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt": "8163633db2bd2103d6b63d4dfa600fc6abe10b76c34645a56b65a502490fb533",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt": "7d14f47ffae24e16cc7d622a1c2d347e0c9222a11d81dfb170118a4ac4830e8c"
+      }
+    },
+    {
+      "id": "F53",
+      "commonAssertion": "默认／分类声音、静音、删除恢复引用保持既有行为；独占原生 Activity 夹具保留默认资料",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "No iOS implementation or sound semantics change. Android UI fixture adjustment only.",
+      "sourceSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "cacd65aee6a5a5352198cbb65817c81835d9730c9100bc4fce7d20f9e43206c6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "65e3d6bf596b20802412ee72c1ee6e28fe1a0e6f08b2b667f443a6604f7709df",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "25dd8fac10ee7ddc28d57750860f3a77bc96ec9a49349b17073ce3f5f3eb528c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt": "8163633db2bd2103d6b63d4dfa600fc6abe10b76c34645a56b65a502490fb533",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt": "7d14f47ffae24e16cc7d622a1c2d347e0c9222a11d81dfb170118a4ac4830e8c"
+      }
+    }
+  ],
+  "sourceFiles": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "cacd65aee6a5a5352198cbb65817c81835d9730c9100bc4fce7d20f9e43206c6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "65e3d6bf596b20802412ee72c1ee6e28fe1a0e6f08b2b667f443a6604f7709df",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "25dd8fac10ee7ddc28d57750860f3a77bc96ec9a49349b17073ce3f5f3eb528c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt": "8163633db2bd2103d6b63d4dfa600fc6abe10b76c34645a56b65a502490fb533",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt": "7d14f47ffae24e16cc7d622a1c2d347e0c9222a11d81dfb170118a4ac4830e8c"
+  },
+  "auxiliary": "App and runner compiled; four settings recovery + four sound UI cases compiled only. No native execution.",
+  "sharedFilesEdited": false,
+  "protocolAndStorage": "unchanged; Store/Runtime claim guard untouched; no automatic reset/replay",
+  "localization": "settings-recovery-localization-delta.json"
+}

@@ -27,7 +27,8 @@ data class MobileProject(val id: String, val hostId: String, val name: String, v
 data class MobileThread(val id: String, val hostId: String, val title: String, val state: String,
     val projectId: String? = null, val projectIds: List<String> = emptyList(), val unread: Boolean = false,
     val archived: Boolean? = null, val lastTurnStatus: String? = null,
-    val pendingAsyncQuestionCount: Int? = null, val archiveUnavailableReason: String? = null) {
+    val pendingAsyncQuestionCount: Int? = null, val archiveUnavailableReason: String? = null,
+    val readState: ThreadReadState? = null) {
     fun belongs(project: MobileProject) = hostId == project.hostId && (projectId == project.id || project.id in projectIds)
     val showsUnread get() = unread && state !in listOf("running", "waiting-for-approval")
 }
@@ -44,7 +45,8 @@ data class MobileHistory(val hostId: String, val threadId: String, val messages:
     val nextCursor: String?, val scope: TargetScope?, val state: String, val turnId: String?, val wire: String,
     val runtimePresent: Boolean = false, val runtime: MobileRuntime? = null, val epoch: String? = null, val cursor: Long? = null,
     val windowed: Boolean = false, val historyRevision: Long? = null,
-    val historyWindowKind: String? = null, val synchronization: MobileHistorySynchronization? = null)
+    val historyWindowKind: String? = null, val synchronization: MobileHistorySynchronization? = null,
+    val readState: ThreadReadState? = null)
 data class MobileHistorySynchronization(val state: String, val checkedAt: String? = null)
 
 /** Bounded pre-revision V9 compatibility only; it is not a history stability proof. */
@@ -80,7 +82,7 @@ object HostReadCodec {
         it.getString("title"), it.getString("state"), it.optional("projectId"),
         it.optJSONArray("projectIds")?.strings().orEmpty(), it.optBoolean("hasUnreadTurn"),
         MobileWorkspaceMetadata.boolean(it,"archived"), MobileWorkspaceMetadata.text(it,"lastTurnStatus"),
-        MobileWorkspaceMetadata.count(it,"pendingAsyncQuestionCount"), MobileWorkspaceMetadata.text(it,"archiveUnavailableReason"))
+        MobileWorkspaceMetadata.count(it,"pendingAsyncQuestionCount"), MobileWorkspaceMetadata.text(it,"archiveUnavailableReason"),NativeThreadReadingWire.state(it))
     fun message(it: JSONObject): MobileMessage = MobileMessage(it.getString("id"), it.getString("role"),
         NativeHistoryStrings.share(it.getString("text")), it.optional("status"), it.optional("kind"), it.optional("detail")?.let(NativeHistoryStrings::share),
         it.optional("runId"), it.optional("replyPhase"), it.optional("replyMessageId"),
@@ -119,12 +121,14 @@ object HostReadCodec {
         require((scope == null || scope.hostId == host) && messages.flatMap { m -> m.attachments }.all { f ->
             f.hostId == host && f.threadId == thread }) { "电脑或附件身份不匹配" }
         val runtime = it.optJSONObject("runtime")
+        val readingThread=it.optJSONObject("thread")
+        require(readingThread==null || readingThread.getString("hostId")==host && readingThread.getString("id")==thread) { "阅读摘要不属于当前电脑或对话" }
         // Decoded messages own the content. Retaining the full raw report as
         // well doubles a long live thread in memory; the wire is cache metadata.
         it.put("messages", JSONArray())
         return MobileHistory(host, thread, messages, it.optional("nextCursor"), scope,
             runtime?.optional("state") ?: "idle", runtime?.optional("turnId"), it.toString(), runtime != null,
-            runtime?.let { MobileRuntime.decode(it,host,thread) },it.optional("epoch"),if(it.has("cursor") && !it.isNull("cursor")) it.getLong("cursor") else null,windowed,revision,windowKind,synchronization)
+            runtime?.let { MobileRuntime.decode(it,host,thread) },it.optional("epoch"),if(it.has("cursor") && !it.isNull("cursor")) it.getLong("cursor") else null,windowed,revision,windowKind,synchronization,readingThread?.let(NativeThreadReadingWire::state))
     }
 }
 

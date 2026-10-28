@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.testTag as semanticTestTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -77,9 +78,9 @@ import kotlin.math.sin
         .clickable(role=Role.Button,onClick=onStop)
         .semantics { contentDescription=stopHint;stateDescription=status },
         verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-        VoiceWaveform(levels,Modifier.weight(1f).clearAndSetSemantics {})
-        Text(stopHint,Modifier.clearAndSetSemantics {},fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,textAlign=TextAlign.Center)
-        VoiceWaveform(levels,Modifier.weight(1f).clearAndSetSemantics {},mirrored=true)
+        VoiceWaveform(levels,Modifier.weight(1f).clearAndSetSemantics { semanticTestTag="dictation-waveform-leading" })
+        Text(stopHint,Modifier.clearAndSetSemantics { semanticTestTag="dictation-stop-hint" },fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,textAlign=TextAlign.Center)
+        VoiceWaveform(levels,Modifier.weight(1f).clearAndSetSemantics { semanticTestTag="dictation-waveform-trailing" },mirrored=true)
     }
 }
 @Composable private fun VoiceWaveform(levels: List<Float>,modifier: Modifier=Modifier,mirrored: Boolean=false) {

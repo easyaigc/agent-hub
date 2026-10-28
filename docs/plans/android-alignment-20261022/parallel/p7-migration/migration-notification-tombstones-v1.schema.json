@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Migration-owned ordinary notification dedup index v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "eventKeys"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "eventKeys": {
+      "type": "array",
+      "maxItems": 32768,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    }
+  },
+  "description": "Production parser additionally requires sorted keys, <=3MiB UTF8, strict JSON/no duplicate keys and exact equality with original audit receipt identities. No active receipt, ticket, lease or TTL in this record."
+}

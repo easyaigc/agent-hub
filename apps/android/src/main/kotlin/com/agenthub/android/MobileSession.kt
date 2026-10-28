@@ -186,6 +186,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun conversationProgressKey(key: String,client: MobileClient)="$key:$selectionRevision:${revisions[client.id] ?: 0}"
     internal val conversationSyncIssue: ConversationSyncIssue? get()=conversationSyncIssues[targetKey].takeUnless { selectedClient.isDemo || selectedThread.isEmpty() }
     private fun receivedConversationSnapshot(key: String,client: MobileClient,page: MobileHistory,proofIsFresh: Boolean=true) {
+        receivePhoneReading(client,page,proofIsFresh)
         if(proofIsFresh&&key==targetKey&&page.runtimePresent)suggestionNeedsFreshHistory=false
         val state=page.synchronization?.state
         val historyFresh=state in listOf("history","live-window") && page.synchronization?.checkedAt!=null
@@ -216,6 +217,142 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var foreground=true
     val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
     internal val attachmentRecoveryBusy: Boolean get()=documentPicker?.recovery?.let { it.loading||it.busy }==true||photoPicker?.recovery?.let { it.loading||it.busy }==true||cameraCapture?.recovery?.let { it.loading||it.busy }==true
+    internal val phoneReading=NativePhoneReadingStore(storage,tasks,::syncPhoneReadAcknowledgements)
+    private var phoneReadingProof by mutableStateOf<NativeReadingProof?>(null)
+    private val phoneReadingFingerprint=NativeLegacyReadingFingerprint()
+    private var phoneReadingEpoch=0L
+    private val phoneReadingAcknowledgementOwners=mutableMapOf<String,String>()
+    private val phoneReadingAcknowledgements=mutableMapOf<String,Job>()
+    private var phoneReadingUncovered by mutableStateOf(false)
+    private var phoneReadingRetry by mutableStateOf(0L)
+    private var attemptedPhoneReading: NativeVisiblePhoneReading?=null
+    private var cachedPhoneReading: NativeVisiblePhoneReading?=null
+    private var phoneWorkspaceHead: Pair<String,ThreadReadPosition?>?=null
+    internal val phoneReadingError get()=phoneReading.failure
+    internal val phoneUnreadCount get()=phoneReading.snapshot.count
+    internal val phoneUnreadKnown get()=phoneReading.ready
+    fun unreadConversationCount(client: MobileClient): Int? = if(client.isDemo)0 else if(!phoneReading.ready)null else client.scope?.let(phoneReading.snapshot::count)
+    fun showsPhoneUnread(thread: MobileThread): Boolean = if(selectedClient.isDemo)thread.showsUnread else
+        thread.state !in listOf("running","waiting-for-approval") && selectedClient.scope?.let {
+            thread.hostId==selectedClient.id && phoneReading.snapshot.isUnread(it,thread.id)
+        }==true
+    internal fun setPhoneReadingSurface(uncovered: Boolean) {
+        phoneReadingUncovered=uncovered;phoneReading.lifecycle.foreground(foreground);phoneReading.lifecycle.uncovered(uncovered)
+        if(!uncovered) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear() }
+    }
+    internal fun retryPhoneReading() { attemptedPhoneReading=null;phoneReadingRetry++;reconcilePhoneReading() }
+    internal val visiblePhoneReading: NativeVisiblePhoneReading? get() {
+        val client=selectedClient;val target=client.scope ?: return null
+        if(selectedThread.isEmpty())return null
+        // Earlier pages/cache can add display rows, but only an accepted latest network page supplies reading proof.
+        val proof=phoneReadingProof?.takeIf { it.threadId==selectedThread && sameScope(it.target,target) } ?: return null
+        if(!localReady || !foreground || !phoneReadingUncovered || client.isDemo || !client.online || selectedThread.isEmpty() ||
+            historyLoading || freshWorkspaces[clientKey]!=true || freshHistories[targetKey]!=true ||
+            readyHistorySelection!=Triple(targetKey,selectionRevision,revisions[client.id] ?: 0) ||
+            proof.selection!=selectionRevision || proof.connectionRevision!=(revisions[client.id] ?: 0) || proof.epoch!=phoneReadingEpoch)return null
+        val position=NativePhoneReadingRules.latest(listOf(currentChat?.readState?.latest,proof.state?.latest,
+            phoneReading.heads[ThreadReadingIdentity.key(target,selectedThread)])) ?: return null
+        val message=messages.lastOrNull { it.id==position.messageId && it.role=="assistant" &&
+            it.status !in listOf("inProgress","running","streaming","unknown") } ?: return null
+        val content=NativeVisiblePhoneReading(client,targetKey,selectedThread,selectionRevision,revisions[client.id] ?: 0,phoneReadingRetry,position,NativeReadingBody(message.id,message.text,message.status))
+        cachedPhoneReading?.let { if(it==content)return it }
+        if(!position.matches(message.id,message.text,message.status))return null
+        cachedPhoneReading=content;return content
+    }
+    internal fun observeVisiblePhoneReading(content: NativeVisiblePhoneReading,visible: Boolean) {
+        if(visiblePhoneReading!=content)return
+        if(!visible) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;return }
+        if(attemptedPhoneReading==content)return
+        val reader=content.client.readerId?.let(::nativeReaderId) ?: return
+        attemptedPhoneReading=content;phoneReading.visible(content,reader)
+    }
+    private fun reconcilePhoneReading() {
+        if(!localReady)return
+        val head=targetKey to workspaces[clientKey]?.threads?.firstOrNull { it.id==selectedThread }?.readState?.latest
+        if(phoneWorkspaceHead!=head) { phoneWorkspaceHead=head;phoneReading.lifecycle.leave();attemptedPhoneReading=null }
+        val clients=realClients.filter { !it.isDemo && it.scope!=null }
+        val values=clients.flatMap { client ->
+            val workspace=workspaces[client.cacheKey(null)]
+            if(workspace==null || !sameScope(workspace.scope,client.scope))emptyList() else workspace.threads.map { thread ->
+                NativeReadingSnapshot(client.scope!!,thread.id,thread.readState?.latest,thread.unread,client.readerId?.let(::nativeReaderId),thread.readState)
+            }
+        }.toMutableList()
+        val legacy=mutableListOf<NativeLegacyReading>()
+        phoneReadingProof?.takeIf { proof -> clients.any { sameScope(it.scope,proof.target) } }?.let { proof ->
+            val client=clients.first { sameScope(it.scope,proof.target) }
+            val source=workspaces[client.cacheKey(null)]?.threads?.firstOrNull { it.id==proof.threadId }?.unread ?: false
+            if(proof.state!=null)values.add(NativeReadingSnapshot(proof.target,proof.threadId,proof.state.latest,source,client.readerId?.let(::nativeReaderId),proof.state))
+            else proof.legacy?.let { legacy.add(it.copy(sourceUnread=source)) }
+        }
+        phoneReading.reconcile(clients.mapNotNull { it.scope },values,legacy)
+    }
+    private fun receivePhoneReading(client: MobileClient,page: MobileHistory,fresh: Boolean) {
+        if(client.id!=selectedClient.id || !sameScope(client.scope,selectedClient.scope) || page.threadId!=selectedThread)return
+        // A replacement/cache snapshot cannot borrow the last latest-page proof, even if its body is identical.
+        if(!fresh || page.scope==null || !sameScope(page.scope,client.scope) || page.historyWindowKind=="earlier") {
+            releasePhoneReadingProof();return
+        }
+        val target=client.scope ?: return
+        val key=ThreadReadingIdentity.key(target,page.threadId)
+        phoneReading.focus(key)
+        val legacy=if(page.readState==null)page.messages.lastOrNull { it.role=="assistant" && it.status !in listOf("inProgress","running","streaming","unknown") }?.let {
+            NativeLegacyReading(target,page.threadId,it.id,phoneReadingFingerprint.version(key,it.id,it.text,it.status ?: "completed"),false)
+        }else null
+        val next=NativeReadingProof(target,page.threadId,page.readState,legacy,selectionRevision,revisions[client.id] ?: 0,phoneReadingEpoch)
+        val changed=phoneReadingProof!=next
+        val visibleBodyChanged=cachedPhoneReading?.body?.let { body -> page.messages.none(body::matches) }==true
+        if(changed || visibleBodyChanged) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;cachedPhoneReading=null }
+        phoneReadingProof=next
+        if(changed)reconcilePhoneReading() else syncPhoneReadAcknowledgements()
+    }
+    private fun releasePhoneReadingProof() {
+        phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null
+        phoneReading.lifecycle.leave();phoneReading.focus(null)
+    }
+    private fun currentPhoneReadingClient(client: MobileClient,revision: Long,epoch: Long): Boolean = localReady && foreground && epoch==phoneReadingEpoch &&
+        realClients.any { it.id==client.id && sameScope(it.scope,client.scope) && it.endpoint==client.endpoint &&
+            it.codexDirect?.fingerprint==client.codexDirect?.fingerprint && it.readerId==client.readerId && it.agentConnection==client.agentConnection } &&
+        (revisions[client.id] ?: 0)==revision && freshWorkspaces[client.cacheKey(null)]==true
+    private fun syncPhoneReadAcknowledgements() {
+        val ledger=phoneReading.ledger ?: return
+        if(!localReady || !foreground)return
+        tasks.launch {
+            val pending=try { withContext(Dispatchers.IO) { ledger.pendingReads() } }catch(_: Exception) { return@launch }
+            pending.forEach { request ->
+                val client=realClients.firstOrNull { sameScope(it.scope,request.target) && it.online &&
+                    it.readerId?.let(::nativeReaderId)==request.readerId && "threads:read-state" in workspaces[it.cacheKey(null)]?.capabilities.orEmpty() } ?: return@forEach
+                val key=ThreadReadingIdentity.key(request.target,request.threadId)
+                if(phoneReadingAcknowledgements[key]?.isActive==true)return@forEach
+                val revision=revisions[client.id] ?: 0;val epoch=phoneReadingEpoch;val owner=UUID.randomUUID().toString()
+                phoneReadingAcknowledgementOwners[key]=owner
+                phoneReadingAcknowledgements[key]=tasks.launch {
+                    try {
+                        if(!currentPhoneReadingClient(client,revision,epoch))return@launch
+                        val acknowledgement=commands.acknowledgeRead(client,request)
+                        if(!currentPhoneReadingClient(client,revision,epoch))return@launch
+                        val value=withContext(Dispatchers.IO) { ledger.acknowledge(request,acknowledgement) }
+                        if(currentPhoneReadingClient(client,revision,epoch))phoneReading.publish(value)
+                    }catch(cancel: CancellationException) { throw cancel }
+                    catch(failure: CodexCommandError) {
+                        if(failure.status==409 && currentPhoneReadingClient(client,revision,epoch)) {
+                            val value=withContext(Dispatchers.IO) { ledger.settleStaleAcknowledgement(request) };phoneReading.publish(value)
+                        }
+                    }catch(_: Exception) { /* Keep the exact local read pending until a fresh authenticated reconciliation. */ }
+                    finally {
+                        if(phoneReadingAcknowledgementOwners[key]==owner) {
+                            phoneReadingAcknowledgementOwners.remove(key);phoneReadingAcknowledgements.remove(key)
+                            if(isActive && currentPhoneReadingClient(client,revision,epoch)) {
+                                val newer=try { withContext(Dispatchers.IO) { ledger.pendingReads().any {
+                                    ThreadReadingIdentity.key(it.target,it.threadId)==key && it.position!=request.position
+                                } } }catch(_: Exception) { false }
+                                if(newer)syncPhoneReadAcknowledgements()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     private val realClients = mutableStateListOf<MobileClient>()
     val clients: List<MobileClient> get() = realClients.toList() + if (demo) DemoMobileData.clients else emptyList()
     var demo by mutableStateOf(false)
@@ -282,7 +419,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var foregroundJob: Job? = null
     fun enterForeground() {
         tasks.launch { easyWorkLogin?.foreground() }
-        foreground=true; freshWorkspaces.clear(); freshHistories.clear()
+        foreground=true;phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
         realClients.toList().forEach { replaceClient(it.copy(online=false,connectionPhase=ConnectionPhase.CONNECTING)) }
         if(localReady) { refresh(); loadHistory() }
         foregroundJob?.cancel()
@@ -316,7 +453,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -326,7 +463,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var presentationTargetKey=targetKey
     private fun synchronizeReadingPresentation() {
         val key=targetKey
-        if(presentationTargetKey!=key) { presentationTargetKey=key;visibleMessageLimit=ReadingPolicy.initialMessageLimit().toInt();revealedEarlier=false }
+        if(presentationTargetKey!=key) { releasePhoneReadingProof();presentationTargetKey=key;visibleMessageLimit=ReadingPolicy.initialMessageLimit().toInt();revealedEarlier=false }
+        phoneReading.focus(selectedClient.scope?.takeIf { selectedThread.isNotEmpty() }?.let { ThreadReadingIdentity.key(it,selectedThread) })
     }
     private val clientKey get() = selectedClient.cacheKey(null)
     val sidebarDisplay get() = sidebarStates[clientKey] ?: SidebarDisplayState()
@@ -870,6 +1008,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun select(client: MobileClient)=selectClient(client,refreshAutomatically=true)
     private fun selectClient(client: MobileClient,refreshAutomatically: Boolean) {
+        releasePhoneReadingProof()
         voice?.suspendRecording();aiSharingRequest=null
         clientNavigationRevision++;selectionRevision++;networkRecoveryJob?.cancel();networkRecoveryJob=null; workspaceJob?.cancel(); historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
         selectedClient = realClients.firstOrNull { it.id==client.id && sameScope(it.scope,client.scope) } ?: client; search = ""; error = null; synchronizeReadingPresentation()
@@ -880,7 +1019,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val key=client.cacheKey(null);val verified=workspaces[key] ?: error("连接快照尚未就绪")
         require(verified.hostId==client.id && (!client.requiresReadTarget || verified.scope!=null) &&
             (client.scope==null || verified.scope==null || sameScope(client.scope,verified.scope))) { "电脑运行目标不匹配" }
-        freshWorkspaces[key]=true;recordConnectionSuccess(client)
+        freshWorkspaces[key]=true;recordConnectionSuccess(client);reconcilePhoneReading()
         selectClient(client,refreshAutomatically=false)
         freshHistories[targetKey]=false
         val events=selectedThread.isNotEmpty() && verified.capabilities.containsAll(listOf("events","commands:target-bound:v1"))
@@ -954,6 +1093,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 var merged = if (more && old != null) MobileWorkspaceMetadata.mergePage(old,result) else result
                 merged = merged.copy(wire=encodeWorkspace(merged).toString())
                 workspaces[key] = merged
+                reconcilePhoneReading()
                 freshWorkspaces[key]=true
                 recordConnectionSuccess(client)
                 replaceClient(selectedClient.copy(online = true, mode = result.mode))
@@ -1736,6 +1876,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val remembered=if(client.storageIdentity==null && prior?.storageIdentity!=null && sameScope(client.scope,prior.scope)) client.copy(storageIdentity=prior.storageIdentity) else client
         if (index < 0) realClients.add(remembered) else realClients[index] = remembered
         if (selectedClient.id == client.id) { selectedClient = remembered;synchronizeReadingPresentation() }
+        if(prior!=remembered)reconcilePhoneReading()
         return remembered
     }
     suspend fun credential(id: String): String = withContext(Dispatchers.IO) { storage?.token(id).orEmpty() }
@@ -1982,7 +2123,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(removed.agentConnection==null) try { storage?.setToken(id,"") } catch(_: Exception) { storageFailure();return }
         revisions[id] = (revisions[id] ?: 0) + 1
         connectionSuccesses.remove(removed.cacheKey(null))
-        realClients.removeAll { it.id == id }
+        phoneReading.lifecycle.leave();attemptedPhoneReading=null
+        phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
+        realClients.removeAll { it.id == id };reconcilePhoneReading()
         if (selectedClient.id == id) select(realClients.firstOrNull() ?: DemoMobileData.clients.first())
         tasks.launch(Dispatchers.IO) {
             easyWorkSessions?.remove(id)
@@ -2021,7 +2164,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         tasks.launch {
             try {
                 val page = withContext(Dispatchers.IO) { NativeHistoryCache(storage).read(key) } ?: return@launch
-                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) { acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CACHE_APPLYING,page.hostId,page.threadId); histories[key] = page.messages; historyPages[key] = page }
+                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) { releasePhoneReadingProof();acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CACHE_APPLYING,page.hostId,page.threadId); histories[key] = page.messages; historyPages[key] = page }
             } catch (_: Exception) { if (targetKey == key) error = "本地缓存无法读取，原缓存已保留" }
             catch (_: OutOfMemoryError) { if(targetKey == key) error = "本地缓存内存不足，原缓存已保留" }
         }
@@ -2030,6 +2173,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     fun restore() {
         val storage=storage ?: return
         if(restoreJob?.isActive==true) return
+        phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
+        phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
         restoring=true;localRecoveryAllowsAttachmentStaging=false
         val generation=storage.beginRestore()
         restoreJob=tasks.launch {
@@ -2124,11 +2269,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 localRecoveryAllowsAttachmentStaging=authenticatedParentRead&&(failure is org.json.JSONException||failure is IllegalArgumentException)
                 localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
             }
-            finally { restoring=false;synchronizeReadingPresentation() }
+            finally { restoring=false;synchronizeReadingPresentation();reconcilePhoneReading() }
             if (localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
         }
     }
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
+        phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
         aiSharing.clearAcceptance();aiSharingRequest=null
         desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()

@@ -168,13 +168,18 @@ private fun LazyListScope.sidebarProjectRows(project: MobileProject,children: Li
 
 @Composable private fun ThreadRow(thread: MobileThread,session: MobileSession,prefix: String,close: () -> Unit,active: Boolean) {
     val colors=MaterialTheme.colorScheme
-    val status=productText(when(thread.state) { "running"->"运行中";"waiting-for-approval"->"待处理";else->if(thread.showsUnread)"未读" else "已读" })
+    val status=when {
+        thread.state=="running"->productText("运行中")
+        thread.state=="waiting-for-approval"->productText("待处理")
+        !session.selectedClient.isDemo && !session.phoneUnreadKnown->productText("未读 %@","—")
+        else->productText(if(session.showsPhoneUnread(thread))"未读" else "已读")
+    }
     val description=productText("%@，%@",thread.title,status)
     Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(10.dp)).background(if(thread.id==session.selectedThread) colors.onSurface.copy(alpha=.06f) else Color.Transparent).testTag("$prefix-${thread.id}").semantics { contentDescription=description }.clickable { session.selectThread(thread);close() }.padding(horizontal=9.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically) {
         Text(thread.title,Modifier.weight(1f),fontSize=16.sp,maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         when { thread.state=="running" -> if(active) CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp)
                 else CircularProgressIndicator(progress={ .25f },modifier=Modifier.size(14.dp),strokeWidth=1.5.dp)
             thread.state=="waiting-for-approval" -> Text(productText("待处理"),fontSize=11.sp,color=Color(0xFFD68B00))
-            thread.showsUnread -> Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF007AFF)).testTag("unread-${thread.id}")) }
+            session.showsPhoneUnread(thread) -> Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF007AFF)).testTag("unread-${thread.id}")) }
     }
 }

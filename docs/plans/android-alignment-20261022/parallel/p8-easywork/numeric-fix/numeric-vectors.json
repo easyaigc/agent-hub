@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "sourceBase": "bf5d1a7aeaaea4623078973f8e58ca70e288e7ab",
+  "sourceFixtureSha256": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104",
+  "frames": {
+    "minimum": {
+      "version": 1,
+      "bindingId": "binding-vector",
+      "senderDeviceId": "desktop-vector",
+      "senderSessionId": "p8-numeric-node-vector",
+      "recipientDeviceId": "mobile-vector",
+      "sequence": 1,
+      "sentAt": "2026-10-28T00:00:00.000Z",
+      "nonce": "s-P8xBpdaBk86JJr",
+      "ciphertext": "fCFPLttTLeNTun_2qCB-cm_YxbBUKjOMbz3z116oLWsuKEj7s70K11yRQKbiPz-d9A6WeNYpK3doSaqEt6iu8Q7RWrvwdcVRd7G7t-QuRZUlPR8jQuuegml_VZ91zkXmYM3z2F9s-23hSVpNbnTc85QzkhYshpMq0D-ns_mwnFVkKiyVJzkG6z2V0Su7Ku2hbZLKDf-w5EAD5YGR1fsEQ64Wo-KvBpVEQUJKZu0-bGqDg55h9FrmOQGsDwxuXQ"
+    },
+    "maximum": {
+      "version": 1,
+      "bindingId": "binding-vector",
+      "senderDeviceId": "desktop-vector",
+      "senderSessionId": "p8-numeric-node-vector",
+      "recipientDeviceId": "mobile-vector",
+      "sequence": 9007199254740991,
+      "sentAt": "2026-10-28T00:00:00.000Z",
+      "nonce": "x7pMhrv0MoM0p8qc",
+      "ciphertext": "0-C33ERC0vriVRXZx5GB3lHrDGU-4bnpavi4NE3OFOfBXBcQNbnzaGyUh0JGpS_hPlRi-3kKBxB9eZra0lJLZ9oZzYORnW5Hb67doEfIMUw9iVN-N_u5V0DvxyrVdpVVpi99D5LwR5HRZk4FKtoY2kY5szuNlnB499bdiepIPk395qjMlB__xquXwIElC8-to13DIM_DfiGn4H9uTkNQnLC3ompoELG2pTRzginZwz6U3gKqANW5HpafeCml6Q"
+    }
+  },
+  "cases": [
+    {
+      "id": "sequence-integer",
+      "field": "sequence",
+      "token": "42",
+      "accepted": true
+    },
+    {
+      "id": "sequence-integral-decimal",
+      "field": "sequence",
+      "token": "42.0",
+      "accepted": true
+    },
+    {
+      "id": "sequence-integral-exponent",
+      "field": "sequence",
+      "token": "4.2e1",
+      "accepted": true
+    },
+    {
+      "id": "version-integer",
+      "field": "version",
+      "token": "1",
+      "accepted": true
+    },
+    {
+      "id": "version-integral-decimal",
+      "field": "version",
+      "token": "1.0",
+      "accepted": true
+    },
+    {
+      "id": "version-integral-exponent",
+      "field": "version",
+      "token": "1e0",
+      "accepted": true
+    },
+    {
+      "id": "sequence-string",
+      "field": "sequence",
+      "token": "\"42\"",
+      "accepted": false
+    },
+    {
+      "id": "sequence-true",
+      "field": "sequence",
+      "token": "true",
+      "accepted": false
+    },
+    {
+      "id": "sequence-false",
+      "field": "sequence",
+      "token": "false",
+      "accepted": false
+    },
+    {
+      "id": "sequence-null",
+      "field": "sequence",
+      "token": "null",
+      "accepted": false
+    },
+    {
+      "id": "sequence-object",
+      "field": "sequence",
+      "token": "{}",
+      "accepted": false
+    },
+    {
+      "id": "sequence-array",
+      "field": "sequence",
+      "token": "[]",
+      "accepted": false
+    },
+    {
+      "id": "sequence-fraction",
+      "field": "sequence",
+      "token": "42.5",
+      "accepted": false
+    },
+    {
+      "id": "sequence-zero",
+      "field": "sequence",
+      "token": "0",
+      "accepted": false
+    },
+    {
+      "id": "sequence-negative",
+      "field": "sequence",
+      "token": "-1",
+      "accepted": false
+    },
+    {
+      "id": "sequence-above-safe",
+      "field": "sequence",
+      "token": "9007199254740992",
+      "accepted": false
+    },
+    {
+      "id": "sequence-long-max",
+      "field": "sequence",
+      "token": "9223372036854775807",
+      "accepted": false
+    },
+    {
+      "id": "sequence-overflow",
+      "field": "sequence",
+      "token": "1e999",
+      "accepted": false
+    },
+    {
+      "id": "sequence-underflow",
+      "field": "sequence",
+      "token": "1e-999",
+      "accepted": false
+    },
+    {
+      "id": "sequence-nan-token",
+      "field": "sequence",
+      "token": "NaN",
+      "accepted": false
+    },
+    {
+      "id": "sequence-infinity-token",
+      "field": "sequence",
+      "token": "Infinity",
+      "accepted": false
+    },
+    {
+      "id": "version-string",
+      "field": "version",
+      "token": "\"1\"",
+      "accepted": false
+    },
+    {
+      "id": "version-true",
+      "field": "version",
+      "token": "true",
+      "accepted": false
+    },
+    {
+      "id": "version-false",
+      "field": "version",
+      "token": "false",
+      "accepted": false
+    },
+    {
+      "id": "version-null",
+      "field": "version",
+      "token": "null",
+      "accepted": false
+    },
+    {
+      "id": "version-object",
+      "field": "version",
+      "token": "{}",
+      "accepted": false
+    },
+    {
+      "id": "version-array",
+      "field": "version",
+      "token": "[]",
+      "accepted": false
+    },
+    {
+      "id": "version-fraction",
+      "field": "version",
+      "token": "1.5",
+      "accepted": false
+    },
+    {
+      "id": "version-zero",
+      "field": "version",
+      "token": "0",
+      "accepted": false
+    },
+    {
+      "id": "version-negative",
+      "field": "version",
+      "token": "-1",
+      "accepted": false
+    },
+    {
+      "id": "version-unsupported",
+      "field": "version",
+      "token": "2",
+      "accepted": false
+    },
+    {
+      "id": "version-above-safe",
+      "field": "version",
+      "token": "9007199254740992",
+      "accepted": false
+    },
+    {
+      "id": "version-overflow",
+      "field": "version",
+      "token": "1e999",
+      "accepted": false
+    }
+  ]
+}

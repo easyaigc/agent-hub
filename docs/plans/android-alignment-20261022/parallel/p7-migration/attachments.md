@@ -1,0 +1,41 @@
+# P7 第二独立阶段：20 MiB 附件存储与迁移
+
+基于 `7fc712d48b43581f07e10113e8ff0c99b0665eac`，继续相同隔离分支/工作树和稳定task。主统筹已明确授权只修改NativeCodexFlow.kt内NativeDraftFiles类；本阶段前后已逐字核对imports及整个发送/队列/日志后缀相同，私有class-scope-proof.json记录摘要。其余改动限共性迁移验证/导出发现和本阶段原生测试。中央progress/manifest/设计/验收表、生成目录、VoiceInputController/View、MobileSession/MainActivity及阅读/通知均未编辑。
+
+新文件的`draft-file:<原UUID>`保存显式version2、原file清单和storage。非空文件以独立payloadId指向`draft-payload-v2:<原UUID>:<payloadId>`，原始字节仍由既有Keystore format4按64KiB块认证和加密；空文件为empty-v1且校验空SHA。小型清单是唯一发布点：原件写完并读回大小/摘要/前缀后才发布清单。写入前失败只在能证明清单未发布时删除本次新payload；不确定写入回执保留可能已提交的原件。取消阻止handoff时只清理持有准确成功回执、尚未进入草稿/操作的新文件，并释放原固定ID租约。
+
+同UUID的后续prepare先核对完整原manifest和原加密原件，返回原记录，不改写密文或生成新payload。旧无version的file/bytes记录保持读取兼容，读取和匹配prepare不转换旧记录。新字节数组prepare也写v2，避免再次把完整Base64塞入文本；其调用者先持有的ByteArray仍是现有上游成本。
+
+原归档只增加附件类型的封闭验证，不创建第二套迁移：每个v2清单必须唯一归属一个准确payload名，大小/摘要与清单一致，所有二进制只能由原封口录音或附件清单认领。孤立、缺失、格式错误或损坏的资料明确拒绝；旧inline记录保持原有完整校验。现有流式封装/候选/原子激活继续负责实际大字节转移。原UUID、manifest、提交意图/结果/摘要、未知回执、尝试标记和迁入只读保持，后续草稿不被重复激活覆盖。不调用Host、上传、重放或模型。
+
+## 新窄接口与尚未接线处
+
+- `NativeDraftFiles.prepareFile(name,mediaType,sourceFile,id?)`在IO线程有界计算摘要，再按同一摘要复制并加密，返回原PreparedLocalDraftFile custody。主统筹接系统/URI私有文件源时，先捕获原目标/草稿代次，用此接口准备，原目标仍有效才提交manifest；迟到且disposable、无引用的结果通过discardPrepared回收，最后close释放租约。
+- `importFile(name,mediaType,sourceFile)`提供直接文件入口；不能用它替代需要迟到/目标保护的prepare custody。
+- `copyTo(manifest,output)`流式校验原件，调用者须待其完整成功后才发布目的数据。本阶段迁移不调用`bytes()`。
+- 现有`bytes(manifest)`兼容正常上传API，仍分配完整ByteArray；系统URI入口当前也仍可能先读ByteArray。没有改发送/队列方法，不宣称全链路上传流式化、真Host发送或真模型通过。
+- File入口不为大图片整段读取来生成缩略图；现有字节入口可保留原缓存，已有缓存仍验证/显示，无缓存的大图维持既有占位策略。平台UI/视觉未验收。
+- 满额旧inline Base64资料仍受旧8/12MiB边界保护，48MiB设备上的旧20MiB迁移没有成功声明；本阶段没有改旧原件以制造通过。未封口WAV、已知非空系统子存储及未知资料的拒绝/保留门槛继续，后续完整Schema另验。
+
+## 主统筹原生入口
+
+`com.agenthub.android.NativeMigrationAttachmentTest`共10项，建议逐方法分组，保留原240秒门槛与完整失败：
+
+1. maximumTwentyMiBOriginalStreamsThroughMigrationWithExactUuidManifestIntentAndReceipt
+2. twoMaximumAttachmentsRespectAggregateStreamingAndPreserveOriginalOrderedManifests
+3. prepareInterruptionRemovesOnlyItsUnpublishedPayloadAndKeepsAllPriorOriginals
+4. cancellationBeforeHandoffRetiresOnlyKnownFreshCommitAndReleasesFixedIdLease
+5. corruptPayloadAndUnclaimedPayloadRefuseReadOrExportWithoutRepairingOriginals
+6. legacyInlineSourceReadsExactOriginalWithoutRewriteAndNewByteEntryUsesVersionTwo
+7. explicitPreparedCleanupRetiresOnlyItsExactVersionTwoPayload
+8. attachmentCandidateAndActivationFailuresPreserveOriginalSlotAndInstallation
+9. stageMaximumAttachmentForIndependentColdReader
+10. activateOriginalMaximumAttachmentInIndependentColdReader
+
+所有原件均为私有合成文件，循环写64KiB，不分配20MiB夹具。full方法保存maximum-attachment.json，须核实际API26 maxMemory=50,331,648与20,971,520字节完整成功，拒绝或编译不算成功。默认11字段保护沿用OwnedControlAcceptance；源码、包、runner及每方法原始证据分别绑定。
+
+冷链第9项输出attachment-cold-writer.json。writer实际退出后，将原合成fixture复制到同一验收包files/acceptance/activation-cold-<16位hex>.json，以migrationActivationFixture给第10项；reader必须不同PID，直接激活原候选，不重建/替换/重放。新reader校验原UUID/manifest/20MiB摘要、未知意图和只读、原源/候选密文以及后续草稿。
+
+补回归至少包含NativeMigrationStreamTest/NativeMigrationVoiceTest/NativeMigrationCandidateTest、MobileInboxStorageTest、MobileDocumentRecoveryTest、MobileAttachmentImportOwnershipTest和MobileLocalRecoveryAttachmentTest；它们对v2默认存储及旧原件边界仍需当前指纹执行。编译与辅助检查、每设备实际结果及真实DEV分别登记。无本工作线设备/真实Host/模型操作。
+
+父线依赖记录：主统筹已反馈满额9,600,044字节录音在API26实际48MiB及真机通过，其证据归父线准确候选。旧NativeMigrationStreamTest三录音聚合因同草稿restore选择造成manifest不符；父线将voice helper加threadId默认参数并在聚合分别绑定synthetic-thread-0/1/2后复验。原失败保留，未计聚合通过。本分支不改旧测试、不引入父线未提交变化；主统筹集成附件提交时须保留自己的该fixture delta。新附件聚合用各自UUID/manifest直接copyTo，不走语音draft restore选择。

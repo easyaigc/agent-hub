@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "stage": "P9-3",
+  "owner": "P7 migration",
+  "identity": {
+    "record": "native-chat-notification-identity-v1",
+    "schema": "identity-storage-v1.schema.json",
+    "export": "exclude private/public installation keys and device ID from portable archive",
+    "import": "never activate imported identity; preserve current local identity/journal atomically or perform separately reviewed local revocation/reset; do not regenerate missing identity with prior journal or drop a bound journal",
+    "privateLimitBytes": 2048
+  },
+  "foreground": {
+    "record": "native-chat-notification-foreground-v1",
+    "schema": "foreground-storage-v1.schema.json",
+    "validator": "NativeChatNotificationForegroundStore.validateEncoded(raw)",
+    "bounds": {
+      "utf8Bytes": 4194304,
+      "targets": 64,
+      "globalOutcomes": 2048,
+      "globalOperations": 256,
+      "operationsPerTarget": 64,
+      "feedUtf8Bytes": 2097152,
+      "feedEvents": 2048
+    },
+    "export": "exclude active registration/cursor/batch; immutable unknown-operation/event evidence may remain in separately encrypted local archive, without installation private key or credential strings",
+    "import": "never activate imported registrations, unknown operations, cursors or pending batches; preserve originals as inactive archive, never query/reissue against a new device identity",
+    "failures": "unknown/future/corrupt/oversized input preserves original bytes and blocks; no reset/skip/promotion"
+  },
+  "preferenceAndReceiptContract": "migration-contract.json still applies: migrated preferences disabled with new revision/higher generation; imported local click tickets/leases stay inactive; reading ledger owned by P7",
+  "parentFence": "invalidate parent presentation fence before migration; stop monitor; retain original authorized snapshot for pending revocation; no imported key or status revision equality may resolve an unknown mutation",
+  "backendGaps": [
+    "FG01 missing complete mutation receipt",
+    "FG02 missing absent-device tombstone",
+    "FG03 missing feed pagination/epoch/reset",
+    "FG04 installation identity/migration lifecycle"
+  ],
+  "implementation": "narrow inventory/reset contract only; no second P9 migrator; shared migration not edited"
+}

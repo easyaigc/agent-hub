@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "2-voice-hint-followup",
+  "baseCommit": "8aa11eafe8efc4c9f91775b136f12909e5f30cc6",
+  "featureIds": ["F49", "F50", "F56", "F64"],
+  "ui": ["UI06", "UI21"],
+  "commonAssertion": "Listening hint is centered between mirrored decorative waveform sides; one localized accessible button; at least 48dp Android hit area; no microphone or Host call in the UI fixture.",
+  "bothPlatforms": {
+    "ios": "reference unchanged; no iOS execution",
+    "android": "foreground/window fixture corrected; physical cause/repair still unverified"
+  },
+  "implementation": "code-present",
+  "verification": "compile auxiliary only; parent must run union APK and inspect four owned-window captures",
+  "sources": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "sha256": "03bc7bcbd3dc2f0edaa1541722ce3b6d27cc6af40640fee853f16d05db8615a0"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceHintUiTest.kt",
+      "sha256": "f23f2b266cf0627ba9b5ff4a20e4693bce384da6da042c9b57001dba2ea7d107"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePhoneReadingSessionTest.kt",
+      "sha256": "77da27a7384251592bee49d1188b23d84db1abe6fbeb9614da53f149ad95371a"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage2-voice-hint-fixture.md",
+  "remaining": [
+    "parent N067 resource union",
+    "leased physical/API26/API37 native execution and actual window QA",
+    "retain original physical timeout as failed"
+  ]
+}

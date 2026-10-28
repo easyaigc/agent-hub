@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "baseStage": "f9e935b3",
+  "destination": "apps/android/localization/native-copy.json",
+  "entries": [
+    {
+      "key": "无法读取通知资料，原文件已保留。",
+      "zh-Hans": "无法读取通知资料，原文件已保留。",
+      "en": "Notification data could not be read. The original files were preserved."
+    },
+    {
+      "key": "无法保存通知设置，请重新读取资料。",
+      "zh-Hans": "无法保存通知设置，请重新读取资料。",
+      "en": "Notification settings could not be saved. Reload the data and try again."
+    }
+  ]
+}

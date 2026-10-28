@@ -42,9 +42,10 @@ internal class NativeMigrationExport(private val context: Context,private val st
         }catch(error: Exception){clear.fill(0);throw error}
     }
     private fun legacyNames(read: (String)->String?): Set<String> {
-        val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1")
+        val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1",NativeMigrationDeviceState.READING,NativeMigrationDeviceState.NOTIFICATIONS,NativeMigrationDeviceState.AUDIT,NativeMigrationNotificationTombstones.RECORD,NativeMigrationSounds.RECORD)
         fun add(name: String){require(name.length<=8192&&!name.contains('\u0000'));names.add(name);require(names.size<=1024)}
         fun value(name: String)=read(name)?.let{StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))}
+        read(NativeMigrationSounds.RECORD)?.let {raw->NativeChatNotificationSoundLibrary.binaryInventory(raw).keys.forEach(::add)}
         val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata)
         val keys=mutableSetOf<String>()
         for(field in listOf("drafts","draftVersions","draftFiles","attachmentImportGenerations","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces"))
@@ -76,7 +77,10 @@ internal class NativeMigrationExport(private val context: Context,private val st
             val ids=StrictMigrationJson.value(raw.toByteArray(Charsets.UTF_8)) as JSONArray;require(ids.length()<=32)
             for(n in 0 until ids.length()){val id=ids.get(n) as String;require(java.util.UUID.fromString(id).toString()==id);add("voice-recording:$id");add("voice-audio:$id")}
         }
-        fileIds.forEach{add("draft-file:$it");add("draft-thumbnail-v1:$it")}
+        fileIds.forEach {id->
+            val record="draft-file:$id";add(record);add("draft-thumbnail-v1:$id")
+            value(record)?.let {body->NativeDraftFiles.record(body).payload?.let(::add)}
+        }
         return names
     }
 }

@@ -31,6 +31,9 @@ data class ThreadReadPosition(val revision: Long, val messageId: String, val con
 
 data class ReadContentProjection(val sourceVersion: String, val displayVersion: String)
 data class ThreadReadState(val latest: ThreadReadPosition, val readerId: String? = null, val read: ThreadReadPosition? = null) {
+    internal fun json() = JSONObject().put("version",1).put("latest",latest.json()).also {
+        readerId?.let { reader -> it.put("readerId",reader) }; read?.let { position -> it.put("read",position.json()) }
+    }
     companion object {
         fun decode(value: JSONObject): ThreadReadState {
             require(value.keys().asSequence().all { it in setOf("version", "latest", "readerId", "read") })

@@ -1759,4 +1759,29 @@
     <string name="product_faf506ec5efb2a446e45856b" formatted="false">"通知渠道由系统管理；声音与角标以系统实际设置为准。"</string>
     <string name="product_c108aeed14b7435e5798c520" formatted="false">"内置与导入铃声尚未就绪"</string>
     <string name="product_c8a0c8ae567390bcdf06c34b" formatted="false">"Android 不支持及时通知。"</string>
+    <string name="product_d918c995c61d6fdb82ac443f" formatted="false">"此音频的采样率或声道暂不支持。"</string>
+    <string name="product_8017ff001f00c1e42da5f3ca" formatted="false">"此音频编码暂不支持，请选择 PCM 音频或系统可解码的 M4A、MP3。"</string>
+    <string name="product_20eff4371124952a87b58b00" formatted="false">"系统自定义铃声"</string>
+    <string name="product_c425213950ec0027451b873d" formatted="false">"铃声数量已达上限，请先删除不再使用的铃声。"</string>
+    <string name="product_dee80402e5962ba2826f57f3" formatted="false">"无法读取所选音频，请重新选择并授予读取权限。"</string>
+    <string name="product_c6324bb94c7691af0dfcadbe" formatted="false">"所选音频已不可用，请重新选择。"</string>
+    <string name="product_db5a160b6d6de20657d3f2be" formatted="false">"此设备无法解码这段音频，请选择其他格式或编码。"</string>
+    <string name="product_5d598532904b19ed6cbb8aa4" formatted="false">"无法保存铃声设置。"</string>
+    <string name="product_bae4673684f1b3f6e383df06" formatted="false">"铃声已导入，当前选择已保留。"</string>
+    <string name="product_c1164c254977c32f53e26d45" formatted="false">"无法读取本机铃声资料，原文件已保留。"</string>
+    <string name="product_51443cd5a28851617800f06f" formatted="false">"停止试听"</string>
+    <string name="product_7f0a0fda741c62205f1ec52b" formatted="false">"试听"</string>
+    <string name="product_b4d918c9e458321f1c17e5f7" formatted="false">"无法打开系统文件选择器。"</string>
+    <string name="product_b04b397a1078a2121300c96f" formatted="false">"部分音频编码取决于系统支持；无法解码时会明确提示。"</string>
+    <string name="product_d97930304924cced749f1727" formatted="false">"本机通知声音入口尚未就绪；可以先导入与试听。"</string>
+    <string name="product_ea5bf07f94c1a4bf6adcb70c" formatted="false">"无法读取通知资料，原文件已保留。"</string>
+    <string name="product_794cfcbd489f5bdc5d3cec85" formatted="false">"无法保存通知设置，请重新读取资料。"</string>
+    <string name="product_6053c9629a77081c9c20bbeb" formatted="false">"前台通知已同步"</string>
+    <string name="product_5cff3d2d80fdf9eef8c91a11" formatted="false">"通知注册或更新结果待确认，正在核对原设备状态。"</string>
+    <string name="product_16b43ce2857ac1918e7b74bd" formatted="false">"原电脑连接需要先完成通知撤销。"</string>
+    <string name="product_d616cb2953c56321fea3a756" formatted="false">"当前电脑未提供可用的前台通知。"</string>
+    <string name="product_50496d27de0ac633b3430e41" formatted="false">"通知资料暂不可用，原文件已保留。"</string>
+    <string name="product_3ce43bf7e5d47e5afd18f803" formatted="false">"远端通知撤销仍待确认。"</string>
+    <string name="product_83c08d39d66aa37337500214" formatted="false">"通知已撤销，重新开启通知后会恢复同步。"</string>
+    <string name="product_401191d0ded2f688a2bbd515" formatted="false">"部分通知的处理结果待确认，不会重复提醒。"</string>
 </resources>

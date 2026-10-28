@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Encrypted user voice default v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "defaultProvider"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "defaultProvider": {
+      "enum": ["desktop", "system"]
+    }
+  },
+  "description": "Production NativeVoicePreferenceRecord.decode also enforces <=256 UTF8 bytes, strict duplicate/depth/UTF8 parsing and integer token1. No capability, permission, recording, operation or automatic-start fields. Absence is a read-only implicit desktop, not a saved choice."
+}

@@ -68,7 +68,7 @@ internal data class EasyWorkDeviceGrant(val value: String) {
 /** Phone proves a device key; only the already signed-in Desktop approves an account grant. */
 internal class EasyWorkDeviceAuthorization(private val storage: NativeSessionStorage) {
     private val claims=Mutex()
-    private val refreshes=Mutex()
+    private val coordinator=EasyWorkAuthorizationCoordinator(storage)
     private suspend fun read(key: String)=withContext(Dispatchers.IO) { storage.read(key)?.let(::JSONObject) }
     private suspend fun write(key: String,value: JSONObject)=withContext(Dispatchers.IO) { storage.write(key,value.toString()) }
     private suspend fun remove(key: String)=withContext(Dispatchers.IO) { storage.remove(key) }
@@ -118,7 +118,7 @@ internal class EasyWorkDeviceAuthorization(private val storage: NativeSessionSto
             @Suppress("UNREACHABLE_CODE") error("等待电脑确认超时")
         }
         val ref="easywork-device-grant:"+easyHash((offer.origin+"\n"+grant.id).toByteArray())
-        write(ref,JSONObject().put("origin",offer.origin).put("grant",grant.json))
+        withContext(Dispatchers.IO) { coordinator.install(ref,offer.origin,grant.json) }
         // Keep this immutable operation receipt so an interrupted save can resume
         // the same claim without consuming a second offer or issuing another grant.
         state.put("grantRef",ref);write(key,state)
@@ -126,36 +126,36 @@ internal class EasyWorkDeviceAuthorization(private val storage: NativeSessionSto
     }
     suspend fun headers(ref: String,binding: EasyWorkBinding,method: String,url: String,body: ByteArray?=null): Map<String,String> {
         val token=validAccess(ref,binding);val identity=EasyWorkIdentity.load(storage);val signer=EasyWorkDPoP.load(identity)
-        return mapOf("Authorization" to "DPoP $token","DPoP" to signer.proof(method,url,token,body=body))
+        val headers=mapOf("Authorization" to "DPoP $token","DPoP" to signer.proof(method,url,token,body=body))
+        withContext(Dispatchers.IO) { coordinator.assertAuthorized(ref,binding.json,token) }
+        return headers
     }
-    private suspend fun validAccess(ref: String,binding: EasyWorkBinding): String = refreshes.withLock {
-        val saved=read(ref)?:error("设备授权已移除，请重新配对")
-        val identity=EasyWorkIdentity.load(storage);val signer=EasyWorkDPoP.load(identity)
-        var grant=EasyWorkDeviceGrant(saved.getJSONObject("grant").toString()).verify(identity,signer,binding)
-        require(grant.refreshExpiry>Instant.now()) { "设备授权已过期，请在电脑上重新配对" }
-        var pending=saved.optJSONObject("refreshOperation")
-        if(pending==null&&grant.accessExpiry>Instant.now().plusSeconds(60))return@withLock grant.accessToken
-        if(pending==null) {
-            pending=JSONObject().put("operationId",UUID.randomUUID().toString()).put("token",grant.refreshToken)
-            saved.put("refreshOperation",pending);write(ref,saved)
+    private suspend fun validAccess(ref: String,binding: EasyWorkBinding): String {
+        withContext(Dispatchers.IO) { coordinator.assertAuthorized(ref,binding.json) }
+        return coordinator.withRefresh(ref) {
+            val identity=EasyWorkIdentity.load(storage);val signer=EasyWorkDPoP.load(identity)
+            val access=withContext(Dispatchers.IO) {coordinator.access(ref) {saved->
+                val grant=EasyWorkDeviceGrant(saved.getJSONObject("grant").toString()).verify(identity,signer,binding)
+                require(grant.refreshExpiry>Instant.now()) { "设备授权已过期，请在电脑上重新配对" }
+                if(!saved.has("refreshOperation")&&grant.accessExpiry>Instant.now().plusSeconds(60))grant.accessToken else null
+            }}
+            access.token?.let {return@withRefresh it}
+            val pending=requireNotNull(access.refresh);val saved=pending.json
+            val original=EasyWorkDeviceGrant(saved.getJSONObject("grant").toString())
+            val result=request(saved.getString("origin"),"/device-grants/refresh","POST",signer,pending.token,pending.body)
+            require(result.getString("protocol")=="EWDAP/1"&&result.getString("grantId")==original.id)
+            val grant=EasyWorkDeviceGrant(EasyWorkDeviceDelivery.open(identity,result.getString("sealedDelivery"),pending.operationId).toString()).verify(identity,signer,binding)
+            require(grant.accessExpiry>Instant.now())
+            withContext(Dispatchers.IO) {coordinator.refreshed(ref,pending,grant.json)}
         }
-        val id=pending.getString("operationId");val body=easyCanonical(JSONObject().put("operationId",id))
-        val result=request(saved.getString("origin"),"/device-grants/refresh","POST",signer,pending.getString("token"),body)
-        require(result.getString("protocol")=="EWDAP/1"&&result.getString("grantId")==grant.id)
-        grant=EasyWorkDeviceGrant(EasyWorkDeviceDelivery.open(identity,result.getString("sealedDelivery"),id).toString()).verify(identity,signer,binding)
-        require(grant.accessExpiry>Instant.now())
-        saved.put("grant",grant.json).remove("refreshOperation");write(ref,saved)
-        grant.accessToken
     }
-    suspend fun revoke(ref: String,binding: EasyWorkBinding) {
-        val saved=read(ref)?:return
+    suspend fun revoke(ref: String,binding: EasyWorkBinding)=coordinator.withRevoke(ref) {
+        if(!withContext(Dispatchers.IO) {coordinator.hasRevokeWork(ref)})return@withRevoke
         val identity=EasyWorkIdentity.load(storage);val signer=EasyWorkDPoP.load(identity)
-        val grant=EasyWorkDeviceGrant(saved.getJSONObject("grant").toString()).verify(identity,signer,binding)
-        val id=saved.optional("revokeOperationId")?:UUID.randomUUID().toString().also { saved.put("revokeOperationId",it) }
-        write(ref,saved)
-        val body=easyCanonical(JSONObject().put("operationId",id))
-        val result=request(saved.getString("origin"),"/device-grants/${grant.id}","DELETE",signer,grant.accessToken,body)
+        val pending=withContext(Dispatchers.IO) {coordinator.revocation(ref) {saved->EasyWorkDeviceGrant(saved.getJSONObject("grant").toString()).verify(identity,signer,binding)}}?:return@withRevoke
+        val saved=pending.json;val grant=EasyWorkDeviceGrant(saved.getJSONObject("grant").toString())
+        val result=request(saved.getString("origin"),"/device-grants/${grant.id}","DELETE",signer,grant.accessToken,pending.body)
         require(result.getString("protocol")=="EWDAP/1"&&result.getString("grantId")==grant.id&&result.getString("bindingId")==binding.id&&result.getString("status")=="revoked")
-        remove(ref)
+        withContext(Dispatchers.IO) {coordinator.revoked(ref,pending)}
     }
 }

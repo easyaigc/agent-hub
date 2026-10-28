@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "phase": "P7-frozen-P9-foreground-source-audit",
+  "sourceProducer": "160b51ec3285e4dd829a50af317a8fbda01ce521",
+  "sourceSchemas": {
+    "identity": {
+      "record": "native-chat-notification-identity-v1",
+      "version": 1,
+      "maxUtf8": 2048,
+      "portable": "excluded entirely, including deviceId/publicKey/privateKey; validate private/public pair and bound-journal relation without generating keys"
+    },
+    "journal": {
+      "record": "native-chat-notification-foreground-v1",
+      "version": 1,
+      "maxUtf8": 4194304,
+      "maxTargets": 64,
+      "maxOperations": 256,
+      "maxOutcomes": 2048,
+      "portable": "never active; immutable original journal remains on source under original encryption and read-only audit. Nonempty v1 journal requires recovery barrier/archival handoff unavailable in frozen contract; export/activation must explicitly reject rather than claim complete migration."
+    }
+  },
+  "safeSubset": {
+    "source": "No journal, or a strictly validated empty journal with matching real identity. Exclude source identity/journal from portable records, preserving original source bytes.",
+    "destination": "Preserve an existing valid local identity and optional empty journal exactly in the same generation; reject nonempty local journal or broken/missing pair. No new identity/key or synthetic registration.",
+    "preferences": "Existing disabled/reset policy3 retained; no monitor start, permission/channel change, HTTP call, mutation replay or cursor promotion."
+  },
+  "nonemptyJournal": {
+    "sourceRetention": "Never delete, rewrite, normalize or relabel original IDs, targets, exact mutation/receipt states/fingerprints/unknown; provide read-only audit view bound to source-record SHA. Existing root data stays original and migration is incomplete.",
+    "whyRejected": "Removing original active journal while excluding installation keys allows a future new-ID registration to bypass original unknown/revocation. v1 supplies no migration recovery barrier or original authorized snapshot; do not fabricate one.",
+    "nextGate": "Parent coordinates P9 typed immutable inactive archive + recovery fence and original-authorization handling, or explicitly reviewed source revocation/reset. No v2 guessing."
+  },
+  "versions": "Only exact frozen1; unknown/future/corrupt/oversized or graph disagreement fail before publication; old source/candidate preserved.",
+  "invariants": [
+    "Existing DeviceState policy3 audit/index exact validation remains unchanged.",
+    "Original source snapshot is immutable and private identity never appears in portable JSON/candidate.",
+    "Candidate never accepts raw active identity/journal records, including manually encrypted archives.",
+    "Destination private identity is local current data, not migrated source identity; ambiguous publication follows existing receipt protocol."
+  ],
+  "evidenceStatus": {
+    "sourceAudit": "read-only source review complete",
+    "narrowAdapter": "Implemented safe subset plus exact read-only v1 audit; nonempty journal deliberately rejects, no full foreground migration claim.",
+    "native": "9 methods compiled only; coordinator execution pending. Method8 requires the frozen P9 production classes.",
+    "realDev": "not executed",
+    "fullForegroundMigration": "not complete; v1 nonempty boundary explicit"
+  },
+  "destinationAtomicity": "Destination-owned valid empty pair included in same prepared generation with original source receipt count, full rollback and idempotence; no source identity in portable candidate.",
+  "readOnly": "Narrow NativeSessionStorage.migrationReadTextRecords rejects pending .bak/.new (including symlinks) before reading selected identities/journals; never calls AtomicFile recovery for those records."
+}

@@ -89,4 +89,28 @@ class NativeSystemVoiceTest {
             fresh.listener.result("new"); assertEquals(1, calls)
         }
     }
+    @Test fun backgroundPartialTextNeedsExplicitCurrentDraftActionAndLateFinalCannotOverwriteIt() {
+        val engine=Engine();val controller=controller(engine);var foreground=true;val applied=mutableListOf<String>()
+        main {
+            controller.start(draft(),{foreground},{_,text->applied.add(text);true},provider=VoiceInputController.Provider.SYSTEM)
+            controller.permissionRequest?.let { controller.permissionResult(it,true) };yield()
+            engine.listener.ready();engine.listener.partial("保留的文字 😀");foreground=false;controller.suspendRecording()
+            assertEquals("保留的文字 😀",controller.transcript);assertFalse(controller.canFillRecognizedText);assertFalse(controller.fillRecognizedText())
+            engine.listener.result("迟到结果");assertTrue(applied.isEmpty())
+            foreground=true;assertTrue(controller.canFillRecognizedText);assertTrue(controller.fillRecognizedText())
+            assertEquals(listOf("保留的文字 😀"),applied);assertFalse(controller.fillRecognizedText())
+            engine.listener.result("重复迟到");assertEquals(1,applied.size)
+        }
+    }
+    @Test fun recognizerErrorPreservesPartialButChangedDraftRejectsExplicitFill() {
+        val engine=Engine();val controller=controller(engine);var current=true;var applies=0
+        main {
+            controller.start(draft(),{current},{_,_->applies++;true},provider=VoiceInputController.Provider.SYSTEM)
+            controller.permissionRequest?.let { controller.permissionResult(it,true) };yield()
+            engine.listener.ready();engine.listener.partial("未提交部分");engine.listener.failed(8)
+            assertTrue(controller.canFillRecognizedText);current=false
+            assertFalse(controller.canFillRecognizedText);assertFalse(controller.fillRecognizedText());assertEquals(0,applies)
+            assertEquals("未提交部分",controller.transcript);controller.cancel()
+        }
+    }
 }

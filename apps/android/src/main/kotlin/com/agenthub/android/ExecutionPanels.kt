@@ -290,7 +290,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
 @Composable private fun ApprovalPanelContent(session: MobileSession,approval: MobileApproval,destination: DraftDestination,externalDraft: ApprovalDraft?,onQuestionFocus: suspend ()->Unit,compact: Boolean,answerViewportHeight: androidx.compose.ui.unit.Dp?) {
     val local=remember { ApprovalDraft() }
     val editable=session.canEditApproval(approval,destination)
-    val enabled=session.canAnswer(approval,destination)
+    val enabled=session.canAnswer(approval,destination) && session.questionVoice?.active!=true
     val selected=(externalDraft ?: local).selected
     val custom=(externalDraft ?: local).custom
     val async=approval.interactionMode=="async"
@@ -343,7 +343,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                 // The whole field remains reachable while its text scrolls inside the line budget.
                 val lines=if(question.secret)1 else answerViewportHeight?.let { ((it.value-52f)/(20f*density.fontScale)).toInt().coerceIn(1,4) } ?: 4
                 val shape=RoundedCornerShape(10.dp)
-                BasicTextField(value,{ custom[question.id]=it },enabled=editable,
+                BasicTextField(value,{ custom[question.id]=it },enabled=editable && !(session.questionVoiceKey==session.questionVoiceIdentity(approval,question,destination) && session.questionVoice?.active==true),
                     textStyle=TextStyle(fontSize=15.sp,lineHeight=20.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(editable)1f else .38f)),
                     visualTransformation=if(question.secret) PasswordVisualTransformation() else VisualTransformation.None,
                     singleLine=question.secret,maxLines=lines,
@@ -356,6 +356,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                             inner()
                         }
                     })
+                NativeQuestionVoice(session,approval,question,destination,value) { custom[question.id]=it }
             }
         }
         if(approval.kind=="question") Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {

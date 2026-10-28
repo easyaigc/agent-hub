@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     }
     private fun renderSession() {
         setContent {
+            LaunchedEffect(session,session.restoring) { session.bindStoredVoicePreferencesIfReady() }
             AgentHubApp(session) { dark ->
                 if (systemBarsDark != dark) {
                     systemBarsDark = dark
@@ -71,7 +72,7 @@ class MainActivity : ComponentActivity() {
         readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop();session.leaveForeground()
         session=replacement;session.configureVoice(applicationContext);session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext)
         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
-        renderSession();session.enterForeground();readNetworkMonitor.start()
+        renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();readNetworkMonitor.start()
     }
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent)
@@ -79,7 +80,7 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("agentHubExternalOperationId",externalOperationId);super.onSaveInstanceState(outState)
     }
-    override fun onStart() { super.onStart(); session.enterForeground();readNetworkMonitor.start(); session.discovery?.start();session.easyWorkDiscovery?.start() }
+    override fun onStart() { super.onStart(); session.enterForeground();session.bindStoredVoicePreferencesIfReady();readNetworkMonitor.start(); session.discovery?.start();session.easyWorkDiscovery?.start() }
     override fun onStop() { readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop(); session.leaveForeground(); super.onStop() }
     @Deprecated("Native retained state until the repository-backed ViewModel is introduced")
     override fun onRetainCustomNonConfigurationInstance(): Any = session

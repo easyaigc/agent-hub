@@ -27,6 +27,7 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
 @Composable internal fun NativeChatNotificationSettingsPage(
     store: NativeChatNotificationStore, platform: NativeChatNotificationPlatform,
     computers: List<NativeChatNotificationComputer>,
+    onExplicitDisable: ((hostId: String?, savedRevision: String, actionId: String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val tasks = rememberCoroutineScope()
@@ -69,7 +70,9 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(productText("通知"), style = MaterialTheme.typography.titleLarge)
         ChatNoticeToggle("消息通知", preferences.enabled, "chat-notifications-enabled", enabled = writable) { enabled ->
-            state.update({ it.copy(enabled = enabled) }) {
+            val actionId = java.util.UUID.randomUUID().toString()
+            state.update({ it.copy(enabled = enabled) }) { saved ->
+                if (!enabled) onExplicitDisable?.invoke(null, saved.revision, actionId)
                 val permission = platform.permission()
                 if (enabled && permission.declared && !permission.granted && Build.VERSION.SDK_INT >= 33) request.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
@@ -91,7 +94,10 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
         computers.distinctBy { it.target.hostId }.forEach { computer ->
             ChatNoticeToggle(computer.name, computer.target.hostId !in preferences.excludedHosts,
                 "chat-notification-host-" + computer.target.hostId, literal = true, enabled = writable) { enabled ->
-                change { it.copy(excludedHosts = if (enabled) it.excludedHosts - computer.target.hostId else it.excludedHosts + computer.target.hostId) }
+                val actionId = java.util.UUID.randomUUID().toString()
+                state.update({ it.copy(excludedHosts = if (enabled) it.excludedHosts - computer.target.hostId else it.excludedHosts + computer.target.hostId) }) { saved ->
+                    if (!enabled) onExplicitDisable?.invoke(computer.target.hostId, saved.revision, actionId)
+                }
             }
         }
         HorizontalDivider()

@@ -1,0 +1,36 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-user-voice-preference-storage",
+  "dependency": "b2a4f589db49e4555f1c9679d9f6e32d9d1856aa",
+  "features": ["F47", "F55", "F56", "F64"],
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePreferenceStorage.kt": "396ff73f387e665e82c7a3344fa1bc3ea7caa4924fe537f189b7b70985a28ecb",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "8d158fe96d69fd397f81fd1295b48dccc58bf2f4793600ebe58a49002f8a9957",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "cd7b01a41686d585971dc00e44aa9989da614993c8cbfd631d03602316f09fcb",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "0f79486f18c09066d1ac2bd0231dec09006dd0621dc0f4aa6d87ec16f8295d9d",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoicePreferenceStorageTest.kt": "fc249a3396273b83a0ca896a174f81fd06ac9522cebd9e62e33712d204888bb2"
+  },
+  "commonAssertions": [
+    "Missing user default remains implicit desktop with no disk write.",
+    "Only strict version1 desktop/system choice is encrypted; corruption/future/unknown never rewritten by load/save/import.",
+    "Real adapter binds once per restored settings/session; existing UI lifetime owner handles late loads, coalesced writes and rebind.",
+    "Existing migration validates known record, preserves destination explicit choice and otherwise imports source; no second migrator or automatic voice/capability/permission action.",
+    "Atomic prepared publication, rollback, idempotency and generation-fenced old writer preserve original unknown operation evidence."
+  ],
+  "dualEndImpact": {
+    "android": "New encrypted implementation of existing port; parent real-session binding remains pending",
+    "ios": "Source comparison only; existing UserDefaults preference not included by iOS migration; current fallback vs Android strict-invalid difference explicit. No changes or pass/A6 resume."
+  },
+  "design": {
+    "page": "UI12 settings/voice default and migration; UI21 subsequent explicit capture semantics",
+    "systemLabel": "reuse frozen dependency system dictation copy; may use network, no on-device capability assumption"
+  },
+  "verification": {
+    "build": "passed final acceptance app/runner final-build.log; exact pre/post source hashes matched",
+    "native": "10 methods compiled only, independent PID writer/reader requires coordinator execution",
+    "realDev": "none",
+    "centralParity": "coordinator owns coverage/catalog/binding; not weakened",
+    "format": "pnpm format:check passed"
+  },
+  "contract": "voice-preference-contract-v1.json"
+}

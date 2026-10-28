@@ -1,0 +1,42 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-foreground-v1-safe-subset-and-source-audit",
+  "base": "dfaeac8b1a510f9ec282a4007ba9e84bd952dee8",
+  "features": ["F47", "F51", "F52", "F53", "F54", "F55"],
+  "commonAssertions": [
+    "Installation-local private/public keys/device ID never portable; raw active identity/journal records reject even in authenticated candidates.",
+    "Frozen v1 source identity pair, bound marker, journal relation, operations/outcomes/fingerprints/targets/schema all strictly read-only; original unknown/processing state never normalized or replayed.",
+    "Nonempty v1 journal explicitly rejects migration without deleting originals or substituting a new identity; immutable audit view exposes exact original journal locally and redacts diagnostics.",
+    "Only validated empty/unbound source state can project away installation records; destination-owned valid empty pair survives atomic generation/rollback/retry.",
+    "Same DeviceState policy3 graph/index validation and original operation journal semantics preserved; no monitor/Host/revoke/register action.",
+    "Future versions, missing identity/bound journal, corrupt key, pending AtomicFile sidecars and source/destination mismatches fail closed."
+  ],
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt": "5ed595d2279a608df687afb69b36a9ff00271f754746164bbdc6dba9c8202ce1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "a1895d9f7b58ec25496be2ed766346874c16ae81f5bae633328c31c539bad214",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "5fed7d1bdc45988ed547dce5a0ffa6addaf17cbf9008c1afe1879215a7dc324e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "8ae8039024591094ebfa3f2f29dc4dc360f851df70ef3acd3b510bb0a992a795",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationForegroundTest.kt": "b85fdd59546fb95c99fad828af5c782cbb196dcdf14c87e99298ed44928091b9",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "1802ce6b9fa38c65000746641bff32e5767950a91edda51e459c6542b0d9d1d0"
+  },
+  "sourceContract": "foreground-migration-policy-v1.json",
+  "sourceAudit": "foreground-source-audit.json",
+  "dualEndImpact": {
+    "android": "P7 helper/migration/storage audit seam only; frozen P9 source read-only and unchanged",
+    "ios": "No changes/acceptance claim; installation identity and original-authority recovery remain separate platform gates; A6 paused"
+  },
+  "design": {
+    "page": "UI12 migration uses existing failure state",
+    "newUi": "none",
+    "newFailureCopy": "前台通知原始操作仍需原安装身份与授权，资料已保留；当前迁移版本不能恢复或重放。"
+  },
+  "verification": {
+    "build": "passed acceptance app/runner publish-build.log, exact pre/post source hashes matched",
+    "native": "9 methods compiled only; no device execution. Method8 requires actual adopted P9 dependency; absent producer class is prerequisite failure.",
+    "fullForegroundMigration": "incomplete: nonempty v1 source/destination journal explicitly blocked until reviewed archive/recovery barrier",
+    "realDev": "none",
+    "central": "coordinator owns manifest/parity/localization, unchanged here",
+    "format": "pnpm format:check passed"
+  },
+  "protectedFixtures": "LegacyGcmTest, NotificationCapacityTest, MigrationSoundTest unchanged since0db4db47; parent owns buffered fixture and shortened child suffixes."
+}

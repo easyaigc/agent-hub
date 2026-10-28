@@ -160,6 +160,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
     }
 
     private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
+        NativeMigrationForeground.requirePortable(records)
         require("metadata" in records)
         // Parse every record with duplicate/depth/UTF-8 checks, preserving its exact original text for later activation.
         val allValues = records.mapValues { StrictMigrationJson.value(it.value.toByteArray(Charsets.UTF_8)) }
@@ -177,6 +178,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         val historyNames = NativeMigrationHistory.validate(allValues,clients)
         val ancillaryNames = NativeMigrationAncillary.validate(parsed)
         val deviceNames = NativeMigrationDeviceState.validate(records,clients)
+        val voicePreferenceNames = NativeVoicePreferenceRecord.validate(records)
         val soundBinaries = NativeMigrationSounds.validate(records,binaries,streams,verifySoundBytes)
         val voiceBinaries=binaries.filterKeys {it.startsWith("voice-audio:")}
         val voiceStreams=streams?.filterKeys {it.startsWith("voice-audio:")}
@@ -198,6 +200,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             name in historyNames -> Unit
             name in ancillaryNames -> Unit
             name in deviceNames -> Unit
+            name in voicePreferenceNames -> Unit
             name == NativeMigrationSounds.RECORD -> Unit
             name in voiceNames -> Unit
             name == "codex-private-connections-v1" -> CodexConnectionVault.validateRows(body)

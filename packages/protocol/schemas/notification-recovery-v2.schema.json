@@ -1,0 +1,402 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codex-manage.invalid/contracts/notification-recovery-v2",
+  "oneOf": [
+    { "$ref": "#/definitions/Intent" },
+    { "$ref": "#/definitions/Receipt" },
+    { "$ref": "#/definitions/QueryReply" },
+    { "$ref": "#/definitions/Feed" },
+    { "$ref": "#/definitions/Capabilities" }
+  ],
+  "definitions": {
+    "Intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "operationId",
+        "epoch",
+        "deviceId",
+        "target",
+        "publicKey",
+        "preferences",
+        "generation",
+        "kind",
+        "fingerprint"
+      ],
+      "properties": {
+        "version": { "const": 2 },
+        "operationId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+        },
+        "epoch": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+        },
+        "deviceId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,128}(?![\\s\\S])",
+          "not": { "enum": ["__proto__", "prototype", "constructor"] }
+        },
+        "target": {
+          "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+        },
+        "publicKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=(?![\\s\\S])"
+        },
+        "preferences": {
+          "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Preferences"
+        },
+        "generation": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "kind": { "enum": ["register", "preferences", "revoke", "feed-reset"] },
+        "gap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["epoch", "after", "floor", "head", "acceptanceId"],
+          "properties": {
+            "epoch": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "after": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "floor": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+            "head": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "acceptanceId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            }
+          }
+        },
+        "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "feed-reset" } } },
+          "then": { "required": ["gap"] },
+          "else": { "not": { "required": ["gap"] } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "revoke" } } },
+          "then": {
+            "properties": { "preferences": { "properties": { "enabled": { "const": false } } } }
+          }
+        }
+      ]
+    },
+    "Receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "epoch", "intent", "stage"],
+      "properties": {
+        "version": { "const": 2 },
+        "epoch": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+        },
+        "intent": { "$ref": "#/definitions/Intent" },
+        "stage": { "enum": ["reserved", "applied", "rejected"] },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "target", "delivery", "state"],
+          "properties": {
+            "version": { "const": 1 },
+            "target": {
+              "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+            },
+            "delivery": { "enum": ["foreground-only", "apns"] },
+            "state": { "enum": ["disabled", "ready", "pending", "unavailable"] },
+            "revision": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "reason": { "type": "string", "maxLength": 4096 }
+          }
+        },
+        "snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "hash", "count", "baseline", "expiresAt"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "hash": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" },
+            "count": { "type": "integer", "minimum": 0, "maximum": 2048 },
+            "baseline": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "expiresAt": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+          }
+        }
+      }
+    },
+    "QueryReply": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "epoch", "target", "deviceId", "operationId", "found", "receipt"],
+          "properties": {
+            "version": { "const": 2 },
+            "epoch": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "target": {
+              "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+            },
+            "deviceId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,128}(?![\\s\\S])",
+              "not": { "enum": ["__proto__", "prototype", "constructor"] }
+            },
+            "operationId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "found": { "const": true },
+            "receipt": { "$ref": "#/definitions/Receipt" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "epoch", "target", "deviceId", "operationId", "found", "reason"],
+          "properties": {
+            "version": { "const": 2 },
+            "epoch": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "target": {
+              "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+            },
+            "deviceId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,128}(?![\\s\\S])",
+              "not": { "enum": ["__proto__", "prototype", "constructor"] }
+            },
+            "operationId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "found": { "const": false },
+            "reason": { "enum": ["absent-unknown", "epoch-mismatch"] }
+          }
+        }
+      ]
+    },
+    "Feed": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "epoch",
+            "deviceId",
+            "target",
+            "generation",
+            "kind",
+            "mode",
+            "baseline",
+            "after",
+            "next",
+            "through",
+            "hasMore",
+            "items",
+            "activeIds",
+            "publicKey",
+            "preferencesFingerprint"
+          ],
+          "properties": {
+            "version": { "const": 2 },
+            "epoch": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "deviceId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,128}(?![\\s\\S])",
+              "not": { "enum": ["__proto__", "prototype", "constructor"] }
+            },
+            "target": {
+              "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+            },
+            "generation": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+            "kind": { "const": "page" },
+            "mode": { "enum": ["live", "reset"] },
+            "resetId": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "snapshotHash": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" },
+            "baseline": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "after": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "next": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "through": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "hasMore": { "type": "boolean" },
+            "items": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["sequence", "event", "fingerprint", "disposition"],
+                "properties": {
+                  "sequence": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                  "event": {
+                    "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Event"
+                  },
+                  "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" },
+                  "disposition": { "enum": ["eligible", "inactive", "stale", "filtered"] }
+                }
+              }
+            },
+            "activeIds": {
+              "type": "array",
+              "maxItems": 2048,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" }
+            },
+            "publicKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=(?![\\s\\S])"
+            },
+            "preferencesFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}(?![\\s\\S])" }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "mode": { "const": "reset" } } },
+              "then": { "required": ["resetId", "snapshotHash"] },
+              "else": {
+                "not": { "anyOf": [{ "required": ["resetId"] }, { "required": ["snapshotHash"] }] }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "epoch",
+            "deviceId",
+            "target",
+            "generation",
+            "kind",
+            "reason",
+            "floor",
+            "head"
+          ],
+          "properties": {
+            "version": { "const": 2 },
+            "epoch": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "deviceId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,128}(?![\\s\\S])",
+              "not": { "enum": ["__proto__", "prototype", "constructor"] }
+            },
+            "target": {
+              "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+            },
+            "generation": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+            "kind": { "const": "reset-required" },
+            "reason": {
+              "enum": [
+                "epoch-mismatch",
+                "subscription-mismatch",
+                "snapshot-expired-or-missing",
+                "retention-gap",
+                "invalid-page-range",
+                "non-contiguous-source"
+              ]
+            },
+            "floor": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+            "head": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "epoch", "deviceId", "target", "generation", "kind", "reason"],
+          "properties": {
+            "version": { "const": 2 },
+            "epoch": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+            },
+            "deviceId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,128}(?![\\s\\S])",
+              "not": { "enum": ["__proto__", "prototype", "constructor"] }
+            },
+            "target": {
+              "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+            },
+            "generation": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+            "kind": { "const": "capacity" },
+            "reason": { "enum": ["active-ids", "page-bytes"] }
+          }
+        }
+      ]
+    },
+    "Capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "epoch", "target", "operations", "limits"],
+      "properties": {
+        "version": { "const": 2 },
+        "epoch": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?![\\s\\S])"
+        },
+        "target": {
+          "$ref": "https://codex-manage.invalid/contracts/task-notifications-v1#/definitions/Target"
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["register", "preferences", "revoke", "feed-reset"] }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "slots",
+            "operations",
+            "logEvents",
+            "logBytes",
+            "snapshots",
+            "snapshotEvents",
+            "snapshotBytes",
+            "totalBytes",
+            "pageEvents",
+            "pageBytes",
+            "activeIds",
+            "snapshotLifetimeMs"
+          ],
+          "properties": {
+            "slots": { "const": 128 },
+            "operations": { "const": 1024 },
+            "logEvents": { "const": 2048 },
+            "logBytes": { "const": 4194304 },
+            "snapshots": { "const": 4 },
+            "snapshotEvents": { "const": 2048 },
+            "snapshotBytes": { "const": 2097152 },
+            "totalBytes": { "const": 16777216 },
+            "pageEvents": { "const": 32 },
+            "pageBytes": { "const": 262144 },
+            "activeIds": { "const": 2048 },
+            "snapshotLifetimeMs": { "const": 300000 }
+          }
+        }
+      }
+    }
+  }
+}

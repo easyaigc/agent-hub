@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "id": "android-p8-authorization-fence-phase3-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "83044a153f1f2e557f0a0ba3c5eaa478fec3f691",
+  "features": ["F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "478c572ab47a6b7a328bfdba0fdeb2bf03708b0f556c35e81f0b2309602bbd6e"
+  },
+  "summary": "Preserve opaque pending metadata under originalPending before adding audit-derived fields; keep only the known token fingerprint after confirmed refresh. Same-named unknown fields remain intact. No wire or authority-flow changes from phase2; 18 host tests pass and same 12 native methods compile.",
+  "commonAssertion": "No derived audit field may discard or overwrite the preserved opaque pending metadata; original authorization wire intent remains unchanged",
+  "dualPlatformImpact": {
+    "android": "One narrow audit preservation change; 18 host tests pass, same 12 native methods compile, native run pending",
+    "ios": "Unchanged and not verified"
+  },
+  "uiCopyDelta": [],
+  "integratorAction": "Use current helper hash from phase3 and other file hashes from phase2. Keep all historical checkpoints immutable and native baseline failure distinct. Run the new 12 methods under exact leases; central registration/root check remains parent-owned.",
+  "integrationChangeRecord": {
+    "id": "android-p8-authorization-fence-phase3-20261029",
+    "baseCommit": "83044a153f1f2e557f0a0ba3c5eaa478fec3f691",
+    "features": ["F43", "F44", "F46"],
+    "summary": "Preserve opaque pending metadata under originalPending before adding audit-derived fields; keep only the known token fingerprint after confirmed refresh. Same-named unknown fields remain intact. No wire or authority-flow changes from phase2; 18 host tests pass and same 12 native methods compile.",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "478c572ab47a6b7a328bfdba0fdeb2bf03708b0f556c35e81f0b2309602bbd6e"
+    }
+  }
+}

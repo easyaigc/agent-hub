@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "9-settings-overflow",
+  "baseCommit": "c98228134b8aebc8cf3515ec578b45a264c65967",
+  "featureIds": ["F56", "F64"],
+  "commonAssertions": [
+    "Full localized preference/capability captions wrap inside the short viewport without clipping or ellipsis",
+    "Native failures preserve actual localized text, dimensions, constraints, overflow direction and a PixelCopy window before aborting",
+    "The full language/theme matrix, enlarged local font, 48dp actions and independent question drafts remain required"
+  ],
+  "bothPlatforms": {
+    "ios": "unchanged; existing native caption reference and separate visual comparison",
+    "android": "full available caption width and explicit 12sp/16sp typography; stronger native diagnostics compiled, native rerun pending"
+  },
+  "priorNative": {
+    "combinedSourceSha256": "77fe4e1b93cb46c3d365e392f7be0f6748b794b50f5a65a8b3af9284a6cd07d3",
+    "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+    "runnerSha256": "3c21dd08075812765c68e5d88c28449eb55e3193a7e363200359cf7bea79ceaa",
+    "passed": ["question viewport matrix", "retained Activity"],
+    "failed": "settings first Chinese/light hasVisualOverflow; failure-state image and measured direction were not captured",
+    "reusedAsCurrentRevisionPass": false
+  },
+  "implementation": "production caption measurement adjusted; matrix diagnostics strengthened",
+  "verification": "new-source App/runner compiled only; coordinator frozen native rerun pending",
+  "sources": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettingsPage.kt",
+      "sha256": "a5a573a085de274bbf5e86fa4fc427a901b93caa08a6cb1c5ca5fc73062196f2"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceViewportMatrixTest.kt",
+      "sha256": "e23d3bb77cd54a144f7c2a6036646e3ab672772c19606be9a2a1a83024db9525"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage9-settings-overflow.md",
+  "remaining": [
+    "coordinator frozen-source native settings matrix rerun and actual PixelCopy/layout review",
+    "production durable preference/discard storage acceptance remains separately owned",
+    "real audio/Host/model DEV and original-file phone transcription remain independent"
+  ]
+}

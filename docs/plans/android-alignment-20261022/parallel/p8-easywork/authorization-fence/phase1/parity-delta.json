@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "id": "android-p8-authorization-fence-phase1-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "9f79fe5ef5ec028f510b796d86c5c4e0704f2494",
+  "features": ["F07", "F09", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "7687fc265d0f75e109cf8ac01eadaad5f7a9647f9e6162bc3f4d9d8b479fb2b6"
+  },
+  "summary": "Add an isolated authorization record coordinator and 13 host fault/concurrency checks. The coordinator is not wired into production authorization until phase two; parent baseline native regression is recorded separately.",
+  "implementation": "coordinator-only-not-integrated",
+  "dualPlatformImpact": {
+    "android": "Standalone coordinator host checks passed; no fixed product behavior or native pass claimed",
+    "ios": "Unchanged; shared revoke/late-save assertion remains open"
+  },
+  "commonAssertion": "Pending or confirmed revocation fences stale refresh/pair saves and local authority for the complete root/ref; original authorization operation remains immutable",
+  "uiCopyDelta": [
+    "设备授权撤销结果待确认，请核对电脑状态",
+    "设备授权保存记录无效，原记录已保留",
+    "原设备授权刷新已被新的状态替代，原记录已保留",
+    "设备授权已更新，请重新核对原操作",
+    "设备授权记录目标已变化，原记录已保留"
+  ],
+  "integratorAction": "Phase one alone does not fix the calling path. Integrate phase two, reconcile the original task WIP hunk by hunk, inventory the new fence prefix with migration owner, then rebuild and run new native methods. Keep the original 19 frozen.",
+  "integrationChangeRecord": {
+    "id": "android-p8-authorization-fence-phase1-20261029",
+    "baseCommit": "9f79fe5ef5ec028f510b796d86c5c4e0704f2494",
+    "features": ["F07", "F09", "F43", "F44", "F46"],
+    "summary": "Add an isolated authorization record coordinator and 13 host fault/concurrency checks. The coordinator is not wired into production authorization until phase two; parent baseline native regression is recorded separately.",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "7687fc265d0f75e109cf8ac01eadaad5f7a9647f9e6162bc3f4d9d8b479fb2b6"
+    }
+  }
+}

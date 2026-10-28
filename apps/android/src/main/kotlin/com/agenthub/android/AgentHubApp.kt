@@ -73,6 +73,7 @@ import com.agenthub.core.*
         val effectiveSheet=if(session.aiSharingRequest!=null) "ai-sharing" else sheet
         DisposableEffect(session) { onDispose { session.setPhoneReadingSurface(false) } }
         VoicePermission(session.voice)
+        VoicePermission(session.questionVoice)
         NativePhotoAuthorizationResult(session)
         NativeRecentPhotoLifecycle(session.recentPhotos)
         val focus = LocalFocusManager.current

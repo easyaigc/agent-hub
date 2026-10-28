@@ -79,6 +79,7 @@ export type DeliveryState =
 export * from './agent-management.js';
 export * from './voice-transcription.js';
 export * from './notifications.js';
+export * from './notification-recovery-v2.js';
 
 export * from './business-notifications.js';
 

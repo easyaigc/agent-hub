@@ -1,14 +1,11 @@
 package com.agenthub.android
 
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import java.util.Locale
 
 /** System speech is a separate selected provider. It may use the system provider's network service.
  * Never feed a saved recording through EXTRA_AUDIO_SOURCE: unsupported providers may silently open the mic.
@@ -47,12 +44,7 @@ internal class AndroidSystemVoice(private val context: Context) : NativeSystemVo
             override fun onPartialResults(results: Bundle?) = listener.partial(results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty())
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
-        opened.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
-            .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true))
+        opened.startListening(nativeSystemSpeechIntent())
     }
     override fun finish() { main(); recognizer?.stopListening() }
     override fun cancel() {

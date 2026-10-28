@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "hostTests": {
+    "passed": 18,
+    "suites": [
+      {
+        "name": "AuthorizationCoordinatorTest",
+        "tests": 13,
+        "sha256": "821a219f0f1f0bf602c8e81f3befebb69d07f14f6ede0f1116bebc4b6420faee"
+      },
+      {
+        "name": "AuthorizationFenceShapeTest",
+        "tests": 4,
+        "sha256": "21ea9154b8389d63128c71aaa479fb630e6caa0c7b739a8507e519aef3fab9b0"
+      },
+      {
+        "name": "AuthorizationOpaqueAuditTest",
+        "tests": 1,
+        "sha256": "6934a61dc70b398309eb6ca1615f725f814b24c632bd6ae6241add1ebdcc6496"
+      }
+    ],
+    "logSha256": "c7b72e65fe6d13879cfe2adfc199dd0fd51be4eb6168c5f815ede3cc5cc1cf9e",
+    "platform": "Host JSON / record adapter only"
+  },
+  "nativeCompile": {
+    "status": "passed",
+    "methods": 12,
+    "logSha256": "c7b72e65fe6d13879cfe2adfc199dd0fd51be4eb6168c5f815ede3cc5cc1cf9e",
+    "execution": "not-performed"
+  },
+  "nodeIssuer": "4 prior passing pure cases reused by exact unchanged source; no listener start",
+  "pnpmCheck": {
+    "status": "integration-pending-central-deltas",
+    "exitCode": 1,
+    "logSha256": "01fbe1b238925ef3a666506aad64ba5554f4969f37d2d6539b1b784181c1c7b0",
+    "passedBeforeStop": ["format:check", "check:github-sync", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationBoundaryTest.kt",
+    "action": "Parent owns central docs/manifest and registers exact final helper plus phase2 file hashes before rerunning complete root check. No guard bypass."
+  },
+  "history": "Phase1/2 and original 16/12/19 archived sources unchanged",
+  "realDev": "No child device, Host, Desktop or model execution"
+}

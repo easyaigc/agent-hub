@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "status": "proposed-not-implemented-not-advertised",
+  "baseline": "160b51ec3285e4dd829a50af317a8fbda01ce521",
+  "authorizationOperation": "parent-p9-recovery-contract-v2-next-20261028-1",
+  "design": "recovery-v2-design.md",
+  "routes": {
+    "capabilities": "/v1/notifications/recovery-v2/capabilities",
+    "submitAndQueryOriginal": "/v1/notifications/recovery-v2/operations",
+    "feedPages": "/v1/notifications/recovery-v2/feed"
+  },
+  "intentRequired": [
+    "version",
+    "operationId",
+    "epoch",
+    "deviceId",
+    "target",
+    "publicKey",
+    "preferences",
+    "generation",
+    "kind",
+    "fingerprint"
+  ],
+  "kinds": ["register", "preferences", "revoke", "feed-reset"],
+  "fingerprint": "SHA-256 of canonical UTF-8 JSON of the complete immutable intent excluding fingerprint; cross-language vectors required",
+  "receiptStages": ["reserved", "applied", "rejected"],
+  "unknownPolicy": "Attempted writes query original ID only. Absent/mismatched epoch/version is not confirmation and never causes an automatic resend or new registration ID. Old v1 unknown remains unchanged.",
+  "revocationPolicy": "A separately authorized explicit off intent may reserve a higher generation and persistent absent-device/v1-write tombstone. It never rewrites the old unknown receipt.",
+  "feedPolicy": "Stable persisted epoch/order/high-water pages; every scanned original and result durable before cursor advance; no silent floor/epoch/overflow/out-of-order reset",
+  "resetPolicy": "Separate immutable feed-reset intent binds durable gap acceptance; bounded original snapshot, no clearing P7 or unknown receipts, no claim to recover pruned history",
+  "diskCompatibility": "Read old v1; activate v2 with atomic device/receipt/fence state and old-writer-rejecting disk version. V1 wire remains for non-adopted devices.",
+  "sourceImplementation": false,
+  "healthCapabilityAdvertised": false,
+  "deviceOrRealHostActions": false,
+  "parentOwned": [
+    "MobileSession",
+    "MainActivity",
+    "NativeSheets",
+    "Manifest",
+    "central product/design/acceptance tables",
+    "real DEV leases"
+  ]
+}

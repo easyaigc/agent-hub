@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "hostTests": {
+    "status": "passed",
+    "tests": 17,
+    "suites": [
+      {
+        "name": "AuthorizationCoordinatorTest",
+        "tests": 13,
+        "sha256": "ec4b0da494500e6d392371373eee9ccc65a858b2e2cd2678e663d98ecc504b71"
+      },
+      {
+        "name": "AuthorizationFenceShapeTest",
+        "tests": 4,
+        "sha256": "e6cd98c482a8c6684812f983c5974a73c9d867ab01e8786714554944b0e8ed86"
+      }
+    ],
+    "logSha256": "f77eab0cf3cebddc1bb33c0c76854a8413ea6974936b833c8839ae1d5b9af29c",
+    "platform": "Host JSON / record adapter only"
+  },
+  "nodeIssuer": {
+    "status": "passed",
+    "tests": 4,
+    "logSha256": "3d0b130ba52078e85e6db453ded0e0128298f778ef37a2298a88aa967330e06b",
+    "networkListeners": false
+  },
+  "nativeCompile": {
+    "status": "passed",
+    "methods": 12,
+    "logSha256": "f77eab0cf3cebddc1bb33c0c76854a8413ea6974936b833c8839ae1d5b9af29c",
+    "execution": "not-performed"
+  },
+  "historyPreserved": {
+    "oldP8Docs": 47,
+    "phase1Docs": 5,
+    "oldNativeMethods": 47,
+    "unchanged": true
+  },
+  "pnpmCheck": {
+    "status": "integration-pending-central-deltas",
+    "exitCode": 1,
+    "logSha256": "57b66287c03f82992cff9b351f35e994d5d02486dbc92facf620e192c7e6f73d",
+    "passedBeforeStop": ["format:check", "check:github-sync", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationBoundaryTest.kt",
+    "action": "Parent owns central docs/manifest. Register old authorization and both fence deltas by change ID and final hash, then rerun complete root check; no bypass or historical result rewrite."
+  },
+  "realDev": {
+    "deviceLease": null,
+    "deviceExecution": false,
+    "realHostDesktopModel": false,
+    "fixedNativeAcceptance": "not-performed"
+  },
+  "parentBaseline": "reported and fingerprinted independently in phase1; actual original regression failure retained by parent"
+}

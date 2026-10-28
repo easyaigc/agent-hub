@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "a0ec7825cab7193c55b340f66199b72516841cf3",
+  "storageOwner": {
+    "implementedHere": "NativeVoicePreferenceStore load/save port only; no stored Schema/backend/migration",
+    "bind": "session.voiceSettings.bind(store), once per restored Session",
+    "proposedValues": ["desktop", "system"],
+    "missing": "load returns null and desktop remains default",
+    "unknownOrCorrupt": "fail while preserving source record; do not silently rewrite",
+    "writes": "owner-approved atomic ordered save; no original voice operation or audio rewrite",
+    "acceptance": "same default after app reopen, unknown/corrupt source preserved, imported defaults and current voice operations remain fenced"
+  },
+  "manifestOwner": {
+    "path": "apps/android/src/main/AndroidManifest.xml",
+    "proposal": "add queries/intent/action android:name=android.speech.RecognitionService",
+    "reason": "Android official API30+ service visibility contract",
+    "implementedHere": false,
+    "acceptance": "inspect real available/unavailable system and on-device services independently on leased API26/current physical target"
+  },
+  "capabilityGaps": [
+    "No guaranteed original-file system recognizer adapter; EXTRA_AUDIO_SOURCE may open microphone",
+    "Real service/acoustic and language model installation not verified",
+    "Explicit new recording fallback differs from iOS automatic fallback"
+  ]
+}

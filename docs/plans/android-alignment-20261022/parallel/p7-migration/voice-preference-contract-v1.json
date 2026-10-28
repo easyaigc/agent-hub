@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "dependency": "b2a4f589db49e4555f1c9679d9f6e32d9d1856aa",
+  "dependencyOnlyMerge": "d4176347",
+  "record": "native-voice-preference-v1",
+  "schema": "voice-preference-storage-v1.schema.json",
+  "adapter": "NativeEncryptedVoicePreferenceStore(storage)",
+  "port": "NativeVoicePreferenceStore",
+  "bounds": {
+    "utf8Bytes": 256,
+    "recordCount": 1
+  },
+  "missing": "load=null; NativeVoiceSettings keeps desktop without writing a record",
+  "failure": "unknown/corrupt/future/duplicate/oversized/pending files fail load and save preserving original bytes; never silently repair or report persisted success",
+  "write": "Dispatchers.IO + exact root operation transaction + existing encrypted AtomicFile. Same explicit value is read-only. Check cancellation before lock work and atomic save; stale generation handle rejects. Already committed choice is not undone by later cancellation.",
+  "migration": {
+    "inventory": "known legacy alias plus existing authenticated self-named text inventory",
+    "candidate": "closed v1 schema validates in old bounded and file-stream graphs; unsupported v2 name/version rejects without replacing old candidate",
+    "activationPrecedence": [
+      "valid destination explicit record wins, retained byte-for-byte",
+      "otherwise accept source explicit record unchanged",
+      "both absent: keep absent, implicit desktop only"
+    ],
+    "rationale": "iOS VoiceTranscriptionPreference is UserDefaults, absent from SavedSession and EncryptedMigration.Payload, and restoreMigration does not alter it. Preserve destination explicit choice; Android additionally imports a source choice only into an unchosen destination. Candidate retains original source choice.",
+    "publication": "same prepared generation/hash/pointer/sourceRecords count/rollback/idempotency; no second migrator",
+    "notMigrated": [
+      "service availability/model or language state",
+      "OS permissions/authorization",
+      "active recording or ASR session",
+      "voice operation/unknown receipt",
+      "automatic recording/transcription start"
+    ]
+  },
+  "bindHook": "On Main after restored Session/storage is selected: session.voiceSettings.bind(NativeEncryptedVoicePreferenceStore(storage)); once per fresh Session. Voice owner provides unbind/rebind lifecycle; parent retires old settings/writer and opens fresh storage/session after migration. Do not bind from a recomposing page.",
+  "iosDifference": "Current iOS unknown raw UserDefaults value falls back desktop; Android refuses invalid/future stored records. No iOS changes/native pass; A6 paused.",
+  "status": {
+    "implementation": "adapter/schema/graph/activation implemented",
+    "auxiliary": "acceptance app/runner and format passed, exact source pre/post match",
+    "native": "10 methods compiled only; no device execution in this workline",
+    "realDev": "not executed",
+    "sharedUiBinding": "parent/voice-owner pending; no MobileSession/VoiceSettings/Manifest edit"
+  },
+  "foregroundBoundary": "Nonempty notification v1 journal migration remains explicitly incomplete/refused; not a migration success."
+}

@@ -42,7 +42,7 @@ internal class NativeChatNotificationSettingsState(private val scope: CoroutineS
             finally { if (current(token)) loading = false }
         }
     }
-    fun update(change: (NativeChatNotificationPreferences) -> NativeChatNotificationPreferences, afterSaved: () -> Unit = {}) {
+    fun update(change: (NativeChatNotificationPreferences) -> NativeChatNotificationPreferences, afterSaved: (NativeChatNotificationPreferences) -> Unit = {}) {
         if (!writable) return
         store.invalidatePreferences()
         val original = requireNotNull(preferences)
@@ -55,7 +55,7 @@ internal class NativeChatNotificationSettingsState(private val scope: CoroutineS
                         change(latest)
                     }
                 }
-                if (current(token)) { preferences = saved; platform.cancelOwned(); afterSaved() }
+                if (current(token)) { preferences = saved; platform.cancelOwned(); afterSaved(saved) }
             } catch (cancel: CancellationException) { throw cancel }
             catch (_: Exception) { if (current(token)) error = "无法保存通知设置，请重新读取资料。" }
             finally { if (current(token)) loading = false }

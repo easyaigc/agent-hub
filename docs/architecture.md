@@ -1,5 +1,9 @@
 # 架构设计
 
+2026-10-29 Android 设备授权增加按存储root/ref协调的持久撤销栅栏：完整原意图先保存，未知/确认撤销均拒绝迟到refresh或pair保存及旧proof返回；重建从原具名操作恢复，不重放业务输入。原grant未知字段、原pending和指纹在加密审计中保留。语音默认选择使用同一Session自身的加密存储，安装/权限/能力不随用户偏好迁移。精确原生/辅助及未验界限见[PAR4档案](plans/android-alignment-20261022/parallel/fourth-stage-native.json)。
+
+2026-10-29 Android 通知恢复 v2 源码已接到可选前台 monitor：完整原意图先落盘、未知只查原 ID，独立关闭与显式缺口接受保持各自收据，待 Host 确认事件不推进游标。JVM 辅助与原生编译分列；共享 UI／迁移入口和真实 DEV 尚待集成负责人验收。iOS v1 与供应商承诺不变，见[Android 候选与交接](plans/android-alignment-20261022/parallel/p9-notifications/recovery-v2-android.md)。
+
 2026-10-27 F03/F69：Host 的独立局域网 HTTPS 监听启动失败后，以 1、2、4、8、16、30 秒封顶间隔串行重试。每次仍读取原私有身份和端口，不旋转证书或放宽鉴权；已绑定后二维码或发布失败时，须先释放监听和定时资源再重试。Host 关闭会取消待重试，并关闭尚未完成的启动所产生的迟到结果；关闭处理先于首次异步启动注册。已建立监听保留既有生命周期，未将主动关闭解释为再次启动。固定错误标识及重试次数进入诊断，原始错误正文不进入监督器日志。共享 Host 对两端连接生效，UI、设计与协议保持；Windows 异常退出根因、建议读取和物理手机的实际结果独立记录，不能由本地恢复检查代替。
 
 2026-10-27 F03/F69 Windows prepared 前缀收据返修：其他对话在原生批次句柄关闭后追加日志时，重新打开并比对原前缀完整SHA，核对文件/路径身份且禁止截短；不重放Native调用。真实短负前缀仍保留原大小门禁，只有完整配置载荷确认后才允许尾部增长；完整正文/manifest/载荷、ACL/chain、最终commit和原预算不变。新增正常追加反例旧代码RED，以及前缀改写、未分类增长和截短拒绝；macOS与双端UI不变，Android无新增通过，A6暂停。V19 Windows实测prepare拒绝但未唯一定位具体守卫，本次候选的目标部署及手机结果继续分别验证。
@@ -25,6 +29,8 @@ Windows 原生 helper 的暖启动将目录保护、逻辑 binary 和物理 bina
 2026-10-28 iOS 主动丢弃录音与生命周期保留分离：输入条“×”和重新录音先落盘丢弃标记，再删除手机音频，恢复时排除该原操作；普通导航／后台仍保留恢复。Host 回执与不可变操作不变，取消代次隔离迟到结果。Android 新断言待对齐，验收见[专项记录](acceptance/voice-discard-20261028.md)。
 
 2026-10-28 Android PAR1：流式迁移、手机独立阅读/逐事件查询与普通通知本地回执已形成窄模块，通知认领在同根锁内重检阅读；系统/认证事件接线与全部子存储仍开放。Android新文件封套v2/归档v3暂非iOS互通格式，原生合成通过不代替真实Desktop/模型或后台送达。[分工与当前范围](plans/android-alignment-20261022/parallel/README.md)。
+
+2026-10-28 通知恢复 v2 源码候选：Host 将完整不可变意图、原 ID 收据、设备订阅代次和缺席设备撤销墓碑保存在同一原子状态文件；先保留后应用，重启只结算原意图。内部磁盘格式升级会阻止旧 writer 忽略新墓碑，未采用 v2 的设备继续使用原 v1/iOS wire。原事件 feed 采用持久 epoch、连续序号、有界分页和显式缺口复位，不自动跳游标或用新版本确认旧 v1 unknown。Android v2 接线、真实 Host／设备／模型及部署仍待阶段验收；没有新增 vendor 承诺或通用 health 能力。见[实现边界](plans/android-alignment-20261022/parallel/p9-notifications/recovery-v2-server.md)。
 
 2026-10-28：Host bridge 的速度能力只按模型目录的稳定 ID 解析，保留 standard／fast／ultrafast，fast 在桌面 wire 边界统一为 priority；未知 ID 不按展示名称猜测能力。原 owner 当前 service tier 优先于保留的旧轮次设置，明确 null 表示标准。iOS 多档选择使用原生菜单；实现、模拟器真实任务与未验收平台见[本次记录](acceptance/host-ultrafast-20261028.md)。
 

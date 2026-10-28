@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "nativeCompile": {
+    "status": "passed",
+    "tasks": 82,
+    "executed": 5,
+    "logSha256": "6f526b52a1a385f0a03b6e0f3552a6c44548b79f60028f73d9b3467a6607ca1b",
+    "methods": 19,
+    "execution": "not-performed"
+  },
+  "fixturePureTests": {
+    "status": "passed",
+    "tests": 7,
+    "logSha256": "bf7fb8e1fe18cdb03bfbf9853323e167923a44cd0dac0319bc31a2be32d4f7e1",
+    "networkListeners": false,
+    "tlsExecuted": false,
+    "androidKeystoreExecuted": false
+  },
+  "sourcePreservation": {
+    "productionFilesUnchanged": true,
+    "frozenPriorDocs": 39,
+    "transportCommitFilesUnchanged": 7,
+    "previousNativeMethodsUnchanged": 28
+  },
+  "sourceFinding": {
+    "method": "lateRefreshAfterConfirmedRevokeMustNotRestoreRemovedGrant",
+    "status": "source-review-only-not-native-reproduced",
+    "productionFix": "not-performed"
+  },
+  "pnpmCheck": {
+    "status": "integration-pending-central-delta",
+    "exitCode": 1,
+    "logSha256": "0bcba3d6ac0b61e8e654f855bf161fac0d2077852b86ee601cf7da6498b1c46e",
+    "passedBeforeStop": ["format:check", "check:github-sync", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt",
+    "action": "Parent integrates prior numeric/transport and current authorization deltas with exact file hashes centrally, then reruns complete root check. No guard bypass or historical evidence edits."
+  },
+  "nativeRealDev": {
+    "status": "not-performed",
+    "deviceLease": null,
+    "adbInvoked": false,
+    "realHostOrDesktopAccess": false,
+    "modelInputSubmitted": false
+  },
+  "gaps": [
+    "System-trusted HTTPS and real issuer/Desktop human approval",
+    "Actual Android process death / reinstall / real key persistence lifecycle",
+    "Same-grant multi-instance read-modify-write race",
+    "Pending polling timeout/expiry and all server error-code variants",
+    "DPoP nonce challenge negotiation",
+    "iOS native authorization/Keystore-equivalent lifecycle"
+  ]
+}

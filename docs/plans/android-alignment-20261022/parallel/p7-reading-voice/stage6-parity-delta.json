@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "6-preference-binding",
+  "baseCommit": "a69dc34df57b6c88d01aabaa4fb411d20cf70447",
+  "featureIds": ["F56", "F64"],
+  "commonAssertions": [
+    "Retained configure and Activity recreation do not create/bind preference adapters twice",
+    "Cancelled/late load and old save acknowledgements cannot overwrite or falsely persist a newer selection",
+    "Recovery validates source before pending save; unknown writes are read back without automatic duplicate saves"
+  ],
+  "bothPlatforms": {
+    "ios": "existing stable default setting reference unchanged",
+    "android": "idempotent lifecycle binding and honest read/save states implemented; storage backend and native acceptance parent-owned"
+  },
+  "implementation": "code-present; no new storage Schema/backend",
+  "verification": "App/runner builds and 17 host-JVM predicates passed; KMP93 unchanged-input reuse; lifecycle native7 compiled only; earlier question fixture empty EditableText correction preserved",
+  "hook": {
+    "preferredSessionCall": "bindVoicePreferencesIfMissing { storage-owner adapter }",
+    "strictTestCall": "voiceSettings.bind(store)",
+    "readback": "voiceSettings.refreshPreferences()",
+    "explicitRetry": "voiceSettings.retryPreferences()",
+    "resume": "voiceSettings.resumePreferences()",
+    "pause": "voiceSettings.pausePreferences()"
+  },
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeQuestionVoiceUiTest.kt",
+      "sha256": "2ef789c81d64840bb612fe903ea9a092135c61731feb6215a1a83a1999607017"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoicePreferenceLifecycleTest.kt",
+      "sha256": "ef79befb3b91967b3c13b6274979ef6c45c4248d147e861998bbc45fa64c7064"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceSettingsUiTest.kt",
+      "sha256": "9c5accb3a494668d6daa57b63eb78166aedadc45c570341f8dc4a1748bdc36d4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "a96d0cb249937995edc867485e140bc527f445f292213bdb45d33e5aa9d7c4f4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettings.kt",
+      "sha256": "588fe9d505bb689a1a354bbed4912e91bc1bdb4cc26757e67e35b98fd7bb84b7"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettingsPage.kt",
+      "sha256": "2875f1eea3e4a928c66f3fc29b4124188438bd0f93f86e7ae2875337f1ed1703"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage6-preference-binding.md",
+  "remaining": [
+    "delivered storage-owner adapter binding and real repository reopen",
+    "parent catalog/parity union",
+    "leased lifecycle and forthcoming short viewport/AX native windows",
+    "real microphone/acoustic/Host/DEV and same-recording phone transcription gap"
+  ]
+}

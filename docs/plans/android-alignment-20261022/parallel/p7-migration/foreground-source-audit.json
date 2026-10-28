@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operation": "parent-p7-foreground-migration-schema-20261028-1",
+  "frozenProducer": "160b51ec3285e4dd829a50af317a8fbda01ce521",
+  "parentAdoption": "66b12bd8",
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationIdentity.kt": {
+      "sha256": "a5d3e766218398d13da653d9e90c5f6c14c75017f6159fe08b94d807085b0e5e",
+      "lines": 56
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundStore.kt": {
+      "sha256": "aca5f97ad0439fa23bb1b20217569c436bf919080e0ff9cb86ed4e6473fdfb9f",
+      "lines": 211
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationWire.kt": {
+      "sha256": "5a5914b682348ac29cff55fc30c15ef17e2998b3ba73aa653d41087e06fc88ba",
+      "lines": 87
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt": {
+      "sha256": "1ae673a5d374be1cd660df9a227f2c424c6531ff7b82b1eb7a31347a02a0fcf8",
+      "lines": 170
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCommands.kt": {
+      "sha256": "5fbac7e9ff2985e5dde55e43f0d0f49aba6a1f546d8e7853c0de3fac37a66031",
+      "lines": 114
+    },
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/foreground-migration-contract.json": {
+      "sha256": "225058653a648c5829def987d32c092b91727f1c72203a069353f28b9d8cc459",
+      "lines": 38
+    },
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/identity-storage-v1.schema.json": {
+      "sha256": "c5e3cea144ef58c9e522605f4abf20b70bd80f633712562623b94d3daecc3112",
+      "lines": 31
+    },
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/foreground-storage-v1.schema.json": {
+      "sha256": "e89600a33a31a29c30e97b800008fc9831b6b4b598fd14556dd70f282dc4e5cb",
+      "lines": 231
+    },
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/notification-storage-v1.schema.json": {
+      "sha256": "ed23ee1e3d4401ebd08e9610971312fbab362513c9c79587bef1847005756420",
+      "lines": 376
+    },
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/foreground-contract.md": {
+      "sha256": "a7b6d4eab6a42d5205ed767aa43f6b2f6d570c22a73bd8ae1c34158d57574e69",
+      "lines": 18
+    }
+  },
+  "findings": {
+    "identity": "Private decoder, X25519 private/public pair, installation-local device ID; load generates only if both identity and foreground journal are absent; bound marker/journal loss fails. Never portable.",
+    "journal": "Exact v1 root: version/deviceId/identity/subscriptions. Closed mutation/batch/outcome codecs;256 global mutations,2048 outcomes,64 targets; unknown is not resolved by status.",
+    "monitor": "With preferences enabled and journal absent, load can generate a new identity then register. Imported inactive evidence cannot act as an existing journal/recovery fence in v1.",
+    "sourceAuthority": "Original retained authorized snapshot is not serialized in this journal: authorization is a64hex fingerprint. A fingerprint is not a bearer credential or revocation authority.",
+    "migrationGap": "P9 v1 lacks a typed migration-owned recovery barrier. Nonempty original journal cannot silently become active or be discarded to recover via new identity. Future versions reject rather than guess."
+  },
+  "policyCheckpoint": "foreground-migration-policy-v1.json",
+  "producerEdits": false,
+  "liveRecordsRead": false,
+  "nativeOrHostOrModelOperations": 0
+}

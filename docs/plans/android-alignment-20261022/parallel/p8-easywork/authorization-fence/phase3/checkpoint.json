@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "date": "2026-10-29",
+  "phase": "opaque-audit-preservation",
+  "baseCommit": "83044a153f1f2e557f0a0ba3c5eaa478fec3f691",
+  "originalBaseCommit": "9f79fe5ef5ec028f510b796d86c5c4e0704f2494",
+  "productionFilesChanged": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "478c572ab47a6b7a328bfdba0fdeb2bf03708b0f556c35e81f0b2309602bbd6e"
+  },
+  "otherProductionFileUnchanged": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt": "1b8681f4fb686fe877eb914e74260fc825dc65fa764e9c3ac938c9ca49ad2256"
+  },
+  "nativeInputSetSha256": "098bc04bda316f4775c714d43fc7aee9900b8c18d90b876536ccd99e3aa9dd13",
+  "nativeInputFiles": 461,
+  "nativeTest": {
+    "class": "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest",
+    "source": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationFenceTest.kt",
+    "sha256": "bfb2b997c5803bfbaa44753c9485edded2a48e1c6a631d213290a3c85cd33d8c",
+    "methods": [
+      "sameClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+      "separateClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+      "unknownRevokeFencesLateRefreshAndResumesOriginalDeleteAcrossClients",
+      "unknownRevokeBlocksFreshHeadersAfterStorageReopenUntilOriginalResume",
+      "concurrentClientsOnOneGrantShareOneActualRefreshOperation",
+      "separateGrantsOnOneStorageRootRemainUsableDuringAnotherRevoke",
+      "identicalRefNamesAcrossNativeStorageRootsKeepTheirOwnAuthority",
+      "refreshKeepsUnknownRootGrantAndPendingFieldsInNativeAudit",
+      "oldApprovedClaimCannotReinstallItsConfirmedRevokedGrant",
+      "persistedUnknownFenceResumesItsOriginalDeleteWhenGrantFileIsMissing",
+      "legacyPendingRevokeIdIsFencedAndAdoptedWithoutReplacement",
+      "malformedFenceScopeIsRefusedWithoutNetworkOrRecordLoss"
+    ],
+    "groups": {
+      "P8-fence-late-save": [
+        "sameClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+        "separateClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+        "unknownRevokeFencesLateRefreshAndResumesOriginalDeleteAcrossClients"
+      ],
+      "P8-fence-persistent-revoke": [
+        "unknownRevokeBlocksFreshHeadersAfterStorageReopenUntilOriginalResume",
+        "persistedUnknownFenceResumesItsOriginalDeleteWhenGrantFileIsMissing",
+        "legacyPendingRevokeIdIsFencedAndAdoptedWithoutReplacement"
+      ],
+      "P8-fence-isolation": [
+        "concurrentClientsOnOneGrantShareOneActualRefreshOperation",
+        "separateGrantsOnOneStorageRootRemainUsableDuringAnotherRevoke",
+        "identicalRefNamesAcrossNativeStorageRootsKeepTheirOwnAuthority"
+      ],
+      "P8-fence-preserve-refuse": [
+        "refreshKeepsUnknownRootGrantAndPendingFieldsInNativeAudit",
+        "oldApprovedClaimCannotReinstallItsConfirmedRevokedGrant",
+        "malformedFenceScopeIsRefusedWithoutNetworkOrRecordLoss"
+      ]
+    },
+    "methodTimeoutMillis": 12000,
+    "scenarioTimeoutMillis": 8000,
+    "wholeClassTimeoutSumMillis": 144000,
+    "wholeInvocationTimeoutSeconds": 240,
+    "configArgument": "p8AuthorizationFenceConfig",
+    "runner": "androidx.test.runner.AndroidJUnitRunner",
+    "execution": "not-performed",
+    "deviceLease": null
+  },
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "a04b3b4efa435bceb0a63a84480721dd26600b558c839354c60647f798e5f11a",
+      "bytes": 26448695,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "0fd7f19a88ab14cdae42b8894ca7053fecb59695c640c35707442cfbfdcdd6bf",
+      "bytes": 4619417,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "hostTests": [
+    {
+      "name": "AuthorizationCoordinatorTest",
+      "tests": 13,
+      "sha256": "821a219f0f1f0bf602c8e81f3befebb69d07f14f6ede0f1116bebc4b6420faee"
+    },
+    {
+      "name": "AuthorizationFenceShapeTest",
+      "tests": 4,
+      "sha256": "21ea9154b8389d63128c71aaa479fb630e6caa0c7b739a8507e519aef3fab9b0"
+    },
+    {
+      "name": "AuthorizationOpaqueAuditTest",
+      "tests": 1,
+      "sha256": "6934a61dc70b398309eb6ca1615f725f814b24c632bd6ae6241add1ebdcc6496"
+    }
+  ],
+  "nodeIssuer": {
+    "reusedSameFixtureSource": true,
+    "tests": 4,
+    "status": "passed in phase2; source unchanged"
+  },
+  "nativeExecution": "not-performed",
+  "networkListenersStarted": false,
+  "oldPhase1And2ArchivesModified": false,
+  "old16And12And19MethodsModified": false,
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

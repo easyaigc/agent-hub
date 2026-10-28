@@ -37,3 +37,5 @@ The branch is for coordinator cherry-pick/integration only; this workline create
 P9-2/F53 声音后续见 [本地声音阶段](sounds.md)。上文保留 P9-1 的原范围与证据，后续结果不倒填为原阶段通过。
 
 设置读取失败的独立检查点见 [设置恢复](settings-recovery.md)（`8b3af30d`）。P9-3 的前台注册、原事件批次、未知操作和异步声音设置见 [前台通知阶段](foreground.md) 与 [Host 契约缺口](foreground-contract.md)。分阶段哈希与证据分别保留；后续不倒填任何原生或真实 DEV 通过。
+
+P9 恢复 v2 设计检查点为 `4df98a64`，见[设计／契约](recovery-v2-design.md)；服务端当前源码、兼容／降级与辅助范围见[服务端阶段](recovery-v2-server.md)。Android v2 接线仍属于下一阶段，不以 Node 结果替代原生／真实 DEV。

@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "date": "2026-10-29",
+  "phase": "production-fence-and-native-compile",
+  "baseCommit": "9f79fe5ef5ec028f510b796d86c5c4e0704f2494",
+  "phase1Commit": "05be2b2a7531d704852488e1989c55f0c95b330b",
+  "productionFilesChanged": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "6011a2091be6df05192bba290a21eb45cc0e8b7aaf90f37e156c720bd5de3c1f",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt": "1b8681f4fb686fe877eb914e74260fc825dc65fa764e9c3ac938c9ca49ad2256"
+  },
+  "nativeStorageApiChanged": false,
+  "originalTaskUncommittedWipReadOrIncluded": false,
+  "nativeTest": {
+    "class": "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest",
+    "source": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationFenceTest.kt",
+    "sha256": "bfb2b997c5803bfbaa44753c9485edded2a48e1c6a631d213290a3c85cd33d8c",
+    "methods": [
+      "sameClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+      "separateClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+      "unknownRevokeFencesLateRefreshAndResumesOriginalDeleteAcrossClients",
+      "unknownRevokeBlocksFreshHeadersAfterStorageReopenUntilOriginalResume",
+      "concurrentClientsOnOneGrantShareOneActualRefreshOperation",
+      "separateGrantsOnOneStorageRootRemainUsableDuringAnotherRevoke",
+      "identicalRefNamesAcrossNativeStorageRootsKeepTheirOwnAuthority",
+      "refreshKeepsUnknownRootGrantAndPendingFieldsInNativeAudit",
+      "oldApprovedClaimCannotReinstallItsConfirmedRevokedGrant",
+      "persistedUnknownFenceResumesItsOriginalDeleteWhenGrantFileIsMissing",
+      "legacyPendingRevokeIdIsFencedAndAdoptedWithoutReplacement",
+      "malformedFenceScopeIsRefusedWithoutNetworkOrRecordLoss"
+    ],
+    "groups": {
+      "P8-fence-late-save": [
+        "sameClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+        "separateClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+        "unknownRevokeFencesLateRefreshAndResumesOriginalDeleteAcrossClients"
+      ],
+      "P8-fence-persistent-revoke": [
+        "unknownRevokeBlocksFreshHeadersAfterStorageReopenUntilOriginalResume",
+        "persistedUnknownFenceResumesItsOriginalDeleteWhenGrantFileIsMissing",
+        "legacyPendingRevokeIdIsFencedAndAdoptedWithoutReplacement"
+      ],
+      "P8-fence-isolation": [
+        "concurrentClientsOnOneGrantShareOneActualRefreshOperation",
+        "separateGrantsOnOneStorageRootRemainUsableDuringAnotherRevoke",
+        "identicalRefNamesAcrossNativeStorageRootsKeepTheirOwnAuthority"
+      ],
+      "P8-fence-preserve-refuse": [
+        "refreshKeepsUnknownRootGrantAndPendingFieldsInNativeAudit",
+        "oldApprovedClaimCannotReinstallItsConfirmedRevokedGrant",
+        "malformedFenceScopeIsRefusedWithoutNetworkOrRecordLoss"
+      ]
+    },
+    "methodTimeoutMillis": 12000,
+    "scenarioTimeoutMillis": 8000,
+    "wholeClassTimeoutSumMillis": 144000,
+    "wholeInvocationTimeoutSeconds": 240,
+    "configArgument": "p8AuthorizationFenceConfig",
+    "runner": "androidx.test.runner.AndroidJUnitRunner",
+    "execution": "not-performed",
+    "deviceLease": null
+  },
+  "nativeInputSetSha256": "c8c42b3bbbb7c6a39155383ad96dda1a24494c7db0bdd8023e1621ae0661b272",
+  "nativeInputFiles": 461,
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "067b5f614a744fb1ac2b70588064217a6a0758dba2cd9a03dc7c6d09f0d37f00",
+      "bytes": 26432029,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "b6e5cc647cf4384484bc3267fedae75f04b574660a426aa63e20d6a739593ce9",
+      "bytes": 7902647,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "fixtures": {
+    "sourceFilesSha256": {
+      "fixture.mjs": "b91aff98e2f40cce295086dae2d0190540481a4314f6b98c7c7b81e31fe7fe7c",
+      "fixture.test.mjs": "6264d9c9ff3ab22c4e4a18512cb97491e43c8dd869c09d1f87fc454687deb9e6"
+    },
+    "frozenCryptoDependencySha256": "cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a",
+    "assetSha256": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104",
+    "pureTests": 4,
+    "listenersStarted": false,
+    "transport": "DEBUG loopback HTTP only"
+  },
+  "hostTests": [
+    {
+      "name": "AuthorizationCoordinatorTest",
+      "tests": 13,
+      "sha256": "ec4b0da494500e6d392371373eee9ccc65a858b2e2cd2678e663d98ecc504b71"
+    },
+    {
+      "name": "AuthorizationFenceShapeTest",
+      "tests": 4,
+      "sha256": "e6cd98c482a8c6684812f983c5974a73c9d867ab01e8786714554944b0e8ed86"
+    }
+  ],
+  "historyPreserved": {
+    "oldP8Docs": 47,
+    "phase1Docs": 5,
+    "oldNativeMethods": 47,
+    "unchanged": true
+  },
+  "parentBaseline": "Phase1 checkpoint records exact parent native baseline: 18 core passed / original regression failed. New native result not claimed.",
+  "oldRegressionAfterFix": "Frozen successful-await assertion is incompatible with explicit authority refusal; preserve its raw result and use the new rejection-plus-absence methods",
+  "limitations": [
+    "Actual process death/restart and concurrent OS process file locking not verified",
+    "System-trusted HTTPS and real issuer/Desktop/model not used",
+    "Migration owner must preserve new fence records; unsupported full archives must refuse",
+    "iOS unchanged and not verified",
+    "Audit retention policy unchanged; active fences/unknown intents cannot be pruned"
+  ],
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

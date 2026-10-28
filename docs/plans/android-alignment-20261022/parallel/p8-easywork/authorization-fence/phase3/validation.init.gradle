@@ -1,0 +1,7 @@
+// Used together with the frozen phase2 init script; no production dependency changes.
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.project(':android')
+    def current = new File(gradle.rootProject.projectDir, 'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase3/jvm')
+    app.android.sourceSets.getByName('test').java.srcDir(current)
+    app.android.sourceSets.getByName('test').kotlin.srcDir(current)
+}

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "checkpoint": "PAR4-intake",
+  "state": "bounded-stage-accepted-awaiting-exact-head-ci",
+  "priorDelivery": {
+    "pullRequest": 46,
+    "mergedMain": "f1d6fb2595ffbb7548e12575b9492b13ebc1c734",
+    "head": "77ac454ccdb90c4d3641fafd78736d0ea797f343",
+    "parentBranchRemovedLocalAndRemote": true
+  },
+  "priorPendingReview": {
+    "pullRequest": 47,
+    "head": "815948dd75cc78bc07370f9ee2ecb2c754b48123",
+    "mergedMain": "995784651b0fdc84d5470d9d0f3f326f4f13bfea",
+    "nativeAuxiliary": 30,
+    "parentBranchRemovedLocalAndRemote": true,
+    "temporarySyncTreeRemoved": true
+  },
+  "lines": [
+    {
+      "scope": "P7 foreground safe subset",
+      "source": "16351578a8c0d931f9aa0c1618c79ac74b0d0a8c",
+      "native": "9 physical-phone methods passed in preceding exact candidate",
+      "limit": "Nonempty journal remains blocked; rejection is not full migration."
+    },
+    {
+      "scope": "P7 voice preference store, lifecycle and owned Activity",
+      "sources": ["6d5498e7", "a10e706b", "93a4cca0"],
+      "native": "8 encrypted store/migration, original writer+different-PID reader, lifecycle7 and actual Activity1 passed under separate immutable candidates",
+      "limit": "Microphone/acoustic and full visual matrix open."
+    },
+    {
+      "scope": "P7 explicit discard and viewport",
+      "sources": ["a7bb5b5f", "c9822813"],
+      "native": "Controller7 and question/retained Activity2 passed; settings overflow failed and fix assigned",
+      "limit": "Durable no-offer adapter and full iOS/native visual proof pending."
+    },
+    {
+      "scope": "P8 authorization save fence",
+      "sources": ["05be2b2a", "83044a15", "eb09a56b"],
+      "native": "Old core18 and new fence12 passed; original baseline race failure retained",
+      "limit": "Real issuer/desktop DEV, true Android process-death authorization and seven-group closure remain open. Protected main WIP untouched."
+    },
+    {
+      "scope": "P9 recovery v2",
+      "sources": ["ad6ba8c9", "d0daf10e", "b77e1bfd"],
+      "auxiliary": "41 shipping Kotlin vectors passed; full workspace check separately recorded",
+      "native": "Recovery15 and owned recovery UI4 passed",
+      "limit": "Global App hooks, real Host deployment/subscription and vendor/background delivery open."
+    }
+  ],
+  "catalog": {
+    "keysEachLanguage": 1833,
+    "sharedKeysReused": 5,
+    "androidSystemLabel": "系统听写",
+    "reason": "Android service may use network; preserve shared iOS Local (phone) copy without override."
+  },
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "paused": ["task/project business", "iOS A6"],
+  "pendingEnvironment": [
+    "API26 system services unavailable",
+    "API37 ADB settings read unavailable"
+  ],
+  "nativeEvidence": "fourth-stage-native.json",
+  "newMainIntegrated": "a9c519a9403b329e0603883854ac9af714a093fa",
+  "viewportRecheck": "fourth-stage-viewport.json",
+  "pullRequest": 49,
+  "viewportFinal": "fourth-stage-viewport-complete.json"
+}

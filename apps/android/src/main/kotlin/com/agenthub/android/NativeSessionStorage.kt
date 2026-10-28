@@ -120,6 +120,20 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         require(source.length() in 29..(maximumBytes+65569L))
         return decodeRecord(source.readBytes(),expectedName)
     }
+    /** Narrow migration audit: reject pending files before any AtomicFile read/recovery. */
+    internal fun migrationReadTextRecords(names: Set<String>): Map<String,String> = ioLock.withLock {
+        checkMigrationAccess();require(names.size in 1..16&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
+        fun exists(file: File)=java.nio.file.Files.exists(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)
+        fun clean(file: File) {
+            require(!exists(File(file.path+".bak"))&&!exists(File(file.path+".new"))) {"Pending migration audit record; originals preserved"}
+            if(exists(file))require(file.isFile&&file.canonicalFile==File(file.parentFile.canonicalFile,file.name))
+        }
+        clean(atomic(root,migrationPointerName).baseFile)
+        requireWritable();val folder=dataRoot()
+        val sources=names.associateWith {name->atomic(folder,name).baseFile}
+        sources.values.forEach(::clean)
+        sources.mapNotNull {(name,file)->if(exists(file))name to readMigrationTextFile(file,name).second else null}.toMap()
+    }
     /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
      * Presence is audited without opening/recovering files or borrowing OS callback authority. */
     internal fun migrationPendingChildScopes(): Set<String> = ioLock.withLock {

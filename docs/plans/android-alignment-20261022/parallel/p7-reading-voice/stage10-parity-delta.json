@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "10-content-color-fixture",
+  "baseCommit": "29d5f52d62ed017870301c9532b42b65779276af",
+  "featureIds": ["F56", "F64"],
+  "commonAssertions": [
+    "Both provider labels and the primary service title use production content color and readable contrast in all four language/theme cases",
+    "Actual owned-window pixels contain the expected foreground inside each full visible Text rectangle",
+    "Semantic/layout JUnit passes and independent visual observations remain separate acceptance evidence"
+  ],
+  "bothPlatforms": {
+    "ios": "unchanged; no new visual acceptance claimed",
+    "android": "test Surface now reproduces the real sheet content-color provider; production UI unchanged; new pixel/color gates compiled, native rerun pending"
+  },
+  "classification": "fixture theme environment and missing visual assertion; original viewport images did not render NativeSheetHost",
+  "priorNative": {
+    "combinedSourceSha256": "cdd940392d7aa25fa5bca3d1a0b80816923aa3e909b1afeec80ff2afd6b38aa4",
+    "appSha256": "3ca2d635225728c6120a2f82fb0318e48751855d23ad6a50ccc0fe04b2522922",
+    "runnerSha256": "6e6a1a67524f026a82dc193d1a97b66c15976dc7192b98970e36263a6edcc70b",
+    "junit": "3 passed; 17 PNGs and 8 layout records",
+    "visual": "dark service/provider primary text not visible; full visual acceptance remains failed/pending",
+    "reusedAsCurrentRevisionPass": false
+  },
+  "implementation": "test Surface, actual Text color/contrast/bounds and PixelCopy foreground gates; no product theme change",
+  "verification": "new-source App/runner compilation only; coordinator native/visual review pending",
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceViewportMatrixTest.kt",
+      "sha256": "7dc5933cb5e8345ae27f7291dc3fd1f690bcfa386c18a3ae4af8bfb4ed356317"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage10-content-color.md",
+  "remaining": [
+    "coordinator frozen-source full-matrix native run and independent image review",
+    "actual native sheet/system inset coverage remains separate",
+    "production durable storage and real audio/Host/model DEV gates remain separately owned"
+  ]
+}

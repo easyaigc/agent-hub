@@ -1,5 +1,11 @@
 # 应用协议与领域契约
 
+2026-10-29 Android 通知恢复 v2 源码已接到可选前台 monitor：完整原意图先落盘、未知只查原 ID，独立关闭与显式缺口接受保持各自收据，待 Host 确认事件不推进游标。JVM 辅助与原生编译分列；共享 UI／迁移入口和真实 DEV 尚待集成负责人验收。iOS v1 与供应商承诺不变，见[Android 候选与交接](plans/android-alignment-20261022/parallel/p9-notifications/recovery-v2-android.md)。
+
+## 可选通知恢复 v2 源码候选（2026-10-28）
+
+新增封闭契约 `notification-recovery-v2`，独立于原通知 v1 与 Codex JSON-RPC。固定 `/v1/notifications/recovery-v2/capabilities`、`operations`（POST 提交／GET 原 ID 查询）、`feed`；现有鉴权与完整目标校验保持。v2 意图包含原 ID、device／target／真实公钥／完整偏好／订阅代次和规范 JSON 摘要，Host 先落盘再应用，旧 unknown 只查原记录。缺席设备撤销持久封住迟到旧注册；分页有稳定 epoch、连续序号、高水位和明确缺口，复位另有完整意图与缺口接受记录。v1/iOS wire 不变；Android v2 与真实场景仍待后续接线验收，无供应商投递承诺。详见[源码与复位边界](plans/android-alignment-20261022/parallel/p9-notifications/recovery-v2-server.md)。
+
 ## Host Key 首次授权
 
 实现、辅助检查、真实桌面与实体手机结果见[首次授权验收](codex-host-key-authorization.md)。

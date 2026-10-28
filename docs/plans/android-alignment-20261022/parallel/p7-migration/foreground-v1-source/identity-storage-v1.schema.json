@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Installation-local Codex notification X25519 identity v1",
+  "description": "Private authenticated NativeSessionStorage only, maximum 2048 UTF-8 bytes. Production decoder verifies canonical raw base64 and derives matching public key. Never export/import or log the private record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "deviceId", "journalBound", "publicKey", "privateKey"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "deviceId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,128}$",
+      "not": {
+        "enum": ["__proto__", "prototype", "constructor"]
+      }
+    },
+    "journalBound": {
+      "type": "boolean"
+    },
+    "publicKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{43}=$"
+    },
+    "privateKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{43}=$"
+    }
+  }
+}

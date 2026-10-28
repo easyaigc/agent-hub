@@ -17,7 +17,8 @@ internal class NativeChatNotificationPresentationFence {
     }
 }
 internal data class NativeChatNotificationMonitorReport(val state: String, val target: NativeChatNoticeTarget,
-    val operationId: String? = null, val cursor: String? = null, val unconfirmedEvents: Int = 0)
+    val operationId: String? = null, val cursor: String? = null, val unconfirmedEvents: Int = 0,
+    val waitingEvents: Int = 0, val unconfirmedOperations: Int = 0, val gap: NativeChatRecoveryGapOffer? = null)
 
 /** One foreground saved-target worker. No background service, token/provider readiness or network failover. */
 internal class NativeChatNotificationForegroundMonitor(private val scope: CoroutineScope, private val storage: NativeSessionStorage,
@@ -25,6 +26,9 @@ internal class NativeChatNotificationForegroundMonitor(private val scope: Corout
     private val commands: NativeChatNotificationCommands, private val delivery: NativeChatNotificationForegroundPort,
     private val now: () -> Long = System::currentTimeMillis) {
     private val mutex = Mutex()
+    private val recovery = (commands as? NativeChatNotificationRecoveryCommands)?.let {
+        NativeChatNotificationRecoveryController(storage, notices, journal, it, delivery, now)
+    }
     private val generation = AtomicLong()
     private var job: Job? = null
     private val reportValue = MutableStateFlow<NativeChatNotificationMonitorReport?>(null)
@@ -56,6 +60,8 @@ internal class NativeChatNotificationForegroundMonitor(private val scope: Corout
         fun result(state: String, operation: String? = null, cursor: String? = null) = NativeChatNotificationMonitorReport(
             if (current()) state else "stale-target-or-generation", snapshot.target, operation, cursor)
         if (!current()) return result("stale-target-or-generation")
+        if (recovery == null && withContext(Dispatchers.IO) { NativeChatNotificationRecoveryStore(storage).exists() }) return result("recovery-unavailable")
+        recovery?.synchronize(snapshot, current)?.let { return it }
         val preferences = withContext(Dispatchers.IO) { notices.preferences() }
         if (!current()) return result("stale-target-or-generation")
         val enabled = preferences.enabled && snapshot.target.hostId !in preferences.excludedHosts
@@ -150,6 +156,8 @@ internal class NativeChatNotificationForegroundMonitor(private val scope: Corout
     /** Explicit parent-owned revocation with the original retained credentials. Unknown register is FG02, not proof of absence. */
     suspend fun revoke(snapshot: NativeChatNotificationSnapshot, fence: NativeChatNotificationPresentationFence.Lease): NativeChatNotificationMonitorReport = mutex.withLock {
         delivery.cancel(snapshot.target)
+        if (withContext(Dispatchers.IO) { NativeChatNotificationRecoveryStore(storage).exists() })
+            return@withLock NativeChatNotificationMonitorReport("v2-explicit-disable-required", snapshot.target)
         val identity = NativeChatNotificationIdentity.load(storage)
         var saved = withContext(Dispatchers.IO) { journal.view(identity, snapshot.target) }
         saved.unknown?.let {
@@ -166,5 +174,18 @@ internal class NativeChatNotificationForegroundMonitor(private val scope: Corout
         val status = commands.unregister(snapshot, identity.deviceId)
         withContext(NonCancellable + Dispatchers.IO) { journal.confirm(identity, snapshot.target, operation, status) }
         NativeChatNotificationMonitorReport(if (!fence.current()) "stale-target-or-generation" else if (status.hasBinding) "revocation-remote-pending" else "disabled", snapshot.target, operation.id)
+    }
+    /** Parent passes the persisted settings revision and one stable UUID per human action. */
+    suspend fun explicitDisable(snapshot: NativeChatNotificationSnapshot, revision: String, actionId: String,
+        fence: NativeChatNotificationPresentationFence.Lease): NativeChatNotificationMonitorReport = mutex.withLock {
+        val configuration = notices.configurationLease(); val current = { fence.current() && configuration() }
+        val value = requireNotNull(recovery).explicitDisable(snapshot, revision, actionId, current)
+        if (current()) value else value.copy(state = "stale-target-or-generation")
+    }
+    suspend fun acceptGap(snapshot: NativeChatNotificationSnapshot, offer: NativeChatRecoveryGapOffer, actionId: String,
+        fence: NativeChatNotificationPresentationFence.Lease): NativeChatNotificationMonitorReport = mutex.withLock {
+        val configuration = notices.configurationLease(); val current = { fence.current() && configuration() }
+        val value = requireNotNull(recovery).acceptGap(snapshot, offer, actionId, current)
+        if (current()) value else value.copy(state = "stale-target-or-generation")
     }
 }

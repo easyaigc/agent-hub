@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "id": "android-p8-device-authorization-boundaries-20261028",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "10b2060c943b5891225d0e32800769f98a81b90d",
+  "features": ["F07", "F09", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationBoundaryTest.kt": "bf1945dbe9a917edaa7e7c9c3580f3a746f76e55309607169e66dc5a0574cd0d"
+  },
+  "productionFilesChanged": [],
+  "summary": "Prepare 18 bounded native device-authorization methods and one explicit revoke/late-refresh regression using production EWDAP v2-path client, isolated encrypted storage and AndroidKeystore DPoP. Compile only; production and prior checkpoints unchanged.",
+  "commonAssertions": {
+    "F07": "Claim original device and grant using desktop-confirmed authorization; synthetic issuer does not prove real desktop approval",
+    "F09": "Keystore DPoP binds URL/method/token/body/key and ECDH-ES delivery binds original operation and complete target",
+    "F43": "Persist original claim/refresh/revoke ID and bytes before first attempt; explicit resume preserves intent",
+    "F44": "Unknown authorization operations retain original identity/token/body; late saves cannot supersede confirmed revocation",
+    "F46": "Independent storage/device/target/signer contexts stay isolated; same-client concurrency shares refresh"
+  },
+  "dualPlatformImpact": {
+    "android": "19 methods compiled, none executed. Missing revoke-vs-refresh save fence identified by source review; regression remains explicit",
+    "ios": "Read-only actor/Keychain/Secure Enclave comparison; no isolated native run, actor has no revoke method in inspected file"
+  },
+  "uiCopyDelta": [],
+  "verification": {
+    "nativeCompile": "passed",
+    "nativeExecution": "not-performed",
+    "nodePureTests": "7 passed; no listeners",
+    "sourceFinding": "unverified live late-refresh after confirmed revoke",
+    "pnpmCheck": "pending central delta integration"
+  },
+  "integratorAction": "Register exact hashes centrally; rebuild combined candidate; run 18 core and one regression separately under exact device/package/time leases and 240s outer deadline. Preserve raw failure and prior results; review production fix separately. A5 remains open and A6 paused.",
+  "integrationChangeRecord": {
+    "id": "android-p8-device-authorization-boundaries-20261028",
+    "baseCommit": "10b2060c943b5891225d0e32800769f98a81b90d",
+    "features": ["F07", "F09", "F43", "F44", "F46"],
+    "summary": "Prepare 18 bounded native device-authorization methods and one explicit revoke/late-refresh regression using production EWDAP v2-path client, isolated encrypted storage and AndroidKeystore DPoP. Compile only; production and prior checkpoints unchanged.",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationBoundaryTest.kt": "bf1945dbe9a917edaa7e7c9c3580f3a746f76e55309607169e66dc5a0574cd0d"
+    }
+  }
+}

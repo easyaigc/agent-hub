@@ -64,22 +64,82 @@ internal class NativeTimelineCache {
 class MobileSession(private val storage: NativeSessionStorage? = null, reader: HostReads? = null, commandProvider: CodexCommands? = null) {
     var voice by mutableStateOf<VoiceInputController?>(null)
         private set
+    internal var questionVoice by mutableStateOf<VoiceInputController?>(null);private set
+    internal var questionVoiceKey by mutableStateOf<String?>(null);private set
+    private var configuredVoiceDiscardPort: NativeVoiceDiscardPort?=null
+    internal val voiceSettings by lazy { NativeVoiceSettings(tasks) }
     fun configureVoice(context: android.content.Context) {
+        voiceSettings.inspector={ inspectNativeSystemVoice(context.applicationContext) }
         if(voice==null && storage!=null) voice=VoiceInputController(context.applicationContext,VoiceRecordingStore(context.applicationContext,storage)) { providers }
+        if(questionVoice==null && storage!=null) questionVoice=VoiceInputController(context.applicationContext,VoiceRecordingStore(context.applicationContext,storage)) { providers }
+        configuredVoiceDiscardPort?.let { port ->
+            voice?.let { if(it.discardPort==null)it.discardPort=port };questionVoice?.let { if(it.discardPort==null)it.discardPort=port }
+        }
     }
-    val canUseVoice get()=canCompose && foreground && !selectedClient.isDemo && transferStatus==null && !importing
+    /** Storage owner supplies a durable local terminal writer; no Schema or remote cancellation here. */
+    internal fun bindVoiceDiscardIfMissing(create: ()->NativeVoiceDiscardPort): Boolean {
+        if(storage==null || configuredVoiceDiscardPort!=null)return false
+        val port=create();configuredVoiceDiscardPort=port
+        voice?.let { if(it.discardPort==null)it.discardPort=port };questionVoice?.let { if(it.discardPort==null)it.discardPort=port }
+        return true
+    }
+    /** Parent supplies the storage-owner adapter. Retained Activity configure calls never create it twice. */
+    internal fun bindVoicePreferencesIfMissing(create: ()->NativeVoicePreferenceStore): Boolean {
+        if(storage==null)return false
+        val attached=voiceSettings.bindIfMissing(localReady && foreground,create)
+        if(localReady && foreground)voiceSettings.resumePreferences()
+        return attached
+    }
+    internal fun bindStoredVoicePreferencesIfReady(): Boolean {
+        val currentStorage=storage ?: return false
+        return bindVoicePreferencesIfMissing { NativeEncryptedVoicePreferenceStore(currentStorage) }
+    }
+    val canUseVoice get()=canCompose && foreground && !selectedClient.isDemo && transferStatus==null && !importing && questionVoice?.active!=true
     fun beginVoice() {
         val controller=voice ?: return
         if(!canUseVoice || controller.active) return
-        val consent=requireSharing("codex-dictation") ?: return
+        val provider=voiceSettings.defaultProvider
+        val consent=if(provider==VoiceInputController.Provider.DESKTOP)requireSharing("codex-dictation") ?: return
+            else AISharingScope(selectedClient.scope ?: return,"codex-dictation")
         val original=VoiceDraft(selectedClient,consent,targetKey,version(targetKey),"voice-v1:"+voiceSHA((consent.key+"\u0000"+targetKey).toByteArray(Charsets.UTF_8)),selectedThread.takeIf { it.isNotEmpty() },text)
-        controller.start(original,allowed={ foreground && targetKey==original.key && version(original.key)==original.version &&
-            sameScope(selectedClient.scope,original.client.scope) && selectedClient.codexDirect?.fingerprint==original.certificate && aiSharing.permits(consent) },apply={ draft,transcript->
-            if(foreground && targetKey==draft.key && version(draft.key)==draft.version && aiSharing.permits(draft.scope)) {
+        val revision=revisions[selectedClient.id] ?: 0
+        fun current()=foreground && targetKey==original.key && version(original.key)==original.version &&
+            (revisions[original.client.id] ?: 0)==revision && selectedClient.id==original.client.id &&
+            sameScope(selectedClient.scope,original.client.scope) && selectedClient.codexDirect?.fingerprint==original.certificate &&
+            selectedClient.endpoint==original.client.endpoint && selectedClient.readerId==original.client.readerId && selectedClient.agentConnection==original.client.agentConnection &&
+            (provider==VoiceInputController.Provider.SYSTEM || aiSharing.permits(consent))
+        controller.start(original,allowed=::current,apply={ draft,transcript->
+            if(current()) {
                 val separator=if(draft.text.isEmpty() || draft.text.last().isWhitespace()) "" else "\n"
                 text=draft.text+separator+transcript;true
             } else false
-        })
+        },provider=provider)
+    }
+    internal fun questionVoiceIdentity(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination)=
+        destination.key+":question:"+voiceSHA(JSONArray(listOf(approval.threadId,approval.turnId,approval.id,question.id)).toString().toByteArray(Charsets.UTF_8))
+    internal fun canBeginQuestionVoice(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination)=
+        localReady && foreground && !selectedClient.isDemo && approval.kind=="question" && question.custom && !question.secret && question in approval.questions &&
+            canEditApproval(approval,destination) && voice?.active!=true && questionVoice?.active==false
+    internal fun beginQuestionVoice(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination,
+        value: ()->String,change: (String)->Unit) {
+        val controller=questionVoice ?: return
+        if(!canBeginQuestionVoice(approval,question,destination))return
+        val provider=voiceSettings.defaultProvider
+        val consent=if(provider==VoiceInputController.Provider.DESKTOP)requireSharing("codex-dictation") ?: return
+            else AISharingScope(selectedClient.scope ?: return,"codex-dictation")
+        val client=selectedClient;val revision=revisions[client.id] ?: 0;val key=questionVoiceIdentity(approval,question,destination);val text=value()
+        val original=VoiceDraft(client,consent,key,voiceSHA(text.toByteArray(Charsets.UTF_8)),"voice-v1:"+voiceSHA((consent.key+"\u0000"+key).toByteArray(Charsets.UTF_8)),approval.threadId,text)
+        fun current()=localReady && foreground && questionVoiceKey==key && canEditApproval(approval,destination) &&
+            (revisions[client.id] ?: 0)==revision && selectedClient.id==client.id && sameScope(selectedClient.scope,client.scope) &&
+            selectedClient.endpoint==client.endpoint && selectedClient.readerId==client.readerId && selectedClient.codexDirect?.fingerprint==original.certificate &&
+            selectedClient.agentConnection==client.agentConnection && value()==text && (provider==VoiceInputController.Provider.SYSTEM || aiSharing.permits(consent))
+        questionVoiceKey=key
+        controller.start(original,::current,{ _,transcript ->
+            if(!current())false else { val separator=if(text.isEmpty() || text.last().isWhitespace())"" else "\n";change(text+separator+transcript);true }
+        },provider=provider)
+    }
+    internal fun endQuestionVoice(key: String) {
+        if(questionVoiceKey==key) { questionVoice?.cancel();questionVoiceKey=null }
     }
     val aiSharing=AISharingConsent(storage)
     var aiSharingRequest by mutableStateOf<AISharingRequest?>(null)
@@ -466,7 +526,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var foregroundJob: Job? = null
     fun enterForeground() {
         tasks.launch { easyWorkLogin?.foreground() }
-        foreground=true;phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
+        foreground=true;if(localReady)voiceSettings.resumePreferences();phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
         realClients.toList().forEach { replaceClient(it.copy(online=false,connectionPhase=ConnectionPhase.CONNECTING)) }
         if(localReady) { refresh(); loadHistory() }
         foregroundJob?.cancel()
@@ -501,7 +561,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -1057,7 +1117,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     fun select(client: MobileClient)=selectClient(client,refreshAutomatically=true)
     private fun selectClient(client: MobileClient,refreshAutomatically: Boolean) {
         releasePhoneReadingProof()
-        voice?.suspendRecording();aiSharingRequest=null
+        voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         clientNavigationRevision++;selectionRevision++;networkRecoveryJob?.cancel();networkRecoveryJob=null; workspaceJob?.cancel(); historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
         selectedClient = realClients.firstOrNull { it.id==client.id && sameScope(it.scope,client.scope) } ?: client; search = ""; error = null; synchronizeReadingPresentation()
         persistMetadata()
@@ -1075,7 +1135,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         loadModels()
     }
     fun selectThread(thread: MobileThread) {
-        voice?.suspendRecording();aiSharingRequest=null
+        voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         require(thread.hostId == selectedClient.id && threads.any { it.id == thread.id })
         if(selectedThread==thread.id) {
             // Reopening the current chat is presentation navigation. Keep its
@@ -1113,7 +1173,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     var scrollToLatestRevision by mutableLongStateOf(0)
         private set
     fun newChat(projectId: String? = null) {
-        voice?.suspendRecording();aiSharingRequest=null
+        voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         if(!selectedClient.isDemo) {
             if(!canCreateThread || projectId==null && !canCreateProjectless || projectId!=null && projects.none { it.id==projectId }) return
             selectionRevision++; historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel(); selectedThread=""; newProjects[clientKey]=projectId
@@ -2221,7 +2281,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     fun restore() {
         val storage=storage ?: return
         if(restoreJob?.isActive==true) return
-        stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
+        voiceSettings.pausePreferences();voice?.suspendRecording();questionVoice?.suspendRecording();stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
         phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
         restoring=true;localRecoveryAllowsAttachmentStaging=false
         val generation=storage.beginRestore()
@@ -2317,11 +2377,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 localRecoveryAllowsAttachmentStaging=authenticatedParentRead&&(failure is org.json.JSONException||failure is IllegalArgumentException)
                 localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
             }
-            finally { restoring=false;synchronizeReadingPresentation();reconcilePhoneReading() }
+            finally { restoring=false;synchronizeReadingPresentation();reconcilePhoneReading();if(localReady && foreground)voiceSettings.resumePreferences() }
             if (localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
         }
     }
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
+        voiceSettings.pausePreferences();voice?.cancel();questionVoice?.cancel();questionVoiceKey=null
         stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
         aiSharing.clearAcceptance();aiSharingRequest=null

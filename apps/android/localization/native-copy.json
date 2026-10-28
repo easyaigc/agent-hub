@@ -715,6 +715,241 @@
       "key": "部分通知的处理结果待确认，不会重复提醒。",
       "en": "Some notification results are unconfirmed. They will not alert again.",
       "zhHans": "部分通知的处理结果待确认，不会重复提醒。"
+    },
+    {
+      "key": "优先使用所选方式。手机系统语音服务可能需要联网；不会自动改用其他服务。",
+      "zhHans": "优先使用所选方式。手机系统语音服务可能需要联网；不会自动改用其他服务。",
+      "en": "Use the selected method first. The phone speech service may use the network; another service is never selected automatically."
+    },
+    {
+      "key": "无法保存语音设置，本次选择仍生效。",
+      "zhHans": "无法保存语音设置，本次选择仍生效。",
+      "en": "The voice setting could not be saved. Your selection still applies for this session."
+    },
+    {
+      "key": "此选择仅在本次打开期间生效。",
+      "zhHans": "此选择仅在本次打开期间生效。",
+      "en": "This selection applies only while this app session remains open."
+    },
+    {
+      "key": "手机语音能力",
+      "zhHans": "手机语音能力",
+      "en": "Phone speech capabilities"
+    },
+    {
+      "key": "已发现手机端识别服务",
+      "zhHans": "已发现手机端识别服务",
+      "en": "On-device speech service found"
+    },
+    {
+      "key": "已发现系统语音服务，可能需要联网",
+      "zhHans": "已发现系统语音服务，可能需要联网",
+      "en": "System speech service found; it may use the network"
+    },
+    {
+      "key": "未发现可用的系统语音服务",
+      "zhHans": "未发现可用的系统语音服务",
+      "en": "No available speech service found"
+    },
+    {
+      "key": "系统语音服务能力尚未确认",
+      "zhHans": "系统语音服务能力尚未确认",
+      "en": "System speech capabilities are unconfirmed"
+    },
+    {
+      "key": "当前语言的手机端模型已安装",
+      "zhHans": "当前语言的手机端模型已安装",
+      "en": "The on-device model for this language is installed"
+    },
+    {
+      "key": "当前语言需要先在系统中下载",
+      "zhHans": "当前语言需要先在系统中下载",
+      "en": "Download this language in system settings first"
+    },
+    {
+      "key": "当前语言由联网服务提供",
+      "zhHans": "当前语言由联网服务提供",
+      "en": "This language uses an online service"
+    },
+    {
+      "key": "系统未报告支持当前语言",
+      "zhHans": "系统未报告支持当前语言",
+      "en": "The service did not report support for this language"
+    },
+    {
+      "key": "当前语言支持情况尚未确认",
+      "zhHans": "当前语言支持情况尚未确认",
+      "en": "Support for this language is unconfirmed"
+    },
+    {
+      "key": "刷新能力",
+      "zhHans": "刷新能力",
+      "en": "Refresh capabilities"
+    },
+    {
+      "key": "可在系统设置中检查语音服务和语言支持。能力检查不会打开麦克风或下载模型。",
+      "zhHans": "可在系统设置中检查语音服务和语言支持。能力检查不会打开麦克风或下载模型。",
+      "en": "Check speech services and language support in system settings. Capability checks do not open the microphone or download models."
+    },
+    {
+      "key": "手机端原录音转写暂不可用。电脑转写失败后，可保留原录音并重新录音。",
+      "zhHans": "手机端原录音转写暂不可用。电脑转写失败后，可保留原录音并重新录音。",
+      "en": "Transcribing the saved recording on this phone is unavailable. If computer transcription fails, keep the original and record again."
+    },
+    {
+      "key": "手机系统语音服务可能需要联网。",
+      "zhHans": "手机系统语音服务可能需要联网。",
+      "en": "The phone speech service may use the network."
+    },
+    {
+      "key": "填入已识别文字",
+      "zhHans": "填入已识别文字",
+      "en": "Use recognized text"
+    },
+    {
+      "key": "改用手机重新录音",
+      "zhHans": "改用手机重新录音",
+      "en": "Record again using phone speech"
+    },
+    {
+      "key": "系统听写",
+      "en": "System dictation",
+      "zhHans": "系统听写"
+    },
+    {
+      "key": "前台通知原始操作仍需原安装身份与授权，资料已保留；当前迁移版本不能恢复或重放。",
+      "en": "Original foreground notification operations still require the original installation identity and authorization. The data is preserved; this migration version cannot recover or replay them.",
+      "zhHans": "前台通知原始操作仍需原安装身份与授权，资料已保留；当前迁移版本不能恢复或重放。"
+    },
+    {
+      "key": "正在读取语音设置…",
+      "zhHans": "正在读取语音设置…",
+      "en": "Loading voice settings…"
+    },
+    {
+      "key": "正在保存语音设置…",
+      "zhHans": "正在保存语音设置…",
+      "en": "Saving voice settings…"
+    },
+    {
+      "key": "无法读取语音设置，本次选择仍生效。",
+      "zhHans": "无法读取语音设置，本次选择仍生效。",
+      "en": "Voice settings could not be loaded. Your selection still applies for this session."
+    },
+    {
+      "key": "恢复语音设置",
+      "zhHans": "恢复语音设置",
+      "en": "Recover voice settings"
+    },
+    {
+      "key": "刷新现有通知",
+      "en": "Refresh current notifications",
+      "zhHans": "刷新现有通知"
+    },
+    {
+      "key": "前台通知已同步，后台推送尚未就绪。",
+      "en": "Foreground notifications are synchronized. Background push is not ready yet.",
+      "zhHans": "前台通知已同步，后台推送尚未就绪。"
+    },
+    {
+      "key": "已丢失的历史不会恢复。确认后将核对电脑仍保留的通知，不会重新提交对话操作。",
+      "en": "Lost history will not be restored. After confirmation, notifications still retained by the computer will be checked. Conversation actions will not be submitted again.",
+      "zhHans": "已丢失的历史不会恢复。确认后将核对电脑仍保留的通知，不会重新提交对话操作。"
+    },
+    {
+      "key": "暂时无法同步通知，原记录已保留。",
+      "en": "Notifications cannot be synchronized right now. The original records are preserved.",
+      "zhHans": "暂时无法同步通知，原记录已保留。"
+    },
+    {
+      "key": "正在等待电脑确认待处理事项，恢复后继续核对。",
+      "en": "Waiting for the computer to confirm pending items. Checks will continue when it recovers.",
+      "zhHans": "正在等待电脑确认待处理事项，恢复后继续核对。"
+    },
+    {
+      "key": "此前仍有通知设置结果待确认。",
+      "en": "Some earlier notification changes are still unconfirmed.",
+      "zhHans": "此前仍有通知设置结果待确认。"
+    },
+    {
+      "key": "电脑未接受本次通知设置，请核对连接和通知设置。",
+      "en": "The computer did not accept this notification change. Check the connection and notification settings.",
+      "zhHans": "电脑未接受本次通知设置，请核对连接和通知设置。"
+    },
+    {
+      "key": "电脑的通知资料已更换，请先确认关闭，再重新开启通知。",
+      "en": "The computer's notification data has changed. Confirm turning notifications off before turning them on again.",
+      "zhHans": "电脑的通知资料已更换，请先确认关闭，再重新开启通知。"
+    },
+    {
+      "key": "确认关闭这台电脑的通知",
+      "en": "Confirm turning off notifications for this computer",
+      "zhHans": "确认关闭这台电脑的通知"
+    },
+    {
+      "key": "确认刷新",
+      "en": "Confirm refresh",
+      "zhHans": "确认刷新"
+    },
+    {
+      "key": "请使用原连接核对通知设置。",
+      "en": "Use the original connection to check notification settings.",
+      "zhHans": "请使用原连接核对通知设置。"
+    },
+    {
+      "key": "这台电脑的通知已关闭。",
+      "en": "Notifications for this computer are turned off.",
+      "zhHans": "这台电脑的通知已关闭。"
+    },
+    {
+      "key": "通知设置结果待确认，正在核对原操作。",
+      "en": "The notification change is unconfirmed. Checking the original request.",
+      "zhHans": "通知设置结果待确认，正在核对原操作。"
+    },
+    {
+      "key": "部分通知历史已不可恢复，需要确认后刷新现有通知。",
+      "en": "Some notification history cannot be recovered. Confirm refreshing the current notifications.",
+      "zhHans": "部分通知历史已不可恢复，需要确认后刷新现有通知。"
+    },
+    {
+      "key": "部分通知的显示结果待确认，不会重复显示。",
+      "en": "Some notification display results are unconfirmed. They will not be displayed again.",
+      "zhHans": "部分通知的显示结果待确认，不会重复显示。"
+    },
+    {
+      "key": "正在结束语音输入…",
+      "zhHans": "正在结束语音输入…",
+      "en": "Ending voice input…"
+    },
+    {
+      "key": "重试丢弃",
+      "zhHans": "重试丢弃",
+      "en": "Retry discard"
+    },
+    {
+      "key": "设备授权撤销结果待确认，请核对电脑状态",
+      "en": "Device authorization revocation is awaiting confirmation. Check the computer.",
+      "zhHans": "设备授权撤销结果待确认，请核对电脑状态"
+    },
+    {
+      "key": "设备授权保存记录无效，原记录已保留",
+      "en": "The saved device authorization record is invalid. The original record is preserved.",
+      "zhHans": "设备授权保存记录无效，原记录已保留"
+    },
+    {
+      "key": "原设备授权刷新已被新的状态替代，原记录已保留",
+      "en": "A newer state has replaced the original authorization refresh. The original record is preserved.",
+      "zhHans": "原设备授权刷新已被新的状态替代，原记录已保留"
+    },
+    {
+      "key": "设备授权已更新，请重新核对原操作",
+      "en": "Device authorization has changed. Check the original operation again.",
+      "zhHans": "设备授权已更新，请重新核对原操作"
+    },
+    {
+      "key": "设备授权记录目标已变化，原记录已保留",
+      "en": "The target of the device authorization record has changed. The original record is preserved.",
+      "zhHans": "设备授权记录目标已变化，原记录已保留"
     }
   ]
 }

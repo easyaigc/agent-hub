@@ -41,6 +41,28 @@ internal class NativeChatNotificationSnapshot(client: MobileClient, credential: 
             URLEncoder.encode(it.key, "UTF-8") + "=" + URLEncoder.encode(it.value, "UTF-8")
         }).toURL()
     }
+    internal fun recoveryUrl(call: NativeChatRecoveryCall, deviceId: String, original: NativeChatRecoveryIntent? = null,
+        page: NativeChatRecoveryQuery? = null): java.net.URL {
+        NativeChatNotificationWire.device(deviceId)
+        val fields = linkedMapOf("hostId" to target.hostId, "target" to NativeChatNotificationCodec.target(target).toString(), "deviceId" to deviceId)
+        when (call) {
+            NativeChatRecoveryCall.CAPABILITIES -> require(original == null && page == null)
+            NativeChatRecoveryCall.SUBMIT, NativeChatRecoveryCall.QUERY -> {
+                require(original != null && original.target == target && original.deviceId == deviceId && page == null)
+                if (call == NativeChatRecoveryCall.QUERY) { fields["epoch"] = original.epoch; fields["operationId"] = original.operationId }
+            }
+            NativeChatRecoveryCall.FEED -> {
+                require(original == null && page != null && page.deviceId == deviceId && page.generation in 1..9_007_199_254_740_991L && page.after in 0..9_007_199_254_740_991L)
+                NativeChatNotificationWire.uuid(page.epoch)
+                fields["epoch"] = page.epoch; fields["generation"] = page.generation.toString(); fields["after"] = page.after.toString()
+                page.through?.let { require(it in page.after..9_007_199_254_740_991L); fields["through"] = it.toString() }
+                page.resetId?.let { fields["resetId"] = NativeChatNotificationWire.uuid(it) }
+            }
+        }
+        return URI(endpoint + "/v1/notifications/recovery-v2/" + call.route + "?" + fields.entries.joinToString("&") {
+            URLEncoder.encode(it.key, "UTF-8") + "=" + URLEncoder.encode(it.value, "UTF-8")
+        }).toURL()
+    }
     override fun toString() = "NativeChatNotificationSnapshot(redacted)"
 }
 internal enum class NativeChatNotificationOperation(val route: String, val post: Boolean) {
@@ -55,7 +77,8 @@ internal interface NativeChatNotificationCommands {
     suspend fun events(snapshot: NativeChatNotificationSnapshot, deviceId: String, after: String): NativeChatNotificationFeed
 }
 /** Exactly one HTTP attempt. Unknown mutation recovery is owned by the durable foreground store. */
-internal class NativeChatNotificationHttp : NativeChatNotificationCommands {
+internal class NativeChatNotificationHttp : NativeChatNotificationCommands,
+    NativeChatNotificationRecoveryCommands by NativeChatNotificationRecoveryHttp() {
     companion object { private val executor = Executors.newFixedThreadPool(2) }
     private suspend fun request(snapshot: NativeChatNotificationSnapshot, operation: NativeChatNotificationOperation,
         deviceId: String, body: JSONObject? = null, after: String = ""): JSONObject {

@@ -12,14 +12,15 @@ internal class NativeMigrationActivation(private val context: Context,private va
         // The authoritative Vault also covers pairing committed before an ordinary metadata snapshot.
         val metadata=storage.metadata()
         if(metadata?.getJSONArray("clients")?.length()?.let{it>0}==true||CodexConnectionVault(storage).clients().isNotEmpty())throw ExistingInstallation()
+        val localRecords=NativeMigrationForeground.preserveDestination(storage)+NativeVoicePreferenceRecord.preserveDestination(storage)
         val stream=NativeMigrationStreamCandidate(context,storage)
         if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
-            storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text),records.binary),receipt.recordCount,checkpoint)
+            storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text,localRecords),records.binary),receipt.recordCount,checkpoint)
         }
         val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
-        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text),records.binary),receipt.recordCount,checkpoint)
+        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords),records.binary),receipt.recordCount,checkpoint)
     }
-    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>): Map<String,String> {
+    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>): Map<String,String> {
         val records=original.toMutableMap();val metadata=JSONObject(records.getValue("metadata"))
         val clients=metadata.getJSONArray("clients").objects()
         val readers=clients.associate {row->val id=row.getString("id");id to UUID.nameUUIDFromBytes(("android-migration-reader-v1\u0000"+receipt.id+"\u0000"+id).toByteArray(Charsets.UTF_8)).toString()}
@@ -47,6 +48,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
         // OS/device callbacks are not accepted; generation-scoped children start empty.
         // Immutable intent/result strings stay exact.
         NativeMigrationDeviceState.prepare(receipt,original,records)
+        records.putAll(localRecords)
         return records
     }
 }

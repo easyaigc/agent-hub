@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettings.kt": "854f6cddf590ea87fff142d530d32f1c46858c23e453fe892beb5de4a745da2a",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "72ea2c98916b4fb4deee7d5045e2552d45064b75b4fbcc5a1aaf1b01495e4dba",
+    "apps/ios/Sources/VoiceInput.swift": "ee141ad79d9f28416cf7c117d0f81bfbbc67587d0823c394da39d0e2cfff9896",
+    "apps/ios/Sources/Models.swift": "71552f93b594644d0d78f1866d5736c355cda4e40862dc8ecc48fd2284e692bd",
+    "apps/ios/Sources/EncryptedMigration.swift": "e11791f76b82982daff58795635bd6f88ab6853541d2c5185f0f7dd773d3d45b",
+    "apps/ios/Sources/SessionStore.swift": "9f89b0ae1b280e8c69e4096062e0ef237508f51286139bafc1520eac021c0871"
+  },
+  "findings": {
+    "voicePort": "b2a4f589 NativeVoicePreferenceStore defines nullable load/suspend save only; NativeVoiceSettings owns late-load/revision/coalescing and one-bind lifecycle.",
+    "ios": "VoiceInput.swift UserDefaults default desktop/local; SavedSession/EncryptedMigration.Payload carry no voice default and restoreMigration does not change that key. Destination explicit voice choice is preserved.",
+    "noPlatformReplay": "Only desktop/system string stored; capabilities, permission, draft/target, original operations and recording state are separate existing owners."
+  },
+  "latestSourceCrossCheck": {
+    "commit": "d0c645354f284b3ccca350a26bb61a38976289c1",
+    "voicePreferenceEnumAndKeySame": true,
+    "discardScope": "separate n069-source-intake.json; pending voice-owner port, not implemented here"
+  }
+}

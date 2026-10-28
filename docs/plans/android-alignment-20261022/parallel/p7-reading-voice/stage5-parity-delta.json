@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "5-question-voice",
+  "baseCommit": "6a4c788f6612087ab2a8e2175f4f01d76a83eee7",
+  "featureIds": ["F56", "F64"],
+  "commonAssertions": [
+    "Ordinary/question voice share selected defaults and recovery semantics but cannot record concurrently",
+    "A non-secret current question can receive text without sending an answer or mutating the composer",
+    "Secret/wrong/replaced/background owners cannot capture or receive late voice text",
+    "Original unknown sealed audio and operation are never rewritten or replayed"
+  ],
+  "bothPlatforms": {
+    "ios": "actual QuestionAnswerField/shared VoiceInputControls reference read; unchanged",
+    "android": "question voice registration and shared native UI present; real/native gates open"
+  },
+  "implementation": "code-present; stage4 owner integration and acceptance remain",
+  "verification": "App/runner compile and host predicates are auxiliary; new three-method native UI fixture not run",
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeQuestionVoiceUiTest.kt",
+      "sha256": "cf8852478c36f79b2e4626fb3052ec4939b4ca419327de62daa89519db02b551"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "sha256": "b7e409678175de405ce9f057c202cf3d649cb4b597136f95c4f82a6f1f1ace21"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "sha256": "bb64d99c9b23d3e412bb03266bdf83cfd754f8bfd0986f6cfddbece8c700d8e6"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "2ccc4a0807f0e55169880850c5dacab22c12e4d54fd600b0cb61afb9a14d1be4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeQuestionVoice.kt",
+      "sha256": "e807900ee3fcd5d92bfb68b7bdd2aab2a3c38b19ac382837f293018fbe7bc598"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "sha256": "72ea2c98916b4fb4deee7d5045e2552d45064b75b4fbcc5a1aaf1b01495e4dba"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage5-question-voice.md",
+  "remaining": [
+    "parent-owned preference storage hook and Manifest query",
+    "central catalog/feature records and bilingual native windows",
+    "leased question/native/microphone/real Host/DEV",
+    "no guaranteed original-file phone transcription"
+  ]
+}

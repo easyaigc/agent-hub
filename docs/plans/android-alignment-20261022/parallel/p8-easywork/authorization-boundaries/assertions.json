@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "baseCommit": "10b2060c943b5891225d0e32800769f98a81b90d",
+  "wire": {
+    "pathPrefix": "/v2/remote-access",
+    "protocol": "EWDAP/1",
+    "registration": "Pairing claims POST carries device public keys; no standalone register RPC in inspected client"
+  },
+  "methods": [
+    {
+      "method": "registrationPersistsVerifiedGrantUsingActualKeystoreDpop",
+      "state": "claim-uninitialized-to-granted",
+      "assertion": "POST then original claim GET; persist verified encrypted grant and immutable claim receipt",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "lostClaimPostReplyResumesExactPersistedOperationWithFreshProof",
+      "state": "claim-post-unknown",
+      "assertion": "Persist exact registration body before POST; explicit resume uses same operation/body and fresh jti",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "savedPendingClaimResumesPollingWithoutAnotherRegistrationPost",
+      "state": "claim-poll-unknown",
+      "assertion": "Persist claimId/pending token before polling; recreated client continues only the same GET",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "rejectedClaimRemovesOnlyItsSyntheticPendingRecord",
+      "state": "claim-rejected",
+      "assertion": "Explicit rejected status removes only this pending key",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "explicitlyExpiredClaimRemovesItsSyntheticPendingRecord",
+      "state": "claim-expired",
+      "assertion": "Explicit expired status removes only this pending key",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "freshGrantAuthorizesActualV2RelayWithoutRefreshOrLegacyToken",
+      "state": "grant-fresh",
+      "assertion": "Production v2 Relay authorizes with actual DPoP and no legacy fallback or refresh",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "refreshRotationPersistsVerifiedGrantAndClearsOriginalIntent",
+      "state": "grant-access-expired",
+      "assertion": "Persist refresh intent before network; verify rotated grant and clear original pending intent",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "concurrentRequestsOnOneAuthorizationClientShareOneRefresh",
+      "state": "same-client-concurrent-refresh",
+      "assertion": "Four requests on one authorization instance share one rotation",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "lostRefreshReplyResumesOriginalTokenAndOperationAfterClientRecreation",
+      "state": "refresh-unknown",
+      "assertion": "Explicit resume after response loss reuses original operation/body/refresh token with fresh proof",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "cancelledRefreshKeepsIntentAndClosedLateReplyCannotOverwriteRecovery",
+      "state": "cancelled-refresh-late",
+      "assertion": "Close original socket before recovering same intent; releasing the closed old response leaves saved state unchanged",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "wrongRefreshTargetIsRefusedWithoutReplacingGrantOrOriginalIntent",
+      "state": "refresh-wrong-target",
+      "assertion": "Reject sealed wrong target without replacing old grant or original pending refresh",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "grantValidationRejectsChangedIdentityMetadataScopesAndTokens",
+      "state": "grant-invalid",
+      "assertion": "Reject changed target/key thumbprint/device/keyVersion/scopes/token format",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "expiredRefreshCredentialIsRefusedBeforeAnyNetworkRequest",
+      "state": "refresh-expired",
+      "assertion": "Reject expired refresh credential before any network submission",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "serverRevocationRefusalRetainsPendingIntentAndNeverDowngrades",
+      "state": "refresh-server-revoked",
+      "assertion": "Typed grant_revoked 403; preserve pending intent and refuse resource/legacy fallback",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "confirmedRevokeRemovesGrantAndRefusesFurtherAuthorization",
+      "state": "revoke-confirmed",
+      "assertion": "Delete original grant record and refuse later authorization locally",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "lostRevokeReplyResumesSameDeletionOperationWithFreshProof",
+      "state": "revoke-unknown",
+      "assertion": "Persist DELETE operation before submission; explicit resume uses identical intent and fresh jti",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "independentGrantRefreshesKeepDeviceTargetAndProofKeysIsolated",
+      "state": "separate-grants-concurrent",
+      "assertion": "Different devices, full targets, operation IDs, signer keys and storage stay isolated",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "offerParsingRejectsUntrustedRecipientDuplicateFieldsAndInvalidCode",
+      "state": "offer-refused",
+      "assertion": "Reject untrusted scanned origin, duplicate/unknown fields, fragment and invalid code before submission",
+      "status": "prepared-not-executed",
+      "sourceFinding": false
+    },
+    {
+      "method": "lateRefreshAfterConfirmedRevokeMustNotRestoreRemovedGrant",
+      "state": "revoke-vs-live-late-refresh",
+      "assertion": "Confirmed revoke fences still-active late refresh writes; source suggests missing fence",
+      "status": "prepared-not-executed",
+      "sourceFinding": true
+    }
+  ],
+  "persistence": "Fresh dedicated namespace / keyAlias; each new authorization client reopens native encrypted storage in same process. Not a process-death proof.",
+  "unknownPolicy": "Explicit caller resume resubmits the original named authorization operation with the same body/id/token and a new DPoP proof. No standalone authorization status query API; no business/model input is sent.",
+  "iosSourceComparison": {
+    "identity": "Global CredentialVault identity and Keychain/Secure Enclave signer; no safe isolated storage DI in inspected path",
+    "claim": "Actor pairing flag, original saved body/claim ID, encrypted pending/grant delivery",
+    "refresh": "Actor per-ref refreshing set, original pending token/operation and verified save",
+    "revoke": "No revoke method in inspected EasyWorkDeviceAuthorization.swift actor; platform route requires owner review",
+    "nativeExecution": "not-performed"
+  },
+  "gaps": [
+    "System-trusted HTTPS and real issuer/Desktop human approval",
+    "Actual Android process death / reinstall / real key persistence lifecycle",
+    "Same-grant multi-instance read-modify-write race",
+    "Pending polling timeout/expiry and all server error-code variants",
+    "DPoP nonce challenge negotiation",
+    "iOS native authorization/Keystore-equivalent lifecycle"
+  ],
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

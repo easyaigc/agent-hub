@@ -29,6 +29,10 @@
 
 后续阶段分别见 [附件](attachments.md)、[旧单条 GCM 边界](legacy-inline.md)、[附件取消交接修复](attachment-handoff-fix.md)、[共同阅读与通知迁移](common-device-migration.md) 和 [冻结 F53 声音迁移](sounds-migration.md)。各阶段仅以对应指纹和验收记录判断；本文早期范围不倒填为后续通过。
 
+冻结 P9 前台身份/journal 的审计与安全子集见 [前台迁移边界](foreground-migration.md)。v1 非空 journal 明确拒绝，原件与 unknown 保留；完整前台迁移仍需 P9 恢复 barrier/原授权契约，不以安全子集替代完整交付。
+
+既有语音设置port的真实加密adapter、小记录Schema、目标显式选择优先策略和冷PID测试入口见 [用户语音默认](voice-preference.md)。真实Session绑定由父线与语音owner统一完成，不在本线编辑共享会话或Page。
+
 ## 第二子阶段：范围清单与原始 WAV 归属栅栏
 
 新文件导出在写入前及原子提交前核对已知非空系统子存储：external-inbox、recent-photos、photo-permission、document-results、photo-results、camera-results，以及这些前缀下的嵌套payloads/outputs。只读目录清单，不调用AtomicFile恢复，不打开content URI或重启回调；存在资料即以具名scope明确拒绝，旧导出文件和原子存储不变。根索引中未封口录音另以provisional-voice拒绝，原始数据不读入内存、不修复、不seal。

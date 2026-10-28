@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "checkpoint": "PAR4-current-native",
+  "date": "2026-10-29",
+  "environment": "Current physical Android phone / API33 / independent acceptance package",
+  "verificationKind": "native auxiliary with synthetic data and loopback peers; not full real DEV",
+  "passedMethodsIncludingTwoExplicitPartialBatchMethods": 77,
+  "fullSuccessfulBatchMethods": 75,
+  "partialBatchPassedMethods": [
+    "com.agenthub.android.NativeVoiceViewportMatrixTest#retainedActivityReusesThePreferenceBindingAndBothControllers",
+    "com.agenthub.android.NativeVoiceViewportMatrixTest#firstAndLastQuestionVoiceControlsRemainReachableWithoutAnsweringInShortViewportMatrix"
+  ],
+  "defaultStorageProofs": [
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-app",
+      "sha256": "c1e42a9a1c871c5419b30750eab5355a73f714b5922a9f59fbff7e7282ebd2b7",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-storage",
+      "sha256": "47b9c1b29d006bf1b2356ab6cc893f8facd10a754d13177b2700e8058a7e6138",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-storage",
+      "sha256": "eae5102b36fe114794273f68e7507e8cc58f8f62a25a564f0c71787e2adfe35c",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-storage",
+      "sha256": "859a67ef610e674e7c45b407568b6da57026519ded9093197a2354736ba8259d",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-storage",
+      "sha256": "84e4fe94a8a58136656de2d2a8ddaa20eb8c9841f8018e7b47645f01805b12af",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-storage",
+      "sha256": "0910e58f240d935f47725e4425d26947e6bccd799b73ce9e56dce9878f08c871",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-storage",
+      "sha256": "cdba64df03d8c4b586a9a87ad98c37805366e458fc04da72f8e703fdf850d20e",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "preference-storage",
+      "sha256": "87f1b0fecfb4b432c0e3bd70b706971c0e381a3ea22dd294655226fefb5f4d16",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "recovery-ui",
+      "sha256": "330654cf29099d09a8a266340d3ef8cfe0a9048eb594c8fb3eba4683a00f8dca",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "recovery-ui",
+      "sha256": "17b7c7d6cb001483b926f8eb9859846f0a2efe1977cd285d37a75df9281474ea",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "recovery-ui",
+      "sha256": "dc00750a564b0ae09579e32956983000e2055274dafcc18efa6d8ba87a426dbc",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-v2-native",
+      "label": "recovery-ui",
+      "sha256": "b3a32867a854a7e059a7258f2b4bd72cfc5a3225c7cf97f34bac4654676e2e8f",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-fence-localized-native",
+      "label": "voice-viewport",
+      "sha256": "f6b82ba64d79b61abc88306d7a40a7769c542d50a127905af7869994abe61913",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-fence-localized-native",
+      "label": "voice-viewport",
+      "sha256": "11b8980912b3ee5b9f1e972836e6c58838bfa779bcd2138dfa173ba06202a94f",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-fence-localized-native",
+      "label": "voice-viewport",
+      "sha256": "4619506cb9428133a3d5055df985ebd91fd3163169d41be5af85091f02b30f0d",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-fence-localized-native",
+      "label": "catalog",
+      "sha256": "579ba5710302a446276a365a5adfb19c3aa8a1f8c91d47be2b9f4f5dabd92500",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-first",
+      "sha256": "39b1e322c98eb205af8848b1ec83b37d940026a43a5b7c9956c6ebd414f65844",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-first",
+      "sha256": "5260783bfe1944fad9a52debdaa061eaacf3f558e72fc990b870449f4d16ebd1",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-first",
+      "sha256": "6524c25f19c85afafb742da8543f69005320b2126318ead364e8c11dc3f4b4cb",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-first",
+      "sha256": "e574833bc1bbeda8aabad7abccc48a7dcf83b8b843c70e41a8acba8340fd0a9b",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-migration",
+      "sha256": "27b3e1cefba39fb02a02c0acde4e2e7f71ebf48711d7393827b29079253e0bc7",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-migration",
+      "sha256": "645f78cf489c8658b3d0ef2e2b358dadccf9b5feab5bbc83c3d3ccb97d248b19",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-migration",
+      "sha256": "69843e35ffa03953a72fbfa94a09b3e9665b2a8b3862758924999caf506f7643",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "storage-migration",
+      "sha256": "078c1a26405b5cb8317eb56a028d9cf9ff3fb68a533352884fc42c5e26534d5f",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "cold-writer",
+      "sha256": "a30f588721a52bd0df617822c4e49de4840ee5760790b834732758e20c774f4c",
+      "fieldsVerified": 11
+    },
+    {
+      "candidate": "stage4-storage-fixture-native",
+      "label": "cold-reader",
+      "sha256": "f26bbd42f475554e0ce5a8577e28ff12645eb9c62d431b3b4021ee0f34ad2e88",
+      "fieldsVerified": 11
+    }
+  ],
+  "groups": [
+    {
+      "label": "preference-app",
+      "candidate": "stage4-storage-v2-native",
+      "status": "passed",
+      "sourceSha256": "d633537bbaa3b8bd6db54f1a1c6376d21db6d48a848216acbf70e216c4188159",
+      "appSha256": "eb69e5f263900977ab642ca0eb177e29518ee615aaa6ba4405669f695a65a3a7",
+      "runnerSha256": "c3d17a68086aacdd5c645b5b5fef631a85a0b2bfa13c50b4d297de7a3b1b423a",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoicePreferenceAppIntegrationTest#realActivityBindsOnlyItsRestoredStoreAndRetainsTheExplicitDefaultOnRecreation"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "80c60ea365cb34619b327a00332faf2effd828f31bb2eb847625cce2549bfe0e",
+      "modelInputs": 0
+    },
+    {
+      "label": "preference-storage",
+      "candidate": "stage4-storage-v2-native",
+      "status": "failed",
+      "sourceSha256": "d633537bbaa3b8bd6db54f1a1c6376d21db6d48a848216acbf70e216c4188159",
+      "appSha256": "eb69e5f263900977ab642ca0eb177e29518ee615aaa6ba4405669f695a65a3a7",
+      "runnerSha256": "c3d17a68086aacdd5c645b5b5fef631a85a0b2bfa13c50b4d297de7a3b1b423a",
+      "passedMethods": [],
+      "failedMethods": [
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#destinationExplicitChoiceWinsAndMissingSourceNeverCreatesAnImplicitDesktopRecord",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#bothChoicesAreEncryptedAtomicAndReadFromAReopenedHandleWithSameValueRetryReadOnly",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#actualSettingsBindingReportsFailureInsteadOfPretendingACorruptChoiceWasPersisted",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#corruptFutureEnumsAndPendingFilesPreserveOriginalsAndRejectLoadSaveAndExport",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#sourceChoiceMigratesWithoutRetargetingOriginalUnknownOperationsOrStartingVoice",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#invalidSourceCandidatesCannotReplaceTheOriginalAndFutureRecordNamesAreNotSkipped",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#missingPreferenceIsReadOnlyAndRealBindingKeepsDesktopWithoutCreatingARecord"
+      ],
+      "instrumentationSha256": "ec66dce437840fbdf562806abd4e4f5702ef47dc148fe42f0a38e23c2e7481d4",
+      "modelInputs": 0
+    },
+    {
+      "label": "preference-lifecycle",
+      "candidate": "stage4-storage-v2-native",
+      "status": "passed",
+      "sourceSha256": "d633537bbaa3b8bd6db54f1a1c6376d21db6d48a848216acbf70e216c4188159",
+      "appSha256": "eb69e5f263900977ab642ca0eb177e29518ee615aaa6ba4405669f695a65a3a7",
+      "runnerSha256": "c3d17a68086aacdd5c645b5b5fef631a85a0b2bfa13c50b4d297de7a3b1b423a",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoicePreferenceLifecycleTest#cancelledLateLoadCannotOverwriteTheNewChoiceOrPublishDuringRecovery",
+        "com.agenthub.android.NativeVoicePreferenceLifecycleTest#failedRestoreCannotPretendPersistenceOrWriteOverUnreadSource",
+        "com.agenthub.android.NativeVoicePreferenceLifecycleTest#deferredBindingWaitsForRecoveryAndPreservesASelectionMadeBeforeLoad",
+        "com.agenthub.android.NativeVoicePreferenceLifecycleTest#writeFailureNeedsVerifiedReadbackAndExplicitRetryInsteadOfFalseAcknowledgement",
+        "com.agenthub.android.NativeVoicePreferenceLifecycleTest#retainedSessionConfigureAndBindIfMissingNeverConstructOrBindTwice",
+        "com.agenthub.android.NativeVoicePreferenceLifecycleTest#cancelledCommittedWriteIsReadBackAndCannotAcknowledgeADifferentNewChoice",
+        "com.agenthub.android.NativeVoicePreferenceLifecycleTest#missingPreferenceUsesVerifiedDefaultWithoutWritingANewSchema"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "093b46ff14517855ab6f209a2b2b08175b411382bf81747a6ff39961bd388eb6",
+      "modelInputs": 0
+    },
+    {
+      "label": "recovery-rules",
+      "candidate": "stage4-storage-v2-native",
+      "status": "passed",
+      "sourceSha256": "d633537bbaa3b8bd6db54f1a1c6376d21db6d48a848216acbf70e216c4188159",
+      "appSha256": "eb69e5f263900977ab642ca0eb177e29518ee615aaa6ba4405669f695a65a3a7",
+      "runnerSha256": "c3d17a68086aacdd5c645b5b5fef631a85a0b2bfa13c50b4d297de7a3b1b423a",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#journalIdentityAndOriginalRemainEncrypted",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#actionableStaleWaitsWithoutAdvancing",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#frozenCrossLanguageCanonicalVectors",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#duplicateHumanOffUsesOneOriginalId",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#oldCredentialAndNewEpochCannotResubmit",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#separateOffPreservesUnknownV1Record",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#lostAckColdRestartQueriesOriginalOnly",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#acceptedGapPagedResetKeepsOldCursorUntilComplete",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#unknownSchemaIsPreservedAndNotActivated",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#interruptedPortOutcomeIsNeverReplayed",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#filteredOriginalStillUsesP7Port",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#paginationKeepsCapturedHighWater",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#restoredOwnerRefreshesOnceWithFreshActiveSet",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#absentDoesNotAuthorizeNewWrite",
+        "com.agenthub.android.NativeChatNotificationRecoveryTest#snapshotHashMismatchDoesNotPublishBaseline"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "86d74967a7278d23eb5b73b6974d2c8d2fb55c18e3bc8cde487cb1ad06504ae6",
+      "modelInputs": 0
+    },
+    {
+      "label": "recovery-ui",
+      "candidate": "stage4-storage-v2-native",
+      "status": "passed",
+      "sourceSha256": "d633537bbaa3b8bd6db54f1a1c6376d21db6d48a848216acbf70e216c4188159",
+      "appSha256": "eb69e5f263900977ab642ca0eb177e29518ee615aaa6ba4405669f695a65a3a7",
+      "runnerSha256": "c3d17a68086aacdd5c645b5b5fef631a85a0b2bfa13c50b4d297de7a3b1b423a",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#gapHasNoAutomaticAcceptance",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#originalUnknownRemainsVisibleAfterKnownOff",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#explicitOffCallbackIsSeparateAndCannotDoubleSubmit",
+        "com.agenthub.android.NativeChatNotificationRecoveryUiTest#acceptedGapRequiresSeparateConfirmationAndStableUuid"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "6bb8d9e0b85d5a250c1f5058d0b55c872a1f30e8ef5d78290869fb0c68c7fde0",
+      "modelInputs": 0
+    },
+    {
+      "label": "p8-core",
+      "candidate": "stage4-fence-localized-native",
+      "status": "passed",
+      "sourceSha256": "77fe4e1b93cb46c3d365e392f7be0f6748b794b50f5a65a8b3af9284a6cd07d3",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "3c21dd08075812765c68e5d88c28449eb55e3193a7e363200359cf7bea79ceaa",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#lostRevokeReplyResumesSameDeletionOperationWithFreshProof",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#savedPendingClaimResumesPollingWithoutAnotherRegistrationPost",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#registrationPersistsVerifiedGrantUsingActualKeystoreDpop",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#lostRefreshReplyResumesOriginalTokenAndOperationAfterClientRecreation",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#rejectedClaimRemovesOnlyItsSyntheticPendingRecord",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#refreshRotationPersistsVerifiedGrantAndClearsOriginalIntent",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#freshGrantAuthorizesActualV2RelayWithoutRefreshOrLegacyToken",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#lostClaimPostReplyResumesExactPersistedOperationWithFreshProof",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#confirmedRevokeRemovesGrantAndRefusesFurtherAuthorization",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#serverRevocationRefusalRetainsPendingIntentAndNeverDowngrades",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#cancelledRefreshKeepsIntentAndClosedLateReplyCannotOverwriteRecovery",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#offerParsingRejectsUntrustedRecipientDuplicateFieldsAndInvalidCode",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#concurrentRequestsOnOneAuthorizationClientShareOneRefresh",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#expiredRefreshCredentialIsRefusedBeforeAnyNetworkRequest",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#independentGrantRefreshesKeepDeviceTargetAndProofKeysIsolated",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#grantValidationRejectsChangedIdentityMetadataScopesAndTokens",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#explicitlyExpiredClaimRemovesItsSyntheticPendingRecord",
+        "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest#wrongRefreshTargetIsRefusedWithoutReplacingGrantOrOriginalIntent"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "6b65952d8fe736ae29bbca6bbe86f2d79ee811a8e887924f67b688f29c060907",
+      "modelInputs": 0
+    },
+    {
+      "label": "p8-fence",
+      "candidate": "stage4-fence-localized-native",
+      "status": "passed",
+      "sourceSha256": "77fe4e1b93cb46c3d365e392f7be0f6748b794b50f5a65a8b3af9284a6cd07d3",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "3c21dd08075812765c68e5d88c28449eb55e3193a7e363200359cf7bea79ceaa",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#unknownRevokeFencesLateRefreshAndResumesOriginalDeleteAcrossClients",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#legacyPendingRevokeIdIsFencedAndAdoptedWithoutReplacement",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#sameClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#persistedUnknownFenceResumesItsOriginalDeleteWhenGrantFileIsMissing",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#separateGrantsOnOneStorageRootRemainUsableDuringAnotherRevoke",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#concurrentClientsOnOneGrantShareOneActualRefreshOperation",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#separateClientConfirmedRevokeRejectsLateRefreshWithoutRestoringGrant",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#unknownRevokeBlocksFreshHeadersAfterStorageReopenUntilOriginalResume",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#identicalRefNamesAcrossNativeStorageRootsKeepTheirOwnAuthority",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#malformedFenceScopeIsRefusedWithoutNetworkOrRecordLoss",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#refreshKeepsUnknownRootGrantAndPendingFieldsInNativeAudit",
+        "com.agenthub.android.NativeEasyWorkAuthorizationFenceTest#oldApprovedClaimCannotReinstallItsConfirmedRevokedGrant"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "73ac7929b59ae89d61b551102a23835f95215fecac455637386851adb5f6479b",
+      "modelInputs": 0
+    },
+    {
+      "label": "voice-discard",
+      "candidate": "stage4-fence-localized-native",
+      "status": "passed",
+      "sourceSha256": "77fe4e1b93cb46c3d365e392f7be0f6748b794b50f5a65a8b3af9284a6cd07d3",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "3c21dd08075812765c68e5d88c28449eb55e3193a7e363200359cf7bea79ceaa",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#discardFingerprintBindsImmutableOriginalAndIgnoresMutableReceiptAttemptFlags",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#navigationDuringAFailedTerminalOnlyDetachesPresentationAndKeepsTheOriginalRecoverable",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#explicitCloseWaitsForTheMatchingTerminalBeforeClearingWithoutTouchingOriginalEvidence",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#explicitRerecordCannotOpenTheNewSystemProviderUntilTerminalAcknowledgement",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#lateOriginalReceiptCannotFillTheDraftAndDiscardDoesNotReplayItsQueryOrAudio",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#backgroundOrNavigationRevokesDelayedRerecordEvenAfterReturningToTheSameDraft",
+        "com.agenthub.android.NativeVoiceDiscardControllerTest#missingFailedOrForeignTerminalNeverClosesOrStartsANewCapture"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "56ad75a1bd10cc41d0102c300bb3e723b5873645b856f9894605683eb99de059",
+      "modelInputs": 0
+    },
+    {
+      "label": "voice-viewport",
+      "candidate": "stage4-fence-localized-native",
+      "status": "failed",
+      "sourceSha256": "77fe4e1b93cb46c3d365e392f7be0f6748b794b50f5a65a8b3af9284a6cd07d3",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "3c21dd08075812765c68e5d88c28449eb55e3193a7e363200359cf7bea79ceaa",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceViewportMatrixTest#retainedActivityReusesThePreferenceBindingAndBothControllers",
+        "com.agenthub.android.NativeVoiceViewportMatrixTest#firstAndLastQuestionVoiceControlsRemainReachableWithoutAnsweringInShortViewportMatrix"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeVoiceViewportMatrixTest#settingsRemainReachableAndExposeSelectionAndFailureInShortViewportMatrix"
+      ],
+      "instrumentationSha256": "7662e935fb1d73094d6217980176a6e2cbbc8955f44d2ba88ef344693618cc26",
+      "modelInputs": 0
+    },
+    {
+      "label": "catalog",
+      "candidate": "stage4-fence-localized-native",
+      "status": "passed",
+      "sourceSha256": "77fe4e1b93cb46c3d365e392f7be0f6748b794b50f5a65a8b3af9284a6cd07d3",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "3c21dd08075812765c68e5d88c28449eb55e3193a7e363200359cf7bea79ceaa",
+      "passedMethods": [
+        "com.agenthub.android.MobileLocalizationTest#compiledCatalogsPreserveAllBytesAndRuntimeValuesAreNeverTranslated"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "f40ce5db70fac3ee0b2460f7a359b70e33ada4edcd421f47b53026714ee99903",
+      "modelInputs": 0
+    },
+    {
+      "label": "storage-first",
+      "candidate": "stage4-storage-fixture-native",
+      "status": "passed",
+      "sourceSha256": "f95fb455bd6d8ddc79c1a56abc0bf52bf911ba1cd5c43abb8e0e5675bb5d6126",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "5717bb7e00ecadfd7e7a0e63619391b3a775a8689e2f11dc41ba343fcc5591ac",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#bothChoicesAreEncryptedAtomicAndReadFromAReopenedHandleWithSameValueRetryReadOnly",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#actualSettingsBindingReportsFailureInsteadOfPretendingACorruptChoiceWasPersisted",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#corruptFutureEnumsAndPendingFilesPreserveOriginalsAndRejectLoadSaveAndExport",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#missingPreferenceIsReadOnlyAndRealBindingKeepsDesktopWithoutCreatingARecord"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "fd0843c0b2a98132193597a80e5b5d9ea6705614af0f7fbf30de31d92dd87439",
+      "modelInputs": 0
+    },
+    {
+      "label": "storage-migration",
+      "candidate": "stage4-storage-fixture-native",
+      "status": "passed",
+      "sourceSha256": "f95fb455bd6d8ddc79c1a56abc0bf52bf911ba1cd5c43abb8e0e5675bb5d6126",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "5717bb7e00ecadfd7e7a0e63619391b3a775a8689e2f11dc41ba343fcc5591ac",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#destinationExplicitChoiceWinsAndMissingSourceNeverCreatesAnImplicitDesktopRecord",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#sourceChoiceMigratesWithoutRetargetingOriginalUnknownOperationsOrStartingVoice",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#invalidSourceCandidatesCannotReplaceTheOriginalAndFutureRecordNamesAreNotSkipped",
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#targetChoiceAndCandidateSurviveInvalidTargetRollbackAndStaleWriter"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "e0943ac18f274f800598655e600003931da89f781940b78289efb40211253bd3",
+      "modelInputs": 0
+    },
+    {
+      "label": "cold-writer",
+      "candidate": "stage4-storage-fixture-native",
+      "status": "passed",
+      "sourceSha256": "f95fb455bd6d8ddc79c1a56abc0bf52bf911ba1cd5c43abb8e0e5675bb5d6126",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "5717bb7e00ecadfd7e7a0e63619391b3a775a8689e2f11dc41ba343fcc5591ac",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#stageUserDefaultForIndependentColdReader"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "2188a7e327f5afd137432361188c5ede3ac9bac8ab71e2042beae72c65cea7ce",
+      "modelInputs": 0
+    },
+    {
+      "label": "cold-reader",
+      "candidate": "stage4-storage-fixture-native",
+      "status": "passed",
+      "sourceSha256": "f95fb455bd6d8ddc79c1a56abc0bf52bf911ba1cd5c43abb8e0e5675bb5d6126",
+      "appSha256": "3333dc772aa2f764fbcfaa5bb546d28b7c9238b7eb642f52a1f6aa0b03c47ba7",
+      "runnerSha256": "5717bb7e00ecadfd7e7a0e63619391b3a775a8689e2f11dc41ba343fcc5591ac",
+      "passedMethods": [
+        "com.agenthub.android.NativeVoicePreferenceStorageTest#readOriginalUserDefaultInIndependentColdReader"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "51fed8ba08e3a471fa4309f477ae99beef91d68198c3172e8a611f5a7e1c57ca",
+      "modelInputs": 0
+    }
+  ],
+  "coldPair": {
+    "differentProcesses": true,
+    "originalCiphertextsPreserved": true,
+    "systemDefaultRead": true,
+    "capabilityCalls": 0,
+    "recordingStarts": 0,
+    "hostCalls": 0,
+    "proofSha256": "1c6c57abd1e39573176810bc27520c24d812385a2c7ed445f369ea3b2967862e"
+  },
+  "authorization": {
+    "oldCore": 18,
+    "newSaveFence": 12,
+    "baselineRaceFailureRetained": true,
+    "successfulAwaitBaselineNotRelabeledAsPass": true,
+    "scenariosAndSidecarShutdownVerified": true,
+    "caseCount": 30,
+    "caseVerificationSha256": "6d0a3538cf2aec0cd5c89eebeac6d372e946828b6ca1c75902e3c9d2774292eb"
+  },
+  "failureHistory": [
+    "Original preference batch timed out after multiple owned Session setup waits. The newly created synthetic Session was never reset or restored. Only test initialization corrected; all eight store/migration assertions later passed.",
+    "Original viewport settings assertion found text layout overflow. Two other methods passed; settings fix remains assigned to UI owner.",
+    "Original transfer helper expected exec-in stdout; the already written exact original fixture was read back and verified, then its reader ran in a different PID. No writer replay or new fixture.",
+    "Initial central check rejected a duplicate shared iOS localization key; removed Android duplicate and kept iOS source text unchanged."
+  ],
+  "limits": [
+    "Full P7/P8/P9 open",
+    "API26 system services and API37 landscape pending",
+    "Real microphone/acoustic ASR and saved-file system transcription pending",
+    "Nonempty notification journal full migration pending",
+    "Production durable explicit-discard storage pending",
+    "Notification global App hooks and vendor/background delivery pending",
+    "iOS A6 and task/project business paused"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

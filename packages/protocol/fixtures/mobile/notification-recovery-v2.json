@@ -1,0 +1,188 @@
+{
+  "version": 2,
+  "algorithm": "sha256-canonical-json-v2",
+  "vectors": [
+    {
+      "name": "register-unicode",
+      "intent": {
+        "version": 2,
+        "operationId": "66813d85-9271-4209-80f5-e895a7f17c64",
+        "epoch": "59518182-c795-40fc-aa18-99a8d84b62d0",
+        "deviceId": "android-fixture",
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host-中",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "desktop-runtime"
+        },
+        "publicKey": "hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=",
+        "preferences": {
+          "version": 1,
+          "revision": "fixture-😀- -</-\"-\\",
+          "generation": 17,
+          "enabled": true,
+          "kinds": ["approval", "question", "plan", "paused", "interrupted", "failed", "uncertain"],
+          "excludedHosts": ["mac-中", "server-😀"],
+          "foregroundBanner": true,
+          "soundEnabled": true,
+          "badgeEnabled": true,
+          "showThreadTitle": true,
+          "timeSensitive": false,
+          "sound": "default",
+          "categorySounds": { "question": "none", "approval": "soft.caf" }
+        },
+        "generation": 23,
+        "kind": "register",
+        "fingerprint": "bcf1452e6ac874c29ca73ad174741ffd5db8ea1c6bcc81873e55e21f5278a02a"
+      },
+      "expectedFingerprint": "bcf1452e6ac874c29ca73ad174741ffd5db8ea1c6bcc81873e55e21f5278a02a"
+    },
+    {
+      "name": "same-wire-keys-shuffled",
+      "intent": {
+        "fingerprint": "bcf1452e6ac874c29ca73ad174741ffd5db8ea1c6bcc81873e55e21f5278a02a",
+        "kind": "register",
+        "generation": 23,
+        "preferences": {
+          "version": 1,
+          "revision": "fixture-😀- -</-\"-\\",
+          "generation": 17,
+          "enabled": true,
+          "kinds": ["approval", "question", "plan", "paused", "interrupted", "failed", "uncertain"],
+          "excludedHosts": ["mac-中", "server-😀"],
+          "foregroundBanner": true,
+          "soundEnabled": true,
+          "badgeEnabled": true,
+          "showThreadTitle": true,
+          "timeSensitive": false,
+          "sound": "default",
+          "categorySounds": { "question": "none", "approval": "soft.caf" }
+        },
+        "publicKey": "hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=",
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host-中",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "desktop-runtime"
+        },
+        "deviceId": "android-fixture",
+        "epoch": "59518182-c795-40fc-aa18-99a8d84b62d0",
+        "operationId": "66813d85-9271-4209-80f5-e895a7f17c64",
+        "version": 2
+      },
+      "expectedFingerprint": "bcf1452e6ac874c29ca73ad174741ffd5db8ea1c6bcc81873e55e21f5278a02a"
+    },
+    {
+      "name": "preferences",
+      "intent": {
+        "version": 2,
+        "operationId": "5fa3b6c1-1c40-4a69-b5b0-d4e84d63592c",
+        "epoch": "59518182-c795-40fc-aa18-99a8d84b62d0",
+        "deviceId": "android-fixture",
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host-中",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "desktop-runtime"
+        },
+        "publicKey": "hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=",
+        "preferences": {
+          "version": 1,
+          "revision": "fixture-😀- -</-\"-\\",
+          "generation": 17,
+          "enabled": true,
+          "kinds": ["approval", "question", "plan", "paused", "interrupted", "failed", "uncertain"],
+          "excludedHosts": ["mac-中", "server-😀"],
+          "foregroundBanner": true,
+          "soundEnabled": true,
+          "badgeEnabled": true,
+          "showThreadTitle": false,
+          "timeSensitive": false,
+          "sound": "default",
+          "categorySounds": { "question": "none", "approval": "soft.caf" }
+        },
+        "generation": 24,
+        "kind": "preferences",
+        "fingerprint": "3e4cd09add172f67dff0347cb050950966e1f46798a9f4cc206952f44df36f33"
+      },
+      "expectedFingerprint": "3e4cd09add172f67dff0347cb050950966e1f46798a9f4cc206952f44df36f33"
+    },
+    {
+      "name": "revoke",
+      "intent": {
+        "version": 2,
+        "operationId": "8ebf92a3-7455-4573-9ea1-e3e23b75a820",
+        "epoch": "59518182-c795-40fc-aa18-99a8d84b62d0",
+        "deviceId": "android-fixture",
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host-中",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "desktop-runtime"
+        },
+        "publicKey": "hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=",
+        "preferences": {
+          "version": 1,
+          "revision": "fixture-😀- -</-\"-\\",
+          "generation": 17,
+          "enabled": false,
+          "kinds": ["approval", "question", "plan", "paused", "interrupted", "failed", "uncertain"],
+          "excludedHosts": ["mac-中", "server-😀"],
+          "foregroundBanner": true,
+          "soundEnabled": true,
+          "badgeEnabled": true,
+          "showThreadTitle": true,
+          "timeSensitive": false,
+          "sound": "default",
+          "categorySounds": { "question": "none", "approval": "soft.caf" }
+        },
+        "generation": 25,
+        "kind": "revoke",
+        "fingerprint": "d867e418529d4bb0138f8da3f853b034e3edd21134857b0c1c1223181529ddab"
+      },
+      "expectedFingerprint": "d867e418529d4bb0138f8da3f853b034e3edd21134857b0c1c1223181529ddab"
+    },
+    {
+      "name": "explicit-gap-reset",
+      "intent": {
+        "version": 2,
+        "operationId": "66813d85-9271-4209-80f5-e895a7f17c64",
+        "epoch": "59518182-c795-40fc-aa18-99a8d84b62d0",
+        "deviceId": "android-fixture",
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host-中",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "desktop-runtime"
+        },
+        "publicKey": "hSDwCYkwp1R0i33ctD73Wg2/Og0mOBr066SpjqqbTmo=",
+        "preferences": {
+          "version": 1,
+          "revision": "fixture-😀- -</-\"-\\",
+          "generation": 17,
+          "enabled": true,
+          "kinds": ["approval", "question", "plan", "paused", "interrupted", "failed", "uncertain"],
+          "excludedHosts": ["mac-中", "server-😀"],
+          "foregroundBanner": true,
+          "soundEnabled": true,
+          "badgeEnabled": true,
+          "showThreadTitle": true,
+          "timeSensitive": false,
+          "sound": "default",
+          "categorySounds": { "question": "none", "approval": "soft.caf" }
+        },
+        "generation": 23,
+        "kind": "feed-reset",
+        "fingerprint": "58aadd7eb4ecb484cb1ee67d0c8f4e27f8cde411ae9ecc2b2bf0a56c2a9dea4c",
+        "gap": {
+          "epoch": "59518182-c795-40fc-aa18-99a8d84b62d0",
+          "after": 2,
+          "floor": 4,
+          "head": 9,
+          "acceptanceId": "3bc890ea-d654-41e9-8840-2764ed74edb1"
+        }
+      },
+      "expectedFingerprint": "58aadd7eb4ecb484cb1ee67d0c8f4e27f8cde411ae9ecc2b2bf0a56c2a9dea4c"
+    }
+  ]
+}

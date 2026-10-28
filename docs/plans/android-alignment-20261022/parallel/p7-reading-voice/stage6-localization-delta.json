@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "parent catalog union required; preserve approved shared terms",
+  "entries": [
+    {
+      "key": "系统听写",
+      "zhHans": "系统听写",
+      "en": "System dictation"
+    },
+    {
+      "key": "正在读取语音设置…",
+      "zhHans": "正在读取语音设置…",
+      "en": "Loading voice settings…"
+    },
+    {
+      "key": "正在保存语音设置…",
+      "zhHans": "正在保存语音设置…",
+      "en": "Saving voice settings…"
+    },
+    {
+      "key": "无法读取语音设置，本次选择仍生效。",
+      "zhHans": "无法读取语音设置，本次选择仍生效。",
+      "en": "Voice settings could not be loaded. Your selection still applies for this session."
+    },
+    {
+      "key": "恢复语音设置",
+      "zhHans": "恢复语音设置",
+      "en": "Recover voice settings"
+    }
+  ],
+  "preserveShared": {
+    "本地（手机）": "Local (phone)"
+  },
+  "supersedes": "stage4 proposed Phone translation is withdrawn; SYSTEM provider uses 系统听写"
+}

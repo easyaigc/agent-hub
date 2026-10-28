@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "status": "parent-owned-catalog-integration-required",
+  "entries": [
+    {
+      "key": "语音输入",
+      "zhHans": "语音输入",
+      "en": "Voice input"
+    },
+    {
+      "key": "默认转写",
+      "zhHans": "默认转写",
+      "en": "Default transcription"
+    },
+    {
+      "key": "电脑端",
+      "zhHans": "电脑端",
+      "en": "Computer"
+    },
+    {
+      "key": "本地（手机）",
+      "zhHans": "本地（手机）",
+      "en": "Local (phone)"
+    },
+    {
+      "key": "优先使用所选方式。手机系统语音服务可能需要联网；不会自动改用其他服务。",
+      "zhHans": "优先使用所选方式。手机系统语音服务可能需要联网；不会自动改用其他服务。",
+      "en": "Use the selected method first. The phone speech service may use the network; another service is never selected automatically."
+    },
+    {
+      "key": "无法保存语音设置，本次选择仍生效。",
+      "zhHans": "无法保存语音设置，本次选择仍生效。",
+      "en": "The voice setting could not be saved. Your selection still applies for this session."
+    },
+    {
+      "key": "此选择仅在本次打开期间生效。",
+      "zhHans": "此选择仅在本次打开期间生效。",
+      "en": "This selection applies only while this app session remains open."
+    },
+    {
+      "key": "手机语音能力",
+      "zhHans": "手机语音能力",
+      "en": "Phone speech capabilities"
+    },
+    {
+      "key": "已发现手机端识别服务",
+      "zhHans": "已发现手机端识别服务",
+      "en": "On-device speech service found"
+    },
+    {
+      "key": "已发现系统语音服务，可能需要联网",
+      "zhHans": "已发现系统语音服务，可能需要联网",
+      "en": "System speech service found; it may use the network"
+    },
+    {
+      "key": "未发现可用的系统语音服务",
+      "zhHans": "未发现可用的系统语音服务",
+      "en": "No available speech service found"
+    },
+    {
+      "key": "系统语音服务能力尚未确认",
+      "zhHans": "系统语音服务能力尚未确认",
+      "en": "System speech capabilities are unconfirmed"
+    },
+    {
+      "key": "当前语言的手机端模型已安装",
+      "zhHans": "当前语言的手机端模型已安装",
+      "en": "The on-device model for this language is installed"
+    },
+    {
+      "key": "当前语言需要先在系统中下载",
+      "zhHans": "当前语言需要先在系统中下载",
+      "en": "Download this language in system settings first"
+    },
+    {
+      "key": "当前语言由联网服务提供",
+      "zhHans": "当前语言由联网服务提供",
+      "en": "This language uses an online service"
+    },
+    {
+      "key": "系统未报告支持当前语言",
+      "zhHans": "系统未报告支持当前语言",
+      "en": "The service did not report support for this language"
+    },
+    {
+      "key": "当前语言支持情况尚未确认",
+      "zhHans": "当前语言支持情况尚未确认",
+      "en": "Support for this language is unconfirmed"
+    },
+    {
+      "key": "刷新能力",
+      "zhHans": "刷新能力",
+      "en": "Refresh capabilities"
+    },
+    {
+      "key": "可在系统设置中检查语音服务和语言支持。能力检查不会打开麦克风或下载模型。",
+      "zhHans": "可在系统设置中检查语音服务和语言支持。能力检查不会打开麦克风或下载模型。",
+      "en": "Check speech services and language support in system settings. Capability checks do not open the microphone or download models."
+    },
+    {
+      "key": "手机端原录音转写暂不可用。电脑转写失败后，可保留原录音并重新录音。",
+      "zhHans": "手机端原录音转写暂不可用。电脑转写失败后，可保留原录音并重新录音。",
+      "en": "Transcribing the saved recording on this phone is unavailable. If computer transcription fails, keep the original and record again."
+    },
+    {
+      "key": "手机系统语音服务可能需要联网。",
+      "zhHans": "手机系统语音服务可能需要联网。",
+      "en": "The phone speech service may use the network."
+    },
+    {
+      "key": "填入已识别文字",
+      "zhHans": "填入已识别文字",
+      "en": "Use recognized text"
+    },
+    {
+      "key": "改用手机重新录音",
+      "zhHans": "改用手机重新录音",
+      "en": "Record again using phone speech"
+    }
+  ],
+  "sharedTermCorrection": "Stage6 preserves parent shared catalog; SYSTEM provider uses 系统听写 / System dictation."
+}

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "stage": "P9-recovery-v2-freshness",
+  "baseCommit": "ad6ba8c9b214d10c0a5dec6226bdd185fe37a75a",
+  "features": [
+    {
+      "id": "F52",
+      "commonAssertion": "去重、注册代次／撤销与未知投递；未验证 owner 不解决待处理事项，偏好不清除 P7 未读",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "V1/iOS wire unchanged; no iOS/native/device proof. V2 authoritative active set refined for parent P7 port.",
+      "sourceSha256": {
+        "packages/notification-runtime/src/index.ts": "5d52a8b71c477b51b741af9d429e985ae16798809c60608ba3589e987661af78",
+        "scripts/notification-recovery-v2.test.mjs": "02daf8c1749c53ab6a1f17f1b2afa2b79af47dceb5f6bb4900696e0defa446cc"
+      }
+    }
+  ],
+  "sourceFiles": {
+    "packages/notification-runtime/src/index.ts": "5d52a8b71c477b51b741af9d429e985ae16798809c60608ba3589e987661af78",
+    "scripts/notification-recovery-v2.test.mjs": "02daf8c1749c53ab6a1f17f1b2afa2b79af47dceb5f6bb4900696e0defa446cc"
+  },
+  "checks": {
+    "build": "pnpm build passed",
+    "node": "27 v2 + 16 existing notification tests passed (43)",
+    "root": "format, lint, 5 sync tests pass; central parity coverage gate remains parent-owned"
+  },
+  "parentInstruction": "parent-p9-android-v2-next-20261028-1",
+  "next": "Android must hold cursor on actionable stale until captured original-window verification; current filtered originals may reconcile in P7 while alert suppressed; inactive/expired never revived",
+  "nativeAndRealDev": "not-run"
+}

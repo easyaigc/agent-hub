@@ -18,10 +18,10 @@ internal class NativeChatNotificationIdentity private constructor(val deviceId: 
             storage.snapshotTransaction { storage.operationTransaction {
                 storage.read(RECORD)?.let {
                     val identity = decode(it)
-                    check(!JSONObject(it).getBoolean("journalBound") || storage.read(NativeChatNotificationForegroundStore.RECORD) != null) { "Notification journal missing; identity preserved" }
+                    check(!JSONObject(it).getBoolean("journalBound") || storage.read(NativeChatNotificationForegroundStore.RECORD) != null || storage.read(NativeChatNotificationRecoveryStore.RECORD) != null) { "Notification journal missing; identity preserved" }
                     return@operationTransaction identity
                 }
-                check(storage.read(NativeChatNotificationForegroundStore.RECORD) == null) { "Notification identity missing; foreground state preserved" }
+                check(storage.read(NativeChatNotificationForegroundStore.RECORD) == null && storage.read(NativeChatNotificationRecoveryStore.RECORD) == null) { "Notification identity missing; foreground state preserved" }
                 val key = X25519PrivateKeyParameters(SecureRandom())
                 val privateBytes = key.encoded
                 try {

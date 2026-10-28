@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "sourceId": "N069",
+  "sourceCommit": "d0c645354f284b3ccca350a26bb61a38976289c1",
+  "sourceVoiceInputSha256": "295a98eb41dd0a2746fdb7400792d0be160e41c10ff83ad791222fe058b3fb03",
+  "preferenceEnumAndStorageKeyUnchangedFromDependency": true,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "triggerOperation": "parent-p7-n069-common-store-20261029-1",
+  "sourceAssertions": [
+    "Explicit discard/re-record persists iOS discardedAt before removing audio; restore excludes discarded records.",
+    "Navigation/background/restart recovery remains available for non-discarded originals.",
+    "Failed discard cannot pretend success or close; late transcription must not overwrite drafts."
+  ],
+  "androidOwnership": {
+    "controllerAndUi": "voice owner; narrow terminal store port pending handoff",
+    "waveStoreAndInventoryMigration": "this common-storage owner after exact port handoff",
+    "currentImplementation": "not implemented in voice preference checkpoint; do not guess marker schema before handoff"
+  },
+  "requiredBoundaries": [
+    "Keep unknown original operation ID, immutable manifest/receipt and necessary original attachments.",
+    "Durable local do-not-offer state is distinct from remote cancellation; no replay or new ID.",
+    "Cold reopen/import must retain terminal intent; pause/navigation alone must not discard.",
+    "Use existing unified storage/graph/publication; no second migrator."
+  ],
+  "evidenceStatus": "read-only source intake only, no Android native/DEV pass or phone operation"
+}

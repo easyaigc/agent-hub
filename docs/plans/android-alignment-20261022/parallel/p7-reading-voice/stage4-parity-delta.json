@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "4-voice-settings-capability-recovery",
+  "baseCommit": "a0ec7825cab7193c55b340f66199b72516841cf3",
+  "featureIds": ["F56", "F64"],
+  "commonAssertions": [
+    "A default only affects a new voice capture; full original target/draft fencing remains",
+    "Capability query never starts the microphone or downloads a model and cannot guarantee advisory offline preference",
+    "Original unknown recording bytes and operation stay intact when explicitly starting a new system capture",
+    "Partial recognized text requires explicit current-original-draft fill after interruption"
+  ],
+  "bothPlatforms": {
+    "ios": "actual settings/local-file transcription/QuestionAnswerField reference read; unchanged",
+    "android": "session default and narrow persistence port, capabilities and ordinary voice recovery implemented; persistent binding and question alignment pending"
+  },
+  "implementation": "partial; storage/Manifest owner integration and native acceptance open",
+  "verification": "App/runner build and 17 host-JVM predicates passed; KMP 93 matching unchanged-input reuse; native cases compiled but not executed",
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSystemVoiceTest.kt",
+      "sha256": "5feaaabbbf85f9ec46912150cc0f2303ea3f3c74f79240c62334f9f0948f6cb1"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceCapabilityTest.kt",
+      "sha256": "c28843ca46b458c87c176570ef73aada40c9ea0f658ffe095746519581912885"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceRecoveryTest.kt",
+      "sha256": "ab911ba733c69bf803087a3fa10bc48bbab3153a5adf32ece44c1eebcc57f864"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceSettingsUiTest.kt",
+      "sha256": "a01384ff41fc8ba59c62a0377a9889fb9c84d3d12674a781e47c1f19978c0fdb"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "fb70e3b52bebabc850dbe28e47700cf7480a3ad5c2922e5c7684839b8879db08"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "sha256": "9f29c2c78c7287e61d361a98250d46b1eb29c4ba596168a9c796a0a9143405c1"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSystemVoice.kt",
+      "sha256": "e2f51431330ccaa0faaf2f3a0069eab2bc2838e19585c0c809b4666db01cdfad"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceCapability.kt",
+      "sha256": "f83df737981d08015d23c36681ac9b6ae0a07e93de314225fe7aa9fb1b4ae9db"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettings.kt",
+      "sha256": "854f6cddf590ea87fff142d530d32f1c46858c23e453fe892beb5de4a745da2a"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettingsPage.kt",
+      "sha256": "3acd3f01ee4e79857771d74c1e4e18f8395acbed49e750a67da22c5ef5e19703"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "sha256": "0270a2d40b06610ddda14f5cfbc80ceb22e0b8b94bc99fe9785fbc49ff706fd7"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "sha256": "55aca2f302682ecb121a8b94be5d15f045dabd5e9acd0843486ae9a5d22ea72e"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage4-voice-settings.md",
+  "ownerHandoffs": "parallel/p7-reading-voice/stage4-owner-handoffs.json"
+}

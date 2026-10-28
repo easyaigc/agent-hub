@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "id": "android-p8-authorization-fence-phase2-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "9f79fe5ef5ec028f510b796d86c5c4e0704f2494",
+  "features": ["F07", "F09", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "6011a2091be6df05192bba290a21eb45cc0e8b7aaf90f37e156c720bd5de3c1f",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt": "1b8681f4fb686fe877eb914e74260fc825dc65fa764e9c3ac938c9ca49ad2256",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationFenceTest.kt": "bfb2b997c5803bfbaa44753c9485edded2a48e1c6a631d213290a3c85cd33d8c"
+  },
+  "productionFilesChanged": [
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt"
+  ],
+  "summary": "Fence pending/confirmed revocation before local authority or late refresh/pair saves using existing root transactions and shared per-root/ref locks. Preserve immutable authorization operations and unknown JSON. Add 12 native methods; 17 host and 4 Node checks pass, native execution pending.",
+  "commonAssertions": {
+    "F07": "Confirmed/unknown local revocation cannot be undone by a late approved grant",
+    "F09": "Authority is scoped by exact storage root/ref and existing binding/token; trust/DPoP/issuer validation unchanged",
+    "F43": "Original claim/refresh/revoke intent and unknown operation metadata survive interruption",
+    "F44": "Pending/confirmed revoke refuses old refresh saves and proof return; explicit same-ID authorization resume differs from business input replay",
+    "F46": "Cross-instance same-grant coordination and independent roots/refs stay isolated"
+  },
+  "dualPlatformImpact": {
+    "android": "Product save fence integrated; 17 host/4 Node checks pass and 12 native methods compile, no device execution",
+    "ios": "No source change or native claim; matching revoke/late-save assertion stays open"
+  },
+  "uiCopyDelta": [
+    "设备授权撤销结果待确认，请核对电脑状态",
+    "设备授权保存记录无效，原记录已保留",
+    "原设备授权刷新已被新的状态替代，原记录已保留",
+    "设备授权已更新，请重新核对原操作",
+    "设备授权记录目标已变化，原记录已保留"
+  ],
+  "verification": {
+    "host": "17 passed",
+    "node": "4 passed; no listeners",
+    "nativeCompile": "passed",
+    "nativeExecution": "not-performed",
+    "pnpmCheck": "pending central registration"
+  },
+  "integratorAction": "Use merge-notes, preserve original WIP and baseline raw failure, update central product/design/acceptance and architecture records, inventory the new fence prefix with migration owner, rebuild combined candidate and run old18 plus new12 separately under leases and 240s outer deadlines. Do not mark the frozen successful-await regression as a fixed pass.",
+  "integrationChangeRecord": {
+    "id": "android-p8-authorization-fence-phase2-20261029",
+    "baseCommit": "9f79fe5ef5ec028f510b796d86c5c4e0704f2494",
+    "features": ["F07", "F09", "F43", "F44", "F46"],
+    "summary": "Fence pending/confirmed revocation before local authority or late refresh/pair saves using existing root transactions and shared per-root/ref locks. Preserve immutable authorization operations and unknown JSON. Add 12 native methods; 17 host and 4 Node checks pass, native execution pending.",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "6011a2091be6df05192bba290a21eb45cc0e8b7aaf90f37e156c720bd5de3c1f",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt": "1b8681f4fb686fe877eb914e74260fc825dc65fa764e9c3ac938c9ca49ad2256",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationFenceTest.kt": "bfb2b997c5803bfbaa44753c9485edded2a48e1c6a631d213290a3c85cd33d8c"
+    }
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "checkpoint": "ewdap-device-authorization-compile-preparation",
+  "baseCommit": "10b2060c943b5891225d0e32800769f98a81b90d",
+  "date": "2026-10-28",
+  "productionFilesChanged": [],
+  "reviewedProductionFilesUnchanged": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt": "d0bca348e5ef86fea45332ae2d0ce94aeba385eb7c78d1264fb117a8a4e1ac45",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDPoP.kt": "255db62be9e99719c7f2c2a3bdcac8b9ac29b5f5a90edf44de6862e5ff6e03ba",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceDelivery.kt": "5df81fb9bc5846a8550bed5e20ed529aec3529a21a2be25dc1e835866200c686",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt": "634d513b079c46587e68477d6fdf842113ec17fa48c6e1f0ade61bee39a7e795",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkModels.kt": "b8b5012f1e5d09a421f5a033c41357331d33b238644b45aa29a9cdf2887aae0c",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": "43d25b9209c2e1bfd729d188115950fadde1423eaa652c7e9d8745f608912491",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "497119aa7526717c2d0c71691fb0191055ba16244e497c16a34dd584543daf7d",
+    "apps/ios/Sources/EasyWorkDeviceAuthorization.swift": "205881522de1c4c0a08a4871f3bb9119bc08345e94b64501bf21de590a5ec283",
+    "apps/ios/Sources/EasyWorkTransport.swift": "95ee7c04e1382b78daa063d92d0d2bce68cb4aa2ca02fa8d59a350f3c861a45b"
+  },
+  "frozenPriorDocs": {
+    "files": 39,
+    "unchanged": true,
+    "transportCommitFiles": 7,
+    "transportCommitFilesUnchanged": true
+  },
+  "nativeTest": {
+    "class": "com.agenthub.android.NativeEasyWorkAuthorizationBoundaryTest",
+    "source": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkAuthorizationBoundaryTest.kt",
+    "sha256": "bf1945dbe9a917edaa7e7c9c3580f3a746f76e55309607169e66dc5a0574cd0d",
+    "methods": [
+      "registrationPersistsVerifiedGrantUsingActualKeystoreDpop",
+      "lostClaimPostReplyResumesExactPersistedOperationWithFreshProof",
+      "savedPendingClaimResumesPollingWithoutAnotherRegistrationPost",
+      "rejectedClaimRemovesOnlyItsSyntheticPendingRecord",
+      "explicitlyExpiredClaimRemovesItsSyntheticPendingRecord",
+      "freshGrantAuthorizesActualV2RelayWithoutRefreshOrLegacyToken",
+      "refreshRotationPersistsVerifiedGrantAndClearsOriginalIntent",
+      "concurrentRequestsOnOneAuthorizationClientShareOneRefresh",
+      "lostRefreshReplyResumesOriginalTokenAndOperationAfterClientRecreation",
+      "cancelledRefreshKeepsIntentAndClosedLateReplyCannotOverwriteRecovery",
+      "wrongRefreshTargetIsRefusedWithoutReplacingGrantOrOriginalIntent",
+      "grantValidationRejectsChangedIdentityMetadataScopesAndTokens",
+      "expiredRefreshCredentialIsRefusedBeforeAnyNetworkRequest",
+      "serverRevocationRefusalRetainsPendingIntentAndNeverDowngrades",
+      "confirmedRevokeRemovesGrantAndRefusesFurtherAuthorization",
+      "lostRevokeReplyResumesSameDeletionOperationWithFreshProof",
+      "independentGrantRefreshesKeepDeviceTargetAndProofKeysIsolated",
+      "offerParsingRejectsUntrustedRecipientDuplicateFieldsAndInvalidCode",
+      "lateRefreshAfterConfirmedRevokeMustNotRestoreRemovedGrant"
+    ],
+    "groups": {
+      "P8-auth-claim": [
+        "registrationPersistsVerifiedGrantUsingActualKeystoreDpop",
+        "lostClaimPostReplyResumesExactPersistedOperationWithFreshProof",
+        "savedPendingClaimResumesPollingWithoutAnotherRegistrationPost",
+        "rejectedClaimRemovesOnlyItsSyntheticPendingRecord",
+        "explicitlyExpiredClaimRemovesItsSyntheticPendingRecord"
+      ],
+      "P8-auth-grant-refresh": [
+        "freshGrantAuthorizesActualV2RelayWithoutRefreshOrLegacyToken",
+        "refreshRotationPersistsVerifiedGrantAndClearsOriginalIntent",
+        "concurrentRequestsOnOneAuthorizationClientShareOneRefresh",
+        "lostRefreshReplyResumesOriginalTokenAndOperationAfterClientRecreation",
+        "cancelledRefreshKeepsIntentAndClosedLateReplyCannotOverwriteRecovery",
+        "wrongRefreshTargetIsRefusedWithoutReplacingGrantOrOriginalIntent",
+        "grantValidationRejectsChangedIdentityMetadataScopesAndTokens",
+        "expiredRefreshCredentialIsRefusedBeforeAnyNetworkRequest",
+        "serverRevocationRefusalRetainsPendingIntentAndNeverDowngrades"
+      ],
+      "P8-auth-revoke-isolation": [
+        "confirmedRevokeRemovesGrantAndRefusesFurtherAuthorization",
+        "lostRevokeReplyResumesSameDeletionOperationWithFreshProof",
+        "independentGrantRefreshesKeepDeviceTargetAndProofKeysIsolated",
+        "offerParsingRejectsUntrustedRecipientDuplicateFieldsAndInvalidCode"
+      ],
+      "P8-auth-revoke-refresh-regression": [
+        "lateRefreshAfterConfirmedRevokeMustNotRestoreRemovedGrant"
+      ]
+    },
+    "coreMethods": [
+      "registrationPersistsVerifiedGrantUsingActualKeystoreDpop",
+      "lostClaimPostReplyResumesExactPersistedOperationWithFreshProof",
+      "savedPendingClaimResumesPollingWithoutAnotherRegistrationPost",
+      "rejectedClaimRemovesOnlyItsSyntheticPendingRecord",
+      "explicitlyExpiredClaimRemovesItsSyntheticPendingRecord",
+      "freshGrantAuthorizesActualV2RelayWithoutRefreshOrLegacyToken",
+      "refreshRotationPersistsVerifiedGrantAndClearsOriginalIntent",
+      "concurrentRequestsOnOneAuthorizationClientShareOneRefresh",
+      "lostRefreshReplyResumesOriginalTokenAndOperationAfterClientRecreation",
+      "cancelledRefreshKeepsIntentAndClosedLateReplyCannotOverwriteRecovery",
+      "wrongRefreshTargetIsRefusedWithoutReplacingGrantOrOriginalIntent",
+      "grantValidationRejectsChangedIdentityMetadataScopesAndTokens",
+      "expiredRefreshCredentialIsRefusedBeforeAnyNetworkRequest",
+      "serverRevocationRefusalRetainsPendingIntentAndNeverDowngrades",
+      "confirmedRevokeRemovesGrantAndRefusesFurtherAuthorization",
+      "lostRevokeReplyResumesSameDeletionOperationWithFreshProof",
+      "independentGrantRefreshesKeepDeviceTargetAndProofKeysIsolated",
+      "offerParsingRejectsUntrustedRecipientDuplicateFieldsAndInvalidCode"
+    ],
+    "regressionMethods": ["lateRefreshAfterConfirmedRevokeMustNotRestoreRemovedGrant"],
+    "regressionStatus": "source finding; compiled, not executed; expected possible failure must remain separate",
+    "methodTimeoutMillis": 12000,
+    "scenarioTimeoutMillis": 8000,
+    "wholeClassTimeoutSumMillis": 228000,
+    "wholeInvocationTimeoutSeconds": 240,
+    "configArgument": "p8AuthorizationConfig",
+    "runner": "androidx.test.runner.AndroidJUnitRunner",
+    "execution": "not-performed",
+    "deviceLease": null
+  },
+  "nativeInputSetSha256": "53f490b8e82deda8c956929dba321d49c7bb18049f29b2ca659eb1e5edc224a8",
+  "nativeInputFiles": 459,
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "ca2fb0c8e6b6ec66d6199eacd99d199c99bc62873e8a754fcb24f406f5565b79",
+      "bytes": 26418961,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "a17a0fe7baa0c2809249df248678115df055f7cda764544dc511632ea4c0ebe8",
+      "bytes": 7866189,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "fixtures": {
+    "sourceFilesSha256": {
+      "fixture.mjs": "cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a",
+      "fixture.test.mjs": "e1faf684bcc29c93f5198f3135071ce45de6dd78bfce3d7068b1e51a48b91ccd"
+    },
+    "assetSha256": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104",
+    "goldenJweSha256": "69f276be49727e3a47863de1e4388aaa09a2287bdb62c498a8fd7f0a14808b36",
+    "listenHost": "127.0.0.1",
+    "transport": "DEBUG-allowed HTTP, not system-trusted HTTPS",
+    "nodePureTests": 7,
+    "listenersStartedThisTurn": false,
+    "deviceIdentityGeneratedThisTurn": false
+  },
+  "gaps": [
+    "System-trusted HTTPS and real issuer/Desktop human approval",
+    "Actual Android process death / reinstall / real key persistence lifecycle",
+    "Same-grant multi-instance read-modify-write race",
+    "Pending polling timeout/expiry and all server error-code variants",
+    "DPoP nonce challenge negotiation",
+    "iOS native authorization/Keystore-equivalent lifecycle"
+  ],
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

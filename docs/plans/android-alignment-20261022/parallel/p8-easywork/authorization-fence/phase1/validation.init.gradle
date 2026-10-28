@@ -1,0 +1,14 @@
+// Opt-in coordinator checks use real host JSON and a fault-injectable private record adapter.
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.project(':android')
+    def root = gradle.rootProject.projectDir
+    def shim = new File(root, 'docs/plans/android-alignment-20261022/parallel/p8-easywork/jvm')
+    def current = new File(root, 'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase1/jvm')
+    app.android.sourceSets.getByName('test').java.srcDirs(shim, current)
+    app.android.sourceSets.getByName('test').kotlin.srcDirs(shim, current)
+    app.dependencies.add('testImplementation', 'junit:junit:4.13.2')
+    app.dependencies.add('testImplementation', 'org.json:json:20250517')
+    app.tasks.withType(Test).configureEach {
+        testLogging { events 'passed', 'failed'; exceptionFormat 'full' }
+    }
+}

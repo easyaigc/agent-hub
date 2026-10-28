@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "phase": "coordinator-only-not-integrated",
+  "date": "2026-10-29",
+  "baseCommit": "9f79fe5ef5ec028f510b796d86c5c4e0704f2494",
+  "initialStatus": "源码发现，等待父线基线实测",
+  "parentBaselineUpdate": {
+    "commit": "b2a4f589db49e4555f1c9679d9f6e32d9d1856aa",
+    "sourceSha256": "b03c51773d0d5a69c91204bb7f0326f8abd673b19320d6f851f2996f690fe9a8",
+    "appSha256": "02bef4ce3929cb9c5554fc5dfb079c3ba4f9b98b56b7e6a70e28e2c53206b756",
+    "runnerSha256": "ce0477d55cfe934f834ac2b428a9cb673026d857faad6c36f643b01374a072ea",
+    "nativeCore": {
+      "passed": 18
+    },
+    "nativeRegression": {
+      "failed": 1,
+      "method": "lateRefreshAfterConfirmedRevokeMustNotRestoreRemovedGrant"
+    },
+    "evidenceOwner": "parent thread 01a15f25-3e97-70c3-8290-214e6b905273; reported exact device result, raw proof preserved there",
+    "childDeviceExecution": false
+  },
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "7687fc265d0f75e109cf8ac01eadaad5f7a9647f9e6162bc3f4d9d8b479fb2b6"
+  },
+  "nativeStorageApiChanged": false,
+  "hostTests": {
+    "status": "passed",
+    "tests": 13,
+    "xmlSha256": "9a2ef2a43e904be0e6d4183c77465c0ce5749ff02b14295ca874fe165fe1ad9d",
+    "logSha256": "6c78957aada4ed584615e7d50544ce0365b0cc40b7a28bde79a437e43a89ff09"
+  },
+  "nativeExecution": "not-performed",
+  "productionAuthorizationCallsChanged": false,
+  "next": "Integrate narrow authorization call sites; prepare new native scenarios without modifying old 19",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

@@ -73,7 +73,15 @@ class VoiceInputController(private val context: Context,private val store: Voice
     enum class Provider { DESKTOP, SYSTEM }
     var provider by mutableStateOf(Provider.DESKTOP);private set
     var transcript by mutableStateOf("");private set
-    val canRetry get()=provider==Provider.DESKTOP && phase==Phase.FAILED && pending!=null
+    internal val capturedText get()=draft?.text
+    val canRetry get()=provider==Provider.DESKTOP && phase==Phase.FAILED && pending!=null && !discardFailed
+    var discarding by mutableStateOf(false);private set
+    var discardFailed by mutableStateOf(false);private set
+    internal var discardPort: NativeVoiceDiscardPort?=null
+    private var discardRestartAllowed=false
+    private var discardPresentationDetached=false
+    val canFillRecognizedText get()=provider==Provider.SYSTEM && phase==Phase.FAILED && transcript.isNotBlank() && allowed?.invoke()==true
+    val canRerecordWithSystem get()=provider==Provider.DESKTOP && phase==Phase.FAILED && allowed?.invoke()==true
     internal var systemFactory: ()->NativeSystemVoice = { AndroidSystemVoice(context.applicationContext) }
     private var systemVoice: NativeSystemVoice?=null
     private var systemTimeout: Job?=null
@@ -83,6 +91,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
     var permissionRequest by mutableStateOf<String?>(null);private set
     val active get()=phase!=Phase.IDLE
     val status get()=when {
+        discarding->"正在结束语音输入…"
         provider==Provider.SYSTEM && phase==Phase.REQUESTING->"准备本地听写…"
         provider==Provider.SYSTEM && phase==Phase.LISTENING->"正在本地听写"
         provider==Provider.SYSTEM && phase==Phase.FINISHING->"正在完成本地听写…"
@@ -93,6 +102,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
     // Only known local states supply a product copy key. Arbitrary Host/OS errors stay literal.
     private var errorCopyKey by mutableStateOf<String?>(null)
     internal val statusCopyKey get()=when {
+        discarding->"正在结束语音输入…"
         provider==Provider.SYSTEM && phase in listOf(Phase.REQUESTING,Phase.LISTENING,Phase.FINISHING)->status
         else->when(phase) {
         Phase.IDLE->"";Phase.REQUESTING->"正在连接电脑转写…";Phase.LISTENING->"正在录音，结束后由电脑转写";Phase.FINISHING->"电脑正在转写…"
@@ -103,6 +113,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
     private var generation=""
     private var draft: VoiceDraft?=null
     private var pending: PendingVoiceRecording?=null
+    private var registration: CompletableDeferred<PendingVoiceRecording?>?=null
     private var capture: NativeAudioCapture?=null
     private var work: Job?=null
     private var monitor: Job?=null
@@ -114,7 +125,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
     private var focus: AudioFocusRequest?=null
     fun start(original: VoiceDraft,allowed: ()->Boolean,apply: (VoiceDraft,String)->Boolean,restore: Boolean=true,provider: Provider=Provider.DESKTOP) {
         if(active) return
-        this.provider=provider;transcript=""
+        this.provider=provider;transcript="";discardFailed=false;discarding=false;registration=null
         generation=UUID.randomUUID().toString();val id=generation
         draft=original;this.allowed=allowed;this.apply=apply;pending=null;error=null;errorCopyKey=null;levels=List(9) { 0f };phase=Phase.REQUESTING
         work=tasks.launch {
@@ -138,7 +149,15 @@ class VoiceInputController(private val context: Context,private val store: Voice
                     .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
                     .setOnAudioFocusChangeListener { change->if(change<0 && generation==id && phase==Phase.LISTENING) suspendRecording(NativeVoiceFailure("录音被系统中断，原录音已保留。")) }.build()
                 localCheck(audio.requestAudioFocus(request)==AudioManager.AUDIOFOCUS_REQUEST_GRANTED,"麦克风正被其他应用占用，请稍后重试。");focus=request
-                pending=store.begin(original.scope,original.certificate,original.key,original.draftId,original.threadId,original.text);checkCurrent(id)
+                // Local registration can commit while cancellation is arriving. Keep its exact result for discard.
+                val registered=CompletableDeferred<PendingVoiceRecording?>();registration=registered
+                withContext(NonCancellable) {
+                    try {
+                        val created=store.begin(original.scope,original.certificate,original.key,original.draftId,original.threadId,original.text)
+                        registered.complete(created);if(generation==id)pending=created
+                    }catch(failure: Exception) { registered.completeExceptionally(failure);throw failure }
+                }
+                checkCurrent(id)
                 val recorder=NativeAudioCapture(store.file(pending!!.id),tasks) { level->if(generation==id && phase==Phase.LISTENING) levels=levels.drop(1)+level }
                 capture=recorder;recorder.start();checkCurrent(id);phase=Phase.LISTENING
                 monitor=tasks.launch {
@@ -215,6 +234,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
     fun permissionResult(id: String,granted: Boolean) { if(permissionRequest==id && generation==id) waiting?.complete(granted) }
     private fun releaseFocus() { focus?.let { audio.abandonAudioFocusRequest(it) };focus=null }
     fun finish() {
+        if(discarding || discardFailed)return
         if(provider==Provider.SYSTEM) {
             if(phase!=Phase.LISTENING)return
             phase=Phase.FINISHING
@@ -241,9 +261,19 @@ class VoiceInputController(private val context: Context,private val store: Voice
             catch(e: Exception) { if(generation==id) { releaseFocus();phase=Phase.FAILED;error=e.message ?: "录音已保留，点击重试查询转写";errorCopyKey=if(e is ImportedVoiceReceiptOnly)ImportedVoiceReceiptOnly.MESSAGE else (e as? NativeVoiceFailure)?.copyKey } }
         }
     }
+    /** Explicitly use already recognized text after interruption; no microphone, file transcription or upload. */
+    fun fillRecognizedText(): Boolean {
+        if(!canFillRecognizedText)return false
+        val original=draft ?: return false
+        if(apply?.invoke(original,transcript)!=true) {
+            error="原草稿或目标已变化，请先取消，再在当前草稿开始录音。";errorCopyKey=error;return false
+        }
+        clear();return true
+    }
     /** Background/target changes stop local capture and preserve audio, without submitting. */
     fun suspendRecording() = suspendRecording(NativeVoiceFailure("已离开录音输入，原录音已保留。"))
     private fun suspendRecording(failure: NativeVoiceFailure) {
+        if(discarding) { discardRestartAllowed=false;return }
         if(!active || cancelling) return
         if(provider==Provider.SYSTEM) {
             generation=UUID.randomUUID().toString();work?.cancel();monitor?.cancel();waiting?.cancel();waiting=null;permissionRequest=null
@@ -258,7 +288,9 @@ class VoiceInputController(private val context: Context,private val store: Voice
             finally { if(generation==id) { phase=Phase.FAILED;if(error==null) { error=failure.copyKey;errorCopyKey=failure.copyKey } } }
         }
     }
+    /** Navigation/presentation cancellation preserves the original recovery semantics; UI discard is separate. */
     fun cancel() {
+        if(discarding) { discardRestartAllowed=false;discardPresentationDetached=true;return }
         if(!active || cancelling) return
         cancelling=true
         if(provider==Provider.SYSTEM) { generation=UUID.randomUUID().toString();work?.cancel();monitor?.cancel();stopSystem();clear();return }
@@ -271,16 +303,60 @@ class VoiceInputController(private val context: Context,private val store: Voice
             clear()
         }
     }
-    fun rerecord() {
+    fun rerecord()=rerecordWith(provider)
+    fun rerecordWith(nextProvider: Provider) {
         if(phase!=Phase.FAILED) return
-        val original=draft ?: return;val guard=allowed ?: return;val change=apply ?: return
+        val guard=allowed ?: return
         if(!guard()) { error="原草稿或目标已变化，请先取消，再在当前草稿开始录音。";errorCopyKey=error;return }
-        val route=provider;val record=pending;clear()
+        discardThen(nextProvider)
+    }
+    fun discard() { if(active && !discarding)discardThen(null) }
+    private fun discardThen(nextProvider: Provider?) {
+        if(cancelling || discarding)return
+        if(provider==Provider.SYSTEM) {
+            val original=draft;val guard=allowed;val change=apply
+            try {
+                cancel()
+                if(nextProvider!=null && original!=null && guard?.invoke()==true && change!=null)start(original,guard,change,restore=false,provider=nextProvider)
+            }catch(_: Exception) { cancelling=false;discardFailed=true;phase=Phase.FAILED;error="无法丢弃录音，请重试。";errorCopyKey=error }
+            return
+        }
+        val original=draft ?: return;val guard=allowed ?: return;val change=apply ?: return
+        val oldWork=work;val recorder=capture;val registered=registration;val previous=pending
+        generation=UUID.randomUUID().toString();val id=generation;discardRestartAllowed=nextProvider!=null;discardPresentationDetached=false
+        discarding=true;discardFailed=false;cancelling=true;error=null;errorCopyKey=null;phase=Phase.FINISHING
+        monitor?.cancel();oldWork?.cancel();waiting?.cancel();waiting=null;permissionRequest=null;releaseFocus()
         work=tasks.launch {
-            if(record!=null && record.manifest==null) { try { store.remove(record,true) } catch(_: OutOfMemoryError) { error="手机内存不足，原录音已保留，请稍后重试。";phase=Phase.FAILED;return@launch } catch(e: Exception) { error=e.message;phase=Phase.FAILED;return@launch } }
-            // Sealed/unknown old operations stay in private storage; a new capture gets a new ID.
-            start(original,guard,change,restore=false,provider=route)
+            try {
+                withTimeout(10_000) {
+                    oldWork?.join()
+                    val stopped=runCatching { recorder?.stop() }
+                    if(stopped.isFailure && recorder?.ended!=true)throw stopped.exceptionOrNull()!!
+                    if(generation!=id)return@withTimeout
+                    capture=null
+                    val record=previous ?: registered?.await()
+                    if(record!=null) {
+                        pending=record
+                        val request=NativeVoiceDiscardRequest(record)
+                        val owner=discardPort ?: throw NativeVoiceFailure("无法丢弃录音，请重试。")
+                        localCheck(owner.discard(request).acknowledges(request),"无法丢弃录音，请重试。")
+                    }
+                }
+                if(generation!=id)return@launch
+                val restart=discardRestartAllowed && nextProvider!=null && guard()
+                clear()
+                if(restart)start(original,guard,change,restore=false,provider=nextProvider!!)
+            }catch(_: Exception) {
+                if(generation==id) {
+                    if(discardPresentationDetached && (recorder==null || recorder.ended)) { clear();return@launch }
+                    if(recorder?.ended!=true && recorder!=null)capture=recorder
+                    discarding=false;discardFailed=true;cancelling=false;phase=Phase.FAILED
+                    error="无法丢弃录音，请重试。";errorCopyKey=error
+                }
+            }catch(_: OutOfMemoryError) {
+                if(generation==id) { discarding=false;discardFailed=true;cancelling=false;phase=Phase.FAILED;error="无法丢弃录音，请重试。";errorCopyKey=error }
+            }
         }
     }
-    private fun clear() { generation=UUID.randomUUID().toString();stopSystem();transcript="";waiting?.cancel();cancelling=false;releaseFocus();draft=null;pending=null;capture=null;permissionRequest=null;waiting=null;phase=Phase.IDLE;error=null;errorCopyKey=null;levels=List(9) { 0f } }
+    private fun clear() { generation=UUID.randomUUID().toString();stopSystem();transcript="";waiting?.cancel();cancelling=false;discarding=false;discardFailed=false;discardRestartAllowed=false;discardPresentationDetached=false;registration=null;releaseFocus();draft=null;pending=null;capture=null;permissionRequest=null;waiting=null;phase=Phase.IDLE;error=null;errorCopyKey=null;levels=List(9) { 0f } }
 }

@@ -21,7 +21,11 @@ import {
   SuggestionObservationError,
   createWindowsTraceDiagnostics,
 } from '@codex-manage/codex-adapter';
-import { NotificationPublisher } from '@codex-manage/notification-runtime';
+import {
+  NotificationPublisher,
+  NotificationRecoveryError,
+} from '@codex-manage/notification-runtime';
+import { notificationRecoveryRoute } from './notification-recovery-routes.js';
 import { startDirectDiscovery } from './direct-discovery.js';
 import { DirectDiscoveryRecovery } from './direct-discovery-recovery.js';
 import { VPNPeerDirectory } from './direct-endpoints.js';
@@ -471,10 +475,14 @@ export async function startRuntimeServer() {
       let data: Record<string, unknown> = {};
       if (request.method === 'POST' && !upload) {
         try {
-          data = JSON.parse((await body(request, 150_000)).toString('utf8')) as Record<
-            string,
-            unknown
-          >;
+          data = JSON.parse(
+            (
+              await body(
+                request,
+                url.pathname === '/v1/notifications/recovery-v2/operations' ? 300_000 : 150_000,
+              )
+            ).toString('utf8'),
+          ) as Record<string, unknown>;
         } catch (error) {
           if (error instanceof RuntimeError) throw error;
           throw new RuntimeError(400, '无效 JSON');
@@ -916,6 +924,19 @@ export async function startRuntimeServer() {
         return;
       }
       if (url.pathname.startsWith('/v1/notifications/')) {
+        const recoveryResponse = notificationRecoveryRoute(
+          request.method,
+          url,
+          data,
+          notifications,
+          session.readingTarget(),
+        );
+        if (recoveryResponse !== undefined) {
+          json(response, 200, recoveryResponse);
+          if (request.method === 'POST') void monitor();
+          return;
+        }
+
         const keys =
           url.pathname === '/v1/notifications/register'
             ? ['hostId', 'registration']
@@ -1235,7 +1256,8 @@ export async function startRuntimeServer() {
       const status =
         error instanceof RuntimeError ||
         error instanceof CreationError ||
-        error instanceof SuggestionObservationError
+        error instanceof SuggestionObservationError ||
+        error instanceof NotificationRecoveryError
           ? error.status
           : 502;
       const resource = requestURL?.pathname.startsWith('/v1/attachments');

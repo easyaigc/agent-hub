@@ -18,10 +18,11 @@ internal class NativeMigrationExport(private val context: Context,private val st
         require(!destination.canonicalPath.startsWith(context.noBackupFilesDir.canonicalPath + java.io.File.separator))
         storage.migrationStreamSnapshot(::legacyNames) { records ->
             requireSupportedScopes()
-            NativeMigrationCandidateStore(context, storage).validateStreamRecords(records)
+            val portable=records.copy(text=NativeMigrationForeground.projectSource(records.text))
+            NativeMigrationCandidateStore(context, storage).validateStreamRecords(portable)
             val atomic = android.util.AtomicFile(destination); val output = atomic.startWrite()
             try {
-                NativeMigrationStreamCrypto.write(output, password) { NativeMigrationStreamArchive.write(it, records, context.packageName) }
+                NativeMigrationStreamCrypto.write(output, password) { NativeMigrationStreamArchive.write(it, portable, context.packageName) }
                 requireSupportedScopes()
                 atomic.finishWrite(output)
             } catch (failure: Throwable) { atomic.failWrite(output); throw failure }
@@ -33,7 +34,8 @@ internal class NativeMigrationExport(private val context: Context,private val st
         try{return NativeMigrationCrypto.seal(clear,password)}finally{clear.fill(0)}
     }
     internal fun capture(): ByteArray {
-        val records=storage.migrationTypedArchiveSnapshot(::legacyNames)
+        val original=storage.migrationTypedArchiveSnapshot(::legacyNames)
+        val records=original.copy(text=NativeMigrationForeground.projectSource(original.text))
         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
         try {
             require(clear.size<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
@@ -45,6 +47,8 @@ internal class NativeMigrationExport(private val context: Context,private val st
         val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1",NativeMigrationDeviceState.READING,NativeMigrationDeviceState.NOTIFICATIONS,NativeMigrationDeviceState.AUDIT,NativeMigrationNotificationTombstones.RECORD,NativeMigrationSounds.RECORD)
         fun add(name: String){require(name.length<=8192&&!name.contains('\u0000'));names.add(name);require(names.size<=1024)}
         fun value(name: String)=read(name)?.let{StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))}
+        add(NativeMigrationForeground.IDENTITY);add(NativeMigrationForeground.JOURNAL)
+        add(NativeVoicePreferenceRecord.RECORD)
         read(NativeMigrationSounds.RECORD)?.let {raw->NativeChatNotificationSoundLibrary.binaryInventory(raw).keys.forEach(::add)}
         val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata)
         val keys=mutableSetOf<String>()

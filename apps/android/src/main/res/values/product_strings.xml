@@ -1786,4 +1786,51 @@
     <string name="product_3ce43bf7e5d47e5afd18f803" formatted="false">"Remote notification revocation is still unconfirmed."</string>
     <string name="product_83c08d39d66aa37337500214" formatted="false">"Notifications were revoked. Turn them on again to resume synchronization."</string>
     <string name="product_401191d0ded2f688a2bbd515" formatted="false">"Some notification results are unconfirmed. They will not alert again."</string>
+    <string name="product_9719ae16c30a0a85394f61b6" formatted="false">"Use the selected method first. The phone speech service may use the network; another service is never selected automatically."</string>
+    <string name="product_9cbbe520d7434077f2c6fcf1" formatted="false">"The voice setting could not be saved. Your selection still applies for this session."</string>
+    <string name="product_15b41045c55501b29f137923" formatted="false">"This selection applies only while this app session remains open."</string>
+    <string name="product_759c42bff8432ad61dc540ef" formatted="false">"Phone speech capabilities"</string>
+    <string name="product_37e44743d5dc06bc0fd3322f" formatted="false">"On-device speech service found"</string>
+    <string name="product_d3a7ca9e5b37dfadfdc46730" formatted="false">"System speech service found; it may use the network"</string>
+    <string name="product_f4f1bd46968e31a968ba232c" formatted="false">"No available speech service found"</string>
+    <string name="product_818108b0a869776f7d557ef3" formatted="false">"System speech capabilities are unconfirmed"</string>
+    <string name="product_04a18dfef1cae7b02e8c665f" formatted="false">"The on-device model for this language is installed"</string>
+    <string name="product_f92ec1b2613ed5d6ec00106b" formatted="false">"Download this language in system settings first"</string>
+    <string name="product_1879b04dab8501e677768c83" formatted="false">"This language uses an online service"</string>
+    <string name="product_067c13e6396425f65248568e" formatted="false">"The service did not report support for this language"</string>
+    <string name="product_63f6f86b062db8c366aa3738" formatted="false">"Support for this language is unconfirmed"</string>
+    <string name="product_ef06f64d21821b979e146e05" formatted="false">"Refresh capabilities"</string>
+    <string name="product_60d3ce7818c444fed5bd443f" formatted="false">"Check speech services and language support in system settings. Capability checks do not open the microphone or download models."</string>
+    <string name="product_47d8a37f27733a6751b43f82" formatted="false">"Transcribing the saved recording on this phone is unavailable. If computer transcription fails, keep the original and record again."</string>
+    <string name="product_23f74b31b9c26d209c998487" formatted="false">"The phone speech service may use the network."</string>
+    <string name="product_dbb57e997ede420ef68e7e63" formatted="false">"Use recognized text"</string>
+    <string name="product_205f2886016c46c4368f6a30" formatted="false">"Record again using phone speech"</string>
+    <string name="product_ce80a78d9ba72825b9edf57b" formatted="false">"System dictation"</string>
+    <string name="product_e680602c84667eda5203f36c" formatted="false">"Original foreground notification operations still require the original installation identity and authorization. The data is preserved; this migration version cannot recover or replay them."</string>
+    <string name="product_1a101ccc0e7cdf24b1dc602c" formatted="false">"Loading voice settings…"</string>
+    <string name="product_6d397665feb8edbc3c6abf34" formatted="false">"Saving voice settings…"</string>
+    <string name="product_cdc921c2c5f605e6b3b6bfb2" formatted="false">"Voice settings could not be loaded. Your selection still applies for this session."</string>
+    <string name="product_b1672266020dfdb635d4ad2a" formatted="false">"Recover voice settings"</string>
+    <string name="product_1fefd57ba872ea645a52b208" formatted="false">"Refresh current notifications"</string>
+    <string name="product_3679a3020f14978bc7b6340d" formatted="false">"Foreground notifications are synchronized. Background push is not ready yet."</string>
+    <string name="product_254a1d074ce410ad61c8e9d6" formatted="false">"Lost history will not be restored. After confirmation, notifications still retained by the computer will be checked. Conversation actions will not be submitted again."</string>
+    <string name="product_1355c71d629ebe23c998620a" formatted="false">"Notifications cannot be synchronized right now. The original records are preserved."</string>
+    <string name="product_1c75366a40ce4497ba387f9b" formatted="false">"Waiting for the computer to confirm pending items. Checks will continue when it recovers."</string>
+    <string name="product_7916c0d057a00da49253ba18" formatted="false">"Some earlier notification changes are still unconfirmed."</string>
+    <string name="product_d94d6a48279512bf798f27e3" formatted="false">"The computer did not accept this notification change. Check the connection and notification settings."</string>
+    <string name="product_adcd01c03668a77ca1794f38" formatted="false">"The computer\'s notification data has changed. Confirm turning notifications off before turning them on again."</string>
+    <string name="product_0e7cb007baf2eadbbaa397ec" formatted="false">"Confirm turning off notifications for this computer"</string>
+    <string name="product_1d6d4cf86844dda3924813ff" formatted="false">"Confirm refresh"</string>
+    <string name="product_3d6ab663d4252ae450850915" formatted="false">"Use the original connection to check notification settings."</string>
+    <string name="product_940be26c678be93588dfb4a0" formatted="false">"Notifications for this computer are turned off."</string>
+    <string name="product_53080dab446617c44e699a03" formatted="false">"The notification change is unconfirmed. Checking the original request."</string>
+    <string name="product_44b9440a15c230892a5284fb" formatted="false">"Some notification history cannot be recovered. Confirm refreshing the current notifications."</string>
+    <string name="product_abeb91aacc6bb84ba60d8f84" formatted="false">"Some notification display results are unconfirmed. They will not be displayed again."</string>
+    <string name="product_6fe145044257f76b750075b5" formatted="false">"Ending voice input…"</string>
+    <string name="product_ad5d5d0fccae56a23a641d89" formatted="false">"Retry discard"</string>
+    <string name="product_5e0c369773590a1f8f26d400" formatted="false">"Device authorization revocation is awaiting confirmation. Check the computer."</string>
+    <string name="product_62ff8de0363916c2f6afe2c5" formatted="false">"The saved device authorization record is invalid. The original record is preserved."</string>
+    <string name="product_242be9c6c003dac15a7151a5" formatted="false">"A newer state has replaced the original authorization refresh. The original record is preserved."</string>
+    <string name="product_90b73b868aafb085f5b02ccc" formatted="false">"Device authorization has changed. Check the original operation again."</string>
+    <string name="product_de03ac3961a6c18db3b3693b" formatted="false">"The target of the device authorization record has changed. The original record is preserved."</string>
 </resources>

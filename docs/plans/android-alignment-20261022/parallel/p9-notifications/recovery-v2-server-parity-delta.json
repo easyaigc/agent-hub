@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "stage": "P9-recovery-v2-server",
+  "baseCommit": "4df98a64ef2b78cf08411642871e1365d9c88741",
+  "features": [
+    {
+      "id": "F52",
+      "commonAssertion": "后台加密推送、去重、注册代次／令牌轮换／撤销和未知投递；供应商接受与设备到达分开",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "V1 notification wire and non-adopted iOS device behavior retained and covered by Node auxiliary regression; no iOS product edit/native proof. New Host internal disk format rejects unsafe older writers after v2 activation.",
+      "implementedSlice": "Optional full original-ID receipts, monotonic generation/absent tombstone, bounded ordered original feed and explicit accepted-gap snapshots. Android v2 is next stage; no vendor/background/arrival promise.",
+      "sourceSha256": {
+        "apps/host-agent/src/notification-recovery-routes.ts": "f067b5d801941f91bc38efaa2d969499049f572e0d9d8eb1ddb1ecb46cf1be40",
+        "apps/host-agent/src/runtime-server.ts": "169cf47991e43c1e84832432a66e1aadab39bb73c7e95b2d5b96e8cc9c489a50",
+        "packages/notification-runtime/src/index.ts": "d463dcbcddb54de43e6d88ce396785989a981bd08b91f25710ab1ee56d2b8bc5",
+        "packages/notification-runtime/src/recovery-v2.ts": "2a91e5643dfedafcd52d85072d09e730147815d21792b1c0969f232dd9f803ff",
+        "packages/protocol/fixtures/mobile/notification-recovery-v2.json": "e29100066001f2a8b85b9ece54c20bae68acaa4c74f267ebf51fdd581ee25b17",
+        "packages/protocol/notification-recovery-v2-contract-manifest.json": "8f4f2a2fedb97938088e33340f99f76fce12a49fba291aabe3516bad91bc113e",
+        "packages/protocol/schemas/notification-recovery-v2.schema.json": "ce4ede23ba7bd9985e472be954635de47fb3ee7d951f6593f3f7c91809de5bf1",
+        "packages/protocol/src/index.ts": "c95af43540f6625aa302fd50b1532782970d07b6e91b243afe422440d757be7c",
+        "packages/protocol/src/notification-recovery-v2.ts": "c74495c3bbf5465d6fc7aeebc4fc6605897e87ae574f32e14d0348285475a6cb",
+        "scripts/notification-recovery-v2-contract.mjs": "47108ceb7aa52f28977b97a6624d90d9c454cd446abc97ac2d4953bd6f389454",
+        "scripts/notification-recovery-v2.test.mjs": "c12ce16092fbc380ea2e564227a89ff49ac8ec9bb831c47221f1d43490da8044"
+      }
+    }
+  ],
+  "sourceFiles": {
+    "apps/host-agent/src/notification-recovery-routes.ts": "f067b5d801941f91bc38efaa2d969499049f572e0d9d8eb1ddb1ecb46cf1be40",
+    "apps/host-agent/src/runtime-server.ts": "169cf47991e43c1e84832432a66e1aadab39bb73c7e95b2d5b96e8cc9c489a50",
+    "packages/notification-runtime/src/index.ts": "d463dcbcddb54de43e6d88ce396785989a981bd08b91f25710ab1ee56d2b8bc5",
+    "packages/notification-runtime/src/recovery-v2.ts": "2a91e5643dfedafcd52d85072d09e730147815d21792b1c0969f232dd9f803ff",
+    "packages/protocol/fixtures/mobile/notification-recovery-v2.json": "e29100066001f2a8b85b9ece54c20bae68acaa4c74f267ebf51fdd581ee25b17",
+    "packages/protocol/notification-recovery-v2-contract-manifest.json": "8f4f2a2fedb97938088e33340f99f76fce12a49fba291aabe3516bad91bc113e",
+    "packages/protocol/schemas/notification-recovery-v2.schema.json": "ce4ede23ba7bd9985e472be954635de47fb3ee7d951f6593f3f7c91809de5bf1",
+    "packages/protocol/src/index.ts": "c95af43540f6625aa302fd50b1532782970d07b6e91b243afe422440d757be7c",
+    "packages/protocol/src/notification-recovery-v2.ts": "c74495c3bbf5465d6fc7aeebc4fc6605897e87ae574f32e14d0348285475a6cb",
+    "scripts/notification-recovery-v2-contract.mjs": "47108ceb7aa52f28977b97a6624d90d9c454cd446abc97ac2d4953bd6f389454",
+    "scripts/notification-recovery-v2.test.mjs": "c12ce16092fbc380ea2e564227a89ff49ac8ec9bb831c47221f1d43490da8044"
+  },
+  "centralTablesEdited": false,
+  "checkChainAppend": [
+    "node scripts/notification-recovery-v2-contract.mjs",
+    "node --test scripts/notification-recovery-v2.test.mjs"
+  ],
+  "migration": "Host state v1 read-compatible, activates local disk v2 to fence old writer; never portable machine identity; mobile journal/reset contract supplied with Android stage",
+  "nativeAndRealDev": "not-run; parent lease only",
+  "proposedDesign": "recovery-v2-design.md remains original checkpoint; implemented decisions in recovery-v2-server.md",
+  "checks": {
+    "build": "pnpm build passed, six workspace build tasks",
+    "node": "25 v2 + 16 existing v1 notification tests passed (41 total), synthetic local boundaries only",
+    "contract": "Schema/manifest and five canonical cross-language vectors match production code",
+    "format": "passed",
+    "lint": "passed",
+    "syncUnit": "5 passed",
+    "pnpmCheck": "stopped at unchanged coordinator central parity coverage gate; no check weakened",
+    "nativeAndRealDev": "not run; Android v2 next stage, no real Host/device/model/vendor action"
+  }
+}

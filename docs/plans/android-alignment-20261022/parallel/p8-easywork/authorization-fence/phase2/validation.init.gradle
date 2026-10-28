@@ -1,0 +1,11 @@
+gradle.projectsEvaluated {
+    def app = gradle.rootProject.project(':android')
+    def root = gradle.rootProject.projectDir
+    def audit = new File(root, 'docs/plans/android-alignment-20261022/parallel/p8-easywork')
+    def dirs = [new File(audit, 'jvm'), new File(audit, 'authorization-fence/phase1/jvm'), new File(audit, 'authorization-fence/phase2/jvm')]
+    app.android.sourceSets.getByName('test').java.srcDirs(dirs)
+    app.android.sourceSets.getByName('test').kotlin.srcDirs(dirs)
+    app.dependencies.add('testImplementation', 'junit:junit:4.13.2')
+    app.dependencies.add('testImplementation', 'org.json:json:20250517')
+    app.tasks.withType(Test).configureEach { testLogging { events 'passed', 'failed'; exceptionFormat 'full' } }
+}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "7-explicit-discard",
+  "baseCommit": "93a4cca0c4086481e97155e8edd08779c4d7ffa3",
+  "featureIds": ["F56", "F64"],
+  "commonAssertions": [
+    "Explicit local discard/re-record waits for durable original-ID/fingerprint acknowledgement; failure does not falsely clear",
+    "Navigation/suspension preserve original recovery; no late draft fill or delayed recapture",
+    "No original operation/audio/receipt replay or remote cancellation; storage Schema remains owner-controlled"
+  ],
+  "bothPlatforms": {
+    "ios": "new d0c64535 actual discard/cancel distinction read; unchanged",
+    "android": "Controller/UI explicit-discard port and ordering implemented; production terminal adapter/restore filter and acceptance pending"
+  },
+  "implementation": "partial pending storage-owner terminal integration",
+  "verification": "auxiliary compilation/predicates; new seven native Controller methods not executed here",
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceDiscardControllerTest.kt",
+      "sha256": "dad450f253e6fe14f4369a876e5d89f19e78de8d3090b5f8cb1d8ea6add2123e"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceRecoveryTest.kt",
+      "sha256": "a2351ae7f2d779d4ec36456d078c3e86e0355b9125cb1def0302331bf44a4831"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "0c1259d7ab90b8d20c7cb835eb2d764b7df29394b7e90516ab7ce50041120094"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceDiscard.kt",
+      "sha256": "62ffde4d99adf9ff0a6b687680b30afc37488b421ceb68d12850638156f6468a"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "sha256": "0795d7f01d8480fa4332a7d8305a38d8d3f37db08211e56e38f37e62b257af56"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "sha256": "1359db3311e24a8529a7a49bf6c4fcb49216779436e94cff96c5e59adc3a95f5"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage7-explicit-discard.md",
+  "ownerHook": "parallel/p7-reading-voice/stage7-discard-owner-hook.json",
+  "remaining": [
+    "production durable no-offer terminal and restore exclusion",
+    "short viewport/bilingual/AX actual-window scenes to follow",
+    "parent catalog/parity union and leased native/real Host/DEV",
+    "original-file phone transcription capability remains absent"
+  ]
+}

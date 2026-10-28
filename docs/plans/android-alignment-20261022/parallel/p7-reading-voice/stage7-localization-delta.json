@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "status": "parent-owned catalog union; reuse new iOS discard key",
+  "entries": [
+    {
+      "key": "无法丢弃录音，请重试。",
+      "zhHans": "无法丢弃录音，请重试。",
+      "en": "Could not discard the recording. Try again."
+    },
+    {
+      "key": "正在结束语音输入…",
+      "zhHans": "正在结束语音输入…",
+      "en": "Ending voice input…"
+    },
+    {
+      "key": "重试丢弃",
+      "zhHans": "重试丢弃",
+      "en": "Retry discard"
+    }
+  ]
+}

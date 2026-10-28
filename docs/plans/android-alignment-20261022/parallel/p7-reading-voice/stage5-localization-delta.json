@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "status": "parent catalog union; reuse existing iOS key when present",
+  "entries": [
+    {
+      "key": "语音输入回复",
+      "zhHans": "语音输入回复",
+      "en": "Dictate reply"
+    }
+  ]
+}

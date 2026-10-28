@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "8-native-viewport",
+  "baseCommit": "a7bb5b5f265b9bcfd7b242db8c512230574cd527",
+  "featureIds": ["F56", "F64"],
+  "commonAssertions": [
+    "Short component viewports keep provider, retry, capability and first/last question voice actions reachable",
+    "One accessible central stop action retains the explicit hint and mirrored decorative meters; stop/cancel do not submit answers",
+    "Retained Activity reuses the same Session/controllers and lazy preference binding",
+    "Read failure is announced politely and never presented as confirmed durable persistence"
+  ],
+  "bothPlatforms": {
+    "ios": "unchanged reference; native visual comparison remains required",
+    "android": "narrow/font-scaled strip uses full-width activity plus separate controls; prepared native matrix compiled, not executed"
+  },
+  "design": {
+    "compactTrigger": "available dp width / composed fontScale < 340",
+    "touchControlsDp": 48,
+    "preparedMatrix": "zh-Hans/en x light/dark; local fontScale 1.2; composed viewport <=320x300dp inside actual Activity",
+    "capture": "owned Activity PixelCopy, maximum17 PNGs with viewport/window metadata",
+    "systemDifferences": "no system display/font/theme/IME settings changed; whole sheet/insets/system bars/TalkBack/process death remain unverified"
+  },
+  "implementation": "Android responsive UI and native scenario preparation implemented",
+  "verification": "app/runner compiled; three methods not executed here; no current-source native pass",
+  "sources": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "sha256": "1972403bce51255ad9a398821e02e82f769f0e3ad770e0ce89a6770fd2f4f177"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettingsPage.kt",
+      "sha256": "b77302fe5098a1759f259ae8843683d7bb1167ae5ff089b5d0e9d76651430f2a"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceViewportMatrixTest.kt",
+      "sha256": "2db4743925f52d57a9c67999f8e34ed9b862e83b3222901368560cb995027bdd"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage8-native-viewport.md",
+  "remaining": [
+    "parent reviewed catalog union including System dictation and stage6/7 copy",
+    "production preference/discard adapters and restore exclusion",
+    "leased native matrix execution, PixelCopy review and independent implementation/environment fingerprints",
+    "real recognizer/audio/Host/model DEV and original-file phone transcription capability"
+  ]
+}

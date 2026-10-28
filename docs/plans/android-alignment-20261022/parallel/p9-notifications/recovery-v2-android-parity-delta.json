@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "stage": "P9-recovery-v2-android",
+  "baseCommit": "d0daf10e0e4366cbeba95ebad2925e58ad5e8013",
+  "features": [
+    {
+      "id": "F52",
+      "commonAssertion": "未知通知写只按原ID/epoch查询；独立人类关闭安装更高代次墓碑；连续有界原事件先完整落盘再经P7处理，待Host确认不前进，缺口明确接受后完整快照校验",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "iOS v1 wire and non-adopted behavior unchanged; no iOS product/UI edit or native proof",
+      "implementedSlice": "Optional foreground v2 monitor/controller, encrypted original operations/outcomes, exact fixed transport, explicit off/gap APIs and independent status component; shared parent product/migration/localization integration pending",
+      "sourceSha256": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryTest.kt": "73811c84e06e02f7af15094c031052a13a0e54377e5bc50afff7d0f5368db4da",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryUiTest.kt": "628082329b315715ebe45fad940984ec6b1fc7f8fd3deb7f7efd5aea6be6821a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCommands.kt": "d0c8d9c06cac56a7c09bd8411499a885f077512c9501a821e1062405b47926aa",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt": "3a7d1849a1f30502b5eddda2680f2931351ce5964e764c37a9ca6142c98ff397",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationIdentity.kt": "df819803b2bbbfda7032c708f9840dba58bb9028423bafac2ca1baef1ba0946a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryCommands.kt": "af06a3a3197aae934e308a950df82042168464a681d5ffd9fe2695b67cb2b671",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryController.kt": "754e62262cbb14db8e25d710088130240d4b11031373483f7e943685621dc8d6",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStatus.kt": "fca730c8049e1376d4c5cd7e0f58b1d25d222b95e7eb3aaf867e91b46bad677c",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt": "bccc9d10e5e94bc23850bc98e033403a77e97eed93a8d7e1c0f195c3b8176f10",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryWire.kt": "2c9c46ea1a3df2f248d4f96c640dfc3e145ca4fa95ae49a159049968ef4f266a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "9837311ecaca55555edfd509b905d6c3a2f8ae20f4cfa2e7c2c74d6649a68b06",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "4cdc7b3e390106f2df7f6081956641c2441dfa5b97b45abd7001da2b3e851e80",
+        "scripts/mobile/check-chat-notification-recovery.mjs": "497922a6146fcd78689a53367814e8878a5e166d5ea0d016945d24d34f223b9f",
+        "scripts/mobile/fixtures/RecoveryStorage.kt": "360c603ef73a3b11d9cd55e45a47042e458137ed8b31b6c265e8f0bb3a411480",
+        "scripts/mobile/fixtures/RecoveryVectors.kt": "124376aa1345748344eb1ccd5123642b369ee3a4ac35ce846dcc4f74472df0fc",
+        "scripts/mobile/fixtures/android/os/Looper.java": "e8864f563af7de3857e28249c25afde3a89016552a3a82487a5840103ca179f5"
+      }
+    }
+  ],
+  "sourceFiles": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryTest.kt": "73811c84e06e02f7af15094c031052a13a0e54377e5bc50afff7d0f5368db4da",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryUiTest.kt": "628082329b315715ebe45fad940984ec6b1fc7f8fd3deb7f7efd5aea6be6821a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCommands.kt": "d0c8d9c06cac56a7c09bd8411499a885f077512c9501a821e1062405b47926aa",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt": "3a7d1849a1f30502b5eddda2680f2931351ce5964e764c37a9ca6142c98ff397",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationIdentity.kt": "df819803b2bbbfda7032c708f9840dba58bb9028423bafac2ca1baef1ba0946a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryCommands.kt": "af06a3a3197aae934e308a950df82042168464a681d5ffd9fe2695b67cb2b671",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryController.kt": "754e62262cbb14db8e25d710088130240d4b11031373483f7e943685621dc8d6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStatus.kt": "fca730c8049e1376d4c5cd7e0f58b1d25d222b95e7eb3aaf867e91b46bad677c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt": "bccc9d10e5e94bc23850bc98e033403a77e97eed93a8d7e1c0f195c3b8176f10",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryWire.kt": "2c9c46ea1a3df2f248d4f96c640dfc3e145ca4fa95ae49a159049968ef4f266a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "9837311ecaca55555edfd509b905d6c3a2f8ae20f4cfa2e7c2c74d6649a68b06",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt": "4cdc7b3e390106f2df7f6081956641c2441dfa5b97b45abd7001da2b3e851e80",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "497922a6146fcd78689a53367814e8878a5e166d5ea0d016945d24d34f223b9f",
+    "scripts/mobile/fixtures/RecoveryStorage.kt": "360c603ef73a3b11d9cd55e45a47042e458137ed8b31b6c265e8f0bb3a411480",
+    "scripts/mobile/fixtures/RecoveryVectors.kt": "124376aa1345748344eb1ccd5123642b369ee3a4ac35ce846dcc4f74472df0fc",
+    "scripts/mobile/fixtures/android/os/Looper.java": "e8864f563af7de3857e28249c25afde3a89016552a3a82487a5840103ca179f5"
+  },
+  "centralTablesEdited": false,
+  "parentOwnedEntryPoints": [
+    "MobileSession",
+    "MainActivity",
+    "NativeSheets",
+    "Manifest",
+    "central parity/design/acceptance tables",
+    "localization registry",
+    "migration inventory/export/activation"
+  ],
+  "mustPreserve": [
+    "P7 mayPresent and MigrationTombstones claim hook; NativeChatNotificationStore source not edited",
+    "required P7 original receive/reconcile and exact-target draft-preserving route",
+    "old v1 unknown record bytes; no v2 inference",
+    "immutable original IDs/auth/target/key/preferences/generation/fingerprint across uncertainty"
+  ],
+  "localizationKeys": [
+    "刷新现有通知",
+    "前台通知已同步，后台推送尚未就绪。",
+    "取消",
+    "已丢失的历史不会恢复。确认后将核对电脑仍保留的通知，不会重新提交对话操作。",
+    "暂时无法同步通知，原记录已保留。",
+    "正在等待电脑确认待处理事项，恢复后继续核对。",
+    "此前仍有通知设置结果待确认。",
+    "电脑未接受本次通知设置，请核对连接和通知设置。",
+    "电脑的通知资料已更换，请先确认关闭，再重新开启通知。",
+    "确认关闭这台电脑的通知",
+    "确认刷新",
+    "请使用原连接核对通知设置。",
+    "这台电脑的通知已关闭。",
+    "通知设置结果待确认，正在核对原操作。",
+    "部分通知历史已不可恢复，需要确认后刷新现有通知。",
+    "部分通知的显示结果待确认，不会重复显示。"
+  ],
+  "migration": {
+    "record": "native-chat-notification-recovery-v2",
+    "version": 2,
+    "validator": "NativeChatNotificationRecoveryStore.validateEncoded(raw)",
+    "authority": "archive-only; do not activate identity/subscription/cursor/batch/tickets/reset; unknown version/unsupported nonempty record blocks with original bytes preserved",
+    "contract": "recovery-v2-android-journal.md",
+    "entryPointsChanged": false
+  },
+  "checkChainAppend": [
+    "GRADLE_USER_HOME=<cached-native-toolchain> node scripts/mobile/check-chat-notification-recovery.mjs (after Android acceptance compile, uses JVM-only memory/Looper ports)"
+  ],
+  "checks": {
+    "kotlinRecoveryJvm": "41 passed, actual shipping controller/stores/decoder/HTTP with synthetic storage/Looper and owned loopback; not Android native proof",
+    "nativeCompile": "assembleDebug + assembleDebugAndroidTest acceptance variant passed; 15 new journal/controller native + 4 new UI tests compiled only",
+    "legacyKotlinJvm": "45 passed; actual shipping v1 wire/fixed HTTP source, synthetic loopback only",
+    "serverNode": "matching source reuse d0daf10e: 27 v2 + 16 v1 passed (43); parent independently passed earlier ad6 server 25+16",
+    "format": "final pnpm format:check passed",
+    "lint": "passed",
+    "syncUnit": "5 passed",
+    "pnpmCheck": "stopped at unchanged coordinator-owned parity coverage gate: prior synthetic-tone.m4a record missing/stale; no gate weakened",
+    "nativeRealDev": "not run; parent lease only",
+    "formalHostVendorBackgroundA6": "not changed or tested"
+  },
+  "handoff": "recovery-v2-android.md"
+}

@@ -1,0 +1,8 @@
+{
+  "contract": "notification-recovery",
+  "version": 2,
+  "files": {
+    "packages/protocol/schemas/notification-recovery-v2.schema.json": "ce4ede23ba7bd9985e472be954635de47fb3ee7d951f6593f3f7c91809de5bf1",
+    "packages/protocol/fixtures/mobile/notification-recovery-v2.json": "e29100066001f2a8b85b9ece54c20bae68acaa4c74f267ebf51fdd581ee25b17"
+  }
+}

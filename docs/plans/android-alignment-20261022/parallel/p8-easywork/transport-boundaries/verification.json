@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "nativeCompile": {
+    "status": "passed",
+    "tasks": 82,
+    "executed": 5,
+    "logSha256": "5b0ae87c68b9c9d64e8a91e93876a6f0d79ef4580eb8a032f4ef9e00849c1ea3",
+    "execution": "not-performed"
+  },
+  "fixturePureTests": {
+    "status": "passed",
+    "tests": 7,
+    "logSha256": "9073d73efad5154d7073cc06d98dbeecb52ac6e8f7c2b6ff5d0c0233199961e7",
+    "networkListeners": false,
+    "tlsExecuted": false,
+    "androidExecuted": false
+  },
+  "sourcePreservation": {
+    "productionFilesUnchanged": true,
+    "frozenPriorDocs": 33,
+    "oldNativeMethods": 16,
+    "filesSha256": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkTransportBoundaryTest.kt": "2974f7a441c9cb8a598cc4c19b25fe943f2bdba68e2a0d4885adcba45f7928d0"
+    }
+  },
+  "pnpmCheck": {
+    "status": "integration-pending-central-delta",
+    "exitCode": 1,
+    "logSha256": "d40bda54a9e6ae105cd036ad1c78a38fe84ca33a66801817aecfc2467481347c",
+    "passedBeforeStop": ["format:check", "check:github-sync", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkProtocolBoundaryTest.kt",
+    "action": "Parent integrates prior numeric and new transport parity deltas with exact file hashes centrally, then reruns complete root check. No guard bypass or frozen result edits."
+  },
+  "nativeRealDev": {
+    "status": "not-performed",
+    "deviceLease": null,
+    "adbInvoked": false,
+    "realDesktopRequests": 0,
+    "realModelInputs": 0
+  },
+  "gaps": [
+    "Positive Relay HTTPS with system CA trust",
+    "Real EWDAP v2 device authorization lifecycle",
+    "Real Host / desktop / model / UI / lifecycle acceptance"
+  ]
+}

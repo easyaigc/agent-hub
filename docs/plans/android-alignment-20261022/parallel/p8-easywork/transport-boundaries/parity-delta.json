@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "id": "android-p8-real-transport-boundaries-20261028",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "25276465207b9f30e7e808aeb6202271a6f62fbb",
+  "features": ["F08", "F09", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkTransportBoundaryTest.kt": "2974f7a441c9cb8a598cc4c19b25fe943f2bdba68e2a0d4885adcba45f7928d0"
+  },
+  "productionFilesChanged": [],
+  "summary": "Add 12 bounded native tests using actual production OkHttp LAN/Relay clients against a synthetic loopback peer; preserve production and prior 16-method numeric checkpoint. Compile preparation only.",
+  "commonAssertions": {
+    "F08": "Automatic read recovery keeps the same request ID and hash across real WSS/HTTP paths; route identity stays fixed",
+    "F09": "Actual TLS rejects changed pins and system-untrusted certificates; descriptor and encrypted response retain complete target",
+    "F43": "Lost original write reply recovers through command/status for the exact original operation/method/hash/target",
+    "F44": "Unknown write results never resubmit original input; reverse path response-loss remains query-only",
+    "F46": "Foreign binding envelopes are filtered without acknowledgement; redirects cannot forward authorization"
+  },
+  "dualPlatformImpact": {
+    "android": "12 native instrumentation methods compiled; no new execution or acceptance result",
+    "ios": "No source, UI or copy change; shared assertions remain obligations and iOS evidence is not substituted"
+  },
+  "uiCopyDelta": [],
+  "verification": {
+    "nativeCompile": "passed",
+    "nativeExecution": "not-performed",
+    "nodePureFixtureTests": "7 passed; no listeners",
+    "pnpmCheck": "pending central delta integration"
+  },
+  "integratorAction": "Register exact native file hash and supporting fixture fingerprint centrally; rerun complete checks and rebuild combined candidate. Run only selected methods under exact device/package/time leases and 240s outer deadline. Preserve raw prior results and A6 pause.",
+  "integrationChangeRecord": {
+    "id": "android-p8-real-transport-boundaries-20261028",
+    "baseCommit": "25276465207b9f30e7e808aeb6202271a6f62fbb",
+    "features": ["F08", "F09", "F43", "F44", "F46"],
+    "summary": "Add 12 bounded native tests using actual production OkHttp LAN/Relay clients against a synthetic loopback peer; preserve production and prior 16-method numeric checkpoint. Compile preparation only.",
+    "files": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkTransportBoundaryTest.kt": "2974f7a441c9cb8a598cc4c19b25fe943f2bdba68e2a0d4885adcba45f7928d0"
+    }
+  }
+}

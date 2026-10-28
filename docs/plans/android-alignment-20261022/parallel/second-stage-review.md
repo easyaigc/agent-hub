@@ -15,3 +15,5 @@ API26本轮新候选预检的settings/activity服务不可用，即使ADB在线�
 根pnpm check、最终一致性、Android App/runner构建及45项shipping wire/HTTP辅助向量通过。当前阶段PR46先保持验收草稿，合并必须核对其准确head远端CI；PR45已合并主线且旧父分支已清理。原生附件工具不支持私有forge，使用项目内真实Gitea链接保存，不能伪造附件成功。
 
 下一阶段分别继续：P7系统子存储、迁移UI与旧inline限制、通知身份/journal只读审计；P7完整目录元数据未读与语音；P8真实OkHttp/TLS/LAN/Relay及原归属七组DEV；P9原回执/撤销代次/分页feed的版本化契约、全局入口及认证/阅读接线、后台供应商和实际送达。未知原操作不重放，任务/项目业务继续暂缓。
+
+最终交付：PR46准确head77ac454c的Workspace/iOS CI均通过，2026-10-28合入主线f1d6fb25，旧父集成分支本地/远端均已删除；先前草稿状态属于历史阶段。后续目录/传输检查点独立保存在PAR3及专用分支，不并入本次通过范围。

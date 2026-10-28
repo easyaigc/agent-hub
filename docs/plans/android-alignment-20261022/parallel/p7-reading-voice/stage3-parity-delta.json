@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "3-complete-unread-directory",
+  "baseCommit": "14d1f0f7c94dbdd9a57bf2a388960c30a9ab47f2",
+  "featureIds": ["F49", "F50", "F56"],
+  "commonAssertions": [
+    "Every configured actual target can aggregate metadata from previously unloaded thread pages without loading transcripts or executing tasks",
+    "Foreign/late/repeated-cursor or incomplete traversals cannot publish complete success",
+    "Offline local reads, pending acknowledgements and known unread counts survive failure"
+  ],
+  "bothPlatforms": {
+    "ios": "actual completeReadingThreadPages/refreshMobileUnread reference read; unchanged",
+    "android": "complete metadata traversal and foreground coalescing implemented; native acceptance pending"
+  },
+  "implementation": "code-present",
+  "verification": "App/runner build and 15 host-JVM auxiliary tests passed; 93 KMP matching unchanged-input reuse; native Session fixtures compiled only; root central parity guard remains",
+  "sources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeReadingDirectorySessionTest.kt",
+      "sha256": "88e6e2cf15bdf6a2eac481d01d236c8ab4592137561606208ab90272810d4a6d"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeReadingDirectoryTest.kt",
+      "sha256": "660f229fe1e95704690d35f46c7479048adce0fce8134bec0f8efa74196cc9a1"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "697dfc062d7bad58e7a611761c799483c4131f282f95c8521e8ab8faaf858087"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingDirectory.kt",
+      "sha256": "8edd1164bf06bd9671f86edb53f8ad57484d197d5c7bb4d315c381292ff39d43"
+    }
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage3-unread-directory.md",
+  "limitations": [
+    "No protocol cross-page snapshot epoch; completed traversal is not an atomic catalog",
+    "Legacy/missing readState does not prove new versions or phone reads",
+    "Native/real Host/DEV and parent central parity integration remain"
+  ]
+}

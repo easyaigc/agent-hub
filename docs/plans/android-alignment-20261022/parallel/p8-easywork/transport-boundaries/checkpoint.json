@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "checkpoint": "real-okhttp-transport-compile-preparation",
+  "baseCommit": "25276465207b9f30e7e808aeb6202271a6f62fbb",
+  "date": "2026-10-28",
+  "productionFilesChanged": [],
+  "productionFilesUnchanged": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt": "634d513b079c46587e68477d6fdf842113ec17fa48c6e1f0ade61bee39a7e795",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": "43d25b9209c2e1bfd729d188115950fadde1423eaa652c7e9d8745f608912491",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "3977703c145c283cd643e3cd20df709a2a81378fd625e8fff8728767c331ad58",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkPairing.kt": "ccf9ec5439bc431ff129a35954ef1fe4b92a879ba46fa10a594a15f7d72859e0"
+  },
+  "frozenPriorDocs": {
+    "files": 33,
+    "unchanged": true
+  },
+  "oldNativeProtocolTest": {
+    "sha256": "84c6f3e018aea26e7c55c2d1020234167cbc85cf815846b289b109fd2b8f4d9b",
+    "methods": 16,
+    "unchanged": true,
+    "executionThisTurn": "not-performed"
+  },
+  "nativeTest": {
+    "class": "com.agenthub.android.NativeEasyWorkTransportBoundaryTest",
+    "source": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkTransportBoundaryTest.kt",
+    "sha256": "2974f7a441c9cb8a598cc4c19b25fe943f2bdba68e2a0d4885adcba45f7928d0",
+    "methods": [
+      "pinnedTlsDescriptorAndEncryptedWssUseProductionOkHttp",
+      "changedPinIsRejectedByActualTlsBeforeProtocolTraffic",
+      "wrongDescriptorTargetIsRejectedAfterPinnedHttpsBeforeWss",
+      "relayHttpActuallyPostsPollsAndAcknowledgesEncryptedFrames",
+      "relayHttpsSelfSignedCertificateIsRejectedBySystemTrust",
+      "lostReadReplyRetriesTheSameRequestFromRealWssToRelay",
+      "lostWriteReplyOnlyQueriesOriginalOperationAcrossWssAndRelay",
+      "unknownWriteResultOverRealTransportsNeverReplaysInput",
+      "droppedRelayPostResponseQueriesOriginalOperationOverActualWss",
+      "wrongEncryptedResponseTargetIsRejectedOverPinnedWss",
+      "relayFiltersForeignBindingWithoutAcknowledgingItsEnvelope",
+      "relayRedirectCannotForwardItsSyntheticAuthorization"
+    ],
+    "groups": {
+      "P8-transport-tls-target": [
+        "pinnedTlsDescriptorAndEncryptedWssUseProductionOkHttp",
+        "changedPinIsRejectedByActualTlsBeforeProtocolTraffic",
+        "wrongDescriptorTargetIsRejectedAfterPinnedHttpsBeforeWss",
+        "relayHttpsSelfSignedCertificateIsRejectedBySystemTrust",
+        "wrongEncryptedResponseTargetIsRejectedOverPinnedWss"
+      ],
+      "P8-transport-recovery": [
+        "lostReadReplyRetriesTheSameRequestFromRealWssToRelay",
+        "lostWriteReplyOnlyQueriesOriginalOperationAcrossWssAndRelay",
+        "unknownWriteResultOverRealTransportsNeverReplaysInput",
+        "droppedRelayPostResponseQueriesOriginalOperationOverActualWss"
+      ],
+      "P8-transport-relay-http": [
+        "relayHttpActuallyPostsPollsAndAcknowledgesEncryptedFrames",
+        "relayFiltersForeignBindingWithoutAcknowledgingItsEnvelope",
+        "relayRedirectCannotForwardItsSyntheticAuthorization"
+      ]
+    },
+    "methodTimeoutMillis": 15000,
+    "scenarioTimeoutMillis": 10000,
+    "wholeClassTimeoutSumMillis": 180000,
+    "wholeInvocationTimeoutSeconds": 240,
+    "runner": "androidx.test.runner.AndroidJUnitRunner",
+    "configArgument": "p8TransportConfig",
+    "execution": "not-performed",
+    "deviceLease": null
+  },
+  "nativeInputSetSha256": "42976cbd814052152f70b83b6d2631d53e57cabcd16b723e62c8f49f10ed09f9",
+  "nativeInputFiles": 458,
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "ca2fb0c8e6b6ec66d6199eacd99d199c99bc62873e8a754fcb24f406f5565b79",
+      "bytes": 26418961,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "3177f2d72adf5706b7e7f9ee14b88bd2a5252cf62a1817c3fff78230a74e3b25",
+      "bytes": 7823581,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "fixtures": {
+    "sourceFilesSha256": {
+      "fixture.mjs": "a9d2de6f19543dfbaf3df64c7312dc9294f44a0d36ca0adaf343ddf0128877c3",
+      "fixture.test.mjs": "73a6b3bf74b19a3d87978477d2dc978bf78392a683adc84d360cb94c6ac72a39"
+    },
+    "asset": "apps/android/src/androidTest/assets/easywork-crypto-vector.json",
+    "assetSha256": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104",
+    "nodePureTests": 7,
+    "listenersStartedThisTurn": false,
+    "runtimeCertificateGeneratedThisTurn": false,
+    "listenHost": "127.0.0.1",
+    "runtimeOrigins": ["pinned HTTPS/WSS", "HTTP encrypted relay", "HTTP control"],
+    "runtimeCertificateSha256": "generated per coordinator-owned run; not yet available"
+  },
+  "gaps": [
+    "Positive Relay HTTPS with system CA trust",
+    "Real EWDAP v2 device authorization lifecycle",
+    "Real Host / desktop / model / UI / lifecycle acceptance"
+  ],
+  "productMatrixIntegration": "parent-owned delta pending; no acceptance upgraded",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

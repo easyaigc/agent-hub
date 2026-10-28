@@ -1078,5 +1078,12 @@
   "environmentPending": [
     "API26 current cmd/settings/activity unavailable before install; ADB and service-name enumeration are insufficient.",
     "API37 settings read did not return; stopped only the exact parent read-only ADB probe, no emulator reset."
-  ]
+  ],
+  "delivery": {
+    "pullRequest": 46,
+    "url": "https://git.51easyai.com/BCAI/agent-hub-app/pulls/46",
+    "merged": true,
+    "head": "77ac454ccdb90c4d3641fafd78736d0ea797f343",
+    "main": "f1d6fb2595ffbb7548e12575b9492b13ebc1c734"
+  }
 }

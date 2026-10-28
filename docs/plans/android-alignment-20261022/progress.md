@@ -105,7 +105,7 @@ F72受控阅读、F71图片预览/有序选择/分页目录/新旧配额及部�
 - 最新已合主线：PR [#45](https://git.51easyai.com/BCAI/agent-hub-app/pulls/45)，main `0ebbc9ba`；PAR1四线首批/103项限定原生辅助与22份保护已登记，旧集成分支本地/远端已清理。完整阶段和真机监听UI等待验保留。第二批迁移/阅读/安全/声音在新专用分支继续。
 
 - 已合主线：PR [#43](https://git.51easyai.com/BCAI/agent-hub-app/pulls/43)，主线`3a6a71d3`；P7至5m及此前I4-3f已交付，原二进制分支本地/远端均已清理。[交付核对](merge-20261028-p7-binary.md)。历史PR与限定保留在档案。
-- 当前开发：`codex/android-parallel-stage2-20261028`；首批流式迁移、阅读/语音和通知模块集成见[PAR1](parallel/first-stage.json)，各线后续仍并行开发。PAR2旧失败保留在[待验接入](parallel/second-stage-intake.json)；取消交接17项、阅读11项与严格数值16项已分候选双环境复验，声音、通知恢复与迁移容量继续按[验收复核](parallel/second-stage-review.md)登记。P7至5s：封口录音档案/候选/原子激活、原回执只读和真实冷恢复，以及迁入状态中英/浅深色交互限定通过。已集成主线速度契约N066，两环境合计20项菜单/当前参数隔离及本地化辅助补验通过；已完成候选加密分块、超额预检和3块原候选跨进程恢复；继续未封口录音、旧inline限制与完整配额、系统收件箱/回调子存储、Provider/设备/通知Schema，接系统迁移UI/冷会话切换，继续语音、未读与生命周期。确认模型221/P4205，另1次未知提交仅只读封存。
+- 当前开发：`codex/android-parallel-stage3-20261028`；首批流式迁移、阅读/语音和通知模块集成见[PAR1](parallel/first-stage.json)，各线后续仍并行开发。PAR2旧失败保留在[待验接入](parallel/second-stage-intake.json)；取消交接17项、阅读11项与严格数值16项已分候选双环境复验，声音、通知恢复与迁移容量继续按[验收复核](parallel/second-stage-review.md)登记。P7至5s：封口录音档案/候选/原子激活、原回执只读和真实冷恢复，以及迁入状态中英/浅深色交互限定通过。已集成主线速度契约N066，两环境合计20项菜单/当前参数隔离及本地化辅助补验通过；已完成候选加密分块、超额预检和3块原候选跨进程恢复；继续未封口录音、旧inline限制与完整配额、系统收件箱/回调子存储、Provider/设备/通知Schema，接系统迁移UI/冷会话切换，继续语音、未读与生命周期。确认模型221/P4205，另1次未知提交仅只读封存。
 - 对照基线：已集成main 2ffdc4fc；原217+后续68节点均已登记，I4纳入N053–N065并新增F72，N066保留Host速度规范及iOS显式菜单；N067/N068停止录音提示由主统筹合入并保留状态本地化；组合编译/恢复态及监听态原生验收分列；问题语音3节点于I3、N048/N049于I2导入，Android粘贴/收件箱已有限定通过，完整冷回调、权限及原生矩阵继续开放。阶段功能范围、未完成与优先级见上表；过程与旧失败留在[阶段档案](records/README.md)，不在本节重复运行流水。
 
 ## 维护与追溯
@@ -114,3 +114,5 @@ F72受控阅读、F71图片预览/有序选择/分页目录/新旧配额及部�
 - 过程记录写入[对应阶段档案](records/README.md)；新阶段只追加一次，以检查点 ID 关联[验收证据](../../acceptance/mobile-evidence/android-alignment-P4.json)。失败、原指纹与严格匹配复用依据不覆盖。
 - 对照输入：[217 条冻结提交](commits.md)、[既有上游增量](upstream-20261024.json)、[新增7提交/F71](upstream-20261025.json)、[晚间9个上游节点](upstream-20261025-evening.json)、[后续4个节点](upstream-20261025-night.json)、[N032状态波纹](upstream-20261026.json)、[新增15个节点](upstream-20261026-later.json)、[外部文件/粘贴2节点](upstream-20261026-share-intake.json)、[新增问题语音3节点](upstream-20261027-voice.json)、[N066速度契约](upstream-20261028-speed.json)、[N067/N068录音提示](upstream-20261028-voice-hint.json)、[冻结 F/UI/S/X 矩阵](parity.md)；未验与暂缓不从范围删除。
 - 逐项实施索引：[P1](P1-scope.json)、[P2](P2-source-review.json)、[P3](P3-source-review.json)、[P4 的 20 功能 / 27 来源节点](P4-remaining-20261024.json)；UI/断言以[设计规格](../../design/mobile-parity.md)和[验收规范](../../acceptance/mobile-parity.md)为准。
+
+当前PAR2已由PR46合入主线f1d6fb25；PAR3目录/传输29项真机辅助结果见[分候选证据](parallel/third-stage-native.json)。语音默认与问题入口、前台迁移身份边界、EWDAP授权竞争和通知恢复v2分别进入下一批复核，完整阶段仍开放。

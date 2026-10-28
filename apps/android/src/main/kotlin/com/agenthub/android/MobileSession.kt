@@ -228,6 +228,13 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var attemptedPhoneReading: NativeVisiblePhoneReading?=null
     private var cachedPhoneReading: NativeVisiblePhoneReading?=null
     private var phoneWorkspaceHead: Pair<String,ThreadReadPosition?>?=null
+    private var phoneReadingDirectoryJob: Job?=null
+    private var phoneReadingDirectoryOwner: Any?=null
+    private var phoneReadingDirectoryGeneration=0L
+    private var phoneReadingDirectoryAttemptNanos: Long?=null
+    internal val phoneReadingDirectoryCompleted=mutableStateMapOf<String,Int>()
+    internal val phoneReadingDirectoryFailures=mutableStateMapOf<String,String>()
+    internal val phoneReadingDirectoryBusy get()=phoneReadingDirectoryJob?.isActive==true
     internal val phoneReadingError get()=phoneReading.failure
     internal val phoneUnreadCount get()=phoneReading.snapshot.count
     internal val phoneUnreadKnown get()=phoneReading.ready
@@ -271,6 +278,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val head=targetKey to workspaces[clientKey]?.threads?.firstOrNull { it.id==selectedThread }?.readState?.latest
         if(phoneWorkspaceHead!=head) { phoneWorkspaceHead=head;phoneReading.lifecycle.leave();attemptedPhoneReading=null }
         val clients=realClients.filter { !it.isDemo && it.scope!=null }
+        val scopes=clients.map { ThreadReadingIdentity.scopeKey(it.scope!!) }.toSet()
+        phoneReadingDirectoryCompleted.keys.toList().filter { it !in scopes }.forEach(phoneReadingDirectoryCompleted::remove)
+        phoneReadingDirectoryFailures.keys.toList().filter { it !in scopes }.forEach(phoneReadingDirectoryFailures::remove)
         val values=clients.flatMap { client ->
             val workspace=workspaces[client.cacheKey(null)]
             if(workspace==null || !sameScope(workspace.scope,client.scope))emptyList() else workspace.threads.map { thread ->
@@ -308,6 +318,43 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun releasePhoneReadingProof() {
         phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null
         phoneReading.lifecycle.leave();phoneReading.focus(null)
+    }
+    /** One serial sweep, coalesced with existing foreground refresh; never navigates or fetches history. */
+    internal fun refreshPhoneReadingDirectory(force: Boolean=false,seedClient: MobileClient?=null,seed: MobileWorkspace?=null): Job? {
+        if(!localReady || !foreground || incomingEasyWorkLink!=null || phoneReading.ledger==null)return null
+        phoneReadingDirectoryJob?.takeIf { it.isActive }?.let { return it }
+        val now=System.nanoTime()
+        if(!force && phoneReadingDirectoryAttemptNanos?.let { now-it<30_000_000_000L }==true)return null
+        phoneReadingDirectoryAttemptNanos=now
+        val clients=realClients.filter { !it.isDemo && it.scope!=null }.map { Triple(it,revisions[it.id] ?: 0,workspaceManagementRevisions[it.cacheKey(null)] ?: 0) }
+        val epoch=phoneReadingDirectoryGeneration;val owner=Any();phoneReadingDirectoryOwner=owner
+        phoneReadingDirectoryJob=tasks.launch {
+            try {
+                for((client,revision,management) in clients) {
+                    fun current()=localReady && foreground && incomingEasyWorkLink==null && epoch==phoneReadingDirectoryGeneration &&
+                        (revisions[client.id] ?: 0)==revision && (workspaceManagementRevisions[client.cacheKey(null)] ?: 0)==management &&
+                        realClients.any { NativeReadingDirectory.sameConnection(it,client) }
+                    if(!current())continue
+                    val key=ThreadReadingIdentity.scopeKey(client.scope!!)
+                    phoneReadingDirectoryCompleted.remove(key)
+                    try {
+                        val first=seed.takeIf { seedClient!=null && NativeReadingDirectory.sameConnection(seedClient,client) }
+                        val result=NativeReadingDirectory.collect(client,first,::current) { cursor -> reads.workspace(client,null,cursor) }
+                        if(!current())continue
+                        phoneReading.reconcile(realClients.filter { !it.isDemo }.mapNotNull { it.scope },result.values,emptyList())
+                        phoneReading.awaitReconciliation()
+                        if(current()) { phoneReadingDirectoryCompleted[key]=result.pages;phoneReadingDirectoryFailures.remove(key) }
+                    }catch(cancel: CancellationException) { if(!isActive || epoch!=phoneReadingDirectoryGeneration)throw cancel }
+                    catch(failure: Exception) { if(current())phoneReadingDirectoryFailures[key]=failure.message ?: failure.javaClass.simpleName }
+                    catch(_: OutOfMemoryError) { if(current())phoneReadingDirectoryFailures[key]="OutOfMemoryError" }
+                }
+            }finally { if(phoneReadingDirectoryOwner===owner) { phoneReadingDirectoryJob=null;phoneReadingDirectoryOwner=null } }
+        }
+        return phoneReadingDirectoryJob
+    }
+    private fun stopPhoneReadingDirectory() {
+        phoneReadingDirectoryGeneration++;phoneReadingDirectoryJob?.cancel();phoneReadingDirectoryJob=null;phoneReadingDirectoryOwner=null
+        phoneReadingDirectoryAttemptNanos=null;phoneReadingDirectoryCompleted.clear();phoneReadingDirectoryFailures.clear()
     }
     private fun currentPhoneReadingClient(client: MobileClient,revision: Long,epoch: Long): Boolean = localReady && foreground && epoch==phoneReadingEpoch &&
         realClients.any { it.id==client.id && sameScope(it.scope,client.scope) && it.endpoint==client.endpoint &&
@@ -427,6 +474,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             while(isActive) {
                 delay(15_000)
                 if(hasClient && selectedClient.isConnecting) { refresh(); loadHistory() }
+                refreshPhoneReadingDirectory()
             }
         }
     }
@@ -453,7 +501,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();easyWorkLogin?.background();foreground=false;networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -1019,7 +1067,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val key=client.cacheKey(null);val verified=workspaces[key] ?: error("连接快照尚未就绪")
         require(verified.hostId==client.id && (!client.requiresReadTarget || verified.scope!=null) &&
             (client.scope==null || verified.scope==null || sameScope(client.scope,verified.scope))) { "电脑运行目标不匹配" }
-        freshWorkspaces[key]=true;recordConnectionSuccess(client);reconcilePhoneReading()
+        freshWorkspaces[key]=true;recordConnectionSuccess(client);reconcilePhoneReading();refreshPhoneReadingDirectory(seedClient=client,seed=verified)
         selectClient(client,refreshAutomatically=false)
         freshHistories[targetKey]=false
         val events=selectedThread.isNotEmpty() && verified.capabilities.containsAll(listOf("events","commands:target-bound:v1"))
@@ -1098,7 +1146,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 recordConnectionSuccess(client)
                 replaceClient(selectedClient.copy(online = true, mode = result.mode))
                 clearReadError(userInitiated)
-                persistMetadata(); startEvents(); loadModels()
+                persistMetadata(); startEvents(); loadModels();refreshPhoneReadingDirectory(seedClient=client,seed=result)
             } catch (cancel: CancellationException) { throw cancel }
             catch (failure: Exception) { if (currentWorkspace(client, key, owner)) { recordConnectionFailure(client,failure,successAtStart); if(userInitiated) readError(failure,"刷新失败，请重试。\n",true); persistMetadata() } }
             finally { if(loadingTargets[key]===owner)loadingTargets.remove(key) }
@@ -2173,7 +2221,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     fun restore() {
         val storage=storage ?: return
         if(restoreJob?.isActive==true) return
-        phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
+        stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
         phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
         restoring=true;localRecoveryAllowsAttachmentStaging=false
         val generation=storage.beginRestore()
@@ -2274,7 +2322,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         }
     }
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
-        phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false
+        stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false
         workspaceManagementRevisions.clear();workspaceArchiveBusy.clear();chatActionBusy.clear();locatedChatSearch=null;pendingChatSearch=null
         aiSharing.clearAcceptance();aiSharingRequest=null
         desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceOwner=null;suggestionSurfaceInteractive=false;suggestionNeedsFreshHistory=false;suggestionUndo=null;textRevisions.clear();handledSuggestions.clear();clientNavigationRevision++;tasks.coroutineContext.cancelChildren(); pagedSelections.clear(); realClients.clear(); selectedThreads.clear(); drafts.clear(); histories.clear(); historyPages.clear(); runs.clear(); workspaces.clear(); loadingTargets.clear(); historyTargets.clear(); expandedProjects.clear(); sidebarStates.clear(); revisions.clear()

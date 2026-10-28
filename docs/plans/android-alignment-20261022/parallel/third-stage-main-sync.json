@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "checkpoint": "PAR3-main-sync",
+  "upstream": "d0c645354f284b3ccca350a26bb61a38976289c1",
+  "mergeSource": "c582d804",
+  "candidate": {
+    "sourceSha256": "82c3f0c79615f24efb181f83c674524cdc8fe00a2b9616f273f8f87ddc502c11",
+    "expandedSourceSha256": "ab31e97e89dc2e8207d0aa845561477dd32f594a73f40f618ec14e8e3eb454e0",
+    "appSha256": "bf28775e2e352f4e386579ed3184f1654d9e91cd9f97bdeb3f989b8bf8cdd145",
+    "testSha256": "cdc295355ce4304263cd1c4c8056488a77d0eabdce42aadfb57a0b54b87c0b37"
+  },
+  "native": [
+    {
+      "label": "actual-transports",
+      "status": "passed",
+      "methods": 12,
+      "environment": "physical-android-api33",
+      "logSha256": "8b4debf8ba34f98bbbfd5122dfa262e78646a43766c10d841737396a1279e347",
+      "elevenFieldProofs": 0
+    },
+    {
+      "label": "directory-rules",
+      "status": "passed",
+      "methods": 4,
+      "environment": "physical-android-api33",
+      "logSha256": "b88768bc5e258483d30b8f3bcd33290223b8dc61b0c68071b0c3448ee4decf99",
+      "elevenFieldProofs": 0
+    },
+    {
+      "label": "directory-session",
+      "status": "passed",
+      "methods": 2,
+      "environment": "physical-android-api33",
+      "logSha256": "c60e25aea45e40fc3eb4a3d46cc9a7a705febd53ffd3ed26bbb8d86f26a013f8",
+      "elevenFieldProofs": 2
+    },
+    {
+      "label": "reading-regression",
+      "status": "passed",
+      "methods": 11,
+      "environment": "physical-android-api33",
+      "logSha256": "7890ece27adc5c304577ca277ff57038b1d49ea251d28a92495c270f1675b89e",
+      "elevenFieldProofs": 6
+    },
+    {
+      "label": "catalog",
+      "status": "passed",
+      "methods": 1,
+      "environment": "physical-android-api33",
+      "logSha256": "ae4f9dc19393b4d6221a80a899a7a0faadf8619b155dd084de045eb78566dbca",
+      "elevenFieldProofs": 1
+    }
+  ],
+  "passedMethods": 30,
+  "defaultElevenFieldProofs": 9,
+  "catalogKeysEachLanguage": 1786,
+  "checks": {
+    "androidBuild": "passed",
+    "iosSimulatorBuild": "passed",
+    "workspaceBuild": "passed",
+    "mobileParity": "passed"
+  },
+  "cleanup": {
+    "fixtureStopped": true,
+    "ownedReverseMappingsRemoved": 3,
+    "existingMappingsPreserved": true,
+    "temporaryWorktree": "remove after push and tree-external receipt; not needed for CI"
+  },
+  "upstreamImpact": "Preserve iOS explicit-discard fix and two shared strings. Android discard alignment remains a separate P7 implementation obligation. Android production Kotlin unchanged from original PAR3.",
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "limits": [
+    "Synthetic native boundary evidence, no full P7/P8 closure",
+    "API26/API37 and positive system-trust Relay HTTPS pending",
+    "No iOS physical execution or A6 expansion"
+  ]
+}

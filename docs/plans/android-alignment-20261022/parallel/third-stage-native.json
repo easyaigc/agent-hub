@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "checkpoint": "PAR3-directory-and-transport",
+  "codeBase": "1ae12b7cbc69da9a0a537494eee47802f8b3d7fd",
+  "state": "partial-auxiliary-not-phase-closure",
+  "candidate": {
+    "sourceSha256": "40d120e94592a79f046a590258388e28dbf5a2d2263cbc6902cd68cc75898f09",
+    "expandedSourceSha256": "b7e45ad4a739fa79c625e260826ce7846d18e5214b0b59df31c8b73a3068c7ee",
+    "appSha256": "04260df27fd6f44881cc3734dd34b51b29b4859f5bfff004f7bfbcbde06f57c7",
+    "testSha256": "5bd1c3039ba643633f7b60eb7774065e9deb1ae07fa1c592d9b39f27bdb9bd7d"
+  },
+  "native": [
+    {
+      "label": "easywork-actual-transports",
+      "status": "passed",
+      "nativeMethods": 12,
+      "modelInputs": 0,
+      "fontRestored": true,
+      "environment": "physical-android-api33",
+      "instrumentationLogSha256": "21a04efceb49a4b0b38852f634c321b73ece690923255d29f9f115bebc87a30a",
+      "defaultStorageProofs": 0,
+      "elevenFieldsPreserved": null
+    },
+    {
+      "label": "directory-rules",
+      "status": "passed",
+      "nativeMethods": 4,
+      "modelInputs": 0,
+      "fontRestored": true,
+      "environment": "physical-android-api33",
+      "instrumentationLogSha256": "9cd24574373228d0ef13586b127cbed0690744cabcff402ef26e0c4b42d03ab2",
+      "defaultStorageProofs": 0,
+      "elevenFieldsPreserved": null
+    },
+    {
+      "label": "directory-session",
+      "status": "passed",
+      "nativeMethods": 2,
+      "modelInputs": 0,
+      "fontRestored": true,
+      "environment": "physical-android-api33",
+      "instrumentationLogSha256": "e5240b648d2d8ab856942d44567eb9dabc39798e77214605bc36a9d59017a285",
+      "defaultStorageProofs": 2,
+      "elevenFieldsPreserved": true
+    },
+    {
+      "label": "reading-regression",
+      "status": "passed",
+      "nativeMethods": 11,
+      "modelInputs": 0,
+      "fontRestored": true,
+      "environment": "physical-android-api33",
+      "instrumentationLogSha256": "410375d294ab7fa0157ea53bc6049e76ffc6db8e2d6842f6ebdb1a31ad887667",
+      "defaultStorageProofs": 6,
+      "elevenFieldsPreserved": true
+    }
+  ],
+  "passedMethods": 29,
+  "defaultElevenFieldProofs": 8,
+  "transport": {
+    "fixtureSources": {
+      "docs/plans/android-alignment-20261022/parallel/p8-easywork/transport-boundaries/fixture.mjs": "a9d2de6f19543dfbaf3df64c7312dc9294f44a0d36ca0adaf343ddf0128877c3",
+      "apps/android/src/androidTest/assets/easywork-crypto-vector.json": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104"
+    },
+    "certificateSha256": "f8835e88d3a03a159ad0b578955e466e26934f045b37b974c2852cfe32aff835",
+    "cases": [
+      {
+        "mode": "relay-foreign-binding",
+        "recordSha256": "c797b68a5f131cd27cb8ecf705288f13c9c11357abaf90dcb93eee0da77baf4d",
+        "protocolRequests": 1,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "normal",
+        "recordSha256": "56c643ce4f106a9c11140a07fb0a72a7a16bca35308dc98fa0ba19d6e0ae112e",
+        "protocolRequests": 1,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "drop-read",
+        "recordSha256": "23d30a36ddb406115fa5b5b0861676c66eee226647235aaf1b5cad4f790ac821",
+        "protocolRequests": 2,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "drop-write",
+        "recordSha256": "985b01316ef0ffcce6827ca78959eddbf00dc2f6396abd565e0244512676d4c1",
+        "protocolRequests": 2,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "normal",
+        "recordSha256": "2aa784228fe349eafa9abc9da1a7ab3ee370daee92ab0d0a8ad98ecbad69c9a5",
+        "protocolRequests": 1,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "relay-drop-write",
+        "recordSha256": "3ce80ef805d76d01a9d22825e2740e8b33ab23656e972fa4466919031216e23c",
+        "protocolRequests": 2,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "drop-write-unknown",
+        "recordSha256": "8039937a8cc6d8a962038a0fcaa390373973cebdd8ab22e33b10c26d84275243",
+        "protocolRequests": 2,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "wrong-descriptor-target",
+        "recordSha256": "603f1359ae6190a6ade09405a488f84cfe8c2bddce7a24b9a7718901c2abe236",
+        "protocolRequests": 0,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "normal",
+        "recordSha256": "df64d91c8ae938ddd2ef3cdea7b68834bf49ced61a18329a40fff1222ebab8a7",
+        "protocolRequests": 0,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "wrong-response-target",
+        "recordSha256": "86647a13150751ea975e6b9a9e7483f978086426bdfca4960647def689d97db1",
+        "protocolRequests": 2,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "relay-redirect",
+        "recordSha256": "748e2096f80c2e2b9180185b1db006393b2932e1ca05722a0af21b212e096f48",
+        "protocolRequests": 0,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      },
+      {
+        "mode": "normal",
+        "recordSha256": "d243d52a59f279c1d735931d6d728889745a50243a837df1761e86831d1d8e47",
+        "protocolRequests": 0,
+        "realDesktopRequests": 0,
+        "realModelInputs": 0
+      }
+    ],
+    "tlsPositive": "pinned LAN descriptor/WSS only",
+    "relayPositive": "encrypted HTTP post/poll/ack only",
+    "relaySystemTrustHttps": "self-signed certificate rejection only; positive path pending",
+    "fixtureProcessStopped": true,
+    "createdReverseMappingsRemoved": 3,
+    "existingReverseMappingsPreserved": true
+  },
+  "parentHarnessFailure": {
+    "attempt": "run1",
+    "cause": "ADB remote-shell JSON quoting before native test selection",
+    "nativeMethods": 0,
+    "productFailure": false,
+    "originalEvidencePreserved": true
+  },
+  "auxiliary": {
+    "nodeFixturePureTests": 7,
+    "rootPnpmCheck": "passed",
+    "nativeBuild": "passed"
+  },
+  "pending": [
+    "API26/API37 new candidate execution",
+    "Real Desktop/Host/model and positive system-trust Relay HTTPS",
+    "Complete unread catalog atomicity: current protocol has no cross-page epoch",
+    "Complete P7/P8 phase and visual/lifecycle matrix"
+  ]
+}

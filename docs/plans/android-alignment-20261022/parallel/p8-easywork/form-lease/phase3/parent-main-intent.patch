@@ -1,0 +1,11 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt
+@@ -76,7 +76,7 @@
+         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
+         renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext);readNetworkMonitor.start()
+     }
+-    override fun onNewIntent(intent: android.content.Intent) { session.coverPanelNotices();
++    override fun onNewIntent(intent: android.content.Intent) { easyWorkConnectionAuthority(session).invalidate(); session.coverPanelNotices();
+         super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent)
+     }
+     override fun onSaveInstanceState(outState: Bundle) {

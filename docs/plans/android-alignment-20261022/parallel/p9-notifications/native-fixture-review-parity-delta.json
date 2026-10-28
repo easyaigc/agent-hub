@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "operationIds": [
+    "parent-p9-cold-reader-original-failure-20261029-1",
+    "parent-p9-stage17-foreground-receipt-failure-20261029-1"
+  ],
+  "features": ["F52", "F53"],
+  "ui": ["UI11"],
+  "scenarios": ["S15", "S16"],
+  "androidImplementation": "Test-only: refresh actual Session catalog before selection; wait persisted submitted-to-system terminal before Intent checks; separate fixed-failure inspection and reviewed single-router release",
+  "androidVerification": "Exact parent raw failure/proofs reviewed; combined app+runner assembly only; new native cases and maintenance not executed",
+  "commonAssertions": [
+    "Session selection requires an exact published directory row; default storage and all drafts remain protected",
+    "Presentation evidence follows actual callback and durable terminal outcome",
+    "Unknown/failed original operations are retained; maintenance never replays them or declares business recovery"
+  ],
+  "iosImpact": "No source/results change; A6 paused",
+  "sourceSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdReaderTest.kt": "373aed792800c48a0fc2ac54c48695b9130701e615815224f0e0999487a4be72",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "eeafc026291dff0cb3b73c3a2ac21d3d12f946a74b88ed2a6176325f3ec13042",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdFailureObserverTest.kt": "ee30641c33ab1adf927620fc68bb740a1d100868f74aad30f7ebfa0adc352615"
+  },
+  "parentSharedFilesChangedHere": [],
+  "productionChanges": [],
+  "nativeRetest": "New candidate/fresh lease only; preserve stage15 original reader failure and stage17 original foreground failure"
+}

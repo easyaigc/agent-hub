@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-native-authority-wrapper-failure-20261029-1",
+  "baseline": "d92aa908807ea69d054c6aeda2696b4951da2e33",
+  "rootCause": "Pure wrapper used selected empty while shared migration metadata requires a nonempty selected ID; valid actual P9 authority was rejected before its own fields were checked.",
+  "productionChange": "Use original client.id as pure validation context only; no shared schema change, no source journal/token/receipt rewrite, no active authority/identity/operation/register.",
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationAuthorizations.kt": "9baa08b2866157c18b319befeb4d1996c940c6e0d52a73e3bb3f1ac1b4a9eef4",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationAuthorityReaderTest.kt": "c0e389675d2e9e2c9fe7b4b92fbef9bf8b0161363e2b4c0394646bcb8bd7686a"
+  },
+  "independentProducer": "New native methods invoke actual NativeChatNotificationSavedConnection.capture and NativeChatNotificationAuthorizations.retain/validateEncoded; no fixture hash formula is used to manufacture their positive input.",
+  "methods": [
+    "actualProducerSnapshotPassesPureWrapperWithoutInitializingIdentityOrRewritingCredential",
+    "independentProducerAndWrapperRejectChangedAuthorityAndAcceptDisplayOnlyChangeWithoutWeakeningSharedMetadata"
+  ],
+  "checks": {
+    "combinedParentHead": "6fbd087b3d21a34904ce25160b9757d314d34859",
+    "combinedInputs": 594,
+    "combinedSourceFingerprint": "5e83506eb9c7c402eb0d236c9e2da2ed0f875e862c4997b2a11f987067745c63",
+    "parentPrePostCopyMatched": true,
+    "overlayPostBuildMatched": true,
+    "assembly": "passed combined-build.log; two new methods compiled only",
+    "format": "pnpm format:check at delivery"
+  },
+  "packages": {
+    "app.apk": {
+      "bytes": 25044955,
+      "sha256": "28db1e0857f81a83085ef8131658320b1ddf72f41fd59c1dd49a8338409a195f"
+    },
+    "runner.apk": {
+      "bytes": 5226915,
+      "sha256": "facbb2fac08f9a51dca5e5fdbeef49ebc47826d6b20c6e4b74d93b52006eae38"
+    }
+  },
+  "upstreamNativeFailure": {
+    "ordinaryPassed": 11,
+    "ordinaryFailed": 8,
+    "coldWriterFailed": 1,
+    "coldReaderStarted": 0,
+    "failureFingerprint": "b25190cafaaea58cbbb49ced0a1577fac58774ff7a425995204dd4d042263a85",
+    "preserved": "Parent stage6-original-archive-native logs/queue remain unchanged; no old writer replay here."
+  },
+  "isolatedScope": "Combination copies parent native sources + only wrapper/test proposed files; excludes current UI preparation changes. No device/Host/model operations.",
+  "native": "None run here; parent re-freezes and reruns 19 plus producer cases and original cold workflow."
+}

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-dark-fixture-visual-review-20261029-1",
+  "compile": "passed",
+  "buildLogSha256": "9a444cbc4ddfbc5e62e4be0b40920671450e34cb524dc3b81ade238e3a882c7e",
+  "sources": {
+    "MobileEasyWorkPairingUiTest": "e97ff2712554cfb182749f47ebc90baa9501f030018a4193dfa0d621859c1948",
+    "NativeEasyWorkFormLeaseTest": "0ad86d6612dd2c96573d1cba710685f0265bfccb181dcc27f93389ac61dd2474",
+    "NativeEasyWorkPairingCopyTest": "1f00b33cc725cb953735f174c3ffe70588d33c503c732bc82690ff803de9e2b0",
+    "NativeEasyWorkPairingViewportTest": "c464b849cdae9d4c2a7d4085651ee5d07bf83a1062cd1fa9cea8aed186be203b"
+  },
+  "originalImagesInspectedSha256": {
+    "31d71ba9-ea6a-4586-8aa5-64858b13bde1/provider-en-dark.png": "9200c9a6231d4d4ca950e61ae375824acb7700732eac49d66db7e386c1b9c481",
+    "9688616b-1aba-4156-a686-c75a694885c9/target-zh-Hans-dark.png": "f49cafa36aa951bb64454726df51338c054d2caff19bfc94a065eb003f2da418"
+  },
+  "finding": "MaterialTheme-only fixture leaves default LocalContentColor black and outer window undrawn; actual App Surface already supplies background/content color",
+  "change": "Test roots use native Surface with actual theme background; constrained Surface preserves exact short-viewport dimensions",
+  "productionColorsChanged": false,
+  "assertionsRelaxed": false,
+  "parentBehaviorPasses": 33,
+  "parentPassedFingerprint": "source64f4c3ec/App3f93361a/runner611a6070; old behavior only, dark visual not closed",
+  "newNativeOrScreenshotActionsHere": 0,
+  "remaining": [
+    "Parent reshoot actual dark Provider/target/copy/viewport and inspect pixels",
+    "Four strict TextLayout failures still independently require added actual metrics/IME/cropped PixelCopy diagnostics"
+  ],
+  "a5Closure": "none",
+  "a6": "paused"
+}

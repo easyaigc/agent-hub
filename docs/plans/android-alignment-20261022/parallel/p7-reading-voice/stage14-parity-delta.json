@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "14-voice-permission-receipt-lifetime",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "commonAssertions": [
+    "A permission receipt keeps its immutable original capture ID across saved-state restoration",
+    "Old/duplicate receipts and retired launcher effects cannot grant, deny or relaunch a replacement capture",
+    "A current permission result still requires current draft/foreground/connection authority before capture",
+    "Permission recovery never sends a reply, restores an old Host operation, or implies offline/saved-file speech capability"
+  ],
+  "bothPlatforms": {
+    "ios": "Unchanged existing permission and original-file local speech implementation; no new iOS execution",
+    "android": "Saveable permission submission/launcher epoch and completion fence implemented in the shared composer/question view fragment"
+  },
+  "design": {
+    "surfaces": ["composer voice permission", "question voice permission"],
+    "states": [
+      "requesting",
+      "saved-state restoration",
+      "replacement controller/draft",
+      "old/duplicate result",
+      "synchronous denial"
+    ],
+    "tokensAndCopy": "unchanged; existing system-network warning and explicit new-recording action retained",
+    "noNewDurableSchema": true
+  },
+  "acceptance": "parallel/p7-reading-voice/stage14-voice-permission.md",
+  "nativePrepared": "4 methods x both providers; actual Compose/registry with synthetic results and no microphone",
+  "nativeExecutedHere": false,
+  "knownGaps": [
+    "actual OS-dialog/process-death permission acceptance pending",
+    "real recognizer/acoustic/locale availability pending",
+    "saved original-file phone transcription remains unsupported"
+  ],
+  "centralOwner": "parent coordinator for final manifests/checks/native schedule/PR/merge",
+  "scope": "no device/Host/model/mic operation; original unknown/task/project operations untouched; A6 paused"
+}

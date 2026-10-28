@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-viewport-and-intent-next-20261029-1",
+  "baseCommit": "3924dbf3f4cc835f6ae39f9dc16e988f263451ab",
+  "sourceSetSha256": "5a8036f25aeb9c8a4c61addb840da495e241fe738838e2170d0fef5f6a17defc",
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "67b9455fe7bcfd151a462f9763077ca22f3b8bcd75f20aa1566c1494cc9677ba",
+      "bytes": 24266978,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "2bfe828ccc64e342f6ad325e8118fc45400a60a8a2338a878a2930e323a452f2",
+      "bytes": 4725168,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "uiSourceSha256": "da2fdf885cfb982a9d8f2f846672c4b976ac98b0fe7141ff4c2e0e2e789d02e5",
+  "nativeViewportSourceSha256": "3def36a7da7d1481c6797bf0bf587bb9ec9552cef9bd734c062c4a400c5010b2",
+  "checks": {
+    "nativeCompile": "passed with exact final own phase5 Session + phase3 Main proposals and private reviewed copy additions",
+    "nativePreparedThisPhase": {
+      "componentLayout": 4,
+      "realDialogIme": 2,
+      "executed": 0
+    },
+    "selectedRunnerClasses": 11,
+    "selectedRunnerMethods": 101,
+    "previousPairing30PlusMain2PlusIo2PlusViewport6": "40 native methods prepared, not executed here",
+    "jvm20": "phase5 final passed; unchanged lease/gate source reused, not rerun for UI-only change",
+    "nodeCopy4": "previous reviewed source unchanged; auxiliary evidence reused only",
+    "rootCheck": {
+      "exitCode": 1,
+      "prechecksPassed": ["format:check", "check:github-sync (5)", "lint"],
+      "failure": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+      "bypassed": false,
+      "logSha256": "fae190589b3ac11c698360b1ad3a44d1e9d259a51a1235c623b612475b439251"
+    },
+    "buildLogSha256": "47b4c4368cb92c072b4245d6b21bd70f335a5b919911531f7d81daecf1dd87f9",
+    "initialCompileFailure": "private language setter in native preparation; original log retained, corrected to actual changeLanguage API and rebuilt"
+  },
+  "sharedFiles": {
+    "requiredSessionOverlay": "phase5 full or exact phase2 upgrade",
+    "requiredMainOverlay": "phase3",
+    "ownSharedFilesRestored": true,
+    "parentSharedFilesReadOnly": true,
+    "NativeSheetsAndAgentHubAppChanged": false,
+    "centralGeneratedFilesChanged": false
+  },
+  "nativeEvidence": "compile only; short constrained layouts do not claim physical screen or IME; real Sheet/IME methods require actual native software keyboard",
+  "noSecretsScreenshots": "only synthetic values; no screenshots or screen dumps produced",
+  "deviceHostIssuerModelOtherChatActions": 0,
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

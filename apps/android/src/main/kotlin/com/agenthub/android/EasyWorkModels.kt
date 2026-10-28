@@ -15,7 +15,7 @@ internal fun easyBytes(value: String): ByteArray {
 /** Canonical JSON is also the authenticated byte framing used by the existing iOS peer. */
 internal fun easyCanonical(value: Any?): String = when(value) {
     null, JSONObject.NULL -> "null"
-    is JSONObject -> value.keys().asSequence().toList().sorted().joinToString(",", "{", "}") { JSONObject.quote(it)+":"+easyCanonical(value.get(it)) }
+    is JSONObject -> value.keys().asSequence().toList().sorted().joinToString(",", "{", "}") { easyCanonical(it)+":"+easyCanonical(value.get(it)) }
     is JSONArray -> (0 until value.length()).joinToString(",", "[", "]") { easyCanonical(value.get(it)) }
     is String -> JSONObject.quote(value).replace("\\/", "/")
     is Boolean, is Number -> value.toString()

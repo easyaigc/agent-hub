@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "stage": "P9-permission-cycle-cleanup-ownership-preflight",
+  "baseCommit": "4872392be1062f9cb0bc18c76c11a205ca0539f6",
+  "operationId": "parent-p9-channel-pass-fixture-intake-20261029-1",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "先核对原租约/target/响应/物理原件，再取得清理职责；预检失败不得清理他处原资源",
+      "androidImplementation": "v2 writer definite absence; read-only complete v2 reader preflight before fixture registration; actual permission before registration",
+      "androidVerification": "three new auxiliaries and component compile; native not-run here",
+      "iosImpact": "unchanged; A6 paused"
+    },
+    {
+      "id": "F53",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "先核对原租约/target/响应/物理原件，再取得清理职责；预检失败不得清理他处原资源",
+      "androidImplementation": "v2 writer definite absence; read-only complete v2 reader preflight before fixture registration; actual permission before registration",
+      "androidVerification": "three new auxiliaries and component compile; native not-run here",
+      "iosImpact": "unchanged; A6 paused"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCycleEvidence.kt": "cc7b42e542f3be84edc6710031625fdb9edc2f6b3508d756fa76266f29ff9173",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCycleFiles.kt": "43c75b95d3873bc449441844929aadbaa145328d13d38b22cdfcda09d1a2a398",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsFixture.kt": "62d56e8489eff26d138b6627da8bfcdccc31f96a4b447b3ea71a43f4da888912",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt": "af09b8c863472942059d26f96d230ac3972a11b8125817ff8f97ac82ed6004d2",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "27d2f125932a4ad488018b24a5d7b863f6faad04459dce94349b5ea429272f8c",
+    "scripts/mobile/fixtures/CycleVectors.kt": "cf2e9e2753a7927d7c1c8ca2fb32dfb4d301c33ed981282e951b8eea508d231d"
+  },
+  "productionChanges": [],
+  "sharedFiveChanges": [],
+  "markerSchema": "unchanged v2",
+  "oldParentPasses": "retained by original source/APK fingerprints; not rerun here"
+}

@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "stage": "P9-real-Android-system-boundary-preparation",
+  "baseCommit": "b6563cc2387dfa35cb9517e3b4c3dbba90584348",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "实际OS权限与NotificationManager真实渠道/post/cancel；原始加密ticket和required P7端口；公开版隐私与受限PendingIntent身份；拒绝后只通知新事件无原操作重放",
+      "androidImplementation": "debug acceptance ownership and executable native cases implemented; physical validation pending",
+      "androidVerification": "not-run; compilation and JVM auxiliary checks only",
+      "iosImpact": "source unchanged; iOS permission/category/sound/foreground evidence remains independent"
+    },
+    {
+      "id": "F53",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "同一安装加密store中的不可变合成声音，经注册provider只读canonical URI；每次验收资源独立并精确清理",
+      "androidImplementation": "debug-only scoped provider URI and actual ContentResolver cases implemented",
+      "androidVerification": "native execution/audibility/system-process URI access pending",
+      "iosImpact": "no source change; iOS sound/URI system mechanisms need independent evidence"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt": "c2ad492255476bd45e58b2f8b6ba6b61b0bba75709f2d79507f1b256017c944b",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsFixture.kt": "62231329f49d69a897e0916499ff2062596855a2bf0b33ddf46d73e8bd206bc7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt": "9d37e3b9e6670fbd940d1b8dc85e58a982683464e3f84421818fe7cc83e5a03f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationRecoveryFixture.kt": "2c933424269f7d357fc4fefe87cd6c3251e624b3f5b8989369f232cd26fc2aa5",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAcceptanceScope.kt": "aa430306afb43202544d67cecbbb57679c103ca6b8456c7d62332f7f5a237d9b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "f49345b05e441fbdf4931a507ef260d2b1b082a6cf213a362cbec18ee397956b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundLibrary.kt": "45c32f934d01137fc7c1b9f50b9cefac2587282e847ac51d61b0a268d18d57b0",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundProvider.kt": "3630254f8d3a3ce018fda43f36c9224d734d6ea85d37cdec24508f3d34728c3d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSystem.kt": "835c2765c0f2011ff1b54a25805e10e34afc4633e1766dd2c2cac3f4fad23b8a"
+  },
+  "nativeMethodCount": 14,
+  "nativePlan": "native-system-plan.json",
+  "prerequisites": "native-system-parent-prerequisites.json",
+  "productionBoundary": "ordinary default prefix and /v1 sound URI unchanged; acceptance path rejects non-debug/non-exact package before storage access",
+  "sharedFiveHookImpact": [],
+  "status": "implemented preparation; unverified native results retained per method",
+  "auxiliaryChecks": {
+    "jvmRecovery": "71 passed; no OS behavior established",
+    "androidAssembly": "acceptance app + androidTest passed; 14 OS cases compiled only",
+    "nativeExecution": "not-run for all 14 cases",
+    "pnpmCheck": "format, sync5 and lint pass; stops unchanged prior synthetic-tone.m4a central parity record"
+  }
+}

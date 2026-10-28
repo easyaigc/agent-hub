@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "stage": "P9-channel-visibility-policy-correction",
+  "baseCommit": "cfb7a01277a4d9733cb86976be4ac3551c229ee8",
+  "operationId": "parent-p9-system-api26-visibility-review-20261029-1",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "App实际提交PRIVATE与系统/用户渠道override分开核对；真实通知PRIVATE和publicVersion隐私断言不变；NO_OVERRIDE不等于PUBLIC、不推断锁屏UI已验",
+      "androidImplementation": "scoped immutable submission observation + independent real same-app control assertion",
+      "androidVerification": "corrected native rerun pending; original API26 failure retained",
+      "iosImpact": "no source/evidence change; Android channel-specific policy distinction"
+    },
+    {
+      "id": "F53",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "ordinary clip URI/AudioAttributes/badge/provider byte assertions retained",
+      "androidImplementation": "channel policy assertion corrected only",
+      "androidVerification": "corrected native rerun pending",
+      "iosImpact": "unchanged"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "eeb55e8ff726b8b7f25f5789291b10c1ec01fc78427f64041d458a3744ea17f0",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt": "bbb5c1371c2f711677a3e75e472ebdc747949df507cc80b66906419addb803eb"
+  },
+  "parentReportedNative": {
+    "api26Provider": {
+      "pass": 5
+    },
+    "api26Granted": {
+      "pass": 5,
+      "fail": 1
+    },
+    "api33Provider": {
+      "pass": 5
+    },
+    "api33Denied": {
+      "pass": 2
+    },
+    "api33Granted": "not-run; OEM permission operation denied without changing authorization",
+    "originalFailure": "ordinaryClipChannelUsesRegisteredProviderUriWithoutPlayingIt expected 0 actual -1000",
+    "newNativeResults": "none here"
+  },
+  "nativeMethodCount": 14,
+  "sharedFiveHooks": [],
+  "coldPreparationIncluded": false,
+  "sources": [
+    "https://developer.android.com/reference/android/app/NotificationChannel#setLockscreenVisibility(int)",
+    "https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r1/services/core/java/com/android/server/notification/RankingHelper.java",
+    "https://developer.android.com/reference/android/service/notification/NotificationListenerService.Ranking#VISIBILITY_NO_OVERRIDE"
+  ]
+}

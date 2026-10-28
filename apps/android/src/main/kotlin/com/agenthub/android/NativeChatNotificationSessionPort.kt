@@ -1,6 +1,9 @@
 package com.agenthub.android
 
 import org.json.JSONObject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /** Captured saved connection. Epoch survives process death; account/path/name/online changes are not authority. */
 internal class NativeChatNotificationSavedConnection private constructor(val client: MobileClient, private val credential: String,
@@ -70,18 +73,16 @@ internal class NativeChatNotificationThreadLocator(private val reads: (NativeCha
     suspend fun locate(connection: NativeChatNotificationSavedConnection, event: NativeChatNotificationEvent, current: () -> Boolean): NativeChatNotificationLocation? {
         val thread = event.threadId ?: return null
         if (event.target != connection.target || !current()) return null
-        val reader = reads(connection); val seen = mutableSetOf<String>(); var cursor: String? = null
-        repeat(8) {
-            if (!current()) return null
-            val page = reader.workspace(connection.client, threadCursor = cursor)
-            if (!current() || page.hostId != connection.target.hostId || page.scope?.agentId != "codex" ||
-                NativeChatNoticeTarget.from(requireNotNull(page.scope)) != connection.target) return null
-            require(page.threads.size <= 2048)
-            NativeChatNotificationLocation.from(connection, page, thread)?.let { return it }
-            val next = page.nextThreadCursor ?: return null
-            if (next.length !in 1..512 || !seen.add(next)) return null
-            cursor = next
+        val reader = reads(connection)
+        return try {
+            NativeWorkspaceThreadDirectory.scan(connection.client, current = current,
+                fetch = { cursor -> reader.workspace(connection.client, threadCursor = cursor) }) { page, _ ->
+                NativeChatNotificationLocation.from(connection, page, thread)
+            }
+        } catch (cancel: CancellationException) {
+            // A stale navigation lease is an unavailable original route; actual job cancellation propagates.
+            currentCoroutineContext().ensureActive()
+            if (!current()) null else throw cancel
         }
-        return null
     }
 }

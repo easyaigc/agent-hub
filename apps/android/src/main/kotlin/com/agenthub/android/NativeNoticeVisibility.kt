@@ -6,7 +6,7 @@ import com.agenthub.core.TargetScope
  * Keep one stable binding per target/thread/render epoch; a new binding revokes old reports. */
 internal class NativePanelNoticeVisibility(val target: TargetScope,val threadId: String,
     notices: List<NativeReadingNotice>,val foreground: Boolean,val uncovered: Boolean,
-    val renderEpoch: Any,val changed: (NativeNoticeVisibilityReport)->Unit) {
+    val renderEpoch: Any,val changed: (NativeNoticeVisibilityReport)->Unit,val renderedKey: String?=null) {
     val notices=notices.toList()
     init { ThreadReadingIdentity.key(target,threadId) }
     fun forTarget(value: TargetScope?,thread: String): NativePanelNoticeVisibility? =

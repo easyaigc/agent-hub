@@ -1,0 +1,12 @@
+// Compile-only additions. Central generated resources/assets are never edited by this delivery.
+gradle.projectsEvaluated {
+    def app=gradle.rootProject.project(':android')
+    def path=gradle.rootProject.findProperty('p8PairingCopyRes')
+    if(path==null)throw new GradleException('p8PairingCopyRes must name the exact private reviewed additions directory')
+    def root=new File(path.toString())
+    if(!new File(root,'values/p8_pairing_copy.xml').isFile()||!new File(root,'values-zh/p8_pairing_copy.xml').isFile())throw new GradleException('Both reviewed addition catalogs are required')
+    app.android.sourceSets.getByName('main').res.srcDir(root)
+    def checks=new File(gradle.rootProject.projectDir,'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase2/jvm')
+    app.android.sourceSets.getByName('test').java.srcDir(checks)
+    app.android.sourceSets.getByName('test').kotlin.srcDir(checks)
+}

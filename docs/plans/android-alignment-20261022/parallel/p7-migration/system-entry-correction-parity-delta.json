@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-system-entry-copy-and-actual-IO-owner-correction",
+  "features": ["F47", "F51", "F54", "F55", "F56", "F64"],
+  "pages": ["UI12", "UI21"],
+  "commonAssertions": [
+    "App keys use the existing native catalog/format grammar; source IDs, percent tokens and password contents never become lookup keys.",
+    "Join observes actual coordinator workers/actions/queries and Java executor exits, including disconnect; Future cancellation alone cannot mint a publication lease.",
+    "Cancelled quiescence retains retired owners until real IO completion; another migration stays gated while the original draft remains editable.",
+    "Disk pointer/restore checks and named child preparation run on IO; Main publication uses a one-use generation/epoch permit and retirement never takes the disk lock.",
+    "Quiescence failure keeps the same Session/draft/unknown intent; no operation/input is repeated.",
+    "Current P8 lease checks, unique pending credential references and Main intent invalidation are preserved. Unreferenced credentials are not execution identities.",
+    "P9 cold selection occurs before default storage; polling/coordinator/empty-photo ports and afterNewIntent remain. Fixed cold acceptance leases cannot be changed by a migration."
+  ],
+  "dualEndImpact": {
+    "android": "Own copy and storage/IO primitives corrected. Eight rebased shared hooks plus four two-line producer patches prepared and compiled. Native/DEV acceptance pending.",
+    "ios": "Existing shared translation keys reused; iOS catalogs/code/proofs unchanged. Equivalent lifecycle and cross-format acceptance not inferred."
+  },
+  "catalog": {
+    "nativeAppendKeys": 25,
+    "mergedParentKeysPerLanguage": 1879,
+    "originalParentNativeEntriesPreserved": true,
+    "delta": "system-entry-native-copy-delta.json",
+    "sharedIosCatalogsChanged": false
+  },
+  "validation": {
+    "appAndRunnerBuild": "passed",
+    "nodeCatalogTests": "4 passed for own and merged parent catalogs",
+    "hostActualExecutorProbe": "4 passed, JVM17 auxiliary only",
+    "nativePreparedMethods": 13,
+    "nativeExecutedHere": false,
+    "realDev": "not run; parent owns device/Host/model leases",
+    "fullP7Passed": false
+  },
+  "centralRegistration": "Parent merges these feature/page/assertion/source deltas into its current registry. Keep A6 and business tasks/projects paused and preserve previous results by original fingerprints.",
+  "sourceAudit": "system-entry-correction-source-audit.json",
+  "remaining": [
+    "Actual system picker, held IO, cancellation, cold restore and real DEV native runs",
+    "8MiB framed text migration and EasyWork fence/orphan candidate archive-only work",
+    "Full P7 and cross-platform migration acceptance"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "requiredForLateApprovalScenario": true,
+  "parentFileUnmodified": true,
+  "sharedFileNotCommittedDirectly": true,
+  "hooks": {
+    "own": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+      "proposedSha256": "f4d734420ce513e0e1d6df7f90ab068c9c8f98bc3f40dd8b52aafa1cfd056964",
+      "patchSha256": "29bbba1561ab1bf8a131197721b0eb001a5b4e981045c926278d55c87c2e3cea",
+      "purpose": "Check captured incoming-link presentation before QR/code/discovery save, after runtime/context, and after workspace read before selecting. Existing catch restores prior credential if superseded during workspace read. Preserve original authorization intent; no replay/cancellation claim."
+    },
+    "parent": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "056ef8f7393386a090242bd28c2d788e7ac932fb82a1b6b778a696398779b6a1",
+      "proposedSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5",
+      "patchSha256": "c3708399292042f5869bc9604365de05572b034f66f042b39f29f849e1a10539",
+      "purpose": "Check captured incoming-link presentation before QR/code/discovery save, after runtime/context, and after workspace read before selecting. Existing catch restores prior credential if superseded during workspace read. Preserve original authorization intent; no replay/cancellation claim."
+    }
+  }
+}

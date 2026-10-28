@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "stage": "P9-independent-recorded-synthetic-permission-cycle",
+  "baseCommit": "753cf40b36968969b9b8de7e1f28c2dcd0167273",
+  "operationId": "parent-p9-api37-permission-cycle-failure-20261029-1",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "原不可变操作恢复必须核对原响应；缺失后端响应时保持unknown且不重放；权限恢复仅新事件可通知",
+      "androidImplementation": "test-only recorded synthetic response marker + separate fresh cycle pair + read-only legacy inspection",
+      "androidVerification": "85 auxiliary vectors and component compilation; added native selectors not-run; original API37 permission reader remains failed",
+      "iosImpact": "no source/evidence change; A6 paused"
+    },
+    {
+      "id": "F53",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "缺权限事件保留终态；恢复权限不补发旧事件或重提原操作",
+      "androidImplementation": "independent fixture continuity case; production guard unchanged",
+      "androidVerification": "native not-run",
+      "iosImpact": "no change"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCycleEvidence.kt": "a89bb1caa3c2309e5ce8dea19a3547c03396465a8d39fe35b960c84110c2a21f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsCycleInspectionTest.kt": "452735b7b405e557f5e79678554a7679e78108dcfc0af59341b09c02db73453d",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt": "18fa4abf1d8eba82052d0594d794f29114f00d84c1485d618a0b58f86714f226",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt": "f7df0db4b8260bfae644731e815491e1680769785f71f296d3f119dbcbe95b5d",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "17e84b9a56147b7a53c3459aacf9d8a75f9218baeb5df8edb8ca8639f790f5aa",
+    "scripts/mobile/fixtures/RecoveryVectors.kt": "e0bff85e8511ac954cfdca1a848605282568172a1bbb51d8b463a8ad4a614e1a",
+    "scripts/mobile/fixtures/CycleVectors.kt": "99a9f18edea31dacaffbcdd9e93045493613cbc275f0966939475060e6b87eb0"
+  },
+  "newNativeSelectors": {
+    "writer": "NativeChatNotificationOsDeniedTest#durableFixtureCycleDenialRecordsActualSyntheticResponseForNewGrantCase",
+    "reader": "NativeChatNotificationOsGrantedTest#durableFixtureCycleRecoveryUsesRecordedResponseWithoutOriginalResubmit",
+    "inspection": "NativeChatNotificationOsCycleInspectionTest#inspectLegacyOriginalBytesWithoutQueryReplayOrJournalWrite"
+  },
+  "results": {
+    "oldApi37Reader": "retained-failed; no replay/repair here",
+    "newIndependentPair": "not-run; fresh cycle required",
+    "legacyInspection": "not-run; current original raw journal not decrypted here",
+    "realHostRuntimeModel": "not-tested"
+  },
+  "sharedFiveChanges": [],
+  "productionControllerChanges": []
+}

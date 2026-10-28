@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "source": "apps/android/localization/native-copy.json",
+  "ownBaseSha256": "ad022e5b5667c90822436a14275441bcf016762fcc9da4ea87d9586e6df81c2d",
+  "ownProposedSha256": "8411c1b92871c59715614928032fb9a13ad18a4f2f74212477f77f0efbc7947f",
+  "newEntries": 14,
+  "reusedKeys": ["账号"],
+  "centralGeneratedFilesChanged": false,
+  "privateCompileResources": "Only additions rendered through existing androidCatalog(); parent runs ordinary generator after merging source",
+  "parent": {
+    "source": "apps/android/localization/native-copy.json",
+    "baseSha256": "c83e0a6a8c32e9ed7eb699bcdaf5a7f67263d6bfffd93812a0dd38065bbfed17",
+    "proposedSha256": "5f7f2cbe0108d3db17a8bf705179c3182909b24d72c7178d04cd2332df5b8616",
+    "added": 14,
+    "reused": []
+  }
+}

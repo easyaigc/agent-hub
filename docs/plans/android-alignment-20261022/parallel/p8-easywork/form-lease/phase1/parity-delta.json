@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "id": "android-p8-form-lease-phase1-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "1253af153e1a5f372ed8504b53b65303264ca365",
+  "features": ["F02", "F04", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "8dd0d1f69eab36994085fe4cb08d81b66aed94799a6c4fabeaf68d475895e07e",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLeaseBinding.kt": "10dddc4ed39628025a52383f3af9f02bd61c45944ed6c6f9fc5870c45c3d795a",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "d33377b21430262d6db27d5f5e64b3a58c97556f551991871f669a4b8efc2e29",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPresentation.kt": "1820c1e6c020b404536afe78fa57398b7a96e3c60f416fbdaa0213f3d671d929",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkFormLeaseTest.kt": "d728fb06d2f5736bf0209f1518d443ed7965fe7cf501e111acfb3b442f2e026b"
+  },
+  "requiredParentSharedOverlay": {
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+    "baseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5",
+    "proposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+    "patchSha256": "8235d14cbda2a9b21d714c926720b647f3cf0213b0380ab44ddd13f174a455cb"
+  },
+  "summary": "Replace nullable-link guard with actual revocable form/action capability and monotonic invalidation; Session checks native authorization/network results, durable credential writes and selection. Add ownership-safe rollback and falsifiable native probes; no device result claimed.",
+  "commonAssertion": "A closed/background/ABA or superseded action cannot install/select a connection or mutate another draft/busy owner, even when nullable link and final visible values equal their originals",
+  "dualPlatformImpact": {
+    "android": "Implemented narrow lease and exact shared overlay; Host14 pass/native11 compile, native runs pending",
+    "ios": "No change or proof; equivalent lifecycle/action lease still needs review"
+  },
+  "designDelta": [
+    "Local abandonment preserves original grant/unknown receipt; no upstream cancellation claim",
+    "Late failure has no new-form UI ownership",
+    "Valid committed connection is retained after later form close"
+  ],
+  "integrationChangeRecord": {
+    "id": "android-p8-form-lease-phase1-20261029",
+    "baseCommit": "1253af153e1a5f372ed8504b53b65303264ca365",
+    "features": ["F02", "F04", "F43", "F44", "F46"],
+    "summary": "Replace nullable-link guard with actual revocable form/action capability and monotonic invalidation; Session checks native authorization/network results, durable credential writes and selection. Add ownership-safe rollback and falsifiable native probes; no device result claimed.",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "8dd0d1f69eab36994085fe4cb08d81b66aed94799a6c4fabeaf68d475895e07e",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLeaseBinding.kt": "10dddc4ed39628025a52383f3af9f02bd61c45944ed6c6f9fc5870c45c3d795a",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "d33377b21430262d6db27d5f5e64b3a58c97556f551991871f669a4b8efc2e29",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPresentation.kt": "1820c1e6c020b404536afe78fa57398b7a96e3c60f416fbdaa0213f3d671d929",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkFormLeaseTest.kt": "d728fb06d2f5736bf0209f1518d443ed7965fe7cf501e111acfb3b442f2e026b"
+    }
+  },
+  "centralRegistration": "parent-owned",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

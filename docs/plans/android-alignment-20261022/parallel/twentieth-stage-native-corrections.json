@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "checkpoint": "PAR20-actual-form-and-original-queries",
+  "date": "2026-10-29",
+  "passedExecutions": 10,
+  "failedExecutions": 0,
+  "uniqueMethods": 7,
+  "physicalPositiveGroups": [
+    {
+      "label": "positive-fresh-form",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#closedActualFormAfterCandidateWriteCannotActivateOrCompleteOldCallback",
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#correctGrantActivatesActualCandidateAtFinalCommitAndOriginalFormCompletesOnce"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "17db662eb0db625d099bd4c982d4284fbf85dbbecf0c15254379cb1d7b947b1e"
+    },
+    {
+      "label": "positive-fresh-failure",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#lastWorkspaceReadFailureRollsBackCandidateWithoutActivatingOrReclaimingGrant",
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#changedOriginalDraftPlusLastReadFailureCannotCommitOrClearNewDraft"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "aa825d350442ba4eee65386a6c4c367a6ae38c711aad5eb244e63dda34d16219"
+    }
+  ],
+  "physicalOriginalQueryGroups": [
+    {
+      "label": "closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "7edd480bd13c3ff339df46576bd9a478b19d5b37a54fd3bb1ea2124623b8e8cb"
+    },
+    {
+      "label": "closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "e7ed465bae4aff53ed9aa0dfe9683ad0c799c63e97be390cb218a52ce62d6ff0"
+    },
+    {
+      "label": "closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "18390da74c27c627a6b0727e3fd01bb0da055e3284c7f879faca5d027e2303dd"
+    }
+  ],
+  "freshApi37OriginalQueryGroups": [
+    {
+      "label": "fresh-closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "14cdb1df93b5757608ff15e0e156d9d7947095de458c191ee5a93367ee087f7f"
+    },
+    {
+      "label": "fresh-closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "504dee218725a774967355b4d9f6a528c535f5c89a05e324d52a17b28d1efa46"
+    },
+    {
+      "label": "fresh-closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing",
+      "status": "passed",
+      "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "15b6bf595517419fd6f04f15795585136865af7377e218d12c972a15f637fb06"
+    }
+  ],
+  "actualPositive": "One actual center tap; full six-field selected/restore/original target, candidate before metadata activation, one saved callback, same-process reopen, original draft/grant/claim/unknown raw bytes preserved. Closed original form rolls back its own candidate and has no old callback. Direct failure/newdraft boundary2 remain separate.",
+  "queryAssertions": {
+    "nativeCasesPerDevice": 3,
+    "devices": 2,
+    "queryCounts": [0, 0, 1, 1, 2, 2],
+    "queryEntriesMatch": true,
+    "realNativeArchiveAndEncryption": true,
+    "ownerAndParentScopePreserved": true,
+    "newRevokeEnrollmentFeedOrReplay": 0
+  },
+  "resources": "Own pairing listener/two mappings closed; all earlier mappings retained exactly",
+  "productionAppByteIdenticalToPar17Through20": true,
+  "limits": [
+    "Synthetic issuer/backend and OS ports for queries; no real issuer/Host/model/fullDEV",
+    "Same-process positive reopen is separate from held-writer/new-PID candidate test, still pending",
+    "Directory-fsync test helper compiled after completed old lease; not replayed and no power-loss acceptance",
+    "True SAF UI, >8MiB text frames/EasyWork archive graph, full visual/voice/vendor matrices remain open"
+  ],
+  "originalFailures": "All original phase15/17/18/19 failures remain immutable, fresh UUIDs used",
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /** Same command fixture for native scenarios and the JVM Main-to-IO regression. No Host/OS access. */
-internal class RecoveryNativeFixture(val storage: NativeSessionStorage) {
+internal class RecoveryNativeFixture(val storage: NativeSessionStorage, enable: Boolean = true) {
     constructor(context: android.content.Context, namespace: String) : this(NativeSessionStorage(context, namespace))
     val target = NativeChatNoticeTarget("fixture-host", "fixture-workspace", "desktop-runtime")
     val notices = NativeChatNotificationStore(storage)
@@ -42,7 +42,7 @@ internal class RecoveryNativeFixture(val storage: NativeSessionStorage) {
     @Volatile var failReceive = false
     @Volatile var capabilityCalls = 0
     @Volatile var cancellations = 0
-    init { notices.update { it.copy(enabled = true) } }
+    init { if (enable) notices.update { it.copy(enabled = true) } }
     fun snapshot(token: String = "fixture-token-" + "x".repeat(32), credentialEpoch: String = "fixture-credential") = NativeChatNotificationSnapshot(
         MobileClient(target.hostId, "Fixture", TargetScope("codex", null, null, target.hostId, target.workspaceId, target.runtimeId), "http://127.0.0.1:8765"), token, credentialEpoch)
     fun event(index: Int = 1, kind: NativeChatNoticeKind = NativeChatNoticeKind.APPROVAL) = NativeChatNotificationEvent(

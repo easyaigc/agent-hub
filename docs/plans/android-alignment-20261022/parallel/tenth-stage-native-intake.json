@@ -1,0 +1,276 @@
+{
+  "version": 1,
+  "checkpoint": "PAR10-pairing-retake",
+  "date": "2026-10-29",
+  "status": "35 distinct native methods passed across physical/fresh API37; five unresolved; physical Main precondition remains blocked",
+  "physicalPairing": {
+    "passed": 33,
+    "failed": 5,
+    "blockedMainPreflight": 2,
+    "pureGroups": [
+      {
+        "label": "copy-explicit",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkPairingCopyTest#explicitEnglishCatalogAndAxIgnoreChineseSystemPreference",
+          "com.agenthub.android.NativeEasyWorkPairingCopyTest#explicitChineseCatalogAndAxIgnoreEnglishSystemPreference"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "eaf60f40982c43d1cb6eaffe9b97233918f26a31a2804396f2656e6c58d9c6ff"
+      },
+      {
+        "label": "copy-system",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkPairingCopyTest#followSystemUsesActualEnglishResolverAndAx",
+          "com.agenthub.android.NativeEasyWorkPairingCopyTest#followSystemUsesActualChineseResolverAndAx",
+          "com.agenthub.android.NativeEasyWorkPairingCopyTest#unsupportedSystemLanguageUsesActualEnglishFallbackAndAx"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "52d1d6ecad53b26fbe1888ac52ef8914ff3298953394053cbc83f598304eb14d"
+      },
+      {
+        "label": "write-io",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkWriteGateTest#mainRevocationAfterActualEncryptedWriteRollsBackWithoutSelectingOldResult",
+          "com.agenthub.android.NativeEasyWorkWriteGateTest#mainRevocationReturnsWhileActualCredentialWriterWaitsForStorageTransaction"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "ad5938a0ed7407c861163118fb982a331b7ff863b44df7220120ba7b8b0dfc1d"
+      },
+      {
+        "label": "viewport-default-large",
+        "status": "failed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [],
+        "failedMethods": [
+          "com.agenthub.android.NativeEasyWorkPairingViewportTest#chineseShortViewportAtDefaultFontUsesActualProviderFieldsAndTargets",
+          "com.agenthub.android.NativeEasyWorkPairingViewportTest#englishShortViewportAtLargeFontUsesActualProviderFieldsAndTargets"
+        ],
+        "instrumentationSha256": "f64d0359678c98bcb73cc6e1fc0a3f12c16c845c5a03a6178be42b6e7631c4d0"
+      },
+      {
+        "label": "viewport-double",
+        "status": "failed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [],
+        "failedMethods": [
+          "com.agenthub.android.NativeEasyWorkPairingViewportTest#englishShortViewportAtDoubleFontKeepsEveryActionAndMetadataReachable",
+          "com.agenthub.android.NativeEasyWorkPairingViewportTest#chineseShortViewportAtDoubleFontKeepsEveryActionAndMetadataReachable"
+        ],
+        "instrumentationSha256": "f238947c4f9d19c5ac00048549b823ceb48929bd6e2170e07ee6689e65613457"
+      },
+      {
+        "label": "actual-ime",
+        "status": "failed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkPairingViewportTest#chineseActualSheetImeKeepsFocusedFieldDoneAndSubmitReachable"
+        ],
+        "failedMethods": [
+          "com.agenthub.android.NativeEasyWorkPairingViewportTest#englishActualSheetImeKeepsFocusedFieldDoneAndSubmitReachable"
+        ],
+        "instrumentationSha256": "aa72e8872ac4b337baee68032c68dd7867e22ec8d381de333dea9707a11bf6af"
+      },
+      {
+        "label": "actual-main",
+        "status": "failed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [],
+        "failedMethods": [
+          "com.agenthub.android.NativeEasyWorkMainIntentTest#actualWarmMainInboxConsumesIntentBeforePairingAndRevokesCapability",
+          "com.agenthub.android.NativeEasyWorkMainIntentTest#actualWarmMainWithoutLinkChangeRevokesOriginalPairingCapability"
+        ],
+        "instrumentationSha256": "8592daec66e712e0e27ba24f9d0f27d0b694bb86d364a4a97adb8570da16fb97"
+      }
+    ],
+    "networkGroups": [
+      {
+        "label": "ui-provider-and-complete-target",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#providerRoundTripPreservesOriginalDraftAndUnknownReceiptEnglishDark",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#completeTargetIsReachableInEnglishLight",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#completeTargetIsReachableInChineseDark",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#providerRoundTripPreservesOriginalDraftAndUnknownReceiptChineseLight"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "d95f6e372a62431e7a05ec29cd150121e70e74a9a09063b6d9c02881f0b56f4f"
+      },
+      {
+        "label": "ui-confirmation-and-invalid-input",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#invalidCodeAndInvalidQrNeverReachTheIssuer",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#pendingConfirmationDisablesProviderAndDuplicateSubmissionThenShowsRejection",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#expiredConfirmationIsAnExplicitEnglishFailure"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "ff1ef795c24b60f516b9b1a016ce4077e4911842a1cc6730f63ddcd84236812e"
+      },
+      {
+        "label": "ui-tls-and-binding",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#mismatchedBindingCannotQuietlyCompleteTheLanForm",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#changedDescriptorTargetIsVisibleAndSendsNoClaim",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#expiredLanQrIsRejectedBeforeAnyNetwork",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#wrongCertificatePinIsVisibleAndSendsNoClaim"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "f94a0189d5ee3dd727b60556a70d7866651d467f54840d6ffe59277549450079"
+      },
+      {
+        "label": "ui-original-intent-and-late-result",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#unknownClaimDoesNotReplayWhenProviderChanges",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#approvedGrantWithUnavailableRuntimeDoesNotQuietlyReportSuccess",
+          "com.agenthub.android.MobileEasyWorkPairingUiTest#newerIncomingQrSurvivesOldApprovalWithoutDispatchingRuntime"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "4bd909e86e202723ec991dca0b5d1e8727b24ab01d5a55c9e15f6201dff5bf49"
+      },
+      {
+        "label": "lease-close-and-background",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#closedManualCodeFormWithNullLinkCannotInstallLateApproval",
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#sessionBackgroundForegroundWithSameNullLinkCannotReviveAction",
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#actualActivityPauseResumeCannotReviveTheOldFormAction"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "3799d063ebf4fd94c61650786391410c9e20e2b52252575abafa6bee94ab70c0"
+      },
+      {
+        "label": "lease-link-target-and-draft-aba",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#newIncomingLinkDismissedBackToNullCannotReviveAction",
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#targetSwitchAndReturnKeepsBothDraftsAndRefusesOldApproval",
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#originalConversationDraftChangeAndRestoreCannotReviveAction"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "52124eb8b056a9f7335e98caea3fab649ad8ef41619fed87ec2dc3ce5f8678fd"
+      },
+      {
+        "label": "lease-input-aba-and-late-failure",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#connectionInputChangeAndRestoreCannotReviveAction",
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#closedFormLateFailureKeepsOriginalDraftAndUnknownBusinessReceipt"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "a3892a8d5da96058011d3efeb17d60b1c6cc3ddbc7e74c4aeaf4f8e7a486afa1"
+      },
+      {
+        "label": "lease-native-credential-write-ownership",
+        "status": "passed",
+        "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+        "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+        "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+        "passedMethods": [
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#revokedAuthorizedWriteRollsBackOnlyItsMappingAndKeepsGrantAndUnknownReceipt",
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#staleRollbackCannotOverwriteANewerIdenticalCredentialWrite",
+          "com.agenthub.android.NativeEasyWorkFormLeaseTest#revokedLeaseCannotWriteTheActualEncryptedCredentialMapping"
+        ],
+        "failedMethods": [],
+        "instrumentationSha256": "018ed848412e5445deeeeb77f482286400024bb79cacbb92484f73852a25b4c1"
+      }
+    ]
+  },
+  "freshApi37Main": {
+    "passed": 2,
+    "group": {
+      "label": "actual-main-fresh-API37",
+      "status": "passed",
+      "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+      "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+      "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkMainIntentTest#actualWarmMainInboxConsumesIntentBeforePairingAndRevokesCapability",
+        "com.agenthub.android.NativeEasyWorkMainIntentTest#actualWarmMainWithoutLinkChangeRevokesOriginalPairingCapability"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "07842411ff3eab49bcae8aabd1a00b2bfb34e8eb6d5c490cea783c537abee5d8"
+    },
+    "preparation": "New task-owned empty AVD from existing SDK image; initial App baseline then explicit in-instrumentation actual Main. No old data/key clone or clear.",
+    "phoneOriginal": "Default original AtomicFile .new preserved; zero original callback there"
+  },
+  "imagesReviewed": [
+    {
+      "name": "provider-zh-Hans-light.png",
+      "sha256": "3b685219855cb8419560560edd49ab81f08c74b53276098d19dc6c95b380ec8c",
+      "assessment": "Correct native Surface/content colors reviewed; component capture only"
+    },
+    {
+      "name": "provider-en-dark.png",
+      "sha256": "928509bfb2c0739a10c736fe30826b41db777ae03cd180ac574ab5f9e9603f9e",
+      "assessment": "Correct native Surface/content colors reviewed; component capture only"
+    },
+    {
+      "name": "target-zh-Hans-dark.png",
+      "sha256": "0a80168647638e75f6d2dd2e761282d8a533156689c386cf0d8f04f7d37a2d47",
+      "assessment": "Correct native Surface/content colors reviewed; component capture only"
+    },
+    {
+      "name": "target-en-light.png",
+      "sha256": "641a147891d929c51c96bacd4cecae2b95266fb11a73bdd7eed712b3daec5569",
+      "assessment": "Correct native Surface/content colors reviewed; component capture only"
+    }
+  ],
+  "resources": {
+    "networkSidecarClosed": true,
+    "ownThreeReversesRemoved": true,
+    "syntheticTlsKeyRetired": true,
+    "oldApi37StoppedDataPreserved": true,
+    "freshApi37ReservedForLongPanelNative": true
+  },
+  "unresolved": [
+    "Four viewport TextLayout overflow flags require actual glyph/end/clip diagnosis",
+    "One English actual IME exact AnnotatedString comparison fails while semantic text matches; Chinese actual IME passed",
+    "Physical Main preflight pending AtomicFile; independent fresh API37 pass is separate"
+  ],
+  "scope": "Actual UI/Session/Keystore/TLS/DPoP, synthetic loopback issuer/runtime only; no real issuer/Desktop/model DEV",
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

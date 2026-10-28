@@ -29,8 +29,10 @@ internal fun chatNotificationTargetTag(target: NativeChatNoticeTarget) =
         onDispose { lifecycle.lifecycle.removeObserver(observer) }
     }
     NativeChatNotificationSettingsPage(coordinator.store, coordinator.system, coordinator.computers,
-        onExplicitDisable = coordinator::explicitDisable, onChanged = coordinator::preferencesSaved,
+        onExplicitDisable = coordinator::explicitDisable, onChanged = coordinator::preferencesSaved, interactionReady=coordinator.migrationInteractionReady,
         status = {
+            if(coordinator.migrationEnrollmentFailed)TextButton(onClick=coordinator::retryMigrationEnrollment,modifier=Modifier.testTag("chat-notification-migration-retry")){Text(productText("重试"))}
+            if(coordinator.migrationNeedsSetup) Text(productText("迁移后需明确开启通知，原记录已保留。"),Modifier.testTag("chat-notification-migration-setup"))
             if (coordinator.unavailable) Text(productText("暂时无法同步通知，原记录已保留。"), Modifier.testTag("chat-notification-coordinator-unavailable"))
             val targets = (coordinator.computers.map { it.target } + coordinator.reports.keys + coordinator.originalReports.keys).distinct()
             for (target in targets) {

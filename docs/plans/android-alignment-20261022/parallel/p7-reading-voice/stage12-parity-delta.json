@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "12-session-notice-integration",
+  "featureIds": ["F49", "F50", "F56"],
+  "commonAssertions": [
+    "Only an actually visible original panel can acknowledge an exact target/thread/run/request/kind notice in the original Session ledger",
+    "Session and native-view guards are checked inside the existing ledger mutation after storage loading",
+    "Body leases carry no notice IDs; notice reads carry no reply position and issue no command",
+    "Projection changes preserve draft/focus/disclosure ownership and late callbacks cannot rearm a covered or changed frame"
+  ],
+  "bothPlatforms": {
+    "ios": "Unchanged existing reading implementation and shared View plan translation; no iOS source or execution in this stage",
+    "android": "Lifecycle/store implementation committed; compiled exact parent stage6 Session/UI/intent overlay supplied for owner application"
+  },
+  "design": {
+    "pages": [
+      "chat execution panels",
+      "inline approvals",
+      "expanded message/review plan",
+      "focused async question dialog"
+    ],
+    "states": [
+      "late metadata",
+      "unseen to seen",
+      "cover",
+      "background",
+      "original replacement",
+      "credential revision",
+      "projection failure/retry"
+    ],
+    "tokens": "existing layout and type tokens; passive stable wrapper",
+    "copy": "reuse 查看计划 -> View plan / 查看计划",
+    "knownGaps": [
+      "oversized or partially clipped cards stay unread",
+      "message plan without exact run or original text stays unread",
+      "same-window/alpha occlusion requires explicit owner cover truth"
+    ]
+  },
+  "acceptance": "parallel/p7-reading-voice/stage12-session-notices.md",
+  "nativeCurrentSource": "pending parent scheduling; prior stage11 12 passes are a different source and fixture boundary",
+  "centralOwner": "parent coordinator",
+  "remaining": [
+    "apply checked shared hunks",
+    "parent combined checks and source manifest",
+    "native actual-Session/ledger-race/UI/bilingual methods",
+    "real DEV and existing body/P9/voice/discard regression"
+  ]
+}

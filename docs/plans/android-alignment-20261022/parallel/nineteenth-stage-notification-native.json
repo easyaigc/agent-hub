@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "checkpoint": "PAR19-notification-originals-and-cold",
+  "date": "2026-10-29",
+  "physicalPhoneGroups": [
+    {
+      "label": "closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority",
+      "status": "failed",
+      "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+      "passedMethods": [],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority"
+      ],
+      "instrumentationSha256": "0fa387e7ce6b78cfca63821f718ecf4d66151d0869a75eabc90e0da524155755"
+    },
+    {
+      "label": "closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke",
+      "status": "failed",
+      "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+      "passedMethods": [],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke"
+      ],
+      "instrumentationSha256": "40fdd37e6dc104afe563541eed48b29c44d8633d419ac51501790a7eabfe964c"
+    },
+    {
+      "label": "closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing",
+      "status": "passed",
+      "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "7adebc24368b0e8eff202c0011be9be5685328b2c0b630ad19c8899b19f6bf3b"
+    },
+    {
+      "label": "foreground-terminal-post",
+      "status": "passed",
+      "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foregroundPresentationUsesOpaqueIntentAndP7UnreadCount"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "42d6b5a8ccf1e323bb64b4fcecb1559dab41ddb022229ee95e60a0e9a5847445"
+    }
+  ],
+  "physicalPassed": 2,
+  "physicalFailed": 2,
+  "foregroundObservationRetake": "Passed actual durable submitted outcome, then Main-owned intent/receipt assertion. Original PAR17 failure retained.",
+  "enrollmentNative": "Missing authority refusal passed; two valid-authority cases timed out with zero query/forbidden command/capture. Boundary transport entry/IO responsibility under review; originals and failures preserved.",
+  "coldCases": [
+    {
+      "case": "original",
+      "roleGroups": [
+        {
+          "label": "writer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "10cf5d854e70e9452b018eb199d7a17a8ed644cc9580cb08971c2e52c3062603"
+        },
+        {
+          "label": "reader",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "4fb3e881a32f00f01c725da955f324e29b74ec2cb812d699903223338cf57e65"
+        },
+        {
+          "label": "observer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#disarmCompletedLeaseFromAnotherProcessWithoutOpeningDefaultApp"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "bb0b180e8cc787faed0979e0a7ef53709407f3ab0cff7d12c94ec49c765dee86"
+        }
+      ],
+      "threeDistinctProcesses": true,
+      "firstActivityBeforeDefault": true,
+      "duplicateIntentKeptNewDraft": true,
+      "originalReceiptAndAuthorityMatched": true,
+      "receiptConsumed": true,
+      "locatorPages": 12,
+      "observer": "Separate completed-router cleanup; not a route pass"
+    },
+    {
+      "case": "expired",
+      "roleGroups": [
+        {
+          "label": "writer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "60aa02651c08a02fe654027ebaed307da63508f148787631b7594c936bc09326"
+        },
+        {
+          "label": "reader",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "a6163cc9ea43136638a9378cc0fa0e8bcc5e336eaf92aafb129a87cb7ecb01bc"
+        },
+        {
+          "label": "observer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#disarmCompletedLeaseFromAnotherProcessWithoutOpeningDefaultApp"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "1f40c5ed30befb7a6ff70bdc9aa5ae277036f76c5100bb0d935563acc6341066"
+        }
+      ],
+      "threeDistinctProcesses": true,
+      "firstActivityBeforeDefault": true,
+      "duplicateIntentKeptNewDraft": true,
+      "originalReceiptAndAuthorityMatched": true,
+      "receiptConsumed": false,
+      "locatorPages": 0,
+      "observer": "Separate completed-router cleanup; not a route pass"
+    },
+    {
+      "case": "wrong-runtime",
+      "roleGroups": [
+        {
+          "label": "writer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "36068aaf3ff3ade51d7434f708908f7b0597a85c5b5f1e53d629e338cd69939c"
+        },
+        {
+          "label": "reader",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "42c466b1ae2a123a8c2ea843f9b98e2d5a947b6e55d258f16063b9ed2f12dd25"
+        },
+        {
+          "label": "observer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#disarmCompletedLeaseFromAnotherProcessWithoutOpeningDefaultApp"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "ad0cc106b822368be06271ecf171c055fc1f86249100563f2cad3bb5461a6644"
+        }
+      ],
+      "threeDistinctProcesses": true,
+      "firstActivityBeforeDefault": true,
+      "duplicateIntentKeptNewDraft": true,
+      "originalReceiptAndAuthorityMatched": true,
+      "receiptConsumed": false,
+      "locatorPages": 0,
+      "observer": "Separate completed-router cleanup; not a route pass"
+    },
+    {
+      "case": "wrong-credential",
+      "roleGroups": [
+        {
+          "label": "writer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "ae271b1f60c2e9516482eaba348cefaced4ae8a31b5c1eccfd649706482d4ce1"
+        },
+        {
+          "label": "reader",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "5c34e2dfec7b4d09208578d7132b31e2ade85d8426d8088d4adddcce850c9fd4"
+        },
+        {
+          "label": "observer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#disarmCompletedLeaseFromAnotherProcessWithoutOpeningDefaultApp"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "6f73bd8d93c4d776aea1fddb328fb1cbf64b23212d37041ea30937c90e0f6224"
+        }
+      ],
+      "threeDistinctProcesses": true,
+      "firstActivityBeforeDefault": true,
+      "duplicateIntentKeptNewDraft": true,
+      "originalReceiptAndAuthorityMatched": true,
+      "receiptConsumed": false,
+      "locatorPages": 0,
+      "observer": "Separate completed-router cleanup; not a route pass"
+    },
+    {
+      "case": "missing-thread",
+      "roleGroups": [
+        {
+          "label": "writer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "77ec24b999a44160710409c73e4687ecc94d28979fb711f0d72677d418964ff6"
+        },
+        {
+          "label": "reader",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "d99e36dbe9e8a48e201f1b0f4e24648c7d227a17c849fa6374273b9c5cf9e37f"
+        },
+        {
+          "label": "observer",
+          "status": "passed",
+          "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+          "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+          "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+          "passedMethods": [
+            "com.agenthub.android.NativeChatNotificationColdReaderTest#disarmCompletedLeaseFromAnotherProcessWithoutOpeningDefaultApp"
+          ],
+          "failedMethods": [],
+          "instrumentationSha256": "fa6a41d38eb969690de96603993b26a031e4bf3e51e7abb82772d92284f850c2"
+        }
+      ],
+      "threeDistinctProcesses": true,
+      "firstActivityBeforeDefault": true,
+      "duplicateIntentKeptNewDraft": true,
+      "originalReceiptAndAuthorityMatched": true,
+      "receiptConsumed": false,
+      "locatorPages": 12,
+      "observer": "Separate completed-router cleanup; not a route pass"
+    }
+  ],
+  "coldSceneCount": 5,
+  "coldRoleExecutions": 15,
+  "uniqueColdMethodCount": 3,
+  "defaultCiphertextsUnchanged": true,
+  "originalFailureMaintenance": {
+    "inspect": {
+      "label": "inspect",
+      "status": "passed",
+      "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationColdFailureObserverTest#inspectOriginalFailureWithoutChangingArmOrOriginals"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "e175edef6c65c4aebc96123344f8d5350731013973aa12ebcc125e02bcccc05d"
+    },
+    "seal": {
+      "label": "seal",
+      "status": "passed",
+      "sourceSha256": "313d53ddae2bc19d9deb5e52045a9c01060008ab2bb349e618a1cf36401d4806",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "cdbd8979d5207ae3dd8815f5daaefc71d6308c192ca452ab21e61fef8dc2020b",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationColdFailureObserverTest#sealReviewedFailureAndReleaseOnlyItsDebugRouter"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "17ab9e32b3b666b685c3ffbfa46366f5283bd2856f1ead7a64178de53378eef0"
+    },
+    "independentSnapshotCanonicalAndCiphertextHashesChecked": true,
+    "originalSixCiphertextsUnchanged": true,
+    "onlyFixedSyntheticDebugRouterReleased": true,
+    "notBusinessOrRoutePass": true
+  },
+  "limits": [
+    "Cold uses claimed receipt fixture and actual Activity, not real OS notification posting/tap or backend/model",
+    "No physical permissions/vendor delivery, API37 landscape, full DEV or complete P9 claim",
+    "Two closed-enrollment positive original-query cases remain open"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

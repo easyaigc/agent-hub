@@ -1,0 +1,73 @@
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt
+@@ -50,6 +50,8 @@
+         MobileClient(f.target.hostId, "P9 enrollment fixture", TargetScope("codex", null, null, f.target.hostId, f.target.workspaceId, f.target.runtimeId), "https://p9-enrollment.example.invalid"), token)
+     private class Boundary {
+         val forbidden = AtomicInteger(); val queries = CopyOnWriteArrayList<NativeChatRecoveryIntent>()
++        val queryEntries = AtomicInteger()
++        @Volatile var lastQueryState = "not-entered"; private set
+         lateinit var expected: NativeChatRecoveryIntent
+         lateinit var authority: String
+         var receipt: NativeChatRecoveryReceipt? = null
+@@ -63,10 +65,15 @@
+             override suspend fun recoveryCapabilities(snapshot: NativeChatNotificationSnapshot, deviceId: String): NativeChatRecoveryCapabilities? = forbidden()
+             override suspend fun recoverySubmit(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent): NativeChatRecoveryReceipt = forbidden()
+             override suspend fun recoveryFeed(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent, query: NativeChatRecoveryQuery, reset: NativeChatRecoverySnapshot?): NativeChatRecoveryFeed = forbidden()
+-            override suspend fun recoveryQuery(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent): NativeChatRecoveryReceipt? {
+-                check(Looper.myLooper() != Looper.getMainLooper())
+-                check(snapshot.target == expected.target && snapshot.authorizationFingerprint == authority && original.encoded() == expected.encoded())
+-                queries.add(original); return receipt // exact writer-recorded response, or absent; never reconstructed from local state
++            // Like the shipping transport, this suspend boundary owns its IO switch.
++            override suspend fun recoveryQuery(snapshot: NativeChatNotificationSnapshot, original: NativeChatRecoveryIntent): NativeChatRecoveryReceipt? = withContext(Dispatchers.IO) {
++                queryEntries.incrementAndGet(); lastQueryState = "entered-io"
++                check(Looper.myLooper() != Looper.getMainLooper()) { lastQueryState = "rejected-main-thread"; "Fixture query must run off Main" }
++                check(snapshot.target == expected.target) { lastQueryState = "rejected-original-target"; "Original target required" }
++                check(snapshot.authorizationFingerprint == authority) { lastQueryState = "rejected-original-authority"; "Original authority required" }
++                check(original.encoded() == expected.encoded()) { lastQueryState = "rejected-original-intent"; "Original intent required" }
++                queries.add(original); lastQueryState = if(receipt == null) "original-receipt-absent" else "writer-receipt-returned"
++                receipt // exact writer-recorded response, or absent; never reconstructed from local state
+             }
+         }
+     }
+@@ -118,7 +125,7 @@
+         val parent = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+         var coordinator: NativeChatNotificationCoordinator? = null
+         val boundary = Boundary(); val system = SystemPort(); var port: Port? = null
+-        var failure: Throwable? = null; var stopped = false
++        var failure: Throwable? = null; var stopped = false; var coordinatorState = JSONObject()
+         var before = emptyMap<String,String>(); var after = emptyMap<String,String>(); var archiveBefore = emptyMap<String,String>(); var archiveAfter = emptyMap<String,String>()
+         try {
+             lateinit var f: RecoveryNativeFixture; lateinit var saved: NativeChatNotificationSavedConnection
+@@ -188,18 +195,29 @@
+                 else check(boundary.queries.all { it.encoded() == boundary.expected.encoded() })
+             }
+             check(boundary.forbidden.get() == 0 && system.forbidden.get() == 0 && activePort.forbidden.get() == 0)
++            check(boundary.queryEntries.get() == boundary.queries.size)
+             check(activePort.captures.get() == if(case == "missing-authority") 1 else 0)
+             main { check(c.migrationNeedsSetup && c.migrationInteractionReady && !c.migrationEnrollmentFailed && c.reports.isEmpty()) }
+         } catch(error: Throwable) { failure = error }
+         finally {
+             try {
+-                main { coordinator?.stopAndJoinForMigration(); check(parent.isActive); stopped = true }
++                main {
++                    coordinator?.let { c ->
++                        // Bounded diagnostic snapshot BEFORE stop clears the owner state. No raw errors/credentials.
++                        coordinatorState = JSONObject().put("originalReportStates", JSONArray(c.originalReports.values.take(4).map { it.state.take(128) }))
++                            .put("automaticReportStates", JSONArray(c.reports.values.take(4).map { it.state.take(128) })).put("queryingCount", c.querying.size)
++                            .put("interactionReady", c.migrationInteractionReady).put("needsSetup", c.migrationNeedsSetup).put("enrollmentFailed", c.migrationEnrollmentFailed)
++                        c.stopAndJoinForMigration()
++                    }
++                    check(parent.isActive); stopped = true
++                }
+                 parent.coroutineContext[Job]!!.cancelAndJoin()
+                 io { storage.awaitQueuedWrites(); archiveStorage.awaitQueuedWrites(); storage.retireWriter(); archiveStorage.retireWriter() }
+             } catch(error: Throwable) { if(failure == null)failure = error else failure!!.addSuppressed(error) }
+             try { io {
+                 proof(context, lease, run, JSONObject().put("case", case).put("archiveRun", archiveRun).put("passed", failure == null).put("ownerStopped", stopped)
+-                    .put("failureType", failure?.javaClass?.name ?: JSONObject.NULL).put("queryCount", boundary.queries.size).put("forbiddenCommands", boundary.forbidden.get())
++                    .put("failureType", failure?.javaClass?.name?.take(128) ?: JSONObject.NULL).put("queryCount", boundary.queries.size).put("forbiddenCommands", boundary.forbidden.get())
++                    .put("queryEntries", boundary.queryEntries.get()).put("lastQueryState", boundary.lastQueryState.take(128)).put("coordinatorState", coordinatorState)
+                     .put("forbiddenSystem", system.forbidden.get()).put("captures", port?.captures?.get() ?: 0).put("forbiddenReadingNavigation", port?.forbidden?.get() ?: 0)
+                     .put("before", JSONObject(before)).put("after", JSONObject(after)).put("archiveBefore", JSONObject(archiveBefore)).put("archiveAfter", JSONObject(archiveAfter)))
+             } } catch(error: Throwable) { if(failure == null)failure = error else failure!!.addSuppressed(error) }

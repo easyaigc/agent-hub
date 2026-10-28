@@ -19,6 +19,7 @@ class NativeReadingLedgerTest {
     private fun visible(ledger: NativeReadingLedger, p: ThreadReadPosition, text: String = "reply ${p.revision}", notices: Set<String> = emptySet()) {
         val view = NativeReadingLifecycle(); view.foreground(true); view.uncovered(true); view.present(target, "thread", p, notices)
         val lease = view.visible(target, "thread", p.messageId, text, "completed", true)!!
+        assertTrue("Body reading cannot carry notice IDs",lease.noticeIds.isEmpty())
         assertNotNull(ledger.readVisible(target, "thread", "a".repeat(64), view, lease))
     }
     @Test fun phoneReadSurvivesServerUnreadRepetitionAndLatePushAcrossInstances() {
@@ -64,9 +65,18 @@ class NativeReadingLedgerTest {
         val scopes = listOf(target, sameMachine, second, secondRuntime)
         val all = ledger.reconcile(scopes, scopes.map { NativeReadingSnapshot(it, "thread", p, true) })
         assertEquals(3, all.count); assertEquals(1, all.count(target)); assertEquals(0, all.badge(false)); assertEquals(3, ledger.snapshot().count)
-        ledger.receive(NativeReadingEvent("approval", target, "thread", "approval"))
+        val approval=NativeReadingEvent("approval",target,"thread","approval",runId="run",requestId="request")
+        ledger.receive(approval)
         assertEquals(3, ledger.snapshot().count)
-        visible(ledger, p, notices = setOf("approval")); assertEquals(2, ledger.snapshot().count)
+        visible(ledger,p,notices=setOf(approval.id))
+        assertEquals("Body read preserves the unseen approval on this same row",3,ledger.snapshot().count)
+        assertTrue(ledger.mayPresent(approval))
+        assertFalse(ledger.mayPresent(NativeReadingEvent("completed",target,"thread","completed",p)))
+        val view=NativeReadingLifecycle().apply { foreground(true);uncovered(true);present(target,"thread",null,setOf(approval.id)) }
+        val noticeLease=checkNotNull(view.visibleNotices(target,"thread",setOf(approval.id)))
+        assertNull(noticeLease.position);assertEquals(setOf(approval.id),noticeLease.noticeIds)
+        assertEquals(2,checkNotNull(ledger.readVisible(target,"thread","a".repeat(64),view,noticeLease)).count)
+        assertFalse(ledger.mayPresent(approval));assertEquals(2,ledger.snapshot().count)
         ledger.reconcile(listOf(second), emptyList()); assertEquals(1, ledger.snapshot().count)
         ledger.reconcile(scopes, emptyList()); assertEquals(2, ledger.snapshot().count)
         val otherAccount = TargetScope("easywork", "authority", "user", "host-a", "workspace", "runtime")

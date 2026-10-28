@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "stage": "P9-leased-first-Activity-original-ticket-boundary",
+  "baseCommit": "0f1ff6d0c2c39a269af381057a79b92c09f0194a",
+  "operationId": "parent-p9-positive-ticket-cold-next-20261029-1",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "新reader进程首次MainActivity在默认store/Session之前选择原租约store；原opaque ticket/机器target/runtime/credential/page严格核对；重复Intent不导航新target、不清新草稿、不重放操作",
+      "androidImplementation": "closed debug lease gate + writer/reader/observer native preparation; shared two-file overlay reviewed but not applied here",
+      "androidVerification": "native roles not-run; local auxiliary/build only",
+      "iosImpact": "no source/evidence change; A6 paused"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdPlan.kt": "476372547c9dfaaed01aed82a88115909f61b34896a6d74ce9fa4e1251d41f7d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdPorts.kt": "b5e6374e12696a510ecf934b10683c6d39ca1891112fad5fe7039d76af53987e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt": "862ac9255c9d598a3f0dcfe790128bb30d11f8c9b0ca98e6267c742fbbd1ecc0",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdWriterTest.kt": "ab0b3b60273457304c32769d12879204f5c213734a52bdd7bb5c733b77e6d5c3",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdReaderTest.kt": "a1313dbceac23774adf03b11d8474d9e2dee990ead84117294c29585b09f8ea9",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "37b46ea52846aca30140b22eec4dd7189047dee07d51529bad0bb36936adca2d",
+    "scripts/mobile/fixtures/RecoveryVectors.kt": "807d36b09addf8cd88359fd086d4cb7d36c9525683fc8e1fe17a7c94871c2ace",
+    "scripts/mobile/fixtures/ColdVectors.kt": "34ca878e69829993da70f4ccf112bdc315912f251950f8878cc00fd5a8fe1886"
+  },
+  "sharedOverlay": "cold-ticket-hooks.patch/json; exactly five fingerprints, two proposed file changes",
+  "nativeRoleSelectors": 3,
+  "coldRouteCases": 5,
+  "nativeResults": "all unverified, no device execution",
+  "checks": {
+    "jvm": "80 passed after supplying actual serialization runtime used by shipping metadata codec",
+    "android": "component helper/tests assembly only; shared overlay requires parent compile"
+  },
+  "sourceBoundary": "fixed UUID/enum only; no configurable namespace/path/transport/method; no default writes, key import, real business or old unknown access",
+  "osSystem14": "independent prerequisite; no OS post/tap inference",
+  "actualPageAssertion": "actual Compose product-surface + selected message-input original/new/other draft",
+  "unresolvedFailure": "separate failure observation preserves selected original; no automatic completion/disarm/replay"
+}

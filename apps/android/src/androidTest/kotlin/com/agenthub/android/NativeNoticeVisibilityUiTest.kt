@@ -36,6 +36,7 @@ class NativeNoticeVisibilityUiTest {
     private lateinit var owned: OwnedControlAcceptance
     private lateinit var session: MobileSession
     private lateinit var ledger: NativeReadingLedger
+    private lateinit var noticeStorage: NativeSessionStorage
     private val target=TargetScope("codex",null,null,"notice-host","workspace","runtime")
     private val reader="a".repeat(64)
     private val lifecycle=NativeReadingLifecycle()
@@ -43,16 +44,29 @@ class NativeNoticeVisibilityUiTest {
     private var covered by mutableStateOf(false)
     private var version=0
     private var mode="approval"
+    private var language by mutableStateOf("en")
     private var longCard=false
+    private var unicodeCard=false
+    private var longPlan=false
+    private var codePlan=false
+    private var customQuestion=false
+    private var viewportWidth by mutableStateOf(330.dp)
+    private fun planText()=when {
+        codePlan -> "Original plan heading.\n\n```text\n"+"abcdefghijklmnopqrstuvwxyz ".repeat(40)+"\n```\n\nOriginal plan tail."
+        longPlan -> (0..25).joinToString("\n\n") { "## Original block $it\n"+"Original paragraph $it. ".repeat(8) }
+        else -> "Actual original plan text."
+    }
     private var commandsCalled=0
+    private var blockedReportIo=false
+    private var diagnostic=0
     private val reports=Collections.synchronizedList(mutableListOf<NativeNoticeVisibilityReport>())
     private val leases=Collections.synchronizedMap(mutableMapOf<NativeNoticeVisibilityFence.Proof,NativeReadingLifecycle.Lease>())
     private fun event(which: String="one",kind: String="approval",run: String="run-$version",request: String="request-$which-$version")=
         NativeReadingEvent("event-$kind-$which-$version",target,"thread",kind,runId=run,requestId=request)
     private fun approvals()=JSONArray(if(mode=="plan")emptyList<JSONObject>() else listOf("one","two","three").map { id ->
         JSONObject().put("id",id).put("threadId","thread").put("turnId","run-$version").put("kind",mode)
-            .put("notificationRequestId","request-$id-$version").put("title","Original $id version $version").put("detail",if(longCard && id=="one")"Synthetic long detail. ".repeat(150) else "")
-            .put("decisions",JSONArray(listOf("accept","decline"))).put("questions",JSONArray().apply { if(mode=="question")put(JSONObject().put("id","q").put("question","Actual $id question").put("custom",false).put("isSecret",false).put("options",JSONArray())) })
+            .put("notificationRequestId","request-$id-$version").put("title","Original $id version $version").put("detail",if(longCard && id=="one") (if(unicodeCard)"原始字段😀、100% %@؛ أصل الطلب. ".repeat(100) else "Synthetic long detail. ".repeat(150)) else "")
+            .put("decisions",JSONArray(listOf("accept","decline"))).put("questions",JSONArray().apply { if(mode=="question")put(JSONObject().put("id","q").put("question","Actual $id question").put("custom",customQuestion).put("isSecret",false).put("options",JSONArray())) })
     })
     private val reads=object: HostReads {
         override suspend fun workspace(client: MobileClient,projectCursor: String?,threadCursor: String?)=HostReadCodec.workspace(JSONObject()
@@ -63,7 +77,7 @@ class NativeNoticeVisibilityUiTest {
             .put("hostId","notice-host").put("threadId",threadId).put("readTarget",CodexCommandCodec.target(target)).put("messages",JSONArray())
             .put("runtime",JSONObject().put("state","idle").put("turnId","run-$version").put("plan",JSONArray()).put("error",JSONObject.NULL)
                 .put("approvals",approvals()).put("receipts",JSONArray()).put("canControl",true)
-                .apply { if(mode=="plan")put("proposedPlan",JSONObject().put("id","plan-$version").put("turnId","run-$version").put("text","Actual original plan text.")) }).toString())
+                .apply { if(mode=="plan")put("proposedPlan",JSONObject().put("id","plan-$version").put("turnId","run-$version").put("text",planText())) }).toString())
     }
     private val commands=object: CodexCommands by NativeCodexCommands({commandsCalled++;error("No command during notice reading")}) {
         override suspend fun models(client: MobileClient)=emptyList<CodexModel>()
@@ -72,12 +86,13 @@ class NativeNoticeVisibilityUiTest {
     private fun history() { main { session.loadHistory()?.join() };ui.waitForIdle() }
     private fun report(value: NativeNoticeVisibilityReport) {
         reports+=value
+        if(blockedReportIo)return
         // Fixture bridge only. Production needs the atomic guard hook documented with this stage.
         lifecycle.present(target,"thread",null,ledger.notices(target,"thread").map { it.id }.toSet())
-        if(value.visible)lifecycle.visibleNotices(target,"thread",setOf(value.notice.id))?.let { leases[value.proof]=it }
+        if(value.visible)lifecycle.visibleNotices(target,"thread",setOf(value.notice.id),value.proof)?.let { leases[value.proof]=it }
     }
-    private fun bind(foreground: Boolean=true,uncovered: Boolean=true,targetOverride: TargetScope=target) {
-        ui.runOnIdle { binding=NativePanelNoticeVisibility(targetOverride,"thread",ledger.notices(target,"thread"),foreground,uncovered,Any(),::report) }
+    private fun bind(foreground: Boolean=true,uncovered: Boolean=true,targetOverride: TargetScope=target,retainFrame: Boolean=false) {
+        ui.runOnIdle { binding=NativePanelNoticeVisibility(targetOverride,"thread",ledger.notices(target,"thread"),foreground,uncovered,if(retainFrame)binding?.renderEpoch ?: Any() else Any(),::report) }
         ui.waitForIdle()
     }
     private fun current(id: String)=synchronized(reports) { reports.lastOrNull { it.visible && it.notice.id==id && it.proof.isCurrent() } }
@@ -90,12 +105,12 @@ class NativeNoticeVisibilityUiTest {
         ui.waitUntil(30_000) { !ui.activity.session.restoring }
         ui.runOnIdle {
             owned=OwnedControlAcceptance(ui.activity,"notice-visibility")
-            ledger=NativeReadingLedger(owned.storage.child(ui.activity,"notice-fixture"));ledger.reconcile(listOf(target),emptyList())
+            noticeStorage=owned.storage.child(ui.activity,"notice-fixture");ledger=NativeReadingLedger(noticeStorage);ledger.reconcile(listOf(target),emptyList())
             lifecycle.foreground(true);lifecycle.uncovered(true)
             session=MobileSession(owned.storage,reads,commands);session.resetAcceptance(reads,commands)
-            ui.activity.setContent { ProductTextProvider("en") { MaterialTheme { Surface {
+            ui.activity.setContent { ProductTextProvider(language) { MaterialTheme(colorScheme=lightColorScheme()) { Surface {
                 Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-                    Box(Modifier.width(330.dp).height(240.dp).testTag("notice-fixture-viewport")) { ExecutionPanels(session,maxHeight=240.dp,autoPresentQuestions=false,noticeVisibility=binding) }
+                    Box(Modifier.width(viewportWidth).height(240.dp).testTag("notice-fixture-viewport")) { ExecutionPanels(session,maxHeight=240.dp,autoPresentQuestions=false,noticeVisibility=binding) }
                     if(covered)Dialog(onDismissRequest={}) { Surface { Text("Owned overlay",Modifier.padding(30.dp).testTag("notice-owned-overlay")) } }
                 }
             } } } }
@@ -114,8 +129,32 @@ class NativeNoticeVisibilityUiTest {
             i.runOnMainSync { PixelCopy.request(ui.activity.window,image,{status=it;done.countDown()},android.os.Handler(android.os.Looper.getMainLooper())) };assertTrue(done.await(10,TimeUnit.SECONDS));assertEquals(PixelCopy.SUCCESS,status)
             File(owned.folder,"$name.png").outputStream().use { assertTrue(image.compress(Bitmap.CompressFormat.PNG,100,it)) }
             val active=synchronized(reports) { reports.filter { it.visible && it.proof.isCurrent() }.map { it.notice.id } }
-            File(owned.folder,"$name-window.json").writeText(JSONObject().put("method","PixelCopy.owned-activity-window").put("package",ui.activity.packageName).put("width",image.width).put("height",image.height).put("visibleNoticeIds",JSONArray(active)).put("fullSystemComposite",false).toString())
+            File(owned.folder,"$name-window.json").writeText(JSONObject().put("method","PixelCopy.owned-activity-window").put("package",ui.activity.packageName).put("width",image.width).put("height",image.height).put("visibleNoticeIds",JSONArray(active)).put("language",language).put("composedTheme","light").put("viewportWidthDp",viewportWidth.value).put("systemFontScale",ui.activity.resources.configuration.fontScale).put("wrapperThemeIsNotFixtureTheme",true).put("fullSystemComposite",false).toString())
         }finally { image.recycle() }
+    }
+    private fun scrollBy(tag: String="execution-panels-scroll",x: Float=0f,y: Float) {
+        ui.onNodeWithTag(tag).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(x,y) };ui.waitForIdle()
+    }
+    private fun top()=scrollBy(y=-1_000_000f)
+    private fun coverageStatus(node: SemanticsNodeInteraction): Map<String,Any> {
+        val read=node.fetchSemanticsNode().config[NativeNoticeReadStatusKey]
+        lateinit var value: Map<String,Any>;ui.runOnIdle { value=read() };return value
+    }
+    private fun coverageDiagnostic() {
+        val nodes=ui.onAllNodes(SemanticsMatcher.keyIsDefined(NativeNoticeReadStatusKey),useUnmergedTree=true).fetchSemanticsNodes()
+        lateinit var values: List<Map<String,Any>>;ui.runOnIdle { values=nodes.map { it.config[NativeNoticeReadStatusKey].invoke() } }
+        File(owned.folder,"coverage-${diagnostic++}.json").writeText(JSONObject().put("fixtureTheme","light")
+            .put("viewportWidthDp",viewportWidth.value).put("parts",JSONArray(values.map(::JSONObject))).toString())
+    }
+    private fun scan(e: NativeReadingEvent,limit: Int=100): NativeNoticeVisibilityReport? {
+        val scroller=ui.onNodeWithTag("execution-panels-scroll")
+        repeat(limit) {
+            current(e.id)?.let { return it }
+            val node=scroller.fetchSemanticsNode();val range=node.config[androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange]
+            if(range.value()>=range.maxValue()) { coverageDiagnostic();return current(e.id) }
+            scrollBy(y=node.boundsInRoot.height*.35f)
+        }
+        coverageDiagnostic();return current(e.id)
     }
     @Test fun selectingAThreadWithNoExplicitPortDoesNotMarkItsNotices() {
         val e=event();ledger.receive(e);ui.waitForIdle();ui.onNodeWithTag("approval-one").assertIsDisplayed()
@@ -164,6 +203,16 @@ class NativeNoticeVisibilityUiTest {
         longCard=true;history();val e=event();ledger.receive(e);bind()
         ui.onNodeWithTag("approval-one").assertIsDisplayed();assertNull(current(e.id));assertTrue(ledger.mayPresent(e));shot("oversized-card-unread")
     }
+    @Test fun planToggleUsesTheExistingSharedCatalogInEnglishAndChinese() {
+        mode="plan";history()
+        for(locale in listOf("en","zh-Hans")) {
+            ui.runOnIdle { language=locale };ui.waitForIdle()
+            ui.onNodeWithTag("review-plan-toggle").performScrollTo().assertTextEquals(if(locale=="en")"View plan" else "查看计划").assertHasClickAction().performClick()
+            ui.onNodeWithTag("proposed-plan-text").performScrollTo().assertIsDisplayed()
+            assertEquals("Actual original plan text.",session.runtime!!.proposedPlan!!.text);assertEquals(0,commandsCalled)
+            ui.onNodeWithTag("review-plan-toggle").performScrollTo().performClick()
+        }
+    }
     @Test fun noticeReadingDoesNotReadTheReplyAndTheSameLedgerSuppressesOldReminders() {
         val position=ThreadReadPosition(1,"reply",ThreadReadPosition.contentVersion("reply","Body","completed"))
         ledger.reconcile(listOf(target),listOf(NativeReadingSnapshot(target,"thread",position,true)))
@@ -172,4 +221,102 @@ class NativeNoticeVisibilityUiTest {
         lifecycle.present(target,"thread",position);val lease=lifecycle.visible(target,"thread","reply","Body","completed",true)!!
         assertNotNull(ledger.readVisible(target,"thread",reader,lifecycle,lease));assertFalse(ledger.mayPresent(reply));assertFalse(ledger.mayPresent(notice))
     }
+    @Test fun longApprovalRequiresEveryActuallyVisibleTextRangeRatherThanTheBottom() {
+        longCard=true;history();val e=event();ledger.receive(e);bind()
+        scrollBy(y=1_000_000f);assertNull(current(e.id));assertTrue(ledger.mayPresent(e))
+        top();val proof=scan(e);assertNotNull("A continuous overlapping native viewport scan must cover the original",proof)
+        assertNotNull(mark(proof!!));assertFalse(ledger.mayPresent(e));shot("long-approval-covered")
+    }
+    @Test fun longPlanMissingMiddleAndCollapsedDisclosureCannotBorrowCoverage() {
+        mode="plan";longPlan=true;history();val e=event(kind="plan",request="plan-$version");ledger.receive(e);bind()
+        ui.onNodeWithTag("review-plan-toggle").performScrollTo().performClick();ui.waitForIdle()
+        scrollBy(y=1_000_000f);assertNull(current(e.id));assertTrue(ledger.mayPresent(e))
+        top();val old=checkNotNull(scan(e)) // Keep the fixture write pending after a complete proof.
+        top();ui.onNodeWithTag("review-plan-toggle").performScrollTo().performClick();ui.waitForIdle()
+        assertFalse(old.proof.isCurrent());assertNull(current(e.id));ui.onNodeWithTag("review-plan-toggle").performClick();ui.waitForIdle()
+        scrollBy(y=1_000_000f);assertNull(current(e.id));assertTrue(ledger.mayPresent(e));top()
+        val proof=scan(e);assertNotNull(proof);assertNotNull(mark(proof!!));assertFalse(ledger.mayPresent(e));shot("long-plan-covered")
+    }
+    @Test fun horizontalCodeNeedsActualOriginalGlyphsBeyondTheInitialClip() {
+        mode="plan";codePlan=true;history();val e=event(kind="plan",request="plan-$version");ledger.receive(e);bind()
+        ui.onNodeWithTag("review-plan-toggle").performScrollTo().performClick();ui.waitForIdle();scan(e)
+        assertNull(current(e.id));assertTrue(ledger.mayPresent(e))
+        ui.onNodeWithTag("proposed-plan-text-1-code-scroll").performScrollTo();ui.waitForIdle()
+        val code=ui.onNodeWithTag("proposed-plan-text-1-code-scroll");var turns=0
+        while(turns++<180) {
+            val node=code.fetchSemanticsNode();val range=node.config[androidx.compose.ui.semantics.SemanticsProperties.HorizontalScrollAxisRange]
+            if(range.value()>=range.maxValue())break
+            scrollBy("proposed-plan-text-1-code-scroll",x=node.boundsInRoot.width*.4f,y=0f)
+        }
+        val proof=current(e.id) ?: scan(e);assertNotNull(proof);assertNotNull(mark(proof!!));assertFalse(ledger.mayPresent(e))
+    }
+    @Test fun longQuestionKeepsDraftAndNativeFocusWhileOriginalRangesAreReadUnderIme() {
+        mode="question";customQuestion=true;longCard=true;history();val e=event(kind="question");ledger.receive(e);bind()
+        val field=ui.onAllNodesWithTag("question-custom-q").onFirst().performScrollTo().performClick()
+        field.performTextInput("Original unsent answer 100% %@");ui.waitForIdle();field.assertIsFocused()
+        assertNull(current(e.id));top();val proof=scan(e);assertNotNull(proof)
+        field.performScrollTo().assertTextEquals("Original unsent answer 100% %@").assertIsFocused()
+        val currentProof=current(e.id) ?: scan(e);assertNotNull(mark(checkNotNull(currentProof)));assertFalse(ledger.mayPresent(e));assertEquals(0,commandsCalled)
+    }
+    @Test fun layoutReflowCannotUseRangesFromTheEarlierWidth() {
+        longCard=true;history();val e=event();ledger.receive(e);bind();val old=checkNotNull(scan(e))
+        ui.runOnIdle { viewportWidth=260.dp };ui.waitForIdle();scrollBy(y=1_000_000f)
+        assertFalse(old.proof.isCurrent());assertNull(current(e.id));assertTrue(ledger.mayPresent(e));top();assertNotNull(mark(checkNotNull(scan(e))))
+    }
+    @Test fun aDifferentNativeWindowClearsEarlierPartialCoverage() {
+        longCard=true;history();val e=event();ledger.receive(e);bind();val old=checkNotNull(scan(e))
+        ui.runOnIdle { covered=true };ui.onNodeWithTag("notice-owned-overlay").assertIsDisplayed();ui.waitForIdle()
+        ui.runOnIdle { covered=false };ui.waitForIdle();scrollBy(y=1_000_000f)
+        assertFalse(old.proof.isCurrent());assertNull(current(e.id));assertTrue(ledger.mayPresent(e));top();assertNotNull(mark(checkNotNull(scan(e))))
+    }
+    @Test fun originalReplacementCannotBorrowAnEarlierLongRequestCoverage() {
+        longCard=true;history();val old=event();ledger.receive(old);bind();val previous=checkNotNull(scan(old))
+        version++;history();val next=event();ledger.receive(next);bind();scrollBy(y=1_000_000f)
+        assertFalse(previous.proof.isCurrent());assertNull(current(next.id));assertTrue(ledger.mayPresent(old));assertTrue(ledger.mayPresent(next))
+        top();assertNotNull(mark(checkNotNull(scan(next))));assertTrue(ledger.mayPresent(old));assertFalse(ledger.mayPresent(next))
+    }
+    @Test fun delayedOriginalLedgerWriteCannotOutliveTheLongPanelWindowProof() {
+        longCard=true;history();val e=event();ledger.receive(e);bind();val proof=checkNotNull(scan(e));val lease=checkNotNull(leases[proof.proof])
+        val pool=java.util.concurrent.Executors.newFixedThreadPool(2);val locked=CountDownLatch(1);val release=CountDownLatch(1);val started=CountDownLatch(1)
+        ui.runOnIdle { blockedReportIo=true }
+        try {
+            val hold=pool.submit { noticeStorage.operationTransaction { locked.countDown();check(release.await(15,TimeUnit.SECONDS)) } }
+            assertTrue(locked.await(5,TimeUnit.SECONDS))
+            val read=pool.submit<NativeUnreadSnapshot?> { started.countDown();ledger.readVisible(target,"thread",reader,lifecycle,lease) }
+            assertTrue(started.await(5,TimeUnit.SECONDS))
+            // Suppress fixture callback I/O while the lock is deliberately held. The native guard
+            // itself must still revoke before the delayed ledger mutation.
+            ui.runOnIdle { covered=true };ui.onNodeWithTag("notice-owned-overlay").assertIsDisplayed()
+            ui.waitUntil(5_000) { !proof.proof.isCurrent() };release.countDown();hold.get(10,TimeUnit.SECONDS)
+            assertNull(read.get(10,TimeUnit.SECONDS));assertTrue(ledger.mayPresent(e))
+        }finally { release.countDown();pool.shutdownNow();ui.runOnIdle { blockedReportIo=false;covered=false } }
+    }
+
+    @Test fun unicodeAndBidirectionalLongOriginalUsesActualUtf16GlyphRanges() {
+        longCard=true;unicodeCard=true;history();val e=event();ledger.receive(e);bind()
+        scrollBy(y=1_000_000f);assertNull(current(e.id));assertTrue(ledger.mayPresent(e))
+        top();assertNotNull(mark(checkNotNull(scan(e))));assertFalse(ledger.mayPresent(e))
+    }
+
+    @Test fun lateNoticeMetadataRetainsOnlyTheSameOriginalAndNativeSceneCoverage() {
+        longCard=true;history();bind()
+        val first=ui.onNode(SemanticsMatcher.keyIsDefined(NativeNoticeReadStatusKey) and hasAnyDescendant(hasTestTag("approval-one")),useUnmergedTree=true)
+        val scroller=ui.onNodeWithTag("execution-panels-scroll")
+        fun complete()=coverageStatus(first)["complete"]==true
+        repeat(100) { if(!complete())scrollBy(y=scroller.fetchSemanticsNode().boundsInRoot.height*.35f) }
+        assertTrue(complete());assertTrue(reports.isEmpty())
+        val e=event();ledger.receive(e);bind(retainFrame=true)
+        assertNotNull(mark(visible(e.id)));assertFalse(ledger.mayPresent(e))
+    }
+
+    @Test fun aFullyOffscreenOriginalKeepsEarlierCoverageButRevokesTheLiveReadProof() {
+        longCard=true;history();val e=event();ledger.receive(e);bind();val old=checkNotNull(scan(e))
+        scrollBy(y=1_000_000f);assertFalse(old.proof.isCurrent());assertNull(current(e.id));assertNull(mark(old))
+        val first=ui.onNode(SemanticsMatcher.keyIsDefined(NativeNoticeReadStatusKey) and hasAnyDescendant(hasTestTag("approval-one")),useUnmergedTree=true)
+        val status=coverageStatus(first)
+        assertEquals(true,status["complete"]);assertEquals(status["characters"],status["coveredCharacters"])
+        top();val fresh=visible(e.id);assertNotSame(old.proof,fresh.proof)
+        assertNotNull(mark(fresh));assertFalse(ledger.mayPresent(e));assertEquals(0,commandsCalled)
+    }
+
 }

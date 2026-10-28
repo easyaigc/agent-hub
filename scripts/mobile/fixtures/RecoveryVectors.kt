@@ -385,6 +385,7 @@ fun main() { try { runBlocking<Unit> {
             failPost=true;check(runCatching{http.recoverySubmit(snapshot,original)}.isFailure && postCount==2)
         } finally {server.stop(0)}
     }
-    passed += coordinatorVectors()
+    passed += coordinatorVectors() + coldVectors()
+    passed += cycleVectors()
     println("$passed shipping Kotlin recovery auxiliary vectors passed; native/real DEV not run")
 }; exitProcess(0) } catch (failure: Throwable) { failure.printStackTrace(); exitProcess(1) } }

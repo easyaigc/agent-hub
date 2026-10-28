@@ -1,0 +1,35 @@
+diff --git a/apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt b/apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt
+@@ -179,17 +179,25 @@
+             // Must succeed BEFORE synchronize can prepare its first unknown mutation/HTTP write.
+             io { authorities.retain(connection) }
+             if (!current()) return
+-            val worker = Worker(connection, monitor()); workers[connection.target] = worker
+-            worker.job = scope.launch(Dispatchers.Main.immediate) {
++            val worker = Worker(connection, monitor())
++            // Publish a cancellable owner before Main.immediate can synchronously reenter stopWorkers.
++            val job = scope.launch(Dispatchers.Main.immediate, start = CoroutineStart.LAZY) {
+                 while (isActive && available() && session.state().readingReady && workers[connection.target] === worker) {
+                     val lease = presentation.capture()
+                     val value = try { worker.monitor.synchronize(worker.connection.snapshot, lease) }
+                     catch (cancel: CancellationException) { throw cancel }
+                     catch (_: Exception) { NativeChatNotificationMonitorReport("read-unavailable", connection.target) }
+-                    if (lease.current() && available() && workers[connection.target] === worker) reports[connection.target] = value
+-                    withTimeoutOrNull(pollMillis) { worker.wake.receive() }
+-                }
+-            }
++                    if (!isActive || !available() || !session.state().readingReady || workers[connection.target] !== worker) break
++                    if (lease.current()) reports[connection.target] = value
++                    val signal = withTimeoutOrNull(pollMillis) { worker.wake.receiveCatching() }
++                    if (signal?.isClosed == true) {
++                        signal.exceptionOrNull()?.let { throw it }
++                        break
++                    }
++                }
++            }
++            worker.job = job; workers[connection.target] = worker
++            job.start()
+         }
+     }
+     private fun stopWorkers() {

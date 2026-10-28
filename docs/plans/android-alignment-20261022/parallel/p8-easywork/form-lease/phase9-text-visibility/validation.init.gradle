@@ -1,0 +1,14 @@
+// Auxiliary JVM only. An isolated folder contains one symlink to the exact native helper.
+// No production source set or default APK is changed by this opt-in initializer.
+gradle.projectsEvaluated {
+    def app=gradle.rootProject.project(':android')
+    def checks=new File(gradle.rootProject.projectDir,'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase9-text-visibility/jvm')
+    def source=new File(app.projectDir,'src/androidTest/kotlin/com/agenthub/android/P8TextVisibility.kt')
+    def shared=new File(gradle.startParameter.projectProperties.get('p8TextHelperSource') ?: 'missing-p8-helper')
+    assert shared.isDirectory() && shared.listFiles().size()==1
+    assert new File(shared,'P8TextVisibility.kt').canonicalFile==source.canonicalFile
+    app.android.sourceSets.getByName('test').java.srcDirs(checks,shared)
+    app.android.sourceSets.getByName('test').kotlin.srcDirs(checks,shared)
+    app.dependencies.add('testImplementation','junit:junit:4.13.2')
+    app.tasks.withType(Test).configureEach {testLogging {events 'passed','failed';exceptionFormat 'full'}}
+}

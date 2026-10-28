@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-api26-worker-close-race-20261029-1",
+  "features": ["F52", "F53"],
+  "ui": ["UI11"],
+  "scenarios": ["S15", "S16"],
+  "commonAssertion": "Publish cancellable worker owner before synchronous entry; never poll/report/wait as a retired owner; normal channel close exits without replay.",
+  "baseSha256": "ee4eef9771fc56c182826c1ece367697746ece7e72edc0bc11a834fea77ebb4a",
+  "proposedSha256": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+  "androidImplementation": "Exact one-file proposal; parent source unchanged; deterministic JVM plus two native component selectors prepared",
+  "androidVerification": "Exact base3 deterministic failures; proposed worker3 + existing enrollment8 auxiliary passed; frozen Android82 compile passed; native2 prepared/not run. pnpm check stops at existing central synthetic-tone.m4a coverage.",
+  "iosImpact": "No source/evidence change; A6 paused",
+  "sourceSha256": {
+    "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseFixture.kt": "af54d8945da432677929c8dfd0d66900c04e87b8787d3fffe09f9d0a636e682c",
+    "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseTest.kt": "134ee2a8f8195444a336d14ee3167e37856481ceb7008fca48a466a4e4e8b7eb",
+    "scripts/mobile/fixtures/WorkerCloseVectors.kt": "be21956bbb6655d311f565cf3c7b38217afcae752b8364b640f4d88682edb23f",
+    "scripts/mobile/check-chat-notification-enrollment.mjs": "cab925b53c501b5dd4c4ed6b7ffd6018525a833ead979b43d847f31e87b83e0e"
+  },
+  "parentSharedModifiedHere": []
+}

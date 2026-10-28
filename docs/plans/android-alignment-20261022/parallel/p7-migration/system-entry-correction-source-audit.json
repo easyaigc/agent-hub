@@ -1,0 +1,96 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-system-entry-review-20261029-1",
+  "rebaseOperations": [
+    "parent-p7-migration-shared-p8-base-20261029-1",
+    "parent-p7-shared-cold-base-20261029-1"
+  ],
+  "parentBase": "cb2135389efb0eca8626654d3ea7a97ddc734809",
+  "sourceFingerprint": "61397f04f65c005e16ffff1fb599deb8bff3017a9924093e2726d9c7acadf034",
+  "sourceFiles": 746,
+  "outputs": {
+    "app.apk": {
+      "sha256": "683c36d71980920853c8ef4b635e8a58a73a7b46ee686f7527ce0ae0a5f41637",
+      "bytes": 28162479
+    },
+    "runner.apk": {
+      "sha256": "b36791e01ab05a06d6483bb19f100087ace3cff8353263c3e4fa747f8c5e2bd0",
+      "bytes": 9456897
+    }
+  },
+  "sharedFiles": {
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": {
+      "baseSha256": "d17f3ded6949d89c8733f1792829642e7561e63770ca4e2cb00a1fe883ceab36",
+      "proposedSha256": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+      "baseSha256": "bde3529e65d1f5b9fe436b9ce7ec31b2a02dc19c622c8a1199e7c50f45ee7370",
+      "proposedSha256": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": {
+      "baseSha256": "0795d7f01d8480fa4332a7d8305a38d8d3f37db08211e56e38f37e62b257af56",
+      "proposedSha256": "289784f1cf32486b462ece61566c87c669eb144b47052d32789a51f8bb73106f"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": {
+      "baseSha256": "3144730347b4429f545530439bb6e0adfa24419dd5016fd4a267e6b7d769ec02",
+      "proposedSha256": "ad0f57c112b54837c959410c6c633aa2db2ece9539e35082002aae71da0c861f"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": {
+      "baseSha256": "c706ed51be4cc2a081dd046ef9281cecdf04d711554c4bcaf1d51c7c698198f2",
+      "proposedSha256": "0247816330fc18b92e0ef5b9ff8831c143bd5357143b9dc3c0ece9cd79290d1a"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": {
+      "baseSha256": "1a442f2832236243f609d717df0f96353b24b4eedd9e68d04aba607ad519d449",
+      "proposedSha256": "4f99503eee90f9e45a5369404bdd2520c1e512fe28636b41a76490702366d6b5"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationsPage.kt": {
+      "baseSha256": "0e0766999fe4740658de8aa39f884732e851d24bfc262810cd62061ebec13976",
+      "proposedSha256": "3cf9ee2a50fd1b08270c2a8afa80197620b9fc90d31947e28113a64a4ce9df1b"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": {
+      "baseSha256": "59d02092cb8e770c8c0f1d1765d1aed9b306e5fdbeeab1bc822719a031268b3b",
+      "proposedSha256": "ab6a85ae4cf5dd15a1bd1590a34daee3854c3f145a789d650467809cc05ad46e"
+    }
+  },
+  "producerFiles": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCommands.kt": {
+      "baseSha256": "d0c8d9c06cac56a7c09bd8411499a885f077512c9501a821e1062405b47926aa",
+      "proposedSha256": "d3cb14e7ff918b170fbee66c242422c4b061e6e8f8550c004c67ab05e067418e",
+      "scope": "Track actual producer executor exit and move disconnect off cancellation caller; exact existing named HTTP operation remains."
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryCommands.kt": {
+      "baseSha256": "af06a3a3197aae934e308a950df82042168464a681d5ffd9fe2695b67cb2b671",
+      "proposedSha256": "f201d241634a039d7d5ad06fac94139bb4e18840d6c536c9a3611d0da6647b66",
+      "scope": "Track actual producer executor exit and move disconnect off cancellation caller; exact existing named HTTP operation remains."
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt": {
+      "baseSha256": "98ce8662ee4567622d2c8bfe9e254f9842197ca99edeb1b355d0dd8e0e94dd98",
+      "proposedSha256": "b9c8c018fba2aefc5bec7158fd58c92470ce996cd16cdcd8a3d05fe77a87152e",
+      "scope": "Track actual producer executor exit and move disconnect off cancellation caller; exact existing named HTTP operation remains."
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": {
+      "baseSha256": "2a359acff63eaa96e54e123e0bc4fab2287927955d53e717c590e3250af035c0",
+      "proposedSha256": "029e2eae723f240a203cbda1d8d5e5052b7a2d9d4a86b9da74924e80626ad971",
+      "scope": "Track actual producer executor exit and move disconnect off cancellation caller; exact existing named HTTP operation remains."
+    }
+  },
+  "nativeCopy": {
+    "before": 211,
+    "after": 236,
+    "new": 25,
+    "preservesAllPriorKeys": true,
+    "mergedTotalPerLanguage": 1879
+  },
+  "validation": {
+    "appAndRunnerBuild": "passed",
+    "nodeCatalogTests": "4 passed for own and merged parent catalogs",
+    "hostActualExecutorProbe": "4 passed, JVM17 auxiliary only",
+    "nativePreparedMethods": 13,
+    "nativeExecutedHere": false,
+    "realDev": "not run; parent owns device/Host/model leases",
+    "fullP7Passed": false
+  },
+  "ownBase": "d9fddf8042f5230c428520e1af36f48d10366b82",
+  "sourceDeltaChanges": 29,
+  "hostProbeSourceSha256": "2e219f12d0c785b4b4c71d0326be462706778030d4a096896805bf1d23a73d99"
+}

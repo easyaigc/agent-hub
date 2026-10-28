@@ -1,0 +1,410 @@
+{
+  "version": 1,
+  "checkpoint": "PAR7-API26-original-archive-reading-notification",
+  "date": "2026-10-29",
+  "device": "task-owned API26 AVD; existing disk retained, cold startup without snapshot load/save",
+  "status": "Core125 actual native methods passed on this candidate; OS boundary10 passed/1 failed,3 not-applicable",
+  "coreAcceptedNativeMethods": 125,
+  "groups": [
+    {
+      "label": "authority-producer",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 2,
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationAuthorityReaderTest#actualProducerSnapshotPassesPureWrapperWithoutInitializingIdentityOrRewritingCredential",
+        "com.agenthub.android.NativeMigrationAuthorityReaderTest#independentProducerAndWrapperRejectChangedAuthorityAndAcceptDisplayOnlyChangeWithoutWeakeningSharedMetadata"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 2,
+      "instrumentationSha256": "3d383218bf9db7ddf64ced0dfcd8c9bcb63c5c59344498c31cafa26dc897c571"
+    },
+    {
+      "label": "archive-and-foreground",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 19,
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#originalDestinationPendingFilesNeverRecoverAndFrozenProducerDecodersAreIndependentPrerequisites",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#unknownReservedRejectedLiveAndResetJournalFormsRetainOriginalIntentsStatesPagesAndReceipts",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#missingOriginalAuthorityIsMarkedWithoutBorrowingCurrentConnectionCredentialsOrInventingQueryPermission",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#destinationArchiveHistoryMergesAndSameOriginalReexportNeverDuplicatesOrRewritesItsPayload",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#leaseIsBoundToExactRootCandidateAndQuiescentEpochIncludingFinalPublicationCheck",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#bothOriginalProtocolsReceiptsAndCredentialsAreArchivedExactlyWithoutPortablePrivateIdentity",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#forgedArchiveOrActiveAuthorityCannotReplaceAnOriginalCandidateEvenWithCorrectPassword",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#nonemptyDestinationIdentityJournalsAuthorityAndUnknownStayExactAcrossRollbackAndPublication",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#actualFileActivationRequiresOwnerBoundaryAndKeepsImportedOriginalsInertAfterReopen",
+        "com.agenthub.android.NativeMigrationNotificationArchiveTest#malformedOrMissingActiveOriginalsAndAuthorityFutureSchemasRefuseTheWholeExportUnchanged",
+        "com.agenthub.android.NativeMigrationForegroundTest#unboundSourceIdentityNeverEntersEitherPortableFormatOrNewInstallation",
+        "com.agenthub.android.NativeMigrationForegroundTest#frozenP9DecodersIndependentlyValidateTheSameReadOnlyOriginals",
+        "com.agenthub.android.NativeMigrationForegroundTest#pendingIdentityFilesCannotBeRecoveredOrDeletedByReadOnlyAuditOrActivation",
+        "com.agenthub.android.NativeMigrationForegroundTest#futureCorruptMissingOrMismatchedIdentityJournalFailClosedWithoutGeneratingAReplacement",
+        "com.agenthub.android.NativeMigrationForegroundTest#validatedEmptySourceJournalIsExcludedAndDestinationOwnPairSurvivesRollbackAndRetry",
+        "com.agenthub.android.NativeMigrationForegroundTest#evenPasswordAuthenticatedPortableIdentityOrJournalCannotReplaceAnOriginalCandidate",
+        "com.agenthub.android.NativeMigrationForegroundTest#unknownMutationHasExactReadOnlyArchiveAndActivationNeedsQuiescentOwnerBoundary",
+        "com.agenthub.android.NativeMigrationForegroundTest#nonemptyOrBrokenDestinationJournalBlocksActivationWithCandidateAndLocalAuthorityUnchanged",
+        "com.agenthub.android.NativeMigrationForegroundTest#processingBatchAndOriginalOutcomesRemainExactInArchiveAndNeverBecomeActiveAuthority"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 19,
+      "instrumentationSha256": "1c95238aba4f584a1e87b92dc358133437dd8b9ca1f8022c5ef40db44fc5282f"
+    },
+    {
+      "label": "archive-cold-writer",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 1,
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationNotificationArchiveColdTest#publishArchivedSourceAndPreservedLocalUnknownForIndependentProcessRead"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 1,
+      "instrumentationSha256": "e494d9b1ceb7dd18b8e3f51e6d46a38f8f3eed8f208d33a35259e5c9a15dcbea"
+    },
+    {
+      "label": "archive-cold-reader",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 1,
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationNotificationArchiveColdTest#readOriginalArchivesAndLocalUnknownUnderDifferentPidWithoutAuthorityActivationOrCiphertextRewrite"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 1,
+      "instrumentationSha256": "a1bf3be6cd5a79e63de335d674767368e5e40fb3f60112ec984c831e30651d0f"
+    },
+    {
+      "label": "notice-ui",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 10,
+      "passedMethods": [
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#nativeActivityPauseAndResumeRequireANewViewProof",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#firstAndLastPanelsRequireActualGeometryAndOldLeasesCannotClearLaterNotices",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#planToggleUsesTheExistingSharedCatalogInEnglishAndChinese",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#aCollapsedPlanPromptDoesNotReadTheOriginalPlanText",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#replacementAndForeignTargetNeverReuseTheOldOriginal",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#explicitForegroundAndCoverRetractionRevokeOldCallbacks",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#lateEventsJoinTheMountedQuestionOnlyByOriginalRequestAndRun",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#noticeReadingDoesNotReadTheReplyAndTheSameLedgerSuppressesOldReminders",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#anOversizedPartiallyClippedCardStaysUnread",
+        "com.agenthub.android.NativeNoticeVisibilityUiTest#selectingAThreadWithNoExplicitPortDoesNotMarkItsNotices"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 10,
+      "instrumentationSha256": "cab1f41390ea07675cfcf42810a97b0cb891176c62aaad15d122e64512ba32bd"
+    },
+    {
+      "label": "notice-rules",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 7,
+      "passedMethods": [
+        "com.agenthub.android.NativeNoticeVisibilityRulesTest#targetThreadAndAccountPolicyFollowTheExistingReadingIdentity",
+        "com.agenthub.android.NativeNoticeVisibilityRulesTest#guardedMutationIsRevokedByGeometryOrDisposalAndOldProofNeverRevives",
+        "com.agenthub.android.NativeNoticeVisibilityRulesTest#matchingRequiresOriginalWireRequestRunKindAndNoInventedOperation",
+        "com.agenthub.android.NativePanelNoticeRulesTest#focusedQuestionSurfaceCanRemainVisibleWhileMainBodyWindowIsUnfocused",
+        "com.agenthub.android.NativePanelNoticeRulesTest#bodyLeaseCannotConsumeNoticesAndBodyReplacementKeepsNoticeLease",
+        "com.agenthub.android.NativePanelNoticeRulesTest#navigationForegroundAndNoticeReplacementInvalidateCapturedLease",
+        "com.agenthub.android.NativePanelNoticeRulesTest#sessionAndViewMustBothAuthorizeInsideTheMutationAndOldFrameNeverRevives"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "bfd30ff41e6366a88923871b564aeb8c45f6ba196c58328dec169fd4dae50c60"
+    },
+    {
+      "label": "notice-actual-session",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 3,
+      "passedMethods": [
+        "com.agenthub.android.NativePanelNoticeSessionTest#mountedQuestionConsumesExactLateNoticeWithoutRecreatingDraftOrReadingReply",
+        "com.agenthub.android.NativePanelNoticeSessionTest#capturedPresentationCannotRearmAfterCoverNavigationOrCredentialReplacement",
+        "com.agenthub.android.NativePanelNoticeSessionTest#actualMessagePlanRequiresExpandedTextAndExactOriginalRun"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 3,
+      "instrumentationSha256": "0f7ae76483103129c28eb6ab678299d096df3633bbae45b2413cf82976e436da"
+    },
+    {
+      "label": "notice-encrypted-race",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 1,
+      "passedMethods": [
+        "com.agenthub.android.NativePanelNoticeLedgerTest#delayedStorageChecksBothGuardsInsideTheOriginalLedgerMutation"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "0718bb811bbb9259b12b895f4fdd3a8044f5e6fc057fc5eea394482e0997ec3b"
+    },
+    {
+      "label": "coordinator-first",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 13,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#oldCallbackCannotPostAfterNavigation",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#permissionDenialAndRecoveryShowOnlyNewEventThroughRequiredReadingPort",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#settingsEntryRoutesActualPageAndDefaultOffCreatesNoIdentity",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#navigationDuringOriginalLookupDoesNotConsumeOrOpenTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#warmIntentAndDuplicateTicketOpenExactlyOnce",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unavailableOriginalThreadIsNotSynthesized",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#backgroundInvalidatesSuspendedPresentationBeforeSystemPost",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#invalidOpaqueIntentIsRecognizedAndNeverBecomesPairingLink",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foregroundPresentationUsesOpaqueIntentAndP7UnreadCount",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#stableSnapshotPublicationDoesNotRestartOrAcceleratePoll",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#readingRecheckAfterChannelPreparationPreventsOldBanner",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#coldIntentWaitsForRealSessionReadyThenPreservesOtherDraft",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foreignTargetAndCredentialNeverUseAnotherConnection"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 13,
+      "instrumentationSha256": "c11fa25a4bbde04b7ff552a772b668ffdfa8b2e463c12b8a3dacd4aa82f241a5"
+    },
+    {
+      "label": "coordinator-second",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 12,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#restoredSessionCanOpenOriginalBeforeReadingLedgerAllowsPolling",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#credentialReplacementDuringLookupKeepsOriginalTicketAndDraft",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#wrongFullTargetTicketNeverSelectsKnownHostWithDifferentRuntime",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#newerIntentSupersedesOldLookupWithoutConsumingOldTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#actualSessionRestoreRetainsOriginalUnknownWithoutAnotherSubmit",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#removedConnectionKeepsOriginalTargetAndRetainedQueryVisible",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#missingRetainedAuthorityShowsRecoveryInsteadOfNewId",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#disposedBindingCannotPublishLateLookupIntoReplacementStorage",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#queryButtonOnDefaultOffDoesNotCreateIdentityOrRegister",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unknownQueryButtonUsesRetainedOriginalAndNeverPostsAgain",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#expiredTicketCannotReadOrNavigate",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#restoredOriginalAuthoritySurvivesCredentialRotation"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 12,
+      "instrumentationSha256": "ffdbda2cdbe5e8f3a17312732ab7c31999efd33258bebbd49f5e6d54eaa4992d"
+    },
+    {
+      "label": "reading-ledger-rules",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 15,
+      "passedMethods": [
+        "com.agenthub.android.NativeReadingLedgerTest#phoneReadSurvivesServerUnreadRepetitionAndLatePushAcrossInstances",
+        "com.agenthub.android.NativeReadingLedgerTest#seenNoticeTombstoneSurvivesDuplicateAndReopenWithoutApprovingAnything",
+        "com.agenthub.android.NativeReadingLedgerTest#readingOldVisibleVersionCannotClearNewerReplyOrSameRevisionConflict",
+        "com.agenthub.android.NativeReadingLedgerTest#independentInstancesSerializeConcurrentEventsWithoutLosingRows",
+        "com.agenthub.android.NativeReadingLedgerTest#allTargetsCountOnceAndCodexAccountMetadataDoesNotCreateAnotherRow",
+        "com.agenthub.android.NativeReadingLedgerTest#malformedStorageIsPreservedAndNeverResetToEmpty",
+        "com.agenthub.android.NativeReadingLedgerTest#exactAcknowledgementCannotClearANewerReplyAndSchemaUsesSameParser",
+        "com.agenthub.android.NativeReadingLedgerTest#strictPositionRejectsFloatingStringUnknownAndOutOfRangeFields",
+        "com.agenthub.android.NativeReadingLedgerTest#presentationQueriesUseExactEventAndPreserveSeenTombstonesWhileThreadIsUnread",
+        "com.agenthub.android.NativeReadingLedgerTest#desktopReadDoesNotClearPhoneAndWrongReaderCannotAcknowledgePending",
+        "com.agenthub.android.NativeReadingLifecycleTest#backgroundCoverNavigationAndOtherViewInvalidateCapturedLease",
+        "com.agenthub.android.NativeReadingLifecycleTest#actualLatestContentAndStatusMustMatchBeforeRead",
+        "com.agenthub.android.NativeReadingLifecycleTest#projectedVisibleReplyMustMatchItsDisplayVersion",
+        "com.agenthub.android.NativePhoneReadingRulesTest#markerMustBeInsideTheActualViewport",
+        "com.agenthub.android.NativePhoneReadingRulesTest#authoritativeLatestNeverFallsBackToAnOlderMatchingBody"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "90ddd6fd05ef182cde9fac5806ba638471fd6d51838fca64387536b921f7f657"
+    },
+    {
+      "label": "reading-presentation-retention",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 7,
+      "passedMethods": [
+        "com.agenthub.android.NativeReadingPresentationTest#unreadNewReplyCannotAuthorizeOldCompletedEvent",
+        "com.agenthub.android.NativeReadingPresentationTest#equalRevisionWithDifferentContentNeverPresents",
+        "com.agenthub.android.NativeReadingPresentationTest#readWatermarkAndReplyUnreadMustBothAllowPresentation",
+        "com.agenthub.android.NativeReadingPresentationTest#seenNoticeCannotBorrowUnreadFromAnotherReplyOrNotice",
+        "com.agenthub.android.NativeReadingPresentationTest#noticeOriginalIntentMustMatchEvenWhenIdIsTheSame",
+        "com.agenthub.android.NativeReadingRetentionTest#oldLargePagesAreNotRetainedByCurrentProofOrLegacyFingerprint",
+        "com.agenthub.android.NativeReadingRetentionSessionTest#manyLargeChatsKeepOnlyCurrentBodyAndDurableCountsReadsAndPendingAcknowledgement"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 1,
+      "instrumentationSha256": "e2d87a8e1fa9acecf3e2658931c459e187a3aaa47f0c56067244e3f283fbd262"
+    },
+    {
+      "label": "directory-reading",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 11,
+      "passedMethods": [
+        "com.agenthub.android.NativeReadingDirectoryTest#missingOrForeignTargetsAndForeignChildrenAreRejected",
+        "com.agenthub.android.NativeReadingDirectoryTest#traversesUnloadedPagesDeduplicatesAndKeepsOnlySmallMetadata",
+        "com.agenthub.android.NativeReadingDirectoryTest#responseAfterOwnerChangeCannotCompleteEvenIfTransportIgnoresCancellation",
+        "com.agenthub.android.NativeReadingDirectoryTest#repeatedCursorAndConflictingVersionNeverReturnAPartialSuccess",
+        "com.agenthub.android.NativeReadingDirectorySessionTest#concurrentTriggersCoalesceAndBackgroundRejectsLatePage",
+        "com.agenthub.android.NativeReadingDirectorySessionTest#unseenPagesAcrossSavedComputersCountWithoutHistoryAndOfflineReadPendingSurvives",
+        "com.agenthub.android.NativePhoneReadingSessionTest#coveredSurfaceAndEarlierPageDoNotProduceALease",
+        "com.agenthub.android.NativePhoneReadingSessionTest#countsIncludeOtherSavedComputerAndRemovingOnePreservesItsReadTombstone",
+        "com.agenthub.android.NativePhoneReadingSessionTest#newerHeadOldPageForeignReadAndBackgroundCannotClearPhone",
+        "com.agenthub.android.NativePhoneReadingSessionTest#staleHost409SettlesOnlyOriginalPositionAndKeepsTheNewReplyUnread",
+        "com.agenthub.android.NativePhoneReadingSessionTest#actualVisibleBodyRecordsPhoneReadAndOnlyMetadataAcknowledgement"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 7,
+      "instrumentationSha256": "c626c50f507844b4b13befe19beb7e0d95615f5038c9b0f2d480de309667cdac"
+    },
+    {
+      "label": "actual-notification-ingress",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 3,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualUnknownOpaqueTicketAndActivityRecreationKeepTheSameCoordinatorAndDraft",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualWarmDispatcherConsumesInvalidNotificationBeforeAnyPairingOrAttachmentRoute",
+        "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualSettingsEntryKeepsDefaultOffWithoutMakingIdentityJournalOrAuthority"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 3,
+      "instrumentationSha256": "7649c7f35f27df6a2cb16861a00367c1f43dec8867260c746200ce5be823d141"
+    },
+    {
+      "label": "voice-migration-binding-regression",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 20,
+      "passedMethods": [
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#malformedTerminalGraphsCannotReplaceAnExistingCandidate",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#corruptCatalogPendingFilesAndChangedAuditFailClosedWithoutRepair",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#unknownSealedOriginalSurvivesDiscardReopenLateReceiptAndRemoval",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#sealedAndRawTerminalsMigrateTogetherWithExactAuditsAndNeverBecomeAnOffer",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#everyImmutableMismatchRejectsWithoutPublishingOrChangingOriginalEvidence",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#terminalRowsReleaseActiveCapacityWhileRemainingInTheMigrationGraph",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#precommitInterruptionsLeaveOriginalOfferableAndLostAcknowledgementRetriesReadOnly",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#provisionalRequestCanMatchAnAlreadySealedSameOriginalWithoutChangingItsIntent",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#easyWorkAuthorizationFencesAreAnExplicitWholeArchiveGapAndNeverDropped",
+        "com.agenthub.android.NativeVoiceDiscardStorageTest#incompleteOddRawAbsentAndEmptyOriginalsAreTerminalWithoutSealingOrDeleting",
+        "com.agenthub.android.NativeMigrationVoiceTest#incompleteProvisionalVoiceAndCorruptOriginalBinaryFailWithoutDeletingOrSealing",
+        "com.agenthub.android.NativeMigrationVoiceTest#typedExportImportsExactOriginalAudioAndIdempotentActivationPreservesLaterEdits",
+        "com.agenthub.android.NativeMigrationVoiceTest#binaryWriteAndFinalPointerFailurePreserveInstallationAndOriginalStagedArchive",
+        "com.agenthub.android.NativeMigrationVoiceTest#legacyInlineAndChunkedAudioKeepExactOriginalsWithoutReadTimeRewrite",
+        "com.agenthub.android.NativeMigrationVoiceTest#concurrentVoiceRegistrationAndSealCannotExportMixedOriginals",
+        "com.agenthub.android.NativeMigrationVoiceTest#missingOrChangedAudioNoncanonicalBase64AndUnsupportedBinaryNeverBecomePartialSuccess",
+        "com.agenthub.android.NativeMigrationVoiceTest#strictIndexMetadataTargetAndPermissionTypesRejectWithoutChangingOriginalCandidate",
+        "com.agenthub.android.NativeMigrationVoiceTest#importedVoiceNeverPreparesOrUploadsEvenWhenOriginalReceiptIsMissingOrAwaitingAudio",
+        "com.agenthub.android.NativeVoicePreferenceAppIntegrationTest#realActivityBindsOnlyItsRestoredStoreAndRetainsTheExplicitDefaultOnRecreation",
+        "com.agenthub.android.NativeVoiceDiscardAppIntegrationTest#bothControllersUseOnlyTheirRestoredStorageAndRetainTheSameTerminalPortAfterRecreation"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 20,
+      "instrumentationSha256": "afc58ce26a34580cd3121d371e848d0c0765c92ebf6fd230e936989878ee8e8f"
+    }
+  ],
+  "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+  "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+  "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+  "defaultStorageElevenFieldProofs": 92,
+  "coldPair": {
+    "writerPid": 4439,
+    "readerPid": 4817,
+    "originalArchiveExact": true,
+    "localIdentityAndUnknownExact": true,
+    "ciphertextsUnchanged": true,
+    "newIdentityOrRegisterOrReplay": 0
+  },
+  "coldTransfer": "Writer executed once. API26 standalone test applet and exec-in transport failed before reader; exact missing destination checked, original bytes transferred with same app UID/no-PTY shell and read back before original reader. No reseed, no writer or business replay. Original logs retained.",
+  "osIntakeGroups": [
+    {
+      "label": "api26-provider",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 5,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#installedScopedProviderReturnsExactReadOnlyNormalizedBytes",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#malformedScopedUriAndWriteModeCannotReadOrMutateSound",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#silentAndOrdinaryOwnedClipsHaveDifferentRealUriBytes",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#acceptanceScopeRejectsProtectedSiblingBeforeCreatingStorage"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "bf24fe0628549e1e148ceb8aca9150eacf2defd4df01859458b8271d85dd4b4f"
+    },
+    {
+      "label": "api26-granted",
+      "status": "failed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 6,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#requiredReadingGuardStillPreventsClaimAfterRealChannelPreparation",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#cancelEventsAndTargetNeverCancelAnotherOwnedRunOrTarget",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#realSilentPostHasPrivatePublicVersionAndOriginalImmutablePendingIntent",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#ownedBlockedCategoryCannotBeBypassedWithAnotherSoundVariant",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#previewOffAndBadgeOffReachActualPostedNotificationFields"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#ordinaryClipChannelUsesRegisteredProviderUriWithoutPlayingIt"
+      ],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "f4f9130aef13594922a466ec7f321942b4aa50862c61e4aa7e8653a233f1b102"
+    }
+  ],
+  "osFailure": "Ordinary clip channel expected visibility0 but system returned-1000; actual posted notification private/publicVersion tests passed. Platform contract under owner review, no weakened assertion or lockscreen UI pass.",
+  "notApplicable": ["two denied runtime-permission methods", "permission grant-cycle reader"],
+  "remaining": [
+    "OS channel contract correction and independently fingerprinted retake",
+    "Full system migration entry/actual runtime quiescence, long-panel coverage and P8 native40 are later source stages",
+    "API37 and physical granted OS matrix remain independent",
+    "Task/project business and iOS A6 paused"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -36,14 +37,24 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.sin
 
 @Composable internal fun VoicePermission(controller: VoiceInputController?) {
-    var launched by remember { mutableStateOf<String?>(null) }
-    val permission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted->
-        val id=launched;launched=null
-        if(id!=null) controller?.permissionResult(id,granted)
-    }
-    LaunchedEffect(controller?.permissionRequest,launched) {
-        val id=controller?.permissionRequest
-        if(id!=null && launched==null) { launched=id;permission.launch(Manifest.permission.RECORD_AUDIO) }
+    // Both the physical launch identity and original capture ID survive saved-state restoration.
+    // Completing it retires that registry key before any new capture can request permission.
+    var launched by rememberSaveable { mutableStateOf<String?>(null) }
+    var completed by rememberSaveable { mutableStateOf<String?>(null) }
+    var launcherEpoch by rememberSaveable { mutableStateOf(java.util.UUID.randomUUID().toString()) }
+    val currentController by rememberUpdatedState(controller)
+    key(launcherEpoch) {
+        val submittedEpoch=launcherEpoch
+        val permission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted->
+            if(launcherEpoch==submittedEpoch) {
+                val id=launched;launched=null;launcherEpoch=java.util.UUID.randomUUID().toString()
+                if(id!=null) { completed=id;currentController?.permissionResult(id,granted) }
+            }
+        }
+        LaunchedEffect(controller?.permissionRequest,launched) {
+            val id=controller?.permissionRequest
+            if(launcherEpoch==submittedEpoch && id!=null && launched==null && id!=completed) { launched=id;permission.launch(Manifest.permission.RECORD_AUDIO) }
+        }
     }
 }
 @Composable internal fun VoiceInputStrip(voice: VoiceInputController,text: String) {

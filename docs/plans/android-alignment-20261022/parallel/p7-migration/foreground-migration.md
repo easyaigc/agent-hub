@@ -1,5 +1,7 @@
 # 冻结 P9 v1 前台状态的迁移边界
 
+本文保留原安全子集的历史策略与证据。后续非空 v1/v2 原件只读归档及父线激活 lease 见 [foreground-archives.md](foreground-archives.md)；不把旧非空拒绝方法计作新策略通过。
+
 源审计/闭合 Schema/策略 checkpoint 为 `dfaeac8b`，只读依据 P9 `160b51ec`（父线采用 `66b12bd8`）。完整 SHA 与 Schema 文件指纹见 `foreground-source-audit.json`；当前策略见 `foreground-migration-policy-v1.json`。未导入或改写 P9 的 identity、journal、wire、monitor 等生产文件，没有推测其开发中的 v2。
 
 ## 原件与安装权威

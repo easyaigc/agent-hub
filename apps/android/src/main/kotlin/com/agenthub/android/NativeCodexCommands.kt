@@ -39,7 +39,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
         val url=URI("$base/$path?$encoded").toURL()
         return suspendCancellableCoroutine { continuation ->
             val active=AtomicReference<HttpURLConnection?>()
-            val future=executor.submit {
+            val future=NativeMigrationIoWork.submit(executor,continuation.context) {
                 var connection: HttpURLConnection?=null
                 try {
                     if(!continuation.isActive) return@submit
@@ -85,7 +85,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
                     if(continuation.isActive) continuation.resumeWithException(if(!post&&path in RESOURCE_READ_ROUTES) CodexCommandError("读取电脑资源失败，请重试。",appOwnedCopy=true) else CodexCommandError("手机内存不足，电脑操作结果未确认；请查询原操作记录"))
                 } finally { active.getAndSet(null)?.disconnect(); connection?.disconnect() }
             }
-            continuation.invokeOnCancellation { active.getAndSet(null)?.disconnect(); future.cancel(true) }
+            continuation.invokeOnCancellation { NativeMigrationIoWork.cancelHttp(continuation.context,active,future) }
         }
     }
     override suspend fun acknowledgeRead(client: MobileClient,request: NativePendingRead): JSONObject {

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "checkpoint": "PAR18-physical-positive-form-clock",
+  "date": "2026-10-29",
+  "device": "physical API33",
+  "groups": [
+    {
+      "label": "positive-fresh-form",
+      "status": "failed",
+      "sourceSha256": "28bfde2bb5daba04bb29e5b3d82bcbb06a10719de3dce864ad3f76fe9225d77e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "0f6d794d1e995e7d55fc5b9a846adcec8067d308e7a2462879e24be0cbcf1860",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#closedActualFormAfterCandidateWriteCannotActivateOrCompleteOldCallback"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#correctGrantActivatesActualCandidateAtFinalCommitAndOriginalFormCompletesOnce"
+      ],
+      "instrumentationSha256": "63194624161e085bd76a7fc4c2c5f9c5e2a412e1144ca597b991b8a8e9cc8196"
+    },
+    {
+      "label": "positive-fresh-failure",
+      "status": "passed",
+      "sourceSha256": "28bfde2bb5daba04bb29e5b3d82bcbb06a10719de3dce864ad3f76fe9225d77e",
+      "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+      "runnerSha256": "0f6d794d1e995e7d55fc5b9a846adcec8067d308e7a2462879e24be0cbcf1860",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#lastWorkspaceReadFailureRollsBackCandidateWithoutActivatingOrReclaimingGrant",
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#changedOriginalDraftPlusLastReadFailureCannotCommitOrClearNewDraft"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "4ff7f124f530a3d13e2a57cd34459407be9e43df23586f4e6ef83122902ba326"
+    }
+  ],
+  "passed": 3,
+  "failed": 1,
+  "actualClosedFormPassed": 1,
+  "directSessionBoundaryPassed": 2,
+  "actualPositiveWholeMethodPassed": false,
+  "actualPointerAndClock": "Both original UI cases reached held with one actual center pointer down/up, original Activity/window/form/focus, complete visible target, two satisfied unchanged12s gates and no diagnostic loss.",
+  "positiveFailure": "Actual saved callback reached one; then JUnit assertEquals on ordinary TargetScope classes compares reference identity. Full six-field value assertion correction pending; whole method remains failed. Original case is not rerun.",
+  "resources": "Own listener/two mappings closed, prior mappings preserved exactly, no active case",
+  "fullWorkspaceCheck": "pnpm check passed on unchanged production/TypeScript/tooling graph; AndroidTest/docs-only delta separately passed parity/build. Production App byte-identical to PAR17.",
+  "limits": [
+    "New positive UUID/runner must prove all original commit/reopen/target/unknown assertions",
+    "No actual issuer/Desktop/model or full A5 claim"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

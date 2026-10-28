@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "read-only-foreground-originals-v1-v2",
+  "operationId": "parent-p7-full-journal-migration-next-20261029-1",
+  "producer": "cc0b6ac8",
+  "archive": {
+    "index": "migration-notification-archives-v1",
+    "originalPrefix": "migration-notification-original-v1:",
+    "maximumInstallations": 16,
+    "maximumIndexUtf8Bytes": 131072,
+    "originals": ["foreground-v1", "recovery-v2", "authorizations-v1"],
+    "id": "SHA256 canonical descriptor without archiveId; audit identity only, never replaces any original operation/device ID",
+    "retention": "No implicit expiry/truncation/eviction. Capacity/quota excess refuses entire archive."
+  },
+  "source": {
+    "privateIdentity": "Validate original X25519 pair, never copy raw identity/privateKey. Archive only public installation context plus original identity SHA.",
+    "journals": "Preserve exact raw v1 and v2 text including original operations, target, intent/body/fingerprint, unknown/reserved/applied/rejected receipts, pending/processing outcomes, cursor/batch/reset snapshot/gap and event IDs.",
+    "authority": "Preserve exact existing retained-authorizations-v1 text under read-only alias; validate complete client/credential epoch/authorization fingerprint. Never put source auth under active P9 record name.",
+    "missingAuthority": "Persist exact referenced-minus-retained fingerprints; never borrow current token/vault or claim query capability. Identity/credential absence does not create replacement authority.",
+    "empty": "Validated unbound/empty installation with no retained authority still projects away all source installation records."
+  },
+  "destination": {
+    "originals": "Validate and preserve its own exact identity/private key, both nonempty journals and retained authority. These remain original local records, not source-imported authority.",
+    "archives": "Merge existing and source archives by exact content ID, preserve payload bytes, reject divergence/orphans/capacity.",
+    "existingClients": "ExistingInstallation rejection for real clients/vault remains; this stage does not implement merging live profiles.",
+    "uiDevicePolicy": "Existing P7 source display preferences/OS receipts reset/archive policy remains. Parent must not let that reset trigger remote off/register actions."
+  },
+  "activation": {
+    "requiredBoundary": "NativeMigrationNotificationActivationLease(storage, receipt) { quiescent volatile owner epoch }",
+    "gate": "Required for any source/destination archive or nonempty destination original. Exact storage root/candidate id/sha/count and owner quiescence checked before staging and before/after final external publication checkpoint. No writes on missing/stale lease.",
+    "ownerContract": "Parent disposes old notification workers/coordinator and gates automatic enrollment before minting lease; callback reads scalar state only, no UI/IO or commands. Hold boundary until atomic activation finishes. Retire old storage handles.",
+    "newSession": "On IO, read requiresExplicitSetup(freshStorage) before binding; gate new enrollment until completion. True for any read-only archive, or an actually published migration with nonempty retained local notification originals. Ordinary unmigrated local journals alone do not add a new setup requirement. Independent human action is needed for any new subscription; no automatic register/confirm/off/replay.",
+    "originalQueries": "Archive presence never proves runtime or credential validity. Only actual original installation keys, original saved authority, target and protocol permit any independently authorized read-only original query; no archived SavedConnection/Identity constructor."
+  },
+  "readOnlyHook": "IO only: NativeMigrationNotificationArchives.readOnlyArchives(storage); wrappers redact toString and expose exact Original enum audit text, never command objects.",
+  "atomicity": "Existing unified export/candidate/prepared generation/pointer/count/hash/rollback/idempotency, no second migrator. Idempotent published receipt does not overwrite later target originals even without a new lease.",
+  "limits": [
+    "Existing 8MiB text/JSON header budget unchanged; simultaneous near-maximum v1/v2/authority or merged history may exceed it and whole-archive refuse. Larger typed-original streaming is an open gate, not partial export.",
+    "Unknown/future/corrupt schemas, missing bound identity/journal, invalid credential epochs, target mismatch and incomplete atomic sidecars reject while preserving originals.",
+    "EasyWork authorization fence remains separate explicit unsupported whole-archive gap.",
+    "Parent actual entry disposal/rebind/enrollment gate and real device/DEV acceptance remain open. A6 stays paused."
+  ],
+  "verification": "12 new archive methods and current ForegroundTest9 compiled only. Current methods3/4 evolve to exact archive/no-active-authority/default no-lease assertions; historical source at25092e2a and frozen packages/results remain immutable. Parent executes exact combined runner."
+}

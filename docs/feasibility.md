@@ -524,3 +524,5 @@ Mac Mini 回收增量已合入规范源码：独立桥接按本机私有配置�
 2026-10-26 P7图片输入：API37系统图片与真实模型像素读取已有一次受控结果，真机/API26系统正向选择及完整图片发送仍待验；新手机/API26/API37对同一原回复的当前共享Host冷读修复通过。历史来源和原owner的重复占位只在完成轮、原正文和全部注册附件版本一致时替换，读取历史不构成运行时控制证明。完整P7、iOS/Windows当前矩阵及原待验项继续开放，见[检查点](acceptance/mobile-evidence/android-alignment-P7.json#photoModelAndColdHistoryCheckpoint)。
 
 I4 Android将13节点/F72源码纳入对照，已有受控资源路由保持。当前模型/强度分离获得限定Native/原owner只读结果；新Markdown阅读入口和图片预览/多选仍需实施验收。既有iOS真机证明不升级，iOS A6继续暂停，见Android阶段档案。
+
+Android系统迁移入口和真实运行时交接已接入候选，完成catalog增量及实际IO跟踪/一次性发布边界；验收仍区分辅助编译、13项原生准备、真实SAF/DEV。超过8MiB的文本帧、EasyWork fence/孤立candidate归档及iOS互操作仍开放，不将入口实现记为完整P7。

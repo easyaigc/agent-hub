@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "key": "连接未完成，请核对电脑端提示后重试。",
+      "en": "Connection did not complete. Check the computer and try again.",
+      "zhHans": "连接未完成，请核对电脑端提示后重试。"
+    },
+    {
+      "key": "电脑证书校验失败，原连接已保留。",
+      "en": "The computer certificate could not be verified. The original connection is preserved.",
+      "zhHans": "电脑证书校验失败，原连接已保留。"
+    },
+    {
+      "key": "配对设备或运行目标不匹配，原连接已保留。",
+      "en": "The pairing device or runtime target does not match. The original connection is preserved.",
+      "zhHans": "配对设备或运行目标不匹配，原连接已保留。"
+    },
+    {
+      "key": "连接信息已过期或撤销，请在电脑上重新生成。",
+      "en": "Connection information expired or was revoked. Generate it again on the computer.",
+      "zhHans": "连接信息已过期或撤销，请在电脑上重新生成。"
+    },
+    {
+      "key": "电脑拒绝了此设备，请在电脑上重新确认。",
+      "en": "The computer rejected this device. Confirm it again on the computer.",
+      "zhHans": "电脑拒绝了此设备，请在电脑上重新确认。"
+    },
+    {
+      "key": "请输入电脑显示的 16 位连接码。",
+      "en": "Enter the 16-character connection code shown on the computer.",
+      "zhHans": "请输入电脑显示的 16 位连接码。"
+    },
+    {
+      "key": "连接二维码内容无效，请从电脑重新复制。",
+      "en": "The connection QR text is invalid. Copy it again from the computer.",
+      "zhHans": "连接二维码内容无效，请从电脑重新复制。"
+    },
+    {
+      "key": "二维码的中继服务未受信任，请核对电脑上的服务地址。",
+      "en": "The relay in this QR text is not trusted. Check the service address on the computer.",
+      "zhHans": "二维码的中继服务未受信任，请核对电脑上的服务地址。"
+    },
+    {
+      "key": "请在已登录的电脑上确认此设备。",
+      "en": "Confirm this device on the signed-in computer.",
+      "zhHans": "请在已登录的电脑上确认此设备。"
+    },
+    {
+      "key": "请在电脑上确认此设备，核对码：%@",
+      "en": "Confirm this device on the computer. Verification code: %@",
+      "zhHans": "请在电脑上确认此设备，核对码：%@"
+    },
+    {
+      "key": "连接目标",
+      "en": "Connection target",
+      "zhHans": "连接目标"
+    },
+    {
+      "key": "账号发行方",
+      "en": "Account authority",
+      "zhHans": "账号发行方"
+    },
+    {
+      "key": "工作区",
+      "en": "Workspace",
+      "zhHans": "工作区"
+    },
+    {
+      "key": "运行时",
+      "en": "Runtime",
+      "zhHans": "运行时"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-revocation-io-lock-review-20261029-1",
+  "featureIds": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+  "pages": ["UI01", "UI03"],
+  "sharedAssertions": [
+    "Revocation on Main returns while credential IO is held",
+    "Old result cannot select or clear a newer draft",
+    "New same-value write survives obsolete rollback",
+    "Unreferenced candidate is never activated by restore/retry"
+  ],
+  "android": "write gate + unique staged credential ref implemented; JVM and native preparation separate",
+  "ios": "No Swift changes; same nonblocking target/draft and immutable authorization assertions remain required, no new iOS pass",
+  "native": "2 new controlled-IO methods prepared only; existing lease11 and Main2 retained",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

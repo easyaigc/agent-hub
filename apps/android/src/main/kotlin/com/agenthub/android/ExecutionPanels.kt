@@ -96,7 +96,7 @@ fun StorageIdentityNotice(session: MobileSession) {
     val key=session.targetKey
     val reading=noticeVisibility?.forTarget(session.selectedClient.scope,session.selectedThread)
     val request=session.creationWaitRequest
-    Column(Modifier.fillMaxWidth().heightIn(max=maxHeight).verticalScroll(rememberScrollState()).padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().heightIn(max=maxHeight).verticalScroll(rememberScrollState()).testTag("execution-panels-scroll").padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         session.transferStatus?.let { Row(Modifier.testTag("transfer-status")) { CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp); Spacer(Modifier.width(8.dp)); Text(it,fontSize=12.sp) } }
         session.runtime?.plan?.takeIf { it.isNotEmpty() }?.let { RuntimePlanProgress(it,key) }
         if(!session.running)session.runtime?.proposedPlan?.let { ProposedPlanReview(session,it,reading) }
@@ -269,7 +269,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                             if(!change.pressed && single && kotlin.math.abs(delta.x)>with(density) { 60.dp.toPx() } && kotlin.math.abs(delta.x)>kotlin.math.abs(delta.y)*1.5f) move(if(delta.x<0) 1 else -1)
                         }
                     }.padding(horizontal=16.dp).padding(bottom=16.dp)) {
-                        ApprovalPanel(session,current,target,drafts.getOrPut(current.identity) { ApprovalDraft() },onQuestionFocus={ state.expand() },answerViewportHeight=answerViewportHeight,noticeVisibility=noticeVisibility)
+                        ApprovalPanel(session,current,target,drafts.getOrPut(current.identity) { ApprovalDraft() },onQuestionFocus={ state.expand() },answerViewportHeight=answerViewportHeight,noticeVisibility=noticeVisibility?.takeIf { state.currentValue==SheetValue.Expanded && state.targetValue==SheetValue.Expanded })
                     }
                 }
             }
@@ -286,8 +286,23 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
 @Composable private fun ApprovalPanel(session: MobileSession,approval: MobileApproval,target: String,externalDraft: ApprovalDraft?=null,onQuestionFocus: suspend ()->Unit={},compact: Boolean=false,answerViewportHeight: androidx.compose.ui.unit.Dp?=null,noticeVisibility: NativePanelNoticeVisibility?=null) {
     val destination=session.approvalActionDestination()
     if(destination.key!=target)return
+    val original=NativeNoticePanelOriginal.Approval(approval)
+    val labels=if(approval.kind=="question")emptyList() else approval.decisions.map { approvalDecisionLabel(approval,it) }
+    val document=remember(approval,labels) {
+        val fields=buildList {
+            // The async deck uses original question prompts/detail, matching the iOS projection.
+            if(approval.interactionMode!="async")add("title" to approval.title)
+            add("detail" to approval.detail)
+            approval.questions.forEachIndexed { i,q ->
+                add("q/$i" to q.question)
+                q.options.forEachIndexed { j,option -> add("q/$i/option/$j" to option.label);add("q/$i/description/$j" to option.description) }
+            }
+            labels.forEachIndexed { i,label -> add("decision/$i" to label) }
+        }
+        NativeNoticeReadDocument.create(original,fields)
+    }
     key(destination,approval) {
-        NativeNoticeVisibilityPanel(noticeVisibility?.forTarget(session.selectedClient.scope,session.selectedThread),NativeNoticePanelOriginal.Approval(approval)) {
+        NativeNoticeVisibilityPanel(noticeVisibility?.forTarget(session.selectedClient.scope,session.selectedThread),original,document) {
             ApprovalPanelContent(session,approval,destination,externalDraft,onQuestionFocus,compact,answerViewportHeight)
         }
     }
@@ -305,14 +320,14 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
     }
     ExecutionCard(if(async) "" else productText(if(approval.kind=="question") "需要回复" else "需要审批"),"approval-${approval.id}",compact=compact) {
         if(async) Text(productText(if(session.runtime?.turnId==approval.turnId) "任务仍在继续，可随时回答或跳过" else "任务已结束，回答将继续此对话"),fontSize=12.sp,modifier=Modifier.testTag("async-question-status"))
-        else SelectionContainer { Text(approval.title,fontSize=14.sp,modifier=Modifier.fillMaxWidth()) }
-        if(approval.detail.isNotEmpty()) Text(approval.detail,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+        else SelectionContainer { NativeNoticeReadText("title",approval.title,fontSize=14.sp,modifier=Modifier.fillMaxWidth()) }
+        if(approval.detail.isNotEmpty()) NativeNoticeReadText("detail",approval.detail,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
         if(session.isAnswering(approval)) Row(Modifier.testTag("approval-pending"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             CircularProgressIndicator(Modifier.size(14.dp).testTag("approval-pending-progress"),strokeWidth=1.5.dp);Text(productText("正在提交…"),fontSize=12.sp)
         }
-        approval.questions.forEach { question ->
-            Text(question.question,fontSize=14.sp,modifier=Modifier.testTag("question-title-${question.id}"))
-            question.options.forEach { option ->
+        approval.questions.forEachIndexed { questionIndex,question ->
+            NativeNoticeReadText("q/$questionIndex",question.question,fontSize=14.sp,modifier=Modifier.testTag("question-title-${question.id}"))
+            question.options.forEachIndexed { optionIndex,option ->
                 val chosen=option.label in selected[question.id].orEmpty()
                 val choiceState=productText(if(chosen)"已选择" else "未选择")
                 val select={
@@ -327,8 +342,8 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                     if(question.multiple) Checkbox(chosen,onCheckedChange=null,enabled=editable,modifier=Modifier.size(20.dp).clearAndSetSemantics {})
                     else RadioButton(chosen,onClick=null,enabled=editable,modifier=Modifier.size(20.dp).clearAndSetSemantics {})
                     Column(Modifier.weight(1f)) {
-                        Text(option.label,fontSize=14.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(editable)1f else .38f))
-                        if(option.description.isNotEmpty()) Text(option.description,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(editable)1f else .38f))
+                        NativeNoticeReadText("q/$questionIndex/option/$optionIndex",option.label,fontSize=14.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(editable)1f else .38f))
+                        if(option.description.isNotEmpty()) NativeNoticeReadText("q/$questionIndex/description/$optionIndex",option.description,fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(editable)1f else .38f))
                     }
                 }
             }
@@ -371,9 +386,9 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                 colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.onSurface,contentColor=MaterialTheme.colorScheme.background,
                     disabledContainerColor=MaterialTheme.colorScheme.onSurface.copy(alpha=.12f),disabledContentColor=MaterialTheme.colorScheme.onSurfaceVariant)) { Text(productText("提交回复"),fontSize=14.sp,fontWeight=FontWeight.SemiBold) }
         } else FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-            approval.decisions.forEach { decision ->
+            approval.decisions.forEachIndexed { decisionIndex,decision ->
                 TextButton(onClick={ session.answer(approval,decision,emptyMap(),destination) },enabled=enabled,modifier=Modifier.heightIn(min=44.dp).testTag("approval-$decision")) {
-                    Text(approvalDecisionLabel(approval,decision),fontSize=12.sp)
+                    NativeNoticeReadText("decision/$decisionIndex",approvalDecisionLabel(approval,decision),fontSize=12.sp)
                 }
             }
         }

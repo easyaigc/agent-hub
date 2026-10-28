@@ -1,0 +1,41 @@
+{
+  "commit": "de876a01b29230b877c9f408348c38a90ee724a5",
+  "sources": [
+    {
+      "name": "JSONObject",
+      "url": "https://android.googlesource.com/platform/libcore/+/de876a01b29230b877c9f408348c38a90ee724a5/json/src/main/java/org/json/JSONObject.java?format=TEXT",
+      "sha256": "b7770e43fdad8415e8f5c37a7dc06a7c1ffb3a16c557887ded1479f3116c868f",
+      "bytes": 30531
+    },
+    {
+      "name": "JSONArray",
+      "url": "https://android.googlesource.com/platform/libcore/+/de876a01b29230b877c9f408348c38a90ee724a5/json/src/main/java/org/json/JSONArray.java?format=TEXT",
+      "sha256": "24f10dbe57a9228b8aec8a891355c26285e7fc4e070a2f826a080300e3ca4180",
+      "bytes": 20699
+    },
+    {
+      "name": "JSONStringer",
+      "url": "https://android.googlesource.com/platform/libcore/+/de876a01b29230b877c9f408348c38a90ee724a5/json/src/main/java/org/json/JSONStringer.java?format=TEXT",
+      "sha256": "8772ac80610cd62e906330152b09864c471a0921f199f4b9d670d98050e3d86c",
+      "bytes": 13540
+    },
+    {
+      "name": "JSONTokener",
+      "url": "https://android.googlesource.com/platform/libcore/+/de876a01b29230b877c9f408348c38a90ee724a5/json/src/main/java/org/json/JSONTokener.java?format=TEXT",
+      "sha256": "744c9ffb50c2472d7269c8d64a7d8331ea1a1691fb6536619ac9590e9ebbbd4b",
+      "bytes": 20427
+    },
+    {
+      "name": "JSON",
+      "url": "https://android.googlesource.com/platform/libcore/+/de876a01b29230b877c9f408348c38a90ee724a5/json/src/main/java/org/json/JSON.java?format=TEXT",
+      "sha256": "a2cc5e4bf64bfe3edd73c6a14409f3200640454051d9947ee79f16a2396a19b1",
+      "bytes": 3884
+    },
+    {
+      "name": "JSONException",
+      "url": "https://android.googlesource.com/platform/libcore/+/de876a01b29230b877c9f408348c38a90ee724a5/json/src/main/java/org/json/JSONException.java?format=TEXT",
+      "sha256": "26e10aae9c209dabbc8f15b4156fe9fdc87f5d9d2cb2d2f078b475a61ba0df7d",
+      "bytes": 1824
+    }
+  ]
+}

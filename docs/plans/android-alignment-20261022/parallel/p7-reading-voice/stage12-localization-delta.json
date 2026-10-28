@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "featureIds": ["F49", "F50", "F56"],
+  "change": "Actual expanded review-plan toggle now uses the existing shared productText translation",
+  "key": "查看计划",
+  "resource": "product_aed5b2af529bf103f6e9ef05",
+  "en": "View plan",
+  "zh-Hans": "查看计划",
+  "generatedCatalogChanged": false,
+  "iosImpact": "Existing shared translation already used; unchanged",
+  "androidAssertion": "NativeNoticeVisibilityUiTest.planToggleUsesTheExistingSharedCatalogInEnglishAndChinese",
+  "nativeCurrentSource": "compiled/prepared; execution pending parent",
+  "themeEvidence": "fixture explicitly light; dark wrapper is not a dark fixture pass"
+}

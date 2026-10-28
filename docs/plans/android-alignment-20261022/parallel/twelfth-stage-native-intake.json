@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "checkpoint": "PAR12-viewport-voice-and-positive-intake",
+  "date": "2026-10-29",
+  "currentPassedMethods": 12,
+  "physicalViewportAndIme": [
+    {
+      "label": "viewport-default-large",
+      "status": "passed",
+      "sourceSha256": "b1f49d99432cd1c2582caab5faa3f5f828a9b5b9d4fa94aa68506d3d1c644657",
+      "appSha256": "f76011fab74b252815a65d7d8047fd13c70c4f6c1759408cd4b9fe8ea8efa3bf",
+      "runnerSha256": "4ae1a20ae0afd9e270e26b3c7fb5aa4d44d8a8abd39524a400a591d533052a33",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPairingViewportTest#chineseShortViewportAtDefaultFontUsesActualProviderFieldsAndTargets",
+        "com.agenthub.android.NativeEasyWorkPairingViewportTest#englishShortViewportAtLargeFontUsesActualProviderFieldsAndTargets"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "419ed7c72ce208694802869e15519e321dd3c25b7cdcf23544a84a60d223bd40"
+    },
+    {
+      "label": "viewport-double",
+      "status": "passed",
+      "sourceSha256": "b1f49d99432cd1c2582caab5faa3f5f828a9b5b9d4fa94aa68506d3d1c644657",
+      "appSha256": "f76011fab74b252815a65d7d8047fd13c70c4f6c1759408cd4b9fe8ea8efa3bf",
+      "runnerSha256": "4ae1a20ae0afd9e270e26b3c7fb5aa4d44d8a8abd39524a400a591d533052a33",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPairingViewportTest#englishShortViewportAtDoubleFontKeepsEveryActionAndMetadataReachable",
+        "com.agenthub.android.NativeEasyWorkPairingViewportTest#chineseShortViewportAtDoubleFontKeepsEveryActionAndMetadataReachable"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "b5a17c0909c1edfa6a6792732919e087760a96ac142a6265e14eb1b9458e57db"
+    },
+    {
+      "label": "actual-ime",
+      "status": "passed",
+      "sourceSha256": "b1f49d99432cd1c2582caab5faa3f5f828a9b5b9d4fa94aa68506d3d1c644657",
+      "appSha256": "f76011fab74b252815a65d7d8047fd13c70c4f6c1759408cd4b9fe8ea8efa3bf",
+      "runnerSha256": "4ae1a20ae0afd9e270e26b3c7fb5aa4d44d8a8abd39524a400a591d533052a33",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPairingViewportTest#englishActualSheetImeKeepsFocusedFieldDoneAndSubmitReachable",
+        "com.agenthub.android.NativeEasyWorkPairingViewportTest#chineseActualSheetImeKeepsFocusedFieldDoneAndSubmitReachable"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "3cf93cd607245350c66375fd1ce215366f3f614358403a6517dc9bd1eb613313"
+    }
+  ],
+  "freshApi37Main": {
+    "label": "actual-main-fresh-API37",
+    "status": "passed",
+    "sourceSha256": "b1f49d99432cd1c2582caab5faa3f5f828a9b5b9d4fa94aa68506d3d1c644657",
+    "appSha256": "f76011fab74b252815a65d7d8047fd13c70c4f6c1759408cd4b9fe8ea8efa3bf",
+    "runnerSha256": "4ae1a20ae0afd9e270e26b3c7fb5aa4d44d8a8abd39524a400a591d533052a33",
+    "passedMethods": [
+      "com.agenthub.android.NativeEasyWorkMainIntentTest#actualWarmMainInboxConsumesIntentBeforePairingAndRevokesCapability",
+      "com.agenthub.android.NativeEasyWorkMainIntentTest#actualWarmMainWithoutLinkChangeRevokesOriginalPairingCapability"
+    ],
+    "failedMethods": [],
+    "instrumentationSha256": "cda9a379d2838b1cb09b761d490afad7be84d4c779c58958ee706044b3c4af0a"
+  },
+  "voiceSavedStateAndRegistry": {
+    "label": "voice-permission-lifetime",
+    "status": "passed",
+    "sourceSha256": "b1f49d99432cd1c2582caab5faa3f5f828a9b5b9d4fa94aa68506d3d1c644657",
+    "appSha256": "f76011fab74b252815a65d7d8047fd13c70c4f6c1759408cd4b9fe8ea8efa3bf",
+    "runnerSha256": "4ae1a20ae0afd9e270e26b3c7fb5aa4d44d8a8abd39524a400a591d533052a33",
+    "passedMethods": [
+      "com.agenthub.android.NativeVoicePermissionLifecycleTest#restoredOldReceiptAndDuplicateCannotGrantOrDenyTheReplacementCapture",
+      "com.agenthub.android.NativeVoicePermissionLifecycleTest#synchronousDenialRetiresTheLaunchBeforeAnotherCompositionCanReplayIt",
+      "com.agenthub.android.NativeVoicePermissionLifecycleTest#aCurrentPermissionReceiptStillCannotBypassChangedDraftAuthority",
+      "com.agenthub.android.NativeVoicePermissionLifecycleTest#restoringTheSamePendingRequestDoesNotLaunchAgainForEitherProvider"
+    ],
+    "failedMethods": [],
+    "instrumentationSha256": "17e86155c0b38c2bbaad80904a0fbc0366f942db70705b4aec1097d101b4e1c7"
+  },
+  "positiveIntake": {
+    "groups": [
+      {
+        "label": "positive-fresh-form",
+        "status": "failed",
+        "sourceSha256": "b1f49d99432cd1c2582caab5faa3f5f828a9b5b9d4fa94aa68506d3d1c644657",
+        "appSha256": "f76011fab74b252815a65d7d8047fd13c70c4f6c1759408cd4b9fe8ea8efa3bf",
+        "runnerSha256": "4ae1a20ae0afd9e270e26b3c7fb5aa4d44d8a8abd39524a400a591d533052a33",
+        "passedMethods": [],
+        "failedMethods": [
+          "com.agenthub.android.NativeEasyWorkPositiveCommitTest#closedActualFormAfterCandidateWriteCannotActivateOrCompleteOldCallback",
+          "com.agenthub.android.NativeEasyWorkPositiveCommitTest#correctGrantActivatesActualCandidateAtFinalCommitAndOriginalFormCompletesOnce"
+        ],
+        "instrumentationSha256": "b9193304d1aca7db8e20e2caa5c17dc39ef060f60ba96adefc03aeb233048a7d"
+      },
+      {
+        "label": "positive-fresh-failure",
+        "status": "failed",
+        "sourceSha256": "b1f49d99432cd1c2582caab5faa3f5f828a9b5b9d4fa94aa68506d3d1c644657",
+        "appSha256": "f76011fab74b252815a65d7d8047fd13c70c4f6c1759408cd4b9fe8ea8efa3bf",
+        "runnerSha256": "4ae1a20ae0afd9e270e26b3c7fb5aa4d44d8a8abd39524a400a591d533052a33",
+        "passedMethods": [],
+        "failedMethods": [
+          "com.agenthub.android.NativeEasyWorkPositiveCommitTest#lastWorkspaceReadFailureRollsBackCandidateWithoutActivatingOrReclaimingGrant",
+          "com.agenthub.android.NativeEasyWorkPositiveCommitTest#changedOriginalDraftPlusLastReadFailureCannotCommitOrClearNewDraft"
+        ],
+        "instrumentationSha256": "60942d1c4a2449692f2459314bcf32105558fe5849c4a590fdde150a125d4b70"
+      }
+    ],
+    "status": "four failed sourceGraph canonical preflight; zero case/credential activation",
+    "resourceClosure": "own sidecar and two reverse mappings closed; no active original case",
+    "rootCauseReview": "Source graph keys contain slashes; native production canonical key versus value quoting under review, strict comparison retained"
+  },
+  "scope": "Voice injects denial/guard-revoked grant only, no OS mic/recognizer. P8 synthetic issuer/runtime only.",
+  "coverageAcrossCandidates": {
+    "distinctPairingMethods": 40,
+    "currentSourceMethods": 8,
+    "priorSourceMethods": 32,
+    "priorEvidence": "tenth-stage-native-intake.json",
+    "notSingleCandidateFullA5Acceptance": true
+  },
+  "pending": [
+    "Physical default Main AtomicFile precondition stays blocked",
+    "Canonical and positive commit/cold orphan native",
+    "Actual OS mic/recognizer, full physical/theme/DEV and real issuer/Desktop"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

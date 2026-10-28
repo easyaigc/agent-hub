@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "checkpoint": "PAR15-fresh-original-cold-intake",
+  "date": "2026-10-29",
+  "device": "fresh task-owned API37",
+  "groups": [
+    {
+      "label": "writer",
+      "status": "passed",
+      "sourceSha256": "cbddbc96b0a428f5660d08bb3d7424803c15660244fd255a4a045c6d33f76eff",
+      "appSha256": "9c97812eba8400588ad021240795aadc10ba2871d2aa138758e2ed4e22bc18dd",
+      "runnerSha256": "8f26c84db3917ceda60693e5874cedb60e46d3343551045038655c8f2ee62824",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "bc7ef049754bd368d8eaa18457dab319d0281624a5152fbf5ad73ede34c2e8f4"
+    },
+    {
+      "label": "reader",
+      "status": "failed",
+      "sourceSha256": "cbddbc96b0a428f5660d08bb3d7424803c15660244fd255a4a045c6d33f76eff",
+      "appSha256": "9c97812eba8400588ad021240795aadc10ba2871d2aa138758e2ed4e22bc18dd",
+      "runnerSha256": "8f26c84db3917ceda60693e5874cedb60e46d3343551045038655c8f2ee62824",
+      "passedMethods": [],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft"
+      ],
+      "instrumentationSha256": "d136470c9a05df601fd6d8b0ccca071e3b84718ea6faa2e38272413f6805ed02"
+    }
+  ],
+  "writerCheckpointPassed": true,
+  "coldRouteWholeMethodPassed": false,
+  "originalInitialAssertions": "Original route opened, first Activity selected owned storage before default; duplicate ticket kept new draft and twelve original locator pages. These intermediate assertions do not make the failed whole reader a pass.",
+  "failure": "Later direct selection of otherThread rejected by existing Session threads.any guard; owner reviewing actual directory/navigation precondition.",
+  "observerNotStarted": true,
+  "otherFourCasesNotStarted": true,
+  "originalLeaseSealed": true,
+  "noWriterOrReaderReplay": true,
+  "defaultEncryptedFilesUnchanged": true,
+  "readOnlyMaintenance": "Prepare separate immutable export and reviewed seal/disarm, preserving all original storage/receipt/draft and failed evidence. Maintenance does not certify route.",
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

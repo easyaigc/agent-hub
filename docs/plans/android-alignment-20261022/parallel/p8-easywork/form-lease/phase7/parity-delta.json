@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-positive-commit-next-20261029-1",
+  "featureIds": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+  "pages": ["UI01", "UI03"],
+  "commonAssertions": [
+    "Only final capability commit activates candidate credential via client metadata pointer",
+    "Correct original grant/claim and complete target retained",
+    "Old form callback absent after disposal; newer draft and unknown original unchanged",
+    "Fresh process restore cannot discover or promote an unreferenced candidate or repeat claim/submit"
+  ],
+  "android": "New isolated read-only synthetic fixture +4 warm methods and2 cold writer/reader methods prepared; no product/shared change",
+  "ios": "No Swift change or new iOS proof; corresponding activation/lifecycle/target assertion remains independent",
+  "actualNativeExecuted": 0,
+  "originalDesktopOrIssuerDev": "not executed; fixture is synthetic independent peer",
+  "centralGeneratedFilesChanged": false,
+  "sharedOverlay": "none beyond adopted phase5 Session and phase3 Main",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

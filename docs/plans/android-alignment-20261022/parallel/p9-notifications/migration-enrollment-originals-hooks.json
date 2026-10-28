@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-migration-enrollment-integration-review-20261029-1",
+  "parentHead": "42df9cee207d4300ba68e6ef549f558a36ccbca7",
+  "parentModifiedHere": false,
+  "applied": false,
+  "sharedFiles": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "baseSha256": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8",
+      "proposedSha256": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+      "proposedSha256": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "baseSha256": "289784f1cf32486b462ece61566c87c669eb144b47052d32789a51f8bb73106f",
+      "proposedSha256": "289784f1cf32486b462ece61566c87c669eb144b47052d32789a51f8bb73106f",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "baseSha256": "ad0f57c112b54837c959410c6c633aa2db2ece9539e35082002aae71da0c861f",
+      "proposedSha256": "ad0f57c112b54837c959410c6c633aa2db2ece9539e35082002aae71da0c861f",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "baseSha256": "0247816330fc18b92e0ef5b9ff8831c143bd5357143b9dc3c0ece9cd79290d1a",
+      "proposedSha256": "0247816330fc18b92e0ef5b9ff8831c143bd5357143b9dc3c0ece9cd79290d1a",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt",
+      "baseSha256": "4f99503eee90f9e45a5369404bdd2520c1e512fe28636b41a76490702366d6b5",
+      "proposedSha256": "566079e3036655c1ec6fcd27f1eb61b8c67c6e2e426928e06cfb9dbfe77b1957",
+      "changed": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationsPage.kt",
+      "baseSha256": "3cf9ee2a50fd1b08270c2a8afa80197620b9fc90d31947e28113a64a4ce9df1b",
+      "proposedSha256": "3cf9ee2a50fd1b08270c2a8afa80197620b9fc90d31947e28113a64a4ce9df1b",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt",
+      "baseSha256": "ab6a85ae4cf5dd15a1bd1590a34daee3854c3f145a789d650467809cc05ad46e",
+      "proposedSha256": "ab6a85ae4cf5dd15a1bd1590a34daee3854c3f145a789d650467809cc05ad46e",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCommands.kt",
+      "baseSha256": "d3cb14e7ff918b170fbee66c242422c4b061e6e8f8550c004c67ab05e067418e",
+      "proposedSha256": "d3cb14e7ff918b170fbee66c242422c4b061e6e8f8550c004c67ab05e067418e",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryCommands.kt",
+      "baseSha256": "f201d241634a039d7d5ad06fac94139bb4e18840d6c536c9a3611d0da6647b66",
+      "proposedSha256": "f201d241634a039d7d5ad06fac94139bb4e18840d6c536c9a3611d0da6647b66",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/HostReads.kt",
+      "baseSha256": "b9c8c018fba2aefc5bec7158fd58c92470ce996cd16cdcd8a3d05fe77a87152e",
+      "proposedSha256": "b9c8c018fba2aefc5bec7158fd58c92470ce996cd16cdcd8a3d05fe77a87152e",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt",
+      "baseSha256": "029e2eae723f240a203cbda1d8d5e5052b7a2d9d4a86b9da74924e80626ad971",
+      "proposedSha256": "029e2eae723f240a203cbda1d8d5e5052b7a2d9d4a86b9da74924e80626ad971",
+      "changed": false
+    }
+  ],
+  "actualChangedSharedFiles": 1,
+  "p7Core": "read-only; enrollment validator and IO tracker unchanged",
+  "requires": "parent applies exact patch and rebuilds; no native result inferred"
+}

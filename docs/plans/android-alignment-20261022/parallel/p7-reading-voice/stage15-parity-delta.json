@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "15-long-native-failure-follow-up",
+  "featureIds": ["F19", "F21", "F40", "F41", "F42", "F49", "F50", "F56", "F58"],
+  "commonAssertions": [
+    "A scroll-only clip revokes the live proof but retains exact same-scene observed ranges",
+    "Nonpainted line-end formatting requires the same current line prefix coverage and current terminal/blank-line geometry",
+    "A missing middle, hidden glyph, ellipsis, closed disclosure, new layout or window cannot borrow coverage",
+    "The same ledger mutation still requires original Session and native view guards",
+    "No original text or answer is added to diagnostics or a second ledger"
+  ],
+  "bothPlatforms": {
+    "android": "Scroll-only reset and line-end formatting witness corrected; native verification pending",
+    "ios": "Unchanged; no new implementation or execution claimed"
+  },
+  "design": {
+    "surfaces": ["long approval/question", "expanded plan", "horizontal code"],
+    "tokensAndCopy": "unchanged",
+    "diagnostics": {
+      "partRecords": 64,
+      "missingRangesPerPart": 8,
+      "rawContent": false
+    }
+  },
+  "acceptance": "parallel/p7-reading-voice/stage15-long-native-fix.md",
+  "priorNative": "parent fresh API37 older UI10 passed, long UI10 failed on old source; preserved separately",
+  "nativePrepared": [
+    "Four actual Android Compose text-shaping probes",
+    "One offscreen coverage/live-proof UI regression",
+    "Existing long UI assertions retained"
+  ],
+  "nativeExecutedHere": false,
+  "centralOwner": "parent coordinator",
+  "scope": "No device/ADB/Host/model/mic or parent writes; A6 and task/project operations paused"
+}

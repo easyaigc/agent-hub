@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "operationId": "parent-p7-full-journal-migration-next-20261029-1",
+  "sourceCommit": "cc0b6ac82909a5e2c0dd54b507f38d97cd0e4411",
+  "sourceHashes": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryWire.kt": "2c9c46ea1a3df2f248d4f96c640dfc3e145ca4fa95ae49a159049968ef4f266a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt": "27c55bb993a4b7e5ab8499126afbccbea7e1027ea4c4f1b5c9be83139474f309",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSessionPort.kt": "11af09a4eed9ffc94f723e40f1948d2660c8e383c7024b9461feae37ae8d47f6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAuthorizations.kt": "1adb14aa1952c1fd2390aa06a23ff7872fe1a2dcef804f1fa187725ce1d377b5",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationIdentity.kt": "df819803b2bbbfda7032c708f9840dba58bb9028423bafac2ca1baef1ba0946a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationWire.kt": "5a5914b682348ac29cff55fc30c15ef17e2998b3ba73aa653d41087e06fc88ba"
+  },
+  "parserDependency": "Pure frozen v2 wire and journal decoder adapted to migration namespace; create/storage/IO/network/mutation paths excluded. P9 Wire identical to current baseline. No P9 producer edits.",
+  "authorityRecord": "native-chat-notification-authorizations-v1",
+  "policy": "Source private identity excluded; raw known journal/receipts and authority snapshots archived read-only, unavailable authority marked; destination active identity/journals/authority kept exact. Existing real-client installation restriction remains."
+}

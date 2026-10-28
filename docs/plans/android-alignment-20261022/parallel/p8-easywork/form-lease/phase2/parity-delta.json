@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "android-p8-form-copy-phase2-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "baseCommit": "e60564ffd8520d1e0890fc14ee60af5408135416",
+  "features": ["F02", "F04", "F43", "F44", "F46"],
+  "files": {
+    "apps/android/localization/native-copy.json": "8411c1b92871c59715614928032fb9a13ad18a4f2f74212477f77f0efbc7947f",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "03615ed312b3d7d79220f81524a297968f93e5478e88720fdda470f4d6f74f19",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPresentation.kt": "c1b963449fc765feaade62d8a05f7d6f3b475ffb062a770d3343a15dad4415cf",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkPairingUiTest.kt": "bd1f51b64a461b58125c20520c5da7affd7b561673d6099a9461180b0a9ad163",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkFormLeaseTest.kt": "458810ede66ecf0a72c0e7ab75499aeb30b9b26da5ce62e5c722df5bbc8fca55",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkPairingCopyTest.kt": "ec971c2a0d31bd3f643238de2d1caaf9be29112c571811ecb67d8b03566c11e2",
+    "apps/android/src/androidTest/assets/p8-pairing-copy-additions.json": "573789483582ce36a43e68e9a15715f35fa7598a008c5e4b01c0bb6072a34cdc",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "ef91b6e1fbf4a95e788a1a55aa4e1302b457d4ce43d3e99a8274d2d2683cfc54"
+  },
+  "summary": "Route pairing pending/failure and complete target labels through productText/NativeL10n and 14 source-native catalog additions; VERIFY uses a normal format parameter. Add independent reviewed-resource zh/en/system and AX native assertions, and pre-Activity exact package guards; central generated files unchanged.",
+  "commonAssertion": "App-owned keys use one actual App resolver/catalog; arbitrary peer text and target values never become lookup keys; system preference follows the existing resolver and missing English resources fail independent native assertions",
+  "dualPlatformImpact": {
+    "android": "Final lease also binds full draft revision; Host16 pass/Node4 pass/new5 native compile, all30 pairing cases native-unverified",
+    "ios": "No source change or proof; phase1 lease/copy parity still needs review"
+  },
+  "designDelta": [
+    "Existing labels and failure categories now use normal reviewed catalog keys",
+    "VERIFY is one %@ argument and pending/error live regions are polite",
+    "Target identifiers remain literal and Provider tab AX is localized"
+  ],
+  "requiredSharedSessionOverlay": {
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+    "baseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+    "proposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+    "patchSha256": "8e05a95f0c0c24bff3d8d1be625dc52ce76efa3dba66a81bf6f6dd7a7848016c",
+    "previousPhase1ProposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+    "rebasedFromBaseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5"
+  },
+  "requiredParentCatalogAction": "Merge additions by key, run existing generate-localization --write and full checks; never overwrite parent native-copy file wholesale",
+  "integrationChangeRecord": {
+    "id": "android-p8-form-copy-phase2-20261029",
+    "baseCommit": "e60564ffd8520d1e0890fc14ee60af5408135416",
+    "features": ["F02", "F04", "F43", "F44", "F46"],
+    "summary": "Route pairing pending/failure and complete target labels through productText/NativeL10n and 14 source-native catalog additions; VERIFY uses a normal format parameter. Add independent reviewed-resource zh/en/system and AX native assertions, and pre-Activity exact package guards; central generated files unchanged.",
+    "files": {
+      "apps/android/localization/native-copy.json": "8411c1b92871c59715614928032fb9a13ad18a4f2f74212477f77f0efbc7947f",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "03615ed312b3d7d79220f81524a297968f93e5478e88720fdda470f4d6f74f19",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPresentation.kt": "c1b963449fc765feaade62d8a05f7d6f3b475ffb062a770d3343a15dad4415cf",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkPairingUiTest.kt": "bd1f51b64a461b58125c20520c5da7affd7b561673d6099a9461180b0a9ad163",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkFormLeaseTest.kt": "458810ede66ecf0a72c0e7ab75499aeb30b9b26da5ce62e5c722df5bbc8fca55",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkPairingCopyTest.kt": "ec971c2a0d31bd3f643238de2d1caaf9be29112c571811ecb67d8b03566c11e2",
+      "apps/android/src/androidTest/assets/p8-pairing-copy-additions.json": "573789483582ce36a43e68e9a15715f35fa7598a008c5e4b01c0bb6072a34cdc",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "ef91b6e1fbf4a95e788a1a55aa4e1302b457d4ce43d3e99a8274d2d2683cfc54"
+    }
+  },
+  "centralRegistration": "parent-owned",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

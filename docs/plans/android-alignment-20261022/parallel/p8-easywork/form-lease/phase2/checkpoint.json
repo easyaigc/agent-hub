@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-form-lease-copy-next-20261029-1",
+  "date": "2026-10-29",
+  "baseCommit": "e60564ffd8520d1e0890fc14ee60af5408135416",
+  "phase": "normal-catalog-copy-and-native-ax-preparation",
+  "filesSha256": {
+    "apps/android/localization/native-copy.json": "8411c1b92871c59715614928032fb9a13ad18a4f2f74212477f77f0efbc7947f",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "03615ed312b3d7d79220f81524a297968f93e5478e88720fdda470f4d6f74f19",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPresentation.kt": "c1b963449fc765feaade62d8a05f7d6f3b475ffb062a770d3343a15dad4415cf",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkPairingUiTest.kt": "bd1f51b64a461b58125c20520c5da7affd7b561673d6099a9461180b0a9ad163",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkFormLeaseTest.kt": "458810ede66ecf0a72c0e7ab75499aeb30b9b26da5ce62e5c722df5bbc8fca55",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkPairingCopyTest.kt": "ec971c2a0d31bd3f643238de2d1caaf9be29112c571811ecb67d8b03566c11e2",
+    "apps/android/src/androidTest/assets/p8-pairing-copy-additions.json": "573789483582ce36a43e68e9a15715f35fa7598a008c5e4b01c0bb6072a34cdc",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "ef91b6e1fbf4a95e788a1a55aa4e1302b457d4ce43d3e99a8274d2d2683cfc54"
+  },
+  "copySourceOverlay": {
+    "version": 1,
+    "source": "apps/android/localization/native-copy.json",
+    "ownBaseSha256": "ad022e5b5667c90822436a14275441bcf016762fcc9da4ea87d9586e6df81c2d",
+    "ownProposedSha256": "8411c1b92871c59715614928032fb9a13ad18a4f2f74212477f77f0efbc7947f",
+    "newEntries": 14,
+    "reusedKeys": ["\u8d26\u53f7"],
+    "centralGeneratedFilesChanged": false,
+    "privateCompileResources": "Only additions rendered through existing androidCatalog(); parent runs ordinary generator after merging source",
+    "parent": {
+      "source": "apps/android/localization/native-copy.json",
+      "baseSha256": "c83e0a6a8c32e9ed7eb699bcdaf5a7f67263d6bfffd93812a0dd38065bbfed17",
+      "proposedSha256": "5f7f2cbe0108d3db17a8bf705179c3182909b24d72c7178d04cd2332df5b8616",
+      "added": 14,
+      "reused": []
+    }
+  },
+  "latestParentSessionHookCheck": {
+    "parentCommit": "69db4817a16bd5b5a485d9e01ed5f200da31b0fa",
+    "currentBaseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+    "finalProposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+    "rebased": true,
+    "previousBaseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5",
+    "parallelPanelRegionPreservedSha256": "ead33aaf22076cc8ffe3f94b3b91a69927045608bca9e92dc4734ef74d98bd64",
+    "foregroundAndNotificationHooksPreserved": true,
+    "sharedSourceModifiedHere": false
+  },
+  "nativeInputFiles": 472,
+  "nativeInputSetSha256": "74a8be4477b658409b06dda8846f9b36b1f0710686d9c6bd35679dda8ca28bbb",
+  "compiledVariant": "Own proposed Session lease plus 14 private resource additions produced by existing androidCatalog(); central generated files untouched",
+  "privateResourceInputs": {
+    "phase2-generated-res/values/p8_pairing_copy.xml": "8a42b0bb61999b570ccacfcb467cc9602a10ddcf53c9d0a8bea80b6610977da6",
+    "phase2-generated-res/values-zh/p8_pairing_copy.xml": "1e62522938410e152ec2a390473fe86cca1484c88f5e825678430c50fc78a968"
+  },
+  "centralGeneratedFilesUnchangedSha256": {
+    "apps/android/src/main/res/values/product_strings.xml": "8b87aa97b21d78e07373ad69b187fb6bf22a85fa5a6731044b79b923a87f3e8a",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "697cc9292bed14bd8dd313bb812297facc1dd4c7c6cac7faa712389889bee453",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "8097846628b6c2ad6d2e6499b90b8e258b4470fb02e820a197808534da56c873"
+  },
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "d53fa3faa52ad5926632eca36240c5afc7a3c70a2319ce3e4537525ce0732c34",
+      "bytes": 26489757,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "f4c0292c41cfbaa281d91e6841b95634034ee23cad6d709d8fddef6a793c9336",
+      "bytes": 8160734,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "nativeCopyTest": {
+    "class": "com.agenthub.android.NativeEasyWorkPairingCopyTest",
+    "methods": [
+      "explicitChineseCatalogAndAxIgnoreEnglishSystemPreference",
+      "explicitEnglishCatalogAndAxIgnoreChineseSystemPreference",
+      "followSystemUsesActualChineseResolverAndAx",
+      "followSystemUsesActualEnglishResolverAndAx",
+      "unsupportedSystemLanguageUsesActualEnglishFallbackAndAx"
+    ],
+    "groups": {
+      "explicit-language": [
+        "explicitChineseCatalogAndAxIgnoreEnglishSystemPreference",
+        "explicitEnglishCatalogAndAxIgnoreChineseSystemPreference"
+      ],
+      "follow-system-and-fallback": [
+        "followSystemUsesActualChineseResolverAndAx",
+        "followSystemUsesActualEnglishResolverAndAx",
+        "unsupportedSystemLanguageUsesActualEnglishFallbackAndAx"
+      ]
+    },
+    "methodTimeoutMillis": 25000,
+    "groupOuterDeadlineSeconds": 240,
+    "execution": "not-performed",
+    "scope": "Actual product components/resources/resolver/AX; scoped Configuration and synthetic target/status, no real Desktop or global device language change"
+  },
+  "suiteInventory": {
+    "previous61MethodsUnchanged": true,
+    "previous14ButtonSelectorsRetained": true,
+    "leaseMethods": 11,
+    "newCopyMethods": 5,
+    "pairingTotal": 30,
+    "allNamedNativeMethodsInRunner": 91
+  },
+  "auxiliaryChecks": {
+    "nativeCompile": "passed",
+    "buildLogSha256": "009c8ea15f882f2ef8596a2b83bd3e10c5046e359818cca026a5770cdd884615",
+    "hostLeaseTests": 16,
+    "hostXmlSha256": {
+      "ConnectionFormLeaseTest": {
+        "tests": 14,
+        "sha256": "10407dba4cb49fdd027b1dfeefee59a8ae9605b4f9caf10adb35b707e22ea653"
+      },
+      "ConnectionDraftLeaseRevisionTest": {
+        "tests": 2,
+        "sha256": "66c887859e85f91f1d3c48d2d4aa36b75be74bee5424913a589d31280749523e"
+      }
+    },
+    "copyNodeTests": 4,
+    "copyNodeLogSha256": "b896865c1fcd46fc37040d87c0988959a3203689244934ed6feb85aba137e75e",
+    "eslint": "passed",
+    "networkListenersStarted": false
+  },
+  "realDeviceHostIssuerDesktopCameraModelActions": 0,
+  "rootCheck": {
+    "status": "parent-central-registration-required",
+    "exitCode": 1,
+    "passedBeforeStop": ["format:check", "check:github-sync (5)", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "logSha256": "1cda5de6c36fe9a80eda3f8c06cc7d04e1c3e42a9f10ba93e56ef9f20dc96123",
+    "bypassed": false
+  },
+  "a5GroupClosure": "none",
+  "a6": "paused",
+  "sharedSessionOverlay": {
+    "version": 1,
+    "supersedes": "phase1 proposed hooks; same exact bases plus full original draft revision checkpoint",
+    "hooks": {
+      "own": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+        "proposedSha256": "207a4f646da628c22dd9b01d361f29a427fd2eaca99304630161b0ae180e7e97",
+        "patchSha256": "9c8aaf59db22788a2327ecb509558a60e14a946c1924705cdaff9c02a1adaaea",
+        "previousPhase1ProposedSha256": "33cabcf2c5b814485df9e0047bc013f0ba634c8647be21f6443691a627a6761a"
+      },
+      "parent": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "baseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+        "proposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+        "patchSha256": "8e05a95f0c0c24bff3d8d1be625dc52ce76efa3dba66a81bf6f6dd7a7848016c",
+        "previousPhase1ProposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+        "rebasedFromBaseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5"
+      }
+    },
+    "originalGrantAndUnknownRecordsUntouched": true,
+    "sharedSourceModifiedHere": false,
+    "preservedParallelPanelHookRegionSha256": "ead33aaf22076cc8ffe3f94b3b91a69927045608bca9e92dc4734ef74d98bd64",
+    "parentForegroundHooksPreserved": true
+  },
+  "fullDraftRevision": "Final Session overlay binds existing full draft version, not only text, before requests/writes and after authorized selection"
+}

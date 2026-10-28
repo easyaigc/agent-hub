@@ -7,13 +7,20 @@ import java.security.MessageDigest
 import java.util.Base64
 import java.util.UUID
 
-/** Closed P7 reader of frozen P9 160b51ec v1. It cannot register, recover, revoke or mint an identity. */
+/** Closed P7 reader of frozen P9 journals. It cannot register, recover, revoke or mint an identity. */
 internal object NativeMigrationForeground {
     const val IDENTITY = "native-chat-notification-identity-v1"
     const val JOURNAL = "native-chat-notification-foreground-v1"
-    private data class Identity(val device: String, val fingerprint: String, val bound: Boolean)
+    const val RECOVERY = "native-chat-notification-recovery-v2"
+    const val AUTHORIZATIONS = "native-chat-notification-authorizations-v1"
+    val ACTIVE_NAMES = setOf(IDENTITY,JOURNAL,RECOVERY,AUTHORIZATIONS)
+    private data class Identity(val device: String, val publicKey: String,val fingerprint: String, val bound: Boolean)
     private data class Journal(val device: String, val fingerprint: String, val subscriptions: Int,
-        val operations: List<String>, val outcomes: List<String>)
+        val operations: List<String>, val outcomes: List<String>,val references: Map<String,NativeChatNoticeTarget>)
+    class ActiveState internal constructor(val context: JSONObject?,val identitySha256: String?,val references: Map<String,NativeChatNoticeTarget>,
+        val available: Map<String,NativeChatNoticeTarget>,val nonempty: Boolean) {
+        override fun toString()="NotificationOriginalState(redacted)"
+    }
     /** Original source journal stays immutable under its original encryption; this view has no writer. */
     class SourceAudit internal constructor(val identitySha256: String?, val journalSha256: String?,
         private val originalJournal: String?, val operationIds: List<String>, val outcomeIds: List<String>,
@@ -78,7 +85,7 @@ internal object NativeMigrationForeground {
         val secret=key(text(v,"privateKey",64));var publicBytes: ByteArray?=null
         try {publicBytes=key(public);require(X25519PrivateKeyParameters(secret,0).generatePublicKey().encoded.contentEquals(publicBytes))}
         finally {secret.fill(0);publicBytes?.fill(0)}
-        return Identity(device(text(v,"deviceId",128)),sha(public),bound)
+        return Identity(device(text(v,"deviceId",128)),public,sha(public),bound)
     }
     private fun cursor(v: JSONObject,key: String)=(v.get(key) as String).also {require(it.isEmpty()||chatNoticeHash(it))}
     private fun ids(v: JSONObject,key: String): List<String> {
@@ -104,6 +111,8 @@ internal object NativeMigrationForeground {
         val v=objectValue(raw,4*1024*1024);exact(v,setOf("version","deviceId","identity","subscriptions"));require(integer(v,"version")==1L)
         val fingerprint=text(v,"identity");require(chatNoticeHash(fingerprint));val subscriptions=v.getJSONArray("subscriptions");require(subscriptions.length()<=64)
         val targets=mutableSetOf<NativeChatNoticeTarget>();val operationIds=mutableListOf<String>();val outcomeIds=mutableListOf<String>()
+        val references=mutableMapOf<String,NativeChatNoticeTarget>()
+        fun reference(id: String,target: NativeChatNoticeTarget){require(references[id]==null||references[id]==target);references[id]=target}
         for(s in subscriptions.objects()) {
             exact(s,setOf("target","authorization","preferences","revoked","cursor","mutations","batch","outcomes"))
             val target=target(s.getJSONObject("target"));require(targets.add(target))
@@ -113,6 +122,7 @@ internal object NativeMigrationForeground {
             require(pref==null||authorization!=null);require(revoked||pref!=null&&authorization!=null)
             val mutations=s.getJSONArray("mutations");val outcomes=s.getJSONArray("outcomes");require(mutations.length()<=64&&outcomes.length()<=2048)
             val operations=mutations.objects().map(::mutation);require(operations.map {it.id}.distinct().size==operations.size&&operations.count {it.state=="unknown"}<=1)
+            authorization?.let {reference(it,target)};mutations.objects().forEach {reference(it.getString("authorization"),target)}
             operationIds.addAll(operations.map {it.id});require(operationIds.size<=256)
             val events=outcomes.objects().map {o->
                 exact(o,setOf("event","fingerprint","state","at"));integer(o,"at")
@@ -130,29 +140,48 @@ internal object NativeMigrationForeground {
                 require(before==position&&batchIds.all {id->events.any {it.id==id}})
             }
         }
-        return Journal(device(text(v,"deviceId",128)),fingerprint,subscriptions.length(),operationIds.toList(),outcomeIds.toList())
+        return Journal(device(text(v,"deviceId",128)),fingerprint,subscriptions.length(),operationIds.toList(),outcomeIds.toList(),references)
+    }
+    /** Validates current installation records without loading its identity or constructing command authority. */
+    fun validateActive(records: Map<String,String>): ActiveState {
+        val id=records[IDENTITY]?.let(::identity)
+        require(id?.bound!=true||JOURNAL in records||RECOVERY in records) {"Bound notification journals missing"}
+        val context=id?.let {JSONObject().put("deviceId",it.device).put("publicKey",it.publicKey).put("fingerprint",it.fingerprint)}
+        return validateArchived(context,records[IDENTITY]?.let(::sha),records)
+    }
+    /** Public installation context is evidence only; no private key or active identity is reconstructed. */
+    fun validateArchived(context: JSONObject?,identitySha256: String?,records: Map<String,String>): ActiveState {
+        context?.let {v->exact(v,setOf("deviceId","publicKey","fingerprint"));device(text(v,"deviceId",128));val public=text(v,"publicKey",64)
+            key(public).fill(0);require(text(v,"fingerprint")==sha(public))}
+        require((context==null)==(identitySha256==null));identitySha256?.let {require(chatNoticeHash(it))}
+        val v1=records[JOURNAL]?.let(::journal)
+        val v2=records[RECOVERY]?.let {raw->objectValue(raw,4*1024*1024);NativeMigrationForegroundV2.decodeEncoded(raw)}
+        require(v1==null&&v2==null||context!=null) {"Original notification identity missing"}
+        if(v1!=null)require(context!!.getString("deviceId")==v1.device&&context.getString("fingerprint")==v1.fingerprint)
+        if(v2!=null)require(context!!.getString("deviceId")==v2.getString("deviceId")&&context.getString("fingerprint")==v2.getString("identity"))
+        val refs=v1?.references.orEmpty().toMutableMap()
+        v2?.getJSONArray("targets")?.objects()?.forEach {row->val target=target(row.getJSONObject("target"))
+            row.getJSONArray("operations").objects().forEach {op->val hash=op.getString("authorization");require(refs[hash]==null||refs[hash]==target);refs[hash]=target}
+        }
+        val available=records[AUTHORIZATIONS]?.let(NativeMigrationNotificationAuthorizations::validate).orEmpty()
+        refs.forEach {(hash,target)->available[hash]?.let {require(it==target)}}
+        return ActiveState(context,identitySha256,refs,available,
+            (v1?.subscriptions?:0)>0||(v2?.getJSONArray("targets")?.length()?:0)>0||available.isNotEmpty())
     }
     private fun inspect(records: Map<String,String>): SourceAudit {
-        val identityRaw=records[IDENTITY];val journalRaw=records[JOURNAL]
-        val identity=identityRaw?.let(::identity);val journal=journalRaw?.let(::journal)
-        require(journal==null||identity!=null) {"Foreground identity missing; original journal preserved"}
-        require(identity?.bound!=true||journal!=null) {"Bound foreground journal missing; original identity preserved"}
-        if(identity!=null&&journal!=null)require(identity.device==journal.device&&identity.fingerprint==journal.fingerprint)
-        return SourceAudit(identityRaw?.let(::sha),journalRaw?.let(::sha),journalRaw,journal?.operations.orEmpty(),journal?.outcomes.orEmpty(),journal?.subscriptions?.let {it>0}==true)
+        val state=validateActive(records);val journalRaw=records[JOURNAL];val journal=journalRaw?.let(::journal)
+        return SourceAudit(state.identitySha256,journalRaw?.let(::sha),journalRaw,journal?.operations.orEmpty(),journal?.outcomes.orEmpty(),state.nonempty)
     }
     /** IO caller gets exact immutable journal bytes, not a recovered identity or command port. */
     fun audit(storage: NativeSessionStorage): SourceAudit=storage.snapshotTransaction {storage.operationTransaction {
-        inspect(storage.migrationReadTextRecords(setOf(IDENTITY,JOURNAL)))
+        inspect(storage.migrationReadTextRecords(ACTIVE_NAMES))
     }}
     fun projectSource(records: Map<String,String>): Map<String,String> {
-        val audit=inspect(records);if(audit.requiresOriginalInstallation)throw OriginalInstallationRequired(audit)
-        return records-IDENTITY-JOURNAL
+        return NativeMigrationNotificationArchives.projectSource(records)
     }
-    fun requirePortable(records: Map<String,String>)=require(IDENTITY !in records&&JOURNAL !in records) {"Installation notification identity/journal cannot be imported"}
-    /** Only the destination's own validated unbound/empty pair can survive the atomic generation. */
+    fun requirePortable(records: Map<String,String>){NativeMigrationNotificationArchives.validatePortable(records)}
+    /** Destination originals remain local authority; the activation lease gates their publication/rebind. */
     fun preserveDestination(storage: NativeSessionStorage): Map<String,String> {
-        val records=storage.migrationReadTextRecords(setOf(IDENTITY,JOURNAL))
-        val audit=inspect(records);if(audit.requiresOriginalInstallation)throw OriginalInstallationRequired(audit)
-        return records
+        return NativeMigrationNotificationArchives.captureDestination(storage)
     }
 }

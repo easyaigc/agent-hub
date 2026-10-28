@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "baseline": "26f97b3f94ba77ed8c31c031b65d9463ac05320f",
+  "producerCommit": "cc0b6ac82909a5e2c0dd54b507f38d97cd0e4411",
+  "sourceFingerprint": "2b7d9b7bf86f90fb6b48151ccd04ce9f38e0844bff7465894e2de9bcca1491df",
+  "nativeInputs": 536,
+  "prePostMatch": true,
+  "sourceHashes": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "1c70c22bb4a5e21edcdd0d833ee1f6d6cf960b05104949a7d5b237e94d21178c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "e58103a4285c7fa58237ed6bb0f1d5cc275c0882c6b100183858f6b542061b53",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "deda3be1083190285f9c9578ece0c732ca6a38bf1804c173bd327360de5254a9",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt": "d605d3a1ed9fcc185499cd0958ce3fc7c27b9262a748058a4d06fbc680b60aca",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForegroundV2.kt": "419dd6773e8a6a1465e2082e0983a87f74ae2bdf0371416d0e3bdb5463cb869b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForegroundV2Wire.kt": "08e3b573bd6987664919bd25427142946f33f6bdb56baaed98ac53a6172165a5",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt": "13429319ed3b358692d2f8fcceb741f96db4634ac01c4b5641b4a7cfae803bfe",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationAuthorizations.kt": "559d841749174757d0dddc3f741560f691ea2cf7cc8090db7c94e6f853003b34",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNotificationArchiveTest.kt": "59d8c774b3c39dede381a7540d699b3adacd7237388bab98a3ac51cdb2d058e8",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNotificationArchiveColdTest.kt": "d5f8fcf5de44dc04c2434c9c1c25ef74e586b4f125786de2e56754cf12d2db69",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NotificationArchiveFixtures.kt": "c0326fa23adfb0e76dae2e6369ff912728091215dc185f8d6e7bb3848f26a0ed",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "7d387a9911655ab6ec267b0ad1de73d4cb637ebee09698b54e0ebf35888bd4a7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationForegroundTest.kt": "70b64cbd1c92eed645077b40cc376f271a9abfed150481ec994ed0524793ada2"
+  },
+  "protectedFiles": "P9 runtime, MainActivity/MobileSession/UI/Manifest/central tables and unrelated tests unchanged. Current ForegroundTest3/4 and report tag evolve to new executable archive contract; original exact fixture at25092e2a and tree-out gzip preserved.",
+  "parserProjectionVerification": {
+    "source": "cc0b6ac82909a5e2c0dd54b507f38d97cd0e4411",
+    "exactReadOnlyProjections": true,
+    "wireCreateRemoved": true,
+    "noStoreIoOrMutationPaths": true,
+    "baseWireAndCodecByteEqual": true,
+    "projectionSha256": {
+      "wire": "08e3b573bd6987664919bd25427142946f33f6bdb56baaed98ac53a6172165a5",
+      "journal": "419dd6773e8a6a1465e2082e0983a87f74ae2bdf0371416d0e3bdb5463cb869b"
+    },
+    "blankLineNormalization": "Whitespace-only lines normalized; no token/string/line count changes."
+  },
+  "packages": {
+    "app.apk": {
+      "bytes": 24780287,
+      "sha256": "5bd80b4dcfafb0d8f5aed924386cd6b22efbaccbf033f11cc3f41b0aaa1c6c41"
+    },
+    "runner.apk": {
+      "bytes": 4959631,
+      "sha256": "1fb16dd5305c081e2c83ab1715c51e9c5d80f8d8a1fcaf82a91c0b5c1cc2de0d"
+    }
+  },
+  "methods": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNotificationArchiveTest.kt": [
+      "bothOriginalProtocolsReceiptsAndCredentialsAreArchivedExactlyWithoutPortablePrivateIdentity",
+      "actualFileActivationRequiresOwnerBoundaryAndKeepsImportedOriginalsInertAfterReopen",
+      "nonemptyDestinationIdentityJournalsAuthorityAndUnknownStayExactAcrossRollbackAndPublication",
+      "leaseIsBoundToExactRootCandidateAndQuiescentEpochIncludingFinalPublicationCheck",
+      "destinationArchiveHistoryMergesAndSameOriginalReexportNeverDuplicatesOrRewritesItsPayload",
+      "missingOriginalAuthorityIsMarkedWithoutBorrowingCurrentConnectionCredentialsOrInventingQueryPermission",
+      "unknownReservedRejectedLiveAndResetJournalFormsRetainOriginalIntentsStatesPagesAndReceipts",
+      "malformedOrMissingActiveOriginalsAndAuthorityFutureSchemasRefuseTheWholeExportUnchanged",
+      "forgedArchiveOrActiveAuthorityCannotReplaceAnOriginalCandidateEvenWithCorrectPassword",
+      "originalDestinationPendingFilesNeverRecoverAndFrozenProducerDecodersAreIndependentPrerequisites"
+    ],
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationNotificationArchiveColdTest.kt": [
+      "publishArchivedSourceAndPreservedLocalUnknownForIndependentProcessRead",
+      "readOriginalArchivesAndLocalUnknownUnderDifferentPidWithoutAuthorityActivationOrCiphertextRewrite"
+    ],
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationForegroundTest.kt": [
+      "unboundSourceIdentityNeverEntersEitherPortableFormatOrNewInstallation",
+      "validatedEmptySourceJournalIsExcludedAndDestinationOwnPairSurvivesRollbackAndRetry",
+      "unknownMutationHasExactReadOnlyArchiveAndActivationNeedsQuiescentOwnerBoundary",
+      "processingBatchAndOriginalOutcomesRemainExactInArchiveAndNeverBecomeActiveAuthority",
+      "futureCorruptMissingOrMismatchedIdentityJournalFailClosedWithoutGeneratingAReplacement",
+      "evenPasswordAuthenticatedPortableIdentityOrJournalCannotReplaceAnOriginalCandidate",
+      "nonemptyOrBrokenDestinationJournalBlocksActivationWithCandidateAndLocalAuthorityUnchanged",
+      "frozenP9DecodersIndependentlyValidateTheSameReadOnlyOriginals",
+      "pendingIdentityFilesCannotBeRecoveredOrDeletedByReadOnlyAuditOrActivation"
+    ]
+  },
+  "checks": {
+    "native": "Current9 foreground +12 archive methods compiled only; final536 input pre/post SHA matched",
+    "format": "Final full pnpm format:check at enrollment delivery",
+    "diff": "Final git diff --check and git show --check at enrollment delivery"
+  },
+  "nativeExecution": "none; actual producer-differential method requires parent combined cc0b6ac8 P9 v2/authority classes",
+  "scope": "No device, ADB, notification/platform permission, Host, model or main coordinator operation. Lease port is a storage-bound contract, not proof of actual owner integration.",
+  "openGates": [
+    "Parent real owner disposal/rebind and persistent explicit setup enforcement",
+    "8MiB text header can reject large complete originals; typed original stream needed for near-maximum combined size",
+    "EasyWork authority/fence remains unsupported whole-archive gap",
+    "iOS corresponding migration and real DEV; A6 stays paused"
+  ],
+  "historicalCases": "Frozen refusal fixture25092e2a and published26f97b3f package pair retained. Current runner tests exact archive and missing-lease/no-active-authority behavior; no permanent expected-failure skip.",
+  "currentRegression": "9 current foreground +12 archive methods compiled only; original frozen results are historical, not new passes."
+}

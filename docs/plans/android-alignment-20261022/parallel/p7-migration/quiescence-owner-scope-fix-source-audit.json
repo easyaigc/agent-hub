@@ -1,0 +1,50 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-native-quiescence-owner-failure-20261029-1",
+  "parentBase": "3b7672102002d1993a84af2cf6886e50199ed32f",
+  "sourceFingerprint": "9f83883284c16eaaf8e5c686363135035b62907768a9b6c301a98a02ba23a381",
+  "sourceFiles": 752,
+  "outputs": {
+    "app.apk": {
+      "sha256": "edc0ebd0c8e32492d15af4a1ecb1721bff6552ed3d4a610e7eb9406d65384857",
+      "bytes": 25295355
+    },
+    "runner.apk": {
+      "sha256": "5ca096f6491daeba3cb673be49403b6a05ba7cbe3b0e5baaa4b4048e09300a98",
+      "bytes": 9784448
+    }
+  },
+  "overlays": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": {
+      "baseSha256": "4f99503eee90f9e45a5369404bdd2520c1e512fe28636b41a76490702366d6b5",
+      "proposedSha256": "09daa99e838ab9b380fd26edf2b41c099c4fc68001b2bcd64697c297b0ccca7b"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationQuiescenceIntegrationTest.kt": {
+      "baseSha256": "73706eaabbff4f4f33edbcf8f4ddbbfd31dfbbf51e3b9f2ac29b18aa77beeed3",
+      "proposedSha256": "b5d13bb3f0ae50fd7b27f743b6aa4189f96fafca01b582cd5521c6af579d3a1c"
+    }
+  },
+  "build": "App/runner passed",
+  "hostProbe": {
+    "sourceSha256": "4da0b507874e2e5ba22e52d500f503b4e57b85852da50d243c1fb3d72f6d5a8b",
+    "compiler": "Kotlin2.4.21",
+    "runtime": "JVM17",
+    "nativeExecuted": false,
+    "result": {
+      "constructorParameterShadowsOwnedPropertyInInitializer": true,
+      "renamedParameterBindsEnrollmentToOwner": true,
+      "actualBlockingIoKeepsOwnerIncompleteAfterCancel": true,
+      "nativeExecuted": false
+    }
+  },
+  "nativeExecutedHere": false,
+  "priorParentResult": {
+    "source": "204ead55",
+    "app": "e63caea4",
+    "runner": "bb320b3a",
+    "newBoundaryCopyPublicationLifecycle": 12,
+    "heldCoordinatorIo": "failed at original line45 before Cancel; original3.189s failure preserved"
+  },
+  "framedAndEasyWorkWipExcluded": true,
+  "fullP7Passed": false
+}

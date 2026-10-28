@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-revocation-io-lock-review-20261029-1",
+  "baseCommit": "d27b4248d356774feb7f273c2b728e2571dabf4c",
+  "checks": {
+    "jvmTestsPassed": 20,
+    "results": {
+      "final-TEST-com.agenthub.android.ConnectionDraftLeaseRevisionTest.xml": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "sha256": "c48629a2a2eaf6d801ef9f2c032ffbfbde02b84060b89ff3238b0d39a2a235d8"
+      },
+      "final-TEST-com.agenthub.android.ConnectionFormLeaseTest.xml": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "sha256": "95de14371c7e32b043f50236bf29b31bcb8a48f9702d25ce66fcf317fa1e5e0a"
+      },
+      "final-TEST-com.agenthub.android.ConnectionWriteGateTest.xml": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "sha256": "35336913ca79e9fa852cc9fe92ccb07728548f9c4bd6470a1a58e1f56dd51f34"
+      },
+      "negative-TEST-com.agenthub.android.ConnectionWriteGateTest.xml": {
+        "tests": 4,
+        "failures": 1,
+        "errors": 0,
+        "sha256": "01cd6e05112d57165f85d436bae808fc7cefd63a4fdd0210da5164d144ea512d"
+      }
+    },
+    "negativeControl": "With only lease.write restored to the old authority-held callback, 1 of4 write-gate tests failed at Main revocation-before-IO-release; original failure XML/log retained",
+    "nativeCompile": "passed for final own Session overlay and existing final Main proposal",
+    "nativeNewIoMethodsPrepared": 2,
+    "nativeIoMethodsExecuted": 0,
+    "nativeMainMethodsPrepared": 2,
+    "existingPairingMethodsPrepared": 30,
+    "actualNativeMainOrDeviceCalls": 0
+  },
+  "sourceFingerprint": "5936f671c0bf71286d4a8a7c7f3885b3e41f68fcac8f7dbef1ad1d3dea7f38d2",
+  "sessionOverlay": {
+    "version": 1,
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+    "hooks": {
+      "own": {
+        "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+        "previousPhase2ProposedSha256": "207a4f646da628c22dd9b01d361f29a427fd2eaca99304630161b0ae180e7e97",
+        "proposedSha256": "8d6129f4dbd0fb080f98b3c6871fea25713597d4b30e0143611c30e66af257f8",
+        "patchSha256": "97efd55bdfab27f8f6fe861c72ab25c9b06e7cd1d1ef11ce9fcd334a81dcf406",
+        "upgradePatchSha256": "06b75084e7df895f8ed20029d247b20cb5c7f2369d4f3780745c459ab4169d05"
+      },
+      "parent": {
+        "baseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+        "previousPhase2ProposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+        "proposedSha256": "2c8f7b2e9376fd021c1d4a0e99080b5307258d8c638e1de8f2bed12eb47f538a",
+        "patchSha256": "95f3fde299f95f83a11902702e929ebb3915af6db9169c037575206904ad44aa",
+        "upgradePatchSha256": "c0bdbbbdd352f6d19ca579ba5074d9936c68cf01258ab20bf89eabc2a154b902"
+      }
+    },
+    "parentSourceReadOnly": true,
+    "stageReference": "phase3 Main proposal unchanged; preserve all P7/P9/voice/discard hooks",
+    "credentialRecordType": "Existing easywork-credential mapping only; new per-action reference is activated solely by committed client metadata",
+    "crashRule": "Unreferenced candidate remains unactivated original; no scan/promote/retry/replay"
+  },
+  "mainOverlay": "phase3 remains unchanged exact bases",
+  "originalSharedFilesRestored": true,
+  "centralGeneratedFilesChanged": false,
+  "stagedCredentials": "Existing credential record type, unique per-action ref, activated only at final client metadata pointer commit; crash residue remains unreferenced, not auto promoted/replayed",
+  "commitBoundary": "Capability checks and final in-memory client/cache/selection mutation under short authority monitor; owned receipt lookup/release is memory only. No credential storage transaction or synchronous credential write there. Metadata retains existing async enqueue durability.",
+  "authorizationAndUnknownRecords": "unchanged; no revoke/retry/replay",
+  "rootCheck": "Known native-copy central feature guard still needs parent; no bypass",
+  "viewport": "Deferred patch outside tree; resumed only after this narrow source stage is archived",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

@@ -52,7 +52,7 @@ object EasyWorkPairing {
         try {
             val host=EasyWorkHostDescriptor(EasyWorkHttp.request(client,"$base/host",limit=65_536,timeoutSeconds=timeout))
             require(host.value.getInt("version")==1&&host.fingerprint==(pin?.lowercase()?:observed)&&easyBytes(host.publicKey).size==32) { "电脑身份校验失败" }
-            require(target==null||target==host.target);require(publicKey==null||publicKey==host.publicKey)
+            require(target==null||target==host.target) { "配对设备或运行时身份不匹配" };require(publicKey==null||publicKey==host.publicKey) { "配对设备或运行时身份不匹配" }
             require(host.endpoints.size<=32&&host.hints.size<=32);host.target.scope();directCandidates(host.endpoints,host.hints,host.fingerprint)
             host
         } finally { EasyWorkHttp.dispose(client) }
@@ -83,7 +83,7 @@ object EasyWorkPairing {
                 val client=EasyWorkHttp.client(base,host.fingerprint)
                 val value=try { EasyWorkHttp.request(client,base+if(automatic) "/connections" else "/pairing/claim",body,timeoutSeconds=if(automatic)30 else 90) } finally { EasyWorkHttp.dispose(client) }
                 val binding=EasyWorkBinding(value.getJSONObject("binding").toString());binding.verify(identity,host.target)
-                require(binding.desktopPublicKey==expected.publicKey)
+                require(binding.desktopPublicKey==expected.publicKey) { "配对设备或运行时身份不匹配" }
                 return binding to directCandidates(listOf(base)+host.endpoints+expected.endpoints,host.hints+expected.hints,host.fingerprint)
             } catch(cancel: CancellationException) { throw cancel } catch(e: Exception) { failure=e }
         }

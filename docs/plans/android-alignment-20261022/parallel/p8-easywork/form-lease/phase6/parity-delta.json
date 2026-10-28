@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-viewport-and-intent-next-20261029-1",
+  "featureIds": ["F02", "F04", "F06", "F07", "F46", "F56"],
+  "pages": ["UI01", "UI03"],
+  "iosReferences": {
+    "apps/ios/Sources/Sheets.swift": "cbf1a9785c5e8075ef7b17d8689e179789ba5de4cb85d6c3cd5e35ecc4ed39c9",
+    "apps/ios/Sources/EasyWorkPairing.swift": "1c443b52ac637b22fccec2df78fb6bb40290655953cf2c0471abe3ca8d5ae616"
+  },
+  "commonAssertions": [
+    "Native scroll and Provider retain input",
+    "Long public fields/target/account metadata remain literal and reachable",
+    "Localized filled field label and selected Provider AX remain available",
+    "Focused field and whole submit avoid real IME; Done releases it"
+  ],
+  "android": "actual ConnectionPage IME padding, AX grouping and EasyWork scoped field Done/label implementation; native6 prepared only",
+  "ios": "Source comparison only; no Swift changes or iOS proof. Existing native Form/toolbar Done differs from Android IME action; verify each platform separately",
+  "designTokens": "Existing 48dp control/17sp field/14sp target/12sp label; no new colors or text keys",
+  "acceptance": {
+    "constrainedLayout": 4,
+    "actualSheetIme": 2,
+    "executed": 0
+  },
+  "remaining": "Parent actual native and integrated source, copy generator and central registration",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

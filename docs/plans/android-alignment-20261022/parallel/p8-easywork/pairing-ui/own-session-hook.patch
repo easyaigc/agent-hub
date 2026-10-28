@@ -1,0 +1,55 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -1769,11 +1769,14 @@
+         }
+         val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
+         val (binding,candidates)=EasyWorkPairing.lan(text,android.os.Build.MODEL,identity)
++        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+         return saveEasyWork(name,binding,candidates).also { dismissIncomingLink(presentation) }
+     }
+     suspend fun connectEasyWorkCode(name: String,endpoint: String,code: String,onPending: (String)->Unit = {}): MobileClient {
++        val presentation=incomingEasyWorkLink?.presentation
+         val offer=EasyWorkDeviceOffer(EasyWorkDeviceOffer.origin(endpoint),EasyWorkDeviceOffer.code(code))
+         val (binding,ref)=easyWorkDeviceAuthorization!!.pair(offer,onPending)
++        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+         return saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",offer.origin)),grantRef=ref)
+     }
+     suspend fun connectEasyWorkRelay(name: String,endpoint: String,code: String,token: String?): MobileClient {
+@@ -1783,6 +1786,7 @@
+         return saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",NativeHostReads.baseAddress(endpoint).toString().trimEnd('/'))),access)
+     }
+     internal suspend fun saveEasyWork(name: String,binding: EasyWorkBinding,candidates: List<AgentCandidate>,token: String?=null,grantRef: String?=null): MobileClient {
++        val presentation=incomingEasyWorkLink?.presentation
+         require(name.isNotBlank()&&name.length<=256);val store=storage?:error("本地安全存储不可用")
+         val identity=EasyWorkIdentity.load(store);binding.verify(identity)
+         val scope=binding.target.scope();val id="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray())
+@@ -1813,11 +1817,13 @@
+                 connection=connection.copy(candidates=(authenticated+connection.candidates).distinctBy { it.transportId to it.endpoint }.take(32))
+             }
+         } finally { incoming.close() }
++        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+         require((revisions[id]?:0L)==revision) { "连接已改变，请重试" }
+         var client=MobileClient(id,name.trim(),scope,candidates.first().endpoint,false,"easywork-runtime",false,requiresReadTarget=true,agentConnection=connection)
+         withContext(Dispatchers.IO) { store.write("easywork-credential:$ref",credential.json().toString()) }
+         try {
+             val workspace=reads.workspace(client);require((revisions[id]?:0L)==revision&&sameScope(workspace.scope,scope))
++            require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+             client=client.copy(online=true);replaceClient(client);revisions[id]=revision+1
+             workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);easyWorkDiscovery?.scan();return client
+         } catch(failure: Exception) {
+@@ -1853,6 +1859,7 @@
+         return true
+     }
+     suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient {
++        val presentation=incomingEasyWorkLink?.presentation
+         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
+         val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
+         val (binding,candidates)=EasyWorkPairing.discovered(host.endpoint,android.os.Build.MODEL,identity,host.deviceId) {
+@@ -1860,6 +1867,7 @@
+         }
+         require(host.deviceId==null||host.deviceId==binding.target.desktopDeviceId) { "发现的电脑身份已变化" }
+         require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion) { "所选目标或草稿已改变，未替换连接" }
++        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+         return saveEasyWork(host.name,binding,candidates)
+     }
+     suspend fun connectKnownEasyWork(address: String): MobileClient {

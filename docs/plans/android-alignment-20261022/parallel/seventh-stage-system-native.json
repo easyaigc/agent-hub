@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "checkpoint": "PAR7-real-notification-system-boundary",
+  "date": "2026-10-29",
+  "device": "physical API33",
+  "status": "7 native OS-boundary methods passed;7 permission-granted methods not run due OEM shell permission restriction",
+  "groups": [
+    {
+      "label": "provider",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 5,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#installedScopedProviderReturnsExactReadOnlyNormalizedBytes",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#malformedScopedUriAndWriteModeCannotReadOrMutateSound",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#silentAndOrdinaryOwnedClipsHaveDifferentRealUriBytes",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#acceptanceScopeRejectsProtectedSiblingBeforeCreatingStorage"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "4ef3aa881ba416e4c5bd7db68cb64a988869b14d08490a9ed92b4d4211fe8f33"
+    },
+    {
+      "label": "denied-existing-state",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 2,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsDeniedTest#permissionCycleDenialPersistsTerminalOldEventForExplicitGrantPhase",
+        "com.agenthub.android.NativeChatNotificationOsDeniedTest#deniedPermissionReconcilesRequiredReadingWithoutChannelClaimOrPost"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "713e6a638331acab19dd978642d4ac0b1aa26154fc80458080de12a86babc521"
+    }
+  ],
+  "proofRows": [
+    {
+      "case": "deniedPermissionReconcilesRequiredReadingWithoutChannelClaimOrPost",
+      "sha256": "7af09c093d6e5478bd04afed5c1b88fb5104b3d55856629949cdda76f4060147",
+      "ownedSystemCleanupPassed": true,
+      "privateDataRetained": false
+    },
+    {
+      "case": "oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+      "sha256": "2fcc5c2d0f6e5627483a9bb8e3cd32e0d926928bb37af5481dc8ee41bdd128e7",
+      "ownedSystemCleanupPassed": true,
+      "privateDataRetained": false
+    },
+    {
+      "case": "permissionCycleDenialPersistsTerminalOldEventForExplicitGrantPhase",
+      "sha256": "dfe4510bb32a94303f2d1642c484c4844330465a636418f29e352b5a78dd63bc",
+      "ownedSystemCleanupPassed": true,
+      "privateDataRetained": true
+    },
+    {
+      "case": "malformedScopedUriAndWriteModeCannotReadOrMutateSound",
+      "sha256": "c8b5f2df93899d3009c16422c9f1a122bbcc8629bf8619620313c7f4499d0751",
+      "ownedSystemCleanupPassed": true,
+      "privateDataRetained": false
+    },
+    {
+      "case": "oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+      "sha256": "7e80b34ddc5d2390cd0312a5c16b55f088ca163a80983f15e1b3bddc2012d79b",
+      "ownedSystemCleanupPassed": true,
+      "privateDataRetained": false
+    },
+    {
+      "case": "installedScopedProviderReturnsExactReadOnlyNormalizedBytes",
+      "sha256": "09f5bc2046dee2fb3a9c4b4ef88a8e18b3caa94f24ac9df70b61435db35d1c7d",
+      "ownedSystemCleanupPassed": true,
+      "privateDataRetained": false
+    },
+    {
+      "case": "silentAndOrdinaryOwnedClipsHaveDifferentRealUriBytes",
+      "sha256": "d5883d034d44185eeee7f90cbf17cc0e550e5a631089edd2c94d27745dfd6264",
+      "ownedSystemCleanupPassed": true,
+      "privateDataRetained": false
+    }
+  ],
+  "permissionPolicy": {
+    "beforeGranted": false,
+    "afterGranted": false,
+    "flagsUnchanged": true,
+    "appOpModeUnchanged": true,
+    "mutationAttempt": "ADB revoke rejected by OS REVOKE_RUNTIME_PERMISSIONS; no grant change or forbidden bypass",
+    "deniedLane": "Executed against already-denied policy without another permission mutation",
+    "grantedLane": "Not run; native normal authorization/environment remains pending"
+  },
+  "retainedOriginalCycle": {
+    "originalDeniedMethodPassed": true,
+    "bytes": 4391,
+    "records": 4,
+    "identityOperationAndOldOutcome": "Original encrypted cycle preserved for named granted-phase read, no writer replay",
+    "precisePrivateIndex": "parent private retained-original-cycle.json"
+  },
+  "preflight": {
+    "multiUser": "0 methods/0 mutations before selecting exact installed/current user0; users11/999 untouched",
+    "installedApkValidation": "Device SHA-256 of exact validated installed pm paths; actual frozen hashes match"
+  },
+  "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+  "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+  "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+  "limits": [
+    "OS Provider ContentResolver self-UID only; system-process URI read and audible sound not verified",
+    "Real denied delivery uses required synthetic reading port and real platform; no second ledger or real Host/model",
+    "7 granted cases, lockscreen/launcher UI, positive original ticket cold launch and background vendor delivery remain unverified",
+    "API26/API37 independent; task/project business and iOS A6 paused"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

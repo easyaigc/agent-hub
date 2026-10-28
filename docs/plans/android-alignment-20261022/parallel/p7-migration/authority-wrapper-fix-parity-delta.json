@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "features": ["F47", "F53", "F55", "F56"],
+  "pages": ["UI12"],
+  "phase": "P7-authority-wrapper-valid-context",
+  "commonAssertions": [
+    "Valid frozen P9 authority must pass migration reader without rewriting original token/journal/receipt.",
+    "Shared metadata schema stays strict; invalid empty selected context still rejects.",
+    "Original ID/target/credential epoch/fingerprint and unknown/future fields stay checked; display-only changes do not become authority changes.",
+    "Imported authority remains read-only alias material; no new identity/operation/register/replay."
+  ],
+  "dualEndImpact": {
+    "android": "One-line migration context fix and independent actual-producer native regression prepared.",
+    "ios": "No code/result changed; same lossless read-only authority assertions remain."
+  },
+  "verification": {
+    "upstream": "11/19 ordinary passed,8 failed and cold writer failed; original evidence preserved, not relabeled.",
+    "local": "Combined parent app/runner compiled; 2 new producer methods not executed; no device/Host/model.",
+    "parentNext": "Freeze matching new combination and rerun full19,2 producer methods and separately authorized original cold workflow; do not replay old failed writer."
+  },
+  "actualUi": "Independent uncommitted UI preparation is excluded from this narrow commit/compile combination.",
+  "sourceAudit": "authority-wrapper-fix-source-audit.json"
+}

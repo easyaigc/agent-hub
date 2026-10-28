@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "stage": "P9-cold-completion-fixture-precondition",
+  "baseCommit": "e7b080f0be3d46396522d9c3522d7c8d61b4dbf5",
+  "operationId": "parent-p9-cold-completed-precondition-20261029-1",
+  "failureOperationId": "parent-p9-native-cycle-cold-feedback-20261029-1",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "显式fixture完成类别前提；生产默认仍拒绝完成事件，原票据/重复/过期/完整target及credential严格边界不变",
+      "androidImplementation": "closed cold seed preference helper + pre-claim guard; definite router absence only",
+      "androidVerification": "three shipping-store auxiliary regressions and component assembly; native retake not-run here",
+      "iosImpact": "unchanged; A6 paused"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdPlan.kt": "00f8aa1c2615e31990dff14634b88fbc42b1c3788d3f738c0b2b03c63ec9f052",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt": "25a1a3f830dad3eae47175894b56666452328f45bffee3feb76934bc68d91049",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdRouterFiles.kt": "68b358557f20c004a9897373fe873271ab3958a8514c5119e75bcd6a4fc26275",
+    "scripts/mobile/fixtures/ColdVectors.kt": "eeb41aac20d53698b11e674e3517e2b22bf03ce01c7511582032fd9c5d5360ea"
+  },
+  "productionDefaultOrClaimChanges": [],
+  "sharedFiveChanges": [],
+  "failedOriginal": "retained, no writer/reader replay or old scope cleanup",
+  "nativeResults": "parent old failure retained; corrected cold writer/reader not-run here"
+}

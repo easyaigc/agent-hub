@@ -1,0 +1,190 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -177,7 +177,10 @@
+     var easyWorkDiscovery: EasyWorkDiscovery? by mutableStateOf(null)
+     var connectionBusy by mutableStateOf(false)
+     var projectBusy by mutableStateOf(false)
+-    var incomingEasyWorkLink: PendingAgentLink? by mutableStateOf(null)
++    private var incomingEasyWorkLinkState: PendingAgentLink? by mutableStateOf(null)
++    var incomingEasyWorkLink: PendingAgentLink?
++        get()=incomingEasyWorkLinkState
++        set(value) {if(incomingEasyWorkLinkState!=value){easyWorkConnectionAuthority(this).invalidate();incomingEasyWorkLinkState=value}}
+     val easyWorkLogin=storage?.let(::EasyWorkLogin)
+     private val easyWorkDeviceAuthorization=storage?.let(::EasyWorkDeviceAuthorization)
+     private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!) }
+@@ -651,6 +654,7 @@
+     private val sidebarStates = mutableStateMapOf<String, SidebarDisplayState>()
+     private val revisions = mutableMapOf<String, Long>()
+     private var selectionRevision = 0L
++        set(value) {if(field!=value)easyWorkConnectionAuthority(this).invalidate();field=value}
+     private var clientNavigationRevision = 0L
+     private var historyJob: Job? = null
+     private var workspaceJob: Job? = null
+@@ -693,7 +697,7 @@
+             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
+         }
+     }
+-    fun leaveForeground() { invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
++    fun leaveForeground() { easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
+         private set
+     var revealedEarlier by mutableStateOf(false)
+@@ -958,6 +962,7 @@
+         set(value) {
+             val key=targetKey
+             if(drafts[key]==value)return
++            easyWorkConnectionAuthority(this).invalidate()
+             if(suggestionUndo?.applied?.targetKey==key)suggestionUndo=null
+             textRevisions[key]=(textRevisions[key] ?: 0)+1
+             if(value.isEmpty())handledSuggestions.remove(key)
+@@ -2146,38 +2151,52 @@
+             operations[target]=flow.journal.records(target);throw failure
+         } finally { endBusy(key,owner);loadOperations() }
+     }
+-    suspend fun connectEasyWorkQR(text: String,name: String,onPending: (String)->Unit = {}): MobileClient {
++    suspend fun connectEasyWorkQR(text: String,name: String,onPending: (String)->Unit = {}): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("qr",name,"",text)) { lease->
++        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
+         val presentation=incomingEasyWorkLink?.presentation
+-        if(android.net.Uri.parse(text.trim()).scheme=="easywork") {
++        val client=if(android.net.Uri.parse(text.trim()).scheme=="easywork") {
+             val offer=EasyWorkDeviceOffer.parse(text)
+-            return connectEasyWorkCode(name,offer.origin,offer.code,onPending).also { dismissIncomingLink(presentation) }
+-        }
+-        val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
+-        val (binding,candidates)=EasyWorkPairing.lan(text,android.os.Build.MODEL,identity)
+-        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+-        return saveEasyWork(name,binding,candidates).also { dismissIncomingLink(presentation) }
+-    }
+-    suspend fun connectEasyWorkCode(name: String,endpoint: String,code: String,onPending: (String)->Unit = {}): MobileClient {
+-        val presentation=incomingEasyWorkLink?.presentation
++            connectEasyWorkCode(name,offer.origin,offer.code,onPending)
++        } else {
++            val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
++            val (binding,candidates)=EasyWorkPairing.lan(text,android.os.Build.MODEL,identity)
++            lease.checkpoint();saveEasyWork(name,binding,candidates)
++        }
++        lease.finish {dismissIncomingLink(presentation)}
++        client
++    }
++    suspend fun connectEasyWorkCode(name: String,endpoint: String,code: String,onPending: (String)->Unit = {}): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("code",name,endpoint,code)) { lease->
++        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
+         val offer=EasyWorkDeviceOffer(EasyWorkDeviceOffer.origin(endpoint),EasyWorkDeviceOffer.code(code))
+-        val (binding,ref)=easyWorkDeviceAuthorization!!.pair(offer,onPending)
+-        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+-        return saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",offer.origin)),grantRef=ref)
+-    }
+-    suspend fun connectEasyWorkRelay(name: String,endpoint: String,code: String,token: String?): MobileClient {
++        val (binding,ref)=easyWorkDeviceAuthorization!!.pair(offer) {if(lease.currentForUi())onPending(it)}
++        lease.checkpoint()
++        saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",offer.origin)),grantRef=ref)
++    }
++    suspend fun connectEasyWorkRelay(name: String,endpoint: String,code: String,token: String?): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("legacy-relay",name,endpoint,code)) { lease->
++        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
+         val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"));val login=easyWorkLogin!!
+         val access=login.validToken(token)
+         val binding=EasyWorkPairing.relay(endpoint,code,identity) { access }
+-        return saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",NativeHostReads.baseAddress(endpoint).toString().trimEnd('/'))),access)
++        lease.checkpoint()
++        saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",NativeHostReads.baseAddress(endpoint).toString().trimEnd('/'))),access)
+     }
+     internal suspend fun saveEasyWork(name: String,binding: EasyWorkBinding,candidates: List<AgentCandidate>,token: String?=null,grantRef: String?=null): MobileClient {
+-        val presentation=incomingEasyWorkLink?.presentation
++        val active=currentCoroutineContext()[EasyWorkConnectionActionLease]
++        if(active!=null) {
++            require(active.authority===easyWorkConnectionAuthority(this)&&active.input.name==name)
++            return saveEasyWorkLeased(name,binding,candidates,token,grantRef,active)
++        }
++        return withEasyWorkConnectionAction(this,EasyWorkConnectionInput("save",name,"",binding.value)) {saveEasyWorkLeased(name,binding,candidates,token,grantRef,it)}
++    }
++    private suspend fun saveEasyWorkLeased(name: String,binding: EasyWorkBinding,candidates: List<AgentCandidate>,token: String?,grantRef: String?,lease: EasyWorkConnectionActionLease): MobileClient {
++        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
+         require(name.isNotBlank()&&name.length<=256);val store=storage?:error("本地安全存储不可用")
+         val identity=EasyWorkIdentity.load(store);binding.verify(identity)
+         val scope=binding.target.scope();val id="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray())
+         val existing=realClients.firstOrNull { it.id==id };val revision=revisions[id]?:0L
+         val ref=existing?.agentConnection?.credentialRef?:"agent-$id"
+         val previous=withContext(Dispatchers.IO) { store.read("easywork-credential:$ref") }
++        lease.checkpoint()
+         val old=previous?.let { EasyWorkCredential.decode(JSONObject(it)) }
+         require(old==null||old.binding.target==binding.target&&old.privateKey==identity.privateKey)
+         val legacy=old?.takeIf { it.grantRef==null }
+@@ -2188,11 +2207,12 @@
+         val saved=existing?.agentConnection?.candidates.orEmpty().filter { (grantRef!=null||old?.grantRef==null)&&(it.transportId!="lan-wss"||pin==null||it.peerFingerprint==pin) }
+         val merged=(candidates+saved).distinctBy { it.transportId to it.endpoint }.take(32)
+         var connection=AgentConnection(scope,merged,ref,existing?.agentConnection?.preference?:"automatic")
++        lease.checkpoint()
+         easyWorkSessions!!.remove(id)
+         val authorization: EasyWorkRequestHeaders?=grantRef?.let { grant->{ method,url,body->easyWorkDeviceAuthorization!!.headers(grant,binding,method,url,body) } }
+         val incoming=EasyWorkRemoteSession(connection.copy(candidates=candidates,preference="automatic"),credential,{ easyWorkLogin!!.validToken(token,binding.target) },authorize=authorization)
+         try {
+-            val context=incoming.request("runtime/context");require(EasyWorkTarget.decode(context.getJSONObject("target"))==binding.target)
++            val context=incoming.request("runtime/context");lease.checkpoint();require(EasyWorkTarget.decode(context.getJSONObject("target"))==binding.target)
+             if(grantRef!=null) {
+                 val routes=context.optJSONArray("connectionCandidates")?.objects().orEmpty();require(routes.size<=32)
+                 val authenticated=routes.flatMap { route->
+@@ -2202,17 +2222,23 @@
+                 connection=connection.copy(candidates=(authenticated+connection.candidates).distinctBy { it.transportId to it.endpoint }.take(32))
+             }
+         } finally { incoming.close() }
+-        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
++        lease.checkpoint()
+         require((revisions[id]?:0L)==revision) { "连接已改变，请重试" }
+         var client=MobileClient(id,name.trim(),scope,candidates.first().endpoint,false,"easywork-runtime",false,requiresReadTarget=true,agentConnection=connection)
+-        withContext(Dispatchers.IO) { store.write("easywork-credential:$ref",credential.json().toString()) }
++        val credentialBody=credential.json().toString();var credentialWritten=false
+         try {
++            withContext(Dispatchers.IO) {EasyWorkConnectionCredentialWrites.write(store,"easywork-credential:$ref",credentialBody,lease);credentialWritten=true}
++            lease.checkpoint()
+             val workspace=reads.workspace(client);require((revisions[id]?:0L)==revision&&sameScope(workspace.scope,scope))
+-            require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+-            client=client.copy(online=true);replaceClient(client);revisions[id]=revision+1
+-            workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);easyWorkDiscovery?.scan();return client
++                lease.checkpoint()
++            return lease.commit {
++                client=client.copy(online=true);replaceClient(client);revisions[id]=revision+1
++                workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);version(targetKey);easyWorkDiscovery?.scan()
++                EasyWorkConnectionCredentialWrites.committed(store,"easywork-credential:$ref",lease)
++                client
++            }
+         } catch(failure: Exception) {
+-            easyWorkSessions.remove(id);withContext(NonCancellable+Dispatchers.IO) { if(previous==null)store.remove("easywork-credential:$ref") else store.write("easywork-credential:$ref",previous) };throw failure
++            easyWorkSessions.remove(id);if(credentialWritten)withContext(NonCancellable+Dispatchers.IO) {EasyWorkConnectionCredentialWrites.rollback(store,"easywork-credential:$ref",credentialBody,previous,lease)};throw failure
+         }
+     }
+     fun setEasyWorkPreference(client: MobileClient,preference: String) {
+@@ -2243,25 +2269,28 @@
+         if(merged!=connection.candidates) { replaceClient(current.copy(agentConnection=connection.copy(candidates=merged)));persistMetadata() }
+         return true
+     }
+-    suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient {
+-        val presentation=incomingEasyWorkLink?.presentation
++    suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { lease->
++        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
+         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
+         val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
+         val (binding,candidates)=EasyWorkPairing.discovered(host.endpoint,android.os.Build.MODEL,identity,host.deviceId) {
++            lease.checkpoint()
+             require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion) { "所选目标或草稿已改变，未申请凭据" }
+         }
+         require(host.deviceId==null||host.deviceId==binding.target.desktopDeviceId) { "发现的电脑身份已变化" }
+         require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion) { "所选目标或草稿已改变，未替换连接" }
+-        require(incomingEasyWorkLink?.presentation==presentation) { "新的连接请求已到达，原授权记录已保留" }
+-        return saveEasyWork(host.name,binding,candidates)
+-    }
+-    suspend fun connectKnownEasyWork(address: String): MobileClient {
++        lease.checkpoint()
++        saveEasyWork(host.name,binding,candidates)
++    }
++    suspend fun connectKnownEasyWork(address: String): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("known","",address,"")) { lease->
++        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
+         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
+         val endpoint=CodexEndpoints.local(address)
+         val known=realClients.firstOrNull { it.agentConnection?.target?.agentId=="easywork"&&it.agentConnection.candidates.any { c->c.transportId=="lan-wss"&&c.endpoint==endpoint } }?:error("首次连接请扫描电脑二维码")
+         val snapshot=reads.workspace(known)
+         require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion && realClients.any { it==known }) { "所选目标、草稿或连接已改变" }
+-        val client=known.copy(online=true);replaceClient(client);workspaces[client.cacheKey(null)]=snapshot;select(client);return client
++        lease.checkpoint()
++        lease.commit {val client=known.copy(online=true);replaceClient(client);workspaces[client.cacheKey(null)]=snapshot;select(client);version(targetKey);client}
+     }
+     fun dismissIncomingLink(presentation: String?) { if(presentation!=null&&incomingEasyWorkLink?.presentation==presentation) { incomingEasyWorkLink=null;if(hasClient) { refresh();loadHistory() } } }
+     fun receiveLink(uri: android.net.Uri) {

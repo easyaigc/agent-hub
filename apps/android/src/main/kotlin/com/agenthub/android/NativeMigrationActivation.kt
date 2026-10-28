@@ -5,23 +5,31 @@ import org.json.JSONObject
 import java.util.UUID
 
 /** Internal activation boundary. UI must retire the old session and restore a newly opened handle. */
-internal class NativeMigrationActivation(private val context: Context,private val storage: NativeSessionStorage) {
+internal class NativeMigrationActivation(private val context: Context,private val storage: NativeSessionStorage,
+    private val notificationLease: NativeMigrationNotificationActivationLease?=null) {
     internal class ExistingInstallation: Exception("请在尚未添加真实电脑的新安装中导入迁移文件，现有连接未更改。")
     fun activate(receipt: NativeMigrationCandidateStore.Receipt,checkpoint: (Int)->Unit={}): String=storage.operationTransaction {
         storage.publishedMigration(receipt.id,receipt.sha256,receipt.recordCount)?.let{return@operationTransaction it}
         // The authoritative Vault also covers pairing committed before an ordinary metadata snapshot.
         val metadata=storage.metadata()
         if(metadata?.getJSONArray("clients")?.length()?.let{it>0}==true||CodexConnectionVault(storage).clients().isNotEmpty())throw ExistingInstallation()
-        val localRecords=NativeMigrationForeground.preserveDestination(storage)+NativeVoicePreferenceRecord.preserveDestination(storage)
+        val destination=NativeMigrationForeground.preserveDestination(storage)
+        val localRecords=NativeVoicePreferenceRecord.preserveDestination(storage)
+        fun guarded(original: Map<String,String>): (Int)->Unit {
+            val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)
+            fun checkBoundary(){if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
+            checkBoundary()
+            return {point->if(point==0)checkBoundary();checkpoint(point);if(point==0)checkBoundary()}
+        }
         val stream=NativeMigrationStreamCandidate(context,storage)
         if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
-            storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text,localRecords),records.binary),receipt.recordCount,checkpoint)
+            storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text,localRecords,destination),records.binary),receipt.recordCount,guarded(records.text))
         }
         val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
-        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords),records.binary),receipt.recordCount,checkpoint)
+        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords,destination),records.binary),receipt.recordCount,guarded(records.text))
     }
-    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>): Map<String,String> {
-        val records=original.toMutableMap();val metadata=JSONObject(records.getValue("metadata"))
+    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>): Map<String,String> {
+        val records=NativeMigrationNotificationArchives.mergeDestination(original,destination).toMutableMap();val metadata=JSONObject(records.getValue("metadata"))
         val clients=metadata.getJSONArray("clients").objects()
         val readers=clients.associate {row->val id=row.getString("id");id to UUID.nameUUIDFromBytes(("android-migration-reader-v1\u0000"+receipt.id+"\u0000"+id).toByteArray(Charsets.UTF_8)).toString()}
         clients.forEach {it.put("readerId",readers.getValue(it.getString("id")))}

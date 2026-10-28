@@ -69,33 +69,66 @@ object ThreadReadingIdentity {
 /** View-owned lease: changing target, covering content, backgrounding or leaving invalidates old callbacks. */
 class NativeReadingLifecycle {
     data class Lease internal constructor(internal val owner: Any, internal val generation: Long,
-        val targetKey: String, val position: ThreadReadPosition?, val noticeIds: Set<String>)
+        val targetKey: String, val position: ThreadReadPosition?, val noticeIds: Set<String>,
+        internal val bodyGeneration: Long = 0, internal val noticeGeneration: Long = 0,
+        internal val noticeGuard: NativeNoticeReadGuard? = null)
     private val owner = Any()
     private var generation = 0L
+    private var bodyGeneration = 0L
+    private var noticeGeneration = 0L
     private var foreground = false
     private var uncovered = false
+    private var noticeUncovered = false
+    private var separateNoticeSurface = false
     private var selected: String? = null
     private var displayed: ThreadReadPosition? = null
     private var notices = emptySet<String>()
     @Synchronized fun present(target: TargetScope, threadId: String, position: ThreadReadPosition?, noticeIds: Set<String> = emptySet()) {
-        generation++; selected = ThreadReadingIdentity.key(target, threadId); displayed = position; notices = noticeIds.toSet()
+        generation++;bodyGeneration++;noticeGeneration++
+        selected = ThreadReadingIdentity.key(target, threadId); displayed = position; notices = noticeIds.toSet()
     }
+    /** Body geometry does not consume or revoke a still-visible notice panel. */
+    @Synchronized fun presentBody(target: TargetScope,threadId: String,position: ThreadReadPosition) {
+        val key=ThreadReadingIdentity.key(target,threadId)
+        if(selected!=key) { generation++;noticeGeneration++;notices=emptySet();selected=key }
+        bodyGeneration++;displayed=position
+    }
+    @Synchronized fun hideBody() { bodyGeneration++;displayed=null }
+    /** Metadata from the same ledger, independently owned by the current Session render frame. */
+    @Synchronized fun presentNotices(target: TargetScope,threadId: String,knownIds: Set<String>) {
+        val key=ThreadReadingIdentity.key(target,threadId)
+        if(selected!=key) { generation++;bodyGeneration++;displayed=null;selected=key }
+        if(notices!=knownIds) { noticeGeneration++;notices=knownIds.toSet() }
+    }
+    @Synchronized fun invalidateNotices() { noticeGeneration++;notices=emptySet() }
     @Synchronized fun foreground(value: Boolean) { if (foreground != value) { generation++; foreground = value } }
-    @Synchronized fun uncovered(value: Boolean) { if (uncovered != value) { generation++; uncovered = value } }
-    @Synchronized fun leave() { generation++; selected = null; displayed = null; notices = emptySet() }
+    @Synchronized fun uncovered(value: Boolean) {
+        if(uncovered!=value) { bodyGeneration++;uncovered=value }
+        if(!separateNoticeSurface && noticeUncovered!=value) { noticeGeneration++;noticeUncovered=value }
+    }
+    /** Logical app cover is separate from the focused native question dialog's own geometry. */
+    @Synchronized fun noticeSurface(value: Boolean) {
+        separateNoticeSurface=true
+        if(noticeUncovered!=value) { noticeGeneration++;noticeUncovered=value }
+    }
+    @Synchronized fun leave() { generation++;bodyGeneration++;noticeGeneration++; selected = null; displayed = null; notices = emptySet() }
     @Synchronized fun visible(target: TargetScope, threadId: String, messageId: String, text: String, status: String?,
         latestContentVisible: Boolean, projection: ReadContentProjection? = null): Lease? {
         val key = ThreadReadingIdentity.key(target, threadId)
         if (!foreground || !uncovered || !latestContentVisible || selected != key ||
             displayed?.matches(messageId, text, status, projection) != true) return null
-        return Lease(owner, generation, key, displayed, notices)
+        return Lease(owner,generation,key,displayed,emptySet(),bodyGeneration,noticeGeneration)
     }
     /** Notice visibility is explicit; rendering an approval is never an approval decision. */
-    @Synchronized fun visibleNotices(target: TargetScope, threadId: String, visibleIds: Set<String>): Lease? {
+    @Synchronized fun visibleNotices(target: TargetScope, threadId: String, visibleIds: Set<String>,noticeGuard: NativeNoticeReadGuard?=null): Lease? {
         val key = ThreadReadingIdentity.key(target, threadId)
-        if (!foreground || !uncovered || selected != key || !notices.containsAll(visibleIds) || visibleIds.isEmpty()) return null
-        return Lease(owner, generation, key, null, visibleIds.toSet())
+        if (!foreground || !noticeUncovered || selected != key || !notices.containsAll(visibleIds) || visibleIds.isEmpty()) return null
+        return Lease(owner,generation,key,null,visibleIds.toSet(),bodyGeneration,noticeGeneration,noticeGuard)
     }
-    @Synchronized internal fun <T> ifCurrent(lease: Lease, block: () -> T): T? =
-        if (lease.owner === owner && lease.generation == generation && foreground && uncovered && selected == lease.targetKey) block() else null
+    @Synchronized internal fun <T> ifCurrent(lease: Lease, block: () -> T): T? {
+        if(lease.owner!==owner || lease.generation!=generation || !foreground || selected!=lease.targetKey)return null
+        if(lease.position!=null)return if(uncovered && lease.bodyGeneration==bodyGeneration)block() else null
+        if(!noticeUncovered || lease.noticeGeneration!=noticeGeneration)return null
+        return lease.noticeGuard?.ifCurrent(block) ?: if(lease.noticeGuard==null)block() else null
+    }
 }

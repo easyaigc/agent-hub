@@ -48,7 +48,9 @@ import androidx.compose.foundation.text.KeyboardOptions
     val t=currentProductText()
     val uri=androidx.compose.ui.platform.LocalUriHandler.current
     val colors=MaterialTheme.colorScheme
-    val inboxBusy by rememberUpdatedState(page=="external-attachments"&&session.externalInbox?.adding==true)
+    val migration=session.migrationController
+    val migrationBusy=page=="migration"&&migration?.canDismiss==false
+    val inboxBusy by rememberUpdatedState((page=="external-attachments"&&session.externalInbox?.adding==true)||migrationBusy)
     val state=rememberModalBottomSheetState(skipPartiallyExpanded=true,confirmValueChange={ next -> !inboxBusy||next!=SheetValue.Hidden })
     ModalBottomSheet(onDismissRequest={ if(!inboxBusy&&(page!="add"||!session.connectionBusy)&&(page!="add-project"||!session.projectBusy))close() },sheetState=state,containerColor=colors.surface,dragHandle={ BottomSheetDefaults.DragHandle() },contentWindowInsets={ WindowInsets.safeDrawing },
         properties=ModalBottomSheetProperties(isAppearanceLightStatusBars=colors.background!=androidx.compose.ui.graphics.Color.Black,isAppearanceLightNavigationBars=colors.background!=androidx.compose.ui.graphics.Color.Black)) {
@@ -60,8 +62,8 @@ import androidx.compose.foundation.text.KeyboardOptions
         DisposableEffect(page) { onDispose { focus.clearFocus(force=true); keyboard?.hide() } }
         LaunchedEffect(page) { focus.clearFocus(force=true); keyboard?.hide() }
         Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).testTag("sheet-$page")) {
-            val title=t.tr(when(page) { "chat-notifications"->"通知"; "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
-            val back=page in listOf("appearance","language","ai-sharing-settings","voice","chat-notifications")
+            val title=t.tr(when(page) { "migration"->"安全迁移"; "chat-notifications"->"通知"; "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
+            val back=page in listOf("appearance","language","ai-sharing-settings","voice","chat-notifications","migration")
             val action=t.tr(if(page=="external-attachments") "稍后添加" else if(page=="ai-sharing" || page=="add" && editing==null) "取消" else "完成")
             val titleStyle=LocalTextStyle.current.copy(fontSize=17.sp,lineHeight=24.sp,fontWeight=FontWeight.SemiBold)
             val measure=androidx.compose.ui.text.rememberTextMeasurer();val density=androidx.compose.ui.platform.LocalDensity.current
@@ -73,7 +75,7 @@ import androidx.compose.foundation.text.KeyboardOptions
                     if(back)measure.measure(t.tr("设置"),label).size.width+38.dp.toPx() else 0f) }
                 val stacked=titleWidth+side*2+with(density) { 8.dp.toPx() }>available
                 val controls: @Composable BoxScope.()->Unit = {
-                    if(back) TextButton(onClick={ navigate("settings") },modifier=Modifier.align(Alignment.CenterStart).heightIn(min=48.dp).testTag("appearance-back")) { ProductIcon("chevron",Modifier.size(14.dp).rotate(180f)); Text(t.tr("设置")) }
+                    if(back) TextButton(onClick={ navigate("settings") },enabled=!migrationBusy,modifier=Modifier.align(Alignment.CenterStart).heightIn(min=48.dp).testTag("appearance-back")) { ProductIcon("chevron",Modifier.size(14.dp).rotate(180f)); Text(t.tr("设置")) }
                     TextButton(onClick=if(page=="add") { { navigate("clients") } } else close,enabled=!inboxBusy&&(page!="ai-sharing"||!session.aiSharing.busy)&&(page!="add"||!session.connectionBusy)&&(page!="add-project"||!session.projectBusy),modifier=Modifier.align(if(page=="ai-sharing") Alignment.CenterStart else Alignment.CenterEnd).heightIn(min=48.dp).testTag(if(page=="settings") "settings-done" else if(page=="add") "cancel-client-form" else if(page=="chat-search") "chat-search-close" else if(page=="external-attachments") "external-attachment-later" else "sheet-done")) { Text(action) }
                 }
                 Column {
@@ -98,6 +100,7 @@ import androidx.compose.foundation.text.KeyboardOptions
                 "language" -> LanguagePage(session)
                 "chat-notifications" -> NativeChatNotificationsPage(session.chatNotifications)
                 "voice" -> NativeVoiceSettingsPage(session)
+                "migration" -> NativeMigrationPage(migration)
                 "generation" -> GenerationPage(session)
                 "reply-records" -> ReplyDeliveryRecordsPage(session,close)
                 "chat-search" -> ChatHistorySearchPage(session,close)
@@ -127,6 +130,7 @@ import androidx.compose.foundation.text.KeyboardOptions
         Text(t.tr("跟随系统，或选择中文和英文。更改会立即生效。"),Modifier.padding(horizontal=32.dp,vertical=8.dp),fontSize=12.sp,color=colors.onSurfaceVariant)
         NativeVoiceSettingsEntry(session,navigate)
         NativeChatNotificationSettingsEntry(session.chatNotifications,navigate)
+        NativeMigrationSettingsEntry(session.migrationController)
         GroupTitle("")
         GroupCard { SettingsRow(t.tr("AI 数据共享"),"","settings-ai-sharing") { navigate("ai-sharing-settings") } }
         GroupTitle(t.tr("本地体验"))

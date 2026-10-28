@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "13-bounded-long-notice-coverage",
+  "featureIds": ["F19", "F21", "F40", "F41", "F42", "F49", "F50", "F56", "F58"],
+  "commonAssertions": [
+    "Every supported original semantic part must have actual native glyph coverage before notice reading",
+    "A bottom visit, selected chat, elapsed time or two nonadjacent samples cannot fill missing ranges",
+    "Layout/original/window/foreground/cover replacement retracts the old proof and clears coverage",
+    "The original Session and view guards remain atomic inside the same ledger mutation",
+    "Reading preserves answer/dictation/focus/disclosure ownership, sends no command and never includes user answers in coverage"
+  ],
+  "bothPlatforms": {
+    "ios": "Unchanged existing scene/sidebar/bottom gate and runtime notice join; no cumulative glyph implementation or new execution claimed",
+    "android": "Bounded view-owned semantic projection/coverage implemented; existing Session/P9 integration retained; native execution pending parent"
+  },
+  "design": {
+    "surfaces": [
+      "normal/inline approval",
+      "long question and async dialog",
+      "expanded review/message plan",
+      "code/table clipping"
+    ],
+    "tokensAndCopy": "unchanged; original Text layouts, light fixture and existing catalog retained",
+    "scope": "one mounted original and native window; no cross-window or closed-disclosure accumulation",
+    "limits": {
+      "parts": 1024,
+      "utf16Units": 131072,
+      "glyphQueriesPerFrame": 8192,
+      "projectionDepth": 64,
+      "projectionNodeVisits": 8192
+    },
+    "knownGaps": [
+      "hidden link/image destinations or unknown Markdown",
+      "oversized/no-semantic-text projection",
+      "ellipsized unavailable original field",
+      "arbitrary paint/alpha occlusion requires owner cover truth"
+    ]
+  },
+  "sharedFiles": "Five captured base/proposed digests; all unchanged in this stage",
+  "acceptance": "parallel/p7-reading-voice/stage13-long-notices.md",
+  "checks": "30 actual compiled JVM rules; App/runner and KMP auxiliary; exact fingerprints/freshness in private delivery receipt",
+  "nativeCurrentSource": "compiled/prepared only, no execution in this workline",
+  "remaining": [
+    "parent final combination/manifests",
+    "actual short-viewport/IME/focus/window/IO native scenes",
+    "old body/P9/voice/discard regression and real DEV"
+  ],
+  "centralOwner": "parent coordinator; task/project operations and A6 remain paused"
+}

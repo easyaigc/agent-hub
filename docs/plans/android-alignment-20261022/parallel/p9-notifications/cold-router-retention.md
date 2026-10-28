@@ -1,0 +1,11 @@
+# Cold router preflight preserves partial and unknown material
+
+Review found that the original size-at-most-three check accepted an extra file beside a valid router marker. Constructing NativeSessionStorage before enumeration could also let AtomicFile recover/delete a sidecar before the closed lease gate had inspected it. This weakens strict failure and original-resource preservation; it does not authorize a replay or establish an actual device failure.
+
+The fixed debug acceptance entry now inventories the fixed router namespace before constructing any storage. A missing or empty directory returns no cold binding without creating one. A nonempty directory must contain exactly the single bounded regular encrypted marker filename derived from the fixed logical record. Directory/file symlinks, extra/unknown files, .bak/.new, unreadable directories and oversized material fail closed. No storage/AES/default Session is opened on these rejected paths and no recovery/deletion is attempted. Only after that preflight does the existing AES-handle check and strict sealed marker decoding run.
+
+The opaque product Intent, UUID lease/TTL/PID/APK checks, constructor ordering, Session port, P7/voice/P8 behavior and parent five-file overlay are unchanged. Unknown/selected original results still require inspection, never automatic disarm or replay. This change needs no edit to the parent's shared five files.
+
+Four real temporary-filesystem auxiliary cases cover missing/empty paths, exact bounded marker bytes, extra/partial files, symlink targets and size rejection. They check retained bytes and use no Android storage/Keystore. Component assembly and auxiliary results are recorded separately from native execution. Parent's already executing combined candidate remains bound to its original source/APK fingerprints; this source correction is not a new native pass. All cold/native permission results remain parent-owned; no device or old operation is run here.
+
+F52/UI11/S15,S16: strict original-ticket selection preserves unknown local router evidence. Android-only debug harness filesystem behavior; iOS source/evidence unchanged, A6 paused. See the separate parity delta for exact code hashes.

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "owner": "parent/P7 reading owner",
+  "applied": false,
+  "purpose": "P7 reader and notification locator share NativeWorkspaceThreadDirectory page/target/cursor/cancellation budget; per-row reading revisions and same ledger remain P7-owned",
+  "sourceRoot": "parent integration checkout (private path kept outside repository)",
+  "files": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingDirectory.kt",
+      "baseSha256": "8edd1164bf06bd9671f86edb53f8ad57484d197d5c7bb4d315c381292ff39d43",
+      "proposedSha256": "6627529417572612a87781b7ea9202f76ee2f8b902b6cf202059f2c97d4101dc"
+    }
+  ],
+  "readOnlyGitApplyCheck": "passed against current parent bytes; recheck before applying",
+  "sharedFiveHookImpact": [],
+  "requires": "adopt the new NativeWorkspaceThreadDirectory.kt in the same build before applying this hunk"
+}

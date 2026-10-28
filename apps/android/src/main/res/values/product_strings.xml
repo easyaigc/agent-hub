@@ -1840,4 +1840,43 @@
     <string name="product_5ed827555505f493823b40e4" formatted="false">"The original notification cannot be opened. Its chat or connection is unavailable."</string>
     <string name="product_e403ba5798ba13a472bf187c" formatted="false">"Current connection"</string>
     <string name="product_70b6e15f481b00a5fb359758" formatted="false">"Original connection records"</string>
+    <string name="product_8504c7de9e385f5e908bd7b4" formatted="false">"Connection did not complete. Check the computer and try again."</string>
+    <string name="product_6b3213992067fca49964f3e7" formatted="false">"The computer certificate could not be verified. The original connection is preserved."</string>
+    <string name="product_1462553a618bbba86897ac68" formatted="false">"The pairing device or runtime target does not match. The original connection is preserved."</string>
+    <string name="product_a799795c885d62eecb6052c8" formatted="false">"Connection information expired or was revoked. Generate it again on the computer."</string>
+    <string name="product_17c7e9787e0dfbfa7992fd8c" formatted="false">"The computer rejected this device. Confirm it again on the computer."</string>
+    <string name="product_3633741a1cb6484ccf69a29c" formatted="false">"Enter the 16-character connection code shown on the computer."</string>
+    <string name="product_2358b831d05ebb4a77d4b0c8" formatted="false">"The connection QR text is invalid. Copy it again from the computer."</string>
+    <string name="product_bfe79c60dfa30d0688c4e699" formatted="false">"The relay in this QR text is not trusted. Check the service address on the computer."</string>
+    <string name="product_ff94eb953cfa91ca43be4458" formatted="false">"Confirm this device on the signed-in computer."</string>
+    <string name="product_c9e2d93ca078f82c7d94d360" formatted="false">"Confirm this device on the computer. Verification code: %@"</string>
+    <string name="product_12ef72257ff2966b5e7a3e5c" formatted="false">"Connection target"</string>
+    <string name="product_b4c6ebaeba95e54853d619f4" formatted="false">"Account authority"</string>
+    <string name="product_37979829426b0cdbdb27e224" formatted="false">"Workspace"</string>
+    <string name="product_c3bdfbfc5c1252096597c67b" formatted="false">"Runtime"</string>
+    <string name="product_733c165c8f4146fd0aed0024" formatted="false">"Migration is not ready."</string>
+    <string name="product_4052ae37bd9cafcb9dd590fa" formatted="false">"Keep the migration file and password safe. The file is saved only to the location you choose. Import requires an installation without real computers; notifications must be enabled separately."</string>
+    <string name="product_4dfe17c4f8012fb46c9bd535" formatted="false">"Restoring local data…"</string>
+    <string name="product_f6dc1b1641600dd004e4ebfa" formatted="false">"Importing…"</string>
+    <string name="product_0b6101f261e6ebf499204fa0" formatted="false">"Checking migration file…"</string>
+    <string name="product_1ef1c3c1492301de8caa0e78" formatted="false">"Review data before importing"</string>
+    <string name="product_3b5c6bd35f725d52712e134d" formatted="false">"%@ computers · %@ drafts · %@ operations and receipts · %@ attachments"</string>
+    <string name="product_4e8d39c94cf03ef2f7a4f0d1" formatted="false">"Original notification records remain available for review; original installation authority is not restored."</string>
+    <string name="product_4a8d6841b4023edfd4415685" formatted="false">"Confirm import"</string>
+    <string name="product_48e4634962660e22291c666b" formatted="false">"Encrypted file saved. Verify that the file and password work."</string>
+    <string name="product_a7eeb41f3a5c6b33220a0411" formatted="false">"Cancelled. Original data is unchanged; validated pending data is retained."</string>
+    <string name="product_f11cb823153f6300894c24e5" formatted="false">"File checked. Import starts only after confirmation."</string>
+    <string name="product_1cf84035e7a10c156983e3ab" formatted="false">"Connections, drafts and receipts restored. Enable notifications separately."</string>
+    <string name="product_e6bb9dc43eedbae44f13a7dd" formatted="false">"Incorrect password, damaged file or unsupported data. Original data is unchanged."</string>
+    <string name="product_0ffd7e5b956125e1fe69c900" formatted="false">"Some local data is unsupported or unfinished. Original contents are retained."</string>
+    <string name="product_4828236fc09b392667f4ef60" formatted="false">"Local restoration is unfinished. Continue checking; the import will not be replayed."</string>
+    <string name="product_4327aebcc10ca1ca50a98102" formatted="false">"The saved result needs checking. The original pending data and receipt are retained."</string>
+    <string name="product_79769ce05030fb9e8a2471a8" formatted="false">"Wait for local data restoration to finish."</string>
+    <string name="product_f30ba57465b53eca014f81a9" formatted="false">"Migration did not finish. Original local data is retained."</string>
+    <string name="product_d2a9cfb49bed73f5e0bee6cc" formatted="false">"Check original result"</string>
+    <string name="product_b0040bdd84b06ed76acaadfa" formatted="false">"Continue local restoration"</string>
+    <string name="product_3b9de18e0fedad689093f4c0" formatted="false">"Replace pending import?"</string>
+    <string name="product_7ddac58171d2538dd8a03864" formatted="false">"Choosing another file replaces the pending import. Original files and local data stay unchanged."</string>
+    <string name="product_9475eb93689f5833fedbef9e" formatted="false">"Choose another file"</string>
+    <string name="product_8c56d9ef0d604131101c7b77" formatted="false">"Enable notifications explicitly after migration. Original records are retained."</string>
 </resources>

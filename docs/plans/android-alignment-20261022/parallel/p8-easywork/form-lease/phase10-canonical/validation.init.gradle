@@ -1,0 +1,13 @@
+// Exact pinned AOSP JSON on the JVM; external org.json uses different slash behavior.
+gradle.projectsEvaluated {
+    def app=gradle.rootProject.project(':android')
+    def root=gradle.rootProject.projectDir
+    def checks=new File(root,'docs/plans/android-alignment-20261022/parallel/p8-easywork')
+    def jar=new File(gradle.startParameter.projectProperties.get('p8AndroidJsonJar') ?: 'missing-aosp-json.jar')
+    assert jar.isFile() && jar.name=='aosp-json.jar'
+    app.android.sourceSets.getByName('test').java.srcDirs(new File(checks,'jvm'),new File(checks,'form-lease/phase10-canonical/jvm'))
+    app.android.sourceSets.getByName('test').kotlin.srcDirs(new File(checks,'jvm'),new File(checks,'form-lease/phase10-canonical/jvm'))
+    app.dependencies.add('testImplementation',app.files(jar))
+    app.dependencies.add('testImplementation','junit:junit:4.13.2')
+    app.tasks.withType(Test).configureEach {systemProperty 'p8.root',root.absolutePath;testLogging {events 'passed','failed';exceptionFormat 'full';showStandardStreams=true}}
+}

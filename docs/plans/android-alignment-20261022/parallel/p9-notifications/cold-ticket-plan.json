@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "stage": "P9-leased-first-Activity-original-ticket-boundary",
+  "baseCommit": "0f1ff6d0c2c39a269af381057a79b92c09f0194a",
+  "scope": "debug exact com.easyai.agenthub.android.acceptance only; fixed named in-process metadata ports; no actual Host/model/OS post evidence",
+  "parentHookOverlay": "cold-ticket-hooks.patch + five-file base/proposed hashes in cold-ticket-hooks.json; not applied by this workline",
+  "methodSelectors": {
+    "writer": "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity",
+    "reader": "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft",
+    "observer": "com.agenthub.android.NativeChatNotificationColdReaderTest#disarmCompletedLeaseFromAnotherProcessWithoutOpeningDefaultApp"
+  },
+  "arguments": {
+    "p9ColdLease": "fresh canonical UUID for each case; never a system cycle UUID or an existing/unknown cold lease",
+    "p9ColdCase": "writer only; one of original, expired, wrong-runtime, wrong-credential, missing-thread; reader uses sealed case"
+  },
+  "execution": {
+    "writer": "own native instrumentation process, no foreground/Activity-launch rule; checks both fixed hook markers; requires existing installation AES alias without importing/generating keys; seeds real owned Session metadata and claimed receipt only",
+    "transition": "parent ends/stops exact acceptance writer process; preserve installation/data, do not reinstall/rebuild or activate default App before reader",
+    "reader": "fresh instrumentation process, verifies writer PID gone, different PID/process nonce, same app+runner APK hashes, live 15min sealed lease and no prior MainActivity/default selection; IO preflight constructs no Session; test then launches the first real MainActivity with unchanged opaque product Intent",
+    "duplicate": "all cases edit a new current draft and send same original via actual Activity.onNewIntent; wait for passive post-dispatch acknowledgement; no extra locator reads/navigation/draft loss",
+    "observer": "after parent stops reader, separate new instrumentation invocation of only observer selector disarms completed router slot; never counted as a cold-route pass; original fixture store/proof retained for parent review"
+  },
+  "notAllowed": [
+    "whole Reader class in a single invocation",
+    "NativeTestForeground/activate-default-App before writer or reader",
+    "arbitrary namespace/path/transport/method input",
+    "release/nonexact/protected easywork package",
+    "new ticket/ID or automatic retry after armed/selected unknown result",
+    "writing default store, importing/overwriting private keys, real business or original unknown 863ec69e"
+  ],
+  "cases": [
+    {
+      "case": "original",
+      "status": "not-run",
+      "expected": {
+        "state": "opened",
+        "locatorPages": 12,
+        "receiptConsumed": true,
+        "duplicateIntent": "same selection and new draft; no new lookup/operation"
+      }
+    },
+    {
+      "case": "expired",
+      "status": "not-run",
+      "expected": {
+        "state": "unavailable",
+        "locatorPages": 0,
+        "receiptConsumed": false,
+        "duplicateIntent": "same selection and new draft; no new lookup/operation"
+      }
+    },
+    {
+      "case": "wrong-runtime",
+      "status": "not-run",
+      "expected": {
+        "state": "unavailable",
+        "locatorPages": 0,
+        "receiptConsumed": false,
+        "duplicateIntent": "same selection and new draft; no new lookup/operation"
+      }
+    },
+    {
+      "case": "wrong-credential",
+      "status": "not-run",
+      "expected": {
+        "state": "unavailable",
+        "locatorPages": 0,
+        "receiptConsumed": false,
+        "duplicateIntent": "same selection and new draft; no new lookup/operation"
+      }
+    },
+    {
+      "case": "missing-thread",
+      "status": "not-run",
+      "expected": {
+        "state": "unavailable",
+        "locatorPages": 12,
+        "receiptConsumed": false,
+        "duplicateIntent": "same selection and new draft; no new lookup/operation"
+      }
+    }
+  ],
+  "rawProof": "app-private files/acceptance/P9-notification-cold/<lease>/ unique role-attempt JSON; writer/reader PID+nonce and APK hashes, counters, cursor sequence and immutable plan hash",
+  "cleanup": "observer releases only completed router record after original reader process exits; scope data retained as original evidence, not silently deleted; parent archives and reviews exact P9-native-system-<lease> data/children before retiring; failures/unknown keep their original marker and do not replay",
+  "evidenceLimits": [
+    "new process first MainActivity with fixed acceptance gate, not uncontrolled launcher/system tap or full DEV",
+    "writer creates claimed fixture receipt, never falsely marks it OS-posted",
+    "actual P7 port/lifecycle retained; no second ledger; no proof of real backend read acknowledgement",
+    "discovery disabled only for selected cold binding; fixed empty media source retains P8 lifecycle/config without reading real MediaStore; no proof of P8 media acquisition",
+    "real NativeChatNotificationPlatform used without posting; OS14 separate",
+    "normal app savedInstanceState may exist after process death; cold proof is new process/no retained Session/first MainActivity/no default branch, not Bundle-null alone",
+    "actual Host/runtime/certificate transport/model and iOS A6 remain unverified/paused"
+  ]
+}

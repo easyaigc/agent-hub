@@ -1840,4 +1840,43 @@
     <string name="product_5ed827555505f493823b40e4" formatted="false">"无法打开原通知，对话或连接暂不可用。"</string>
     <string name="product_e403ba5798ba13a472bf187c" formatted="false">"当前连接"</string>
     <string name="product_70b6e15f481b00a5fb359758" formatted="false">"原连接记录"</string>
+    <string name="product_8504c7de9e385f5e908bd7b4" formatted="false">"连接未完成，请核对电脑端提示后重试。"</string>
+    <string name="product_6b3213992067fca49964f3e7" formatted="false">"电脑证书校验失败，原连接已保留。"</string>
+    <string name="product_1462553a618bbba86897ac68" formatted="false">"配对设备或运行目标不匹配，原连接已保留。"</string>
+    <string name="product_a799795c885d62eecb6052c8" formatted="false">"连接信息已过期或撤销，请在电脑上重新生成。"</string>
+    <string name="product_17c7e9787e0dfbfa7992fd8c" formatted="false">"电脑拒绝了此设备，请在电脑上重新确认。"</string>
+    <string name="product_3633741a1cb6484ccf69a29c" formatted="false">"请输入电脑显示的 16 位连接码。"</string>
+    <string name="product_2358b831d05ebb4a77d4b0c8" formatted="false">"连接二维码内容无效，请从电脑重新复制。"</string>
+    <string name="product_bfe79c60dfa30d0688c4e699" formatted="false">"二维码的中继服务未受信任，请核对电脑上的服务地址。"</string>
+    <string name="product_ff94eb953cfa91ca43be4458" formatted="false">"请在已登录的电脑上确认此设备。"</string>
+    <string name="product_c9e2d93ca078f82c7d94d360" formatted="false">"请在电脑上确认此设备，核对码：%@"</string>
+    <string name="product_12ef72257ff2966b5e7a3e5c" formatted="false">"连接目标"</string>
+    <string name="product_b4c6ebaeba95e54853d619f4" formatted="false">"账号发行方"</string>
+    <string name="product_37979829426b0cdbdb27e224" formatted="false">"工作区"</string>
+    <string name="product_c3bdfbfc5c1252096597c67b" formatted="false">"运行时"</string>
+    <string name="product_733c165c8f4146fd0aed0024" formatted="false">"迁移尚未就绪。"</string>
+    <string name="product_4052ae37bd9cafcb9dd590fa" formatted="false">"妥善保存迁移文件和密码。文件只写入你选择的位置；导入适用于尚未添加真实电脑的新安装，通知需另行明确开启。"</string>
+    <string name="product_4dfe17c4f8012fb46c9bd535" formatted="false">"正在恢复本机资料…"</string>
+    <string name="product_f6dc1b1641600dd004e4ebfa" formatted="false">"正在导入…"</string>
+    <string name="product_0b6101f261e6ebf499204fa0" formatted="false">"正在核对迁移文件…"</string>
+    <string name="product_1ef1c3c1492301de8caa0e78" formatted="false">"核对待导入资料"</string>
+    <string name="product_3b5c6bd35f725d52712e134d" formatted="false">"%@ 台电脑 · %@ 个草稿 · %@ 条操作与回执 · %@ 个附件"</string>
+    <string name="product_4e8d39c94cf03ef2f7a4f0d1" formatted="false">"保留原通知记录供核对，不恢复原安装授权。"</string>
+    <string name="product_4a8d6841b4023edfd4415685" formatted="false">"确认导入"</string>
+    <string name="product_48e4634962660e22291c666b" formatted="false">"加密文件已保存。请核对文件和密码可用。"</string>
+    <string name="product_a7eeb41f3a5c6b33220a0411" formatted="false">"已取消；原资料未更改，已核对的待导入资料仍保留。"</string>
+    <string name="product_f11cb823153f6300894c24e5" formatted="false">"文件已核对，确认后才会导入。"</string>
+    <string name="product_1cf84035e7a10c156983e3ab" formatted="false">"连接、草稿和回执已恢复。通知需另行明确开启。"</string>
+    <string name="product_e6bb9dc43eedbae44f13a7dd" formatted="false">"密码错误、文件损坏或资料暂不支持；原数据未更改。"</string>
+    <string name="product_0ffd7e5b956125e1fe69c900" formatted="false">"本机有尚未支持或未完成的资料，原内容已保留。"</string>
+    <string name="product_4828236fc09b392667f4ef60" formatted="false">"本机恢复尚未完成，请继续核对；不会重复导入。"</string>
+    <string name="product_4327aebcc10ca1ca50a98102" formatted="false">"保存结果待核对，原候选和回执已保留。"</string>
+    <string name="product_79769ce05030fb9e8a2471a8" formatted="false">"请等待本机资料恢复完成。"</string>
+    <string name="product_f30ba57465b53eca014f81a9" formatted="false">"迁移未完成，原本机资料已保留。"</string>
+    <string name="product_d2a9cfb49bed73f5e0bee6cc" formatted="false">"核对原结果"</string>
+    <string name="product_b0040bdd84b06ed76acaadfa" formatted="false">"继续恢复本机"</string>
+    <string name="product_3b9de18e0fedad689093f4c0" formatted="false">"更换待导入资料？"</string>
+    <string name="product_7ddac58171d2538dd8a03864" formatted="false">"另选文件会更换本次待导入资料，原文件和本机资料不变。"</string>
+    <string name="product_9475eb93689f5833fedbef9e" formatted="false">"另选文件"</string>
+    <string name="product_8c56d9ef0d604131101c7b77" formatted="false">"迁移后需明确开启通知，原记录已保留。"</string>
 </resources>

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "operationId": "parent-p8-native-pure-first-feedback-20261029-1",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "sourceSha256": "ba00bc6e470b37df79bb5723347c0e62ac5f0ec8b6fd320a2a77b7d700f70501",
+  "compiledJvmMethod": "operationTransaction$android(kotlin.jvm.functions.Function0)",
+  "compile": "passed",
+  "buildLogSha256": "0253ea03a59adfd9e3347eb4c621bc180bb3534d9d0421f8721af96e5bb52e9b",
+  "nativeExecutionHere": 0,
+  "deadlineChanged": false,
+  "requiredFrames": [
+    "actual declared NativeSessionStorage transaction method",
+    "EasyWorkConnectionCredentialWrites.write",
+    "java.util.concurrent.locks"
+  ],
+  "heldIoMainBeforeReleaseAssertionsRetained": true,
+  "parentFailure": "stage8-pairing-native/actions-1793217336245-b4b4d780/instrumentation.log",
+  "parentSource": "64f4c3ec53ae8dabab0c5b6d17326866ca27f3990b2ec3106de6b582eacd717b",
+  "parentExistingOtherMethodPass": "after-write Main revoke/rollback passed under parent original fingerprint, not a new rerun",
+  "sharedMainSessionUnchanged": true,
+  "positiveStage": "parked outside tree; separate commit/evidence",
+  "a5Closure": "none",
+  "a6": "paused"
+}

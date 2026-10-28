@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "checkpoint": "PAR9-system-channel-policy",
+  "date": "2026-10-29",
+  "device": "task-owned API37",
+  "status": "2 native methods passed; original channel failures retained",
+  "sourceSha256": "3f33ef96f7a0d35fdb9204d46e7070b33939c04fcfd2fb26b06dc19f4d51d877",
+  "appSha256": "d7c19a6489b768c448bb1ae51c8a408389117ac0125120f9b8788f9fadd8a5f1",
+  "runnerSha256": "d6c652125a8a65e32254629878a50eb3358c0a0327f2ba320016c9d9c938cec8",
+  "passedMethods": [
+    "com.agenthub.android.NativeChatNotificationOsGrantedTest#ordinaryClipChannelUsesRegisteredProviderUriWithoutPlayingIt",
+    "com.agenthub.android.NativeChatNotificationOsGrantedTest#realSilentPostHasPrivatePublicVersionAndOriginalImmutablePendingIntent"
+  ],
+  "instrumentationSha256": "ae665ebc4be154f1de81668a453cba5abe1a4fd2625839fb54da5296ff4b984c",
+  "permissionPolicyRestored": true,
+  "scope": "Independent new same-app system control channel versus actual app-requested PRIVATE; actual private notification/publicVersion/original immutable PendingIntent and sound provider bytes retained",
+  "originalCycles": "No cycle argument or writer/reader replay. Original API37 unknown and physical permission cases remain separate.",
+  "limits": [
+    "API26 corrected retake pending",
+    "Self-UID provider access does not establish cross-UID system playback",
+    "No lockscreen visual, actual Host/model or complete DEV claim"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

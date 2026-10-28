@@ -985,6 +985,201 @@
       "key": "原连接记录",
       "en": "Original connection records",
       "zhHans": "原连接记录"
+    },
+    {
+      "key": "连接未完成，请核对电脑端提示后重试。",
+      "en": "Connection did not complete. Check the computer and try again.",
+      "zhHans": "连接未完成，请核对电脑端提示后重试。"
+    },
+    {
+      "key": "电脑证书校验失败，原连接已保留。",
+      "en": "The computer certificate could not be verified. The original connection is preserved.",
+      "zhHans": "电脑证书校验失败，原连接已保留。"
+    },
+    {
+      "key": "配对设备或运行目标不匹配，原连接已保留。",
+      "en": "The pairing device or runtime target does not match. The original connection is preserved.",
+      "zhHans": "配对设备或运行目标不匹配，原连接已保留。"
+    },
+    {
+      "key": "连接信息已过期或撤销，请在电脑上重新生成。",
+      "en": "Connection information expired or was revoked. Generate it again on the computer.",
+      "zhHans": "连接信息已过期或撤销，请在电脑上重新生成。"
+    },
+    {
+      "key": "电脑拒绝了此设备，请在电脑上重新确认。",
+      "en": "The computer rejected this device. Confirm it again on the computer.",
+      "zhHans": "电脑拒绝了此设备，请在电脑上重新确认。"
+    },
+    {
+      "key": "请输入电脑显示的 16 位连接码。",
+      "en": "Enter the 16-character connection code shown on the computer.",
+      "zhHans": "请输入电脑显示的 16 位连接码。"
+    },
+    {
+      "key": "连接二维码内容无效，请从电脑重新复制。",
+      "en": "The connection QR text is invalid. Copy it again from the computer.",
+      "zhHans": "连接二维码内容无效，请从电脑重新复制。"
+    },
+    {
+      "key": "二维码的中继服务未受信任，请核对电脑上的服务地址。",
+      "en": "The relay in this QR text is not trusted. Check the service address on the computer.",
+      "zhHans": "二维码的中继服务未受信任，请核对电脑上的服务地址。"
+    },
+    {
+      "key": "请在已登录的电脑上确认此设备。",
+      "en": "Confirm this device on the signed-in computer.",
+      "zhHans": "请在已登录的电脑上确认此设备。"
+    },
+    {
+      "key": "请在电脑上确认此设备，核对码：%@",
+      "en": "Confirm this device on the computer. Verification code: %@",
+      "zhHans": "请在电脑上确认此设备，核对码：%@"
+    },
+    {
+      "key": "连接目标",
+      "en": "Connection target",
+      "zhHans": "连接目标"
+    },
+    {
+      "key": "账号发行方",
+      "en": "Account authority",
+      "zhHans": "账号发行方"
+    },
+    {
+      "key": "工作区",
+      "en": "Workspace",
+      "zhHans": "工作区"
+    },
+    {
+      "key": "运行时",
+      "en": "Runtime",
+      "zhHans": "运行时"
+    },
+    {
+      "key": "迁移尚未就绪。",
+      "en": "Migration is not ready.",
+      "zhHans": "迁移尚未就绪。"
+    },
+    {
+      "key": "妥善保存迁移文件和密码。文件只写入你选择的位置；导入适用于尚未添加真实电脑的新安装，通知需另行明确开启。",
+      "en": "Keep the migration file and password safe. The file is saved only to the location you choose. Import requires an installation without real computers; notifications must be enabled separately.",
+      "zhHans": "妥善保存迁移文件和密码。文件只写入你选择的位置；导入适用于尚未添加真实电脑的新安装，通知需另行明确开启。"
+    },
+    {
+      "key": "正在恢复本机资料…",
+      "en": "Restoring local data…",
+      "zhHans": "正在恢复本机资料…"
+    },
+    {
+      "key": "正在导入…",
+      "en": "Importing…",
+      "zhHans": "正在导入…"
+    },
+    {
+      "key": "正在核对迁移文件…",
+      "en": "Checking migration file…",
+      "zhHans": "正在核对迁移文件…"
+    },
+    {
+      "key": "核对待导入资料",
+      "en": "Review data before importing",
+      "zhHans": "核对待导入资料"
+    },
+    {
+      "key": "%@ 台电脑 · %@ 个草稿 · %@ 条操作与回执 · %@ 个附件",
+      "en": "%@ computers · %@ drafts · %@ operations and receipts · %@ attachments",
+      "zhHans": "%@ 台电脑 · %@ 个草稿 · %@ 条操作与回执 · %@ 个附件"
+    },
+    {
+      "key": "保留原通知记录供核对，不恢复原安装授权。",
+      "en": "Original notification records remain available for review; original installation authority is not restored.",
+      "zhHans": "保留原通知记录供核对，不恢复原安装授权。"
+    },
+    {
+      "key": "确认导入",
+      "en": "Confirm import",
+      "zhHans": "确认导入"
+    },
+    {
+      "key": "加密文件已保存。请核对文件和密码可用。",
+      "en": "Encrypted file saved. Verify that the file and password work.",
+      "zhHans": "加密文件已保存。请核对文件和密码可用。"
+    },
+    {
+      "key": "已取消；原资料未更改，已核对的待导入资料仍保留。",
+      "en": "Cancelled. Original data is unchanged; validated pending data is retained.",
+      "zhHans": "已取消；原资料未更改，已核对的待导入资料仍保留。"
+    },
+    {
+      "key": "文件已核对，确认后才会导入。",
+      "en": "File checked. Import starts only after confirmation.",
+      "zhHans": "文件已核对，确认后才会导入。"
+    },
+    {
+      "key": "连接、草稿和回执已恢复。通知需另行明确开启。",
+      "en": "Connections, drafts and receipts restored. Enable notifications separately.",
+      "zhHans": "连接、草稿和回执已恢复。通知需另行明确开启。"
+    },
+    {
+      "key": "密码错误、文件损坏或资料暂不支持；原数据未更改。",
+      "en": "Incorrect password, damaged file or unsupported data. Original data is unchanged.",
+      "zhHans": "密码错误、文件损坏或资料暂不支持；原数据未更改。"
+    },
+    {
+      "key": "本机有尚未支持或未完成的资料，原内容已保留。",
+      "en": "Some local data is unsupported or unfinished. Original contents are retained.",
+      "zhHans": "本机有尚未支持或未完成的资料，原内容已保留。"
+    },
+    {
+      "key": "本机恢复尚未完成，请继续核对；不会重复导入。",
+      "en": "Local restoration is unfinished. Continue checking; the import will not be replayed.",
+      "zhHans": "本机恢复尚未完成，请继续核对；不会重复导入。"
+    },
+    {
+      "key": "保存结果待核对，原候选和回执已保留。",
+      "en": "The saved result needs checking. The original pending data and receipt are retained.",
+      "zhHans": "保存结果待核对，原候选和回执已保留。"
+    },
+    {
+      "key": "请等待本机资料恢复完成。",
+      "en": "Wait for local data restoration to finish.",
+      "zhHans": "请等待本机资料恢复完成。"
+    },
+    {
+      "key": "迁移未完成，原本机资料已保留。",
+      "en": "Migration did not finish. Original local data is retained.",
+      "zhHans": "迁移未完成，原本机资料已保留。"
+    },
+    {
+      "key": "核对原结果",
+      "en": "Check original result",
+      "zhHans": "核对原结果"
+    },
+    {
+      "key": "继续恢复本机",
+      "en": "Continue local restoration",
+      "zhHans": "继续恢复本机"
+    },
+    {
+      "key": "更换待导入资料？",
+      "en": "Replace pending import?",
+      "zhHans": "更换待导入资料？"
+    },
+    {
+      "key": "另选文件会更换本次待导入资料，原文件和本机资料不变。",
+      "en": "Choosing another file replaces the pending import. Original files and local data stay unchanged.",
+      "zhHans": "另选文件会更换本次待导入资料，原文件和本机资料不变。"
+    },
+    {
+      "key": "另选文件",
+      "en": "Choose another file",
+      "zhHans": "另选文件"
+    },
+    {
+      "key": "迁移后需明确开启通知，原记录已保留。",
+      "en": "Enable notifications explicitly after migration. Original records are retained.",
+      "zhHans": "迁移后需明确开启通知，原记录已保留。"
     }
   ]
 }

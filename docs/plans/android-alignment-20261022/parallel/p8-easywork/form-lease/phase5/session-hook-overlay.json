@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+  "hooks": {
+    "own": {
+      "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+      "previousPhase2ProposedSha256": "207a4f646da628c22dd9b01d361f29a427fd2eaca99304630161b0ae180e7e97",
+      "proposedSha256": "8d6129f4dbd0fb080f98b3c6871fea25713597d4b30e0143611c30e66af257f8",
+      "patchSha256": "97efd55bdfab27f8f6fe861c72ab25c9b06e7cd1d1ef11ce9fcd334a81dcf406",
+      "upgradePatchSha256": "06b75084e7df895f8ed20029d247b20cb5c7f2369d4f3780745c459ab4169d05"
+    },
+    "parent": {
+      "baseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+      "previousPhase2ProposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+      "proposedSha256": "2c8f7b2e9376fd021c1d4a0e99080b5307258d8c638e1de8f2bed12eb47f538a",
+      "patchSha256": "95f3fde299f95f83a11902702e929ebb3915af6db9169c037575206904ad44aa",
+      "upgradePatchSha256": "c0bdbbbdd352f6d19ca579ba5074d9936c68cf01258ab20bf89eabc2a154b902"
+    }
+  },
+  "parentSourceReadOnly": true,
+  "stageReference": "phase3 Main proposal unchanged; preserve all P7/P9/voice/discard hooks",
+  "credentialRecordType": "Existing easywork-credential mapping only; new per-action reference is activated solely by committed client metadata",
+  "crashRule": "Unreferenced candidate remains unactivated original; no scan/promote/retry/replay"
+}

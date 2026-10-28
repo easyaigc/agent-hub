@@ -21,14 +21,19 @@ import javax.crypto.spec.GCMParameterSpec
 class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1") {
     init { require(keyAlias.matches(Regex("[a-zA-Z0-9_-]{1,128}"))) }
     private val root = File(context.noBackupFilesDir, namespace).apply { mkdirs() }
+    private val canonicalRoot=root.canonicalPath
     // AtomicFile's older reader may restore its backup while another instance
     // is writing. Coordinate all instances for this directory in this process.
-    private val ioLock = IO_LOCKS.computeIfAbsent(root.canonicalPath) { ReentrantLock(true) }
-    private val recovery = RECOVERY.computeIfAbsent(root.canonicalPath) { RecoveryFence() }
+    private val ioLock = IO_LOCKS.computeIfAbsent(canonicalRoot) { ReentrantLock(true) }
+    private val recovery = RECOVERY.computeIfAbsent(canonicalRoot) { RecoveryFence() }
+    private data class PreparedChild(val epoch: Long,val storage: NativeSessionStorage)
+    private val preparedChildren=ConcurrentHashMap<String,PreparedChild>()
     private val writes = Executors.newSingleThreadExecutor()
+    @Volatile private var retiredWriter=false
     private val snapshotLock=Any()
     private val snapshots=mutableMapOf<String,Pair<()->Unit,(Exception)->Unit>>()
     private val scheduledSnapshots=mutableSetOf<String>()
+    private val queuedWriteFailures=ConcurrentHashMap<String,Exception>()
     private val key: SecretKey by lazy {
         synchronized(KEY_LOCK) {
             val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -38,21 +43,48 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
             }.generateKey()
         }
     }
-    private class RecoveryFence(var blocked: Boolean=false,@Volatile var generation: Long=0) { val queuedGeneration=ThreadLocal<Long>() }
-    internal fun beginRestore(): Long = ioLock.withLock { requireCurrentGeneration();recovery.blocked=true;++recovery.generation }
+    private class RecoveryFence(@Volatile var blocked: Boolean=false,@Volatile var generation: Long=0) {
+        val queuedGeneration=ThreadLocal<Long>()
+        // No filesystem, crypto or storage transaction runs under this short publication monitor.
+        val publicationLock=Any()
+        @Volatile var publicationEpoch=0L
+    }
+    internal fun beginRestore(): Long = ioLock.withLock { requireCurrentGeneration();synchronized(recovery.publicationLock){recovery.blocked=true;++recovery.generation} }
     internal fun finishRestore(generation: Long,publish: ()->Unit) = ioLock.withLock {
         requireCurrentGeneration()
-        check(recovery.generation==generation) { "本地读取已被新的恢复替代" }
-        publish()
-        recovery.blocked=false
+        synchronized(recovery.publicationLock) {
+            check(recovery.generation==generation) { "本地读取已被新的恢复替代" }
+            publish();recovery.blocked=false
+        }
+    }
+    internal class RestorePublication internal constructor(internal val owner: NativeSessionStorage,internal val generation: Long,internal val epoch: Long) {
+        internal var used=false
+    }
+    /** IO verifies the actual pointer and generation before Main receives this one-use permit. */
+    internal fun prepareRestorePublication(generation: Long): RestorePublication = ioLock.withLock {
+        requireCurrentGeneration()
+        synchronized(recovery.publicationLock) {
+            check(!retiredWriter&&recovery.blocked&&recovery.generation==generation)
+            RestorePublication(this,generation,recovery.publicationEpoch)
+        }
+    }
+    /** Main publishes only memory; it never obtains ioLock or reloads a pointer here. */
+    internal fun finishPreparedRestore(permit: RestorePublication,publish: ()->Unit) = synchronized(recovery.publicationLock) {
+        check(permit.owner===this&&!permit.used&&!retiredWriter&&migrationUnavailable==null&&writableGeneration.isSuccess)
+        check(recovery.blocked&&recovery.generation==permit.generation&&recovery.publicationEpoch==permit.epoch) { "本地读取已被新的恢复替代" }
+        permit.used=true;publish();recovery.blocked=false
     }
     private var migrationUnavailable: Throwable?=null
-    private fun checkMigrationAccess() {migrationUnavailable?.let {throw IllegalStateException("迁入数据尚未恢复，原记录已保留",it)}}
+    private fun checkMigrationAccess() {
+        migrationUnavailable?.let {throw IllegalStateException("迁入数据尚未恢复，原记录已保留",it)}
+        writableGeneration.exceptionOrNull()?.let {throw IllegalStateException("本机迁移结果待核对，原文件已保留",it)}
+    }
     private fun requireCurrentGeneration() {
         checkMigrationAccess()
         check(writableGeneration.getOrThrow()==activeGeneration()) { "旧安装的保存不能覆盖迁入数据" }
     }
     private fun requireWritable() {
+        check(!retiredWriter) { "旧迁移会话已停止保存，请使用恢复后的会话" }
         requireCurrentGeneration()
         check(!recovery.blocked) { "本地数据恢复前不能保存，原文件已保留" }
         check(recovery.queuedGeneration.get()?.let { it==recovery.generation }!=false) { "旧的保存已被本地恢复替代" }
@@ -105,7 +137,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         val folder=File(root,"migration-generation-$generation");require(folder.isDirectory&&folder.canonicalFile==File(root.canonicalFile,folder.name)) { "迁入数据不可用，未回退到旧数据" }
         return generation
     }
-    private val writableGeneration=ioLock.withLock {runCatching {activeGeneration()}}
+    private val writableGeneration=ioLock.withLock {runCatching {requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);activeGeneration()}}
     private fun dataRoot(): File=activeGeneration()?.let {File(root,"migration-generation-$it")} ?: root
     private fun file(name: String): AtomicFile {require(name!=migrationPointerName);return atomic(dataRoot(),name)}
     fun read(name: String): String? = ioLock.withLock {checkMigrationAccess();decodeAtomic(file(name),name)}
@@ -120,19 +152,32 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         require(source.length() in 29..(maximumBytes+65569L))
         return decodeRecord(source.readBytes(),expectedName)
     }
+    private fun migrationFileExists(file: File)=java.nio.file.Files.exists(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)
+    private fun requireSettledMigrationFile(file: File) {
+        require(!migrationFileExists(File(file.path+".bak"))&&!migrationFileExists(File(file.path+".new"))) {"Pending migration audit record; originals preserved"}
+        if(migrationFileExists(file))require(file.isFile&&file.canonicalFile==File(requireNotNull(file.parentFile).canonicalFile,file.name))
+    }
+    /** Current local publication context only; no portable identity or notification authority. */
+    internal fun migrationHasPublishedGeneration(): Boolean = ioLock.withLock {
+        checkMigrationAccess();requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
+        requireWritable();activeGeneration()!=null
+    }
+    /** Exact last local publication, including an acknowledgement lost before Session replacement. */
+    internal fun migrationPublicationReceipt(): NativeMigrationCandidateStore.Receipt? = ioLock.withLock {
+        checkMigrationAccess();requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
+        if(activeGeneration()==null)return@withLock null
+        val value=JSONObject(requireNotNull(decodeAtomic(atomic(root,migrationPointerName),migrationPointerName)))
+        NativeMigrationCandidateStore.Receipt(value.getString("candidateId"),value.getString("sha256"),
+            if(value.get("version")==2)value.getInt("sourceRecords")else value.getInt("records"))
+    }
     /** Narrow migration audit: reject pending files before any AtomicFile read/recovery. */
     internal fun migrationReadTextRecords(names: Set<String>): Map<String,String> = ioLock.withLock {
         checkMigrationAccess();require(names.size in 1..16&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
-        fun exists(file: File)=java.nio.file.Files.exists(file.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)
-        fun clean(file: File) {
-            require(!exists(File(file.path+".bak"))&&!exists(File(file.path+".new"))) {"Pending migration audit record; originals preserved"}
-            if(exists(file))require(file.isFile&&file.canonicalFile==File(file.parentFile.canonicalFile,file.name))
-        }
-        clean(atomic(root,migrationPointerName).baseFile)
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
         requireWritable();val folder=dataRoot()
         val sources=names.associateWith {name->atomic(folder,name).baseFile}
-        sources.values.forEach(::clean)
-        sources.mapNotNull {(name,file)->if(exists(file))name to readMigrationTextFile(file,name).second else null}.toMap()
+        sources.values.forEach(::requireSettledMigrationFile)
+        sources.mapNotNull {(name,file)->if(migrationFileExists(file))name to readMigrationTextFile(file,name).second else null}.toMap()
     }
     /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
      * Presence is audited without opening/recovering files or borrowing OS callback authority. */
@@ -319,6 +364,8 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
             }
         }
         requireWritable()
+        // Invalidate prepared Main publications/child handles before any generation file changes.
+        synchronized(recovery.publicationLock){recovery.publicationEpoch++}
         val generation=java.util.UUID.randomUUID().toString();val folder=File(root,"migration-generation-$generation")
         require(!folder.exists()&&folder.mkdir()&&folder.canonicalFile==File(root.canonicalFile,folder.name))
         var published=false
@@ -328,11 +375,11 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
             val pointer=JSONObject().put("version",if(actualRecordCount==recordCount)1 else 2).put("generation",generation).put("candidateId",candidateId).put("sha256",sha256).put("records",actualRecordCount).put("recordsSha256",recordsSha256)
             if(actualRecordCount!=recordCount)pointer.put("sourceRecords",recordCount)
             encodeAtomic(atomic(root,migrationPointerName),migrationPointerName,pointer.toString())
-            published=true;recovery.generation++;generation
+            published=true;synchronized(recovery.publicationLock){recovery.generation++};generation
         } catch(failure: Throwable) {
             // A finish acknowledgement can fail after the atomic pointer reached disk. Never delete a committed generation.
             val observed=runCatching {activeGeneration()}
-            if(observed.isSuccess&&observed.getOrNull()==generation) {published=true;recovery.generation++;generation}
+            if(observed.isSuccess&&observed.getOrNull()==generation) {published=true;synchronized(recovery.publicationLock){recovery.generation++};generation}
             else throw failure
         } finally {
             val after=runCatching {activeGeneration()}
@@ -345,6 +392,8 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         }
     }
     internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias)
+    /** Main calls only after joining producers and the serial writer, then replacing the Session. */
+    internal fun retireWriter() {retiredWriter=true;writes.shutdown()}
     // Audio stays binary and bounded in memory. Each chunk authenticates its name,
     // total length and position, so truncation/reordering cannot publish plaintext.
     // Binary format4 authenticates an encrypted logical name and length before chunks.
@@ -518,7 +567,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         val generation=recovery.generation
         writes.execute { try { ioLock.withLock {
             check(generation==recovery.generation) { "旧的保存已被本地恢复替代" };write(name,text)
-        } } catch (error: Exception) { failed(error) } catch(_: OutOfMemoryError) { failed(IllegalStateException("本地存储内存不足，原文件已保留")) } } }
+        };queuedWriteFailures.remove(name) } catch (error: Exception) { queuedWriteFailures[name]=error;failed(error) } catch(_: OutOfMemoryError) { val error=IllegalStateException("本地存储内存不足，原文件已保留");queuedWriteFailures[name]=error;failed(error) } } }
     // History reads may arrive faster than disk encryption. Keep the newest
     // immutable snapshot per target and serialize on the storage worker.
     // Submission intent persistence continues to use the synchronous write.
@@ -535,24 +584,35 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         writes.execute {
             while(true) {
                 val next=synchronized(snapshotLock) { snapshots.remove(name).also { if(it==null) scheduledSnapshots.remove(name) } } ?: break
-                try { next.first() } catch(error: Exception) { next.second(error) } catch(_: OutOfMemoryError) { next.second(IllegalStateException("本地缓存内存不足，原文件已保留")) }
+                try { next.first();queuedWriteFailures.remove(name) } catch(error: Exception) { queuedWriteFailures[name]=error;next.second(error) } catch(_: OutOfMemoryError) { val error=IllegalStateException("本地缓存内存不足，原文件已保留");queuedWriteFailures[name]=error;next.second(error) }
             }
         }
     }
     internal fun <T> snapshotTransaction(block: ()->T): T = synchronized(SNAPSHOT_IO_LOCK,block)
     // A retry fence must be consumed atomically across journal instances too.
     internal fun <T> operationTransaction(block: ()->T): T = ioLock.withLock(block)
-    internal val coordinationKey get()=root.canonicalPath
+    internal val coordinationKey get()=canonicalRoot
+    /** IO prepares only named native runtime children. A later publication invalidates the cache. */
+    internal fun prepareChild(context: Context,suffix: String): NativeSessionStorage = ioLock.withLock {
+        requireCurrentGeneration();check(!retiredWriter)
+        child(context,suffix).also {preparedChildren[suffix]=PreparedChild(recovery.publicationEpoch,it)}
+    }
     internal fun child(context: Context,suffix: String): NativeSessionStorage {
         require(suffix.matches(Regex("[a-z0-9-]{1,32}")))
+        preparedChildren[suffix]?.let {prepared->return synchronized(recovery.publicationLock) {
+            check(!retiredWriter&&migrationUnavailable==null&&writableGeneration.isSuccess&&prepared.epoch==recovery.publicationEpoch) { "已准备的本地存储已被新的迁移替代" }
+            prepared.storage
+        }}
         val childAlias="agent-hub-child-"+MessageDigest.getInstance("SHA-256").digest((keyAlias+"\u0000"+suffix).toByteArray()).take(24).joinToString("") { "%02x".format(it) }
         val observed=ioLock.withLock {runCatching {requireCurrentGeneration();activeGeneration()}}
         val generation=observed.getOrNull()
         val scopedAlias=if(generation==null)childAlias else "agent-hub-child-"+digest(childAlias+"\u0000"+generation).take(48)
         return NativeSessionStorage(context,namespace+(generation?.let {"-"+it} ?: "")+"-"+suffix,scopedAlias).also {it.migrationUnavailable=observed.exceptionOrNull()}
     }
+    /** Caller first gates producers; the actual serial writer also reports unresolved save failures. */
     internal suspend fun awaitQueuedWrites() = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { waiting ->
-        writes.execute { if(waiting.isActive)waiting.resumeWith(Result.success(Unit)) }
+        writes.execute { if(waiting.isActive)waiting.resumeWith(if(queuedWriteFailures.isEmpty())Result.success(Unit)
+            else Result.failure(IllegalStateException("本机仍有保存失败的资料，原内容已保留。"))) }
     }
     internal fun storedBytes(name: String): Long = ioLock.withLock { checkMigrationAccess();file(name).baseFile.length() }
     fun remove(name: String) = ioLock.withLock { requireWritable();file(name).delete() }

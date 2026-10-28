@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-positive-commit-next-20261029-1",
+  "baseCommit": "780a5f0b",
+  "scope": "Independent synthetic positive commit boundary; no production/shared source change",
+  "sourceSetSha256": "0e0104ca2ed0c42f6adbb96888d3a045fffb9a8a2e10e24519899ed6921deb69",
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "2edc8c7ccbfef66e0de4f68f49934ae679368332cdc157ba6e05f308736021ef",
+      "bytes": 24266978,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "5ecf711622c98bd9e6b7690413857d980dfa497bf00262da89af677b7d75247d",
+      "bytes": 8314917,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "nativePrepared": {
+    "actualFormButtonAndSavedCallback": 2,
+    "mountedOwnerSessionFinalReadFailure": 2,
+    "separateColdWriterAndNewPidReader": 2,
+    "total": 6,
+    "executedHere": 0
+  },
+  "selectedRunnerClasses": 13,
+  "selectedRunnerMethodsCompiled": 107,
+  "checks": {
+    "nodePureFixture": {
+      "new": 8,
+      "frozenPreviousPairing": 6,
+      "passed": 14,
+      "listenersStarted": 0,
+      "logSha256": "6b79934d53d53ba2c4906dddd910613ab7e85dab2ff3da3b8383b17a920dfb38"
+    },
+    "compile": "passed final app and runner using exact own shadows corresponding to adopted parent Session2c8/Maine9; real shared files restored",
+    "buildLogSha256": "13de0713140ef982694f1f46814db691f7c1700f538e17f9112b0829bd7c76d8",
+    "root": {
+      "exitCode": 1,
+      "passedBeforeStop": ["format:check", "check:github-sync5", "lint"],
+      "failure": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+      "bypassed": false,
+      "logSha256": "389aac84f5e51eb8b45e46222c482a68ae158a4debe27e44c45447954c197f2d"
+    },
+    "originalFailuresRetained": [
+      "before-auth-scheme-status-assertion.log (7/8; bearer rejected403, assertion expected throw)",
+      "before-suspend-identity-load-failure.log (compile; corrected coroutine boundary)"
+    ]
+  },
+  "runtimeFixture": {
+    "newKind": "p8-synthetic-positive-commit-v1",
+    "namedReads": ["runtime/context({})", "project/list({})", "thread/list({limit:100})"],
+    "transport": "loopback HTTP with original grant DPoP and independent AES-GCM binding/session/target validation",
+    "release": "first final thread/list response held until explicit ok/error",
+    "notOriginalDesktopIssuerOrRealDev": true,
+    "noCommandModelSubmitProxyOrOtherService": true,
+    "existingSidecar40Unchanged": true
+  },
+  "sharedInputs": {
+    "parentSessionSha256": "2c8f7b2e9376fd021c1d4a0e99080b5307258d8c638e1de8f2bed12eb47f538a",
+    "parentMainSha256": "e9b5642944d9f8dd7601d79a977b1cfe484b23f32b80fdf0a19b5e8eeeb9f277",
+    "newOverlayRequired": false,
+    "centralCatalogsChanged": false,
+    "parentCombinedRebuildRequired": true
+  },
+  "coldRequirements": "Select writer and reader separately; same explicit UUID/config/sidecar/package/key lineage; parent force-stop within18s of atomic writer-ready proof and verify new PID after ready timestamp. Elapsed/completed writer is failure, not a passing writer result. Reader creates no identity/key/case/claim and cannot promote candidate refs.",
+  "feedbackStage": "Four separate test-only commits before this stage: exact mangled stack, strict layout diagnostics, explicit actual Main preparation and native Surface colors. Parent old33 behavior passes remain bound to original source64/App3f/runner611; dark reshoot and strict layout diagnosis remain open.",
+  "actualDeviceHostIssuerDesktopModelOtherChatActions": 0,
+  "a5Closure": "none",
+  "a6": "paused",
+  "taskProjectIos": "paused"
+}

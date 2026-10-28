@@ -1,0 +1,9 @@
+// Opt-in pure lease/race checks. This does not run an Android process or pretend to write its disk.
+gradle.projectsEvaluated {
+    def app=gradle.rootProject.project(':android')
+    def checks=new File(gradle.rootProject.projectDir,'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase1/jvm')
+    app.android.sourceSets.getByName('test').java.srcDir(checks)
+    app.android.sourceSets.getByName('test').kotlin.srcDir(checks)
+    app.dependencies.add('testImplementation','junit:junit:4.13.2')
+    app.tasks.withType(Test).configureEach {testLogging {events 'passed','failed';exceptionFormat 'full'}}
+}

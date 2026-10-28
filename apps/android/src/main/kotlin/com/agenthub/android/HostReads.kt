@@ -163,7 +163,7 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
         readResponse(client,path,query,descriptorBudget) { input,active -> NativeWireReader.read(input,if(path=="host") 65_536 else 64*1024*1024,active) }
     private suspend fun <T> readResponse(client: MobileClient, path: String, query: Map<String, String>,descriptorBudget: CodexConnectionReadBudget=CodexConnectionReadBudget.BACKGROUND_DISCOVERY,decode: (java.io.InputStream,()->Boolean)->T): T = suspendCancellableCoroutine { continuation ->
         val active = AtomicReference<HttpURLConnection?>()
-        val future = executor.submit {
+        val future = NativeMigrationIoWork.submit(executor,continuation.context) {
             var connection: HttpURLConnection? = null
             try {
                 if (!continuation.isActive) return@submit
@@ -197,7 +197,7 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
                 if(continuation.isActive) continuation.resumeWithException(HostReadError("手机内存不足，未能读取完整历史；原缓存和草稿已保留"))
             } finally { active.getAndSet(null)?.disconnect(); connection?.disconnect() }
         }
-        continuation.invokeOnCancellation { active.getAndSet(null)?.disconnect(); future.cancel(true) }
+        continuation.invokeOnCancellation { NativeMigrationIoWork.cancelHttp(continuation.context,active,future) }
     }
     override suspend fun workspace(client: MobileClient, projectCursor: String?, threadCursor: String?): MobileWorkspace {
         val query = buildMap { projectCursor?.let { put("projectCursor", it) }; threadCursor?.let { put("threadCursor", it) }; client.readerId?.let { put("readerId", nativeReaderId(it)) } }

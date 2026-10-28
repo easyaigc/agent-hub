@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "operationId": "parent-p8-form-lease-copy-next-20261029-1",
+  "parentCommit": "290327a877f7440d04f3f0575e9d13015652455d",
+  "purpose": "Actual action lease checkpoint after auth/network and before credential writes/selection, monotonic target/draft/link/background invalidation and ownership-safe rollback",
+  "sharedSourceLeftUnmodified": true,
+  "hooks": {
+    "own": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+      "proposedSha256": "33cabcf2c5b814485df9e0047bc013f0ba634c8647be21f6443691a627a6761a",
+      "patchSha256": "b0f2f63695fadc08b0ff10ecb9a7e03fb18027bf54d17d03e0a0328e0b2fda11"
+    },
+    "parent": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5",
+      "proposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+      "patchSha256": "8235d14cbda2a9b21d714c926720b647f3cf0213b0380ab44ddd13f174a455cb"
+    }
+  }
+}

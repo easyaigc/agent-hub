@@ -36,14 +36,20 @@ import androidx.compose.ui.unit.sp
     }
 }
 
-@Composable internal fun ProposedPlanMessage(message: MobileMessage,targetKey: String) {
+@Composable internal fun ProposedPlanMessage(message: MobileMessage,targetKey: String,
+    noticeVisibility: NativePanelNoticeVisibility?=null,originalPlan: MobileProposedPlan?=null) {
     val clipboard=LocalClipboardManager.current
     Surface(shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surface,
         modifier=Modifier.fillMaxWidth().testTag("proposed-plan-message-${message.id}")) {
         Column(Modifier.padding(12.dp)) {
             PlanDisclosure(productText(if(message.status in setOf("inProgress","in_progress","in-progress","streaming"))"正在制定计划…" else "计划"),
                 "proposed-plan-toggle-${message.id}",targetKey+":"+message.id,icon="lightbulb") {
-                MarkdownContent(message.text,"markdown-${message.id}")
+                val reading=noticeVisibility?.takeIf { it.renderedKey==targetKey && originalPlan!=null &&
+                    message.role=="assistant" && message.kind=="plan" && message.runId==originalPlan.turnId &&
+                    message.text==originalPlan.text && message.status !in setOf("inProgress","in_progress","in-progress","running","streaming","unknown") }
+                NativeNoticeVisibilityPanel(reading,originalPlan?.let(NativeNoticePanelOriginal::Plan)) {
+                    MarkdownContent(message.text,"markdown-${message.id}")
+                }
                 TextButton(onClick={ clipboard.setText(AnnotatedString(message.text)) },modifier=Modifier.testTag("copy-plan-${message.id}")) {
                     ProductIcon("copy",Modifier.size(16.dp));Spacer(Modifier.width(6.dp));Text(productText("复制计划"),fontSize=12.sp)
                 }
@@ -90,7 +96,7 @@ import androidx.compose.ui.unit.sp
             Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 Text(productText("实施此计划？"),fontSize=14.sp,fontWeight=FontWeight.SemiBold)
                 if(session.messages.none { it.kind=="plan"&&it.text==plan.text }) {
-                    PlanDisclosure("查看计划","review-plan-toggle",destination to plan) {
+                    PlanDisclosure(productText("查看计划"),"review-plan-toggle",destination to plan) {
                         NativeNoticeVisibilityPanel(noticeVisibility?.forTarget(session.selectedClient.scope,session.selectedThread),NativeNoticePanelOriginal.Plan(plan)) {
                             MarkdownContent(plan.text,"proposed-plan-text")
                         }

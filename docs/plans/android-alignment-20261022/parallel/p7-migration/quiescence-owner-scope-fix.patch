@@ -1,0 +1,82 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt
+@@ -8,7 +8,7 @@
+ import kotlinx.coroutines.channels.Channel
+ 
+ /** Session-owned foreground lifecycle, settings and opaque-ticket ingress. No Activity, owner or execution lookup. */
+-internal class NativeChatNotificationCoordinator(scope: CoroutineScope, private val session: NativeChatNotificationSessionPort,
++internal class NativeChatNotificationCoordinator(parentScope: CoroutineScope, private val session: NativeChatNotificationSessionPort,
+     val system: NativeChatNotificationSystem, private val commands: NativeChatNotificationCommands = NativeChatNotificationHttp(),
+     private val locator: NativeChatNotificationThreadLocator = NativeChatNotificationThreadLocator(),
+     private val now: () -> Long = System::currentTimeMillis, private val pollMillis: Long = 10_000,
+@@ -20,9 +20,9 @@
+             return NativeChatNotificationCoordinator(scope, session, system, applicationId = app.packageName, migrationEnrollmentCheck=true)
+         }
+     }
+-    private val ownerJob=SupervisorJob(scope.coroutineContext[Job])
++    private val ownerJob=SupervisorJob(parentScope.coroutineContext[Job])
+     private val migrationIo=NativeMigrationIoWork()
+-    private val scope=CoroutineScope(scope.coroutineContext+ownerJob+migrationIo)
++    private val scope=CoroutineScope(parentScope.coroutineContext+ownerJob+migrationIo)
+     val store = NativeChatNotificationStore(session.storage)
+     private val legacy = NativeChatNotificationForegroundStore(session.storage)
+     private val recovery = NativeChatNotificationRecoveryStore(session.storage)
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationQuiescenceIntegrationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationQuiescenceIntegrationTest.kt
+@@ -29,6 +29,15 @@
+     @Test fun actualHeldCoordinatorIoCannotPublishAndCancelKeepsMainAndOriginalDraftAvailable()=runBlocking {
+         val actual=ui.activity.session;val coordinator=requireNotNull(actual.chatNotifications)
+         val owner=coordinator.javaClass.getDeclaredField("ownerJob").apply {isAccessible=true}.get(coordinator) as Job
++        fun field(value: Any,name: String)=value.javaClass.getDeclaredField(name).apply {isAccessible=true}.get(value)
++        val coordinatorScope=field(coordinator,"scope") as CoroutineScope
++        val enrollment=requireNotNull(field(coordinator,"migrationEnrollment"))
++        val enrollmentScope=field(enrollment,"scope") as CoroutineScope
++        assertSame("Enrollment must capture this coordinator's owned scope",coordinatorScope,enrollmentScope)
++        assertSame("Enrollment must be parented by this coordinator's owner Job",owner,enrollmentScope.coroutineContext[Job])
++        assertFalse("Coordinator owner is live before quiescence",owner.isCompleted)
++        val previousEnrollment=field(enrollment,"job") as Job?
++        assertTrue("Initial enrollment finished before holding IO",previousEnrollment?.isCompleted==true)
+         val disk=NativeSessionStorage::class.java.getDeclaredField("ioLock").apply {isAccessible=true}.get(owned.storage) as ReentrantLock
+         val payload=MigrationActivationFixtures.payload().getJSONObject("records")
+         val name=payload.keys().asSequence().single {it.startsWith("operations:")};val unknown=payload.getString(name)
+@@ -39,14 +48,37 @@
+         try {
+             withContext(Dispatchers.IO){check(entered.await(5,TimeUnit.SECONDS))}
+             ui.runOnIdle {coordinator.preferencesSaved()}
+-            ui.waitUntil(5_000){disk.queueLength>0}
++            val enrollmentJob=requireNotNull(field(enrollment,"job") as Job?)
++            assertNotSame(previousEnrollment,enrollmentJob)
++            assertTrue("The actual refresh belongs to this owner",owner.children.any {it===enrollmentJob})
++            var heldEnrollmentThread: Thread?=null
++            ui.waitUntil(5_000){
++                heldEnrollmentThread=Thread.getAllStackTraces().entries.singleOrNull {(thread,stack)->
++                    val enrollmentFrame=stack.any {it.className.startsWith("com.agenthub.android.NativeMigrationNotificationEnrollment\$refresh\$")}
++                    val storageFrame=stack.any {it.className=="com.agenthub.android.NativeSessionStorage"&&it.methodName=="snapshotTransaction"}
++                    enrollmentFrame&&(disk.hasQueuedThread(thread)||thread.state==Thread.State.BLOCKED&&storageFrame)
++                }?.key
++                enrollmentJob.isActive&&enrollmentJob.children.any {it.isActive}&&heldEnrollmentThread!=null
++            }
++            val heldThread=requireNotNull(heldEnrollmentThread)
++            assertSame(enrollmentJob,field(enrollment,"job"))
++            assertTrue("The held enrollment IO is still a child of this exact Job",enrollmentJob.children.any {it.isActive})
++            java.io.File(owned.folder,"held-enrollment-owner.json").writeText(org.json.JSONObject()
++                .put("coordinator",System.identityHashCode(coordinator)).put("owner",System.identityHashCode(owner))
++                .put("gateJob",System.identityHashCode(enrollmentJob)).put("heldThreadId",heldThread.id)
++                .put("heldThreadName",heldThread.name).put("gateParentIsCoordinator",true)
++                .put("directlyQueuedOnRootIoLock",disk.hasQueuedThread(heldThread)).put("threadState",heldThread.state.name)
++                .put("stack",org.json.JSONArray(heldThread.stackTrace.take(24).map {it.toString()})).toString())
+             ui.runOnIdle {ui.activity.migration.password="owned actual cancel password";ui.activity.migration.export()}
+             ui.waitUntil(5_000){actual.migrationPaused&&ui.activity.migration.phase==NativeMigrationPhase.PREPARING_EXPORT}
+-            assertFalse(owner.isCompleted)
++            assertFalse("Held actual coordinator owner cannot finish",owner.isCompleted)
++            assertFalse("Held actual gate job cannot finish",enrollmentJob.isCompleted)
++            assertTrue("Held exact enrollment thread remains blocked",heldThread.state in setOf(Thread.State.BLOCKED,Thread.State.WAITING,Thread.State.TIMED_WAITING))
+             ui.onNodeWithTag("migration-cancel").performScrollTo().performClick()
+             ui.waitUntil(5_000){!actual.migrationPaused&&ui.activity.migration.result==NativeMigrationResult.CANCELLED}
+             ui.runOnIdle {assertSame(actual,ui.activity.session);assertEquals("original unsaved draft for cancellation",actual.text);actual.text="draft edited after actual cancellation"}
+-            assertFalse(held.isCompleted);assertFalse(owner.isCompleted)
++            assertFalse(held.isCompleted);assertFalse(owner.isCompleted);assertFalse(enrollmentJob.isCompleted)
++            assertTrue("Held exact enrollment thread remains blocked",heldThread.state in setOf(Thread.State.BLOCKED,Thread.State.WAITING,Thread.State.TIMED_WAITING))
+             ui.runOnIdle {assertFalse(actual.migrationReady);ui.activity.migration.password="owned second attempt stays gated";ui.activity.migration.export();assertFalse(actual.migrationPaused)}
+         }finally {release.countDown();held.join()}
+         withTimeout(10_000){owner.join();owned.storage.awaitQueuedWrites()}

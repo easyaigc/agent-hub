@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "scope": "String/member escaping and sorted non-numeric protocol keys; no general RFC8785/number-format claim",
+  "vectors": [
+    {
+      "id": "slash-key",
+      "input": {
+        "a/b": "value/with/slash"
+      },
+      "canonical": "{\"a/b\":\"value/with/slash\"}",
+      "sha256": "021e2fb748c339bd58ea19d51163f0106c7779f90c65207b4b4e82a8b0067d71"
+    },
+    {
+      "id": "quote-and-slash",
+      "input": {
+        "a\"/b": "quote \" and \\/"
+      },
+      "canonical": "{\"a\\\"/b\":\"quote \\\" and \\\\/\"}",
+      "sha256": "3a4e89dbc2fefc4df3141085a4ba7698d2099c423ab8d390d85598a9b8e65c40"
+    },
+    {
+      "id": "chinese-key",
+      "input": {
+        "中文/键": "原文/值"
+      },
+      "canonical": "{\"中文/键\":\"原文/值\"}",
+      "sha256": "fc132203a9f2aaefa039bf76b1251f2ea1bd76ec677dc87b86ced2298d60ab20"
+    },
+    {
+      "id": "supplementary-key",
+      "input": {
+        "😀/键": "A😀é"
+      },
+      "canonical": "{\"😀/键\":\"A😀é\"}",
+      "sha256": "d74deb2059743ac828acce27fb5460435f88fa45353abfcbaded286d9cbbff0d"
+    },
+    {
+      "id": "combining-key",
+      "input": {
+        "é/é": "é/é"
+      },
+      "canonical": "{\"é/é\":\"é/é\"}",
+      "sha256": "08c7b73374502b106e1f91f45d13a16cf7fb79137b523a8d0a6abd4da81977b9"
+    },
+    {
+      "id": "line-separator-key",
+      "input": {
+        "line / ": "value / "
+      },
+      "canonical": "{\"line / \":\"value / \"}",
+      "sha256": "35c5296a78b36b35d5f1615f7df24ea12bf4402d916e338df5831c84f2da5fb0"
+    },
+    {
+      "id": "control-key",
+      "input": {
+        "\u0000\b\f\n\r\t/": "\u0001\u000b\u001f"
+      },
+      "canonical": "{\"\\u0000\\b\\f\\n\\r\\t/\":\"\\u0001\\u000b\\u001f\"}",
+      "sha256": "20f56c3f955a8857d4cc5d8c74016ed0868eefaa73d9e14de92ec3e02f26ed99"
+    },
+    {
+      "id": "nested-array",
+      "input": {
+        "z": [
+          {
+            "nested/key": "nested/value"
+          },
+          {
+            "quote\"": "/"
+          }
+        ],
+        "a": null
+      },
+      "canonical": "{\"a\":null,\"z\":[{\"nested/key\":\"nested/value\"},{\"quote\\\"\":\"/\"}]}",
+      "sha256": "d333a8e6a44af932c0dbe13dbb124e29f9d31c6834b88557f7df8cb78cc04844"
+    },
+    {
+      "id": "ascii-sort",
+      "input": {
+        "z/path": "z",
+        "a/path": "a",
+        "m/path": "m"
+      },
+      "canonical": "{\"a/path\":\"a\",\"m/path\":\"m\",\"z/path\":\"z\"}",
+      "sha256": "4e5e025ca14025341cb0553a52d951af8e3afb5ef1136a3bf36fa6574f7e1db9"
+    },
+    {
+      "id": "exact-four-source-graph",
+      "input": {
+        "form-lease/phase7/fixture.mjs": "f9a8f840eaca987411edb23bff1caa09daa00724f599ae87ee3333c6ec1b56a9",
+        "pairing-ui/fixture.mjs": "322cd03880dfa64d5a095719ee3cbf030b68430b9e4e78b89ba312d77e2a4f38",
+        "authorization-fence/phase2/fixture.mjs": "b91aff98e2f40cce295086dae2d0190540481a4314f6b98c7c7b81e31fe7fe7c",
+        "authorization-boundaries/fixture.mjs": "cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a"
+      },
+      "canonical": "{\"authorization-boundaries/fixture.mjs\":\"cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a\",\"authorization-fence/phase2/fixture.mjs\":\"b91aff98e2f40cce295086dae2d0190540481a4314f6b98c7c7b81e31fe7fe7c\",\"form-lease/phase7/fixture.mjs\":\"f9a8f840eaca987411edb23bff1caa09daa00724f599ae87ee3333c6ec1b56a9\",\"pairing-ui/fixture.mjs\":\"322cd03880dfa64d5a095719ee3cbf030b68430b9e4e78b89ba312d77e2a4f38\"}",
+      "sha256": "76c85c26c22aa9ef0cf1025e5ca58ef52d1dbbbb234fe58894ab0fbb345b3852"
+    },
+    {
+      "id": "request-hash-slash-key",
+      "input": {
+        "target": {
+          "account": {
+            "authority": "https://acceptance.example",
+            "subject": "synthetic-user"
+          },
+          "desktopDeviceId": "desktop-vector",
+          "workspaceId": "workspace-vector",
+          "runtimeId": "runtime-vector"
+        },
+        "method": "turn/start",
+        "params": {
+          "threadId": "synthetic-thread",
+          "clientRequestId": "stable-operation",
+          "text": "immutable synthetic input",
+          "metadata/path": {
+            "问\"题/😀": "原文/值"
+          }
+        }
+      },
+      "canonical": "{\"method\":\"turn/start\",\"params\":{\"clientRequestId\":\"stable-operation\",\"metadata/path\":{\"问\\\"题/😀\":\"原文/值\"},\"text\":\"immutable synthetic input\",\"threadId\":\"synthetic-thread\"},\"target\":{\"account\":{\"authority\":\"https://acceptance.example\",\"subject\":\"synthetic-user\"},\"desktopDeviceId\":\"desktop-vector\",\"runtimeId\":\"runtime-vector\",\"workspaceId\":\"workspace-vector\"}}",
+      "sha256": "edec214762bfc56e92c26341748c41716dd8b52c22dbd2e55f6542f42c70aacd"
+    },
+    {
+      "id": "ordinary-declared-keys",
+      "input": {
+        "target": {
+          "account": {
+            "authority": "https://acceptance.example",
+            "subject": "synthetic-user"
+          },
+          "desktopDeviceId": "desktop-vector",
+          "workspaceId": "workspace-vector",
+          "runtimeId": "runtime-vector"
+        },
+        "method": "turn/start",
+        "params": {
+          "threadId": "synthetic-thread",
+          "clientRequestId": "stable-operation",
+          "text": "original / \" 中文 😀"
+        }
+      },
+      "canonical": "{\"method\":\"turn/start\",\"params\":{\"clientRequestId\":\"stable-operation\",\"text\":\"original / \\\" 中文 😀\",\"threadId\":\"synthetic-thread\"},\"target\":{\"account\":{\"authority\":\"https://acceptance.example\",\"subject\":\"synthetic-user\"},\"desktopDeviceId\":\"desktop-vector\",\"runtimeId\":\"runtime-vector\",\"workspaceId\":\"workspace-vector\"}}",
+      "sha256": "df922e09db39326c61dfc8a6cfffea5607d66e10d75ae3a4e9307c4f3a68d0a1"
+    }
+  ],
+  "protectedDelivery": {
+    "identity": {
+      "deviceId": "mobile-vector",
+      "privateKey": "dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo",
+      "publicKey": "hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo"
+    },
+    "deliveryId": "846952ad-8e58-407c-861f-76eb5a286e85",
+    "delivery": "eyJ0eXAiOiJld2RhcCtqd2UiLCJ2ZXJzaW9uIjoxLCJkZWxpdmVyeUlkIjoiODQ2OTUyYWQtOGU1OC00MDdjLTg2MWYtNzZlYjVhMjg2ZTg1IiwiYWxnIjoiRUNESC1FUyIsImVuYyI6IkEyNTZHQ00iLCJlcGsiOnsiY3J2IjoiWDI1NTE5IiwieCI6IjFucmpUb0VBdDI2SjVmb1lQakhIeVZzdVZ3M25yMjB5c3BGelIxMlpEa1EiLCJrdHkiOiJPS1AifSwiZXZpZGVuY2VcL3BhdGgiOiJvbGRcL3F1b3RlXCJcL-S4reaWhyJ9..JTiKidlNxCJyO1Te.PRY_lbUokfAVBJVjlllrm-iEypweuSkqzjqKy6JvEAlITohEshgx-5m-G91bHvJ_6tB3h6UBJ4G8a85ued6vsm1gHBGXaXPy-3pMW3lOetcjfc2QjiXwH4uAXonryejZ5QWiTZYlDJnlOocV4A-C4A.3mRRGWGvfeHviHdqTaA5Cg",
+    "deliverySha256": "99b6a2383e3c551a95ceb4d0126ee1cccd43cde2682e234f4f301248147cd250",
+    "protectedHeaderSha256": "f941584ed2b8d9b92fdab8fd0c0f7348212e71a3303b3ae1e9b9cb7e10acd069",
+    "payloadCanonical": "{\"deliveryId\":\"846952ad-8e58-407c-861f-76eb5a286e85\",\"old/key\":\"original/quote\\\"/😀\",\"protocol\":\"EWDAP/1\"}"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "id": "android-p8-positive-startup-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-positive-sidecar-startup-20261029-1",
+  "features": ["F04", "F06", "F07", "F43", "F44", "F46"],
+  "ui": ["UI03"],
+  "summary": "Node helper only: read the self source via URL object and separately verify actual CLI startup, health and graceful close. Preserve original pure8 and original native/package fingerprints.",
+  "commonAssertion": "Only the exact independently fingerprinted synthetic fixture starts and answers health; named lifecycle close releases both owned loopback ports. No case, claim, model, ADB/reverse or Android write occurs.",
+  "dualPlatformImpact": {
+    "android": "No source or app/runner change; parent may retain current Android candidate and bind updated Node sourceGraph independently",
+    "ios": "Unchanged; no new result"
+  },
+  "sourceGraph": {
+    "form-lease/phase7/fixture.mjs": "f9a8f840eaca987411edb23bff1caa09daa00724f599ae87ee3333c6ec1b56a9",
+    "pairing-ui/fixture.mjs": "322cd03880dfa64d5a095719ee3cbf030b68430b9e4e78b89ba312d77e2a4f38",
+    "authorization-fence/phase2/fixture.mjs": "b91aff98e2f40cce295086dae2d0190540481a4314f6b98c7c7b81e31fe7fe7c",
+    "authorization-boundaries/fixture.mjs": "cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a"
+  },
+  "sourceGraphSha256": "76c85c26c22aa9ef0cf1025e5ca58ef52d1dbbbb234fe58894ab0fbb345b3852",
+  "auxiliary": {
+    "originalPureTests": 8,
+    "unchangedPairingTests": 6,
+    "realCliStartupHealthCloseTests": 1,
+    "totalPassed": 15,
+    "failed": 0,
+    "negativeControl": "Original URL string fails new CLI lifecycle test with ENOENT before health",
+    "cases": 0,
+    "claims": 0,
+    "reverseRules": 0,
+    "modelInputs": 0
+  },
+  "nativeAcceptance": "No new device execution in leaf; parent original startup failure remains and parent must retry positive4 under its lease",
+  "parentReported": {
+    "stage10Network25": "passed",
+    "stage10Dark4": "reviewed by parent",
+    "actualMain2FreshApi37": "passed in fresh isolated environment",
+    "actualMainPhoneOriginalDefaults": "AtomicFile sidecar guard refusal retained; no default recovery/reset"
+  },
+  "centralRegistration": "parent-owned",
+  "a5Closure": false,
+  "a6": "paused"
+}

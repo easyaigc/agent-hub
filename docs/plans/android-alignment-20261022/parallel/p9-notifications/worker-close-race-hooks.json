@@ -1,0 +1,8 @@
+{
+  "operationId": "parent-p9-api26-worker-close-race-20261029-1",
+  "sharedPath": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt",
+  "baseSha256": "ee4eef9771fc56c182826c1ece367697746ece7e72edc0bc11a834fea77ebb4a",
+  "proposedSha256": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+  "parentModifiedHere": false,
+  "scope": "One supplied coordinator only; Main/Session/IO tracker/monitor/controllers/policies unchanged"
+}

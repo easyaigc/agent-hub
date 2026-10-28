@@ -36,7 +36,10 @@ class NativeChatNotificationSoundProvider : ContentProvider() {
     override fun onCreate() = context != null
     private fun library() = NativeChatNotificationSoundLibrary(requireNotNull(context), NativeSessionStorage(requireNotNull(context)))
     private fun resolve(uri: Uri): Pair<NativeChatNotificationSoundLibrary, NativeChatNotificationSound> {
-        val library = library(); val hash = hash(uri, requireNotNull(context).packageName + ".chat-notification-sounds")
+        val app = requireNotNull(context)
+        val scope = NativeChatNotificationAcceptanceScope.fromSoundUri(app, uri)
+        val hash = scope?.soundHash(app, uri) ?: hash(uri, app.packageName + ".chat-notification-sounds")
+        val library = if (scope == null) library() else NativeChatNotificationSoundLibrary(app, scope.storage(app), scope)
         return library to (library.byHash(hash) ?: throw FileNotFoundException("Unknown notification sound"))
     }
     override fun getType(uri: Uri): String { resolve(uri); return "audio/wav" }

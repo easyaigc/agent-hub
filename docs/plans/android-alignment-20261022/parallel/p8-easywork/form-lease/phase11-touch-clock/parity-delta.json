@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "id": "android-p8-positive-form-clock-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-positive-touch-clock-feedback-20261029-1",
+  "baseCommit": "e4ea9cbc7a7fa74c8f08f138aa5672480a24619d",
+  "features": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S18"],
+  "summary": "AndroidTest only: UI pending gates use rule-owned waitUntil at the same12s budget; keep default real wait for direct Session/cold lanes. Separate bounded non-consuming pointer/lifecycle/window/geometry/clock diagnostics.",
+  "commonAssertion": "One real pointer tap reaches a fully visible original button and retains its mounted form/Activity; no semantic-button fallback or repeated input; callbacks once, close rollback and original grant/claim/unknown hashes remain strict.",
+  "dualPlatformImpact": {
+    "android": "Test synchronization/observation only; no production or Node fixture change",
+    "ios": "Unchanged and paused; no new proof"
+  },
+  "rawParentEvidence": {
+    "uiCases": 2,
+    "perCaseClaimPost": 1,
+    "perCaseClaimGet": 1,
+    "resolution": "approved",
+    "perCaseRelayReads": 0,
+    "savedCallbacks": 0,
+    "scope": "Original native final-observations and sidecar close JSON; originals unchanged"
+  },
+  "clockEvidence": {
+    "composeUiTest": "1.12.1 official matching source artifact",
+    "waitUntil": "autoAdvance drives one frame per failed condition and yields Android",
+    "inputRoute": "TouchInput dispatches MotionEvents to Compose owner View, so scene pointer passes observe the actual route"
+  },
+  "bounds": {
+    "waitMsPerPhase": 12000,
+    "outerNativeMethodMs": 50000,
+    "pointerRecords": 32,
+    "lifecycleRecords": 16,
+    "focusRecords": 16,
+    "overflow": "fails",
+    "actualPointerCenterTolerancePx": 1.5,
+    "closedFormRollbackWaitMs": 12000,
+    "closedFormRollbackClock": "same rule-owned waitUntil; budget unchanged"
+  },
+  "auxiliary": {
+    "androidTestKotlin": "compiled",
+    "sourceResourceInputs": 483,
+    "nativeExecution": 0,
+    "deviceOrHostActions": 0,
+    "modelInputs": 0,
+    "newApks": 0
+  },
+  "unchangedAssertions": [
+    "real touch",
+    "whole target and system-visible window",
+    "same original form and callback once",
+    "candidate before metadata commit",
+    "closed form rollback",
+    "grant/claim/unknown bytes and hashes",
+    "default encrypted file protection"
+  ],
+  "nativeGate": "Parent rebuild combined runner and run form2 with new leases/UUIDs; prior Session2/canonical4 results keep prior fingerprints; no old failed case replay",
+  "rootCheck": "Existing central native-copy feature record gap remains parent-owned; no bypass",
+  "centralRegistration": "parent-owned; no production UI/tokens/copy/architecture change",
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/P8CommitAcceptance.kt": "eac88d9ef32ac0eb8b976b7d39c12e6820dcb1880f3830a029152a092a87b010",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkPositiveCommitTest.kt": "2272674885f14628a684237c4c83bacd980b6b4e3ef5fcdfe4afb65dc644b733",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/P8FormTouchProbe.kt": "24b1a917e05d527ec94826cd110061d0049f9a156d6ecbf9d867fbbd1c6f841a"
+  },
+  "a5Closure": false,
+  "a6": "paused"
+}

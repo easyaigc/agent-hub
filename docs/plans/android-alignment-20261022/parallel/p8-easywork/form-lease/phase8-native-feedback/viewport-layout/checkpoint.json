@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-native-pure-first-feedback-20261029-1",
+  "sourceSha256": "85e5ac7502f055d287f0851469d7c9797eb61d59ff34b982244619f4e22c63e9",
+  "compile": "passed",
+  "buildLogSha256": "582f7e29d835e2efcb86cc9d5205e0decef7c857b8602a723348709fb157e526",
+  "nativeExecutionHere": 0,
+  "status": "Diagnostics prepared; original Provider visual-overflow cause remains unresolved pending measured native evidence",
+  "parentFailures": [
+    "stage8-pairing-native/actions-1793217347773-0f510edd/instrumentation.log",
+    "stage8-pairing-native/actions-1793217368861-9ceebc67/instrumentation.log"
+  ],
+  "parentSource": "64f4c3ec53ae8dabab0c5b6d17326866ca27f3990b2ec3106de6b582eacd717b",
+  "originalTextAndOverflowAndBoundsAndPointerAssertionsRetained": true,
+  "capture": "Only exact synthetic acceptance Activity component rectangle; bounded PixelCopy on actual failure",
+  "productUiChanged": false,
+  "sharedMainSessionUnchanged": true,
+  "a5Closure": "none",
+  "a6": "paused"
+}

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-system-migration-entry-candidate",
+  "features": ["F47", "F53", "F55", "F56"],
+  "pages": ["UI12"],
+  "commonAssertions": [
+    "Password stays in memory; export/import use native system document contracts and bounded encrypted streams.",
+    "A validated durable candidate is previewed before explicit confirmation; cancel, wrong password and unsupported input preserve original files/data.",
+    "Quiescence joins actual notification/Session reader/voice producers and flushes latest in-memory metadata and serial storage writes; failure keeps the old draft model.",
+    "A successful owner boundary retires old writer/scope and restores a fresh handle/Session with its same reading ledger supplied to notifications.",
+    "Migrated notification enrollment stays closed until IO checks finish and a durable explicit enabled preference exists; foreground/settings/archive reads cannot register/off/confirm/replay.",
+    "Unknown staging/publication is observed by original identity, never automatically retried with a new ID."
+  ],
+  "dualEndImpact": {
+    "android": "Owned controller/document/preview/enrollment components and narrow storage APIs implemented. Eight exact parent shared-file overlays plus actual lifecycle regressions prepared and compiled; parent integration/native acceptance pending.",
+    "ios": "No code or acceptance result changed. Password/system file interaction follows the existing native iOS flow; binary format interoperability and equivalent lifecycle/original archive proof are not claimed."
+  },
+  "design": {
+    "entry": "Settings > Secure migration; masked password, export/import, validated preview, explicit confirmation/replacement, cancel/failure and original-result check.",
+    "copy": "Chinese/English, existing grouped settings/sheet controls and 48dp actions. Source archive remains inert; missing credentials do not become query authority.",
+    "platformDifference": "Android SAF document contracts; no iOS picker or shared file-format acceptance inferred."
+  },
+  "acceptance": {
+    "auxiliary": "709-input combined App/runner build passed; five real provider/storage/enrollment boundary methods plus two actual Activity/Session/rotation/ledger methods compile. No new device execution here.",
+    "parentRequired": "Apply exact shared overlays or reviewed three-way rebase, freeze new source/APK/runner fingerprints, run seven new methods plus archive/foreground/current P9 regressions, and actual system picker/real DEV scenarios. Parent owns device/Host/model leases.",
+    "remaining": "8MiB bounded large-text migration, EasyWork fence archive, full P7, iOS/Android interoperability and real DEV remain open."
+  },
+  "sourceAudit": "system-entry-source-audit.json"
+}

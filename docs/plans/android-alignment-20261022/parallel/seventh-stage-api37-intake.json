@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "checkpoint": "PAR7-API37-system-intake",
+  "date": "2026-10-29",
+  "device": "task-owned API37; data retained, no snapshot load/save/wipe",
+  "status": "12 native methods passed,2 failed; no complete OS/DEV claim",
+  "groups": [
+    {
+      "label": "provider",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 5,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#installedScopedProviderReturnsExactReadOnlyNormalizedBytes",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#malformedScopedUriAndWriteModeCannotReadOrMutateSound",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#silentAndOrdinaryOwnedClipsHaveDifferentRealUriBytes",
+        "com.agenthub.android.NativeChatNotificationOsProviderTest#acceptanceScopeRejectsProtectedSiblingBeforeCreatingStorage"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "98d547c290b2087cf3d775515dbb6ea61b241ddf3148545eb8c7b888c2398613"
+    },
+    {
+      "label": "denied",
+      "status": "passed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 2,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsDeniedTest#permissionCycleDenialPersistsTerminalOldEventForExplicitGrantPhase",
+        "com.agenthub.android.NativeChatNotificationOsDeniedTest#deniedPermissionReconcilesRequiredReadingWithoutChannelClaimOrPost"
+      ],
+      "failedMethods": [],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "a867a5b13a58f87d55fbaa3300347ad49062d89660c2ac085f7dafeb824bf5e7"
+    },
+    {
+      "label": "granted",
+      "status": "failed",
+      "sourceSha256": "8d163134b02bf2cfce715b8f578f0245849c9d8cdbcda320acc4c57c15fcfe9b",
+      "appSha256": "7d4e5a5858a9fd79e0f7dd19fbfd1b9642e17ccea9135e4f5ea5bcabb1c130e0",
+      "runnerSha256": "8b71e9e9b3f1a0fb94a7ca3a8cfbb2c3b2d3f4b9a40c375aa29e2cde72fb17dd",
+      "expectedMethods": 7,
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#requiredReadingGuardStillPreventsClaimAfterRealChannelPreparation",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#cancelEventsAndTargetNeverCancelAnotherOwnedRunOrTarget",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#realSilentPostHasPrivatePublicVersionAndOriginalImmutablePendingIntent",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#ownedBlockedCategoryCannotBeBypassedWithAnotherSoundVariant",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#previewOffAndBadgeOffReachActualPostedNotificationFields"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#ordinaryClipChannelUsesRegisteredProviderUriWithoutPlayingIt",
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#permissionCycleRecoveryShowsOnlyNewEventWithoutAnotherOriginalSubmit"
+      ],
+      "instrumentationStarted": true,
+      "defaultStorageElevenFieldProofs": 0,
+      "instrumentationSha256": "cf707aacb402ff7741b436a751c0a94f07a9eb784de84651a1d147b51f6b2b29"
+    }
+  ],
+  "permissionPolicyRestored": true,
+  "initialPackageUpdate": "Existing older acceptance manifest did not declare POST_NOTIFICATIONS; exact app/test updated-r without clearing data before recording/testing/restoring new permission policy",
+  "failures": [
+    "Clip channel0 versus system-1000: official channel contract correction reviewed separately; old failure retained",
+    "Original denied-cycle grant reader returned mutation-unknown-original-query; original encrypted case sealed for read-only diagnosis, no writer replay or journal repair"
+  ],
+  "retainedFailedOriginalNamespaces": 2,
+  "retainedOriginalBytes": 15490,
+  "physicalOriginalCycle": "Independent: physical granted7 still not-run; not replaced by this AVD result",
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

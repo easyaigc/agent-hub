@@ -23,7 +23,9 @@ internal data class NativeChatNotificationSound(val id: String, val title: Strin
     val sha256: String, val bytes: Int, val frames: Int, val sourceExtension: String)
 
 /** Same installation key/store as notifications. Only normalized local audio persists; source URIs do not. */
-internal class NativeChatNotificationSoundLibrary(private val context: Context, private val storage: NativeSessionStorage) {
+internal class NativeChatNotificationSoundLibrary(private val context: Context, private val storage: NativeSessionStorage,
+    private val acceptance: NativeChatNotificationAcceptanceScope? = null) {
+    init { acceptance?.requireStorage(context, storage) }
     companion object {
         const val RECORD = "native-chat-notification-sounds-v1"
         const val MAX_IMPORTED = 128
@@ -92,7 +94,7 @@ internal class NativeChatNotificationSoundLibrary(private val context: Context, 
     }
     fun catalog(): List<NativeChatNotificationSound> = transaction { builtins + load().items }
     fun find(id: String): NativeChatNotificationSound? = catalog().singleOrNull { it.id == id }
-    fun uri(item: NativeChatNotificationSound): Uri = Uri.Builder().scheme("content").authority(context.packageName + ".chat-notification-sounds")
+    fun uri(item: NativeChatNotificationSound): Uri = acceptance?.soundUri(context, item.sha256) ?: Uri.Builder().scheme("content").authority(context.packageName + ".chat-notification-sounds")
         .appendPath("v1").appendPath(item.sha256 + ".wav").build()
     fun read(id: String): ByteArray = transaction {
         val item = find(id) ?: throw FileNotFoundException("Unknown notification sound")

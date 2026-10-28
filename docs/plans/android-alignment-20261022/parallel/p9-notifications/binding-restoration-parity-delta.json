@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "stage": "P9-coordinator-binding-restoration-native-preparation",
+  "baseCommit": "b4a9834f6c6e59e79e2782df8dafae7569c2d9d6",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "绑定替换前失效旧authority/路由；同一storage和required P7 port；真实Session restore保留原未知ID/身份/草稿；新storage不能接收旧callback或激活原私有记录",
+      "androidImplementation": "production unchanged; four new native auxiliary cases",
+      "androidVerification": "compiled only; parent device rerun pending",
+      "iosImpact": "no source or verification change"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCoordinatorTest.kt": "ae886c182bd0845e9675cc3b7362bf6fc80e20526614a8ec125af5173a8859be"
+  },
+  "nativeCoordinatorMethodCount": 25,
+  "newMethods": [
+    "credentialReplacementDuringLookupKeepsOriginalTicketAndDraft",
+    "restoredSessionCanOpenOriginalBeforeReadingLedgerAllowsPolling",
+    "disposedBindingCannotPublishLateLookupIntoReplacementStorage",
+    "actualSessionRestoreRetainsOriginalUnknownWithoutAnotherSubmit"
+  ],
+  "existingMethodNamesPreserved": true,
+  "sharedFiveHookImpact": [],
+  "requiredEvidence": "parent integrated acceptance candidate and explicit physical method results; synthetic readiness and child storage do not establish real P7 initialization or migration activation",
+  "checks": {
+    "androidBuild": "acceptance assembleDebug + assembleDebugAndroidTest passed; 25 coordinator methods compiled only"
+  }
+}

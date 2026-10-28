@@ -95,6 +95,12 @@ private data class ParsedMarkdown(val source: String, val document: Node)
         val result=withContext(Dispatchers.Default) { ParsedMarkdown(text, NativeMarkdown.parse(text)) }
         withContext(Dispatchers.Main.immediate) { value=result }
     }
+    val notice=LocalNativeNoticeReadContext.current
+    val codeLabel=productText("代码")
+    val noticeDocument=remember(parsed,text,notice?.original,tag,codeLabel) {
+        parsed?.takeIf { it.source==text }?.let { NativeMarkdownNoticeProjection.document(notice?.original,it.source,it.document,tag,codeLabel) }
+    }
+    NativeNoticeReadProjection(noticeDocument)
     val open=LocalMessageLinkOpen.current
     // Preserve rendered block/scroll ownership during an async parse, but disable
     // callbacks from the earlier rendered source until the current document is ready.
@@ -113,7 +119,7 @@ private data class ParsedMarkdown(val source: String, val document: Node)
 @Composable internal fun MarkdownBlock(node: Node, tag: String, source: String) {
     val colors = MaterialTheme.colorScheme
     when (node) {
-        is Heading -> Column { Text(rememberInline(node,tag), fontSize = when (node.level) { 1 -> 22.sp; 2 -> 20.sp; else -> 17.sp }, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, modifier = Modifier.padding(top=4.dp).testTag(tag));MessageLinkWait(tag) }
+        is Heading -> Column { NativeNoticeReadText(tag,rememberInline(node,tag), fontSize = when (node.level) { 1 -> 22.sp; 2 -> 20.sp; else -> 17.sp }, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, modifier = Modifier.padding(top=4.dp).testTag(tag));MessageLinkWait(tag) }
         is FencedCodeBlock -> CodeContent(NativeMarkdown.codeBody(node, source), node.info.orEmpty(), tag)
         is IndentedCodeBlock -> CodeContent(node.literal, "", tag)
         is BlockQuote -> Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag(tag)) {
@@ -122,13 +128,13 @@ private data class ParsedMarkdown(val source: String, val document: Node)
         }
         is BulletList, is OrderedList -> Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
             NativeMarkdown.children(node).forEachIndexed { index, child ->
-                Row { Text(if (node is OrderedList) "${node.markerStartNumber + index}." else "•", Modifier.width(26.dp), fontSize=16.sp); Column(Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(6.dp)) { NativeMarkdown.children(child).forEachIndexed { i, block -> MarkdownBlock(block,"$tag-$index-$i",source) } } }
+                Row { NativeNoticeReadText("$tag-marker-$index",if (node is OrderedList) "${node.markerStartNumber + index}." else "•", Modifier.width(26.dp), fontSize=16.sp); Column(Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(6.dp)) { NativeMarkdown.children(child).forEachIndexed { i, block -> MarkdownBlock(block,"$tag-$index-$i",source) } } }
             }
         }
         is TableBlock -> MarkdownTable(node, tag)
         is ThematicBreak -> HorizontalDivider(Modifier.padding(vertical=4.dp))
-        is HtmlBlock -> Text(node.literal, fontFamily=FontFamily.Monospace, fontSize=13.sp)
-        else -> Column { Text(rememberInline(node,tag), fontSize = 17.sp, lineHeight = 24.sp, modifier = Modifier.testTag(tag));MessageLinkWait(tag) }
+        is HtmlBlock -> NativeNoticeReadText(tag,node.literal, fontFamily=FontFamily.Monospace, fontSize=13.sp)
+        else -> Column { NativeNoticeReadText(tag,rememberInline(node,tag), fontSize = 17.sp, lineHeight = 24.sp, modifier = Modifier.testTag(tag));MessageLinkWait(tag) }
     }
 }
 // Container blocks render their children and must not first flatten the entire
@@ -149,7 +155,7 @@ private data class ParsedMarkdown(val source: String, val document: Node)
     Column(Modifier.testTag("$tag-table").horizontalScroll(rememberScrollState()).border(1.dp, colors.onSurface.copy(alpha=.12f), RoundedCornerShape(8.dp)).clip(RoundedCornerShape(8.dp))) {
         rows.forEachIndexed { rowIndex,row ->
             Row(Modifier.background(if (row.parent is TableHead) colors.surface else Color.Transparent)) {
-                NativeMarkdown.children(row).forEachIndexed { index, cell -> val cellTag="$tag-$rowIndex-$index";Column(Modifier.width(widths[index])) { Text(rememberInline(cell,cellTag),Modifier.padding(10.dp),fontSize=15.sp, fontWeight=if (row.parent is TableHead) FontWeight.SemiBold else FontWeight.Normal);MessageLinkWait(cellTag) } }
+                NativeMarkdown.children(row).forEachIndexed { index, cell -> val cellTag="$tag-$rowIndex-$index";Column(Modifier.width(widths[index])) { NativeNoticeReadText(cellTag,rememberInline(cell,cellTag),Modifier.padding(10.dp),fontSize=15.sp, fontWeight=if (row.parent is TableHead) FontWeight.SemiBold else FontWeight.Normal);MessageLinkWait(cellTag) } }
             }
             HorizontalDivider(color=colors.onSurface.copy(alpha=.12f))
         }
@@ -161,12 +167,12 @@ private data class ParsedMarkdown(val source: String, val document: Node)
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surface).testTag("$tag-code")) {
         DisableSelection {
         Row(Modifier.fillMaxWidth().padding(start=12.dp,end=LocalMessageActionEndInset.current), horizontalArrangement=Arrangement.SpaceBetween) {
-            Text(if(language.isEmpty())productText("代码") else language, Modifier.weight(1f).padding(top=12.dp), fontSize=12.sp, color=colors.onSurfaceVariant,maxLines=1,overflow=TextOverflow.Ellipsis)
+            NativeNoticeReadText("$tag-language",if(language.isEmpty())productText("代码") else language, Modifier.weight(1f).padding(top=12.dp), fontSize=12.sp, color=colors.onSurfaceVariant,maxLines=1,overflow=TextOverflow.Ellipsis)
             TextButton(onClick={ clipboard.setText(AnnotatedString(text)) },modifier=Modifier.heightIn(min=MobileDesign.androidIconTouchSize.dp).testTag("$tag-copy-code")) { Text(productText("复制"),fontSize=12.sp) }
         }
         }
         SelectionContainer(Modifier.testTag("$tag-code-body")) {
-        Column(Modifier.horizontalScroll(rememberScrollState()).padding(12.dp)) {
+        Column(Modifier.horizontalScroll(rememberScrollState()).testTag("$tag-code-scroll").padding(12.dp)) {
             if (language == "diff") {
                 // Keep one selectable string. Splitting CRLF into separate Text
                 // nodes makes native cross-line Copy invent LF separators.
@@ -185,9 +191,9 @@ private data class ParsedMarkdown(val source: String, val document: Node)
                         start = end + 1
                     }
                 } }
-                Text(highlighted, fontFamily=FontFamily.Monospace,fontSize=13.sp,softWrap=false)
+                NativeNoticeReadText("$tag-code-text",highlighted, fontFamily=FontFamily.Monospace,fontSize=13.sp,softWrap=false)
             }
-            else Text(text, fontFamily=FontFamily.Monospace,fontSize=16.sp,lineHeight=22.sp,softWrap=false)
+            else NativeNoticeReadText("$tag-code-text",text, fontFamily=FontFamily.Monospace,fontSize=16.sp,lineHeight=22.sp,softWrap=false)
         }
         }
     }

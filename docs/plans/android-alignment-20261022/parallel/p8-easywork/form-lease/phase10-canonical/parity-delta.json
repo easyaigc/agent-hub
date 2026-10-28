@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "id": "android-p8-canonical-keys-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-positive-native-canonical-graph-20261029-1",
+  "baseCommit": "6ed679f27ae13920cb45a5f99c366448cec94e18",
+  "features": ["F04", "F06", "F07", "F09", "F43", "F44", "F46"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S18"],
+  "summary": "One production expression routes object member names through the existing scalar String canonical encoder; slash escaping now matches current Node/iOS contract bytes. Strict original hashes/AAD/sourceGraph remain required.",
+  "commonAssertion": "Complete original content and keys have identical protocol canonical bytes across supported string/member vectors; existing original intent/JWE/receipt bytes are never normalized or rehashed for acceptance; unknown outcomes cannot replay",
+  "productionChange": {
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkModels.kt",
+    "baseSha256": "b8b5012f1e5d09a421f5a033c41357331d33b238644b45aa29a9cdf2887aae0c",
+    "proposedSha256": "b5bf7289d410341d24f1363773866902dcf5f8eb23ac670ef428e62ead78304e",
+    "expressionsChanged": 1
+  },
+  "dualPlatformImpact": {
+    "android": "Production key encoding corrected; no Session/storage/DPoP/JWE/AAD/recovery fallback changes",
+    "ios": "Production source unchanged; exact existing serializer checked through host Swift; no iOS native run; A6 paused"
+  },
+  "auxiliary": {
+    "pinnedAospCommit": "de876a01b29230b877c9f408348c38a90ee724a5",
+    "negativeControl": {
+      "newMethods": 7,
+      "failed": 5,
+      "oldBoundaryMethods": 10,
+      "oldBoundaryFailed": 0
+    },
+    "jvm": {
+      "passed": 17,
+      "failed": 0,
+      "hostBase64Bridge": true
+    },
+    "nodeProtocolAndFixtureVectors": 12,
+    "hostSwiftVectors": 12,
+    "nativeKotlin": "compiled",
+    "newNativeMethods": 4,
+    "nativeExecuted": 0,
+    "newModelInputs": 0,
+    "nodeFixtureGraphUnchanged": "76c85c26c22aa9ef0cf1025e5ca58ef52d1dbbbb234fe58894ab0fbb345b3852"
+  },
+  "oldGraphAndroidHash": "55f8ef8980d40a7fbf09667581f1bdc734a22ce34fea1afba482a4a0c6257ca2",
+  "nativeGates": "Parent rebuild combined app/runner then execute canonical4, positive4/cold2 with fresh leases/UUIDs; old sourceGraph failures remain and old original operations never replay",
+  "rootCheck": "format/sync5/lint passed then existing central native-copy feature record gap; parent merges this delta into central coverage",
+  "centralRegistration": "parent-owned; documentation-delta.md supplies product/design/acceptance/architecture/protocol/feasibility wording",
+  "files": {
+    "apps/android/src/androidTest/assets/easywork-canonical-keys-v1.json": "7e4674776d94bb44a10ff52c540afa1ab83d40fc9fdcfc432a438e8ba3ed14dd",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCanonicalTest.kt": "b1af4e2c8188725dcc398c199fe9e50e224508a06125f510433054142840db8c",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkModels.kt": "b5bf7289d410341d24f1363773866902dcf5f8eb23ac670ef428e62ead78304e",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/aosp-source-lock.json": "0106ae26a00a5547bbb7820a91bf6c2e7144a4fa3042e6a45ce3b36ea0b67275",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/jvm/P8CanonicalTest.kt": "32471af33220799753f2f46e0648c72f6775ad6c0ba6f12cf846536659978591",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/prepare-aosp.mjs": "1e2577885ef5bb1342d5c26e1b1bf272d652da2ed4756752d3fd135482661169",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/swift-check.mjs": "7157dd039a3775a96fc0e2c10ce9d392afe5fc9b0dbfe2d55cdbd8d7a46ad511",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/validation.init.gradle": "33ae278aaa6a30c0b22e80a25d4c8dc986930cdde11cb622a140b59517e61db4",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/vectors.mjs": "2f9d1263a5544264606a7306bf09fd28069ae1b17bdb9376505ef3d664622170",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/jvm/com/agenthub/android/P8EasyWorkBoundaryTest.kt": "5a33435c3c59b15bfe70b5e84c14e0a93c79fd25fe00ac556985938be5ca568d"
+  },
+  "a5Closure": false,
+  "a6": "paused"
+}

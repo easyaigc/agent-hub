@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "id": "android-p8-main-intent-lease-20261029",
+  "features": ["F43", "F44", "F46"],
+  "baseCommit": "1391926428d6b8690035e1be5cdefb0f80456a9b",
+  "summary": "Invalidate pairing capability before any new Intent intake, including externalInbox-consumed inputs, while preserving panel/read/voice/discard/receive hooks. Shared source is an exact overlay; no actual Intent/device proof.",
+  "requiredParentMainOverlay": {
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+    "baseSha256": "a713c78fbca623229f5f57536390301154f6cbc0f58f0b68c3660225721412f8",
+    "proposedSha256": "e9b5642944d9f8dd7601d79a977b1cfe484b23f32b80fdf0a19b5e8eeeb9f277",
+    "patchSha256": "68aa5f549b3930e9ad7190448c2a9890c9dcf58a8ab17f692e660aff3e9573ce"
+  },
+  "requiredParentSessionOverlay": {
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+    "baseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+    "proposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+    "patchSha256": "8e05a95f0c0c24bff3d8d1be625dc52ce76efa3dba66a81bf6f6dd7a7848016c",
+    "previousPhase1ProposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+    "rebasedFromBaseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5"
+  },
+  "dualPlatformImpact": {
+    "android": "Overlay compiled in own variant; native MainActivity Intent case remains parent gate",
+    "ios": "No change or proof"
+  },
+  "centralRegistration": "parent-owned",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-enrollment-scope-new-base-20261029-1",
+  "features": ["F52", "F53"],
+  "ui": ["UI11"],
+  "scenarios": ["S15", "S16"],
+  "commonAssertion": "Closed enrollment permits exact original-authority receipt reads only; no enrollment/new revoke/replay; inert archive authority is never activated.",
+  "androidImplementation": "Independent native source delivery; P14 combined candidate required",
+  "androidVerification": "Parent stage19: retained-revoke/off-query-only failed at fixture before recording any query; missing-authority and foreground terminal passed. Follow-up fixture IO dispatch correction prepared; new native result not run here.",
+  "iosImpact": "No source/evidence change; A6 remains paused",
+  "source": {
+    "path": "scripts/mobile/fixtures/native/NativeChatNotificationEnrollmentOriginalsTest.kt",
+    "sha256": "af14fccf6428d592844ea921a0a1a2aeb7f8a12f30e9b6cd8b1a1a2c6978462d"
+  },
+  "destination": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt",
+  "coordinatorPrerequisiteSha256": "ee4eef9771fc56c182826c1ece367697746ece7e72edc0bc11a834fea77ebb4a",
+  "parentSharedFilesChangedHere": [],
+  "followupOperationId": "parent-p9-stage19-native-query-dispatch-feedback-20261029-1",
+  "dispatchBaseSha256": "35b4fefb712d58b2d0d58e40b13a76485b81d8ec4728f61d89ddd40b0d28842f",
+  "dispatchPatch": "native-enrollment-originals-dispatch.patch"
+}

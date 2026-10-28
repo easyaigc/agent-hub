@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operations": [
+    "parent-p8-viewport-measurements-20261029-1",
+    "parent-p8-native-ime-main-feedback-20261029-1"
+  ],
+  "features": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+  "scenarios": ["S01", "S18"],
+  "ui": ["UI03"],
+  "commonAssertion": "Full original text and exact target values remain visible, reachable and labelled; annotations do not change original UTF-16 input content. Truncation, ellipsis, omitted offsets/lines or actual clipping fail. Unknown defaults remain with their owner.",
+  "dualPlatformImpact": {
+    "android": "Test-only correction; production UI and lifecycle unchanged",
+    "ios": "No implementation or verification change; prior parity remains open"
+  },
+  "implementation": "androidTest only",
+  "auxiliaryChecks": {
+    "jvm": {
+      "tests": 18,
+      "failures": 0,
+      "skipped": 0
+    },
+    "nativeKotlin": "compile passed; no new APK or native execution",
+    "rootCheck": "format/sync5/lint passed; stopped at existing central native-copy coverage gap"
+  },
+  "nativeAcceptance": "Pending parent execution on rebuilt combined candidate; prior failures unchanged",
+  "centralRegistration": "parent-owned; merge this delta with full combined source fingerprint",
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkPairingViewportTest.kt": "3ee3f9579c0dd139bacba119fb93e1fd2212d258d5aa64114280e42e53e8848a",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/P8TextVisibility.kt": "86ad6b87ad89443ed975d25dbc0e0779fb1dad16ed9216edc9a54dcd9f9ef33d",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase9-text-visibility/jvm/P8TextVisibilityTest.kt": "f00c6e2dd6a557aadc63ae75788d27107f2f902296ed1276c68f526e22496a37",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase9-text-visibility/validation.init.gradle": "fe2cb4c623e038f54650d9a4014d14b9dd7aff24fe9f36ae1943867b0d0d63d1"
+  },
+  "a5Closure": false,
+  "a6": "paused"
+}

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "purpose": "Invalidate pairing action before incoming Intent intake, including externalInbox-consumed Intents; preserve cover/read/voice/discard and all receive logic",
+  "hooks": {
+    "own": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "baseSha256": "4e188173006145ca5fed55be663917e57fb66f372073304250dc710c7edb02aa",
+      "proposedSha256": "7c678e1f7006b2e44b9ccf4d56bb055a0d990097c813f57ba6aceeffe8b2711e",
+      "patchSha256": "e766a67058855a9fcc34b3f84c49f8018e07f14ec32dc611af7766977ce14066"
+    },
+    "parent": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "baseSha256": "a713c78fbca623229f5f57536390301154f6cbc0f58f0b68c3660225721412f8",
+      "proposedSha256": "e9b5642944d9f8dd7601d79a977b1cfe484b23f32b80fdf0a19b5e8eeeb9f277",
+      "patchSha256": "68aa5f549b3930e9ad7190448c2a9890c9dcf58a8ab17f692e660aff3e9573ce"
+    }
+  },
+  "parentAgentHubAppSha256": "c706ed51be4cc2a081dd046ef9281cecdf04d711554c4bcaf1d51c7c698198f2",
+  "agentHubAppChanged": false,
+  "foregroundHook": "Existing MainActivity.onStop -> Session.leaveForeground; final Session overlay invalidates authority there. Form lifecycle also revokes on pause/stop.",
+  "actualIntentExecution": "not-performed"
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-native-quiescence-owner-failure-20261029-1",
+  "features": ["F47", "F51", "F54", "F55", "F56", "F64"],
+  "pages": ["UI12", "UI21"],
+  "assertions": [
+    "Actual notification enrollment uses the coordinator owned scope/Job/IO context, not the original Session scope.",
+    "Held native storage work is attributed to the exact enrollment Job, its owner membership and a unique actual enrollment stack before migration export.",
+    "Cancel keeps Main responsive, same Session/draft editable and a second migration gated until the old actual owner completes.",
+    "Original submitted unknown payload, ID, ciphertext and no-publication assertions remain; no replay."
+  ],
+  "dualEndImpact": {
+    "android": "Three-line constructor binding correction plus stronger exact-owner held-IO fixture and bounded diagnostics. No copy/token/protocol change.",
+    "ios": "No iOS code/catalog/format change or new iOS acceptance inferred."
+  },
+  "validation": {
+    "parentHistorical": "12 new methods passed, held-IO1 failed at line45 before Cancel on204ead55; preserved",
+    "jvmAuxiliary": "Kotlin2.4.21/JVM17 parameter-shadow reproduction and actual blocking-child cancellation checks passed",
+    "combinedBuild": "App/runner passed with only2 parent overlays",
+    "nativeExecutedHere": false,
+    "currentNativeAcceptance": "pending parent",
+    "fullP7Passed": false
+  },
+  "sourceAudit": "quiescence-owner-scope-fix-source-audit.json",
+  "patch": "quiescence-owner-scope-fix.patch",
+  "centralRegistration": "Parent merges exact feature/assertion/source delta against current registries; keep previous failure/pass fingerprints distinct. A6/business tasks remain paused."
+}

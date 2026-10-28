@@ -1,0 +1,71 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt
+@@ -9,6 +9,7 @@
+ import androidx.compose.runtime.*
+
+ class MainActivity : ComponentActivity() {
++    companion object { const val P9_NOTIFICATION_COLD_HOOK = NativeChatNotificationColdStart.HOOK_VERSION }
+     private var systemBarsDark: Boolean? = null
+     private var externalOperationId=java.util.UUID.randomUUID().toString()
+     private fun receive(intent: android.content.Intent) {
+@@ -26,15 +27,18 @@
+         NativeReadAcceptanceTiming.configure(applicationContext,intent)
+         @Suppress("DEPRECATION")
+         val retained = lastCustomNonConfigurationInstance as? MobileSession
+-        val storage=NativeSessionStorage(applicationContext)
+-        session = retained ?: MobileSession(storage)
++        val cold=NativeChatNotificationColdStart.selectForActivity(applicationContext,intent,retained,savedInstanceState!=null)
++        val storage=cold?.storage ?: run {NativeChatNotificationColdStart.noteDefaultStorage(applicationContext);NativeSessionStorage(applicationContext)}
++        session = retained ?: cold?.session ?: MobileSession(storage)
+         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
+         session.configureChatNotifications(applicationContext)
+         session.configureVoice(applicationContext)
+-        session.discovery = CodexHostDiscovery(applicationContext, session, storage)
+-        session.easyWorkDiscovery=EasyWorkDiscovery(applicationContext,session,storage)
++        if(!NativeChatNotificationColdStart.bound(session)) {
++            session.discovery = CodexHostDiscovery(applicationContext, session, storage)
++            session.easyWorkDiscovery=EasyWorkDiscovery(applicationContext,session,storage)
++        }
+         externalOperationId=savedInstanceState?.getString("agentHubExternalOperationId")?.takeIf { value -> runCatching { java.util.UUID.fromString(value).toString()==value }.getOrDefault(false) } ?: externalOperationId
+-        session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext)
++        session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext,NativeChatNotificationColdStart.recentPhotoSource(applicationContext,session) ?: NativeRecentPhotos(applicationContext))
+         intent?.let(::receive)
+         if (retained == null) session.restore()
+         enableEdgeToEdge()
+@@ -77,7 +81,7 @@
+         renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext);readNetworkMonitor.start()
+     }
+     override fun onNewIntent(intent: android.content.Intent) { easyWorkConnectionAuthority(session).invalidate(); session.coverPanelNotices();
+-        super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent)
++        super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent);NativeChatNotificationColdStart.afterNewIntent(applicationContext,intent,session)
+     }
+     override fun onSaveInstanceState(outState: Bundle) {
+         outState.putString("agentHubExternalOperationId",externalOperationId);super.onSaveInstanceState(outState)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -62,6 +62,7 @@
+ /** Main-thread native state; public rules and projection come from the shared core. */
+ @Stable
+ class MobileSession(private val storage: NativeSessionStorage? = null, reader: HostReads? = null, commandProvider: CodexCommands? = null) : NativePanelNoticeSession {
++    companion object { const val P9_NOTIFICATION_COLD_PORT_HOOK = NativeChatNotificationColdStart.HOOK_VERSION }
+     var voice by mutableStateOf<VoiceInputController?>(null)
+         private set
+     internal var questionVoice by mutableStateOf<VoiceInputController?>(null);private set
+@@ -310,7 +311,7 @@
+             }
+             override fun state()=NativeChatNotificationSessionState(localReady,foreground,
+                 "$clientNavigationRevision:$selectionRevision:$phoneReadingEpoch",phoneReadingUncovered,
+-                phoneReading.ready && phoneReading.failure==null)
++                phoneReading.ready && phoneReading.failure==null && NativeChatNotificationColdStart.pollingAllowed(store))
+             override suspend fun savedConnections():List<NativeChatNotificationSavedConnection> {
+                 check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+                 val candidates=realClients.filter {!it.isDemo && it.scope?.agentId=="codex" && it.agentConnection==null && it.endpoint!=null}.toList()
+@@ -343,7 +344,7 @@
+                 return selectedThread==location.thread.id && sameScope(selectedClient.scope,saved.scope)
+             }
+         }
+-        chatNotifications=NativeChatNotificationCoordinator.create(context,tasks,port,language).also {
++        chatNotifications=(NativeChatNotificationColdStart.coordinator(context,tasks,port,language) ?: NativeChatNotificationCoordinator.create(context,tasks,port,language)).also {
+             it.updateComputers(realClients.toList());it.reconcile()
+         }
+     }

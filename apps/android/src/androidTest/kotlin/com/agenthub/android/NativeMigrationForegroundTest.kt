@@ -12,7 +12,7 @@ import java.security.SecureRandom
 import java.util.Base64
 import java.util.UUID
 
-/** Frozen v1 source audit/safe-subset migration only. Never calls an identity loader/monitor/Host. */
+/** Current v1 audit/archive contract. Historical refusal fixture is retained at25092e2a and in tree-out evidence. */
 class NativeMigrationForegroundTest {
     @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
     @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
@@ -93,22 +93,32 @@ class NativeMigrationForegroundTest {
         val later=pair(true);current.write(NativeMigrationForeground.IDENTITY,later.raw);current.write(NativeMigrationForeground.JOURNAL,journal(later).toString());current.write("later-fg-draft","keep later draft");val after=tree(current)
         assertEquals(generation,NativeMigrationActivation(ui.activity,owned.storage).activate(receipt));assertEquals(after,tree(current));assertEquals(later.raw,current.read(NativeMigrationForeground.IDENTITY))
     }
-    @Test fun unknownMutationHasExactReadOnlyAuditAndBlocksExportWithoutDeletingOrReplayingIt() {
+    @Test fun unknownMutationHasExactReadOnlyArchiveAndActivationNeedsQuiescentOwnerBoundary() {
         val source=seed();val identity=pair(true);val raw=nonempty(identity,source.target).toString();source.storage.write(NativeMigrationForeground.IDENTITY,identity.raw);source.storage.write(NativeMigrationForeground.JOURNAL,raw)
         val audit=NativeMigrationForeground.audit(source.storage);val operation=JSONObject(raw).getJSONArray("subscriptions").getJSONObject(0).getJSONArray("mutations").getJSONObject(0)
         assertEquals(raw,audit.readOnlyJournal());assertEquals(sha(raw),audit.journalSha256);assertEquals(listOf(operation.getString("id")),audit.operationIds);assertTrue(audit.requiresOriginalInstallation)
         assertEquals("ForegroundSourceAudit(redacted)",audit.toString());val before=tree(source.storage)
-        val file=File(owned.folder,"existing-fg-export.migration");file.writeBytes(byteArrayOf(8,3,1,7));val previous=file.readBytes()
-        val failure=runCatching{NativeMigrationExport(ui.activity,source.storage).sealFile(file,password)}.exceptionOrNull()
-        assertTrue(failure is NativeMigrationForeground.OriginalInstallationRequired);assertEquals(raw,(failure as NativeMigrationForeground.OriginalInstallationRequired).audit.readOnlyJournal())
-        assertArrayEquals(previous,file.readBytes());assertTrue(runCatching{NativeMigrationExport(ui.activity,source.storage).capture()}.isFailure);assertEquals(before,tree(source.storage))
+        val file=File(owned.folder,"existing-fg-export.migration");file.writeBytes(byteArrayOf(8,3,1,7))
+        NativeMigrationExport(ui.activity,source.storage).sealFile(file,password)
+        val receipt=NativeMigrationCandidateStore(ui.activity,owned.storage).stageFile(UUID.randomUUID().toString(),file,password)
+        val records=NativeMigrationStreamCandidate(ui.activity,owned.storage).read(receipt){it.text}
+        assertTrue(NativeMigrationForeground.ACTIVE_NAMES.none {it in records});NativeMigrationNotificationArchives.validatePortable(records)
+        val entry=JSONObject(records.getValue(NativeMigrationNotificationArchives.RECORD)).getJSONArray("installations").getJSONObject(0)
+        assertEquals(raw,records.getValue(NativeMigrationNotificationArchives.PREFIX+entry.getString("archiveId")+":foreground-v1"))
+        assertEquals(listOf(operation.getString("authorization")),entry.getJSONArray("missingAuthorizations").strings())
+        val destination=tree(owned.storage);assertTrue(runCatching{NativeMigrationActivation(ui.activity,owned.storage).activate(receipt)}.isFailure)
+        assertEquals(destination,tree(owned.storage));assertEquals(before,tree(source.storage))
         assertEquals(raw,source.storage.read(NativeMigrationForeground.JOURNAL));assertEquals("unknown",operation.getString("state"))
     }
-    @Test fun processingBatchAndOriginalOutcomesRemainExactAndCannotBePromotedByMigration() {
+    @Test fun processingBatchAndOriginalOutcomesRemainExactInArchiveAndNeverBecomeActiveAuthority() {
         val source=seed();val identity=pair(true);val value=nonempty(identity,source.target,true);val raw=value.toString()
         source.storage.write(NativeMigrationForeground.IDENTITY,identity.raw);source.storage.write(NativeMigrationForeground.JOURNAL,raw);val before=tree(source.storage)
         val audit=NativeMigrationForeground.audit(source.storage);assertEquals(raw,audit.readOnlyJournal());assertEquals(2,audit.outcomeIds.size);assertEquals(1,audit.operationIds.size)
-        assertTrue(runCatching{export(source.storage)}.exceptionOrNull() is NativeMigrationForeground.OriginalInstallationRequired);assertEquals(before,tree(source.storage))
+        val receipt=stage(source.storage);val records=NativeMigrationStreamCandidate(ui.activity,owned.storage).read(receipt){it.text}
+        assertTrue(NativeMigrationForeground.ACTIVE_NAMES.none {it in records});NativeMigrationNotificationArchives.validatePortable(records)
+        val entry=JSONObject(records.getValue(NativeMigrationNotificationArchives.RECORD)).getJSONArray("installations").getJSONObject(0)
+        assertEquals(raw,records.getValue(NativeMigrationNotificationArchives.PREFIX+entry.getString("archiveId")+":foreground-v1"))
+        assertTrue(entry.getBoolean("requiresOriginalInstallation"));assertEquals(before,tree(source.storage))
         val sub=JSONObject(audit.readOnlyJournal()!!).getJSONArray("subscriptions").getJSONObject(0)
         assertEquals(value.getJSONArray("subscriptions").getJSONObject(0).getJSONObject("batch").toString(),sub.getJSONObject("batch").toString())
         assertEquals(listOf("pending","processing"),sub.getJSONArray("outcomes").objects().map{it.getString("state")})
@@ -150,7 +160,7 @@ class NativeMigrationForegroundTest {
             val before=tree(owned.storage);assertTrue(kind,runCatching{NativeMigrationActivation(ui.activity,owned.storage).activate(receipt)}.isFailure)
             assertEquals(before,tree(owned.storage));assertEquals(original,tree(candidate))
         }
-        File(owned.folder,"foreground-v1-boundary.json").writeText(JSONObject().put("privateIdentityPortable",false).put("nonemptyJournalMigrationSupported",false)
+        File(owned.folder,"foreground-v1-boundary.json").writeText(JSONObject().put("privateIdentityPortable",false).put("nonemptyJournalRequiresOwnerLease",true)
             .put("originalUnknownAuditPreserved",true).put("identityGenerationCalls",0).put("httpCalls",0).put("nativeProductionP9Invoked",false).toString())
     }
     @Test fun frozenP9DecodersIndependentlyValidateTheSameReadOnlyOriginals() {

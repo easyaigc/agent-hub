@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-viewport-and-intent-next-20261029-1",
+  "featureIds": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+  "scope": "Android actual warm MainActivity Intent lease revocation integration preparation",
+  "sharedAssertion": "A new Intent revokes old pairing capability before any notification/file/link route, without changing the original immutable operation or target draft",
+  "android": "2 bounded actual Main native methods prepared, not run",
+  "ios": "No Swift changes or new iOS acceptance; existing warm link/lifecycle semantics are comparison only",
+  "nativeAcceptance": "not-run; parent-owned device/package lease and negative control required",
+  "a5Closure": "none",
+  "a6": "paused"
+}

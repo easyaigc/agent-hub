@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "supersedes": "phase1 proposed hooks; same exact bases plus full original draft revision checkpoint",
+  "hooks": {
+    "own": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+      "proposedSha256": "207a4f646da628c22dd9b01d361f29a427fd2eaca99304630161b0ae180e7e97",
+      "patchSha256": "9c8aaf59db22788a2327ecb509558a60e14a946c1924705cdaff9c02a1adaaea",
+      "previousPhase1ProposedSha256": "33cabcf2c5b814485df9e0047bc013f0ba634c8647be21f6443691a627a6761a"
+    },
+    "parent": {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+      "proposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+      "patchSha256": "8e05a95f0c0c24bff3d8d1be625dc52ce76efa3dba66a81bf6f6dd7a7848016c",
+      "previousPhase1ProposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+      "rebasedFromBaseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5"
+    }
+  },
+  "originalGrantAndUnknownRecordsUntouched": true,
+  "sharedSourceModifiedHere": false,
+  "preservedParallelPanelHookRegionSha256": "ead33aaf22076cc8ffe3f94b3b91a69927045608bca9e92dc4734ef74d98bd64",
+  "parentForegroundHooksPreserved": true
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "parentManifest": {
+    "path": "apps/android/src/main/AndroidManifest.xml",
+    "sha256": "03c4e71191758db71b822166418e79a881cf5cc0a850a55ee4d7a3a81f842309",
+    "postNotificationsDeclared": true,
+    "providerPresent": true,
+    "exported": "false",
+    "grantUriPermissions": "true"
+  },
+  "appliedHere": false,
+  "isolatedManifest": "older component baseline lacks these parent entries; assembly is not installation proof",
+  "fiveSharedHookImpact": [],
+  "entryDiOverlay": "none required for this framework-only phase; valid actual MainActivity PendingIntent payload/route remains a separate parent integration scenario"
+}

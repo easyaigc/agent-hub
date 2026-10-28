@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-foreground-original-archive",
+  "features": ["F47", "F53", "F55", "F56"],
+  "pages": ["UI12"],
+  "commonAssertions": [
+    "Source private identity never portable; original journal/operation/event/receipt and retained authority text preserve exact originals as read-only graph.",
+    "Destination original installation identity, nonempty journals, credentials and unknown operations survive unchanged; import cannot turn source archive into active authority.",
+    "Missing originals/future/corrupt/incomplete/quota/capacity data refuses whole archive, no partial candidate or re-registration.",
+    "Parent quiescent exact-candidate lease gates commit; fresh Session checks durable explicit-setup requirement; new enrollment needs independent human action.",
+    "No register, confirm, replay, replacement device/key/operation ID or runtime-connected claim."
+  ],
+  "dualEndImpact": {
+    "android": "Pure frozen schema readers, inert original archive, destination preservation and atomic activation lease implemented; parent main entry/coordinator changes pending.",
+    "ios": "No code/result changed. Source-installation private identity exclusion, exact read-only original archive and separate explicit subscription are common assertions; iOS equivalent implementation/native acceptance not claimed."
+  },
+  "design": {
+    "productUi": "No product entry/page/copy/system notification UI change in this backend. Parent owns source-archive recovery explanation and explicit new-subscription control.",
+    "originalStatus": "Unknown stays unknown; missing original key/credential shown as actual recovery limitation, never success/runtime authority."
+  },
+  "acceptance": {
+    "native": "NativeMigrationNotificationArchiveTest 10 + ColdTest 2 compiled only, including actual encrypted graph/file activation and independent PID prepared scenarios.",
+    "producerDifferential": "Last native method requires cc0b6ac8 actual producer classes, fails if absent; this isolated baseline lacks v2 runtime and does not claim execution.",
+    "realDev": "not run; no device/Host/model lease",
+    "remaining": "8MiB max-text streaming gate, actual parent release/rebind/setup enforcement, iOS, full P7 and EasyWork authority migration open."
+  },
+  "contracts": [
+    "foreground-archive-policy-v1.json",
+    "notification-archive-index-v1.schema.json",
+    "foreground-archive-source-intake.json"
+  ],
+  "regressionEvolution": {
+    "originalFixtureCommit": "25092e2a3949b05672b29cb475022fd5d9514aed",
+    "originalFixtureSha256": "b85fdd59546fb95c99fad828af5c782cbb196dcdf14c87e99298ed44928091b9",
+    "oldAssertionsPreserved": "Original frozen source/package/results retained; current executable runner no longer expects implemented export to fail.",
+    "currentMethods": [
+      "unknownMutationHasExactReadOnlyArchiveAndActivationNeedsQuiescentOwnerBoundary",
+      "processingBatchAndOriginalOutcomesRemainExactInArchiveAndNeverBecomeActiveAuthority"
+    ],
+    "additionalBoundary": "Empty source plus nonempty destination requires persistent explicit new enrollment after actual local publication; normal unmigrated installation retains existing behavior.",
+    "native": "All9 current foreground +12 archive methods compiled only; original results do not become new passes."
+  }
+}

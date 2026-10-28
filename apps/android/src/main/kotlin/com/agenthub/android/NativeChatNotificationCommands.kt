@@ -87,7 +87,7 @@ internal class NativeChatNotificationHttp : NativeChatNotificationCommands,
         val bytes = body?.toString()?.toByteArray(Charsets.UTF_8)
         return suspendCancellableCoroutine { continuation ->
             val active = AtomicReference<HttpURLConnection?>()
-            val future = executor.submit {
+            val future = NativeMigrationIoWork.submit(executor,continuation.context) {
                 try {
                     if (!continuation.isActive) return@submit
                     val connection = url.openConnection() as HttpURLConnection; active.set(connection)
@@ -112,7 +112,7 @@ internal class NativeChatNotificationHttp : NativeChatNotificationCommands,
                     if (continuation.isActive) continuation.resumeWithException(IllegalStateException("Notification request unconfirmed", failure))
                 } finally { active.getAndSet(null)?.disconnect() }
             }
-            continuation.invokeOnCancellation { active.getAndSet(null)?.disconnect(); future.cancel(true) }
+            continuation.invokeOnCancellation { NativeMigrationIoWork.cancelHttp(continuation.context,active,future) }
         }
     }
     override suspend fun register(snapshot: NativeChatNotificationSnapshot, identity: NativeChatNotificationIdentity, preferences: NativeChatNotificationPreferences) = withContext(Dispatchers.IO) {

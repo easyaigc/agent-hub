@@ -2,7 +2,7 @@ package com.agenthub.android
 
 import android.content.Intent
 
-/** Narrow native notification boundary. Test implementations never invoke NotificationManager or permission UI. */
+/** Narrow native notification boundary. Component doubles do not notify; explicit acceptance uses the real platform with isolated ownership. */
 internal interface NativeChatNotificationSystem {
     val sounds: NativeChatNotificationSoundLibrary
     fun languageChanged(selection: String)

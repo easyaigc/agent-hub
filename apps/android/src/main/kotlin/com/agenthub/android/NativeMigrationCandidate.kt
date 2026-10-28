@@ -20,6 +20,22 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
     private val journal = NativeOperationJournal(parent)
     internal data class Receipt(val id: String, val sha256: String, val recordCount: Int)
     internal class InvalidCandidate : Exception("Invalid migration candidate; active data was not changed")
+    /** Cold UI recovery names the existing candidate. Validation does not activate or replay it. */
+    fun currentReceipt(): Receipt? {
+        val stream=NativeMigrationStreamCandidate(context,parent)
+        return parent.operationTransaction {storage.operationTransaction candidate@{
+            val raw=storage.migrationReadTextRecords(setOf(SLOT))[SLOT]?:return@candidate null
+            val saved=objectValue(raw);val id=saved.getString("id");require(UUID.fromString(id).toString()==id)
+            val digest=saved.getString("sha256");require(digest.matches(Regex("[a-f0-9]{64}")))
+            val count=if(saved.get("version")==1) {
+                val bytes=legacyPayload(saved)
+                try {require(sha(bytes)==digest);validateArchive(bytes).size}finally{bytes.fill(0)}
+            }else {require(saved.get("version") in setOf(2,3));saved.get("records") as Int}
+            val receipt=Receipt(id,digest,count);require(count in 1..1024)
+            if(saved.get("version")==3)stream.read(receipt){}else readArchive(receipt)
+            receipt
+        }}
+    }
     fun stageFile(candidateId: String, envelope: java.io.File, password: String, replacing: Receipt? = null, checkpoint: (Int) -> Unit = {}): Receipt = try {
         if (NativeMigrationStreamCrypto.isEnvelope(envelope)) NativeMigrationStreamCandidate(context, parent).stage(candidateId, envelope, password, replacing, checkpoint)
         else {
@@ -38,6 +54,10 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         private fun sha(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
         private fun exact(value: JSONObject, keys: Set<String>) = require(value.keys().asSequence().toSet() == keys)
         private fun objectValue(raw: String) = StrictMigrationJson.parse(raw.toByteArray(Charsets.UTF_8))
+        private fun legacyPayload(saved: JSONObject): ByteArray {
+            exact(saved,setOf("version","id","sha256","payload"));val encoded=saved.getString("payload")
+            require(encoded.length<=((MAX_PAYLOAD_BYTES+2)/3)*4);return NativeMigrationRecords.bytes(encoded)
+        }
     }
 
     /** Small authenticated header is the sole publication; encrypted chunks are immutable per generation. */
@@ -106,10 +126,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         require(saved.getString("id") == receipt.id && saved.getString("sha256") == receipt.sha256)
         val clear=when(saved.get("version")) {
             1 -> {
-                exact(saved,setOf("version","id","sha256","payload"))
-                val encoded=saved.getString("payload");require(encoded.length<=((MAX_PAYLOAD_BYTES+2)/3)*4)
-                val bytes=Base64.getDecoder().decode(encoded)
-                try {require(Base64.getEncoder().encodeToString(bytes)==encoded);bytes} catch(failure: Throwable){bytes.fill(0);throw failure}
+                legacyPayload(saved)
             }
             2 -> {
                 exact(saved,setOf("version","id","sha256","size","records","generation","chunks"))
@@ -160,7 +177,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
     }
 
     private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
-        NativeMigrationForeground.requirePortable(records)
+        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)
         require("metadata" in records)
         // Parse every record with duplicate/depth/UTF-8 checks, preserving its exact original text for later activation.
         val allValues = records.mapValues { StrictMigrationJson.value(it.value.toByteArray(Charsets.UTF_8)) }
@@ -203,6 +220,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             name in voicePreferenceNames -> Unit
             name == NativeMigrationSounds.RECORD -> Unit
             name in voiceNames -> Unit
+            name in foregroundNames -> Unit
             name == "codex-private-connections-v1" -> CodexConnectionVault.validateRows(body)
             name.startsWith("draft-file:") -> {
                 manifest(body.getJSONObject("file"))

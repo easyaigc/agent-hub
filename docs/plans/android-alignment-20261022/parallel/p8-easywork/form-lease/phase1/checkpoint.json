@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-form-lease-copy-next-20261029-1",
+  "date": "2026-10-29",
+  "baseCommit": "1253af153e1a5f372ed8504b53b65303264ca365",
+  "phase": "revocable-form-action-lease",
+  "filesSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "8dd0d1f69eab36994085fe4cb08d81b66aed94799a6c4fabeaf68d475895e07e",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLeaseBinding.kt": "10dddc4ed39628025a52383f3af9f02bd61c45944ed6c6f9fc5870c45c3d795a",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "d33377b21430262d6db27d5f5e64b3a58c97556f551991871f669a4b8efc2e29",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPresentation.kt": "1820c1e6c020b404536afe78fa57398b7a96e3c60f416fbdaa0213f3d671d929",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkFormLeaseTest.kt": "d728fb06d2f5736bf0209f1518d443ed7965fe7cf501e111acfb3b442f2e026b"
+  },
+  "sharedSessionOverlay": {
+    "version": 1,
+    "operationId": "parent-p8-form-lease-copy-next-20261029-1",
+    "parentCommit": "290327a877f7440d04f3f0575e9d13015652455d",
+    "purpose": "Actual action lease checkpoint after auth/network and before credential writes/selection, monotonic target/draft/link/background invalidation and ownership-safe rollback",
+    "sharedSourceLeftUnmodified": true,
+    "hooks": {
+      "own": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+        "proposedSha256": "33cabcf2c5b814485df9e0047bc013f0ba634c8647be21f6443691a627a6761a",
+        "patchSha256": "b0f2f63695fadc08b0ff10ecb9a7e03fb18027bf54d17d03e0a0328e0b2fda11"
+      },
+      "parent": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "baseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5",
+        "proposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+        "patchSha256": "8235d14cbda2a9b21d714c926720b647f3cf0213b0380ab44ddd13f174a455cb"
+      }
+    }
+  },
+  "nativeInputFiles": 467,
+  "nativeInputSetSha256": "c03d5c01d4339884a3b4f59ad4311ff69ecccef9563e99bba3cea08cff48cc30",
+  "compiledVariant": "Own base plus exact own proposed shared overlay; actual shared file restored",
+  "hostChecks": {
+    "class": "ConnectionFormLeaseTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "xmlSha256": "8539d073878ffcceab07b17995ae3d908c5ca17cf8a36615b647bc8213ce3872",
+    "scope": "Host capability/race only"
+  },
+  "nativeTest": {
+    "class": "com.agenthub.android.NativeEasyWorkFormLeaseTest",
+    "methods": [
+      "closedManualCodeFormWithNullLinkCannotInstallLateApproval",
+      "actualActivityPauseResumeCannotReviveTheOldFormAction",
+      "sessionBackgroundForegroundWithSameNullLinkCannotReviveAction",
+      "newIncomingLinkDismissedBackToNullCannotReviveAction",
+      "targetSwitchAndReturnKeepsBothDraftsAndRefusesOldApproval",
+      "originalConversationDraftChangeAndRestoreCannotReviveAction",
+      "connectionInputChangeAndRestoreCannotReviveAction",
+      "closedFormLateFailureKeepsOriginalDraftAndUnknownBusinessReceipt",
+      "revokedLeaseCannotWriteTheActualEncryptedCredentialMapping",
+      "revokedAuthorizedWriteRollsBackOnlyItsMappingAndKeepsGrantAndUnknownReceipt",
+      "staleRollbackCannotOverwriteANewerIdenticalCredentialWrite"
+    ],
+    "groups": {
+      "close-and-background": [
+        "closedManualCodeFormWithNullLinkCannotInstallLateApproval",
+        "actualActivityPauseResumeCannotReviveTheOldFormAction",
+        "sessionBackgroundForegroundWithSameNullLinkCannotReviveAction"
+      ],
+      "link-target-and-draft-aba": [
+        "newIncomingLinkDismissedBackToNullCannotReviveAction",
+        "targetSwitchAndReturnKeepsBothDraftsAndRefusesOldApproval",
+        "originalConversationDraftChangeAndRestoreCannotReviveAction"
+      ],
+      "input-aba-and-late-failure": [
+        "connectionInputChangeAndRestoreCannotReviveAction",
+        "closedFormLateFailureKeepsOriginalDraftAndUnknownBusinessReceipt"
+      ],
+      "native-credential-write-ownership": [
+        "revokedLeaseCannotWriteTheActualEncryptedCredentialMapping",
+        "revokedAuthorizedWriteRollsBackOnlyItsMappingAndKeepsGrantAndUnknownReceipt",
+        "staleRollbackCannotOverwriteANewerIdenticalCredentialWrite"
+      ]
+    },
+    "methodTimeoutMillis": 40000,
+    "groupOuterDeadlineSeconds": 240,
+    "execution": "not-performed",
+    "networkProbeKind": "actual mounted form owner + bounded test-owned NonCancellable production Session call; not button or real Desktop proof"
+  },
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "8e8aa6331b8e668f31bdd6047ac61d704dd752c77faf3dd772dd0fa10a193b04",
+      "bytes": 24243130,
+      "retention": "Compile-only intermediate; source/log/XML retained, APK may be replaced by phase2 build; parent rebuilds integrated source before any device lease"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "63f8757e7aeef261df890465768bb61fa5768b83f773f946f19011ef8c48f72d",
+      "bytes": 4678189,
+      "retention": "Compile-only intermediate; source/log/XML retained, APK may be replaced by phase2 build; parent rebuilds integrated source before any device lease"
+    }
+  },
+  "old75MethodNamesStillPresent": true,
+  "old14ButtonSourceUnchangedInThisPhase": true,
+  "checks": {
+    "compile": "passed",
+    "compileLogSha256": "503e6de8c39e351d20f38a8dcc5ede55772b9061b838161899b554316c235f03",
+    "nativeStorageApiChanged": false,
+    "newDurableRecordTypes": false,
+    "rootCheck": "pending final phase2 and parent central registration"
+  },
+  "leaseSemantics": [
+    "Monotonic form/action/Session epoch plus original input fingerprint and target/draft snapshot",
+    "Revocation before commit blocks connection installation/selection; preserve original authorization and unknown receipts",
+    "Valid commit remains committed after later close; UI completion loses ownership",
+    "Owned rollback never replaces a newer identical write; no grant/claim/journal cleanup or automatic revoke/retry/replay"
+  ],
+  "copyStatus": "Previous local bilingual map remains for now; phase2 will replace it with normal catalog keys",
+  "deviceOrHostOrRealModelActions": 0,
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

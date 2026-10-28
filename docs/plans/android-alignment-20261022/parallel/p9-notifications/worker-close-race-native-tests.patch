@@ -1,0 +1,216 @@
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseFixture.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseFixture.kt
+new file mode 100644
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseFixture.kt
+@@ -0,0 +1,155 @@
++package com.agenthub.android
++
++import android.os.Looper
++import androidx.compose.runtime.snapshots.Snapshot
++import com.agenthub.core.TargetScope
++import kotlinx.coroutines.*
++import kotlinx.coroutines.channels.Channel
++import org.json.JSONArray
++import org.json.JSONObject
++import java.util.concurrent.CopyOnWriteArrayList
++import java.util.concurrent.atomic.AtomicBoolean
++import kotlin.coroutines.AbstractCoroutineContextElement
++import kotlin.coroutines.CoroutineContext
++
++/** Actual supplied coordinator/monitor/controllers. Fixed private-field probes are test-only;
++ * no timing loop tries to win the production race, no platform/Host command is constructed. */
++internal class NativeChatNotificationWorkerCloseFixture(val storage: NativeSessionStorage) {
++    private val f = RecoveryNativeFixture(storage)
++    private val failures = CopyOnWriteArrayList<Throwable>()
++    private val first = CompletableDeferred<Observed>()
++    private val once = AtomicBoolean()
++    private var entryCase = false
++    private var syncCase = false
++    private var loopJob: Job? = null
++    private var v1 = 0
++    private var systemCalls = 0
++    private data class Observed(val actual: Job, val registered: Job?, val retiredAtEntry: Boolean)
++    private val probe = Probe { context ->
++        if(Looper.myLooper() == Looper.getMainLooper() && ::coordinator.isInitialized) {
++            val worker = workers().values.singleOrNull()
++            if(worker != null && loopJob == null)loopJob = context[Job]
++            if(entryCase && worker != null && once.compareAndSet(false, true)) {
++                val actual = checkNotNull(context[Job]); val registered = job(worker)
++                coordinator.connectionsWillChange() // synchronous reentry before the first worker instruction
++                first.complete(Observed(actual, registered, true))
++            }
++        }
++    }
++    private class Probe(val observe: (CoroutineContext) -> Unit) : ThreadContextElement<Job?>, AbstractCoroutineContextElement(Key) {
++        companion object Key : CoroutineContext.Key<Probe>
++        val current = ThreadLocal<Job?>()
++        override fun updateThreadContext(context: CoroutineContext): Job? = current.get().also { current.set(context[Job]); observe(context) }
++        override fun restoreThreadContext(context: CoroutineContext, oldState: Job?) { current.set(oldState) }
++    }
++    private val parent = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + probe + CoroutineExceptionHandler { _, failure -> failures.add(failure) })
++    private val port = object : NativeChatNotificationSessionPort {
++        override val storage = this@NativeChatNotificationWorkerCloseFixture.storage
++        override val reading = object : NativeChatNotificationReading {
++            override suspend fun receive(event: NativeChatNotificationEvent): NativeChatNoticeReadingResult = error("No event delivery in close fixture")
++            override fun mayPresent(event: NativeChatNotificationEvent) = false
++        }
++        override fun state() = NativeChatNotificationSessionState(true, true, "fixed-worker-owner", false, true)
++        override suspend fun savedConnections(): List<NativeChatNotificationSavedConnection> { check(Looper.myLooper() == Looper.getMainLooper()); return listOf(source) }
++        override suspend fun reconcileActive(target: NativeChatNoticeTarget, ids: Set<String>, current: () -> Boolean) { check(Looper.myLooper() != Looper.getMainLooper()) }
++        override fun openExistingThread(location: NativeChatNotificationLocation, current: () -> Boolean): Boolean = error("No navigation")
++    }
++    private val system = object : NativeChatNotificationSystem {
++        private fun forbidden(): Nothing { systemCalls++; error("Worker close fixture never exercises OS") }
++        override val sounds: NativeChatNotificationSoundLibrary get() = forbidden()
++        override fun languageChanged(selection: String) = forbidden()
++        override fun permission() = NativeChatNotificationPermission(false, false, false)
++        override fun settings(channel: String?): android.content.Intent = forbidden()
++        override fun channels() = emptyList<NativeChatNotificationChannelState>()
++        override fun soundProviderRegistered() = false
++        override fun channelSoundTitle(channel: NativeChatNotificationChannelState): String = forbidden()
++        override suspend fun prepareAsync(kind: NativeChatNoticeKind, sound: String, badge: Boolean, current: () -> Boolean): String? = forbidden()
++        override fun cancelOwned(target: NativeChatNoticeTarget?) {
++            if(syncCase && once.compareAndSet(false, true)) {
++                check(Looper.myLooper() == Looper.getMainLooper())
++                val worker = workers().values.single(); val actual = checkNotNull(loopJob)
++                val registered = job(worker)
++                // Actual Delivery.cancel invokes this on NonCancellable Main, then the
++                // stale synchronize result returns to the already retired worker.
++                coordinator.connectionsWillChange(); first.complete(Observed(actual, registered, false))
++            }
++        }
++        override fun cancelEvents(target: NativeChatNoticeTarget, ids: Set<String>) {}
++        override fun post(receipt: NativeChatNoticeReceipt, preferences: NativeChatNotificationPreferences, computer: String, unread: Int, channel: String) = forbidden()
++        override suspend fun testAsync(preferences: NativeChatNotificationPreferences, current: () -> Boolean): Boolean = forbidden()
++    }
++    private val commands: NativeChatNotificationCommands = object : NativeChatNotificationCommands, NativeChatNotificationRecoveryCommands by f.commands {
++        private fun forbidden(): Nothing { v1++; error("No v1 fallback") }
++        override suspend fun register(snapshot: NativeChatNotificationSnapshot, identity: NativeChatNotificationIdentity, preferences: NativeChatNotificationPreferences): NativeChatNotificationStatus = forbidden()
++        override suspend fun preferences(snapshot: NativeChatNotificationSnapshot, deviceId: String, preferences: NativeChatNotificationPreferences): NativeChatNotificationStatus = forbidden()
++        override suspend fun unregister(snapshot: NativeChatNotificationSnapshot, deviceId: String): NativeChatNotificationStatus = forbidden()
++        override suspend fun status(snapshot: NativeChatNotificationSnapshot, deviceId: String): NativeChatNotificationStatus = forbidden()
++        override suspend fun events(snapshot: NativeChatNotificationSnapshot, deviceId: String, after: String): NativeChatNotificationFeed = forbidden()
++    }
++    private val source = NativeChatNotificationSavedConnection.capture(MobileClient(f.target.hostId, "Worker fixture",
++        TargetScope("codex", null, null, f.target.hostId, f.target.workspaceId, f.target.runtimeId), "https://worker-close.example.invalid"), "synthetic-worker-" + "a".repeat(48))
++    private lateinit var coordinator: NativeChatNotificationCoordinator
++    var result = JSONObject(); private set
++    @Suppress("UNCHECKED_CAST") private fun workers() = field(coordinator, "workers") as MutableMap<NativeChatNoticeTarget, Any>
++    private fun field(value: Any, name: String): Any? = value.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(value)
++    private fun job(worker: Any) = field(worker, "job") as Job?
++    @Suppress("UNCHECKED_CAST") private fun wake(worker: Any) = field(worker, "wake") as Channel<Unit>
++    suspend fun run(case: String): JSONObject {
++        require(case in setOf("entry-reentry", "normal-close", "sync-return-retire")); entryCase = case == "entry-reentry"; syncCase = case == "sync-return-retire"
++        var originalBefore: String? = null; var identityBefore: String? = null
++        if(syncCase)withContext(Dispatchers.IO) {
++            f.loseAck = true; check(f.sync(snapshot = source.snapshot)?.state == "mutation-unknown-original-query")
++            f.notices.update { it.copy(enabled = false) }
++            originalBefore = storage.read(NativeChatNotificationRecoveryStore.RECORD); identityBefore = storage.read(NativeChatNotificationIdentity.RECORD)
++            f.submitted.clear(); f.queried.clear(); f.queries.clear(); f.capabilityCalls = 0
++        }
++        var observer: androidx.compose.runtime.snapshots.ObserverHandle? = null
++        var failure: Throwable? = null
++        try {
++            withContext(Dispatchers.Main.immediate) {
++                coordinator = NativeChatNotificationCoordinator(parent, port, system, commands, now = { f.now }, pollMillis = 60_000, applicationId = "com.easyai.agenthub.android.acceptance")
++                if(case == "normal-close")observer = Snapshot.registerGlobalWriteObserver { changed ->
++                    if(changed === coordinator.reports && once.compareAndSet(false, true)) {
++                        check(Looper.myLooper() == Looper.getMainLooper())
++                        val worker = workers().values.single(); val actual = checkNotNull(probe.current.get())
++                        // A normal closed signal between valid report publication and the wait.
++                        // Deliberately isolate close handling from cancellation/registration timing.
++                        check(wake(worker).close()); first.complete(Observed(actual, job(worker), false))
++                    }
++                }
++                coordinator.updateComputers(listOf(source.client)); coordinator.reconcile()
++            }
++            val seen = withTimeout(10_000) { first.await() }
++            withTimeout(10_000) { seen.actual.join() }
++            withContext(Dispatchers.Main.immediate) { observer?.dispose(); observer = null; coordinator.stopAndJoinForMigration(); check(parent.isActive) }
++            result = JSONObject().put("case", case).put("registeredBeforeEntry", seen.registered === seen.actual).put("workerCompleted", seen.actual.isCompleted)
++                .put("workerCancelled", seen.actual.isCancelled).put("retiredAtEntry", seen.retiredAtEntry).put("uncaughtTypes", JSONArray(failures.map { it.javaClass.simpleName.take(96) }))
++                .put("submitted", f.submitted.size).put("capabilities", f.capabilityCalls).put("feedReads", f.queries.size).put("v1Calls", v1).put("forbiddenSystemCalls", systemCalls)
++                .put("originalIntentHash", f.submitted.singleOrNull()?.encoded()?.let(NativeChatNotificationWire::hash) ?: JSONObject.NULL)
++            check(seen.registered === seen.actual) { "Worker became visible/entered before its Job was registered: $result" }
++            check(failures.isEmpty()) { "Worker raised an uncaught exception: $result" }
++            check(v1 == 0 && systemCalls == 0)
++            withContext(Dispatchers.IO) {
++                check(NativeChatNotificationAuthorizations(storage).all().single().snapshot.authorizationFingerprint == source.snapshot.authorizationFingerprint)
++                if(entryCase) {
++                    check(seen.actual.isCancelled && f.submitted.isEmpty() && f.capabilityCalls == 0 && f.queries.isEmpty())
++                    check(storage.read(NativeChatNotificationIdentity.RECORD) == null && storage.read(NativeChatNotificationRecoveryStore.RECORD) == null)
++                } else if(syncCase) {
++                    check(seen.actual.isCancelled && f.submitted.isEmpty() && f.capabilityCalls == 1 && f.queried.isEmpty() && f.queries.isEmpty())
++                    check(storage.read(NativeChatNotificationRecoveryStore.RECORD) == originalBefore && storage.read(NativeChatNotificationIdentity.RECORD) == identityBefore)
++                    check(f.view().operations.single().state == "unknown")
++                } else {
++                    check(f.submitted.size == 1 && f.submitted.single().kind == "register" && f.capabilityCalls == 1 && f.queries.size == 1)
++                    val saved = f.view().operations.single(); check(saved.original.encoded() == f.submitted.single().encoded() && saved.state == "applied")
++                }
++            }
++            return result
++        } catch(error: Throwable) { failure = error; throw error }
++        finally {
++            try {
++                withContext(Dispatchers.Main.immediate) { observer?.dispose(); if(::coordinator.isInitialized)coordinator.stopAndJoinForMigration() }
++                parent.coroutineContext[Job]!!.cancelAndJoin()
++            } catch(error: Throwable) { if(failure != null)failure!!.addSuppressed(error) else throw error }
++        }
++    }
++}
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseTest.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseTest.kt
+new file mode 100644
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseTest.kt
+@@ -0,0 +1,51 @@
++package com.agenthub.android
++
++import androidx.test.ext.junit.runners.AndroidJUnit4
++import androidx.test.platform.app.InstrumentationRegistry
++import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
++import androidx.test.runner.lifecycle.Stage
++import kotlinx.coroutines.*
++import org.json.JSONObject
++import org.junit.*
++import org.junit.runner.RunWith
++import java.io.File
++import java.security.KeyStore
++import java.util.UUID
++
++/** Real Android Main/Looper/KeyStore, actual combined coordinator and fixed synchronous callbacks.
++ * Component-only: no Activity, OS posting, permission mutation, Host/model or default store. */
++@RunWith(AndroidJUnit4::class)
++class NativeChatNotificationWorkerCloseTest {
++    @get:Rule val timeout: org.junit.rules.TestRule = org.junit.rules.Timeout.seconds(90)
++    private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
++    @Before fun explicitFreshOwner() {
++        val args = InstrumentationRegistry.getArguments()
++        Assume.assumeTrue("Parent worker-close lease and fresh run required; skip is not acceptance", args.getString("p9WorkerCloseLease") != null && args.getString("p9WorkerCloseRun") != null)
++        require(BuildConfig.DEBUG && context.packageName == "com.easyai.agenthub.android.acceptance")
++        for(name in listOf("p9WorkerCloseLease", "p9WorkerCloseRun"))check(UUID.fromString(args.getString(name)).toString() == args.getString(name))
++        check(KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.getKey("agent-hub-mobile-v1", null) is javax.crypto.SecretKey)
++        check(!NativeChatNotificationColdRouterFiles.hasReadableMarker(context.noBackupFilesDir)) { "Incomplete cold lease preserved; do not mix native queues" }
++        InstrumentationRegistry.getInstrumentation().runOnMainSync { check(Stage.values().flatMap { ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(it) }.none { it is MainActivity }) }
++    }
++    @Test fun synchronousEntryReentryFindsRegisteredJobAndCancelsBeforeFirstSync() = runCase("entry-reentry")
++    @Test fun synchronousRetirementDuringCancelReturnsWithoutClosedWaitOrReplay() = runCase("sync-return-retire")
++    private fun runCase(case: String): Unit = runBlocking {
++        val args = InstrumentationRegistry.getArguments(); val run = checkNotNull(args.getString("p9WorkerCloseRun")); val lease = checkNotNull(args.getString("p9WorkerCloseLease"))
++        withContext(Dispatchers.IO) { NativeChatNotificationCycleFiles.requireFresh(context.noBackupFilesDir, run) }
++        val storage = NativeChatNotificationAcceptanceScope.create(context, run).storage(context)
++        val fixture = withContext(Dispatchers.IO) { NativeChatNotificationWorkerCloseFixture(storage) }; var failure: Throwable? = null
++        try { fixture.run(case) } catch(error: Throwable) { failure = error }
++        finally {
++            try { withContext(Dispatchers.IO) {
++                storage.awaitQueuedWrites(); storage.retireWriter()
++                val folder = File(context.filesDir, "acceptance/P9-worker-close/$lease").apply { check(mkdirs() || isDirectory); android.system.Os.chmod(absolutePath, 448) }
++                check(folder.canonicalFile == File(context.filesDir.canonicalFile, "acceptance/P9-worker-close/$lease"))
++                val file = File(folder, "$run-${UUID.randomUUID()}.json"); check(file.createNewFile()); android.system.Os.chmod(file.absolutePath, 384)
++                file.writeText(JSONObject().put("version", 1).put("lease", lease).put("run", run).put("case", case).put("api", android.os.Build.VERSION.SDK_INT)
++                    .put("passed", failure == null).put("failureType", failure?.javaClass?.name?.take(128) ?: JSONObject.NULL).put("result", fixture.result)
++                    .put("boundary", "Real Android Main/storage; fixed local synthetic transport/system. No Activity/Host/model/OS notification proof; encrypted fixture retained.").toString())
++            } } catch(error: Throwable) { if(failure != null)failure!!.addSuppressed(error) else failure = error }
++        }
++        failure?.let { throw it }; Unit
++    }
++}

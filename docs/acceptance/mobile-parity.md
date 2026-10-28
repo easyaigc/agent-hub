@@ -1271,3 +1271,55 @@ I4-3d1：可读态系统入口16原生辅助/16默认11字段通过；外部Inte
 Android PAR2分候选复验阅读11项、附件所有权17项和严格数值协议16项，真机/API26各自结果独立保存；声音16项、通知回执18项及跨UID声音URI拒绝也按原冻结候选登记。后续候选的前台恢复26项、设置/声音交互10项真机通过，容量/声音迁移夹具修复和旧GCM边界继续分项复验。旧失败、超时、安装指纹读取失败、API26服务不可用与未启动记录均保留，不以合成原生通过代替真实Host/模型/OS送达或完整视觉验收。完整阶段仍开，见[PAR2复核](../plans/android-alignment-20261022/parallel/second-stage-review.md)。
 
 关联 S04／S11／S17／S18、UI06／UI21。双端 listening 显示两侧实时声纹与居中“轻触停止录音”，点击中间区域沿原 finish 转写并保留原草稿边界；准备、转写和失败态不提供该动作。iOS 主输入和问题回复共用，Android 同步现有主输入录音条。实现、构建、原生 UI 及未验范围分项见[专项记录](voice-recording-stop-hint-20261028.md)。不将合成 UI 转写记为真实采音或 ASR，不恢复 A6 其他暂停项。
+
+## Android 同账本可见提醒的验收边界
+
+PAR6 的实际 Session 接线必须单独验证：原请求/目标/渲染身份、提醒晚到、正文与提醒相互独立、遮挡/后台/更换凭据前撤销、存储延迟后的原子重检、问题草稿与焦点保持，以及消息计划只在精确原正文展开时确认。默认惰性组件的旧12项、Host/JVM辅助或iOS历史结果不能替代这一批实际原生证据。
+
+归档与通知的初轮失败按各自源码/APK/runner保留；尚未执行、预检失败、单个方法通过和整批通过分别登记。完整迁移的实际系统文件入口、旧Session退出/新Session重绑、显式新订阅、真实Host/系统推送/供应商、语音和完整视觉矩阵继续保留未验状态；任务/项目与iOS A6暂停。
+
+## Android 系统通知原生场景
+
+PAR7按准确源码/App/runner/设备及独立UUID资源执行14项：Provider5先保持权限；API33+记录授权/flags后拒绝2，随后允许7并核原操作不重放，最后恢复原授权。API26仅适用Provider5与允许6，另3项记不适用。不能把跳过/编译/模拟SystemPort或其他平台结果当OS通过。清理只限本次UUID的渠道、通知、导入声音和已知存储，未知/失败证据保留；真实Host/桌面/模型、后台供应商、系统UI与听感仍单列。
+
+## Android 配对租约的40项原生门槛
+
+PAR8按实际Source/App/runner运行按钮14、迟到/ABA11、语言AX5、Main Intent2、慢IO2、视口与真实IME6。受控issuer/TLS/DPoP为合成对端；实际入口、存储、原grant/claim/unknown和默认数据保护分别验明。预检/超时/配置错误不得算通过，实际IME缺失直接失败，不用仅文本存在代替完全可见/点击。正向完整连接、真实issuer/桌面/模型、camera和完整A5七组仍独立开放；原未知业务操作不重放。
+
+## Android 渠道策略修正与原权限周期
+
+原API26/37的0/-1000失败必须保留。PAR9修正仅在准确acceptance scope记录实际提交值，与独立同包系统控制渠道比较，仍核真实通知PRIVATE、公开版脱敏、原PendingIntent及声音字节。修正场景重新绑定候选/设备，不回改旧结果。API37原拒绝周期grant-reader返回unknown-original-query，先只读核原回执和fixture生命周期；旧writer不重跑、不改journal造成功，手机原周期独立待验。
+
+PAR9 独立API37渠道策略复验2项通过，见[原生回执](../plans/android-alignment-20261022/parallel/ninth-stage-channel-native.json)。权限原值恢复；没有传旧cycle或重跑原writer/reader。API26修正版和物理机允许权限仍单列。
+
+PAR10：P8原生失败修正、严格视口诊断与正向提交准备，P9固定原票据首Activity及合成响应跨PID准备已接入；编译/原生执行结果另行登记。旧失败原件不改写，任务项目与iOS A6暂停。
+
+PAR11 接入P7长面板覆盖812b423a及元数据continuity865e0102；30项JVM辅助与原生准备分开，实际短视口、Unicode、跳中段、换请求、IME/焦点、窗口和迟到账本仍待新组合原生验收。既有Session/ledger/P9入口不替换。
+
+PAR12：语音权限原capture/launcher代次恢复、配对UTF-16双通道/实际字形与clip验证、通知router/周期职责/完成类别前提修正分拆接入。原麦克风/听写及生产通知类别默认不变；实际原生待新候选，未知旧操作不重放。
+
+PAR13长文行尾格式仅由同一layout完整行前缀与真实可见行末作证，不能用相邻段或bottom补中段。保留原10失败，新候选复验；P8正向fixture真实监听自检与Android原生分开。
+
+PAR14 系统迁移入口采用d9fddf80/7bf63736/d83d2e78，核12文件base/proposed后应用精确shared/producer patch，25-key标准catalog合并1879。13项新原生待执行；IO/runnable完成、取消保草稿、原ledger重绑、原candidate不重放及真实SAF分别留证。完整P7和iOS格式互操作未关闭。
+
+PAR15：四个正向方法此前在sourceGraph严格预检失败、0case；对象key编码候选按12组Node/协议/宿主Swift与实际AOSP源码辅助对齐，旧表达式保留负向。4个新native及正向保存/cold仍待新候选；原JWE/AAD、未知原始字符串/指纹和旧失败不重写。
+
+PAR14初验86通过/1失败，coordinator构造参数scope遮蔽导致owner提前完成；采用parentScope修复，原静止断言保留并补Job/lock归属诊断，须新原生。PAR15 actual Android canonical4与原字节保护通过，直接Session2通过；按钮2原case在approved后pending超时，框架等待待修。详见对应档案，真实SAF/DEV与完整A5未关闭。
+
+PAR17 coordinator组合保留owner作用域修正；登记关闭时本地原inventory、原授权GET及off query-only等8辅助通过，未初始化/失败/离开前台仍关闭。实际Android原生与新的cold5角色需按冻结指纹单列，原失败/旧未知不重放。
+
+PAR17物理API33按04a461a1/App c07a5405/runner 32f790a3：60通过/1失败；迁移13项全通过，owner作用域修正确认。coordinator前台post观察需修正真实完成条件，原件只读新3项仍待。PAR15新cold writer仅准备检查点通过，reader末尾目录guard失败，整例失败；原lease封存、0输入重放。真实SAF/full DEV不因此关闭。
+
+PAR18仅修正实际配对表单验收的规则时钟驱动并补实际触点/窗口/原form诊断；不改产品UI和iOS，不加等待预算或语义点击替代。原2失败保留，新2方法须新UUID/新runner验证。
+
+PAR19新3 selector各用独立run/lease，真实Android原件/archive/enrollment与合成backend/OS分开；源代理35b4fefb精确映射AndroidTest。前台post旧失败、cold旧失败原lease均保留；只读维护/审阅seal不重复输入且不算产品cold通过。待新冻结候选执行。
+
+PAR19新五种cold场景全通过（每例三PID写/读/维护，15角色、3不同方法），实际Activity前置选择及同ticket/原回执隔离通过，OS通知posting/tap未在此例验证。真机前台post观察和缺原授权拒绝2通过，另2有效原授权查询fixture线程契约待修；旧失败原lease已只读审阅后封存，仅debug路由释放，原输入不重放。
+
+PAR20三处scope值断言和查询transport自身IO切换仅修测试，待新UUID原生；严保六字段/null、off-Main/full原授权/无新revoke。原失败保留。维护helper新目录fsync只编译，旧lease已按原候选封存，禁止为补证明重执行；掉电矩阵未验。
+
+PAR20 090df0cc/App c07a5405/runner 95b40e4f：真机配对form/rollback/Session4，原回执query3在真机/API37各3，共10本次通过/7不同方法。所有原失败保留，新UUID；query仅原授权，0新revoke/feed/重放。生产App与17–20字节相同；真实issuer/Host/模型、跨PIDcandidate、系统SAF和完整矩阵继续单列。
+
+PR51独立回补worker退出修复：Main/Session/voice维持f73c036a，P7大文本/残留/新语音仍在stage7。Stage7 worker30是相关边界证明；本PR准确App/runner和迁移owner回归、CI另验，尚未用旧结果冒称通过。原异常/CI失败保持。
+
+PR51独立候选d68312b4/App3a33cfb7/runner728be44c：API26共43、新手机headless5，共48次/43不同方法全部通过，30默认11字段保护；Main/Session/voice保f73原字节，不含stage7帧/残留/新语音。未知原操作不重放，实际OS/provider/完整DEV与准确head CI另验；旧异常/Linux失败未删除，iOS/A6不改。

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "checkpoint": "PAR15-canonical-and-positive-native",
+  "date": "2026-10-29",
+  "device": "fresh task-owned API37",
+  "canonical": {
+    "label": "actual-native-canonical-and-originals",
+    "status": "passed",
+    "sourceSha256": "cbddbc96b0a428f5660d08bb3d7424803c15660244fd255a4a045c6d33f76eff",
+    "appSha256": "9c97812eba8400588ad021240795aadc10ba2871d2aa138758e2ed4e22bc18dd",
+    "runnerSha256": "8f26c84db3917ceda60693e5874cedb60e46d3343551045038655c8f2ee62824",
+    "passedMethods": [
+      "com.agenthub.android.NativeEasyWorkCanonicalTest#actualAndroidKeyAndValueEncodingMatchesAllCrossLanguageVectors",
+      "com.agenthub.android.NativeEasyWorkCanonicalTest#unknownJournalRetainsOriginalRawIntentAndFingerprintAcrossReopen",
+      "com.agenthub.android.NativeEasyWorkCanonicalTest#sourceGraphHashRemainsStrictForChangedKeysValuesAndHashes",
+      "com.agenthub.android.NativeEasyWorkCanonicalTest#originalJweUsesItsOriginalProtectedHeaderAndRejectsReencoding"
+    ],
+    "failedMethods": [],
+    "instrumentationSha256": "f1ca325a57a7df1d28a04f0c4bbb2697a1a53bdf8b1556dc7ebc74c8a2224507"
+  },
+  "positiveGroups": [
+    {
+      "label": "positive-fresh-form",
+      "status": "failed",
+      "sourceSha256": "cbddbc96b0a428f5660d08bb3d7424803c15660244fd255a4a045c6d33f76eff",
+      "appSha256": "9c97812eba8400588ad021240795aadc10ba2871d2aa138758e2ed4e22bc18dd",
+      "runnerSha256": "8f26c84db3917ceda60693e5874cedb60e46d3343551045038655c8f2ee62824",
+      "passedMethods": [],
+      "failedMethods": [
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#closedActualFormAfterCandidateWriteCannotActivateOrCompleteOldCallback",
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#correctGrantActivatesActualCandidateAtFinalCommitAndOriginalFormCompletesOnce"
+      ],
+      "instrumentationSha256": "1844fb0001371b9ac54a43d237b53b9cd9b6fe69517c5587d5970c57f1b2863d"
+    },
+    {
+      "label": "positive-fresh-failure",
+      "status": "passed",
+      "sourceSha256": "cbddbc96b0a428f5660d08bb3d7424803c15660244fd255a4a045c6d33f76eff",
+      "appSha256": "9c97812eba8400588ad021240795aadc10ba2871d2aa138758e2ed4e22bc18dd",
+      "runnerSha256": "8f26c84db3917ceda60693e5874cedb60e46d3343551045038655c8f2ee62824",
+      "passedMethods": [
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#lastWorkspaceReadFailureRollsBackCandidateWithoutActivatingOrReclaimingGrant",
+        "com.agenthub.android.NativeEasyWorkPositiveCommitTest#changedOriginalDraftPlusLastReadFailureCannotCommitOrClearNewDraft"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "d1dcee84660c962c1c3525fbe1c9fbba01e4c0a0a6743a9d0db0480b4446c75c"
+    }
+  ],
+  "canonicalPassed": 4,
+  "directSessionBoundaryPassed": 2,
+  "actualFormFailed": 2,
+  "formFailure": "Original UI cases issued one claim POST and GET each, reached approved, then no relay request before existing 12s pending timeout. HTTP-only polling does not advance Compose clock; owner preparing framework wait without timeout expansion or replacing physical tap. Raw old cases retained, never rerun.",
+  "originalBytes": "Android slash/strict source graph, exact original JWE protected AAD and unknown raw journal/hash pass; no original reserialization or replay.",
+  "resources": "Own listener/two reverse mappings closed; no active case",
+  "limits": [
+    "Synthetic loopback issuer only; actual issuer/Desktop/Relay HTTPS and seven-group A5 remain open",
+    "Cold writer/readers not executed in this checkpoint"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

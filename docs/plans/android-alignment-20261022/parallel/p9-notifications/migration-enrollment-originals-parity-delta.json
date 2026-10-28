@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "stage": "P9-P14-enrollment-original-access-review",
+  "operationId": "parent-p9-migration-enrollment-integration-review-20261029-1",
+  "baseCommit": "04cacbf2f968cf834b3448e23ea9d99815e4df36",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "自动enrollment关闭不吞掉本安装原件核对；closed off只读原件，不生成新撤销；target/authority/unknown ID不可替换",
+      "androidImplementation": "proposed exact one-file coordinator overlay plus reusable auxiliary; parent not modified",
+      "androidVerification": "supplied baseline reproduction; proposed8 + existing95 auxiliary; no native here",
+      "iosImpact": "source/evidence unchanged; A6 paused"
+    },
+    {
+      "id": "F53",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "自动enrollment关闭不吞掉本安装原件核对；closed off只读原件，不生成新撤销；target/authority/unknown ID不可替换",
+      "androidImplementation": "proposed exact one-file coordinator overlay plus reusable auxiliary; parent not modified",
+      "androidVerification": "supplied baseline reproduction; proposed8 + existing95 auxiliary; no native here",
+      "iosImpact": "source/evidence unchanged; A6 paused"
+    }
+  ],
+  "sourceSha256": {
+    "scripts/mobile/check-chat-notification-enrollment.mjs": "4cb69e72be18483615aa06f82c7d8d8e844d26cf4db82ad6c250a7ec7325f747",
+    "scripts/mobile/fixtures/EnrollmentArchiveBoundary.kt": "03afe4649ac1a9848f747a327212c5995e1e0d674679cb5fbbbb3b62a2d50101",
+    "scripts/mobile/fixtures/EnrollmentCoordinatorVectors.kt": "4ace3e0b9bc2c5a1450245fb204f638217d5310832888c2505ffccaa01c6d689",
+    "scripts/mobile/fixtures/android/os/Looper.java": "6178132897221c0b62dd79d1237c02fa8861b29759f340acf14dbcf10c74ccab"
+  },
+  "parentSharedActualChangesHere": [],
+  "proposedSharedChanges": [
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt"
+  ],
+  "coldIngress": "source-reviewed against Main27c5ad58/Sessione9c38fe9; fresh cold native unverified here",
+  "p7ArchiveAndTombstone": "reviewed read-only; actual graph/claim path not exercised by auxiliary",
+  "results": "native/full DEV not-run; old operations and failed leases unchanged"
+}

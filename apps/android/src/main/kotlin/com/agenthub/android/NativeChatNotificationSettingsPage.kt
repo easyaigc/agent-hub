@@ -28,7 +28,7 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
     store: NativeChatNotificationStore, platform: NativeChatNotificationSystem,
     computers: List<NativeChatNotificationComputer>,
     onExplicitDisable: ((hostId: String?, savedRevision: String, actionId: String) -> Unit)? = null,
-    onChanged: () -> Unit = {}, status: @Composable (() -> Unit)? = null,
+    onChanged: () -> Unit = {}, interactionReady: Boolean=true, status: @Composable (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val tasks = rememberCoroutineScope()
@@ -64,7 +64,7 @@ internal data class NativeChatNotificationComputer(val target: NativeChatNoticeT
         return
     }
     val preferences = requireNotNull(state.preferences)
-    val writable = state.writable
+    val writable = state.writable&&interactionReady
     fun settings(channel: String? = null) {
         try { context.startActivity(platform.settings(channel)) } catch (_: Exception) { error = true }
     }

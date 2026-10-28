@@ -61,7 +61,8 @@ internal class NativeTimelineCache {
 
 /** Main-thread native state; public rules and projection come from the shared core. */
 @Stable
-class MobileSession(private val storage: NativeSessionStorage? = null, reader: HostReads? = null, commandProvider: CodexCommands? = null) {
+class MobileSession(private val storage: NativeSessionStorage? = null, reader: HostReads? = null, commandProvider: CodexCommands? = null) : NativePanelNoticeSession {
+    companion object { const val P9_NOTIFICATION_COLD_PORT_HOOK = NativeChatNotificationColdStart.HOOK_VERSION }
     var voice by mutableStateOf<VoiceInputController?>(null)
         private set
     internal var questionVoice by mutableStateOf<VoiceInputController?>(null);private set
@@ -177,12 +178,16 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     var easyWorkDiscovery: EasyWorkDiscovery? by mutableStateOf(null)
     var connectionBusy by mutableStateOf(false)
     var projectBusy by mutableStateOf(false)
-    var incomingEasyWorkLink: PendingAgentLink? by mutableStateOf(null)
+    private var incomingEasyWorkLinkState: PendingAgentLink? by mutableStateOf(null)
+    var incomingEasyWorkLink: PendingAgentLink?
+        get()=incomingEasyWorkLinkState
+        set(value) {if(incomingEasyWorkLinkState!=value){easyWorkConnectionAuthority(this).invalidate();incomingEasyWorkLinkState=value}}
     val easyWorkLogin=storage?.let(::EasyWorkLogin)
     private val easyWorkDeviceAuthorization=storage?.let(::EasyWorkDeviceAuthorization)
     private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!) }
     private val easyWorkAgent=easyWorkSessions?.let(::EasyWorkAgentClient)
-    private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val migrationIo=NativeMigrationIoWork()
+    private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate+migrationIo)
     internal val desktopSuggestionReader=NativeDesktopSuggestionReader(tasks)
     private val suggestionReadAhead=NativeSuggestionReadAhead(tasks)
     private var suggestionNeedsFreshHistory by mutableStateOf(false)
@@ -282,7 +287,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var foreground=true
     val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
     internal val attachmentRecoveryBusy: Boolean get()=documentPicker?.recovery?.let { it.loading||it.busy }==true||photoPicker?.recovery?.let { it.loading||it.busy }==true||cameraCapture?.recovery?.let { it.loading||it.busy }==true
-    internal val phoneReading=NativePhoneReadingStore(storage,tasks) {syncPhoneReadAcknowledgements();chatNotifications?.reconcile()}
+    internal val phoneReading=NativePhoneReadingStore(storage,tasks) {syncPhoneReadAcknowledgements();chatNotifications?.reconcile()}.apply {beforeNoticeRead={chatNotifications?.invalidateBeforeChange()}}
     internal var chatNotifications by mutableStateOf<NativeChatNotificationCoordinator?>(null)
         private set
     internal fun configureChatNotifications(context: android.content.Context) {
@@ -307,7 +312,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             }
             override fun state()=NativeChatNotificationSessionState(localReady,foreground,
                 "$clientNavigationRevision:$selectionRevision:$phoneReadingEpoch",phoneReadingUncovered,
-                phoneReading.ready && phoneReading.failure==null)
+                phoneReading.ready && phoneReading.failure==null && NativeChatNotificationColdStart.pollingAllowed(store))
             override suspend fun savedConnections():List<NativeChatNotificationSavedConnection> {
                 check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
                 val candidates=realClients.filter {!it.isDemo && it.scope?.agentId=="codex" && it.agentConnection==null && it.endpoint!=null}.toList()
@@ -333,14 +338,14 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 val saved=realClients.singleOrNull(location.connection::matches) ?: return false
                 if(location.workspace.scope?.let {NativeChatNoticeTarget.from(it)}!=location.connection.target ||
                     location.workspace.threads.none {it===location.thread} || location.thread.hostId!=saved.id)return false
-                chatNotifications?.navigationWillChange()
+                invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
                 workspaces[saved.cacheKey(null)]=location.workspace
                 selectVerifiedClient(saved)
                 selectThread(location.thread)
                 return selectedThread==location.thread.id && sameScope(selectedClient.scope,saved.scope)
             }
         }
-        chatNotifications=NativeChatNotificationCoordinator.create(context,tasks,port,language).also {
+        chatNotifications=(NativeChatNotificationColdStart.coordinator(context,tasks,port,language) ?: NativeChatNotificationCoordinator.create(context,tasks,port,language)).also {
             it.updateComputers(realClients.toList());it.reconcile()
         }
     }
@@ -350,6 +355,60 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val target=TargetScope("codex",null,null,event.target.hostId,event.target.workspaceId,event.target.runtimeId)
         val position=event.readPosition?.let {ThreadReadPosition(it.revision,it.messageId,it.contentVersion)}
         return NativeReadingEvent(event.id,target,thread,event.kind.wire,position,event.runId,event.requestId,event.operationId)
+    }
+
+    // P7 panel visibility uses the original P9 ledger and existing Session writer.
+    override val panelNoticeLedger get()=phoneReading.ledger
+    override val panelNoticeLifecycle get()=phoneReading.lifecycle
+    internal val panelNoticeBinding get()=phoneReading.noticeBinding
+    override val hasPanelNoticeBinding get()=phoneReading.noticeBinding!=null
+    override suspend fun awaitPanelNoticeReading()=phoneReading.awaitReconciliation()
+    private var panelNoticeRenderRevision=0L
+    private val panelNoticeAuthorityGuard=object: NativeNoticeReadGuard {
+        override fun <T> ifCurrent(block: ()->T): T? {
+            val snapshot=androidx.compose.runtime.snapshots.Snapshot.takeSnapshot()
+            return try { snapshot.enter {
+                if(!localReady || !foreground || voice?.active==true || aiSharingRequest!=null || incomingEasyWorkLink!=null || importing || error!=null)null else block()
+            } } finally { snapshot.dispose() }
+        }
+    }
+    private fun invalidatePanelNoticeForHistory(key: String,page: MobileHistory) {
+        if(key!=targetKey)return
+        val old=historyPages[key]
+        if(old?.runtime?.approvals!=page.runtime?.approvals || old?.runtime?.proposedPlan!=page.runtime?.proposedPlan ||
+            old?.scope?.let {ThreadReadingIdentity.scopeKey(it)}!=page.scope?.let {ThreadReadingIdentity.scopeKey(it)})invalidatePanelNoticeContext()
+    }
+    private val panelBlockedCredentialRevisions=mutableMapOf<String,Long>()
+    private fun invalidatePanelNoticeContext() { panelNoticeRenderRevision++;phoneReading.clearNoticePresentation() }
+    private fun invalidatePanelNoticeCredential(id: String) {
+        panelBlockedCredentialRevisions[id]=revisions[id] ?: 0
+        invalidatePanelNoticeContext();phoneReading.lifecycle.leave()
+    }
+    override fun coverPanelNotices() {
+        invalidatePanelNoticeContext();phoneReading.lifecycle.noticeSurface(false)
+    }
+    override fun capturePanelNoticePresentation(): NativePanelNoticePresentation? {
+        val client=selectedClient;val scope=client.scope ?: return null;val thread=selectedThread
+        val revision=revisions[client.id] ?: 0
+        if(!localReady || !foreground || client.isDemo || thread.isEmpty() || thread.startsWith("draft-") ||
+            incomingEasyWorkLink!=null || voice?.active==true || aiSharingRequest!=null || importing || error!=null || panelBlockedCredentialRevisions[client.id]==revision ||
+            loadedHistorySelections[targetKey]!=(selectionRevision to revision))return null
+        val page=historyPages[targetKey] ?: return null
+        if(page.hostId!=client.id || page.threadId!=thread || page.scope==null ||
+            runCatching {ThreadReadingIdentity.key(page.scope,thread)!=ThreadReadingIdentity.key(scope,thread)}.getOrDefault(true))return null
+        val reader=client.readerId?.let(::nativeReaderId) ?: return null
+        val original=runtime ?: return null
+        val connection=readingSHA(JSONArray(listOf(client.id,client.endpoint,client.readerId,client.codexDirect?.fingerprint,
+            client.agentConnection?.json()?.toString())).toString())
+        val key=NativePanelNoticeKey(ThreadReadingIdentity.key(scope,thread),targetKey,reader,connection,
+            selectionRevision,clientNavigationRevision,revision,phoneReadingEpoch,panelNoticeRenderRevision,original.approvals.toList(),original.proposedPlan)
+        return NativePanelNoticePresentation(scope,thread,key,panelNoticeAuthorityGuard)
+    }
+    override fun presentPanelNotices(presentation: NativePanelNoticePresentation?,uncovered: Boolean) {
+        phoneReading.lifecycle.foreground(foreground);phoneReading.lifecycle.noticeSurface(uncovered)
+        // Revalidate on Main after composition. No notice/credential disk read occurs here.
+        val current=if(uncovered)capturePanelNoticePresentation() else null
+        phoneReading.presentNoticeFrame(current?.takeIf {presentation?.key==it.key})
     }
 
     private var phoneReadingProof by mutableStateOf<NativeReadingProof?>(null)
@@ -369,7 +428,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     internal val phoneReadingDirectoryCompleted=mutableStateMapOf<String,Int>()
     internal val phoneReadingDirectoryFailures=mutableStateMapOf<String,String>()
     internal val phoneReadingDirectoryBusy get()=phoneReadingDirectoryJob?.isActive==true
-    internal val phoneReadingError get()=phoneReading.failure
+    internal val phoneReadingError get()=phoneReading.failure ?: phoneReading.noticeFailure
     internal val phoneUnreadCount get()=phoneReading.snapshot.count
     internal val phoneUnreadKnown get()=phoneReading.ready
     fun unreadConversationCount(client: MobileClient): Int? = if(client.isDemo)0 else if(!phoneReading.ready)null else client.scope?.let(phoneReading.snapshot::count)
@@ -381,10 +440,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val notificationSurfaceChanged=phoneReadingUncovered!=uncovered
         if(notificationSurfaceChanged)chatNotifications?.invalidateBeforeChange()
         phoneReadingUncovered=uncovered;phoneReading.lifecycle.foreground(foreground);phoneReading.lifecycle.uncovered(uncovered)
-        if(!uncovered) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear() }
+        if(!uncovered) { phoneReading.lifecycle.hideBody();attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear() }
         if(notificationSurfaceChanged)chatNotifications?.reconcile()
     }
-    internal fun retryPhoneReading() { attemptedPhoneReading=null;phoneReadingRetry++;reconcilePhoneReading() }
+    internal fun retryPhoneReading() { phoneReading.retryNoticePresentation();attemptedPhoneReading=null;phoneReadingRetry++;reconcilePhoneReading() }
     internal val visiblePhoneReading: NativeVisiblePhoneReading? get() {
         val client=selectedClient;val target=client.scope ?: return null
         if(selectedThread.isEmpty())return null
@@ -405,7 +464,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     internal fun observeVisiblePhoneReading(content: NativeVisiblePhoneReading,visible: Boolean) {
         if(visiblePhoneReading!=content)return
-        if(!visible) { if(attemptedPhoneReading!=null)chatNotifications?.invalidateBeforeChange();phoneReading.lifecycle.leave();attemptedPhoneReading=null;return }
+        if(!visible) { if(attemptedPhoneReading!=null)chatNotifications?.invalidateBeforeChange();phoneReading.lifecycle.hideBody();attemptedPhoneReading=null;return }
         if(attemptedPhoneReading==content)return
         val reader=content.client.readerId?.let(::nativeReaderId) ?: return
         chatNotifications?.invalidateBeforeChange();attemptedPhoneReading=content;phoneReading.visible(content,reader)
@@ -413,7 +472,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun reconcilePhoneReading() {
         if(!localReady)return
         val head=targetKey to workspaces[clientKey]?.threads?.firstOrNull { it.id==selectedThread }?.readState?.latest
-        if(phoneWorkspaceHead!=head) { phoneWorkspaceHead=head;phoneReading.lifecycle.leave();attemptedPhoneReading=null }
+        if(phoneWorkspaceHead!=head) { phoneWorkspaceHead=head;phoneReading.lifecycle.hideBody();attemptedPhoneReading=null }
         val clients=realClients.filter { !it.isDemo && it.scope!=null }
         val scopes=clients.map { ThreadReadingIdentity.scopeKey(it.scope!!) }.toSet()
         phoneReadingDirectoryCompleted.keys.toList().filter { it !in scopes }.forEach(phoneReadingDirectoryCompleted::remove)
@@ -448,7 +507,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val next=NativeReadingProof(target,page.threadId,page.readState,legacy,selectionRevision,revisions[client.id] ?: 0,phoneReadingEpoch)
         val changed=phoneReadingProof!=next
         val visibleBodyChanged=cachedPhoneReading?.body?.let { body -> page.messages.none(body::matches) }==true
-        if(changed || visibleBodyChanged) { phoneReading.lifecycle.leave();attemptedPhoneReading=null;cachedPhoneReading=null }
+        if(changed || visibleBodyChanged) { phoneReading.lifecycle.hideBody();attemptedPhoneReading=null;cachedPhoneReading=null }
         phoneReadingProof=next
         if(changed)reconcilePhoneReading() else syncPhoneReadAcknowledgements()
     }
@@ -574,8 +633,82 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         private set
     internal var localRecoveryAllowsAttachmentStaging by mutableStateOf(false)
         private set
-    internal val canReceiveOriginalAttachmentResults get()=(!restoring&&!localRecoveryRequired)||localRecoveryAllowsAttachmentStaging
-    private val localReady get()=!restoring&&!localRecoveryRequired
+    internal val canReceiveOriginalAttachmentResults get()=!migrationPaused&&((!restoring&&!localRecoveryRequired)||localRecoveryAllowsAttachmentStaging)
+    // Main owns mutation gating; the IO activation lease reads only these volatile scalars.
+    private val migrationNotificationOwners=mutableStateListOf<NativeChatNotificationCoordinator>()
+    private var migrationNotificationCleanup: Job?=null
+    internal var migrationController: NativeMigrationController?=null
+    internal var migrationPaused by mutableStateOf(false);private set
+    @Volatile private var migrationQuiescent=false
+    @Volatile private var migrationEpoch=0L
+    private var migrationOperation: String?=null
+    internal val migrationStorage get()=requireNotNull(storage)
+    internal val migrationReady get()=storage!=null && localReady && !migrationPaused &&
+        !connectionBusy && !projectBusy && !importing && !attachmentRecoveryBusy &&
+        externalInbox?.let {!it.loading&&!it.receiving&&!it.adding}!=false &&
+        recentPhotos?.let {it.ready&&!it.saving}!=false &&
+        documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !NativeChatNotificationColdStart.bound(this)
+    internal val migrationCanImport get()=migrationReady&&realClients.isEmpty()
+    internal fun invalidateMigrationLease(){migrationQuiescent=false;migrationEpoch++}
+    internal fun ownsMigrationLease(lease: NativeMigrationOwnerLease)=migrationPaused&&migrationOperation==lease.operationId&&storage===lease.storage
+    internal suspend fun quiesceForMigration(operationId: String): NativeMigrationOwnerLease {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());check(migrationReady)
+        val store=requireNotNull(storage)
+        // Resolve an in-flight preference write before pausing its model. Never force a retry.
+        bindStoredVoicePreferencesIfReady()
+        withTimeout(30_000){voiceSettings.resumePreferences()?.join()}
+        check(voiceSettings.persisted) {"Voice preference save is unfinished"}
+        check(migrationReady)
+        migrationPaused=true;migrationQuiescent=false;val epoch=++migrationEpoch
+        migrationOperation=operationId
+        try {
+            val original=tasks.coroutineContext[Job]!!.children.toList()
+            val notifications=chatNotifications
+            notifications?.let {migrationNotificationOwners.add(it);it.dispose()};easyWorkConnectionAuthority(this).invalidate()
+            leaveForeground()
+            withTimeout(30_000) {
+                notifications?.stopAndJoinForMigration();migrationNotificationOwners.remove(notifications);chatNotifications=null
+                voice?.quiesceForMigration();questionVoice?.quiesceForMigration()
+                val children=(original+tasks.coroutineContext[Job]!!.children.toList()).distinct()
+                children.forEach {it.cancel()};children.forEach {it.join()}
+                check(tasks.coroutineContext[Job]!!.children.none {it.isActive})
+                migrationIo.awaitIdle()
+                // Snapshot after the real producers stop. This includes the latest in-memory draft.
+                val metadata=metadataSnapshot()
+                store.enqueue("metadata",metadata) {storageFailure()}
+                store.awaitQueuedWrites()
+            }
+            check(migrationPaused&&migrationOperation==operationId&&migrationEpoch==epoch)
+            migrationQuiescent=true
+            return NativeMigrationOwnerLease(store,operationId) {migrationQuiescent&&migrationEpoch==epoch}
+        }catch(failure: Throwable) {
+            migrationQuiescent=false;migrationPaused=false;migrationOperation=null;chatNotifications=null;resumeMigrationNotificationCleanup()
+            throw failure // Main resumes this same model, preserving any unsaved draft.
+        }
+    }
+    private fun resumeMigrationNotificationCleanup() {
+        if(migrationNotificationCleanup?.isActive==true)return
+        migrationNotificationCleanup=tasks.launch {
+            for(owner in migrationNotificationOwners.toList()){owner.stopAndJoinForMigration();migrationNotificationOwners.remove(owner)}
+        }
+    }
+    internal suspend fun restoreForMigration() {
+        check(restoreJob==null&&!migrationPaused)
+        foreground=false
+        val generation=withContext(Dispatchers.IO){migrationStorage.beginRestore()}
+        restoreUsingGeneration(generation)
+        awaitMigrationRestore()
+    }
+    internal suspend fun awaitMigrationRestore() {
+        restoreJob?.join();check(!restoring&&!localRecoveryRequired)
+        phoneReading.awaitReconciliation()
+    }
+    internal suspend fun abandonMigrationRestore(){migrationIo.close();tasks.coroutineContext[Job]!!.cancelAndJoin();migrationIo.awaitIdle()}
+    internal fun retireForMigration(operationId: String) {
+        check(migrationPaused&&migrationOperation==operationId)
+        migrationQuiescent=false;migrationEpoch++;migrationIo.close();tasks.cancel();storage?.retireWriter()
+    }
+    private val localReady get()=!restoring&&!localRecoveryRequired&&!migrationPaused
     private var restoreJob: Job?=null
     var restoring by mutableStateOf(storage != null)
         private set
@@ -597,12 +730,14 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val sidebarStates = mutableStateMapOf<String, SidebarDisplayState>()
     private val revisions = mutableMapOf<String, Long>()
     private var selectionRevision = 0L
+        set(value) {if(field!=value)easyWorkConnectionAuthority(this).invalidate();field=value}
     private var clientNavigationRevision = 0L
     private var historyJob: Job? = null
     private var workspaceJob: Job? = null
     private var foregroundJob: Job? = null
     fun enterForeground() {
-        chatNotifications?.navigationWillChange()
+        if(migrationPaused)return
+        invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
         tasks.launch { easyWorkLogin?.foreground() }
         foreground=true;chatNotifications?.reconcile();if(localReady)voiceSettings.resumePreferences();phoneReading.lifecycle.foreground(true); freshWorkspaces.clear(); freshHistories.clear()
         realClients.toList().forEach { replaceClient(it.copy(online=false,connectionPhase=ConnectionPhase.CONNECTING)) }
@@ -639,7 +774,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -709,7 +844,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             MobileHistory(context.client.id,context.threadId,emptyList(),null,context.client.scope,"unknown",null,wire.toString())
         }
         val stored=if(selection.complete)page.copy(nextCursor=null,wire=JSONObject(page.wire).put("nextCursor",JSONObject.NULL).toString()) else page
-        historyPages[context.key]=stored
+        invalidatePanelNoticeForHistory(context.key,stored);historyPages[context.key]=stored
         persistHistory(context.key,context.client,context.threadId,stored,merged)
         pagedSelections[context.key]=context.selection
         loadedHistorySelections[context.key]=context.selection to context.revision
@@ -902,8 +1037,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     var text: String
         get() = drafts[targetKey].orEmpty()
         set(value) {
+            if(migrationPaused)return
             val key=targetKey
             if(drafts[key]==value)return
+            easyWorkConnectionAuthority(this).invalidate()
             if(suggestionUndo?.applied?.targetKey==key)suggestionUndo=null
             textRevisions[key]=(textRevisions[key] ?: 0)+1
             if(value.isEmpty())handledSuggestions.remove(key)
@@ -1194,7 +1331,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun select(client: MobileClient)=selectClient(client,refreshAutomatically=true)
     private fun selectClient(client: MobileClient,refreshAutomatically: Boolean) {
-        chatNotifications?.navigationWillChange()
+        invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
         releasePhoneReadingProof()
         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         clientNavigationRevision++;selectionRevision++;networkRecoveryJob?.cancel();networkRecoveryJob=null; workspaceJob?.cancel(); historyJob?.cancel(); eventJob?.cancel(); historyRecoveryJob?.cancel()
@@ -1214,7 +1351,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         loadModels()
     }
     fun selectThread(thread: MobileThread) {
-        chatNotifications?.navigationWillChange()
+        invalidatePanelNoticeContext();chatNotifications?.navigationWillChange()
         voice?.suspendRecording();questionVoice?.suspendRecording();aiSharingRequest=null
         require(thread.hostId == selectedClient.id && threads.any { it.id == thread.id })
         if(selectedThread==thread.id) {
@@ -1356,7 +1493,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 if(!more&&result.windowed&&!paged)pagedSelections.remove(key)
                 if(more && (!result.runtimePresent || result.windowed)) pagedSelections[key]=selection
                 if (more) { visibleMessageLimit += merged.size - previous.size; revealedEarlier = true }
-                historyPages[key] = page; histories[key] = merged; runs.remove(key)
+                invalidatePanelNoticeForHistory(key,page);historyPages[key] =page; histories[key] = merged; runs.remove(key)
                 loadedHistorySelections[key]=selection to revision
                 clearReadError(userInitiated)
                 freshHistories[key]=true
@@ -2007,7 +2144,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                             val unchangedMessages=histories[key]==merged
                             val stored=if(retain)page.copy(nextCursor=prior?.nextCursor,wire=JSONObject(page.wire).put("nextCursor",prior?.nextCursor).toString()) else page
                             if(page.windowed&&!retain)pagedSelections.remove(key)
-                            historyPages[key]=stored; histories[key]=merged; runs.remove(key)
+                            invalidatePanelNoticeForHistory(key,stored);historyPages[key]=stored; histories[key]=merged; runs.remove(key)
                             loadedHistorySelections[key]=selection to revision
                             freshHistories[key]=batch.ready!=false
                             if(batch.ready!=false)readyHistorySelection=Triple(key,selection,revision)
@@ -2053,7 +2190,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val prior = realClients.firstOrNull { it.id == result.hostId && sameScope(it.scope, scope) }
         val client = candidate.copy(id = result.hostId, scope = scope, online = true, mode = result.mode,
             readerId = editing?.readerId ?: prior?.readerId ?: UUID.randomUUID().toString(), requiresReadTarget=result.scope != null)
-        chatNotifications?.connectionsWillChange()
+        invalidatePanelNoticeCredential(client.id);chatNotifications?.connectionsWillChange()
         withContext(Dispatchers.IO) { storage?.setToken(client.id, secret) }
         revisions[client.id] = (revisions[client.id] ?: 0) + 1
         val remembered = replaceClient(client); workspaces[remembered.cacheKey(null)] = result
@@ -2092,34 +2229,55 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             operations[target]=flow.journal.records(target);throw failure
         } finally { endBusy(key,owner);loadOperations() }
     }
-    suspend fun connectEasyWorkQR(text: String,name: String,onPending: (String)->Unit = {}): MobileClient {
+    suspend fun connectEasyWorkQR(text: String,name: String,onPending: (String)->Unit = {}): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("qr",name,"",text)) { lease->
+        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val presentation=incomingEasyWorkLink?.presentation
-        if(android.net.Uri.parse(text.trim()).scheme=="easywork") {
+        val client=if(android.net.Uri.parse(text.trim()).scheme=="easywork") {
             val offer=EasyWorkDeviceOffer.parse(text)
-            return connectEasyWorkCode(name,offer.origin,offer.code,onPending).also { dismissIncomingLink(presentation) }
+            connectEasyWorkCode(name,offer.origin,offer.code,onPending)
+        } else {
+            val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
+            val (binding,candidates)=EasyWorkPairing.lan(text,android.os.Build.MODEL,identity)
+            lease.checkpoint();saveEasyWork(name,binding,candidates)
         }
-        val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
-        val (binding,candidates)=EasyWorkPairing.lan(text,android.os.Build.MODEL,identity)
-        return saveEasyWork(name,binding,candidates).also { dismissIncomingLink(presentation) }
+        lease.finish {dismissIncomingLink(presentation)}
+        client
     }
-    suspend fun connectEasyWorkCode(name: String,endpoint: String,code: String,onPending: (String)->Unit = {}): MobileClient {
+    suspend fun connectEasyWorkCode(name: String,endpoint: String,code: String,onPending: (String)->Unit = {}): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("code",name,endpoint,code)) { lease->
+        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val offer=EasyWorkDeviceOffer(EasyWorkDeviceOffer.origin(endpoint),EasyWorkDeviceOffer.code(code))
-        val (binding,ref)=easyWorkDeviceAuthorization!!.pair(offer,onPending)
-        return saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",offer.origin)),grantRef=ref)
+        val (binding,ref)=easyWorkDeviceAuthorization!!.pair(offer) {if(lease.currentForUi())onPending(it)}
+        lease.checkpoint()
+        saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",offer.origin)),grantRef=ref)
     }
-    suspend fun connectEasyWorkRelay(name: String,endpoint: String,code: String,token: String?): MobileClient {
+    suspend fun connectEasyWorkRelay(name: String,endpoint: String,code: String,token: String?): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("legacy-relay",name,endpoint,code)) { lease->
+        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"));val login=easyWorkLogin!!
         val access=login.validToken(token)
         val binding=EasyWorkPairing.relay(endpoint,code,identity) { access }
-        return saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",NativeHostReads.baseAddress(endpoint).toString().trimEnd('/'))),access)
+        lease.checkpoint()
+        saveEasyWork(name,binding,listOf(AgentCandidate("relay","relay-http",NativeHostReads.baseAddress(endpoint).toString().trimEnd('/'))),access)
     }
     internal suspend fun saveEasyWork(name: String,binding: EasyWorkBinding,candidates: List<AgentCandidate>,token: String?=null,grantRef: String?=null): MobileClient {
+        val active=currentCoroutineContext()[EasyWorkConnectionActionLease]
+        if(active!=null) {
+            require(active.authority===easyWorkConnectionAuthority(this)&&active.input.name==name)
+            return saveEasyWorkLeased(name,binding,candidates,token,grantRef,active)
+        }
+        return withEasyWorkConnectionAction(this,EasyWorkConnectionInput("save",name,"",binding.value)) {saveEasyWorkLeased(name,binding,candidates,token,grantRef,it)}
+    }
+    private suspend fun saveEasyWorkLeased(name: String,binding: EasyWorkBinding,candidates: List<AgentCandidate>,token: String?,grantRef: String?,lease: EasyWorkConnectionActionLease): MobileClient {
+        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         require(name.isNotBlank()&&name.length<=256);val store=storage?:error("本地安全存储不可用")
         val identity=EasyWorkIdentity.load(store);binding.verify(identity)
         val scope=binding.target.scope();val id="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray())
         val existing=realClients.firstOrNull { it.id==id };val revision=revisions[id]?:0L
-        val ref=existing?.agentConnection?.credentialRef?:"agent-$id"
-        val previous=withContext(Dispatchers.IO) { store.read("easywork-credential:$ref") }
+        val previousRef=existing?.agentConnection?.credentialRef?:"agent-$id"
+        // Candidate bytes are unactivated until this action commits the metadata pointer.
+        // A crash leaves an unreferenced original; recovery never promotes or replays it.
+        val ref="agent-$id-${lease.id}"
+        val previous=withContext(Dispatchers.IO) { store.read("easywork-credential:$previousRef") }
+        lease.checkpoint()
         val old=previous?.let { EasyWorkCredential.decode(JSONObject(it)) }
         require(old==null||old.binding.target==binding.target&&old.privateKey==identity.privateKey)
         val legacy=old?.takeIf { it.grantRef==null }
@@ -2130,11 +2288,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val saved=existing?.agentConnection?.candidates.orEmpty().filter { (grantRef!=null||old?.grantRef==null)&&(it.transportId!="lan-wss"||pin==null||it.peerFingerprint==pin) }
         val merged=(candidates+saved).distinctBy { it.transportId to it.endpoint }.take(32)
         var connection=AgentConnection(scope,merged,ref,existing?.agentConnection?.preference?:"automatic")
+        lease.checkpoint()
         easyWorkSessions!!.remove(id)
         val authorization: EasyWorkRequestHeaders?=grantRef?.let { grant->{ method,url,body->easyWorkDeviceAuthorization!!.headers(grant,binding,method,url,body) } }
         val incoming=EasyWorkRemoteSession(connection.copy(candidates=candidates,preference="automatic"),credential,{ easyWorkLogin!!.validToken(token,binding.target) },authorize=authorization)
         try {
-            val context=incoming.request("runtime/context");require(EasyWorkTarget.decode(context.getJSONObject("target"))==binding.target)
+            val context=incoming.request("runtime/context");lease.checkpoint();require(EasyWorkTarget.decode(context.getJSONObject("target"))==binding.target)
             if(grantRef!=null) {
                 val routes=context.optJSONArray("connectionCandidates")?.objects().orEmpty();require(routes.size<=32)
                 val authenticated=routes.flatMap { route->
@@ -2144,15 +2303,23 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 connection=connection.copy(candidates=(authenticated+connection.candidates).distinctBy { it.transportId to it.endpoint }.take(32))
             }
         } finally { incoming.close() }
+        lease.checkpoint()
         require((revisions[id]?:0L)==revision) { "连接已改变，请重试" }
         var client=MobileClient(id,name.trim(),scope,candidates.first().endpoint,false,"easywork-runtime",false,requiresReadTarget=true,agentConnection=connection)
-        withContext(Dispatchers.IO) { store.write("easywork-credential:$ref",credential.json().toString()) }
+        val credentialBody=credential.json().toString();var credentialWritten=false
         try {
+            withContext(Dispatchers.IO) {EasyWorkConnectionCredentialWrites.write(store,"easywork-credential:$ref",credentialBody,lease);credentialWritten=true}
+            lease.checkpoint()
             val workspace=reads.workspace(client);require((revisions[id]?:0L)==revision&&sameScope(workspace.scope,scope))
-            client=client.copy(online=true);replaceClient(client);revisions[id]=revision+1
-            workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);easyWorkDiscovery?.scan();return client
+                lease.checkpoint()
+            return lease.commit {
+                EasyWorkConnectionCredentialWrites.committed(store,"easywork-credential:$ref",lease)
+                client=client.copy(online=true);replaceClient(client);revisions[id]=revision+1
+                workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);version(targetKey);easyWorkDiscovery?.scan()
+                client
+            }
         } catch(failure: Exception) {
-            easyWorkSessions.remove(id);withContext(NonCancellable+Dispatchers.IO) { if(previous==null)store.remove("easywork-credential:$ref") else store.write("easywork-credential:$ref",previous) };throw failure
+            easyWorkSessions.remove(id);if(credentialWritten)withContext(NonCancellable+Dispatchers.IO) {EasyWorkConnectionCredentialWrites.rollback(store,"easywork-credential:$ref",credentialBody,previous,lease)};throw failure
         }
     }
     fun setEasyWorkPreference(client: MobileClient,preference: String) {
@@ -2183,23 +2350,28 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(merged!=connection.candidates) { replaceClient(current.copy(agentConnection=connection.copy(candidates=merged)));persistMetadata() }
         return true
     }
-    suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient {
+    suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { lease->
+        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
         val identity=EasyWorkIdentity.load(storage?:error("本地安全存储不可用"))
         val (binding,candidates)=EasyWorkPairing.discovered(host.endpoint,android.os.Build.MODEL,identity,host.deviceId) {
+            lease.checkpoint()
             require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion) { "所选目标或草稿已改变，未申请凭据" }
         }
         require(host.deviceId==null||host.deviceId==binding.target.desktopDeviceId) { "发现的电脑身份已变化" }
         require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion) { "所选目标或草稿已改变，未替换连接" }
-        return saveEasyWork(host.name,binding,candidates)
+        lease.checkpoint()
+        saveEasyWork(host.name,binding,candidates)
     }
-    suspend fun connectKnownEasyWork(address: String): MobileClient {
+    suspend fun connectKnownEasyWork(address: String): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("known","",address,"")) { lease->
+        require(foreground);version(targetKey);lease.bindDraftRevision {draftVersions[targetKey].orEmpty()};lease.checkpoint()
         val selection=selectionRevision; val sourceKey=targetKey; val sourceVersion=version(sourceKey)
         val endpoint=CodexEndpoints.local(address)
         val known=realClients.firstOrNull { it.agentConnection?.target?.agentId=="easywork"&&it.agentConnection.candidates.any { c->c.transportId=="lan-wss"&&c.endpoint==endpoint } }?:error("首次连接请扫描电脑二维码")
         val snapshot=reads.workspace(known)
         require(selectionRevision==selection && targetKey==sourceKey && version(sourceKey)==sourceVersion && realClients.any { it==known }) { "所选目标、草稿或连接已改变" }
-        val client=known.copy(online=true);replaceClient(client);workspaces[client.cacheKey(null)]=snapshot;select(client);return client
+        lease.checkpoint()
+        lease.commit {val client=known.copy(online=true);replaceClient(client);workspaces[client.cacheKey(null)]=snapshot;select(client);version(targetKey);client}
     }
     fun dismissIncomingLink(presentation: String?) { if(presentation!=null&&incomingEasyWorkLink?.presentation==presentation) { incomingEasyWorkLink=null;if(hasClient) { refresh();loadHistory() } } }
     fun receiveLink(uri: android.net.Uri) {
@@ -2244,7 +2416,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             codexDirect=PairedCodexConnection(target, authorized.descriptor.fingerprint, (routes + prior?.codexDirect?.routes.orEmpty()).distinctBy { it.endpoint }.take(32),
                 com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), authorized.descriptor.systemEndpoints, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })), storageIdentity=prior?.storageIdentity)
         // No suspension between the final generation check, atomic credential/client publication and UI commit.
-        chatNotifications?.connectionsWillChange()
+        invalidatePanelNoticeCredential(host.id);chatNotifications?.connectionsWillChange()
         CodexConnectionVault(store).save(client, authorized.token)
         revisions[host.id] = revision + 1
         val remembered = replaceClient(client)
@@ -2272,7 +2444,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), supplied, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })))
                 require(snapshot.mode == "desktop-runtime" && sameScope(snapshot.scope, offer.target)) { "电脑运行时身份不匹配" }
                 require((revisions[client.id] ?: 0) == revision) { "连接已改变，请重试" }
-                chatNotifications?.connectionsWillChange()
+                invalidatePanelNoticeCredential(client.id);chatNotifications?.connectionsWillChange()
                 withContext(Dispatchers.IO) { storage?.setToken(client.id, offer.token!!) }
                 client = client.copy(online = true)
                 revisions[client.id] = revision + 1; client = replaceClient(client)
@@ -2296,7 +2468,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val transportChanged=endpoint != current.endpoint
         val updated=current.copy(endpoint=endpoint,codexDirect=direct)
         if(changed) {
-            if(transportChanged)chatNotifications?.connectionsWillChange()
+            if(transportChanged) { invalidatePanelNoticeContext();phoneReading.lifecycle.leave();chatNotifications?.connectionsWillChange() }
             try { storage?.let { CodexConnectionVault(it).updateClient(updated) } } catch(_: Exception) { storageFailure();return false }
             // Verified address hints do not change the authenticated transport or invalidate its in-flight reply.
             if(transportChanged) revisions[current.id] = (revisions[current.id] ?: 0) + 1
@@ -2312,7 +2484,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun removeClient(id: String) {
         val removed=realClients.firstOrNull { it.id==id } ?: return
-        chatNotifications?.connectionsWillChange()
+        invalidatePanelNoticeCredential(id);chatNotifications?.connectionsWillChange()
         // A removed private client must not be recovered from its atomic credential record after a crash.
         if(removed.agentConnection==null) try { storage?.setToken(id,"") } catch(_: Exception) { storageFailure();return }
         revisions[id] = (revisions[id] ?: 0) + 1
@@ -2331,6 +2503,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun storageFailure() { tasks.launch { error = "本地保存失败，请保留当前内容并检查手机存储" } }
     private fun persistMetadata() {
         if (storage == null || !localReady) return
+        storage.enqueue("metadata",metadataSnapshot()) {storageFailure()}
+    }
+    private fun metadataSnapshot(): String {
         val json = JSONObject().put("version", 1).put("appearance", appearance).put("language",language).put("demo", demo).put("selected", selectedClient.id)
             .put("clients", JSONArray(realClients.map(::encodeClient)))
             .put("drafts", JSONObject(drafts.toMap())).put("selectedThreads", JSONObject(selectedThreads.toMap()))
@@ -2343,7 +2518,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             .put("sidebar", JSONObject(sidebarStates.mapValues { (_,state) -> JSONObject().put("recent",state.recentExpanded).put("projects",state.projectsExpanded).put("lists",JSONArray(state.expandedLists.toList()))
                 .put("pinnedSection",state.pinnedSectionExpanded).put("recentSection",state.recentSectionExpanded) }))
             .put("workspaces", JSONObject(workspaces.mapValues { JSONObject(it.value.wire) }))
-        storage.enqueue("metadata", json.toString()) { storageFailure() }
+        return json.toString()
     }
     private fun persistHistory(key: String, client: MobileClient, thread: String, result: MobileHistory, messages: List<MobileMessage>, reuseUnchangedFragments: Boolean=false) {
         if (storage == null) return
@@ -2358,20 +2533,22 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         tasks.launch {
             try {
                 val page = withContext(Dispatchers.IO) { NativeHistoryCache(storage).read(key) } ?: return@launch
-                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) { releasePhoneReadingProof();acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CACHE_APPLYING,page.hostId,page.threadId); histories[key] = page.messages; historyPages[key] = page }
+                if (targetKey == key && selectionRevision == selection && !histories.containsKey(key) && page.hostId == selectedClient.id && page.threadId == selectedThread && (!selectedClient.requiresReadTarget || sameScope(page.scope, selectedClient.scope))) { releasePhoneReadingProof();acceptanceTiming?.record(NativeReadAcceptanceTiming.Point.CACHE_APPLYING,page.hostId,page.threadId); histories[key] = page.messages; invalidatePanelNoticeForHistory(key,page);historyPages[key] =page }
             } catch (_: Exception) { if (targetKey == key) error = "本地缓存无法读取，原缓存已保留" }
             catch (_: OutOfMemoryError) { if(targetKey == key) error = "本地缓存内存不足，原缓存已保留" }
         }
     }
     fun retryLocalRecovery() { if(localRecoveryRequired&&!restoring) restore() }
-    fun restore() {
-        chatNotifications?.connectionsWillChange()
+    fun restore()=restoreUsingGeneration(null)
+    private fun restoreUsingGeneration(preparedGeneration: Long?) {
+        if(migrationPaused)return
+        invalidatePanelNoticeContext();chatNotifications?.connectionsWillChange()
         val storage=storage ?: return
         if(restoreJob?.isActive==true) return
         voiceSettings.pausePreferences();voice?.suspendRecording();questionVoice?.suspendRecording();stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
         phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
         restoring=true;localRecoveryAllowsAttachmentStaging=false
-        val generation=storage.beginRestore()
+        val generation=preparedGeneration ?: storage.beginRestore()
         restoreJob=tasks.launch {
             var authenticatedParentRead=false
             try {
@@ -2454,7 +2631,10 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                     publish
                 }
                 // Publication and write authorization happen only after the complete snapshot and vault decode.
-                storage.finishRestore(generation,applyState)
+                if(preparedGeneration!=null) {
+                    val permit=withContext(Dispatchers.IO){storage.prepareRestorePublication(generation)}
+                    storage.finishPreparedRestore(permit,applyState)
+                } else storage.finishRestore(generation,applyState)
                 localRecoveryRequired=false;error=null
             } catch (cancel: CancellationException) { localRecoveryRequired=true;throw cancel }
             catch (failure: Exception) {
@@ -2465,10 +2645,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
             }
             finally { restoring=false;chatNotifications?.languageChanged(language);synchronizeReadingPresentation();reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile();if(localReady && foreground)voiceSettings.resumePreferences() }
-            if (localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
+            if (preparedGeneration==null && localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
         }
     }
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
+        invalidatePanelNoticeContext();panelBlockedCredentialRevisions.clear()
         chatNotifications?.dispose();chatNotifications=null
         voiceSettings.pausePreferences();voice?.cancel();questionVoice?.cancel();questionVoiceKey=null
         stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null;phoneReadingRetry++;phoneReadingUncovered=false

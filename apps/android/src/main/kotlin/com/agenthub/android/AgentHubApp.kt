@@ -70,8 +70,10 @@ import com.agenthub.core.*
         var editing by remember { mutableStateOf<MobileClient?>(null) }
         var composerFocused by remember { mutableStateOf(false) }
         var attachmentPreview by remember { mutableStateOf(false) }
-        val effectiveSheet=if(session.aiSharingRequest!=null) "ai-sharing" else sheet
-        DisposableEffect(session) { onDispose { session.setPhoneReadingSurface(false) } }
+        val effectiveSheet=if(session.migrationController?.presented==true)"migration"else if(session.aiSharingRequest!=null) "ai-sharing" else sheet
+        val noticePresentation=session.capturePanelNoticePresentation()
+        val noticeBinding=session.panelNoticeBinding
+        DisposableEffect(session) { onDispose { session.coverPanelNotices();session.setPhoneReadingSurface(false) } }
         VoicePermission(session.voice)
         VoicePermission(session.questionVoice)
         NativePhotoAuthorizationResult(session)
@@ -90,7 +92,7 @@ import com.agenthub.core.*
                 mainPaneFocus.requestFocus();keyboard?.hide();nativeKeyboard.hide()
             }
         }
-        val openSheet: (String) -> Unit = { session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
+        val openSheet: (String) -> Unit = { session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sheet=it }
         LaunchedEffect(effectiveSheet,session.pendingChatSearchToken) {
             if(effectiveSheet==null&&session.pendingChatSearchToken!=null) { withFrameNanos { };session.applyPendingChatSearch() }
         }
@@ -111,7 +113,7 @@ import com.agenthub.core.*
             if(inbox!=null&&mainWindowFocused&&!sidebar&&effectiveSheet==null&&session.error==null&&session.voice?.active!=true&&!attachmentPreview&&!session.importing&&(inbox.presentation!=null||inbox.presentIfWanted(inboxSurface)))openSheet("external-attachments")
         }
         LaunchedEffect(session.incomingEasyWorkLink) { if(session.incomingEasyWorkLink!=null) { editing=null;openSheet("add") } }
-        BackHandler(sidebar && sheet == null && session.error == null) { session.chatNotifications?.navigationWillChange();sidebar=false; focus.clearFocus() }
+        BackHandler(sidebar && sheet == null && session.error == null) { session.coverPanelNotices();session.chatNotifications?.navigationWillChange();sidebar=false; focus.clearFocus() }
         Surface(Modifier.fillMaxSize().focusRequester(mainPaneFocus).focusable(enabled=!sidebar&&effectiveSheet==null&&session.error==null), color=colors.background) {
             // Consume system/IME insets once for the entire product surface. The fixed header
             // stays in the resized viewport on API 26 as well as edge-to-edge API 37.
@@ -126,12 +128,12 @@ import com.agenthub.core.*
                 val offset = drag ?: settled
                 Column(Modifier.fillMaxSize().pointerInput(sidebar,widthPx) {
                     var allowed=false
-                    detectHorizontalDragGestures(onDragStart={ start -> allowed=sidebar || start.x < with(density) { 24.dp.toPx() }; if(allowed) { session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=if(sidebar) 0f else -widthPx } },onHorizontalDrag={ change,amount -> if(allowed) { change.consume(); drag=((drag ?: settled)+amount).coerceIn(-widthPx,0f) } },onDragEnd={ if(allowed) sidebar=(drag ?: settled)>-widthPx/2; drag=null },onDragCancel={ drag=null })
+                    detectHorizontalDragGestures(onDragStart={ start -> allowed=sidebar || start.x < with(density) { 24.dp.toPx() }; if(allowed) { session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=if(sidebar) 0f else -widthPx } },onHorizontalDrag={ change,amount -> if(allowed) { change.consume(); drag=((drag ?: settled)+amount).coerceIn(-widthPx,0f) } },onDragEnd={ if(allowed) sidebar=(drag ?: settled)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
                     if(inbox?.receiving==true)Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=6.dp).testTag("external-attachment-receiving"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(14.dp),strokeWidth=1.5.dp);Text(productText("正在导入附件…"),fontSize=12.sp,color=colors.onSurfaceVariant)
                     }
-                    ChatHeader(session, openSidebar={ session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
+                    ChatHeader(session, openSidebar={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide(); sidebar=true }, openClients={ openSheet("clients") }, newChat={ openSheet("projects") }, settings={ openSheet("settings") },generation={ openSheet("generation") },search={ openSheet("chat-search") },archived={ openSheet("archived-chats") },replyRecords={ openSheet("reply-records") },composerFocused=composerFocused,dismissKeyboard={ focus.clearFocus(force=true); keyboard?.hide(); nativeKeyboard.hide() })
                     NativeChatNotificationOpenStatus(session.chatNotifications)
                     if (session.restoring) Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
                     else if (!session.hasClient) Onboarding { openSheet("add") }
@@ -153,19 +155,22 @@ import com.agenthub.core.*
                         // viewport; every control can then be scrolled into view.
                         Column(Modifier.fillMaxWidth().verticalScroll(bottomScroll).testTag("bottom-controls")) {
                             if (!session.selectedClient.isDemo && !session.canCompose) Text(productText(if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。"),Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
-                            if(!session.selectedClient.isDemo) { ExecutionPanels(session,executionMaxHeight,autoPresentQuestions=effectiveSheet==null && !sidebar && session.error==null,inlineToolApprovals=inlineToolApprovals); GenerationControls(session,compactLayout=inlineToolApprovals) { openSheet("generation") } }
+                            if(!session.selectedClient.isDemo) { ExecutionPanels(session,executionMaxHeight,autoPresentQuestions=effectiveSheet==null && !sidebar && session.error==null,inlineToolApprovals=inlineToolApprovals,noticeVisibility=noticeBinding); GenerationControls(session,compactLayout=inlineToolApprovals) { openSheet("generation") } }
                             QueuedCommands(session,interactive=!sidebar && effectiveSheet==null && session.error==null)
                             StorageIdentityNotice(session)
-                            CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { Composer(session,interactive=!sidebar && effectiveSheet==null && session.error==null,onAttachmentPreview={ attachmentPreview=it }) { composerFocused=it } }
+                            CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { Composer(session,interactive=!sidebar && effectiveSheet==null && session.error==null,onAttachmentPreview={ if(it)session.coverPanelNotices();attachmentPreview=it }) { composerFocused=it } }
                         }
                     }
                 }
                 // Keep the drawer/list mounted: position changes do not destroy scroll/search state.
                 val interactiveDrawer=sidebar || drag!=null
                 val closingDrawer=!interactiveDrawer && offset > -widthPx+.5f
-                SideEffect { session.setPhoneReadingSurface(mainWindowFocused && !interactiveDrawer && !closingDrawer &&
-                    effectiveSheet==null && session.error==null && !attachmentPreview && session.voice?.active!=true &&
-                    session.incomingEasyWorkLink==null && !session.importing && inbox?.presentation==null) }
+                val panelUncovered=!interactiveDrawer && !closingDrawer && effectiveSheet==null && session.error==null &&
+                    !attachmentPreview && session.voice?.active!=true && session.incomingEasyWorkLink==null && !session.importing && inbox?.presentation==null
+                SideEffect {
+                    session.setPhoneReadingSurface(mainWindowFocused && panelUncovered)
+                    session.presentPanelNotices(noticePresentation,panelUncovered)
+                }
                 // Retain the dimming surface for the same motion as the panel, as on iOS.
                 // Its closing-only hits are absorbed until the visible transition finishes.
                 if (interactiveDrawer || closingDrawer) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=MobileDesign.sidebarBackdropAlpha*((offset+widthPx)/widthPx).coerceIn(0f,1f))).clickable { focus.clearFocus(); sidebar=false }.testTag(if(interactiveDrawer) "sidebar-backdrop" else "sidebar-closing-backdrop").semantics { if(closingDrawer) hideFromAccessibility() })
@@ -183,11 +188,11 @@ import com.agenthub.core.*
                         }
                     }
                 }.pointerInput(widthPx) {
-                    detectHorizontalDragGestures(onDragStart={ session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
+                    detectHorizontalDragGestures(onDragStart={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();focus.clearFocus(); keyboard?.hide(); drag=0f },onHorizontalDrag={ change,amount -> change.consume(); drag=((drag ?: 0f)+amount).coerceIn(-widthPx,0f) },onDragEnd={ sidebar=(drag ?: 0f)>-widthPx/2; drag=null },onDragCancel={ drag=null })
                 }) {
                     Sidebar(session,close={ sidebar=false; focus.clearFocus(); keyboard?.hide();nativeKeyboard.hide() },clients={ openSheet("clients") },newChat={ openSheet("projects") },settings={ openSheet("settings") },addProject={ openSheet("add-project") },active=sidebar&&effectiveSheet==null&&session.error==null)
                 }
-                if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ session.chatNotifications?.navigationWillChange();if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> session.chatNotifications?.navigationWillChange();if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> session.chatNotifications?.navigationWillChange();editing=client; sheet="add" }) }
+                if (effectiveSheet != null) CompositionLocalProvider(LocalExternalAttachmentSurface provides inboxSurface) { NativeSheetHost(effectiveSheet, session, editing, close={ session.coverPanelNotices();session.chatNotifications?.navigationWillChange();if(effectiveSheet=="migration"){session.migrationController?.close();sheet=null;editing=null} else if(effectiveSheet=="ai-sharing") session.dismissAISharing() else if(effectiveSheet=="external-attachments") { if(inbox?.dismiss(inboxSurface)!=false) { sheet=null;editing=null } } else { session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);sheet=null; editing=null } }, navigate={ page -> session.coverPanelNotices();session.chatNotifications?.navigationWillChange();if(effectiveSheet=="migration")session.migrationController?.close();if(page!="add")session.dismissIncomingLink(session.incomingEasyWorkLink?.presentation);editing=null; sheet=page }, edit={ client -> session.coverPanelNotices();session.chatNotifications?.navigationWillChange();editing=client; sheet="add" }) }
                 session.error?.let { failure ->
                     androidx.compose.ui.window.Dialog(onDismissRequest={ session.error=null },properties=androidx.compose.ui.window.DialogProperties(dismissOnClickOutside=false)) {
                         Surface(shape=RoundedCornerShape(28.dp),color=colors.surface,modifier=Modifier.widthIn(max=320.dp)) {
@@ -625,7 +630,7 @@ import com.agenthub.core.*
             items(toolApprovals,key={ session.targetKey+":approval:"+it.turnId+":"+it.id }) { approval ->
                 // Keep the48dp return-to-latest target plus its inset outside
                 // the approval card, including when reading a tall large-text card.
-                Box(Modifier.padding(end=56.dp)) { InlineToolApproval(session,approval) }
+                Box(Modifier.padding(end=56.dp)) { InlineToolApproval(session,approval,session.panelNoticeBinding) }
             }
             // Like the iOS bottom anchor, target the true end even when the last
             // message or approval is taller than the viewport.
@@ -644,7 +649,7 @@ import com.agenthub.core.*
             Text(productText("任务失败记录"),fontSize=12.sp,color=colors.onSurfaceVariant)
             SelectionContainer { Text(message.text,fontSize=12.sp,color=colors.onSurfaceVariant) }
         }
-        else if(message.kind=="plan") ProposedPlanMessage(message,targetKey)
+        else if(message.kind=="plan") ProposedPlanMessage(message,targetKey,session.panelNoticeBinding,session.runtime?.proposedPlan)
         else if(message.kind=="planImplementation") Surface(shape=RoundedCornerShape(16.dp),color=colors.surface) { Column(Modifier.padding(12.dp)) { Text(productText(if(message.kind=="plan") "执行计划" else "正在执行计划"),fontWeight=FontWeight.SemiBold,fontSize=14.sp); MarkdownContent(message.text,"markdown-${message.id}") } }
         else MarkdownContent(message.text,"markdown-${message.id}")
         if(reading!=null) Box(Modifier.fillMaxWidth().height(1.dp).testTag("phone-reading-content-end")

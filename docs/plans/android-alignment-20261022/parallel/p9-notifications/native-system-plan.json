@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "stage": "P9-real-Android-system-boundary-preparation",
+  "baseCommit": "b6563cc2387dfa35cb9517e3b4c3dbba90584348",
+  "executionOwner": "parent exact device lease; this workline performs no device/permission/UI/Host/model operations",
+  "requiredPackage": "com.easyai.agenthub.android.acceptance",
+  "protectedSibling": "com.easyai.agenthub.android.acceptance.easywork",
+  "classes": {
+    "com.agenthub.android.NativeChatNotificationOsProviderTest": [
+      "installedScopedProviderReturnsExactReadOnlyNormalizedBytes",
+      "silentAndOrdinaryOwnedClipsHaveDifferentRealUriBytes",
+      "malformedScopedUriAndWriteModeCannotReadOrMutateSound",
+      "oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+      "acceptanceScopeRejectsProtectedSiblingBeforeCreatingStorage"
+    ],
+    "com.agenthub.android.NativeChatNotificationOsGrantedTest": [
+      "realSilentPostHasPrivatePublicVersionAndOriginalImmutablePendingIntent",
+      "previewOffAndBadgeOffReachActualPostedNotificationFields",
+      "cancelEventsAndTargetNeverCancelAnotherOwnedRunOrTarget",
+      "ownedBlockedCategoryCannotBeBypassedWithAnotherSoundVariant",
+      "ordinaryClipChannelUsesRegisteredProviderUriWithoutPlayingIt",
+      "requiredReadingGuardStillPreventsClaimAfterRealChannelPreparation",
+      "permissionCycleRecoveryShowsOnlyNewEventWithoutAnotherOriginalSubmit"
+    ],
+    "com.agenthub.android.NativeChatNotificationOsDeniedTest": [
+      "deniedPermissionReconcilesRequiredReadingWithoutChannelClaimOrPost",
+      "permissionCycleDenialPersistsTerminalOldEventForExplicitGrantPhase"
+    ]
+  },
+  "methodCount": 14,
+  "arguments": {
+    "p9SystemLease": "parent supplied canonical UUID; missing value skips OS tests and is NOT a pass",
+    "p9SystemPermission": "unchanged for Provider; denied for Denied; granted for Granted",
+    "p9SystemCycle": "same canonical UUID for the two explicitly ordered permission-cycle methods; never reuse completed/unknown cycle"
+  },
+  "sdkMatrix": [
+    {
+      "sdk": 26,
+      "eligible": 11,
+      "notApplicable": 3,
+      "flow": "Provider 5 unchanged + Granted 6 non-cycle; two Denied methods and Granted cycle require API33+"
+    },
+    {
+      "sdk": 33,
+      "eligible": 14,
+      "flow": "Provider5 unchanged; parent records previous authorization, denies exact acceptance package, Denied2 with fresh cycle UUID, grants, Granted7 with same cycle UUID, finally restores prior authorization/flags"
+    },
+    {
+      "sdk": 37,
+      "eligible": 14,
+      "flow": "same explicit API33+ permission sequence on API37; keep separate implementation/device fingerprint"
+    }
+  ],
+  "nativeResults": [
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsProviderTest",
+      "method": "installedScopedProviderReturnsExactReadOnlyNormalizedBytes",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsProviderTest",
+      "method": "silentAndOrdinaryOwnedClipsHaveDifferentRealUriBytes",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsProviderTest",
+      "method": "malformedScopedUriAndWriteModeCannotReadOrMutateSound",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsProviderTest",
+      "method": "oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsProviderTest",
+      "method": "acceptanceScopeRejectsProtectedSiblingBeforeCreatingStorage",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsGrantedTest",
+      "method": "realSilentPostHasPrivatePublicVersionAndOriginalImmutablePendingIntent",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsGrantedTest",
+      "method": "previewOffAndBadgeOffReachActualPostedNotificationFields",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsGrantedTest",
+      "method": "cancelEventsAndTargetNeverCancelAnotherOwnedRunOrTarget",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsGrantedTest",
+      "method": "ownedBlockedCategoryCannotBeBypassedWithAnotherSoundVariant",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsGrantedTest",
+      "method": "ordinaryClipChannelUsesRegisteredProviderUriWithoutPlayingIt",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsGrantedTest",
+      "method": "requiredReadingGuardStillPreventsClaimAfterRealChannelPreparation",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsGrantedTest",
+      "method": "permissionCycleRecoveryShowsOnlyNewEventWithoutAnotherOriginalSubmit",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsDeniedTest",
+      "method": "deniedPermissionReconcilesRequiredReadingWithoutChannelClaimOrPost",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    },
+    {
+      "class": "com.agenthub.android.NativeChatNotificationOsDeniedTest",
+      "method": "permissionCycleDenialPersistsTerminalOldEventForExplicitGrantPhase",
+      "status": "not-run",
+      "reason": "source/compilation preparation only; no device lease here"
+    }
+  ],
+  "excludedEvidence": {
+    "actualMainActivityPendingIntentPayloadDispatch": "not tested; only canonical PendingIntent identity/creator/immutability + original encrypted ticket and builder Intent shape are checked",
+    "realP7LedgerCount": "reading interface is required; fixed synthetic count7 is auxiliary, no second ledger",
+    "crossUidSystemSoundRead": "self ContentResolver bytes only; no system UID impersonation or grant claim",
+    "audibleSound": "no playback or normal-sound post; volume/DND untouched",
+    "lockscreenAndLauncherBadgeUi": "Notification fields only; system UI/launcher behavior unverified",
+    "backgroundFcmHms": "not implemented/registered/verified here; vendor credentials/service not provided",
+    "completeDev": "not claimed; no real Host/model/Activity route"
+  },
+  "permissionOwnership": "No runtime permission API, shell, UiAutomation or dialog action in tests; parent records/restores existing authorization after failures as well",
+  "cleanup": "only run UUID prefix channels/tags/observed PendingIntents and known imported sound/store records; parent cycle data retained between phases; failures and unrecognized bytes preserved"
+}

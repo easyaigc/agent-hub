@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-shared-base-notice-integration-20261029-1",
+  "baseCommit": "1391926428d6b8690035e1be5cdefb0f80456a9b",
+  "mainIntentOverlay": {
+    "version": 1,
+    "purpose": "Invalidate pairing action before incoming Intent intake, including externalInbox-consumed Intents; preserve cover/read/voice/discard and all receive logic",
+    "hooks": {
+      "own": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+        "baseSha256": "4e188173006145ca5fed55be663917e57fb66f372073304250dc710c7edb02aa",
+        "proposedSha256": "7c678e1f7006b2e44b9ccf4d56bb055a0d990097c813f57ba6aceeffe8b2711e",
+        "patchSha256": "e766a67058855a9fcc34b3f84c49f8018e07f14ec32dc611af7766977ce14066"
+      },
+      "parent": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+        "baseSha256": "a713c78fbca623229f5f57536390301154f6cbc0f58f0b68c3660225721412f8",
+        "proposedSha256": "e9b5642944d9f8dd7601d79a977b1cfe484b23f32b80fdf0a19b5e8eeeb9f277",
+        "patchSha256": "68aa5f549b3930e9ad7190448c2a9890c9dcf58a8ab17f692e660aff3e9573ce"
+      }
+    },
+    "parentAgentHubAppSha256": "c706ed51be4cc2a081dd046ef9281cecdf04d711554c4bcaf1d51c7c698198f2",
+    "agentHubAppChanged": false,
+    "foregroundHook": "Existing MainActivity.onStop -> Session.leaveForeground; final Session overlay invalidates authority there. Form lifecycle also revokes on pause/stop.",
+    "actualIntentExecution": "not-performed"
+  },
+  "requiredSessionOverlay": {
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+    "baseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+    "proposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+    "patchSha256": "8e05a95f0c0c24bff3d8d1be625dc52ce76efa3dba66a81bf6f6dd7a7848016c",
+    "previousPhase1ProposedSha256": "eb41bec3862bac254a08fefb70c696c69015f1d5667b3e10907f2daabc1471b0",
+    "rebasedFromBaseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5"
+  },
+  "nativeInputSetSha256": "85557043fd2663a893ae68290edc940a59511fa83d4d06718e272034b77605d8",
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "2fda58ae8e30fe54a3e383c102f3066412d5a0649b5138e03286493fcfd18282",
+      "bytes": 24250594,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "13f5b39b1ca0a927da954df8e850e854ff797d30e4ffe6c0201343ce2132b65f",
+      "bytes": 4690916,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "compiledVariant": "Own final Session and MainActivity Intent proposals plus reviewed private catalog additions; both actual shared files restored, parent read-only",
+  "checks": {
+    "compile": "passed",
+    "buildLogSha256": "b9f6cd0c9b7e9e3763a95c587e1d73ef6ee39b99853d4e30a28b1ecfc53f4032",
+    "hostTests": {
+      "ConnectionFormLeaseTest": {
+        "tests": 14,
+        "sha256": "67b3494f4ab65b6e6dd3d93a875f040bf95baf12f688ef26f54bb193ae6fa402"
+      },
+      "ConnectionDraftLeaseRevisionTest": {
+        "tests": 2,
+        "sha256": "b38c048de612564029af819e189644add0a9ae753f9752b349bd593ff410c178"
+      }
+    },
+    "hostPassed": 16,
+    "copyNodePassed": 4,
+    "nativeMethodsStillPresent": 91,
+    "pairingMethodsPrepared": 30,
+    "actualNativeOrIntentCallbackExecution": "not-performed"
+  },
+  "centralGeneratedFilesChanged": false,
+  "agentHubAppChanged": false,
+  "realDeviceHostIssuerDesktopCameraModelActions": 0,
+  "rootCheck": "Phase2 final invocation format/sync/lint passed; native-copy central registration guard stopped full check. Source branch phase3 adds reviewable overlay/docs only.",
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

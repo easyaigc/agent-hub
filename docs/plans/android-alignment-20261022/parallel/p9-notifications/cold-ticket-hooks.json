@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "owner": "parent only; read-only exact five-file overlay, not applied",
+  "parentHead": "22467307aa46b03fa4929245b5ffad27be6da260",
+  "baseReason": "P8 phase5 nonblocking Session IO + phase3 Main entry working bytes supplied by parent",
+  "fiveFiles": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "baseSha256": "e9b5642944d9f8dd7601d79a977b1cfe484b23f32b80fdf0a19b5e8eeeb9f277",
+      "proposedSha256": "d17f3ded6949d89c8733f1792829642e7561e63770ca4e2cb00a1fe883ceab36",
+      "changed": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "baseSha256": "2c8f7b2e9376fd021c1d4a0e99080b5307258d8c638e1de8f2bed12eb47f538a",
+      "proposedSha256": "bde3529e65d1f5b9fe436b9ce7ec31b2a02dc19c622c8a1199e7c50f45ee7370",
+      "changed": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "baseSha256": "3144730347b4429f545530439bb6e0adfa24419dd5016fd4a267e6b7d769ec02",
+      "proposedSha256": "3144730347b4429f545530439bb6e0adfa24419dd5016fd4a267e6b7d769ec02",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "baseSha256": "c706ed51be4cc2a081dd046ef9281cecdf04d711554c4bcaf1d51c7c698198f2",
+      "proposedSha256": "c706ed51be4cc2a081dd046ef9281cecdf04d711554c4bcaf1d51c7c698198f2",
+      "changed": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt",
+      "baseSha256": "480cd4fcd0658091310cbd1f621abf0f08b1ece5e0f77b7a7889b3274058ffa4",
+      "proposedSha256": "480cd4fcd0658091310cbd1f621abf0f08b1ece5e0f77b7a7889b3274058ffa4",
+      "changed": false
+    }
+  ],
+  "readOnlyApplyCheck": "passed",
+  "actualChangedFiles": 2,
+  "preserved": "onNewIntent P8 authority.invalidate first, then P7 cover and original dispatch; P7 notice/reading, voice preferences/discard, P8 external/lease calls retained",
+  "nativeCompilation": "new helper/tests compile in component baseline; shared overlay requires parent integrated compile",
+  "fixtureBoundary": "debug exact acceptance package; immutable canonical UUID lease; no default-first/adopt; no arbitrary namespace/path/transport/method",
+  "fixedRecentPhotoPort": "cold binding only: actual P8 configure/lifecycle retained, access NONE + empty named source avoids reading real media"
+}

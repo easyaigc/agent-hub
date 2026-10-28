@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "stage": "P9-shared-bounded-thread-directory",
+  "baseCommit": "b13c8467aa5738eddd517ce3913a0f223ba35a93",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "完整原机器目标、原始thread真实目录行、同一有界分页与取消规则；超限是目录未读完，不判定原thread不存在、不造thread、不转owner",
+      "androidImplementation": "implemented locator/shared scanner; P7 adoption hunk prepared, not applied",
+      "androidVerification": "auxiliary checks and compilation; physical rerun pending",
+      "iosImpact": "source unchanged; independent iOS lookup evidence remains separate"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeWorkspaceThreadDirectory.kt": "1535b47d9865653ed607ba7d808291c316776b6907d522da4d615db607d26e77",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSessionPort.kt": "ccddaa9d2a66a1d8b2152c0675a74047291e0a6fe5a8ceb9cc230443b1297c29",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "cefed32f8ec9eda7938c367f4df773302fb719bc854f7894912088b5fed3af8c",
+    "scripts/mobile/fixtures/CoordinatorVectors.kt": "654b7b9b8a68bb6e9aaa0d64c9df57d8880efab7d2cdd8a014bfa4718332f79a"
+  },
+  "limits": {
+    "pages": 1024,
+    "uniqueThreads": 16384,
+    "cursorCharacters": 16384
+  },
+  "p7OwnerHunk": "shared-directory-hooks.patch/json; read-only apply check only, not compiled here",
+  "fiveSharedHookImpact": [],
+  "nativeCoordinatorMethods": 21,
+  "checks": {
+    "jvm": "71 passed; shipping scanner/locator, memory storage/synthetic Looper and named fake readers are auxiliary only",
+    "android": "acceptance assembleDebug and assembleDebugAndroidTest passed; no device/Host/model operation"
+  }
+}

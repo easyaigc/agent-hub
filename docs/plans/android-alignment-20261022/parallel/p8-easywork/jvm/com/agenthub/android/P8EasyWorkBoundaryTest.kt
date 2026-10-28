@@ -93,14 +93,14 @@ class P8EasyWorkBoundaryTest {
             assertEquals(c.binding.target,binding.target);make(candidate,binding)
         }
     }
-    private fun receipt(request: JSONObject,mutate: (JSONObject)->Unit={}): JSONObject {
+    internal fun receipt(request: JSONObject,mutate: (JSONObject)->Unit={}): JSONObject {
         val params=request.getJSONObject("params")
         return JSONObject().put("state","accepted").put("operationId",params.getString("clientRequestId"))
             .put("method",request.getString("method")).put("target",target.json())
             .put("requestHash",easyHash(easyCanonical(JSONObject().put("target",target.json()).put("method",request.getString("method")).put("params",params)).toByteArray()))
             .put("response",JSONObject().put("ok",true).put("result",JSONObject().put("receipt","original"))).also(mutate)
     }
-    private suspend fun recovery(status: (JSONObject)->JSONObject): Pair<List<JSONObject>,Result<JSONObject>> {
+    internal suspend fun recovery(params: JSONObject=JSONObject().put("threadId","synthetic-thread").put("clientRequestId","stable-operation").put("text","immutable synthetic input"),status: (JSONObject)->JSONObject): Pair<List<JSONObject>,Result<JSONObject>> {
         val requests=CopyOnWriteArrayList<JSONObject>();var original: JSONObject?=null
         val c=credential
         val routes=registry(c) { candidate,binding->Peer(c.copy(binding=binding)) { request->
@@ -110,7 +110,7 @@ class P8EasyWorkBoundaryTest {
         } }
         val session=EasyWorkRemoteSession(connection(),c,{ error("Injected transports must not request an account token") },routes)
         return try {
-            val result=runCatching { withTimeout(5000) { session.request("turn/start",JSONObject().put("threadId","synthetic-thread").put("clientRequestId","stable-operation").put("text","immutable synthetic input"),"stable-request") } }
+            val result=runCatching { withTimeout(5000) { session.request("turn/start",params,"stable-request") } }
             requests.toList() to result
         } finally { session.close() }
     }

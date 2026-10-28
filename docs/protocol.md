@@ -136,3 +136,7 @@ P3-5b 已实现：workspaceManagementRequest/Operation 严格有序ID、1..100�
 升级区分历史免密设备凭据与已通过 Host Key 授权的凭据：旧免密绑定缺少 `hostKeyAuthorized` 时不再通过鉴权，用户可在原连接失败后点“使用 Host Key 重新授权”，输入一次后沿用原设备密钥与凭据，保存连接和草稿不清空。原 Host Key 手动／二维码连接及新版已授权设备照常重连。
 
 P5-2移动建议读取使用`codex-mobile-http-v1.schema.json`中的`desktopSuggestionResponse`与可选`runtime.suggestionSourceTurnId`。Codex的具名GET继续绑定机器/聊天/来源轮次及既有鉴权/证书；EasyWork的`thread/suggestion/read`在已鉴权加密会话中映射同一响应投影，保持其账号约束。Android读取预算为八秒，接收体有界，超时可恢复，原消费者取消保持取消。响应匹配不授予命令权限或自动采用；Android会话读取器与界面仍在P5-3接通。
+
+Android EasyWork canonical对象成员名与String值使用相同编码路径，统一移除可选slash转义，按现有非数字协议键与iOS/Node逐字节对齐；数值/通用RFC8785不新增承诺。解密仍认证原JWE protected段，未知原intent/raw SHA不重算，不接受重序列化替代或自动重放。新向量/Android原生门槛见phase10-canonical档案。
+
+本轮Android登记关闭修正仅恢复原operation ID及原授权下的查询，不增加命令或wire字段；未知撤销不宣称已取消，不分配替代operation或重放原操作。

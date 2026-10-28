@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "nativeCompile": "passed with exact own shared lease and reviewed private resource additions; no device run",
+  "hostTests": {
+    "ConnectionFormLeaseTest": {
+      "tests": 14,
+      "sha256": "10407dba4cb49fdd027b1dfeefee59a8ae9605b4f9caf10adb35b707e22ea653"
+    },
+    "ConnectionDraftLeaseRevisionTest": {
+      "tests": 2,
+      "sha256": "66c887859e85f91f1d3c48d2d4aa36b75be74bee5424913a589d31280749523e"
+    }
+  },
+  "hostPassed": 16,
+  "copyNodeTests": {
+    "passed": 4,
+    "logSha256": "b896865c1fcd46fc37040d87c0988959a3203689244934ed6feb85aba137e75e"
+  },
+  "eslint": "passed",
+  "nativeMethodsPrepared": {
+    "existingButtons": 14,
+    "newLease": 11,
+    "newCopyAx": 5,
+    "total": 30
+  },
+  "rootCheck": {
+    "status": "parent-central-registration-required",
+    "exitCode": 1,
+    "passedBeforeStop": ["format:check", "check:github-sync (5)", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "logSha256": "1cda5de6c36fe9a80eda3f8c06cc7d04e1c3e42a9f10ba93e56ef9f20dc96123",
+    "bypassed": false
+  },
+  "centralGeneratedFiles": "unchanged; parent runs existing generator after merging source",
+  "sharedSource": "own restored; parent read-only and exact overlay rebased to preserve parallel panel/notice hooks",
+  "realDeviceHostIssuerDesktopCameraModelActions": 0,
+  "a5GroupClosure": "none",
+  "a6": "paused"
+}

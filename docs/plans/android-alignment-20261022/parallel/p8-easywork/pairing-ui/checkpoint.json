@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-pairing-ui-next-20261029-1",
+  "date": "2026-10-29",
+  "baseCommit": "3c3f041c679b510acf1a7f0fb708b086e5bb1cf8",
+  "phase": "pairing-ui-test-preparation",
+  "parentReadOnlyReference": {
+    "parentCommit": "10699cf970ff356d1729848f194c63fd95df0945",
+    "filesSha256": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "c8acede9f47f2f98e2ba0bbc7dbc86d06c0a0d52f1c9c0d7a9240d301e160921",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "056ef8f7393386a090242bd28c2d788e7ac932fb82a1b6b778a696398779b6a1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "3144730347b4429f545530439bb6e0adfa24419dd5016fd4a267e6b7d769ec02",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkPairing.kt": "ccf9ec5439bc431ff129a35954ef1fe4b92a879ba46fa10a594a15f7d72859e0",
+      "apps/ios/Sources/Sheets.swift": "cbf1a9785c5e8075ef7b17d8689e179789ba5de4cb85d6c3cd5e35ecc4ed39c9",
+      "apps/ios/Sources/EasyWorkPairing.swift": "1c443b52ac637b22fccec2df78fb6bb40290655953cf2c0471abe3ca8d5ae616"
+    },
+    "readOnly": true
+  },
+  "sourceFilesSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "0dd4f342c1434ea1b4bcfb4547c9ec491464ab96498246618b628784a8191962",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPresentation.kt": "68595e3ed1de6ca75447970c0114aaaae28c02281c408c0e988e5ff1f5fcc809",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkPairing.kt": "aa133cdc5f4fd293c4152226c3d9118a46180ffa287538a74bc012f5444cefc1",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkPairingUiTest.kt": "64cc055f7da38f7eae3ce7d2c904b8811b8617238c9160b12c897d647aec1884"
+  },
+  "nativeInputFiles": 464,
+  "nativeInputSetSha256": "ba8b0ef92839c1eef5480051952930cceb8da3388af4dfeda5d6161e304864ad",
+  "compiledVariant": "own base plus required session hook overlay; shared source restored and not committed directly",
+  "requiredOverlay": {
+    "version": 1,
+    "requiredForLateApprovalScenario": true,
+    "parentFileUnmodified": true,
+    "sharedFileNotCommittedDirectly": true,
+    "hooks": {
+      "own": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "baseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+        "proposedSha256": "f4d734420ce513e0e1d6df7f90ab068c9c8f98bc3f40dd8b52aafa1cfd056964",
+        "patchSha256": "29bbba1561ab1bf8a131197721b0eb001a5b4e981045c926278d55c87c2e3cea",
+        "purpose": "Check captured incoming-link presentation before QR/code/discovery save, after runtime/context, and after workspace read before selecting. Existing catch restores prior credential if superseded during workspace read. Preserve original authorization intent; no replay/cancellation claim."
+      },
+      "parent": {
+        "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "baseSha256": "056ef8f7393386a090242bd28c2d788e7ac932fb82a1b6b778a696398779b6a1",
+        "proposedSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5",
+        "patchSha256": "c3708399292042f5869bc9604365de05572b034f66f042b39f29f849e1a10539",
+        "purpose": "Check captured incoming-link presentation before QR/code/discovery save, after runtime/context, and after workspace read before selecting. Existing catch restores prior credential if superseded during workspace read. Preserve original authorization intent; no replay/cancellation claim."
+      }
+    }
+  },
+  "packages": {
+    "app": {
+      "applicationId": "com.easyai.agenthub.android.acceptance",
+      "sha256": "8523afde77297b93eeed5128ad7d75f3d9337c22d190fde3ce4df870f62834ca",
+      "bytes": 26453859,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    },
+    "runner": {
+      "applicationId": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "346246f12f24e3156fe39e340ee0ef1b9efbeef18b401177da604f9ee9fe7932",
+      "bytes": 8113561,
+      "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+    }
+  },
+  "nativeTest": {
+    "class": "com.agenthub.android.MobileEasyWorkPairingUiTest",
+    "methods": [
+      "providerRoundTripPreservesOriginalDraftAndUnknownReceiptChineseLight",
+      "providerRoundTripPreservesOriginalDraftAndUnknownReceiptEnglishDark",
+      "completeTargetIsReachableInChineseDark",
+      "completeTargetIsReachableInEnglishLight",
+      "pendingConfirmationDisablesProviderAndDuplicateSubmissionThenShowsRejection",
+      "expiredConfirmationIsAnExplicitEnglishFailure",
+      "invalidCodeAndInvalidQrNeverReachTheIssuer",
+      "expiredLanQrIsRejectedBeforeAnyNetwork",
+      "wrongCertificatePinIsVisibleAndSendsNoClaim",
+      "changedDescriptorTargetIsVisibleAndSendsNoClaim",
+      "mismatchedBindingCannotQuietlyCompleteTheLanForm",
+      "unknownClaimDoesNotReplayWhenProviderChanges",
+      "approvedGrantWithUnavailableRuntimeDoesNotQuietlyReportSuccess",
+      "newerIncomingQrSurvivesOldApprovalWithoutDispatchingRuntime"
+    ],
+    "groups": {
+      "provider-and-complete-target": [
+        "providerRoundTripPreservesOriginalDraftAndUnknownReceiptChineseLight",
+        "providerRoundTripPreservesOriginalDraftAndUnknownReceiptEnglishDark",
+        "completeTargetIsReachableInChineseDark",
+        "completeTargetIsReachableInEnglishLight"
+      ],
+      "confirmation-and-invalid-input": [
+        "pendingConfirmationDisablesProviderAndDuplicateSubmissionThenShowsRejection",
+        "expiredConfirmationIsAnExplicitEnglishFailure",
+        "invalidCodeAndInvalidQrNeverReachTheIssuer"
+      ],
+      "tls-and-binding": [
+        "expiredLanQrIsRejectedBeforeAnyNetwork",
+        "wrongCertificatePinIsVisibleAndSendsNoClaim",
+        "changedDescriptorTargetIsVisibleAndSendsNoClaim",
+        "mismatchedBindingCannotQuietlyCompleteTheLanForm"
+      ],
+      "original-intent-and-late-result": [
+        "unknownClaimDoesNotReplayWhenProviderChanges",
+        "approvedGrantWithUnavailableRuntimeDoesNotQuietlyReportSuccess",
+        "newerIncomingQrSurvivesOldApprovalWithoutDispatchingRuntime"
+      ]
+    },
+    "methodTimeoutMillis": 45000,
+    "groupOuterDeadlineSeconds": 240,
+    "arguments": [
+      "p8PairingUiConfig",
+      "p8PairingUiBuild",
+      "p8UiForeground (lease owner opt-in; blank ComponentActivity only)"
+    ],
+    "nativeExecution": "not-performed",
+    "deviceLease": null,
+    "appOwnedScreenshotProfiles": [
+      "zh-Hans/light provider",
+      "en/dark provider",
+      "zh-Hans/dark target",
+      "en/light target"
+    ],
+    "host": "Blank native ComponentActivity; MainActivity/default connection restore are not started",
+    "defaultProtection": "Every existing default mobile-v1 encrypted file streamed and hashed before/after; own independent namespace and AES alias"
+  },
+  "auxiliary": {
+    "compile": "passed",
+    "nodeContractCases": 6,
+    "nodeLogSha256": "cdbdc37ab826b63076d0e1bf2c807a9f928e13e746664e76ccc15febe6d84cb1",
+    "compileLogSha256": "5ee88deaffaa656a69ad180a59947324d64145d6c97903a3285ee006f2f4ddf9",
+    "listenersStarted": false,
+    "all75CurrentAndPriorMethodNamesInRunner": true,
+    "old61NativeMethodsUnchanged": true,
+    "manifestAndSigners": "verified"
+  },
+  "uiBehavior": [
+    "Retain ephemeral EasyWork form across Provider subtree replacement",
+    "Localize reviewed pending/failure categories only; do not echo untrusted peer messages",
+    "Render complete existing EasyWork target",
+    "Suppress obsolete action status/error/dismissal; session hook additionally guards persistence/selection"
+  ],
+  "externalUnverified": [
+    "Real native execution for all 14 new methods",
+    "True camera scan and permission outcomes",
+    "Real discovery/issuer/original Desktop confirmation",
+    "Full successful original runtime/workspace handoff",
+    "Actual client-to-client original Desktop drafts/receipts and models",
+    "iOS matching target summary and late-result behavior",
+    "Separate cold writer/reader lease"
+  ],
+  "centralRegistration": "parent-owned",
+  "a5GroupClosure": "none",
+  "a6": "paused",
+  "fixture": {
+    "sourceSha256": "322cd03880dfa64d5a095719ee3cbf030b68430b9e4e78b89ba312d77e2a4f38",
+    "pureTestSourceSha256": "498f3cb2f7861bfae786574c7f8488a331723b6fc42c746aeb17f96d657c326d",
+    "issuerDependencySha256": "b91aff98e2f40cce295086dae2d0190540481a4314f6b98c7c7b81e31fe7fe7c",
+    "cryptoDependencySha256": "cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a",
+    "assetSha256": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104",
+    "listenerCountStartedHere": 0
+  }
+}

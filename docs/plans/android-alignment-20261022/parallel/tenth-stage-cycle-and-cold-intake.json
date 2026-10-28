@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "checkpoint": "PAR10-original-cycle-and-cold-intake",
+  "date": "2026-10-29",
+  "device": "Original task-owned API37, existing data retained",
+  "cycleGroups": [
+    {
+      "label": "old-cycle-read-only",
+      "status": "passed",
+      "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+      "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+      "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsCycleInspectionTest#inspectLegacyOriginalBytesWithoutQueryReplayOrJournalWrite"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "754b7105b5b3b81c5d51a7815f50af35d762e4988f216f468de644db06b8273c"
+    },
+    {
+      "label": "fresh-cycle-denied-writer",
+      "status": "passed",
+      "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+      "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+      "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsDeniedTest#durableFixtureCycleDenialRecordsActualSyntheticResponseForNewGrantCase"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "8576ba20fc99fc146fa3bba8bd802c737a9e63c7bb5ba11888093035c0da2d62"
+    },
+    {
+      "label": "fresh-cycle-granted-reader",
+      "status": "passed",
+      "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+      "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+      "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationOsGrantedTest#durableFixtureCycleRecoveryUsesRecordedResponseWithoutOriginalResubmit"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "38d6b2d841ac34cd220b13ad7cca99d4ec45283ab11a63e5a9ebff6003190e31"
+    }
+  ],
+  "oldOriginalInspection": {
+    "physicalEncryptedFiles": 4,
+    "unchanged": true,
+    "epochIdentityOriginalMatched": true,
+    "operationState": "applied",
+    "recordedSyntheticResponse": "applied",
+    "after": 1,
+    "terminalOldEvent": "system-unavailable",
+    "commands": 0,
+    "controllerCalls": 0,
+    "defaultStoreOpened": false
+  },
+  "freshCycle": {
+    "writerAndDifferentProcessReaderPassed": true,
+    "originalReceiptQueriedWithoutNewSubmit": true,
+    "permissionFlagsAppOpRestored": true,
+    "notRealHostConfirmation": true
+  },
+  "coldWriter": {
+    "group": {
+      "label": "writer",
+      "status": "failed",
+      "sourceSha256": "08e96934ebde50be962c799fa27937f64c7c129a8a6145010ba8cd5e0bff3a43",
+      "appSha256": "44a0d17adef9fc132dbdb9bd439a258577fa9d3aadc87cf0b6904258fbfea651",
+      "runnerSha256": "b6dd861db2ce5b916e7b57cc03c72b724aa3b58c6768975e1a366e542707a88b",
+      "passedMethods": [],
+      "failedMethods": [
+        "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity"
+      ],
+      "instrumentationSha256": "370585d351a363bb77a56bafe219395cff4fbc20818552084514d7ff64f6c597"
+    },
+    "status": "failed before router arm; reader/observer and four other cases not started",
+    "cause": "Fixture COMPLETED event not included in default seven kinds; production claim correctly rejects",
+    "defaultEncryptedFileCount": 6249,
+    "defaultCiphertextsUnchanged": true,
+    "failedLeasePreservedOnOldAvd": true,
+    "writerNeverReplayed": true
+  },
+  "harnessPreconditions": [
+    "Ciphertext capture/count bounds rejected before any role; then bounded device SHA256 with measured inventory scope",
+    "Proof folder absent for failed writer; exec-out status0 tar error retained as invalid capture, not an archive"
+  ],
+  "remaining": [
+    "New safety/completion fixture source must use fresh leases; old failures never rewritten",
+    "Physical phone allowed-permission cycle remains independent",
+    "Real backend/original OS tap and complete DEV not established"
+  ],
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0
+}

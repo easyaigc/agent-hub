@@ -109,7 +109,8 @@ class VoiceInputController(private val context: Context,private val store: Voice
         Phase.FAILED->if(error==null)"录音已保留，点击重试查询转写"else errorCopyKey?.takeIf {it==error}
     }
     }
-    private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
+    private val migrationIo=NativeMigrationIoWork()
+    private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate+migrationIo)
     private var generation=""
     private var draft: VoiceDraft?=null
     private var pending: PendingVoiceRecording?=null
@@ -288,6 +289,22 @@ class VoiceInputController(private val context: Context,private val store: Voice
             finally { if(generation==id) { phase=Phase.FAILED;if(error==null) { error=failure.copyKey;errorCopyKey=failure.copyKey } } }
         }
     }
+    /** Join the actual local stop/discard before retiring storage. No remove, upload or replacement. */
+    internal suspend fun quiesceForMigration() {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+        val original=tasks.coroutineContext[Job]!!.children.toList()
+        if(discarding)discardRestartAllowed=false
+        else if(phase!=Phase.FINISHING)suspendRecording()
+        val terminal=work
+        // The stop/discard work owns the recorder worker. Join it before cancelling that worker.
+        terminal?.join()
+        check(capture==null||capture?.ended==true) {"Voice capture has not stopped"}
+        val children=(original+tasks.coroutineContext[Job]!!.children.toList()).distinct()
+        children.forEach {it.cancel()};children.forEach {it.join()}
+        check(tasks.coroutineContext[Job]!!.children.none {it.isActive})
+        migrationIo.awaitIdle()
+    }
+    internal fun retireForMigration(){migrationIo.close();tasks.cancel()}
     /** Navigation/presentation cancellation preserves the original recovery semantics; UI discard is separate. */
     fun cancel() {
         if(discarding) { discardRestartAllowed=false;discardPresentationDetached=true;return }

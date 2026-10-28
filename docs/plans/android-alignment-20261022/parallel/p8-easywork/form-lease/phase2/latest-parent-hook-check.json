@@ -1,0 +1,10 @@
+{
+  "parentCommit": "69db4817a16bd5b5a485d9e01ed5f200da31b0fa",
+  "currentBaseSha256": "6172fa025e7c81bdbc3838c9345a3b917a3fabb0bb7c1c56c25db2223515489d",
+  "finalProposedSha256": "e8d877dc449e00236fcfba11743497ba9506f60e9818e4d105115652c690e5b5",
+  "rebased": true,
+  "previousBaseSha256": "b71fe03955e58b6c2d067be0d6f0344fafd6b0232df98642fd41ed295c1db7d5",
+  "parallelPanelRegionPreservedSha256": "ead33aaf22076cc8ffe3f94b3b91a69927045608bca9e92dc4734ef74d98bd64",
+  "foregroundAndNotificationHooksPreserved": true,
+  "sharedSourceModifiedHere": false
+}

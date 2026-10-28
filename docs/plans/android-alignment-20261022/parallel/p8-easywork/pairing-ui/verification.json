@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "compile": {
+    "status": "passed",
+    "methods": 14,
+    "variant": "own session hook overlay f4d734420ce513e0e1d6df7f90ab068c9c8f98bc3f40dd8b52aafa1cfd056964 temporarily compiled and exact base restored",
+    "logSha256": "5ee88deaffaa656a69ad180a59947324d64145d6c97903a3285ee006f2f4ddf9",
+    "nativeExecution": "not-performed"
+  },
+  "node": {
+    "status": "passed",
+    "cases": 6,
+    "logSha256": "cdbdc37ab826b63076d0e1bf2c807a9f928e13e746664e76ccc15febe6d84cb1",
+    "listenersStarted": false
+  },
+  "eslint": {
+    "status": "passed",
+    "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "pnpmCheck": {
+    "status": "integration-pending-central-registration",
+    "exitCode": 1,
+    "passedBeforeStop": ["format:check", "check:github-sync (5)", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/src/androidTest/kotlin/com/agenthub/android/MobileEasyWorkPairingUiTest.kt",
+    "logSha256": "523d65f40e1bff98ee31a9fc3fb28b414afd21d785735eebb5b6f1d4c83af2be",
+    "guardBypassed": false
+  },
+  "packaging": "Exact app/test IDs, same expected signer and instrumentation target verified; all new14 plus old61 method names found in runner DEX; frozen crypto asset matches",
+  "protectedFiles": "Own MobileSession restored to 05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1; NativeSheets/P9/voice/discard unchanged; parent used only as read-only reference",
+  "realDev": "No device, ADB, Host, real issuer, original Desktop, camera or model actions",
+  "nativeUiAndTlsResults": "unverified; compilation and Node cases cannot establish UI/TLS on Android",
+  "a5GroupClosure": "none",
+  "a6": "paused",
+  "isolatedHost": "Blank native ComponentActivity; no MainActivity/default connection restore, no Host monitor. Default encrypted files compared by streaming hashes."
+}

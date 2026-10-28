@@ -41,19 +41,22 @@ class NativeChatNotificationCoordinatorTest {
         .put("capabilities",JSONArray()).put("projects",JSONArray()).put("threads",JSONArray(listOf(first,other).map{JSONObject().put("id",it.id).put("hostId",it.hostId).put("title",it.title).put("state",it.state)})).toString())
     private var locateGate:CompletableDeferred<Unit>?=null
     private var locateEntered:CompletableDeferred<Unit>?=null
+    private var locateOwner:Job?=null
+    private var lateLocate=false
     private var feedGate:CompletableDeferred<Unit>?=null
     private var feedEntered:CompletableDeferred<Unit>?=null
     private val reader=object:HostReads {
         override suspend fun workspace(client:MobileClient,projectCursor:String?,threadCursor:String?):MobileWorkspace {
-            locateEntered?.complete(Unit);locateGate?.await();return workspace
+            locateOwner=currentCoroutineContext()[Job];locateEntered?.complete(Unit)
+            if(lateLocate)withContext(NonCancellable){locateGate?.await()}else locateGate?.await()
+            return workspace
         }
         override suspend fun history(client:MobileClient,threadId:String,cursor:String?)=HostReadCodec.history(JSONObject().put("hostId",target.hostId).put("threadId",threadId).put("readTarget",CodexCommandCodec.target(target)).put("messages",JSONArray()).toString())
     }
     private fun main(action:suspend()->Unit)=runBlocking {withContext(Dispatchers.Main.immediate){action()}}
     private fun io(action:suspend()->Unit)=runBlocking {withContext(Dispatchers.IO){action()}}
-    private inner class Port:NativeChatNotificationSessionPort {
-        override val storage get()=owned.storage
-        var ready=true;var foreground=true;var visible=true;var navigation=0
+    private inner class Port(override val storage:NativeSessionStorage=owned.storage):NativeChatNotificationSessionPort {
+        var ready=true;var foreground=true;var visible=true;var navigation=0;var readingReady=true
         val received=mutableListOf<String>();val active=mutableListOf<Set<String>>();var mayAlert=true;var opened=0
         override val reading=object:NativeChatNotificationReading {
             override suspend fun receive(event:NativeChatNotificationEvent):NativeChatNoticeReadingResult {
@@ -61,7 +64,7 @@ class NativeChatNotificationCoordinatorTest {
             }
             override fun mayPresent(event:NativeChatNotificationEvent):Boolean=mayAlert
         }
-        override fun state()=NativeChatNotificationSessionState(ready&&!actual.restoring&&!actual.localRecoveryRequired,foreground,"${actual.targetKey}:$navigation",visible)
+        override fun state()=NativeChatNotificationSessionState(ready&&!actual.restoring&&!actual.localRecoveryRequired,foreground,"${actual.targetKey}:$navigation",visible,readingReady)
         override suspend fun savedConnections():List<NativeChatNotificationSavedConnection> {
             check(Looper.myLooper()==Looper.getMainLooper());val clients=actual.clients.filter{!it.isDemo}.toList()
             val saved=withContext(Dispatchers.IO){storage.snapshotTransaction {clients.map{NativeChatNotificationSavedConnection.capture(it,storage.token(it.id))}}}
@@ -75,7 +78,7 @@ class NativeChatNotificationCoordinatorTest {
         }
     }
     private inner class SystemPort:NativeChatNotificationSystem {
-        override val sounds=NativeChatNotificationSoundLibrary(ui.activity,owned.storage)
+        override val sounds=NativeChatNotificationSoundLibrary(ui.activity,port.storage)
         override fun languageChanged(selection:String){check(Looper.myLooper()==Looper.getMainLooper())}
         var allowed by mutableStateOf(true)
         val posts=mutableStateListOf<NativeChatNoticeReceipt>();val intents=mutableListOf<Intent>();var cancellations=0
@@ -104,22 +107,28 @@ class NativeChatNotificationCoordinatorTest {
         ui.runOnIdle {originalIntent=Intent(ui.activity.intent);owned=OwnedControlAcceptance(ui.activity,"chat-notification-coordinator");owned.session.resetAcceptance()}
         fixture=runBlocking{withContext(Dispatchers.IO){RecoveryNativeFixture(owned.storage)}}
         main {
-            val commands=object:CodexCommands by NativeCodexCommands({error("No real Host commands in this fixture")}) {override suspend fun models(client:MobileClient)=emptyList<CodexModel>()}
+            val commands=fixtureCodexCommands()
             actual=MobileSession(owned.storage,reader,commands);actual.resetAcceptance(reader,commands);actual.connect("Fixture","https://fixture.example.invalid",token);actual.selectThread(other);actual.text="Original owned draft"
-            port=Port();system=SystemPort();tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
-            val transport=object:NativeChatNotificationCommands,NativeChatNotificationRecoveryCommands by fixture.commands {
-                override suspend fun register(snapshot:NativeChatNotificationSnapshot,identity:NativeChatNotificationIdentity,preferences:NativeChatNotificationPreferences):NativeChatNotificationStatus=error("No v1 write expected")
-                override suspend fun preferences(snapshot:NativeChatNotificationSnapshot,deviceId:String,preferences:NativeChatNotificationPreferences):NativeChatNotificationStatus=error("No v1 write expected")
-                override suspend fun unregister(snapshot:NativeChatNotificationSnapshot,deviceId:String):NativeChatNotificationStatus=error("No v1 write expected")
-                override suspend fun status(snapshot:NativeChatNotificationSnapshot,deviceId:String)=withContext(Dispatchers.IO){NativeChatNotificationStatus(snapshot.target,"foreground-only","unavailable",fixture.notices.preferences().revision,null,false)}
-                override suspend fun events(snapshot:NativeChatNotificationSnapshot,deviceId:String,after:String):NativeChatNotificationFeed=error("No v1 feed expected")
-                override suspend fun recoveryFeed(snapshot:NativeChatNotificationSnapshot,original:NativeChatRecoveryIntent,query:NativeChatRecoveryQuery,reset:NativeChatRecoverySnapshot?):NativeChatRecoveryFeed {
-                    feedEntered?.complete(Unit);feedGate?.await();return fixture.commands.recoveryFeed(snapshot,original,query,reset)
-                }
-            }
-            coordinator=NativeChatNotificationCoordinator(tasks,port,system,transport,NativeChatNotificationThreadLocator{reader},{fixture.now},60_000,ui.activity.packageName)
-            coordinator.updateComputers(actual.clients);pageOwner=PageOwner().also{it.registry.currentState=Lifecycle.State.RESUMED}
+            port=Port();system=SystemPort()
+            bindCoordinator()
+            pageOwner=PageOwner().also{it.registry.currentState=Lifecycle.State.RESUMED}
         }
+    }
+    private fun fixtureCodexCommands()=object:CodexCommands by NativeCodexCommands({error("No real Host commands in this fixture")}) {override suspend fun models(client:MobileClient)=emptyList<CodexModel>()}
+    private fun bindCoordinator(){
+        tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
+        val transport=object:NativeChatNotificationCommands,NativeChatNotificationRecoveryCommands by fixture.commands {
+            override suspend fun register(snapshot:NativeChatNotificationSnapshot,identity:NativeChatNotificationIdentity,preferences:NativeChatNotificationPreferences):NativeChatNotificationStatus=error("No v1 write expected")
+            override suspend fun preferences(snapshot:NativeChatNotificationSnapshot,deviceId:String,preferences:NativeChatNotificationPreferences):NativeChatNotificationStatus=error("No v1 write expected")
+            override suspend fun unregister(snapshot:NativeChatNotificationSnapshot,deviceId:String):NativeChatNotificationStatus=error("No v1 write expected")
+            override suspend fun status(snapshot:NativeChatNotificationSnapshot,deviceId:String)=withContext(Dispatchers.IO){NativeChatNotificationStatus(snapshot.target,"foreground-only","unavailable",fixture.notices.preferences().revision,null,false)}
+            override suspend fun events(snapshot:NativeChatNotificationSnapshot,deviceId:String,after:String):NativeChatNotificationFeed=error("No v1 feed expected")
+            override suspend fun recoveryFeed(snapshot:NativeChatNotificationSnapshot,original:NativeChatRecoveryIntent,query:NativeChatRecoveryQuery,reset:NativeChatRecoverySnapshot?):NativeChatRecoveryFeed {
+                feedEntered?.complete(Unit);feedGate?.await();return fixture.commands.recoveryFeed(snapshot,original,query,reset)
+            }
+        }
+        coordinator=NativeChatNotificationCoordinator(tasks,port,system,transport,NativeChatNotificationThreadLocator{reader},{fixture.now},60_000,ui.activity.packageName)
+        coordinator.updateComputers(actual.clients)
     }
     @After fun preserve() {
         if(::coordinator.isInitialized)main{coordinator.dispose();tasks.cancel();actual.leaveForeground();owned.session.leaveForeground();ui.activity.setIntent(originalIntent);owned.verifyDefault();check(actual.operationRecords.isEmpty())}
@@ -146,7 +155,22 @@ class NativeChatNotificationCoordinatorTest {
         main{system.allowed=false};fixture.events.add(fixture.event(1));start();synchronized();check(system.posts.isEmpty()&&port.received.size==1)
         fixture.events.add(fixture.event(2));main{system.allowed=true;coordinator.preferencesSaved()};ui.waitUntil(10_000){system.posts.size==1};check(system.posts.single().event.id==fixture.event(2).id&&port.received.size==2)
     }
-    @Test fun foregroundPresentationUsesOpaqueIntentAndP7UnreadCount(){fixture.events.add(fixture.event());start();ui.waitUntil(10_000){system.posts.size==1};val intent=system.intents.single();check(intent.extras!!.keySet()==setOf(NativeChatNotificationPlatform.TICKET)&&intent.getStringExtra(NativeChatNotificationPlatform.TICKET)==system.posts.single().ticket)}
+    @Test fun foregroundPresentationUsesOpaqueIntentAndP7UnreadCount(){
+        val event=fixture.event();fixture.events.add(event);start()
+        // A visible posts append precedes the rest of the Main callback. Wait for the
+        // actual durable delivery outcome, then inspect both callback products on Main.
+        io{withTimeout(10_000){
+            while(true){
+                val outcome=fixture.view().outcomes.singleOrNull{it.event.id==event.id}
+                if(outcome?.terminal==true){check(outcome.state=="submitted-to-system");break}
+                delay(10)
+            }
+        }}
+        main{val posted=system.posts.single();val intent=system.intents.single()
+            check(posted.event.id==event.id&&port.received.single()==event.id)
+            check(intent.extras!!.keySet()==setOf(NativeChatNotificationPlatform.TICKET)&&intent.getStringExtra(NativeChatNotificationPlatform.TICKET)==posted.ticket)
+        }
+    }
     @Test fun readingRecheckAfterChannelPreparationPreventsOldBanner(){system.afterPrepare={port.mayAlert=false};fixture.events.add(fixture.event());start();synchronized();check(port.received.size==1&&system.posts.isEmpty())}
     @Test fun backgroundInvalidatesSuspendedPresentationBeforeSystemPost(){
         system.prepareEntered=CompletableDeferred();system.prepareGate=CompletableDeferred();fixture.events.add(fixture.event());start();runBlocking{withTimeout(10_000){system.prepareEntered!!.await()}}
@@ -239,6 +263,72 @@ class NativeChatNotificationCoordinatorTest {
         locateGate=CompletableDeferred();locateEntered=CompletableDeferred();ownedActivityIntent(NativeChatNotificationPlatform.openIntent(ui.activity,older));runBlocking{withTimeout(10_000){locateEntered!!.await()}}
         ownedActivityIntent(NativeChatNotificationPlatform.openIntent(ui.activity,newer));main{locateGate!!.complete(Unit)};ui.waitUntil(10_000){coordinator.openState=="opened"}
         check(port.opened==1&&actual.selectedThread==other.id);io{check(coordinator.store.ticket(older,fixture.now)!=null)}
+    }
+
+    @Test fun credentialReplacementDuringLookupKeepsOriginalTicketAndDraft(){
+        main{port.readingReady=false};val original=ticket();locateGate=CompletableDeferred();locateEntered=CompletableDeferred()
+        ownedActivityIntent(NativeChatNotificationPlatform.openIntent(ui.activity,original));runBlocking{withTimeout(10_000){locateEntered!!.await()}}
+        main{coordinator.connectionsWillChange()};io{port.storage.setToken(target.hostId,"u".repeat(43))}
+        main{coordinator.reconcile();locateGate!!.complete(Unit)}
+        ui.waitUntil(10_000){coordinator.openState=="unavailable"}
+        main{check(port.opened==0&&actual.selectedThread==other.id&&actual.text=="Original owned draft"&&system.posts.isEmpty())}
+        io{check(coordinator.store.ticket(original,fixture.now)!=null)}
+        check(fixture.submitted.isEmpty()&&fixture.queries.isEmpty())
+    }
+    @Test fun restoredSessionCanOpenOriginalBeforeReadingLedgerAllowsPolling(){
+        val original=ticket();main{port.ready=false;port.readingReady=false;coordinator.reconcile()}
+        ownedActivityIntent(NativeChatNotificationPlatform.openIntent(ui.activity,original))
+        main{check(coordinator.openState=="waiting-for-restoration"&&port.opened==0);port.ready=true;coordinator.reconcile()}
+        ui.waitUntil(10_000){coordinator.openState=="opened"}
+        main{check(actual.selectedThread==first.id&&port.opened==1&&fixture.submitted.isEmpty()&&fixture.queries.isEmpty())}
+        io{check(port.storage.read(NativeChatNotificationIdentity.RECORD)==null)}
+        main{port.readingReady=true;coordinator.reconcile()};synchronized()
+        main{check(fixture.submitted.size==1&&port.received.isEmpty());coordinator.navigationWillChange();actual.selectThread(other);check(actual.text=="Original owned draft")}
+    }
+    @Test fun disposedBindingCannotPublishLateLookupIntoReplacementStorage(){
+        val oldCoordinator=coordinator;val oldPort=port;val oldActual=actual;val oldFixture=fixture;val oldSystem=system
+        val original=ticket();val gate=CompletableDeferred<Unit>();locateGate=gate;locateEntered=CompletableDeferred();lateLocate=true
+        ownedActivityIntent(NativeChatNotificationPlatform.openIntent(ui.activity,original));runBlocking{withTimeout(10_000){locateEntered!!.await()}}
+        val lookup=checkNotNull(locateOwner)
+        try{
+            main{oldCoordinator.dispose();tasks.cancel();oldActual.leaveForeground();locateGate=null;lateLocate=false}
+            var replacement:NativeSessionStorage?=null
+            io{replacement=owned.storage.child(ui.activity,"p9-binding-replacement");fixture=RecoveryNativeFixture(checkNotNull(replacement))}
+            main{
+                val storage=checkNotNull(replacement);val commands=fixtureCodexCommands()
+                actual=MobileSession(storage,reader,commands);actual.resetAcceptance(reader,commands);actual.connect("Replacement","https://fixture.example.invalid",token);actual.selectThread(other);actual.text="Replacement owned draft"
+                port=Port(storage).also{it.readingReady=false};system=SystemPort();bindCoordinator();coordinator.reconcile()
+            }
+        }finally{gate.complete(Unit)}
+        runBlocking{withTimeout(10_000){lookup.join()}}
+        main{
+            check(oldPort.storage!==port.storage&&oldPort.opened==0&&port.opened==0)
+            check(actual.selectedThread==other.id&&actual.text=="Replacement owned draft"&&coordinator.openState==null&&coordinator.reports.isEmpty())
+            check(system.posts.isEmpty()&&oldSystem.posts.isEmpty()&&fixture.submitted.isEmpty()&&oldFixture.submitted.isEmpty())
+        }
+        io{
+            check(oldCoordinator.store.ticket(original,oldFixture.now)!=null)
+            for(record in listOf(NativeChatNotificationIdentity.RECORD,NativeChatNotificationAuthorizations.RECORD,NativeChatNotificationRecoveryStore.RECORD,NativeChatNotificationForegroundStore.RECORD))check(port.storage.read(record)==null)
+        }
+    }
+    @Test fun actualSessionRestoreRetainsOriginalUnknownWithoutAnotherSubmit(){
+        fixture.loseAck=true;fixture.saveReceipt=false;start();ui.waitUntil(10_000){coordinator.reports.values.any{it.state=="mutation-unknown-original-query"}}
+        val original=fixture.submitted.single().encoded();var identity:String?=null
+        io{owned.storage.awaitQueuedWrites();identity=owned.storage.read(NativeChatNotificationIdentity.RECORD)}
+        main{
+            coordinator.dispose();tasks.cancel();actual.leaveForeground()
+            actual=MobileSession(owned.storage,reader,fixtureCodexCommands());port=Port().also{it.readingReady=false};system=SystemPort();bindCoordinator()
+            coordinator.reconcile();check(coordinator.reports.isEmpty());actual.restore()
+        }
+        ui.waitUntil(10_000){!actual.restoring}
+        main{
+            check(!actual.localRecoveryRequired&&actual.clients.any{it.id==target.hostId}&&actual.selectedThread==other.id&&actual.text=="Original owned draft")
+            coordinator.reconcile();coordinator.queryOriginals(fixture.target)
+        }
+        ui.waitUntil(10_000){coordinator.originalReports[fixture.target]?.state=="mutation-unknown-original-query"}
+        main{check(coordinator.reports.isEmpty()&&system.posts.isEmpty()&&fixture.submitted.size==1&&fixture.queries.isEmpty())}
+        check(fixture.queried.isNotEmpty()&&fixture.queried.all{it.encoded()==original})
+        io{check(owned.storage.read(NativeChatNotificationIdentity.RECORD)==identity&&fixture.view().operations.single().original.encoded()==original)}
     }
 
 }

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "stage": "P9-cold-router-original-resource-preflight",
+  "baseCommit": "087e764573941ec40211fef407359f55a332dae4",
+  "operationId": "parent-p9-channel-pass-fixture-intake-20261029-1",
+  "features": [
+    {
+      "id": "F52",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "commonAssertion": "未知/部分router原件先核对后读取；不得AtomicFile自动恢复、删除或默认目标回退",
+      "androidImplementation": "fixed namespace physical preflight before any storage construction; no shared hook changes",
+      "androidVerification": "four filesystem auxiliary cases plus component compile; native not-run here",
+      "iosImpact": "no source/evidence change; A6 paused"
+    }
+  ],
+  "sourceSha256": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt": "07ff155e7ded5dd0c96434507a29102d3cee7fac8b5120ce2cf0755dea3cc01a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdRouterFiles.kt": "93bf9af0aa07f306fecf6181a2e6eeea053c3c2c6bbe7ffc9a9c17cfc5dcbde9",
+    "scripts/mobile/check-chat-notification-recovery.mjs": "19b2605e732ec8b7ff58d20c18f824750cdc0193ee69c46224f42c443a52b3d9",
+    "scripts/mobile/fixtures/ColdVectors.kt": "e94c2f7c4da58f45245aeb58a00cb6780d204b4fbe3079f40ce7e5266b85ea22"
+  },
+  "sharedFiveChanges": [],
+  "nativeResults": "not-run; parent candidate and old failures retain their fingerprints",
+  "requiresNewTicketOrReplay": false
+}

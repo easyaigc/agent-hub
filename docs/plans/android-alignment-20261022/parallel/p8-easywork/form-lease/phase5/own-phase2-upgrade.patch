@@ -1,0 +1,27 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -1809,8 +1809,11 @@
+         val identity=EasyWorkIdentity.load(store);binding.verify(identity)
+         val scope=binding.target.scope();val id="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray())
+         val existing=realClients.firstOrNull { it.id==id };val revision=revisions[id]?:0L
+-        val ref=existing?.agentConnection?.credentialRef?:"agent-$id"
+-        val previous=withContext(Dispatchers.IO) { store.read("easywork-credential:$ref") }
++        val previousRef=existing?.agentConnection?.credentialRef?:"agent-$id"
++        // Candidate bytes are unactivated until this action commits the metadata pointer.
++        // A crash leaves an unreferenced original; recovery never promotes or replays it.
++        val ref="agent-$id-${lease.id}"
++        val previous=withContext(Dispatchers.IO) { store.read("easywork-credential:$previousRef") }
+         lease.checkpoint()
+         val old=previous?.let { EasyWorkCredential.decode(JSONObject(it)) }
+         require(old==null||old.binding.target==binding.target&&old.privateKey==identity.privateKey)
+@@ -1847,9 +1850,9 @@
+             val workspace=reads.workspace(client);require((revisions[id]?:0L)==revision&&sameScope(workspace.scope,scope))
+             lease.checkpoint()
+             return lease.commit {
++                EasyWorkConnectionCredentialWrites.committed(store,"easywork-credential:$ref",lease)
+                 client=client.copy(online=true);replaceClient(client);revisions[id]=revision+1
+                 workspaces[MobileRules.cacheKey(id,scope,null,null)]=workspace;select(client);version(targetKey);easyWorkDiscovery?.scan()
+-                EasyWorkConnectionCredentialWrites.committed(store,"easywork-credential:$ref",lease)
+                 client
+             }
+         } catch(failure: Exception) {

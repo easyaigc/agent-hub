@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-native-pure-first-feedback-20261029-1",
+  "sourceSha256": "7fe9347106ecaf78fb33466e328a8bf04ef0f560b6ae6c77c848c061377a0024",
+  "compile": "passed",
+  "buildLogSha256": "0253ea03a59adfd9e3347eb4c621bc180bb3534d9d0421f8721af96e5bb52e9b",
+  "nativeExecutionHere": 0,
+  "parentFailure": "stage8-pairing-native/actions-1793217422026-b3fb35cb/instrumentation.log",
+  "parentSource": "64f4c3ec53ae8dabab0c5b6d17326866ca27f3990b2ec3106de6b582eacd717b",
+  "newExplicitOptIn": "p8ActualMainStart=1 after exact p8ActualMainReady=1 and installed package hashes",
+  "readiness": "Actual same instrumentation process Main lifecycle RESUMED and completed restore; no fake Activity/dispatcher",
+  "defaultProtection": "Snapshot all mobile-v1 namespaces before preflight/start and after restore; no reset/delete/reinstall; no saved connection/callback preparation",
+  "warmSameActivityNoStopDestroyAndCapabilityAssertions": "retained",
+  "sharedMainSessionUnchanged": true,
+  "a5Closure": "none",
+  "a6": "paused"
+}

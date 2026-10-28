@@ -187,7 +187,7 @@ internal static class TraceState
         if(!Fields(request,"schemaVersion","kind","id","items") || !(request["schemaVersion"] is int) || (int)request["schemaVersion"]!=1 ||
             !(request["kind"] is string) || (string)request["kind"]!="snapshot-many" || !(request["id"] is int) || (int)request["id"]<1)throw new ArgumentException();
         var items=request["items"] as object[];
-        if(items==null || items.Length<1 || items.Length>8)throw new ArgumentException();
+        if(items==null || items.Length<1 || items.Length>64)throw new ArgumentException();
         int estimate=256;
         for(int index=0;index<items.Length;index++) {
             var item=items[index] as Dictionary<string,object>;

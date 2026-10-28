@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
+import { renameSync } from 'node:fs';
 import {
   chmod,
   cp,
@@ -1506,6 +1507,11 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
       configurable: true,
       get: () => true,
     });
+    // This block models the asynchronous reader transport. Its capability
+    // sample is cheap on Main; leaving the synchronous native reader here
+    // instead performs Windows process/ACL probes inside the health fixture.
+    // Actual native permissions were exercised above and by Worker tests.
+    const fencedAvailability = t.mock.method(observer, 'boundReadAvailable', () => true);
     let phases = [];
     observer.prepareBoundSourceAsync = async (...args) => {
       assert.equal(args.length, 5, 'The fenced read carries no directory authorization');
@@ -1519,9 +1525,109 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
       };
     };
     try {
+      const assertAvailable = observer.assertBoundReadAvailable.bind(observer);
+      let observedReady = false;
+      const readiness = t.mock.method(observer, 'assertBoundReadAvailable', (...args) => {
+        if (!observedReady)
+          throw new hostAdapter.SuggestionObservationError(503, 'Synthetic stale capability');
+        return assertAvailable(...args);
+      });
+      try {
+        onFollow = () => {
+          // A fresh owner reply gives Main a turn to receive the actual new
+          // reader sample; it never extends or re-dates the old sample.
+          observedReady = true;
+        };
+        assert.equal(
+          (await request()).status,
+          200,
+          'A stale entry observation cannot preempt the already-required fresh owner read',
+        );
+        phases = [];
+        observedReady = false;
+        onFollow = () => {};
+        assert.equal((await request()).status, 503, 'Unavailable after fresh owner still rejects');
+        assert.equal(readCount, 1);
+        assert.deepEqual(phases, [], 'No native prepare occurs without current readiness');
+      } finally {
+        readiness.mock.restore();
+      }
+      phases = [];
       onFollow = (count) => phases.push('source' + count);
       assert.equal((await request()).status, 200);
       assert.deepEqual(phases, ['source1', 'prepare', 'source2', 'commit', 'source3', 'dispose']);
+      // Exercise the actual Host -> Session -> Persistence path with real
+      // overdue atomic writes, rather than asserting that a scheduling hook ran.
+      const activeSession = service.session;
+      const persistence = activeSession.persistence;
+      const priorRename = persistence.options.rename;
+      const fencedPrepare = observer.prepareBoundSourceAsync;
+      const publications = [];
+      const cacheThread = { id: randomUUID(), messages: [{ text: 'latest cached history' }] };
+      const historyFile = join(
+        persistence.historyDirectory,
+        createHash('sha256')
+          .update(activeSession.hostId + '\0' + cacheThread.id)
+          .digest('hex') + '.json',
+      );
+      persistence.options.rename = (from, to) => {
+        publications.push(to);
+        return renameSync(from, to);
+      };
+      try {
+        phases = [];
+        activeSession.state.cacheSchedulingFixture = 'latest state';
+        onFollow = (count) => {
+          phases.push('source' + count);
+          if (count === 1) {
+            activeSession.saveBackground();
+            persistence.dirty(cacheThread);
+          }
+          assert.deepEqual(publications, [], 'Owner replies must precede background publication');
+        };
+        observer.prepareBoundSourceAsync = async (...args) => {
+          await new Promise((done) => setTimeout(done, 1100));
+          assert.deepEqual(
+            publications,
+            [],
+            'Overdue state and history stay deferred during prepare',
+          );
+          const receipt = await fencedPrepare(...args);
+          return {
+            commit: receipt.commit,
+            dispose() {
+              assert.deepEqual(
+                publications,
+                [],
+                'Final source/disposal still has no background I/O',
+              );
+              receipt.dispose();
+            },
+          };
+        };
+        assert.equal((await request()).status, 200);
+        assert.deepEqual(phases, ['source1', 'prepare', 'source2', 'commit', 'source3', 'dispose']);
+        const drainedBy = performance.now() + 3000;
+        while (
+          (persistence.status.backgroundSave !== 'idle' || persistence.status.historyPending) &&
+          performance.now() < drainedBy
+        )
+          await new Promise((done) => setTimeout(done, 20));
+        assert(publications.includes(persistence.file), 'State resumes after HTTP completion');
+        assert(publications.includes(historyFile), 'History resumes after HTTP completion');
+        assert.equal(
+          JSON.parse(await readFile(persistence.file, 'utf8')).cacheSchedulingFixture,
+          'latest state',
+        );
+        assert.deepEqual(
+          JSON.parse(await readFile(historyFile, 'utf8')).messages,
+          cacheThread.messages,
+        );
+      } finally {
+        delete activeSession.state.cacheSchedulingFixture;
+        persistence.options.rename = priorRename;
+        observer.prepareBoundSourceAsync = fencedPrepare;
+      }
       for (const boundary of [2, 3]) {
         phases = [];
         onFollow = (count) => {
@@ -1592,6 +1698,7 @@ test('production HTTP suggestion read fences both owner snapshots and target; ru
       assert(!phases.includes('commit'), 'Late uncancellable owner success cannot issue commit');
       assert.equal(phases.filter((p) => p === 'dispose').length, 1);
     } finally {
+      fencedAvailability.mock.restore();
       delete observer.usesFencedSourceRead;
       observer.prepareBoundSourceAsync = priorPrepare;
       onFollow = () => {};
@@ -1778,7 +1885,7 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
   await writeFile(
     stub,
     `
-    export {assertPrivateFile,protectWindowsStateDirectory,protectWindowsStateFile,windowsTraceInstanceReady} from ${JSON.stringify(platformURL)};
+    export {assertPrivateFile,assertPrivateFileAsync,protectWindowsStateDirectory,protectWindowsStateFile,protectWindowsStateFileAsync,windowsTraceInstanceReady} from ${JSON.stringify(platformURL)};
     export const evidence={instance:undefined,probeFailed:false};
     export const inspectWindowsTraceInstance=()=>{if(evidence.probeFailed)throw Error('synthetic unavailable P');return evidence.instance;};
   `,

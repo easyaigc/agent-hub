@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 
 // Synthetic stdio only. All paths, actions and effects belong to the test fixture.
@@ -54,6 +54,13 @@ lines.on('line', (line) => {
   else if (config.mode === 'exit-operation') process.exit(23);
   else if (config.mode === 'timeout') {
     // Effect recorded above; do not acknowledge or retry it.
+  } else if (config.mode === 'async-held') {
+    const timer = setInterval(() => {
+      if (existsSync(config.log + '.release')) {
+        clearInterval(timer);
+        process.stdout.write(ok);
+      }
+    }, 10);
   } else if (config.mode === 'late') setTimeout(() => process.stdout.write(ok), 5500);
   else if (config.mode === 'reject-second' && count === 2)
     process.stdout.write(`${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException\n`);

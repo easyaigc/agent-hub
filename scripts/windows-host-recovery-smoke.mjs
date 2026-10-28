@@ -36,7 +36,7 @@ let closePrivateState;
 try {
   const { discoverWindowsDesktopCli, refreshWindowsHostConfiguration } =
     await import('./windows-desktop-recovery.mjs');
-  const { inspectWindowsPipe, closeWindowsPrivateStateBackend } =
+  const { inspectWindowsPipe, loadWindowsDesktop, closeWindowsPrivateStateBackend } =
     await import('../packages/codex-adapter/dist/desktop-platform.js');
   closePrivateState = closeWindowsPrivateStateBackend;
   const owner = join(directory, 'installed/Codex.exe');
@@ -146,6 +146,35 @@ try {
   assert.equal(resultDesktop.verification, desktop.verification);
   assert.equal(resultDesktop.custom, desktop.custom);
   assert(!refreshWindowsHostConfiguration(hostPath).changed, 'Repeated startup is idempotent');
+  // Reproduce the live worker's stale startup paths after a desktop update.
+  // The ordinary strict inspector still rejects them. Runtime reconnection
+  // resolves the current native owner without rewriting any private state.
+  writeFileSync(desktopPath, JSON.stringify({ ...desktop, archive: 'missing-old-archive' }));
+  const staleBytes = readFileSync(desktopPath);
+  assert.throws(() => loadWindowsDesktop(desktopPath, 'host'), /Wrong Windows desktop/);
+  const live = loadWindowsDesktop(desktopPath, 'host', { executable: 'missing-cli' });
+  assert.equal(live.identity.executable, owner);
+  assert.equal(live.executable, cli);
+  assert.equal(live.archive.version, 'future-metadata');
+  assert.deepEqual(readFileSync(desktopPath), staleBytes);
+  assert.deepEqual(
+    readFileSync(hostPath),
+    Buffer.from(JSON.stringify(refreshed.configuration, null, 2) + '\n'),
+  );
+  for (const property of ['sameUser', 'sameSession']) {
+    identity[property] = false;
+    assert.throws(() => loadWindowsDesktop(desktopPath, 'host', { executable: cli }), /identity/);
+    identity[property] = true;
+  }
+  validCli = false;
+  assert.throws(
+    () => loadWindowsDesktop(desktopPath, 'host', { executable: cli }),
+    (error) => error.code === 'WINDOWS_CLI_NOT_FOUND',
+  );
+  validCli = true;
+  assert.deepEqual(readFileSync(desktopPath), staleBytes);
+  refreshWindowsHostConfiguration(hostPath);
+
   const before = readFileSync(hostPath);
   const desktopBefore = readFileSync(desktopPath);
   for (const reason of ['WINDOWS_DESKTOP_NOT_RUNNING', 'WINDOWS_POWERSHELL_MODULE_UNAVAILABLE']) {

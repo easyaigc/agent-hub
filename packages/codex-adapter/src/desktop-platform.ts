@@ -1,15 +1,23 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  closeSync,
+  constants,
   existsSync,
+  fstatSync,
   lstatSync,
   mkdirSync,
+  openSync,
+  readSync,
   readFileSync,
+  readdirSync,
   realpathSync,
   renameSync,
   rmSync,
+  statSync,
 } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
+import { lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { Duplex } from 'node:stream';
 import { isMainThread, threadId } from 'node:worker_threads';
@@ -123,9 +131,9 @@ function windowsPrivateStateExecutable(
       ],
       active,
     );
-  bootstrap('protect', directory);
   const executable = join(directory, name + '.exe');
   if (!existsSync(executable)) {
+    bootstrap('protect', directory);
     const system = process.env.SystemRoot ?? 'C:\\Windows';
     const compiler = ['Framework64', 'Framework']
       .map((name) => join(system, 'Microsoft.NET', name, 'v4.0.30319/csc.exe'))
@@ -165,13 +173,33 @@ function windowsPrivateStateExecutable(
       rmSync(temporary);
     }
   }
-  bootstrap('check', executable);
   // Resolve the actual executable for callers outside an MSIX virtual view.
   // The logical and physical files both retain the original private ACL check.
   const physical = realpathSync.native(executable);
   if (basename(physical).toLowerCase() !== name + '.exe' || basename(dirname(physical)) !== digest)
     throw new Error('Unsafe Windows native helper path');
-  bootstrap('check', physical);
+  // Every isolate still protects/checks the directory, logical binary and
+  // physical binary freshly. Batch the fixed operations to avoid paying three
+  // PowerShell process startups for a previously compiled native helper.
+  windowsPowerShellSync(
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-File',
+      windowsHelper('private-state.ps1'),
+      '-Action',
+      'bootstrap-native',
+      '-Path',
+      directory,
+      '-BinaryPath',
+      executable,
+      '-PhysicalPath',
+      physical,
+    ],
+    active,
+  );
+  if (realpathSync.native(executable) !== physical)
+    throw new Error('Windows native helper namespace changed during bootstrap');
   nativeExecutables.set(cacheKey, physical);
   return physical;
 }
@@ -185,6 +213,9 @@ export function windowsPrivateStateNativeExecutable(active?: () => boolean): str
   return windowsPrivateStateExecutable('private-state', active);
 }
 let privateStateBackend: ReturnType<typeof createWindowsPrivateStateBackend> | undefined;
+let privateStateAsyncBackend: ReturnType<typeof createWindowsPrivateStateBackend> | undefined;
+let privateStateAsyncQueue: Promise<void> = Promise.resolve();
+let privateStateAsyncGeneration = 0;
 function privateState(action: 'protect' | 'protect-file' | 'check', path: string): void {
   // A later independent call may create a new channel only after confirmed child exit.
   // Never retry this call, including when its operation may already have executed.
@@ -193,7 +224,12 @@ function privateState(action: 'protect' | 'protect-file' | 'check', path: string
   privateStateBackend.call(action, path);
 }
 export function closeWindowsPrivateStateBackend(): void {
-  privateStateBackend?.close();
+  privateStateAsyncGeneration++;
+  try {
+    privateStateBackend?.close();
+  } finally {
+    privateStateAsyncBackend?.close();
+  }
 }
 
 /** Explicit, verified aliases for the same product's helper storage only. */
@@ -242,6 +278,37 @@ export function protectWindowsStateDirectory(path: string): void {
 
 export function protectWindowsStateFile(path: string): void {
   if (process.platform === 'win32') privateState('protect-file', path);
+}
+
+/** Independent channel: explicit synchronous barriers never share its in-flight slot. */
+export function protectWindowsStateFileAsync(path: string): Promise<void> {
+  return privateStateAsync('protect-file', path);
+}
+
+function privateStateAsync(action: 'protect-file' | 'check', path: string): Promise<void> {
+  if (process.platform !== 'win32') return Promise.resolve();
+  const generation = privateStateAsyncGeneration;
+  const call = privateStateAsyncQueue.then(async () => {
+    if (generation !== privateStateAsyncGeneration)
+      throw Object.assign(new Error('Windows private state unavailable'), {
+        code: 'WINDOWS_PRIVATE_STATE_UNAVAILABLE',
+      });
+    if (privateStateAsyncBackend?.status.gone) privateStateAsyncBackend = undefined;
+    privateStateAsyncBackend ??= createWindowsPrivateStateBackend();
+    await privateStateAsyncBackend.callAsync(action, path);
+  });
+  privateStateAsyncQueue = call.catch(() => {
+    // A later independent operation may proceed; this caller still receives its rejection.
+  });
+  return call;
+}
+
+export async function assertPrivateFileAsync(path: string): Promise<void> {
+  const stat = await lstat(path);
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe private file');
+  if (process.platform === 'win32') await privateStateAsync('check', path);
+  else if (stat.uid !== process.getuid?.() || stat.mode & 0o022)
+    throw new Error('Unsafe private file');
 }
 
 /** Handle-based Windows trace read. Never uses POSIX mode bits as an ACL check. */
@@ -404,62 +471,168 @@ export function windowsTraceInstanceReady(value: WindowsTraceInstance, root: str
 
 /** Inspect a user's installed archive, never modify or execute its contents. */
 export function inspectDesktopArchive(path: string): { version: string; asarSha256: string } {
-  const bytes = readFileSync(path);
-  if (bytes.length < 16) throw new Error('Invalid desktop archive');
-  const headerSize = bytes.readUInt32LE(4),
-    jsonSize = bytes.readUInt32LE(12);
-  if (headerSize > 32 * 1024 * 1024 || jsonSize > headerSize - 8 || 8 + headerSize > bytes.length)
-    throw new Error('Invalid desktop archive header');
-  interface Entry {
-    files?: Record<string, Entry>;
-    offset?: string;
-    size?: number;
-    unpacked?: boolean;
-    link?: string;
-  }
-  const tree: Entry = JSON.parse(bytes.subarray(16, 16 + jsonSize).toString('utf8'));
-  const read = (entry: Entry | undefined) => {
-    if (
-      !entry ||
-      entry.unpacked ||
-      entry.link ||
-      entry.offset === undefined ||
-      !Number.isSafeInteger(entry.size)
-    )
-      throw new Error('Unsupported archive entry');
-    const offset = 8 + headerSize + Number(entry.offset),
-      size = entry.size!;
-    if (
-      !Number.isSafeInteger(offset) ||
-      offset < 8 + headerSize ||
-      size < 0 ||
-      offset + size > bytes.length
-    )
-      throw new Error('Invalid archive entry');
-    return bytes.subarray(offset, offset + size).toString('utf8');
-  };
-  const version: unknown = JSON.parse(read(tree.files?.['package.json'])).version;
-  const entries = tree.files?.['.vite']?.files?.build?.files ?? {};
-  const modules = Object.entries(entries)
-    .filter(([name, entry]) => name.endsWith('.js') && (entry.size ?? 0) < 8 * 1024 * 1024)
-    .map(([, entry]) => read(entry));
-  if (
-    !modules.some(
-      (value) =>
-        value.includes('codex-ipc') && value.includes('win32') && value.includes('ipc.sock'),
-    ) ||
-    !modules.some(
-      (value) =>
+  const physical = realpathSync.native(path);
+  const before = statSync(physical, { bigint: true });
+  if (!before.isFile() || before.size < 16n || before.size > BigInt(Number.MAX_SAFE_INTEGER))
+    throw new Error('Invalid desktop archive');
+  const same = (value: typeof before) =>
+    value.dev === before.dev &&
+    value.ino === before.ino &&
+    value.mode === before.mode &&
+    value.nlink === before.nlink &&
+    value.uid === before.uid &&
+    value.gid === before.gid &&
+    value.size === before.size &&
+    value.mtimeNs === before.mtimeNs &&
+    value.ctimeNs === before.ctimeNs &&
+    value.birthtimeNs === before.birthtimeNs;
+  const fd = openSync(physical, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0));
+  try {
+    if (!same(fstatSync(fd, { bigint: true })))
+      throw new Error('Desktop archive changed during inspection');
+    const length = Number(before.size);
+    const exact = (offset: number, size: number) => {
+      const bytes = Buffer.alloc(size);
+      let done = 0;
+      while (done < size) {
+        const count = readSync(fd, bytes, done, size - done, offset + done);
+        if (!count) throw new Error('Desktop archive changed or truncated during inspection');
+        done += count;
+      }
+      return bytes;
+    };
+    const prefix = exact(0, 16);
+    const headerSize = prefix.readUInt32LE(4),
+      jsonSize = prefix.readUInt32LE(12);
+    if (headerSize > 32 * 1024 * 1024 || jsonSize > headerSize - 8 || 8 + headerSize > length)
+      throw new Error('Invalid desktop archive header');
+    interface Entry {
+      files?: Record<string, Entry>;
+      offset?: string;
+      size?: number;
+      unpacked?: boolean;
+      link?: string;
+    }
+    const tree: Entry = JSON.parse(exact(16, jsonSize).toString('utf8'));
+    const read = (entry: Entry | undefined) => {
+      if (
+        !entry ||
+        entry.unpacked ||
+        entry.link ||
+        entry.offset === undefined ||
+        !Number.isSafeInteger(entry.size)
+      )
+        throw new Error('Unsupported archive entry');
+      const offset = 8 + headerSize + Number(entry.offset),
+        size = entry.size!;
+      if (
+        !Number.isSafeInteger(offset) ||
+        offset < 8 + headerSize ||
+        size < 0 ||
+        !Number.isSafeInteger(offset + size) ||
+        offset + size > length
+      )
+        throw new Error('Invalid archive entry');
+      if (size > 8 * 1024 * 1024) throw new Error('Unsupported archive entry size');
+      return exact(offset, size).toString('utf8');
+    };
+    const version: unknown = JSON.parse(read(tree.files?.['package.json'])).version;
+    const entries = tree.files?.['.vite']?.files?.build?.files ?? {};
+    let transport = false,
+      profile = false;
+    for (const [name, entry] of Object.entries(entries)) {
+      if (!name.endsWith('.js') || (entry.size ?? 0) >= 8 * 1024 * 1024) continue;
+      const value = read(entry);
+      transport ||=
+        value.includes('codex-ipc') && value.includes('win32') && value.includes('ipc.sock');
+      profile ||=
         /"thread-stream-state-changed":11/.test(value) &&
         /"thread-follower-start-turn":2/.test(value) &&
-        /"thread-follower-interrupt-turn":4/.test(value),
+        /"thread-follower-interrupt-turn":4/.test(value);
+      // Keep validating later selected entries even after finding the profile.
+    }
+    if (!transport || !profile) throw new Error('Desktop protocol profile not recognized');
+    const hash = createHash('sha256');
+    const chunk = Buffer.alloc(64 * 1024);
+    for (let offset = 0; offset < length;) {
+      const count = readSync(fd, chunk, 0, Math.min(chunk.length, length - offset), offset);
+      if (!count) throw new Error('Desktop archive changed or truncated during inspection');
+      hash.update(chunk.subarray(0, count));
+      offset += count;
+    }
+    if (
+      !same(fstatSync(fd, { bigint: true })) ||
+      realpathSync.native(path) !== physical ||
+      !same(statSync(physical, { bigint: true }))
     )
-  )
-    throw new Error('Desktop protocol profile not recognized');
-  return {
-    version: typeof version === 'string' ? version : '',
-    asarSha256: createHash('sha256').update(bytes).digest('hex'),
-  };
+      throw new Error('Desktop archive changed during inspection');
+    return {
+      version: typeof version === 'string' ? version : '',
+      asarSha256: hash.digest('hex'),
+    };
+  } finally {
+    closeSync(fd);
+  }
+}
+
+const windowsInstallationFailure = (code: string) =>
+  Object.assign(new Error('Windows desktop installation unavailable'), { code });
+
+/** Bounded discovery, never PATH search, shell execution, or desktop restart. */
+export function discoverWindowsDesktopCli(
+  identity: WindowsDesktopIdentity,
+  configured?: string,
+  localData = process.env.LOCALAPPDATA,
+) {
+  const ownerDirectory = dirname(identity.executable);
+  const adjacent = [
+    join(ownerDirectory, 'resources/codex.exe'),
+    join(ownerDirectory, 'bin/codex.exe'),
+  ];
+  const bin = localData && join(localData, 'OpenAI/Codex/bin');
+  const candidates = [...adjacent, configured, bin && join(bin, 'codex.exe')];
+  if (bin && existsSync(bin)) {
+    const entries = readdirSync(bin, { withFileTypes: true });
+    if (entries.length > 128) throw windowsInstallationFailure('WINDOWS_CLI_DISCOVERY_LIMIT');
+    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name)))
+      if (entry.isDirectory() && /^[a-f0-9]{8,64}$/i.test(entry.name))
+        candidates.push(join(bin, entry.name, 'codex.exe'));
+  }
+  const seen = new Set();
+  const trusted = [];
+  for (const candidate of candidates) {
+    if (!candidate || !existsSync(candidate)) continue;
+    const path = resolve(candidate);
+    if (seen.has(path.toLowerCase())) continue;
+    seen.add(path.toLowerCase());
+    if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink()) continue;
+    try {
+      trusted.push({ path, ...inspectWindowsCli(path) });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'WINDOWS_CLI_REJECTED') throw error;
+    }
+  }
+  // Prefer a CLI physically shipped with this verified owner. Multiple different
+  // loose payloads are ambiguous; don't guess by modification time or version.
+  const bundled = trusted.filter((v) =>
+    adjacent.some((p) => resolve(p).toLowerCase() === v.path.toLowerCase()),
+  );
+  const choices = bundled.length ? bundled : trusted;
+  if (!choices.length) throw windowsInstallationFailure('WINDOWS_CLI_NOT_FOUND');
+  const configuredChoice =
+    configured &&
+    choices.find((value) => value.path.toLowerCase() === resolve(configured).toLowerCase());
+  if (configuredChoice) return configuredChoice.path;
+  if (new Set(choices.map((v) => v.sha256)).size !== 1)
+    throw windowsInstallationFailure('WINDOWS_CLI_AMBIGUOUS');
+  return choices[0]!.path;
+}
+
+export function inspectWindowsInstallation(configured?: string, identity = inspectWindowsPipe()) {
+  const archivePath = join(dirname(identity.executable), 'resources/app.asar');
+  const archive = inspectDesktopArchive(archivePath);
+  const executable = discoverWindowsDesktopCli(identity, configured);
+  return { identity, archivePath, archive, executable };
 }
 
 export interface WindowsDesktopConfiguration {
@@ -476,8 +649,10 @@ export interface WindowsDesktopConfiguration {
 export function loadWindowsDesktop(
   path: string,
   hostId: string,
+  refresh?: { executable?: string | undefined },
 ): {
   config: WindowsDesktopConfiguration;
+  executable?: string;
   identity: WindowsDesktopIdentity;
   archive: { version: string; asarSha256: string };
   verificationStatus: 'not-run' | 'passed' | 'stale' | 'unavailable';
@@ -487,11 +662,15 @@ export function loadWindowsDesktop(
   if (typeof config.executable !== 'string' || !config.executable)
     throw new Error('Windows desktop configuration required');
   const identity = inspectWindowsPipe();
-  if (identity.executable.toLowerCase() !== config.executable.toLowerCase())
+  if (!refresh && identity.executable.toLowerCase() !== config.executable.toLowerCase())
     throw new Error('Wrong Windows desktop executable');
-  const archive = inspectDesktopArchive(
-    config.archive ?? join(dirname(config.executable), 'resources/app.asar'),
-  );
+  // A private stored path is a startup hint. During reconnection resolve the
+  // actual same-user/session pipe owner, its adjacent protocol archive
+  // and a trusted metadata CLI again. No configuration or task input is written.
+  const installed = refresh ? inspectWindowsInstallation(refresh.executable, identity) : undefined;
+  const archive =
+    installed?.archive ??
+    inspectDesktopArchive(config.archive ?? join(dirname(config.executable), 'resources/app.asar'));
   // Acceptance is evidence for reporting, not permission to use an actual owner.
   let verificationStatus: 'not-run' | 'passed' | 'stale' | 'unavailable' = 'not-run';
   if (config.verification) {
@@ -516,7 +695,13 @@ export function loadWindowsDesktop(
   }
   if (verificationStatus !== 'passed')
     console.warn(`Windows 实机验收记录：${verificationStatus}；已有聊天仍按实际 owner 接入。`);
-  return { config, identity, archive, verificationStatus };
+  return {
+    config,
+    identity,
+    archive,
+    verificationStatus,
+    ...(installed ? { executable: installed.executable } : {}),
+  };
 }
 
 export function windowsAdapterDigest(): string {
@@ -533,6 +718,7 @@ export function windowsAdapterDigest(): string {
     'desktop-suggestion-worker-limits.js',
     'windows-trace-diagnostics.js',
     'desktop-ipc.js',
+    'history-reader.js',
     'desktop-framing.js',
     'runtime-session.js',
     'approval-requests.js',

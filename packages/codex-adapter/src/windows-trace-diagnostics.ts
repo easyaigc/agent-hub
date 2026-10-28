@@ -152,7 +152,7 @@ export function createWindowsTraceDiagnostics(
       const started = performance.now();
       value.calls++;
       value.pending++;
-      value.items += Number.isSafeInteger(items) && items >= 0 && items <= 8 ? items : 0;
+      value.items += Number.isSafeInteger(items) && items >= 0 && items <= 64 ? items : 0;
       let decodeStarted: number | undefined;
       let waitEnded = false,
         ended = false;

@@ -53,12 +53,12 @@ function New-ScheduledTaskTrigger([switch]$AtLogOn, [switch]$Once, $User, [datet
         Repetition = [pscustomobject]@{ Interval = [System.Xml.XmlConvert]::ToString($RepetitionInterval); Duration = $null; StopAtDurationEnd = $false }
     }
 }
-function New-ScheduledTaskSettingsSet($ExecutionTimeLimit, $RestartCount, $RestartInterval, [switch]$AllowStartIfOnBatteries, [switch]$DontStopIfGoingOnBatteries, [switch]$StartWhenAvailable, $MultipleInstances) {
+function New-ScheduledTaskSettingsSet($ExecutionTimeLimit, $RestartCount, $RestartInterval, [switch]$AllowStartIfOnBatteries, [switch]$DontStopIfGoingOnBatteries, [switch]$StartWhenAvailable, $MultipleInstances, [int]$Priority = 7) {
     [pscustomobject]@{
         Enabled = $true; ExecutionTimeLimit = $ExecutionTimeLimit; RestartCount = $RestartCount
         RestartInterval = $RestartInterval; AllowBattery = [bool]$AllowStartIfOnBatteries
         StayOnBattery = [bool]$DontStopIfGoingOnBatteries; StartWhenAvailable = [bool]$StartWhenAvailable
-        MultipleInstances = $MultipleInstances
+        MultipleInstances = $MultipleInstances; Priority = $Priority
     }
 }
 function Register-ScheduledTask($TaskName, $Action, $Principal, $Trigger, $Settings) {
@@ -482,15 +482,22 @@ if ($Scenario -in @('stop-tree', 'wrong-process-owner', 'owner-query-failed', 'b
 
 $absent = Invoke-Fixture status
 Assert-Fixture (-not $absent.installed -and -not $absent.running -and -not $absent.loginAutostart) 'Absent task status'
+Assert-Fixture ($null -eq $absent.taskPriority) 'Absent task must not fabricate a registered priority'
 $first = Invoke-Fixture start
 Assert-Fixture ($first.running -and $first.loginAutostart -and $FixtureStarts -eq 1) 'Install must start and enable login'
 Assert-Fixture ($FixtureTask.Principal.LogonType -eq 'Interactive' -and $FixtureTask.Principal.RunLevel -eq 'Limited') 'Expected current interactive user'
 $settings = $FixtureTask.Settings
+Assert-Fixture ($settings.Priority -eq 4 -and $first.taskPriority -eq 4) 'Host registration must use Normal rather than the default BelowNormal priority'
 Assert-Fixture ($settings.AllowBattery -and $settings.StayOnBattery -and $settings.StartWhenAvailable) 'Battery startup settings'
 Assert-Fixture ($settings.RestartCount -eq 3 -and $settings.RestartInterval.TotalMinutes -eq 1 -and $settings.ExecutionTimeLimit -eq [TimeSpan]::Zero -and $settings.MultipleInstances -eq 'IgnoreNew') 'Retry and singleton settings'
 $originalAction = $FixtureTask.Actions[0] | ConvertTo-Json -Compress
+$FixtureTask.Settings.Priority = 7
+$writesBeforePriorityRead = $FixtureWrites
+$oldPriority = Invoke-Fixture status
+Assert-Fixture ($oldPriority.taskPriority -eq 7 -and $FixtureWrites -eq $writesBeforePriorityRead) 'Status must report an old priority without rewriting the task'
 $null = Invoke-Fixture start
 Assert-Fixture ($FixtureStarts -eq 1) 'Repeated start duplicated the Host'
+Assert-Fixture ($FixtureTask.Settings.Priority -eq 4) 'Start must upgrade the registered scheduling policy without duplicating a running Host'
 
 # Registration, current running and actual login triggers are independent.
 $FixtureTask.Triggers[0].Enabled = $false
@@ -517,5 +524,6 @@ $resumed = Invoke-Fixture start
 Assert-Fixture ($resumed.running -and $resumed.loginAutostart) 'Start must re-enable stopped task'
 $null = Invoke-Fixture restart
 Assert-Fixture ($FixtureStops -eq 2 -and $FixtureStarts -eq 4) 'Restart must replace only one Host'
+Assert-Fixture ((Invoke-Fixture status).taskPriority -eq 4) 'Restart must retain Normal task scheduling'
 Assert-Fixture (($FixtureTask.Actions[0] | ConvertTo-Json -Compress) -eq $originalAction) 'Lifecycle changed private paths'
 @{ scenario = $Scenario; passed = $true; starts = $FixtureStarts; stops = $FixtureStops } | ConvertTo-Json -Compress

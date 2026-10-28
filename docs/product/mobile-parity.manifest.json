@@ -13605,6 +13605,313 @@
         "apps/android/src/main/res/values-zh/product_strings.xml": "089e9faa0af58a15e4842d008f5421a3d0a515c466f03d6d1d98bb6d581d8113",
         "apps/android/src/androidTest/assets/localization-catalog.json": "d313c7f3cd0e766ea6e6b7bd28c1e5f43b8981a359ab35354bb7f8d07e1803be"
       }
+    },
+    {
+      "id": "host-ios-connections-20261026",
+      "baseCommit": "8c7e37162f2cd97c9c85c1b795b067086314089b",
+      "features": ["F03", "F69", "F17"],
+      "summary": "macOS共享安装尚无owner时只选择独立核实的原桌面直接执行器，保持无效清单和owner拒绝；新增独立物理iPhone真实多Host建议读取、灰字与全文、采用撤销及冷重连入口。Windows运行时和逐机部署分别登记，Android UI不变、A6暂停。 Windows运行中重连重核验实际安装与可信CLI，复用启动发现，旧metadata进程确认退出才替换；不改配置或重放输入。原生Windows与手机结果单列。 只读metadata请求超时或写入失败时退休该进程并触发运行时重连，保留请求失败且不重放。 当前核验后的CLI选择同步供新建、分叉、队列和项目管理的下一条元数据连接使用，不保留失效安装路径；仍只使用既有具名API。 Windows原生helper的目录保护及逻辑/物理binary权限检查合为一次PowerShell启动，逐次校验及命名空间后核对保留；目标效果待原生复验。 2026-10-26 F03／F17／F69：Host 只读目录变更改为合并后台保存；准确原 owner 的完整消息投影逐字段相等时保留历史引用，正文、附件、状态或 ID 变化仍更新。后台状态仅在真实写入者／完整磁盘头连续、实际权限合格且完整序列化字节等于本进程已同步落盘的头时跳过重复发布；命令显式保存仍每次执行文件及适用平台目录同步，任何新写失败均撤销该可复用证明。故障、未知操作与回执边界保持；iOS／Android 共用 Host，未改变 UI 或草稿规则。辅助检查、各机延迟与物理手机结果分别登记，Android 不新增通过，A6 保持暂停。 主工作区记录为保留其他未提交改动后的组合源码指纹，不替代本任务独立包的冻结验证。 2026-10-26 F03／F17：逐机复核发现 desktop open 的只读尾部仍强制发布完整状态头。现在该路径同步执行相同的真实 writer／完整磁盘头／权限及完整内容校验，只有已成功同步的相同字节可复用；任何变化（包括回执）仍在返回前完整发布并同步。若存在待补偿的命令提交，读路径也必须执行原强制同步，不能清除未落实的提交门禁。新增实际 RuntimeSession.open 的合成原 owner 回归覆盖重复打开、相同长度正文/状态、变更标题及待提交命令。iOS／Android 共用 Host，UI、草稿和未知操作不重放规则保持，真机与逐机结果另记，A6继续暂停。",
+      "files": {
+        "scripts/desktop-completion-notify-observer.py": "530440caea6124e2049a8941f344a34753771ad3db6acbbb553cef040e1d40a0",
+        "scripts/desktop-completion-notify-observer-test.py": "a2ae867759d888cf3e2bc7211813bea6350bf6268861f7d89d48ea82af5b8fc1",
+        "apps/ios/Tests/CodexManageUITests.swift": "f097deade44168ac2b299d3bf730850a63ee8188e49f16a0734b6cdd31276616",
+        "packages/codex-adapter/src/desktop-platform.ts": "544590290226da81d182953ae7595122d5b8e90961fce4f461d9c2c2b605a2b7",
+        "packages/codex-adapter/src/history-reader.ts": "a1421afeccd6e6ed02bac9567dd256f24e843859b6d90debbdacb894e1e06fb1",
+        "scripts/windows-desktop-recovery.mjs": "dcc879cdf09566ba6b5d2014cbcc1425af86411323ed00b875c9b92986e78a40",
+        "scripts/windows-host-recovery-smoke.mjs": "c54cb7412b37795837e4cad22a3fc8cfd8886dbd7abc192f9086914216e9dd24",
+        "scripts/history-smoke.mjs": "12f486fdbcf4664ef5b403b194f65044d92b9a6fd4941569bde067b9d730ae0c",
+        "packages/codex-adapter/src/runtime-session.ts": "a9f31c7c8679fc737d601bf7e767689efa2fd5220d33d38fa28245f5030e4297",
+        "packages/codex-adapter/src/desktop-ipc.ts": "8bf45e0b0417e7709f46f5f18e0dc7359e2d4c1388faebe3302239bbe95436be",
+        "scripts/windows-desktop-reconnect-acceptance.mjs": "7793e1667984590c3cc62e6dae7efbd5fd66f9fd56b1edd9ac37fb977c574673",
+        "packages/codex-adapter/src/desktop-thread-preparer.ts": "bd70137a1edc26c79f5f018673e2783838d408850d3b366bbad0e7d51fe00d06",
+        "packages/codex-adapter/src/desktop-native-queue.ts": "6fafefac91bd3f6e695b55209f899124dcbb17a7fb30f1ef135e637147a90475",
+        "packages/codex-adapter/src/desktop-workspace-management.ts": "67586e6e3081ddcae12575ba55a92cd10bd854fc9632173565d5790c13f45141",
+        "packages/codex-adapter/src/desktop-forks.ts": "d0c45af071a495576a4f4e130cd6c279ea46ffbee09714f1bd809a5753ea636f",
+        "packages/codex-adapter/src/desktop-prepared-bridge.ts": "dc3dcb7addc3d6d2846dbfad341c018b4e0a21dcbe60ac29f8ff1aa1a7029a6b",
+        "scripts/desktop-prepared-bridge-smoke.mjs": "5c7e00ed0853c1265266759d13bcf46569668a28916f58e6d62ec6093dc6c3c3",
+        "packages/codex-adapter/windows/private-state.ps1": "5bb92faf6e23b8c83301d69db4bdb261f73c5143ee9cadf0be9b827158fbee09",
+        "scripts/windows-native-helper-path-smoke.mjs": "87c8567a6037bedbdf10bd1c7ce5957ac09ac2a98d997d66b0d012fa7e5f8aab",
+        "scripts/windows-control-smoke.mjs": "11ecc42bc510d3168db6b37d81ded73027f0d78825daee24b9ceb4d3f0251272",
+        "packages/codex-adapter/src/runtime-persistence.ts": "8d43e1883856b51b6aa22971cbc8db3d72f622be19210d5d43bae6aa010b7955",
+        "scripts/runtime-persistence-smoke.mjs": "e24fbf5f68a22aa75ec6de409a5e5e140893cae92f47cb1ad25b7ba0862f968c"
+      }
+    },
+    {
+      "id": "windows-dense-discovery-20261026",
+      "baseCommit": "3a89d1fd55d6f24d1b4229810ba030d72f016db1",
+      "features": ["F69"],
+      "summary": "2026-10-26 F69 Windows 准备阶段候选：时间过滤后的新鲜目录按最多八项重新组成前缀和配置载荷批次，避免原目录分组中剩余单项反复逐项读取。每个批次至多八项，仅使用本请求的新鲜收据，过滤掉的 manifest 及每个目录、文件和最终 commit 守卫完整保留；原 4/7/8 秒预算、原 owner、权限、内容与六秒租期不变。辅助回归对照同一实际文件系统上的 scalar 原生接口，准备/提交的完整路径及读取长度多重集和全部收据相等；稀疏场景由 17 个 scalar 调用降到仅根目录 1 个，后变为合格的排除项仍拒绝 commit。当前是源码候选，尚未由本次 Windows 原生或手机验收证明收益。macOS 路径和双端 UI 不变，Android 无新增通过，A6 继续暂停。 2026-10-26 F69 真机续验：人类确认 UI 自动化设置及正常重启后，独立物理 iPhone 15 Pro Max 对指定 MacBook 与 M5 的 V7 正式 Host 完成 A→B→A→B 灰字/全文、采用/撤销及冷启动；原 owner 来源和用户输入集合保持。测试表单未切换失败、测试 helper 局部重选及新旧 App 二进制分别留证；新 App SHA256 为 9d393fe796e94bc007323e70bcfb610ba4e75b6f6b2e006ac5287702b1208e11，两台分别 154.647/118.129 秒通过。Windows V7 正式 prepare 仍耗尽 4 秒，当前候选未部署；这些 Mac 通过不升级 Windows、Android 或完整产品状态。见专项连接修复记录，A6 保持暂停。",
+      "files": {
+        "packages/codex-adapter/src/desktop-prediction-trace.ts": "e6bcb82d477a7eaeba32aa0a04c683c7368458b607ed95479751abc161e28d44",
+        "scripts/windows-trace-discovery.test.mjs": "4dad4fd96735ab34dca579fe00765a33eba77b233f914ea7de1494357db53706",
+        "apps/ios/Tests/CodexManageUITests.swift": "2c52d9567e75d5d6e334be89a553f35576b415e090cd8ed3b4ba1a205faf5423"
+      }
+    },
+    {
+      "id": "host-metadata-stream-recovery-20261026",
+      "baseCommit": "70491b9c0943d6adcab61e670555d8d49fdf9179",
+      "features": ["F03"],
+      "summary": "2026-10-26 F03：官方只读 metadata 子进程保持存活但关闭输入时，后续写入会发出流错误；读取器现在消费 stdin/stdout/stderr 及 readline 的错误，撤销就绪、结束该读取子进程并走既有重连，保留失败请求且不重放。真实 Node 子进程反例原代码触发未处理 EPIPE 退出，修复后通过并能新连。iOS／Android 共用 Host，连接 UI、设备凭据和草稿规则不变；Windows 正式崩溃日志的具体来源与部署效果仍需当前产物验证，Android 不新增通过，A6 保持暂停。",
+      "files": {
+        "packages/codex-adapter/src/history-reader.ts": "42507c1055de6c14a19eb0a5e2db263596ff9bd2976f8b65457def9c05cbe58c",
+        "scripts/history-smoke.mjs": "936cb6401772b65db478e7deded8a6ae01fbb5c45609628de377cc35b215c24d",
+        "scripts/host-worker-supervisor.mjs": "b11fdd57daeb3e571329ff06fb1c4746a9d7351296e236e5480034c8a7e6f5b0",
+        "scripts/diagnostics/windows-trace-native-cost.mjs": "c01fb25acb3488081151f2b18c3d37892a3d24e99fd7a4d11746564ede9e17a0"
+      }
+    },
+    {
+      "id": "windows-trace-batch64-20261026",
+      "baseCommit": "70491b9c0943d6adcab61e670555d8d49fdf9179",
+      "features": ["F69"],
+      "summary": "2026-10-26 F69 Windows 原生批次候选：小项上限由8增为64，仍按原48KiB请求、256KiB响应估计、每项16KiB和100000字符命令行上限规划，原生最多8项并发；每个原始Snapshot的完整新鲜打开、前后路径/身份/ACL/内容核验均保持，失败整批拒绝且不重放。原750ms单批与4/7/8秒读取预算不变；不增加权限或跨请求缓存。真实Windows单次计时四组摘要相同，但不包含正式传输，不能据此断言根因或收益；候选实际部署和手机结果仍待验。iOS／Android UI不变，Android无新增通过，A6暂停。",
+      "files": {
+        "packages/codex-adapter/src/desktop-trace-native.ts": "b022e4cf36ef1d1739c0b0780c847417eac97d6d46262a4974816cc205e2e90d",
+        "packages/codex-adapter/windows/trace-state.cs": "015a9e545f7876bc97dac6d6dcf1ee875bf7c568a3eb101b4cb26a04e2c9d639",
+        "scripts/fixtures/windows-trace-batch.mjs": "18595561f13bb65b65bb9c87a038276ee3ae253f6cd0e32d77d38678bd11cb2e",
+        "scripts/windows-prepared-trace.test.mjs": "a4cc01ebf7343c9c6f1246c5f7ad0b7ff0a077f6c37691ba61f4177c3ba5d1b7",
+        "scripts/windows-trace-buffer-native.test.mjs": "2afd81ca9f30fca3b792c1ff1061a95df09300c572b23dd80a79d409ab1417a0",
+        "scripts/windows-trace-discovery.test.mjs": "38ac3592f84cdc432b5dba7327ee073735e4805f8a82dc9096ded18651cff569",
+        "scripts/windows-trace-worker.test.mjs": "b2d9531417954791976cc417210fad2273e47b0b2e20a5d34eca0ae015bba553"
+      }
+    },
+    {
+      "id": "windows-stdio-fixture-closure-20261026",
+      "baseCommit": "d61bc947cbc48ba3636d3efab8be38ac5974e56a",
+      "features": ["F03"],
+      "summary": "2026-10-26 F03 验收夹具修正：Windows libuv为stdio 0-2复制原生管道句柄，仅关闭CRT fd0不会造成预期断管。隔离fixture现在额外关闭自己stdin的libuv句柄并等待真实close回调，再告知父进程发出失败写入；不触碰生产stdin或其它进程。此前Windows读取超时保留为夹具失败，不算产品EPIPE回归通过；真实Native32/64守卫测试已通过，修正后断管及正式部署继续分别验收。生产Host/Adapter/C#及双端UI完全不变，Android不新增通过，A6保持暂停。",
+      "files": {
+        "scripts/history-smoke.mjs": "267ee63df9b0fd38bebaf2997b69afb0abfd9c7159d5e5228495b2e96e7e0a4d"
+      }
+    },
+    {
+      "id": "host-repair-empty-and-fixture-ipc-20261026",
+      "baseCommit": "d61bc947cbc48ba3636d3efab8be38ac5974e56a",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-26 F03/F69 验收续修：隔离metadata假子进程的关闭指令与完成确认改走独立固定Node IPC，先等初始化写入drain，再关自己stdin及Windows libuv副本，避免把关闭确认写入同一条关闭中的管道；生产协议与运行组件不变。Windows新两源独立Native prepare/commit按原预算成功6.111/4.181秒，均真实null，原owner和正式HTTP仍另验；新增仅测试入口覆盖真实历史、A/B无伪灰字/无采用按钮、草稿不变及冷连接，不能以空结果冒充采用正例。两端产品UI无改动，Android无新增通过，A6暂停。",
+      "files": {
+        "scripts/history-smoke.mjs": "3f6a891ee6a21835d8ef2c913d510a3441c3660563d6ebfb4d4c67338bcca2b3",
+        "apps/ios/Tests/CodexManageUITests.swift": "3b09de454395f4b42b1f0eb0c6a5c90ff42bad5fd66c32c6f2771ff56d5fb03f"
+      }
+    },
+    {
+      "id": "host-repair-macos-pinned-node-20261026",
+      "baseCommit": "d61bc947cbc48ba3636d3efab8be38ac5974e56a",
+      "features": ["F69"],
+      "summary": "2026-10-26 F69：macOS collector 从私有清单 SHA 固定的 wrapper 读取规范绝对 Node shebang，匹配原 GUI 的实际同用户子进程；后续 executor 核对复用首次固定的路径，继续拒绝变更二进制、PID 重用、错误父链、无效清单及任意 Node 孙进程。修复 NVM 安装被硬编码内置 Node 拒绝的 503。25 项 Python 边界检查通过仅为辅助，目标部署和真机仍待验；Android 产品未改且无新增验收，A6 继续暂停。",
+      "files": {
+        "scripts/desktop-completion-notify-observer.py": "13de0e0a8eace6507c075dbc0d761272945035a6b623323b5c52342d39a45027",
+        "scripts/desktop-completion-notify-observer-test.py": "6d98cda390fb412b4878e401fd898d3c633ec5fee2fe56d108dbd7631caf42b6",
+        "packages/codex-adapter/resources/desktop-completion-notify-observer.py": "13de0e0a8eace6507c075dbc0d761272945035a6b623323b5c52342d39a45027"
+      }
+    },
+    {
+      "id": "host-repair-physical-foreground-20261027",
+      "baseCommit": "aeed6f889a8250ef66a45b391c75f6f64cd6d845",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69 物理验收工具续修：真实空建议场景在每次来源切换前通过原生XCUIApplication激活准确独立bundle并等待foreground，保留原目标/历史/无伪提示/草稿/冷重连断言；先前73.470秒已通过前两源空建议后因foreground单次状态门槛失败，未写成产品通过。另一次多行搜索标题失败及Runner信任拒绝均独立保留，签名/配置有效至2027且仅重装自有Runner后可执行。无产品UI/Host/协议变化，Android无新增通过，A6暂停。",
+      "files": {
+        "apps/ios/Tests/CodexManageUITests.swift": "d4df0bf610ce7a706f4df99fe9113aa5308f4279f580a987f6060e8175156134"
+      }
+    },
+    {
+      "id": "host-repair-bounded-desktop-archive-20261027",
+      "baseCommit": "aeed6f889a8250ef66a45b391c75f6f64cd6d845",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69 Windows 640129388字节ASAR一次性readFileSync内存分配失败阻断正常服务恢复，统一Adapter改为有界header/条目、逐模块检查和64KiB完整SHA流式读取；前后fd/路径/dev/inode/大小/权限/高精度时间身份保持，不缓存、不省略完整摘要/协议条目验证。640MB低内存夹具、短读、同大小修改、命名空间替换、迟到坏条目和大小边界6项辅助通过，Windows原机仍待部署/普通环境恢复及正式预算/手机验收。Windows断管测试替换不能关闭全部Node复制句柄的夹具为原机已验证的自有C#原始HANDLE关闭/EPIPE子进程，原失败保留，未变生产协议。Android无产品变化和新增通过，A6暂停。",
+      "files": {
+        "packages/codex-adapter/src/desktop-platform.ts": "97f7f7a6192a0dad20aaf97a55fba76358f9b1f73c126b74c9950f35b68e2e8c",
+        "scripts/history-smoke.mjs": "344cf75fe3d839399ae83a18b03cde84a0a8383378085183968dcd0514eccce1",
+        "scripts/desktop-archive-bounds.test.mjs": "888d98d1e6118417c94401ef8a67d57e5bf0c30c5a8c0d2d5158c4c6c35d162d",
+        "scripts/fixtures/windows-history-stdio-closure.mjs": "a59023928fef39696aff34c6f91ffda87c3aa98a2702a74b9090fc2761717c51"
+      }
+    },
+    {
+      "id": "host-repair-connection-history-only-20261027",
+      "baseCommit": "30a228caff7f94156afebdf7b4ba161ad9ecd460",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69：物理 Host 修复验收器新增显式 connectionOnly 分支，仅核对真实扫码连接、准确 A/B 历史、未改草稿、客户端集合和冷重连；该分支不读取或裁定建议，不把 HTTP 503 当作 Native null。原非空和真实空建议断言保持，iOS/Android 产品代码与协议不变，Android 无新增通过，A6 暂停。",
+      "files": {
+        "apps/ios/Tests/CodexManageUITests.swift": "dbe180b6861e3fd3db4e1dce14e471d9b82dbb1ff82707ef3fc4238ec60259b7"
+      }
+    },
+    {
+      "id": "host-repair-windows-planning-prefix-20261027",
+      "baseCommit": "183fc4701abde708f1fc78c98ab47fbd52f91c30",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69 Windows prepared 候选：规划改为逐行增量累计实际JSON/UTF-8字节与原链/正文响应估计，保留发送前完整帧校验、所有原生收据和64项/48KiB/256KiB及原预算。配置发现先读1KiB，首个配置事件未完整时只对成功读取扩展到原16KiB并保留两份前缀守卫；原生读取失败不扩展或重试，所选完整日志/载荷/原owner/最终commit校验保持，macOS仍用原16KiB路径。B项诊断计数同步当前64上限。145项定向检查127通过/18仅Windows跳过，完整原生与普通Host、手机建议仍待本次候选验证；双端UI不变，Android无新增通过，A6暂停。",
+      "files": {
+        "packages/codex-adapter/src/desktop-trace-native.ts": "7259cf500788e841ef501a904e88aabd84eff461b5c7990ddb28f0a1d3975b44",
+        "packages/codex-adapter/src/desktop-prediction-trace.ts": "994f60c98f80bd413d940416ae32dae9d547fb97d584a1cff4e2c58338c11b71",
+        "packages/codex-adapter/src/windows-trace-diagnostics.ts": "28df4ffd383f11e710023cbc466961bd4c6f331858fd9e617b6df428d03ecba9",
+        "scripts/windows-trace-planning.test.mjs": "44960fce904ba0087877fc6d0faf3673e400c77cf7cb8db31ef5aa3ef0b95e47",
+        "scripts/windows-trace-diagnostics.test.mjs": "abb8ccece5225bde3251a688db2f274a21256c0e42e427f5c986b81736df96b3"
+      }
+    },
+    {
+      "id": "host-repair-prefix-delivery-append-20261027",
+      "baseCommit": "368485e807351299f0009fdf96f114e9118bdda7",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69 Windows prepared 前缀收据返修：其他对话在原生批次句柄关闭后追加日志时，重新打开并比对原前缀完整SHA，核对文件/路径身份且禁止截短；不重放Native调用。真实短负前缀仍保留原大小门禁，只有完整配置载荷确认后才允许尾部增长；完整正文/manifest/载荷、ACL/chain、最终commit和原预算不变。新增正常追加反例旧代码RED，以及前缀改写、未分类增长和截短拒绝；macOS与双端UI不变，Android无新增通过，A6暂停。V19 Windows实测prepare拒绝但未唯一定位具体守卫，本次候选的目标部署及手机结果继续分别验证。",
+      "files": {
+        "packages/codex-adapter/src/desktop-prediction-trace.ts": "2f0559b66a25acb464743ad808069d822f48e133605338db124c8acf0144e926",
+        "scripts/windows-trace-planning.test.mjs": "31a7bc0e2a0af8b695ca9540ba0b6414949e95134f8f945b265e40828f816991"
+      }
+    },
+    {
+      "id": "host-repair-main-dispatch-diagnostics-20261027",
+      "baseCommit": "60be1951c06de88222d351f49daab4f4b3aed038",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69：修正Main延迟处理prepared回包时把已超过阶段边界误记为transport_lost的诊断分类，仍按原4/7/8秒及750毫秒拒绝迟到结果，不重放或增加预算。真实Worker回包在Main延迟4.15秒的旧代码RED、新代码GREEN，13项定向通过；这不等于修复造成派发延迟的具体函数。新增仅限准确Node/原worker/私有配置路径和完整SHA、原Host身份及Main线程的本地CPU诊断导入，匹配操作停止或240秒结束，不开放TCP、不读取其他进程；6项隔离辅助通过，Windows正式采样与修复仍待完成。Host工具含诊断统一由主开发源提交并通过GitHub分发；双端UI不变，Android无新增验收，A6暂停。",
+      "files": {
+        "packages/codex-adapter/src/desktop-suggestion-worker-client.ts": "a95e847bbad7bf2be4341c682d4ca6943cdeee47992ddd5b6013a223218e5a0c",
+        "scripts/windows-trace-diagnostics.test.mjs": "4df0b6d2da5ffe23e0a350d62cd271bf097a635aede1fc14b3186f57df00ca76",
+        "scripts/diagnostics/windows-host-cpu-profile-preload.mjs": "5c52ed62c55a4f237710181b60e606ec6da522cf6f4277f1ae6da3bc120e9bfd",
+        "scripts/diagnostics/windows-host-cpu-profile-preload.test.mjs": "7442d6c564404ac8a435f924695ce8e4a0d713234d2913b38f348cd335c5c64d"
+      }
+    },
+    {
+      "id": "host-repair-readonly-cache-scheduling-20261027",
+      "baseCommit": "e7fffff51872b88345d68c0e8e5a839cc9c93459",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69：Windows有界Native建议读取从首个owner到最终核验/释放期间延后可替换状态及历史的后台落盘；保留最新数据、嵌套持有与超时/断连释放，结束后按原重试规则恢复。显式命令/saveRead、真实writer nonce/完整head核验和close屏障仍同步执行，原4/7/8秒及750毫秒预算、来源/目标/收据边界保持。真实文件辅助检查及生产HTTP路由通过，包含超过原200/1000毫秒到期时间仍零后台发布、最终核验后恢复最新字节；旧fixture引用重启前Session的失败独立保留。Windows实际采样把最后1.59秒owner窗口中约1.15秒归于后台落盘，但不唯一解释其他历史失败；修复产物尚待本次逐机部署、WindowsNative与物理手机验收。双端产品UI和协议不变，Android无新增通过，A6暂停。 首次完整检查发现已有诊断夹具空catch违反lint，保留失败，仅补充预期无metadata的注释；不改采样或产品行为。",
+      "files": {
+        "apps/host-agent/src/runtime-server.ts": "87d3453aed77d4bf1155a0e35746956bb184fd960eeb056223c2a05dccfd8c04",
+        "packages/codex-adapter/src/runtime-persistence.ts": "e567763201002921b882b93c19e6ff226a4df3f051ab5abf107d8c0b12334d0c",
+        "packages/codex-adapter/src/runtime-session.ts": "9199293846d8aa20e987b1ada94b9c7aa5d93c2dac031d0e9ffe682fa31b01be",
+        "scripts/runtime-persistence-smoke.mjs": "f9291ec283920e453bca4dd23a16b81729525ec9a6b96d285baade01bbef1364",
+        "scripts/desktop-suggestion-observer.test.mjs": "08fcbbfda9bfeb657d949bb3421ba321c7b3b02c8df2f431d299200564046aea",
+        "scripts/diagnostics/windows-host-cpu-profile-preload.test.mjs": "232d4c5b97f37686bfb46dfb4182f6eaedca844b4affc4d0dd2229f3d94b4e49"
+      }
+    },
+    {
+      "id": "host-repair-owner-readiness-ordering-20261027",
+      "baseCommit": "ca016538e379597b792975bfeea18f3f455afc47",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69 Windows入口时序候选：后台可替换落盘延后窗口内，先完成原本必需的第一轮真实owner核验，让Main接收排队的Reader采样，再检查当前就绪并准备Native读取；保持目标前置校验、三次owner、全部Native守卫和原4/7/8秒及750毫秒预算，不重试、不新增等待、不续旧样本TTL，不可用仍拒绝且不prepare。实际Host路由合成反例旧503/新200，持续不可用仍503/零Native，15.525秒定向通过。强制异步Worker的路由夹具改用廉价合成能力样本，保留500毫秒health断言；该段不再调用同步Native检查，原Native权限另测。Windows V22首A21毫秒503及原机health夹具失败继续保留，尚未唯一归因；本候选当前原机部署/Native与物理手机未验。macOS生产路径、两端UI及协议不变，Android无新增通过，A6暂停。",
+      "files": {
+        "apps/host-agent/src/runtime-server.ts": "de41aed0ad09e6f6a0efeb1c289332d586652d6ddc3ea20e8257a2c02676fce7",
+        "scripts/desktop-suggestion-observer.test.mjs": "871dd1236b5db11f4af3b2c570c504bc9a66d755ede12259fb17a9f44df55660"
+      }
+    },
+    {
+      "id": "host-repair-one-source-native-probe-20261027",
+      "baseCommit": "d605a30a8c72f716c8b3b44451de05d7e4f80481",
+      "features": ["F03", "F69"],
+      "summary": "2026-10-27 F03/F69：标准仓库新增参数化单来源Windows Native fenced探针。仅本地私有JSON计划，精确Host/runtime与实际服务状态目录绑定，完整两份Adapter及Protocol JS清单指纹校验，原8秒及实际Client阶段/Native守卫不变；最多一次prepare/commit、无模型输入/新来源，正文仅摘要，Reader关闭与Native进程/stdio操作系统证明分列。4组计划/清单/平台辅助通过，尚无本次原机Native通过；不改变Host运行实现、两端UI或协议，Android无新增通过，A6暂停。",
+      "files": {
+        "scripts/diagnostics/windows-fenced-source-probe.mjs": "1c0939829c76e0d01179f6f05722c2adb27a8689e7eda6598d4588974e86fdc4",
+        "scripts/diagnostics/windows-fenced-source-probe.test.mjs": "a3b5cb4ec98aa6bd9fd19a926f063d9c1cf9367f2078474cb614d28d6151071d"
+      }
+    },
+    {
+      "id": "host-repair-async-background-persistence-20261027",
+      "baseCommit": "b5f20d69b91e69368b746dfe123ef2e262f4b65e",
+      "features": ["F03", "F69"],
+      "summary": "Windows replaceable background file writes, flushes and private ACL waiting become asynchronous. Main alone publishes after real writer nonce/full-head and version checks; explicit command/read barriers stay synchronous. In-flight holds, latest history, failure backoff and close cleanup remain fenced. Real-file and Worker/child fixtures are auxiliary; V26 formal A timeout is retained, current remote and physical acceptance pending. macOS scheduling, mobile UI and protocol unchanged; Android has no new pass; A6 paused. Full frozen check passed on identical production sources. Background correctness fixture waits include existing Windows helper cold-start/operation budgets; HTTP latency assertions and production deadlines remain unchanged. Test-only delta is separately checked. Windows39/40 preflight failure retained. Test-only loopback HTTP now bypasses environment proxies, uses1500ms and cleans owned sockets; silent-proxy RED reproduces timeout/hang and GREEN exits naturally with zero proxy connections. Original Windows environment cause and formal/phone acceptance remain pending; no production limits or code changed.",
+      "files": {
+        "packages/codex-adapter/src/runtime-persistence.ts": "60f4cb07943358b9b579808efe479a1ac075cee73db6e41526ff2d263c25b45f",
+        "packages/codex-adapter/src/desktop-platform.ts": "0d78c09dd0e060b69cd8280cfb7131a1a05f88cca14dbbf140aefc570548a32a",
+        "packages/codex-adapter/src/desktop-private-state-native.ts": "277a6cdccccc46097bcedf8a83f5b7902f5a86085369df62d4c94f60e6c066d7",
+        "scripts/runtime-persistence-smoke.mjs": "2715bee6344093729d194ff5b2a3e53059164d3be12fcc49c00099cd32cdea2d",
+        "scripts/windows-private-state-native.test.mjs": "f78ee99b8e84943f88e53e765379823eb8a8197495e6826c252f49b913fb5059",
+        "scripts/fixtures/windows-private-state-child.mjs": "4fcc90dc781119b854b9e4f4324e42d006a37d215b9c55ee8490c789fdf3af1d",
+        "scripts/desktop-suggestion-observer.test.mjs": "11f4aa7494a0e2bb4e64b89edc07cd33e850d2dab3499bdfb885a457d0859fe2"
+      }
+    },
+    {
+      "id": "host-repair-one-source-numeric-diagnostics-20261027",
+      "baseCommit": "ef98df6e4dfe37937b3ff41884d35f16ac98412d",
+      "features": ["F03", "F69"],
+      "summary": "Explicit numeric-diagnostics mode for the independent one-source Windows CLI only; exact11-field private plan, compiled inventories, real Host/config/state and permission guards remain. Temporarily enables existing numeric summaries only around owned read/retirement and restores prior environment on success/failure. Original deadlines, single prepare/commit and no-model/no-replay rules remain. Seven local contract checks are auxiliary; V28 formal A503/1366ms remains failed and current Native diagnosis/phone pending. Mobile UI/protocol unchanged; Android has no new pass; A6 paused.",
+      "files": {
+        "scripts/diagnostics/windows-fenced-source-probe.mjs": "c18e7249aebf3190f1c92016b34723ce7d5c75671d156e352663369e2a910977",
+        "scripts/diagnostics/windows-fenced-source-probe.test.mjs": "885dd228dc93426f25dd2a31a6155fd17d4f8654a7dc04d80bb6557b382acd84"
+      }
+    },
+    {
+      "id": "host-repair-formal-diagnostic-environment-contract-20261027",
+      "baseCommit": "92fec9bfcb0ac3d31a38e59e2c4efd471a0f91d6",
+      "features": ["F03", "F69"],
+      "summary": "Offline builder accepts only the reviewed private formal diagnostic source SHA, fixes enabled-1 classified environment receipt handling, and separates expected prior process identities from source. Fresh output paths derive from the immutable operation ID. Rejects unreviewed sources and refuses overwrite. Existing lifecycle recovery and one-A/no-model/no-replay/deadline guards remain; no Host runtime, mobile UI or protocol changes. Previous orchestration made zero A requests and was restored to normal; current formal and physical acceptance remain pending. Android has no new pass; A6 paused.",
+      "files": {
+        "scripts/diagnostics/windows-formal-diagnostic-builder.mjs": "4cb32d96db6d8fb700207f993e05fd2c41d5260176ef4e0320788e5451d6e989",
+        "scripts/diagnostics/windows-formal-diagnostic-builder.test.mjs": "4c13fd5643396953e4f82c35683adfd1ae425a71c7908e13f609d9fda0519fb9"
+      }
+    },
+    {
+      "id": "host-repair-native-phase-first-batch-20261027",
+      "baseCommit": "d55226750d76fd932505fa95cd03a09c2d5a9203",
+      "features": ["F03", "F69"],
+      "summary": "Windows formal diagnostic A503/2082ms is bound to the first64-item Native B response exceeding750ms while phase still has2.84s; owner fence9.84ms passed. Each bounded prepare/commit phase now dispatches one8-item native parallel wave before its remaining items. All caller items validate before any dispatch; IDs remain monotonic, replies publish only after every subframe, and a failure retires without replay. All filesystem guards, byte caps and4/7/8s/750ms limits remain. Seven local wire/real-filesystem boundary checks are auxiliary; Windows deployment/normal/physical acceptance pending. macOS behavior, mobile UI and public protocol unchanged; Android has no new pass; A6 paused. Eighteen focused checks now include actual Worker/Node-child second-frame750ms expiry, shared300ms fixture remainder, exact wire retirement, and no logical result from stale or duplicate replies between subframes. The first exploratory full suite retained three old frame-count/first-result expectation failures; expectations now follow the two-frame operation while retaining stale rejection and non-replay assertions. These are auxiliary results, not Windows OS or phone proof.",
+      "files": {
+        "packages/codex-adapter/src/desktop-trace-native.ts": "ee4da90b9be31427d1cf89f1bd0696f31129fe4121f0b4b6faf07f837a276053",
+        "scripts/windows-trace-worker.test.mjs": "34c261792e348f0a4618b5e72298b1d193334ced57b63602079cea55931bb950",
+        "scripts/fixtures/windows-trace-batch.mjs": "303ac9744340b4fab6acedddd289616cc448389e73e94b9e61dce685e1730144"
+      }
+    },
+    {
+      "id": "host-repair-windows-normal-task-scheduling-20261027",
+      "baseCommit": "12e970d61f708af86c36dbac35f04ddc60010943",
+      "features": ["F03", "F69"],
+      "summary": "Windows OS audit confirms formal Host/supervisor/four Native children BelowNormal/base6 versus original Codex/tool Normal/base8; task priority7. Register the single owned limited-user task explicitly at4/Normal on start/restart; status reports its registered priority without mutation or claiming a live process changed. Preserve owner/action/private paths, triggers, IgnoreNew, stop guards and original deadlines. Native PowerShell fixture covers install, read-only old7 status, registration migration without duplicate start and restart retention. macOS local checks are auxiliary; PowerShell fixture is unavailable here and must execute on Windows. V32 firstB8 diagnostic still503/3246ms, normal/phone remain pending; no unique root-cause or new Android pass claimed, A6 paused.",
+      "files": {
+        "scripts/windows-host-task.ps1": "773b6e08170e923c26f325b617c2e40ba001134331cebbb21d869b5f6a934e24",
+        "scripts/windows-host-task-fixture.ps1": "b82fc730e3d7d44457e17e3365134a6efa74f56700ac5d3ff504ab80e8f1b4a2"
+      }
+    },
+    {
+      "id": "host-repair-native-fatal-classification-20261027",
+      "baseCommit": "568199e0654f9f9609d81e749cea35f244b9e6b9",
+      "features": ["F03", "F69"],
+      "summary": "Windows V33 normal-priority deployment is verified but ordinaryA503/37ms still stops before prepare. Existing supervisor records two actual Host exits0xc0000409 and automatic recovery; no unique crash cause claimed. Preserve a fixed classification of bounded non-JSON Node fatal stderr, once per reason per child, including split/CRLF lines and an unterminated close tail. Never persist raw fatal text, secrets, paths or configuration. Existing16KiB cap, exact child PID, exit codes, restart/health/stop policy and Native4/7/8s/750ms remain. Real Node pipe fixtures verify secret exclusion, overflow rejection and reporter failure without extra generation; they do not reproduce a native Windows abort or prove mobile recovery. No UI/protocol change; iOS/Android client parity unchanged and Android real acceptance still pending; A6 paused.",
+      "files": {
+        "scripts/host-worker-supervisor.mjs": "e83e8fe8fd69f6140875881af4093a1f38d4fc075fb0c4af911370e167839a14",
+        "scripts/host-lifecycle-smoke.mjs": "c2299b5bdd50f12b5b61a69fd274db1b6ee744ef4b3c8880081ac85b645fa5dd"
+      }
+    },
+    {
+      "id": "host-repair-direct-listener-startup-recovery-20261027",
+      "baseCommit": "08a98d1a2fcbe0425a240ad48fdfd5607ce4d704",
+      "features": ["F03", "F69"],
+      "summary": "Retry failed private direct HTTPS startup serially with1s to30s capped backoff. Preserve the paired certificate, original target/key/port and strict request guards; cancel scheduled retry on shutdown and retire a late successful result before publication. Failed post-bind QR or advertisement startup retires all owned listener/timer resources before another attempt. A successfully established service retains its existing lifecycle; this does not claim repair of an unknown Windows native abort or suggestion failure. Three actual local checks cover occupied TLS port recovery with identical certificate/key and strict pinned CA validation, post-bind resource cleanup, shutdown cancellation, diagnostic-sink failure and late startup retirement. Shared Host applies to iOS/Android; UI/design/protocol unchanged, Windows and physical acceptance pending, Android no new pass and A6 paused.",
+      "files": {
+        "apps/host-agent/src/direct-discovery-recovery.ts": "a821db10183f52a7a19851a312555c15f8223853ab0af61e71d3b14ca57a962c",
+        "apps/host-agent/src/direct-discovery.ts": "e2bdfd0806025aac2f58be1c25723c98ffda8f9ddadaef9696e0885b6603e733",
+        "apps/host-agent/src/runtime-server.ts": "04ff7015911f046533ab09d5e90554a18e2e3ad3c0a77c924dffebe5b43533b9",
+        "scripts/direct-discovery-recovery.test.mjs": "f46effb532bb93f6b1541327810faa2f04fdc725368b87099755361fe1f8de1a"
+      }
+    },
+    {
+      "id": "host-repair-direct-recovery-main-approval-projection-20261027",
+      "baseCommit": "e29914a0134bef0a484f549dd9e0dc03e5b9e493",
+      "features": ["F03", "F69"],
+      "summary": "Merge only the owned direct listener startup recovery hunks into the main development workspace while preserving its independent MCP application-approval response projection. The canonical release remains the isolated e299 source; this combined development file does not inherit release or native acceptance. No existing approval, Android or iOS work is removed; A6 paused.",
+      "files": {
+        "apps/host-agent/src/runtime-server.ts": "dc088fb9c9570afaccc9ac8b1a6840cd53b1583ad8f8f239248d611b06666240"
+      }
+    },
+    {
+      "id": "approval-response-acknowledgement-20261028",
+      "baseCommit": "8c7e37162f2cd97c9c85c1b795b067086314089b",
+      "features": ["F41"],
+      "summary": "审批 HTTP 辅助用例等待原子进程实际完成后再读取响应证据，避免将传输返回与子进程落盘混为同一时点；覆盖原响应和过期拒绝，不新增真实模型或手机验收结论。",
+      "files": {
+        "scripts/runtime-smoke.mjs": "5e95ad312c934feab0e486e3d5c91d440d65ffc9e1545652d4881e1a08cb828c"
+      }
+    },
+    {
+      "id": "working-changes-main-integration-20261029",
+      "baseCommit": "d0c645354f284b3ccca350a26bb61a38976289c1",
+      "features": ["F03", "F17", "F69"],
+      "summary": "将保留的Host恢复、只读持久化、原生批次和诊断改动整合最新主线；保留应用审批回调隔离、原生图片历史、速度规范化、录音丢弃和Windows私有DACL修复。原生手机与Windows真实结果仍按各自冻结指纹，不新增通过。",
+      "files": {
+        "apps/ios/Tests/CodexManageUITests.swift": "14eeb13b84de5cc8dbf98713322e9a8bb5db14e8c34687cef94a6c4f3acbdaf2",
+        "packages/codex-adapter/src/desktop-ipc.ts": "5feb98610399db686a811f7d5825cfdf08dde0d568c717cf60ac6e0b9a292689",
+        "packages/codex-adapter/src/desktop-platform.ts": "a49bfbf889baaa2f329722b2c37078833c3a64d9b81eaf5280084abc5a909a67",
+        "packages/codex-adapter/src/history-reader.ts": "86360552766418d47f80a37269929e8bba89dc21b3af2eed422cbddf77262d95",
+        "packages/codex-adapter/src/runtime-session.ts": "370869f80ddc8558b7853a171d371a5f83639fbf5af7950faa92eb82bc296ebe",
+        "scripts/history-smoke.mjs": "9fadbe77270c69715dbb92639105244bc7c61effd76703b6dfd13503ed04482b"
+      }
     }
   ]
 }

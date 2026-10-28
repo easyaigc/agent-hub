@@ -202,7 +202,12 @@ childProcess.execFileSync = (file, args, options) => {
   if (file.endsWith('private-state.exe')) return 'PRIVATE_STATE_OK';
   if (args.some(arg => arg.endsWith('private-state.ps1'))) {
     const action=args[args.indexOf('-Action')+1],path=args[args.indexOf('-Path')+1];
-    assert(['protect','protect-file','check'].includes(action));
+    assert(['protect','protect-file','check','bootstrap-native'].includes(action));
+    if(action==='bootstrap-native')for(const flag of ['-BinaryPath','-PhysicalPath']){
+      const binary=args[args.indexOf(flag)+1],inside=relative(${JSON.stringify(directory)},binary);
+      assert(binary&&inside!=='..'&&!inside.startsWith('..'+sep),'Binary bootstrap escaped fixture root');
+      assert(fs.statSync(binary).isFile());
+    }
     const contained=relative(${JSON.stringify(directory)},path);
     assert(contained!=='..'&&!contained.startsWith('..'+sep),'Bootstrap escaped fixture root');
     return 'PRIVATE_STATE_OK';

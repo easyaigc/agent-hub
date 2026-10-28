@@ -68,6 +68,7 @@ export interface ReadWorkspace {
 /** Dedicated metadata reader. Never loads, resumes, starts or submits a turn. */
 export class CodexHistoryReader {
   private process: ChildProcessWithoutNullStreams | undefined;
+  private processClosed: Promise<void> = Promise.resolve();
   private nextId = 0;
   private initialized = false;
   private startupTimeout = 15000;
@@ -83,14 +84,49 @@ export class CodexHistoryReader {
   constructor(
     private readonly hostId: string,
     private readonly name: string,
-    private readonly executable = 'codex',
+    private executable = 'codex',
     private readonly desktopStatePath?: string,
   ) {}
   get ready(): boolean {
     return this.initialized && this.process?.exitCode === null && !this.process.killed;
   }
 
+  /** Never replace a metadata subprocess until its exit and stdio close are confirmed. */
+  async configureExecutable(executable: string): Promise<void> {
+    if (executable === this.executable) return;
+    await this.closeAndWait();
+    this.executable = executable;
+  }
+
+  private async closeAndWait(): Promise<void> {
+    const child = this.process;
+    if (!child) return;
+    this.close();
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        this.processClosed,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                Object.assign(new Error('Previous metadata reader exit unconfirmed'), {
+                  code: 'CODEX_READER_EXIT_UNCONFIRMED',
+                }),
+              ),
+            10_000,
+          );
+        }),
+      ]);
+      if (this.process === child) this.process = undefined;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   async connect(): Promise<void> {
+    if (this.ready) return;
+    await this.closeAndWait();
     const child = withWindowsProcessCreation(15000, (remaining) => {
       this.startupTimeout = remaining;
       return spawn(this.executable, ['app-server', '--stdio'], {
@@ -103,9 +139,22 @@ export class CodexHistoryReader {
       });
     });
     this.process = child;
+    this.processClosed = new Promise((resolve) => child.once('close', resolve));
     // Stderr may contain machine-specific data; consume it without publishing it.
     child.stderr.resume();
+    const transportClosed = () => {
+      if (this.process !== child) return;
+      this.fail(new Error('Reader transport closed'));
+      child.kill('SIGTERM');
+    };
+    // A live metadata process can close only its input. A write callback alone
+    // does not consume the stream's subsequent error event (for example EPIPE).
+    child.stdin.on('error', transportClosed);
+    child.stdout.on('error', transportClosed);
+    child.stdout.once('end', transportClosed);
+    child.stderr.on('error', transportClosed);
     const lines = createInterface({ input: child.stdout });
+    lines.on('error', transportClosed);
     lines.on('line', (line) => {
       try {
         const message = object(JSON.parse(line));
@@ -162,8 +211,17 @@ export class CodexHistoryReader {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(
         () => {
+          const error = Object.assign(new Error('Codex read timed out'), {
+            code: 'CODEX_READER_TIMEOUT',
+          });
           this.pending.delete(id);
-          reject(new Error('Codex read timed out'));
+          reject(error);
+          // A live but unresponsive metadata process must not keep desktop
+          // readiness true forever. Only read requests exist on this channel.
+          if (this.process === child) {
+            this.fail(error);
+            child.kill('SIGTERM');
+          }
         },
         method === 'initialize' ? this.startupTimeout : 15000,
       );
@@ -171,8 +229,15 @@ export class CodexHistoryReader {
       child.stdin.write(JSON.stringify({ id, method, params }) + '\n', (error) => {
         if (error) {
           clearTimeout(timer);
+          const failure = Object.assign(new Error('Reader write failed'), {
+            code: 'CODEX_READER_WRITE_FAILED',
+          });
           this.pending.delete(id);
-          reject(new Error('Reader write failed'));
+          reject(failure);
+          if (this.process === child) {
+            this.fail(failure);
+            child.kill('SIGTERM');
+          }
         }
       });
     });

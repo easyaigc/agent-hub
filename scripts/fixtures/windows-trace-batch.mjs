@@ -15,7 +15,7 @@ const run = promisify(execFile);
 
 // Actual Node filesystem, mapped into a disposable synthetic Windows namespace.
 // Native replies are synthetic: no DACL/Windows success is claimed on macOS.
-export async function batchSnapshotFixture(run) {
+export async function batchSnapshotFixture(run, senderFactory) {
   const fixture = await frozenBatchFixture();
   const drive = join(fixture.directory, 'drive');
   fs.mkdirSync(join(drive, 'fixture', 'traces'), { recursive: true, mode: 0o700 });
@@ -58,19 +58,27 @@ export const opendirSync=path=>fs.opendirSync(local(path));
       bytes: maximum ? fs.readFileSync(local(path)).subarray(0, maximum) : Buffer.alloc(0),
     };
   };
+  const send = (items) => {
+    counts.batch++;
+    return items.map((item, index) => {
+      changed?.('before', index, item);
+      const result = snapshot('C:\\fixture\\traces', item.path, item.maximum);
+      changed?.('after', index, item);
+      return result;
+    });
+  };
+  const sender = senderFactory?.(
+    'C:\\fixture\\traces',
+    (request) => send(request.items),
+    () => {},
+  );
   platform.installWindowsTraceBackend({
     snapshot(...args) {
       counts.single++;
       return snapshot(...args);
     },
     snapshotMany(root, items) {
-      counts.batch++;
-      return items.map((item, index) => {
-        changed?.('before', index, item);
-        const result = snapshot(root, item.path, item.maximum);
-        changed?.('after', index, item);
-        return result;
-      });
+      return sender ? sender.read(root, items) : send(items);
     },
   });
   const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
@@ -85,6 +93,7 @@ export const opendirSync=path=>fs.opendirSync(local(path));
         changed = callback;
       },
       reset() {
+        sender?.beginPhase();
         counts.single = 0;
         counts.batch = 0;
         counts.snapshots = 0;
@@ -127,6 +136,7 @@ async function stdioChild() {
   setTimeout(() => process.exit(92), 6000).unref();
   const input = createInterface({ input: process.stdin });
   let previous;
+  let batchCount = 0;
   input.on('line', (line) => {
     if (line === 'QUIT') {
       record('quit');
@@ -136,6 +146,7 @@ async function stdioChild() {
     assertLine: {
       if (!line.startsWith('B\t')) break assertLine;
       const request = JSON.parse(Buffer.from(line.slice(2), 'base64'));
+      batchCount++;
       const value = {
         schemaVersion: 1,
         kind: 'snapshot-many',
@@ -174,13 +185,17 @@ async function stdioChild() {
         send({ error: 'SYNTHETIC_SECOND_ITEM_REJECTED' });
         return;
       }
-      if (mode === 'batch-timeout') {
+      if (mode === 'batch-timeout' || (mode === 'cold-second-timeout' && batchCount === 2)) {
         setTimeout(() => record('first-item'), 450);
         setTimeout(() => send(value), 900);
         return;
       }
       if (mode === 'budget') {
         setTimeout(() => send(value), 180);
+        return;
+      }
+      if (mode === 'cold-shared-budget') {
+        setTimeout(() => send(value), 200);
         return;
       }
       if (mode === 'owner-close') {
@@ -215,6 +230,7 @@ async function transportOwner() {
   const originalNow = Date.now;
   try {
     backend.budget(1800);
+    if (workerData.mode === 'cold-shared-budget') backend.budget(300);
     if (workerData.mode === 'clock-forward') Date.now = () => originalNow() + 60_000;
     if (workerData.mode === 'clock-backward') {
       backend.budget(100);
@@ -284,7 +300,10 @@ async function transportMain() {
     }
   };
   const itemCount = Number(process.argv[4]);
-  assert(itemCount === 2 || itemCount === 8, 'Fixed synthetic batch width required');
+  assert(
+    itemCount === 2 || itemCount === 8 || itemCount === 64,
+    'Fixed synthetic batch width required',
+  );
   registerWindowsTraceTransport();
   const monitor = monitorPrivateStateWorkers(
     new URL('./desktop-trace-native-worker.js', import.meta.url),
@@ -410,7 +429,10 @@ child.spawn=function(command,args,options){
 }
 
 export async function batchTransportFixture(mode, extra = {}, itemCount = 2) {
-  assert(itemCount === 2 || itemCount === 8, 'Fixed synthetic batch width required');
+  assert(
+    itemCount === 2 || itemCount === 8 || itemCount === 64,
+    'Fixed synthetic batch width required',
+  );
   const fixture = await frozenBatchFixture();
   const env = Object.fromEntries(
     Object.entries(process.env).filter(([key]) =>

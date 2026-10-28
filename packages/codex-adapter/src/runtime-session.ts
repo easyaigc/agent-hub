@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { randomUUID, createHash } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import { setImmediate } from 'node:timers/promises';
@@ -545,11 +546,13 @@ export class RuntimeSession {
         ? new DesktopRuntime(options, this.hostId, options.name)
         : new CodexRuntime(options);
     if (this.runtime instanceof DesktopRuntime) {
-      this.nativeQueue = new DesktopNativeQueue(
+      const metadataExecutable = () =>
         options.executable ??
-          (process.platform === 'darwin'
-            ? '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex'
-            : 'codex'),
+        (process.platform === 'darwin'
+          ? '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex'
+          : 'codex');
+      this.nativeQueue = new DesktopNativeQueue(
+        metadataExecutable,
         process.platform === 'win32'
           ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
           : dirname(dirname(options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
@@ -560,10 +563,7 @@ export class RuntimeSession {
             this.hostId,
             this.runtime,
             join(options.directory, 'desktop-prepared-bridge'),
-            options.executable ??
-              (process.platform === 'darwin'
-                ? '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex'
-                : 'codex'),
+            metadataExecutable,
             process.platform === 'win32'
               ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
               : dirname(dirname(options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
@@ -598,10 +598,7 @@ export class RuntimeSession {
         this.desktopForks = new DesktopForkBroker(
           join(options.directory, 'desktop-forks'),
           this.hostId,
-          options.executable ??
-            (process.platform === 'darwin'
-              ? '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex'
-              : 'codex'),
+          metadataExecutable,
           process.platform === 'win32'
             ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
             : dirname(dirname(options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock'))),
@@ -800,7 +797,8 @@ export class RuntimeSession {
           this.epoch = randomUUID();
           for (const thread of this.state.threads) this.emit(thread.id, 'runtime-reconnected');
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          runtimeFailure('runtime-reconnect', error);
           this.reconnectDelay = Math.min(this.reconnectDelay * 2, 15_000);
         })
         .finally(() => {
@@ -812,9 +810,10 @@ export class RuntimeSession {
   private requireReady(): void {
     if (!this.ready) throw new RuntimeError(503, 'Codex 运行时未连接');
   }
-  private save(): void {
+  private save(readOnly = false): void {
     try {
-      this.persistence.save(this.state);
+      if (readOnly && !this.needsCommit) this.persistence.saveRead(this.state);
+      else this.persistence.save(this.state);
       this.needsCommit = false;
     } catch (error) {
       this.needsCommit = true;
@@ -825,7 +824,19 @@ export class RuntimeSession {
   private saveBackground(): void {
     this.persistence.schedule(() => this.state);
   }
-  private emit(threadId: string, kind: string, notify = true): void {
+
+  /** A bounded readonly operation can yield Main to its owner/worker replies. */
+  deferBackgroundPersistence(signal: AbortSignal): () => void {
+    const resume = this.persistence.deferBackground();
+    const release = () => {
+      signal.removeEventListener('abort', release);
+      resume();
+    };
+    if (signal.aborted) release();
+    else signal.addEventListener('abort', release, { once: true });
+    return release;
+  }
+  private emit(threadId: string, kind: string, notify = true, historyChanged = true): void {
     if (this.closed) return;
     if (this.options?.mode === 'shared-runtime')
       this.sharedVersions.set(threadId, (this.sharedVersions.get(threadId) ?? 0) + 1);
@@ -837,7 +848,7 @@ export class RuntimeSession {
         );
         if (reply) this.updateReadHead(changed, reply);
       }
-      this.persistence.dirty(changed);
+      if (historyChanged) this.persistence.dirty(changed);
     }
     // Polls deliver the latest state; retain signals rather than hundreds of full transcripts.
     this.events.push({ seq: ++this.seq, threadId, kind });
@@ -1627,7 +1638,8 @@ export class RuntimeSession {
         new Promise<void>((resolve) => setTimeout(resolve, 250)),
       ]);
       this.requireReady();
-      this.save();
+      // Catalog/read state is replaceable; command intent still uses save().
+      this.saveBackground();
     }
     if (this.mode === 'shared-runtime') {
       const projects = await this.runtime.call('project/list', {
@@ -2123,7 +2135,7 @@ export class RuntimeSession {
       this.loaded.add(threadId);
       if (!cursor) await runtime.ipc.refreshModelSettings(threadId);
       await this.refreshNativeQueue(threadId);
-      this.save();
+      this.save(true);
       return this.history(threadId);
     }
     // The service intentionally omits zero-turn metadata from its interactive
@@ -2348,7 +2360,8 @@ export class RuntimeSession {
         ? (process.env.CODEX_HOME ?? join(homedir(), '.codex'))
         : dirname(dirname(this.options.socket ?? join(homedir(), '.codex', 'ipc', 'ipc.sock')));
     const metadata = new DesktopWorkspaceManagement(
-      this.options.executable ??
+      () =>
+        this.options.executable ??
         (process.platform === 'darwin'
           ? '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex'
           : 'codex'),
@@ -5563,7 +5576,10 @@ export class RuntimeSession {
             if (this.closed || this.desktopProjections.get(id) !== job) break;
             if (version !== job.version) continue;
             if (this.runtime instanceof DesktopRuntime && this.runtime.ipc.hasOwner(id)) {
-              original.messages = thread.messages;
+              // Same authoritative projection must not rewrite a full history
+              // cache just because the desktop sent another snapshot object.
+              const historyChanged = !isDeepStrictEqual(original.messages, thread.messages);
+              if (historyChanged) original.messages = thread.messages;
               const source = this.desktopReadReply(original, job.state);
               if (source) this.projectReadHead(original, source);
               this.verifiedDesktopMessageIds.set(id, new Set(thread.messages.map((v) => v.id)));
@@ -5571,7 +5587,7 @@ export class RuntimeSession {
                 this.verifiedDesktopMessageIds.delete(
                   this.verifiedDesktopMessageIds.keys().next().value!,
                 );
-              this.emit(id, 'desktop/snapshot', false);
+              this.emit(id, 'desktop/snapshot', false, historyChanged);
             }
             break;
           }

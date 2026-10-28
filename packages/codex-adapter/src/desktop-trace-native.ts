@@ -17,7 +17,7 @@ export type TraceSnapshotBatch = {
   items: (TraceSnapshotItem & { index: number })[];
 };
 export const traceSnapshotBatchLimits = Object.freeze({
-  items: 8,
+  items: 64,
   maximum: 16_384,
   requestBytes: 48 * 1024,
   responseBytes: 256 * 1024,
@@ -50,39 +50,52 @@ function batchPath(path: unknown): path is string {
       .some((part) => /[. ]$/.test(part))
   );
 }
-/** Planning only: an oversized original single read is never retried as a batch. */
-export function traceSnapshotBatchFits(items: readonly TraceSnapshotItem[]): boolean {
-  if (
-    items.length === 0 ||
-    items.length > traceSnapshotBatchLimits.items ||
-    items.some(
-      (item) =>
+/** Request-local planning only; every dispatched frame is validated again. */
+export function createTraceSnapshotBatchPlanner(): { add(item: TraceSnapshotItem): boolean } {
+  let count = 0;
+  let requestBytes = Buffer.byteLength(
+    JSON.stringify({ schemaVersion: 1, kind: 'snapshot-many', id: 2147483647, items: [] }),
+  );
+  let responseBytes = 256;
+  return {
+    add(item) {
+      if (
+        count === traceSnapshotBatchLimits.items ||
         !batchPath(item.path) ||
         !Number.isSafeInteger(item.maximum) ||
         item.maximum < 0 ||
-        item.maximum > traceSnapshotBatchLimits.maximum,
-    )
-  )
-    return false;
-  const request = {
-    schemaVersion: 1,
-    kind: 'snapshot-many',
-    id: 2147483647,
-    items: items.map((item, index) => ({ index, path: item.path, maximum: item.maximum })),
+        item.maximum > traceSnapshotBatchLimits.maximum
+      )
+        return false;
+      // Serialize only this row. Rebuilding all previous rows for every append
+      // made file/directory/commit planning quadratic in the batch width.
+      const nextRequestBytes =
+        requestBytes +
+        Buffer.byteLength(
+          JSON.stringify({ index: count, path: item.path, maximum: item.maximum }),
+        ) +
+        (count > 0 ? 1 : 0);
+      // Identical conservative chain/body bound to the native protocol.
+      const nextResponseBytes =
+        responseBytes + 256 + pathDepth(item.path) * 128 + 4 * Math.ceil(item.maximum / 3);
+      if (
+        nextRequestBytes > traceSnapshotBatchLimits.requestBytes ||
+        2 + 4 * Math.ceil(nextRequestBytes / 3) > traceSnapshotBatchLimits.lineCharacters ||
+        nextResponseBytes > traceSnapshotBatchLimits.responseBytes
+      )
+        return false;
+      count++;
+      requestBytes = nextRequestBytes;
+      responseBytes = nextResponseBytes;
+      return true;
+    },
   };
-  const size = Buffer.byteLength(JSON.stringify(request));
-  // Each native chain component is <=101 ASCII bytes; reserve128 plus envelope.
-  const response =
-    256 +
-    items.reduce(
-      (sum, item) => sum + 256 + pathDepth(item.path) * 128 + 4 * Math.ceil(item.maximum / 3),
-      0,
-    );
-  return (
-    size <= traceSnapshotBatchLimits.requestBytes &&
-    2 + 4 * Math.ceil(size / 3) <= traceSnapshotBatchLimits.lineCharacters &&
-    response <= traceSnapshotBatchLimits.responseBytes
-  );
+}
+
+/** Planning only: an oversized original single read is never retried as a batch. */
+export function traceSnapshotBatchFits(items: readonly TraceSnapshotItem[]): boolean {
+  const planner = createTraceSnapshotBatchPlanner();
+  return items.length > 0 && items.every((item) => planner.add(item));
 }
 export function encodeTraceSnapshotBatch(value: unknown): string {
   if (
@@ -213,6 +226,59 @@ function decodeSnapshotValue(raw: unknown): TraceSnapshotValue {
 }
 
 /** Persistent fixed native operations, synchronously consumed only in a reader thread. */
+/** Start each bounded phase with one native parallel wave, without retrying a frame. */
+export function createTraceSnapshotBatchSender(
+  root: string,
+  send: (request: TraceSnapshotBatch) => TraceSnapshotValue[],
+  retire: () => void,
+) {
+  let nextId = 0;
+  let parallelReady = false;
+  let retired = false;
+  return {
+    beginPhase() {
+      parallelReady = false;
+    },
+    read(requestedRoot: string, items: readonly TraceSnapshotItem[]): TraceSnapshotValue[] {
+      if (retired || requestedRoot !== root || nextId === 2147483647)
+        throw new Error('Trace batch scope changed');
+      const original: TraceSnapshotBatch = {
+        schemaVersion: 1,
+        kind: 'snapshot-many',
+        id: nextId + 1,
+        items: items.map((item, index) => ({ index, path: item.path, maximum: item.maximum })),
+      };
+      // Validate every item before even a cold prefix can reach the native child.
+      encodeTraceSnapshotBatch(original);
+      const chunks =
+        !parallelReady && original.items.length > 8
+          ? [original.items.slice(0, 8), original.items.slice(8)]
+          : [original.items];
+      if (nextId > 2147483647 - chunks.length) throw new Error('Trace batch scope changed');
+      const values: TraceSnapshotValue[] = [];
+      try {
+        for (const chunk of chunks) {
+          const request: TraceSnapshotBatch = {
+            ...original,
+            id: ++nextId,
+            items: chunk.map((item, index) => ({ ...item, index })),
+          };
+          encodeTraceSnapshotBatch(request);
+          const result = send(request);
+          if (result.length !== request.items.length) throw new Error('Incomplete native batch');
+          values.push(...result);
+          if (request.items.length > 1) parallelReady = true;
+        }
+        return values;
+      } catch (error) {
+        retired = true;
+        retire();
+        throw error;
+      }
+    },
+  };
+}
+
 export async function createWindowsTraceBackend(
   identity: WindowsDesktopIdentity,
   root: string,
@@ -309,24 +375,14 @@ export async function createWindowsTraceBackend(
       sample?.end(completed);
     }
   }
-  let nextBatch = 0;
+  const batches = createTraceSnapshotBatchSender(
+    root,
+    (request) => call('snapshot-many', undefined, undefined, request) as TraceSnapshotValue[],
+    close,
+  );
   const backend = {
     snapshotMany(requestedRoot: string, items: readonly TraceSnapshotItem[]): TraceSnapshotValue[] {
-      if (requestedRoot !== root || nextBatch === 2147483647)
-        throw new Error('Trace batch scope changed');
-      const request: TraceSnapshotBatch = {
-        schemaVersion: 1,
-        kind: 'snapshot-many',
-        id: ++nextBatch,
-        items: items.map((item, index) => ({ index, path: item.path, maximum: item.maximum })),
-      };
-      encodeTraceSnapshotBatch(request);
-      try {
-        return call('snapshot-many', undefined, undefined, request) as TraceSnapshotValue[];
-      } catch (error) {
-        close();
-        throw error;
-      }
+      return batches.read(requestedRoot, items);
     },
     snapshot(requestedRoot: string, path: string, maximum = 0) {
       if (requestedRoot !== root) throw new Error('Trace root changed');
@@ -339,6 +395,7 @@ export async function createWindowsTraceBackend(
     backend,
     budget: (milliseconds: number) => {
       deadline = performance.now() + milliseconds;
+      batches.beginPhase();
     },
     resetBudget: () => {
       deadline = Infinity;

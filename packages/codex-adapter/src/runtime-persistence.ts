@@ -12,7 +12,13 @@ import {
   lstatSync,
 } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { protectWindowsStateFile } from './desktop-platform.js';
+import { open as openFile, unlink as unlinkFile } from 'node:fs/promises';
+import {
+  assertPrivateFile,
+  assertPrivateFileAsync,
+  protectWindowsStateFile,
+  protectWindowsStateFileAsync,
+} from './desktop-platform.js';
 import { runtimeFailure } from './runtime-diagnostics.js';
 import { machineRuntimeTargetKey, parseNotificationTarget } from '@codex-manage/protocol';
 
@@ -34,6 +40,7 @@ export class RuntimePersistenceError extends Error {
 }
 interface PersistenceOptions {
   protect?: typeof protectWindowsStateFile;
+  protectAsync?: typeof protectWindowsStateFileAsync;
   rename?: typeof renameSync;
   retryDelays?: readonly number[];
   cooldownMs?: number;
@@ -97,7 +104,15 @@ export class RuntimePersistence<State extends RuntimeState> {
   private hostId = '';
   private closed = false;
   private backgroundTimer: NodeJS.Timeout | undefined;
+  private backgroundDueAt = 0;
+  private backgroundHolds = 0;
   private backgroundState: (() => State) | undefined;
+  private backgroundVersion = 0;
+  private writeVersion = 0;
+  private backgroundTask: Promise<void> | undefined;
+  private historyTask: Promise<void> | undefined;
+  private readonly historyVersions = new Map<string, number>();
+  private readonly publicationWaiters = new Set<() => void>();
   private backgroundAttempt = 0;
   private backgroundRetryAfter = 0;
   private readonly failures = new Map<string, { attempt: number; after: number }>();
@@ -105,6 +120,7 @@ export class RuntimePersistence<State extends RuntimeState> {
   private writer?: { pid: number; nonce: string; target: unknown; ledgerId: string };
   private ledgerHead: string | undefined;
   private loadedHead: string | undefined;
+  private durableHead: string | undefined;
   private checkpoint: ReplyLedgerCheckpoint | undefined;
   private writerFile: string;
 
@@ -133,13 +149,30 @@ export class RuntimePersistence<State extends RuntimeState> {
     return join(this.historyDirectory, digest + '.json');
   }
 
-  private atomicWrite(file: string, value: unknown, durable = false): void {
+  private atomicWrite(file: string, value: unknown, durable = false, replaceable = false): void {
     const temporary = file + '.' + randomUUID() + '.tmp';
     let owned = false;
     let published = false;
     let stage = 'serialize';
     try {
       const json = JSON.stringify(value);
+      if (
+        replaceable &&
+        durable &&
+        file === this.file &&
+        this.writer &&
+        this.durableHead !== undefined &&
+        this.ledgerHead === this.durableHead &&
+        digest(json) === this.durableHead
+      ) {
+        // saveState already rechecked the real writer nonce and complete file
+        // bytes. Also retain the current private-file boundary before a no-op.
+        assertPrivateFile(file);
+        return;
+      }
+      // Any failed new write invalidates cached durability, even if its bytes
+      // equal the last save (including a publish followed by fsync failure).
+      if (file === this.file) this.durableHead = undefined;
       stage = 'write';
       // Exclusive creation prevents cleanup from ever unlinking somebody else's file.
       writeFileSync(temporary, '', { mode: 0o600, flag: 'wx' });
@@ -171,6 +204,7 @@ export class RuntimePersistence<State extends RuntimeState> {
           closeSync(fd);
         }
       }
+      if (file === this.file && durable) this.durableHead = digest(json);
     } catch (error) {
       throw new RuntimePersistenceError(stage, error);
     } finally {
@@ -401,18 +435,32 @@ export class RuntimePersistence<State extends RuntimeState> {
   schedule(state: () => State): void {
     if (this.closed) return;
     this.backgroundState = state;
-    if (this.backgroundTimer) return;
+    this.backgroundVersion++;
+    if (this.backgroundTimer || this.backgroundTask) return;
     const cooling = this.backgroundAttempt >= this.delays.length;
+    const delay = cooling
+      ? Math.max(1, this.backgroundRetryAfter - Date.now())
+      : this.delays[this.backgroundAttempt]!;
+    this.backgroundDueAt ||= Date.now() + delay;
+    if (this.backgroundHolds) return;
     this.backgroundTimer = setTimeout(
       () => {
         this.backgroundTimer = undefined;
-        if (this.closed || !this.backgroundState) return;
+        if (this.closed || this.backgroundHolds || !this.backgroundState) return;
+        this.backgroundDueAt = 0;
         if (cooling) {
           this.backgroundAttempt = 0;
           this.backgroundRetryAfter = 0;
         }
+        if ((this.options.platform ?? process.platform) === 'win32') {
+          this.backgroundTask = this.saveBackgroundAsync().finally(() => {
+            this.backgroundTask = undefined;
+            if (!this.closed && this.backgroundState) this.schedule(this.backgroundState);
+          });
+          return;
+        }
         try {
-          this.save(this.backgroundState());
+          this.saveState(this.backgroundState(), true);
         } catch (error) {
           this.report('background-save', error, ++this.backgroundAttempt);
           if (this.backgroundAttempt >= this.delays.length)
@@ -420,10 +468,147 @@ export class RuntimePersistence<State extends RuntimeState> {
           this.schedule(this.backgroundState);
         }
       },
-      cooling
-        ? Math.max(1, this.backgroundRetryAfter - Date.now())
-        : this.delays[this.backgroundAttempt],
+      Math.max(0, this.backgroundDueAt - Date.now()),
     );
+  }
+
+  /** Defer only scheduled cache writes; explicit save/read/close barriers still run. */
+  deferBackground(): () => void {
+    if (this.closed) return () => {};
+    this.backgroundHolds++;
+    if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
+    if (this.timer) clearTimeout(this.timer);
+    if (this.continuation) clearImmediate(this.continuation);
+    this.backgroundTimer = undefined;
+    this.timer = undefined;
+    this.continuation = undefined;
+    this.historyDueAt = 0;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.backgroundHolds--;
+      if (this.closed || this.backgroundHolds) return;
+      this.wakePublications();
+      if (this.backgroundState) this.schedule(this.backgroundState);
+      this.scheduleHistory();
+    };
+  }
+
+  private wakePublications(): void {
+    for (const wake of this.publicationWaiters) wake();
+    this.publicationWaiters.clear();
+  }
+
+  private async publicationAllowed(current: () => boolean): Promise<boolean> {
+    while (!this.closed && this.backgroundHolds)
+      await new Promise<void>((resolve) => this.publicationWaiters.add(resolve));
+    return !this.closed && current();
+  }
+
+  /** Only replaceable Windows background I/O uses this path; command barriers stay synchronous. */
+  private async atomicWriteBackground(
+    file: string,
+    value: unknown,
+    durable: boolean,
+    current: () => boolean,
+  ): Promise<boolean> {
+    const temporary = file + '.' + randomUUID() + '.tmp';
+    let owned = false;
+    let published = false;
+    let stage = 'serialize';
+    let handle: Awaited<ReturnType<typeof openFile>> | undefined;
+    try {
+      const json = JSON.stringify(value);
+      if (file === this.file) {
+        this.assertReplyWriter();
+        if (
+          this.writer &&
+          this.durableHead !== undefined &&
+          this.ledgerHead === this.durableHead &&
+          digest(json) === this.durableHead
+        ) {
+          await assertPrivateFileAsync(file);
+          if (!(await this.publicationAllowed(current)) || this.closed || !current()) return false;
+          this.assertReplyWriter();
+          return true;
+        }
+        this.durableHead = undefined;
+      }
+      stage = 'write';
+      handle = await openFile(temporary, 'wx', 0o600);
+      owned = true;
+      await handle.writeFile(json);
+      stage = 'protect';
+      if (this.options.protectAsync) await this.options.protectAsync(temporary);
+      else if (this.options.protect) this.options.protect(temporary);
+      else await protectWindowsStateFileAsync(temporary);
+      if (durable) {
+        stage = 'file-fsync';
+        if (this.options.fsync) this.options.fsync(handle.fd);
+        else await handle.sync();
+      }
+      await handle.close();
+      handle = undefined;
+      if (!(await this.publicationAllowed(current)) || this.closed || !current()) return false;
+      // Main alone publishes. A synchronous save/read/close or newer cache
+      // version makes this temporary file obsolete before it can replace data.
+      if (file === this.file) this.assertReplyWriter();
+      stage = 'publish';
+      (this.options.rename ?? renameSync)(temporary, file);
+      published = true;
+      if (file === this.file) {
+        this.ledgerHead = digest(json);
+        this.durableHead = digest(json);
+      }
+      return true;
+    } catch (error) {
+      throw new RuntimePersistenceError(stage, error);
+    } finally {
+      await handle?.close().catch(() => {
+        // The original failure is retained; cleanup of the owned path still follows.
+      });
+      if (owned && !published) {
+        try {
+          await unlinkFile(temporary);
+        } catch (error) {
+          this.report('temporary-cleanup', new RuntimePersistenceError('cleanup', error));
+        }
+      }
+    }
+  }
+
+  private async saveBackgroundAsync(): Promise<void> {
+    const version = this.backgroundVersion;
+    const writeVersion = this.writeVersion;
+    const current = () => version === this.backgroundVersion && writeVersion === this.writeVersion;
+    try {
+      const state = this.backgroundState!();
+      this.hostId = state.hostId;
+      const threads = state.threads.map(({ id, messages }) => ({ id, messages }));
+      if (
+        !(await this.atomicWriteBackground(this.file, this.persistedState(state), true, current)) ||
+        !current()
+      )
+        return;
+      for (const thread of threads) {
+        if (this.references.get(thread.id) !== thread.messages) this.dirty(thread);
+        this.references.set(thread.id, thread.messages);
+      }
+      this.backgroundState = undefined;
+      this.backgroundAttempt = 0;
+      this.backgroundRetryAfter = 0;
+    } catch (error) {
+      if (this.closed || !current()) return;
+      this.report('background-save', error, ++this.backgroundAttempt);
+      if (this.backgroundAttempt >= this.delays.length)
+        this.backgroundRetryAfter = Date.now() + (this.options.cooldownMs ?? 60_000);
+    }
+  }
+
+  /** Wait for owned temporary I/O cleanup; does not flush or execute a command. */
+  async settleBackground(): Promise<void> {
+    await Promise.allSettled([this.backgroundTask, this.historyTask]);
   }
 
   load(): State | undefined {
@@ -461,33 +646,43 @@ export class RuntimePersistence<State extends RuntimeState> {
   }
 
   save(state: State): void {
+    this.saveState(state, false);
+  }
+
+  /** Reads retain the same synchronous durability for every changed state. */
+  saveRead(state: State): void {
+    this.saveState(state, true);
+  }
+
+  private persistedState(state: State) {
+    return {
+      ...state,
+      ...(this.writer
+        ? {
+            replyLedger: {
+              version: 2,
+              contract:
+                (this.options.platform ?? process.platform) === 'win32'
+                  ? 'file-flush-only'
+                  : 'fsync-before-model-v2',
+              target: this.writer.target,
+              ledgerId: this.writer.ledgerId,
+              writerPid: this.writer.pid,
+              writerNonce: this.writer.nonce,
+            },
+          }
+        : {}),
+      historyCacheVersion: 1,
+      threads: state.threads.map((thread) => ({ ...thread, messages: [] })),
+    };
+  }
+
+  private saveState(state: State, replaceable: boolean): void {
     if (this.closed) throw new RuntimePersistenceError('closed', undefined);
+    this.writeVersion++;
     this.hostId = state.hostId;
     this.assertReplyWriter();
-    this.atomicWrite(
-      this.file,
-      {
-        ...state,
-        ...(this.writer
-          ? {
-              replyLedger: {
-                version: 2,
-                contract:
-                  (this.options.platform ?? process.platform) === 'win32'
-                    ? 'file-flush-only'
-                    : 'fsync-before-model-v2',
-                target: this.writer.target,
-                ledgerId: this.writer.ledgerId,
-                writerPid: this.writer.pid,
-                writerNonce: this.writer.nonce,
-              },
-            }
-          : {}),
-        historyCacheVersion: 1,
-        threads: state.threads.map((thread) => ({ ...thread, messages: [] })),
-      },
-      true,
-    );
+    this.atomicWrite(this.file, this.persistedState(state), true, replaceable);
     this.ledgerHead = digest(readFileSync(this.file));
     for (const thread of state.threads) {
       if (this.references.get(thread.id) !== thread.messages) this.dirty(thread);
@@ -495,6 +690,7 @@ export class RuntimePersistence<State extends RuntimeState> {
     }
     if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
     this.backgroundTimer = undefined;
+    this.backgroundDueAt = 0;
     this.backgroundState = undefined;
     this.backgroundAttempt = 0;
     this.backgroundRetryAfter = 0;
@@ -502,13 +698,26 @@ export class RuntimePersistence<State extends RuntimeState> {
 
   dirty(thread: CachedThread): void {
     if (this.closed) return;
-    if (!thread.messages.length && !this.references.get(thread.id)?.length) return;
+    if (
+      !thread.messages.length &&
+      !this.references.get(thread.id)?.length &&
+      !this.pending.has(thread.id)
+    )
+      return;
+    this.historyVersions.set(thread.id, (this.historyVersions.get(thread.id) ?? 0) + 1);
     this.pending.set(thread.id, thread);
     this.scheduleHistory(1000);
   }
 
   private scheduleHistory(delay = 0): void {
-    if (this.closed || this.continuation || !this.pending.size) return;
+    if (
+      this.closed ||
+      this.backgroundHolds ||
+      this.historyTask ||
+      this.continuation ||
+      !this.pending.size
+    )
+      return;
     const earliest = Math.min(
       ...[...this.pending.keys()].map((id) => this.failures.get(id)?.after ?? 0),
     );
@@ -536,13 +745,20 @@ export class RuntimePersistence<State extends RuntimeState> {
 
   private drainOne(): void {
     this.continuation = undefined;
-    if (this.closed) return;
+    if (this.closed || this.backgroundHolds) return;
     const next = [...this.pending.entries()].find(([id]) => {
       const failure = this.failures.get(id);
       return !failure || failure.after <= Date.now();
     });
     if (!next) return this.scheduleHistory();
     const [id, thread] = next;
+    if ((this.options.platform ?? process.platform) === 'win32') {
+      this.historyTask = this.writeHistoryBackground(id, thread).finally(() => {
+        this.historyTask = undefined;
+        if (!this.closed) this.scheduleHistory();
+      });
+      return;
+    }
     try {
       this.writeHistory(thread);
       this.pending.delete(id);
@@ -563,9 +779,48 @@ export class RuntimePersistence<State extends RuntimeState> {
     if (this.pending.size) this.continuation = setImmediate(() => this.drainOne());
   }
 
+  private async writeHistoryBackground(id: string, thread: CachedThread): Promise<void> {
+    const version = this.historyVersions.get(id);
+    const current = () => version === this.historyVersions.get(id);
+    try {
+      const published = await this.atomicWriteBackground(
+        this.historyFile(id),
+        {
+          version: 1,
+          hostId: this.hostId,
+          threadId: id,
+          messages: thread.messages,
+        },
+        false,
+        current,
+      );
+      if (!published || !current()) return;
+      this.pending.delete(id);
+      this.historyVersions.delete(id);
+      this.failures.delete(id);
+    } catch (error) {
+      if (this.closed || !current()) return;
+      const prior = this.failures.get(id)?.attempt ?? 0;
+      const attempt = (prior >= this.delays.length ? 0 : prior) + 1;
+      this.failures.set(id, {
+        attempt,
+        after: Date.now() + (this.delays[attempt] ?? this.options.cooldownMs ?? 60_000),
+      });
+      this.report('history-save', error, attempt);
+      // Preserve the latest pending object, including changes during I/O.
+      const latest = this.pending.get(id);
+      if (latest) {
+        this.pending.delete(id);
+        this.pending.set(id, latest);
+      }
+    }
+  }
+
   close(replyWorkFenced = false): void {
     if (this.closed) return;
     this.closed = true;
+    this.writeVersion++;
+    this.wakePublications();
     if (this.backgroundTimer) clearTimeout(this.backgroundTimer);
     this.backgroundTimer = undefined;
     this.backgroundState = undefined;
@@ -583,6 +838,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       }
     }
     this.pending.clear();
+    this.historyVersions.clear();
     this.failures.clear();
     if (this.writer) {
       try {

@@ -1,3 +1,4 @@
+import type { MetadataExecutable } from './desktop-thread-preparer.js';
 import { isDeepStrictEqual } from 'node:util';
 import { MetadataConnection } from './desktop-thread-preparer.js';
 import { object, list, string, type WireObject } from './runtime.js';
@@ -14,7 +15,7 @@ export class DesktopNativeQueue {
   private closed = false;
   available = false;
   constructor(
-    private readonly executable: string,
+    private readonly executable: MetadataExecutable,
     private readonly home: string,
   ) {}
   private async connection(): Promise<MetadataConnection> {

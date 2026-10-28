@@ -1,3 +1,4 @@
+import type { MetadataExecutable } from './desktop-thread-preparer.js';
 import type { WorkspaceManagementRequest } from '@codex-manage/protocol';
 import { MetadataConnection, MetadataRejection } from './desktop-thread-preparer.js';
 import { CodexRuntime, CodexRejection, object, list, string } from './runtime.js';
@@ -6,7 +7,7 @@ type Action = WorkspaceManagementRequest['action'];
 /** Fixed catalog mutations only; never resumes a thread or starts a model executor. */
 export class DesktopWorkspaceManagement {
   constructor(
-    private readonly executable: string,
+    private readonly executable: MetadataExecutable,
     private readonly home: string,
     private readonly sharedWebsocketUrl?: string,
   ) {}

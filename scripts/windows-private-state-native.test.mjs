@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+import { Agent, createServer, get, globalAgent } from 'node:http';
 import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -148,7 +149,8 @@ syncBuiltinESMExports();\n`,
     writeFile(join(directory, 'config.json'), JSON.stringify(configuration));
   await saveConfiguration();
   await configureNative(executable);
-  const backends = [],
+  const platforms = [],
+    backends = [],
     actors = [];
   const monitor = monitorPrivateStateWorkers(entryURL, log);
   const events = () =>
@@ -162,6 +164,7 @@ syncBuiltinESMExports();\n`,
   t.after(async () => {
     let failure;
     for (const worker of actors) await worker.terminate();
+    for (const platform of platforms) platform.closeWindowsPrivateStateBackend();
     for (const backend of backends) {
       try {
         backend.close();
@@ -194,6 +197,17 @@ syncBuiltinESMExports();\n`,
     gateURL,
     events,
     useNative: configureNative,
+    async platform() {
+      const input = await readFile(join(source, 'desktop-platform.ts'), 'utf8');
+      const output = ts.transpileModule(input, {
+        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+      }).outputText;
+      const path = join(directory, 'desktop-platform-actual.js');
+      await writeFile(path, output);
+      const platform = await import(pathToFileURL(path).href);
+      platforms.push(platform);
+      return platform;
+    },
     async retired(pid) {
       const birth = events().find((event) => event.event === 'spawn' && event.pid === pid);
       assert(birth, 'Only a recorded fixture child can be inspected');
@@ -252,6 +266,169 @@ test('real transport reuses one child, preserves exact path/cwd framing and reti
   assert.equal(process.listenerCount('exit'), exit);
   assert.throws(() => backend.call('check', 'after-close'), unavailable);
   assert.equal(f.events().filter((v) => v.event === 'request').length, 24);
+});
+
+test('async native permission waiting keeps timers and real HTTP responsive without accepting a second intent', async (t) => {
+  const f = await fixture(t, 'async-held'),
+    backend = f.open();
+  const started = performance.now();
+  let phase = 'native-start',
+    httpElapsedMs;
+  let completed = false;
+  // Observe a possible failure immediately, even while the HTTP assertion is
+  // waiting. A failed probe must not leave a late unhandled rejection/socket.
+  const operation = backend.callAsync('protect-file', 'owned-background-temporary').then(
+    () => {
+      completed = true;
+      return { ok: true };
+    },
+    (error) => ({ ok: false, error }),
+  );
+  const server = createServer((_request, response) => response.end('healthy'));
+  // This is the fixture's own loopback server. Global environment proxies must
+  // not reroute this responsiveness assertion or receive its request.
+  const agent = new Agent({ keepAlive: false, proxyEnv: {} });
+  let request, timer;
+  try {
+    await until(
+      () => f.events().some((v) => v.event === 'request'),
+      'Async request never reached native',
+    );
+    phase = 'native-held';
+    await assert.rejects(backend.callAsync('check', 'must-not-be-sent'), unavailable);
+    assert.throws(() => backend.call('check', 'must-not-be-sent'), unavailable);
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    phase = 'local-http';
+    const httpStarted = performance.now();
+    const body = await new Promise((resolve, reject) => {
+      request = get(`http://127.0.0.1:${server.address().port}`, { agent }, (response) => {
+        let body = '';
+        response.setEncoding('utf8');
+        response.on('data', (chunk) => (body += chunk));
+        response.on('error', reject);
+        response.on('end', () => {
+          clearTimeout(timer);
+          resolve(body);
+        });
+      });
+      request.on('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      timer = setTimeout(
+        () => request.destroy(new Error('Fixture loopback HTTP exceeded1500ms')),
+        1500,
+      );
+    });
+    httpElapsedMs = performance.now() - httpStarted;
+    await delay(25);
+    assert.equal(body, 'healthy');
+    assert.equal(completed, false, 'HTTP and timers must complete while native is still held');
+    phase = 'native-release';
+    await writeFile(f.log + '.release', 'release-owned-fixture');
+    const result = await operation;
+    if (!result.ok) throw result.error;
+    await backend.callAsync('check', 'next-independent-intent');
+    assert.deepEqual(
+      f
+        .events()
+        .filter((v) => v.event === 'request')
+        .map((v) => [v.id, v.path]),
+      [
+        [1, 'owned-background-temporary'],
+        [2, 'next-independent-intent'],
+      ],
+    );
+    backend.close();
+    assert.equal(backend.status.gone, true);
+    phase = 'complete';
+  } finally {
+    clearTimeout(timer);
+    request?.destroy();
+    agent.destroy();
+    server.closeAllConnections();
+    if (server.listening) await new Promise((resolve) => server.close(resolve));
+    await writeFile(f.log + '.release', 'release-owned-fixture');
+    const result = await operation;
+    t.diagnostic(
+      JSON.stringify({
+        phase,
+        elapsedMs: performance.now() - started,
+        httpElapsedMs,
+        nativeFailed: !result.ok,
+        nativeErrorCode: result.error?.code,
+        envProxyEnabled:
+          process.env.NODE_USE_ENV_PROXY === '1' || process.execArgv.includes('--use-env-proxy'),
+        httpProxyPresent: Boolean(process.env.HTTP_PROXY || process.env.http_proxy),
+        globalProxyConfigured: Boolean(globalAgent.options.proxyEnv),
+      }),
+    );
+  }
+});
+
+test('async permission rejection remains correlated and preserves the same child for the next intent', async (t) => {
+  const f = await fixture(t, 'reject-second'),
+    backend = f.open();
+  await backend.callAsync('check', 'same-path');
+  const pid = backend.status.pid;
+  await assert.rejects(backend.callAsync('check', 'same-path'), rejected);
+  await backend.callAsync('protect-file', 'same-path');
+  assert.equal(backend.status.pid, pid);
+  assert.deepEqual(
+    f
+      .events()
+      .filter((v) => v.event === 'request')
+      .map((v) => v.id),
+    [1, 2, 3],
+  );
+});
+
+for (const mode of ['wrong-id', 'timeout'])
+  test(`async permission ${mode} fails closed without replay`, async (t) => {
+    const f = await fixture(t, mode),
+      backend = f.open();
+    await assert.rejects(backend.callAsync('protect-file', 'immutable-effect'), unavailable);
+    await assert.rejects(backend.callAsync('check', 'new-intent'), unavailable);
+    backend.close();
+    assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
+  });
+
+test('closing an in-flight async permission call rejects it and retires its exact child', async (t) => {
+  const f = await fixture(t, 'async-held'),
+    backend = f.open();
+  const rejection = assert.rejects(
+    backend.callAsync('protect-file', 'owned-temporary'),
+    unavailable,
+  );
+  await until(() => f.events().some((v) => v.event === 'request'), 'Native request missing');
+  const pid = backend.status.pid;
+  backend.close();
+  await rejection;
+  await f.retired(pid);
+  assert.equal(backend.status.gone, true);
+});
+
+test('platform shutdown rejects queued background permission intents without starting another helper', async (t) => {
+  const f = await fixture(t, 'async-held'),
+    platform = await f.platform();
+  const first = assert.rejects(
+    asWindows(() => platform.protectWindowsStateFileAsync('first-owned-temporary')),
+    unavailable,
+  );
+  const queued = assert.rejects(
+    asWindows(() => platform.protectWindowsStateFileAsync('queued-owned-temporary')),
+    unavailable,
+  );
+  await until(
+    () => f.events().some((v) => v.event === 'request'),
+    'First permission request missing',
+  );
+  const pid = f.events().find((v) => v.event === 'spawn').pid;
+  platform.closeWindowsPrivateStateBackend();
+  await Promise.all([first, queued]);
+  await f.retired(pid);
+  assert.equal(f.events().filter((v) => v.event === 'spawn').length, 1);
+  assert.equal(f.events().filter((v) => v.event === 'request').length, 1);
 });
 
 test('invalid actions and non-roundtripping/oversized paths never reach native stdin', async (t) => {

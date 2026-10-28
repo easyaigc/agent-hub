@@ -467,7 +467,14 @@ export class DesktopSuggestionWorkerClient {
       !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(message.nonce) ||
       (p.nonce !== undefined && p.nonce !== message.nonce)
     ) {
-      this.fail(worker);
+      // A delayed Main dispatch can see a valid identity after its phase
+      // boundary, before the timer callback runs. Keep rejecting it, but do
+      // not describe this known deadline as a physical transport failure.
+      this.fail(
+        worker,
+        this.error(),
+        p && identity && performance.now() >= phaseDeadline ? 'phase_deadline' : 'transport_lost',
+      );
       return;
     }
     if (Object.hasOwn(message, 'error')) {

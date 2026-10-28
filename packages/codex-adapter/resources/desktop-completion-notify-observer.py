@@ -47,6 +47,11 @@ class ProcessIdentity(NamedTuple):
     started_microseconds: int
 
 
+class ProcessIdentities(dict):
+    # Keep the executable pinned at discovery, including later executor checks.
+    wrapper_node = None
+
+
 class ProcBSDInfo(C.Structure):
     # Fixed macOS SDK sys/proc_info.h layout for PROC_PIDTBSDINFO (flavor 3).
     _fields_ = [(name, C.c_uint32) for name in (
@@ -205,8 +210,8 @@ def shared_wrapper(native, desktops):
     state = private(SHARED_STATE, True)
     manifest = json.loads(private(state / 'environment.json').read_text())
     wrapper_path = state / 'codex-shared.mjs'
-    owner_directory = private(state / 'service', True)
-    owner = json.loads(private(owner_directory / 'desktop-service-owner.json').read_text())
+    wrapper_bytes = private(wrapper_path).read_bytes()
+    owner_directory = state / 'service'
     if (manifest.get('schemaVersion') not in (1, 2)
             or manifest.get('label') != 'com.codexmanage.shared-desktop-environment'
             or manifest.get('state') != str(state)
@@ -214,21 +219,42 @@ def shared_wrapper(native, desktops):
             or manifest.get('executable') != EXECUTOR
             or manifest.get('wrapper') != str(wrapper_path)
             or manifest.get('environment', {}).get('CODEX_CLI_PATH') != str(wrapper_path)
-            or manifest.get('wrapperSha256') != sha256(private(wrapper_path).read_bytes())
-            or owner.get('url') != manifest.get('url')
-            or not re.fullmatch(r'ws://127\.0\.0\.1:[1-9][0-9]{0,4}', owner.get('url', ''))
+            or manifest.get('wrapperSha256') != sha256(wrapper_bytes)
+            or not re.fullmatch(r'ws://127\.0\.0\.1:[1-9][0-9]{0,4}', manifest.get('url', ''))):
+        raise RuntimeError('Installed shared desktop identity changed')
+    try:
+        private(owner_directory, True)
+        owner = json.loads(private(owner_directory / 'desktop-service-owner.json').read_text())
+    except FileNotFoundError:
+        # Installation can precede the user's normal desktop reopen. The saved
+        # Host URL is not evidence that its launcher is already running. Only
+        # discover()'s independently pinned direct desktop children may be used
+        # until a real private owner record exists; never trust a Node grandchild.
+        return None
+    if (owner.get('url') != manifest.get('url')
             or not re.fullmatch(r'[0-9a-f]{64}', owner.get('fingerprint', ''))):
         raise RuntimeError('Installed shared desktop identity changed')
     electron_pid, wrapper_pid = owner.get('electronPid'), owner.get('ownerPid')
     if (type(electron_pid) is not int or type(wrapper_pid) is not int
             or electron_pid not in desktops):
         raise RuntimeError('Shared launcher must belong to the original desktop')
-    node = str(Path(DESKTOP).parents[1] / 'Resources/cua_node/bin/node')
+    # The installed wrapper is hash-pinned above. Its absolute shebang records
+    # the Node selected at installation (bundled or NVM); do not guess a path.
+    shebang = wrapper_bytes.partition(b'\n')[0]
+    try:
+        node = shebang[2:].decode('utf-8', 'strict') if shebang.startswith(b'#!') else ''
+    except UnicodeDecodeError:
+        node = ''
+    node_path = Path(node)
+    if (not node_path.is_absolute() or node_path.name != 'node'
+            or node_path.resolve() != node_path or not node_path.is_file()
+            or not os.access(node_path, os.X_OK)):
+        raise RuntimeError('Installed shared launcher Node identity changed')
     wrapper = process_identity(native, wrapper_pid, node)
     if (wrapper is None or wrapper.ppid != electron_pid
             or not process_matches(native, desktops[electron_pid], DESKTOP)):
         raise RuntimeError('Original shared launcher process changed')
-    return wrapper
+    return wrapper, node
 
 
 def executor_valid(native, identities, pid, desktop_pid):
@@ -239,8 +265,8 @@ def executor_valid(native, identities, pid, desktop_pid):
     if executor.ppid == desktop_pid:
         return True
     wrapper = identities.get(executor.ppid)
-    node = str(Path(DESKTOP).parents[1] / 'Resources/cua_node/bin/node')
-    return (wrapper is not None and wrapper.ppid == desktop_pid
+    node = getattr(identities, 'wrapper_node', None)
+    return (node is not None and wrapper is not None and wrapper.ppid == desktop_pid
             and process_matches(native, wrapper, node))
 
 
@@ -253,16 +279,18 @@ def discover(native):
         match = re.match(r'\s*(\d+)\s+(\d+)\s+(.*)', line)
         if match:
             rows.append((int(match[1]), int(match[2]), match[3]))
-    identities = {}
+    identities = ProcessIdentities()
     for pid, _, name in rows:
         if name == DESKTOP:
             identity = process_identity(native, pid, DESKTOP)
             if identity is not None:
                 identities[pid] = identity
     desktops = dict(identities)
-    wrapper = shared_wrapper(native, desktops)
+    launcher = shared_wrapper(native, desktops)
+    wrapper = launcher[0] if launcher is not None else None
     if wrapper is not None:
         identities[wrapper.pid] = wrapper
+        identities.wrapper_node = launcher[1]
     parents = {}
     for pid, ppid, name in rows:
         desktop_pid = ppid if ppid in desktops else (
@@ -280,7 +308,9 @@ def discover(native):
     selected = set(parents) | set(parents.values())
     if wrapper is not None:
         selected.add(wrapper.pid)
-    return parents, rows, {pid: identity for pid, identity in identities.items() if pid in selected}
+    pinned = ProcessIdentities({pid: identity for pid, identity in identities.items() if pid in selected})
+    pinned.wrapper_node = identities.wrapper_node
+    return parents, rows, pinned
 
 
 def proc_event(pid, flags, token):

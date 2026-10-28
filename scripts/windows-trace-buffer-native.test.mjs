@@ -127,7 +127,7 @@ test('Windows batch keeps private fresh opens, per-item guards and one-command n
   );
   assert.equal(
     digest(source.slice(batch, dispatch)),
-    '2ce168db49330baf358110666222453efa8307e663d846e15c98d075bbad0059',
+    '6731c53137d08e767d8233a2b2db7fb3adb0f62df54f0fa3b130007e825f8720',
     'All request/response validation stays before any namespace capture',
   );
   assert.equal(
@@ -395,6 +395,8 @@ test(
       ).toString('base64');
       for (const batchItems of [
         ...Array.from({ length: 8 }, (_, index) => items.slice(0, index + 1)),
+        Array.from({ length: 32 }, (_, index) => ({ ...items[index % items.length] })),
+        Array.from({ length: 64 }, () => ({ ...items[0] })),
         [
           { path: empty, maximum: 1 },
           { path: full, maximum: 16384 },
@@ -411,7 +413,16 @@ test(
         ).toString('base64');
         const batchValues = [];
         for (const version of ['old', 'new']) {
-          const result = run(binaries[version].observed, ['batch', root, batchRequest]);
+          const result =
+            count > 8
+              ? run(
+                  binaries[version].observed,
+                  ['batch', root, '--request-stdin'],
+                  5000,
+                  undefined,
+                  batchRequest,
+                )
+              : run(binaries[version].observed, ['batch', root, batchRequest]);
           assert.equal(result.status, 0);
           const observed = JSON.parse(result.stdout);
           assert.equal(observed.rejected, false);
@@ -441,6 +452,7 @@ test(
             ),
           );
           assertProof(observed, batchItems);
+          assert(observed.highWater <= 8, 'At most eight full native reads may overlap');
           if (count === 1) assert.equal(observed.highWater, 1);
           batchValues.push(batch);
         }
@@ -590,9 +602,9 @@ test(
           },
         ],
         [
-          'ninth item',
+          '65th item',
           (value) => {
-            value.items.push({ index: 8, ...items[0] });
+            value.items = Array.from({ length: 65 }, (_, index) => ({ ...items[0], index }));
           },
         ],
       ]) {

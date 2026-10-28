@@ -1,3 +1,4 @@
+/// <reference lib="es2024.sharedmemory" />
 import {
   Worker,
   MessageChannel,
@@ -510,6 +511,69 @@ export function createWindowsPrivateStateBackend(
   process.once('beforeExit', cleanup);
   process.once('exit', cleanup);
   parentPort?.once('close', cleanup);
+  function* operation(
+    action: WindowsPrivateStateAction,
+    path: string,
+  ): Generator<{ index: number; expected: number; timeout: number }, void, void> {
+    if (
+      closed ||
+      busy ||
+      !['protect', 'protect-file', 'check'].includes(action) ||
+      !privateStatePath(path) ||
+      !privateStatePath(process.cwd())
+    )
+      throw unavailable();
+    busy = true;
+    try {
+      const startup = performance.now() + timeouts.startupMs;
+      while (Atomics.load(control, p.state) === p.starting) {
+        const remaining = startup - performance.now();
+        if (remaining <= 0) throw unavailable();
+        yield { index: p.state, expected: p.starting, timeout: remaining };
+      }
+      if (
+        Atomics.load(control, p.state) !== p.ready ||
+        performance.now() >= startup ||
+        nextId === 0x7fffffff
+      )
+        throw unavailable();
+      const id = ++nextId;
+      const deadline = performance.now() + timeouts.operationMs;
+      Atomics.store(control, p.request, id);
+      Atomics.store(control, p.result, p.waiting);
+      worker.postMessage({ kind: 'call', id, action, path, cwd: process.cwd(), deadline });
+      while (Atomics.load(control, p.result) === p.waiting) {
+        const remaining = deadline - performance.now();
+        if (remaining <= 0) throw unavailable();
+        yield { index: p.result, expected: p.waiting, timeout: remaining };
+      }
+      const length = Atomics.load(control, p.length);
+      if (
+        Atomics.load(control, p.state) !== p.ready ||
+        performance.now() >= deadline ||
+        Atomics.load(control, p.response) !== id ||
+        length <= 0 ||
+        length > bytes.length
+      )
+        throw unavailable();
+      const response = Buffer.from(bytes.subarray(0, length)).toString('utf8');
+      if (Atomics.load(control, p.result) === p.ok && response === 'PRIVATE_STATE_OK') return;
+      if (
+        Atomics.load(control, p.result) === p.rejected &&
+        /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}$/.exec(response)?.[0] === response
+      )
+        throw Object.assign(new Error('Windows private state rejected'), {
+          code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
+          nativeError: response,
+        });
+      throw unavailable();
+    } catch (error) {
+      if ((error as { code?: string }).code !== 'UNSAFE_WINDOWS_PRIVATE_STATE') fail();
+      throw error;
+    } finally {
+      busy = false;
+    }
+  }
   return {
     get status() {
       return {
@@ -520,64 +584,27 @@ export function createWindowsPrivateStateBackend(
       };
     },
     call(action: WindowsPrivateStateAction, path: string): void {
-      if (
-        closed ||
-        busy ||
-        !['protect', 'protect-file', 'check'].includes(action) ||
-        !privateStatePath(path) ||
-        !privateStatePath(process.cwd())
-      )
-        throw unavailable();
-      busy = true;
+      for (const wait of operation(action, path))
+        Atomics.wait(control, wait.index, wait.expected, wait.timeout);
+    },
+    async callAsync(action: WindowsPrivateStateAction, path: string): Promise<void> {
+      const iterator = operation(action, path);
+      let next = iterator.next();
+      if (next.done) return;
+      worker.ref();
       try {
-        const startup = performance.now() + timeouts.startupMs;
-        while (Atomics.load(control, p.state) === p.starting) {
-          const remaining = startup - performance.now();
-          if (remaining <= 0) throw unavailable();
-          Atomics.wait(control, p.state, p.starting, remaining);
+        while (!next.done) {
+          await Atomics.waitAsync(
+            control,
+            next.value.index,
+            next.value.expected,
+            next.value.timeout,
+          ).value;
+          next = iterator.next();
         }
-        if (
-          Atomics.load(control, p.state) !== p.ready ||
-          performance.now() >= startup ||
-          nextId === 0x7fffffff
-        )
-          throw unavailable();
-        const id = ++nextId;
-        const deadline = performance.now() + timeouts.operationMs;
-        Atomics.store(control, p.request, id);
-        Atomics.store(control, p.result, p.waiting);
-        worker.postMessage({ kind: 'call', id, action, path, cwd: process.cwd(), deadline });
-        while (Atomics.load(control, p.result) === p.waiting) {
-          const remaining = deadline - performance.now();
-          if (remaining <= 0) throw unavailable();
-          Atomics.wait(control, p.result, p.waiting, remaining);
-        }
-        const length = Atomics.load(control, p.length);
-        if (
-          Atomics.load(control, p.state) !== p.ready ||
-          performance.now() >= deadline ||
-          Atomics.load(control, p.response) !== id ||
-          length <= 0 ||
-          length > bytes.length
-        )
-          throw unavailable();
-        const response = Buffer.from(bytes.subarray(0, length)).toString('utf8');
-        if (Atomics.load(control, p.result) === p.ok && response === 'PRIVATE_STATE_OK') return;
-        if (
-          Atomics.load(control, p.result) === p.rejected &&
-          /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}$/.exec(response)?.[0] ===
-            response
-        )
-          throw Object.assign(new Error('Windows private state rejected'), {
-            code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
-            nativeError: response,
-          });
-        throw unavailable();
-      } catch (error) {
-        if ((error as { code?: string }).code !== 'UNSAFE_WINDOWS_PRIVATE_STATE') fail();
-        throw error;
       } finally {
-        busy = false;
+        iterator.return();
+        worker.unref();
       }
     },
     close,

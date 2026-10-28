@@ -8,15 +8,15 @@
 
 iOS 26 独立 iPhone 17 Pro 模拟器：1 个 XCTest 原生用例、7 个场景、0 失败、0 跳过。实际 App 经 HostService HTTP 提交准确 Host／thread／Turn／approval ID、具名 decision、空 answers 和 `mcp-v1` 请求头；每次提交后卡片消失并显示完成结果。HTTP fixture 使用生产 Adapter 投影，单独断言响应映射。它是合成辅助证据，不宣称真实 Electron／模型在本次隔离源码上通过。
 
-| 场景 | 原生动作／结果 |
-| --- | --- |
+| 场景                  | 原生动作／结果                            |
+| --------------------- | ----------------------------------------- |
 | Computer Use 会话允许 | 单个“本会话允许”；accept 映射为原 session |
-| Computer Use 始终允许 | 原请求声明 always，精确提交 acceptAlways |
-| 拒绝 | decline，原请求清除 |
-| 取消 | cancel，按钮显示“取消” |
-| 额外权限本轮允许 | accept，原权限对象与 scope=turn |
-| 额外权限会话允许 | acceptForSession，scope=session |
-| 复杂表单 | 没有允许入口；提示电脑处理，可拒绝／取消 |
+| Computer Use 始终允许 | 原请求声明 always，精确提交 acceptAlways  |
+| 拒绝                  | decline，原请求清除                       |
+| 取消                  | cancel，按钮显示“取消”                    |
+| 额外权限本轮允许      | accept，原权限对象与 scope=turn           |
+| 额外权限会话允许      | acceptForSession，scope=session           |
+| 复杂表单              | 没有允许入口；提示电脑处理，可拒绝／取消  |
 
 7 张审批截图均保留，抽查会话授权、额外权限和复杂表单 3 张，未见按钮截断或重复会话入口。Android 当前隔离源码的 App 与 instrumentation APK 构建通过（82 项 Gradle 任务）；本轮未重新运行 Android 原生界面。早先相同新增界面逻辑在 API 36 独立模拟器上 1 项原生合成审批通过，作为历史辅助证据单列。
 

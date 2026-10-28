@@ -1,3 +1,4 @@
+import type { MetadataExecutable } from './desktop-thread-preparer.js';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   closeSync,
@@ -70,7 +71,7 @@ export class DesktopForkBroker {
   constructor(
     private readonly directory: string,
     private readonly hostId: string,
-    executable: string,
+    executable: MetadataExecutable,
     home: string,
     private readonly open: (threadId: string, operationId: string) => Promise<boolean>,
     private readonly verify: (record: ThreadForkOperation, cwd: string) => Promise<boolean>,

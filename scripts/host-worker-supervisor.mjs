@@ -2,12 +2,24 @@ import { spawn } from 'node:child_process';
 
 const identifier = (value) =>
   typeof value === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : undefined;
+// Native aborts can bypass JS diagnostics. Preserve only a fixed classification;
+// neither the fatal text, paths, payloads nor an untrusted JSON object is logged.
+function nativeStderrReason(line) {
+  if (/^FATAL ERROR: .*JavaScript heap out of memory/.test(line))
+    return 'javascript-heap-exhausted';
+  if (/^Assertion failed: .*UV_HANDLE_CLOSING.*async\.c\b/.test(line))
+    return 'libuv-async-handle-closing';
+  if (/^Assertion failed: .*\bfile\b.*\.[ch](?:c|pp)?, line \d+/.test(line))
+    return 'native-assertion';
+  if (/^FATAL ERROR: /.test(line)) return 'node-fatal';
+}
 export function safeWorkerFailure(error) {
   const frames = new Set([
     'runtime-persistence.js',
     'runtime-session.js',
     'runtime-server.js',
     'runtime-entry.js',
+    'history-reader.js',
     'desktop-platform.js',
     'windows-desktop-worker.mjs',
     'windows-desktop-recovery.mjs',
@@ -240,43 +252,53 @@ export function superviseWorker({
     if (probe) probeTimer = setTimeout(checkHealth, probeIntervalMs);
     diagnostic({ event: 'started', childPid: child.pid });
     let buffer = '';
+    const nativeReasons = new Set();
+    const consumeLine = (line) => {
+      const reason = nativeStderrReason(line);
+      if (reason && !nativeReasons.has(reason)) {
+        nativeReasons.add(reason);
+        diagnostic({ event: 'native-runtime-stderr', childPid: launched.pid, reason });
+      }
+      try {
+        const value = JSON.parse(line);
+        if (value.diagnostic !== 'host-runtime-failure') {
+          if (process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1') {
+            const summary = windowsTraceSummary(value.windowsTrace);
+            if (summary)
+              diagnostic({
+                event: 'windows-trace-summary',
+                childPid: launched.pid,
+                windowsTrace: summary,
+              });
+          }
+          return;
+        }
+        diagnostic({
+          event: 'runtime-failure',
+          childPid: launched.pid,
+          scope: identifier(value.scope),
+          recoveryState: workerRecoveryState(value.scope, value.code),
+          ...safeWorkerFailure(value),
+          attempt: Number.isSafeInteger(value.attempt) ? value.attempt : undefined,
+        });
+      } catch {
+        // Raw stdout, stderr, exception messages and configuration never enter logs.
+      }
+    };
     child.stderr.on('data', (chunk) => {
       buffer += chunk.toString('utf8');
       if (buffer.length > 16_384) buffer = '';
       const lines = buffer.split('\n');
       buffer = lines.pop();
-      for (const line of lines) {
-        try {
-          const value = JSON.parse(line);
-          if (value.diagnostic !== 'host-runtime-failure') {
-            if (process.env.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS === '1') {
-              const summary = windowsTraceSummary(value.windowsTrace);
-              if (summary)
-                diagnostic({
-                  event: 'windows-trace-summary',
-                  childPid: launched.pid,
-                  windowsTrace: summary,
-                });
-            }
-            continue;
-          }
-          diagnostic({
-            event: 'runtime-failure',
-            childPid: child.pid,
-            scope: identifier(value.scope),
-            recoveryState: workerRecoveryState(value.scope, value.code),
-            ...safeWorkerFailure(value),
-            attempt: Number.isSafeInteger(value.attempt) ? value.attempt : undefined,
-          });
-        } catch {
-          // Raw stdout, stderr, exception messages and configuration never enter logs.
-        }
-      }
+      for (const line of lines) consumeLine(line.replace(/\r$/, ''));
     });
     child.on('error', (error) =>
       diagnostic({ event: 'spawn-failure', ...safeWorkerFailure(error) }),
     );
     child.once('close', (code, signal) => {
+      // close follows stdio closure, including a fatal tail without a newline.
+      if (buffer) consumeLine(buffer.replace(/\r$/, ''));
+      buffer = '';
       diagnostic({
         event: 'exited',
         childPid: child.pid,

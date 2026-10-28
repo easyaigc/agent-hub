@@ -20,12 +20,14 @@ const physicalRoot = join(
   'Packages/OpenAI.Codex_2p2nqsd0c76g0/LocalCache/Local/CodexManage/native-helpers',
 );
 const bootstrapChecks = [];
+let bootstrapProcesses = 0;
 const aliasChecks = [];
 const permissions = [];
 let first;
 let second;
 let packaged = true;
 let deny;
+let rejectBootstrap = false;
 const onPermissionCall = ({ action, path }) => {
   assert.equal(action, 'check', 'Alias recognition must not repair permissions');
   aliasChecks.push(path);
@@ -59,7 +61,19 @@ try {
     assert(args[args.indexOf('-File') + 1].endsWith('private-state.ps1'));
     const action = args[args.indexOf('-Action') + 1];
     const path = args[args.indexOf('-Path') + 1];
+    bootstrapProcesses++;
     if (action === 'check') bootstrapChecks.push(path);
+    if (action === 'bootstrap-native') {
+      if (rejectBootstrap)
+        throw Object.assign(Error('synthetic unsafe binary ACL'), {
+          stderr: 'UNSAFE_WINDOWS_PRIVATE_STATE\n',
+        });
+      assert(fs.statSync(path).isDirectory());
+      const logical = args[args.indexOf('-BinaryPath') + 1];
+      const physical = args[args.indexOf('-PhysicalPath') + 1];
+      assert(fs.statSync(logical).isFile() && fs.statSync(physical).isFile());
+      bootstrapChecks.push(logical, physical);
+    }
     return 'PRIVATE_STATE_OK';
   };
   syncBuiltinESMExports();
@@ -88,6 +102,31 @@ try {
     'Launcher bootstrap did not check its logical executable',
   );
   assert(permissions[0].calls.length > 0, 'Packaged module bypassed its exact permission fixture');
+  rejectBootstrap = true;
+  const rejected = await import(
+    new URL('../packages/codex-adapter/dist/desktop-platform.js?msix=rejected', import.meta.url)
+  );
+  assert.throws(
+    () => rejected.windowsHostLauncherExecutable(),
+    (error) => error.code === 'UNSAFE_WINDOWS_PRIVATE_STATE',
+  );
+  rejectBootstrap = false;
+  assert.equal(
+    rejected.windowsHostLauncherExecutable(),
+    inside.executable,
+    'A rejected batch cannot seed a cached permission success',
+  );
+  const beforeWarm = bootstrapProcesses;
+  const warm = await import(
+    new URL('../packages/codex-adapter/dist/desktop-platform.js?msix=warm', import.meta.url)
+  );
+  assert.equal(warm.windowsHostLauncherExecutable(), inside.executable);
+  assert.equal(
+    bootstrapProcesses - beforeWarm,
+    1,
+    'A new isolate retains both checks in one warm bootstrap process',
+  );
+
   assert(aliasChecks.includes(inside.executable), 'Physical alias check did not reach its fixture');
   assert(
     aliasChecks.includes(dirname(inside.executable)),

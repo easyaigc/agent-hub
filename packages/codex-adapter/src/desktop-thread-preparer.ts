@@ -59,6 +59,15 @@ export interface PreparationObserver {
   exited(code: number | null): void;
 }
 
+/** Internal trusted CLI selection, re-evaluated for each new metadata process. */
+export type MetadataExecutable = string | (() => string);
+const metadataExecutablePath = (value: MetadataExecutable): string => {
+  const path = typeof value === 'function' ? value() : value;
+  if (typeof value === 'function' && !isAbsolute(path))
+    throw new BeforeDesktopSubmit('元数据准备需要本机固定的官方 CLI');
+  return path;
+};
+
 export class MetadataConnection {
   private readonly child: ChildProcessWithoutNullStreams;
   private readonly pending = new Map<
@@ -73,7 +82,7 @@ export class MetadataConnection {
   private startupTimeout = 20_000;
   private readonly exited: Promise<number | null>;
   constructor(
-    executable: string,
+    executable: MetadataExecutable,
     home: string,
     cwd: string,
     private readonly purpose: 'empty' | 'fork' | 'management' | 'queue' = 'empty',
@@ -86,7 +95,7 @@ export class MetadataConnection {
     env.CODEX_HOME = home;
     this.child = withWindowsProcessCreation(20000, (remaining) => {
       this.startupTimeout = remaining;
-      return spawn(executable, ['app-server', '--stdio'], {
+      return spawn(metadataExecutablePath(executable), ['app-server', '--stdio'], {
         windowsHide: true,
         cwd,
         env,
@@ -220,10 +229,10 @@ export class DesktopThreadPreparer {
   private closed = false;
   private readonly connections = new Set<MetadataConnection>();
   constructor(
-    private readonly executable: string,
+    private readonly executable: MetadataExecutable,
     private readonly home: string,
   ) {
-    if (!isAbsolute(executable) || !isAbsolute(home))
+    if (!isAbsolute(metadataExecutablePath(executable)) || !isAbsolute(home))
       throw new Error('空会话准备需要本机固定的官方 CLI 与 Codex 目录');
   }
   async prepare(target: EmptyThreadTarget, observer: PreparationObserver): Promise<string> {

@@ -25,6 +25,7 @@ let fault;
 let protectedFiles = 0;
 let store;
 let supervisor;
+let nativeFatalModesPassed = 0;
 const state = {
   hostId: 'isolated-fixture-host',
   threads: [],
@@ -263,6 +264,94 @@ process.once('disconnect', () => process.exit(1));
   await delay(100);
   assert.equal(await readFile(marker, 'utf8'), '3', 'Stopping cannot launch a fourth child');
 
+  // Native fatal output is not JSON. Real pipes exercise split/CRLF lines,
+  // duplicate suppression, an unterminated tail and the existing size bound.
+  const fatalChild = join(directory, 'fatal-stderr-child.mjs');
+  const fatalSecret = 'PRIVATE_FATAL_FIXTURE_TOKEN_AND_PATH_MUST_NOT_BE_LOGGED';
+  const fatalFirst =
+    'FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory ' +
+    fatalSecret +
+    '\n';
+  await writeFile(
+    fatalChild,
+    `
+import {writeFileSync} from 'node:fs';
+import {setTimeout as delay} from 'node:timers/promises';
+const [mode, marker] = process.argv.slice(2);
+process.on('message', message => { if (message.command === 'host-worker-stop') process.exit(0); });
+const write = text => new Promise((resolve, reject) => process.stderr.write(text, error => error ? reject(error) : resolve()));
+if (mode === 'oversized') {
+  await write('FATAL ERROR: ' + ${JSON.stringify(fatalSecret)}.repeat(600));
+} else {
+  await write(JSON.stringify({message: 'FATAL ERROR: ' + ${JSON.stringify(fatalSecret)}}) + '\\n');
+  const first = ${JSON.stringify(fatalFirst)};
+  await write(first.slice(0, 17));
+  await delay(20);
+  await write(first.slice(17));
+  await write(first);
+  await write(${JSON.stringify('Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file C:\\private\\' + fatalSecret + '\\async.c, line 94\r\n')});
+  await write(${JSON.stringify('Assertion failed: false, file C:\\private\\' + fatalSecret + '\\node_worker.cc, line 2\n')});
+  await write('FATAL ERROR: ' + ${JSON.stringify(fatalSecret)});
+}
+writeFileSync(marker, 'ready');
+`,
+  );
+  for (const mode of ['split-and-tail', 'report-fault', 'oversized']) {
+    const fatalMarker = join(directory, 'fatal-ready-' + mode);
+    const reports = [],
+      warnings = [];
+    const originalError = console.error;
+    if (mode === 'report-fault') console.error = (value) => warnings.push(value);
+    try {
+      supervisor = superviseWorker({
+        executable: process.execPath,
+        args: [fatalChild, mode, fatalMarker],
+        report(entry) {
+          reports.push(entry);
+          if (mode === 'report-fault' && entry.event === 'native-runtime-stderr')
+            throw Error(fatalSecret);
+        },
+        delays: [10],
+      });
+      await waitUntil(async () => (await readdir(directory)).includes('fatal-ready-' + mode));
+      await supervisor.stop();
+      const projected = reports.filter((entry) => entry.event === 'native-runtime-stderr');
+      assert.deepEqual(
+        projected.map((entry) => entry.reason),
+        mode === 'oversized'
+          ? []
+          : [
+              'javascript-heap-exhausted',
+              'libuv-async-handle-closing',
+              'native-assertion',
+              'node-fatal',
+            ],
+      );
+      const pid = reports.find((entry) => entry.event === 'started').childPid;
+      for (const entry of projected) {
+        assert.deepEqual(Object.keys(entry).sort(), ['childPid', 'event', 'reason']);
+        assert.equal(entry.childPid, pid);
+      }
+      assert(!JSON.stringify(reports).includes(fatalSecret));
+      assert(!JSON.stringify(reports).includes('C:\\private'));
+      assert.equal(
+        reports.filter((entry) => entry.event === 'exited' && entry.exitCode === 0).length,
+        1,
+      );
+      await delay(50);
+      assert.equal(reports.filter((entry) => entry.event === 'started').length, 1);
+      assert(!reports.some((entry) => entry.event === 'retry'));
+      assert.deepEqual(
+        warnings,
+        mode === 'report-fault' ? Array(4).fill('HOST_DIAGNOSTICS_UNAVAILABLE') : [],
+      );
+      nativeFatalModesPassed++;
+    } finally {
+      await supervisor?.stop();
+      console.error = originalError;
+    }
+  }
+
   // Real factory records travel through real child stderr, including split lines.
   // Subscriber-only capture avoids emitting fixture records from this parent.
   const traceChannel = channel('agent-hub.windows-trace.summary');
@@ -480,6 +569,8 @@ if (mode === 'report-fault' && count === 1) process.exit(7);
       windowsTraceForwarded: forwardedTraceRecords,
       windowsTraceModes: 5,
       windowsTraceReporterFailureRecovered: true,
+      nativeFatalModesPassed,
+      nativeFatalRawContentExcluded: true,
       idlePersistenceRecovery: true,
       cooldownStoppedWithoutWrites: true,
       evidence:

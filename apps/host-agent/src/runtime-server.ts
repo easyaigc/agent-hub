@@ -23,6 +23,7 @@ import {
 } from '@codex-manage/codex-adapter';
 import { NotificationPublisher } from '@codex-manage/notification-runtime';
 import { startDirectDiscovery } from './direct-discovery.js';
+import { DirectDiscoveryRecovery } from './direct-discovery-recovery.js';
 import { VPNPeerDirectory } from './direct-endpoints.js';
 import { PrivateConnections } from './private-connections.js';
 import { FileTransfers } from './file-transfers.js';
@@ -722,6 +723,7 @@ export async function startRuntimeServer() {
           let prepared:
             Awaited<ReturnType<DesktopSuggestionObserver['prepareBoundSourceAsync']>> | undefined;
           let ownsFencedSlot = false;
+          let resumeBackground: (() => void) | undefined;
           try {
             if (suggestionObserver.usesFencedSourceRead) {
               if (fencedSuggestionPending) throw new RuntimeError(503, '原桌面建议读取忙碌');
@@ -729,8 +731,11 @@ export async function startRuntimeServer() {
               ownsFencedSlot = true;
             }
             active();
-            suggestionObserver.assertBoundReadAvailable(target);
+            if (!suggestionObserver.usesFencedSourceRead)
+              suggestionObserver.assertBoundReadAvailable(target);
             active();
+            if (suggestionObserver.usesFencedSourceRead)
+              resumeBackground = session.deferBackgroundPersistence(lifetime.signal);
             const sourceTurnId = url.searchParams.get('sourceTurnId')!;
             const source = async () =>
               traced('source_fence', async () => {
@@ -741,6 +746,11 @@ export async function startRuntimeServer() {
             await source(); // Exact original owner and latest completed source turn.
             let confirmed;
             if (suggestionObserver.usesFencedSourceRead) {
+              // The required fresh owner IPC yields Main while background
+              // writes are held, so queued reader samples can be received.
+              // Check current readiness after that yield; never renew an old
+              // sample or issue Native work while the reader is unavailable.
+              suggestionObserver.assertBoundReadAvailable(target);
               prepared = await traced('prepare', () =>
                 within(() =>
                   suggestionObserver.prepareBoundSourceAsync(
@@ -795,6 +805,7 @@ export async function startRuntimeServer() {
               prepared?.dispose();
             } finally {
               if (ownsFencedSlot) fencedSuggestionPending = false;
+              resumeBackground?.();
               lifetime.abort();
               clearTimeout(timer);
               response.removeListener('close', disconnected);
@@ -1293,33 +1304,56 @@ export async function startRuntimeServer() {
       ready: session.ready,
     }),
   );
-  if (
+  const discoveryEnabled =
     process.env.HOST_AGENT_DISCOVERY === '1' ||
-    (mode === 'desktop-runtime' && process.env.HOST_AGENT_DISCOVERY !== '0')
-  ) {
-    try {
-      direct = await startDirectDiscovery({
-        directory,
-        name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
-        token,
-        target: () => session.readingTarget(),
-        handler,
-        peers: () => vpnDirectory.peers(),
-        claim: (input) => privateConnections.claim(input, session.readingTarget()),
-      });
-      console.log(
-        JSON.stringify({
-          service: 'host-agent-discovery',
-          address: direct.server.address(),
-          pagePath: direct.pagePath,
-        }),
-      );
-    } catch {
-      console.error(
-        'Host direct discovery unavailable; check private TLS files, OpenSSL and discovery port. Existing Host routes remain active.',
-      );
-    }
-  }
+    (mode === 'desktop-runtime' && process.env.HOST_AGENT_DISCOVERY !== '0');
+  const directRecovery = discoveryEnabled
+    ? new DirectDiscoveryRecovery(
+        () =>
+          startDirectDiscovery({
+            directory,
+            name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
+            token,
+            target: () => session.readingTarget(),
+            handler,
+            peers: () => vpnDirectory.peers(),
+            claim: (input) => privateConnections.claim(input, session.readingTarget()),
+          }),
+        (value) => {
+          direct = value;
+          console.log(
+            JSON.stringify({
+              service: 'host-agent-discovery',
+              address: direct.server.address(),
+              pagePath: direct.pagePath,
+            }),
+          );
+        },
+        (error, attempt) => {
+          appendRuntimeDiagnostic(
+            directory,
+            {
+              scope: 'direct-discovery',
+              stage: 'startup',
+              hostId: session.readingTarget().hostId,
+              attempt,
+            },
+            error,
+          );
+          const code = (error as NodeJS.ErrnoException)?.code;
+          console.error(
+            JSON.stringify({
+              diagnostic: 'host-runtime-failure',
+              scope: 'direct-discovery',
+              stage: 'startup',
+              attempt,
+              code:
+                typeof code === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(code) ? code : undefined,
+            }),
+          );
+        },
+      )
+    : undefined;
   const close = () => {
     process.removeListener('SIGINT', close);
     process.removeListener('SIGTERM', close);
@@ -1329,7 +1363,7 @@ export async function startRuntimeServer() {
     for (const dispose of [
       unsubscribeNotifications,
       () => notifications.close(),
-      () => direct?.close(),
+      () => directRecovery?.close(),
       () => workspaceView?.close(),
       () => chatActions?.close(),
       () => desktopTranscription?.close(),
@@ -1348,5 +1382,13 @@ export async function startRuntimeServer() {
   };
   process.once('SIGINT', close);
   process.once('SIGTERM', close);
-  return { server, session, close, direct };
+  await directRecovery?.start();
+  return {
+    server,
+    session,
+    close,
+    get direct() {
+      return direct;
+    },
+  };
 }

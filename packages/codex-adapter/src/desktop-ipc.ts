@@ -1081,7 +1081,13 @@ export class DesktopRuntime {
     if (process.platform === 'win32') {
       if (!this.options.windowsDesktopConfig)
         throw new Error('CODEX_DESKTOP_WINDOWS_CONFIG required');
-      const windows = loadWindowsDesktop(this.options.windowsDesktopConfig, this.hostId);
+      const windows = loadWindowsDesktop(this.options.windowsDesktopConfig, this.hostId, {
+        executable: this.options.executable,
+      });
+      await this.reader.configureExecutable(windows.executable!);
+      // Other metadata helpers share this options object, but resolve it only
+      // when opening their next connection. Private startup files stay intact.
+      this.options.executable = windows.executable!;
       actual = windows.archive.version;
       this.ipc.windowsIdentity = windows.identity;
     } else {

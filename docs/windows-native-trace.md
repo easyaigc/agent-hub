@@ -222,3 +222,5 @@ Windows 边界检查使用合成数据和本机真实 NTFS/DACL/句柄，覆盖�
 b07 候选的独立 Observer 单 A 完整读取 3507.232ms，但同包常规 Host 首 A 仍返回 HTTP503／4425.011083ms，首败即停；剩余矩阵未执行，P2 未闭环。现有日志未开启数字诊断，不能倒填失败阶段。
 
 Windows canonical worker 私有配置现在允许 `environment.AGENT_HUB_WINDOWS_TRACE_DIAGNOSTICS`，值严格限定字符串 `"0"` 或 `"1"`。仅在隔离 DEV 暂时设置 `"1"`，通过现有 supervisor 转存固定数字摘要到同配置目录的 `worker-diagnostics/worker.jsonl`；不接受任意预加载或系统环境修改。默认缺省关闭、正式服务及 macOS 路径不变。一次真实 Host 请求取证后恢复原配置并重新验证普通模式；诊断通过不代替普通模式验收。此改动只补取证入口，不宣称性能问题修复。
+
+2026-10-27 F03/F69 Windows 640129388字节ASAR一次性readFileSync内存分配失败阻断正常服务恢复，统一Adapter改为有界header/条目、逐模块检查和64KiB完整SHA流式读取；前后fd/路径/dev/inode/大小/权限/高精度时间身份保持，不缓存、不省略完整摘要/协议条目验证。640MB低内存夹具、短读、同大小修改、命名空间替换、迟到坏条目和大小边界6项辅助通过，Windows原机仍待部署/普通环境恢复及正式预算/手机验收。Windows断管测试替换不能关闭全部Node复制句柄的夹具为原机已验证的自有C#原始HANDLE关闭/EPIPE子进程，原失败保留，未变生产协议。Android无产品变化和新增通过，A6暂停。

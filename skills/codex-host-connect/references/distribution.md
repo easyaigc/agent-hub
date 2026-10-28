@@ -28,6 +28,16 @@ node --input-type=module -e "await import('./apps/host-agent/dist/runtime-server
 
 主开发电脑的规范仓库统一维护 SKILL、Host Agent、Adapter 和桥接工具。各电脑的安装副本仅用于部署与诊断，不独立维护源码；所有修复先在规范仓库合并、检查、构建，再由同一本机接入包分发给 macOS 与 Windows。远端已有改动先导出无凭据、无运行数据的差异，在规范仓库逐项审查回归，不能覆盖本机已有未提交工作。
 
+Host、Adapter、启动器、服务监督、诊断、profiling 支持及 SKILL 本身的任何优化与修复，都先反馈人类指定的唯一主开发电脑。本项目当前负责人是人类指定的 Mac Mini 24G；在其规范仓库统一修改、验证和提交，通过既有可信 GitHub 仓库的准确提交或 Release 分发冻结产物。目标核对 GitHub 来源、commit、整包和实际组件 SHA-256 后按差异部署，不本地开发、维护分叉、放宽任务／环境校验或伪造 argv。临时手工 ZIP、私有 Host 文件传输或诊断附件不能代替 GitHub 交付。常规私有配置和只读诊断按已有授权处理，不追加联系已指定机器的确认。公开分发只包含审查过的源码与无私有数据产物，不把内部开发历史、机器私有计划、凭据、日志或真机证明推入公开仓库。
+
+### 限域诊断与计时证据
+
+Windows 的真实 Host 子入口是原 `windows-desktop-worker.mjs <配置> --host-child`，由 worker 固定导入 `runtime-entry.js`。诊断导入核对原 Node、worker、配置的规范路径和完整 SHA，以及准确 Host/runtime、原 argv 和 Main 线程；不能以修改 argv、任务参数或 `NODE_OPTIONS` 白名单让错误入口通过。私有编排仅使用已提交的固定诊断入口，保持原退出屏障和原 owner；CPU 采样不改变普通服务的权限或 Native／HTTP 预算。
+
+当前 profiler 在 Main 事件循环中用 240 秒计时器请求结束自己的 Inspector 会话。这是结束请求的名义时限，不能承诺主线程阻塞时仍在 240 秒内完成；固定 stop 标记的读取也可能延迟。报告须同时核对单调时间、实际 stop 请求／完成时间及 profile 的 startTime／endTime，超过名义时限就记录超预算及实际延迟，不能将 stop 原因、未触发 timer 或 `deadlineTriggered=false` 解释为没有越界。不得由目标临时加 kill、改预算或接受迟到结果来补成通过。
+
+诊断时限与产品读取时限分别判定。原 prepared／commit 和来源守卫仍按绝对单调截止时间核验，Main 计时回调延迟也不接受迟到 prepared、结果或状态；保留原 4／7／8 秒及 Native 750 毫秒限制，不重放未知输入。需要修改限域工具、增加独立看门狗或扩展采样范围时，仍先回到唯一标准仓库实现、检查、提交与 GitHub 分发，并在目标独立验收。
+
 每次部署核对并记录接入包 SHA-256，同步程序与 SKILL，保留目标自身 Host ID、令牌、原目录配置、Node 与服务路径、端口和控制聊天。核对原 Node 从正式入口实际解析到的全部运行组件：使用随包 `scripts/verify-host-runtime.mjs --entry <实际 Host dist/runtime-entry.js> --bundle <本包 bundle.json>`，读取真实 ESM 依赖闭包并比对包内指纹，不启动 Host，也不证明旧进程内存已更新；文件变化后仍核对必要重启后的新 PID 与正式入口。嵌套 `dist/node_modules` 可能遮蔽工作区中的新版，不能只核对名义 `packages` 目录；结果不匹配时保留差异并部署同一包的实际运行副本后复验。通常只重启本产品 Host；首次开启建议所需的原 Codex 正常重启另按 [建议流程](desktop-suggestions.md) 执行。逐机核对实际运行 Adapter 指纹、桌面 owner 与专项证明；不分发或复用其他电脑的私有配置、历史和通过记录。完整开发顺序见随包仓库的 `docs/development.md`。
 
 发现指纹不一致时，先核对其他已授权部署的任务、包摘要和源码差异。正在验证的新修复必须保留，不为匹配旧 `bundle.json` 回滚；各现场分别记录实际指纹及归属，统一源码和产物完成后再复核，不能将不同版本写成同包通过。

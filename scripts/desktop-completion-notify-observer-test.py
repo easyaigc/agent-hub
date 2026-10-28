@@ -229,7 +229,12 @@ class SharedLauncherTests(unittest.TestCase):
         state.chmod(0o700)
         (state / 'service').mkdir(mode=0o700)
         wrapper = state / 'codex-shared.mjs'
-        wrapper.write_bytes(b'synthetic-installed-wrapper')
+        self.node = str(Path(sys.executable).resolve())
+        self.node_file = state / 'node'
+        self.node_file.write_bytes(b'synthetic-node')
+        self.node_file.chmod(0o700)
+        self.node = str(self.node_file)
+        wrapper.write_bytes(('#!' + self.node + '\nsynthetic-installed-wrapper').encode())
         wrapper.chmod(0o700)
         self.manifest_path = state / 'environment.json'
         self.manifest = {
@@ -246,7 +251,6 @@ class SharedLauncherTests(unittest.TestCase):
                                      'url': self.manifest['url'], 'fingerprint': 'a' * 64}))
         owner.chmod(0o600)
         self.native = FakeNative()
-        self.node = str(Path(m.DESKTOP).parents[1] / 'Resources/cua_node/bin/node')
         self.native.add(15, 10, self.node)
         self.native.add(20, 15, m.EXECUTOR)
         stack = contextlib.ExitStack()
@@ -263,6 +267,26 @@ class SharedLauncherTests(unittest.TestCase):
         self.native.add(15, 10, self.node, 200)
         self.assertFalse(m.executor_valid(self.native, identities, 20, 10))
 
+    def test_hash_pinned_nvm_node_is_rechecked_for_later_executor_validation(self):
+        parents, _, identities = m.discover(self.native)
+        self.assertEqual(identities.wrapper_node, self.node)
+        self.assertTrue(m.executor_valid(self.native, identities, 20, 10))
+        self.native.paths[15] = '/synthetic/other-node'
+        self.assertFalse(m.executor_valid(self.native, identities, 20, 10))
+        self.assertEqual(self.native.stats['notifierArgvReads'], 0)
+
+    def test_changed_shebang_or_noncanonical_node_is_rejected(self):
+        wrapper = Path(self.temp.name) / 'codex-shared.mjs'
+        for shebang in ['#!/usr/bin/env node', '#!relative/node',
+                        '#!' + str(self.node_file.parent / 'subdir/../node')]:
+            with self.subTest(shebang=shebang):
+                wrapper.write_text(shebang + '\nsynthetic-installed-wrapper')
+                # Even a newly hash-pinned malformed interpreter must fail.
+                self.manifest['wrapperSha256'] = m.sha256(wrapper.read_bytes())
+                self.manifest_path.write_text(json.dumps(self.manifest))
+                with self.assertRaisesRegex(RuntimeError, 'Node identity changed'):
+                    m.discover(self.native)
+
     def test_arbitrary_node_grandchild_is_not_an_original_executor(self):
         with patch.object(m, 'SHARED_STATE', None):
             with self.assertRaisesRegex(RuntimeError, 'executors are unavailable'):
@@ -275,6 +299,43 @@ class SharedLauncherTests(unittest.TestCase):
         parents, _, identities = m.discover(self.native)
         self.assertEqual(parents, {20: 10})
         self.assertTrue(m.executor_valid(self.native, identities, 20, 10))
+
+    def test_pending_shared_install_keeps_the_actual_direct_executor(self):
+        (Path(self.temp.name) / 'service/desktop-service-owner.json').unlink()
+        self.native.add(20, 10, m.EXECUTOR)
+        parents, _, identities = m.discover(self.native)
+        self.assertEqual(parents, {20: 10})
+        self.assertNotIn(15, identities)
+        self.assertTrue(m.executor_valid(self.native, identities, 20, 10))
+        self.assertEqual(self.native.stats['notifierArgvReads'], 0)
+
+    def test_missing_shared_owner_does_not_trust_a_node_grandchild(self):
+        (Path(self.temp.name) / 'service/desktop-service-owner.json').unlink()
+        with self.assertRaisesRegex(RuntimeError, 'executors are unavailable'):
+            m.discover(self.native)
+
+    def test_pending_install_without_service_directory_keeps_direct_executor(self):
+        service = Path(self.temp.name) / 'service'
+        (service / 'desktop-service-owner.json').unlink()
+        service.rmdir()
+        self.native.add(20, 10, m.EXECUTOR)
+        parents, _, identities = m.discover(self.native)
+        self.assertEqual(parents, {20: 10})
+        self.assertTrue(m.executor_valid(self.native, identities, 20, 10))
+
+    def test_missing_owner_does_not_ignore_an_invalid_manifest(self):
+        (Path(self.temp.name) / 'service/desktop-service-owner.json').unlink()
+        self.native.add(20, 10, m.EXECUTOR)
+        self.manifest['wrapperSha256'] = '0' * 64
+        self.manifest_path.write_text(json.dumps(self.manifest))
+        with self.assertRaisesRegex(RuntimeError, 'identity changed'):
+            m.discover(self.native)
+
+    def test_present_invalid_owner_does_not_fall_back_to_direct_executor(self):
+        self.native.add(20, 10, m.EXECUTOR)
+        (Path(self.temp.name) / 'service/desktop-service-owner.json').write_text('{}')
+        with self.assertRaisesRegex(RuntimeError, 'identity changed'):
+            m.discover(self.native)
 
     def test_reparented_or_wrong_binary_wrapper_is_rejected(self):
         for parent, binary in [(999, self.node), (10, '/synthetic/other-node')]:

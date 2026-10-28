@@ -18,7 +18,7 @@ import {
   windowsTraceSnapshotBatchAvailable,
 } from './desktop-platform.js';
 import {
-  traceSnapshotBatchFits,
+  createTraceSnapshotBatchPlanner,
   traceSnapshotBatchLimits,
   type TraceSnapshotValue,
 } from './desktop-trace-native.js';
@@ -38,6 +38,7 @@ const limits = {
   response: 8 * 1024 * 1024,
   totalBytes: 64 * 1024 * 1024,
   requests: 128,
+  initialDiscoveryPrefix: 1024,
   discoveryPrefix: 16_384,
   protocolEvent: 128 * 1024,
 };
@@ -512,6 +513,7 @@ class TraceSnapshot {
         continue;
       }
       const selected: string[] = [];
+      const planner = createTraceSnapshotBatchPlanner();
       for (
         let at = index;
         at < paths.length && selected.length < traceSnapshotBatchLimits.items;
@@ -521,7 +523,7 @@ class TraceSnapshot {
         if (
           this.directories.has(path) ||
           selected.includes(path) ||
-          !traceSnapshotBatchFits([...selected, path].map((path) => ({ path, maximum: 0 })))
+          !planner.add({ path, maximum: 0 })
         )
           break;
         selected.push(path);
@@ -730,9 +732,7 @@ class TraceSnapshot {
     const length = Math.min(Number(before.size), maximum);
     const cached = this.nativeFiles.get(path);
     const reusable = cached && sameFile(cached.stat, before);
-    requireValue(
-      native.bytes.length === length && sameFile(before, lstatSync(path, { bigint: true })),
-    );
+    this.confirmFileReceipt(path, maximum, prefix, before, native);
     this.guards.push({
       path,
       stat: before,
@@ -766,6 +766,38 @@ class TraceSnapshot {
     return native.bytes;
   }
 
+  private confirmFileReceipt(
+    path: string,
+    maximum: number,
+    prefix: boolean,
+    before: BigIntStats,
+    native: { bytes: Buffer },
+  ): void {
+    const length = Math.min(Number(before.size), maximum);
+    const current = lstatSync(path, { bigint: true });
+    requireValue(native.bytes.length === length);
+    if (sameFile(before, current)) return;
+    // A different chat may append after its native prefix handle closes while
+    // the other batch items finish. Reopen and compare those exact bytes; no
+    // native call is replayed, and full bodies still require identical metadata.
+    requireValue(
+      this.prepared && prefix && sameNode(before, current) && current.size >= before.size,
+    );
+    const guard: Guard = {
+      path,
+      stat: before,
+      directory: false,
+      scope: 'contained',
+      prefixLength: length,
+      prefixSha256: createHash('sha256').update(native.bytes).digest('hex'),
+      // Tentative only. The real receipt below retains its original short-size
+      // guard until a complete configured payload closes that discovery input.
+      prefixMayGrow: true,
+    };
+    this.prefixAfterBatch(guard, current);
+    requireValue(sameNode(current, this.guardStat(guard)));
+  }
+
   /** Ordered discovery inputs; each dispatched B is all-or-nothing, never replayed. */
   files(items: readonly { path: string; maximum: number; prefix?: boolean }[]): Buffer[] {
     if (
@@ -786,6 +818,7 @@ class TraceSnapshot {
         cached: { stat: BigIntStats; bytes: Buffer; identity: string } | undefined;
         reusable: boolean | undefined;
       }[] = [];
+      const planner = createTraceSnapshotBatchPlanner();
       for (
         let at = index;
         at < items.length && plans.length < traceSnapshotBatchLimits.items;
@@ -803,13 +836,7 @@ class TraceSnapshot {
         const reusable = cached && sameFile(cached.stat, before);
         if (
           (reusable && cached.bytes.length >= length) ||
-          !traceSnapshotBatchFits([
-            ...plans.map((plan) => ({
-              path: plan.path,
-              maximum: Math.max(1, plan.length),
-            })),
-            { path: item.path, maximum: Math.max(1, length) },
-          ])
+          !planner.add({ path: item.path, maximum: Math.max(1, length) })
         )
           break;
         plans.push({ ...item, before, length, cached, reusable });
@@ -838,14 +865,19 @@ class TraceSnapshot {
         const plan = plans[at]!,
           value = values[at]!;
         this.nativeResult(plan.path, value);
-        requireValue(
-          value.bytes.length === plan.length &&
-            sameFile(plan.before, lstatSync(plan.path, { bigint: true })),
-        );
+        this.confirmFileReceipt(plan.path, plan.maximum, plan.prefix === true, plan.before, value);
       }
       // Fence early items against changes while a later native item ran.
-      for (const plan of plans)
-        requireValue(sameFile(plan.before, lstatSync(plan.path, { bigint: true })));
+      for (let at = 0; at < plans.length; at++) {
+        const plan = plans[at]!;
+        this.confirmFileReceipt(
+          plan.path,
+          plan.maximum,
+          plan.prefix === true,
+          plan.before,
+          values[at]!,
+        );
+      }
       for (let at = 0; at < plans.length; at++) {
         const plan = plans[at]!;
         result.push(
@@ -884,18 +916,11 @@ class TraceSnapshot {
     if (process.platform === 'win32' && windowsTraceSnapshotBatchAvailable()) {
       for (let index = 0; index < this.guards.length;) {
         const guards: Guard[] = [];
+        const planner = createTraceSnapshotBatchPlanner();
         const width = this.prepared ? traceSnapshotBatchLimits.items : 2;
         for (let at = index; at < this.guards.length && guards.length < width; at++) {
           const next = this.guards[at]!;
-          if (
-            !traceSnapshotBatchFits(
-              [...guards, next].map((guard) => ({
-                path: guard.path,
-                maximum: this.nativeMaximum(guard),
-              })),
-            )
-          )
-            break;
+          if (!planner.add({ path: next.path, maximum: this.nativeMaximum(next) })) break;
           guards.push(next);
         }
         const items = guards.map((guard) => ({
@@ -1278,14 +1303,13 @@ export class DesktopPredictionTraceReader {
     });
   }
 
-  private *discoverCandidates(
+  private *discoverDirectories(
     snapshot: TraceSnapshot,
     names: string[],
     notBeforeUnixMs: number,
   ): Generator<{
     name: string;
     directory: string;
-    configured: JsonObject | undefined;
   }> {
     const preparedWindows = process.platform === 'win32' && snapshot.isPreparedDiscovery;
     const width = preparedWindows ? traceSnapshotBatchLimits.items : 1;
@@ -1319,10 +1343,40 @@ export class DesktopPredictionTraceReader {
           return Number(manifest.started_at_unix_ms) >= notBeforeUnixMs;
         });
       }
+      yield* group;
+    }
+  }
+
+  private *discoverCandidates(
+    snapshot: TraceSnapshot,
+    names: string[],
+    notBeforeUnixMs: number,
+  ): Generator<{
+    name: string;
+    directory: string;
+    configured: JsonObject | undefined;
+  }> {
+    const preparedWindows = process.platform === 'win32' && snapshot.isPreparedDiscovery;
+    const width = preparedWindows ? traceSnapshotBatchLimits.items : 1;
+    const directories = this.discoverDirectories(snapshot, names, notBeforeUnixMs);
+    for (;;) {
+      // Filtering may leave one eligible directory in each manifest batch.
+      // Repack only these fresh, request-local receipts so prefixes/payloads
+      // keep bounded batches. Excluded manifests retain all commit guards.
+      const group: { name: string; directory: string }[] = [];
+      while (group.length < width) {
+        const next = directories.next();
+        if (next.done) break;
+        group.push(next.value);
+      }
+      if (group.length === 0) return;
+      const prefixMaximum = preparedWindows
+        ? limits.initialDiscoveryPrefix
+        : limits.discoveryPrefix;
       const prefixes = snapshot.files(
         group.map((item) => ({
           path: join(item.directory, 'trace.jsonl'),
-          maximum: limits.discoveryPrefix,
+          maximum: prefixMaximum,
           prefix: true,
         })),
       );
@@ -1330,12 +1384,9 @@ export class DesktopPredictionTraceReader {
         ...item,
         configured: undefined as JsonObject | undefined,
       }));
-      const references: { offset: number; path: string }[] = [];
-      for (let offset = 0; offset < contexts.length; offset++) {
+      const reference = (offset: number, prefix: Buffer) => {
         const item = contexts[offset]!;
-        const lines = snapshot.decode(() =>
-          prefixes[offset]!.toString('utf8').split('\n').slice(0, -1),
-        );
+        const lines = snapshot.decode(() => prefix.toString('utf8').split('\n').slice(0, -1));
         for (const line of lines) {
           const event = snapshot.json(line),
             payload = object(event.payload);
@@ -1344,14 +1395,34 @@ export class DesktopPredictionTraceReader {
             payload.event_type === 'session_configured'
           ) {
             if (!preparedWindows) snapshot.directory(join(item.directory, 'payloads'));
-            references.push({
+            return {
               offset,
               path: payloadPath(item.directory, payload.event_payload, 'protocol_event'),
-            });
-            break;
+            };
           }
         }
+        return undefined;
+      };
+      const discovered = prefixes.map((prefix, offset) => reference(offset, prefix));
+      if (preparedWindows) {
+        // Once the first configured event is complete, later prefix lines were
+        // never parser inputs. Otherwise extend the successful short read to
+        // the original bound, retaining both native/prefix receipts at commit.
+        // A rejected native read never reaches this extension path.
+        const extend = prefixes.flatMap((prefix, offset) =>
+          !discovered[offset] && prefix.length === prefixMaximum ? [offset] : [],
+        );
+        const extended = snapshot.files(
+          extend.map((offset) => ({
+            path: join(contexts[offset]!.directory, 'trace.jsonl'),
+            maximum: limits.discoveryPrefix,
+            prefix: true,
+          })),
+        );
+        for (let at = 0; at < extend.length; at++)
+          discovered[extend[at]!] = reference(extend[at]!, extended[at]!);
       }
+      const references = discovered.filter((item) => item !== undefined);
       const payloadItems = references.map((item) => ({
         path: item.path,
         maximum: limits.protocolEvent,

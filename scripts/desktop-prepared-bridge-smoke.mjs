@@ -304,6 +304,45 @@ try {
   assert.equal(recoveryInputs, 0);
   recovery.close();
   assert.throws(() => new DesktopThreadPreparer('relative-cli', home));
+  // A broker constructed before a Windows installation refresh must use the
+  // newly verified CLI when it next prepares empty metadata, not its old path.
+  let selectedExecutable = join(directory, 'removed-installation', 'codex.exe');
+  const dynamicPreparer = new DesktopThreadPreparer(() => selectedExecutable, home);
+  selectedExecutable = executable;
+  let exited = false;
+  const prepared = await dynamicPreparer.prepare(
+    { cwd, projectId: null, title: 'dynamic CLI' },
+    {
+      starting() {},
+      identified() {},
+      materialized() {},
+      exited(code) {
+        assert.equal(code, 0);
+        exited = true;
+      },
+    },
+  );
+  assert.equal(prepared, threadId);
+  assert(exited, 'New CLI must still exit before a desktop handoff');
+  const callsBeforeInvalidProvider = await readFile(calls, 'utf8');
+  selectedExecutable = 'relative-cli';
+  await assert.rejects(
+    dynamicPreparer.prepare(
+      { cwd, projectId: null, title: 'reject' },
+      {
+        starting() {
+          assert.fail('Invalid provider must not start');
+        },
+        identified() {},
+        materialized() {},
+        exited() {},
+      },
+    ),
+    /固定的官方 CLI/,
+  );
+  assert.equal(await readFile(calls, 'utf8'), callsBeforeInvalidProvider);
+  dynamicPreparer.close();
+
   console.log(
     'Production readiness without acceptance reports, target/private-config checks, empty metadata preparation, process-exit handoff and no replay: passed',
   );

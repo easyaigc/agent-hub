@@ -405,6 +405,27 @@ test('actual client phase timeout and prepared wait keep different deadline owne
   });
 });
 
+test('a real prepared reply delayed on Main is rejected as a phase deadline, not transport loss', async () => {
+  await withClient('normal', async (client, events) => {
+    client.worker.prependListener('message', (message) => {
+      if (message.kind === 'prepared')
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 4150);
+    });
+    await assert.rejects(
+      client.prepare('thread', 'turn', performance.now() + 20000),
+      (error) => error.status === 503,
+    );
+    const failure = events.find((event) => event.operation === 'read');
+    assert.equal(failure.reason, 'phase_deadline');
+    assert.equal(failure.deadlineKind, 'phase');
+    assert.equal(failure.deadlineTriggered, true);
+    assert(failure.phaseRemainingMs < 0);
+    assert(failure.remainingMs > 0, 'The shared RPC boundary has not expired');
+    assert(!events.some((event) => ['prepared', 'committed'].includes(event.stage)));
+    assert.equal(client.available, false, 'Late evidence never renews capability');
+  });
+});
+
 test('actual Reader-side calls account P S T B, typed batch decode, failures and per-phase isolation', async () => {
   const events = [],
     c = channel('agent-hub.windows-trace.summary'),
@@ -473,7 +494,7 @@ test('actual Reader-side calls account P S T B, typed batch decode, failures and
   }
 });
 
-test('native B8 summary counts all eight obligations without accepting an oversized count', () => {
+test('native B64 summary counts the current bound without accepting an oversized count', () => {
   const events = [],
     summary = channel('agent-hub.windows-trace.summary');
   const receive = (event) => events.push(event);
@@ -482,10 +503,10 @@ test('native B8 summary counts all eight obligations without accepting an oversi
     const diagnostic = createWindowsTraceDiagnostics('reader', 1, {
       operation: 'parser',
     });
-    diagnostic.nativeCall('B', 8).end(true);
-    diagnostic.nativeCall('B', 9).end(false);
+    diagnostic.nativeCall('B', 64).end(true);
+    diagnostic.nativeCall('B', 65).end(false);
     diagnostic.end('ok');
-    assert.equal(events[0].native.B.items, 8);
+    assert.equal(events[0].native.B.items, 64);
     assert.equal(events[0].native.B.calls, 2);
     assert.equal(events[0].native.B.completed, 1);
     assert.equal(events[0].native.B.failed, 1);

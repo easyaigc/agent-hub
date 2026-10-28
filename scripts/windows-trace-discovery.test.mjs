@@ -12,18 +12,94 @@ const manifests = (snapshot, paths) =>
   );
 const projection = (snapshot) =>
   snapshot.guards
-    .map(({ path, stat, directory, scope, nativeIdentity, body }) => ({
-      path,
-      directory,
-      scope,
-      nativeIdentity,
-      body,
-      ino: stat.ino,
-      mode: stat.mode,
-      size: stat.size,
-      mtimeNs: stat.mtimeNs,
+    .map(({ stat, ...guard }) => ({
+      ...guard,
+      stat: Object.fromEntries(
+        ['dev', 'ino', 'mode', 'uid', 'gid', 'nlink', 'size', 'mtimeNs', 'ctimeNs'].map((key) => [
+          key,
+          stat[key],
+        ]),
+      ),
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
+
+test('time-filtered candidates fill bounded discovery batches without losing any fresh proof', () =>
+  preparedTraceFixture(
+    ({ reader, TraceSnapshot, root, create, remote, local, data, calls, reset, batch }) => {
+      const fixtures = Array.from({ length: 64 }, () => create()).sort((a, b) =>
+        a.fixture.directory.localeCompare(b.fixture.directory),
+      );
+      for (const [index, value] of fixtures.entries()) {
+        value.fixture.manifest.started_at_unix_ms = index % 8 === 0 ? 10 : 0;
+        data.writeJson(join(value.fixture.directory, 'manifest.json'), value.fixture.manifest);
+      }
+      const names = fixtures.map((value) => win32.basename(remote(value.fixture.directory))).sort();
+      const obligations = () =>
+        items(calls)
+          .map(({ path, maximum }) => [
+            path,
+            maximum ? Math.min(maximum, Number(fs.statSync(local(path)).size)) : 0,
+          ])
+          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+      // The scalar transport is an independent reference for every original
+      // directory/file receipt, including manifests excluded by the time filter.
+      batch(false);
+      const reference = new TraceSnapshot(true);
+      reference.root(root);
+      const expected = [...reader.discoverCandidates(reference, names, 5)];
+      const expectedGuards = projection(reference);
+      const expectedPrepareItems = obligations();
+      reset();
+      reference.commit();
+      const expectedCommitItems = obligations();
+      reset();
+      batch(true);
+      const current = new TraceSnapshot(true);
+      current.root(root);
+      assert.deepEqual([...reader.discoverCandidates(current, names, 5)], expected);
+      assert.equal(expected.length, 8);
+      assert.deepEqual(projection(current), expectedGuards);
+      assert.deepEqual(obligations(), expectedPrepareItems);
+      assert.equal(
+        calls.filter((call) => call.kind === 'S').length,
+        1,
+        'Only the original root stays scalar; sparse prefixes and payloads fill one batch each',
+      );
+      assert(calls.filter((call) => call.kind === 'B').every((call) => call.items.length <= 64));
+      reset();
+      current.commit();
+      assert.deepEqual(
+        obligations(),
+        expectedCommitItems,
+        'Filtered-out manifests and every original directory still participate in commit',
+      );
+      reference.dispose();
+      current.dispose();
+    },
+  ));
+
+test('a filtered-out manifest becoming eligible after dense discovery still rejects commit', () =>
+  preparedTraceFixture(({ reader, TraceSnapshot, root, create, remote, data }) => {
+    const fixtures = Array.from({ length: 17 }, () => create()).sort((a, b) =>
+      a.fixture.directory.localeCompare(b.fixture.directory),
+    );
+    for (const [index, value] of fixtures.entries()) {
+      value.fixture.manifest.started_at_unix_ms = index % 8 === 0 ? 10 : 0;
+      data.writeJson(join(value.fixture.directory, 'manifest.json'), value.fixture.manifest);
+    }
+    const names = fixtures.map((value) => win32.basename(remote(value.fixture.directory))).sort();
+    const snapshot = new TraceSnapshot(true);
+    snapshot.root(root);
+    assert.equal([...reader.discoverCandidates(snapshot, names, 5)].length, 3);
+    const excluded = fixtures[1];
+    excluded.fixture.manifest.started_at_unix_ms = 6;
+    data.writeJson(join(excluded.fixture.directory, 'manifest.json'), excluded.fixture.manifest);
+    assert.throws(
+      () => snapshot.commit(),
+      'Negative classification is an input receipt, never a reusable authorization cache',
+    );
+    snapshot.dispose();
+  }));
 
 for (const batch of [true, false]) {
   test(`manifest full-chain receipts retain identical directory guards and commit reads; batch=${batch}`, () =>

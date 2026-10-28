@@ -9930,14 +9930,17 @@ final class CodexManageUITests: XCTestCase {
       let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true AND isEnabled == true"), object: option)
       XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed)
       option.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-      if title == "手动连接" {
-        let addressId = agent == "easywork" ? "easywork-manual-address" : "client-address"
-        if !app.textFields[addressId].waitForExistence(timeout: 3) {
+      let formFieldId: String? = title == "手动连接"
+        ? (agent == "easywork" ? "easywork-manual-address" : "client-address")
+        : (title == "扫码连接" && agent == "codex" ? "codex-qr-description" : nil)
+      if let formFieldId {
+        if !app.textFields[formFieldId].waitForExistence(timeout: 3), !option.isSelected {
           // Discovery can finish while the connection sheet is presenting.
           // Selecting this same local form again does not submit a connection.
+          print("CONNECTION_FORM_RESELECT", agent, title)
           option.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
-        XCTAssertTrue(app.textFields[addressId].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields[formFieldId].waitForExistence(timeout: 10))
       }
       return
     }
@@ -10761,6 +10764,144 @@ final class CodexManageUITests: XCTestCase {
 
   /// Ordinary installed App, real Host reads only. The runner separately checks
   /// source Turn IDs in HTTP requests and unchanged original-owner input counts.
+  /// Real remote Host response, ordinary independent App, no execution send.
+  @MainActor func testOriginalDesktopReadOnlySuggestionsDEVHostRepair() throws {
+    #if targetEnvironment(simulator)
+    throw XCTSkip("Requires the explicitly paired physical iPhone")
+    #else
+    let encoded = try XCTUnwrap(ProcessInfo.processInfo.environment["SUGGESTION_DEV_FIXTURE_JSON"])
+    let fixture = try JSONDecoder().decode(ReadOnlySuggestionFixture.self, from: Data(encoded.utf8))
+    XCTAssertEqual(fixture.bundleId, "com.easyai.agenthub.hostrepair20261026")
+    XCTAssertNotEqual(fixture.threadAId, fixture.threadBId)
+    let fixtureMetadata = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any])
+    let expectsEmptyNative = fixtureMetadata["expectsEmptyNativeSuggestions"] as? Bool == true
+    let connectionOnly = fixtureMetadata["connectionOnly"] as? Bool == true
+    let historyMarkers = fixtureMetadata["expectedHistoryMarkers"] as? [String: String] ?? [:]
+    app.terminate(); app.launchArguments = []; app.launchChineseTest()
+    dismissPhysicalPasswordPrompt()
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "host-repair-start"))
+    let initialClientIds = Set(app.collectionViews.firstMatch.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "client-")).allElementsBoundByIndex.map { String($0.identifier.dropFirst("client-".count)) })
+    if let own = findReadOnlySuggestionClient(fixture.hostId) {
+      own.tap()
+      XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "host-repair-existing", automatic: true))
+    } else {
+      XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "host-repair-new"))
+      let metadata = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(encoded.utf8)) as? [String: Any])
+      if let pairing = metadata["pairingURI"] as? String {
+        app.buttons["client-switch"].tap(); app.buttons["add-client"].tap()
+        selectConnectionMethod("扫码连接", agent: "codex")
+        let field = app.textFields["codex-qr-description"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText(pairing)
+        if app.buttons["完成输入"].exists { app.buttons["完成输入"].tap() }
+        app.buttons["codex-connect-qr"].tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let deadline = Date().addingTimeInterval(90)
+        while Date() < deadline && app.buttons["codex-connect-qr"].exists {
+          let alert = springboard.alerts.firstMatch
+          if alert.exists {
+            let text = alert.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator: " ")
+            if text.contains("Agent Hub") && (text.contains("网络") || text.localizedCaseInsensitiveContains("network")) {
+              let allow = alert.buttons.matching(NSPredicate(format: "label IN %@", ["允许", "Allow", "好", "OK", "无线局域网与蜂窝网络", "无线局域网与蜂窝数据"])).firstMatch
+              if allow.exists { allow.tap() }
+            }
+          }
+          if app.staticTexts["client-form-error"].exists { break }
+          Thread.sleep(forTimeInterval: 0.3)
+        }
+        XCTAssertFalse(app.buttons["codex-connect-qr"].exists, "The pinned ordinary QR connection must finish")
+      } else {
+        connectLive(try fixture.connection(threadId: fixture.threadAId, title: fixture.threadATitle), supportsCreation: false)
+      }
+    }
+    for (index, useA) in [true, false, true, false].enumerated() {
+      // Reassert the exact test App after the bounded read-only settling window.
+      app.activate()
+      XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
+      let threadId = useA ? fixture.threadAId : fixture.threadBId
+      let title = useA ? fixture.threadATitle : fixture.threadBTitle
+      let expected = useA ? fixture.textA : fixture.textB
+      openDesktopTestConversation(try fixture.connection(threadId: threadId, title: title))
+      XCTAssertTrue(composer.waitForExistence(timeout: 30))
+      let before = normalizedSuggestionDraftText()
+      if connectionOnly {
+        let marker = try XCTUnwrap(historyMarkers[useA ? "A" : "B"])
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch.waitForExistence(timeout: 60))
+        XCTAssertEqual(normalizedSuggestionDraftText(), before)
+        XCTAssertFalse(app.staticTexts["readonly-note"].exists)
+        XCTAssertFalse(app.staticTexts["离线 · 草稿保留在此对话"].exists)
+        shot("host-repair-connection-history-\(index)")
+        print("HOST_REPAIR_CONNECTION_HISTORY", index, threadId)
+        continue
+      }
+      if expectsEmptyNative {
+        let marker = try XCTUnwrap(historyMarkers[useA ? "A" : "B"])
+        let message = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch
+        XCTAssertTrue(message.waitForExistence(timeout: 60), "The real source history must render")
+        let settling = Date().addingTimeInterval(15)
+        while Date() < settling {
+          XCTAssertFalse(app.buttons["suggestion-details"].exists)
+          XCTAssertFalse(app.buttons["suggestion-entry"].exists)
+          XCTAssertFalse(app.buttons["suggestion-apply"].exists)
+          XCTAssertEqual(normalizedSuggestionDraftText(), before)
+          Thread.sleep(forTimeInterval: 0.3)
+        }
+        XCTAssertFalse(app.staticTexts["readonly-note"].exists)
+        XCTAssertFalse(app.staticTexts["离线 · 草稿保留在此对话"].exists)
+        shot("host-repair-native-empty-\(index)")
+        print("HOST_REPAIR_NATIVE_EMPTY", index, threadId)
+        continue
+      }
+      let entry = app.buttons[before.isEmpty ? "suggestion-details" : "suggestion-entry"]
+      XCTAssertTrue(entry.waitForExistence(timeout: 60), "The actual current source must provide its own native suggestion")
+      if before.isEmpty {
+        XCTAssertEqual(app.descendants(matching: .any)["suggestion-text"].firstMatch.label, expected)
+        XCTAssertFalse(app.buttons["send-message"].isEnabled)
+      }
+      shot("host-repair-native-source-\(index)")
+      entry.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      let full = app.descendants(matching: .any)["suggestion-full-text"].firstMatch
+      XCTAssertTrue(full.waitForExistence(timeout: 10))
+      XCTAssertEqual(full.label, expected)
+      shot("host-repair-native-full-\(index)")
+      app.buttons["suggestion-apply"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+      expectSuggestionDraft(before.isEmpty ? expected : before + "\n\n" + expected)
+      app.buttons["suggestion-undo"].tap()
+      expectSuggestionDraft(before)
+      if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
+      print("HOST_REPAIR_NATIVE_SOURCE_ADOPT_UNDO", index, threadId)
+    }
+    app.terminate(); app.launchArguments = []; app.launchChineseTest()
+    XCTAssertTrue(openReadOnlySuggestionClientPicker(step: "host-repair-cold-reconnect"))
+    let clients = try XCTUnwrap(scanReadOnlySuggestionClients())
+    XCTAssertTrue(clients.ids.isSuperset(of: initialClientIds.union([fixture.hostId]))); XCTAssertEqual(clients.selectedId, fixture.hostId)
+    XCTAssertTrue(closeReadOnlySuggestionClientPicker(step: "host-repair-end"))
+    XCTAssertTrue(composer.waitForExistence(timeout: 30))
+    if connectionOnly {
+      let marker = try XCTUnwrap(historyMarkers["B"])
+      XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch.waitForExistence(timeout: 60))
+      XCTAssertFalse(app.staticTexts["readonly-note"].exists)
+      XCTAssertFalse(app.staticTexts["离线 · 草稿保留在此对话"].exists)
+    } else if expectsEmptyNative {
+      let marker = try XCTUnwrap(historyMarkers["B"])
+      XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch.waitForExistence(timeout: 60))
+      let settling = Date().addingTimeInterval(15)
+      while Date() < settling {
+        XCTAssertFalse(app.buttons["suggestion-details"].exists)
+        XCTAssertFalse(app.buttons["suggestion-entry"].exists)
+        Thread.sleep(forTimeInterval: 0.3)
+      }
+      XCTAssertFalse(app.staticTexts["readonly-note"].exists)
+      XCTAssertFalse(app.staticTexts["离线 · 草稿保留在此对话"].exists)
+    } else {
+      let coldSuggestion = app.buttons[normalizedSuggestionDraftText().isEmpty ? "suggestion-details" : "suggestion-entry"]
+      XCTAssertTrue(coldSuggestion.waitForExistence(timeout: 60), "A cold launch must obtain a fresh native suggestion")
+      XCTAssertEqual(app.descendants(matching: .any)["suggestion-text"].firstMatch.label, fixture.textB)
+    }
+    shot("host-repair-cold-connection-source-B")
+    print(connectionOnly ? "HOST_REPAIR_PHYSICAL_CONNECTION_COMPLETE" : "HOST_REPAIR_PHYSICAL_COMPLETE", fixture.hostId)
+    #endif
+  }
+
   @MainActor func testOriginalDesktopReadOnlySuggestionsDEV() throws {
     let encoded = try XCTUnwrap(ProcessInfo.processInfo.environment["SUGGESTION_DEV_FIXTURE_JSON"])
     let fixture = try JSONDecoder().decode(ReadOnlySuggestionFixture.self, from: Data(encoded.utf8))

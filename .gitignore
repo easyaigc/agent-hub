@@ -56,3 +56,7 @@ packages/mobile-core/build/
 apps/ios/FilePreviewKit/.build/
 apps/ios/FilePreviewKit/.swiftpm/
 !/docs/acceptance/file-preview-20261026.md
+
+# Retained sanitized Host repair evidence.
+!/docs/acceptance/computer-use-approvals-20261026.md
+!/docs/acceptance/thread-model-settings-20261026.md

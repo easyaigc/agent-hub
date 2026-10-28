@@ -692,7 +692,7 @@ test('catalogs are also checked after all native confirms, not only before', () 
 for (const mode of ['short-grow', 'window-rewrite', 'closed-tail-append', 'full-body-rewrite'])
   test(`a later body confirm cannot hide an earlier input mutation: ${mode}`, () =>
     preparedTraceFixture(
-      ({ reader, TraceSnapshot, root, local, remote, create, prepare, data, change }) => {
+      ({ reader, TraceSnapshot, root, local, remote, create, prepare, data }) => {
         const a = create(),
           b = data.bundle(local(root));
         if (mode === 'closed-tail-append')
@@ -709,11 +709,9 @@ for (const mode of ['short-grow', 'window-rewrite', 'closed-tail-append', 'full-
         TraceSnapshot.prototype.nativeGuard = function (guard, ...args) {
           const result = Reflect.apply(original, this, [guard, ...args]);
           if (guard.path === remote(b.logPath)) prefixConfirmed = true;
-          return result;
-        };
-        change((when, path) => {
-          if (when !== 'after' || path !== remote(a.terminal.path) || !prefixConfirmed || injected)
-            return;
+          if (guard.path !== remote(a.terminal.path) || !prefixConfirmed || injected) return result;
+          // Inject after the later native body is actually confirmed. Wider B
+          // groups may return both raw items before either post-check runs.
           injected = true;
           if (mode === 'short-grow' || mode === 'closed-tail-append')
             fs.appendFileSync(b.logPath, 'NEW-TAIL');
@@ -723,7 +721,8 @@ for (const mode of ['short-grow', 'window-rewrite', 'closed-tail-append', 'full-
             bytes[1] ^= 1;
             fs.writeFileSync(file, bytes);
           }
-        });
+          return result;
+        };
         const result = pending.commit();
         assert.equal(prefixConfirmed, true);
         assert.equal(injected, true);
@@ -993,9 +992,9 @@ test(
   },
 );
 
-test('layered discovery keeps every native item/result while reducing ordered S round trips to bounded B8', () =>
+test('layered discovery keeps every native item/result while reducing ordered S round trips to byte-bounded B64', () =>
   preparedTraceFixture(({ reader, root: _root, local, remote, create, calls, batch, reset }) => {
-    const values = Array.from({ length: 8 }, () => create());
+    const values = Array.from({ length: 80 }, () => create());
     const target = values[0].fixture;
     const read = () =>
       reader.prepareSourcePredictions(target.sourceThreadId, target.sourceTurnId, 1, true);
@@ -1018,11 +1017,11 @@ test('layered discovery keeps every native item/result while reducing ordered S 
         (call) =>
           call.kind !== 'B' ||
           (call.items.length >= 2 &&
-            call.items.length <= 8 &&
+            call.items.length <= 64 &&
             call.items.every((item) => item.maximum >= 0 && item.maximum <= 16_384)),
       ),
     );
-    assert(planned.some((call) => call.kind === 'B' && call.items.length === 8));
+    assert(planned.some((call) => call.kind === 'B' && call.items.length === 64));
     const payloadDirectories = values.map((value) =>
       remote(join(value.fixture.directory, 'payloads')),
     );
@@ -1282,10 +1281,10 @@ for (const count of [1, 2, 7, 8, 9, 16])
       );
       assert(
         calls.every(
-          (call) => call.kind !== 'B' || (call.items.length >= 2 && call.items.length <= 8),
+          (call) => call.kind !== 'B' || (call.items.length >= 2 && call.items.length <= 64),
         ),
       );
-      assert.equal(calls.length, Math.ceil(expected.length / 8));
+      assert.equal(calls.length, Math.ceil(expected.length / 64));
     }));
 
 for (const at of [6, 7])
@@ -1322,10 +1321,10 @@ for (const at of [6, 7])
         assert.equal(snapshot.guards.length, 1);
       }));
 
-for (const at of [6, 7])
-  test(`B8 commit rejects a fresh native identity change at item ${at + 1}`, () =>
+for (const at of [6, 7, 30, 31, 62, 63])
+  test(`B64 commit rejects a fresh native identity change at item ${at + 1}`, () =>
     preparedTraceFixture(({ TraceSnapshot, root, local, calls, reset, change, changeAcl }) => {
-      const paths = Array.from({ length: 8 }, (_, index) => root + `\\native-${index}`);
+      const paths = Array.from({ length: 64 }, (_, index) => root + `\\native-${index}`);
       paths.forEach((path) => fs.writeFileSync(local(path), 'AAAA'));
       const snapshot = new TraceSnapshot(true);
       snapshot.root(root);
@@ -1345,7 +1344,7 @@ for (const at of [6, 7])
         calls.map((call) => call.kind),
         ['B'],
       );
-      assert.equal(calls[0].items.length, 8);
+      assert.equal(calls[0].items.length, 64);
     }));
 
 test('directory B8 retains unique guards, repeated path checks and no file-body reads', () =>

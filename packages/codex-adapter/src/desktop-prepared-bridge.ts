@@ -1,3 +1,4 @@
+import type { MetadataExecutable } from './desktop-thread-preparer.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { execFile } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
@@ -254,7 +255,7 @@ export class DesktopPreparedBridge implements DesktopCreationBridge {
     private readonly hostId: string,
     private readonly runtime: DesktopRuntime,
     private readonly directory: string,
-    executable: string,
+    executable: MetadataExecutable,
     home: string,
     private readonly firstInput: (
       plan: DesktopCreationPlan,

@@ -1761,3 +1761,5 @@
 "图片" = "Image";
 
 "轻触停止录音" = "Tap to stop recording";
+"丢弃录音" = "Discard recording";
+"无法丢弃录音，请重试。" = "Unable to discard the recording. Please try again.";

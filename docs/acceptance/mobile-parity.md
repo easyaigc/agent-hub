@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-10-28 F64／UI06／UI21 主动丢弃录音：iOS 主输入及问题回复的“×”明确丢弃当前录音，先持久标记再删除本地 WAV；再次点录音或重启不会恢复已丢弃项。“重新录音”同样丢弃旧录音。离开页面、切目标和后台保留原恢复语义，Host 原操作回执不撤销、不重放，迟到结果不写回草稿。Android 当前取消已封存录音仍保留恢复，此新增共同断言待对齐；本次验收范围见[专项记录](../acceptance/voice-discard-20261028.md)，其他 A6 暂停项保持。
+
 2026-10-28 F36／S06／UI08：Host bridge 超快模式的本轮范围为本机真实 Electron、独立 iOS 模拟器和模型任务，覆盖 ultrafast、偏好重启／项目继承、fast／standard 切回和独立原 owner 唯一输入／serviceTier 核对。辅助检查、真实结果和原失败分别记录于[专项记录](host-ultrafast-20261028.md)；物理 iPhone、Android、Windows及正式 Host 部署不由模拟器结果代验，A6 保持暂停。
 
 2026-10-28 F03／F69：Windows Host 去除 Publisher 安装门禁并统一普通用户 DACL 保护；iOS／Android 连接到该 Host 时共同受益，页面、状态、文案与 token 不变。macOS 路径不受影响；本次不新增双端或 Windows 真机通过，A6 继续暂停。见[专项记录](windows-install-20261028.md)。

@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-10-28 iOS 主动丢弃录音与生命周期保留分离：输入条“×”和重新录音先落盘丢弃标记，再删除手机音频，恢复时排除该原操作；普通导航／后台仍保留恢复。Host 回执与不可变操作不变，取消代次隔离迟到结果。Android 新断言待对齐，验收见[专项记录](acceptance/voice-discard-20261028.md)。
+
 2026-10-28 Android PAR1：流式迁移、手机独立阅读/逐事件查询与普通通知本地回执已形成窄模块，通知认领在同根锁内重检阅读；系统/认证事件接线与全部子存储仍开放。Android新文件封套v2/归档v3暂非iOS互通格式，原生合成通过不代替真实Desktop/模型或后台送达。[分工与当前范围](plans/android-alignment-20261022/parallel/README.md)。
 
 2026-10-28：Host bridge 的速度能力只按模型目录的稳定 ID 解析，保留 standard／fast／ultrafast，fast 在桌面 wire 边界统一为 priority；未知 ID 不按展示名称猜测能力。原 owner 当前 service tier 优先于保留的旧轮次设置，明确 null 表示标准。iOS 多档选择使用原生菜单；实现、模拟器真实任务与未验收平台见[本次记录](acceptance/host-ultrafast-20261028.md)。

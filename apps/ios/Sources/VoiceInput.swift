@@ -77,6 +77,7 @@ private enum PendingVoiceStore {
     let target: String; let scopeKey: String; let originalText: String; let operationId: String
     let sha256: String; let durationMs: Int; let sizeBytes: Int; let createdAt: Date
     var locallyResolvedAt: Date?
+    var discardedAt: Date?
   }
   static func directory() throws -> URL {
     let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
@@ -106,7 +107,8 @@ private enum PendingVoiceStore {
         UUID(uuidString: record.operationId)?.uuidString.lowercased() == record.operationId,
         file.lastPathComponent == record.operationId + ".json" else { continue }
       if Date().timeIntervalSince(record.createdAt) >= 24 * 3600 { remove(record.operationId); continue }
-      if record.locallyResolvedAt == nil, record.target == target && record.scopeKey == scopeKey && record.originalText == text { candidates.append(record) }
+      if record.locallyResolvedAt == nil, record.discardedAt == nil,
+        record.target == target && record.scopeKey == scopeKey && record.originalText == text { candidates.append(record) }
     }
     // Partial local saves contain no submitted operation. Remove old orphan audio only.
     for file in files where file.pathExtension == "wav" {
@@ -126,6 +128,19 @@ private enum PendingVoiceStore {
   static func remove(_ id: String) {
     guard let root = try? directory() else { return }
     for suffix in [".json", ".wav"] { try? FileManager.default.removeItem(at: root.appendingPathComponent(id + suffix)) }
+  }
+  static func discard(_ id: String) throws {
+    let root = try directory(), metadata = root.appendingPathComponent(id + ".json")
+    if FileManager.default.fileExists(atPath: metadata.path) {
+      var record = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: metadata))
+      // Persist the user's decision before deleting audio. A leftover file must
+      // never become recoverable again, including after an app restart.
+      record.discardedAt = Date()
+      try JSONEncoder().encode(record).write(to: metadata, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+      try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: metadata.path)
+    }
+    let audio = root.appendingPathComponent(id + ".wav")
+    if FileManager.default.fileExists(atPath: audio.path) { try FileManager.default.removeItem(at: audio) }
   }
   static func resolveLocally(_ id: String) {
     // Keep the original operation and audio until expiry, without offering it again.
@@ -305,7 +320,21 @@ final class VoiceInputController: ObservableObject {
       do {
         let text: String
         if isFixture {
-          try await Task.sleep(for: .milliseconds(300))
+          #if DEBUG
+          if simulatesTranscriptionFailure, recording == nil,
+            let encoded = ProcessInfo.processInfo.environment["VOICE_PENDING_FIXTURE_WAV"], let data = Data(base64Encoded: encoded) {
+            let audio = FileManager.default.temporaryDirectory.appendingPathComponent(id.uuidString.lowercased() + ".wav")
+            try data.write(to: audio, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            fileURL = audio
+            let saved = VoiceRecording(operationId: id.uuidString.lowercased(), data: data,
+              sha256: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined(), durationMs: 1000)
+            guard let provider else { throw HostServiceError.unavailable }
+            recording = saved
+            try PendingVoiceStore.save(saved, target: targetKey, scopeKey: provider.scopeKey, text: originalText)
+          }
+          #endif
+          let delay = ProcessInfo.processInfo.environment["VOICE_PENDING_FIXTURE_WAV"] == nil ? 300 : 8000
+          try await Task.sleep(for: .milliseconds(delay))
           if simulatesTranscriptionFailure && !usingLocalRecording {
             throw HostServiceError.message(L10n.tr("电脑转写暂不可用"))
           }
@@ -373,13 +402,28 @@ final class VoiceInputController: ObservableObject {
   func recordAgain(text: String) {
     guard phase == .failed, let provider, let onChange = onDraftChange else { return }
     let target = targetKey
-    cancel()
+    guard discard() else { return }
     start(target: target, text: text, provider: provider, restorePending: false, onChange: onChange)
   }
   func cancel() {
     generation = UUID()
     setupTask?.cancel(); finishTask?.cancel()
     reset(discard: true, preservePending: recording != nil)
+  }
+  @discardableResult func discard() -> Bool {
+    generation = UUID()
+    setupTask?.cancel(); finishTask?.cancel(); finishTask = nil
+    stopCapture()
+    do {
+      if let recording { try PendingVoiceStore.discard(recording.operationId) }
+    } catch {
+      phase = .failed
+      self.error = L10n.tr("无法丢弃录音，请重试。")
+      return false
+    }
+    reset(discard: true)
+    error = nil
+    return true
   }
   func suspend() {
     guard phase != .idle else { return }
@@ -541,9 +585,9 @@ struct VoiceInputControls: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 3) {
-        IconButton(symbol: "xmark", label: voice.phase == .listening || voice.phase == .requesting ? L10n.tr("取消录音") : L10n.tr("结束等待"),
+        IconButton(symbol: "xmark", label: voice.phase == .listening || voice.phase == .requesting ? L10n.tr("取消录音") : L10n.tr("丢弃录音"),
           id: identifier("cancel-dictation", question: "question-cancel-dictation-")) {
-          voice.cancel()
+          voice.discard()
         }.background(Color.primary.opacity(0.06), in: Circle())
         Group {
           if voice.phase == .finishing {

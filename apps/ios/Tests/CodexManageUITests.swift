@@ -6547,6 +6547,63 @@ final class CodexManageUITests: XCTestCase {
     shot("voice-local-fallback-unsent-draft")
   }
 
+  @MainActor func testDiscardPendingRecordingDoesNotRestoreAfterRestart() {
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-voice-input-fixture", "-voice-transcription-failed"]
+    // One second of synthetic PCM WAV, saved through the production pending store.
+    var wav = Data([82,73,70,70,36,125,0,0,87,65,86,69,102,109,116,32,16,0,0,0,1,0,1,0,128,62,0,0,0,125,0,0,2,0,16,0,100,97,116,97,0,125,0,0])
+    wav.append(Data(repeating: 0, count: 32000))
+    app.launchEnvironment["VOICE_PENDING_FIXTURE_WAV"] = wav.base64EncodedString()
+    app.launchChineseTest()
+    let draft = "discard-recording-" + UUID().uuidString.lowercased()
+    XCTAssertTrue(composer.waitForExistence(timeout: 10))
+    composer.tap(); typeComposerText(draft)
+    func startNewRecording() {
+      app.buttons["voice-input"].tap()
+      let stop = app.buttons["stop-dictation"]
+      XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: stop)], timeout: 5), .completed)
+      XCTAssertEqual(stop.label, "结束录音并转写", "Discarded audio must not replace a new recording")
+      XCTAssertFalse(app.alerts.firstMatch.exists)
+    }
+    func discardWaiting() {
+      let cancel = app.buttons["cancel-dictation"]
+      XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+      XCTAssertEqual(cancel.label, "丢弃录音")
+      cancel.tap()
+      XCTAssertTrue(composer.waitForExistence(timeout: 5))
+      XCTAssertEqual(composer.value as? String, draft)
+    }
+    func relaunch() {
+      app.terminate()
+      app.launchArguments = ["-ui-testing", "-restore-testing", "-voice-input-fixture", "-voice-transcription-failed"]
+      app.launchChineseTest()
+      XCTAssertTrue(composer.waitForExistence(timeout: 10))
+      XCTAssertEqual(composer.value as? String, draft)
+    }
+    startNewRecording()
+    app.buttons["stop-dictation"].tap()
+    discardWaiting()
+    startNewRecording()
+    app.buttons["cancel-dictation"].tap()
+    relaunch()
+    startNewRecording()
+    app.buttons["stop-dictation"].tap()
+    // Leaving the app without pressing × must still retain recovery.
+    relaunch()
+    app.buttons["voice-input"].tap()
+    let restored = app.alerts.firstMatch
+    XCTAssertTrue(restored.waitForExistence(timeout: 5))
+    XCTAssertTrue(app.buttons["voice-record-again"].exists)
+    restored.buttons["重试转写"].firstMatch.tap()
+    discardWaiting()
+    relaunch()
+    startNewRecording()
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertEqual(composer.value as? String, draft)
+    XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label == %@", draft)).firstMatch.exists)
+    shot("discard-pending-recording-restart-unsent-draft", fullScreen: true)
+  }
+
   func testDictationCancelFinishAndSend() {
     launchVoiceFixture()
     composer.tap()

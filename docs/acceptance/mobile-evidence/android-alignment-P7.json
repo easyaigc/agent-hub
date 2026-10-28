@@ -9021,5 +9021,1068 @@
       "P7 full migration, voice, unread and lifecycle",
       "Business task/project management and iOS A6 remain paused"
     ]
+  },
+  "migrationPublicationCheckpoint": {
+    "phase": "P7-5d",
+    "sourceBase": "968f2b1207a9ee910651443ca95e94b1830822f4",
+    "summary": "P7-5d：Android增加迁入资料的加密代次暂存/逐记录读回与单指针原子发布基础；准备失败保留原密文，旧写入/恢复/子仓库拒绝越代，同候选认领不覆盖后续编辑，坏指针不降级旧资料。API26与真机各21项（6发布、6旧并发恢复、7原附件恢复、2不同进程冷读），共42辅助与30份默认11字段保护通过。尚未接产品导入入口，完整Schema/凭据/导出导入UI、配额及发布前进程死亡继续；不宣称完整迁移通过。0模型，确认累计221/P4205，原未知尝试仍只读。",
+    "features": ["F30", "F33", "F47", "F55", "F56", "F71"],
+    "sourceSha256": "017199ce8793e601960a9fd756c9386a41b5ef21bda031e7cda18d5896e0e13d",
+    "appSha256": "a2bd4deee13207a70686eeb7b447be8aeca2933c07dadb058e621294291fed4c",
+    "runnerSha256": "98779de0d04a7904bef8cb2366c730715372dc63767872ba3ed21054bd2ed020",
+    "nativeAuxiliary": 42,
+    "defaultElevenFieldProofs": 30,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "group": "publication",
+        "methods": 6,
+        "nativeReportSha256": "cdceb92d7193b47c0a26254a3214dfca36a6948c1bc6fe3056018a7cf3ee40be",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "9e82e7ec19b00bda98723e65d68cd54b2407fab0cf7f9cbf2c45ab0b3215ee6d",
+          "fb7a796428eaadf8bb6023e0adf5a401c55bc5986b70de693d8d64189a64d83f",
+          "80d731e23602f6ab0352cf3c8ccc2427a47327cd815566abe47de25a011031d9",
+          "90359df192c95546b537f09a41fade70081c91f304ba6cdfa1ff53e31de4c34e",
+          "db4e95e363f0b4b62c0826ce5d503a53cea8f64a96e18f0202aa64ac90007c11",
+          "b5e9216b94182ea00afd674d027c5f093c499f8d40907baa5d32376fe1e56fee"
+        ],
+        "scope": "Owned default-field protection"
+      },
+      {
+        "environment": "owned-API26",
+        "group": "legacy",
+        "methods": 6,
+        "nativeReportSha256": "63ca7b3401c2165a0316f864c1bfd7a546d3d79c00974b244c1a3e09ba9e0436",
+        "defaultElevenFieldProofs": 0,
+        "proofSha256s": [],
+        "scope": "Own synthetic namespaces only; concurrency and restoration assertions, no default-field proof claim"
+      },
+      {
+        "environment": "owned-API26",
+        "group": "attachments",
+        "methods": 7,
+        "nativeReportSha256": "61efe32950ee772ff1d5aeac64f7583a7bf7e540d63ff2e7b17d6b50742c4728",
+        "defaultElevenFieldProofs": 7,
+        "proofSha256s": [
+          "69b85d3c7581995457432736393e73be08eec87c152d4ca68c701b60e8ea1b93",
+          "bd48dc334939b6825cfe1f85f1c3df6f9002d79ecae1750a7dcd28078ff9ca96",
+          "9def48008576e6a254f9be64cd928d3167271444e21a44ad65983f84714d4018",
+          "da77cd698a3d8c85447eb23c05803dbbfa418e5f7a09ae65dc65cc46e5b1dfac",
+          "fbad1e2fe01c9ed4fc43b8a069e58f31a4fe387d75225cfd4788d716d632c55e",
+          "4a1fc8ca76760ebe4316745fe965205110bb398436e37e5d08cbccd4fe124497",
+          "ef8b4d0ef42e99081c7f1c18615680a2bf58a0404ce6fc8b5265a6a2aba77d93"
+        ],
+        "scope": "Owned default-field protection"
+      },
+      {
+        "environment": "owned-API26",
+        "group": "published-generation-process-cold",
+        "methods": 2,
+        "reportSha256": "55e032bd686c8190e83d370252bafe330296315d5e40b42eafcb9367c59a60d9",
+        "writerFixtureSha256": "44165ddc578befcaafdb9fceaa1b37bea7402de099ca4c21a8fe0061f4bca327",
+        "readerReceiptSha256": "95527dcd99290d82c11645924a0724d1a7bdfe7fe43fb3432a3916499b13738f",
+        "defaultElevenFieldProofs": 2,
+        "proofSha256s": [
+          "a6cc948c742b4c09537df8e31a0178d234068fbfc3c748d118492dcd0c4adc0c",
+          "23b42ca13bea7dd1df121751b196b14100ea84d48801869259585f548c9e4e74"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "group": "publication",
+        "methods": 6,
+        "nativeReportSha256": "b46237abec4e3ab560fff977ffecfc721ff508d2a3a5882f541327615d572893",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "55ff7f330f04308de5bc8572b66c738a709deb13fd31cef5b5257f1bf818e197",
+          "9b17e78e752640cc01bd9d79d7b0df6132730f267299d1795e0e24994d407871",
+          "4b11f5abfd5d5386269531e8c411e89f413a69ba983824e51e9d292deac52630",
+          "dd9613cddf01168a66660091c065ea1d33099d8e150bae890d0376cd5fd91c50",
+          "afdb9fbf271dd9e6b537d1f2786ca09986e7573e3f706f93775cc3bb65b93377",
+          "0c2fa44a44237dc9a91b0e5da34f1e557f8178012fe96a23d4f7af947c8d7d98"
+        ],
+        "scope": "Owned default-field protection"
+      },
+      {
+        "environment": "physical-API33",
+        "group": "legacy",
+        "methods": 6,
+        "nativeReportSha256": "83e0aabaa08994c98acbe9ea53ed46cd885757b6d7dc42d672bc37a895b99b09",
+        "defaultElevenFieldProofs": 0,
+        "proofSha256s": [],
+        "scope": "Own synthetic namespaces only; concurrency and restoration assertions, no default-field proof claim"
+      },
+      {
+        "environment": "physical-API33",
+        "group": "attachments",
+        "methods": 7,
+        "nativeReportSha256": "51b4a350eb7d27e4d51eb724f60c44b0121998946575dd02cd3392fe144bf8a0",
+        "defaultElevenFieldProofs": 7,
+        "proofSha256s": [
+          "db9a5d97f709bf8f8c3992233287b11ab1d9fd3520ef16ae79142a40f30c651e",
+          "cacaa62c92e934664b4a4cb487875b885ca29e05799b69b5084b79eadbbf78b8",
+          "7e4a934f346863bbd3fa7a240ce1693b81b352413f6742b067fec8eaacd2e95a",
+          "81451164a6007b4aa1e57806c9f30fe545bcb534ff633fd008d6fccdb75e6483",
+          "4c13d472ef51b04f63e23e9fd78392703d87df2e6284a31e4ab8658e9dc5c948",
+          "fb42b2d1f5461152caea2e58895286375012f26a2f39abdb52429427d5a25bac",
+          "28624e1cbf12f0568943d34170ae8044a26ff05bfe2c64645f6deb176928d082"
+        ],
+        "scope": "Owned default-field protection"
+      },
+      {
+        "environment": "physical-API33",
+        "group": "published-generation-process-cold",
+        "methods": 2,
+        "reportSha256": "cd64527d9322b653c8d0d568958dfdf42862f9cc9ccf8f2e69254eef929693ef",
+        "writerFixtureSha256": "fdf98c539e95579fefaf9be63fd3cc4eddfb808987bba83c68682a1a922d74ee",
+        "readerReceiptSha256": "8ddb39a38664ac75f8f9b7d778eb5aa470f94575c547cf389c7e9eb1ba3f17bd",
+        "defaultElevenFieldProofs": 2,
+        "proofSha256s": [
+          "3728197914d4e93de0bf68a458312a8e563614ac925c3ec4990895effcdedb52",
+          "5ea0e238a547ba5c4d9a321cc4d06f4800977a6d0af81f4df8457382bb041328"
+        ]
+      }
+    ],
+    "atomicBoundary": "All bounded records are encrypted/read back in a new generation. One authenticated AtomicFile pointer is the commit point. Before commit errors preserve original files; unchanged legacy layout is still the default until publication.",
+    "lateAuthority": "Old instances, restore attempts, child lookups and queued snapshots cannot write into the new generation. Reopened instance and fresh child keys are required.",
+    "idempotency": "Candidate UUID, original payload digest, length-framed record digest and count match the existing receipt; re-reading never rewrites later imported edits.",
+    "iosImpact": "iOS existing import validates, clears consent/reading identity and rolls back partial writes. Android native generation storage now supports the analogous publication boundary; no iOS source/device/A6 upgrade. Semantic import and UI remain pending.",
+    "scope": "Actual Keystore/AtomicFile/worker/UI-recovery plus post-publication process cold fixtures. No product migration button, import/export success, real key loss, disk full or precommit hard-death claim.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Pre-publication hard process death and original-generation-only fresh reader",
+      "Candidate Schema/new-install guard, credentials and EasyWork mapping, consent/reading/local-source/receipt downgrade rules",
+      "Complete export/import UI, inventories, large attachment quota and real key/I/O failures",
+      "API37 ADB reverse timeout and landscape; original model owner unavailable on new preflight; historical unknown operations not replayed",
+      "Business tasks/projects and iOS A6 remain paused"
+    ]
+  },
+  "migrationInterruptedCheckpoint": {
+    "phase": "P7-5d2",
+    "sourceBase": "67039c1665b880f6122e8f3f8261d963aee8c59e",
+    "summary": "P7-5d2：API26/真机各完成1次发布前受控进程中断及1个新PID只读验收；原草稿/不可变输入/全部原根密文保持，无发布指针，只有本次准确未提交暂存被清理。2个成功reader、2条受控中断流程与4份默认11字段保护通过；被终止writer不算JUnit通过。生产APK与5d完全一致，仅增opt-in验收器；完整导入/导出Schema、身份/凭据/再配对及UI继续。0模型，累计确认221/P4205，未知操作只读。",
+    "features": ["F47", "F55", "F56"],
+    "sourceSha256": "9e36f6b26622180cf8b7780b9009b9905ce50f40369ac4bab038a2678ca21c40",
+    "appSha256": "a2bd4deee13207a70686eeb7b447be8aeca2933c07dadb058e621294291fed4c",
+    "runnerSha256": "e2c0a3da906526e824a22e97db76217e5a0d31192865c9a17f2b6c64a18b3564",
+    "nativeSuccessfulReaders": 2,
+    "controlledPrecommitDeaths": 2,
+    "defaultElevenFieldProofs": 4,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "controlledPrecommitDeaths": 1,
+        "nativeSuccessfulReaders": 1,
+        "reportSha256": "28ad6fe6db216bb6621725834045fde717f37f81a41a2b74b7d89bed7fae5788",
+        "writerFixtureSha256": "ee103004e276a4da010579251c6202a90a30ce2ee0dc2c5c3a09c22f0cd73afc",
+        "readerReceiptSha256": "b7283cd576695ff1e4974a430cfe6749d35bb5e2d3c80031fcd6858f2f4e3e98",
+        "defaultElevenFieldProofs": 2,
+        "proofSha256s": [
+          "fbc5c24314546b0dba6060d77fa4d778bfa14c362d5877b651d23e46070818cf",
+          "c01b9fcb493e07c8fcc16576bb003f9c2d6f4463b600b1f236967fd1d6962d2e"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "controlledPrecommitDeaths": 1,
+        "nativeSuccessfulReaders": 1,
+        "reportSha256": "bcaecaa49581c19a52f2d6671ac144be09134fbd38f0eeb07319d7b625090c50",
+        "writerFixtureSha256": "7cae4e113e35062226acd3ca899a2e62a922f8827e8785a7c5b8cc1e354258bb",
+        "readerReceiptSha256": "ea8ec7b4edf67ed715e8108ec6890fbc492379a87901ee736874da931cdab22c",
+        "defaultElevenFieldProofs": 2,
+        "proofSha256s": [
+          "233cdedfe3cd24ba2a829e73b82b675ce4652db89bb95eaee8609cfc8be48418",
+          "68cf64e231b91cbe493e244c94528835330cc4c349a8519a5b18260ca9a460d8"
+        ]
+      }
+    ],
+    "interruptionBoundary": "The exact writer PID, bundle and active instrumentation are checked after the first encrypted staged record is read back and before pointer publication. Force-stop applies to that owned target only; PID absence precedes the next native reader.",
+    "writerAccounting": "A controlled terminated writer is not a passing JUnit method; its prepared checkpoint and default protection are independently checked. Reader validates original active generation, original root ciphertext, absent pointer, and exact staged file digest before deleting only its own test orphan.",
+    "productionReuse": {
+      "checkpoint": "P7-5d",
+      "nativeAuxiliary": 42,
+      "basis": "Same production APK and every previous Android/KMP/protocol/test input; only the new isolated interruption test class was added. Original scopes/limits remain unchanged; no final-runner rerun claim."
+    },
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Complete migration schema/inventory/new-install and target/credential/repair boundaries",
+      "Consent/read identity/device-local source/reset and observe-only imported receipt rules",
+      "System export/import/password/error/rollback UI, quotas and real Key/I/O matrix",
+      "API37 ADB/landscape and prior original model/physical quota-cold pending; no replay",
+      "Business tasks/projects and iOS A6 paused"
+    ]
+  },
+  "migrationMetadataCheckpoint": {
+    "phase": "P7-5e",
+    "sourceBase": "947c1d1be76934e3eab8c57a2cfa05164131f864",
+    "summary": "P7-5e：归档元数据增加封闭字段、严格类型/嵌套/数量与当前连接解析校验；坏草稿/侧栏/设置/连接/未来字段不能替换原候选，合法原文/空新聊与旧十附件保持。先以旧实现复现数字草稿可替换候选的失败，再修复；最终6项两环境12执行，原候选SDK11/手机单项1及两组进程冷读4按相同生产包/未改测试精确复用，共28辅助、12默认11字段/12原密文目录保护。手机旧11合批240秒超时不计，矩阵待分组补验。尚未接完整导入/导出UI与身份/凭据策略；0模型，累计确认221/P4205，未知操作只读。",
+    "features": ["F30", "F47", "F55", "F56", "F71"],
+    "sourceSha256": "111d79a80f6bae94dc8feece0fc95bc7b525d769673e1da37a22c1fba2206f1d",
+    "appSha256": "113c49178fff56472c7a88319c7976999ece10844f2722d45032208a63baeab2",
+    "runnerSha256": "9a0c12b690d12f116eaf80c576d3272fb776f475d11aad4262f1a3e8cb4700df",
+    "finalRunnerMethods": 12,
+    "matchedImplementationMethods": 16,
+    "nativeAuxiliary": 28,
+    "defaultElevenFieldProofs": 12,
+    "originalEncryptedDirectoryProofs": 12,
+    "processColdGroups": 2,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "methods": 6,
+        "group": "metadata-final-six",
+        "reportSha256": "8ab5a7fef6553acbf2dbc128d3096914a96f0963b2ed7ab428aa39164ea060e7",
+        "sourceSha256": "111d79a80f6bae94dc8feece0fc95bc7b525d769673e1da37a22c1fba2206f1d",
+        "runnerSha256": "9a0c12b690d12f116eaf80c576d3272fb776f475d11aad4262f1a3e8cb4700df",
+        "proofCount": 6,
+        "proofKind": "default",
+        "proofSha256s": [
+          "6f71e937970a93ff3d9311ec962ab616d16805d7fd2647e188d5ba71db037788",
+          "d410c6603f4af34dfaab0adcb9c3009dffbda7fa8212d509aeb1ac9426f4f646",
+          "a53b9a818cc2d040fe9ebbe6f73a5f99d8335ae5df6294d86886816b334828cf",
+          "54258e5830f3c629c2b803834a3de7788374d2e91fee2367cedbc765d5bcba70",
+          "5f7a991f8080a073387f73340286658a30987484fb5e9bfcc7d8c3cd9a6cade9",
+          "e27881d9b8179514f885007d527e41b5de8026ac04881d4822023768dd1d19c1"
+        ],
+        "matchedImplementationReuse": false,
+        "reuseBasis": null
+      },
+      {
+        "environment": "owned-API26",
+        "methods": 11,
+        "group": "original-candidate-regression",
+        "reportSha256": "3eeeb9fd4e89d2128efef6a57e281638238dc0599c193ae2ed0b252719c288f0",
+        "sourceSha256": "c6c466d07601a4ff303bdd9365579f0bf462677b7acd53de5ddba853482a60a9",
+        "runnerSha256": "6b42d9475cc201896e2cc1ce93419f1d8f40901900ced95a86fbefed5b55f994",
+        "proofCount": 11,
+        "proofKind": "original",
+        "proofSha256s": [
+          "92da61ef854adc7b76a83cab05eb2e98783eccfffe9e60c1caa278f74a619445",
+          "53c4f1e148b962d8a16d9da29bfd16fc295bb817fb64c88a029afcc7ebd5eabe",
+          "48b822566476c9beedcb32e7087f6fc566063241bf6744b8f83664e3b40ef12f",
+          "7260addf508bd9e02cfc6a5500860a32e23842480a74e85924d4c1c6804cbf86",
+          "b1683fbb547136779e78562c9ae134123c31940538fdbcf3f7a78a290f2cceab",
+          "a541eedb8f11856b048c8af53785b6c817e47d0744856c06d2d3958ef0c61bd5",
+          "24ada4fedead3e524a0dd430bf634b8f0753b227bf614ea5cf458dae4dda1c7b",
+          "75d246a516ef98dc333e59c811c961eaca2332cdad0cbe860e8e8225ddbf4f81",
+          "cbbcb992a17d7254f7bcce67c136ed5edbd06499d4d1eb06c6f5e6d0b86b2370",
+          "0436479f15cad627c4a9909e0c26dc72fb9e1669d823d8e28d71da9f88c0012c",
+          "96946bc4e85d8e9a0e418f22b1d6dbc9d90d0b287d89a03dec73b1c4377827f7"
+        ],
+        "matchedImplementationReuse": true,
+        "reuseBasis": "Same production APK and all source/test/helper bytes except the new metadata legacy-ten method; selected original candidate classes unchanged."
+      },
+      {
+        "environment": "owned-API26",
+        "group": "original-candidate-process-cold",
+        "methods": 2,
+        "reportSha256": "4252b11db1ccb62ce46a37be7e56fe7b17a4cd341fff329fa942ae361768ceec",
+        "readerReceiptSha256": "b62efb18e16039fefd94c323343d491d3837d85c03a45594c5c3ae27f64d7cdd",
+        "matchedImplementationReuse": true,
+        "reuseBasis": "Same production APK and unchanged candidate cold reader/seed plus all helpers; only unrelated metadata test gained a legacy-ten method. Old runner retained."
+      },
+      {
+        "environment": "physical-API33",
+        "methods": 6,
+        "group": "metadata-final-six",
+        "reportSha256": "3bb9d91a3c9e06abf8186f22225b494150bb06612bfc9d14742b326261b3010f",
+        "sourceSha256": "111d79a80f6bae94dc8feece0fc95bc7b525d769673e1da37a22c1fba2206f1d",
+        "runnerSha256": "9a0c12b690d12f116eaf80c576d3272fb776f475d11aad4262f1a3e8cb4700df",
+        "proofCount": 6,
+        "proofKind": "default",
+        "proofSha256s": [
+          "e4a65e89b18e99f443b697ff7243c80499f61df516112ea4c93bf5f3cea0c9fc",
+          "99a4f43b05e82b74b7e5951da67b60334304745d35854b7905aefd8d383aa7cb",
+          "e7140ddab5dafcab000270e28444d3a1536bc15c38a016451f71f41caf1044e6",
+          "35f2589bd62c8572f32dac30734008058c15b66a9149323f22e9f1e4ac98a3c5",
+          "ae1a6c223b987a6b1d470e7569ad616ddd2ae946fac807d199e24a092effbd92",
+          "7b58207f88e33d204741d60f844ded0c6520deca6c943684e3de27b51e56752e"
+        ],
+        "matchedImplementationReuse": false,
+        "reuseBasis": null
+      },
+      {
+        "environment": "physical-API33",
+        "methods": 1,
+        "group": "original-candidate-regression",
+        "reportSha256": "7adea734d321d5f4f9ce0b3b16c7053eaabec488bc00e7b2abc7fede09f70985",
+        "sourceSha256": "c6c466d07601a4ff303bdd9365579f0bf462677b7acd53de5ddba853482a60a9",
+        "runnerSha256": "6b42d9475cc201896e2cc1ce93419f1d8f40901900ced95a86fbefed5b55f994",
+        "proofCount": 1,
+        "proofKind": "original",
+        "proofSha256s": ["f95e1fe39843486ada1d75abf44fe74ce61892e3b8cacb9b1e250aba0da1cc9c"],
+        "matchedImplementationReuse": true,
+        "reuseBasis": "Same production APK and all source/test/helper bytes except the new metadata legacy-ten method; selected original candidate classes unchanged."
+      },
+      {
+        "environment": "physical-API33",
+        "group": "original-candidate-process-cold",
+        "methods": 2,
+        "reportSha256": "c916c1210fc70bcc969aff09a773c56d1cfc71b0ce7b741c9cc7abfa805105d2",
+        "readerReceiptSha256": "5ab97d1bc9a408c9768d871ab9472ad27f491faf1f4d8bad909e11126a85b5b6",
+        "matchedImplementationReuse": true,
+        "reuseBasis": "Same production APK and unchanged candidate cold reader/seed plus all helpers; only unrelated metadata test gained a legacy-ten method. Old runner retained."
+      }
+    ],
+    "baselineFailure": {
+      "reportSha256": "42b7bc464693bc9fb1a0a246e465cdf313da676feb05770b84ba9aab51365b58",
+      "logSha256": "ced4bee9b00ae0103cf9e23b1a863c491aa0a4b19732b5b5f5b8dda48022b639",
+      "reason": "Old validator accepted authenticated draft value7 and replaced predecessor; regression assertion failed before the fix. Active installation/default files stayed protected.",
+      "countedPassed": false
+    },
+    "phoneLongBatchFailure": {
+      "reportSha256": "57704e6f702caa660d0bd13992be83b49401bf249f066b0312494afaef315fae",
+      "logSha256": "0ba048eea28237ffd51eb0843a4571e7dd1608639294bb19d960ec3f80f54b7f",
+      "reason": "11-method original candidate regression exceeded240 seconds; partial methods are not counted as whole-batch pass. Current schema-six, separate original candidate single and candidate cold flow passed.",
+      "countedPassed": false
+    },
+    "bounds": "Current native metadata known fields;128clients,10000 entries/list items,100000 UTF-16 draft units,≤10 legacy draft files; source copy/normalization is not performed. Unknown future state rejects explicitly. This is not complete cross-record inventory/identity validation.",
+    "iosImpact": "Uses current Android persisted format; iOS SavedSession remains a separate native format. Same product assertion that malformed/unsupported migration does not change active data or silently discard original state. No iOS/A6 upgrade.",
+    "rootReuse": {
+      "basis": "PR40 frozen root check; 1425 inputs unchanged during pnpm check, exit0",
+      "matchingNonAndroidNonDocumentationInputs": 796,
+      "changes": [],
+      "scope": "Current Android native files independently compiled and tested; current docs/parity/format checked separately. No new whole-root frozen check claim."
+    },
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Full record inventory/orphans, new-install guard and target/credential/re-pair boundaries",
+      "Imported consent/read identity/local-source reset and observe-only receipt downgrade rules",
+      "Export/import UI, password/system-file/cancel/error/activation and complete quota/Key/I/O matrix",
+      "Physical original11 candidate matrix remaining grouped cases; API37 ADB/landscape and prior original-model/physical quota cold pending",
+      "Business task/project management and iOS A6 paused"
+    ]
+  },
+  "migrationReferenceCheckpoint": {
+    "phase": "P7-5f",
+    "sourceBase": "efc178a4e7cbf1b73c165ff0e2b20e23706e76d6",
+    "summary": "P7-5f：迁移档案闭合附件/原输入/操作引用；原回复附件顺序逐项匹配不可变意图，有来源的回复/首条缺失快照、孤立文件及未知/错误类型记录均拒绝。已配对Codex凭据使用日常Vault同一校验，须与归档电脑、运行目标、证书、地址和存储身份精确一致。API26/新手机各6项新检查与6项元数据兼容共24辅助，24份默认11字段保护；旧十附件保持。尚未激活或开放完整迁移界面。",
+    "features": ["F30", "F47", "F55", "F56", "F71"],
+    "sourceSha256": "9a5e40654034b7fe65bd660ae35de20e2dd1c7a1ad3b2cd04bc536178afa500f",
+    "appSha256": "91a90a4d1c713445ad566a2b24473dd99242c582b80a78f51d632d3764b8c2bc",
+    "runnerSha256": "73462d5e4fa028063f8b1525261242c19c2811debe2fc5d7f0d41bf29adedce1",
+    "nativeAuxiliary": 24,
+    "defaultElevenFieldProofs": 24,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "group": "final",
+        "nativeAuxiliaryMethods": 6,
+        "reportSha256": "1e3a2b71565f150e7729950d08d9a2a750e09ca77a2f5b6305a215bbe467e5ec",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "7d24534f6839529bf575bc97cb5274e443085f1cf252706705e2079283c3df1e",
+          "54c7a9a59a3b5ab06ffa4bc978af941b172b0293d71a4cb371e03b06cf674678",
+          "fa1f8b9cd28fc5bb5aeded9e0e8554a0cb6b4edcdf0b4a368bf880eb42bb0a52",
+          "5e40c20011ccaeeb66b64266e73f2c5a24962b0ce24616f34bcb4e4cb28d91ce",
+          "0e1cf4f1182e759a2a5ca10ac2f6ea0e893b3c8b1c804d78c8ddfa1e292d96ea",
+          "2e140c0e9ac269b21a670983a4c0251b11245c8d76b1b279acafa417b5e958af"
+        ]
+      },
+      {
+        "environment": "owned-API26",
+        "group": "metadata",
+        "nativeAuxiliaryMethods": 6,
+        "reportSha256": "8f1f8478b98fd02bde307c223d06cf468f878555529dc877ea44fcc791a658fb",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "2db63bdf7b2f21a989b597f6645036b911d077f1121e52d6b1b0c3c73e1cf63b",
+          "7122565e6e3e241512bfdffd131dadf2c6295b827c7be1f8f8f5fb2a21b8208d",
+          "aa7ef5b3f0d067e6551ab4adc0c0169269333dd1cc3d7edee2ffa7a26f46b0a7",
+          "34a357c83beefe9288feae49e81f38fc9c2367b5645af970dfc4ec0fe975e17a",
+          "d64720c842dd15b9fb6cf9103e47d5db5530d912b467019e34ee896b663a8922",
+          "93101f55e95940380301299b3cbaa6a328fa3d2ddc3dd2e4fb571c071310e751"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "group": "final",
+        "nativeAuxiliaryMethods": 6,
+        "reportSha256": "942b3cc05d09cff3129d742bc462f6cf532eb74124b6c9764b0e290fb25510d4",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "0f51b3ca7f10fbf103f10e2b3992e936026df754b45ba97860d0a8aecbef97cf",
+          "4b7c31d25c72bdbe749d59b42576beae37de17201786c6284b034ff0e39a57aa",
+          "f90485f30fb78ff0474113283b665a427bf1c23be231a99f6c73d228b5be967f",
+          "9e22f95001e921032fbbc694d939d113727590295f5356e63b9ff1b6eae3f2b3",
+          "c6244b2d04eeacbb32bb6742daac3e748d0376be1fde93b782c347ac865182e9",
+          "3f8c8eb8114f10d511377560586c9e25b86ab861286868ebf0aa5f3d9a800987"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "group": "metadata",
+        "nativeAuxiliaryMethods": 6,
+        "reportSha256": "3c8c7a1a460df7e05f124a914c24db71937193cfb092a6c21d00fc39721af8b9",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "329d2cdfd53d17d6ad7bc0e492bfd54572d36d4a337476999eb5e8ef1a6dc132",
+          "38d8f86ad82a391b38feba752d27893d1bd30b456edb403830ba2a6d428b4a16",
+          "caa671566d5770cba2832895b3c06e0ff4c7e411a5e22693b61187cf49b4d13c",
+          "55d6704af83287bdb1696030fecacae99b584cb9415d6013087c3a32ac3cd3c2",
+          "bf525ae477a03c7c6828a1a55b1e2ce4b6094bf7909cc422866aa3d9fd2fa78d",
+          "5f570338b8e6926d9b655f84abe0c6e78550e016227445962944fc0f11863231"
+        ]
+      }
+    ],
+    "initialFailure": {
+      "reason": "Both first cohorts rejected the positive synthetic pairing because its test route used HTTP. Fixed the fixture to the actual HTTPS pairing contract; production validation stayed intact. Initial failed batches are retained and not counted.",
+      "reportsSha256": [
+        "8771315270a7082720ad8db1e81f19406126ca6a52beb7db2d60d44744811d2d",
+        "7920419424cad0d53e881e05f0ea66b3213c94a5b0602b77f2db21644180e89a"
+      ]
+    },
+    "implementationBounds": [
+      "Closed current Codex metadata/attachment/journal/submission graph; this is not a complete on-device record inventory/export",
+      "Only the existing verified Codex vault record is allowed; unsupported legacy token/device/provider/notification records still reject explicitly",
+      "No imported authorization reset or new-install activation/product UI in this checkpoint"
+    ],
+    "iosImpact": "Matches iOS explicit credential/reference checks and original state preservation; payloads remain native-specific. No iOS source/A6 change.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Complete on-device inventory/export, legacy credentials and other provider re-pairing",
+      "New-install activation, imported consent/read identity/photo source and retry authority reset",
+      "Native export/import UI and applicable quota/failure/real DEV matrix",
+      "Prior API37 landscape/ADB, original owner, physical original candidate full11 grouped cases remain separate",
+      "Business task/project management and iOS A6 paused"
+    ]
+  },
+  "migrationActivationCheckpoint": {
+    "phase": "P7-5g",
+    "sourceBase": "0ea2bae6ec9692883b700b9d355aedeb2618d6e0",
+    "summary": "P7-5g：内部新安装激活拒绝已有真实电脑或仅Vault配对；迁入重置阅读身份/本机相册提示/导入代次，代次隔离旧许可及系统回调。原操作加持久只读标记，清旧回复重试证明，底层提交/上传前入口与创建续发均禁止重放；原ID正向回执仍可查询保存。相同激活回执不覆盖新编辑。API26/新手机共56辅助（12新边界、4实际进程冷读、40普通回复恢复回归），16份默认11字段保护；完整迁移清单/导出导入UI仍待接。",
+    "features": ["F30", "F47", "F55", "F56", "F71"],
+    "sourceSha256": "ba639c9c21cb9f6a36f31db561bc73df89ca451a397432bf185e5d82c618b83c",
+    "appSha256": "bf32a8b204027ebfe9275607935c3beb5e9b3e357d701c4cbbe90b0d0020c21e",
+    "runnerSha256": "2deb69b8324893ec67f3ae44f2a28a8e54e78d5721d0a1aad1120a73f2db0b72",
+    "nativeAuxiliary": 56,
+    "defaultElevenFieldProofs": 16,
+    "processColdGroups": 2,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "group": "activation",
+        "nativeAuxiliaryMethods": 6,
+        "reportSha256": "1ae1d07c6b8a98e091634f5ecf4db8ef0f2f212ff6ce015841d3b5e4e82aced5",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "d38977beec02e6b735bf7b1ddaa9218a819c13f5801262a3d2d4ca1378b4eb5e",
+          "9f82360075304d746234e07f8e6c000fefd589e30c968e9bc00773e944e6a509",
+          "dfa39b77e585042a65fca5b3416a455a7bc3a6966e3e50c14d5cc019b196e538",
+          "e2c0302da7087e3882192d4d552a7d822cbfb8b223581ec7d980a325fe94e8d5",
+          "930d25e2c51d47cc9b80d567685b22e04e9c0984884e3cfb87e8d67f1e47b02c",
+          "5645131fcf8838dac936f4effb410f33686fcf7817ddb34e86e350e5f98d307f"
+        ]
+      },
+      {
+        "environment": "owned-API26",
+        "group": "reply",
+        "nativeAuxiliaryMethods": 20,
+        "reportSha256": "5c808054133776eaa95f97285e09bdd3d4cf8c827958344f53d6a0355ab1e378",
+        "defaultElevenFieldProofs": 0,
+        "proofSha256s": []
+      },
+      {
+        "environment": "owned-API26",
+        "group": "actual-import-process-cold",
+        "nativeAuxiliaryMethods": 2,
+        "reportSha256": "39962f155c5ccab2eb8a6143deb0ef13efad5b3e157141b21f587b224215325b",
+        "readerReceiptSha256": "997cd70571f0953c57abc5aaf07de1eaa63aebc9cf8db2faf4a873d321551b15",
+        "originalProcessEnded": true,
+        "defaultElevenFieldProofs": 2,
+        "proofSha256s": [
+          "a8888c69ccd9492d94df837ba2934692e493dbe54498742e52ef1f6b80a5d8ec",
+          "444927e9a1920de9b1a9199bdbff4ec3fdf43cd3d2b0f805cbed54e71da1f26f"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "group": "activation",
+        "nativeAuxiliaryMethods": 6,
+        "reportSha256": "c6e35655d07bb48a2c3fed6d12f1f9b4ab15637a1696ceb3323a7673320a72c7",
+        "defaultElevenFieldProofs": 6,
+        "proofSha256s": [
+          "57a272c36ab3fcc589b4cde6be950009f40e8dcf24a4d0a1c43a240ffe96a3de",
+          "6f3b9bb6f4cecf169641e96ee2db6c7787679a0e7d2c6d81a686203e9bba51e8",
+          "40a0eef49a5399bd7d1295cff222c3b492c49c9074b733a6613973a8117872cc",
+          "c4e0fde65ec8341b98536aadee6c04618a5719b3d48190ba79c05eaf73cedfdb",
+          "17a21e79380d6d1dd52a386320a98f03696855d3c9e47063916c099ec1745027",
+          "bd798dd1ff7227f0f346a57497a848f42f03d8c9f6c0503f27021375c5e27bda"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "group": "reply",
+        "nativeAuxiliaryMethods": 20,
+        "reportSha256": "5fd52538b70021e46ff2f82f18e94ea8814bdcaa5a1eeb7d5a80c3ec7364daa0",
+        "defaultElevenFieldProofs": 0,
+        "proofSha256s": []
+      },
+      {
+        "environment": "physical-API33",
+        "group": "actual-import-process-cold",
+        "nativeAuxiliaryMethods": 2,
+        "reportSha256": "0a1ce9632b9b0b098a81be1b6c484823e54d6a110fd7e034f631245cd53c3f37",
+        "readerReceiptSha256": "05a39c70e0f56fc95ef23bc2e5bfb93bff5efcf226626aff66876836adb8e93d",
+        "originalProcessEnded": true,
+        "defaultElevenFieldProofs": 2,
+        "proofSha256s": [
+          "0b98d0d3511f68c69ba956cd33c42eabd90eefe334e312297c6b6fdd2ce05c3b",
+          "a257f1274bae93ff4ce622024405741f470580322f8a1cba149f25f1bccee802"
+        ]
+      }
+    ],
+    "authority": "Immutable operation ID/intent/result and consumed fence remain; imported originals are durably observe-only, including prepared/ready operations. Positive original receipt queries are allowed, negative absence cannot grant replay. New drafts/operations are separate.",
+    "iosImpact": "Common new-install/credential/consent/reader and old-proof reset assertions follow iOS restoreMigration. Android currently keeps imported originals conservatively observe-only; iOS explicitly revalidated recovery actions and all product UI require further parity work. No iOS/A6 new pass.",
+    "implementationBounds": [
+      "Internal activation only, no product export/import/system-file UI yet",
+      "Current accepted Codex schema and quota; complete local record inventory, legacy token/provider/device identity and notification migration remain open",
+      "Cold proof uses synthetic archived records and actual Keystore/process boundary; no real Electron/model input or full migration product pass"
+    ],
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Complete native inventory/export and full schema/quota matrix",
+      "Product native import/export UI, lifecycle session replacement and real DEV",
+      "Explicitly revalidated recovery-action parity; imported unknown originals never replay",
+      "Voice/unread/lifecycle, API37 landscape/ADB, old owner and previous physical old candidate grouped pending",
+      "Business task/project management and iOS A6 paused"
+    ]
+  },
+  "migrationInventoryCheckpoint": {
+    "phase": "P7-5h",
+    "sourceBase": "fd57175de4b2e441b6b5da9899c225f794fbe20c",
+    "summary": "P7-5h：导出前增加完整有效代次清单快照；逻辑名与全部实际密文逐个对应，未识别/缺失/损坏/未完成AtomicFile/越界链接/未支持二进制/超额均拒绝，不生成删减备份、不删除原文件。全快照与多记录写入串行，旧代次不混入。API26/新手机各6新项+6激活+6引用，共36辅助与36份默认11字段保护。自动清单发现、完整类型/二进制与产品导出UI仍继续。",
+    "features": ["F30", "F47", "F55", "F56", "F71"],
+    "sourceSha256": "3d180ae7ef9ef1757ec38f8941865be8eb99339e018e4173d3cc8b13221f1cb8",
+    "appSha256": "9365b67adc955558a780d818e9e4b2575b357ce87ab7c6b3b0af1093dd9db69b",
+    "runnerSha256": "0540a27798bf365c375bb8a70bb5ad66d2e5063f28cace23677a3c8ef129ea54",
+    "nativeAuxiliary": 36,
+    "defaultElevenFieldProofs": 36,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "nativeAuxiliaryMethods": 18,
+        "groups": ["inventory-six", "activation-six", "references-six"],
+        "reportSha256": "0fe329484363e9d21f1026d2b2960ddcc048d9efc3e7d6d2585eb73253343309",
+        "defaultElevenFieldProofs": 18,
+        "proofSha256s": [
+          "2a94434214d10129c61e13101ead70fac126dbc79b8dab8f2c4339b229348cd4",
+          "e0ea93880d6c8bbe3e3b76152ceff2ce500347ba0f43f7cd3ceb35bc79f043f7",
+          "f25698c3d11dcc1f649aa22c3ce7f3d307be2afe2214f16492b2344069357ad0",
+          "595edbc8f323251bc6f69b6db2ca093ae49ee8161cad014d1af604574eabf552",
+          "14784e54b452bfbcadc378b58b8532a298f5ee2e410757205af4c07d51c6bbb8",
+          "4a52a06cd8b2737063e1d3b0e347c7570d03c1fad7a2ab701f0dd87f6817aeb4",
+          "00cfd3496eaa86c5d37a0221998f53d2f92f65df89574f46da54ea45fedb3152",
+          "acf61a94cf1822cc0de942c674d3c2e64d09eadfd14a73415ebc24ed3df6f994",
+          "43aae51c5cec3ba32a6fa83a43c0ae9a867f12d363ddc8a99ffd22bc43b3dcfe",
+          "81b4b827919e51a17915188e62895c90c980389887e48a41875d4199ff376539",
+          "7061b51f03ce3dc2e0202304b706f8f3c7240ad6edb9d6390cecbe71d976f807",
+          "a5045c59a828a6ab1e3e446120e8c4d0503acbffff26ebdf8fc52a0cf92bb76c",
+          "fd3285383f472201540431163fe337e73b654cd2c53ef51ae7b94c3f0d8d4723",
+          "708891a0e536b1bab2cc715ec84852d631c6a28b9f2b88d11ce9222a7006c9ed",
+          "0c8264c2e61c0f38923d81900bc0e73ef2b9e83e8ce518b0b3a04659bd81add7",
+          "97293c558c82e50e1866b4b32b12ac061188f55e8e406703f35ec8634a8dafc5",
+          "7b533bedf6148695821e58801f340969f15feae54b49ff0ed788f48c6eb6cade",
+          "cad9fc5edfa46c1d26e70b5aafbd838595321812d29c40d34b1cc885f27d36cd"
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "nativeAuxiliaryMethods": 18,
+        "groups": ["inventory-six", "activation-six", "references-six"],
+        "reportSha256": "0de0cc8b1e319884e8004cd484bf1eddf212679e0e18bedaeb41f96eb0263ad0",
+        "defaultElevenFieldProofs": 18,
+        "proofSha256s": [
+          "d2acb7bfa04c72d0836ea6929de3fdd62ac3f568bb6e502cc4a71a7c38fe702b",
+          "7f5a1933102e9be580d964f156d0863170a870df55643d45a5d4b3bb3b428203",
+          "39d36178e2f3b5fce4d84ebb69b9ef727001c748bbf7a18beb34ae9aa147c3c6",
+          "2994a83f1cb060172a9155f05017895a6e89857ef54947ed3ab35d515e1abd65",
+          "5187cb242a2a8a90328822dc31af3277847382ffc2478a70656f7310a04a144e",
+          "6a8dc97687b0751686de7dfbd36fe1db149d3cb91aa3766708b499fa9d0008ce",
+          "0f4f94c823d7d017696ddca13c548a084fdd0b39c9298b755c84e6d6e3835e04",
+          "a3c9b5e09926021b887e2733ff67efb43bf49bbc1cb13e4ac2cd38fd2f0cf1f9",
+          "a042972cb9d37574d60a24b00e4845d2cd821f5ffc72d1a8b86a2d31bd973d49",
+          "3f9f7fa9d8221c90828f3bba232dbb8d05904cbccbdaaf00832c8a4d9ca9802a",
+          "882a93d5c691c3460cd08d3930bfdc4fe6079d331121950ba9be23c7433ed3bb",
+          "822a3da94b8677bcdafc46b5a2544b4e0a518e7718bf2ec3525873ab7eba7aa5",
+          "37ceae58083bd84780362845757c9fbada67e971a65127c5b23768f776a65319",
+          "740c2fc00ac05590dd9162f7c72ff7a9d38cafa542baf61100a3a96a18e16c3b",
+          "6dd04064799f5f1f96732f6eb95c706f1be08b47c76ab2ad184fefb5ae7823b4",
+          "b75b7ed67f6419dea449871bbd08e8c73863d25e30cdc4044c3f29f7f9e35bea",
+          "7c8349e6a9ae391a448b6cd117e9611c39d61ca6fa91d871704cd6c531568b9a",
+          "b12ae15fbd5ba26ef669f709ca3f5a4065c99556ffe56063024ad644b30eefdf"
+        ]
+      }
+    ],
+    "bounds": "Internal exact text-record snapshot,1..1024 names and current8MiB plaintext quota. Caller must provide every active logical name; hashed filenames are never reverse-guessed. Unsupported binary is rejected. Only reserved UUID generation directories at the legacy root can be recognized as inactive; unexpected active-generation directories fail. No product export/import caller yet.",
+    "concurrency": "Existing history snapshot lock precedes shared per-directory lock.40 serialized two-record writes and40 full snapshots cannot blend revisions; no read/write fallback.",
+    "iosImpact": "Same complete immutable export and preserve-active-data assertion; Android specific Keystore/hashed-record inventory. No iOS source/A6 pass.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Automatic dependency/name discovery, complete history/voice/inbox/provider/device/notification schema and quota",
+      "Full native export/import UI and old-session lifecycle replacement with real DEV",
+      "iOS explicit revalidated recovery-action parity; imported unknown original never replay",
+      "Previous API37 landscape/ADB, original owner, physical old candidate groups and cellular/VPN pending",
+      "Business task/project management and iOS A6 paused"
+    ]
+  },
+  "migrationNamesCheckpoint": {
+    "phase": "P7-5i",
+    "sourceBase": "b60c1e1ac2e9401eafef371f8a29b2d52e5659ee",
+    "summary": "P7-5i：新本机文本记录将逻辑名与正文一起加密认证，可发现未索引的新记录；格式1旧资料只读兼容且不改写。跨版本/改名/篡改拒绝；损坏、未支持二进制和无法点名的旧记录明确保留待处理。API26/新手机各43辅助，共86辅助、66默认11字段保护，含两组真实不同进程导入冷读；完整导出/系统迁移界面未关闭。",
+    "features": ["F30", "F47", "F55", "F56", "F71"],
+    "sourceSha256": "e5f83865f28a0b9c6d813c5975d609039bf4ad375559fd102304e3d1a205c59b",
+    "appSha256": "459ed96f7a1b657e0f3bec5711237e24d51b1587998902eced6d432796b75561",
+    "runnerSha256": "3172d6f333a129d96eb4613aeded36f44808703564a29a61f635e830de272e30",
+    "nativeAuxiliary": 86,
+    "defaultElevenFieldProofs": 66,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "nativeAuxiliaryMethods": 43,
+        "defaultElevenFieldProofs": 33,
+        "groups": [
+          {
+            "group": "names",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "86e75f5d9f788dbe0556d144d316fab3e3a4c3f17c534d01fbf1826ffe965b40",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "4880af049eb4f74e5fdf87198bb179a1964422f9d56f8aeb0b131bde86bc79c6",
+              "b79729582dfa27d956c920cd890c3ed32f48fcf6b98351e33e4fe16cdcae240d",
+              "ca18a3755513cefc28b153f59ac5c848320597ada683eff128e2829454f5c443",
+              "8045355395b4c9c3dedceb4166dfde2c47299959f00b879c300afa0722f4c7fc",
+              "3aeeeb5633c94728ee39d350561d828a5f23ab9d808994542045ce391d8c4344",
+              "26da7ace4dc47d70b9fae79577e7a52f51682e9744be58ca6d42653064cd31f3",
+              "771c58bcf48944dd09974a809f4ac4c8adb8816508124391ff67e194ba5c86b1",
+              "dffeb00d93e4eafada8b62fb1ec16b07ff0b69ae468a05b2a1b830fdbfbb050f",
+              "150cf185bd9aa01b293dfd154e6d1f5bddefb2c20ae694a0786b3718f7d55340",
+              "48ebf78b5005657a2a0e91200314a5cc1507e5b0f4565b9bbc60de3732f49a8a",
+              "4a5e35ffd8353d78382b43f84cbd122ac4389f4427de80cbeedd752a14a3ed82",
+              "6cc836b58e4ff7d81628e40776dce14e2fd64ad20938c69b5defefd8c149e700",
+              "ebb89e6cde1adf895f380da47b4fcc7ea3d610ba82f4f9ea3813a6f7387edac5",
+              "f94f16d26d52e4aa0ae43171fbb6119c63a421863bc5d13da5313521aaa602b7",
+              "096b2120ee63ff6e5d4ebf5478d80f407b47539bd422da88cf6488501bf6f77f",
+              "296f8dc1054f162d1b5b85c25e36c28b4a8d55419d4b7482d64120d7e19cb68e",
+              "efd6492f3a1406dfb40500823426318f2e70ddf61a423b2b60ea1d0f63585dfa",
+              "67f2957543a60dad2540781a1a65aaca59a60cdc4a0b52ee584b3d7b0174d297"
+            ]
+          },
+          {
+            "group": "recovery",
+            "nativeAuxiliaryMethods": 13,
+            "reportSha256": "24ab0185a3327992418615fcde9b50d762a918aa1f94aad668c6dd2c43c6b39b",
+            "defaultElevenFieldProofs": 13,
+            "proofSha256s": [
+              "679bd57434ac141a720670d5da130c650c113e4eedeafb21f22b28183646dcd8",
+              "9d94b3f2b4424d5d9d673f9309759ee9dd25820cde2aca55c74bd66a580e6f83",
+              "a9ee102e263d0919ae98c833f449373e3ed189bd85ae5c7dd5d7a7fde1d2d8c9",
+              "ed7846d7fff9197703d0a549a3b7b83c127f99a7763d6f5470672b85081e98ce",
+              "08d3d8023f55d233ef48f05b21cc3bba89491d2514f9a37810dac4f4f5b733a0",
+              "c4f1f30a6dd3b9604092ed4fe2dc88eda29f6794822f51aa9a47e41013b8f364",
+              "afbaff472319b2107eec3fa2f6d2ba913236d1aaea2e2f938393d0e1887f6b10",
+              "8533d0d688a94c61bce1bd78ff01ad79ba8fff8663cbaf922c04fed4f4296731",
+              "937d69c74dd4a92b63adc6b3276463a3e2df076b496a56734b3d43842ae1cce4",
+              "b9db06530603f3b16c13f7edb04d7eda92ad7498b6127a6d5ba652f5434f7c50",
+              "4b420de93081102a075225ce9186de7a03329a6bad47eccb927cb322f786d254",
+              "6b3088da87a912045b473950fe45e37f891cb8523dec8942564836650bab1574",
+              "147c87b29690d01128482c3575821c64be6ea0549971ad4a22b4a3e18c33334c"
+            ]
+          },
+          {
+            "group": "legacy",
+            "nativeAuxiliaryMethods": 10,
+            "reportSha256": "4abca536df271ca48f050d5212758855f5996060e10ad5e483cbfb3e4876107d",
+            "defaultElevenFieldProofs": 0,
+            "proofSha256s": []
+          },
+          {
+            "group": "separate-process-activation-cold",
+            "nativeAuxiliaryMethods": 2,
+            "reportSha256": "00b8c7496911b66befcb34305892735788de83cc3fbd0c3ce62bfecc5694c41b",
+            "defaultElevenFieldProofs": 2,
+            "originalProcessEnded": true
+          }
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "nativeAuxiliaryMethods": 43,
+        "defaultElevenFieldProofs": 33,
+        "groups": [
+          {
+            "group": "names",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "f98498fc21a9f38b0dfa4ad13ad1dbad8c582901554c998721b61d8ee9b4292e",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "340ad46890ee28255ba0e49e815a65805b8f2b64c7c49e0674a211f20624d18d",
+              "93414f5d20d880d899bcfbffa5517f75af7e1297f816af28eff857382db82774",
+              "639aa8f70d05c6baaba290075774c67eb126b3cea3f25a9a799d2ace9e943620",
+              "3a416082472f4573a9fb305e531482ec575bc07eddb80bcb174cc3d1622c432e",
+              "363a79d59c6b47fd0b17dc499d391dc1e3c117872460f83a65514029528407fd",
+              "42fef3481eb7b3ffc8e7b3e610f7bdb502e4b288224656997e7f30965c98ea2b",
+              "d46095aa27c9f986d2bf24d4bf26e4985d9a73edbda76a95b2d2fbcb6f6aac7a",
+              "0b99cb29e9f1e13f19103a55466b3b5d4bf3e9999e2efb59d4e391f7911d348b",
+              "3646c52a3afab6a990b5dc58673768552ec7f349c9ff0718148fdf2b590b5056",
+              "87ac76d4a21444e9fb3189404ce5ac3129706688c5f72268d02ac03d36bda095",
+              "398cc708c9b541ec46c609d8c5e19802f876b8bf3cfea71b45859b974057c5f9",
+              "abf3c19620ccf7b75e6c8b5150d2250dcf8dbc6f882fc6c2236485fcf2d4dd2d",
+              "404f4739c1ee435c7b750b41091523a820f0ae6c19b0fc316b6367b2d3d3ee00",
+              "c268c6c2c72c0a50a509bf1cb16d92d73e38dfc42e544d2fc75c7834f8a956ba",
+              "7795e4fbd38172959c932e2f3728359d8d20ad5ea7294d0eed4ab95683fc1581",
+              "bd2c5ab7f4f6b24bd605019d4f1dbd426c5f97851d5cc9b8e23cd444ff4cc010",
+              "0b665316ac7be13f0b61d6a164e4c01cc3cefe5ea708c8632145920fce6e8082",
+              "2b59bf12d25711e7383ae3648612d0cc11e6c6db34a1275a7f839f979ba77d57"
+            ]
+          },
+          {
+            "group": "recovery",
+            "nativeAuxiliaryMethods": 13,
+            "reportSha256": "acd8f37d15ff2cf33e6d33c1784855c64b1cda216932e4ed7a177a98df2ce286",
+            "defaultElevenFieldProofs": 13,
+            "proofSha256s": [
+              "46737ac18818ddec4db0fc56a7c876e07201b10e04251980ff0d780306acc4f5",
+              "fade20e5bacdca42e5114cedef30691c22c73021b3fabae15428c9cf36ce51a2",
+              "25c9a096f7e14602d13ec8a1456658cb3e539555d16eb6bc749edeadb5bd6f9f",
+              "0d8d9c2722689341e9d47506ece67bdbdc222ebf3860ddab16928c7e5756a774",
+              "7a5300bee2a9f8de5279fb1a94f9d4069a73d3756969e1b2512ca66138753b71",
+              "a98834e68f6751c04a39ba12776835799b166b0a0a549543d0f9c01bf0d1e096",
+              "2a23e0c3b2ea99be1bfbaf13fa109fd63cdeffa08d0962e1adac46dfdf282dd2",
+              "b87f9a74b0fe94ef0e7826bb5b7957f6bd341b7813f394169fb18586ee3c4a0d",
+              "667af9d74c28340177299d9acdb974ca872940efe739d6e7c5ae60103eca97ba",
+              "e7473b63deb03846b3ebefed824a5faff19ffcf53f0aaeaf329807fc60e19f0c",
+              "339f4aa8f032ec6ac9e1bc16845442363c3dcc0f2b8ec335d0cda46a7c84ab37",
+              "89fb552af71112099f93d452328a34349678bb983e2e79d05a394aa7f86b2b0c",
+              "5ae9a012a736e03bbb57d14193143b1ac3b1affca297b9b13feec36216519a88"
+            ]
+          },
+          {
+            "group": "legacy",
+            "nativeAuxiliaryMethods": 10,
+            "reportSha256": "b59f478783ec41c2e70a08e739ce34870c070934b40572c2663103accb03a873",
+            "defaultElevenFieldProofs": 0,
+            "proofSha256s": []
+          },
+          {
+            "group": "separate-process-activation-cold",
+            "nativeAuxiliaryMethods": 2,
+            "reportSha256": "e051e76795daa463faa62c5f237b8151e3e5015eec785de649e711b8db0cdd2d",
+            "defaultElevenFieldProofs": 2,
+            "originalProcessEnded": true
+          }
+        ]
+      }
+    ],
+    "bounds": "Android installation-local text format3 encrypts logical-name length/name/text with AES-GCM and a non-UTF-8 domain context; exact expected name and hashed filename are checked. New names discoverable only after Keystore authentication. Format1 retains exact-name AAD and untouched reads, including empty plaintext. Format2 binary unchanged and explicitly not discoverable/exportable yet. Names/snapshot limits unchanged; discovery alone is not a complete archive exporter.",
+    "verification": "Each environment:6names+6inventory+6publication;6activation+7original attachment recovery;5local recovery+1actual concurrent storage+4voice original audio/provisional recovery/corruption/binary rejection;2 separate native processes for activation/receipt restoration.20 legacy checks use fresh private namespaces and have no eleven-field proof claim.",
+    "iosImpact": "Same complete export and preserve-original assertion; Android Keystore storage format only. iOS EncryptedMigration.swift UI and restore behavior remain comparison, not this stage native pass. No UI change or iOS A6 evidence.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Exact legacy reference-name closure and full history/voice/inbox/provider/device/notification schema/quota",
+      "Native system export/import UI and old-session lifecycle replacement with real DEV",
+      "iOS explicit revalidated recovery-action parity; imported unknown original never replay",
+      "API37 landscape/ADB, original owner, physical old candidate groups and cellular/VPN pending",
+      "Business task/project management and iOS A6 paused"
+    ]
+  },
+  "migrationExportCheckpoint": {
+    "phase": "P7-5j",
+    "sourceBase": "7d4b19afbbf68f4cc2863c3d847e784038d828a8",
+    "summary": "P7-5j：内部导出边界自动发现当前文本记录并准确展开旧元数据依赖，在同一锁内核对完整清单；先按同一候选契约验证，再加密。历史v1/v2索引和分片复用原生缓存读取规则，校验完整运行目标、分片归属/数量/消息ID且保持原字符串；原未知输入迁入仍只读。API26/新手机各26，共52辅助、36默认11字段保护；完整全类型迁移和系统UI仍开放。",
+    "features": ["F17", "F30", "F47", "F55", "F56", "F60", "F71"],
+    "sourceSha256": "b6c8b25d57d70d33531de956ad9283c8e71b22321b92001e8d2560dcb2573f0a",
+    "appSha256": "4ac3ebd958827163ff1d3b826fe7e0a82ece7c0b6223a2107beb8187f318d477",
+    "runnerSha256": "1cba973be98764c36d29dbc12597b20d5e1f781a536de1af0b2d4270416eba74",
+    "nativeAuxiliary": 52,
+    "defaultElevenFieldProofs": 36,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "nativeAuxiliaryMethods": 26,
+        "defaultElevenFieldProofs": 18,
+        "groups": [
+          {
+            "group": "export",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "c5f47533dea89e5a6819f83588afbbb6a20fc47a9d18c169dc55b208d102f2c7",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "47e10d54f7fd787c60c096e7fdaf843ab2f5feb42d82f32538e446c424c20b07",
+              "2d1e51ec7f61228ea42bf335560c0fd15888fdb493b1bc29b5d9afb5e151e52f",
+              "010adddbd3c23a7d6e6910dc5a1a6b5b72eada6111d8849c945397a024a689db",
+              "69c58b4bf41409fe6e62da1f0106050789b988aa1346bfe0dcea9453c1fdec85",
+              "b76ea7b2bbae1ab46dcd5c336499995f7199ef377fe217a4a8140477811c235d",
+              "187b938a67d2d8eeca8d4230aa442457355bb6d2a506d4bcfb5278ecbac320ce",
+              "cc3775e7dc899f0a017d4c35069a34863348a09a38037c09778d3496b421241a",
+              "477e07dd07bf31a991d13892d1f82e7ddb592bf3e52e5aa96c9bb90571de5a0b",
+              "e7672b4732479e285fc62f848db6592ea21671572c61a4c826c310c3d0ea72a2",
+              "f57588c00284313796a87a84f3e5667ccbfa8493af9328069ab22b5635ec5514",
+              "48ab500616947775fcf706795c45373db98839a085360efd87925adab37bca29",
+              "d29515cf0c2f2028fd3e87516151e490a7c35b5fed61a37bca272b116902e06a",
+              "ec4b0325f2d464815ff65b9caa984be2297c667c74c8f86fabacab1ed210fe66",
+              "dabfa4800e81e9293997e4280ac5381f7418be905f94c589094071125ce98446",
+              "95f8e143902d7ab342977fb3a54cdacf5ad3e4aca234ce881a8927ce4840db3d",
+              "93760398abb4dbb4497394ffee32c65e705353a58796c581f8854c127c4f7c00",
+              "bc612794ada364681cb20ed1bba23e524230cc20e4f350ff5c75d1d016278272",
+              "93213504c5913ad86b2e5645756cdcbeadda280ca73e386e43d1b8176a419c20"
+            ]
+          },
+          {
+            "group": "history",
+            "nativeAuxiliaryMethods": 8,
+            "reportSha256": "ad51258968481cdb21697f4b8180c2f08f4e8b2e517da865a1599c6078137a32",
+            "defaultElevenFieldProofs": 0,
+            "proofSha256s": []
+          }
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "nativeAuxiliaryMethods": 26,
+        "defaultElevenFieldProofs": 18,
+        "groups": [
+          {
+            "group": "export",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "ff2a1f633a6d9e6aa9fe6dbf19eaa2ac2fb212e6201a4ed3af5b3120e65cdfba",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "6638a7b9931a0f0ffd1ebf64d89de8b052dcacd6f61a808cc419f242110ca11f",
+              "4db0d05d0be3f0b51e0de7e0a8f617533dc8119f0d4d600379e89918e3068c1f",
+              "d4dcddd93f6d4cf4397034c5891b05142edaa41385b9f7b6b7b5562cfad35968",
+              "937988d3ac9d7f053dd16a7e80d7541dd05f90fcf995514b28a6cb6be0775ceb",
+              "e68332a34f234e75b0eaefb89efc334672a169594d6e2fae73510bba65435488",
+              "a4198c703c3478b4493a5864ca5bd0cd4db67ccc715505397e14cf6d8b12a7d6",
+              "db5ecf378e4a4252a545a4ae5d9141fa96c67c60bc120c55bc3354737dc96d8e",
+              "3dd1fb4c9fc77e10c374a7d851ec67a68d28b5e4ebb2fa547c6524d74f300a76",
+              "7a14bad5d654bf3b8045dd1c22caff3081f63bcecc4e2e4817159abea8c31ab1",
+              "7571ca11a01c014e8868edd846ca7550c01e7b9213c3590b28585d86d229a68f",
+              "abe9582f50a29b4058db91eeb7ca9d037b83e7abf7f8e76fd7c7a15eb230c871",
+              "71a4c53c52fd7c03bcab45d7630624f97a516fed3c671d034669fd7aaf7c690b",
+              "8193383223caad72ff7817c5f5916e7240f83904958642585a7ad6fb8067bd55",
+              "369ff7c99f1f10dd12ce82fbf33f3447c6b6ddb1c803f256fb821cca0ab0713c",
+              "5ba9cc9510b19d678373bf16c61973171937c9f49e6ef20c1745c7ceb42acfc8",
+              "12b798062251d94ba8f386d0bf9a8ec6c13b5c0fc15a2dff7e46a7207bba0f3d",
+              "13f8167b9235e4145c5c8987e3643b0ba63f36f683ba7c727a80bc4953fda73a",
+              "1933d67503b43b8fe60fd1ad36fd67b9a1b8972c6ed905c89bc6aaf139baeffa"
+            ]
+          },
+          {
+            "group": "history",
+            "nativeAuxiliaryMethods": 8,
+            "reportSha256": "4de1020bd245a625d0a6a7e00ca0432a95e68b8bc6b9dcffbbc1127a009a4973",
+            "defaultElevenFieldProofs": 0,
+            "proofSha256s": []
+          }
+        ]
+      }
+    ],
+    "bounds": "Internal Codex-root text/file/operation/credential/history archive only, current8MiB payload and1024 records. No native settings/system export/import caller yet. Unsupported voice/provider/device/notification/thumbnail/child callback records reject or remain explicit full-schema dependencies. Unindexed legacy hashed names without trustworthy metadata/reference cannot be guessed. History cache observation never establishes live owner authority.",
+    "historyGraph": "Closed version1/2 index; strict duplicate/depth/UTF-8 parsing of both object and array records; exact ordered generation parts, messageCount and unique message IDs. Runtime identity and canonical/retained target aliases bind to an archived client. Shared NativeHistoryCache.decode is used for ordinary reads and migration validation. Original history record strings are preserved, not flattened or rebuilt.",
+    "verification": "Each environment6new export/history checks+6references+6metadata and8unchanged native history regression.70messages/3parts preserve original text/order/kind/nextCursor/epoch/cursor through actual encrypted export, candidate stage and generation activation; all old format1 records resolve from exact references without rewriting; missing/orphan/mixed-runtime/duplicate-field/wrong-count/cross-target parts and pending .bak/unknown type reject;20concurrent history writes and20capture reads cannot blend generations.16ordinary native history checks use private namespaces and have no eleven-field proof claim.",
+    "iosImpact": "iOS EncryptedMigration/SessionStore migrationPayload and restoreMigration remain product comparison: complete referenced materials, new-install restriction and fresh authority. Android platform-specific archive/cache layout; no iOS source, native UI or A6 pass. Explicit revalidated imported-operation recovery policy still differs and stays pending.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Complete voice/binary, thumbnail, inbox/callback child, provider/device and notification schema/quota",
+      "Native system export/import UI and old-session lifecycle replacement with real DEV",
+      "Unindexed legacy names and full historical alias matrix",
+      "iOS explicit revalidated recovery-action parity; imported unknown original never replay",
+      "API37 landscape/ADB, original owner, physical old candidate groups and cellular/VPN pending",
+      "Business task/project management and iOS A6 paused"
+    ]
+  },
+  "migrationAncillaryCheckpoint": {
+    "phase": "P7-5k",
+    "sourceBase": "f0cc0f9cccc585510c1ee1f452ce267a4d94ecc9",
+    "summary": "P7-5k：缩略图与旧AI共享许可纳入严格迁移契约；缩略图复用普通预览的摘要/PNG/尺寸校验，原附件保持独立。旧许可保留在原档案，迁入后清空且需重新授权；不发送原操作。最终候选共52辅助、44默认11字段保护；API26附件栏/八方向EXIF/配额脚本修订与许可交互通过，真机核心18通过且同组UI8通过。",
+    "features": ["F30", "F47", "F55", "F56", "F64", "F71"],
+    "sourceSha256": "f9771a86bed597f568eafc1f904c556759ee1aa09db013ff5b5dfd5ac35cce97",
+    "appSha256": "ce453ddfd656756a2c28200140c3b7db359cd1edd42247f2f6d90402bba62d62",
+    "runnerSha256": "22834fe03691df8e480daccbea63554cf6b36d99c5a77e0abfda8446d02cd283",
+    "nativeAuxiliary": 52,
+    "defaultElevenFieldProofs": 44,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "groups": [
+          {
+            "group": "ancillary-final",
+            "status": "passed",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "55bbc5b94a90a3fb259c828a489e837a9a87adf0d6de6e2d8141964765a1c3e0",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "7b4e9f1260a192df64e6e9230bf28ce28d7c1c4e5706e34cbfdceb50d60db179",
+              "4ce03732c14a7b50392849678c1c50b4be61a04723391ca00b307903855cdd11",
+              "9aef516668fbdc549e2a2c74038b378d61975f6d7d4ea485225ec866e59caef7",
+              "0b475ed5fa3aff1eb9764b167d51697205eb071291fe9b9022d74a1d4bb1f95b",
+              "9a68ff087fc0ab6055a249a002e02a549983717750f3b53843c1de5477e73a7b",
+              "1c63cd4d95342d7bbc198db5915fa089cf8fb2eec43e6c15b19fa6e64e3e7193",
+              "20d449b760ab437d1b6a16bffefab7f786fc3f551d37480c632074d089da184f",
+              "9ae4ad6e1180842b59a847b3c9f73f423f29218c6e94dd05ff172f8341ba9ae0",
+              "1579cd9de077feed1170f1480b599e0086f78d19674e8b05b67add4f4971602e",
+              "b29c45c11f6a75bd1d949d8913127fab7521b08403ab0a34ee2fa3116790cb5a",
+              "ffc01c7023192f0ba75be50e4d6968134eba22eb1b79453faaa9f7a91354c248",
+              "82296ebb1921c14e32c093caf9ff16a62417f3bfa5c85e2e4bac5e1e39068d73",
+              "12082862e97b210ed1fdbc6d42eca52ca306424f99cf39a7b3b7fa07532ba49c",
+              "a0c7cc9266e163171490b629e3963ae88e8709ec56bda4786beb105fddddf188",
+              "2dffb51ae4c8bc9511f7e49d3d6ccc3ba5fa95d354ffec02bb49ba939eaccd38",
+              "e14e45b9427960aab2e1cbb4d82dd71cdfb90dbaf9bbb75cb39788fec994ae02",
+              "a3a626a266408a7d88a976b0e2482081cb650bc91303112dbc34cd70dacd203f",
+              "1f9ced775324d74c526fe72d53c7e2debeb62cfd9ce209e7b7ea7a46d122e756"
+            ],
+            "nativeWindowImages": []
+          },
+          {
+            "group": "ui-final",
+            "status": "passed",
+            "nativeAuxiliaryMethods": 8,
+            "reportSha256": "5dcd18f497c9d4bc4a7590b2e48f12d4f70b5f5b87cf844d3a16520c237b7d99",
+            "defaultElevenFieldProofs": 4,
+            "proofSha256s": [
+              "db8e9a008fed59346921b3b7fd5da671418459b2ae08eb6030c9daf8835f469c",
+              "ece2b0e7dc6afbad42c79a903ce4ca6e56a695852338cc6a47edc0eb91ec7fc6",
+              "2b802ec8a98192ad061d4ec1e0b6a8566b8ee9e62206357f45d284b5bd9b3eff",
+              "bf7446e0d05a8e5e51e8f1c598123e7e82676dc3bbc286a61dbbd3851bfae8c8"
+            ],
+            "nativeWindowImages": [
+              {
+                "name": "large-image-uses-bounded-cache.png",
+                "sha256": "939cac5445f205788ae0049eb7fe25d2641edf5d70e827ed0aa5a218a6b383be"
+              },
+              {
+                "name": "undecodable-image-keeps-original-file.png",
+                "sha256": "6c0e3757a87161e383c591fbcc82cad93154f28174e50b72c775f8714c113f2c"
+              },
+              {
+                "name": "image-thumbnail-and-file-sizes.png",
+                "sha256": "e4cc9840f508a5113684a4759b127b0b1097626d3f739e615ebf93ed1bfb7702"
+              },
+              {
+                "name": "jpeg-exif-thumbnail-original-bytes-unchanged.png",
+                "sha256": "193f1206707b7d38f78e51170912ce4622bfc5a42c49b91bedca4ff66d72fe74"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "groups": [
+          {
+            "group": "ancillary-final",
+            "status": "passed",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "475a82b2d91e4c21c58e461d309dd03ce51379b7ea1936d240f7ce113262d920",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "a7ccef87beb79f8d65b20545415f73931bd95833b54e48bad0b4f7c74868e70a",
+              "bc35343a3af63d50752a61510eb59b7646b39fa5f5e5de85c9c0dec5f2dd80a2",
+              "09befcf66cffa8728384493990cf298b6776778e0b8a31d5870de0d7b7fa0363",
+              "b7272da3f73beeb95df3e5d7445b3441a4b1ee4df51cdda1325295ed66e8bb5a",
+              "ed6517d28b1d6c9e47e8a551959c32db34575f446b53638b88689d8169746b7e",
+              "d0b0891e15d91a4a86ccac60623f4d96fcf470dc0bf53c222b8315a90a415bd7",
+              "505dbcbd78deed6981fa8a92777f2293ffc7c07489dc609c663765cad4bd1fb0",
+              "adeffc8d8d49543e141b777b688a6d2220dd0c8162e4f6339e1ab953f22ef5e3",
+              "60694e3e770cb055f06ce10eda349d3e394ad75f1d377d40f10ff9d40920e041",
+              "d0c1b4765e49b830add32a8d0582721fcea028316fb8ec284738309cee93a36a",
+              "902f794cac7bbc6cbb3c9e74ccd9c17e5a1eb5375aa7a894499ea95145a25b4b",
+              "1425b17440bee00884bba970ded22c6cf0153dda55522cf591c7d3092293bf95",
+              "ddbb563b5c9a97e30b8563780d05fa4ef16bda619e7057e427f167d971c8d5be",
+              "34f9f41daf308f0a8703b5ee9a3522cb1203cd68b2aeea2382c069cd7eace5ba",
+              "dc36adbfa2147a12c8d0d2044b171000edb54ed08f7ee86a3b3ea333466a9ecd",
+              "1d0136529d341c8eb051dc41301edb6985fc5504d6d4d61c8f6c2f23153c7079",
+              "108d013d7f64223f315dbfb58734bff79da579e1c4374cd6f73b0ccc74ed7552",
+              "30fc91d257cbfde39e308296f4ae4de73bab8497f1e0ade65a5b31a2f96cedcf"
+            ],
+            "nativeWindowImages": []
+          },
+          {
+            "group": "ui-final",
+            "status": "passed",
+            "nativeAuxiliaryMethods": 8,
+            "reportSha256": "44431864714ef6941a7bd22a69e970670e2959a17fddc4debed62a9f8e24124e",
+            "defaultElevenFieldProofs": 4,
+            "proofSha256s": [
+              "862de0ccbdc4d2b36e8b6c23bc1c4a4aa877c2fc5dcc52ae18694e0a591e06fa",
+              "d80b76fd52a4ea78cf232b0c985a5c30020257e0dad60f04c2496346ad803d7b",
+              "c63167c99b3bcfa6fb817394851d425ef112bb8ed009c8a7e3793c3138a4d804",
+              "093cb68cabe759b68bd7fa6a5de9f492574f57d97f2f5a88459824c349d8bb27"
+            ],
+            "nativeWindowImages": [
+              {
+                "name": "large-image-uses-bounded-cache.png",
+                "sha256": "fe8cda2f0d3802716eb0fa91ec0d27c8b2372e45acca138ccb4755298526f815"
+              },
+              {
+                "name": "undecodable-image-keeps-original-file.png",
+                "sha256": "37dadcba841eaa3a27819e4ad80c5dc9568ba4deb97ffae6ba68a2ced3492d7e"
+              },
+              {
+                "name": "image-thumbnail-and-file-sizes.png",
+                "sha256": "b4621fa95803b5f259ce1e12b07751632c99e2c72b3068f6972bf298960a6c60"
+              },
+              {
+                "name": "jpeg-exif-thumbnail-original-bytes-unchanged.png",
+                "sha256": "3311315fb7a7770812affef15a121b720b494862fab043263a1888aeeaae6358"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "bounds": "Internal supported Codex text/file/operation/credential/history plus optional thumbnail and old-consent archive only. No native system migration UI. Existing8MiB/1024record gate remains. Voice/binary, inbox/callback children, provider/device and notification full schema/quota remain open.",
+    "permissionPolicy": "Archived grants are strict version1 closed records with valid UUIDs, scope, typed time and bounded strings. They can refer to historical absent targets as audit data, never active authority. Original source bytes stay exact; activation writes an empty version1 grant set in the new generation and retains record count/receipt idempotency. Old original operations remain observe-only.",
+    "previewPolicy": "Exact referenced image manifest, PNG signature/base64/hash,128edge and96KiB image limit; null preview remains valid optional display cache. It never supplies upload bytes or bypasses original attachment checks. Same strict helper used by ordinary native preview and candidate validation.",
+    "visualBounds": "API26 PixelCopy owned native windows inspected: actual light appearance, portrait1080x1920. Wrapper viewportTheme=dark does not apply to these fixture sessions; no dark-theme/landscape/large-font/iOS native pass claimed. Image tile/name/size/remove, fallback and original large-file cache plus all8EXIFpixel mappings are asserted. Mobile full visual matrix remains pending.",
+    "retainedFailure": {
+      "environment": "owned-API26",
+      "reportSha256": "ed5130b87424b1cd923bba444c07033cb553ce23cb5db8684d204200bb7789a3",
+      "status": "failed",
+      "methodsInFailedBatch": 4,
+      "failure": "Old EXIF examiner tried to attach8images simultaneously under current5attachment quota; failed at sixth image. Product quota was not changed. Examiner now removes each verified image before the next and retains the last for native window review.",
+      "partialSuccessesNotCounted": true,
+      "productionAppSha256Unchanged": true
+    },
+    "supersededRunner": "Earlier18+4 batches and the original failed UI batch remain under their own source/runner fingerprints. Only final candidate results above count toward this checkpoint.",
+    "iosImpact": "Same fresh-consent and original attachment/preview assertions; Android-specific cache and storage formats. iOS actual source remains comparison, iOS A6 paused; no iOS native UI pass.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "pending": [
+      "Complete voice/binary, inbox/callback child, provider/device and notification schema/quota",
+      "Native system export/import UI and old-session lifecycle replacement with real DEV",
+      "Unindexed legacy names and full historical alias matrix; explicit revalidated recovery-action parity",
+      "Full dual-native theme/rotation/font/visual matrix",
+      "API37 landscape/ADB, original owner, old candidate groups and cellular/VPN",
+      "Business task/project management and iOS A6 paused"
+    ]
   }
 }

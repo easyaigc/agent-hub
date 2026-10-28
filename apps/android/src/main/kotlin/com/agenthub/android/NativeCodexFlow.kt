@@ -163,6 +163,7 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
         content: CodexContent,mode: String,expectedTurnId: String?,expectedPlanId: String? = null,
         guard: ()->Boolean,progress: (String)->Unit = {},operationId: String=UUID.randomUUID().toString()): CodexFlowResult {
         val id=operationId
+        for(target in client.operationTargets(threadId))require(journal.records(target).none{it.id==id&&it.migrationReadOnly}) { "迁入的原操作只能查询回执，原输入未改变" }
         source(client,id,origin,content)
         progress("核对电脑与聊天…")
         var (workspace,history)=authority(client,threadId,projectId,guard,reuseConfirmed=true)
@@ -312,7 +313,7 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
         return finishCreation(client,record,manifest,guard,progress,explicitContinuation=true)
     }
     fun mayContinueCreation(record: SavedOperation): Boolean {
-        if(record.kind!="creation" || record.detached)return false
+        if(record.kind!="creation" || record.detached || record.migrationReadOnly)return false
         val result=record.result?.let { CodexCommandCodec.creation(JSONObject(it)) }
         return ReplyRecoveryRules.mayContinueCreation(record.phase,record.submissionAttempted,result?.diagnostic?.disposition,
                 result?.preparation?.preparationPhase,result?.preparation?.preparedThreadId)
@@ -403,7 +404,7 @@ class NativeCodexFlow(private val storage: NativeSessionStorage,private val read
     suspend fun detach(client: MobileClient,record: SavedOperation): SavedOperation {
         // Local persistence releases waiting even when the Host cannot acknowledge it.
         val detached=journal.detach(record.target,record.id)
-        if(record.kind=="creation") try {
+        if(record.kind=="creation"&&!record.migrationReadOnly) try {
             val result=commands.detachCreation(client,record.id)
             return journal.observed(record.target,record.id,result.phase,encodeCreation(result),result.error)
         } catch(cancel: CancellationException) { throw cancel }

@@ -1,0 +1,163 @@
+{
+  "phase": "P7-5i",
+  "sourceBase": "b60c1e1ac2e9401eafef371f8a29b2d52e5659ee",
+  "summary": "P7-5i：新本机文本记录将逻辑名与正文一起加密认证，可发现未索引的新记录；格式1旧资料只读兼容且不改写。跨版本/改名/篡改拒绝；损坏、未支持二进制和无法点名的旧记录明确保留待处理。API26/新手机各43辅助，共86辅助、66默认11字段保护，含两组真实不同进程导入冷读；完整导出/系统迁移界面未关闭。",
+  "features": ["F30", "F47", "F55", "F56", "F71"],
+  "sourceSha256": "e5f83865f28a0b9c6d813c5975d609039bf4ad375559fd102304e3d1a205c59b",
+  "appSha256": "459ed96f7a1b657e0f3bec5711237e24d51b1587998902eced6d432796b75561",
+  "runnerSha256": "3172d6f333a129d96eb4613aeded36f44808703564a29a61f635e830de272e30",
+  "nativeAuxiliary": 86,
+  "defaultElevenFieldProofs": 66,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "nativeAuxiliaryMethods": 43,
+      "defaultElevenFieldProofs": 33,
+      "groups": [
+        {
+          "group": "names",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "86e75f5d9f788dbe0556d144d316fab3e3a4c3f17c534d01fbf1826ffe965b40",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "4880af049eb4f74e5fdf87198bb179a1964422f9d56f8aeb0b131bde86bc79c6",
+            "b79729582dfa27d956c920cd890c3ed32f48fcf6b98351e33e4fe16cdcae240d",
+            "ca18a3755513cefc28b153f59ac5c848320597ada683eff128e2829454f5c443",
+            "8045355395b4c9c3dedceb4166dfde2c47299959f00b879c300afa0722f4c7fc",
+            "3aeeeb5633c94728ee39d350561d828a5f23ab9d808994542045ce391d8c4344",
+            "26da7ace4dc47d70b9fae79577e7a52f51682e9744be58ca6d42653064cd31f3",
+            "771c58bcf48944dd09974a809f4ac4c8adb8816508124391ff67e194ba5c86b1",
+            "dffeb00d93e4eafada8b62fb1ec16b07ff0b69ae468a05b2a1b830fdbfbb050f",
+            "150cf185bd9aa01b293dfd154e6d1f5bddefb2c20ae694a0786b3718f7d55340",
+            "48ebf78b5005657a2a0e91200314a5cc1507e5b0f4565b9bbc60de3732f49a8a",
+            "4a5e35ffd8353d78382b43f84cbd122ac4389f4427de80cbeedd752a14a3ed82",
+            "6cc836b58e4ff7d81628e40776dce14e2fd64ad20938c69b5defefd8c149e700",
+            "ebb89e6cde1adf895f380da47b4fcc7ea3d610ba82f4f9ea3813a6f7387edac5",
+            "f94f16d26d52e4aa0ae43171fbb6119c63a421863bc5d13da5313521aaa602b7",
+            "096b2120ee63ff6e5d4ebf5478d80f407b47539bd422da88cf6488501bf6f77f",
+            "296f8dc1054f162d1b5b85c25e36c28b4a8d55419d4b7482d64120d7e19cb68e",
+            "efd6492f3a1406dfb40500823426318f2e70ddf61a423b2b60ea1d0f63585dfa",
+            "67f2957543a60dad2540781a1a65aaca59a60cdc4a0b52ee584b3d7b0174d297"
+          ]
+        },
+        {
+          "group": "recovery",
+          "nativeAuxiliaryMethods": 13,
+          "reportSha256": "24ab0185a3327992418615fcde9b50d762a918aa1f94aad668c6dd2c43c6b39b",
+          "defaultElevenFieldProofs": 13,
+          "proofSha256s": [
+            "679bd57434ac141a720670d5da130c650c113e4eedeafb21f22b28183646dcd8",
+            "9d94b3f2b4424d5d9d673f9309759ee9dd25820cde2aca55c74bd66a580e6f83",
+            "a9ee102e263d0919ae98c833f449373e3ed189bd85ae5c7dd5d7a7fde1d2d8c9",
+            "ed7846d7fff9197703d0a549a3b7b83c127f99a7763d6f5470672b85081e98ce",
+            "08d3d8023f55d233ef48f05b21cc3bba89491d2514f9a37810dac4f4f5b733a0",
+            "c4f1f30a6dd3b9604092ed4fe2dc88eda29f6794822f51aa9a47e41013b8f364",
+            "afbaff472319b2107eec3fa2f6d2ba913236d1aaea2e2f938393d0e1887f6b10",
+            "8533d0d688a94c61bce1bd78ff01ad79ba8fff8663cbaf922c04fed4f4296731",
+            "937d69c74dd4a92b63adc6b3276463a3e2df076b496a56734b3d43842ae1cce4",
+            "b9db06530603f3b16c13f7edb04d7eda92ad7498b6127a6d5ba652f5434f7c50",
+            "4b420de93081102a075225ce9186de7a03329a6bad47eccb927cb322f786d254",
+            "6b3088da87a912045b473950fe45e37f891cb8523dec8942564836650bab1574",
+            "147c87b29690d01128482c3575821c64be6ea0549971ad4a22b4a3e18c33334c"
+          ]
+        },
+        {
+          "group": "legacy",
+          "nativeAuxiliaryMethods": 10,
+          "reportSha256": "4abca536df271ca48f050d5212758855f5996060e10ad5e483cbfb3e4876107d",
+          "defaultElevenFieldProofs": 0,
+          "proofSha256s": []
+        },
+        {
+          "group": "separate-process-activation-cold",
+          "nativeAuxiliaryMethods": 2,
+          "reportSha256": "00b8c7496911b66befcb34305892735788de83cc3fbd0c3ce62bfecc5694c41b",
+          "defaultElevenFieldProofs": 2,
+          "originalProcessEnded": true
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "nativeAuxiliaryMethods": 43,
+      "defaultElevenFieldProofs": 33,
+      "groups": [
+        {
+          "group": "names",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "f98498fc21a9f38b0dfa4ad13ad1dbad8c582901554c998721b61d8ee9b4292e",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "340ad46890ee28255ba0e49e815a65805b8f2b64c7c49e0674a211f20624d18d",
+            "93414f5d20d880d899bcfbffa5517f75af7e1297f816af28eff857382db82774",
+            "639aa8f70d05c6baaba290075774c67eb126b3cea3f25a9a799d2ace9e943620",
+            "3a416082472f4573a9fb305e531482ec575bc07eddb80bcb174cc3d1622c432e",
+            "363a79d59c6b47fd0b17dc499d391dc1e3c117872460f83a65514029528407fd",
+            "42fef3481eb7b3ffc8e7b3e610f7bdb502e4b288224656997e7f30965c98ea2b",
+            "d46095aa27c9f986d2bf24d4bf26e4985d9a73edbda76a95b2d2fbcb6f6aac7a",
+            "0b99cb29e9f1e13f19103a55466b3b5d4bf3e9999e2efb59d4e391f7911d348b",
+            "3646c52a3afab6a990b5dc58673768552ec7f349c9ff0718148fdf2b590b5056",
+            "87ac76d4a21444e9fb3189404ce5ac3129706688c5f72268d02ac03d36bda095",
+            "398cc708c9b541ec46c609d8c5e19802f876b8bf3cfea71b45859b974057c5f9",
+            "abf3c19620ccf7b75e6c8b5150d2250dcf8dbc6f882fc6c2236485fcf2d4dd2d",
+            "404f4739c1ee435c7b750b41091523a820f0ae6c19b0fc316b6367b2d3d3ee00",
+            "c268c6c2c72c0a50a509bf1cb16d92d73e38dfc42e544d2fc75c7834f8a956ba",
+            "7795e4fbd38172959c932e2f3728359d8d20ad5ea7294d0eed4ab95683fc1581",
+            "bd2c5ab7f4f6b24bd605019d4f1dbd426c5f97851d5cc9b8e23cd444ff4cc010",
+            "0b665316ac7be13f0b61d6a164e4c01cc3cefe5ea708c8632145920fce6e8082",
+            "2b59bf12d25711e7383ae3648612d0cc11e6c6db34a1275a7f839f979ba77d57"
+          ]
+        },
+        {
+          "group": "recovery",
+          "nativeAuxiliaryMethods": 13,
+          "reportSha256": "acd8f37d15ff2cf33e6d33c1784855c64b1cda216932e4ed7a177a98df2ce286",
+          "defaultElevenFieldProofs": 13,
+          "proofSha256s": [
+            "46737ac18818ddec4db0fc56a7c876e07201b10e04251980ff0d780306acc4f5",
+            "fade20e5bacdca42e5114cedef30691c22c73021b3fabae15428c9cf36ce51a2",
+            "25c9a096f7e14602d13ec8a1456658cb3e539555d16eb6bc749edeadb5bd6f9f",
+            "0d8d9c2722689341e9d47506ece67bdbdc222ebf3860ddab16928c7e5756a774",
+            "7a5300bee2a9f8de5279fb1a94f9d4069a73d3756969e1b2512ca66138753b71",
+            "a98834e68f6751c04a39ba12776835799b166b0a0a549543d0f9c01bf0d1e096",
+            "2a23e0c3b2ea99be1bfbaf13fa109fd63cdeffa08d0962e1adac46dfdf282dd2",
+            "b87f9a74b0fe94ef0e7826bb5b7957f6bd341b7813f394169fb18586ee3c4a0d",
+            "667af9d74c28340177299d9acdb974ca872940efe739d6e7c5ae60103eca97ba",
+            "e7473b63deb03846b3ebefed824a5faff19ffcf53f0aaeaf329807fc60e19f0c",
+            "339f4aa8f032ec6ac9e1bc16845442363c3dcc0f2b8ec335d0cda46a7c84ab37",
+            "89fb552af71112099f93d452328a34349678bb983e2e79d05a394aa7f86b2b0c",
+            "5ae9a012a736e03bbb57d14193143b1ac3b1affca297b9b13feec36216519a88"
+          ]
+        },
+        {
+          "group": "legacy",
+          "nativeAuxiliaryMethods": 10,
+          "reportSha256": "b59f478783ec41c2e70a08e739ce34870c070934b40572c2663103accb03a873",
+          "defaultElevenFieldProofs": 0,
+          "proofSha256s": []
+        },
+        {
+          "group": "separate-process-activation-cold",
+          "nativeAuxiliaryMethods": 2,
+          "reportSha256": "e051e76795daa463faa62c5f237b8151e3e5015eec785de649e711b8db0cdd2d",
+          "defaultElevenFieldProofs": 2,
+          "originalProcessEnded": true
+        }
+      ]
+    }
+  ],
+  "bounds": "Android installation-local text format3 encrypts logical-name length/name/text with AES-GCM and a non-UTF-8 domain context; exact expected name and hashed filename are checked. New names discoverable only after Keystore authentication. Format1 retains exact-name AAD and untouched reads, including empty plaintext. Format2 binary unchanged and explicitly not discoverable/exportable yet. Names/snapshot limits unchanged; discovery alone is not a complete archive exporter.",
+  "verification": "Each environment:6names+6inventory+6publication;6activation+7original attachment recovery;5local recovery+1actual concurrent storage+4voice original audio/provisional recovery/corruption/binary rejection;2 separate native processes for activation/receipt restoration.20 legacy checks use fresh private namespaces and have no eleven-field proof claim.",
+  "iosImpact": "Same complete export and preserve-original assertion; Android Keystore storage format only. iOS EncryptedMigration.swift UI and restore behavior remain comparison, not this stage native pass. No UI change or iOS A6 evidence.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Exact legacy reference-name closure and full history/voice/inbox/provider/device/notification schema/quota",
+    "Native system export/import UI and old-session lifecycle replacement with real DEV",
+    "iOS explicit revalidated recovery-action parity; imported unknown original never replay",
+    "API37 landscape/ADB, original owner, physical old candidate groups and cellular/VPN pending",
+    "Business task/project management and iOS A6 paused"
+  ]
+}

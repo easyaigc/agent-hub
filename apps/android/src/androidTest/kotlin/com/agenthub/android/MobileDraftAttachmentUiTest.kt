@@ -247,11 +247,13 @@ class MobileDraftAttachmentUiTest {
                 }
                 assertEquals("Actual serialized JPEG EXIF orientation $orientation",expected[orientation-1],actual)
             }finally{image.recycle()}
+            // Exercise all orientations without exceeding the current per-draft quota.
+            if(orientation<8)main {session.removeAttachment(file.manifest.id,session.attachmentDestination());assertTrue(session.attachments.isEmpty())}
         }
         val last=session.attachments.last()
         ui.waitUntil(10_000) { ui.onAllNodesWithTag("draft-attachment-image-${last.manifest.id}").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithTag("draft-attachment-image-${last.manifest.id}").performScrollTo().assertIsDisplayed();shot("jpeg-exif-thumbnail-original-bytes-unchanged")
-        assertEquals(8,session.attachments.size);assertEquals(0,writes)
+        assertEquals(1,session.attachments.size);assertEquals(0,writes)
     }
 
 }

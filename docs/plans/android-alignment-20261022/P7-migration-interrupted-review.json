@@ -1,0 +1,58 @@
+{
+  "phase": "P7-5d2",
+  "sourceBase": "67039c1665b880f6122e8f3f8261d963aee8c59e",
+  "summary": "P7-5d2：API26/真机各完成1次发布前受控进程中断及1个新PID只读验收；原草稿/不可变输入/全部原根密文保持，无发布指针，只有本次准确未提交暂存被清理。2个成功reader、2条受控中断流程与4份默认11字段保护通过；被终止writer不算JUnit通过。生产APK与5d完全一致，仅增opt-in验收器；完整导入/导出Schema、身份/凭据/再配对及UI继续。0模型，累计确认221/P4205，未知操作只读。",
+  "features": ["F47", "F55", "F56"],
+  "sourceSha256": "9e36f6b26622180cf8b7780b9009b9905ce50f40369ac4bab038a2678ca21c40",
+  "appSha256": "a2bd4deee13207a70686eeb7b447be8aeca2933c07dadb058e621294291fed4c",
+  "runnerSha256": "e2c0a3da906526e824a22e97db76217e5a0d31192865c9a17f2b6c64a18b3564",
+  "nativeSuccessfulReaders": 2,
+  "controlledPrecommitDeaths": 2,
+  "defaultElevenFieldProofs": 4,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "controlledPrecommitDeaths": 1,
+      "nativeSuccessfulReaders": 1,
+      "reportSha256": "28ad6fe6db216bb6621725834045fde717f37f81a41a2b74b7d89bed7fae5788",
+      "writerFixtureSha256": "ee103004e276a4da010579251c6202a90a30ce2ee0dc2c5c3a09c22f0cd73afc",
+      "readerReceiptSha256": "b7283cd576695ff1e4974a430cfe6749d35bb5e2d3c80031fcd6858f2f4e3e98",
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "fbc5c24314546b0dba6060d77fa4d778bfa14c362d5877b651d23e46070818cf",
+        "c01b9fcb493e07c8fcc16576bb003f9c2d6f4463b600b1f236967fd1d6962d2e"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "controlledPrecommitDeaths": 1,
+      "nativeSuccessfulReaders": 1,
+      "reportSha256": "bcaecaa49581c19a52f2d6671ac144be09134fbd38f0eeb07319d7b625090c50",
+      "writerFixtureSha256": "7cae4e113e35062226acd3ca899a2e62a922f8827e8785a7c5b8cc1e354258bb",
+      "readerReceiptSha256": "ea8ec7b4edf67ed715e8108ec6890fbc492379a87901ee736874da931cdab22c",
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "233cdedfe3cd24ba2a829e73b82b675ce4652db89bb95eaee8609cfc8be48418",
+        "68cf64e231b91cbe493e244c94528835330cc4c349a8519a5b18260ca9a460d8"
+      ]
+    }
+  ],
+  "interruptionBoundary": "The exact writer PID, bundle and active instrumentation are checked after the first encrypted staged record is read back and before pointer publication. Force-stop applies to that owned target only; PID absence precedes the next native reader.",
+  "writerAccounting": "A controlled terminated writer is not a passing JUnit method; its prepared checkpoint and default protection are independently checked. Reader validates original active generation, original root ciphertext, absent pointer, and exact staged file digest before deleting only its own test orphan.",
+  "productionReuse": {
+    "checkpoint": "P7-5d",
+    "nativeAuxiliary": 42,
+    "basis": "Same production APK and every previous Android/KMP/protocol/test input; only the new isolated interruption test class was added. Original scopes/limits remain unchanged; no final-runner rerun claim."
+  },
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Complete migration schema/inventory/new-install and target/credential/repair boundaries",
+    "Consent/read identity/device-local source/reset and observe-only imported receipt rules",
+    "System export/import/password/error/rollback UI, quotas and real Key/I/O matrix",
+    "API37 ADB/landscape and prior original model/physical quota-cold pending; no replay",
+    "Business tasks/projects and iOS A6 paused"
+  ]
+}

@@ -14,7 +14,8 @@ data class SavedOperation(val id: String, val kind: String, val target: String, 
     val intentSha256: String, val phase: String, val result: String? = null, val error: String? = null,
     val detached: Boolean = false, val submissionAttempted: Boolean = false,
     val sourceKey: String? = null, val sourceVersion: String? = null,val parentOperationId: String? = null,
-    val replyRecovery: NativeReplyRecovery? = null, val forkContext: NativeForkContext? = null,val sharingScope: String? = null) {
+    val replyRecovery: NativeReplyRecovery? = null, val forkContext: NativeForkContext? = null,val sharingScope: String? = null,
+    val migrationReadOnly: Boolean = false) {
     fun body()=JSONObject().put("id",id).put("kind",kind).put("target",target).put("intent",intent)
         .put("intentSha256",intentSha256).put("phase",phase).put("result",result ?: JSONObject.NULL)
         .put("error",error ?: JSONObject.NULL).put("detached",detached).put("submissionAttempted",submissionAttempted)
@@ -22,6 +23,7 @@ data class SavedOperation(val id: String, val kind: String, val target: String, 
         .put("parentOperationId",parentOperationId ?: JSONObject.NULL)
         .put("sharingScope",sharingScope?.let(::JSONObject) ?: JSONObject.NULL)
         .put("replyRecovery",replyRecovery?.body() ?: JSONObject.NULL).put("forkContext",forkContext?.body() ?: JSONObject.NULL)
+        .apply {if(migrationReadOnly)put("migrationReadOnly",true)}
 }
 
 /** The journal is separate from editable drafts. Successful atomic storage precedes every submit. */
@@ -37,7 +39,7 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         val record=SavedOperation(value.getString("id"),value.getString("kind"),value.getString("target"),value.getString("intent"),
             value.getString("intentSha256"),value.getString("phase"),value.optional("result"),value.optional("error"),value.getBoolean("detached"),
             value.optBoolean("submissionAttempted",value.getString("phase") !in listOf("ready","preparing","prepared")),
-            value.optional("sourceKey"),value.optional("sourceVersion"),value.optional("parentOperationId"),value.optJSONObject("replyRecovery")?.let(NativeReplyRecovery::decode),value.optJSONObject("forkContext")?.let(NativeForkContext::decode),value.optJSONObject("sharingScope")?.let { AISharingScope.decode(it);it.toString() })
+            value.optional("sourceKey"),value.optional("sourceVersion"),value.optional("parentOperationId"),value.optJSONObject("replyRecovery")?.let(NativeReplyRecovery::decode),value.optJSONObject("forkContext")?.let(NativeForkContext::decode),value.optJSONObject("sharingScope")?.let { AISharingScope.decode(it);it.toString() },value.optBoolean("migrationReadOnly",false))
         require(record.intentSha256==sha(record.intent)) { "本地提交意图损坏，未重放" }
         val definition=definitions[record.kind] ?: error("未知本地操作类型")
         validateIntent(JSONObject(record.intent),definition)
@@ -84,14 +86,17 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         }
     }
     suspend fun markPreparing(target: String,id: String): SavedOperation = change(target,id) {
+        require(!it.migrationReadOnly) { "迁入的原操作只能查询回执，不能重放" }
         require(it.kind=="creation" && it.phase=="ready" && !it.submissionAttempted) { "只能准备尚未提交的新建意图" }
         it.copy(phase="preparing")
     }
     suspend fun markSubmitting(target: String,id: String): SavedOperation = change(target,id) {
+        require(!it.migrationReadOnly) { "迁入的原操作只能查询回执，不能重放" }
         require(!it.submissionAttempted && it.phase==if(it.kind=="creation") "prepared" else "ready") { "操作已尝试提交，只能查询原记录" }
         it.copy(phase="submitting",submissionAttempted=true,replyRecovery=it.replyRecovery?.copy(phase="uncertain",inspection=null))
     }
     suspend fun observeReplyInspection(client: MobileClient,target: String,id: String,inspection: JSONObject): SavedOperation = change(target,id) {
+        require(!it.migrationReadOnly) { "迁入的原操作不能继承重试授权" }
         val recovery=it.replyRecovery ?: error("旧记录未捕获恢复授权，只能查询原回执")
         require(recovery.matches(client,it) && !recovery.consumed && it.result==null) { "原操作不能取得新的重试授权" }
         val candidate=recovery.copy(inspection=inspection.toString())
@@ -99,6 +104,7 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         it.copy(replyRecovery=candidate.copy(phase="strong-not-accepted"),error=null)
     }
     suspend fun consumeReplyRetry(client: MobileClient,target: String,id: String): SavedOperation = change(target,id) {
+        require(!it.migrationReadOnly) { "迁入的原操作只能查询回执，不能重放" }
         val recovery=it.replyRecovery ?: error("原记录缺少恢复授权")
         require(recovery.mayRetry(client,it)) { "原消息结果待核对，不能重新提交" }
         it.copy(phase="submitting",submissionAttempted=true,replyRecovery=recovery.copy(phase="uncertain",inspection=null,consumed=true))
@@ -107,6 +113,7 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         it.copy(replyRecovery=it.replyRecovery?.copy(phase="uncertain",inspection=null))
     }
     suspend fun markCreationRetrySubmitting(target: String,id: String): SavedOperation = change(target,id) {
+        require(!it.migrationReadOnly) { "迁入的原操作只能查询回执，不能重放" }
         val original=it.result?.let { value->CodexCommandCodec.creation(JSONObject(value)) }
         require(it.kind=="creation" && it.submissionAttempted && original!=null &&
             ReplyRecoveryRules.mayContinueCreation(it.phase,true,original.diagnostic?.disposition,
@@ -200,6 +207,7 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
             require(updated.id==old.id && updated.kind==old.kind && updated.intent==old.intent && updated.intentSha256==old.intentSha256 && updated.target==old.target && updated.sourceKey==old.sourceKey && updated.sourceVersion==old.sourceVersion && updated.parentOperationId==old.parentOperationId) { "提交意图不可修改" }
             require(updated.forkContext==old.forkContext) { "原分支目标与连接身份不可改写" }
             require(!old.submissionAttempted || updated.submissionAttempted) { "不得解除已提交边界" }
+            require(!old.migrationReadOnly || updated.migrationReadOnly) { "不得恢复迁入原操作的执行权限" }
             if(old.replyRecovery==null) require(updated.replyRecovery==null) { "旧记录不得凭当前连接补造恢复授权" }
             else {
                 val before=old.replyRecovery;val after=updated.replyRecovery ?: error("不得丢失原恢复记录")

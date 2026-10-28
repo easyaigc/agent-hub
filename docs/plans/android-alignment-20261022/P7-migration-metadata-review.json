@@ -1,0 +1,144 @@
+{
+  "phase": "P7-5e",
+  "sourceBase": "947c1d1be76934e3eab8c57a2cfa05164131f864",
+  "summary": "P7-5e：归档元数据增加封闭字段、严格类型/嵌套/数量与当前连接解析校验；坏草稿/侧栏/设置/连接/未来字段不能替换原候选，合法原文/空新聊与旧十附件保持。先以旧实现复现数字草稿可替换候选的失败，再修复；最终6项两环境12执行，原候选SDK11/手机单项1及两组进程冷读4按相同生产包/未改测试精确复用，共28辅助、12默认11字段/12原密文目录保护。手机旧11合批240秒超时不计，矩阵待分组补验。尚未接完整导入/导出UI与身份/凭据策略；0模型，累计确认221/P4205，未知操作只读。",
+  "features": ["F30", "F47", "F55", "F56", "F71"],
+  "sourceSha256": "111d79a80f6bae94dc8feece0fc95bc7b525d769673e1da37a22c1fba2206f1d",
+  "appSha256": "113c49178fff56472c7a88319c7976999ece10844f2722d45032208a63baeab2",
+  "runnerSha256": "9a0c12b690d12f116eaf80c576d3272fb776f475d11aad4262f1a3e8cb4700df",
+  "finalRunnerMethods": 12,
+  "matchedImplementationMethods": 16,
+  "nativeAuxiliary": 28,
+  "defaultElevenFieldProofs": 12,
+  "originalEncryptedDirectoryProofs": 12,
+  "processColdGroups": 2,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "methods": 6,
+      "group": "metadata-final-six",
+      "reportSha256": "8ab5a7fef6553acbf2dbc128d3096914a96f0963b2ed7ab428aa39164ea060e7",
+      "sourceSha256": "111d79a80f6bae94dc8feece0fc95bc7b525d769673e1da37a22c1fba2206f1d",
+      "runnerSha256": "9a0c12b690d12f116eaf80c576d3272fb776f475d11aad4262f1a3e8cb4700df",
+      "proofCount": 6,
+      "proofKind": "default",
+      "proofSha256s": [
+        "6f71e937970a93ff3d9311ec962ab616d16805d7fd2647e188d5ba71db037788",
+        "d410c6603f4af34dfaab0adcb9c3009dffbda7fa8212d509aeb1ac9426f4f646",
+        "a53b9a818cc2d040fe9ebbe6f73a5f99d8335ae5df6294d86886816b334828cf",
+        "54258e5830f3c629c2b803834a3de7788374d2e91fee2367cedbc765d5bcba70",
+        "5f7a991f8080a073387f73340286658a30987484fb5e9bfcc7d8c3cd9a6cade9",
+        "e27881d9b8179514f885007d527e41b5de8026ac04881d4822023768dd1d19c1"
+      ],
+      "matchedImplementationReuse": false,
+      "reuseBasis": null
+    },
+    {
+      "environment": "owned-API26",
+      "methods": 11,
+      "group": "original-candidate-regression",
+      "reportSha256": "3eeeb9fd4e89d2128efef6a57e281638238dc0599c193ae2ed0b252719c288f0",
+      "sourceSha256": "c6c466d07601a4ff303bdd9365579f0bf462677b7acd53de5ddba853482a60a9",
+      "runnerSha256": "6b42d9475cc201896e2cc1ce93419f1d8f40901900ced95a86fbefed5b55f994",
+      "proofCount": 11,
+      "proofKind": "original",
+      "proofSha256s": [
+        "92da61ef854adc7b76a83cab05eb2e98783eccfffe9e60c1caa278f74a619445",
+        "53c4f1e148b962d8a16d9da29bfd16fc295bb817fb64c88a029afcc7ebd5eabe",
+        "48b822566476c9beedcb32e7087f6fc566063241bf6744b8f83664e3b40ef12f",
+        "7260addf508bd9e02cfc6a5500860a32e23842480a74e85924d4c1c6804cbf86",
+        "b1683fbb547136779e78562c9ae134123c31940538fdbcf3f7a78a290f2cceab",
+        "a541eedb8f11856b048c8af53785b6c817e47d0744856c06d2d3958ef0c61bd5",
+        "24ada4fedead3e524a0dd430bf634b8f0753b227bf614ea5cf458dae4dda1c7b",
+        "75d246a516ef98dc333e59c811c961eaca2332cdad0cbe860e8e8225ddbf4f81",
+        "cbbcb992a17d7254f7bcce67c136ed5edbd06499d4d1eb06c6f5e6d0b86b2370",
+        "0436479f15cad627c4a9909e0c26dc72fb9e1669d823d8e28d71da9f88c0012c",
+        "96946bc4e85d8e9a0e418f22b1d6dbc9d90d0b287d89a03dec73b1c4377827f7"
+      ],
+      "matchedImplementationReuse": true,
+      "reuseBasis": "Same production APK and all source/test/helper bytes except the new metadata legacy-ten method; selected original candidate classes unchanged."
+    },
+    {
+      "environment": "owned-API26",
+      "group": "original-candidate-process-cold",
+      "methods": 2,
+      "reportSha256": "4252b11db1ccb62ce46a37be7e56fe7b17a4cd341fff329fa942ae361768ceec",
+      "readerReceiptSha256": "b62efb18e16039fefd94c323343d491d3837d85c03a45594c5c3ae27f64d7cdd",
+      "matchedImplementationReuse": true,
+      "reuseBasis": "Same production APK and unchanged candidate cold reader/seed plus all helpers; only unrelated metadata test gained a legacy-ten method. Old runner retained."
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 6,
+      "group": "metadata-final-six",
+      "reportSha256": "3bb9d91a3c9e06abf8186f22225b494150bb06612bfc9d14742b326261b3010f",
+      "sourceSha256": "111d79a80f6bae94dc8feece0fc95bc7b525d769673e1da37a22c1fba2206f1d",
+      "runnerSha256": "9a0c12b690d12f116eaf80c576d3272fb776f475d11aad4262f1a3e8cb4700df",
+      "proofCount": 6,
+      "proofKind": "default",
+      "proofSha256s": [
+        "e4a65e89b18e99f443b697ff7243c80499f61df516112ea4c93bf5f3cea0c9fc",
+        "99a4f43b05e82b74b7e5951da67b60334304745d35854b7905aefd8d383aa7cb",
+        "e7140ddab5dafcab000270e28444d3a1536bc15c38a016451f71f41caf1044e6",
+        "35f2589bd62c8572f32dac30734008058c15b66a9149323f22e9f1e4ac98a3c5",
+        "ae1a6c223b987a6b1d470e7569ad616ddd2ae946fac807d199e24a092effbd92",
+        "7b58207f88e33d204741d60f844ded0c6520deca6c943684e3de27b51e56752e"
+      ],
+      "matchedImplementationReuse": false,
+      "reuseBasis": null
+    },
+    {
+      "environment": "physical-API33",
+      "methods": 1,
+      "group": "original-candidate-regression",
+      "reportSha256": "7adea734d321d5f4f9ce0b3b16c7053eaabec488bc00e7b2abc7fede09f70985",
+      "sourceSha256": "c6c466d07601a4ff303bdd9365579f0bf462677b7acd53de5ddba853482a60a9",
+      "runnerSha256": "6b42d9475cc201896e2cc1ce93419f1d8f40901900ced95a86fbefed5b55f994",
+      "proofCount": 1,
+      "proofKind": "original",
+      "proofSha256s": ["f95e1fe39843486ada1d75abf44fe74ce61892e3b8cacb9b1e250aba0da1cc9c"],
+      "matchedImplementationReuse": true,
+      "reuseBasis": "Same production APK and all source/test/helper bytes except the new metadata legacy-ten method; selected original candidate classes unchanged."
+    },
+    {
+      "environment": "physical-API33",
+      "group": "original-candidate-process-cold",
+      "methods": 2,
+      "reportSha256": "c916c1210fc70bcc969aff09a773c56d1cfc71b0ce7b741c9cc7abfa805105d2",
+      "readerReceiptSha256": "5ab97d1bc9a408c9768d871ab9472ad27f491faf1f4d8bad909e11126a85b5b6",
+      "matchedImplementationReuse": true,
+      "reuseBasis": "Same production APK and unchanged candidate cold reader/seed plus all helpers; only unrelated metadata test gained a legacy-ten method. Old runner retained."
+    }
+  ],
+  "baselineFailure": {
+    "reportSha256": "42b7bc464693bc9fb1a0a246e465cdf313da676feb05770b84ba9aab51365b58",
+    "logSha256": "ced4bee9b00ae0103cf9e23b1a863c491aa0a4b19732b5b5f5b8dda48022b639",
+    "reason": "Old validator accepted authenticated draft value7 and replaced predecessor; regression assertion failed before the fix. Active installation/default files stayed protected.",
+    "countedPassed": false
+  },
+  "phoneLongBatchFailure": {
+    "reportSha256": "57704e6f702caa660d0bd13992be83b49401bf249f066b0312494afaef315fae",
+    "logSha256": "0ba048eea28237ffd51eb0843a4571e7dd1608639294bb19d960ec3f80f54b7f",
+    "reason": "11-method original candidate regression exceeded240 seconds; partial methods are not counted as whole-batch pass. Current schema-six, separate original candidate single and candidate cold flow passed.",
+    "countedPassed": false
+  },
+  "bounds": "Current native metadata known fields;128clients,10000 entries/list items,100000 UTF-16 draft units,≤10 legacy draft files; source copy/normalization is not performed. Unknown future state rejects explicitly. This is not complete cross-record inventory/identity validation.",
+  "iosImpact": "Uses current Android persisted format; iOS SavedSession remains a separate native format. Same product assertion that malformed/unsupported migration does not change active data or silently discard original state. No iOS/A6 upgrade.",
+  "rootReuse": {
+    "basis": "PR40 frozen root check; 1425 inputs unchanged during pnpm check, exit0",
+    "matchingNonAndroidNonDocumentationInputs": 796,
+    "changes": [],
+    "scope": "Current Android native files independently compiled and tested; current docs/parity/format checked separately. No new whole-root frozen check claim."
+  },
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Full record inventory/orphans, new-install guard and target/credential/re-pair boundaries",
+    "Imported consent/read identity/local-source reset and observe-only receipt downgrade rules",
+    "Export/import UI, password/system-file/cancel/error/activation and complete quota/Key/I/O matrix",
+    "Physical original11 candidate matrix remaining grouped cases; API37 ADB/landscape and prior original-model/physical quota cold pending",
+    "Business task/project management and iOS A6 paused"
+  ]
+}

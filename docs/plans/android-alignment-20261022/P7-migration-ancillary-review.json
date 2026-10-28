@@ -1,0 +1,168 @@
+{
+  "phase": "P7-5k",
+  "sourceBase": "f0cc0f9cccc585510c1ee1f452ce267a4d94ecc9",
+  "summary": "P7-5k：缩略图与旧AI共享许可纳入严格迁移契约；缩略图复用普通预览的摘要/PNG/尺寸校验，原附件保持独立。旧许可保留在原档案，迁入后清空且需重新授权；不发送原操作。最终候选共52辅助、44默认11字段保护；API26附件栏/八方向EXIF/配额脚本修订与许可交互通过，真机核心18通过且同组UI8通过。",
+  "features": ["F30", "F47", "F55", "F56", "F64", "F71"],
+  "sourceSha256": "f9771a86bed597f568eafc1f904c556759ee1aa09db013ff5b5dfd5ac35cce97",
+  "appSha256": "ce453ddfd656756a2c28200140c3b7db359cd1edd42247f2f6d90402bba62d62",
+  "runnerSha256": "22834fe03691df8e480daccbea63554cf6b36d99c5a77e0abfda8446d02cd283",
+  "nativeAuxiliary": 52,
+  "defaultElevenFieldProofs": 44,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "groups": [
+        {
+          "group": "ancillary-final",
+          "status": "passed",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "55bbc5b94a90a3fb259c828a489e837a9a87adf0d6de6e2d8141964765a1c3e0",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "7b4e9f1260a192df64e6e9230bf28ce28d7c1c4e5706e34cbfdceb50d60db179",
+            "4ce03732c14a7b50392849678c1c50b4be61a04723391ca00b307903855cdd11",
+            "9aef516668fbdc549e2a2c74038b378d61975f6d7d4ea485225ec866e59caef7",
+            "0b475ed5fa3aff1eb9764b167d51697205eb071291fe9b9022d74a1d4bb1f95b",
+            "9a68ff087fc0ab6055a249a002e02a549983717750f3b53843c1de5477e73a7b",
+            "1c63cd4d95342d7bbc198db5915fa089cf8fb2eec43e6c15b19fa6e64e3e7193",
+            "20d449b760ab437d1b6a16bffefab7f786fc3f551d37480c632074d089da184f",
+            "9ae4ad6e1180842b59a847b3c9f73f423f29218c6e94dd05ff172f8341ba9ae0",
+            "1579cd9de077feed1170f1480b599e0086f78d19674e8b05b67add4f4971602e",
+            "b29c45c11f6a75bd1d949d8913127fab7521b08403ab0a34ee2fa3116790cb5a",
+            "ffc01c7023192f0ba75be50e4d6968134eba22eb1b79453faaa9f7a91354c248",
+            "82296ebb1921c14e32c093caf9ff16a62417f3bfa5c85e2e4bac5e1e39068d73",
+            "12082862e97b210ed1fdbc6d42eca52ca306424f99cf39a7b3b7fa07532ba49c",
+            "a0c7cc9266e163171490b629e3963ae88e8709ec56bda4786beb105fddddf188",
+            "2dffb51ae4c8bc9511f7e49d3d6ccc3ba5fa95d354ffec02bb49ba939eaccd38",
+            "e14e45b9427960aab2e1cbb4d82dd71cdfb90dbaf9bbb75cb39788fec994ae02",
+            "a3a626a266408a7d88a976b0e2482081cb650bc91303112dbc34cd70dacd203f",
+            "1f9ced775324d74c526fe72d53c7e2debeb62cfd9ce209e7b7ea7a46d122e756"
+          ],
+          "nativeWindowImages": []
+        },
+        {
+          "group": "ui-final",
+          "status": "passed",
+          "nativeAuxiliaryMethods": 8,
+          "reportSha256": "5dcd18f497c9d4bc4a7590b2e48f12d4f70b5f5b87cf844d3a16520c237b7d99",
+          "defaultElevenFieldProofs": 4,
+          "proofSha256s": [
+            "db8e9a008fed59346921b3b7fd5da671418459b2ae08eb6030c9daf8835f469c",
+            "ece2b0e7dc6afbad42c79a903ce4ca6e56a695852338cc6a47edc0eb91ec7fc6",
+            "2b802ec8a98192ad061d4ec1e0b6a8566b8ee9e62206357f45d284b5bd9b3eff",
+            "bf7446e0d05a8e5e51e8f1c598123e7e82676dc3bbc286a61dbbd3851bfae8c8"
+          ],
+          "nativeWindowImages": [
+            {
+              "name": "large-image-uses-bounded-cache.png",
+              "sha256": "939cac5445f205788ae0049eb7fe25d2641edf5d70e827ed0aa5a218a6b383be"
+            },
+            {
+              "name": "undecodable-image-keeps-original-file.png",
+              "sha256": "6c0e3757a87161e383c591fbcc82cad93154f28174e50b72c775f8714c113f2c"
+            },
+            {
+              "name": "image-thumbnail-and-file-sizes.png",
+              "sha256": "e4cc9840f508a5113684a4759b127b0b1097626d3f739e615ebf93ed1bfb7702"
+            },
+            {
+              "name": "jpeg-exif-thumbnail-original-bytes-unchanged.png",
+              "sha256": "193f1206707b7d38f78e51170912ce4622bfc5a42c49b91bedca4ff66d72fe74"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "groups": [
+        {
+          "group": "ancillary-final",
+          "status": "passed",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "475a82b2d91e4c21c58e461d309dd03ce51379b7ea1936d240f7ce113262d920",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "a7ccef87beb79f8d65b20545415f73931bd95833b54e48bad0b4f7c74868e70a",
+            "bc35343a3af63d50752a61510eb59b7646b39fa5f5e5de85c9c0dec5f2dd80a2",
+            "09befcf66cffa8728384493990cf298b6776778e0b8a31d5870de0d7b7fa0363",
+            "b7272da3f73beeb95df3e5d7445b3441a4b1ee4df51cdda1325295ed66e8bb5a",
+            "ed6517d28b1d6c9e47e8a551959c32db34575f446b53638b88689d8169746b7e",
+            "d0b0891e15d91a4a86ccac60623f4d96fcf470dc0bf53c222b8315a90a415bd7",
+            "505dbcbd78deed6981fa8a92777f2293ffc7c07489dc609c663765cad4bd1fb0",
+            "adeffc8d8d49543e141b777b688a6d2220dd0c8162e4f6339e1ab953f22ef5e3",
+            "60694e3e770cb055f06ce10eda349d3e394ad75f1d377d40f10ff9d40920e041",
+            "d0c1b4765e49b830add32a8d0582721fcea028316fb8ec284738309cee93a36a",
+            "902f794cac7bbc6cbb3c9e74ccd9c17e5a1eb5375aa7a894499ea95145a25b4b",
+            "1425b17440bee00884bba970ded22c6cf0153dda55522cf591c7d3092293bf95",
+            "ddbb563b5c9a97e30b8563780d05fa4ef16bda619e7057e427f167d971c8d5be",
+            "34f9f41daf308f0a8703b5ee9a3522cb1203cd68b2aeea2382c069cd7eace5ba",
+            "dc36adbfa2147a12c8d0d2044b171000edb54ed08f7ee86a3b3ea333466a9ecd",
+            "1d0136529d341c8eb051dc41301edb6985fc5504d6d4d61c8f6c2f23153c7079",
+            "108d013d7f64223f315dbfb58734bff79da579e1c4374cd6f73b0ccc74ed7552",
+            "30fc91d257cbfde39e308296f4ae4de73bab8497f1e0ade65a5b31a2f96cedcf"
+          ],
+          "nativeWindowImages": []
+        },
+        {
+          "group": "ui-final",
+          "status": "passed",
+          "nativeAuxiliaryMethods": 8,
+          "reportSha256": "44431864714ef6941a7bd22a69e970670e2959a17fddc4debed62a9f8e24124e",
+          "defaultElevenFieldProofs": 4,
+          "proofSha256s": [
+            "862de0ccbdc4d2b36e8b6c23bc1c4a4aa877c2fc5dcc52ae18694e0a591e06fa",
+            "d80b76fd52a4ea78cf232b0c985a5c30020257e0dad60f04c2496346ad803d7b",
+            "c63167c99b3bcfa6fb817394851d425ef112bb8ed009c8a7e3793c3138a4d804",
+            "093cb68cabe759b68bd7fa6a5de9f492574f57d97f2f5a88459824c349d8bb27"
+          ],
+          "nativeWindowImages": [
+            {
+              "name": "large-image-uses-bounded-cache.png",
+              "sha256": "fe8cda2f0d3802716eb0fa91ec0d27c8b2372e45acca138ccb4755298526f815"
+            },
+            {
+              "name": "undecodable-image-keeps-original-file.png",
+              "sha256": "37dadcba841eaa3a27819e4ad80c5dc9568ba4deb97ffae6ba68a2ced3492d7e"
+            },
+            {
+              "name": "image-thumbnail-and-file-sizes.png",
+              "sha256": "b4621fa95803b5f259ce1e12b07751632c99e2c72b3068f6972bf298960a6c60"
+            },
+            {
+              "name": "jpeg-exif-thumbnail-original-bytes-unchanged.png",
+              "sha256": "3311315fb7a7770812affef15a121b720b494862fab043263a1888aeeaae6358"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "bounds": "Internal supported Codex text/file/operation/credential/history plus optional thumbnail and old-consent archive only. No native system migration UI. Existing8MiB/1024record gate remains. Voice/binary, inbox/callback children, provider/device and notification full schema/quota remain open.",
+  "permissionPolicy": "Archived grants are strict version1 closed records with valid UUIDs, scope, typed time and bounded strings. They can refer to historical absent targets as audit data, never active authority. Original source bytes stay exact; activation writes an empty version1 grant set in the new generation and retains record count/receipt idempotency. Old original operations remain observe-only.",
+  "previewPolicy": "Exact referenced image manifest, PNG signature/base64/hash,128edge and96KiB image limit; null preview remains valid optional display cache. It never supplies upload bytes or bypasses original attachment checks. Same strict helper used by ordinary native preview and candidate validation.",
+  "visualBounds": "API26 PixelCopy owned native windows inspected: actual light appearance, portrait1080x1920. Wrapper viewportTheme=dark does not apply to these fixture sessions; no dark-theme/landscape/large-font/iOS native pass claimed. Image tile/name/size/remove, fallback and original large-file cache plus all8EXIFpixel mappings are asserted. Mobile full visual matrix remains pending.",
+  "retainedFailure": {
+    "environment": "owned-API26",
+    "reportSha256": "ed5130b87424b1cd923bba444c07033cb553ce23cb5db8684d204200bb7789a3",
+    "status": "failed",
+    "methodsInFailedBatch": 4,
+    "failure": "Old EXIF examiner tried to attach8images simultaneously under current5attachment quota; failed at sixth image. Product quota was not changed. Examiner now removes each verified image before the next and retains the last for native window review.",
+    "partialSuccessesNotCounted": true,
+    "productionAppSha256Unchanged": true
+  },
+  "supersededRunner": "Earlier18+4 batches and the original failed UI batch remain under their own source/runner fingerprints. Only final candidate results above count toward this checkpoint.",
+  "iosImpact": "Same fresh-consent and original attachment/preview assertions; Android-specific cache and storage formats. iOS actual source remains comparison, iOS A6 paused; no iOS native UI pass.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Complete voice/binary, inbox/callback child, provider/device and notification schema/quota",
+    "Native system export/import UI and old-session lifecycle replacement with real DEV",
+    "Unindexed legacy names and full historical alias matrix; explicit revalidated recovery-action parity",
+    "Full dual-native theme/rotation/font/visual matrix",
+    "API37 landscape/ADB, original owner, old candidate groups and cellular/VPN",
+    "Business task/project management and iOS A6 paused"
+  ]
+}

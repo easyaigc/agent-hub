@@ -42,21 +42,27 @@ internal class NativeHistoryCache(private val storage: NativeSessionStorage) {
         }
     }
     fun read(key: String): MobileHistory? = storage.snapshotTransaction {
-        val name="history:$key";val envelope=storage.read(name)?.let(::JSONObject) ?: return@snapshotTransaction null
+        decode(key,storage::read)
+    }
+    companion object {
+    /** Shared by the native cache reader and authenticated migration validation. */
+    internal fun decode(key: String,read: (String)->String?): MobileHistory? {
+        val name="history:$key";val envelope=read(name)?.let(::JSONObject) ?: return null
         require(envelope.getString("targetKey")==key)
         val header=envelope.getJSONObject("history")
-        if(envelope.getInt("version")==1) return@snapshotTransaction MobileSnapshotCodec.history(header.toString())
+        if(envelope.getInt("version")==1) return MobileSnapshotCodec.history(header.toString())
         require(envelope.getInt("version")==2)
         val page=MobileSnapshotCodec.history(header.toString());require(page.hostId==envelope.getString("hostId")&&page.threadId==envelope.getString("threadId"))
         val generation=envelope.getString("generation");require(runCatching { UUID.fromString(generation) }.isSuccess)
         val parts=envelope.getJSONArray("parts").strings();require(parts.size<=10_000&&parts.distinct().size==parts.size)
         val messages=parts.flatMapIndexed { index,part ->
             require(part=="$name:part:$generation:$index") { "缓存分片目标不匹配" }
-            val content=try { storage.read(part) } catch(failure: Exception) { throw IllegalStateException("缓存分片 $index 读取失败（${storage.storedBytes(part)} bytes）",failure) }
+            val content=try { read(part) } catch(failure: Exception) { throw IllegalStateException("缓存分片 $index 读取失败",failure) }
             val array=JSONArray(content ?: error("缓存分片缺失，原文件已保留"));require(array.length() in 1..32)
             MobileSnapshotCodec.history(JSONObject(header.toString()).put("messages",array).toString()).messages
         }
         require(messages.size==envelope.getInt("messageCount")&&messages.map { it.id }.distinct().size==messages.size)
-        page.copy(messages=messages)
+        return page.copy(messages=messages)
+    }
     }
 }

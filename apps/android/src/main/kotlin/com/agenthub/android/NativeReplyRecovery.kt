@@ -10,7 +10,7 @@ data class NativeReplyRecovery(val capturedTarget: String,val trust: String,val 
     val phase: String="not-written",val consumed: Boolean=false,val inspection: String?=null) {
     fun body()=JSONObject().put("capturedTarget",JSONObject(capturedTarget)).put("trust",trust).put("fingerprint",fingerprint)
         .put("phase",phase).put("consumed",consumed).put("inspection",inspection?.let(::JSONObject) ?: JSONObject.NULL)
-    fun matches(client: MobileClient,record: SavedOperation): Boolean = !record.detached && matchesObservation(client,record)
+    fun matches(client: MobileClient,record: SavedOperation): Boolean = !record.detached && !record.migrationReadOnly && matchesObservation(client,record)
     /** Ending a local wait removes write authority, not the captured read-only identity. */
     fun matchesObservation(client: MobileClient,record: SavedOperation): Boolean = runCatching {
         val target=HostReadCodec.target(JSONObject(capturedTarget))!!

@@ -1,0 +1,97 @@
+{
+  "phase": "P7-5f",
+  "sourceBase": "efc178a4e7cbf1b73c165ff0e2b20e23706e76d6",
+  "summary": "P7-5f：迁移档案闭合附件/原输入/操作引用；原回复附件顺序逐项匹配不可变意图，有来源的回复/首条缺失快照、孤立文件及未知/错误类型记录均拒绝。已配对Codex凭据使用日常Vault同一校验，须与归档电脑、运行目标、证书、地址和存储身份精确一致。API26/新手机各6项新检查与6项元数据兼容共24辅助，24份默认11字段保护；旧十附件保持。尚未激活或开放完整迁移界面。",
+  "features": ["F30", "F47", "F55", "F56", "F71"],
+  "sourceSha256": "9a5e40654034b7fe65bd660ae35de20e2dd1c7a1ad3b2cd04bc536178afa500f",
+  "appSha256": "91a90a4d1c713445ad566a2b24473dd99242c582b80a78f51d632d3764b8c2bc",
+  "runnerSha256": "73462d5e4fa028063f8b1525261242c19c2811debe2fc5d7f0d41bf29adedce1",
+  "nativeAuxiliary": 24,
+  "defaultElevenFieldProofs": 24,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "group": "final",
+      "nativeAuxiliaryMethods": 6,
+      "reportSha256": "1e3a2b71565f150e7729950d08d9a2a750e09ca77a2f5b6305a215bbe467e5ec",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "7d24534f6839529bf575bc97cb5274e443085f1cf252706705e2079283c3df1e",
+        "54c7a9a59a3b5ab06ffa4bc978af941b172b0293d71a4cb371e03b06cf674678",
+        "fa1f8b9cd28fc5bb5aeded9e0e8554a0cb6b4edcdf0b4a368bf880eb42bb0a52",
+        "5e40c20011ccaeeb66b64266e73f2c5a24962b0ce24616f34bcb4e4cb28d91ce",
+        "0e1cf4f1182e759a2a5ca10ac2f6ea0e893b3c8b1c804d78c8ddfa1e292d96ea",
+        "2e140c0e9ac269b21a670983a4c0251b11245c8d76b1b279acafa417b5e958af"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "group": "metadata",
+      "nativeAuxiliaryMethods": 6,
+      "reportSha256": "8f1f8478b98fd02bde307c223d06cf468f878555529dc877ea44fcc791a658fb",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "2db63bdf7b2f21a989b597f6645036b911d077f1121e52d6b1b0c3c73e1cf63b",
+        "7122565e6e3e241512bfdffd131dadf2c6295b827c7be1f8f8f5fb2a21b8208d",
+        "aa7ef5b3f0d067e6551ab4adc0c0169269333dd1cc3d7edee2ffa7a26f46b0a7",
+        "34a357c83beefe9288feae49e81f38fc9c2367b5645af970dfc4ec0fe975e17a",
+        "d64720c842dd15b9fb6cf9103e47d5db5530d912b467019e34ee896b663a8922",
+        "93101f55e95940380301299b3cbaa6a328fa3d2ddc3dd2e4fb571c071310e751"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "group": "final",
+      "nativeAuxiliaryMethods": 6,
+      "reportSha256": "942b3cc05d09cff3129d742bc462f6cf532eb74124b6c9764b0e290fb25510d4",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "0f51b3ca7f10fbf103f10e2b3992e936026df754b45ba97860d0a8aecbef97cf",
+        "4b7c31d25c72bdbe749d59b42576beae37de17201786c6284b034ff0e39a57aa",
+        "f90485f30fb78ff0474113283b665a427bf1c23be231a99f6c73d228b5be967f",
+        "9e22f95001e921032fbbc694d939d113727590295f5356e63b9ff1b6eae3f2b3",
+        "c6244b2d04eeacbb32bb6742daac3e748d0376be1fde93b782c347ac865182e9",
+        "3f8c8eb8114f10d511377560586c9e25b86ab861286868ebf0aa5f3d9a800987"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "group": "metadata",
+      "nativeAuxiliaryMethods": 6,
+      "reportSha256": "3c8c7a1a460df7e05f124a914c24db71937193cfb092a6c21d00fc39721af8b9",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "329d2cdfd53d17d6ad7bc0e492bfd54572d36d4a337476999eb5e8ef1a6dc132",
+        "38d8f86ad82a391b38feba752d27893d1bd30b456edb403830ba2a6d428b4a16",
+        "caa671566d5770cba2832895b3c06e0ff4c7e411a5e22693b61187cf49b4d13c",
+        "55d6704af83287bdb1696030fecacae99b584cb9415d6013087c3a32ac3cd3c2",
+        "bf525ae477a03c7c6828a1a55b1e2ce4b6094bf7909cc422866aa3d9fd2fa78d",
+        "5f570338b8e6926d9b655f84abe0c6e78550e016227445962944fc0f11863231"
+      ]
+    }
+  ],
+  "initialFailure": {
+    "reason": "Both first cohorts rejected the positive synthetic pairing because its test route used HTTP. Fixed the fixture to the actual HTTPS pairing contract; production validation stayed intact. Initial failed batches are retained and not counted.",
+    "reportsSha256": [
+      "8771315270a7082720ad8db1e81f19406126ca6a52beb7db2d60d44744811d2d",
+      "7920419424cad0d53e881e05f0ea66b3213c94a5b0602b77f2db21644180e89a"
+    ]
+  },
+  "implementationBounds": [
+    "Closed current Codex metadata/attachment/journal/submission graph; this is not a complete on-device record inventory/export",
+    "Only the existing verified Codex vault record is allowed; unsupported legacy token/device/provider/notification records still reject explicitly",
+    "No imported authorization reset or new-install activation/product UI in this checkpoint"
+  ],
+  "iosImpact": "Matches iOS explicit credential/reference checks and original state preservation; payloads remain native-specific. No iOS source/A6 change.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Complete on-device inventory/export, legacy credentials and other provider re-pairing",
+    "New-install activation, imported consent/read identity/photo source and retry authority reset",
+    "Native export/import UI and applicable quota/failure/real DEV matrix",
+    "Prior API37 landscape/ADB, original owner, physical original candidate full11 grouped cases remain separate",
+    "Business task/project management and iOS A6 paused"
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "phase": "P7-5h",
+  "sourceBase": "fd57175de4b2e441b6b5da9899c225f794fbe20c",
+  "summary": "P7-5h：导出前增加完整有效代次清单快照；逻辑名与全部实际密文逐个对应，未识别/缺失/损坏/未完成AtomicFile/越界链接/未支持二进制/超额均拒绝，不生成删减备份、不删除原文件。全快照与多记录写入串行，旧代次不混入。API26/新手机各6新项+6激活+6引用，共36辅助与36份默认11字段保护。自动清单发现、完整类型/二进制与产品导出UI仍继续。",
+  "features": ["F30", "F47", "F55", "F56", "F71"],
+  "sourceSha256": "3d180ae7ef9ef1757ec38f8941865be8eb99339e018e4173d3cc8b13221f1cb8",
+  "appSha256": "9365b67adc955558a780d818e9e4b2575b357ce87ab7c6b3b0af1093dd9db69b",
+  "runnerSha256": "0540a27798bf365c375bb8a70bb5ad66d2e5063f28cace23677a3c8ef129ea54",
+  "nativeAuxiliary": 36,
+  "defaultElevenFieldProofs": 36,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "nativeAuxiliaryMethods": 18,
+      "groups": ["inventory-six", "activation-six", "references-six"],
+      "reportSha256": "0fe329484363e9d21f1026d2b2960ddcc048d9efc3e7d6d2585eb73253343309",
+      "defaultElevenFieldProofs": 18,
+      "proofSha256s": [
+        "2a94434214d10129c61e13101ead70fac126dbc79b8dab8f2c4339b229348cd4",
+        "e0ea93880d6c8bbe3e3b76152ceff2ce500347ba0f43f7cd3ceb35bc79f043f7",
+        "f25698c3d11dcc1f649aa22c3ce7f3d307be2afe2214f16492b2344069357ad0",
+        "595edbc8f323251bc6f69b6db2ca093ae49ee8161cad014d1af604574eabf552",
+        "14784e54b452bfbcadc378b58b8532a298f5ee2e410757205af4c07d51c6bbb8",
+        "4a52a06cd8b2737063e1d3b0e347c7570d03c1fad7a2ab701f0dd87f6817aeb4",
+        "00cfd3496eaa86c5d37a0221998f53d2f92f65df89574f46da54ea45fedb3152",
+        "acf61a94cf1822cc0de942c674d3c2e64d09eadfd14a73415ebc24ed3df6f994",
+        "43aae51c5cec3ba32a6fa83a43c0ae9a867f12d363ddc8a99ffd22bc43b3dcfe",
+        "81b4b827919e51a17915188e62895c90c980389887e48a41875d4199ff376539",
+        "7061b51f03ce3dc2e0202304b706f8f3c7240ad6edb9d6390cecbe71d976f807",
+        "a5045c59a828a6ab1e3e446120e8c4d0503acbffff26ebdf8fc52a0cf92bb76c",
+        "fd3285383f472201540431163fe337e73b654cd2c53ef51ae7b94c3f0d8d4723",
+        "708891a0e536b1bab2cc715ec84852d631c6a28b9f2b88d11ce9222a7006c9ed",
+        "0c8264c2e61c0f38923d81900bc0e73ef2b9e83e8ce518b0b3a04659bd81add7",
+        "97293c558c82e50e1866b4b32b12ac061188f55e8e406703f35ec8634a8dafc5",
+        "7b533bedf6148695821e58801f340969f15feae54b49ff0ed788f48c6eb6cade",
+        "cad9fc5edfa46c1d26e70b5aafbd838595321812d29c40d34b1cc885f27d36cd"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "nativeAuxiliaryMethods": 18,
+      "groups": ["inventory-six", "activation-six", "references-six"],
+      "reportSha256": "0de0cc8b1e319884e8004cd484bf1eddf212679e0e18bedaeb41f96eb0263ad0",
+      "defaultElevenFieldProofs": 18,
+      "proofSha256s": [
+        "d2acb7bfa04c72d0836ea6929de3fdd62ac3f568bb6e502cc4a71a7c38fe702b",
+        "7f5a1933102e9be580d964f156d0863170a870df55643d45a5d4b3bb3b428203",
+        "39d36178e2f3b5fce4d84ebb69b9ef727001c748bbf7a18beb34ae9aa147c3c6",
+        "2994a83f1cb060172a9155f05017895a6e89857ef54947ed3ab35d515e1abd65",
+        "5187cb242a2a8a90328822dc31af3277847382ffc2478a70656f7310a04a144e",
+        "6a8dc97687b0751686de7dfbd36fe1db149d3cb91aa3766708b499fa9d0008ce",
+        "0f4f94c823d7d017696ddca13c548a084fdd0b39c9298b755c84e6d6e3835e04",
+        "a3c9b5e09926021b887e2733ff67efb43bf49bbc1cb13e4ac2cd38fd2f0cf1f9",
+        "a042972cb9d37574d60a24b00e4845d2cd821f5ffc72d1a8b86a2d31bd973d49",
+        "3f9f7fa9d8221c90828f3bba232dbb8d05904cbccbdaaf00832c8a4d9ca9802a",
+        "882a93d5c691c3460cd08d3930bfdc4fe6079d331121950ba9be23c7433ed3bb",
+        "822a3da94b8677bcdafc46b5a2544b4e0a518e7718bf2ec3525873ab7eba7aa5",
+        "37ceae58083bd84780362845757c9fbada67e971a65127c5b23768f776a65319",
+        "740c2fc00ac05590dd9162f7c72ff7a9d38cafa542baf61100a3a96a18e16c3b",
+        "6dd04064799f5f1f96732f6eb95c706f1be08b47c76ab2ad184fefb5ae7823b4",
+        "b75b7ed67f6419dea449871bbd08e8c73863d25e30cdc4044c3f29f7f9e35bea",
+        "7c8349e6a9ae391a448b6cd117e9611c39d61ca6fa91d871704cd6c531568b9a",
+        "b12ae15fbd5ba26ef669f709ca3f5a4065c99556ffe56063024ad644b30eefdf"
+      ]
+    }
+  ],
+  "bounds": "Internal exact text-record snapshot,1..1024 names and current8MiB plaintext quota. Caller must provide every active logical name; hashed filenames are never reverse-guessed. Unsupported binary is rejected. Only reserved UUID generation directories at the legacy root can be recognized as inactive; unexpected active-generation directories fail. No product export/import caller yet.",
+  "concurrency": "Existing history snapshot lock precedes shared per-directory lock.40 serialized two-record writes and40 full snapshots cannot blend revisions; no read/write fallback.",
+  "iosImpact": "Same complete immutable export and preserve-active-data assertion; Android specific Keystore/hashed-record inventory. No iOS source/A6 pass.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Automatic dependency/name discovery, complete history/voice/inbox/provider/device/notification schema and quota",
+    "Full native export/import UI and old-session lifecycle replacement with real DEV",
+    "iOS explicit revalidated recovery-action parity; imported unknown original never replay",
+    "Previous API37 landscape/ADB, original owner, physical old candidate groups and cellular/VPN pending",
+    "Business task/project management and iOS A6 paused"
+  ]
+}

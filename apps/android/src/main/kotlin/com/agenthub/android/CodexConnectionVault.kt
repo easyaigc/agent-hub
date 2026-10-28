@@ -9,7 +9,11 @@ internal class CodexConnectionVault(private val storage: NativeSessionStorage) {
     private fun rows(): List<JSONObject> {
         val raw = storage.read(key) ?: return emptyList()
         require(raw.length <= 1_048_576)
-        val root = JSONObject(raw)
+        return validateRows(JSONObject(raw))
+    }
+    companion object {
+      /** Migration and ordinary restore use the same credential/verified-target boundary. */
+      internal fun validateRows(root: JSONObject): List<JSONObject> {
         require(root.keys().asSequence().toSet() == setOf("version", "connections") && root.get("version") == 1)
         val rows = root.getJSONArray("connections").objects()
         require(rows.size <= 128)
@@ -21,6 +25,7 @@ internal class CodexConnectionVault(private val storage: NativeSessionStorage) {
             require((row.get("token") as? String)?.matches(Regex("[A-Za-z0-9_-]{43}")) == true)
         }
         return rows
+      }
     }
     fun clients(): List<MobileClient> = storage.operationTransaction { rows().map { decodeClient(it.getJSONObject("client")) } }
     fun token(id: String): String? = storage.operationTransaction { rows().firstOrNull { it.getJSONObject("client").getString("id") == id }?.getString("token") }

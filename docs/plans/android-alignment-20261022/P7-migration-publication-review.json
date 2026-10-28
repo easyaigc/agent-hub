@@ -1,0 +1,139 @@
+{
+  "phase": "P7-5d",
+  "sourceBase": "968f2b1207a9ee910651443ca95e94b1830822f4",
+  "summary": "P7-5d：Android增加迁入资料的加密代次暂存/逐记录读回与单指针原子发布基础；准备失败保留原密文，旧写入/恢复/子仓库拒绝越代，同候选认领不覆盖后续编辑，坏指针不降级旧资料。API26与真机各21项（6发布、6旧并发恢复、7原附件恢复、2不同进程冷读），共42辅助与30份默认11字段保护通过。尚未接产品导入入口，完整Schema/凭据/导出导入UI、配额及发布前进程死亡继续；不宣称完整迁移通过。0模型，确认累计221/P4205，原未知尝试仍只读。",
+  "features": ["F30", "F33", "F47", "F55", "F56", "F71"],
+  "sourceSha256": "017199ce8793e601960a9fd756c9386a41b5ef21bda031e7cda18d5896e0e13d",
+  "appSha256": "a2bd4deee13207a70686eeb7b447be8aeca2933c07dadb058e621294291fed4c",
+  "runnerSha256": "98779de0d04a7904bef8cb2366c730715372dc63767872ba3ed21054bd2ed020",
+  "nativeAuxiliary": 42,
+  "defaultElevenFieldProofs": 30,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "group": "publication",
+      "methods": 6,
+      "nativeReportSha256": "cdceb92d7193b47c0a26254a3214dfca36a6948c1bc6fe3056018a7cf3ee40be",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "9e82e7ec19b00bda98723e65d68cd54b2407fab0cf7f9cbf2c45ab0b3215ee6d",
+        "fb7a796428eaadf8bb6023e0adf5a401c55bc5986b70de693d8d64189a64d83f",
+        "80d731e23602f6ab0352cf3c8ccc2427a47327cd815566abe47de25a011031d9",
+        "90359df192c95546b537f09a41fade70081c91f304ba6cdfa1ff53e31de4c34e",
+        "db4e95e363f0b4b62c0826ce5d503a53cea8f64a96e18f0202aa64ac90007c11",
+        "b5e9216b94182ea00afd674d027c5f093c499f8d40907baa5d32376fe1e56fee"
+      ],
+      "scope": "Owned default-field protection"
+    },
+    {
+      "environment": "owned-API26",
+      "group": "legacy",
+      "methods": 6,
+      "nativeReportSha256": "63ca7b3401c2165a0316f864c1bfd7a546d3d79c00974b244c1a3e09ba9e0436",
+      "defaultElevenFieldProofs": 0,
+      "proofSha256s": [],
+      "scope": "Own synthetic namespaces only; concurrency and restoration assertions, no default-field proof claim"
+    },
+    {
+      "environment": "owned-API26",
+      "group": "attachments",
+      "methods": 7,
+      "nativeReportSha256": "61efe32950ee772ff1d5aeac64f7583a7bf7e540d63ff2e7b17d6b50742c4728",
+      "defaultElevenFieldProofs": 7,
+      "proofSha256s": [
+        "69b85d3c7581995457432736393e73be08eec87c152d4ca68c701b60e8ea1b93",
+        "bd48dc334939b6825cfe1f85f1c3df6f9002d79ecae1750a7dcd28078ff9ca96",
+        "9def48008576e6a254f9be64cd928d3167271444e21a44ad65983f84714d4018",
+        "da77cd698a3d8c85447eb23c05803dbbfa418e5f7a09ae65dc65cc46e5b1dfac",
+        "fbad1e2fe01c9ed4fc43b8a069e58f31a4fe387d75225cfd4788d716d632c55e",
+        "4a1fc8ca76760ebe4316745fe965205110bb398436e37e5d08cbccd4fe124497",
+        "ef8b4d0ef42e99081c7f1c18615680a2bf58a0404ce6fc8b5265a6a2aba77d93"
+      ],
+      "scope": "Owned default-field protection"
+    },
+    {
+      "environment": "owned-API26",
+      "group": "published-generation-process-cold",
+      "methods": 2,
+      "reportSha256": "55e032bd686c8190e83d370252bafe330296315d5e40b42eafcb9367c59a60d9",
+      "writerFixtureSha256": "44165ddc578befcaafdb9fceaa1b37bea7402de099ca4c21a8fe0061f4bca327",
+      "readerReceiptSha256": "95527dcd99290d82c11645924a0724d1a7bdfe7fe43fb3432a3916499b13738f",
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "a6cc948c742b4c09537df8e31a0178d234068fbfc3c748d118492dcd0c4adc0c",
+        "23b42ca13bea7dd1df121751b196b14100ea84d48801869259585f548c9e4e74"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "group": "publication",
+      "methods": 6,
+      "nativeReportSha256": "b46237abec4e3ab560fff977ffecfc721ff508d2a3a5882f541327615d572893",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "55ff7f330f04308de5bc8572b66c738a709deb13fd31cef5b5257f1bf818e197",
+        "9b17e78e752640cc01bd9d79d7b0df6132730f267299d1795e0e24994d407871",
+        "4b11f5abfd5d5386269531e8c411e89f413a69ba983824e51e9d292deac52630",
+        "dd9613cddf01168a66660091c065ea1d33099d8e150bae890d0376cd5fd91c50",
+        "afdb9fbf271dd9e6b537d1f2786ca09986e7573e3f706f93775cc3bb65b93377",
+        "0c2fa44a44237dc9a91b0e5da34f1e557f8178012fe96a23d4f7af947c8d7d98"
+      ],
+      "scope": "Owned default-field protection"
+    },
+    {
+      "environment": "physical-API33",
+      "group": "legacy",
+      "methods": 6,
+      "nativeReportSha256": "83e0aabaa08994c98acbe9ea53ed46cd885757b6d7dc42d672bc37a895b99b09",
+      "defaultElevenFieldProofs": 0,
+      "proofSha256s": [],
+      "scope": "Own synthetic namespaces only; concurrency and restoration assertions, no default-field proof claim"
+    },
+    {
+      "environment": "physical-API33",
+      "group": "attachments",
+      "methods": 7,
+      "nativeReportSha256": "51b4a350eb7d27e4d51eb724f60c44b0121998946575dd02cd3392fe144bf8a0",
+      "defaultElevenFieldProofs": 7,
+      "proofSha256s": [
+        "db9a5d97f709bf8f8c3992233287b11ab1d9fd3520ef16ae79142a40f30c651e",
+        "cacaa62c92e934664b4a4cb487875b885ca29e05799b69b5084b79eadbbf78b8",
+        "7e4a934f346863bbd3fa7a240ce1693b81b352413f6742b067fec8eaacd2e95a",
+        "81451164a6007b4aa1e57806c9f30fe545bcb534ff633fd008d6fccdb75e6483",
+        "4c13d472ef51b04f63e23e9fd78392703d87df2e6284a31e4ab8658e9dc5c948",
+        "fb42b2d1f5461152caea2e58895286375012f26a2f39abdb52429427d5a25bac",
+        "28624e1cbf12f0568943d34170ae8044a26ff05bfe2c64645f6deb176928d082"
+      ],
+      "scope": "Owned default-field protection"
+    },
+    {
+      "environment": "physical-API33",
+      "group": "published-generation-process-cold",
+      "methods": 2,
+      "reportSha256": "cd64527d9322b653c8d0d568958dfdf42862f9cc9ccf8f2e69254eef929693ef",
+      "writerFixtureSha256": "fdf98c539e95579fefaf9be63fd3cc4eddfb808987bba83c68682a1a922d74ee",
+      "readerReceiptSha256": "8ddb39a38664ac75f8f9b7d778eb5aa470f94575c547cf389c7e9eb1ba3f17bd",
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "3728197914d4e93de0bf68a458312a8e563614ac925c3ec4990895effcdedb52",
+        "5ea0e238a547ba5c4d9a321cc4d06f4800977a6d0af81f4df8457382bb041328"
+      ]
+    }
+  ],
+  "atomicBoundary": "All bounded records are encrypted/read back in a new generation. One authenticated AtomicFile pointer is the commit point. Before commit errors preserve original files; unchanged legacy layout is still the default until publication.",
+  "lateAuthority": "Old instances, restore attempts, child lookups and queued snapshots cannot write into the new generation. Reopened instance and fresh child keys are required.",
+  "idempotency": "Candidate UUID, original payload digest, length-framed record digest and count match the existing receipt; re-reading never rewrites later imported edits.",
+  "iosImpact": "iOS existing import validates, clears consent/reading identity and rolls back partial writes. Android native generation storage now supports the analogous publication boundary; no iOS source/device/A6 upgrade. Semantic import and UI remain pending.",
+  "scope": "Actual Keystore/AtomicFile/worker/UI-recovery plus post-publication process cold fixtures. No product migration button, import/export success, real key loss, disk full or precommit hard-death claim.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Pre-publication hard process death and original-generation-only fresh reader",
+    "Candidate Schema/new-install guard, credentials and EasyWork mapping, consent/reading/local-source/receipt downgrade rules",
+    "Complete export/import UI, inventories, large attachment quota and real key/I/O failures",
+    "API37 ADB reverse timeout and landscape; original model owner unavailable on new preflight; historical unknown operations not replayed",
+    "Business tasks/projects and iOS A6 remain paused"
+  ]
+}

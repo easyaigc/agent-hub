@@ -1,0 +1,104 @@
+{
+  "phase": "P7-5g",
+  "sourceBase": "0ea2bae6ec9692883b700b9d355aedeb2618d6e0",
+  "summary": "P7-5g：内部新安装激活拒绝已有真实电脑或仅Vault配对；迁入重置阅读身份/本机相册提示/导入代次，代次隔离旧许可及系统回调。原操作加持久只读标记，清旧回复重试证明，底层提交/上传前入口与创建续发均禁止重放；原ID正向回执仍可查询保存。相同激活回执不覆盖新编辑。API26/新手机共56辅助（12新边界、4实际进程冷读、40普通回复恢复回归），16份默认11字段保护；完整迁移清单/导出导入UI仍待接。",
+  "features": ["F30", "F47", "F55", "F56", "F71"],
+  "sourceSha256": "ba639c9c21cb9f6a36f31db561bc73df89ca451a397432bf185e5d82c618b83c",
+  "appSha256": "bf32a8b204027ebfe9275607935c3beb5e9b3e357d701c4cbbe90b0d0020c21e",
+  "runnerSha256": "2deb69b8324893ec67f3ae44f2a28a8e54e78d5721d0a1aad1120a73f2db0b72",
+  "nativeAuxiliary": 56,
+  "defaultElevenFieldProofs": 16,
+  "processColdGroups": 2,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "group": "activation",
+      "nativeAuxiliaryMethods": 6,
+      "reportSha256": "1ae1d07c6b8a98e091634f5ecf4db8ef0f2f212ff6ce015841d3b5e4e82aced5",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "d38977beec02e6b735bf7b1ddaa9218a819c13f5801262a3d2d4ca1378b4eb5e",
+        "9f82360075304d746234e07f8e6c000fefd589e30c968e9bc00773e944e6a509",
+        "dfa39b77e585042a65fca5b3416a455a7bc3a6966e3e50c14d5cc019b196e538",
+        "e2c0302da7087e3882192d4d552a7d822cbfb8b223581ec7d980a325fe94e8d5",
+        "930d25e2c51d47cc9b80d567685b22e04e9c0984884e3cfb87e8d67f1e47b02c",
+        "5645131fcf8838dac936f4effb410f33686fcf7817ddb34e86e350e5f98d307f"
+      ]
+    },
+    {
+      "environment": "owned-API26",
+      "group": "reply",
+      "nativeAuxiliaryMethods": 20,
+      "reportSha256": "5c808054133776eaa95f97285e09bdd3d4cf8c827958344f53d6a0355ab1e378",
+      "defaultElevenFieldProofs": 0,
+      "proofSha256s": []
+    },
+    {
+      "environment": "owned-API26",
+      "group": "actual-import-process-cold",
+      "nativeAuxiliaryMethods": 2,
+      "reportSha256": "39962f155c5ccab2eb8a6143deb0ef13efad5b3e157141b21f587b224215325b",
+      "readerReceiptSha256": "997cd70571f0953c57abc5aaf07de1eaa63aebc9cf8db2faf4a873d321551b15",
+      "originalProcessEnded": true,
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "a8888c69ccd9492d94df837ba2934692e493dbe54498742e52ef1f6b80a5d8ec",
+        "444927e9a1920de9b1a9199bdbff4ec3fdf43cd3d2b0f805cbed54e71da1f26f"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "group": "activation",
+      "nativeAuxiliaryMethods": 6,
+      "reportSha256": "c6e35655d07bb48a2c3fed6d12f1f9b4ab15637a1696ceb3323a7673320a72c7",
+      "defaultElevenFieldProofs": 6,
+      "proofSha256s": [
+        "57a272c36ab3fcc589b4cde6be950009f40e8dcf24a4d0a1c43a240ffe96a3de",
+        "6f3b9bb6f4cecf169641e96ee2db6c7787679a0e7d2c6d81a686203e9bba51e8",
+        "40a0eef49a5399bd7d1295cff222c3b492c49c9074b733a6613973a8117872cc",
+        "c4e0fde65ec8341b98536aadee6c04618a5719b3d48190ba79c05eaf73cedfdb",
+        "17a21e79380d6d1dd52a386320a98f03696855d3c9e47063916c099ec1745027",
+        "bd798dd1ff7227f0f346a57497a848f42f03d8c9f6c0503f27021375c5e27bda"
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "group": "reply",
+      "nativeAuxiliaryMethods": 20,
+      "reportSha256": "5fd52538b70021e46ff2f82f18e94ea8814bdcaa5a1eeb7d5a80c3ec7364daa0",
+      "defaultElevenFieldProofs": 0,
+      "proofSha256s": []
+    },
+    {
+      "environment": "physical-API33",
+      "group": "actual-import-process-cold",
+      "nativeAuxiliaryMethods": 2,
+      "reportSha256": "0a1ce9632b9b0b098a81be1b6c484823e54d6a110fd7e034f631245cd53c3f37",
+      "readerReceiptSha256": "05a39c70e0f56fc95ef23bc2e5bfb93bff5efcf226626aff66876836adb8e93d",
+      "originalProcessEnded": true,
+      "defaultElevenFieldProofs": 2,
+      "proofSha256s": [
+        "0b98d0d3511f68c69ba956cd33c42eabd90eefe334e312297c6b6fdd2ce05c3b",
+        "a257f1274bae93ff4ce622024405741f470580322f8a1cba149f25f1bccee802"
+      ]
+    }
+  ],
+  "authority": "Immutable operation ID/intent/result and consumed fence remain; imported originals are durably observe-only, including prepared/ready operations. Positive original receipt queries are allowed, negative absence cannot grant replay. New drafts/operations are separate.",
+  "iosImpact": "Common new-install/credential/consent/reader and old-proof reset assertions follow iOS restoreMigration. Android currently keeps imported originals conservatively observe-only; iOS explicitly revalidated recovery actions and all product UI require further parity work. No iOS/A6 new pass.",
+  "implementationBounds": [
+    "Internal activation only, no product export/import/system-file UI yet",
+    "Current accepted Codex schema and quota; complete local record inventory, legacy token/provider/device identity and notification migration remain open",
+    "Cold proof uses synthetic archived records and actual Keystore/process boundary; no real Electron/model input or full migration product pass"
+  ],
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Complete native inventory/export and full schema/quota matrix",
+    "Product native import/export UI, lifecycle session replacement and real DEV",
+    "Explicitly revalidated recovery-action parity; imported unknown originals never replay",
+    "Voice/unread/lifecycle, API37 landscape/ADB, old owner and previous physical old candidate grouped pending",
+    "Business task/project management and iOS A6 paused"
+  ]
+}

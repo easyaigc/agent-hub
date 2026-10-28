@@ -67,7 +67,7 @@ internal class NativeMigrationCandidateStore(context: Context, parent: NativeSes
         finally { clear.fill(0) }
     }
 
-    private fun validate(clear: ByteArray): Map<String, String> {
+    internal fun validate(clear: ByteArray): Map<String, String> {
         require(clear.size <= MAX_PAYLOAD_BYTES)
         val root = StrictMigrationJson.parse(clear)
         exact(root, setOf("format", "version", "applicationId", "records"))
@@ -77,8 +77,10 @@ internal class NativeMigrationCandidateStore(context: Context, parent: NativeSes
         val names = values.keys().asSequence().toList(); require(names.size in 1..1024 && "metadata" in names)
         val records = names.associateWith { name -> require(name.length <= 8192 && !name.contains('\u0000')); values.get(name) as String }
         // Parse every record with duplicate/depth/UTF-8 checks, preserving its exact original text for later activation.
-        val parsed = records.mapValues { objectValue(it.value) }
+        val allValues = records.mapValues { StrictMigrationJson.value(it.value.toByteArray(Charsets.UTF_8)) }
+        val parsed = allValues.filterValues { it is JSONObject }.mapValues { it.value as JSONObject }
         val metadata = parsed.getValue("metadata")
+        NativeMigrationMetadata.validate(metadata)
         require(metadata.get("version") == 1)
         require(metadata.get("appearance") in listOf("system", "light", "dark"))
         require(metadata.get("demo") is Boolean)
@@ -87,6 +89,9 @@ internal class NativeMigrationCandidateStore(context: Context, parent: NativeSes
         val clients = metadata.getJSONArray("clients").objects().map(::decodeClient)
         require(clients.size <= 128 && clients.map { it.id }.distinct().size == clients.size)
         require(clients.all { it.scope?.agentId == "codex" }) // EasyWork device re-pairing is not an identity copy.
+        val historyNames = NativeMigrationHistory.validate(allValues,clients)
+        val ancillaryNames = NativeMigrationAncillary.validate(parsed)
+        require(allValues.keys.all { it in parsed || it in historyNames })
         val operations = mutableListOf<SavedOperation>()
         val manifests = mutableMapOf<String, JSONObject>()
         fun manifest(value: JSONObject) {
@@ -99,6 +104,9 @@ internal class NativeMigrationCandidateStore(context: Context, parent: NativeSes
         NativePhotoOrigins.validate(metadata.optJSONObject("photoSources"),manifests.values.map {LocalDraftFile(CreationFile(it.getString("id"),it.getString("name"),it.getString("mediaType"),it.getLong("sizeBytes"),it.getString("sha256")))})
         for ((name, body) in parsed) when {
             name == "metadata" -> Unit
+            name in historyNames -> Unit
+            name in ancillaryNames -> Unit
+            name == "codex-private-connections-v1" -> CodexConnectionVault.validateRows(body)
             name.startsWith("draft-file:") -> {
                 exact(body, setOf("file", "bytes")); val file = body.getJSONObject("file"); manifest(file)
                 require(name == "draft-file:" + file.getString("id"))
@@ -130,8 +138,9 @@ internal class NativeMigrationCandidateStore(context: Context, parent: NativeSes
             }
             else -> error("Unsupported migration record")
         }
-        // The initial candidate format intentionally excludes credentials, device keys, grants and push bindings.
-        // They need the next explicit connection/identity migration boundary before active restore is enabled.
+        NativeMigrationReferences.validate(parsed,clients,operations)
+        // Only verified Codex credentials are supported here. Device keys, grants, push bindings
+        // and other provider re-pairing remain explicit boundaries, never silently discarded.
         require(operations.map { it.id }.distinct().size == operations.size)
         for ((id, _) in manifests) require("draft-file:$id" in records)
         for ((name, body) in parsed) if (name.startsWith("submission:")) {
@@ -157,8 +166,9 @@ internal class NativeMigrationCandidateStore(context: Context, parent: NativeSes
 }
 
 /** Strict bounded local archive parser; strings that hold original records are checked again at their own boundary. */
-private object StrictMigrationJson {
-    fun parse(bytes: ByteArray): JSONObject {
+internal object StrictMigrationJson {
+    fun parse(bytes: ByteArray): JSONObject = value(bytes) as JSONObject
+    fun value(bytes: ByteArray): Any {
         require(bytes.size <= NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES * 2)
         var nodes = 0
         JsonReader(InputStreamReader(ByteArrayInputStream(bytes), Charsets.UTF_8.newDecoder())).use { reader ->
@@ -187,7 +197,7 @@ private object StrictMigrationJson {
                     else -> error("Invalid migration JSON")
                 }
             }
-            val result = value(0) as JSONObject
+            val result = value(0)
             require(reader.peek() == JsonToken.END_DOCUMENT); return result
         }
     }

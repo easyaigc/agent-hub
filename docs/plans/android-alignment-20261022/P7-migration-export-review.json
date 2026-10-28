@@ -1,0 +1,109 @@
+{
+  "phase": "P7-5j",
+  "sourceBase": "7d4b19afbbf68f4cc2863c3d847e784038d828a8",
+  "summary": "P7-5j：内部导出边界自动发现当前文本记录并准确展开旧元数据依赖，在同一锁内核对完整清单；先按同一候选契约验证，再加密。历史v1/v2索引和分片复用原生缓存读取规则，校验完整运行目标、分片归属/数量/消息ID且保持原字符串；原未知输入迁入仍只读。API26/新手机各26，共52辅助、36默认11字段保护；完整全类型迁移和系统UI仍开放。",
+  "features": ["F17", "F30", "F47", "F55", "F56", "F60", "F71"],
+  "sourceSha256": "b6c8b25d57d70d33531de956ad9283c8e71b22321b92001e8d2560dcb2573f0a",
+  "appSha256": "4ac3ebd958827163ff1d3b826fe7e0a82ece7c0b6223a2107beb8187f318d477",
+  "runnerSha256": "1cba973be98764c36d29dbc12597b20d5e1f781a536de1af0b2d4270416eba74",
+  "nativeAuxiliary": 52,
+  "defaultElevenFieldProofs": 36,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "nativeAuxiliaryMethods": 26,
+      "defaultElevenFieldProofs": 18,
+      "groups": [
+        {
+          "group": "export",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "c5f47533dea89e5a6819f83588afbbb6a20fc47a9d18c169dc55b208d102f2c7",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "47e10d54f7fd787c60c096e7fdaf843ab2f5feb42d82f32538e446c424c20b07",
+            "2d1e51ec7f61228ea42bf335560c0fd15888fdb493b1bc29b5d9afb5e151e52f",
+            "010adddbd3c23a7d6e6910dc5a1a6b5b72eada6111d8849c945397a024a689db",
+            "69c58b4bf41409fe6e62da1f0106050789b988aa1346bfe0dcea9453c1fdec85",
+            "b76ea7b2bbae1ab46dcd5c336499995f7199ef377fe217a4a8140477811c235d",
+            "187b938a67d2d8eeca8d4230aa442457355bb6d2a506d4bcfb5278ecbac320ce",
+            "cc3775e7dc899f0a017d4c35069a34863348a09a38037c09778d3496b421241a",
+            "477e07dd07bf31a991d13892d1f82e7ddb592bf3e52e5aa96c9bb90571de5a0b",
+            "e7672b4732479e285fc62f848db6592ea21671572c61a4c826c310c3d0ea72a2",
+            "f57588c00284313796a87a84f3e5667ccbfa8493af9328069ab22b5635ec5514",
+            "48ab500616947775fcf706795c45373db98839a085360efd87925adab37bca29",
+            "d29515cf0c2f2028fd3e87516151e490a7c35b5fed61a37bca272b116902e06a",
+            "ec4b0325f2d464815ff65b9caa984be2297c667c74c8f86fabacab1ed210fe66",
+            "dabfa4800e81e9293997e4280ac5381f7418be905f94c589094071125ce98446",
+            "95f8e143902d7ab342977fb3a54cdacf5ad3e4aca234ce881a8927ce4840db3d",
+            "93760398abb4dbb4497394ffee32c65e705353a58796c581f8854c127c4f7c00",
+            "bc612794ada364681cb20ed1bba23e524230cc20e4f350ff5c75d1d016278272",
+            "93213504c5913ad86b2e5645756cdcbeadda280ca73e386e43d1b8176a419c20"
+          ]
+        },
+        {
+          "group": "history",
+          "nativeAuxiliaryMethods": 8,
+          "reportSha256": "ad51258968481cdb21697f4b8180c2f08f4e8b2e517da865a1599c6078137a32",
+          "defaultElevenFieldProofs": 0,
+          "proofSha256s": []
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "nativeAuxiliaryMethods": 26,
+      "defaultElevenFieldProofs": 18,
+      "groups": [
+        {
+          "group": "export",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "ff2a1f633a6d9e6aa9fe6dbf19eaa2ac2fb212e6201a4ed3af5b3120e65cdfba",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "6638a7b9931a0f0ffd1ebf64d89de8b052dcacd6f61a808cc419f242110ca11f",
+            "4db0d05d0be3f0b51e0de7e0a8f617533dc8119f0d4d600379e89918e3068c1f",
+            "d4dcddd93f6d4cf4397034c5891b05142edaa41385b9f7b6b7b5562cfad35968",
+            "937988d3ac9d7f053dd16a7e80d7541dd05f90fcf995514b28a6cb6be0775ceb",
+            "e68332a34f234e75b0eaefb89efc334672a169594d6e2fae73510bba65435488",
+            "a4198c703c3478b4493a5864ca5bd0cd4db67ccc715505397e14cf6d8b12a7d6",
+            "db5ecf378e4a4252a545a4ae5d9141fa96c67c60bc120c55bc3354737dc96d8e",
+            "3dd1fb4c9fc77e10c374a7d851ec67a68d28b5e4ebb2fa547c6524d74f300a76",
+            "7a14bad5d654bf3b8045dd1c22caff3081f63bcecc4e2e4817159abea8c31ab1",
+            "7571ca11a01c014e8868edd846ca7550c01e7b9213c3590b28585d86d229a68f",
+            "abe9582f50a29b4058db91eeb7ca9d037b83e7abf7f8e76fd7c7a15eb230c871",
+            "71a4c53c52fd7c03bcab45d7630624f97a516fed3c671d034669fd7aaf7c690b",
+            "8193383223caad72ff7817c5f5916e7240f83904958642585a7ad6fb8067bd55",
+            "369ff7c99f1f10dd12ce82fbf33f3447c6b6ddb1c803f256fb821cca0ab0713c",
+            "5ba9cc9510b19d678373bf16c61973171937c9f49e6ef20c1745c7ceb42acfc8",
+            "12b798062251d94ba8f386d0bf9a8ec6c13b5c0fc15a2dff7e46a7207bba0f3d",
+            "13f8167b9235e4145c5c8987e3643b0ba63f36f683ba7c727a80bc4953fda73a",
+            "1933d67503b43b8fe60fd1ad36fd67b9a1b8972c6ed905c89bc6aaf139baeffa"
+          ]
+        },
+        {
+          "group": "history",
+          "nativeAuxiliaryMethods": 8,
+          "reportSha256": "4de1020bd245a625d0a6a7e00ca0432a95e68b8bc6b9dcffbbc1127a009a4973",
+          "defaultElevenFieldProofs": 0,
+          "proofSha256s": []
+        }
+      ]
+    }
+  ],
+  "bounds": "Internal Codex-root text/file/operation/credential/history archive only, current8MiB payload and1024 records. No native settings/system export/import caller yet. Unsupported voice/provider/device/notification/thumbnail/child callback records reject or remain explicit full-schema dependencies. Unindexed legacy hashed names without trustworthy metadata/reference cannot be guessed. History cache observation never establishes live owner authority.",
+  "historyGraph": "Closed version1/2 index; strict duplicate/depth/UTF-8 parsing of both object and array records; exact ordered generation parts, messageCount and unique message IDs. Runtime identity and canonical/retained target aliases bind to an archived client. Shared NativeHistoryCache.decode is used for ordinary reads and migration validation. Original history record strings are preserved, not flattened or rebuilt.",
+  "verification": "Each environment6new export/history checks+6references+6metadata and8unchanged native history regression.70messages/3parts preserve original text/order/kind/nextCursor/epoch/cursor through actual encrypted export, candidate stage and generation activation; all old format1 records resolve from exact references without rewriting; missing/orphan/mixed-runtime/duplicate-field/wrong-count/cross-target parts and pending .bak/unknown type reject;20concurrent history writes and20capture reads cannot blend generations.16ordinary native history checks use private namespaces and have no eleven-field proof claim.",
+  "iosImpact": "iOS EncryptedMigration/SessionStore migrationPayload and restoreMigration remain product comparison: complete referenced materials, new-install restriction and fresh authority. Android platform-specific archive/cache layout; no iOS source, native UI or A6 pass. Explicit revalidated imported-operation recovery policy still differs and stays pending.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "pending": [
+    "Complete voice/binary, thumbnail, inbox/callback child, provider/device and notification schema/quota",
+    "Native system export/import UI and old-session lifecycle replacement with real DEV",
+    "Unindexed legacy names and full historical alias matrix",
+    "iOS explicit revalidated recovery-action parity; imported unknown original never replay",
+    "API37 landscape/ADB, original owner, physical old candidate groups and cellular/VPN pending",
+    "Business task/project management and iOS A6 paused"
+  ]
+}

@@ -12381,6 +12381,25 @@
       "files": {
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeOriginalGalleryColdReadTest.kt": "ed32a701aa48a877e5cf3b33e33f77e2db5d688eefa5e1987582e432f1cac65a"
       }
+    },
+    {
+      "id": "windows-publisher-free-private-dacl-20261028",
+      "baseCommit": "968f2b1207a9ee910651443ca95e94b1830822f4",
+      "features": ["F03", "F69"],
+      "summary": "Windows Host 去除桌面与 CLI 的 Publisher／签名文案／Store 包身份门禁，保留准确管道、同用户与会话、路径／摘要和实际协议校验。bootstrap 与原生 worker 共用同一文件句柄 DACL 实现，只读 Owner/DACL、只写受保护 DACL，不请求审计特权、不接管其他所有者，并拒绝 NULL DACL、共享授权与重解析点。iOS／Android 共用 Host，UI／草稿／未知操作不变；本机辅助检查与目标 Windows／手机实测分列，A6 继续暂停。",
+      "files": {
+        "packages/codex-adapter/src/desktop-platform.ts": "9f0d9fbec4cfb1fc4356abe765739c3cb37796799725bfe5351a422755641db9",
+        "packages/codex-adapter/windows/desktop-cli.ps1": "3b8e9770ea56e4fbfa4070be3a16916ad4dc05b08750775a9dfcaed231e12caf",
+        "packages/codex-adapter/windows/desktop-pipe.ps1": "6db7a6440fbb98d20209388117bf6f8f1e5574d3fcc5bc7ac3173fe9e17e34e7",
+        "packages/codex-adapter/windows/private-state.cs": "5b44e30e8506206f274042fc878784cc291932145580082c063dfb525f363ceb",
+        "packages/codex-adapter/windows/private-state.ps1": "499be7866ffeda71bfcddfb54231d7171fd3b4b26785837f37613e7bfd679139",
+        "scripts/windows-control-smoke.mjs": "09015b7f831f562354ba85bfdfd1d3bdf6aac6e6ca85af9d6be11b1322fc8f76",
+        "scripts/windows-desktop-recovery.mjs": "44fbf8b711b42a248ac2bed3c01641c09ab3d4b7640aff4b8367f4464769475a",
+        "scripts/windows-host-recovery-smoke.mjs": "90abd9581aed5d57900397e9a1252d9a8fdc26e52a46ad3dc9ee1428147815b1",
+        "scripts/windows-install-native.test.mjs": "64cc8b7360a913dfe29634b7671bc4bb79f9e214c65da096243b2ecb1c628193",
+        "scripts/package-host-connect.mjs": "e5f120e37679173aaea2c870a1fca42681e2ae61676b3f209c82823b3f589041",
+        "scripts/package-host-connect.test.mjs": "b18a1febae57f3af682b0e0c5cfc0e2e64f8946eba3f8f2ef721f4e99f7f0614"
+      }
     }
   ]
 }

@@ -44,6 +44,15 @@ const fixedSourceFiles = new Set([
   'scripts/ci/Dockerfile',
   'scripts/ci/legacy-bootstrap.bash',
   'scripts/ci/legacy-sdkmanager.bash',
+  'apps/ios/CodexManage.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved',
+  'apps/ios/FilePreviewKit/Package.resolved',
+  'apps/android/src/androidTest/java/com/agenthub/android/OwnedAcceptanceDocuments.java',
+  'apps/android/src/androidTest/java/com/agenthub/android/OwnedExternalSourceActivity.java',
+  'apps/android/src/androidTest/java/com/agenthub/android/OwnedPhotoMediaActivity.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedExternalInboxColdDriver.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
 ]);
 const runtimePackages = ['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime'];
 const excluded = new Set([
@@ -481,6 +490,8 @@ export async function packageHostConnect({
         windows: 'implemented-owner-control',
         windowsReplyPolicy: 'actual-owner',
         windowsAcceptancePolicy: 'report-only',
+        windowsPublisherPolicy: 'not-checked',
+        windowsPrivateStatePolicy: 'current-owner-protected-dacl-no-sacl',
         suggestions: {
           darwin: 'read-existing-native-trace-and-completion-notify',
           win32: 'read-existing-native-trace-with-current-instance-dacl-validation',

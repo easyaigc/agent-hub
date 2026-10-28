@@ -56,15 +56,8 @@ try {
     if ($server.SessionId -ne [System.Diagnostics.Process]::GetCurrentProcess().SessionId) { throw 'WRONG_DESKTOP_SESSION' }
     $desktop = $server.Path
     if (-not $desktop) { throw 'DESKTOP_PATH_UNAVAILABLE' }
-    $signature = Get-AuthenticodeSignature -LiteralPath $desktop
-    $trusted = $signature.Status -eq 'Valid' -and $signature.SignerCertificate.Subject -match 'OpenAI'
-    if (-not $trusted) {
-        $trusted = @(Get-AppxPackage | Where-Object {
-            $_.SignatureKind -eq 'Store' -and $_.Publisher -match 'OpenAI' -and
-            $desktop.StartsWith($_.InstallLocation.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)
-        }).Count -eq 1
-    }
-    if (-not $trusted) { throw 'UNTRUSTED_DESKTOP_PUBLISHER' }
+    # Publisher labels and Store package names are not runtime compatibility gates.
+    # Keep the same retained pipe, current-user/session checks and exact image hash.
     $digest = (Get-FileHash -LiteralPath $desktop -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($Action -eq 'bridge') {
         if (-not $ExpectedDesktop -or -not $ExpectedSha256 -or
@@ -82,10 +75,10 @@ try {
         if ($value.pid -ne $serverProcessId -or $value.startedAtUnixMs -ne [DateTimeOffset]::new($server.StartTime.ToUniversalTime()).ToUnixTimeMilliseconds()) { throw 'DESKTOP_IDENTITY_CHANGED' }
         $trace
     } else {
-        @{ pid = $serverProcessId; startedAtUnixMs = [DateTimeOffset]::new($server.StartTime.ToUniversalTime()).ToUnixTimeMilliseconds(); executable = $desktop; executableSha256 = $digest; userSid = $currentSid; sameUser = $true; sameSession = $true; trustedPublisher = $true } | ConvertTo-Json -Compress
+        @{ pid = $serverProcessId; startedAtUnixMs = [DateTimeOffset]::new($server.StartTime.ToUniversalTime()).ToUnixTimeMilliseconds(); executable = $desktop; executableSha256 = $digest; userSid = $currentSid; sameUser = $true; sameSession = $true } | ConvertTo-Json -Compress
     }
 } catch {
-    $known = @('WINDOWS_DESKTOP_NOT_RUNNING', 'PROCESS_QUERY_FAILED', 'TOKEN_QUERY_FAILED', 'PIPE_IDENTITY_FAILED', 'WRONG_DESKTOP_USER', 'WRONG_DESKTOP_SESSION', 'DESKTOP_PATH_UNAVAILABLE', 'UNTRUSTED_DESKTOP_PUBLISHER', 'DESKTOP_IDENTITY_CHANGED')
+    $known = @('WINDOWS_DESKTOP_NOT_RUNNING', 'PROCESS_QUERY_FAILED', 'TOKEN_QUERY_FAILED', 'PIPE_IDENTITY_FAILED', 'WRONG_DESKTOP_USER', 'WRONG_DESKTOP_SESSION', 'DESKTOP_PATH_UNAVAILABLE', 'DESKTOP_IDENTITY_CHANGED')
     $reason = if ($_.Exception.Message -in $known) { $_.Exception.Message } else { 'WINDOWS_DESKTOP_PIPE_REJECTED' }
     [Console]::Error.WriteLine($reason)
     exit 1

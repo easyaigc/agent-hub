@@ -25,7 +25,6 @@ const identity = {
   userSid: 'fixture-sid',
   sameUser: true,
   sameSession: true,
-  trustedPublisher: true,
 };
 const version = '26.928.20755';
 const archive = () => {

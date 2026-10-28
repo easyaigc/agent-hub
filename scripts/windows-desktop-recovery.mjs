@@ -53,7 +53,7 @@ export function discoverWindowsDesktopCli(
     seen.add(path.toLowerCase());
     if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink()) continue;
     try {
-      trusted.push({ path, ...inspectWindowsCli(path, identity.executable) });
+      trusted.push({ path, ...inspectWindowsCli(path) });
     } catch (error) {
       if (error.code !== 'WINDOWS_CLI_REJECTED') throw error;
     }

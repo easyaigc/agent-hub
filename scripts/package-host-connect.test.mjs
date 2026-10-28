@@ -207,6 +207,20 @@ test(
         'scripts/ci/Dockerfile': 'FROM scratch\n',
         'scripts/ci/legacy-bootstrap.bash': '# synthetic bootstrap\n',
         'scripts/ci/legacy-sdkmanager.bash': '# synthetic sdk compatibility\n',
+        'apps/ios/CodexManage.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved':
+          '{"pins":[],"version":3}\n',
+        'apps/ios/FilePreviewKit/Package.resolved': '{"pins":[],"version":3}\n',
+        ...Object.fromEntries(
+          [
+            'apps/android/src/androidTest/java/com/agenthub/android/OwnedAcceptanceDocuments.java',
+            'apps/android/src/androidTest/java/com/agenthub/android/OwnedExternalSourceActivity.java',
+            'apps/android/src/androidTest/java/com/agenthub/android/OwnedPhotoMediaActivity.java',
+            'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedCameraColdDriver.java',
+            'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java',
+            'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedExternalInboxColdDriver.java',
+            'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
+          ].map((name) => [name, '// reviewed test-only source fixture\n']),
+        ),
       };
       for (const [name, body] of Object.entries(ciSources)) await write(name, body);
       await write('skills/codex-host-connect/SKILL.md', 'Synthetic packaging fixture.\n');
@@ -257,6 +271,15 @@ test(
           ),
           emitted,
         );
+      const unknown = 'apps/android/src/androidTest/java/Unknown.java';
+      await write(unknown, '// not reviewed for distribution\n');
+      const unknownOutput = join(tmp, 'unknown.zip');
+      await assert.rejects(
+        packageHostConnect({ repository, taskHubBundle, output: unknownOutput }),
+        /Review unknown source file.*Unknown\.java/,
+      );
+      await assert.rejects(readFile(unknownOutput), { code: 'ENOENT' });
+      await rm(join(repository, unknown));
       const orphan = 'packages/codex-adapter/dist/orphan.js';
       await write(orphan, 'export const stale = true;\n');
       const output = join(tmp, 'rejected.zip');

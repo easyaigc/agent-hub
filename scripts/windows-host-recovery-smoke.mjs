@@ -17,7 +17,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { superviseWorker, workerRecoveryState } from './host-worker-supervisor.mjs';
 import { installWindowsPrivateStateFixture } from './fixtures/windows-private-state-boundary.mjs';
 
-// Actual discovery, archive parsing and atomic publication. Only OS trust APIs
+// Actual discovery, archive parsing and atomic publication. Only OS identity APIs
 // are stubbed; this is not Windows signature/DACL/desktop acceptance.
 const directory = mkdtempSync(join(tmpdir(), 'windows-recovery-'));
 const permissions = installWindowsPrivateStateFixture(
@@ -78,10 +78,9 @@ try {
     executableSha256: 'a'.repeat(64),
     sameUser: true,
     sameSession: true,
-    trustedPublisher: true,
   };
   let failure;
-  let trust = true;
+  let validCli = true;
   const calls = [];
   process.env.SystemRoot = join(directory, 'system');
   process.env.LOCALAPPDATA = join(directory, 'user');
@@ -107,8 +106,8 @@ try {
       return JSON.stringify(identity);
     }
     if (args.some((v) => v.endsWith('desktop-cli.ps1'))) {
-      if (!trust)
-        throw Object.assign(new Error('private signature error'), {
+      if (!validCli)
+        throw Object.assign(new Error('private CLI identity error'), {
           stderr: 'WINDOWS_CLI_REJECTED\n',
         });
       return JSON.stringify({ sha256: args.includes(cli) ? 'b'.repeat(64) : 'c'.repeat(64) });
@@ -159,13 +158,13 @@ try {
     assert.deepEqual(readFileSync(desktopPath), desktopBefore);
   }
   failure = undefined;
-  trust = false;
+  validCli = false;
   assert.throws(
     () => refreshWindowsHostConfiguration(hostPath),
     (error) => error.code === 'WINDOWS_CLI_NOT_FOUND',
   );
   assert.deepEqual(readFileSync(hostPath), before);
-  trust = true;
+  validCli = true;
   const second = join(directory, 'user/OpenAI/Codex/bin/abcdef0123456789');
   mkdirSync(second);
   writeFileSync(join(second, 'codex.exe'), 'different synthetic payload');
@@ -276,7 +275,7 @@ process.on('message',()=>{server.closeAllConnections();server.close(()=>process.
   console.log(
     JSON.stringify({
       result: 'passed',
-      evidence: 'OS trust fixture plus isolated real Node child; not Windows acceptance',
+      evidence: 'OS identity fixture plus isolated real Node child; not Windows acceptance',
       hashedCliDiscovery: true,
       startupRefreshPreservesConfiguration: true,
       liveWorkerNeverKilledForHealth: true,

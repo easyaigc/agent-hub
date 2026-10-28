@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-10-28 F03／F69：Windows Host 去除 Publisher 安装门禁并统一普通用户 DACL 保护；iOS／Android 连接到该 Host 时共同受益，页面、状态、文案与 token 不变。macOS 路径不受影响；本次不新增双端或 Windows 真机通过，A6 继续暂停。见[专项记录](windows-install-20261028.md)。
+
 内置 Markdown 与可注册原生预览器；iPhone 真实原桌面文件核心阅读闭环通过，Android 编译及共享规则通过，完整双端与正式发布待验
 
 2026-10-26 F34：现有对话底部模型／强度只展示准确原 owner 设置；模型目录默认值和手机未发送覆盖项不得冒充实际值。未取得时显示同步中／跟随电脑，设置面板区分电脑当前设置与下次发送。iOS／Android 共用 KMP 展示选择规则；Host 小体积具名只读查询即使完整快照不可用也返回当前参数，不授予执行控制。源码、辅助检查、iPhone 真实验收与未验收平台分别登记于 acceptance/thread-model-settings-20261026.md，A6 保持暂停。

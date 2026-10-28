@@ -68,14 +68,14 @@ function windowsPowerShellSync(args: string[], active?: () => boolean): string {
     const stderr = String((cause as { stderr?: unknown }).stderr ?? '');
     const code =
       stderr.match(
-        /^(WINDOWS_POWERSHELL_MODULE_UNAVAILABLE|WINDOWS_DESKTOP_NOT_RUNNING|WINDOWS_DESKTOP_PIPE_REJECTED|UNTRUSTED_DESKTOP_PUBLISHER|WRONG_DESKTOP_USER|WRONG_DESKTOP_SESSION|WINDOWS_CLI_REJECTED|UNSAFE_WINDOWS_PRIVATE_STATE)\s*$/m,
+        /^(WINDOWS_POWERSHELL_MODULE_UNAVAILABLE|WINDOWS_DESKTOP_NOT_RUNNING|WINDOWS_DESKTOP_PIPE_REJECTED|WRONG_DESKTOP_USER|WRONG_DESKTOP_SESSION|WINDOWS_CLI_REJECTED|UNSAFE_WINDOWS_PRIVATE_STATE)\s*$/m,
       )?.[1] ?? 'WINDOWS_HELPER_FAILED';
     throw Object.assign(new Error('Windows helper failed', { cause }), { code });
   }
 }
 
 /** Verify the discovered CLI without launching it or submitting model input. */
-export function inspectWindowsCli(path: string, desktop: string): { sha256: string } {
+export function inspectWindowsCli(path: string): { sha256: string } {
   const value = JSON.parse(
     windowsPowerShellSync([
       '-NoProfile',
@@ -84,8 +84,6 @@ export function inspectWindowsCli(path: string, desktop: string): { sha256: stri
       windowsHelper('desktop-cli.ps1'),
       '-Path',
       path,
-      '-Desktop',
-      desktop,
     ]),
   );
   if (!/^[a-f0-9]{64}$/.test(value.sha256)) throw new Error('Invalid Windows CLI identity');
@@ -293,7 +291,6 @@ export interface WindowsDesktopIdentity {
   userSid: string;
   sameUser: boolean;
   sameSession: boolean;
-  trustedPublisher: boolean;
 }
 
 export function inspectWindowsPipe(): WindowsDesktopIdentity {
@@ -311,7 +308,6 @@ export function inspectWindowsPipe(): WindowsDesktopIdentity {
   if (
     !value.sameUser ||
     !value.sameSession ||
-    !value.trustedPublisher ||
     !Number.isSafeInteger(value.pid) ||
     value.pid <= 0 ||
     !Number.isSafeInteger(value.startedAtUnixMs) ||

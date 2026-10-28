@@ -20,7 +20,7 @@ pnpm --version
 pnpm service:windows preflight
 ```
 
-预检通过保留的命名管道句柄获取 server PID，检查同一用户 SID、同一登录会话、可信 OpenAI 签名或 Store 包，以及实际归档中的 IPC profile。它不启动另一桌面执行实例，不证明具体 Thread 的 owner 控制。找不到 CLI 时从实际安装中定位 `codex.exe` 并设置 `CODEX_EXECUTABLE`。应用版本不作为预检条件；归档方法版本或真实协议不兼容时报告具体失败。脚本被本机策略拒绝时报告原因，不关闭执行策略或绕过拒绝。
+预检通过保留的命名管道句柄获取 server PID，检查同一用户 SID、同一登录会话、准确进程路径和 SHA-256，以及实际归档中的 IPC profile。不以 Publisher、签名证书文案、Store 包名称或应用版本作为连接门槛；正式版和 Beta 均按实际协议与功能判断。它不启动另一桌面执行实例，不证明具体 Thread 的 owner 控制。找不到 CLI 时从实际安装中定位 `codex.exe` 并设置 `CODEX_EXECUTABLE`。应用版本不作为预检条件；归档方法版本或真实协议不兼容时报告具体失败。脚本被本机策略拒绝时报告原因，不关闭执行策略或绕过拒绝。
 
 首次安装、修复及升级默认注册并启用登录自启，无需额外询问；正常启动无需测试 Thread ID 或验收报告：
 
@@ -31,7 +31,7 @@ pnpm service:windows start
 pnpm service:windows status
 ```
 
-状态在程序 `.local/desktop-runtime`，DACL 只允许当前用户、SYSTEM 和管理员。密钥为 `access-token`，Host ID 在 `runtime.json`。不能因 Windows 没有 POSIX uid/mode 而跳过私有文件检查。
+状态在程序 `.local/desktop-runtime`，DACL 只允许当前用户、SYSTEM 和管理员。密钥为 `access-token`，Host ID 在 `runtime.json`。不能因 Windows 没有 POSIX uid/mode 而跳过私有文件检查。bootstrap 与常驻原生 worker 使用同一文件句柄权限实现，只读取所有者与 DACL、只写受保护 DACL，不读取或修改 SACL，不请求审计特权、不接管其他所有者；重复保护安全目录不要求管理员。NULL DACL、共享授权及重解析点仍拒绝。
 
 服务使用当前用户交互登录会话的 `CodexManage Host Agent` 计划任务，记录 Node/程序路径并在登录时启动；同一任务另有无截止的每分钟周期触发，补启已退出的外层 supervisor。`start`／`restart` 注册或修正本产品任务的当前用户登录及周期触发器和启动设置，启用电池供电运行、禁止并行实例，失败后每分钟重试一次、最多三次。拒绝操作指向其他 worker/config 或其他用户的同名任务。`start` 保留原配置且不重复启动正在运行的 Host；`restart` 重启本产品 Host；`stop` 停止并禁用任务，后续登录及周期补启保持关闭，保留私有状态，之后 `start` 重新启用。不关闭原桌面或停止其他聊天。
 

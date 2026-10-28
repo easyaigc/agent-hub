@@ -46,36 +46,42 @@ import kotlin.math.sin
 }
 @Composable internal fun VoiceInputStrip(voice: VoiceInputController,text: String) {
     val colors=MaterialTheme.colorScheme
+    val status=voice.statusCopyKey?.let {productText(it)} ?: voice.status
     val stopHint=productText("轻触停止录音")
     Column(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp).floatingProduct(MobileDesign.composerRadius).padding(4.dp).testTag("voice-panel"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text(if(text.isEmpty())productText("随心输入") else text,Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(text.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
+        val displayedText=if(voice.transcript.isEmpty())text else text+if(text.isEmpty() || text.last().isWhitespace())voice.transcript else "\n"+voice.transcript
+        Text(if(displayedText.isEmpty())productText("随心输入") else displayedText,Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(displayedText.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(3.dp)) {
             Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",productText(if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "结束等待"),"cancel-dictation",onClick=voice::cancel) }
             if(voice.phase==VoiceInputController.Phase.FINISHING) {
-                VoiceTranscriptionActivity(voice.status,Modifier.weight(1f))
+                VoiceTranscriptionActivity(status,Modifier.weight(1f))
             } else if(voice.phase==VoiceInputController.Phase.LISTENING) {
-                Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("dictation-waveform")
-                    .clickable(role=Role.Button,onClick=voice::finish)
-                    .semantics { contentDescription=stopHint;stateDescription=voice.status },
-                    verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                    VoiceWaveform(voice.levels,Modifier.weight(1f).clearAndSetSemantics {})
-                    Text(stopHint,Modifier.clearAndSetSemantics {},fontSize=12.sp,color=colors.onSurfaceVariant,textAlign=TextAlign.Center)
-                    VoiceWaveform(voice.levels,Modifier.weight(1f).clearAndSetSemantics {},mirrored=true)
-                }
-            } else VoiceWaveform(voice.levels,Modifier.weight(1f).testTag("dictation-waveform").semantics { contentDescription=voice.status })
+                VoiceListeningActivity(voice.levels,status,stopHint,voice::finish,Modifier.weight(1f))
+            } else VoiceWaveform(voice.levels,Modifier.weight(1f).testTag("dictation-waveform").semantics { contentDescription=status })
             Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) {
                 if(voice.phase==VoiceInputController.Phase.FINISHING) {
-                    IconButton(onClick=voice::finish,enabled=false,modifier=Modifier.size(48.dp).testTag("stop-dictation").semantics { contentDescription=voice.status }) {
+                    IconButton(onClick=voice::finish,enabled=false,modifier=Modifier.size(48.dp).testTag("stop-dictation").semantics { contentDescription=status }) {
                         CircularProgressIndicator(Modifier.size(18.dp),color=colors.onSurfaceVariant,strokeWidth=2.dp)
                     }
-                } else IconAction(if(voice.phase==VoiceInputController.Phase.FAILED) "refresh" else "stop",productText(if(voice.phase==VoiceInputController.Phase.FAILED) "重试转写" else "结束录音并转写"),"stop-dictation",voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.FAILED),voice::finish)
+                } else IconAction(if(voice.phase==VoiceInputController.Phase.FAILED) "refresh" else "stop",productText(if(voice.phase==VoiceInputController.Phase.FAILED) "重试转写" else "结束录音并转写"),"stop-dictation",voice.phase==VoiceInputController.Phase.LISTENING || voice.canRetry,voice::finish)
             }
         }
-        if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(voice.status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
+        if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
         if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text(productText("重新录音"),fontSize=17.sp,color=Color(0xFF007AFF)) }
     }
 }
 
+/** N067/N068: central stop action, mirrored side meters, one accessible button. */
+@Composable internal fun VoiceListeningActivity(levels: List<Float>,status: String,stopHint: String,onStop: ()->Unit,modifier: Modifier=Modifier) {
+    Row(modifier.heightIn(min=48.dp).testTag("dictation-waveform")
+        .clickable(role=Role.Button,onClick=onStop)
+        .semantics { contentDescription=stopHint;stateDescription=status },
+        verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+        VoiceWaveform(levels,Modifier.weight(1f).clearAndSetSemantics {})
+        Text(stopHint,Modifier.clearAndSetSemantics {},fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,textAlign=TextAlign.Center)
+        VoiceWaveform(levels,Modifier.weight(1f).clearAndSetSemantics {},mirrored=true)
+    }
+}
 @Composable private fun VoiceWaveform(levels: List<Float>,modifier: Modifier=Modifier,mirrored: Boolean=false) {
     val color=MaterialTheme.colorScheme.onSurfaceVariant
     Canvas(modifier.height(44.dp)) {

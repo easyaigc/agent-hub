@@ -40,7 +40,8 @@ class MobileLocalizedControlsTest {
                 return HostReadCodec.history(JSONObject().put("hostId",target.hostId).put("threadId",threadId).put("readTarget",CodexCommandCodec.target(target))
                     .put("messages",JSONArray().put(JSONObject().put("id","original").put("role","assistant").put("text","复制 100% %@")))
                     .put("runtime",JSONObject().put("state","idle").put("turnId",JSONObject.NULL).put("plan",JSONArray()).put("error",JSONObject.NULL)
-                        .put("approvals",JSONArray()).put("receipts",JSONArray()).put("canControl",true)).toString())
+                        .put("approvals",JSONArray()).put("receipts",JSONArray()).put("canControl",true)
+                        .put("generationSettings",JSONObject().put("model","raw-model").put("effort","xhigh").put("speed","standard"))).toString())
             }
         }
         val native=NativeCodexCommands({ "" })
@@ -103,6 +104,8 @@ class MobileLocalizedControlsTest {
         assertEquals(expected.text,actual.text);assertEquals(expected.revision,actual.revision)
     }
     @Test fun translatedGenerationMenusKeepWireIdsAndFullOriginalModelAccessibility() {
+        // The toolbar reports original owner settings; next-send choices are independent.
+        assertEquals("raw-model",session.generationDisplay.model);assertEquals("xhigh",session.displayedEffort)
         val draft=snapshotDraft();openGeneration()
         tap("model-picker");ui.onNodeWithTag("model-raw-model").assertTextContains(rawModel+" · Recommended").performClick()
         ui.onNodeWithTag("effort-slider").assertContentDescriptionEquals(NativeL10n(ui.activity,"en").tr("推理强度"))

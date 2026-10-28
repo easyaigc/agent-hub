@@ -110,6 +110,23 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     fun write(name: String,text: String)=ioLock.withLock {requireWritable();encodeAtomic(file(name),name,text)}
 
     internal class IncompleteMigrationInventory: Exception("本机迁移记录不完整或包含未支持资料，原数据未更改。")
+    /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
+     * Presence is audited without opening/recovering files or borrowing OS callback authority. */
+    internal fun migrationPendingChildScopes(): Set<String> = ioLock.withLock {
+        requireWritable()
+        val generation=activeGeneration();val prefix=namespace+(generation?.let {"-$it"}?:"")+"-"
+        val systemScopes=setOf("external-inbox","recent-photos","photo-permission","document-results","photo-results","camera-results")
+        val siblings=root.parentFile!!.listFiles()?:error("Migration child inventory unavailable")
+        siblings.mapNotNull { folder ->
+            val suffix=folder.name.removePrefix(prefix)
+            val scope=systemScopes.singleOrNull { suffix==it || suffix.startsWith("$it-") }
+            if(!folder.name.startsWith(prefix)||scope==null)null else {
+                require(folder.canonicalFile==File(root.parentFile!!.canonicalFile,folder.name)&&folder.isDirectory)
+                val children=folder.listFiles()?:error("Migration child inventory unavailable")
+                if(children.isEmpty())null else scope
+            }
+        }.toSet()
+    }
     /** Resolve exact legacy references and capture all names/text under the same generation lock.
      * Reading for discovery never invokes AtomicFile recovery or changes a pending .bak/.new. */
     internal fun migrationArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>): Map<String,String> = try {
@@ -122,6 +139,42 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
                 }
             }
             migrationSnapshot(migrationNames(aliases))
+        }}
+    }catch(_: Exception){throw IncompleteMigrationInventory()}
+    /** Typed root snapshot; discovers authenticated format4 names and exact indexed legacy2 aliases.
+     * Discovery never restores AtomicFile backups or silently skips an unsupported record. */
+    internal fun migrationTypedArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>,maximumBytes: Int=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES): NativeMigrationRecords = try {
+        snapshotTransaction {ioLock.withLock {
+            requireWritable();require(maximumBytes in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+            val files=migrationFiles(dataRoot()).associateBy{it.name};require(files.size in 1..1024)
+            val aliases=resolveLegacyNames {name->files[digest(name)+".bin"]?.let {source->
+                require(source.length() in 29..(maximumBytes+65569L));decodeRecord(source.readBytes(),name).second
+            }}.associateBy{digest(it)+".bin"}
+            val text=linkedMapOf<String,String>();val binary=linkedMapOf<String,String>();var total=0L
+            for((filename,source)in files.toSortedMap()) {
+                require(source.length() in 29..(maximumBytes+65569L+28L*((maximumBytes+65535)/65536)))
+                java.io.DataInputStream(source.inputStream().buffered()).use {input->
+                    input.mark(4);val version=input.readUnsignedByte();input.reset()
+                    val name: String;val value: String
+                    if(version==1||version==3) {
+                        val decoded=decodeRecord(source.readBytes(),aliases[filename]);name=decoded.first;value=decoded.second
+                        require(name !in binary&&text.put(name,value)==null)
+                    }else {
+                        // Authenticate the small header and account for base64 expansion before
+                        // allocating a complete binary value. Oversize originals remain untouched.
+                        val header=binaryHeader(input,aliases[filename],null)
+                        val expanded=((header.size.toLong()+2)/3)*4
+                        require(total+expanded<=maximumBytes)
+                        input.close()
+                        val decoded=java.io.DataInputStream(source.inputStream().buffered()).use {decodeBinary(it,aliases[filename],null,maximumBytes)};name=decoded.first.name
+                        try {value=java.util.Base64.getEncoder().encodeToString(decoded.second)}finally {decoded.second.fill(0)}
+                        require(name !in text&&binary.put(name,value)==null)
+                    }
+                    require(name.isNotEmpty()&&name.length<=8192&&!name.contains('\u0000')&&name!=migrationPointerName&&filename==digest(name)+".bin")
+                    total+=if(version==1||version==3)strictBytes(value).size else value.length;require(total<=maximumBytes)
+                }
+            }
+            require("metadata" in text);NativeMigrationRecords(text,binary)
         }}
     }catch(_: Exception){throw IncompleteMigrationInventory()}
     private fun migrationFiles(folder: File): List<File> {
@@ -177,29 +230,70 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     }
 
     /** One authenticated pointer is the commit point; staged generations are never active on failure. */
-    internal fun publishMigration(candidateId: String,sha256: String,records: Map<String,String>,checkpoint: (Int)->Unit={}): String = ioLock.withLock {
+    internal fun publishMigration(candidateId: String,sha256: String,records: Map<String,String>,checkpoint: (Int)->Unit={}): String =
+        publishMigrationRecords(candidateId,sha256,NativeMigrationRecords(records),checkpoint)
+
+    internal fun publishMigrationRecords(candidateId: String,sha256: String,archive: NativeMigrationRecords,checkpoint: (Int)->Unit={}): String = ioLock.withLock {
+        val records=archive.text;val binaries=archive.binary
         require(java.util.UUID.fromString(candidateId).toString()==candidateId&&sha256.matches(Regex("[a-f0-9]{64}")))
-        require(records.size in 1..1024&&records.containsKey("metadata")&&migrationPointerName !in records)
-        require(records.keys.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')}&&records.values.sumOf {it.toByteArray(Charsets.UTF_8).size.toLong()}<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+        require(archive.size in 1..1024&&records.containsKey("metadata")&&migrationPointerName !in records&&migrationPointerName !in binaries)
+        require((records.keys+binaries.keys).all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')}&&(records.values+binaries.values).sumOf {strictBytes(it).size.toLong()}<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
         val contents=MessageDigest.getInstance("SHA-256")
         for((name,text)in records.toSortedMap())for(value in listOf(name,text)) {val bytes=value.toByteArray(Charsets.UTF_8);contents.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.size).array());contents.update(bytes)}
+        if(binaries.isNotEmpty()) {
+            contents.update(byteArrayOf(0xff.toByte(),4));contents.update(java.nio.ByteBuffer.allocate(4).putInt(binaries.size).array())
+            for((name,encoded)in binaries.toSortedMap())for(value in listOf(name,encoded)){val bytes=strictBytes(value);contents.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.size).array());contents.update(bytes)}
+        }
         val recordsSha256=contents.digest().joinToString("") {"%02x".format(it)}
+        publishMigrationGeneration(candidateId,sha256,archive.size,recordsSha256,checkpoint) { folder ->
+            records.toSortedMap().entries.forEachIndexed {index,(name,text)->val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)}
+            binaries.toSortedMap().entries.forEachIndexed {index,(name,encoded)->
+                val bytes=NativeMigrationRecords.bytes(encoded)
+                try {
+                    val target=atomic(folder,name);encodeBinaryAtomic(target,name,java.io.ByteArrayInputStream(bytes),bytes.size)
+                    java.io.DataInputStream(target.openRead()).use {input->val observed=decodeBinary(input,name,bytes.size,NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES).second
+                        try {check(MessageDigest.isEqual(bytes,observed))}finally {observed.fill(0)}}
+                }finally {bytes.fill(0)}
+                checkpoint(records.size+index+1)
+            }
+        }
+    }
+
+    internal fun publishStreamMigration(candidateId: String, sha256: String, archive: NativeMigrationStreamRecords, checkpoint: (Int) -> Unit = {}): String = ioLock.withLock {
+        require(java.util.UUID.fromString(candidateId).toString()==candidateId && sha256.matches(Regex("[a-f0-9]{64}")))
+        require("metadata" in archive.text && migrationPointerName !in archive.text && migrationPointerName !in archive.binary)
+        val digest=MessageDigest.getInstance("SHA-256")
+        NativeMigrationStreamArchive.write(java.security.DigestOutputStream(nullOutputStreamCompat(),digest),archive,"local-generation-v3")
+        val recordsSha256=digest.digest().joinToString(""){"%02x".format(it)}
+        publishMigrationGeneration(candidateId,sha256,archive.size,recordsSha256,checkpoint) { folder ->
+            archive.text.toSortedMap().entries.forEachIndexed { index,(name,text) ->
+                val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)
+            }
+            archive.binary.toSortedMap().entries.forEachIndexed { index,(name,blob) ->
+                val target=atomic(folder,name);encodeBinaryStream(target,name,blob.size,blob::verifiedCopy)
+                val probe=NativeMigrationProbe();java.io.DataInputStream(target.openRead().buffered()).use { decodeBinaryTo(it,name,blob.size,probe) }
+                require(probe.size==blob.size.toLong() && probe.sha256()==blob.sha256 && probe.prefix().contentEquals(blob.prefix));checkpoint(archive.text.size+index+1)
+            }
+        }
+    }
+
+    private fun publishMigrationGeneration(candidateId: String,sha256: String,recordCount: Int,recordsSha256: String,checkpoint: (Int)->Unit,write: (File)->Unit): String {
         val active=activeGeneration()
         if(active!=null) {
             val prior=JSONObject(decodeAtomic(atomic(root,migrationPointerName),migrationPointerName)!!)
             if(prior.getString("candidateId")==candidateId) {
-                require(prior.getString("sha256")==sha256&&prior.getString("recordsSha256")==recordsSha256&&prior.getInt("records")==records.size)
-                return@withLock active
+                require(prior.getString("sha256")==sha256&&prior.getString("recordsSha256")==recordsSha256&&prior.getInt("records")==recordCount)
+                return active
             }
         }
         requireWritable()
         val generation=java.util.UUID.randomUUID().toString();val folder=File(root,"migration-generation-$generation")
         require(!folder.exists()&&folder.mkdir()&&folder.canonicalFile==File(root.canonicalFile,folder.name))
         var published=false
-        try {
-            records.toSortedMap().entries.forEachIndexed {index,(name,text)->val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)}
+        return try {
+            write(folder)
             checkpoint(0)
-            val pointer=JSONObject().put("version",1).put("generation",generation).put("candidateId",candidateId).put("sha256",sha256).put("records",records.size).put("recordsSha256",recordsSha256).toString()
+            val pointer=JSONObject().put("version",1).put("generation",generation).put("candidateId",candidateId).put("sha256",sha256).put("records",recordCount).put("recordsSha256",recordsSha256).toString()
             encodeAtomic(atomic(root,migrationPointerName),migrationPointerName,pointer)
             published=true;recovery.generation++;generation
         } catch(failure: Throwable) {
@@ -229,9 +323,9 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         require(name.isNotEmpty()&&name.length<=16384&&bytes.size<=65536)
         return bytes
     }
-    private fun binaryHeader(input: java.io.DataInputStream,name: String,expectedSize: Int): BinaryHeader {
+    private fun binaryHeader(input: java.io.DataInputStream,name: String?,expectedSize: Int?): BinaryHeader {
         val version=input.readInt()
-        if(version==2) {require(input.readInt()==expectedSize);return BinaryHeader(name,expectedSize,null)}
+        if(version==2) {val size=input.readInt();require(size in 1..21*1024*1024&&(expectedSize==null||size==expectedSize));return BinaryHeader(requireNotNull(name),size,null)}
         require(version==4) {"录音文件格式已变化"}
         val length=input.readInt();require(length in 25..65560)
         val iv=ByteArray(12);input.readFully(iv);val encrypted=ByteArray(length);input.readFully(encrypted)
@@ -242,8 +336,9 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
             require(count in 1..65536&&frame.remaining()==count+4)
             val encoded=ByteArray(count);frame.get(encoded)
             val actual=Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(encoded)).toString()
-            require(binaryName(actual).contentEquals(encoded)&&actual==name&&frame.int==expectedSize)
-            return BinaryHeader(actual,expectedSize,iv)
+            val size=frame.int
+            require(binaryName(actual).contentEquals(encoded)&&(name==null||actual==name)&&size in 1..21*1024*1024&&(expectedSize==null||size==expectedSize))
+            return BinaryHeader(actual,size,iv)
         }finally {clear.fill(0)}
     }
     private fun writeBinaryHeader(out: java.io.DataOutputStream,name: String,size: Int): ByteArray {
@@ -252,43 +347,124 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         val encrypted=try {crypt(cipher,clear)}finally {clear.fill(0)}
         out.writeInt(4);out.writeInt(encrypted.size);out.write(cipher.iv);out.write(encrypted);return cipher.iv
     }
-    internal fun writeBinary(name: String, source: File, maximumBytes: Int=12*1024*1024) = ioLock.withLock {
-        requireWritable();binaryName(name)
-        require(maximumBytes in 1..21*1024*1024)
-        val size=source.length();require(size in 1..maximumBytes.toLong())
-        val atomic=file(name);val stream=atomic.startWrite()
+    private fun encodeBinaryAtomic(atomic: AtomicFile,name: String,input: java.io.InputStream,size: Int) {
+        require(size in 1..21*1024*1024);binaryName(name);val stream=atomic.startWrite()
         try {
-            val out=java.io.DataOutputStream(stream);val nonce=writeBinaryHeader(out,name,size.toInt())
-            source.inputStream().use { input->
-                val buffer=ByteArray(65536);var offset=0;var index=0
-                while(offset<size) {
-                    val count=minOf(buffer.size,size.toInt()-offset);java.io.DataInputStream(input).readFully(buffer,0,count)
-                    val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key);updateAAD(binaryAAD(name,size.toInt(),index++,nonce))}
-                    out.write(cipher.iv);out.write(crypt(cipher,buffer.copyOf(count)));offset+=count
-                }
-                require(input.read()==-1) {"录音在保存期间发生变化"}
+            val out=java.io.DataOutputStream(stream);val nonce=writeBinaryHeader(out,name,size)
+            val buffer=ByteArray(65536);var offset=0;var index=0
+            while(offset<size) {
+                val count=minOf(buffer.size,size-offset);java.io.DataInputStream(input).readFully(buffer,0,count)
+                val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.ENCRYPT_MODE,key);updateAAD(binaryAAD(name,size,index++,nonce))}
+                out.write(cipher.iv);out.write(crypt(cipher,buffer.copyOf(count)));offset+=count
             }
+            require(input.read()==-1) {"录音在保存期间发生变化"}
             out.flush();atomic.finishWrite(stream)
-        }catch(error: Throwable) {atomic.failWrite(stream);throw error}
+        }catch(error: Throwable){atomic.failWrite(stream);throw error}
     }
-    internal fun readBinary(name: String, expectedSize: Int, maximumBytes: Int=12*1024*1024): ByteArray = ioLock.withLock {
-        checkMigrationAccess();binaryName(name)
-        require(maximumBytes in 1..21*1024*1024&&expectedSize in 1..maximumBytes)
-        java.io.DataInputStream(file(name).openRead()).use { input->
-            val header=binaryHeader(input,name,expectedSize)
-            val result=ByteArray(expectedSize);var offset=0;var index=0
-            try {
-                while(offset<expectedSize) {
-                    val count=minOf(65536,expectedSize-offset);val iv=ByteArray(12);input.readFully(iv)
-                    val encrypted=ByteArray(count+16);input.readFully(encrypted)
-                    val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.DECRYPT_MODE,key,GCMParameterSpec(128,iv));updateAAD(binaryAAD(name,expectedSize,index++,header.nonce))}
-                    val clear=crypt(cipher,encrypted)
-                    try {require(clear.size==count);System.arraycopy(clear,0,result,offset,count);offset+=count}finally {clear.fill(0)}
-                }
-                require(input.read()==-1) {"录音文件含多余内容"};result
-            }catch(failure: Throwable) {result.fill(0);throw failure}
+    internal fun writeBinary(name: String,source: File,maximumBytes: Int=12*1024*1024)=ioLock.withLock {
+        requireWritable();binaryName(name);require(maximumBytes in 1..21*1024*1024)
+        val size=source.length();require(size in 1..maximumBytes.toLong())
+        source.inputStream().use {encodeBinaryAtomic(file(name),name,it,size.toInt())}
+    }
+    /** Bounded caller-owned bytes; no plaintext scratch file or text/base64 Keystore envelope. */
+    internal fun writeBinaryBytes(name: String,bytes: ByteArray,maximumBytes: Int)=ioLock.withLock {
+        requireWritable();binaryName(name);require(maximumBytes in 1..21*1024*1024&&bytes.size in 1..maximumBytes)
+        encodeBinaryAtomic(file(name),name,java.io.ByteArrayInputStream(bytes),bytes.size)
+    }
+    private fun decodeBinary(input: java.io.DataInputStream,name: String?,expectedSize: Int?,maximumBytes: Int): Pair<BinaryHeader,ByteArray> {
+        val header=binaryHeader(input,name,expectedSize);require(header.size in 1..maximumBytes)
+        val result=ByteArray(header.size);var offset=0;var index=0
+        try {
+            while(offset<header.size) {
+                val count=minOf(65536,header.size-offset);val iv=ByteArray(12);input.readFully(iv)
+                val encrypted=ByteArray(count+16);input.readFully(encrypted)
+                val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply {init(Cipher.DECRYPT_MODE,key,GCMParameterSpec(128,iv));updateAAD(binaryAAD(header.name,header.size,index++,header.nonce))}
+                val clear=crypt(cipher,encrypted)
+                try {require(clear.size==count);System.arraycopy(clear,0,result,offset,count);offset+=count}finally {clear.fill(0)}
+            }
+            require(input.read()==-1) {"录音文件含多余内容"};return header to result
+        }catch(failure: Throwable){result.fill(0);throw failure}
+    }
+    internal fun readBinary(name: String,expectedSize: Int,maximumBytes: Int=12*1024*1024): ByteArray=ioLock.withLock {
+        checkMigrationAccess();binaryName(name);require(maximumBytes in 1..21*1024*1024&&expectedSize in 1..maximumBytes)
+        java.io.DataInputStream(file(name).openRead()).use {decodeBinary(it,name,expectedSize,maximumBytes).second}
+    }
+    /** Authenticated bounded binary delivery. The consumer publishes only after this returns. */
+    private fun decodeBinaryTo(input: java.io.DataInputStream, name: String?, size: Int?, output: java.io.OutputStream): BinaryHeader {
+        val header = binaryHeader(input, name, size); var offset = 0; var index = 0
+        while (offset < header.size) {
+            val count = minOf(65536, header.size - offset); val iv = ByteArray(12); input.readFully(iv)
+            val encrypted = ByteArray(count + 16); input.readFully(encrypted)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
+                init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv)); updateAAD(binaryAAD(header.name, header.size, index++, header.nonce))
+            }
+            val clear = crypt(cipher, encrypted)
+            try { require(clear.size == count); output.write(clear); offset += count } finally { clear.fill(0) }
         }
+        require(input.read() == -1); return header
     }
+    internal fun copyBinaryTo(name: String, expectedSize: Int, output: java.io.OutputStream) = ioLock.withLock {
+        checkMigrationAccess(); require(expectedSize in 1..21 * 1024 * 1024)
+        java.io.DataInputStream(file(name).openRead().buffered()).use { decodeBinaryTo(it, name, expectedSize, output) }; Unit
+    }
+    private fun encodeBinaryStream(atomic: AtomicFile, name: String, size: Int, produce: (java.io.OutputStream) -> Unit) {
+        require(size in 1..21 * 1024 * 1024); val stream = atomic.startWrite(); val buffer = ByteArray(65536)
+        try {
+            val out = java.io.DataOutputStream(stream); val nonce = writeBinaryHeader(out, name, size)
+            var used = 0; var total = 0; var index = 0
+            fun chunk() {
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, key); updateAAD(binaryAAD(name, size, index++, nonce)) }
+                val clear = buffer.copyOf(used)
+                try { out.write(cipher.iv); out.write(crypt(cipher, clear)) } finally { clear.fill(0); buffer.fill(0) }; used = 0
+            }
+            produce(object : java.io.OutputStream() {
+                override fun write(value: Int) { write(byteArrayOf(value.toByte())) }
+                override fun write(bytes: ByteArray, offset: Int, count: Int) {
+                    require(offset >= 0 && count >= 0 && offset <= bytes.size - count && count <= size - total)
+                    total += count; var position = offset; var remaining = count
+                    while (remaining > 0) {
+                        val n = minOf(buffer.size - used, remaining); System.arraycopy(bytes, position, buffer, used, n)
+                        used += n; position += n; remaining -= n; if (used == buffer.size) chunk()
+                    }
+                }
+            })
+            require(total == size); if (used > 0) chunk(); out.flush(); atomic.finishWrite(stream)
+        } catch (error: Throwable) { atomic.failWrite(stream); throw error } finally { buffer.fill(0) }
+    }
+    internal fun writeBinaryStream(name: String, size: Int, produce: (java.io.OutputStream) -> Unit) = ioLock.withLock {
+        requireWritable(); encodeBinaryStream(file(name), name, size, produce)
+    }
+    /** Discovery, verification and export share one generation lock. No whole binary or Base64 value. */
+    internal fun <T> migrationStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>, consume: (NativeMigrationStreamRecords) -> T): T =
+        snapshotTransaction { ioLock.withLock {
+            requireWritable(); val files = migrationFiles(dataRoot()).associateBy { it.name }; require(files.size in 1..1024)
+            val aliases = resolveLegacyNames { name -> files[digest(name) + ".bin"]?.let { source ->
+                require(source.length() in 29..(NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES + 65569L)); decodeRecord(source.readBytes(), name).second
+            } }.associateBy { digest(it) + ".bin" }
+            val text = linkedMapOf<String, String>(); val binaries = linkedMapOf<String, NativeMigrationBlob>(); var totalText = 0L
+            for ((filename, source) in files.toSortedMap()) {
+                require(source.length() in 29..23L * 1024 * 1024)
+                java.io.DataInputStream(source.inputStream().buffered()).use { input ->
+                    input.mark(4); val version = input.readUnsignedByte(); input.reset()
+                    val name: String
+                    if (version == 1 || version == 3) {
+                        require(source.length() <= NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES + 65569L)
+                        val decoded = decodeRecord(source.readBytes(), aliases[filename]); name = decoded.first
+                        totalText += strictBytes(decoded.second).size; require(totalText <= NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+                        require(text.put(name, decoded.second) == null)
+                    } else {
+                        val probe = NativeMigrationProbe(); val header = decodeBinaryTo(input, aliases[filename], null, probe); name = header.name
+                        val blob = NativeMigrationBlob(header.size, probe.sha256(), probe.prefix()) { output ->
+                            // Use the discovered exact file, not AtomicFile recovery or a newly selected generation.
+                            java.io.DataInputStream(source.inputStream().buffered()).use { decodeBinaryTo(it, name, header.size, output) }
+                        }
+                        require(binaries.put(name, blob) == null)
+                    }
+                    require(name.isNotEmpty() && name.length <= 8192 && !name.contains('\u0000') && name != migrationPointerName && filename == digest(name) + ".bin")
+                }
+            }
+            consume(NativeMigrationStreamRecords(text, binaries))
+        } }
     private fun binaryAAD(name: String,size: Int,index: Int,nonce: ByteArray?)=
         (if(nonce==null)byteArrayOf()else binaryContext+nonce+byteArrayOf(0))+strictBytes(name)+byteArrayOf(0)+java.nio.ByteBuffer.allocate(8).putInt(size).putInt(index).array()
     // Feed bounded updates to Keystore on older Android providers as well.

@@ -1,0 +1,181 @@
+{
+  "phase": "P7-5r",
+  "sourceBase": "8f2890673fa6994670cf325c1488acfefc44b8b8",
+  "summary": "P7-5r：本机候选采用独立随机代次的256KiB加密分块及最后发布的小型认证头，旧内联候选保持只读兼容；二进制导出在完整分配前核对膨胀配额。有界多块激活/损坏/中断与旧契约两环境76辅助通过，54份默认11字段及22份全部原加密文件保护。满额录音成功迁移仍待文件流式实现。",
+  "features": ["F47", "F55", "F64"],
+  "sourceSha256": "c8b5ce88dd696a5d0d92680de4732c9c47e133c9538babc2c289155ff4aee399",
+  "appSha256": "1799444436e2a4a9fda1094adb0ef02edeac29680daeea9ffd9f7e58e96396d9",
+  "runnerSha256": "b2970b220a4f40ea9ace00e4b5427efa9a26db5c7ef76fcba2423723adf077d8",
+  "nativeAuxiliary": 76,
+  "defaultElevenFieldProofs": 54,
+  "allOriginalEncryptedFileProofs": 22,
+  "cohorts": [
+    {
+      "environment": "API26",
+      "groups": [
+        {
+          "group": "capacity-bounded",
+          "nativeAuxiliary": 7,
+          "defaultElevenFieldProofs": 7,
+          "allOriginalEncryptedFileProofs": 0,
+          "logSha256": "4ef2b336165d05ebe9e29d676b4ceb6979d217fbd99b6cf9a396502f1282b7b0",
+          "evidenceSha256": "e277400ef442b3510d458f992c18c0ab2fae38bef9e80ca6484403e0eaf82713",
+          "capacityObservation": [
+            {
+              "wavBytes": 9600044,
+              "durationMs": 300000,
+              "base64Bytes": 12800060,
+              "payloadLimitBytes": 8388608,
+              "heapLimitBytes": 50331648,
+              "elapsedMs": 326,
+              "remoteWrites": 0,
+              "maximumVoiceImportPending": true,
+              "explicitRejectBeforeWholeValue": true,
+              "sourceCiphertextUnchanged": true
+            }
+          ]
+        },
+        {
+          "group": "compatibility",
+          "nativeAuxiliary": 20,
+          "defaultElevenFieldProofs": 20,
+          "allOriginalEncryptedFileProofs": 0,
+          "logSha256": "3b7380a9af39bcfe2d694f4fb6c6b1337e87d4104746faefbb6c04814dbccedc",
+          "evidenceSha256": "ffec112ca90d3c2f49133c43d6220f091c3de7ba389fd2d09793410318d789e7"
+        },
+        {
+          "group": "candidate-a",
+          "nativeAuxiliary": 6,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 6,
+          "logSha256": "5e547cf137a76da758f775fb1aea773de352bf4257f47bb981530458aa364619",
+          "evidenceSha256": "ef2b42285b29cf1faeeefce86591526a67db8fa324ae9c3d4e5cfb3b7fc3aeeb"
+        },
+        {
+          "group": "candidate-b",
+          "nativeAuxiliary": 5,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 5,
+          "logSha256": "a622c6e05ded9bc99de81e1eb2f2e031a437be221c0e760284567258890c52b4",
+          "evidenceSha256": "4c6b29606ea15fe400470630e392823e9e498352b17cd57ac069bbe2d83cf76a"
+        }
+      ]
+    },
+    {
+      "environment": "physical API33",
+      "groups": [
+        {
+          "group": "capacity-bounded",
+          "nativeAuxiliary": 7,
+          "defaultElevenFieldProofs": 7,
+          "allOriginalEncryptedFileProofs": 0,
+          "logSha256": "0620a9fb49260945054f8474a39c45e98b0457bc22be003c9c7050fcff2245e0",
+          "evidenceSha256": "106a714c999bccdc6f6c87ac42a194cd3d14bd4ab16446ddf9a5c58c491c3221",
+          "capacityObservation": [
+            {
+              "wavBytes": 9600044,
+              "durationMs": 300000,
+              "base64Bytes": 12800060,
+              "payloadLimitBytes": 8388608,
+              "heapLimitBytes": 268435456,
+              "elapsedMs": 2371,
+              "remoteWrites": 0,
+              "maximumVoiceImportPending": true,
+              "explicitRejectBeforeWholeValue": true,
+              "sourceCiphertextUnchanged": true
+            }
+          ]
+        },
+        {
+          "group": "compatibility",
+          "nativeAuxiliary": 20,
+          "defaultElevenFieldProofs": 20,
+          "allOriginalEncryptedFileProofs": 0,
+          "logSha256": "9c3c77916911916b3634447b84ba5000af80af0eb3c65a1f82ce856ab7cbd19f",
+          "evidenceSha256": "115f6f8ce55e75de980e0e2f24b6429b54a675f9a8356d19d59f3683223f9a88"
+        },
+        {
+          "group": "candidate-small-1",
+          "nativeAuxiliary": 2,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 2,
+          "logSha256": "5661fb28e97d3197c6aa7499f760e47867425fa09bf09d04fd46c5c33062d6b5",
+          "evidenceSha256": "65a2eba3acb0311416d63231c7bdf99e1926fb32f5b6526b15f709323ccb08da"
+        },
+        {
+          "group": "candidate-small-2",
+          "nativeAuxiliary": 2,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 2,
+          "logSha256": "1b0049386e16df5f15bae3f83929144a96be4a09fd454e5d2778593f6de3de35",
+          "evidenceSha256": "3082456e93e39075209652e4b2016b8234fc77541ed9c2ff0489589bb3f02a31"
+        },
+        {
+          "group": "candidate-small-3",
+          "nativeAuxiliary": 2,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 2,
+          "logSha256": "6c4ea3d1806306f44697ebfe9cc30cbbd25995c138058860b380c78cb634b4c3",
+          "evidenceSha256": "62778b107214e79e25058b3243eb7c3badd57b856e8d2efc7d4bd3e12ee84379"
+        },
+        {
+          "group": "candidate-small-4",
+          "nativeAuxiliary": 2,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 2,
+          "logSha256": "d3dd9568fa02e354ce74fa3c7beaf3b13f69b3a8c653c130b94d01f464d27727",
+          "evidenceSha256": "59d253bbe1207d7a9fcdbcde4b9f551e2ae1b8079d3ed335a02b50170b096ece"
+        },
+        {
+          "group": "candidate-small-5",
+          "nativeAuxiliary": 2,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 2,
+          "logSha256": "d4b95979500fa2cae5b51e02865bc6c7077d9c81038ad0f6449b13182142794d",
+          "evidenceSha256": "2487196dae835818fbb6f6e2518f4e555953c771ff4ceeda2285194c5601b850"
+        },
+        {
+          "group": "candidate-small-6",
+          "nativeAuxiliary": 1,
+          "defaultElevenFieldProofs": 0,
+          "allOriginalEncryptedFileProofs": 1,
+          "logSha256": "5cfe3b4f067594c3718f26b83bcf961fe1339ed0191b0517a72f73bada99da97",
+          "evidenceSha256": "7abf433070e796ad5bbd86be7adfa9ffc040f463026fab57a1dace92e31c395a"
+        }
+      ]
+    }
+  ],
+  "candidateContract": "Local version2 header contains original candidate ID, complete plaintext digest, exact record/byte counts and ordered per-chunk size/hash under one lock.256KiB chunks use format4 logical names bound to generation/index and file nonce. Each is written/read back before sole AtomicFile header publication. Same-ID/digest reads original ciphertext; replacement requires exact original receipt; failure before publication removes only newly created chunks. Ambiguous header acknowledgement preserves possibly published chunks. Prior generations are retained for explicit retirement, never swept.",
+  "compatibility": "Portable password envelope remains version1 and existing clear archive1/2 remain unchanged. Local inline candidate1 is read and checked without rewriting; only an explicit replacement writes local2. Existing immutable intent/results and imported read-only restrictions remain.",
+  "negativeRecord": {
+    "phase": "P7-5r-initial-capacity",
+    "status": "failed",
+    "environment": "API26",
+    "growthLimitBytes": 50331648,
+    "attemptedAllocationBytes": 25600136,
+    "failure": "OutOfMemoryError during NativeSessionStorage.strictBytes inside migrationTypedArchiveSnapshot",
+    "sourceSha256": "554288a79cb4191e26c4f4d711ebc4ce05983936e87d10bbbf0f0ba462cd23b0",
+    "appSha256": "251bc02e356ede66266dda53aecd17c7c4c7bdaaaf329f78b4d8c20839046a6c",
+    "runnerSha256": "dcf512e55d7e278497748ef2b26efaede27a398827791f4bb9caa6eaa1f180f1",
+    "originalResultNotOverwritten": true,
+    "fullCapacityNotPassed": true,
+    "resolution": "Keep original8/12MiB bounds; authenticate binary header and reject base64 expansion before whole-value allocation. File-stream full migration remains priority, not accepted by this local chunk stage."
+  },
+  "capacityBoundary": "Do not increase8MiB payload/12MiB envelope based on the initial16/24 trial. API26 actual48MiB heap exhausted during base64 UTF8 accounting. Authenticated format4 size or legacy format2 declared size now gates base64 expansion before whole binary decoding; maximum9,600,044-byte WAV is explicitly rejected with original bytes preserved, not counted as migration success. Complete attachment/aggregate and full stream encryption/import remain priority.",
+  "oldCandidatePhoneTimeout": "Original6-method phone group hit240000ms during fifth method; four partial completions not counted. Same source/app/runner rerun in1-2-method fresh private fixture groups; original failure retained, timeout and assertions unchanged.",
+  "checks": {
+    "nativeBuild": "passed debug acceptance app and runner",
+    "mobileParity": "passed after result registration, including base HEAD source coverage",
+    "fullPnpmCheck": "not rerun: prior P7-5q full result retains its1472-input fingerprint; only current native files and parity/docs changed",
+    "iosBuild": "not rerun: iOS inputs unchanged since P7-5q successful simulator build; no current iOS device evidence",
+    "parityLogSha256": "f9d7adcbcf7f6b3ed8c2a6e8136b82a5c27b73189abd3802abcf28f519821ec1"
+  },
+  "iosImpact": "iOS shares password-envelope primitives and safety assertions, not Android local candidate schema. Source/UI untouched; independent iOS voice-directory migration gap remains open; A6 paused.",
+  "uiImpact": "No new product screen. Internal chunk/size handling only; system migration page/old-session retirement, full voice/unread/lifecycle and API37/visual matrices remain open.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "unknownOperationsReplayed": false,
+  "wholeMigrationComplete": false
+}

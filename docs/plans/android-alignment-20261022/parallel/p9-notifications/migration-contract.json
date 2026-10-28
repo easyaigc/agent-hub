@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "record": "native-chat-notifications-v1",
+  "validator": "NativeChatNotificationStore.validateEncoded(text)",
+  "schema": "notification-storage-v1.schema.json",
+  "storage": "existing NativeSessionStorage AES-GCM/atomic record; no new namespace or key",
+  "bounds": {
+    "utf8Bytes": 4194304,
+    "leases": 256,
+    "liveReceipts": 2048,
+    "eventWireCharacters": 16384,
+    "receiptTtlMilliseconds": 86400000
+  },
+  "import": {
+    "owner": "P7 migration",
+    "preferences": "retain choices, force enabled=false, assign new revision and increment generation; system POST_NOTIFICATIONS and channel permission are not migrated",
+    "leases": "do not activate imported leases; require verified saved target and local credential-reference epoch",
+    "receipts": "preserve original receipts/unknown states in immutable migration archive; never re-post or enable imported click tickets; active local receipts start empty",
+    "reading": "P7 owns separate ledger; badge/sound/notification choices do not erase read state or tombstones",
+    "sounds": "references only in this stage; no imported files/key/URI grant implemented; missing or unsupported sound blocks posting rather than claiming ready",
+    "push": "no token, public/private encryption key, provider registration or revocation material exists in this stage; any future schema must version/inventory these explicitly",
+    "unknownRecords": "reject unknown schema or oversized records without modifying original files; no silent reset or skip"
+  },
+  "implementation": "contract only; no second migration implementation in P9"
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agent-hub.invalid/proposed/easywork-import-descriptor-v1",
+  "title": "Proposed EasyWork descriptive import handoff; not a production migration schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "provider",
+    "target",
+    "requiresPairing",
+    "credentialState",
+    "preference",
+    "candidateOrigins"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "provider": {
+      "const": "easywork"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "subject", "desktopDeviceId", "workspaceId", "runtimeId"],
+      "properties": {
+        "authority": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "\\S"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "\\S"
+        },
+        "desktopDeviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "\\S"
+        },
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "\\S"
+        },
+        "runtimeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "requiresPairing": {
+      "const": true
+    },
+    "credentialState": {
+      "const": "none"
+    },
+    "preference": {
+      "enum": ["automatic", "lan-only", "relay-only"]
+    },
+    "candidateOrigins": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512,
+        "pattern": "^https://[^/?#@]+/?$"
+      }
+    }
+  }
+}

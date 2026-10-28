@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "baseCommit": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+  "integration": "central manifest/generated outputs are parent-owned; root parity gate expected to reject until integrated",
+  "features": [
+    {
+      "id": "F49",
+      "commonAssertion": "手机独立已读：实际最新内容可见才确认版本；桌面／另一手机阅读不清除本机，新版本冲突不误清",
+      "bothPlatforms": {
+        "ios": "existing implementation used as source reference; no iOS production/native change",
+        "android": "candidate modules and voice hint implemented; shared registration pending"
+      },
+      "implementation": "in-progress",
+      "verification": "auxiliary-only; native-device-and-real-DEV-not-run",
+      "acceptance": "parallel/p7-reading-voice/integration.md",
+      "scope": "reading/notice authority and lifecycle"
+    },
+    {
+      "id": "F50",
+      "commonAssertion": "全部真实电脑汇总未读对话，一目标最多一；阅读不审批，角标关闭不删账本，迟到推送不恢复旧未读",
+      "bothPlatforms": {
+        "ios": "existing implementation used as source reference; no iOS production/native change",
+        "android": "candidate modules and voice hint implemented; shared registration pending"
+      },
+      "implementation": "in-progress",
+      "verification": "auxiliary-only; native-device-and-real-DEV-not-run",
+      "acceptance": "parallel/p7-reading-voice/integration.md",
+      "scope": "reading/notice authority and lifecycle"
+    },
+    {
+      "id": "F56",
+      "commonAssertion": "中文/英文/跟随系统语言、外观/隐私与支持；深浅色与系统跟随、原生键盘／返回／旋转／后台／重启、无障碍与减少动画；输入／长历史性能、更新保留数据",
+      "bothPlatforms": {
+        "ios": "existing implementation used as source reference; no iOS production/native change",
+        "android": "candidate modules and voice hint implemented; shared registration pending"
+      },
+      "implementation": "in-progress",
+      "verification": "auxiliary-only; native-device-and-real-DEV-not-run",
+      "acceptance": "parallel/p7-reading-voice/integration.md",
+      "scope": "voice and view generation subset; full matrix remains open"
+    },
+    {
+      "id": "F64",
+      "commonAssertion": "AI 共享明确许可不重放原动作；原录音经所选 Host 独立转写，只回原草稿并保留未知回执；转写提示居中且两侧处理波纹循环起伏，减少动态效果时波纹静止，停止键原位显示不可重复触发的加载动画；首次电脑端失败提供重试与原录音本地转写选择，回退不自动发送、不覆盖其他目标或新草稿；问题回复与普通输入的语音状态及失败恢复交互一致",
+      "bothPlatforms": {
+        "ios": "existing implementation used as source reference; no iOS production/native change",
+        "android": "candidate modules and voice hint implemented; shared registration pending"
+      },
+      "implementation": "in-progress",
+      "verification": "auxiliary-only; native-device-and-real-DEV-not-run",
+      "acceptance": "parallel/p7-reading-voice/integration.md",
+      "scope": "voice and view generation subset; full matrix remains open"
+    }
+  ],
+  "ui": ["UI02", "UI06", "UI11", "UI12", "UI21"],
+  "upstream": [
+    {
+      "id": "N067",
+      "commit": "e0c3ab0338698c0d15cdd332117d4ea91dd73853",
+      "status": "Android listening hint ported with branch-owned status localization preserved; locale union/native evidence pending"
+    },
+    {
+      "id": "N068",
+      "commit": "2ffdc4fcaee6f97bdd77a8496513c322ecc77e4e",
+      "status": "same N067 scope; no whole-merge import"
+    }
+  ],
+  "sources": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/ThreadReading.kt",
+      "sha256": "9a78a51e6306f8ce9d04bd6eb0e7f13566ee9bf771ceaf1cb68065d658f66c2b"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt",
+      "sha256": "be89e7720d4b0e3b7a7449eafb9a4ea33faf4eae8f00638bd93442df90c2fd6b"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSystemVoice.kt",
+      "sha256": "20ee4b8fb99bdea0e6709bb5a13fc01ff39c12fea51f45fdd0c9d3d9649b7195"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "sha256": "3ceb0aea52feb9be1ba59e8599ba75b946a084c9ade08bbe0cd819f907ed040f"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "sha256": "37bf7890317fdd05e956ffc58ac21d9edea94aef6b36d55b6b816fc2d746b3d4"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeReadingLedgerTest.kt",
+      "sha256": "a6c22f65395ab991ad374c66d64cdd33f31dbaa227c9b87180243f3e3cebf24c"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeReadingLifecycleTest.kt",
+      "sha256": "8a3b78a1610c4488a12433fcef48c4d1a80e2259babb401abe277c267c5c535e"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSystemVoiceTest.kt",
+      "sha256": "346475623b16519c62c4290978764ec133236da326130a897111af84dbeedce0"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceHintUiTest.kt",
+      "sha256": "a4d7e44b2bba4402d76cf80cbd0c60c18d54f362dee2f281bbed781e65dce326"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeReadingPresentationTest.kt",
+      "sha256": "21a86f6042bd9ab7b9209cc6c60014cc8d74a288e49c799eef9860993a6d870d"
+    }
+  ],
+  "remaining": [
+    "MobileSession/MainActivity/full target wire and typed read-ack registration",
+    "P9 notification delivery receipt consumer",
+    "ledger migration publication schema registration",
+    "localization delta integration/regeneration",
+    "default voice setting and pre-capture fallback",
+    "same-recording local transcription with capability-verified file source",
+    "native API26/API37/physical/real DEV and full AX/theme/language/system matrix"
+  ]
+}

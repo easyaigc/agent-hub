@@ -1,0 +1,49 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-parallel-migration-stream-1-and-scope-2",
+  "base": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+  "features": ["F47", "F55", "F64"],
+  "ui": ["UI12"],
+  "scenarios": ["S11", "S17", "S18"],
+  "commonAssertions": [
+    "Preserve exact original target/certificate/operation ID/intent/result/voice manifest/bytes and unknown receipt; never replay prepare/audio/upload/model input.",
+    "Authenticate every ordered frame plus final EOF; validate full closed record graph, sizes, hashes and WAV header before candidate or active-pointer publication.",
+    "Wrong password, corrupt/truncated/trailing/reordered data and precommit interruption preserve original encrypted source/current generation/candidate.",
+    "Same candidate ID and plaintext digest returns the original stored result without ciphertext rewrite; activation retry preserves later independent draft edits.",
+    "Known nonempty inbox/callback/photo-permission/recent-photo/camera child stores and indexed provisional voice reject file export without dropping, sealing or replaying their original data.",
+    "Imported UUIDs never authorize sealing or deleting a same-ID raw WAV that may belong to the original installation/namespace."
+  ],
+  "dualEndImpact": {
+    "android": "New file APIs, portable framed v2 envelope, typed stream archive/local candidate v3 and shared activation pointer. Legacy envelope/archive/candidate readers and legacy byte-array limits remain.",
+    "ios": "No source/UI change. Password PBKDF2/AES-GCM primitives retained; iOS does not yet read this Android file envelope/payload. Its independent voice-directory migration gap and A6 remain open."
+  },
+  "implementation": "implemented sealed WAV stream candidate plus explicit child/provisional inventory refusal and imported raw-ownership fence",
+  "verification": {
+    "nativeBuild": "passed final scope candidate app/runner; build-scope.log",
+    "hostAuxiliary": "compiled production envelope/KDF; 33,554,449-byte stream at JVM heap 50,331,648 bytes; roundtrip plus five negative cases passed; JDK ICU shim uses ASCII password only",
+    "androidNative": "not executed: device/bundle/time lease reserved to coordinator",
+    "realDev": "not executed; zero network/model operations in this workline",
+    "centralParity": "integration pending: missing/stale change record; central manifest intentionally not edited",
+    "format": "pnpm format:check passed final scope source/docs"
+  },
+  "sources": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationStreamTest.kt": "b0a4efd6625d67bce0b3d28c7cc4501f6bb5bfaae4ce75539dde4bd3ed9df9ca",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "636e895ec367f43647460d6b489f39aec629342d19f98eb01b947f38980ddb38",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "944b7295298122a630bcaef4aa92431085ae06d0270f462a3fc92c00888e5b9c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "a3c3da662c4e684508abfe7677a99643786877244dca085871bcedd4435a9985",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamArchive.kt": "3bb41c2ad640d36d32e001a9ba360bde280c44c31bc56132173e3799f3222617",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt": "ae8727680ea2aad9cf658ceb478c8516718a2546c2dd35602c28cc03d2c53b47",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCrypto.kt": "48124b87233dc16ff5d48e775e39ce6f5a87c38b75f00041e0724d6dd9c38add",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamRecords.kt": "8c3e82dd9a9c71834fa0e6705e2d26c6242bff994a5dca30e128694ea3ca326b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationVoice.kt": "1b268d85185149d9c6cc12834398d4d60d96cdd639b37bc89a9af38e070388ec",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "cd6f101a677ad79c9e08fbecda3aeeaec7cf4e7caf7331842a12df1b07770a71",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "b3432fb9b95a296a015ab578f462ec9eb01ab0db2ff6a3a2b44caf20fea1248c"
+  },
+  "remaining": [
+    "API26 actual 48MiB Keystore full-pipeline/physical/API37 and cross-process native execution",
+    "Large legacy draft-file Base64 text, aggregate raw ceiling, provisional WAV ownership/capture synchronization",
+    "System inbox/callback/camera child stores and OS-local authority audit",
+    "Provider/device/OIDC/P9 descriptors and mobile-reading-ledger-v1 schema/reader reauthorization",
+    "Native system export/import UI and cold MobileSession retirement"
+  ]
+}

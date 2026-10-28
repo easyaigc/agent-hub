@@ -1,0 +1,24 @@
+{
+  "observedAt": "2026-10-28",
+  "baseline": "25235202",
+  "observedMain": "f29432474bf286da5b48c0a47e07d2e65f279169",
+  "integration": "P7-5q: main source merged; additive manifest conflict resolution preserved all393 change IDs; no Android production-source difference",
+  "entries": [
+    {
+      "id": "N066",
+      "commit": "f29432474bf286da5b48c0a47e07d2e65f279169",
+      "title": "fix(host): normalize ultrafast speed settings and verify native tasks",
+      "scope": "F36/UI08/S06 Host stable speed IDs, current-owner settings priority and iOS explicit multi-option menu; F34 current/next-send isolation retained",
+      "android": "Existing stable-ID three-speed menu supported; native synthetic5 scenarios per environment passed after examiner correction; live-owner speed/model writes and full visual matrix remain pending"
+    }
+  ],
+  "resolvedFiles": {
+    "apps/ios/Sources/Sheets.swift": "cbf1a9785c5e8075ef7b17d8689e179789ba5de4cb85d6c3cd5e35ecc4ed39c9",
+    "packages/codex-adapter/src/generation-settings.ts": "dd4d7089e8ac6aab7f0c99e982dd2c24156bedc249355add6057a83e563e09c9",
+    "packages/codex-adapter/src/runtime-session.ts": "b86c072b9d75b764dd53cc943fd9a62f2bbfef51f56424a81dcac5ffddd624c3",
+    "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "db64ecf05c60fa566ce1b903daef67c5360e2e4d7f0204bfc5523b9c916c5923"
+  },
+  "iosA6": "Human pause retained; source/build review only",
+  "tasksProjects": "deferred",
+  "review": "P7-main-sync-speed-review.json"
+}

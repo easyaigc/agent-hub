@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "destination": "apps/android/localization/native-copy.json",
+  "entries": [
+    {
+      "key": "后台推送尚未就绪",
+      "zh-Hans": "后台推送尚未就绪",
+      "en": "Background push is not ready"
+    },
+    {
+      "key": "通知渠道由系统管理；声音与角标以系统实际设置为准。",
+      "zh-Hans": "通知渠道由系统管理；声音与角标以系统实际设置为准。",
+      "en": "Notification channels are managed by Android. Sound and badges follow the actual system settings."
+    },
+    {
+      "key": "内置与导入铃声尚未就绪",
+      "zh-Hans": "内置与导入铃声尚未就绪",
+      "en": "Built-in and imported sounds are not ready"
+    },
+    {
+      "key": "Android 不支持及时通知。",
+      "zh-Hans": "Android 不支持及时通知。",
+      "en": "Time Sensitive notifications are not supported on Android."
+    }
+  ]
+}

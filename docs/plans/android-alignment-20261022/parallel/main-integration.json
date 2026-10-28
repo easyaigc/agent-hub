@@ -1,0 +1,109 @@
+{
+  "phase": "parallel-parent-main-integration",
+  "baseCommit": "2ad9d979cdfc77099d4f5e8c1365886e07947466",
+  "incomingMain": "2ffdc4fcaee6f97bdd77a8496513c322ecc77e4e",
+  "nodes": ["N067", "N068"],
+  "scope": "主统筹集成main2ffdc4fc/N067/N068停止录音提示：保留双侧声纹/居中48dp停止入口，同时将忙碌、监听状态和读屏继续解析5p的App文案来源，外部错误原文不翻译。中央词条合并为1750；源码合并与当前原生验收分开。",
+  "conflicts": {
+    "VoiceInputView": "Upstream listening row plus local statusCopyKey resolver in busy/listening/failure/accessibility",
+    "design": "Both appended design records retained",
+    "manifest": "Strict additive merge preserved397 old change IDs before parent record",
+    "generatedProductTable": "Regenerated from merged manifest"
+  },
+  "checks": {
+    "androidBuild": "passed acceptance app/runner",
+    "iosSimulatorBuild": "passed simulator compilation, no device/A6",
+    "mobileParity": "passed after merged1750 catalog hashes were explicitly registered; original stale-coverage failure retained",
+    "restoredVoiceUi": "10 native auxiliary,10 full default-data protections; no microphone, Host/model input or live listening acceptance"
+  },
+  "notClaimed": [
+    "full listening/microphone/new voice finish/native model",
+    "full P7 P8 P9",
+    "API37 or iOS A6"
+  ],
+  "newModelInputs": 0,
+  "unknownOperationsReplayed": false,
+  "sourceSha256": "90b44726e45ee2eb50bb2e217b3f490433adb037133729fbc75bb84b9cb1e20b",
+  "appSha256": "da77d0a39730febabc4fb24d5d35f90e30b3659d6f26ca9f2d56523477b36b73",
+  "runnerSha256": "310b664dcd483c5b24112abeb2d2a7a48a7b109fce920e440e8db77d34a4b438",
+  "nativeAuxiliary": 10,
+  "defaultElevenFieldProofs": 10,
+  "groups": [
+    {
+      "environment": "API26",
+      "language": "en",
+      "contentTheme": "light",
+      "nativeAuxiliary": 2,
+      "defaultElevenFieldProofs": 2,
+      "logSha256": "ca7c134a7fdcafc518e040ea00ea62b9a24bba6ada3421e733b0e2feb2994fac",
+      "evidenceSha256": "89009ebae40fe04f968f0086f232545386758081ca0d657522334a6611d7b1a2"
+    },
+    {
+      "environment": "API26",
+      "language": "en",
+      "contentTheme": "dark",
+      "nativeAuxiliary": 1,
+      "defaultElevenFieldProofs": 1,
+      "logSha256": "8c2e593efc55205123281d524923841452d58767581817414afb2d9f66b76659",
+      "evidenceSha256": "fa0860304e6569eec02136470f56d14f8de15b274756d256aea16cee10cfd8cf"
+    },
+    {
+      "environment": "API26",
+      "language": "zh-Hans",
+      "contentTheme": "light",
+      "nativeAuxiliary": 1,
+      "defaultElevenFieldProofs": 1,
+      "logSha256": "49ea7c0347603c774f4b523d678841e1b46a368c74647d1a87d8bcd0be2371ca",
+      "evidenceSha256": "90689a0030aeb91abca175e5d903dd5713cc54263d634c0633042a45c54fc1f4"
+    },
+    {
+      "environment": "API26",
+      "language": "zh-Hans",
+      "contentTheme": "dark",
+      "nativeAuxiliary": 1,
+      "defaultElevenFieldProofs": 1,
+      "logSha256": "7cbf43b964847e1b24b7fc600725215605b33f6334b7c27b7cb36fa8f7ff0eb3",
+      "evidenceSha256": "933860a36220bd6ed77b4f18bcf913929531590231c30fd446c0a93f8a0da6fa"
+    },
+    {
+      "environment": "physical API33",
+      "language": "en",
+      "contentTheme": "light",
+      "nativeAuxiliary": 2,
+      "defaultElevenFieldProofs": 2,
+      "logSha256": "dab2594329d1f1a0bb52c589b84ec6ba3951711f7373dd1df146276e5785966e",
+      "evidenceSha256": "2b141ca67effc86ef9aab9fde8beb17801569c0dbdedfd0a3970f8eddae4adf6"
+    },
+    {
+      "environment": "physical API33",
+      "language": "en",
+      "contentTheme": "dark",
+      "nativeAuxiliary": 1,
+      "defaultElevenFieldProofs": 1,
+      "logSha256": "d9789ab6647e7f92b644772ea12b01a56fd6c65dca6d1311d9ec145900fc58bf",
+      "evidenceSha256": "7e92a7c9084b7887ecd470b166c1530bce15a584142f0566c89f50c8765718e2"
+    },
+    {
+      "environment": "physical API33",
+      "language": "zh-Hans",
+      "contentTheme": "light",
+      "nativeAuxiliary": 1,
+      "defaultElevenFieldProofs": 1,
+      "logSha256": "870068c163661a841a51ae3d3a635fe3b619fc22097e3568b6a76370e97ff566",
+      "evidenceSha256": "1a2ce635e1c0171283171b0ae6a4f8a456023a8addea62844a21cb1b7a07bd32"
+    },
+    {
+      "environment": "physical API33",
+      "language": "zh-Hans",
+      "contentTheme": "dark",
+      "nativeAuxiliary": 1,
+      "defaultElevenFieldProofs": 1,
+      "logSha256": "50b657bf6c42562122f8fa78703767d70f923e68b6c8d880650c0387e98da267",
+      "evidenceSha256": "3071f32d8b63bd98e5b15aa16d3954b04e2c8098054d806e5b9f1fc218074d37"
+    }
+  ],
+  "visualReview": "Eight owned receipt-only windows manually inspected: Chinese/English text and controls readable and status within panel.24 PixelCopy frames retained across busy/receipt-only/external-literal states. Content theme only; system bars/full fonts/rotation/AX remain pending. Physical font differs from emulator; cause not asserted. Existing English connecting caption still Chinese and empty subtitle edge observation remain open.",
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1
+}

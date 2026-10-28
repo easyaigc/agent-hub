@@ -24,6 +24,10 @@ object VoiceCodec {
 }
 internal fun voiceSHA(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
+internal class ImportedVoiceReceiptOnly: IllegalStateException(MESSAGE) {
+    companion object {const val MESSAGE="迁入的原录音仅核对原回执，音频已保留。"}
+}
+
 /** Only an explicit finish/retry calls this flow. Unknown uploads are queried, never replayed. */
 class VoiceTranscriptionFlow(private val commands: AgentCommands,private val store: VoiceRecordingStore) {
     suspend fun transcribe(client: MobileClient,pending: PendingVoiceRecording,allowed: ()->Boolean): String {
@@ -34,12 +38,13 @@ class VoiceTranscriptionFlow(private val commands: AgentCommands,private val sto
         guard()
         var receipt=try { commands.voiceStatus(client,request) }
         catch(e: CodexCommandError) {
-            if(e.status!=404 || current.audioAttempted) throw e
+            if(e.status!=404 || current.audioAttempted || current.migrationReadOnly) throw e
             guard();store.mark(pending,prepareAttempted=true);guard()
             commands.prepareVoice(client,request)
         }
         guard()
         if(receipt.phase=="awaiting-audio") {
+            if(current.migrationReadOnly)throw ImportedVoiceReceiptOnly()
             // The original Host authoritatively still awaits these exact bytes.
             // It commits the transcribing receipt before upstream I/O.
             store.mark(pending,prepareAttempted=true,audioAttempted=true);guard()

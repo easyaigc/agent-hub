@@ -1,0 +1,190 @@
+{
+  "phase": "P7-5n",
+  "sourceBase": "e73f04fd2c3c56a8666d46871d491a3a2e8e95c5",
+  "integratedMain": "3a6a71d3b98297d9d0c6a91e3406701663a5eefc",
+  "summary": "P7-5n：封口录音纳入类型化档案、严格候选和原子代次；文本v1兼容，v2分别保存原文本与规范二进制，索引/原目标/证书/草稿/音频清单闭合，支持旧内联和分块音频。迁入原录音持久只读，404或等待音频均禁止准备/上传，只核对原回执。API26/新手机86辅助、76默认11字段保护通过；完整配额/未封口/子存储与系统UI继续。",
+  "features": ["F47", "F55", "F56", "F64"],
+  "sourceSha256": "2b14b671413c0f81235822687590329507799b81ee4f176aaaa2b3fce05c90c2",
+  "appSha256": "777b2b61967671a225c29e42908f6514b3c4468512e2dc70e6cd3cab5a84f3ab",
+  "runnerSha256": "0f22fd391f7379b077794b8975e467f95cbd55da28119880f3d97da7150ec460",
+  "nativeAuxiliary": 86,
+  "defaultElevenFieldProofs": 76,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "groups": [
+        {
+          "group": "typed",
+          "nativeAuxiliaryMethods": 8,
+          "reportSha256": "4fdc39f3871802d7924750cab04b46234ddd910b6ed628119edbefdc92cc9dd1",
+          "defaultElevenFieldProofs": 8,
+          "proofSha256s": [
+            "1783087068f70b1c108201d5024c7e1087ed8b2901d5ed52b441947c8a877996",
+            "330363eb8fe6a445ca16a6483114abe07f6f5f9c6c448f5819df31ac45f51081",
+            "732313f1b1547944630297018846d0f7be698a485be59de59215f2d126df3d8c",
+            "925454d7ea81d046a477193e1869057cba17f94138882f7f8b5597295662619f",
+            "4fe2d8171361e5b2fccfa8cecdfd5c89e98ccb23cdf64db463ef89017548363b",
+            "7f293a536a593ef1becd5435ee8e77dac3d87e0766866d41e64ef8e7c171eafd",
+            "93700cafd8833272b64716d38dc1705613ad9603f7d96b48c4d38e8eef8a1db8",
+            "2f61844d6728081d1f0766214d19ef40ca49bf26307c95d74dfcf6db2a0960c7"
+          ]
+        },
+        {
+          "group": "compat",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "4dab893e748d43835b01c2e808a30f217f40ee8fa2d2eb8c6ae1701839f0574e",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "c14de3c624fc5618f69c17157fe0c280f569ebc7fede03008dbc9a3eef734ec8",
+            "38c31118408159e7e460857c632d4feb0699d409d39589bb16f2618de3984147",
+            "17c3aff97c5f171c2a4a5a4deac2804f9a689b3f2c1d5464536d4f21f2bd6795",
+            "b567206a42a7a83158a7cb1dfb83a58fd4268c1562fce603cdb9d6114d5e4480",
+            "8f7c1c08669862abe29944505e8e13d2e08996bd9cc65498ff7cf8acc10924cd",
+            "a48e0456727848130be6f6123fee0ef150a1ecd771972ab404022e0a8f382de2",
+            "8aa047f0b40152e65b2fa82deeacc57b12d0f95b47baf1ede94ae4dfed3f2aee",
+            "4c3d66d805f9932f0d2ebf356e5e908a68b161156f8c8825833f02c9eae60448",
+            "fea4e51fdea4316d8f50b024a337936d6f8048f2261a55632a38fc04463d6999",
+            "51c5c9817ffb4fc7629c9ea15c7e9e9da1e1974accc936452251ee84803c9be9",
+            "6e1820b72d2a3fdfe6c3a2c1abf580aa1a827600a32ab680999d4a9a4bc68646",
+            "05d3f2c4c80c145c8d7a1e2ea36c5c853cc97cad04521b4efa5ac1dc7b01e173",
+            "2b759bdb46e769b950e52ff24443da50f23436d33acf1c0ad56cdf848b2210c6",
+            "664f4a1eb6595750430ad9bb8fae0ccf234b96bec1e584ce21d2b9fa2c8376ef",
+            "c971c0ce8181e72cc22d9ecdaf18dbf383e5d10b8eeeef134c9cf31865a4937c",
+            "129d1c92e99c13dc1abf25596fba019f9d84db49e059b7c1658bd13ed391576c",
+            "eefb64f1c0a18a49b6b98df46efeefbd9a8817736044e7b98e5927d2a5ba870b",
+            "fbafdf2174df7a5fb64f25df12ea7ab1d58903b6e8a84268ea77733a064438af"
+          ]
+        },
+        {
+          "group": "inventory",
+          "nativeAuxiliaryMethods": 12,
+          "reportSha256": "1255422fd4f260b2f41861ab141ef4378dcd233d5436295f9f8a90639df13609",
+          "defaultElevenFieldProofs": 12,
+          "proofSha256s": [
+            "980027cc491ba9ba30f1fab6012e9d77bf573f68a5cb87559e6a9ec48b9aa94d",
+            "7062399c331b15335cd245e9675f309be8098c2214aeeac5b9941104bd7336ca",
+            "47976507bbeb4023f52eab60ce8ff5d8ff9f9982f5210d112753ff361176ddab",
+            "272168bd09e484dee09cfb76628f052dfbeb450f586d52dd48323239b66896d1",
+            "f7ef216c49c10c4733574ccd50125ac17c59c0714ad45d95ea7d63cfb7493a41",
+            "54b13bd0c96e99f01c60f7fedbf4ee93c476c222ea46fe50ce108545e72fa45d",
+            "7adff889c23d5eadcf479f73081deb709a27ffd824b9f6ab0149137ebd395028",
+            "b9eaf549720eb1ee1b664a6a33ef108af1c9ab0584cd572a9cde2007def58416",
+            "ac5ef30f6183681a1cf3ae064f9ff0a9c8a61d2da102a144a1d63e65fa21d7c2",
+            "b617bc253f00cf5bdeb363f67d24df1a432a9ab17fc40d56fcdbfd2f1fc7279c",
+            "9de22efaca6c9d3a8076b564325c8c71a718cf328ebb7571fb24cf8658edaa52",
+            "cbdccebc639a1d91f03b7bca74e379f08cd59c3cfae79f88faf048eee78a8095"
+          ]
+        },
+        {
+          "group": "voice",
+          "nativeAuxiliaryMethods": 5,
+          "reportSha256": "c118a725586398c95f8140ef5c4739d6a69a5ff2fa463e8f97620c436c22975f",
+          "defaultElevenFieldProofs": 0,
+          "proofSha256s": []
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "groups": [
+        {
+          "group": "typed",
+          "nativeAuxiliaryMethods": 8,
+          "reportSha256": "67e7f3382877731500dcb6daf3a7c7b0d2e5abca08127b89e5e839f6ae97fba7",
+          "defaultElevenFieldProofs": 8,
+          "proofSha256s": [
+            "6e31e620d58112ad112a40a032f3ad413040c3f2054eebb1e312e7051686bb1c",
+            "a7d95a5eabe57fe9e25b3fe9a2df48c77d5f3b94a6fb3e9034986088e778d654",
+            "9c491204ca21445fde9394000cffff62544b2abdfffc85faf93533e8ed701132",
+            "a03a45e3d1339b20eae0c373091685c23c3052299e1594ebca9e44a02df2d3df",
+            "e5a0111c31bd82bcc876ff5464d1df07b1f06453fc7c8bd61a392fc5b7304d83",
+            "b53e193467168580a862522b3bbc442ada621a27038a81d520ea4aaf5c95cda6",
+            "6a8334a88b97540cd66af0e66eb3561e222c170577f5e5147547de95c834945d",
+            "f80bab635a0da87d986338b5174ebca482ad482dbe6de285d81af4bf57bcbab9"
+          ]
+        },
+        {
+          "group": "compat",
+          "nativeAuxiliaryMethods": 18,
+          "reportSha256": "2e4c13bd00daac5b00d92cd685a2aa0bf1e37dbc904a7a61040948f82398f696",
+          "defaultElevenFieldProofs": 18,
+          "proofSha256s": [
+            "4342ef778917bfc20133761e6062650147b8b576564887a1e815c4c880324e36",
+            "2c5fd52d4adf517e12b7533aa98e3f6d40297ae770967037636ab114fbaaa00e",
+            "0c8bf0e992d6d2f692f3b5a5292e4a6388e18fe6d250fa9f17fc2f755524ee1e",
+            "ff880885d2a238a1dacdbc5fdaab76dc4f28791a61ee7012da4c90df489dc1a2",
+            "8c74ff9ca449295f135d4d49a48555fafaa8adf4918d98b124b25b1154f96e48",
+            "231ed7990f7a2eaaac0b0b37099af10392fdf4fcd3d4cb0e9dadae55e5ceca5c",
+            "6322509209c720721fea7b6b47b3b74939a9d0ca2dbb3f0ef5315ba52b32577f",
+            "0e40bf794f410488a2bb4cbf73954897dec917a5d9df10cf82dca85a13bd686b",
+            "d2bd8894141d2dab4104bfa129d38ea5464244cbfc17a94c32037cd815c40218",
+            "70a9e4650c377cfe3e98b83264d93e8d7ebafef49186d97e91bcfd46d6f60de0",
+            "9127eab1716e4b99305cb41982463c14259bf73311f536326a55d02dd6a56104",
+            "6b401757ecf407b1ea51c7b91e3864854893151e8557aa0b192a6bd4513c0c61",
+            "df0fd2d4287c5ba26d2bfd4392a7650a4a591b06487d9255cdca847d30a6b5ed",
+            "e46f76c38bb0f8f0a5001cf1a5b48adcff4f1c3d36898164a6497d7a9c71a7d8",
+            "6838085b73756c40dd803e584134acb9b3a4622e0dba069ed027905b9fd4d16a",
+            "80bdfe33ca93d7b0db96835c165b5a035312b98b574814923984e6d847214d43",
+            "0a5e0bebd17605fff651a873a983cc0639f11cefdb7342ea30e6a25270c19715",
+            "1f00f267e3314fa669519e65bf387ffbd24c82e5c563b4d2b0872b74c1b1ad27"
+          ]
+        },
+        {
+          "group": "inventory",
+          "nativeAuxiliaryMethods": 12,
+          "reportSha256": "bb161eec363a702e628e4a232c92182fc40552de01bb7d5a583d5f98fe6929c4",
+          "defaultElevenFieldProofs": 12,
+          "proofSha256s": [
+            "08628b51de48f671d891f6fc006f826abb1b8f829a06d687306c95a566090127",
+            "668d0461f5f522057ea15604bb79d8c975478349a961499ea55a2330357304f9",
+            "07e5434b9ab3baa58039c502922922f621badfb01566b4dec3a46cc1f42e1ab8",
+            "2794b94f13e0f8bd747dc07dcbf24c1bf89003d626f52988cc8f6ac131080949",
+            "de1acf64475993ee0843371addf706d2b3418c2d1cb6b6dd8523536b65d8b44a",
+            "7df90ffc2d0b100c7c4197b02ae744bc71ef1699c3573c879a76d5f75bf46123",
+            "63bd95b03ce308bb0bae1836ccd01f7320b1985414df6d00911c662beae1498e",
+            "7184211a929f374569f48d57a2c60270abf9fd192b22cb8fd8a5a77a99902576",
+            "bb49a8abadc77c350e62e9da565ec97d726cfce6b9ebf3fb15633964e0394d39",
+            "68cb2a7a185b9931f3b1be0f19219050c65c4c5a4dd2ddef932bb253edc42416",
+            "6262f99d0997780a5cd85a20b4a1a2872a89ede73ad2b0f2c7281331ed115b7b",
+            "5f7e8f1b28d8fbd555041f85511a978679f34379e4b8de2bd89eca65b03bc4e5"
+          ]
+        },
+        {
+          "group": "voice",
+          "nativeAuxiliaryMethods": 5,
+          "reportSha256": "94b8074943e2ffc865f433828556cd5d0e69357df580ebe1ea0bfbc2732da3a8",
+          "defaultElevenFieldProofs": 0,
+          "proofSha256s": []
+        }
+      ]
+    }
+  ],
+  "archiveSchema": "Existing text-only payload1 retained. Payload2 uses exact original text records plus canonical-base64 binaries, closed disjoint names and total record count. Common encrypted envelope stays1; application identity is exact current Android package. Candidate read/validate text-only convenience APIs reject a binary archive instead of omitting binary records.",
+  "sourceSnapshot": "Same history snapshot/root locks; authenticated text3/binary4 names discovered, indexed legacy1/2 aliases exact. No AtomicFile recovery during discovery. Missing/unknown/corrupt/unfinished files reject and preserve source. Unsealed recordings remain explicitly unsupported and their provisional WAV is not modified.",
+  "voiceContract": "Index at most32 distinct UUIDs, closed sealed rows, original Codex runtime/certificate/draft binding, exact WAV header/PCM size/duration/hash/manifest and strict persisted flags/receipt phase/time. Binary set exactly equals referenced original audio; old inline-audio JSON and legacy2 files remain exact on export. Historical incompatible target/unsupported records fail closed; no partial product migration claim.",
+  "activation": "Text and binary records encrypted/read back in unpublished generation; both contribute to commit digest/count. Failure after binary or before pointer preserves installation/source/candidate; original pointer remains sole publication point. Fresh reader/empty consent authority and original operation read-only policies remain.",
+  "noReplay": "Voice migrationReadOnly is persisted, decoded from current store and preserved by receipt updates. Even with a new allowed callback, missing404 never prepares and awaiting-audio never uploads. Explicit original status may return completed text to existing guarded draft flow; no imported audio submission or unknown operation replay.",
+  "copy": "New imported-recording receipt-only message added to both compiled native catalogs (1748 keys/language). Compiled Android builds and catalog generation passed; full new product migration UI/error-screen/AX matrix remains pending.",
+  "iosImpact": "Common source/attachment/receipt preservation, strict import/new installation and no-replay assertions retained. iOS independent PendingVoiceStore remains outside its existing migration payload; iOS source/device unchanged and A6 paused. Android bounded sealed-voice subset does not close full dual-end migration.",
+  "retainedPreflight": {
+    "logSha256": "0dbe185f374b9ed22d25539eee4c3b368588548c94923e99efdc9f6c98df09f1",
+    "status": "not-started",
+    "reason": "Extra phone regression preflight rejected active instrumentation. Subsequent read-only snapshot identified independent EasyWork acceptance; it was not stopped. Idle retry later passed18 plus remaining12/5.",
+    "snapshotSha256": "0a3874b21a703f21275b24a3a27f3d9a8ab6d0bb482f9f821759e47f3933dc03",
+    "newTestsInRejectedAttempt": 0
+  },
+  "bounds": "Internal matching Codex sealed-root subset only; existing8MiB payload/12MiB envelope/1024record gates remain. No full quota, provisional ownership, nested inbox/callback/provider/device/notification coverage, system migration UI, actual Electron/model or iOS device pass. Native/HTTP fixtures remain auxiliary.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "unknownOperationsReplayed": false,
+  "pending": [
+    "Full-size/multiple/provisional voice and streaming quotas",
+    "Nested inbox/callback/camera originals and provider/device/notification schema",
+    "System migration UI and retired old-session/cold switch",
+    "Explicit revalidated recovery parity; voice/unread/lifecycle",
+    "API37 and existing environmental/original-owner matrices",
+    "Task/project business and iOS A6 paused"
+  ]
+}

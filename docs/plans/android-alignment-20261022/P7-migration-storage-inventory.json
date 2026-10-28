@@ -1,30 +1,30 @@
 {
   "phase": "P7-followup-storage-inventory",
   "sourceBase": "8666a29dfefcaf65aa77671d85f6291968951b93",
-  "basis": "Read-only source inventory; not runtime capability or native pass",
+  "basis": "Source inventory plus explicit phase references; each status retains its verification scope",
   "entries": [
     {
       "id": "root-text",
       "actualStorage": "metadata; Codex Vault; original operations/submissions; draft-file; history index/parts; thumbnails; old AI grants",
       "status": "supported within internal text archive",
       "source": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
-      "sourceSha256": "31fb3123752eb437b6234dd3502d4f304d0adf6daad759144d6b42e2afb6f42b",
+      "sourceSha256": "9f384213fb91b727577d161ccc69402baaed02d63c09a23919335ce6cd8ff5d0",
       "boundary": "Retain exact immutable intent/result and manifests; imported grants reset and operations observe-only"
     },
     {
       "id": "sealed-voice",
       "actualStorage": "voice-index-v1; voice-recording:<uuid>; voice-audio:<uuid>",
-      "status": "binary archive and schema still open",
+      "status": "Implemented and native-auxiliary verified for bounded matching Codex sealed voice in P7-5n; full-size/provisional/provider/system UI remain open",
       "source": "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt",
-      "sourceSha256": "128c5103712b479613391bf84e1b43c99975e5ce7c5b5465fa04b9c7146e022a",
-      "boundary": "Retain original ID/target/certificate/manifest/prepareAttempted/audioAttempted/receipt; never prepare/upload unknown imported originals"
+      "sourceSha256": "24a8b0c642911999b92d5371b230e13146cf9c330a5a3466b7e1326cbe9dd420",
+      "boundary": "Original exact ID/target/certificate/draft/manifest and attempt/receipt flags retained; migrationReadOnly forbids prepare/upload, original receipt queries only. Payload/count quotas remain initial bounds."
     },
     {
       "id": "provisional-voice",
       "actualStorage": "noBackupFilesDir/voice-recordings-v1/<uuid>.wav",
       "status": "separate global raw directory; not covered by root archive",
       "source": "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt",
-      "sourceSha256": "128c5103712b479613391bf84e1b43c99975e5ce7c5b5465fa04b9c7146e022a",
+      "sourceSha256": "24a8b0c642911999b92d5371b230e13146cf9c330a5a3466b7e1326cbe9dd420",
       "boundary": "Need owner/namespace inventory, capture synchronization and explicit pending/corrupt policy; no deletion or implicit seal/upload during export"
     },
     {
@@ -106,16 +106,16 @@
       "apps/ios/Sources/SessionStore.swift",
       "apps/ios/Sources/VoiceInput.swift"
     ],
-    "finding": "iOS migrationPayload explicitly snapshots saved state/attachments/credentials/notification records; independent PendingVoiceStore directory is not included there. This is a dual-end gap requiring an explicit common assertion, not existing iOS native pass."
+    "finding": "iOS migrationPayload includes saved state/attachments/credentials/notification records but not independent PendingVoiceStore. Android P7-5n supports a bounded matching Codex sealed-voice subset; full dual-end voice migration remains open."
   },
   "sequence": [
-    "P7-5l: authenticated self-describing binary storage with exact legacy2 compatibility and cross-write chunk binding",
-    "Typed voice payload/candidate/generation publication and quotas; imported original receipts query-only",
-    "Child snapshots and raw-file ownership; classify portable original bytes versus installation-only OS authority",
-    "EasyWork/provider/device/OIDC schema and notification dependency; business task/project features paused",
+    "Typed sealed voice archive/candidate/generation implemented within initial quota; actual process-cold importer next",
+    "Full-size/multiple/provisional voice, ownership and streaming quotas",
+    "Nested inbox/callback/camera originals, provider/device/OIDC and notification dependency",
     "Native system file export/import and cold session replacement, then voice/unread/lifecycle matrix"
   ],
   "productionMigrationUi": false,
   "newModelInputs": 0,
-  "unknownOperationsReplayed": false
+  "unknownOperationsReplayed": false,
+  "updatedBy": "P7-5n"
 }

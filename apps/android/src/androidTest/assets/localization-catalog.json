@@ -1747,7 +1747,18 @@
     "暂时无法预览文件，请重试。": "The file could not be previewed. Try again.",
     "下一项": "Next result",
     "无法读取图片目录，请重试。": "Unable to load photos. Try again.",
-    "使用系统选图器": "Use system photo picker"
+    "使用系统选图器": "Use system photo picker",
+    "迁入的原录音仅核对原回执，音频已保留。": "This imported recording can only check its original receipt. The audio is preserved.",
+    "正在连接电脑转写…": "Connecting to computer transcription…",
+    "已离开语音输入，原草稿已保留。": "You left voice input. Your original draft is preserved.",
+    "本地听写超时，原草稿已保留，请重试。": "Local dictation timed out. Your original draft is preserved. Try again.",
+    "本地听写失败，原草稿已保留。": "Local dictation failed. Your original draft is preserved.",
+    "原草稿或目标已变化，请先取消，再在当前草稿开始录音。": "The draft or target changed. Cancel first, then start recording in the current draft.",
+    "手机内存不足，原草稿已保留，请稍后重试。": "Your phone is low on memory. Your original draft is preserved. Try again later.",
+    "后台推送尚未就绪": "Background push is not ready",
+    "通知渠道由系统管理；声音与角标以系统实际设置为准。": "Notification channels are managed by Android. Sound and badges follow the actual system settings.",
+    "内置与导入铃声尚未就绪": "Built-in and imported sounds are not ready",
+    "Android 不支持及时通知。": "Time Sensitive notifications are not supported on Android."
   },
   "zh-Hans": {
     "\n请查询原回执；不会再次提交。": "\n请查询原回执；不会再次提交。",
@@ -3497,6 +3508,17 @@
     "暂时无法预览文件，请重试。": "暂时无法预览文件，请重试。",
     "下一项": "下一项",
     "无法读取图片目录，请重试。": "无法读取图片目录，请重试。",
-    "使用系统选图器": "使用系统选图器"
+    "使用系统选图器": "使用系统选图器",
+    "迁入的原录音仅核对原回执，音频已保留。": "迁入的原录音仅核对原回执，音频已保留。",
+    "正在连接电脑转写…": "正在连接电脑转写…",
+    "已离开语音输入，原草稿已保留。": "已离开语音输入，原草稿已保留。",
+    "本地听写超时，原草稿已保留，请重试。": "本地听写超时，原草稿已保留，请重试。",
+    "本地听写失败，原草稿已保留。": "本地听写失败，原草稿已保留。",
+    "原草稿或目标已变化，请先取消，再在当前草稿开始录音。": "原草稿或目标已变化，请先取消，再在当前草稿开始录音。",
+    "手机内存不足，原草稿已保留，请稍后重试。": "手机内存不足，原草稿已保留，请稍后重试。",
+    "后台推送尚未就绪": "后台推送尚未就绪",
+    "通知渠道由系统管理；声音与角标以系统实际设置为准。": "通知渠道由系统管理；声音与角标以系统实际设置为准。",
+    "内置与导入铃声尚未就绪": "内置与导入铃声尚未就绪",
+    "Android 不支持及时通知。": "Android 不支持及时通知。"
   }
 }

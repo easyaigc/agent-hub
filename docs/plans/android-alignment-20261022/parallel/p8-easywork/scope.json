@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+  "date": "2026-10-28",
+  "scope": "A5-1 through A5-7 source/evidence reconciliation and isolated auxiliary EWDAP/transport tests. No production, device, desktop, service or model mutations.",
+  "ownership": {
+    "thisWorkline": "p8-easywork audit and synthetic security/transport boundaries",
+    "otherWorkline": "Existing EasyWork dual-platform real DEV work owns the main checkout WIP, full history/search/plan UI and its acceptance.easywork install",
+    "disposition": "No WIP copied; production files deliberately unchanged because ownership overlaps. Current external source/environment fingerprints have not been adopted."
+  },
+  "groups": [
+    {
+      "id": "A5-1",
+      "name": "Registered providers and complete target identity",
+      "features": ["F10", "F43", "F46"],
+      "android": ["AgentRegistry.kt", "EasyWorkModels.kt", "EasyWorkAgentClient.kt"],
+      "ios": ["AgentClient.swift", "EasyWorkAgentClient.swift"],
+      "interactions": [
+        "Select Codex or EasyWork by registered provider ID, never display name",
+        "Keep authority/subject/device/workspace/runtime/thread distinct; route edits preserve identity",
+        "Reject an unknown wire method before opening a transport; preserve immutable operation intent"
+      ],
+      "currentSourceAssessment": "Provider dispatch, target conversion and narrow adapter methods are present. New management/notification capabilities remain with their existing owners; no arbitrary shell or IPC exposure is added.",
+      "auxiliaryTests": [
+        "bindingRequiresEveryTargetCoordinateAndDeviceKey",
+        "arbitraryWireMethodIsRejectedBeforeOpeningAnyTransport"
+      ],
+      "realGate": "On each leased environment switch two similar targets; verify original Codex owner and EasyWork runtime independently, with isolated drafts/receipts/events and zero wrong-target writes.",
+      "iosAndroidSourceComparison": [
+        "iOS uses AgentClient while Android registers AgentReads/AgentCommands; both map EasyWork behind the adapter. Android explicitly rejects Codex staged creation/active-open APIs for EasyWork and uses its direct thread/create path.",
+        "Current iOS adapter declares notification operations absent from this Android adapter. That P9 dependency is recorded, not implemented or accepted by P8."
+      ]
+    },
+    {
+      "id": "A5-2",
+      "name": "Discovery, pairing, certificate and device binding",
+      "features": ["F06", "F07", "F09"],
+      "android": [
+        "EasyWorkConnectionPage.kt",
+        "EasyWorkDiscovery.kt",
+        "EasyWorkPairing.kt",
+        "EasyWorkDeviceAuthorization.kt",
+        "EasyWorkTransport.kt"
+      ],
+      "ios": [
+        "EasyWorkDiscovery.swift",
+        "EasyWorkPairing.swift",
+        "EasyWorkDeviceAuthorization.swift"
+      ],
+      "interactions": [
+        "Bonjour or saved route selection, QR or 16-character connection code, original Desktop confirmation",
+        "Reject stale offers, altered certificate/public key/binding, and untrusted scanned relay origin",
+        "Authenticated runtime context may add LAN candidates without replacing target identity"
+      ],
+      "currentSourceAssessment": "Current form uses EWDAP code/QR without phone login. Paired descriptor checks and pinned private LAN transport are present. Legacy pairing remains a separate compatibility path; source presence does not prove physical camera or certificate refusal.",
+      "auxiliaryTests": ["bindingRequiresEveryTargetCoordinateAndDeviceKey"],
+      "realGate": "Physical camera and manual code, fresh discovery and saved route; Desktop approves/rejects the exact device. Exercise real wrong certificate/public key/expiry without repointing any existing user connection.",
+      "iosAndroidSourceComparison": [
+        "iOS discovery/camera/form and Android NSD/CameraX/Compose have separate native implementations. Shared source semantics include 16-character EWDAP code, Desktop confirmation and full-target/public-key checks; native form/camera/permission parity is unverified here."
+      ]
+    },
+    {
+      "id": "A5-3",
+      "name": "Encrypted LAN and relay, handshake and recovery",
+      "features": ["F08", "F09", "F18", "F43", "F44", "F46"],
+      "android": [
+        "EasyWorkCrypto.kt",
+        "EasyWorkTransport.kt",
+        "EasyWorkSession.kt",
+        "EasyWorkEventSignal.kt",
+        "EasyWorkThreadSync.kt"
+      ],
+      "ios": ["EasyWorkTransport.swift", "EasyWorkSession.swift", "EasyWorkThreadSync.swift"],
+      "interactions": [
+        "Automatic prefers LAN; LAN-only and relay-only keep explicit policy",
+        "Key confirmation precedes protocol processing; encrypted header, request ID and target are authenticated",
+        "A lost write reply switches path and queries original operation receipt; only reads retry with unchanged request"
+      ],
+      "currentSourceAssessment": "Current request recovery checks receipt operationId/method/requestHash/target and never retries the write. Synthetic transport injection exercises this production path; it does not exercise real WSS, relay authentication, restart or public routing.",
+      "auxiliaryTests": [
+        "independentNodeFramesAndAuthenticatedHeaders",
+        "lostWriteReplyUsesOriginalReceiptWithoutReplayingInput",
+        "unknownWriteReceiptRemainsUnknownWithoutReplay",
+        "recoveredReceiptRequiresOriginalTargetMethodIdAndInputHash",
+        "readRetryPreservesExactRequestAndUsesSecondChannel",
+        "pathPreferencesUseOnlyTheSelectedTransport"
+      ],
+      "realGate": "Both actual paths plus automatic failover on one frozen app/runtime candidate; retain original thread/run/operation IDs and independently count Desktop inputs before/after every failure and restart.",
+      "iosAndroidSourceComparison": [
+        "iOS Foundation and Android OkHttp are distinct transports. Both expose a 32 MiB receive limit; Android also bounds queued frames/count. The current Android session is exercised with synthetic encrypted peers, not with iOS/native transport evidence."
+      ]
+    },
+    {
+      "id": "A5-4",
+      "name": "Workspace, history, models, plan and event presentation",
+      "features": ["F16", "F17", "F18", "F21", "F22", "F24", "F34", "F35", "F36"],
+      "android": [
+        "EasyWorkAgentClient.kt",
+        "EasyWorkThreadSync.kt",
+        "MobileRuntime.kt",
+        "MobileSession.kt",
+        "ExecutionPanels.kt",
+        "PlanPanels.kt",
+        "Sidebar.kt"
+      ],
+      "ios": [
+        "EasyWorkAgentClient.swift",
+        "EasyWorkThreadSync.swift",
+        "Models.swift",
+        "SessionStore.swift",
+        "RootView.swift"
+      ],
+      "interactions": [
+        "Existing project/thread directory, paging, full-history search and revisit",
+        "Separate plan card/steps, compaction state, actual owner settings and capability-driven speed",
+        "Gap/epoch recovery, cached reading and runtime health shown separately"
+      ],
+      "currentSourceAssessment": "Adapter maps workspace/history/models/plans and shared authoritative deltas. The active EasyWork workline owns full-history/search/plan-card corrections. Its WIP is absent from this candidate; no UI fix or current native pass is inferred.",
+      "auxiliaryTests": [],
+      "realGate": "Compare current native screens with iOS for complete history/search/plan/settings and actual runtime; inspect every applicable screenshot and anchor/state transition. Await owned corrections rather than duplicating them.",
+      "iosAndroidSourceComparison": [
+        "Both adapters consume authoritative thread/sync but platform history projection/UI remain distinct. Current Android candidate omits the other EasyWork workline full-history/search/plan-card WIP; neither its later fixes nor its proofs are adopted."
+      ]
+    },
+    {
+      "id": "A5-5",
+      "name": "Create, reply, queue, guidance, stop, approvals and resources",
+      "features": [
+        "F29",
+        "F31",
+        "F32",
+        "F34",
+        "F35",
+        "F36",
+        "F37",
+        "F38",
+        "F39",
+        "F40",
+        "F41",
+        "F42",
+        "F58",
+        "F43",
+        "F44",
+        "F46",
+        "F48"
+      ],
+      "android": [
+        "AgentRegistry.kt",
+        "EasyWorkAgentClient.kt",
+        "EasyWorkReceiptNormalization.kt",
+        "EasyWorkSession.kt",
+        "NativeOperationJournal.kt",
+        "ExecutionPanels.kt"
+      ],
+      "ios": [
+        "AgentClient.swift",
+        "EasyWorkAgentClient.swift",
+        "EasyWorkSession.swift",
+        "SessionStore.swift",
+        "RootView.swift"
+      ],
+      "interactions": [
+        "Create project/no-project thread, first input and attachment-only input; receive exact original receipt",
+        "Native client queue owns execution; steer/stop/plan/approval/question bind original Run and request",
+        "Upload/download real bytes with digest, scope and independent random attachment-content check"
+      ],
+      "currentSourceAssessment": "Named operations, native queue evidence and resource methods are present. Current auxiliary recovery checks only the session boundary. File UI, migration, notifications, full history and plan-card work remain with their owners.",
+      "auxiliaryTests": [
+        "lostWriteReplyUsesOriginalReceiptWithoutReplayingInput",
+        "unknownWriteReceiptRemainsUnknownWithoutReplay",
+        "recoveredReceiptRequiresOriginalTargetMethodIdAndInputHash"
+      ],
+      "realGate": "Real model plus independent Desktop canonical input/run count for each creation/queue/control/approval/question/resource case on both paths; unknown old operations stay read-only.",
+      "iosAndroidSourceComparison": [
+        "Both map named EasyWork operations and native client queue receipts; Android explicitly rejects Codex staged creation/upload and active-open methods. Direct new-thread creation is a separate supported path whose actual capabilities and receipt must be checked.",
+        "Android and iOS resource/approval/question UI are separately implemented; current production-input fingerprints cannot be inferred from shared wire method names."
+      ]
+    },
+    {
+      "id": "A5-6",
+      "name": "Desktop-confirmed EWDAP grant, DPoP, refresh and revocation",
+      "features": ["F07", "F09", "F43", "F44", "F46"],
+      "android": [
+        "EasyWorkDeviceAuthorization.kt",
+        "EasyWorkDPoP.kt",
+        "EasyWorkDeviceDelivery.kt",
+        "EasyWorkModels.kt",
+        "EasyWorkSession.kt",
+        "EasyWorkLogin.kt"
+      ],
+      "ios": [
+        "EasyWorkDeviceAuthorization.swift",
+        "EasyWorkTransport.swift",
+        "EasyWorkSession.swift"
+      ],
+      "interactions": [
+        "Phone claims anonymously; signed-in original Desktop confirms device and verification code",
+        "ECDH-ES/A256GCM delivers device grant; system P-256 DPoP binds URL/method/token/body/key",
+        "Persist claim/refresh/revoke intent before network I/O; exact-binding revocation and no legacy-token downgrade",
+        "Migration conveys descriptive provider data only; fresh local keys and explicit re-pairing precede new authorization"
+      ],
+      "currentSourceAssessment": "Scoped grants, DPoP, encrypted delivery, persisted refresh and revocation are present. OS-backed DPoP key creation is deliberately outside host-JVM evidence. Legacy phone OIDC is compatibility code, not the EWDAP gate or a requirement to sign in on phone.",
+      "auxiliaryTests": [
+        "independentEwdapJweDeliveryRefusesTamperingAndWrongRecipient",
+        "authorizedBindingCannotFallBackToLegacyAccountToken",
+        "bindingRequiresEveryTargetCoordinateAndDeviceKey"
+      ],
+      "realGate": "Each target OS verifies actual Keystore/Keychain, Desktop confirmation/rejection, replay/key/body/binding refusals, real token expiry and new-process refresh, exact grant revoke. Public Desktop OIDC and deployed cross-network relay are separate gates.",
+      "iosAndroidSourceComparison": [
+        "iOS uses CryptoKit/SecKey/Keychain while Android uses BouncyCastle plus AndroidKeyStore. Android host-JVM JWE proof does not exercise either secure-store implementation or DPoP key lifetime.",
+        "Both sources keep phone EWDAP anonymous and Desktop account authorization distinct; compatibility phone OIDC code is not evidence of EWDAP public deployment."
+      ]
+    },
+    {
+      "id": "A5-7",
+      "name": "API26/API37/physical matrix, recovery and Codex regression",
+      "features": [
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10",
+        "F17",
+        "F18",
+        "F29",
+        "F43",
+        "F44",
+        "F46",
+        "F48"
+      ],
+      "android": [
+        "EasyWorkAgentClient.kt",
+        "EasyWorkConnectionPage.kt",
+        "EasyWorkSession.kt",
+        "NativeSessionStorage.kt",
+        "NativeOperationJournal.kt"
+      ],
+      "ios": [
+        "AgentClient.swift",
+        "EasyWorkAgentClient.swift",
+        "EasyWorkSession.swift",
+        "SessionStore.swift"
+      ],
+      "interactions": [
+        "API26, API37 and leased physical phone each exercise LAN/relay plus app/desktop restart and target switch",
+        "Inspect original screenshots, exact bundle and source/package/runner/environment fingerprints",
+        "Independent Codex regression; preserve prior failure and never replay sealed unknown input"
+      ],
+      "currentSourceAssessment": "Only current auxiliary JVM evidence is produced here. No device lease was granted and no device or original Desktop/model action was performed. Every group remains unsealed for this current candidate.",
+      "auxiliaryTests": [],
+      "realGate": "Integrator supplies exact device/package/time lease, compatible isolated Electron/relay build and unique new task intents; freeze all evidence before claiming scoped current or matched-reuse passes.",
+      "iosAndroidSourceComparison": [
+        "Old API26/API37/Xiaomi and iOS proofs retain their original source/environment hashes. No leased current device proof or whole native+Desktop fingerprint match is available to this workline."
+      ]
+    }
+  ]
+}

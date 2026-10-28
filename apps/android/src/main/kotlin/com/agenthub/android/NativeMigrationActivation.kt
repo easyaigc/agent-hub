@@ -12,8 +12,12 @@ internal class NativeMigrationActivation(private val context: Context,private va
         // The authoritative Vault also covers pairing committed before an ordinary metadata snapshot.
         val metadata=storage.metadata()
         if(metadata?.getJSONArray("clients")?.length()?.let{it>0}==true||CodexConnectionVault(storage).clients().isNotEmpty())throw ExistingInstallation()
-        val records=NativeMigrationCandidateStore(context,storage).read(receipt)
-        storage.publishMigration(receipt.id,receipt.sha256,prepare(receipt,records),checkpoint)
+        val stream=NativeMigrationStreamCandidate(context,storage)
+        if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
+            storage.publishStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text),records.binary),checkpoint)
+        }
+        val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
+        storage.publishMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text),records.binary),checkpoint)
     }
     private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>): Map<String,String> {
         val records=original.toMutableMap();val metadata=JSONObject(records.getValue("metadata"))
@@ -28,6 +32,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
             records["codex-private-connections-v1"]=vault.toString()
         }
         for((name,raw)in original)when {
+            name.startsWith("voice-recording:") -> records[name]=JSONObject(raw).put("migrationReadOnly",true).toString()
             name.startsWith("submission:") -> records[name]=JSONObject(raw).apply{remove("photoSources")}.toString()
             name.startsWith("operations:") -> {
                 val body=JSONObject(raw)

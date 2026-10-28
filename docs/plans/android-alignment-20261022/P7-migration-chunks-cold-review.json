@@ -1,0 +1,188 @@
+{
+  "phase": "P7-5s",
+  "sourceBase": "db0ebe76925b77e7f16a2c5a2d9606731e977c22",
+  "summary": "P7-5s：两环境分别核对至少3块候选的暂存后冷激活、激活后冷读，writer先退出且新PID继续；原候选/音频/未知回执/只读限制与后续草稿保持。另精确核对存储文件未超限但Base64膨胀超额时的提前拒绝。共10原生辅助、10默认11字段保护，产品APK与5r完全相同。",
+  "features": ["F47", "F55", "F64"],
+  "sourceSha256": "ea757ffe0826c2748492cfe036a4f0dc47252757f402aed9c33b0cdf9aabce60",
+  "appSha256": "1799444436e2a4a9fda1094adb0ef02edeac29680daeea9ffd9f7e58e96396d9",
+  "runnerSha256": "c5f05d123508e0798492e907dc0d41db7680103770e031f0db060e585ae18745",
+  "nativeAuxiliary": 10,
+  "defaultElevenFieldProofs": 10,
+  "coldChains": [
+    {
+      "environment": "API26",
+      "kind": "post",
+      "candidateChunks": 3,
+      "writerProcessExitedBeforeReader": true,
+      "differentReaderPid": true,
+      "proofs": {
+        "writerPid": 24665,
+        "readerPid": 24806,
+        "differentProcess": true,
+        "sameDeviceKeystore": true,
+        "originalImportedAudio": true,
+        "originalImportReceipt": true,
+        "originalManifestAndAttemptFences": true,
+        "importedVoiceObserveOnly": true,
+        "laterDraftPreserved": true,
+        "importedCiphertextUnchanged": true,
+        "sourceCiphertextUnchanged": true,
+        "remoteWrites": 0
+      },
+      "groups": [
+        {
+          "side": "writer",
+          "logSha256": "a6f0204d5fef99880f7e193a8330ffeb973ac107fa69fef94a468f1742719b5a",
+          "evidenceSha256": "cfd052f8864e722ba43859257c5bcd05fbba0d2fe9498cd05109b9425c9f79eb"
+        },
+        {
+          "side": "reader",
+          "logSha256": "9c3f4778d00c562e2a357ec71efd77aaa455978221f5855c24ca4a65a74de052",
+          "evidenceSha256": "91c06aea247fe92f53d33e8902a80d9abd0d70bd494766ce8e1d2edd14e115cd"
+        }
+      ],
+      "fixtureSha256": "9ed75838f401f50a939a3ecfa5a9c776e2bb2dda64efdf084d6b10c12482e76c"
+    },
+    {
+      "environment": "API26",
+      "kind": "staged",
+      "candidateChunks": 3,
+      "writerProcessExitedBeforeReader": true,
+      "differentReaderPid": true,
+      "proofs": {
+        "writerPid": 24916,
+        "readerPid": 25035,
+        "differentProcess": true,
+        "sameDeviceKeystore": true,
+        "originalCandidateMatched": true,
+        "noCandidateReplacement": true,
+        "originalAudioAndOperation": true,
+        "originalUnknownReceipt": true,
+        "importedVoiceObserveOnly": true,
+        "originalImportReceipt": true,
+        "sourceCiphertextUnchanged": true,
+        "remoteWrites": 0
+      },
+      "groups": [
+        {
+          "side": "writer",
+          "logSha256": "9c9500a44907f1eb6fbcf84d68531206342284e26f1d7f24f03e4646dfe8475f",
+          "evidenceSha256": "783e110a962a1df78554cbc8ad0f15011ceff806a73746a20f696489fbde2b35"
+        },
+        {
+          "side": "reader",
+          "logSha256": "7af43cba1e0221580fd17a7b9238a68f4ff815e3a2502dc7599ecce67894537c",
+          "evidenceSha256": "983ddba5289cc3eb23b972514b024a8620662272973658bd63def6619601b9c7"
+        }
+      ],
+      "fixtureSha256": "9d99fb084c399dfca07a24d26ef152804b5b870ca4eb9b2b61fccc51d731f9cd"
+    },
+    {
+      "environment": "physical API33",
+      "kind": "post",
+      "candidateChunks": 3,
+      "writerProcessExitedBeforeReader": true,
+      "differentReaderPid": true,
+      "proofs": {
+        "writerPid": 1614,
+        "readerPid": 2384,
+        "differentProcess": true,
+        "sameDeviceKeystore": true,
+        "originalImportedAudio": true,
+        "originalImportReceipt": true,
+        "originalManifestAndAttemptFences": true,
+        "importedVoiceObserveOnly": true,
+        "laterDraftPreserved": true,
+        "importedCiphertextUnchanged": true,
+        "sourceCiphertextUnchanged": true,
+        "remoteWrites": 0
+      },
+      "groups": [
+        {
+          "side": "writer",
+          "logSha256": "7f2adf84a68ef245c1563f1f934d712ffa5f3efbf1b05f789e7c2f32ac3b2389",
+          "evidenceSha256": "9fff4e5be9035c8b6a5e98b139397204ea6b5e77ffac3ed54df7928d9e14df4b"
+        },
+        {
+          "side": "reader",
+          "logSha256": "bdf781a8e2ef7fc53214fa5fdf92d182f34913fd8c71617badda444b1f729a2a",
+          "evidenceSha256": "11c2107fa7324da08accb6a76ecb1f976d7c3e8065d7cb53c55633d445d21259"
+        }
+      ],
+      "fixtureSha256": "0e2c60bae0a4406f9db4b1fcf366700ca955ba8d4d6936230cbf5367e233de2c"
+    },
+    {
+      "environment": "physical API33",
+      "kind": "staged",
+      "candidateChunks": 3,
+      "writerProcessExitedBeforeReader": true,
+      "differentReaderPid": true,
+      "proofs": {
+        "writerPid": 4214,
+        "readerPid": 4699,
+        "differentProcess": true,
+        "sameDeviceKeystore": true,
+        "originalCandidateMatched": true,
+        "noCandidateReplacement": true,
+        "originalAudioAndOperation": true,
+        "originalUnknownReceipt": true,
+        "importedVoiceObserveOnly": true,
+        "originalImportReceipt": true,
+        "sourceCiphertextUnchanged": true,
+        "remoteWrites": 0
+      },
+      "groups": [
+        {
+          "side": "writer",
+          "logSha256": "079ee64a50887dff24c41038c699701db3a13af366add6cf4d1284801e9abb9b",
+          "evidenceSha256": "9d1997b403beb99b47131ba6261bb9a2e6c0d3a54eadc91f9570ce4877cc40e4"
+        },
+        {
+          "side": "reader",
+          "logSha256": "3d8f1a4a8f918e6183720f6ff919b9643c5e9fe06ba363283a1e6d98ff1b6eb9",
+          "evidenceSha256": "b8a76475fd0f6f4359a801f081c4505a7355ec0fd8c4396ac80a77036c87a91f"
+        }
+      ],
+      "fixtureSha256": "342e3b2410d8f364da2d77bb27d104611cd4f32bcce63a8a5e51bf1639f9fcb5"
+    }
+  ],
+  "exactExpansion": [
+    {
+      "environment": "API26",
+      "nativeAuxiliary": 1,
+      "storedBinaryBelowPayloadLimit": true,
+      "base64ExpansionAbovePayloadLimit": true,
+      "failsBeforeWholeBinaryDecode": true,
+      "sourceCiphertextUnchanged": true,
+      "logSha256": "a1403cde609ac3e4947452d681140092d25cecc88f52ec7dc6ca115c81d6dd72",
+      "evidenceSha256": "bb72d2df7de10292341a2a178924fe8992415616bdad72466179685ee7e13908"
+    },
+    {
+      "environment": "physical API33",
+      "nativeAuxiliary": 1,
+      "storedBinaryBelowPayloadLimit": true,
+      "base64ExpansionAbovePayloadLimit": true,
+      "failsBeforeWholeBinaryDecode": true,
+      "sourceCiphertextUnchanged": true,
+      "logSha256": "ac0a79de5a7fe20b239e40a159166e521ec585947fb3d43be347d4a6ed359dfe",
+      "evidenceSha256": "2971cf11784f90fbf6da90d4de15ef0696402a835ec5591556d327904e2eb03b"
+    }
+  ],
+  "changedNativeFiles": "Only NativeMigrationVoiceColdTest.kt and NativeMigrationCapacityTest.kt; test PCM increased from131072 to524288, explicit localVersion2 and >=3 chunk assertions at writer and reader. No production source change.",
+  "preflightRecord": "First staged phone writer did not start due another package active instrumentation. Original preflight retained; no writer operation was submitted there. Later idle preflight allowed a new private writer/reader chain. No other package interrupted.",
+  "matchedReuse": "5r76 auxiliary/54 default/22 all-original proofs retain original source/runner fingerprints and match the exact product APK; not counted as new executions. Original API26 OOM/phone6-method timeout retained.",
+  "iosImpact": "Compare original IDs/bytes, fresh-reader authority and no-replay assertions with iOS migration source. No iOS source/device/A6 execution in this phase; independent iOS original-voice-directory gap stays open.",
+  "checks": {
+    "nativeBuild": "passed acceptance app/runner; same product APK as5r",
+    "mobileParity": "passed including base HEAD source coverage; final result-only fields formatted separately",
+    "fullPnpmCheck": "not rerun; native-only examiner/docs delta from5r; P7-5q full check retained as prior fingerprint evidence",
+    "parityLogSha256": "a7e32c3c6f8ec2722c1ee092ece40b52d12f0f80d9e0c27a7f8dd8ffa2d35852"
+  },
+  "wholeMigrationComplete": false,
+  "remaining": "File-based streaming for full voice/attachments/aggregate capacity; provisional WAV ownership, child stores/provider/device/notification contracts; system export/import UI and old-session retirement; then voice/unread/lifecycle.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "unknownOperationsReplayed": false
+}

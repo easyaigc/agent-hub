@@ -1,0 +1,2839 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+  "featureIds": [
+    "F06",
+    "F07",
+    "F08",
+    "F09",
+    "F10",
+    "F16",
+    "F17",
+    "F18",
+    "F21",
+    "F22",
+    "F24",
+    "F29",
+    "F31",
+    "F32",
+    "F34",
+    "F35",
+    "F36",
+    "F37",
+    "F38",
+    "F39",
+    "F40",
+    "F41",
+    "F42",
+    "F43",
+    "F44",
+    "F46",
+    "F48",
+    "F58"
+  ],
+  "currentSourceEvidence": "source-audit.json",
+  "historicalIosAndIntegrationNodes": [
+    {
+      "id": "B029",
+      "commit": "e9a2e21fd28e3524b20aef9aee94cae94545aa5e",
+      "title": "docs(android): start A5 EasyWork implementation and acceptance ledger",
+      "iosChangedPaths": [],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "B030",
+      "commit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "title": "chore: preserve in-progress A5 before upstream migration",
+      "iosChangedPaths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Info.plist",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+        "apps/ios/Sources/EasyWorkDiscovery.swift",
+        "apps/ios/Sources/EasyWorkPairing.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EasyWorkTransport.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/SharedReadingPolicy.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Tests/CodexManageUITests.swift"
+      ],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "B031",
+      "commit": "9bb43e2a5fba13f97594e2c31f280256af9ace0e",
+      "title": "feat: 集成 Task Hub 与桌面连接扩展",
+      "iosChangedPaths": [
+        "apps/ios/AppStore/site/privacy-en.html",
+        "apps/ios/AppStore/site/privacy.html",
+        "apps/ios/AppStore/site/support.html",
+        "apps/ios/AppStore/store-metadata-zh-CN.json",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Info.plist",
+        "apps/ios/NotificationContent/Info.plist",
+        "apps/ios/NotificationContent/NotificationViewController.swift",
+        "apps/ios/NotificationService/Info.plist",
+        "apps/ios/NotificationService/NotificationService.swift",
+        "apps/ios/Resources/PrivacyInfo.xcprivacy",
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/BusinessNotificationModels.swift",
+        "apps/ios/Sources/CodexDiscovery.swift",
+        "apps/ios/Sources/EasyWorkDiscovery.swift",
+        "apps/ios/Sources/EasyWorkPairing.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/MobileUnreadBadge.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/NotificationModels.swift",
+        "apps/ios/Sources/NotificationSettings.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift",
+        "apps/ios/Sources/TaskHubBusinessNotifications.swift",
+        "apps/ios/Sources/TaskHubClient.swift",
+        "apps/ios/Sources/TaskHubConsent.swift",
+        "apps/ios/Sources/TaskHubDiscovery.swift",
+        "apps/ios/Sources/TaskHubModels.swift",
+        "apps/ios/Sources/TaskHubNavigation.swift",
+        "apps/ios/Sources/TaskHubPairing.swift",
+        "apps/ios/Sources/TaskHubSQLitePersistence.swift",
+        "apps/ios/Sources/TaskHubStore.swift",
+        "apps/ios/Sources/TaskHubUploadCoordinator.swift",
+        "apps/ios/Sources/TaskHubViews.swift",
+        "apps/ios/Sources/TaskNotifications.swift",
+        "apps/ios/Sources/ThreadReading.swift",
+        "apps/ios/Sources/VoiceInput.swift",
+        "apps/ios/Tests/CodexManageUITests.swift",
+        "apps/ios/Tests/TaskHubNetworkUITests.swift",
+        "apps/ios/Tests/TaskHubUITests.swift"
+      ],
+      "interpretation": "EasyWork subset only; deferred business scope not resumed"
+    },
+    {
+      "id": "B033",
+      "commit": "90ff45c0c86419354494269073bdf914796fcf8d",
+      "title": "perf: 优化慢网下 Codex 与 EasyWork 消息接收",
+      "iosChangedPaths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EasyWorkThreadSync.swift",
+        "apps/ios/Sources/EasyWorkTransport.swift",
+        "apps/ios/Tests/CodexManageUITests.swift"
+      ],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "B034",
+      "commit": "cde9b76e2b07e9da08293ad06f17ce35d5fe535d",
+      "title": "feat(mobile): merge receive optimization with Android and iOS parity",
+      "iosChangedPaths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EasyWorkThreadSync.swift",
+        "apps/ios/Sources/EasyWorkTransport.swift",
+        "apps/ios/Tests/CodexManageUITests.swift"
+      ],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "O083",
+      "commit": "f3352b14fad12a073809fc192a8294019080e3db",
+      "title": "fix: preserve client-owned queues and normalize exact delivery evidence",
+      "iosChangedPaths": [
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Tests/CodexManageUITests.swift"
+      ],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "O090",
+      "commit": "89b228abc30b846d2bd3d7ca2653c26e8ba63d67",
+      "title": "fix(queue): delegate pending input to desktop client queues",
+      "iosChangedPaths": [
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Tests/CodexManageUITests.swift"
+      ],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "O091",
+      "commit": "c4720f3623e4bf0388265ea1dc45546f0f4e7fcf",
+      "title": "Preserve grouped delivery history and finish shared queue interface integration",
+      "iosChangedPaths": [
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj",
+        "apps/ios/Resources/en.lproj/Localizable.strings",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Tests/CodexManageUITests.swift"
+      ],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "O092",
+      "commit": "0e1498b01cdbdc568217ffec2943e48e8a466805",
+      "title": "Use the native attachment collection for queue mode visibility",
+      "iosChangedPaths": [],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "O093",
+      "commit": "86806e33d6d122e3366da001f0184d7751cab2e3",
+      "title": "Map Android text into the shared composer presentation rule",
+      "iosChangedPaths": [],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    },
+    {
+      "id": "O094",
+      "commit": "03ec3c8a945fa542ea7a13e6861abc751526240d",
+      "title": "Keep relay transport regression fixtures aligned with device-bound authorization",
+      "iosChangedPaths": [],
+      "interpretation": "Historical implementation/source node, not current acceptance"
+    }
+  ],
+  "frozenComparisonCommit": "6d81284e9c352e977140c09197526296d57b9669",
+  "currentIosIncrementalNodes": [
+    {
+      "commit": "f29432474bf286da5b48c0a47e07d2e65f279169",
+      "title": "fix(host): normalize ultrafast speed settings and verify native tasks",
+      "changedPaths": ["apps/ios/Sources/Sheets.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "ad5adf10820d9ebb6816fc2d521f3c675b2dd6e2",
+      "title": "feat(mobile): add native Markdown file preview",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "2b19513ef9a221e71cc8040f041b59b87591d59c",
+      "title": "fix(mobile): display current desktop model and reasoning settings",
+      "changedPaths": [
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "141613dc3a7eae9dd4f2caa8722784b6e18107e7",
+      "title": "feat(ios): preview and select attachment images",
+      "changedPaths": [
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "f90bda22c1a5461ef60df5c6753e8fa41cd197ec",
+      "title": "fix(ios): align question voice recovery with composer",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "915e656537f8b2415ca65017bb25014841d7e3b3",
+      "title": "fix(mobile): share tool copy and keep resource controls reachable",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "3f843f22935b356818f4603e7bb3c693573a49c3",
+      "title": "fix(ios): bind resource bytes and cache to original machine target",
+      "changedPaths": ["apps/ios/Sources/HostService.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "ccd904a7ae2e9202a327df25c027f320b4049cb6",
+      "title": "feat(ios): receive shared files and paste file attachments",
+      "changedPaths": ["apps/ios/Sources/RootView.swift", "apps/ios/Sources/SessionStore.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "b2501ce3046eb306f678952addf43f89735e5e4d",
+      "title": "fix(mobile): retire stale suggestion controls and preserve scoped prefetch",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "9f3caef045995a869f70229160a95878036771dc",
+      "title": "feat: bridge Codex application approvals to mobile",
+      "changedPaths": [
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "9835a17d9728c6b7bdf5758993dbe79738da8147",
+      "title": "feat(android): connect original suggestions to guarded local drafts",
+      "changedPaths": ["apps/ios/Sources/RootView.swift", "apps/ios/Sources/SessionStore.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "5cf7d2f3f2c91e34ae2a526666c62e146c9f62a0",
+      "title": "feat(ios): streamline recent photo selection and plan toggle",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "7a9a629bdd1a74d8273190b9e9b3e66b102d3af7",
+      "title": "fix(ios): offer local transcription fallback after failure",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+      "title": "feat(android): add registered original-source suggestion reads",
+      "changedPaths": [
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/HostService.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "fa2f14dbde37535dee6db2353ae619325c26b589",
+      "title": "feat(mobile): animate transcription status waveforms",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "f7018a63eaa8627133dc3a9d0d7f89ede86e2cd0",
+      "title": "fix(mobile): fence approval answers to their original request",
+      "changedPaths": ["apps/ios/Sources/RootView.swift", "apps/ios/Sources/SessionStore.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "946d1f2e07c5afe2503ff97aeb99a323a67103c5",
+      "title": "feat(ios): add quick attachments with upload on send",
+      "changedPaths": [
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "da2e8971d825b12dd931c85727bed5e82489d55a",
+      "title": "perf(mobile): reduce history refresh, persistence and render overhead",
+      "changedPaths": [
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EasyWorkThreadSync.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "cf451d014d3dbd1fcc9b419b4106b27a41f5e973",
+      "title": "fix(ios): improve file actions and isolate app network identity",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "f82b6d012a2cd4c7c080d3aea480cba76d8a5ed4",
+      "title": "feat(suggestions): 接入 EasyWork 桌面建议与原生采纳",
+      "changedPaths": [
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "22cdc7ab34b0604fce3a5057ac16760e9293fe19",
+      "title": "fix(mobile): center voice transcription status and show progress",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+      "title": "Sync Android alignment sources with current Host and iOS fixes",
+      "changedPaths": [
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "f9d2ebda68aa36a8cfd0a2c2cfe246abd2bd5576",
+      "title": "fix: recover M5 Host Key authorization with discovery compatibility",
+      "changedPaths": [
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "48d60964f7cafd5baeaa649a28d39b51cd75a97a",
+      "title": "fix(ios): keep history scrolling responsive and preserve reading anchors",
+      "changedPaths": [
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "14ef1da30ea7b84380b141b1977872c9f64dd4ab",
+      "title": "feat(connection): preserve Codex LAN and Tailscale routes",
+      "changedPaths": ["apps/ios/Sources/SessionStore.swift", "apps/ios/Sources/Sheets.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "f0f04b6598566d1dd6c28e41b7273053056bcd91",
+      "title": "fix: restore historical status and desktop message file previews",
+      "changedPaths": [
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "e5bbb73be3c2ff073f256051c7187fa03f01d9ac",
+      "title": "Require Host Key authorization and validate preserving iPhone upgrade",
+      "changedPaths": [
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/Sheets.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "2c61a3d3ed43cf3ece4b444acbf03d561e0cae48",
+      "title": "fix(ios): keep sidebar tap regions aligned during refresh",
+      "changedPaths": ["apps/ios/Sources/RootView.swift", "apps/ios/Sources/SessionStore.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "383fc464b4a161750bb4203c441a9289c87f4880",
+      "title": "test(ios): verify isolated voice device network permissions",
+      "changedPaths": ["apps/ios/Sources/RootView.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "26b43787fac5e2d2b9b9819ec3670af6540afa20",
+      "title": "fix(ios): stop archived chat reconnect loops and refresh voice routes",
+      "changedPaths": ["apps/ios/Sources/RootView.swift", "apps/ios/Sources/SessionStore.swift"],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    },
+    {
+      "commit": "1c08a1335576d3ebd2a6f775d84603fefdba46d2",
+      "title": "Fix current attachment resolution and stable previews on integrated main",
+      "changedPaths": [
+        "apps/ios/Sources/HostService.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/RootView.swift"
+      ],
+      "meaning": "Committed source lineage through assigned base only; no current DEV or external WIP adoption"
+    }
+  ],
+  "groups": [
+    {
+      "id": "A5-1",
+      "name": "Registered providers and complete target identity",
+      "features": ["F10", "F43", "F46"],
+      "android": ["AgentRegistry.kt", "EasyWorkModels.kt", "EasyWorkAgentClient.kt"],
+      "ios": ["AgentClient.swift", "EasyWorkAgentClient.swift"],
+      "interactions": [
+        "Select Codex or EasyWork by registered provider ID, never display name",
+        "Keep authority/subject/device/workspace/runtime/thread distinct; route edits preserve identity",
+        "Reject an unknown wire method before opening a transport; preserve immutable operation intent"
+      ],
+      "currentSourceAssessment": "Provider dispatch, target conversion and narrow adapter methods are present. New management/notification capabilities remain with their existing owners; no arbitrary shell or IPC exposure is added.",
+      "auxiliaryTests": [
+        "bindingRequiresEveryTargetCoordinateAndDeviceKey",
+        "arbitraryWireMethodIsRejectedBeforeOpeningAnyTransport"
+      ],
+      "realGate": "On each leased environment switch two similar targets; verify original Codex owner and EasyWork runtime independently, with isolated drafts/receipts/events and zero wrong-target writes.",
+      "iosAndroidSourceComparison": [
+        "iOS uses AgentClient while Android registers AgentReads/AgentCommands; both map EasyWork behind the adapter. Android explicitly rejects Codex staged creation/active-open APIs for EasyWork and uses its direct thread/create path.",
+        "Current iOS adapter declares notification operations absent from this Android adapter. That P9 dependency is recorded, not implemented or accepted by P8."
+      ],
+      "androidSources": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkModels.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt"
+      ],
+      "iosSources": [
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift"
+      ],
+      "featureRows": [
+        {
+          "id": "F10",
+          "commonAssertion": "Provider／Transport 注册扩展，UI 按领域能力工作；未知 Provider 清晰拒绝，不透传任意 shell／IPC",
+          "ui": ["UI03"],
+          "scenarios": ["S01", "S14"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/HostService.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F43",
+          "commonAssertion": "stable operation／message ID、不可变意图、附件与设置固定；重复同内容查询，同 ID 不同内容拒绝；准确已接受/终态原回执可解除仍在途HTTP的本次等待，不释放新操作",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S03", "S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A4-native-open-receipt-diagnostics",
+            "A4-cancelled-queue-terminal-receipt",
+            "A4-final-reply-authority-and-interrupted-terminal",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F46",
+          "commonAssertion": "切换、连接编辑、旧成功／错误、迟到事件／回执不覆盖新目标、草稿或新操作忙碌状态",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-pull-reading-anchor",
+            "A3-explicit-refresh-feedback",
+            "A3-android-refresh-feedback",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "snapshot-integration-preserve-local-ios-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        }
+      ],
+      "iosNodeRefs": ["B030", "B031", "B033", "B034", "O083", "O090"],
+      "postFrozenIosIncrementalNodeRefs": [
+        "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+        "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "f82b6d012a2cd4c7c080d3aea480cba76d8a5ed4",
+        "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+        "f0f04b6598566d1dd6c28e41b7273053056bcd91",
+        "e5bbb73be3c2ff073f256051c7187fa03f01d9ac"
+      ],
+      "lastChangingIosNodes": {
+        "apps/ios/Sources/AgentClient.swift": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "0e22a1c82f45ecc17ce89c72fe62417e52126c23"
+      },
+      "implementation": "Code present; per-feature completeness and corrections remain with owners",
+      "currentNativeVerification": "not-performed",
+      "matchedHistoricalReuse": false,
+      "sealed": false
+    },
+    {
+      "id": "A5-2",
+      "name": "Discovery, pairing, certificate and device binding",
+      "features": ["F06", "F07", "F09"],
+      "android": [
+        "EasyWorkConnectionPage.kt",
+        "EasyWorkDiscovery.kt",
+        "EasyWorkPairing.kt",
+        "EasyWorkDeviceAuthorization.kt",
+        "EasyWorkTransport.kt"
+      ],
+      "ios": [
+        "EasyWorkDiscovery.swift",
+        "EasyWorkPairing.swift",
+        "EasyWorkDeviceAuthorization.swift"
+      ],
+      "interactions": [
+        "Bonjour or saved route selection, QR or 16-character connection code, original Desktop confirmation",
+        "Reject stale offers, altered certificate/public key/binding, and untrusted scanned relay origin",
+        "Authenticated runtime context may add LAN candidates without replacing target identity"
+      ],
+      "currentSourceAssessment": "Current form uses EWDAP code/QR without phone login. Paired descriptor checks and pinned private LAN transport are present. Legacy pairing remains a separate compatibility path; source presence does not prove physical camera or certificate refusal.",
+      "auxiliaryTests": ["bindingRequiresEveryTargetCoordinateAndDeviceKey"],
+      "realGate": "Physical camera and manual code, fresh discovery and saved route; Desktop approves/rejects the exact device. Exercise real wrong certificate/public key/expiry without repointing any existing user connection.",
+      "iosAndroidSourceComparison": [
+        "iOS discovery/camera/form and Android NSD/CameraX/Compose have separate native implementations. Shared source semantics include 16-character EWDAP code, Desktop confirmation and full-target/public-key checks; native form/camera/permission parity is unverified here."
+      ],
+      "androidSources": [
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkPairing.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt"
+      ],
+      "iosSources": [
+        "apps/ios/Sources/EasyWorkDiscovery.swift",
+        "apps/ios/Sources/EasyWorkPairing.swift",
+        "apps/ios/Sources/EasyWorkDeviceAuthorization.swift"
+      ],
+      "featureRows": [
+        {
+          "id": "F06",
+          "commonAssertion": "EasyWork 首次扫码／16位连接码，由已登录电脑核对设备与确认；之后发现已知 LAN／VPN 电脑，准确目标、公钥、证书与绑定校验，兼容旧配对码",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM04-discovery-private-credentials",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F07",
+          "commonAssertion": "手机无需账号登录；电脑确认的 EWDAP/1 设备授权，系统 DPoP 签名、加密设备凭据、刷新与撤销；重放／改写请求／错误密钥及跨绑定拒绝，秘密不进入日志",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM04-discovery-private-credentials",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F09",
+          "commonAssertion": "EasyWork 加密会话、序号／重放检查、请求关联及订阅恢复；错误设备／绑定／工作区拒绝",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        }
+      ],
+      "iosNodeRefs": ["B030", "B031"],
+      "postFrozenIosIncrementalNodeRefs": [],
+      "lastChangingIosNodes": {
+        "apps/ios/Sources/EasyWorkDiscovery.swift": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+        "apps/ios/Sources/EasyWorkPairing.swift": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+        "apps/ios/Sources/EasyWorkDeviceAuthorization.swift": "5064d60eb5630402d4a02fd4ed24aa1dac167681"
+      },
+      "implementation": "Code present; per-feature completeness and corrections remain with owners",
+      "currentNativeVerification": "not-performed",
+      "matchedHistoricalReuse": false,
+      "sealed": false
+    },
+    {
+      "id": "A5-3",
+      "name": "Encrypted LAN and relay, handshake and recovery",
+      "features": ["F08", "F09", "F18", "F43", "F44", "F46"],
+      "android": [
+        "EasyWorkCrypto.kt",
+        "EasyWorkTransport.kt",
+        "EasyWorkSession.kt",
+        "EasyWorkEventSignal.kt",
+        "EasyWorkThreadSync.kt"
+      ],
+      "ios": ["EasyWorkTransport.swift", "EasyWorkSession.swift", "EasyWorkThreadSync.swift"],
+      "interactions": [
+        "Automatic prefers LAN; LAN-only and relay-only keep explicit policy",
+        "Key confirmation precedes protocol processing; encrypted header, request ID and target are authenticated",
+        "A lost write reply switches path and queries original operation receipt; only reads retry with unchanged request"
+      ],
+      "currentSourceAssessment": "Current request recovery checks receipt operationId/method/requestHash/target and never retries the write. Synthetic transport injection exercises this production path; it does not exercise real WSS, relay authentication, restart or public routing.",
+      "auxiliaryTests": [
+        "independentNodeFramesAndAuthenticatedHeaders",
+        "lostWriteReplyUsesOriginalReceiptWithoutReplayingInput",
+        "unknownWriteReceiptRemainsUnknownWithoutReplay",
+        "recoveredReceiptRequiresOriginalTargetMethodIdAndInputHash",
+        "readRetryPreservesExactRequestAndUsesSecondChannel",
+        "pathPreferencesUseOnlyTheSelectedTransport"
+      ],
+      "realGate": "Both actual paths plus automatic failover on one frozen app/runtime candidate; retain original thread/run/operation IDs and independently count Desktop inputs before/after every failure and restart.",
+      "iosAndroidSourceComparison": [
+        "iOS Foundation and Android OkHttp are distinct transports. Both expose a 32 MiB receive limit; Android also bounds queued frames/count. The current Android session is exercised with synthetic encrypted peers, not with iOS/native transport evidence."
+      ],
+      "androidSources": [
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkEventSignal.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkThreadSync.kt"
+      ],
+      "iosSources": [
+        "apps/ios/Sources/EasyWorkTransport.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/EasyWorkThreadSync.swift"
+      ],
+      "featureRows": [
+        {
+          "id": "F08",
+          "commonAssertion": "自动、仅直连、仅中继三种偏好；电脑确认配对后自动重连，双通道切换保持同一完整目标、稳定业务操作 ID、回执与事件位置",
+          "ui": ["UI03"],
+          "scenarios": ["S11", "S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F09",
+          "commonAssertion": "EasyWork 加密会话、序号／重放检查、请求关联及订阅恢复；错误设备／绑定／工作区拒绝",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F18",
+          "commonAssertion": "流式事件、epoch／sequence、重复／乱序／缺口和 snapshot 恢复；切换取消不会变为任务失败",
+          "ui": ["UI05"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A4-native-receipts-and-complete-large-history",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM01-read-cancellation-preconditions",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F43",
+          "commonAssertion": "stable operation／message ID、不可变意图、附件与设置固定；重复同内容查询，同 ID 不同内容拒绝；准确已接受/终态原回执可解除仍在途HTTP的本次等待，不释放新操作",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S03", "S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A4-native-open-receipt-diagnostics",
+            "A4-cancelled-queue-terminal-receipt",
+            "A4-final-reply-authority-and-interrupted-terminal",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F44",
+          "commonAssertion": "未确认／结果未知保留并查询；仅明确未执行的拒绝可恢复／重试，不能自动重放写操作；原查询不借当前Run，外层RPC完成不能覆盖原失败或取消",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F46",
+          "commonAssertion": "切换、连接编辑、旧成功／错误、迟到事件／回执不覆盖新目标、草稿或新操作忙碌状态",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-pull-reading-anchor",
+            "A3-explicit-refresh-feedback",
+            "A3-android-refresh-feedback",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "snapshot-integration-preserve-local-ios-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        }
+      ],
+      "iosNodeRefs": ["B030", "B031", "B033", "B034"],
+      "postFrozenIosIncrementalNodeRefs": ["da2e8971d825b12dd931c85727bed5e82489d55a"],
+      "lastChangingIosNodes": {
+        "apps/ios/Sources/EasyWorkTransport.swift": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+        "apps/ios/Sources/EasyWorkSession.swift": "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "apps/ios/Sources/EasyWorkThreadSync.swift": "da2e8971d825b12dd931c85727bed5e82489d55a"
+      },
+      "implementation": "Code present; per-feature completeness and corrections remain with owners",
+      "currentNativeVerification": "not-performed",
+      "matchedHistoricalReuse": false,
+      "sealed": false
+    },
+    {
+      "id": "A5-4",
+      "name": "Workspace, history, models, plan and event presentation",
+      "features": ["F16", "F17", "F18", "F21", "F22", "F24", "F34", "F35", "F36"],
+      "android": [
+        "EasyWorkAgentClient.kt",
+        "EasyWorkThreadSync.kt",
+        "MobileRuntime.kt",
+        "MobileSession.kt",
+        "ExecutionPanels.kt",
+        "PlanPanels.kt",
+        "Sidebar.kt"
+      ],
+      "ios": [
+        "EasyWorkAgentClient.swift",
+        "EasyWorkThreadSync.swift",
+        "Models.swift",
+        "SessionStore.swift",
+        "RootView.swift"
+      ],
+      "interactions": [
+        "Existing project/thread directory, paging, full-history search and revisit",
+        "Separate plan card/steps, compaction state, actual owner settings and capability-driven speed",
+        "Gap/epoch recovery, cached reading and runtime health shown separately"
+      ],
+      "currentSourceAssessment": "Adapter maps workspace/history/models/plans and shared authoritative deltas. The active EasyWork workline owns full-history/search/plan-card corrections. Its WIP is absent from this candidate; no UI fix or current native pass is inferred.",
+      "auxiliaryTests": [],
+      "realGate": "Compare current native screens with iOS for complete history/search/plan/settings and actual runtime; inspect every applicable screenshot and anchor/state transition. Await owned corrections rather than duplicating them.",
+      "iosAndroidSourceComparison": [
+        "Both adapters consume authoritative thread/sync but platform history projection/UI remain distinct. Current Android candidate omits the other EasyWork workline full-history/search/plan-card WIP; neither its later fixes nor its proofs are adopted."
+      ],
+      "androidSources": [
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkThreadSync.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileRuntime.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt"
+      ],
+      "iosSources": [
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkThreadSync.swift",
+        "apps/ios/Sources/Models.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/RootView.swift"
+      ],
+      "featureRows": [
+        {
+          "id": "F16",
+          "commonAssertion": "仅实际允许的 Provider／模式可按原 Agent 规则登记已有目录；原桌面不支持时两端一致提示，不叠加 Host 全局目录白名单",
+          "ui": ["UI02", "UI04"],
+          "scenarios": ["S02", "S14"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A3-native-read-ui",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F17",
+          "commonAssertion": "本地窗口／服务端历史统一加载早期消息、原消息 ID 与顺序、工具／附件标记和缓存重访；触顶、重试、耗尽与旧页返回均正确；读取历史不建立执行权限",
+          "ui": ["UI05"],
+          "scenarios": ["S02", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-latest-upstream",
+            "A3-pull-reading-anchor",
+            "A3-explicit-refresh-feedback",
+            "A3-android-refresh-feedback",
+            "A3-acceptance-closure",
+            "A4-native-execution-session",
+            "A4-native-receipts-and-complete-large-history",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F18",
+          "commonAssertion": "流式事件、epoch／sequence、重复／乱序／缺口和 snapshot 恢复；切换取消不会变为任务失败",
+          "ui": ["UI05"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A4-native-receipts-and-complete-large-history",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM01-read-cancellation-preconditions",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F21",
+          "commonAssertion": "计划正文、步骤和待确认状态分开，保持独立卡片及版本，不混入工具组",
+          "ui": ["UI06", "UI09"],
+          "scenarios": ["S08"],
+          "iosSources": [
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F22",
+          "commonAssertion": "压缩活动独立显示开始／完成／失败／中断，失联显示待同步；不虚构百分比或压缩执行接口",
+          "ui": ["UI06"],
+          "scenarios": ["S05"],
+          "iosSources": [
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F24",
+          "commonAssertion": "首屏最近二十条，每次展开六十条并补齐跨边界工具组；回最新、滚动保持与输入浮层不遮挡正文／控件",
+          "ui": ["UI05", "UI07"],
+          "scenarios": ["S05", "S18"],
+          "iosSources": [
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-latest-upstream",
+            "A3-pull-reading-anchor",
+            "A4-async-question-parity",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F34",
+          "commonAssertion": "模型／强度目录与支持范围；主动偏好按完整客户端保存，新草稿继承，旧草稿与运行设置不被覆盖；现有对话展示原 owner 实际模型／强度，默认推荐与待发送选择分别标识",
+          "ui": ["UI07", "UI08"],
+          "scenarios": ["S06"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F35",
+          "commonAssertion": "权限选项、跟随电脑默认、明确高权限提示；提交设置固定，展示实际 owner 生效权限",
+          "ui": ["UI07", "UI08"],
+          "scenarios": ["S06"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F36",
+          "commonAssertion": "速度按独立能力与目录开放；标准／快速开关或多档菜单，EasyWork 未声明时不伪造支持；Codex ultrafast 按稳定 ID 开放，fast 映射 priority，当前速度优先旧轮次，不支持档位拒绝且已提交意图不重放",
+          "ui": ["UI07", "UI08"],
+          "scenarios": ["S06"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        }
+      ],
+      "iosNodeRefs": ["B030", "B031", "B033", "B034", "O083", "O090", "O091"],
+      "postFrozenIosIncrementalNodeRefs": [
+        "ad5adf10820d9ebb6816fc2d521f3c675b2dd6e2",
+        "2b19513ef9a221e71cc8040f041b59b87591d59c",
+        "141613dc3a7eae9dd4f2caa8722784b6e18107e7",
+        "f90bda22c1a5461ef60df5c6753e8fa41cd197ec",
+        "915e656537f8b2415ca65017bb25014841d7e3b3",
+        "ccd904a7ae2e9202a327df25c027f320b4049cb6",
+        "b2501ce3046eb306f678952addf43f89735e5e4d",
+        "9f3caef045995a869f70229160a95878036771dc",
+        "9835a17d9728c6b7bdf5758993dbe79738da8147",
+        "5cf7d2f3f2c91e34ae2a526666c62e146c9f62a0",
+        "7a9a629bdd1a74d8273190b9e9b3e66b102d3af7",
+        "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+        "fa2f14dbde37535dee6db2353ae619325c26b589",
+        "f7018a63eaa8627133dc3a9d0d7f89ede86e2cd0",
+        "946d1f2e07c5afe2503ff97aeb99a323a67103c5",
+        "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "cf451d014d3dbd1fcc9b419b4106b27a41f5e973",
+        "f82b6d012a2cd4c7c080d3aea480cba76d8a5ed4",
+        "22cdc7ab34b0604fce3a5057ac16760e9293fe19",
+        "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+        "f9d2ebda68aa36a8cfd0a2c2cfe246abd2bd5576",
+        "48d60964f7cafd5baeaa649a28d39b51cd75a97a",
+        "14ef1da30ea7b84380b141b1977872c9f64dd4ab",
+        "f0f04b6598566d1dd6c28e41b7273053056bcd91",
+        "e5bbb73be3c2ff073f256051c7187fa03f01d9ac",
+        "2c61a3d3ed43cf3ece4b444acbf03d561e0cae48",
+        "383fc464b4a161750bb4203c441a9289c87f4880",
+        "26b43787fac5e2d2b9b9819ec3670af6540afa20",
+        "1c08a1335576d3ebd2a6f775d84603fefdba46d2"
+      ],
+      "lastChangingIosNodes": {
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+        "apps/ios/Sources/EasyWorkThreadSync.swift": "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "apps/ios/Sources/Models.swift": "141613dc3a7eae9dd4f2caa8722784b6e18107e7",
+        "apps/ios/Sources/SessionStore.swift": "cf727dcf6a51212ac70badd24fdd4fce928640ed",
+        "apps/ios/Sources/RootView.swift": "cf727dcf6a51212ac70badd24fdd4fce928640ed"
+      },
+      "implementation": "Code present; per-feature completeness and corrections remain with owners",
+      "currentNativeVerification": "not-performed",
+      "matchedHistoricalReuse": false,
+      "sealed": false
+    },
+    {
+      "id": "A5-5",
+      "name": "Create, reply, queue, guidance, stop, approvals and resources",
+      "features": [
+        "F29",
+        "F31",
+        "F32",
+        "F34",
+        "F35",
+        "F36",
+        "F37",
+        "F38",
+        "F39",
+        "F40",
+        "F41",
+        "F42",
+        "F58",
+        "F43",
+        "F44",
+        "F46",
+        "F48"
+      ],
+      "android": [
+        "AgentRegistry.kt",
+        "EasyWorkAgentClient.kt",
+        "EasyWorkReceiptNormalization.kt",
+        "EasyWorkSession.kt",
+        "NativeOperationJournal.kt",
+        "ExecutionPanels.kt"
+      ],
+      "ios": [
+        "AgentClient.swift",
+        "EasyWorkAgentClient.swift",
+        "EasyWorkSession.swift",
+        "SessionStore.swift",
+        "RootView.swift"
+      ],
+      "interactions": [
+        "Create project/no-project thread, first input and attachment-only input; receive exact original receipt",
+        "Native client queue owns execution; steer/stop/plan/approval/question bind original Run and request",
+        "Upload/download real bytes with digest, scope and independent random attachment-content check"
+      ],
+      "currentSourceAssessment": "Named operations, native queue evidence and resource methods are present. Current auxiliary recovery checks only the session boundary. File UI, migration, notifications, full history and plan-card work remain with their owners.",
+      "auxiliaryTests": [
+        "lostWriteReplyUsesOriginalReceiptWithoutReplayingInput",
+        "unknownWriteReceiptRemainsUnknownWithoutReplay",
+        "recoveredReceiptRequiresOriginalTargetMethodIdAndInputHash"
+      ],
+      "realGate": "Real model plus independent Desktop canonical input/run count for each creation/queue/control/approval/question/resource case on both paths; unknown old operations stay read-only.",
+      "iosAndroidSourceComparison": [
+        "Both map named EasyWork operations and native client queue receipts; Android explicitly rejects Codex staged creation/upload and active-open methods. Direct new-thread creation is a separate supported path whose actual capabilities and receipt must be checked.",
+        "Android and iOS resource/approval/question UI are separately implemented; current production-input fingerprints cannot be inferred from shared wire method names."
+      ],
+      "androidSources": [
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt"
+      ],
+      "iosSources": [
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/SessionStore.swift",
+        "apps/ios/Sources/RootView.swift"
+      ],
+      "featureRows": [
+        {
+          "id": "F29",
+          "commonAssertion": "文字或混合图片／文件回复，first-send 与后续发送统一输入内容；无重复首条／占位轮",
+          "ui": ["UI04"],
+          "scenarios": ["S03", "S04"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM05-sharing-voice-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F31",
+          "commonAssertion": "上传进度、名称／大小／摘要／归属校验；全部附件确认后提交，失败保留原输入",
+          "ui": ["UI07"],
+          "scenarios": ["S04", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F32",
+          "commonAssertion": "受控资源下载、图片／文件预览、导出分享与错误处理；修改文件后重新解析当前版本，缓存按版本校验，后台同步不关闭同资源预览；路径不构成下载权；瞬时ctime漂移有界完整重读，持续漂移准确报错，内容／目标变化不放行；产物卡初始直接显示保存／分享，点击正文文件链接立即高亮并在所点段落展示下载等待，同一文件在其他段落的链接不重复显示等待，准备完成后打开系统预览，失败可重试；原桌面按具体已登记资源授权，无关配置目录失效不得影响下载; 内置 Markdown 与可注册原生预览器；iPhone 真实原桌面文件核心阅读闭环通过，Android 编译及共享规则通过，完整双端与正式发布待验",
+          "ui": ["UI05", "UI07", "UI12"],
+          "scenarios": ["S04", "S18"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A3-latest-upstream",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F34",
+          "commonAssertion": "模型／强度目录与支持范围；主动偏好按完整客户端保存，新草稿继承，旧草稿与运行设置不被覆盖；现有对话展示原 owner 实际模型／强度，默认推荐与待发送选择分别标识",
+          "ui": ["UI07", "UI08"],
+          "scenarios": ["S06"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F35",
+          "commonAssertion": "权限选项、跟随电脑默认、明确高权限提示；提交设置固定，展示实际 owner 生效权限",
+          "ui": ["UI07", "UI08"],
+          "scenarios": ["S06"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F36",
+          "commonAssertion": "速度按独立能力与目录开放；标准／快速开关或多档菜单，EasyWork 未声明时不伪造支持；Codex ultrafast 按稳定 ID 开放，fast 映射 priority，当前速度优先旧轮次，不支持档位拒绝且已提交意图不重放",
+          "ui": ["UI07", "UI08"],
+          "scenarios": ["S06"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F37",
+          "commonAssertion": "排队由Codex或EasyWork原客户端唯一执行；手机按准确回执显示顺序与取消，旧Host项只读核对且不自动迁移或重发；立即执行及取消限定当前原队列记录，逐项等待不锁草稿",
+          "ui": ["UI07"],
+          "scenarios": ["S07"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A4-real-native-task-controls",
+            "A4-idle-empty-send-accessibility",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F38",
+          "commonAssertion": "立即追加绑定当前 Turn／Run，过期前置条件拒绝；通道重连不变为新任务",
+          "ui": ["UI07"],
+          "scenarios": ["S07"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F39",
+          "commonAssertion": "同一任务按钮随草稿／运行状态显示禁用发送、发送、停止或恢复；长按停止／继续／重新运行语义一致；运行中存在独立新草稿时仍能从原任务菜单停止，菜单停止不发送或清空草稿，旧目标/Turn/草稿版本回调拒绝",
+          "ui": ["UI07"],
+          "scenarios": ["S07"],
+          "iosSources": [
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-native-execution-session",
+            "A4-real-native-task-controls",
+            "A4-cancelled-queue-terminal-receipt",
+            "A4-idle-empty-send-accessibility",
+            "A4-final-reply-authority-and-interrupted-terminal",
+            "A4-xiaomi-foreground-and-real-model-checkpoint",
+            "A4-genuine-runtime-failure-and-recovery",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM05-sharing-voice-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F40",
+          "commonAssertion": "计划开关位于输入框上方审批之后，明确开关状态；批准完整计划或调整时核对ID／版本，断线缓存不可批准，去重和设置继承一致",
+          "ui": ["UI09"],
+          "scenarios": ["S08"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-native-execution-session",
+            "A4-real-native-plan-approval",
+            "A4-final-reply-authority-and-interrupted-terminal",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM05-sharing-voice-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F41",
+          "commonAssertion": "审批绑定 Host／thread／Turn／request；应用访问与额外权限保留原授权范围，一端处理后另一端失效，拒绝过期／错目标",
+          "ui": ["UI09"],
+          "scenarios": ["S09"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A4-real-native-plan-approval",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM05-sharing-voice-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F42",
+          "commonAssertion": "单／多选、自定义及保密问题回答，完整性校验、提交禁用态与目标复核；普通自定义回复最多四行、保密回复单行且保留完整原文，输入完成不自动提交；问题输入框采用普通样式、44dp触达，普通最多四行且长原文不裁切，短键盘视口可完整触达并保留选区/滚动编辑/重开；保密单行，编辑与Done不自动提交",
+          "ui": ["UI09"],
+          "scenarios": ["S09"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A4-async-question-parity",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F43",
+          "commonAssertion": "stable operation／message ID、不可变意图、附件与设置固定；重复同内容查询，同 ID 不同内容拒绝；准确已接受/终态原回执可解除仍在途HTTP的本次等待，不释放新操作",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S03", "S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A4-native-open-receipt-diagnostics",
+            "A4-cancelled-queue-terminal-receipt",
+            "A4-final-reply-authority-and-interrupted-terminal",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F44",
+          "commonAssertion": "未确认／结果未知保留并查询；仅明确未执行的拒绝可恢复／重试，不能自动重放写操作；原查询不借当前Run，外层RPC完成不能覆盖原失败或取消",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F46",
+          "commonAssertion": "切换、连接编辑、旧成功／错误、迟到事件／回执不覆盖新目标、草稿或新操作忙碌状态",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-pull-reading-anchor",
+            "A3-explicit-refresh-feedback",
+            "A3-android-refresh-feedback",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "snapshot-integration-preserve-local-ios-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F48",
+          "commonAssertion": "提交失败与执行失败区分；底部提示关闭独立保存，后续真实 Turn 可替代旧失败提示，未知不被抹掉；客户端队列同步错误独立于已接受结果、后续成功和普通失败关闭",
+          "ui": ["UI10"],
+          "scenarios": ["S10"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-native-execution-session",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A4-xiaomi-foreground-and-real-model-checkpoint",
+            "A4-genuine-runtime-failure-and-recovery",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "snapshot-integration-preserve-local-ios-20261020"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F58",
+          "commonAssertion": "非阻塞问题以待回答横幅和分页弹层呈现，保留上一题／下一题、横向切换与跳过；分页和收起保留草稿，处理后推进，完整目标／Turn 改变清理过期回答；等待回答不暂停模型，结束后回答继续原对话；输入框行数、保密及完成规则与 F42 一致",
+          "ui": ["UI09", "UI11"],
+          "scenarios": ["S09", "S15"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A4-native-execution-session",
+            "A4-async-question-parity",
+            "A4-renewed-creation-authority",
+            "A4-native-open-receipt-diagnostics",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        }
+      ],
+      "iosNodeRefs": ["B030", "B031", "B033", "B034", "O083", "O090", "O091"],
+      "postFrozenIosIncrementalNodeRefs": [
+        "ad5adf10820d9ebb6816fc2d521f3c675b2dd6e2",
+        "2b19513ef9a221e71cc8040f041b59b87591d59c",
+        "141613dc3a7eae9dd4f2caa8722784b6e18107e7",
+        "f90bda22c1a5461ef60df5c6753e8fa41cd197ec",
+        "915e656537f8b2415ca65017bb25014841d7e3b3",
+        "ccd904a7ae2e9202a327df25c027f320b4049cb6",
+        "b2501ce3046eb306f678952addf43f89735e5e4d",
+        "9f3caef045995a869f70229160a95878036771dc",
+        "9835a17d9728c6b7bdf5758993dbe79738da8147",
+        "5cf7d2f3f2c91e34ae2a526666c62e146c9f62a0",
+        "7a9a629bdd1a74d8273190b9e9b3e66b102d3af7",
+        "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+        "fa2f14dbde37535dee6db2353ae619325c26b589",
+        "f7018a63eaa8627133dc3a9d0d7f89ede86e2cd0",
+        "946d1f2e07c5afe2503ff97aeb99a323a67103c5",
+        "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "cf451d014d3dbd1fcc9b419b4106b27a41f5e973",
+        "f82b6d012a2cd4c7c080d3aea480cba76d8a5ed4",
+        "22cdc7ab34b0604fce3a5057ac16760e9293fe19",
+        "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+        "f9d2ebda68aa36a8cfd0a2c2cfe246abd2bd5576",
+        "48d60964f7cafd5baeaa649a28d39b51cd75a97a",
+        "14ef1da30ea7b84380b141b1977872c9f64dd4ab",
+        "f0f04b6598566d1dd6c28e41b7273053056bcd91",
+        "e5bbb73be3c2ff073f256051c7187fa03f01d9ac",
+        "2c61a3d3ed43cf3ece4b444acbf03d561e0cae48",
+        "383fc464b4a161750bb4203c441a9289c87f4880",
+        "26b43787fac5e2d2b9b9819ec3670af6540afa20",
+        "1c08a1335576d3ebd2a6f775d84603fefdba46d2"
+      ],
+      "lastChangingIosNodes": {
+        "apps/ios/Sources/AgentClient.swift": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+        "apps/ios/Sources/EasyWorkSession.swift": "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "apps/ios/Sources/SessionStore.swift": "cf727dcf6a51212ac70badd24fdd4fce928640ed",
+        "apps/ios/Sources/RootView.swift": "cf727dcf6a51212ac70badd24fdd4fce928640ed"
+      },
+      "implementation": "Code present; per-feature completeness and corrections remain with owners",
+      "currentNativeVerification": "not-performed",
+      "matchedHistoricalReuse": false,
+      "sealed": false
+    },
+    {
+      "id": "A5-6",
+      "name": "Desktop-confirmed EWDAP grant, DPoP, refresh and revocation",
+      "features": ["F07", "F09", "F43", "F44", "F46"],
+      "android": [
+        "EasyWorkDeviceAuthorization.kt",
+        "EasyWorkDPoP.kt",
+        "EasyWorkDeviceDelivery.kt",
+        "EasyWorkModels.kt",
+        "EasyWorkSession.kt",
+        "EasyWorkLogin.kt"
+      ],
+      "ios": [
+        "EasyWorkDeviceAuthorization.swift",
+        "EasyWorkTransport.swift",
+        "EasyWorkSession.swift"
+      ],
+      "interactions": [
+        "Phone claims anonymously; signed-in original Desktop confirms device and verification code",
+        "ECDH-ES/A256GCM delivers device grant; system P-256 DPoP binds URL/method/token/body/key",
+        "Persist claim/refresh/revoke intent before network I/O; exact-binding revocation and no legacy-token downgrade",
+        "Migration conveys descriptive provider data only; fresh local keys and explicit re-pairing precede new authorization"
+      ],
+      "currentSourceAssessment": "Scoped grants, DPoP, encrypted delivery, persisted refresh and revocation are present. OS-backed DPoP key creation is deliberately outside host-JVM evidence. Legacy phone OIDC is compatibility code, not the EWDAP gate or a requirement to sign in on phone.",
+      "auxiliaryTests": [
+        "independentEwdapJweDeliveryRefusesTamperingAndWrongRecipient",
+        "authorizedBindingCannotFallBackToLegacyAccountToken",
+        "bindingRequiresEveryTargetCoordinateAndDeviceKey"
+      ],
+      "realGate": "Each target OS verifies actual Keystore/Keychain, Desktop confirmation/rejection, replay/key/body/binding refusals, real token expiry and new-process refresh, exact grant revoke. Public Desktop OIDC and deployed cross-network relay are separate gates.",
+      "iosAndroidSourceComparison": [
+        "iOS uses CryptoKit/SecKey/Keychain while Android uses BouncyCastle plus AndroidKeyStore. Android host-JVM JWE proof does not exercise either secure-store implementation or DPoP key lifetime.",
+        "Both sources keep phone EWDAP anonymous and Desktop account authorization distinct; compatibility phone OIDC code is not evidence of EWDAP public deployment."
+      ],
+      "androidSources": [
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDPoP.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceDelivery.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkModels.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkLogin.kt"
+      ],
+      "iosSources": [
+        "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+        "apps/ios/Sources/EasyWorkTransport.swift",
+        "apps/ios/Sources/EasyWorkSession.swift"
+      ],
+      "featureRows": [
+        {
+          "id": "F07",
+          "commonAssertion": "手机无需账号登录；电脑确认的 EWDAP/1 设备授权，系统 DPoP 签名、加密设备凭据、刷新与撤销；重放／改写请求／错误密钥及跨绑定拒绝，秘密不进入日志",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM04-discovery-private-credentials",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F09",
+          "commonAssertion": "EasyWork 加密会话、序号／重放检查、请求关联及订阅恢复；错误设备／绑定／工作区拒绝",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F43",
+          "commonAssertion": "stable operation／message ID、不可变意图、附件与设置固定；重复同内容查询，同 ID 不同内容拒绝；准确已接受/终态原回执可解除仍在途HTTP的本次等待，不释放新操作",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S03", "S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A4-native-open-receipt-diagnostics",
+            "A4-cancelled-queue-terminal-receipt",
+            "A4-final-reply-authority-and-interrupted-terminal",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F44",
+          "commonAssertion": "未确认／结果未知保留并查询；仅明确未执行的拒绝可恢复／重试，不能自动重放写操作；原查询不借当前Run，外层RPC完成不能覆盖原失败或取消",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F46",
+          "commonAssertion": "切换、连接编辑、旧成功／错误、迟到事件／回执不覆盖新目标、草稿或新操作忙碌状态",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-pull-reading-anchor",
+            "A3-explicit-refresh-feedback",
+            "A3-android-refresh-feedback",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "snapshot-integration-preserve-local-ios-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        }
+      ],
+      "iosNodeRefs": ["B030", "B031", "B033", "B034"],
+      "postFrozenIosIncrementalNodeRefs": ["da2e8971d825b12dd931c85727bed5e82489d55a"],
+      "lastChangingIosNodes": {
+        "apps/ios/Sources/EasyWorkDeviceAuthorization.swift": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+        "apps/ios/Sources/EasyWorkTransport.swift": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+        "apps/ios/Sources/EasyWorkSession.swift": "da2e8971d825b12dd931c85727bed5e82489d55a"
+      },
+      "implementation": "Code present; per-feature completeness and corrections remain with owners",
+      "currentNativeVerification": "not-performed",
+      "matchedHistoricalReuse": false,
+      "sealed": false
+    },
+    {
+      "id": "A5-7",
+      "name": "API26/API37/physical matrix, recovery and Codex regression",
+      "features": [
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10",
+        "F17",
+        "F18",
+        "F29",
+        "F43",
+        "F44",
+        "F46",
+        "F48"
+      ],
+      "android": [
+        "EasyWorkAgentClient.kt",
+        "EasyWorkConnectionPage.kt",
+        "EasyWorkSession.kt",
+        "NativeSessionStorage.kt",
+        "NativeOperationJournal.kt"
+      ],
+      "ios": [
+        "AgentClient.swift",
+        "EasyWorkAgentClient.swift",
+        "EasyWorkSession.swift",
+        "SessionStore.swift"
+      ],
+      "interactions": [
+        "API26, API37 and leased physical phone each exercise LAN/relay plus app/desktop restart and target switch",
+        "Inspect original screenshots, exact bundle and source/package/runner/environment fingerprints",
+        "Independent Codex regression; preserve prior failure and never replay sealed unknown input"
+      ],
+      "currentSourceAssessment": "Only current auxiliary JVM evidence is produced here. No device lease was granted and no device or original Desktop/model action was performed. Every group remains unsealed for this current candidate.",
+      "auxiliaryTests": [],
+      "realGate": "Integrator supplies exact device/package/time lease, compatible isolated Electron/relay build and unique new task intents; freeze all evidence before claiming scoped current or matched-reuse passes.",
+      "iosAndroidSourceComparison": [
+        "Old API26/API37/Xiaomi and iOS proofs retain their original source/environment hashes. No leased current device proof or whole native+Desktop fingerprint match is available to this workline."
+      ],
+      "androidSources": [
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt"
+      ],
+      "iosSources": [
+        "apps/ios/Sources/AgentClient.swift",
+        "apps/ios/Sources/EasyWorkAgentClient.swift",
+        "apps/ios/Sources/EasyWorkSession.swift",
+        "apps/ios/Sources/SessionStore.swift"
+      ],
+      "featureRows": [
+        {
+          "id": "F06",
+          "commonAssertion": "EasyWork 首次扫码／16位连接码，由已登录电脑核对设备与确认；之后发现已知 LAN／VPN 电脑，准确目标、公钥、证书与绑定校验，兼容旧配对码",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM04-discovery-private-credentials",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F07",
+          "commonAssertion": "手机无需账号登录；电脑确认的 EWDAP/1 设备授权，系统 DPoP 签名、加密设备凭据、刷新与撤销；重放／改写请求／错误密钥及跨绑定拒绝，秘密不进入日志",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM04-discovery-private-credentials",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F08",
+          "commonAssertion": "自动、仅直连、仅中继三种偏好；电脑确认配对后自动重连，双通道切换保持同一完整目标、稳定业务操作 ID、回执与事件位置",
+          "ui": ["UI03"],
+          "scenarios": ["S11", "S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F09",
+          "commonAssertion": "EasyWork 加密会话、序号／重放检查、请求关联及订阅恢复；错误设备／绑定／工作区拒绝",
+          "ui": ["UI03"],
+          "scenarios": ["S14"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift"
+          ],
+          "historicalChangeNodes": [
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F10",
+          "commonAssertion": "Provider／Transport 注册扩展，UI 按领域能力工作；未知 Provider 清晰拒绝，不透传任意 shell／IPC",
+          "ui": ["UI03"],
+          "scenarios": ["S01", "S14"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/HostService.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F17",
+          "commonAssertion": "本地窗口／服务端历史统一加载早期消息、原消息 ID 与顺序、工具／附件标记和缓存重访；触顶、重试、耗尽与旧页返回均正确；读取历史不建立执行权限",
+          "ui": ["UI05"],
+          "scenarios": ["S02", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-latest-upstream",
+            "A3-pull-reading-anchor",
+            "A3-explicit-refresh-feedback",
+            "A3-android-refresh-feedback",
+            "A3-acceptance-closure",
+            "A4-native-execution-session",
+            "A4-native-receipts-and-complete-large-history",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F18",
+          "commonAssertion": "流式事件、epoch／sequence、重复／乱序／缺口和 snapshot 恢复；切换取消不会变为任务失败",
+          "ui": ["UI05"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-native-execution-session",
+            "A4-native-receipts-and-complete-large-history",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM01-read-cancellation-preconditions",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F29",
+          "commonAssertion": "文字或混合图片／文件回复，first-send 与后续发送统一输入内容；无重复首条／占位轮",
+          "ui": ["UI04"],
+          "scenarios": ["S03", "S04"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM05-sharing-voice-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F43",
+          "commonAssertion": "stable operation／message ID、不可变意图、附件与设置固定；重复同内容查询，同 ID 不同内容拒绝；准确已接受/终态原回执可解除仍在途HTTP的本次等待，不释放新操作",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S03", "S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A4-native-open-receipt-diagnostics",
+            "A4-cancelled-queue-terminal-receipt",
+            "A4-final-reply-authority-and-interrupted-terminal",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F44",
+          "commonAssertion": "未确认／结果未知保留并查询；仅明确未执行的拒绝可恢复／重试，不能自动重放写操作；原查询不借当前Run，外层RPC完成不能覆盖原失败或取消",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S10", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-renewed-creation-authority",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM02-reply-recovery-implementation",
+            "windows-trace-client-queue-upstream-integration-20261019"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F46",
+          "commonAssertion": "切换、连接编辑、旧成功／错误、迟到事件／回执不覆盖新目标、草稿或新操作忙碌状态",
+          "ui": ["UI04", "UI10"],
+          "scenarios": ["S05", "S11"],
+          "iosSources": [
+            "apps/ios/Sources/EasyWorkAgentClient.swift",
+            "apps/ios/Sources/EasyWorkDeviceAuthorization.swift",
+            "apps/ios/Sources/EasyWorkDiscovery.swift",
+            "apps/ios/Sources/EasyWorkPairing.swift",
+            "apps/ios/Sources/EasyWorkSession.swift",
+            "apps/ios/Sources/EasyWorkTransport.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/SessionStore.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A3-native-read-ui",
+            "A3-pull-reading-anchor",
+            "A3-explicit-refresh-feedback",
+            "A3-android-refresh-feedback",
+            "A4-command-and-intent-boundaries",
+            "A4-target-bound-http",
+            "A4-native-execution-session",
+            "A4-real-mixed-attachment-content-diff-final-copy",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "UM01-source90-receive-migration",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "windows-cellular-reliability-20261020",
+            "snapshot-integration-preserve-local-ios-20261020",
+            "controlled-weak-network-windows-20261021",
+            "native-discovery-jitter-read-coalescing-20261021"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        },
+        {
+          "id": "F48",
+          "commonAssertion": "提交失败与执行失败区分；底部提示关闭独立保存，后续真实 Turn 可替代旧失败提示，未知不被抹掉；客户端队列同步错误独立于已接受结果、后续成功和普通失败关闭",
+          "ui": ["UI10"],
+          "scenarios": ["S10"],
+          "iosSources": [
+            "apps/ios/Sources/AgentClient.swift",
+            "apps/ios/Sources/HostService.swift",
+            "apps/ios/Sources/Models.swift",
+            "apps/ios/Sources/RootView.swift",
+            "apps/ios/Sources/SessionStore.swift",
+            "apps/ios/Sources/Sheets.swift"
+          ],
+          "historicalChangeNodes": [
+            "A2-public-state",
+            "A4-native-execution-session",
+            "A4-native-receipts-and-complete-large-history",
+            "A4-history-reader-owner-id-reconciliation",
+            "A4-xiaomi-foreground-and-real-model-checkpoint",
+            "A4-genuine-runtime-failure-and-recovery",
+            "A5-easywork-registered-native-in-progress",
+            "UM01-upstream-9bb43e2-in-progress",
+            "windows-trace-client-queue-upstream-integration-20261019",
+            "snapshot-integration-preserve-local-ios-20261020"
+          ],
+          "baselineImplementation": {
+            "ios": "code-present",
+            "android": "in-progress"
+          },
+          "baselineVerification": {
+            "ios": "not-verified-for-current-product",
+            "android": "not-verified-for-current-product"
+          },
+          "sourceMappingMeaning": "Frozen feature-to-source map; current hashes and last-changing commits below, not UI or DEV acceptance"
+        }
+      ],
+      "iosNodeRefs": ["B030", "B031", "B033", "B034", "O083", "O090", "O091"],
+      "postFrozenIosIncrementalNodeRefs": [
+        "2b19513ef9a221e71cc8040f041b59b87591d59c",
+        "141613dc3a7eae9dd4f2caa8722784b6e18107e7",
+        "ccd904a7ae2e9202a327df25c027f320b4049cb6",
+        "9835a17d9728c6b7bdf5758993dbe79738da8147",
+        "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+        "f7018a63eaa8627133dc3a9d0d7f89ede86e2cd0",
+        "946d1f2e07c5afe2503ff97aeb99a323a67103c5",
+        "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "f82b6d012a2cd4c7c080d3aea480cba76d8a5ed4",
+        "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+        "f9d2ebda68aa36a8cfd0a2c2cfe246abd2bd5576",
+        "48d60964f7cafd5baeaa649a28d39b51cd75a97a",
+        "14ef1da30ea7b84380b141b1977872c9f64dd4ab",
+        "f0f04b6598566d1dd6c28e41b7273053056bcd91",
+        "e5bbb73be3c2ff073f256051c7187fa03f01d9ac",
+        "2c61a3d3ed43cf3ece4b444acbf03d561e0cae48",
+        "26b43787fac5e2d2b9b9819ec3670af6540afa20"
+      ],
+      "lastChangingIosNodes": {
+        "apps/ios/Sources/AgentClient.swift": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+        "apps/ios/Sources/EasyWorkSession.swift": "da2e8971d825b12dd931c85727bed5e82489d55a",
+        "apps/ios/Sources/SessionStore.swift": "cf727dcf6a51212ac70badd24fdd4fce928640ed"
+      },
+      "implementation": "Code present; per-feature completeness and corrections remain with owners",
+      "currentNativeVerification": "not-performed",
+      "matchedHistoricalReuse": false,
+      "sealed": false
+    }
+  ],
+  "explicitlySeparateGates": [
+    "Host-JVM synthetic boundaries",
+    "API26 native",
+    "API37 native",
+    "Physical Android",
+    "iOS",
+    "Original Electron and actual model",
+    "Public Desktop OIDC",
+    "Deployed cross-network relay",
+    "Windows"
+  ],
+  "paused": ["F65-F67/UI14-UI19 business", "UM06 later business/UM07/UM08 business", "iOS A6"]
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "identity": {
+    "deviceId": "mobile-vector",
+    "privateKey": "dwdtCnMYpX08FsFyUbJmRd9ML4frwJkqsXf7pR25LCo",
+    "publicKey": "hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo"
+  },
+  "deliveryId": "3d1d45bb-8db4-43bd-80d5-27c7fae639d3",
+  "payload": {
+    "protocol": "EWDAP/1",
+    "deliveryId": "3d1d45bb-8db4-43bd-80d5-27c7fae639d3",
+    "synthetic": "independent Node delivery; no real credentials"
+  },
+  "delivery": "eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsInR5cCI6ImV3ZGFwK2p3ZSIsInZlcnNpb24iOjEsImRlbGl2ZXJ5SWQiOiIzZDFkNDViYi04ZGI0LTQzYmQtODBkNS0yN2M3ZmFlNjM5ZDMiLCJlcGsiOnsiY3J2IjoiWDI1NTE5IiwieCI6IlpyMURVVGhvV1Fsd0FxaHlKSU5mTHBsdkRvRVRjMUxFLVhuS0x6d1ZiMXMiLCJrdHkiOiJPS1AifX0..qavxXK1P0rwgasnZ.yP4TRxsBfPNonDcSEXFGPWWF22Vj_JgDtYpAYES7KtObeAWho_h32mMftyQXCe_MJp_DLsy0clfymnXegtr1e5AnMsFxnk_lRW1Ggh_tahBF1GuelUug6-0wtC2i73yIHz82bfHs7jV2H2S28TSTdR70gltojqLdrYFEv_rva9-4gENWRhDO.2Ty3m290vdpeolhHPc3sww"
+}

@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p9-notifications-20261028",
+  "baseCommit": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+  "status": "integration-pending-not-product-pass",
+  "features": [
+    {
+      "id": "F51",
+      "commonAssertion": "通知总开关默认关闭、分类／按电脑、预览／前台横幅／声音／角标偏好及系统设置入口一致",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "existing NotificationModels/Settings/Sounds/TaskNotifications unchanged; no new iOS proof",
+      "implementedSlice": "Strict v1 preferences, independent settings/page/actual test call path, permission/channel probes; shared navigation pending",
+      "sourceSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCodec.kt": "8f5502be5e2d4cc78e4a6ab9dc64c317bb0db6a9f357d2dfcbe4597815dd6f18",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationModels.kt": "a6af468b1d1e950689da0a6ad9720a6370500e24e3b9963a2f03122022b347b5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "c30e186171b8f36071fdafb0a468957594ee677cc44fc98d13e4064b8e8ba301",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRuntime.kt": "b5e9e963f9982776b268b9da8ac9bda497245e74a98d18b9980970a1c7cc2c59",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "eaae21354ca9676e1030fb1d3a15acc1c85018d7731ac77f22a10ddf06f01720",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "81b945ea7412d84e06cbb4564b33e889717e1255168000f193efa0a01c28fd0c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationTest.kt": "0718bb1006caae2d152e761b6848c3d0ba8b8fd542c537073aa20e473a3e9a39"
+      }
+    },
+    {
+      "id": "F52",
+      "commonAssertion": "后台加密推送、去重、注册代次／令牌轮换／撤销和未知投递；供应商接受与设备到达分开",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "existing NotificationModels/Settings/Sounds/TaskNotifications unchanged; no new iOS proof",
+      "implementedSlice": "Exact-target local lease/receipt generation and original-event dedupe; no vendor or encrypted background ingress",
+      "sourceSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCodec.kt": "8f5502be5e2d4cc78e4a6ab9dc64c317bb0db6a9f357d2dfcbe4597815dd6f18",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationModels.kt": "a6af468b1d1e950689da0a6ad9720a6370500e24e3b9963a2f03122022b347b5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "c30e186171b8f36071fdafb0a468957594ee677cc44fc98d13e4064b8e8ba301",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRuntime.kt": "b5e9e963f9982776b268b9da8ac9bda497245e74a98d18b9980970a1c7cc2c59",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "eaae21354ca9676e1030fb1d3a15acc1c85018d7731ac77f22a10ddf06f01720",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "81b945ea7412d84e06cbb4564b33e889717e1255168000f193efa0a01c28fd0c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationTest.kt": "0718bb1006caae2d152e761b6848c3d0ba8b8fd542c537073aa20e473a3e9a39"
+      }
+    },
+    {
+      "id": "F53",
+      "commonAssertion": "内置／系统／导入声音、分类覆盖／静音、本地转换与限额、删除后回默认；声音不上传",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "existing NotificationModels/Settings/Sounds/TaskNotifications unchanged; no new iOS proof",
+      "implementedSlice": "System default/silent and category override channels; builtin/import/preview/convert/delete remain open",
+      "sourceSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCodec.kt": "8f5502be5e2d4cc78e4a6ab9dc64c317bb0db6a9f357d2dfcbe4597815dd6f18",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationModels.kt": "a6af468b1d1e950689da0a6ad9720a6370500e24e3b9963a2f03122022b347b5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "c30e186171b8f36071fdafb0a468957594ee677cc44fc98d13e4064b8e8ba301",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRuntime.kt": "b5e9e963f9982776b268b9da8ac9bda497245e74a98d18b9980970a1c7cc2c59",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "eaae21354ca9676e1030fb1d3a15acc1c85018d7731ac77f22a10ddf06f01720",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "81b945ea7412d84e06cbb4564b33e889717e1255168000f193efa0a01c28fd0c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationTest.kt": "0718bb1006caae2d152e761b6848c3d0ba8b8fd542c537073aa20e473a3e9a39"
+      }
+    },
+    {
+      "id": "F54",
+      "commonAssertion": "通知标题／摘要隐私、展开内容和点击路由；先刷新完整目标，保留当前草稿，不隐式批准／恢复／重发",
+      "ui": ["UI11"],
+      "scenarios": ["S15", "S16"],
+      "androidImplementation": "in-progress",
+      "androidVerification": "not-verified",
+      "iosImpact": "existing NotificationModels/Settings/Sounds/TaskNotifications unchanged; no new iOS proof",
+      "implementedSlice": "Redacted expanded/public presentation; opaque once-only ticket, refresh-before-open port; central route adapter pending",
+      "sourceSha256": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCodec.kt": "8f5502be5e2d4cc78e4a6ab9dc64c317bb0db6a9f357d2dfcbe4597815dd6f18",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationModels.kt": "a6af468b1d1e950689da0a6ad9720a6370500e24e3b9963a2f03122022b347b5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "c30e186171b8f36071fdafb0a468957594ee677cc44fc98d13e4064b8e8ba301",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRuntime.kt": "b5e9e963f9982776b268b9da8ac9bda497245e74a98d18b9980970a1c7cc2c59",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "eaae21354ca9676e1030fb1d3a15acc1c85018d7731ac77f22a10ddf06f01720",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt": "81b945ea7412d84e06cbb4564b33e889717e1255168000f193efa0a01c28fd0c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationTest.kt": "0718bb1006caae2d152e761b6848c3d0ba8b8fd542c537073aa20e473a3e9a39"
+      }
+    }
+  ],
+  "sharedFilesEdited": false,
+  "auxiliary": "Android app + instrumentation compilation; native 17-method execution pending device lease",
+  "realDev": "not-run; no device, desktop, model or vendor action"
+}

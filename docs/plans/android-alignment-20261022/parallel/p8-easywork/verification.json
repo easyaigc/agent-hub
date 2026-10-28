@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "date": "2026-10-28",
+  "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+  "checks": {
+    "hostJvm": {
+      "status": "passed",
+      "tests": 10,
+      "failures": 0,
+      "skipped": 0,
+      "resultSha256": "56483332e88b231a1e6d20051b3f5dd964966d65abdc064a18247fe759ee513e",
+      "testNames": [
+        "pathPreferencesUseOnlyTheSelectedTransport",
+        "bindingRequiresEveryTargetCoordinateAndDeviceKey",
+        "arbitraryWireMethodIsRejectedBeforeOpeningAnyTransport",
+        "lostWriteReplyUsesOriginalReceiptWithoutReplayingInput",
+        "independentEwdapJweDeliveryRefusesTamperingAndWrongRecipient",
+        "independentNodeFramesAndAuthenticatedHeaders",
+        "recoveredReceiptRequiresOriginalTargetMethodIdAndInputHash",
+        "authorizedBindingCannotFallBackToLegacyAccountToken",
+        "readRetryPreservesExactRequestAndUsesSecondChannel",
+        "unknownWriteReceiptRemainsUnknownWithoutReplay"
+      ],
+      "command": "node scripts/mobile/gradle.mjs :android:testDebugUnitTest --tests com.agenthub.android.P8EasyWorkBoundaryTest --init-script docs/plans/android-alignment-20261022/parallel/p8-easywork/boundaries.init.gradle",
+      "limit": "Production Android protocol/session on host JVM; synthetic peers, JDK Base64 shim and org.json:json:20250517 compatibility runtime. No Android JSON/secure-storage/TLS/UI/Desktop/model acceptance."
+    },
+    "nodeEwdapVector": {
+      "status": "passed",
+      "scope": "Independent deterministic Node ECDH-ES/A256GCM vector; synthetic keys/nonce only",
+      "logSha256": "e31a916229ed656d397027ca2c9ecd79e9dea531cfec22d96a533fee570059d6"
+    },
+    "proposedMigrationSchema": {
+      "status": "passed",
+      "tests": 3,
+      "scope": "Proposed descriptor only; no production migration implementation",
+      "logSha256": "ac7800d6d437b5c99ccbb562423fe5f8f8f9a1d970da7e1dc68a650bd09cd605"
+    },
+    "nativeBuild": {
+      "status": "passed",
+      "tasks": 82,
+      "command": "node scripts/mobile/gradle.mjs :android:assembleDebug :android:assembleDebugAndroidTest -PagentHubAcceptance=true",
+      "packages": {
+        "app": {
+          "sha256": "ff614d36bed8a901a61b6546c939e4d27dba6f2552c0aa59476e45973919b5ce",
+          "bytes": 24210362,
+          "package": "com.easyai.agenthub.android.acceptance",
+          "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+        },
+        "runner": {
+          "sha256": "2286cf7661d48793ff48cd69dbdb5b6f0677485103e59f5c0558f53a6a6794a9",
+          "bytes": 4490573,
+          "package": "com.easyai.agenthub.android.acceptance.test",
+          "signerCertificateSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1"
+        }
+      },
+      "nativeInputSetSha256": "5d985e49e5277fe9004282807b8eb27c3c3498b8d5915f708259bffc181ae7d8",
+      "nativeInputFiles": 456,
+      "limit": "Built only; never installed or launched. P8 JVM tests are opt-in host tests and are not part of this Android instrumentation runner."
+    },
+    "pnpmCheck": {
+      "status": "passed",
+      "exitCode": 0,
+      "command": "pnpm check",
+      "logSha256": "61a48ed3322ad51b2ce42ef731bfc3c3c8720425c5c4adebb11ab75e9b1ed18b",
+      "scope": "Full required root check on unchanged assigned production/workspace inputs. Final audit/schema/doc-only updates were additionally checked by the workline commands below. Platform-specific skips retain their original log reasons."
+    },
+    "currentNativeDev": {
+      "status": "not-performed",
+      "deviceLease": null,
+      "matchedHistoricalReuse": false
+    },
+    "failuresPreserved": [
+      {
+        "stage": "first host JVM attempt",
+        "status": "no-tests-found",
+        "cause": "Kotlin test source directory not registered; explicit Kotlin source set fixed; original log preserved outside tree"
+      },
+      {
+        "stage": "first pnpm check",
+        "status": "missing-built-protocol-module",
+        "cause": "Fresh isolated checkout had no packages/protocol/dist; pnpm build restored matching workspace outputs and full pnpm check then passed. Initial failure log preserved outside tree."
+      }
+    ],
+    "pnpmBuild": {
+      "status": "passed",
+      "tasks": 6,
+      "cacheHits": 6,
+      "scope": "Content-addressed workspace build outputs restored into this isolated tree before the root check; not a fresh-compilation or native DEV claim",
+      "logSha256": "cf3916fe55d88ccc4d14ead9f6e419db29398100bf505bdb413b70b263adf32f"
+    },
+    "finalWorklineChecks": {
+      "status": "passed",
+      "checks": [
+        "7 groups / 28 features / 40 unchanged production inputs / 11 historical P8 nodes / 31 post-freeze iOS source nodes",
+        "9 immutable acceptance-plan digests; all unsubmitted and unbound",
+        "independent Node EWDAP vector",
+        "3 proposed Schema cases",
+        "ESLint for all workline JavaScript",
+        "Prettier for final workline files"
+      ],
+      "auditLogSha256": "e6dc528ffbadef7b31d5917352f8c3e22b16be6ad1667e1b1be66ac1fad83eeb",
+      "eslintLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "a5GroupClosure": "none; every current native/real-DEV group remains open",
+  "evidenceLocation": "Private tree-external archive identified in final delivery receipt; no local paths or credentials committed"
+}

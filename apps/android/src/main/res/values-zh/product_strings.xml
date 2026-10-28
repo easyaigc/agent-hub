@@ -1748,4 +1748,15 @@
     <string name="product_f8baad25a05174807b7290a0" formatted="false">"下一项"</string>
     <string name="product_6c56ec1524e6e4f6b2d40880" formatted="false">"无法读取图片目录，请重试。"</string>
     <string name="product_feda7009bcf6c204adad5dcf" formatted="false">"使用系统选图器"</string>
+    <string name="product_62d56e62f31282def78b7762" formatted="false">"迁入的原录音仅核对原回执，音频已保留。"</string>
+    <string name="product_3edf7b630d2996eaec428f0c" formatted="false">"正在连接电脑转写…"</string>
+    <string name="product_c044e545646267a7973c4269" formatted="false">"已离开语音输入，原草稿已保留。"</string>
+    <string name="product_92f9a2ea6d142b540b88e60c" formatted="false">"本地听写超时，原草稿已保留，请重试。"</string>
+    <string name="product_121f73594ca48a132ce5f1f2" formatted="false">"本地听写失败，原草稿已保留。"</string>
+    <string name="product_a45abf68bdc8d78b4ed8a3bb" formatted="false">"原草稿或目标已变化，请先取消，再在当前草稿开始录音。"</string>
+    <string name="product_38e1e33707bec6feab041817" formatted="false">"手机内存不足，原草稿已保留，请稍后重试。"</string>
+    <string name="product_a56df727e90a0b26ab1ca16d" formatted="false">"后台推送尚未就绪"</string>
+    <string name="product_faf506ec5efb2a446e45856b" formatted="false">"通知渠道由系统管理；声音与角标以系统实际设置为准。"</string>
+    <string name="product_c108aeed14b7435e5798c520" formatted="false">"内置与导入铃声尚未就绪"</string>
+    <string name="product_c8a0c8ae567390bcdf06c34b" formatted="false">"Android 不支持及时通知。"</string>
 </resources>

@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "runnerCaveat": "scripts/mobile/android-easywork-live.mjs hardcodes the existing .debug install and paths. Do not execute it directly for this acceptance candidate; integrator must supply a reviewed package-bound leased runner. No such adaptation or device execution occurred here.",
+  "intents": [
+    {
+      "intent": {
+        "intentId": "bcac26b7-fce0-51a8-94db-77da5a534908",
+        "scenarioId": "P8-target-registration",
+        "groups": ["A5-1", "A5-7"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "Switch registered Codex/EasyWork targets with similar display names; confirm distinct draft/receipt/event namespaces and original owner.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "722c81af7df7e8a87d58b47807fc20c78d11cb1351a25db700cc438ae9b0f4ff",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "b50114f3-c43d-5f78-b19c-39082e1db652",
+        "scenarioId": "P8-pairing-qr-code",
+        "groups": ["A5-2", "A5-6"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "Fresh physical QR and manual code, Desktop approves/rejects exact local device, stale/untrusted offers refused.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "794fff833592c9b366b2bc31eb27783b744c39a6a2e93cf5477458a7fe1a0797",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "c91ee7a3-0034-5c82-b165-52607d58c529",
+        "scenarioId": "P8-tls-binding",
+        "groups": ["A5-2", "A5-3"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "Actual certificate/public-key/binding mismatch refused before any business write; saved-route address change retains exact target.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "b88153d1c81451e19ded3503cfa7ed6abd9d25876c669f8df6db397e7ee67da6",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "9023c571-95f5-5c9f-bf59-e8bc168f50fa",
+        "scenarioId": "P8-dual-path-receipt",
+        "groups": ["A5-3", "A5-5"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "One new synthetic model input per scene; interrupt its reply path, query original operation, independent original Desktop input/run count stays one.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "6097694c1fa06849d49fbfc043f534569e927baf8a026acf099cc8ceb3611c52",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "01372523-0777-5946-b50a-836266865222",
+        "scenarioId": "P8-authority-history-ui",
+        "groups": ["A5-4"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "Read owned current complete history/search/plan/settings and compaction screens; compare iOS layout/state and distinguish history from runtime authority.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "06440109b60a682b51c8678d430892982a9ddc625b0e142c1e2eaae12cd91740",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "42f07535-885b-52e0-a4b0-518c1af1d500",
+        "scenarioId": "P8-business-controls-resources",
+        "groups": ["A5-5"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "New isolated thread and random attachment; native queue, steer, stop, plans, approvals/questions and download, independent original Desktop and byte checks.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "52732ecc68a9e6cfd701afb6df050823bf391ac835559eaa3feeafb3aa935abf",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "f33a5156-da4d-5961-b89e-4f6a57978411",
+        "scenarioId": "P8-ewdap-security",
+        "groups": ["A5-6"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "System signer persists; real DPoP replay/key/body/target refusals; original Desktop exact-grant revoke and rejection disable native composer.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "2a641b5f2ed084cc097232bd460159e850926b6b012a762bfd85a414817b1790",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "bf07d941-6258-5b57-a126-26f75bc7c5a7",
+        "scenarioId": "P8-expiry-process-recovery",
+        "groups": ["A5-3", "A5-6", "A5-7"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "Actually expire access, restart only leased acceptance app, refresh with local key and original grant; draft/receipt/original run set preserved.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "d8bc295685f28c473499446161e16b0802463386e236cc4cf4d8a617a5142307",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    },
+    {
+      "intent": {
+        "intentId": "19065a59-46b9-5acf-afaf-d9b029c1016b",
+        "scenarioId": "P8-desktop-restart-codex",
+        "groups": ["A5-7"],
+        "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+        "scope": "With isolated Desktop owner released and restart lease, restart only owned DEV lifecycle; preserve original operation counts; run separate Codex regression.",
+        "environments": ["API26", "API37", "leased-physical-Android"],
+        "paths": ["LAN", "relay"],
+        "preconditions": [
+          "Integrator grants exact device, bundle, APK/runner SHA and time window; no overlap with active EasyWork workline",
+          "Freeze integrated production + runner + Desktop + relay fingerprints and store protected original inputs outside worktree",
+          "Assign exact complete host/runtime/thread target before first submission; materialize a new immutable operation once, keep same ID for recovery",
+          "Do not replay any historical unknown operation; public Desktop OIDC and public relay deployment require separate evidence"
+        ],
+        "requiredEvidence": [
+          "original screenshots with review status",
+          "full target and original Thread/Run IDs",
+          "native operation receipt and exact immutable request hash",
+          "independent original Desktop canonical input/run count",
+          "source/APK/runner/device/OS/Desktop/relay fingerprints",
+          "actual failures and cleanup receipt"
+        ]
+      },
+      "planSha256": "de35fdd190a0e7890380caf5fd51bdca8421057badfc223cc708dc83b00e2507",
+      "scheduling": {
+        "state": "unscheduled-not-submitted",
+        "executable": false,
+        "device": null,
+        "bundle": null,
+        "hostTarget": null,
+        "lease": null,
+        "materialization": "This is an immutable acceptance plan, not an executable command. Scheduling fills a separate bound record; changed target/input creates a new operation, never rewrites an unknown submitted operation."
+      }
+    }
+  ]
+}

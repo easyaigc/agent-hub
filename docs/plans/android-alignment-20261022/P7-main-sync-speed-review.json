@@ -1,0 +1,72 @@
+{
+  "phase": "P7-5q",
+  "sourceBase": "5b3e1248ad7a533b625b59621edf178496fbc455",
+  "integratedMain": "f29432474bf286da5b48c0a47e07d2e65f279169",
+  "summary": "P7-5q：集成主线速度ID规范化与iOS显式多档菜单节点N066；Android产品APK与5p完全相同。补齐旧本地化验收器的原owner当前参数，保留所有原断言；两环境各5项速度/当前参数/未发送覆盖隔离辅助通过。 另两环境各5项共用夹具本地化回归通过，合计20辅助、20默认11字段保护。",
+  "features": ["F34", "F36"],
+  "sourceSha256": "be53e05d84e1cb5cb7668ea868615dd5034faa8b7a2344bae989c08a0c3cd8ea",
+  "appSha256": "a50e43e3e31c97428bf9b4481e78cc644d81758fc58bf6f5811a2703a0efe851",
+  "runnerSha256": "8755a6d51aeef8a27077408784b7157a3e9a40d670e8fedf92797cd94e43d5be",
+  "nativeAuxiliary": 20,
+  "defaultElevenFieldProofs": 20,
+  "cohorts": [
+    {
+      "environment": "API26",
+      "nativeAuxiliary": 5,
+      "defaultElevenFieldProofs": 5,
+      "logSha256": "e0d4cb9c53595a6ab7b029fcac5ef9181ae6e317986be099d8d87ca1e1ff72cb",
+      "evidenceSha256": "091d94fa0c147fd750cbe25180931aa379ad7b3314e391b4b301c3bf6843d426"
+    },
+    {
+      "environment": "physical API33",
+      "nativeAuxiliary": 5,
+      "defaultElevenFieldProofs": 5,
+      "logSha256": "f0861ed48af8f14e6f8b89b51407fae534e84b373de2a10a5ad63f6b130049d6",
+      "evidenceSha256": "a5267f33267fc4b16ba11443fe518a291a3959d2b5e6e963a3377dd88eca1387"
+    }
+  ],
+  "examinerCorrection": "Original fake owner omitted runtime generationSettings, while expecting next-send model in actual-owner toolbar. Product correctly showed Syncing. Fixture now explicitly supplies owner raw-model/xhigh/standard and asserts them before next-send menu interaction. Missing-owner, next-send-only, per-chat refresh and draft-isolation checks remain independently unchanged. Product source unchanged.",
+  "priorFailure": "Initial API26 group failed1/5; partial passes not counted. Physical initial group not started because another package instrumentation was active. Both original logs retained; no other app interrupted. Corrected candidate passed5/5 in each environment.",
+  "parity": "Android full speed menu selects stable ultrafast ID and localizes display only; Host maps fast to priority, keeps ultrafast, and uses current owner settings rather than stale prior turn. Existing current/next-send distinction remains. Incoming iOS explicit native menu preserved; no iOS device/A6 execution here.",
+  "visualReview": "Physical English generation/permission dialog and API26 actual-versus-next panel manually reviewed; actual owner and editable next values remain distinct and text/actions readable in these portrait default-size captures. Font/theme/rotation/full AX and live-owner speed writes remain open.",
+  "matchedReuse": "Same production APK as5p; only changed native file is MobileLocalizedControlsTest.kt. Prior5p 36 auxiliary and26 protection proofs remain matched reuse, not new passes; cold/voice evidence retains its original source/runner fingerprints.",
+  "ciReconciliation": "PR43 candidate CI10548 passed. First post-merge CI10549 was cancelled with context canceled; concurrency cancel-in-progress is enabled. Latest main CI10551 and mirror10552 passed. No observed assertion regression and no new remote repair dispatch or replay of completed historical CI task.",
+  "checks": {
+    "pnpmCheck": "passed complete combined-source invocation",
+    "rootLogSha256": "eeffd8b8f90b775cff45d00a4e321f51b758f1ec4796ef8b5712174e7c295f0a",
+    "frozenInputCount": 1472,
+    "frozenInputMapSha256": "d692c30ad87dddf13763f2b71cbe08bcda2ebd43f6cbcbd587490209a3ac752e",
+    "inputsMatchedBeforeAndAfter": true,
+    "nonzeroSkipGroups": [1, 2, 24, 22],
+    "skipsNotWindowsAcceptance": true,
+    "pnpmBuildIos": "passed simulator compilation only",
+    "iosBuildLogSha256": "ea32e75f46b3833954b205380659cc007151f51c189e6bbf3f2442cf3463c7b7",
+    "iosA6Executed": false,
+    "postRecordFormatAndParity": "passed after result registration; final result-only fields formatted separately",
+    "parityLogSha256": "94ddc4cf1b62ea57da850e84f167ae8e6c1d028165674a3fd83a03cdc9874b85",
+    "parityBaseLogSha256": "60e8e8fb548ef706713cd92e54ad86ffb89e39988565df22510effe19451c69b"
+  },
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "unknownOperationsReplayed": false,
+  "bounds": "Native synthetic reads and menus only, no actual model/Host writes or full P7 completion. Full-size/provisional storage, child stores/provider/notifications, system migration UI and voice/unread/lifecycle remain open.",
+  "additionalSharedFixtureRegressions": [
+    {
+      "environment": "API26",
+      "nativeAuxiliary": 5,
+      "defaultElevenFieldProofs": 5,
+      "logSha256": "d78dcb3e74a31ba3e4f240aeb92ed3e795c77041e5c9e61fe1b4b2388701dbf4",
+      "evidenceSha256": "8a23a548fba4999fa293ee64762da1a23e227a718b19852c4ff9d6cfc84b7a5e"
+    },
+    {
+      "environment": "physical API33",
+      "nativeAuxiliary": 5,
+      "defaultElevenFieldProofs": 5,
+      "logSha256": "7893178dabafc894b5682655a1d7a8e0368e9b2bd76737fb76c7e1646e264091",
+      "evidenceSha256": "d415f8638b0fc44791c0671d8e6e7c73da97d9548ce10747df027a56060c8d00"
+    }
+  ],
+  "sharedFixturePhonePending": false
+}

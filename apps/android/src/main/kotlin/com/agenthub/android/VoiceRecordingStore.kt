@@ -13,10 +13,10 @@ import java.util.UUID
 
 data class PendingVoiceRecording(val id: String,val scope: AISharingScope,val certificate: String?,val draftKey: String,
     val draftId: String,val threadId: String?,val originalText: String,val createdAt: Long,val manifest: VoiceManifest? = null,
-    val prepareAttempted: Boolean = false,val audioAttempted: Boolean = false) {
+    val prepareAttempted: Boolean = false,val audioAttempted: Boolean = false,val migrationReadOnly: Boolean = false) {
     fun json()=JSONObject().put("version",1).put("id",id).put("scope",scope.json()).put("certificate",certificate ?: JSONObject.NULL)
         .put("draftKey",draftKey).put("draftId",draftId).put("threadId",threadId ?: JSONObject.NULL).put("originalText",originalText)
-        .put("createdAt",createdAt).put("manifest",manifest?.json() ?: JSONObject.NULL).put("prepareAttempted",prepareAttempted).put("audioAttempted",audioAttempted)
+        .put("createdAt",createdAt).put("manifest",manifest?.json() ?: JSONObject.NULL).put("prepareAttempted",prepareAttempted).put("audioAttempted",audioAttempted).also {if(migrationReadOnly)it.put("migrationReadOnly",true)}
 }
 
 /** Only this installation can decrypt sealed audio. A provisional WAV can be recovered after process death before any upload. */
@@ -30,11 +30,15 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
         require(v.getInt("version")==1);val id=v.getString("id");validId(id)
         return PendingVoiceRecording(id,AISharingScope.decode(v.getJSONObject("scope")),v.optional("certificate"),v.getString("draftKey"),
             v.getString("draftId"),v.optional("threadId"),v.getString("originalText"),v.getLong("createdAt"),
-            v.optJSONObject("manifest")?.let(VoiceCodec::manifest),v.getBoolean("prepareAttempted"),v.getBoolean("audioAttempted")).also {
+            v.optJSONObject("manifest")?.let(VoiceCodec::manifest),v.getBoolean("prepareAttempted"),v.getBoolean("audioAttempted"),v.optBoolean("migrationReadOnly",false)).also {
             require(it.manifest==null || it.manifest.operationId==id && it.manifest.hostId==it.scope.target.hostId && it.manifest.draftId==it.draftId && it.manifest.threadId==it.threadId)
         }
     }
     private fun read(id: String)=storage.read(key(id))?.let(::JSONObject) ?: error("原录音记录不存在")
+    /** Inventory only: a raw WAV is not a sealed manifest and is never implicitly repaired for export. */
+    internal fun migrationProvisionalIds(): List<String> = storage.operationTransaction {
+        index().filter { id -> decode(read(id)).manifest == null }
+    }
     suspend fun begin(scope: AISharingScope,certificate: String?,draftKey: String,draftId: String,threadId: String?,text: String): PendingVoiceRecording = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             val ids=index();check(ids.size<32) { "待处理录音过多，请先处理原录音。" }
@@ -47,6 +51,7 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
     suspend fun seal(pending: PendingVoiceRecording): PendingVoiceRecording = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             val body=read(pending.id);val current=decode(body)
+            check(!current.migrationReadOnly) { "迁入的原录音仅核对原回执，音频已保留。" }
             if(current.manifest!=null) return@operationTransaction current
             val audio=file(current.id);require(audio.isFile && audio.length() in 46..VoiceTranscriptionRules.maxBytes.toLong()) { "尚无可恢复的完整录音，原记录已保留。" }
             val dataBytes=((audio.length()-44)/2*2).toInt()
@@ -98,7 +103,10 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
             // Cancel may race the durable seal. End waiting while retaining an already sealed/attempted original.
             if(unsealedOnly && (current.manifest!=null || current.prepareAttempted || current.audioAttempted)) return@operationTransaction
             storage.write("voice-index-v1",JSONArray(index().filterNot { it==pending.id }).toString())
-            storage.remove(key(pending.id));storage.remove("voice-audio:${pending.id}");val audio=file(pending.id);check(audio.delete() || !audio.exists())
+            storage.remove(key(pending.id));storage.remove("voice-audio:${pending.id}")
+            // Imported IDs do not grant ownership of this installation's global raw directory.
+            // The source installation/namespace may still own an interrupted provisional WAV.
+            if(!current.migrationReadOnly) {val audio=file(pending.id);check(audio.delete() || !audio.exists())}
         }
     }
 }

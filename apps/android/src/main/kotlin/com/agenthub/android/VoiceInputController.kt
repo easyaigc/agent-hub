@@ -70,13 +70,34 @@ data class VoiceDraft(val client: MobileClient,val scope: AISharingScope,val key
 @Stable
 class VoiceInputController(private val context: Context,private val store: VoiceRecordingStore,private val commands: ()->AgentCommands) {
     enum class Phase { IDLE, REQUESTING, LISTENING, FINISHING, FAILED }
+    enum class Provider { DESKTOP, SYSTEM }
+    var provider by mutableStateOf(Provider.DESKTOP);private set
+    var transcript by mutableStateOf("");private set
+    val canRetry get()=provider==Provider.DESKTOP && phase==Phase.FAILED && pending!=null
+    internal var systemFactory: ()->NativeSystemVoice = { AndroidSystemVoice(context.applicationContext) }
+    private var systemVoice: NativeSystemVoice?=null
+    private var systemTimeout: Job?=null
     var phase by mutableStateOf(Phase.IDLE);private set
     var error by mutableStateOf<String?>(null);private set
     var levels by mutableStateOf(List(9) { 0f });private set
     var permissionRequest by mutableStateOf<String?>(null);private set
     val active get()=phase!=Phase.IDLE
-    val status get()=when(phase) {
+    val status get()=when {
+        provider==Provider.SYSTEM && phase==Phase.REQUESTING->"准备本地听写…"
+        provider==Provider.SYSTEM && phase==Phase.LISTENING->"正在本地听写"
+        provider==Provider.SYSTEM && phase==Phase.FINISHING->"正在完成本地听写…"
+        else->when(phase) {
         Phase.IDLE->"";Phase.REQUESTING->"正在连接电脑转写…";Phase.LISTENING->"正在录音，结束后由电脑转写";Phase.FINISHING->"电脑正在转写…";Phase.FAILED->error ?: "录音已保留，点击重试查询转写"
+    }
+    }
+    // Only known local states supply a product copy key. Arbitrary Host/OS errors stay literal.
+    private var errorCopyKey by mutableStateOf<String?>(null)
+    internal val statusCopyKey get()=when {
+        provider==Provider.SYSTEM && phase in listOf(Phase.REQUESTING,Phase.LISTENING,Phase.FINISHING)->status
+        else->when(phase) {
+        Phase.IDLE->"";Phase.REQUESTING->"正在连接电脑转写…";Phase.LISTENING->"正在录音，结束后由电脑转写";Phase.FINISHING->"电脑正在转写…"
+        Phase.FAILED->if(error==null)"录音已保留，点击重试查询转写"else errorCopyKey?.takeIf {it==error}
+    }
     }
     private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
     private var generation=""
@@ -91,84 +112,156 @@ class VoiceInputController(private val context: Context,private val store: Voice
     private var cancelling=false
     private val audio=context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var focus: AudioFocusRequest?=null
-    fun start(original: VoiceDraft,allowed: ()->Boolean,apply: (VoiceDraft,String)->Boolean,restore: Boolean=true) {
+    fun start(original: VoiceDraft,allowed: ()->Boolean,apply: (VoiceDraft,String)->Boolean,restore: Boolean=true,provider: Provider=Provider.DESKTOP) {
         if(active) return
+        this.provider=provider;transcript=""
         generation=UUID.randomUUID().toString();val id=generation
-        draft=original;this.allowed=allowed;this.apply=apply;pending=null;error=null;levels=List(9) { 0f };phase=Phase.REQUESTING
+        draft=original;this.allowed=allowed;this.apply=apply;pending=null;error=null;errorCopyKey=null;levels=List(9) { 0f };phase=Phase.REQUESTING
         work=tasks.launch {
             try {
-                check(allowed()) { "录音目标或草稿已变化" }
+                localCheck(allowed(),"录音目标或草稿已变化")
+                if(provider==Provider.SYSTEM) { startSystem(id);return@launch }
                 if(restore) {
                     val saved=store.restore(original.scope,original.certificate,original.key,original.text)
-                    if(saved!=null) { pending=saved;checkCurrent(id);phase=Phase.FAILED;error="已恢复此草稿的原录音。点击重试查询同一转写；不会自动重新提交。";return@launch }
+                    if(saved!=null) { pending=saved;checkCurrent(id);phase=Phase.FAILED;error="已恢复此草稿的原录音。点击重试查询同一转写；不会自动重新提交。";errorCopyKey=error;return@launch }
                 }
                 val ready=commands().voiceReadiness(original.client);checkCurrent(id)
-                check(ready.available) { ready.reason ?: "电脑转写暂不可用，请检查 Codex 登录。原草稿已保留。" }
-                check(ready.maxBytes>=44 && ready.maxDurationMs>0) { "电脑未提供有效的录音限制" }
+                if(!ready.available)throw ready.reason?.let { IllegalStateException(it) } ?: NativeVoiceFailure("电脑转写暂不可用，请检查 Codex 登录。原草稿已保留。")
+                localCheck(ready.maxBytes>=44 && ready.maxDurationMs>0,"电脑未提供有效的录音限制")
                 if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED) {
                     val result=CompletableDeferred<Boolean>();waiting=result;permissionRequest=id
                     val granted=result.await();waiting=null;permissionRequest=null;checkCurrent(id)
-                    check(granted) { "麦克风权限未开启，请在系统设置中允许访问麦克风。" }
+                    localCheck(granted,"麦克风权限未开启，请在系统设置中允许访问麦克风。")
                 }
                 checkCurrent(id)
                 val request=AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                     .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-                    .setOnAudioFocusChangeListener { change->if(change<0 && generation==id && phase==Phase.LISTENING) suspendRecording("录音被系统中断，原录音已保留。") }.build()
-                check(audio.requestAudioFocus(request)==AudioManager.AUDIOFOCUS_REQUEST_GRANTED) { "麦克风正被其他应用占用，请稍后重试。" };focus=request
+                    .setOnAudioFocusChangeListener { change->if(change<0 && generation==id && phase==Phase.LISTENING) suspendRecording(NativeVoiceFailure("录音被系统中断，原录音已保留。")) }.build()
+                localCheck(audio.requestAudioFocus(request)==AudioManager.AUDIOFOCUS_REQUEST_GRANTED,"麦克风正被其他应用占用，请稍后重试。");focus=request
                 pending=store.begin(original.scope,original.certificate,original.key,original.draftId,original.threadId,original.text);checkCurrent(id)
                 val recorder=NativeAudioCapture(store.file(pending!!.id),tasks) { level->if(generation==id && phase==Phase.LISTENING) levels=levels.drop(1)+level }
                 capture=recorder;recorder.start();checkCurrent(id);phase=Phase.LISTENING
                 monitor=tasks.launch {
                     while(generation==id && phase==Phase.LISTENING) {
                         delay(100)
-                        if(allowed()!=true) { suspendRecording("录音目标、共享许可或草稿已变化，原录音已保留。");return@launch }
-                        if(recorder.ended) { suspendRecording("录音已停止，原录音已保留。点击重试转写。");return@launch }
+                        if(allowed()!=true) { suspendRecording(NativeVoiceFailure("录音目标、共享许可或草稿已变化，原录音已保留。"));return@launch }
+                        if(recorder.ended) { suspendRecording(NativeVoiceFailure("录音已停止，原录音已保留。点击重试转写。"));return@launch }
                     }
                 }
             } catch(e: CancellationException) { throw e }
-            catch(_: OutOfMemoryError) { if(generation==id) { releaseFocus();phase=Phase.FAILED;error="手机内存不足，原录音和草稿已保留，请稍后重试。" } }
-            catch(e: Exception) { if(generation==id) { releaseFocus();phase=Phase.FAILED;error=e.message ?: "无法开始录音，原草稿已保留" } }
+            catch(_: OutOfMemoryError) { if(generation==id) { if(provider==Provider.SYSTEM)systemFailed(id,NativeVoiceFailure("手机内存不足，原草稿已保留，请稍后重试。"))else { releaseFocus();phase=Phase.FAILED;error="手机内存不足，原录音和草稿已保留，请稍后重试。";errorCopyKey=error } } }
+            catch(e: Exception) { if(generation==id) { if(provider==Provider.SYSTEM)systemFailed(id,e)else { releaseFocus();phase=Phase.FAILED;error=e.message ?: "无法开始录音，原草稿已保留";errorCopyKey=(e as? NativeVoiceFailure)?.copyKey } } }
         }
     }
-    private fun checkCurrent(id: String) { check(generation==id && allowed?.invoke()==true) { "共享许可、录音目标或草稿已变化，原录音已保留。" } }
+    private fun localCheck(value: Boolean,key: String) { if(!value)throw NativeVoiceFailure(key) }
+    private suspend fun startSystem(id: String) {
+        if(context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED) {
+            val result=CompletableDeferred<Boolean>();waiting=result;permissionRequest=id
+            val granted=result.await();waiting=null;permissionRequest=null;checkCurrent(id)
+            localCheck(granted,"麦克风权限未开启，请在系统设置中允许访问麦克风。")
+        }
+        checkCurrent(id);localCheck(!audio.isMicrophoneMute,"麦克风已被系统静音，请解除静音后重试。原草稿已保留。")
+        val engine=systemFactory();systemVoice=engine;systemDeadline(id,15_000)
+        fun current()=generation==id && allowed?.invoke()==true
+        engine.start(object: NativeSystemVoice.Listener {
+            override fun ready() { if(current() && phase==Phase.REQUESTING) { phase=Phase.LISTENING;systemDeadline(id,120_000) } }
+            override fun level(value: Float) { if(current() && phase==Phase.LISTENING) levels=levels.drop(1)+value }
+            override fun partial(text: String) { if(current())transcript=text }
+            override fun ended() { if(current() && phase in listOf(Phase.REQUESTING,Phase.LISTENING)) { phase=Phase.FINISHING;systemDeadline(id,15_000) } }
+            override fun result(text: String) {
+                if(!current())return
+                try {
+                    localCheck(text.isNotBlank(),"没有识别到语音，请重新录音。")
+                    val original=draft ?: return
+                    localCheck(apply?.invoke(original,text)==true,"原草稿或目标已变化，请先取消，再在当前草稿开始录音。")
+                    clear()
+                }catch(e: Exception) { systemFailed(id,e) }
+            }
+            override fun failed(code: Int) {
+                if(!current())return
+                val key=when(code) {
+                    android.speech.SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS->"麦克风权限未开启，请在系统设置中允许访问麦克风。"
+                    android.speech.SpeechRecognizer.ERROR_NO_MATCH,android.speech.SpeechRecognizer.ERROR_SPEECH_TIMEOUT->"没有识别到语音，请重新录音。"
+                    else->null
+                }
+                systemFailed(id,if(key!=null)NativeVoiceFailure(key)else IllegalStateException("SpeechRecognizer error $code"))
+            }
+        })
+        monitor=tasks.launch {
+            while(generation==id && phase in listOf(Phase.REQUESTING,Phase.LISTENING,Phase.FINISHING)) {
+                delay(100)
+                if(!current()) { suspendRecording();return@launch }
+                if(audio.isMicrophoneMute) { systemFailed(id,NativeVoiceFailure("麦克风已被系统静音，请解除静音后重试。原草稿已保留。"));return@launch }
+            }
+        }
+    }
+    private fun systemDeadline(id: String,millis: Long) {
+        systemTimeout?.cancel();systemTimeout=tasks.launch {
+            delay(millis)
+            if(generation==id)systemFailed(id,NativeVoiceFailure("本地听写超时，原草稿已保留，请重试。"))
+        }
+    }
+    private fun stopSystem() {
+        systemTimeout?.cancel();systemTimeout=null
+        val engine=systemVoice;systemVoice=null
+        engine?.cancel()
+    }
+    private fun systemFailed(id: String,failure: Exception) {
+        if(generation!=id)return
+        generation=UUID.randomUUID().toString();monitor?.cancel();stopSystem();releaseFocus()
+        phase=Phase.FAILED;error=failure.message ?: "本地听写失败，原草稿已保留。";errorCopyKey=(failure as? NativeVoiceFailure)?.copyKey
+    }
+    private fun checkCurrent(id: String) { localCheck(generation==id && allowed?.invoke()==true,"共享许可、录音目标或草稿已变化，原录音已保留。") }
     fun permissionResult(id: String,granted: Boolean) { if(permissionRequest==id && generation==id) waiting?.complete(granted) }
     private fun releaseFocus() { focus?.let { audio.abandonAudioFocusRequest(it) };focus=null }
     fun finish() {
+        if(provider==Provider.SYSTEM) {
+            if(phase!=Phase.LISTENING)return
+            phase=Phase.FINISHING
+            try { systemVoice?.finish();systemDeadline(generation,15_000) } catch(e: Exception) { systemFailed(generation,e) }
+            return
+        }
         if(phase !in listOf(Phase.LISTENING,Phase.FAILED)) return
-        val original=draft ?: return;val id=generation;phase=Phase.FINISHING;error=null;monitor?.cancel()
+        val original=draft ?: return;val id=generation;phase=Phase.FINISHING;error=null;errorCopyKey=null;monitor?.cancel()
         work=tasks.launch {
             try {
                 val recorder=capture;capture=null
                 val stopped=runCatching { recorder?.stop() };releaseFocus();checkCurrent(id)
                 if(stopped.isFailure && pending?.let { store.file(it.id).length()<=44 }!=false) throw stopped.exceptionOrNull()!!
-                val record=pending ?: error("尚无可重试的录音，请重新录音。")
+                val record=pending ?: throw NativeVoiceFailure("尚无可重试的录音，请重新录音。")
                 val sealed=if(record.manifest==null) store.seal(record) else record
                 pending=sealed;checkCurrent(id)
                 val text=VoiceTranscriptionFlow(commands(),store).transcribe(original.client,sealed) { generation==id && allowed?.invoke()==true }
                 checkCurrent(id)
-                check(apply?.invoke(original,text)==true) { "原草稿已变化，转写结果和录音已保留。" }
+                localCheck(apply?.invoke(original,text)==true,"原草稿已变化，转写结果和录音已保留。")
                 store.remove(sealed)
                 if(generation==id) clear()
             } catch(e: CancellationException) { throw e }
             catch(_: OutOfMemoryError) { if(generation==id) { releaseFocus();phase=Phase.FAILED;error="手机内存不足，原录音和草稿已保留，请稍后重试。" } }
-            catch(e: Exception) { if(generation==id) { releaseFocus();phase=Phase.FAILED;error=e.message ?: "录音已保留，点击重试查询转写" } }
+            catch(e: Exception) { if(generation==id) { releaseFocus();phase=Phase.FAILED;error=e.message ?: "录音已保留，点击重试查询转写";errorCopyKey=if(e is ImportedVoiceReceiptOnly)ImportedVoiceReceiptOnly.MESSAGE else (e as? NativeVoiceFailure)?.copyKey } }
         }
     }
     /** Background/target changes stop local capture and preserve audio, without submitting. */
-    fun suspendRecording(message: String="已离开录音输入，原录音已保留。") {
+    fun suspendRecording() = suspendRecording(NativeVoiceFailure("已离开录音输入，原录音已保留。"))
+    private fun suspendRecording(failure: NativeVoiceFailure) {
         if(!active || cancelling) return
+        if(provider==Provider.SYSTEM) {
+            generation=UUID.randomUUID().toString();work?.cancel();monitor?.cancel();waiting?.cancel();waiting=null;permissionRequest=null
+            stopSystem();releaseFocus();phase=Phase.FAILED;error="已离开语音输入，原草稿已保留。";errorCopyKey=error;return
+        }
         val recorder=capture;capture=null;generation=UUID.randomUUID().toString();val id=generation
         monitor?.cancel();work?.cancel();waiting?.cancel();waiting=null;permissionRequest=null;releaseFocus();phase=Phase.FINISHING
         work=tasks.launch {
             try { runCatching { recorder?.stop() };pending?.let { if(it.manifest==null && store.file(it.id).length()>44) pending=store.seal(it) } }
             catch(_: OutOfMemoryError) { if(generation==id) error="手机内存不足，原录音和草稿已保留，请稍后重试。" }
             catch(e: Exception) { if(generation==id) error=e.message }
-            finally { if(generation==id) { phase=Phase.FAILED;error=error ?: message } }
+            finally { if(generation==id) { phase=Phase.FAILED;if(error==null) { error=failure.copyKey;errorCopyKey=failure.copyKey } } }
         }
     }
     fun cancel() {
         if(!active || cancelling) return
         cancelling=true
+        if(provider==Provider.SYSTEM) { generation=UUID.randomUUID().toString();work?.cancel();monitor?.cancel();stopSystem();clear();return }
         val recorder=capture;capture=null;val record=pending
         generation=UUID.randomUUID().toString();monitor?.cancel();work?.cancel();waiting?.cancel();waiting=null;permissionRequest=null;releaseFocus();phase=Phase.FINISHING
         work=tasks.launch {
@@ -181,13 +274,13 @@ class VoiceInputController(private val context: Context,private val store: Voice
     fun rerecord() {
         if(phase!=Phase.FAILED) return
         val original=draft ?: return;val guard=allowed ?: return;val change=apply ?: return
-        if(!guard()) { error="原草稿或目标已变化，请先取消，再在当前草稿开始录音。";return }
-        val record=pending;clear()
+        if(!guard()) { error="原草稿或目标已变化，请先取消，再在当前草稿开始录音。";errorCopyKey=error;return }
+        val route=provider;val record=pending;clear()
         work=tasks.launch {
             if(record!=null && record.manifest==null) { try { store.remove(record,true) } catch(_: OutOfMemoryError) { error="手机内存不足，原录音已保留，请稍后重试。";phase=Phase.FAILED;return@launch } catch(e: Exception) { error=e.message;phase=Phase.FAILED;return@launch } }
             // Sealed/unknown old operations stay in private storage; a new capture gets a new ID.
-            start(original,guard,change,restore=false)
+            start(original,guard,change,restore=false,provider=route)
         }
     }
-    private fun clear() { generation=UUID.randomUUID().toString();cancelling=false;releaseFocus();draft=null;pending=null;capture=null;permissionRequest=null;waiting=null;phase=Phase.IDLE;error=null;levels=List(9) { 0f } }
+    private fun clear() { generation=UUID.randomUUID().toString();stopSystem();transcript="";waiting?.cancel();cancelling=false;releaseFocus();draft=null;pending=null;capture=null;permissionRequest=null;waiting=null;phase=Phase.IDLE;error=null;errorCopyKey=null;levels=List(9) { 0f } }
 }

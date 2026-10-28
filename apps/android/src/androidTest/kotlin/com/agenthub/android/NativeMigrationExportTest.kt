@@ -60,7 +60,7 @@ class NativeMigrationExportTest {
         history();val exporter=NativeMigrationExport(ui.activity,owned.storage)
         owned.storage.write("future-record","{\"version\":1}");var before=MigrationActivationFixtures.tree(owned.storage);rejected{exporter.capture()};assertEquals(before,MigrationActivationFixtures.tree(owned.storage));owned.storage.remove("future-record")
         val pending=File(file("metadata").path+".bak");pending.writeBytes(file("metadata").readBytes());before=MigrationActivationFixtures.tree(owned.storage);rejected{exporter.capture()};assertEquals(before,MigrationActivationFixtures.tree(owned.storage));assertTrue(pending.delete())
-        owned.storage.write("voice-index-v1","[]");before=MigrationActivationFixtures.tree(owned.storage);rejected{exporter.capture()};assertEquals(before,MigrationActivationFixtures.tree(owned.storage));rejected{exporter.seal("too-short")};assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
+        owned.storage.write("voice-future-index-v2","[]");before=MigrationActivationFixtures.tree(owned.storage);rejected{exporter.capture()};assertEquals(before,MigrationActivationFixtures.tree(owned.storage));rejected{exporter.seal("too-short")};assertEquals(before,MigrationActivationFixtures.tree(owned.storage))
     }
     @Test fun concurrentHistoryReplacementCannotBlendAnIndexAndItsOriginalFragments(){
         history(35,"initial");val errors=ConcurrentLinkedQueue<Throwable>();val writer=Thread{try{repeat(20){history(35,"revision-$it")}}catch(e: Throwable){errors.add(e)}}

@@ -10300,5 +10300,1292 @@
       "Native migration system UI and cold session replacement, then voice/unread/lifecycle",
       "Existing environment and original-owner pending matrix; task/project business and iOS A6 paused"
     ]
+  },
+  "migrationVoiceCheckpoint": {
+    "phase": "P7-5n",
+    "sourceBase": "e73f04fd2c3c56a8666d46871d491a3a2e8e95c5",
+    "integratedMain": "3a6a71d3b98297d9d0c6a91e3406701663a5eefc",
+    "summary": "P7-5n：封口录音纳入类型化档案、严格候选和原子代次；文本v1兼容，v2分别保存原文本与规范二进制，索引/原目标/证书/草稿/音频清单闭合，支持旧内联和分块音频。迁入原录音持久只读，404或等待音频均禁止准备/上传，只核对原回执。API26/新手机86辅助、76默认11字段保护通过；完整配额/未封口/子存储与系统UI继续。",
+    "features": ["F47", "F55", "F56", "F64"],
+    "sourceSha256": "2b14b671413c0f81235822687590329507799b81ee4f176aaaa2b3fce05c90c2",
+    "appSha256": "777b2b61967671a225c29e42908f6514b3c4468512e2dc70e6cd3cab5a84f3ab",
+    "runnerSha256": "0f22fd391f7379b077794b8975e467f95cbd55da28119880f3d97da7150ec460",
+    "nativeAuxiliary": 86,
+    "defaultElevenFieldProofs": 76,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "groups": [
+          {
+            "group": "typed",
+            "nativeAuxiliaryMethods": 8,
+            "reportSha256": "4fdc39f3871802d7924750cab04b46234ddd910b6ed628119edbefdc92cc9dd1",
+            "defaultElevenFieldProofs": 8,
+            "proofSha256s": [
+              "1783087068f70b1c108201d5024c7e1087ed8b2901d5ed52b441947c8a877996",
+              "330363eb8fe6a445ca16a6483114abe07f6f5f9c6c448f5819df31ac45f51081",
+              "732313f1b1547944630297018846d0f7be698a485be59de59215f2d126df3d8c",
+              "925454d7ea81d046a477193e1869057cba17f94138882f7f8b5597295662619f",
+              "4fe2d8171361e5b2fccfa8cecdfd5c89e98ccb23cdf64db463ef89017548363b",
+              "7f293a536a593ef1becd5435ee8e77dac3d87e0766866d41e64ef8e7c171eafd",
+              "93700cafd8833272b64716d38dc1705613ad9603f7d96b48c4d38e8eef8a1db8",
+              "2f61844d6728081d1f0766214d19ef40ca49bf26307c95d74dfcf6db2a0960c7"
+            ]
+          },
+          {
+            "group": "compat",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "4dab893e748d43835b01c2e808a30f217f40ee8fa2d2eb8c6ae1701839f0574e",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "c14de3c624fc5618f69c17157fe0c280f569ebc7fede03008dbc9a3eef734ec8",
+              "38c31118408159e7e460857c632d4feb0699d409d39589bb16f2618de3984147",
+              "17c3aff97c5f171c2a4a5a4deac2804f9a689b3f2c1d5464536d4f21f2bd6795",
+              "b567206a42a7a83158a7cb1dfb83a58fd4268c1562fce603cdb9d6114d5e4480",
+              "8f7c1c08669862abe29944505e8e13d2e08996bd9cc65498ff7cf8acc10924cd",
+              "a48e0456727848130be6f6123fee0ef150a1ecd771972ab404022e0a8f382de2",
+              "8aa047f0b40152e65b2fa82deeacc57b12d0f95b47baf1ede94ae4dfed3f2aee",
+              "4c3d66d805f9932f0d2ebf356e5e908a68b161156f8c8825833f02c9eae60448",
+              "fea4e51fdea4316d8f50b024a337936d6f8048f2261a55632a38fc04463d6999",
+              "51c5c9817ffb4fc7629c9ea15c7e9e9da1e1974accc936452251ee84803c9be9",
+              "6e1820b72d2a3fdfe6c3a2c1abf580aa1a827600a32ab680999d4a9a4bc68646",
+              "05d3f2c4c80c145c8d7a1e2ea36c5c853cc97cad04521b4efa5ac1dc7b01e173",
+              "2b759bdb46e769b950e52ff24443da50f23436d33acf1c0ad56cdf848b2210c6",
+              "664f4a1eb6595750430ad9bb8fae0ccf234b96bec1e584ce21d2b9fa2c8376ef",
+              "c971c0ce8181e72cc22d9ecdaf18dbf383e5d10b8eeeef134c9cf31865a4937c",
+              "129d1c92e99c13dc1abf25596fba019f9d84db49e059b7c1658bd13ed391576c",
+              "eefb64f1c0a18a49b6b98df46efeefbd9a8817736044e7b98e5927d2a5ba870b",
+              "fbafdf2174df7a5fb64f25df12ea7ab1d58903b6e8a84268ea77733a064438af"
+            ]
+          },
+          {
+            "group": "inventory",
+            "nativeAuxiliaryMethods": 12,
+            "reportSha256": "1255422fd4f260b2f41861ab141ef4378dcd233d5436295f9f8a90639df13609",
+            "defaultElevenFieldProofs": 12,
+            "proofSha256s": [
+              "980027cc491ba9ba30f1fab6012e9d77bf573f68a5cb87559e6a9ec48b9aa94d",
+              "7062399c331b15335cd245e9675f309be8098c2214aeeac5b9941104bd7336ca",
+              "47976507bbeb4023f52eab60ce8ff5d8ff9f9982f5210d112753ff361176ddab",
+              "272168bd09e484dee09cfb76628f052dfbeb450f586d52dd48323239b66896d1",
+              "f7ef216c49c10c4733574ccd50125ac17c59c0714ad45d95ea7d63cfb7493a41",
+              "54b13bd0c96e99f01c60f7fedbf4ee93c476c222ea46fe50ce108545e72fa45d",
+              "7adff889c23d5eadcf479f73081deb709a27ffd824b9f6ab0149137ebd395028",
+              "b9eaf549720eb1ee1b664a6a33ef108af1c9ab0584cd572a9cde2007def58416",
+              "ac5ef30f6183681a1cf3ae064f9ff0a9c8a61d2da102a144a1d63e65fa21d7c2",
+              "b617bc253f00cf5bdeb363f67d24df1a432a9ab17fc40d56fcdbfd2f1fc7279c",
+              "9de22efaca6c9d3a8076b564325c8c71a718cf328ebb7571fb24cf8658edaa52",
+              "cbdccebc639a1d91f03b7bca74e379f08cd59c3cfae79f88faf048eee78a8095"
+            ]
+          },
+          {
+            "group": "voice",
+            "nativeAuxiliaryMethods": 5,
+            "reportSha256": "c118a725586398c95f8140ef5c4739d6a69a5ff2fa463e8f97620c436c22975f",
+            "defaultElevenFieldProofs": 0,
+            "proofSha256s": []
+          }
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "groups": [
+          {
+            "group": "typed",
+            "nativeAuxiliaryMethods": 8,
+            "reportSha256": "67e7f3382877731500dcb6daf3a7c7b0d2e5abca08127b89e5e839f6ae97fba7",
+            "defaultElevenFieldProofs": 8,
+            "proofSha256s": [
+              "6e31e620d58112ad112a40a032f3ad413040c3f2054eebb1e312e7051686bb1c",
+              "a7d95a5eabe57fe9e25b3fe9a2df48c77d5f3b94a6fb3e9034986088e778d654",
+              "9c491204ca21445fde9394000cffff62544b2abdfffc85faf93533e8ed701132",
+              "a03a45e3d1339b20eae0c373091685c23c3052299e1594ebca9e44a02df2d3df",
+              "e5a0111c31bd82bcc876ff5464d1df07b1f06453fc7c8bd61a392fc5b7304d83",
+              "b53e193467168580a862522b3bbc442ada621a27038a81d520ea4aaf5c95cda6",
+              "6a8334a88b97540cd66af0e66eb3561e222c170577f5e5147547de95c834945d",
+              "f80bab635a0da87d986338b5174ebca482ad482dbe6de285d81af4bf57bcbab9"
+            ]
+          },
+          {
+            "group": "compat",
+            "nativeAuxiliaryMethods": 18,
+            "reportSha256": "2e4c13bd00daac5b00d92cd685a2aa0bf1e37dbc904a7a61040948f82398f696",
+            "defaultElevenFieldProofs": 18,
+            "proofSha256s": [
+              "4342ef778917bfc20133761e6062650147b8b576564887a1e815c4c880324e36",
+              "2c5fd52d4adf517e12b7533aa98e3f6d40297ae770967037636ab114fbaaa00e",
+              "0c8bf0e992d6d2f692f3b5a5292e4a6388e18fe6d250fa9f17fc2f755524ee1e",
+              "ff880885d2a238a1dacdbc5fdaab76dc4f28791a61ee7012da4c90df489dc1a2",
+              "8c74ff9ca449295f135d4d49a48555fafaa8adf4918d98b124b25b1154f96e48",
+              "231ed7990f7a2eaaac0b0b37099af10392fdf4fcd3d4cb0e9dadae55e5ceca5c",
+              "6322509209c720721fea7b6b47b3b74939a9d0ca2dbb3f0ef5315ba52b32577f",
+              "0e40bf794f410488a2bb4cbf73954897dec917a5d9df10cf82dca85a13bd686b",
+              "d2bd8894141d2dab4104bfa129d38ea5464244cbfc17a94c32037cd815c40218",
+              "70a9e4650c377cfe3e98b83264d93e8d7ebafef49186d97e91bcfd46d6f60de0",
+              "9127eab1716e4b99305cb41982463c14259bf73311f536326a55d02dd6a56104",
+              "6b401757ecf407b1ea51c7b91e3864854893151e8557aa0b192a6bd4513c0c61",
+              "df0fd2d4287c5ba26d2bfd4392a7650a4a591b06487d9255cdca847d30a6b5ed",
+              "e46f76c38bb0f8f0a5001cf1a5b48adcff4f1c3d36898164a6497d7a9c71a7d8",
+              "6838085b73756c40dd803e584134acb9b3a4622e0dba069ed027905b9fd4d16a",
+              "80bdfe33ca93d7b0db96835c165b5a035312b98b574814923984e6d847214d43",
+              "0a5e0bebd17605fff651a873a983cc0639f11cefdb7342ea30e6a25270c19715",
+              "1f00f267e3314fa669519e65bf387ffbd24c82e5c563b4d2b0872b74c1b1ad27"
+            ]
+          },
+          {
+            "group": "inventory",
+            "nativeAuxiliaryMethods": 12,
+            "reportSha256": "bb161eec363a702e628e4a232c92182fc40552de01bb7d5a583d5f98fe6929c4",
+            "defaultElevenFieldProofs": 12,
+            "proofSha256s": [
+              "08628b51de48f671d891f6fc006f826abb1b8f829a06d687306c95a566090127",
+              "668d0461f5f522057ea15604bb79d8c975478349a961499ea55a2330357304f9",
+              "07e5434b9ab3baa58039c502922922f621badfb01566b4dec3a46cc1f42e1ab8",
+              "2794b94f13e0f8bd747dc07dcbf24c1bf89003d626f52988cc8f6ac131080949",
+              "de1acf64475993ee0843371addf706d2b3418c2d1cb6b6dd8523536b65d8b44a",
+              "7df90ffc2d0b100c7c4197b02ae744bc71ef1699c3573c879a76d5f75bf46123",
+              "63bd95b03ce308bb0bae1836ccd01f7320b1985414df6d00911c662beae1498e",
+              "7184211a929f374569f48d57a2c60270abf9fd192b22cb8fd8a5a77a99902576",
+              "bb49a8abadc77c350e62e9da565ec97d726cfce6b9ebf3fb15633964e0394d39",
+              "68cb2a7a185b9931f3b1be0f19219050c65c4c5a4dd2ddef932bb253edc42416",
+              "6262f99d0997780a5cd85a20b4a1a2872a89ede73ad2b0f2c7281331ed115b7b",
+              "5f7e8f1b28d8fbd555041f85511a978679f34379e4b8de2bd89eca65b03bc4e5"
+            ]
+          },
+          {
+            "group": "voice",
+            "nativeAuxiliaryMethods": 5,
+            "reportSha256": "94b8074943e2ffc865f433828556cd5d0e69357df580ebe1ea0bfbc2732da3a8",
+            "defaultElevenFieldProofs": 0,
+            "proofSha256s": []
+          }
+        ]
+      }
+    ],
+    "archiveSchema": "Existing text-only payload1 retained. Payload2 uses exact original text records plus canonical-base64 binaries, closed disjoint names and total record count. Common encrypted envelope stays1; application identity is exact current Android package. Candidate read/validate text-only convenience APIs reject a binary archive instead of omitting binary records.",
+    "sourceSnapshot": "Same history snapshot/root locks; authenticated text3/binary4 names discovered, indexed legacy1/2 aliases exact. No AtomicFile recovery during discovery. Missing/unknown/corrupt/unfinished files reject and preserve source. Unsealed recordings remain explicitly unsupported and their provisional WAV is not modified.",
+    "voiceContract": "Index at most32 distinct UUIDs, closed sealed rows, original Codex runtime/certificate/draft binding, exact WAV header/PCM size/duration/hash/manifest and strict persisted flags/receipt phase/time. Binary set exactly equals referenced original audio; old inline-audio JSON and legacy2 files remain exact on export. Historical incompatible target/unsupported records fail closed; no partial product migration claim.",
+    "activation": "Text and binary records encrypted/read back in unpublished generation; both contribute to commit digest/count. Failure after binary or before pointer preserves installation/source/candidate; original pointer remains sole publication point. Fresh reader/empty consent authority and original operation read-only policies remain.",
+    "noReplay": "Voice migrationReadOnly is persisted, decoded from current store and preserved by receipt updates. Even with a new allowed callback, missing404 never prepares and awaiting-audio never uploads. Explicit original status may return completed text to existing guarded draft flow; no imported audio submission or unknown operation replay.",
+    "copy": "New imported-recording receipt-only message added to both compiled native catalogs (1748 keys/language). Compiled Android builds and catalog generation passed; full new product migration UI/error-screen/AX matrix remains pending.",
+    "iosImpact": "Common source/attachment/receipt preservation, strict import/new installation and no-replay assertions retained. iOS independent PendingVoiceStore remains outside its existing migration payload; iOS source/device unchanged and A6 paused. Android bounded sealed-voice subset does not close full dual-end migration.",
+    "retainedPreflight": {
+      "logSha256": "0dbe185f374b9ed22d25539eee4c3b368588548c94923e99efdc9f6c98df09f1",
+      "status": "not-started",
+      "reason": "Extra phone regression preflight rejected active instrumentation. Subsequent read-only snapshot identified independent EasyWork acceptance; it was not stopped. Idle retry later passed18 plus remaining12/5.",
+      "snapshotSha256": "0a3874b21a703f21275b24a3a27f3d9a8ab6d0bb482f9f821759e47f3933dc03",
+      "newTestsInRejectedAttempt": 0
+    },
+    "bounds": "Internal matching Codex sealed-root subset only; existing8MiB payload/12MiB envelope/1024record gates remain. No full quota, provisional ownership, nested inbox/callback/provider/device/notification coverage, system migration UI, actual Electron/model or iOS device pass. Native/HTTP fixtures remain auxiliary.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false,
+    "pending": [
+      "Full-size/multiple/provisional voice and streaming quotas",
+      "Nested inbox/callback/camera originals and provider/device/notification schema",
+      "System migration UI and retired old-session/cold switch",
+      "Explicit revalidated recovery parity; voice/unread/lifecycle",
+      "API37 and existing environmental/original-owner matrices",
+      "Task/project business and iOS A6 paused"
+    ]
+  },
+  "migrationVoiceImportColdCheckpoint": {
+    "phase": "P7-5o",
+    "sourceBase": "7e074ae840ba20bb7941d7e611884c3e8844b71b",
+    "summary": "P7-5o：两环境各完成迁入后冷读、暂存候选跨进程激活两链路，writer均先退出再由新PID继续；原音频/未知回执/清单/尝试标记/只读策略、激活回执及源密文保持，重复激活保留后续草稿。共8原生辅助、8默认11字段保护，0远端写入；产品APK与5n相同，旧86项按原指纹匹配复用。",
+    "features": ["F47", "F55", "F64"],
+    "sourceSha256": "1f257bdde3f1e6d6df30ecbfe65bb21b700564030ea989419a9751ab085e6752",
+    "appSha256": "777b2b61967671a225c29e42908f6514b3c4468512e2dc70e6cd3cab5a84f3ab",
+    "runnerSha256": "f84608f0e21d8e4e707462990e2995e310b8b78da2f90bd588e7905091dd65d1",
+    "nativeAuxiliary": 8,
+    "defaultElevenFieldProofs": 8,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "chains": [
+          {
+            "chain": "post",
+            "writerProcessConfirmedExitedBeforeReader": true,
+            "assertions": {
+              "writerPid": 19773,
+              "readerPid": 19921,
+              "differentProcess": true,
+              "sameDeviceKeystore": true,
+              "originalImportedAudio": true,
+              "originalImportReceipt": true,
+              "originalManifestAndAttemptFences": true,
+              "importedVoiceObserveOnly": true,
+              "laterDraftPreserved": true,
+              "importedCiphertextUnchanged": true,
+              "sourceCiphertextUnchanged": true,
+              "remoteWrites": 0
+            },
+            "groups": [
+              {
+                "batch": "writer",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "cef1968bcc0af1a603bf02a1b358aed0ebdbc69156072485e3b805901b262d47",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "39698ac878704d917e36c31b3dbc3f31283539723f1b64742452bc41a5495e11"
+              },
+              {
+                "batch": "reader",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "70a72aeb942d36de63019fe67185d49cd43eee4ab72cf64008965b084783339a",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "4f99ddadb7ae301a6ee6be83234072416881b7eb1f12f5835c2c0d45c1b647bc"
+              }
+            ]
+          },
+          {
+            "chain": "staged",
+            "writerProcessConfirmedExitedBeforeReader": true,
+            "assertions": {
+              "writerPid": 20025,
+              "readerPid": 20142,
+              "differentProcess": true,
+              "sameDeviceKeystore": true,
+              "originalCandidateMatched": true,
+              "noCandidateReplacement": true,
+              "originalAudioAndOperation": true,
+              "originalUnknownReceipt": true,
+              "importedVoiceObserveOnly": true,
+              "originalImportReceipt": true,
+              "sourceCiphertextUnchanged": true,
+              "remoteWrites": 0
+            },
+            "groups": [
+              {
+                "batch": "writer",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "fde34286bf4e40f62c418b4970f3b8ba0fc593a7aab88842c455fca0d18beffe",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "d54c4a3275698955afd1979a39304d19b0711b7826e02eeac2469569557a534b"
+              },
+              {
+                "batch": "reader",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "1054137776579008a750706ad8b121410c4b8cb54e674d9d18a6762548bcfea9",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "f370ab420d6b8b03dc46a95005ee0f919e258025df2d6af8e8897931489ccf34"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "chains": [
+          {
+            "chain": "post",
+            "writerProcessConfirmedExitedBeforeReader": true,
+            "assertions": {
+              "writerPid": 3507,
+              "readerPid": 4121,
+              "differentProcess": true,
+              "sameDeviceKeystore": true,
+              "originalImportedAudio": true,
+              "originalImportReceipt": true,
+              "originalManifestAndAttemptFences": true,
+              "importedVoiceObserveOnly": true,
+              "laterDraftPreserved": true,
+              "importedCiphertextUnchanged": true,
+              "sourceCiphertextUnchanged": true,
+              "remoteWrites": 0
+            },
+            "groups": [
+              {
+                "batch": "writer",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "aa0ffab27d528ab83bb03b652dd6f2bbf8e91cc145765189b67112753d21f95f",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "39da9a74468af86a057fbf4ce6c1b603e53c496a9ee0b2e8f66319a4bda1ed48"
+              },
+              {
+                "batch": "reader",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "70bab0d7957d52e883fe46645132592be70259064c85362d9cc8454fb076fac5",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "c3e5788c5fc4f1f021d36fccf8a97ecc9a94c831b924bd21659dc7820f5f7f4c"
+              }
+            ]
+          },
+          {
+            "chain": "staged",
+            "writerProcessConfirmedExitedBeforeReader": true,
+            "assertions": {
+              "writerPid": 4436,
+              "readerPid": 4963,
+              "differentProcess": true,
+              "sameDeviceKeystore": true,
+              "originalCandidateMatched": true,
+              "noCandidateReplacement": true,
+              "originalAudioAndOperation": true,
+              "originalUnknownReceipt": true,
+              "importedVoiceObserveOnly": true,
+              "originalImportReceipt": true,
+              "sourceCiphertextUnchanged": true,
+              "remoteWrites": 0
+            },
+            "groups": [
+              {
+                "batch": "writer",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "0f5b742e4d631994f0fdb4c48bc4da2ff8de452c4ba8ffea786b0966fd9d281e",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "078309c871b2048d53faff932964e8de22090dc2058b1705d042813ca95b9f58"
+              },
+              {
+                "batch": "reader",
+                "nativeAuxiliaryMethods": 1,
+                "reportSha256": "a3e8564e2d5b02ed8c82587468b8b9cc31c0134823e7c61601e81d5d3bcc60a0",
+                "defaultElevenFieldProofs": 1,
+                "proofSha256": "f0161be2b23efdc9011c07f0d77469fde728f1a4dec99abd66d5df21928e2f39"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "matchedReuse": {
+      "phase": "P7-5n",
+      "productionApkExactlyEqual": true,
+      "allPriorSourceFilesExactlyEqual": true,
+      "onlyAddedFile": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceColdTest.kt",
+      "priorNativeAuxiliary": 86,
+      "priorDefaultElevenFieldProofs": 76,
+      "currentRerunClaim": false
+    },
+    "bounds": "Production sealed-voice store/export/candidate/generation; synthetic audio and original status, actual writer exit/new PID. No microphone, Electron/model, full quota/provisional/children/provider/systemUI or iOS device pass.",
+    "iosImpact": "Same original audio/draft/receipt and no-replay assertions; iOS source/A6 unchanged, independent voice-directory migration gap remains open.",
+    "observedUiFollowup": "Source review found VoiceInputStrip rendering raw voice.status; compiled English catalog alone is not runtime English UI acceptance. Next phase classifies app-owned status and preserves arbitrary external errors.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false
+  },
+  "migrationVoiceUiCheckpoint": {
+    "phase": "P7-5p",
+    "sourceBase": "f384c370a35cf3785995604db5de2aad5253ce70",
+    "summary": "P7-5p：语音正常/恢复状态与迁入只读异常携带明确App文案键，展示和读屏使用本机双语资源，外部错误原文不翻译。实际迁入会话AgentHubApp在两环境×中英×浅深色8场景通过：原ID查询、忙碌防重复、提示完整、外部原文和取消保留草稿/音频；另回归迁移/原语音与1749词条。共36辅助、26默认11字段保护。",
+    "features": ["F47", "F55", "F56", "F64"],
+    "sourceSha256": "fcdaf714958f116b4b55911d17fda3c2c998d1e795b1b99c9cfb969270457317",
+    "appSha256": "a50e43e3e31c97428bf9b4481e78cc644d81758fc58bf6f5811a2703a0efe851",
+    "runnerSha256": "1f73e5b4bf5bdd3b06781df51cd3eed38aabcabf9dda32b52e61e08a6b11deef",
+    "nativeAuxiliary": 36,
+    "defaultElevenFieldProofs": 26,
+    "cohorts": [
+      {
+        "environment": "owned-API26",
+        "groups": [
+          {
+            "group": "ui-en-light",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "55782380398415917e0827c0e351e9beab81d50e1aba27e275803baadfcf6b44",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["4e25aaeeea7d7a5217f5c07a07ad80ca6489eb944229acd017bbeaa626bd320f"],
+            "nativeUiAssertions": {
+              "language": "en",
+              "appearance": "light",
+              "actualDark": false,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "8f8e9e89d45d82a9ed0a2f070324a65a2bcd3899a118f78f354b5f83f326a6db"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "27af640135f4b90231bd00562a37ce9247971e471c4b61155506d28f5eca9bd0"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "5815c2c628bfee8137d48a7a709bafcfaecff29947fa80a87d279a82bb48ae65"
+              }
+            ]
+          },
+          {
+            "group": "ui-en-dark",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "1ca796e87bb5b08ccd0c397edfed2ad8b773acbb480a477c484fb0834450cc96",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["f1827227dbad3532d890e07d00b95435898f4e21a3f053fe0ebd526b58c62b55"],
+            "nativeUiAssertions": {
+              "language": "en",
+              "appearance": "dark",
+              "actualDark": true,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "fbc0ca8f296ebb7ab727473bafcf575424536e8d388db6ddaa28903e70c640e3"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "b1458ec2082965ff1088545a346927b3e688f81f157f4f8b6a80e1e11b4965b8"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "0754743f775cc29aedacf088bd67a8d01a0939e6865c4c95f477c7dcccb0d058"
+              }
+            ]
+          },
+          {
+            "group": "ui-zh-Hans-light",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "7df6a4160e53fb0b9020d589f5c86188a3d433d26bb8efb610dc800d2f51a44c",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["84a0a1f7d4ee0f60987beaecc747c31b6357ddc31686a82d365b1119d495890f"],
+            "nativeUiAssertions": {
+              "language": "zh-Hans",
+              "appearance": "light",
+              "actualDark": false,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "a27c699d4761c6b7b0d260e2c6304e9de229e07ec621243f7e0ed1fb4e38eb9b"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "a101e764799c467a00acc55c16179ce8fc67299aac4ec51ced69fa516ebb4c4c"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "3760c0779967299fda63151821c47a3045945da43c6f6dfdbc97aee1b0143d7f"
+              }
+            ]
+          },
+          {
+            "group": "ui-zh-Hans-dark",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "d275e544ad49efb859ef14773d8c48f7077733dea31136a6fbbc94017ca9de44",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["3549aa80fac94845ffd2a5b32c94f16a9b142812288316d58f9f3d29e1c5e5e5"],
+            "nativeUiAssertions": {
+              "language": "zh-Hans",
+              "appearance": "dark",
+              "actualDark": true,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "d4a41e21f1c6a00f55f94b2f1e86f59c9be9576b511058ed4d3bb05dc3a81739"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "bb27295dc85ace86dda49b5035a5febfac8bfcfefb2823d0a905bbc78baf7461"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "37b421aa0d5048ee956fbc1aee1f8638d1467df09ae4ce92462f056a5cc68ff1"
+              }
+            ]
+          },
+          {
+            "group": "core",
+            "nativeAuxiliaryMethods": 14,
+            "reportSha256": "07f3c71793ca39711c7581def8d5ff03d9829aeb016fc5784cd22da07588dd66",
+            "defaultElevenFieldProofs": 9,
+            "proofSha256s": [
+              "65dbd6706809ff426c6ea90067bbc6ff11157c0b0ab32e75e8d6e9a8eb1bd186",
+              "bacc4a092b1c2447cde0e6faad5ebe1020aa3987cbe24801791c996e4dd00831",
+              "4aa473da04d1fdbe4c939efdda00e6080271b081b0b7595c65f44c9a56954cda",
+              "568c468014f0160e9f7b7a2245d48001094df8f4efdd7668b1aa59d337d39aff",
+              "751bacb1f9f0d1887293cf3f0590b3ea0b0e5fb4a3f7526a562898d4e8bab612",
+              "17dd1097a21848f07ff31be2f43bf030ff63f68aeddcf92fdbbe99517f7fada0",
+              "9d940a46bf5f3ff1a89fd039d3be7bfc447d4ccbb28eb15c2e8def2b14b8ead3",
+              "9510b159f1968dde716e931b64ee444869dd88a372d9c251980e46f96af6caf1",
+              "6957d372c61c6e6c6cd7706eee2769473d8d2bfda8c06e3cb02ba7f8dfee7078"
+            ],
+            "compiledCatalog": {
+              "keysPerLanguage": 1749,
+              "languages": 2,
+              "runtimeValuesLiteral": true
+            }
+          }
+        ]
+      },
+      {
+        "environment": "physical-API33",
+        "groups": [
+          {
+            "group": "ui-en-light",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "2c4f307ff2702ccd64a0f983718d6bc6c1b956779318f1ce17dbe9d4f5ceabec",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["766782b2e6ede533832f34004d65b2c79cc78e97b9d3c19556dee9eae717660a"],
+            "nativeUiAssertions": {
+              "language": "en",
+              "appearance": "light",
+              "actualDark": false,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "3bcd90085ece1aae3a6b9346f7f1f314e8a1b51f0dfdc5500c38afe2292d099a"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "7c7fa4661f8d30f55b4acf23445dd5bcde935a4af83eb316af609999bfe1ae24"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "fb5a0f721a9bbe0faa66669b717ac7166ebe6d09ea0e35c14ffcc1942967be78"
+              }
+            ]
+          },
+          {
+            "group": "ui-en-dark",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "b3a2b067039a9a1a4f19ee2f560951d0bafb33c12cd418b5ee1fc2f56b647acc",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["eac002ad8fb0d87e4dfa86907abb41a3eabd439d392d4faca56ffacc102aec0f"],
+            "nativeUiAssertions": {
+              "language": "en",
+              "appearance": "dark",
+              "actualDark": true,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "b033e922c2d45eb7221e973cd4856fd38acea5239f55cb9731d900128458e26e"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "377cdca1aaa5900ee6a27c2823b2039e1fafd7dbdc8d6c082f4bb0d042a25f13"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "7f119317e282323c61ff0620020e27557f60868c5109a14abe8d3c138421cc7e"
+              }
+            ]
+          },
+          {
+            "group": "ui-zh-Hans-light",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "a7f7536a6c75052c418b66f83c90c7844d3c1daee35ab7228b27ec433a3edf2b",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["0e2f0c504b51409d91f8a269b81ffecc9a201c8a6047ea755b55e687441f41a5"],
+            "nativeUiAssertions": {
+              "language": "zh-Hans",
+              "appearance": "light",
+              "actualDark": false,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "0f7b4bb9742e70e065be9d18bd863c7ba8370c769bce918243adb81205a4a4c3"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "cd572f94361ad96e92011cfb8d6bd1fde2bd841ae715149ef410b0fb96a8bc30"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "9de254050b9e23032bf14455b147f505cd9b4cc2c48cd1a09c5f473b8d21cf3c"
+              }
+            ]
+          },
+          {
+            "group": "ui-zh-Hans-dark",
+            "nativeAuxiliaryMethods": 1,
+            "reportSha256": "f9f68f7fbc6fd0842fac0185c9142a141ea021fe7ec260a7aeed4310b1628276",
+            "defaultElevenFieldProofs": 1,
+            "proofSha256s": ["aa0f21587f1397747cd61379571ed0ab22abf53880b4830e1d7658e72a6f0d92"],
+            "nativeUiAssertions": {
+              "language": "zh-Hans",
+              "appearance": "dark",
+              "actualDark": true,
+              "statusWithinPanel": true,
+              "microphoneNotRequested": true,
+              "originalVoiceQueries": 2,
+              "voiceWriteCalls": 0,
+              "appliedTranscripts": 0,
+              "originalDraftAndAudioPreserved": true,
+              "originalMetadataUnchanged": true,
+              "externalErrorLiteral": true,
+              "busyActionDisabled": true
+            },
+            "nativeWindows": [
+              {
+                "name": "original-external-error-literal.png",
+                "sha256": "4535449881644cad4904d7024042fae2edf97e652672f83b82133cc60def4df1"
+              },
+              {
+                "name": "imported-voice-query-busy.png",
+                "sha256": "bec4c183b368082114f7c2fd0f7844b363b89d539b05d38221bcbac0ce94e7b6"
+              },
+              {
+                "name": "imported-voice-receipt-only.png",
+                "sha256": "bdd2663a1d41212f2d6c93e7c60da6131203fc06242b6a12c73776e516d30eef"
+              }
+            ]
+          },
+          {
+            "group": "core",
+            "nativeAuxiliaryMethods": 14,
+            "reportSha256": "84e76becfb6bea2eba2f4f62a43e91d4b3aa4ba7297ed8a7f2dd6c5064f270f5",
+            "defaultElevenFieldProofs": 9,
+            "proofSha256s": [
+              "335b9ac6cb48425f1a9f061eff5941378c547f5296c4a91273546803c1376f08",
+              "a728457ae2fccd4fca17ad5fe0a385e8bc037779a8375349bc930f80870518b6",
+              "a440173f030435fdef080da9efefc0d74daec4e71cb1930d24847b510cc1a755",
+              "972215ff43e31168cb2b5d7742dd5aa2abba9f854adb6c3b9a9bfbe0c5ccf6bb",
+              "d08c5eaa67c8847e88bb733aad52cdd7a15c4cbb7bc4b53b490830bf355c4281",
+              "2de3a81ac8f8ae56cb3524eba166369af97287289f48193f2cea20d3b5bdce11",
+              "4f5bb67031e278e2475897fef3641ceaad3f977b65ceb51078974b546b9241e4",
+              "71b551b4b3fe586e97ed3b789403213d5c9b7129627b248601782dea30c06ffe",
+              "80870250b23fa28e31aac3822874c093fc81d4f1bca25ef18dade301f3871972"
+            ],
+            "compiledCatalog": {
+              "keysPerLanguage": 1749,
+              "languages": 2,
+              "runtimeValuesLiteral": true
+            }
+          }
+        ]
+      }
+    ],
+    "sourceBoundary": "Normal REQUESTING/LISTENING/FINISHING/fallback states and explicitly restored original voice supply product-copy keys. ImportedVoiceReceiptOnly is a typed local failure. Arbitrary CodexCommandError/OS text remains literal; a synthetic external error equal to product key复制 stays复制 in English instead of becoming Copy. Known key is cleared on new operation/finish/reset and checked against current error.",
+    "nativeInteraction": "Real typed import -> fresh MobileSession.restore -> production AgentHubApp/VoiceInputController/VoiceInputStrip. Controlled allowed callback and synthetic deferred receipt; no microphone prompt. Busy control disabled and second finish produces no extra query; awaiting original audio fails receipt-only without prepare/upload. Second original query returns external literal; cancel keeps original draft and audio/metadata, no transcript applied.",
+    "visualReview": "24 PixelCopy owned-activity images retained. Eight receipt-only windows and API26 English-light busy window manually inspected; status bounds fully within panel, actions readable, original mixed text unchanged. Actual content theme is verified via production AgentHubApp callback; these tests do not verify MainActivity system-bar callback integration. API26 portrait1080x1920, physical portrait1080x2340; default fontScale1. Physical font differs from API26; configuration cause not asserted. Full font/rotation/AX and system UI matrix remains open.",
+    "catalogExaminer": "Removed stale fixed1699 count and1661 proof number; uses frozen current catalog keys/count and compares every compiled resource in both languages, plus literal runtime parameters.1749 keys/language passed on both environments; no product dictionary shortened.",
+    "otherObservedUi": "English connection caption still shows raw Chinese in synthetic connecting state. Empty-state English subtitle is near viewport edge; clipping is not proven without text-layout evidence. Recorded as separate P6/UI matrix followup, not hidden or claimed fixed.",
+    "iosImpact": "Matches iOS product-owned localization versus external text, busy/retained-original and no-replay assertions. iOS source/device unchanged in this phase and A6 paused. Full voice/migration UI and voice-directory migration gap remain open.",
+    "bounds": "Native fixture component/session scenarios only; no new Electron/model/microphone, system file migration page, full quota/provisional/child/provider or complete parity pass. P7 full migration remains active.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false
+  },
+  "mainSyncSpeedCheckpoint": {
+    "phase": "P7-5q",
+    "sourceBase": "5b3e1248ad7a533b625b59621edf178496fbc455",
+    "integratedMain": "f29432474bf286da5b48c0a47e07d2e65f279169",
+    "summary": "P7-5q：集成主线速度ID规范化与iOS显式多档菜单节点N066；Android产品APK与5p完全相同。补齐旧本地化验收器的原owner当前参数，保留所有原断言；两环境各5项速度/当前参数/未发送覆盖隔离辅助通过。 另两环境各5项共用夹具本地化回归通过，合计20辅助、20默认11字段保护。",
+    "features": ["F34", "F36"],
+    "sourceSha256": "be53e05d84e1cb5cb7668ea868615dd5034faa8b7a2344bae989c08a0c3cd8ea",
+    "appSha256": "a50e43e3e31c97428bf9b4481e78cc644d81758fc58bf6f5811a2703a0efe851",
+    "runnerSha256": "8755a6d51aeef8a27077408784b7157a3e9a40d670e8fedf92797cd94e43d5be",
+    "nativeAuxiliary": 20,
+    "defaultElevenFieldProofs": 20,
+    "cohorts": [
+      {
+        "environment": "API26",
+        "nativeAuxiliary": 5,
+        "defaultElevenFieldProofs": 5,
+        "logSha256": "e0d4cb9c53595a6ab7b029fcac5ef9181ae6e317986be099d8d87ca1e1ff72cb",
+        "evidenceSha256": "091d94fa0c147fd750cbe25180931aa379ad7b3314e391b4b301c3bf6843d426"
+      },
+      {
+        "environment": "physical API33",
+        "nativeAuxiliary": 5,
+        "defaultElevenFieldProofs": 5,
+        "logSha256": "f0861ed48af8f14e6f8b89b51407fae534e84b373de2a10a5ad63f6b130049d6",
+        "evidenceSha256": "a5267f33267fc4b16ba11443fe518a291a3959d2b5e6e963a3377dd88eca1387"
+      }
+    ],
+    "examinerCorrection": "Original fake owner omitted runtime generationSettings, while expecting next-send model in actual-owner toolbar. Product correctly showed Syncing. Fixture now explicitly supplies owner raw-model/xhigh/standard and asserts them before next-send menu interaction. Missing-owner, next-send-only, per-chat refresh and draft-isolation checks remain independently unchanged. Product source unchanged.",
+    "priorFailure": "Initial API26 group failed1/5; partial passes not counted. Physical initial group not started because another package instrumentation was active. Both original logs retained; no other app interrupted. Corrected candidate passed5/5 in each environment.",
+    "parity": "Android full speed menu selects stable ultrafast ID and localizes display only; Host maps fast to priority, keeps ultrafast, and uses current owner settings rather than stale prior turn. Existing current/next-send distinction remains. Incoming iOS explicit native menu preserved; no iOS device/A6 execution here.",
+    "visualReview": "Physical English generation/permission dialog and API26 actual-versus-next panel manually reviewed; actual owner and editable next values remain distinct and text/actions readable in these portrait default-size captures. Font/theme/rotation/full AX and live-owner speed writes remain open.",
+    "matchedReuse": "Same production APK as5p; only changed native file is MobileLocalizedControlsTest.kt. Prior5p 36 auxiliary and26 protection proofs remain matched reuse, not new passes; cold/voice evidence retains its original source/runner fingerprints.",
+    "ciReconciliation": "PR43 candidate CI10548 passed. First post-merge CI10549 was cancelled with context canceled; concurrency cancel-in-progress is enabled. Latest main CI10551 and mirror10552 passed. No observed assertion regression and no new remote repair dispatch or replay of completed historical CI task.",
+    "checks": {
+      "pnpmCheck": "passed complete combined-source invocation",
+      "rootLogSha256": "eeffd8b8f90b775cff45d00a4e321f51b758f1ec4796ef8b5712174e7c295f0a",
+      "frozenInputCount": 1472,
+      "frozenInputMapSha256": "d692c30ad87dddf13763f2b71cbe08bcda2ebd43f6cbcbd587490209a3ac752e",
+      "inputsMatchedBeforeAndAfter": true,
+      "nonzeroSkipGroups": [1, 2, 24, 22],
+      "skipsNotWindowsAcceptance": true,
+      "pnpmBuildIos": "passed simulator compilation only",
+      "iosBuildLogSha256": "ea32e75f46b3833954b205380659cc007151f51c189e6bbf3f2442cf3463c7b7",
+      "iosA6Executed": false,
+      "postRecordFormatAndParity": "passed after result registration; final result-only fields formatted separately",
+      "parityLogSha256": "94ddc4cf1b62ea57da850e84f167ae8e6c1d028165674a3fd83a03cdc9874b85",
+      "parityBaseLogSha256": "60e8e8fb548ef706713cd92e54ad86ffb89e39988565df22510effe19451c69b"
+    },
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false,
+    "bounds": "Native synthetic reads and menus only, no actual model/Host writes or full P7 completion. Full-size/provisional storage, child stores/provider/notifications, system migration UI and voice/unread/lifecycle remain open.",
+    "additionalSharedFixtureRegressions": [
+      {
+        "environment": "API26",
+        "nativeAuxiliary": 5,
+        "defaultElevenFieldProofs": 5,
+        "logSha256": "d78dcb3e74a31ba3e4f240aeb92ed3e795c77041e5c9e61fe1b4b2388701dbf4",
+        "evidenceSha256": "8a23a548fba4999fa293ee64762da1a23e227a718b19852c4ff9d6cfc84b7a5e"
+      },
+      {
+        "environment": "physical API33",
+        "nativeAuxiliary": 5,
+        "defaultElevenFieldProofs": 5,
+        "logSha256": "7893178dabafc894b5682655a1d7a8e0368e9b2bd76737fb76c7e1646e264091",
+        "evidenceSha256": "d415f8638b0fc44791c0671d8e6e7c73da97d9548ce10747df027a56060c8d00"
+      }
+    ],
+    "sharedFixturePhonePending": false
+  },
+  "chunkedCandidateCapacityCheckpoint": {
+    "phase": "P7-5r",
+    "sourceBase": "8f2890673fa6994670cf325c1488acfefc44b8b8",
+    "summary": "P7-5r：本机候选采用独立随机代次的256KiB加密分块及最后发布的小型认证头，旧内联候选保持只读兼容；二进制导出在完整分配前核对膨胀配额。有界多块激活/损坏/中断与旧契约两环境76辅助通过，54份默认11字段及22份全部原加密文件保护。满额录音成功迁移仍待文件流式实现。",
+    "features": ["F47", "F55", "F64"],
+    "sourceSha256": "c8b5ce88dd696a5d0d92680de4732c9c47e133c9538babc2c289155ff4aee399",
+    "appSha256": "1799444436e2a4a9fda1094adb0ef02edeac29680daeea9ffd9f7e58e96396d9",
+    "runnerSha256": "b2970b220a4f40ea9ace00e4b5427efa9a26db5c7ef76fcba2423723adf077d8",
+    "nativeAuxiliary": 76,
+    "defaultElevenFieldProofs": 54,
+    "allOriginalEncryptedFileProofs": 22,
+    "cohorts": [
+      {
+        "environment": "API26",
+        "groups": [
+          {
+            "group": "capacity-bounded",
+            "nativeAuxiliary": 7,
+            "defaultElevenFieldProofs": 7,
+            "allOriginalEncryptedFileProofs": 0,
+            "logSha256": "4ef2b336165d05ebe9e29d676b4ceb6979d217fbd99b6cf9a396502f1282b7b0",
+            "evidenceSha256": "e277400ef442b3510d458f992c18c0ab2fae38bef9e80ca6484403e0eaf82713",
+            "capacityObservation": [
+              {
+                "wavBytes": 9600044,
+                "durationMs": 300000,
+                "base64Bytes": 12800060,
+                "payloadLimitBytes": 8388608,
+                "heapLimitBytes": 50331648,
+                "elapsedMs": 326,
+                "remoteWrites": 0,
+                "maximumVoiceImportPending": true,
+                "explicitRejectBeforeWholeValue": true,
+                "sourceCiphertextUnchanged": true
+              }
+            ]
+          },
+          {
+            "group": "compatibility",
+            "nativeAuxiliary": 20,
+            "defaultElevenFieldProofs": 20,
+            "allOriginalEncryptedFileProofs": 0,
+            "logSha256": "3b7380a9af39bcfe2d694f4fb6c6b1337e87d4104746faefbb6c04814dbccedc",
+            "evidenceSha256": "ffec112ca90d3c2f49133c43d6220f091c3de7ba389fd2d09793410318d789e7"
+          },
+          {
+            "group": "candidate-a",
+            "nativeAuxiliary": 6,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 6,
+            "logSha256": "5e547cf137a76da758f775fb1aea773de352bf4257f47bb981530458aa364619",
+            "evidenceSha256": "ef2b42285b29cf1faeeefce86591526a67db8fa324ae9c3d4e5cfb3b7fc3aeeb"
+          },
+          {
+            "group": "candidate-b",
+            "nativeAuxiliary": 5,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 5,
+            "logSha256": "a622c6e05ded9bc99de81e1eb2f2e031a437be221c0e760284567258890c52b4",
+            "evidenceSha256": "4c6b29606ea15fe400470630e392823e9e498352b17cd57ac069bbe2d83cf76a"
+          }
+        ]
+      },
+      {
+        "environment": "physical API33",
+        "groups": [
+          {
+            "group": "capacity-bounded",
+            "nativeAuxiliary": 7,
+            "defaultElevenFieldProofs": 7,
+            "allOriginalEncryptedFileProofs": 0,
+            "logSha256": "0620a9fb49260945054f8474a39c45e98b0457bc22be003c9c7050fcff2245e0",
+            "evidenceSha256": "106a714c999bccdc6f6c87ac42a194cd3d14bd4ab16446ddf9a5c58c491c3221",
+            "capacityObservation": [
+              {
+                "wavBytes": 9600044,
+                "durationMs": 300000,
+                "base64Bytes": 12800060,
+                "payloadLimitBytes": 8388608,
+                "heapLimitBytes": 268435456,
+                "elapsedMs": 2371,
+                "remoteWrites": 0,
+                "maximumVoiceImportPending": true,
+                "explicitRejectBeforeWholeValue": true,
+                "sourceCiphertextUnchanged": true
+              }
+            ]
+          },
+          {
+            "group": "compatibility",
+            "nativeAuxiliary": 20,
+            "defaultElevenFieldProofs": 20,
+            "allOriginalEncryptedFileProofs": 0,
+            "logSha256": "9c3c77916911916b3634447b84ba5000af80af0eb3c65a1f82ce856ab7cbd19f",
+            "evidenceSha256": "115f6f8ce55e75de980e0e2f24b6429b54a675f9a8356d19d59f3683223f9a88"
+          },
+          {
+            "group": "candidate-small-1",
+            "nativeAuxiliary": 2,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 2,
+            "logSha256": "5661fb28e97d3197c6aa7499f760e47867425fa09bf09d04fd46c5c33062d6b5",
+            "evidenceSha256": "65a2eba3acb0311416d63231c7bdf99e1926fb32f5b6526b15f709323ccb08da"
+          },
+          {
+            "group": "candidate-small-2",
+            "nativeAuxiliary": 2,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 2,
+            "logSha256": "1b0049386e16df5f15bae3f83929144a96be4a09fd454e5d2778593f6de3de35",
+            "evidenceSha256": "3082456e93e39075209652e4b2016b8234fc77541ed9c2ff0489589bb3f02a31"
+          },
+          {
+            "group": "candidate-small-3",
+            "nativeAuxiliary": 2,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 2,
+            "logSha256": "6c4ea3d1806306f44697ebfe9cc30cbbd25995c138058860b380c78cb634b4c3",
+            "evidenceSha256": "62778b107214e79e25058b3243eb7c3badd57b856e8d2efc7d4bd3e12ee84379"
+          },
+          {
+            "group": "candidate-small-4",
+            "nativeAuxiliary": 2,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 2,
+            "logSha256": "d3dd9568fa02e354ce74fa3c7beaf3b13f69b3a8c653c130b94d01f464d27727",
+            "evidenceSha256": "59d253bbe1207d7a9fcdbcde4b9f551e2ae1b8079d3ed335a02b50170b096ece"
+          },
+          {
+            "group": "candidate-small-5",
+            "nativeAuxiliary": 2,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 2,
+            "logSha256": "d4b95979500fa2cae5b51e02865bc6c7077d9c81038ad0f6449b13182142794d",
+            "evidenceSha256": "2487196dae835818fbb6f6e2518f4e555953c771ff4ceeda2285194c5601b850"
+          },
+          {
+            "group": "candidate-small-6",
+            "nativeAuxiliary": 1,
+            "defaultElevenFieldProofs": 0,
+            "allOriginalEncryptedFileProofs": 1,
+            "logSha256": "5cfe3b4f067594c3718f26b83bcf961fe1339ed0191b0517a72f73bada99da97",
+            "evidenceSha256": "7abf433070e796ad5bbd86be7adfa9ffc040f463026fab57a1dace92e31c395a"
+          }
+        ]
+      }
+    ],
+    "candidateContract": "Local version2 header contains original candidate ID, complete plaintext digest, exact record/byte counts and ordered per-chunk size/hash under one lock.256KiB chunks use format4 logical names bound to generation/index and file nonce. Each is written/read back before sole AtomicFile header publication. Same-ID/digest reads original ciphertext; replacement requires exact original receipt; failure before publication removes only newly created chunks. Ambiguous header acknowledgement preserves possibly published chunks. Prior generations are retained for explicit retirement, never swept.",
+    "compatibility": "Portable password envelope remains version1 and existing clear archive1/2 remain unchanged. Local inline candidate1 is read and checked without rewriting; only an explicit replacement writes local2. Existing immutable intent/results and imported read-only restrictions remain.",
+    "negativeRecord": {
+      "phase": "P7-5r-initial-capacity",
+      "status": "failed",
+      "environment": "API26",
+      "growthLimitBytes": 50331648,
+      "attemptedAllocationBytes": 25600136,
+      "failure": "OutOfMemoryError during NativeSessionStorage.strictBytes inside migrationTypedArchiveSnapshot",
+      "sourceSha256": "554288a79cb4191e26c4f4d711ebc4ce05983936e87d10bbbf0f0ba462cd23b0",
+      "appSha256": "251bc02e356ede66266dda53aecd17c7c4c7bdaaaf329f78b4d8c20839046a6c",
+      "runnerSha256": "dcf512e55d7e278497748ef2b26efaede27a398827791f4bb9caa6eaa1f180f1",
+      "originalResultNotOverwritten": true,
+      "fullCapacityNotPassed": true,
+      "resolution": "Keep original8/12MiB bounds; authenticate binary header and reject base64 expansion before whole-value allocation. File-stream full migration remains priority, not accepted by this local chunk stage."
+    },
+    "capacityBoundary": "Do not increase8MiB payload/12MiB envelope based on the initial16/24 trial. API26 actual48MiB heap exhausted during base64 UTF8 accounting. Authenticated format4 size or legacy format2 declared size now gates base64 expansion before whole binary decoding; maximum9,600,044-byte WAV is explicitly rejected with original bytes preserved, not counted as migration success. Complete attachment/aggregate and full stream encryption/import remain priority.",
+    "oldCandidatePhoneTimeout": "Original6-method phone group hit240000ms during fifth method; four partial completions not counted. Same source/app/runner rerun in1-2-method fresh private fixture groups; original failure retained, timeout and assertions unchanged.",
+    "checks": {
+      "nativeBuild": "passed debug acceptance app and runner",
+      "mobileParity": "passed after result registration, including base HEAD source coverage",
+      "fullPnpmCheck": "not rerun: prior P7-5q full result retains its1472-input fingerprint; only current native files and parity/docs changed",
+      "iosBuild": "not rerun: iOS inputs unchanged since P7-5q successful simulator build; no current iOS device evidence",
+      "parityLogSha256": "f9d7adcbcf7f6b3ed8c2a6e8136b82a5c27b73189abd3802abcf28f519821ec1"
+    },
+    "iosImpact": "iOS shares password-envelope primitives and safety assertions, not Android local candidate schema. Source/UI untouched; independent iOS voice-directory migration gap remains open; A6 paused.",
+    "uiImpact": "No new product screen. Internal chunk/size handling only; system migration page/old-session retirement, full voice/unread/lifecycle and API37/visual matrices remain open.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false,
+    "wholeMigrationComplete": false
+  },
+  "chunkedCandidateColdCheckpoint": {
+    "phase": "P7-5s",
+    "sourceBase": "db0ebe76925b77e7f16a2c5a2d9606731e977c22",
+    "summary": "P7-5s：两环境分别核对至少3块候选的暂存后冷激活、激活后冷读，writer先退出且新PID继续；原候选/音频/未知回执/只读限制与后续草稿保持。另精确核对存储文件未超限但Base64膨胀超额时的提前拒绝。共10原生辅助、10默认11字段保护，产品APK与5r完全相同。",
+    "features": ["F47", "F55", "F64"],
+    "sourceSha256": "ea757ffe0826c2748492cfe036a4f0dc47252757f402aed9c33b0cdf9aabce60",
+    "appSha256": "1799444436e2a4a9fda1094adb0ef02edeac29680daeea9ffd9f7e58e96396d9",
+    "runnerSha256": "c5f05d123508e0798492e907dc0d41db7680103770e031f0db060e585ae18745",
+    "nativeAuxiliary": 10,
+    "defaultElevenFieldProofs": 10,
+    "coldChains": [
+      {
+        "environment": "API26",
+        "kind": "post",
+        "candidateChunks": 3,
+        "writerProcessExitedBeforeReader": true,
+        "differentReaderPid": true,
+        "proofs": {
+          "writerPid": 24665,
+          "readerPid": 24806,
+          "differentProcess": true,
+          "sameDeviceKeystore": true,
+          "originalImportedAudio": true,
+          "originalImportReceipt": true,
+          "originalManifestAndAttemptFences": true,
+          "importedVoiceObserveOnly": true,
+          "laterDraftPreserved": true,
+          "importedCiphertextUnchanged": true,
+          "sourceCiphertextUnchanged": true,
+          "remoteWrites": 0
+        },
+        "groups": [
+          {
+            "side": "writer",
+            "logSha256": "a6f0204d5fef99880f7e193a8330ffeb973ac107fa69fef94a468f1742719b5a",
+            "evidenceSha256": "cfd052f8864e722ba43859257c5bcd05fbba0d2fe9498cd05109b9425c9f79eb"
+          },
+          {
+            "side": "reader",
+            "logSha256": "9c3f4778d00c562e2a357ec71efd77aaa455978221f5855c24ca4a65a74de052",
+            "evidenceSha256": "91c06aea247fe92f53d33e8902a80d9abd0d70bd494766ce8e1d2edd14e115cd"
+          }
+        ],
+        "fixtureSha256": "9ed75838f401f50a939a3ecfa5a9c776e2bb2dda64efdf084d6b10c12482e76c"
+      },
+      {
+        "environment": "API26",
+        "kind": "staged",
+        "candidateChunks": 3,
+        "writerProcessExitedBeforeReader": true,
+        "differentReaderPid": true,
+        "proofs": {
+          "writerPid": 24916,
+          "readerPid": 25035,
+          "differentProcess": true,
+          "sameDeviceKeystore": true,
+          "originalCandidateMatched": true,
+          "noCandidateReplacement": true,
+          "originalAudioAndOperation": true,
+          "originalUnknownReceipt": true,
+          "importedVoiceObserveOnly": true,
+          "originalImportReceipt": true,
+          "sourceCiphertextUnchanged": true,
+          "remoteWrites": 0
+        },
+        "groups": [
+          {
+            "side": "writer",
+            "logSha256": "9c9500a44907f1eb6fbcf84d68531206342284e26f1d7f24f03e4646dfe8475f",
+            "evidenceSha256": "783e110a962a1df78554cbc8ad0f15011ceff806a73746a20f696489fbde2b35"
+          },
+          {
+            "side": "reader",
+            "logSha256": "7af43cba1e0221580fd17a7b9238a68f4ff815e3a2502dc7599ecce67894537c",
+            "evidenceSha256": "983ddba5289cc3eb23b972514b024a8620662272973658bd63def6619601b9c7"
+          }
+        ],
+        "fixtureSha256": "9d99fb084c399dfca07a24d26ef152804b5b870ca4eb9b2b61fccc51d731f9cd"
+      },
+      {
+        "environment": "physical API33",
+        "kind": "post",
+        "candidateChunks": 3,
+        "writerProcessExitedBeforeReader": true,
+        "differentReaderPid": true,
+        "proofs": {
+          "writerPid": 1614,
+          "readerPid": 2384,
+          "differentProcess": true,
+          "sameDeviceKeystore": true,
+          "originalImportedAudio": true,
+          "originalImportReceipt": true,
+          "originalManifestAndAttemptFences": true,
+          "importedVoiceObserveOnly": true,
+          "laterDraftPreserved": true,
+          "importedCiphertextUnchanged": true,
+          "sourceCiphertextUnchanged": true,
+          "remoteWrites": 0
+        },
+        "groups": [
+          {
+            "side": "writer",
+            "logSha256": "7f2adf84a68ef245c1563f1f934d712ffa5f3efbf1b05f789e7c2f32ac3b2389",
+            "evidenceSha256": "9fff4e5be9035c8b6a5e98b139397204ea6b5e77ffac3ed54df7928d9e14df4b"
+          },
+          {
+            "side": "reader",
+            "logSha256": "bdf781a8e2ef7fc53214fa5fdf92d182f34913fd8c71617badda444b1f729a2a",
+            "evidenceSha256": "11c2107fa7324da08accb6a76ecb1f976d7c3e8065d7cb53c55633d445d21259"
+          }
+        ],
+        "fixtureSha256": "0e2c60bae0a4406f9db4b1fcf366700ca955ba8d4d6936230cbf5367e233de2c"
+      },
+      {
+        "environment": "physical API33",
+        "kind": "staged",
+        "candidateChunks": 3,
+        "writerProcessExitedBeforeReader": true,
+        "differentReaderPid": true,
+        "proofs": {
+          "writerPid": 4214,
+          "readerPid": 4699,
+          "differentProcess": true,
+          "sameDeviceKeystore": true,
+          "originalCandidateMatched": true,
+          "noCandidateReplacement": true,
+          "originalAudioAndOperation": true,
+          "originalUnknownReceipt": true,
+          "importedVoiceObserveOnly": true,
+          "originalImportReceipt": true,
+          "sourceCiphertextUnchanged": true,
+          "remoteWrites": 0
+        },
+        "groups": [
+          {
+            "side": "writer",
+            "logSha256": "079ee64a50887dff24c41038c699701db3a13af366add6cf4d1284801e9abb9b",
+            "evidenceSha256": "9d1997b403beb99b47131ba6261bb9a2e6c0d3a54eadc91f9570ce4877cc40e4"
+          },
+          {
+            "side": "reader",
+            "logSha256": "3d8f1a4a8f918e6183720f6ff919b9643c5e9fe06ba363283a1e6d98ff1b6eb9",
+            "evidenceSha256": "b8a76475fd0f6f4359a801f081c4505a7355ec0fd8c4396ac80a77036c87a91f"
+          }
+        ],
+        "fixtureSha256": "342e3b2410d8f364da2d77bb27d104611cd4f32bcce63a8a5e51bf1639f9fcb5"
+      }
+    ],
+    "exactExpansion": [
+      {
+        "environment": "API26",
+        "nativeAuxiliary": 1,
+        "storedBinaryBelowPayloadLimit": true,
+        "base64ExpansionAbovePayloadLimit": true,
+        "failsBeforeWholeBinaryDecode": true,
+        "sourceCiphertextUnchanged": true,
+        "logSha256": "a1403cde609ac3e4947452d681140092d25cecc88f52ec7dc6ca115c81d6dd72",
+        "evidenceSha256": "bb72d2df7de10292341a2a178924fe8992415616bdad72466179685ee7e13908"
+      },
+      {
+        "environment": "physical API33",
+        "nativeAuxiliary": 1,
+        "storedBinaryBelowPayloadLimit": true,
+        "base64ExpansionAbovePayloadLimit": true,
+        "failsBeforeWholeBinaryDecode": true,
+        "sourceCiphertextUnchanged": true,
+        "logSha256": "ac0a79de5a7fe20b239e40a159166e521ec585947fb3d43be347d4a6ed359dfe",
+        "evidenceSha256": "2971cf11784f90fbf6da90d4de15ef0696402a835ec5591556d327904e2eb03b"
+      }
+    ],
+    "changedNativeFiles": "Only NativeMigrationVoiceColdTest.kt and NativeMigrationCapacityTest.kt; test PCM increased from131072 to524288, explicit localVersion2 and >=3 chunk assertions at writer and reader. No production source change.",
+    "preflightRecord": "First staged phone writer did not start due another package active instrumentation. Original preflight retained; no writer operation was submitted there. Later idle preflight allowed a new private writer/reader chain. No other package interrupted.",
+    "matchedReuse": "5r76 auxiliary/54 default/22 all-original proofs retain original source/runner fingerprints and match the exact product APK; not counted as new executions. Original API26 OOM/phone6-method timeout retained.",
+    "iosImpact": "Compare original IDs/bytes, fresh-reader authority and no-replay assertions with iOS migration source. No iOS source/device/A6 execution in this phase; independent iOS original-voice-directory gap stays open.",
+    "checks": {
+      "nativeBuild": "passed acceptance app/runner; same product APK as5r",
+      "mobileParity": "passed including base HEAD source coverage; final result-only fields formatted separately",
+      "fullPnpmCheck": "not rerun; native-only examiner/docs delta from5r; P7-5q full check retained as prior fingerprint evidence",
+      "parityLogSha256": "a7e32c3c6f8ec2722c1ee092ece40b52d12f0f80d9e0c27a7f8dd8ffa2d35852"
+    },
+    "wholeMigrationComplete": false,
+    "remaining": "File-based streaming for full voice/attachments/aggregate capacity; provisional WAV ownership, child stores/provider/device/notification contracts; system export/import UI and old-session retirement; then voice/unread/lifecycle.",
+    "newModelInputs": 0,
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1,
+    "unknownOperationsReplayed": false
+  },
+  "parallelMainVoiceIntegrationCheckpoint": {
+    "phase": "parallel-parent-main-integration",
+    "baseCommit": "2ad9d979cdfc77099d4f5e8c1365886e07947466",
+    "incomingMain": "2ffdc4fcaee6f97bdd77a8496513c322ecc77e4e",
+    "nodes": ["N067", "N068"],
+    "scope": "主统筹集成main2ffdc4fc/N067/N068停止录音提示：保留双侧声纹/居中48dp停止入口，同时将忙碌、监听状态和读屏继续解析5p的App文案来源，外部错误原文不翻译。中央词条合并为1750；源码合并与当前原生验收分开。",
+    "conflicts": {
+      "VoiceInputView": "Upstream listening row plus local statusCopyKey resolver in busy/listening/failure/accessibility",
+      "design": "Both appended design records retained",
+      "manifest": "Strict additive merge preserved397 old change IDs before parent record",
+      "generatedProductTable": "Regenerated from merged manifest"
+    },
+    "checks": {
+      "androidBuild": "passed acceptance app/runner",
+      "iosSimulatorBuild": "passed simulator compilation, no device/A6",
+      "mobileParity": "passed after merged1750 catalog hashes were explicitly registered; original stale-coverage failure retained",
+      "restoredVoiceUi": "10 native auxiliary,10 full default-data protections; no microphone, Host/model input or live listening acceptance"
+    },
+    "notClaimed": [
+      "full listening/microphone/new voice finish/native model",
+      "full P7 P8 P9",
+      "API37 or iOS A6"
+    ],
+    "newModelInputs": 0,
+    "unknownOperationsReplayed": false,
+    "sourceSha256": "90b44726e45ee2eb50bb2e217b3f490433adb037133729fbc75bb84b9cb1e20b",
+    "appSha256": "da77d0a39730febabc4fb24d5d35f90e30b3659d6f26ca9f2d56523477b36b73",
+    "runnerSha256": "310b664dcd483c5b24112abeb2d2a7a48a7b109fce920e440e8db77d34a4b438",
+    "nativeAuxiliary": 10,
+    "defaultElevenFieldProofs": 10,
+    "groups": [
+      {
+        "environment": "API26",
+        "language": "en",
+        "contentTheme": "light",
+        "nativeAuxiliary": 2,
+        "defaultElevenFieldProofs": 2,
+        "logSha256": "ca7c134a7fdcafc518e040ea00ea62b9a24bba6ada3421e733b0e2feb2994fac",
+        "evidenceSha256": "89009ebae40fe04f968f0086f232545386758081ca0d657522334a6611d7b1a2"
+      },
+      {
+        "environment": "API26",
+        "language": "en",
+        "contentTheme": "dark",
+        "nativeAuxiliary": 1,
+        "defaultElevenFieldProofs": 1,
+        "logSha256": "8c2e593efc55205123281d524923841452d58767581817414afb2d9f66b76659",
+        "evidenceSha256": "fa0860304e6569eec02136470f56d14f8de15b274756d256aea16cee10cfd8cf"
+      },
+      {
+        "environment": "API26",
+        "language": "zh-Hans",
+        "contentTheme": "light",
+        "nativeAuxiliary": 1,
+        "defaultElevenFieldProofs": 1,
+        "logSha256": "49ea7c0347603c774f4b523d678841e1b46a368c74647d1a87d8bcd0be2371ca",
+        "evidenceSha256": "90689a0030aeb91abca175e5d903dd5713cc54263d634c0633042a45c54fc1f4"
+      },
+      {
+        "environment": "API26",
+        "language": "zh-Hans",
+        "contentTheme": "dark",
+        "nativeAuxiliary": 1,
+        "defaultElevenFieldProofs": 1,
+        "logSha256": "7cbf43b964847e1b24b7fc600725215605b33f6334b7c27b7cb36fa8f7ff0eb3",
+        "evidenceSha256": "933860a36220bd6ed77b4f18bcf913929531590231c30fd446c0a93f8a0da6fa"
+      },
+      {
+        "environment": "physical API33",
+        "language": "en",
+        "contentTheme": "light",
+        "nativeAuxiliary": 2,
+        "defaultElevenFieldProofs": 2,
+        "logSha256": "dab2594329d1f1a0bb52c589b84ec6ba3951711f7373dd1df146276e5785966e",
+        "evidenceSha256": "2b141ca67effc86ef9aab9fde8beb17801569c0dbdedfd0a3970f8eddae4adf6"
+      },
+      {
+        "environment": "physical API33",
+        "language": "en",
+        "contentTheme": "dark",
+        "nativeAuxiliary": 1,
+        "defaultElevenFieldProofs": 1,
+        "logSha256": "d9789ab6647e7f92b644772ea12b01a56fd6c65dca6d1311d9ec145900fc58bf",
+        "evidenceSha256": "7e92a7c9084b7887ecd470b166c1530bce15a584142f0566c89f50c8765718e2"
+      },
+      {
+        "environment": "physical API33",
+        "language": "zh-Hans",
+        "contentTheme": "light",
+        "nativeAuxiliary": 1,
+        "defaultElevenFieldProofs": 1,
+        "logSha256": "870068c163661a841a51ae3d3a635fe3b619fc22097e3568b6a76370e97ff566",
+        "evidenceSha256": "1a2ce635e1c0171283171b0ae6a4f8a456023a8addea62844a21cb1b7a07bd32"
+      },
+      {
+        "environment": "physical API33",
+        "language": "zh-Hans",
+        "contentTheme": "dark",
+        "nativeAuxiliary": 1,
+        "defaultElevenFieldProofs": 1,
+        "logSha256": "50b657bf6c42562122f8fa78703767d70f923e68b6c8d880650c0387e98da267",
+        "evidenceSha256": "3071f32d8b63bd98e5b15aa16d3954b04e2c8098054d806e5b9f1fc218074d37"
+      }
+    ],
+    "visualReview": "Eight owned receipt-only windows manually inspected: Chinese/English text and controls readable and status within panel.24 PixelCopy frames retained across busy/receipt-only/external-literal states. Content theme only; system bars/full fonts/rotation/AX remain pending. Physical font differs from emulator; cause not asserted. Existing English connecting caption still Chinese and empty subtitle edge observation remain open.",
+    "allPhasesCumulativeConfirmedInputs": 221,
+    "p4CumulativeInputs": 205,
+    "unknownSubmissionAttempts": 1
+  },
+  "parallelFirstStageIntegration": {
+    "checkpoint": "PAR1",
+    "evidence": "docs/plans/android-alignment-20261022/parallel/first-stage.json",
+    "sourceSha256": "97365e09a18026eaedd7e8257f861d363923b1151aba2b3599a2f6076a28ba34",
+    "nativeAuxiliaryPassed": 103,
+    "defaultElevenFieldProofs": 22,
+    "realDev": false,
+    "newModelInputs": 0,
+    "fullPhaseClosed": false,
+    "phoneListeningUi": "timeout-pending-root-cause",
+    "api37": "not-run"
   }
 }

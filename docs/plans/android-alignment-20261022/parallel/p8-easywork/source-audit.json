@@ -1,0 +1,283 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "sourceBase": "1e908bea1ac75341e17e56a518d7bebd46620c4d",
+  "auditedSourceSetSha256": "f8aa3008a9ba49a528742b1c114a200b0f1b1f35c5bfeb58d54f83b1b3440153",
+  "sourceFiles": {
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": {
+      "sha256": "edf3d8b09fda67769f58e9a409f3a1b6db3b4866412169e24b4b52b0673c8454",
+      "lastChangingCommit": "d2a234ca3ee834d0cd124820f862c29b3b7f1c03",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": {
+      "sha256": "2487ed49d0ea3db78eaec8f71d79e422f1f0dde865bb3ba44154eba946961094",
+      "lastChangingCommit": "d95987c67b941ed14c5443f19aeb25548f7196a5",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": {
+      "sha256": "c8acede9f47f2f98e2ba0bbc7dbc86d06c0a0d52f1c9c0d7a9240d301e160921",
+      "lastChangingCommit": "e866d94998887b7468858762e94cf57bd468a06d",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkCrypto.kt": {
+      "sha256": "e6e48453741aa3d5fd10a059f5325910a1e0dd34451d74507a1955d2258ba091",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDPoP.kt": {
+      "sha256": "255db62be9e99719c7f2c2a3bdcac8b9ac29b5f5a90edf44de6862e5ff6e03ba",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceAuthorization.kt": {
+      "sha256": "d0bca348e5ef86fea45332ae2d0ce94aeba385eb7c78d1264fb117a8a4e1ac45",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDeviceDelivery.kt": {
+      "sha256": "5df81fb9bc5846a8550bed5e20ed529aec3529a21a2be25dc1e835866200c686",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt": {
+      "sha256": "79d5be5dc30e8b63cc3303aa6ac78135e36196ea07adebe138427e28b096c809",
+      "lastChangingCommit": "f54be8195177901b17d53dcbe994a0c46c9dcde7",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkEventSignal.kt": {
+      "sha256": "a53a1eabd7104d3f573aa872e4863884ce1934ec0935ea413d6cf8b0e5485f19",
+      "lastChangingCommit": "da2e8971d825b12dd931c85727bed5e82489d55a",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkLogin.kt": {
+      "sha256": "0b63f3f51435986be1f9b6f413a26a31dbf9a7ce6fb25789e81f183d4a0db99d",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkModels.kt": {
+      "sha256": "b8b5012f1e5d09a421f5a033c41357331d33b238644b45aa29a9cdf2887aae0c",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkPairing.kt": {
+      "sha256": "ccf9ec5439bc431ff129a35954ef1fe4b92a879ba46fa10a594a15f7d72859e0",
+      "lastChangingCommit": "f54be8195177901b17d53dcbe994a0c46c9dcde7",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkReceiptNormalization.kt": {
+      "sha256": "9f8987f68589a04527d88fb7a344d6ff2a0b017b8f57d28b506f7a4ea8c8ffe2",
+      "lastChangingCommit": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": {
+      "sha256": "3977703c145c283cd643e3cd20df709a2a81378fd625e8fff8728767c331ad58",
+      "lastChangingCommit": "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkThreadSync.kt": {
+      "sha256": "cc56d0a9ec934af98213009098b4bce220e5002d255af4f7f603aad50ac5d0be",
+      "lastChangingCommit": "cde9b76e2b07e9da08293ad06f17ce35d5fe535d",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": {
+      "sha256": "43d25b9209c2e1bfd729d188115950fadde1423eaa652c7e9d8745f608912491",
+      "lastChangingCommit": "cde9b76e2b07e9da08293ad06f17ce35d5fe535d",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": {
+      "sha256": "db64ecf05c60fa566ce1b903daef67c5360e2e4d7f0204bfc5523b9c916c5923",
+      "lastChangingCommit": "cf727dcf6a51212ac70badd24fdd4fce928640ed",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileRuntime.kt": {
+      "sha256": "f6ad26f417c46767d18a80f5d5167dcea83d2466d1f73250a70d057a8674e599",
+      "lastChangingCommit": "093df54fb8c053a6ae37e80caac7434f60e32334",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+      "sha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+      "lastChangingCommit": "fca7283a3ed7b257b11b27e2ff30ffc59a15d8d4",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": {
+      "sha256": "bff0dfc6a8ae62a703b2e868abcf0c065846d1cd3832d65b95b421fd4696ad94",
+      "lastChangingCommit": "fd57175de4b2e441b6b5da9899c225f794fbe20c",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": {
+      "sha256": "497119aa7526717c2d0c71691fb0191055ba16244e497c16a34dd584543daf7d",
+      "lastChangingCommit": "db0ebe76925b77e7f16a2c5a2d9606731e977c22",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/PlanPanels.kt": {
+      "sha256": "0939701818e0c2749837c35bd6b46fa51cbcbb91f19605c1293fac16d1d731c2",
+      "lastChangingCommit": "6980671a046344891a318adc8595937be6eb12d7",
+      "matchesAssignedBase": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": {
+      "sha256": "7e9ad03b7ae965c00b469ea5f01bc573bc22e392e39fa419494f98508311c711",
+      "lastChangingCommit": "e866d94998887b7468858762e94cf57bd468a06d",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/AgentClient.swift": {
+      "sha256": "e9b2f2a2d21e25d17f228b2c89d7d8a9203679c710a72c59fca005f014e464f9",
+      "lastChangingCommit": "ab4824ff4e6499b6e147f4b52ca64dd9b639cec0",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/EasyWorkAgentClient.swift": {
+      "sha256": "2fd43e7147ce0ec3ebf024344a1feba5755e9eed8126c7c7904f8ee031dec360",
+      "lastChangingCommit": "0e22a1c82f45ecc17ce89c72fe62417e52126c23",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/EasyWorkDeviceAuthorization.swift": {
+      "sha256": "205881522de1c4c0a08a4871f3bb9119bc08345e94b64501bf21de590a5ec283",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/EasyWorkDiscovery.swift": {
+      "sha256": "d404184238dc74e2c747c4204b3d4564ce3f015e59f1d6d77911452aec4612e1",
+      "lastChangingCommit": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/EasyWorkPairing.swift": {
+      "sha256": "1c443b52ac637b22fccec2df78fb6bb40290655953cf2c0471abe3ca8d5ae616",
+      "lastChangingCommit": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/EasyWorkSession.swift": {
+      "sha256": "2de9425769e9e6c0928356cb88914648c2aae4ac8103dc651eb773d20faa8e3d",
+      "lastChangingCommit": "da2e8971d825b12dd931c85727bed5e82489d55a",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/EasyWorkThreadSync.swift": {
+      "sha256": "52b4bfa9045f708d1b3510ab502045d5ca8886e79ce799785d95718580d070cb",
+      "lastChangingCommit": "da2e8971d825b12dd931c85727bed5e82489d55a",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/EasyWorkTransport.swift": {
+      "sha256": "95ee7c04e1382b78daa063d92d0d2bce68cb4aa2ca02fa8d59a350f3c861a45b",
+      "lastChangingCommit": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/HostService.swift": {
+      "sha256": "ab6e4642a46db2f60b5f1d9969986e3d8661d5b3db1a739fa4b7aae3e0ebb1e8",
+      "lastChangingCommit": "3f843f22935b356818f4603e7bb3c693573a49c3",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/Models.swift": {
+      "sha256": "71552f93b594644d0d78f1866d5736c355cda4e40862dc8ecc48fd2284e692bd",
+      "lastChangingCommit": "141613dc3a7eae9dd4f2caa8722784b6e18107e7",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/RootView.swift": {
+      "sha256": "ff2a47a7470c8b4f0eecc9b5fc7afe8a4ebad8d19bf5703757bba3a855ad4ef4",
+      "lastChangingCommit": "cf727dcf6a51212ac70badd24fdd4fce928640ed",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/SessionStore.swift": {
+      "sha256": "9f89b0ae1b280e8c69e4096062e0ef237508f51286139bafc1520eac021c0871",
+      "lastChangingCommit": "cf727dcf6a51212ac70badd24fdd4fce928640ed",
+      "matchesAssignedBase": true
+    },
+    "apps/ios/Sources/Sheets.swift": {
+      "sha256": "cbf1a9785c5e8075ef7b17d8689e179789ba5de4cb85d6c3cd5e35ecc4ed39c9",
+      "lastChangingCommit": "f29432474bf286da5b48c0a47e07d2e65f279169",
+      "matchesAssignedBase": true
+    },
+    "docs/integrations/easywork-ewdap-1/implementation.patch": {
+      "sha256": "ce725b11ca21369e34b7266fba0caf14833f6f135fc17026a2783dd00bd129ef",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "docs/integrations/easywork-ewdap-1/manifest.json": {
+      "sha256": "ca0ebefb74d241e35608f7247355b79c28a6b99f041d027b60adf0d52d82716f",
+      "lastChangingCommit": "5064d60eb5630402d4a02fd4ed24aa1dac167681",
+      "matchesAssignedBase": true
+    },
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/RuntimeIdentity.kt": {
+      "sha256": "6dca5f73299604d62d75bd27e64a2798994c78d6ffdb49ae321b4639c895ce2c",
+      "lastChangingCommit": "6f5322034eb28683f0c354d0113a3f9b8daf7488",
+      "matchesAssignedBase": true
+    },
+    "packages/protocol/schemas/agent-management-v1.schema.json": {
+      "sha256": "b306eb000a2130a481f7341dfbc81145588aa8b438eee293a19486058faf04b6",
+      "lastChangingCommit": "5060010c0dae79fe2307734e7a291501c8ac9fae",
+      "matchesAssignedBase": true
+    }
+  },
+  "historicalDeclaredSources": {
+    "apps/ios/Sources/EasyWorkPairing.swift": {
+      "historicalSha256": "407a2a8fe1fc669c29af24846742358dd79e9809342e66f3732f31c459821fb2",
+      "currentSha256": "1c443b52ac637b22fccec2df78fb6bb40290655953cf2c0471abe3ca8d5ae616",
+      "matches": false
+    },
+    "apps/ios/Sources/EasyWorkDiscovery.swift": {
+      "historicalSha256": "fa4fc62efc7568e191563e1545f4a5ad7d1c4e0440c19b8a2a6f93fb1205221a",
+      "currentSha256": "d404184238dc74e2c747c4204b3d4564ce3f015e59f1d6d77911452aec4612e1",
+      "matches": false
+    },
+    "apps/ios/Sources/EasyWorkTransport.swift": {
+      "historicalSha256": "9e12ab830d8ca7c127611b8678ee4f44e63883bb8859eebd07f7a3f5489e5808",
+      "currentSha256": "95ee7c04e1382b78daa063d92d0d2bce68cb4aa2ca02fa8d59a350f3c861a45b",
+      "matches": false
+    },
+    "apps/ios/Sources/EasyWorkSession.swift": {
+      "historicalSha256": "90a493b67e99173ec1327c41fbdc8c80ed0602529d271bf1517728e76fa735e1",
+      "currentSha256": "2de9425769e9e6c0928356cb88914648c2aae4ac8103dc651eb773d20faa8e3d",
+      "matches": false
+    },
+    "apps/ios/Sources/EasyWorkAgentClient.swift": {
+      "historicalSha256": "b05190574ef9b4779fd5e520aa7f2ad979ddc72bac07ccf81527bf6410db8dfe",
+      "currentSha256": "2fd43e7147ce0ec3ebf024344a1feba5755e9eed8126c7c7904f8ee031dec360",
+      "matches": false
+    },
+    "apps/ios/Sources/AgentClient.swift": {
+      "historicalSha256": "5ccf6ff2e01077af1ba0f0be2c0ec6c76d07b506115f8b971d332fbad8d1dbdc",
+      "currentSha256": "e9b2f2a2d21e25d17f228b2c89d7d8a9203679c710a72c59fca005f014e464f9",
+      "matches": false
+    },
+    "packages/protocol/schemas/agent-management-v1.schema.json": {
+      "historicalSha256": "0452df893ea01b232c009e3ec4654c47120ed002623b04a30e06f82197126bb0",
+      "currentSha256": "b306eb000a2130a481f7341dfbc81145588aa8b438eee293a19486058faf04b6",
+      "matches": false
+    }
+  },
+  "dependencyPatch": {
+    "declaredSha256": "ce725b11ca21369e34b7266fba0caf14833f6f135fc17026a2783dd00bd129ef",
+    "actualSha256": "ce725b11ca21369e34b7266fba0caf14833f6f135fc17026a2783dd00bd129ef",
+    "matches": true,
+    "meaning": "Delivery integrity only; no current Desktop adoption or deployment claimed"
+  },
+  "history": {
+    "ledgerPath": "docs/acceptance/mobile-evidence/A5-execution-progress.json",
+    "ledgerSha256": "6c1b64b6d602c99bda4202307041027ebc166eb44f167cb8e6341ab8c1ddc0cb",
+    "ledgerDate": "2026-10-15",
+    "closingInput": {
+      "productionSourceSha256": "76de80d317366fa97fd8ceff878c78546cf0327f74bea45b67c133dce2acce42",
+      "apkSha256": "c4441782e5ba857d75080b38694cf1dcd05931f4276898798dfe1845597d25d8",
+      "examinerSha256": "856027ea0a97b5bd84ef4cb2bad80d878ee5177ed59b83c741db8c5d1929eda6",
+      "status": "independent-gates-passed-full-desktop-recovery-awaiting-source-clarification"
+    },
+    "scopedDeviceAuthorization": {
+      "status": "passed",
+      "apkSha256": "c4441782e5ba857d75080b38694cf1dcd05931f4276898798dfe1845597d25d8",
+      "productionSourceSha256": "76de80d317366fa97fd8ceff878c78546cf0327f74bea45b67c133dce2acce42",
+      "environments": 3,
+      "scope": "Historical isolated DEV only; its combined native+Desktop hash is not reproduced by this audit"
+    },
+    "priorAcceptedFreeze": {
+      "acceptedGroups": 3,
+      "productionSourceSha256": "e44f7bfdef4265ce431ca46b617a7673b30fb75f6363039fc4dfc59b8022ac30",
+      "apkSha256": "31e26e2582e574dcdc014af6eb5692edad0b3a74f2b42131bae18ed8b42b5b4d",
+      "scope": "All original passed and failed reports remain valid for this prior freeze. They are not claimed as complete tests of the new TLS cleanup implementation."
+    },
+    "preservedRecoveryFailure": {
+      "status": "failed-awaiting-source-clarification",
+      "scope": "Extra unrelated user-triggered desktop task observed during recovery; no attribution to human or application until checked. Native business/plan/approval/history subset passed; full recovery result remains failed.",
+      "reportSha256": "92332a7634a5678bc624b771f5aec1309af1cdd01ee9b6a5cd568e0053144a6c"
+    },
+    "reuseDecision": "No current-native reuse claim. Missing matching whole source/APK/runner/environment and original proof availability prevents promoting historical passes."
+  },
+  "externalWipAdopted": false,
+  "currentDeviceOrDesktopProofProduced": false
+}

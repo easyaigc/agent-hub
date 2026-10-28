@@ -1,0 +1,25 @@
+{
+  "observedAt": "2026-10-28",
+  "integratedBaseline": "2ffdc4fcaee6f97bdd77a8496513c322ecc77e4e",
+  "observedMain": "2ffdc4fcaee6f97bdd77a8496513c322ecc77e4e",
+  "integration": "main2ffdc4fc source merged by parent; localized owned status/literal external errors retained; current combined build/native gates pending",
+  "entries": [
+    {
+      "id": "N067",
+      "commit": "e0c3ab0338698c0d15cdd332117d4ea91dd73853",
+      "title": "feat(mobile): add tap-to-stop hint between recording waveforms",
+      "scope": "F64/UI06/UI21: mirrored waveform sides, localized central hint, tap to existing finish and accessibility semantics for listening state; finishing remains busy/disabled",
+      "android": "Parent source integration preserves upstream listening hint and branch-owned status localization. Combined build and restored-voice regression pending; listening/physical-microphone/full UI assertions are not inferred from source integration."
+    },
+    {
+      "id": "N068",
+      "commit": "2ffdc4fcaee6f97bdd77a8496513c322ecc77e4e",
+      "title": "Merge pull request '手机录音：两侧声纹与居中轻触停止提示' (#44) from codex/voice-recording-stop-hint-20261028 into main",
+      "scope": "Merge source and acceptance record node; same product scope asN067",
+      "android": "Parent source integration preserves upstream listening hint and branch-owned status localization. Combined build and restored-voice regression pending; listening/physical-microphone/full UI assertions are not inferred from source integration."
+    }
+  ],
+  "tasksProjects": "deferred",
+  "iosA6": "paused; no iOS native execution",
+  "migrationScope": "No upstream migration behavior changes in these2nodes; P7 full stream/schema/UI work continues"
+}

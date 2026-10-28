@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+2026-10-28 Android PAR1：文件流式链路已在API26的48MiB堆走通满额WAV及原候选冷恢复。手机独立阅读/逐事件查询与普通通知原回执为窄模块，实际页面/认证事件接线和全部子存储继续开发；Android新文件封套尚不与iOS互通。限定原生辅助结果和真实DEV/系统送达分列，见[当前分工](plans/android-alignment-20261022/parallel/README.md)。
+
 2026-10-28 Windows 安装兼容性：按用户要求移除桌面与 CLI 的 Publisher／签名文案／Store 包身份门禁；同一管道句柄、当前用户与登录会话、准确路径／摘要及真实 IPC 方法检查继续执行。私有状态 bootstrap 与常驻 worker 共用文件句柄实现，只读所有者与 DACL、只写受保护 DACL，保留 SACL，不提权或接管他人文件。源码与辅助检查不代表目标 Windows／手机功能通过，见[专项记录](acceptance/windows-install-20261028.md)。
 
 内置 Markdown 与可注册原生预览器；iPhone 真实原桌面文件核心阅读闭环通过，Android 编译及共享规则通过，完整双端与正式发布待验

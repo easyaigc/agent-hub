@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "status": "exact-proposed-delta-parent-must-integrate-and-regenerate",
+  "entries": [
+    {
+      "key": "轻触停止录音",
+      "en": "Tap to stop recording",
+      "zhHans": "轻触停止录音",
+      "destination": "ios-shared-N067",
+      "resourceName": "product_712a84cf019a0935a06f6d4a"
+    },
+    {
+      "key": "已离开语音输入，原草稿已保留。",
+      "en": "You left voice input. Your original draft is preserved.",
+      "zhHans": "已离开语音输入，原草稿已保留。",
+      "destination": "android-native",
+      "resourceName": "product_c044e545646267a7973c4269"
+    },
+    {
+      "key": "本地听写超时，原草稿已保留，请重试。",
+      "en": "Local dictation timed out. Your original draft is preserved. Try again.",
+      "zhHans": "本地听写超时，原草稿已保留，请重试。",
+      "destination": "android-native",
+      "resourceName": "product_92f9a2ea6d142b540b88e60c"
+    },
+    {
+      "key": "本地听写失败，原草稿已保留。",
+      "en": "Local dictation failed. Your original draft is preserved.",
+      "zhHans": "本地听写失败，原草稿已保留。",
+      "destination": "android-native",
+      "resourceName": "product_121f73594ca48a132ce5f1f2"
+    },
+    {
+      "key": "原草稿或目标已变化，请先取消，再在当前草稿开始录音。",
+      "en": "The draft or target changed. Cancel first, then start recording in the current draft.",
+      "zhHans": "原草稿或目标已变化，请先取消，再在当前草稿开始录音。",
+      "destination": "android-native",
+      "resourceName": "product_a45abf68bdc8d78b4ed8a3bb"
+    },
+    {
+      "key": "手机内存不足，原草稿已保留，请稍后重试。",
+      "en": "Your phone is low on memory. Your original draft is preserved. Try again later.",
+      "zhHans": "手机内存不足，原草稿已保留，请稍后重试。",
+      "destination": "android-native",
+      "resourceName": "product_38e1e33707bec6feab041817"
+    }
+  ]
+}

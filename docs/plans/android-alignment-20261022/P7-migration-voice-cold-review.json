@@ -1,0 +1,176 @@
+{
+  "phase": "P7-5o",
+  "sourceBase": "7e074ae840ba20bb7941d7e611884c3e8844b71b",
+  "summary": "P7-5o：两环境各完成迁入后冷读、暂存候选跨进程激活两链路，writer均先退出再由新PID继续；原音频/未知回执/清单/尝试标记/只读策略、激活回执及源密文保持，重复激活保留后续草稿。共8原生辅助、8默认11字段保护，0远端写入；产品APK与5n相同，旧86项按原指纹匹配复用。",
+  "features": ["F47", "F55", "F64"],
+  "sourceSha256": "1f257bdde3f1e6d6df30ecbfe65bb21b700564030ea989419a9751ab085e6752",
+  "appSha256": "777b2b61967671a225c29e42908f6514b3c4468512e2dc70e6cd3cab5a84f3ab",
+  "runnerSha256": "f84608f0e21d8e4e707462990e2995e310b8b78da2f90bd588e7905091dd65d1",
+  "nativeAuxiliary": 8,
+  "defaultElevenFieldProofs": 8,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "chains": [
+        {
+          "chain": "post",
+          "writerProcessConfirmedExitedBeforeReader": true,
+          "assertions": {
+            "writerPid": 19773,
+            "readerPid": 19921,
+            "differentProcess": true,
+            "sameDeviceKeystore": true,
+            "originalImportedAudio": true,
+            "originalImportReceipt": true,
+            "originalManifestAndAttemptFences": true,
+            "importedVoiceObserveOnly": true,
+            "laterDraftPreserved": true,
+            "importedCiphertextUnchanged": true,
+            "sourceCiphertextUnchanged": true,
+            "remoteWrites": 0
+          },
+          "groups": [
+            {
+              "batch": "writer",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "cef1968bcc0af1a603bf02a1b358aed0ebdbc69156072485e3b805901b262d47",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "39698ac878704d917e36c31b3dbc3f31283539723f1b64742452bc41a5495e11"
+            },
+            {
+              "batch": "reader",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "70a72aeb942d36de63019fe67185d49cd43eee4ab72cf64008965b084783339a",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "4f99ddadb7ae301a6ee6be83234072416881b7eb1f12f5835c2c0d45c1b647bc"
+            }
+          ]
+        },
+        {
+          "chain": "staged",
+          "writerProcessConfirmedExitedBeforeReader": true,
+          "assertions": {
+            "writerPid": 20025,
+            "readerPid": 20142,
+            "differentProcess": true,
+            "sameDeviceKeystore": true,
+            "originalCandidateMatched": true,
+            "noCandidateReplacement": true,
+            "originalAudioAndOperation": true,
+            "originalUnknownReceipt": true,
+            "importedVoiceObserveOnly": true,
+            "originalImportReceipt": true,
+            "sourceCiphertextUnchanged": true,
+            "remoteWrites": 0
+          },
+          "groups": [
+            {
+              "batch": "writer",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "fde34286bf4e40f62c418b4970f3b8ba0fc593a7aab88842c455fca0d18beffe",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "d54c4a3275698955afd1979a39304d19b0711b7826e02eeac2469569557a534b"
+            },
+            {
+              "batch": "reader",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "1054137776579008a750706ad8b121410c4b8cb54e674d9d18a6762548bcfea9",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "f370ab420d6b8b03dc46a95005ee0f919e258025df2d6af8e8897931489ccf34"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "chains": [
+        {
+          "chain": "post",
+          "writerProcessConfirmedExitedBeforeReader": true,
+          "assertions": {
+            "writerPid": 3507,
+            "readerPid": 4121,
+            "differentProcess": true,
+            "sameDeviceKeystore": true,
+            "originalImportedAudio": true,
+            "originalImportReceipt": true,
+            "originalManifestAndAttemptFences": true,
+            "importedVoiceObserveOnly": true,
+            "laterDraftPreserved": true,
+            "importedCiphertextUnchanged": true,
+            "sourceCiphertextUnchanged": true,
+            "remoteWrites": 0
+          },
+          "groups": [
+            {
+              "batch": "writer",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "aa0ffab27d528ab83bb03b652dd6f2bbf8e91cc145765189b67112753d21f95f",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "39da9a74468af86a057fbf4ce6c1b603e53c496a9ee0b2e8f66319a4bda1ed48"
+            },
+            {
+              "batch": "reader",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "70bab0d7957d52e883fe46645132592be70259064c85362d9cc8454fb076fac5",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "c3e5788c5fc4f1f021d36fccf8a97ecc9a94c831b924bd21659dc7820f5f7f4c"
+            }
+          ]
+        },
+        {
+          "chain": "staged",
+          "writerProcessConfirmedExitedBeforeReader": true,
+          "assertions": {
+            "writerPid": 4436,
+            "readerPid": 4963,
+            "differentProcess": true,
+            "sameDeviceKeystore": true,
+            "originalCandidateMatched": true,
+            "noCandidateReplacement": true,
+            "originalAudioAndOperation": true,
+            "originalUnknownReceipt": true,
+            "importedVoiceObserveOnly": true,
+            "originalImportReceipt": true,
+            "sourceCiphertextUnchanged": true,
+            "remoteWrites": 0
+          },
+          "groups": [
+            {
+              "batch": "writer",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "0f5b742e4d631994f0fdb4c48bc4da2ff8de452c4ba8ffea786b0966fd9d281e",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "078309c871b2048d53faff932964e8de22090dc2058b1705d042813ca95b9f58"
+            },
+            {
+              "batch": "reader",
+              "nativeAuxiliaryMethods": 1,
+              "reportSha256": "a3e8564e2d5b02ed8c82587468b8b9cc31c0134823e7c61601e81d5d3bcc60a0",
+              "defaultElevenFieldProofs": 1,
+              "proofSha256": "f0161be2b23efdc9011c07f0d77469fde728f1a4dec99abd66d5df21928e2f39"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "matchedReuse": {
+    "phase": "P7-5n",
+    "productionApkExactlyEqual": true,
+    "allPriorSourceFilesExactlyEqual": true,
+    "onlyAddedFile": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceColdTest.kt",
+    "priorNativeAuxiliary": 86,
+    "priorDefaultElevenFieldProofs": 76,
+    "currentRerunClaim": false
+  },
+  "bounds": "Production sealed-voice store/export/candidate/generation; synthetic audio and original status, actual writer exit/new PID. No microphone, Electron/model, full quota/provisional/children/provider/systemUI or iOS device pass.",
+  "iosImpact": "Same original audio/draft/receipt and no-replay assertions; iOS source/A6 unchanged, independent voice-directory migration gap remains open.",
+  "observedUiFollowup": "Source review found VoiceInputStrip rendering raw voice.status; compiled English catalog alone is not runtime English UI acceptance. Next phase classifies app-owned status and preserves arbitrary external errors.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "unknownOperationsReplayed": false
+}

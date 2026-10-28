@@ -1,0 +1,359 @@
+{
+  "phase": "P7-5p",
+  "sourceBase": "f384c370a35cf3785995604db5de2aad5253ce70",
+  "summary": "P7-5p：语音正常/恢复状态与迁入只读异常携带明确App文案键，展示和读屏使用本机双语资源，外部错误原文不翻译。实际迁入会话AgentHubApp在两环境×中英×浅深色8场景通过：原ID查询、忙碌防重复、提示完整、外部原文和取消保留草稿/音频；另回归迁移/原语音与1749词条。共36辅助、26默认11字段保护。",
+  "features": ["F47", "F55", "F56", "F64"],
+  "sourceSha256": "fcdaf714958f116b4b55911d17fda3c2c998d1e795b1b99c9cfb969270457317",
+  "appSha256": "a50e43e3e31c97428bf9b4481e78cc644d81758fc58bf6f5811a2703a0efe851",
+  "runnerSha256": "1f73e5b4bf5bdd3b06781df51cd3eed38aabcabf9dda32b52e61e08a6b11deef",
+  "nativeAuxiliary": 36,
+  "defaultElevenFieldProofs": 26,
+  "cohorts": [
+    {
+      "environment": "owned-API26",
+      "groups": [
+        {
+          "group": "ui-en-light",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "55782380398415917e0827c0e351e9beab81d50e1aba27e275803baadfcf6b44",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["4e25aaeeea7d7a5217f5c07a07ad80ca6489eb944229acd017bbeaa626bd320f"],
+          "nativeUiAssertions": {
+            "language": "en",
+            "appearance": "light",
+            "actualDark": false,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "8f8e9e89d45d82a9ed0a2f070324a65a2bcd3899a118f78f354b5f83f326a6db"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "27af640135f4b90231bd00562a37ce9247971e471c4b61155506d28f5eca9bd0"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "5815c2c628bfee8137d48a7a709bafcfaecff29947fa80a87d279a82bb48ae65"
+            }
+          ]
+        },
+        {
+          "group": "ui-en-dark",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "1ca796e87bb5b08ccd0c397edfed2ad8b773acbb480a477c484fb0834450cc96",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["f1827227dbad3532d890e07d00b95435898f4e21a3f053fe0ebd526b58c62b55"],
+          "nativeUiAssertions": {
+            "language": "en",
+            "appearance": "dark",
+            "actualDark": true,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "fbc0ca8f296ebb7ab727473bafcf575424536e8d388db6ddaa28903e70c640e3"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "b1458ec2082965ff1088545a346927b3e688f81f157f4f8b6a80e1e11b4965b8"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "0754743f775cc29aedacf088bd67a8d01a0939e6865c4c95f477c7dcccb0d058"
+            }
+          ]
+        },
+        {
+          "group": "ui-zh-Hans-light",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "7df6a4160e53fb0b9020d589f5c86188a3d433d26bb8efb610dc800d2f51a44c",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["84a0a1f7d4ee0f60987beaecc747c31b6357ddc31686a82d365b1119d495890f"],
+          "nativeUiAssertions": {
+            "language": "zh-Hans",
+            "appearance": "light",
+            "actualDark": false,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "a27c699d4761c6b7b0d260e2c6304e9de229e07ec621243f7e0ed1fb4e38eb9b"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "a101e764799c467a00acc55c16179ce8fc67299aac4ec51ced69fa516ebb4c4c"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "3760c0779967299fda63151821c47a3045945da43c6f6dfdbc97aee1b0143d7f"
+            }
+          ]
+        },
+        {
+          "group": "ui-zh-Hans-dark",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "d275e544ad49efb859ef14773d8c48f7077733dea31136a6fbbc94017ca9de44",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["3549aa80fac94845ffd2a5b32c94f16a9b142812288316d58f9f3d29e1c5e5e5"],
+          "nativeUiAssertions": {
+            "language": "zh-Hans",
+            "appearance": "dark",
+            "actualDark": true,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "d4a41e21f1c6a00f55f94b2f1e86f59c9be9576b511058ed4d3bb05dc3a81739"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "bb27295dc85ace86dda49b5035a5febfac8bfcfefb2823d0a905bbc78baf7461"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "37b421aa0d5048ee956fbc1aee1f8638d1467df09ae4ce92462f056a5cc68ff1"
+            }
+          ]
+        },
+        {
+          "group": "core",
+          "nativeAuxiliaryMethods": 14,
+          "reportSha256": "07f3c71793ca39711c7581def8d5ff03d9829aeb016fc5784cd22da07588dd66",
+          "defaultElevenFieldProofs": 9,
+          "proofSha256s": [
+            "65dbd6706809ff426c6ea90067bbc6ff11157c0b0ab32e75e8d6e9a8eb1bd186",
+            "bacc4a092b1c2447cde0e6faad5ebe1020aa3987cbe24801791c996e4dd00831",
+            "4aa473da04d1fdbe4c939efdda00e6080271b081b0b7595c65f44c9a56954cda",
+            "568c468014f0160e9f7b7a2245d48001094df8f4efdd7668b1aa59d337d39aff",
+            "751bacb1f9f0d1887293cf3f0590b3ea0b0e5fb4a3f7526a562898d4e8bab612",
+            "17dd1097a21848f07ff31be2f43bf030ff63f68aeddcf92fdbbe99517f7fada0",
+            "9d940a46bf5f3ff1a89fd039d3be7bfc447d4ccbb28eb15c2e8def2b14b8ead3",
+            "9510b159f1968dde716e931b64ee444869dd88a372d9c251980e46f96af6caf1",
+            "6957d372c61c6e6c6cd7706eee2769473d8d2bfda8c06e3cb02ba7f8dfee7078"
+          ],
+          "compiledCatalog": {
+            "keysPerLanguage": 1749,
+            "languages": 2,
+            "runtimeValuesLiteral": true
+          }
+        }
+      ]
+    },
+    {
+      "environment": "physical-API33",
+      "groups": [
+        {
+          "group": "ui-en-light",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "2c4f307ff2702ccd64a0f983718d6bc6c1b956779318f1ce17dbe9d4f5ceabec",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["766782b2e6ede533832f34004d65b2c79cc78e97b9d3c19556dee9eae717660a"],
+          "nativeUiAssertions": {
+            "language": "en",
+            "appearance": "light",
+            "actualDark": false,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "3bcd90085ece1aae3a6b9346f7f1f314e8a1b51f0dfdc5500c38afe2292d099a"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "7c7fa4661f8d30f55b4acf23445dd5bcde935a4af83eb316af609999bfe1ae24"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "fb5a0f721a9bbe0faa66669b717ac7166ebe6d09ea0e35c14ffcc1942967be78"
+            }
+          ]
+        },
+        {
+          "group": "ui-en-dark",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "b3a2b067039a9a1a4f19ee2f560951d0bafb33c12cd418b5ee1fc2f56b647acc",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["eac002ad8fb0d87e4dfa86907abb41a3eabd439d392d4faca56ffacc102aec0f"],
+          "nativeUiAssertions": {
+            "language": "en",
+            "appearance": "dark",
+            "actualDark": true,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "b033e922c2d45eb7221e973cd4856fd38acea5239f55cb9731d900128458e26e"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "377cdca1aaa5900ee6a27c2823b2039e1fafd7dbdc8d6c082f4bb0d042a25f13"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "7f119317e282323c61ff0620020e27557f60868c5109a14abe8d3c138421cc7e"
+            }
+          ]
+        },
+        {
+          "group": "ui-zh-Hans-light",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "a7f7536a6c75052c418b66f83c90c7844d3c1daee35ab7228b27ec433a3edf2b",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["0e2f0c504b51409d91f8a269b81ffecc9a201c8a6047ea755b55e687441f41a5"],
+          "nativeUiAssertions": {
+            "language": "zh-Hans",
+            "appearance": "light",
+            "actualDark": false,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "0f7b4bb9742e70e065be9d18bd863c7ba8370c769bce918243adb81205a4a4c3"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "cd572f94361ad96e92011cfb8d6bd1fde2bd841ae715149ef410b0fb96a8bc30"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "9de254050b9e23032bf14455b147f505cd9b4cc2c48cd1a09c5f473b8d21cf3c"
+            }
+          ]
+        },
+        {
+          "group": "ui-zh-Hans-dark",
+          "nativeAuxiliaryMethods": 1,
+          "reportSha256": "f9f68f7fbc6fd0842fac0185c9142a141ea021fe7ec260a7aeed4310b1628276",
+          "defaultElevenFieldProofs": 1,
+          "proofSha256s": ["aa0f21587f1397747cd61379571ed0ab22abf53880b4830e1d7658e72a6f0d92"],
+          "nativeUiAssertions": {
+            "language": "zh-Hans",
+            "appearance": "dark",
+            "actualDark": true,
+            "statusWithinPanel": true,
+            "microphoneNotRequested": true,
+            "originalVoiceQueries": 2,
+            "voiceWriteCalls": 0,
+            "appliedTranscripts": 0,
+            "originalDraftAndAudioPreserved": true,
+            "originalMetadataUnchanged": true,
+            "externalErrorLiteral": true,
+            "busyActionDisabled": true
+          },
+          "nativeWindows": [
+            {
+              "name": "original-external-error-literal.png",
+              "sha256": "4535449881644cad4904d7024042fae2edf97e652672f83b82133cc60def4df1"
+            },
+            {
+              "name": "imported-voice-query-busy.png",
+              "sha256": "bec4c183b368082114f7c2fd0f7844b363b89d539b05d38221bcbac0ce94e7b6"
+            },
+            {
+              "name": "imported-voice-receipt-only.png",
+              "sha256": "bdd2663a1d41212f2d6c93e7c60da6131203fc06242b6a12c73776e516d30eef"
+            }
+          ]
+        },
+        {
+          "group": "core",
+          "nativeAuxiliaryMethods": 14,
+          "reportSha256": "84e76becfb6bea2eba2f4f62a43e91d4b3aa4ba7297ed8a7f2dd6c5064f270f5",
+          "defaultElevenFieldProofs": 9,
+          "proofSha256s": [
+            "335b9ac6cb48425f1a9f061eff5941378c547f5296c4a91273546803c1376f08",
+            "a728457ae2fccd4fca17ad5fe0a385e8bc037779a8375349bc930f80870518b6",
+            "a440173f030435fdef080da9efefc0d74daec4e71cb1930d24847b510cc1a755",
+            "972215ff43e31168cb2b5d7742dd5aa2abba9f854adb6c3b9a9bfbe0c5ccf6bb",
+            "d08c5eaa67c8847e88bb733aad52cdd7a15c4cbb7bc4b53b490830bf355c4281",
+            "2de3a81ac8f8ae56cb3524eba166369af97287289f48193f2cea20d3b5bdce11",
+            "4f5bb67031e278e2475897fef3641ceaad3f977b65ceb51078974b546b9241e4",
+            "71b551b4b3fe586e97ed3b789403213d5c9b7129627b248601782dea30c06ffe",
+            "80870250b23fa28e31aac3822874c093fc81d4f1bca25ef18dade301f3871972"
+          ],
+          "compiledCatalog": {
+            "keysPerLanguage": 1749,
+            "languages": 2,
+            "runtimeValuesLiteral": true
+          }
+        }
+      ]
+    }
+  ],
+  "sourceBoundary": "Normal REQUESTING/LISTENING/FINISHING/fallback states and explicitly restored original voice supply product-copy keys. ImportedVoiceReceiptOnly is a typed local failure. Arbitrary CodexCommandError/OS text remains literal; a synthetic external error equal to product key复制 stays复制 in English instead of becoming Copy. Known key is cleared on new operation/finish/reset and checked against current error.",
+  "nativeInteraction": "Real typed import -> fresh MobileSession.restore -> production AgentHubApp/VoiceInputController/VoiceInputStrip. Controlled allowed callback and synthetic deferred receipt; no microphone prompt. Busy control disabled and second finish produces no extra query; awaiting original audio fails receipt-only without prepare/upload. Second original query returns external literal; cancel keeps original draft and audio/metadata, no transcript applied.",
+  "visualReview": "24 PixelCopy owned-activity images retained. Eight receipt-only windows and API26 English-light busy window manually inspected; status bounds fully within panel, actions readable, original mixed text unchanged. Actual content theme is verified via production AgentHubApp callback; these tests do not verify MainActivity system-bar callback integration. API26 portrait1080x1920, physical portrait1080x2340; default fontScale1. Physical font differs from API26; configuration cause not asserted. Full font/rotation/AX and system UI matrix remains open.",
+  "catalogExaminer": "Removed stale fixed1699 count and1661 proof number; uses frozen current catalog keys/count and compares every compiled resource in both languages, plus literal runtime parameters.1749 keys/language passed on both environments; no product dictionary shortened.",
+  "otherObservedUi": "English connection caption still shows raw Chinese in synthetic connecting state. Empty-state English subtitle is near viewport edge; clipping is not proven without text-layout evidence. Recorded as separate P6/UI matrix followup, not hidden or claimed fixed.",
+  "iosImpact": "Matches iOS product-owned localization versus external text, busy/retained-original and no-replay assertions. iOS source/device unchanged in this phase and A6 paused. Full voice/migration UI and voice-directory migration gap remain open.",
+  "bounds": "Native fixture component/session scenarios only; no new Electron/model/microphone, system file migration page, full quota/provisional/child/provider or complete parity pass. P7 full migration remains active.",
+  "newModelInputs": 0,
+  "allPhasesCumulativeConfirmedInputs": 221,
+  "p4CumulativeInputs": 205,
+  "unknownSubmissionAttempts": 1,
+  "unknownOperationsReplayed": false
+}

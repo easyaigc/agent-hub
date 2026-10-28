@@ -535,6 +535,61 @@
       "key": "使用系统选图器",
       "en": "Use system photo picker",
       "zhHans": "使用系统选图器"
+    },
+    {
+      "key": "迁入的原录音仅核对原回执，音频已保留。",
+      "en": "This imported recording can only check its original receipt. The audio is preserved.",
+      "zhHans": "迁入的原录音仅核对原回执，音频已保留。"
+    },
+    {
+      "key": "正在连接电脑转写…",
+      "en": "Connecting to computer transcription…",
+      "zhHans": "正在连接电脑转写…"
+    },
+    {
+      "key": "已离开语音输入，原草稿已保留。",
+      "en": "You left voice input. Your original draft is preserved.",
+      "zhHans": "已离开语音输入，原草稿已保留。"
+    },
+    {
+      "key": "本地听写超时，原草稿已保留，请重试。",
+      "en": "Local dictation timed out. Your original draft is preserved. Try again.",
+      "zhHans": "本地听写超时，原草稿已保留，请重试。"
+    },
+    {
+      "key": "本地听写失败，原草稿已保留。",
+      "en": "Local dictation failed. Your original draft is preserved.",
+      "zhHans": "本地听写失败，原草稿已保留。"
+    },
+    {
+      "key": "原草稿或目标已变化，请先取消，再在当前草稿开始录音。",
+      "en": "The draft or target changed. Cancel first, then start recording in the current draft.",
+      "zhHans": "原草稿或目标已变化，请先取消，再在当前草稿开始录音。"
+    },
+    {
+      "key": "手机内存不足，原草稿已保留，请稍后重试。",
+      "en": "Your phone is low on memory. Your original draft is preserved. Try again later.",
+      "zhHans": "手机内存不足，原草稿已保留，请稍后重试。"
+    },
+    {
+      "key": "后台推送尚未就绪",
+      "en": "Background push is not ready",
+      "zhHans": "后台推送尚未就绪"
+    },
+    {
+      "key": "通知渠道由系统管理；声音与角标以系统实际设置为准。",
+      "en": "Notification channels are managed by Android. Sound and badges follow the actual system settings.",
+      "zhHans": "通知渠道由系统管理；声音与角标以系统实际设置为准。"
+    },
+    {
+      "key": "内置与导入铃声尚未就绪",
+      "en": "Built-in and imported sounds are not ready",
+      "zhHans": "内置与导入铃声尚未就绪"
+    },
+    {
+      "key": "Android 不支持及时通知。",
+      "en": "Time Sensitive notifications are not supported on Android.",
+      "zhHans": "Android 不支持及时通知。"
     }
   ]
 }

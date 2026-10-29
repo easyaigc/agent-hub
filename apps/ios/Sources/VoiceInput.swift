@@ -643,8 +643,7 @@ struct VoiceInputControls: View {
             if voice.phase == .finishing {
               ProgressView().tint(.primary)
             } else if voice.phase == .failed {
-              Label(voice.canRetryTranscription ? L10n.tr("重试转写") : L10n.tr("重新录音"), systemImage: "arrow.clockwise")
-                .font(.subheadline).padding(.horizontal, 12)
+              Image(systemName: "arrow.clockwise").font(.system(size: 17))
             } else {
               Image(systemName: "stop.fill").font(.system(size: 17))
             }
@@ -653,7 +652,7 @@ struct VoiceInputControls: View {
           .accessibilityLabel(voice.phase == .finishing ? voice.status : voice.phase == .failed
             ? (voice.canRetryTranscription ? L10n.tr("重试转写") : L10n.tr("重新录音")) : L10n.tr("结束录音并转写"))
           .accessibilityIdentifier(identifier("stop-dictation", question: "question-voice-"))
-          .background(Color.primary.opacity(0.06), in: Capsule())
+          .background(Color.primary.opacity(0.06), in: Circle())
           .disabled(voice.phase != .listening && voice.phase != .failed)
       }
       if voice.phase != .finishing {

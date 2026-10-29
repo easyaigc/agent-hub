@@ -6546,7 +6546,7 @@ final class CodexManageUITests: XCTestCase {
     stop.tap()
     shot("voice-empty-draft-after-desktop-failure", fullScreen: true)
     XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 5), "Failure must remain visible in the input")
-    XCTAssertEqual(stop.label, "重试转写", "Retry must have a visible text label")
+    XCTAssertEqual(stop.label, "重试转写", "The icon must keep its accessibility label")
     XCTAssertFalse(app.alerts.firstMatch.exists)
     XCTAssertTrue(app.staticTexts["voice-status"].label.contains("录音已保留"))
     stop.tap()

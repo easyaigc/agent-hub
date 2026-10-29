@@ -116,6 +116,7 @@ interface AgentCommands {
     suspend fun forkOptions(client: MobileClient,threadId: String): ThreadForkOptions = error("此客户端尚未支持对话分支")
     suspend fun forkThread(client: MobileClient,request: ThreadForkRequest): ThreadForkOperation = error("此客户端尚未支持对话分支")
     suspend fun forkStatus(client: MobileClient,threadId: String,operationId: String): ThreadForkOperation = error("此客户端尚未支持对话分支")
+    suspend fun usage(client: MobileClient): String = error("此客户端暂未提供额度")
     suspend fun models(client: MobileClient): List<CodexModel>
     suspend fun events(client: MobileClient, threadId: String, epoch: String, cursor: Long): EventBatch
     suspend fun send(client: MobileClient, intent: ReplyIntent): DeliveryReceipt

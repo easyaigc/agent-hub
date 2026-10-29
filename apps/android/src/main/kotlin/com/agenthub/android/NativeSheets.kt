@@ -217,7 +217,7 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
         GroupCard {
             session.clients.forEach { client ->
                 Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically) {
-                    Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("client-${client.id}").clickable { session.select(client); close() },verticalAlignment=Alignment.CenterVertically) { ProductIcon("laptop"); Column(Modifier.weight(1f).padding(horizontal=12.dp)) { Text(client.name,fontSize=16.sp); Text(clientSourceText(client),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant); val running=session.runningConversationCount(client)
+                    Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("client-${client.id}").clickable { session.select(client); close() },verticalAlignment=Alignment.CenterVertically) { ProductIcon("laptop"); Column(Modifier.weight(1f).padding(horizontal=12.dp)) { Text(client.name,fontSize=16.sp); ClientUsageSummary(session,client); Text(clientSourceText(client),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant); val running=session.runningConversationCount(client)
                         val unread=session.unreadConversationCount(client)
                         val runningDescription=clientRunningDescription(client,running)
                         Text(clientRunningText(client,running),Modifier.testTag("client-running-${client.id}").semantics {

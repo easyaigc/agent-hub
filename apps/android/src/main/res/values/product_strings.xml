@@ -1646,6 +1646,22 @@
     <string name="product_2e5d2fb7f6f7fb957a87b6ca" formatted="false">"Message or hold to speak"</string>
     <string name="product_dcdddf96014730fca16b253b" formatted="false">"Touch and hold to start voice input"</string>
     <string name="product_850ceeaec29fb2d16e1c5c3a" formatted="false">"Recording incomplete"</string>
+    <string name="product_63df5f3faf2dcf0559d93d16" formatted="false">"Unlimited"</string>
+    <string name="product_f36cac96220bb1e499d1e50a" formatted="false">"Unavailable"</string>
+    <string name="product_b53b025a86f15d0e8746e346" formatted="false">"Usage unavailable"</string>
+    <string name="product_846d83a8e1f302864b30fb69" formatted="false">"Cached usage"</string>
+    <string name="product_e5acbd230d4c159ac703a274" formatted="false">"Some usage is unavailable"</string>
+    <string name="product_e3ca04a9cb133d2f714ffb86" formatted="false">"Cached"</string>
+    <string name="product_52ff3a4b1c1fd39c6c2142a9" formatted="false">"Current client usage"</string>
+    <string name="product_0a5f9a892960a00a6c0f42d2" formatted="false">"Updated"</string>
+    <string name="product_13585a52c95e5f131df319f0" formatted="false">"Percentages show usage consumed; each window is independent"</string>
+    <string name="product_f90638383727a236d7cdae6d" formatted="false">"Resets"</string>
+    <string name="product_40781b5ae18a779127b18b32" formatted="false">"Applies to"</string>
+    <string name="product_dc5053cd0052f7cc0c4659d8" formatted="false">"All models and features"</string>
+    <string name="product_8400f36c837a6a8632929a7f" formatted="false">"All limits apply"</string>
+    <string name="product_0bb6ef6a18e1fb128ba84d25" formatted="false">"Any limit may be available"</string>
+    <string name="product_ae25ef22856b7e79855c26b5" formatted="false">"Provider rules apply"</string>
+    <string name="product_ba39316da2cf42a5535f02f7" formatted="false">"Observed"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

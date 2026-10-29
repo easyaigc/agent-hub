@@ -1379,6 +1379,9 @@ Android语音展示按来源提供statusCopyKey：正常阶段/明确原录音�
 
 Android迁移候选本机格式2采用256KiB加密块和最后发布的认证头；块逻辑名绑定随机代次/位置、块文件格式4随机头，完整SHA与原Schema通过才可激活。旧内联本机候选只读兼容，外部密码封装与载荷版本不变。读取/替换共用候选子目录锁；发布不明确时保留可能提交块，不重放原操作。当前仍8MiB/12MiB内部边界，先按二进制头核对Base64膨胀配额，文件流式满额迁移尚未完成。
 
+### 2026-10-29 F73 额度接入
+
+公共 usage v1、Codex Host／EasyWork 只读适配与双端原生两处展示已落地；左侧固定设置，右侧环和两行余额位于收起按钮前。KMP 统一精度、未知类型和窗口投影，额度来源变化不改变 Codex 会话／草稿身份。真实、辅助和未验收项分列于 [F73 记录](acceptance/agent-usage-20261028.md)；其他 A6 暂停项保持。
 Android系统迁移候选通过Session拥有的IO完成跟踪连接本机存储、通知协调器及实际HTTP producer；取消Future不等于runnable退出。迁移先停止/汇合实际任务并保存原草稿，再在IO准备准确generation及children，Main用一次性许可发布新Session/原阅读ledger。失败保留原模型和原未知操作，原输入不重放。通知导入仍为archive-only，明确保存启用偏好后允许新安装登记。源码已接入，13项原生/实际系统文件选择和DEV仍待验；Host/Relay/wire接口及iOS未变。
 
 Android EasyWork canonical对象key改为复用既有String标量路径，修正JSONObject.quote在key与value的slash编码差异；不添加另一套encoder或兼容放宽。原受保护段AAD、未知原意图/指纹及具名回执核对保持。

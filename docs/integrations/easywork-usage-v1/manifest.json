@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "baseCommit": "e38bf8ac0083f0e285bce30a1e098fefce261591",
+  "patchSha256": "4d6e459a9ac33e8bce71383dbaf8712a8632ad83e8a8c9c1a7f4d8d4c85da03d",
+  "patchOptions": "git apply --unidiff-zero",
+  "files": [
+    {
+      "path": "apps/desktop/package.json",
+      "beforeSha256": "4cf784d79ba4ac2cfea749aed7e56932c47b694889f694b6820299d4f7637eec",
+      "afterSha256": "872e21012c42e19f95930ef31fc5343361651dd066233b8e73d0f7408fa82990"
+    },
+    {
+      "path": "apps/desktop/src/main/acceptance/codex-plus-real-dev.ts",
+      "beforeSha256": "0067290f1fef14f0a3ac0296e3b840ea532a405beca6a5db342e289e86e709e4",
+      "afterSha256": "517a6bc3cf7a8bb9176aff1e38921f1f8c286a4ae2597411126f58ceb457af10"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-remote-access-controller.ts",
+      "beforeSha256": "9fbbafdd2fb4862a855e7564d75f7e6939379206132c3677b5ec6dd8accb70cf",
+      "afterSha256": "173f14382b194fe95e8a5cd48021d926d9f05d35fc2d057267cc30fcddf2c5f3"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/desktop-remote-context.ts",
+      "beforeSha256": "90697f3ef6cf9ca116d7f012eef20eb46f89d006c5b8281d7c1188dee96e663b",
+      "afterSha256": "537270b8750ecb9388faa27918202437f2b55f22b7871a892a0b9a4296f25c96"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/remote-runtime-bridge.ts",
+      "beforeSha256": "b052001e40fc0a7817b9172716cd6fb389e836106687b6e262ee09bdd94d46be",
+      "afterSha256": "d35bc4d91bcbd18c3e34b993ae732906e655ad6f5d7d17ed3c0a6393df37469c"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts",
+      "beforeSha256": "76fd785a3ba009bbeed59593b3bdbc7ab5a3b19020a7bf4207b9e55dcfb0c3be",
+      "afterSha256": "b406c56e847e0f48779ce53d861867c2294688a1f577aed4917ccf27782afa3a"
+    },
+    {
+      "path": "apps/desktop/src/main/remote-access/remote-usage.ts",
+      "beforeSha256": null,
+      "afterSha256": "deb8603e1eac37e1752203e603d0ba1c20021926492a0274197c6a9ddc75724a"
+    },
+    {
+      "path": "apps/desktop/test/main/remote-access/remote-runtime-bridge.test.ts",
+      "beforeSha256": "d837eeb2977a7b50275bd1881c89a9b67d21a6f8d460d7246b2dd1d1527d1a02",
+      "afterSha256": "f6c61daba515387fc01bb1f984657df02d12f6c87bb38fda425b11ff0bb530f9"
+    },
+    {
+      "path": "apps/desktop/test/main/remote-access/remote-usage.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "8080d21808c77c687a62659422a82a7baeeae034be06e209ab3c67813234da24"
+    },
+    {
+      "path": "bun.lock",
+      "beforeSha256": "ad0b7dd7d05f24746148f27f07bde9e64c4bc26f61de636cac5265062ccb56a5",
+      "afterSha256": "885c90b895d30405ca6eae0087a534f3951e9b05b11e4a0b109af2be5be2c834"
+    },
+    {
+      "path": "packages/agent-protocol/src/v2.ts",
+      "beforeSha256": "4713a40cf8dc09ea470f5e551f493856b02d131b2e53273e44176a652b952f22",
+      "afterSha256": "7fe8ac9ddd992081c03916281c3283369abcd620ba845c172dfb2a55943e1e3e"
+    },
+    {
+      "path": "packages/codex-easywork-adapter/package.json",
+      "beforeSha256": null,
+      "afterSha256": "22c4ed172f328e5c5e7d947adb73fe07fa39d2a9917da46ad074a5bc89c3b4ea"
+    },
+    {
+      "path": "packages/codex-easywork-adapter/runtime/index.d.ts",
+      "beforeSha256": null,
+      "afterSha256": "42dbd7195828c341fc290dbce1562c1b54a596d787d3ed06885edc7f75345ffd"
+    },
+    {
+      "path": "packages/codex-easywork-adapter/runtime/index.js",
+      "beforeSha256": null,
+      "afterSha256": "da1cb50497dc935e183e2d2c27cef3b0f3bc30611ce7aef6e1b75d1bae1a0eaf"
+    },
+    {
+      "path": "packages/codex-easywork-adapter/source-manifest.json",
+      "beforeSha256": null,
+      "afterSha256": "f02f40c9c1e5acb5451a888a89abd50042dcee5349736221ed5f0ddbcdd7d8a6"
+    },
+    {
+      "path": "packages/codex-notification-protocol/runtime/index.d.ts",
+      "beforeSha256": "17323caa16e78a6ab2aa376e8658e5278b4f3bfb2358158905848561c59d0c5d",
+      "afterSha256": "1aa94afc85a3db1c85931facedced6ca5f2b85c343c7d5bfe2321da43b946ab8"
+    },
+    {
+      "path": "packages/codex-notification-protocol/runtime/index.js",
+      "beforeSha256": "9ffe5af43ad28406b6b9599ba80971a7923aa61a891c189b79db3b78867901e1",
+      "afterSha256": "0538afc597500f971c8fa0132b9bd6c47e51dde68a31a5f63d731b1b85a7341e"
+    },
+    {
+      "path": "packages/codex-notification-protocol/runtime/usage.d.ts",
+      "beforeSha256": null,
+      "afterSha256": "63ca2b7992dadddd740de66e02934576f6fcec121faa50f5b7d4855816620383"
+    },
+    {
+      "path": "packages/codex-notification-protocol/runtime/usage.js",
+      "beforeSha256": null,
+      "afterSha256": "053650c92124298995b985fd8ba5894158b7fd864281a9c9a6ceaca1cc3bdc4c"
+    }
+  ],
+  "validation": {
+    "bridgeAndControllerTests": 22,
+    "authorizationLifetimeTests": 2,
+    "fullTypecheck": "passed with pinned dependencies",
+    "canonicalAdapterTestGroups": 7,
+    "realElectronAccountRead": "passed; original desktop authentication service and real account summary authority",
+    "mobileTransports": "passed: native simulator LAN/Relay and physical iPhone LAN",
+    "physicalIPhone": "passed: real native App hosted XCTest, snapshot ID and exact balance independently matched desktop usage/read"
+  }
+}

@@ -1,0 +1,1106 @@
+diff --git a/apps/desktop/package.json b/apps/desktop/package.json
+index 0ebb98e27..13f47ea8c 100644
+--- a/apps/desktop/package.json
++++ b/apps/desktop/package.json
+@@ -106 +106,3 @@
+-    "@codex-manage/notification-runtime": "workspace:*"
++    "@codex-manage/notification-runtime": "workspace:*",
++    "@codex-manage/easywork-adapter": "workspace:*",
++    "@codex-manage/protocol": "workspace:*"
+diff --git a/apps/desktop/src/main/acceptance/codex-plus-real-dev.ts b/apps/desktop/src/main/acceptance/codex-plus-real-dev.ts
+index e104bdfd9..4865ba0aa 100644
+--- a/apps/desktop/src/main/acceptance/codex-plus-real-dev.ts
++++ b/apps/desktop/src/main/acceptance/codex-plus-real-dev.ts
+@@ -0,0 +1,2 @@
++import { readEasyWorkUsage } from "@codex-manage/easywork-adapter"
++import { getWorkbenchAccountSummary } from "../workbench/workbench-financial-capabilities.js"
+@@ -32,0 +35,2 @@ export function createCodexPlusRealAcceptance(input: {
++  const usageSamples: unknown[] = []
++  let usageAuthStatus: string | undefined
+@@ -130,0 +135,2 @@ export function createCodexPlusRealAcceptance(input: {
++        usageSamples,
++        usageAuthStatus,
+@@ -173,0 +180,32 @@ export function createCodexPlusRealAcceptance(input: {
++          case "desktop.usage-auth-login":
++            usageAuthStatus = (await input.services.easyAiAuth.startLogin()).status
++            break
++          case "desktop.usage-auth-state":
++            usageAuthStatus = (await input.services.easyAiAuth.getState()).status
++            break
++          case "desktop.usage-read": {
++            if (!controller) throw new Error("Usage acceptance controller unavailable")
++            const context = await controller.localContext()
++            const target = {
++              agentId: "easywork",
++              hostId: context.target.desktopDeviceId,
++              workspaceId: context.target.workspaceId,
++              runtimeId: context.target.runtimeId,
++            }
++            const authoritative = await getWorkbenchAccountSummary(input.services.easyAiAuth)
++            const response = await readEasyWorkUsage(input.services.easyAiAuth, target, command.id)
++            usageSamples.push({
++              id: command.id,
++              response,
++              authoritative,
++              authorityOrigin: new URL(
++                (await input.services.easyAiAuth.ensurePlatformAccessContext()).platformBaseUrl
++              ).origin,
++              observedAt: new Date().toISOString(),
++            })
++            break
++          }
++
++          case "relay.refresh-offer":
++            await controller.createOffer()
++            break
+diff --git a/apps/desktop/src/main/remote-access/desktop-remote-access-controller.ts b/apps/desktop/src/main/remote-access/desktop-remote-access-controller.ts
+index eabe94af7..1d8c15e4e 100644
+--- a/apps/desktop/src/main/remote-access/desktop-remote-access-controller.ts
++++ b/apps/desktop/src/main/remote-access/desktop-remote-access-controller.ts
+@@ -0,0 +1,2 @@
++import { desktopLocalContext } from "./desktop-remote-context.js"
++import { createDesktopUsageReader } from "./remote-usage.js"
+@@ -115,0 +118 @@ export class DesktopRemoteAccessController {
++  #usageGeneration = 0
+@@ -701,0 +705 @@ export class DesktopRemoteAccessController {
++    const usageGeneration = ++this.#usageGeneration
+@@ -708,0 +713,3 @@ export class DesktopRemoteAccessController {
++        usage: createDesktopUsageReader(this.#auth, this.#fetch, () =>
++          Boolean(this.#bridge && usageGeneration === this.#usageGeneration)
++        ),
+@@ -730,9 +737 @@ export class DesktopRemoteAccessController {
+-      return {
+-        target: this.#snapshot.target,
+-        identity: {
+-          account: this.#snapshot.target.account,
+-          deviceId: this.#snapshot.target.desktopDeviceId,
+-          platform: "desktop",
+-          publicKey: this.#identity.publicKey,
+-        },
+-      }
++      return desktopLocalContext(this.#snapshot.target, this.#identity.publicKey)
+@@ -769,0 +769 @@ export class DesktopRemoteAccessController {
++    this.#usageGeneration++
+diff --git a/apps/desktop/src/main/remote-access/desktop-remote-context.ts b/apps/desktop/src/main/remote-access/desktop-remote-context.ts
+index e990bcd69..5d76099d3 100644
+--- a/apps/desktop/src/main/remote-access/desktop-remote-context.ts
++++ b/apps/desktop/src/main/remote-access/desktop-remote-context.ts
+@@ -86,0 +87,15 @@ export async function resolveDesktopRemoteContext(input: {
++
++export function desktopLocalContext(
++  target: RuntimeTarget,
++  publicKey: string
++): { target: RuntimeTarget; identity: RemoteDeviceIdentity } {
++  return {
++    target,
++    identity: {
++      account: target.account,
++      deviceId: target.desktopDeviceId,
++      platform: "desktop",
++      publicKey,
++    },
++  }
++}
+diff --git a/apps/desktop/src/main/remote-access/remote-runtime-bridge.ts b/apps/desktop/src/main/remote-access/remote-runtime-bridge.ts
+index 4b72bc457..af15964f4 100644
+--- a/apps/desktop/src/main/remote-access/remote-runtime-bridge.ts
++++ b/apps/desktop/src/main/remote-access/remote-runtime-bridge.ts
+@@ -0,0 +1 @@
++import { readRuntimeUsage, type RuntimeUsageReader } from "./remote-usage.js"
+@@ -12,0 +14 @@ import {
++  remoteRuntimeSummary,
+@@ -92,0 +95 @@ export type RemoteRuntimeBridgeOptions = {
++  readonly usage?: RuntimeUsageReader
+@@ -143,0 +147 @@ export class RemoteRuntimeBridge {
++  readonly #usage?: RemoteRuntimeBridgeOptions["usage"]
+@@ -162,0 +167 @@ export class RemoteRuntimeBridge {
++    this.#usage = options.usage
+@@ -229,0 +235 @@ export class RemoteRuntimeBridge {
++            usage: !!this.#usage,
+@@ -248,10 +254,4 @@ export class RemoteRuntimeBridge {
+-      case "runtime/summary": {
+-        const threads = await this.#runtime.listThreads()
+-        return {
+-          target: this.#target,
+-          ...(this.#runtime.getHealth ? { health: this.#runtime.getHealth() } : {}),
+-          activeThreads: threads.filter((thread) => !thread.archivedAt).length,
+-          runningThreads: threads.filter((thread) => thread.activeRun).length,
+-          updatedAt: new Date().toISOString(),
+-        }
+-      }
++      case "runtime/summary":
++        return await remoteRuntimeSummary(this.#runtime, this.#target)
++      case "usage/read":
++        return await readRuntimeUsage(this.#target, request.params, this.#usage)
+diff --git a/apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts b/apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts
+index cb866847f..7a52fc5e8 100644
+--- a/apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts
++++ b/apps/desktop/src/main/remote-access/remote-runtime-capabilities.ts
+@@ -0,0 +1 @@
++import type { RuntimeTarget } from "@easyai-desktop/agent-protocol"
+@@ -16,0 +18 @@ export function remoteRuntimeCapabilities(input: {
++  usage?: boolean
+@@ -24,0 +27 @@ export function remoteRuntimeCapabilities(input: {
++    ...(input.usage ? ["usage:read:v1"] : []),
+@@ -60,0 +64,11 @@ export async function remoteRuntimeState(runtime: ChatHandlerRuntime, connected?
++
++export async function remoteRuntimeSummary(runtime: ChatHandlerRuntime, target: RuntimeTarget) {
++  const threads = await runtime.listThreads()
++  return {
++    target,
++    ...(runtime.getHealth ? { health: runtime.getHealth() } : {}),
++    activeThreads: threads.filter((thread) => !thread.archivedAt).length,
++    runningThreads: threads.filter((thread) => thread.activeRun).length,
++    updatedAt: new Date().toISOString(),
++  }
++}
+diff --git a/apps/desktop/src/main/remote-access/remote-usage.ts b/apps/desktop/src/main/remote-access/remote-usage.ts
+new file mode 100644
+index 000000000..22398f109
+--- /dev/null
++++ b/apps/desktop/src/main/remote-access/remote-usage.ts
+@@ -0,0 +1,43 @@
++import {
++  parseUsageTarget,
++  usageTargetKey,
++  unavailableUsage,
++  type UsageResponse,
++  type UsageTarget,
++} from "@codex-manage/protocol"
++import { readEasyWorkUsage, type EasyWorkUsageAuth } from "@codex-manage/easywork-adapter"
++import type { RuntimeTarget } from "@easyai-desktop/agent-protocol"
++import { RemoteBridgeError } from "./remote-bridge-codecs.js"
++
++export type RuntimeUsageReader = (target: UsageTarget, requestId: string) => Promise<UsageResponse>
++
++export function createDesktopUsageReader(
++  auth: EasyWorkUsageAuth,
++  fetchImpl: typeof fetch,
++  authorized: () => boolean
++): RuntimeUsageReader {
++  return async (target, requestId) => {
++    if (!authorized()) return unavailableUsage(target, requestId, "not-authenticated")
++    const result = await readEasyWorkUsage(auth, target, requestId, fetchImpl)
++    return authorized() ? result : unavailableUsage(target, requestId, "not-authenticated")
++  }
++}
++
++export async function readRuntimeUsage(
++  current: RuntimeTarget,
++  params: { target: unknown; requestId: string },
++  read?: RuntimeUsageReader
++): Promise<UsageResponse> {
++  const target = parseUsageTarget(params.target)
++  const expected = parseUsageTarget({
++    agentId: "easywork",
++    hostId: current.desktopDeviceId,
++    workspaceId: current.workspaceId,
++    runtimeId: current.runtimeId,
++  })
++  if (usageTargetKey(target) !== usageTargetKey(expected))
++    throw new RemoteBridgeError("target_mismatch", false)
++  return read
++    ? await read(target, params.requestId)
++    : unavailableUsage(target, params.requestId, "unsupported")
++}
+diff --git a/apps/desktop/test/main/remote-access/remote-runtime-bridge.test.ts b/apps/desktop/test/main/remote-access/remote-runtime-bridge.test.ts
+index 688edd711..4a9b43905 100644
+--- a/apps/desktop/test/main/remote-access/remote-runtime-bridge.test.ts
++++ b/apps/desktop/test/main/remote-access/remote-runtime-bridge.test.ts
+@@ -21,0 +22,47 @@ describe("RemoteRuntimeBridge", () => {
++  test("usage/read is target bound, read only, and advertises only an assembled provider", async () => {
++    const usageTarget = {
++      agentId: "easywork",
++      hostId: target.desktopDeviceId,
++      workspaceId: target.workspaceId,
++      runtimeId: target.runtimeId,
++    }
++    const usage = vi.fn(
++      async (
++        identity: { agentId: string; hostId: string; workspaceId: string; runtimeId: string },
++        requestId: string
++      ) => ({
++        schemaVersion: 1 as const,
++        target: identity,
++        requestId,
++        status: "unavailable" as const,
++        reason: "not-returned" as const,
++      })
++    )
++    const runtime = { listThreads: async () => [] } as unknown as ChatHandlerRuntime
++    const bridge = new RemoteRuntimeBridge({ target, runtime, usage })
++    const result = await bridge.handle(
++      request(
++        "usage/read",
++        { schemaVersion: 1, target: usageTarget, requestId: "usage-request" },
++        "usage-request"
++      )
++    )
++    expect(result).toMatchObject({
++      ok: true,
++      result: { status: "unavailable", reason: "not-returned", target: usageTarget },
++    })
++    expect(usage).toHaveBeenCalledOnce()
++    await bridge.handle(
++      request(
++        "usage/read",
++        {
++          schemaVersion: 1,
++          target: { ...usageTarget, runtimeId: "other" },
++          requestId: "wrong-usage",
++        },
++        "wrong-usage"
++      )
++    )
++    expect(usage).toHaveBeenCalledOnce()
++  })
++
+diff --git a/apps/desktop/test/main/remote-access/remote-usage.test.ts b/apps/desktop/test/main/remote-access/remote-usage.test.ts
+new file mode 100644
+index 000000000..e3ea01e08
+--- /dev/null
++++ b/apps/desktop/test/main/remote-access/remote-usage.test.ts
+@@ -0,0 +1,48 @@
++import { describe, expect, test, vi } from "vitest"
++import { createDesktopUsageReader } from "../../../src/main/remote-access/remote-usage.js"
++
++const target = {
++  agentId: "easywork",
++  hostId: "host",
++  workspaceId: "workspace",
++  runtimeId: "runtime",
++}
++const access = {
++  platformBaseUrl: "https://example.test",
++  accessToken: "fixture-only",
++  userId: "fixture-user",
++}
++
++describe("desktop usage authorization lifetime", () => {
++  test("an invalidated bridge does not read the account service", async () => {
++    const auth = { ensurePlatformAccessContext: vi.fn(async () => access) }
++    const fetchImpl = vi.fn<typeof fetch>()
++    const result = await createDesktopUsageReader(auth, fetchImpl, () => false)(target, "before")
++    expect(result).toMatchObject({ status: "unavailable", reason: "not-authenticated" })
++    expect(auth.ensurePlatformAccessContext).not.toHaveBeenCalled()
++    expect(fetchImpl).not.toHaveBeenCalled()
++  })
++
++  test("a source reply arriving after bridge invalidation cannot expose a balance", async () => {
++    let authorized = true
++    let complete!: (response: Response) => void
++    const fetchImpl = vi.fn<typeof fetch>(
++      () =>
++        new Promise((resolve) => {
++          complete = resolve
++        })
++    )
++    const auth = { ensurePlatformAccessContext: vi.fn(async () => access) }
++    const pending = createDesktopUsageReader(auth, fetchImpl, () => authorized)(target, "during")
++    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
++    authorized = false
++    complete(new Response(JSON.stringify({ balance: { amount: "12.345", currency: "resource" } })))
++    const result = await pending
++    expect(result).toMatchObject({
++      status: "unavailable",
++      reason: "not-authenticated",
++      requestId: "during",
++    })
++    expect(result).not.toHaveProperty("snapshot")
++  })
++})
+diff --git a/bun.lock b/bun.lock
+index 3e264b524..e44a5d6eb 100644
+--- a/bun.lock
++++ b/bun.lock
+@@ -219,0 +220,2 @@
++        "@codex-manage/protocol": "workspace:*",
++        "@codex-manage/easywork-adapter": "workspace:*"
+@@ -241 +243 @@
+-        "tw-animate-css": "^1.4.0",
++        "tw-animate-css": "^1.4.0"
+@@ -247,2 +249,2 @@
+-        "@trycua/cua-driver-win32-x64-msvc": "0.21.0",
+-      },
++        "@trycua/cua-driver-win32-x64-msvc": "0.21.0"
++      }
+@@ -413,0 +416,7 @@
++    "packages/codex-easywork-adapter": {
++      "name": "@codex-manage/easywork-adapter",
++      "version": "0.1.0",
++      "dependencies": {
++        "@codex-manage/protocol": "workspace:*"
++      }
++    },
+@@ -1042,0 +1052,2 @@
++    "@codex-manage/easywork-adapter": ["@codex-manage/easywork-adapter@workspace:packages/codex-easywork-adapter"],
++
+diff --git a/packages/agent-protocol/src/v2.ts b/packages/agent-protocol/src/v2.ts
+index bbfc155f5..cd78f2d28 100644
+--- a/packages/agent-protocol/src/v2.ts
++++ b/packages/agent-protocol/src/v2.ts
+@@ -40,0 +41 @@ export const agentProtocolV2MethodSchema = z.enum([
++  "usage/read",
+@@ -131,0 +133,17 @@ export const agentProtocolV2RequestSchema = z.discriminatedUnion("method", [
++  requestSchema(
++    "usage/read",
++    z
++      .object({
++        schemaVersion: z.literal(1),
++        requestId: z.string().min(1).max(128),
++        target: z
++          .object({
++            agentId: z.string().min(1).max(128),
++            hostId: z.string().min(1).max(128),
++            workspaceId: z.string().min(1).max(128),
++            runtimeId: z.string().min(1).max(128),
++          })
++          .strict(),
++      })
++      .strict()
++  ),
+diff --git a/packages/codex-easywork-adapter/package.json b/packages/codex-easywork-adapter/package.json
+new file mode 100644
+index 000000000..36dcf0a70
+--- /dev/null
++++ b/packages/codex-easywork-adapter/package.json
+@@ -0,0 +1,15 @@
++{
++  "name": "@codex-manage/easywork-adapter",
++  "version": "0.1.0",
++  "private": true,
++  "type": "module",
++  "exports": {
++    ".": {
++      "types": "./runtime/index.d.ts",
++      "import": "./runtime/index.js"
++    }
++  },
++  "dependencies": {
++    "@codex-manage/protocol": "workspace:*"
++  }
++}
+diff --git a/packages/codex-easywork-adapter/runtime/index.d.ts b/packages/codex-easywork-adapter/runtime/index.d.ts
+new file mode 100644
+index 000000000..3de8f497b
+--- /dev/null
++++ b/packages/codex-easywork-adapter/runtime/index.d.ts
+@@ -0,0 +1,26 @@
++import { type UsageTarget, type UsageResponse } from "@codex-manage/protocol"
++export interface EasyWorkUsageAccess {
++  platformBaseUrl: string
++  accessToken: string
++  userId?: string
++  tenantId?: string
++}
++export interface EasyWorkUsageAuth {
++  ensurePlatformAccessContext(): Promise<EasyWorkUsageAccess>
++}
++/** JSON numeric lexemes are quoted before parsing, so balances cannot silently lose precision. */
++export declare function parseExactUsageJSON(input: string): unknown
++export declare function mapEasyWorkUsage(
++  value: unknown,
++  target: UsageTarget,
++  requestId: string,
++  scopeRef: string,
++  now?: Date
++): UsageResponse
++/** Fixed read-only upstream operation. Credentials stay on the desktop and redirects are refused. */
++export declare function readEasyWorkUsage(
++  auth: EasyWorkUsageAuth,
++  target: UsageTarget,
++  requestId: string,
++  fetchImpl?: typeof fetch
++): Promise<UsageResponse>
+diff --git a/packages/codex-easywork-adapter/runtime/index.js b/packages/codex-easywork-adapter/runtime/index.js
+new file mode 100644
+index 000000000..ddc9cea78
+--- /dev/null
++++ b/packages/codex-easywork-adapter/runtime/index.js
+@@ -0,0 +1,176 @@
++import { createHash, randomUUID } from "node:crypto"
++import { normalizeUsageDecimal, parseUsageResponse, unavailableUsage } from "@codex-manage/protocol"
++const object = (value) => (value && typeof value === "object" && !Array.isArray(value) ? value : {})
++/** JSON numeric lexemes are quoted before parsing, so balances cannot silently lose precision. */
++export function parseExactUsageJSON(input) {
++  if (Buffer.byteLength(input) > 262144) throw new Error("Invalid usage data")
++  // Validate grammar first; this result is deliberately discarded (numbers may be imprecise).
++  JSON.parse(input)
++  let output = "",
++    quoted = false,
++    escaped = false
++  for (let i = 0; i < input.length; ) {
++    const c = input[i]
++    if (quoted) {
++      output += c
++      i++
++      if (escaped) escaped = false
++      else if (c === "\\") escaped = true
++      else if (c === '"') quoted = false
++    } else if (c === '"') {
++      quoted = true
++      output += c
++      i++
++    } else if (c === "-" || /[0-9]/.test(c)) {
++      const match = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(input.slice(i))
++      if (!match) throw new Error("Invalid usage data")
++      output += JSON.stringify(match[0])
++      i += match[0].length
++    } else {
++      output += c
++      i++
++    }
++  }
++  return JSON.parse(output)
++}
++function scope(access) {
++  if (!access.userId) throw new Error("Usage identity unavailable")
++  return createHash("sha256")
++    .update(
++      JSON.stringify([
++        new URL(access.platformBaseUrl).origin,
++        access.userId,
++        access.tenantId ?? null,
++      ])
++    )
++    .digest("hex")
++}
++export function mapEasyWorkUsage(value, target, requestId, scopeRef, now = new Date()) {
++  const data = object(value),
++    balance = object(data.balance),
++    membership = object(data.membership)
++  const raw = balance.availableAmount ?? balance.amount
++  if (raw === undefined || raw === null) return unavailableUsage(target, requestId, "not-returned")
++  if (
++    typeof raw !== "string" ||
++    (balance.currency !== undefined && typeof balance.currency !== "string")
++  )
++    return unavailableUsage(target, requestId, "invalid-data")
++  // The registered account-summary API defines omitted currency as the resource wallet.
++  const currency = typeof balance.currency === "string" ? balance.currency : "resource"
++  const unit =
++    currency === "resource"
++      ? { kind: "compute", code: "easyai-resource", label: "算力" }
++      : /^[A-Z]{3}$/.test(currency)
++        ? { kind: "currency", code: currency, label: currency }
++        : { kind: "custom", code: currency, label: currency }
++  const sampledAt = now.toISOString()
++  return parseUsageResponse({
++    schemaVersion: 1,
++    target,
++    requestId,
++    status: "ok",
++    snapshot: {
++      snapshotId: randomUUID(),
++      sampledAt,
++      source: {
++        adapterId: "easywork",
++        scopeRef,
++        scopeLabel: null,
++        planLabel: typeof membership.name === "string" ? membership.name : null,
++      },
++      coverage: "complete",
++      issues: [],
++      buckets: [
++        {
++          id: "wallet",
++          label: null,
++          sharedPoolRef: null,
++          combination: { kind: "provider-defined" },
++          metrics: [
++            {
++              id: "available",
++              kind: "balance",
++              label: balance.availableAmount !== undefined ? "可用余额" : "余额",
++              unit,
++              reading: {
++                state: "amount",
++                amount: normalizeUsageDecimal(raw),
++                entitlement: "unknown",
++              },
++              expiresAt: null,
++              appliesTo: { kind: "all" },
++              observedAt: sampledAt,
++              validUntil: new Date(+now + 60000).toISOString(),
++            },
++          ],
++        },
++      ],
++    },
++  })
++}
++/** Fixed read-only upstream operation. Credentials stay on the desktop and redirects are refused. */
++export async function readEasyWorkUsage(auth, target, requestId, fetchImpl = fetch) {
++  try {
++    const access = await auth.ensurePlatformAccessContext(),
++      before = scope(access)
++    const base = new URL(
++      access.platformBaseUrl.endsWith("/") ? access.platformBaseUrl : access.platformBaseUrl + "/"
++    )
++    if (
++      base.protocol !== "https:" &&
++      !(base.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(base.hostname))
++    )
++      return unavailableUsage(target, requestId, "invalid-data")
++    if (base.username || base.password || base.search || base.hash)
++      return unavailableUsage(target, requestId, "invalid-data")
++    const response = await fetchImpl(new URL("workbench-platform/v1/account-summary", base), {
++      headers: { authorization: `Bearer ${access.accessToken}` },
++      redirect: "error",
++      signal: AbortSignal.timeout(5000),
++    })
++    if (!response.ok)
++      return unavailableUsage(
++        target,
++        requestId,
++        response.status === 401
++          ? "not-authenticated"
++          : response.status === 403
++            ? "forbidden"
++            : "upstream-error"
++      )
++    const reader = response.body?.getReader()
++    if (!reader) return unavailableUsage(target, requestId, "invalid-data")
++    const chunks = []
++    let size = 0
++    try {
++      while (true) {
++        const { done, value } = await reader.read()
++        if (done) break
++        size += value.length
++        if (size > 262144) throw new Error("Invalid usage data")
++        chunks.push(value)
++      }
++    } finally {
++      await reader.cancel().catch(() => {})
++      reader.releaseLock()
++    }
++    const value = parseExactUsageJSON(Buffer.concat(chunks).toString("utf8"))
++    if (before !== scope(await auth.ensurePlatformAccessContext()))
++      return unavailableUsage(target, requestId, "not-authenticated")
++    return mapEasyWorkUsage(value, target, requestId, before)
++  } catch (error) {
++    const e = object(error)
++    return unavailableUsage(
++      target,
++      requestId,
++      e.name === "TimeoutError"
++        ? "timeout"
++        : e.code === "EASYAI_AUTH_REQUIRED"
++          ? "not-authenticated"
++          : e instanceof SyntaxError
++            ? "invalid-data"
++            : "upstream-error"
++    )
++  }
++}
+diff --git a/packages/codex-easywork-adapter/source-manifest.json b/packages/codex-easywork-adapter/source-manifest.json
+new file mode 100644
+index 000000000..567039678
+--- /dev/null
++++ b/packages/codex-easywork-adapter/source-manifest.json
+@@ -0,0 +1,13 @@
++{
++  "version": 1,
++  "source": "codex-manage/packages/easywork-adapter",
++  "files": {
++    "packages/codex-notification-protocol/runtime/usage.js": "053650c92124298995b985fd8ba5894158b7fd864281a9c9a6ceaca1cc3bdc4c",
++    "packages/codex-notification-protocol/runtime/index.js": "0538afc597500f971c8fa0132b9bd6c47e51dde68a31a5f63d731b1b85a7341e",
++    "packages/codex-easywork-adapter/runtime/index.js": "da1cb50497dc935e183e2d2c27cef3b0f3bc30611ce7aef6e1b75d1bae1a0eaf",
++    "packages/codex-notification-protocol/runtime/usage.d.ts": "63ca2b7992dadddd740de66e02934576f6fcec121faa50f5b7d4855816620383",
++    "packages/codex-notification-protocol/runtime/index.d.ts": "1aa94afc85a3db1c85931facedced6ca5f2b85c343c7d5bfe2321da43b946ab8",
++    "packages/codex-easywork-adapter/runtime/index.d.ts": "42dbd7195828c341fc290dbce1562c1b54a596d787d3ed06885edc7f75345ffd",
++    "packages/codex-easywork-adapter/package.json": "22c4ed172f328e5c5e7d947adb73fe07fa39d2a9917da46ad074a5bc89c3b4ea"
++  }
++}
+diff --git a/packages/codex-notification-protocol/runtime/index.d.ts b/packages/codex-notification-protocol/runtime/index.d.ts
+index 486bde836..36bd79362 100644
+--- a/packages/codex-notification-protocol/runtime/index.d.ts
++++ b/packages/codex-notification-protocol/runtime/index.d.ts
+@@ -67,0 +68,2 @@ export * from './business-notifications.js';
++
++export * from './usage.js';
+diff --git a/packages/codex-notification-protocol/runtime/index.js b/packages/codex-notification-protocol/runtime/index.js
+index e3cc39c87..a986e986a 100644
+--- a/packages/codex-notification-protocol/runtime/index.js
++++ b/packages/codex-notification-protocol/runtime/index.js
+@@ -11,0 +12,2 @@ export * from './business-notifications.js';
++
++export * from './usage.js';
+diff --git a/packages/codex-notification-protocol/runtime/usage.d.ts b/packages/codex-notification-protocol/runtime/usage.d.ts
+new file mode 100644
+index 000000000..b9ff1afae
+--- /dev/null
++++ b/packages/codex-notification-protocol/runtime/usage.d.ts
+@@ -0,0 +1,142 @@
++import type { RuntimeTarget } from './agent-management.js';
++export declare const USAGE_VERSION: 1;
++export declare const USAGE_CAPABILITY: "usage:read:v1";
++export declare const USAGE_MAX_BYTES: number;
++export type UsageTarget = Readonly<Pick<RuntimeTarget, 'agentId' | 'hostId' | 'workspaceId' | 'runtimeId'>>;
++export type UsageReason = 'not-returned' | 'unsupported' | 'not-authenticated' | 'forbidden' | 'timeout' | 'offline' | 'upstream-error' | 'invalid-data' | 'unsupported-version';
++export type UsageUnit = {
++    kind: 'credits' | 'compute' | 'tokens' | 'requests' | 'currency' | 'custom';
++    code: string;
++    label: string;
++};
++export type UsageAppliesTo = {
++    kind: 'all';
++} | {
++    kind: 'models' | 'features';
++    ids: readonly string[];
++};
++export interface UsageMetricBase {
++    id: string;
++    label: string;
++    appliesTo: UsageAppliesTo;
++    observedAt: string;
++    validUntil: string;
++}
++export type UsageMeasure = {
++    kind: 'percentage';
++    usedPercent: number;
++} | {
++    kind: 'quantity';
++    used: string;
++    limit: string;
++    unit: UsageUnit;
++};
++export type UsageLimitReading = {
++    state: 'measured';
++    usage: UsageMeasure;
++} | {
++    state: 'unlimited';
++} | {
++    state: 'unavailable';
++    reason: UsageReason;
++};
++export type UsageBalanceReading = {
++    state: 'amount';
++    amount: string;
++    entitlement: 'finite' | 'unlimited' | 'unknown';
++} | {
++    state: 'unlimited';
++} | {
++    state: 'unavailable';
++    reason: UsageReason;
++};
++export type UsageMetric = UsageMetricBase & ({
++    kind: 'balance';
++    unit: UsageUnit;
++    reading: UsageBalanceReading;
++    expiresAt: string | null;
++} | {
++    kind: 'window-limit';
++    window: {
++        durationSeconds: number | null;
++        resetsAt: string | null;
++        resetPolicy: 'fixed' | 'rolling' | 'provider-defined' | 'unknown';
++    };
++    reading: UsageLimitReading;
++} | {
++    kind: 'capacity-limit';
++    reading: UsageLimitReading;
++} | {
++    kind: 'extension';
++    namespace: string;
++    extensionVersion: number;
++    valueText: string | null;
++    note: string | null;
++});
++export interface UsageIssue {
++    bucketId: string | null;
++    metricId: string | null;
++    reason: UsageReason;
++}
++export interface UsageBucket {
++    id: string;
++    label: string | null;
++    sharedPoolRef: string | null;
++    combination: {
++        kind: 'all-of' | 'any-of';
++        metricIds: readonly string[];
++    } | {
++        kind: 'provider-defined';
++    };
++    metrics: readonly UsageMetric[];
++}
++export interface UsageSnapshot {
++    snapshotId: string;
++    sampledAt: string;
++    source: {
++        adapterId: string;
++        scopeRef: string | null;
++        scopeLabel: string | null;
++        planLabel: string | null;
++    };
++    coverage: 'complete' | 'partial';
++    buckets: readonly UsageBucket[];
++    issues: readonly UsageIssue[];
++}
++export type UsageResponse = {
++    schemaVersion: 1;
++    target: UsageTarget;
++    requestId: string;
++} & ({
++    status: 'ok';
++    snapshot: UsageSnapshot;
++} | {
++    status: 'unavailable';
++    reason: UsageReason;
++});
++export interface UsageProvider {
++    readonly descriptor: {
++        id: typeof USAGE_CAPABILITY;
++        version: 1;
++        metricKinds: readonly UsageMetric['kind'][];
++        updates: 'push' | 'poll';
++    };
++    read(input: {
++        target: UsageTarget;
++        requestId: string;
++        signal: {
++            readonly aborted: boolean;
++        };
++    }): Promise<UsageResponse>;
++}
++export declare const usageReasons: readonly UsageReason[];
++/** Source decimals can be normalized losslessly. Wire decimals must already be canonical. */
++export declare function normalizeUsageDecimal(value: string): string;
++export declare function usageTarget(target: RuntimeTarget): UsageTarget;
++export declare function parseUsageTarget(value: unknown): UsageTarget;
++export declare function usageTargetKey(target: UsageTarget): string;
++/** Validate a single known metric at its element boundary. */
++export declare function parseUsageMetric(value: unknown): UsageMetric;
++/** Unknown v1 metrics may be skipped by a forward-compatible reader; known malformed data never passes. */
++export declare function parseUsageResponse(value: unknown, tolerateUnknownMetrics?: boolean): UsageResponse;
++export declare function unavailableUsage(target: UsageTarget, requestId: string, reason: UsageReason): UsageResponse;
+diff --git a/packages/codex-notification-protocol/runtime/usage.js b/packages/codex-notification-protocol/runtime/usage.js
+new file mode 100644
+index 000000000..dec017275
+--- /dev/null
++++ b/packages/codex-notification-protocol/runtime/usage.js
+@@ -0,0 +1,323 @@
++export const USAGE_VERSION = 1;
++export const USAGE_CAPABILITY = 'usage:read:v1';
++export const USAGE_MAX_BYTES = 256 * 1024;
++export const usageReasons = [
++    'not-returned',
++    'unsupported',
++    'not-authenticated',
++    'forbidden',
++    'timeout',
++    'offline',
++    'upstream-error',
++    'invalid-data',
++    'unsupported-version',
++];
++const utf8Length = (value) => [...value].reduce((n, c) => n +
++    (c.codePointAt(0) <= 0x7f
++        ? 1
++        : c.codePointAt(0) <= 0x7ff
++            ? 2
++            : c.codePointAt(0) <= 0xffff
++                ? 3
++                : 4), 0);
++function invalid() {
++    throw new Error('Invalid usage contract');
++}
++function row(value, keys) {
++    if (!value || typeof value !== 'object' || Array.isArray(value))
++        invalid();
++    const result = value;
++    if (Object.keys(result).length !== keys.length || keys.some((key) => !Object.hasOwn(result, key)))
++        invalid();
++    return result;
++}
++function text(value, max = 80) {
++    if (typeof value !== 'string' ||
++        !value.trim() ||
++        [...value].length > max ||
++        [...value].some((c) => c.codePointAt(0) < 32 || c.codePointAt(0) === 127))
++        invalid();
++}
++function id(value) {
++    text(value, 128);
++    if (utf8Length(value) > 128)
++        invalid();
++}
++function nullable(value, check) {
++    if (value !== null)
++        check(value);
++}
++function choice(value, values) {
++    if (typeof value !== 'string' || !values.includes(value))
++        invalid();
++}
++function list(value, max) {
++    if (!Array.isArray(value) || value.length > max)
++        invalid();
++}
++function instant(value) {
++    if (typeof value !== 'string' ||
++        !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value) ||
++        !Number.isFinite(Date.parse(value)) ||
++        new Date(value).toISOString().slice(0, 19) !== value.slice(0, 19))
++        invalid();
++}
++/** Source decimals can be normalized losslessly. Wire decimals must already be canonical. */
++export function normalizeUsageDecimal(value) {
++    if (typeof value !== 'string' || value.length > 256)
++        invalid();
++    const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(value);
++    if (!match)
++        invalid();
++    const exponent = Number(match[4] ?? 0);
++    if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 84)
++        invalid();
++    let digits = match[2] + (match[3] ?? ''), point = match[2].length + exponent;
++    if (point < 0) {
++        digits = '0'.repeat(-point) + digits;
++        point = 0;
++    }
++    if (point > digits.length)
++        digits += '0'.repeat(point - digits.length);
++    const whole = (digits.slice(0, point) || '0').replace(/^0+(?=\d)/, '');
++    const fraction = digits.slice(point).replace(/0+$/, '');
++    if (whole.length > 60 || fraction.length > 24)
++        invalid();
++    return ((match[1] && (whole !== '0' || fraction) ? '-' : '') + whole + (fraction ? '.' + fraction : ''));
++}
++function decimal(value, nonnegative = false) {
++    if (typeof value !== 'string' ||
++        normalizeUsageDecimal(value) !== value ||
++        (nonnegative && value.startsWith('-')))
++        invalid();
++}
++export function usageTarget(target) {
++    return parseUsageTarget({
++        agentId: target.agentId,
++        hostId: target.hostId,
++        workspaceId: target.workspaceId,
++        runtimeId: target.runtimeId,
++    });
++}
++export function parseUsageTarget(value) {
++    const result = row(value, ['agentId', 'hostId', 'workspaceId', 'runtimeId']);
++    Object.values(result).forEach(id);
++    return result;
++}
++export function usageTargetKey(target) {
++    return JSON.stringify([target.agentId, target.hostId, target.workspaceId, target.runtimeId]);
++}
++function unit(value) {
++    const v = row(value, ['kind', 'code', 'label']);
++    choice(v.kind, ['credits', 'compute', 'tokens', 'requests', 'currency', 'custom']);
++    id(v.code);
++    text(v.label);
++    if (utf8Length(v.code) > 64 || (v.kind === 'currency' && !/^[A-Z]{3}$/.test(v.code)))
++        invalid();
++}
++function applies(value) {
++    const kind = value?.kind;
++    if (kind === 'all') {
++        row(value, ['kind']);
++        return;
++    }
++    const v = row(value, ['kind', 'ids']);
++    choice(v.kind, ['models', 'features']);
++    list(v.ids, 64);
++    if (!v.ids.length || new Set(v.ids).size !== v.ids.length)
++        invalid();
++    v.ids.forEach(id);
++}
++function reading(value, balance) {
++    const state = value?.state;
++    if (state === 'unlimited') {
++        row(value, ['state']);
++        return true;
++    }
++    if (state === 'unavailable') {
++        const v = row(value, ['state', 'reason']);
++        choice(v.reason, usageReasons);
++        return false;
++    }
++    if (balance) {
++        const v = row(value, ['state', 'amount', 'entitlement']);
++        if (state !== 'amount')
++            invalid();
++        decimal(v.amount);
++        choice(v.entitlement, ['finite', 'unlimited', 'unknown']);
++    }
++    else {
++        const v = row(value, ['state', 'usage']);
++        if (state !== 'measured')
++            invalid();
++        const kind = v.usage?.kind;
++        if (kind === 'percentage') {
++            const u = row(v.usage, ['kind', 'usedPercent']);
++            if (typeof u.usedPercent !== 'number' || !Number.isFinite(u.usedPercent) || u.usedPercent < 0)
++                invalid();
++        }
++        else {
++            const u = row(v.usage, ['kind', 'used', 'limit', 'unit']);
++            if (kind !== 'quantity')
++                invalid();
++            decimal(u.used, true);
++            decimal(u.limit, true);
++            unit(u.unit);
++        }
++    }
++    return true;
++}
++/** Validate a single known metric at its element boundary. */
++export function parseUsageMetric(value) {
++    const base = ['id', 'kind', 'label', 'appliesTo', 'observedAt', 'validUntil'];
++    const kind = value?.kind;
++    const extra = kind === 'balance'
++        ? ['unit', 'reading', 'expiresAt']
++        : kind === 'window-limit'
++            ? ['window', 'reading']
++            : kind === 'capacity-limit'
++                ? ['reading']
++                : kind === 'extension'
++                    ? ['namespace', 'extensionVersion', 'valueText', 'note']
++                    : invalid();
++    const v = row(value, [...base, ...extra]);
++    id(v.id);
++    text(v.label);
++    applies(v.appliesTo);
++    instant(v.observedAt);
++    instant(v.validUntil);
++    if (Date.parse(v.validUntil) < Date.parse(v.observedAt))
++        invalid();
++    if (kind === 'balance') {
++        unit(v.unit);
++        reading(v.reading, true);
++        nullable(v.expiresAt, instant);
++    }
++    else if (kind === 'extension') {
++        id(v.namespace);
++        if (!Number.isSafeInteger(v.extensionVersion) || v.extensionVersion < 1)
++            invalid();
++        nullable(v.valueText, (x) => text(x, 256));
++        nullable(v.note, (x) => text(x, 256));
++    }
++    else {
++        reading(v.reading, false);
++        if (kind === 'window-limit') {
++            const w = row(v.window, ['durationSeconds', 'resetsAt', 'resetPolicy']);
++            if (w.durationSeconds !== null &&
++                (!Number.isSafeInteger(w.durationSeconds) || w.durationSeconds < 1))
++                invalid();
++            nullable(w.resetsAt, instant);
++            choice(w.resetPolicy, ['fixed', 'rolling', 'provider-defined', 'unknown']);
++        }
++    }
++    return value;
++}
++/** Unknown v1 metrics may be skipped by a forward-compatible reader; known malformed data never passes. */
++export function parseUsageResponse(value, tolerateUnknownMetrics = false) {
++    if (utf8Length(JSON.stringify(value)) > USAGE_MAX_BYTES)
++        invalid();
++    const ok = value?.status === 'ok';
++    const v = row(value, [
++        'schemaVersion',
++        'target',
++        'requestId',
++        'status',
++        ok ? 'snapshot' : 'reason',
++    ]);
++    if (v.schemaVersion !== 1)
++        invalid();
++    parseUsageTarget(v.target);
++    id(v.requestId);
++    if (!ok) {
++        if (v.status !== 'unavailable')
++            invalid();
++        choice(v.reason, usageReasons);
++        return value;
++    }
++    const s = row(v.snapshot, ['snapshotId', 'sampledAt', 'source', 'coverage', 'buckets', 'issues']);
++    id(s.snapshotId);
++    instant(s.sampledAt);
++    choice(s.coverage, ['complete', 'partial']);
++    const source = row(s.source, ['adapterId', 'scopeRef', 'scopeLabel', 'planLabel']);
++    id(source.adapterId);
++    nullable(source.scopeRef, id);
++    nullable(source.scopeLabel, text);
++    nullable(source.planLabel, text);
++    list(s.buckets, 32);
++    list(s.issues, 64);
++    for (const issue of s.issues) {
++        const i = row(issue, ['bucketId', 'metricId', 'reason']);
++        nullable(i.bucketId, id);
++        nullable(i.metricId, id);
++        choice(i.reason, usageReasons);
++    }
++    const bucketIds = new Set();
++    let count = 0, unavailable = s.issues.length > 0;
++    let sourceIncomplete = unavailable;
++    const issues = [...s.issues];
++    const buckets = s.buckets.map((value) => {
++        const b = row(value, ['id', 'label', 'sharedPoolRef', 'combination', 'metrics']);
++        id(b.id);
++        nullable(b.label, text);
++        nullable(b.sharedPoolRef, id);
++        if (bucketIds.has(b.id))
++            invalid();
++        bucketIds.add(b.id);
++        list(b.metrics, 64);
++        count += b.metrics.length;
++        if (count > 64)
++            invalid();
++        const metricIds = new Set();
++        const metrics = b.metrics.flatMap((value) => {
++            const raw = value;
++            id(raw?.id);
++            text(raw?.kind);
++            if (metricIds.has(raw.id))
++                invalid();
++            metricIds.add(raw.id);
++            if (!['balance', 'window-limit', 'capacity-limit', 'extension'].includes(raw.kind) &&
++                tolerateUnknownMetrics) {
++                text(raw.label);
++                applies(raw.appliesTo);
++                instant(raw.observedAt);
++                instant(raw.validUntil);
++                if (Date.parse(raw.validUntil) < Date.parse(raw.observedAt))
++                    invalid();
++                issues.push({ bucketId: b.id, metricId: raw.id, reason: 'unsupported-version' });
++                unavailable = true;
++                return [];
++            }
++            const metric = parseUsageMetric(value);
++            if ('reading' in metric && metric.reading.state === 'unavailable') {
++                unavailable = true;
++                sourceIncomplete = true;
++            }
++            return [metric];
++        });
++        const c = b.combination;
++        if (c?.kind === 'provider-defined')
++            row(c, ['kind']);
++        else {
++            const c = row(b.combination, ['kind', 'metricIds']);
++            choice(c.kind, ['all-of', 'any-of']);
++            list(c.metricIds, 64);
++            if (c.metricIds.length < 2 ||
++                new Set(c.metricIds).size !== c.metricIds.length ||
++                c.metricIds.some((x) => !metricIds.has(x)))
++                invalid();
++        }
++        // Unknown children cannot leave a locally incomplete combination masquerading as complete.
++        const combination = metrics.length === b.metrics.length ? b.combination : { kind: 'provider-defined' };
++        return { ...b, combination, metrics };
++    });
++    if (issues.length > 64 || (s.coverage === 'partial') !== sourceIncomplete)
++        invalid();
++    return {
++        ...v,
++        snapshot: { ...s, coverage: unavailable ? 'partial' : s.coverage, buckets, issues },
++    };
++}
++export function unavailableUsage(target, requestId, reason) {
++    return parseUsageResponse({ schemaVersion: 1, target, requestId, status: 'unavailable', reason });
++}

@@ -1,0 +1,886 @@
+<div id="agent-usage-native">
+  <p class="n-preview-note">按现有原生布局重绘 · 额度为示例</p>
+  <div class="n-stage viz-dotted-background">
+    <div class="n-phone" aria-label="客户端选择与底部用量圆环、两行余额联动预览"></div>
+  </div>
+</div>
+<style>
+  #agent-usage-native {
+    width: 100%;
+  }
+  #agent-usage-native .n-preview-note {
+    margin: 0 0 12px;
+    color: light-dark(#62626a, #aaaab1);
+    font:
+      12px/1.5 -apple-system,
+      BlinkMacSystemFont,
+      'PingFang SC',
+      sans-serif;
+  }
+  #agent-usage-native .n-stage {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 0;
+    min-height: 916px;
+  }
+  #agent-usage-native .n-phone {
+    --n-bg: light-dark(#ffffff, #000000);
+    --n-side: light-dark(#f2f2f7, #1c1c1e);
+    --n-sheet: light-dark(#f5f5f8, #171719);
+    --n-panel: light-dark(#fff, #2c2c2e);
+    --n-text: light-dark(#111114, #f5f5f7);
+    --n-sub: light-dark(#73737c, #aaaab2);
+    --n-divider: light-dark(#d9d9df, #39393e);
+    --n-selection: light-dark(#e4e4eb, #36363d);
+    --n-blue: light-dark(#007aff, #64adff);
+    --n-track: light-dark(#e5e9f0, #373b43);
+    --n-bubble: light-dark(#e8f5ff, #1f3d57);
+    --n-warn: light-dark(#8a5000, #e9b66d);
+    --n-shadow: light-dark(#00000013, #00000060);
+    color: var(--n-text);
+    background: var(--n-bg);
+    width: min(402px, 100%);
+    min-height: 860px;
+    border: 1px solid var(--n-divider);
+    border-radius: 36px;
+    box-shadow: 0 12px 32px var(--n-shadow);
+    font:
+      16px/1.4 -apple-system,
+      BlinkMacSystemFont,
+      'PingFang SC',
+      sans-serif;
+    position: relative;
+    overflow: clip;
+  }
+  #agent-usage-native .n-phone * {
+    box-sizing: border-box;
+  }
+  #agent-usage-native .n-phone button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    min-height: 44px;
+    text-align: left;
+  }
+  #agent-usage-native .n-phone button:focus-visible {
+    outline: 2px solid var(--n-blue);
+    outline-offset: -2px;
+    border-radius: 8px;
+  }
+  #agent-usage-native .n-phone svg {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+  }
+  #agent-usage-native .n-status {
+    position: absolute;
+    top: 20px;
+    left: 29px;
+    right: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 8;
+    font-size: 16px;
+    font-weight: 600;
+    pointer-events: none;
+  }
+  #agent-usage-native .n-status-icons {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  #agent-usage-native .n-status-icons svg {
+    width: 17px;
+    height: 17px;
+  }
+  #agent-usage-native .n-home {
+    position: absolute;
+    bottom: 8px;
+    left: calc(50% - 58px);
+    width: 116px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--n-text);
+    z-index: 8;
+    pointer-events: none;
+  }
+  #agent-usage-native .n-chat {
+    position: absolute;
+    inset: 0;
+    background: var(--n-bg);
+    padding: 70px 12px 35px;
+  }
+  #agent-usage-native .n-chat-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  #agent-usage-native .n-glass {
+    border-radius: 24px;
+    border: 1px solid var(--n-divider) !important;
+    padding: 0 14px !important;
+    min-width: 44px;
+    background: var(--n-bg) !important;
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+  }
+  #agent-usage-native .n-client-pill {
+    font-size: 13px !important;
+    text-align: center !important;
+    display: block;
+  }
+  #agent-usage-native .n-chat-content {
+    margin-top: 38px;
+  }
+  #agent-usage-native .n-chat-bubble {
+    background: var(--n-bubble);
+    border-radius: 20px;
+    padding: 12px 15px;
+    margin-left: 48px;
+    font-size: 15px;
+  }
+  #agent-usage-native .n-chat-reply {
+    font-size: 15px;
+    margin: 26px 4px 0;
+  }
+  #agent-usage-native .n-chat-compose {
+    position: absolute;
+    bottom: 40px;
+    left: 12px;
+    right: 12px;
+    border: 1px solid var(--n-divider);
+    border-radius: 27px;
+    padding: 14px 18px;
+    color: var(--n-sub);
+    font-size: 15px;
+  }
+  #agent-usage-native .n-shade {
+    position: absolute;
+    inset: 0;
+    background: light-dark(#00000038, #00000060);
+    z-index: 1;
+  }
+  #agent-usage-native .n-drawer {
+    position: relative;
+    z-index: 2;
+    width: min(calc(100% - 44px), 350px);
+    min-height: 860px;
+    background: var(--n-side);
+    padding: 64px 10px 27px;
+    display: flex;
+    flex-direction: column;
+  }
+  #agent-usage-native .n-drawer-head {
+    display: flex;
+    padding-left: 9px;
+    align-items: center;
+    min-height: 58px;
+  }
+  #agent-usage-native .n-drawer-picker {
+    flex: 1;
+    min-width: 0;
+  }
+  #agent-usage-native .n-drawer-name {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 20px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  #agent-usage-native .n-drawer-name svg {
+    width: 12px;
+    height: 12px;
+    color: var(--n-sub);
+  }
+  #agent-usage-native .n-client-heading {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  #agent-usage-native .n-push {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+  }
+  #agent-usage-native .n-origin {
+    color: var(--n-sub);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  #agent-usage-native .n-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    flex: 0 0 44px;
+  }
+  #agent-usage-native .n-quick {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 9px !important;
+  }
+  #agent-usage-native .n-quick svg {
+    width: 20px;
+    height: 20px;
+  }
+  #agent-usage-native .n-drawer-scroll {
+    flex: 1;
+    padding: 6px 0 14px;
+  }
+  #agent-usage-native .n-section-name {
+    color: var(--n-sub);
+    font-size: 14px;
+    min-height: 37px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 9px;
+  }
+  #agent-usage-native .n-section-name svg {
+    width: 11px;
+    height: 11px;
+  }
+  #agent-usage-native .n-section-name .n-plus {
+    margin-left: auto;
+    width: 19px;
+    height: 19px;
+    color: var(--n-text);
+  }
+  #agent-usage-native .n-section-name svg.lucide-plus,
+  #agent-usage-native .n-project svg.lucide-chevron-down {
+    margin-left: auto;
+  }
+  #agent-usage-native .n-thread {
+    padding: 10px 9px;
+    min-height: 42px;
+    font-size: 16px;
+    border-radius: 10px;
+    overflow-wrap: anywhere;
+  }
+  #agent-usage-native .n-thread.active {
+    background: var(--n-selection);
+  }
+  #agent-usage-native .n-project {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 9px;
+  }
+  #agent-usage-native .n-project .n-arrow {
+    width: 12px;
+    height: 12px;
+    margin-left: auto;
+    color: var(--n-sub);
+  }
+  #agent-usage-native .n-thread.indented {
+    margin-left: 24px;
+    min-height: 36px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+  #agent-usage-native .n-footer {
+    border-top: 1px solid var(--n-divider);
+    padding-top: 6px;
+  }
+  #agent-usage-native .n-footer-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  #agent-usage-native .n-metrics-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    min-width: 44px;
+    flex: 0 1 auto;
+  }
+  #agent-usage-native .n-metrics-values {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 0;
+  }
+  #agent-usage-native .n-ring {
+    width: 38px;
+    height: 38px;
+    position: relative;
+  }
+  #agent-usage-native .n-ring svg {
+    width: 38px;
+    height: 38px;
+    display: block;
+  }
+  #agent-usage-native .n-ring-label {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  #agent-usage-native .n-footer-settings {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 60px;
+    font-size: 13px !important;
+  }
+  #agent-usage-native .n-footer-settings svg {
+    width: 16px;
+    height: 16px;
+  }
+  #agent-usage-native .n-footer-line {
+    font-size: 12px;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  #agent-usage-native .n-footer-line.secondary {
+    font-size: 11px;
+    color: var(--n-sub);
+  }
+  #agent-usage-native .n-warning {
+    color: var(--n-warn) !important;
+  }
+  #agent-usage-native .n-dialog-stage {
+    position: relative;
+    min-height: 860px;
+    padding-top: 174px;
+    display: flex;
+    flex-direction: column;
+    z-index: 3;
+  }
+  #agent-usage-native .n-dialog-stage .n-shade {
+    z-index: -1;
+  }
+  #agent-usage-native .n-sheet {
+    margin: auto 6px 7px;
+    padding: 0 15px 29px;
+    background: var(--n-sheet);
+    border-radius: 32px;
+    border: 1px solid var(--n-divider);
+  }
+  #agent-usage-native .n-grabber {
+    width: 56px;
+    height: 4px;
+    border-radius: 3px;
+    background: var(--n-sub);
+    opacity: 0.45;
+    margin: 6px auto 7px;
+  }
+  #agent-usage-native .n-sheet-nav {
+    display: grid;
+    grid-template-columns: 68px 1fr 68px;
+    align-items: center;
+    min-height: 56px;
+    margin-bottom: 12px;
+  }
+  #agent-usage-native .n-sheet-title {
+    font-size: 17px;
+    font-weight: 600;
+    text-align: center;
+  }
+  #agent-usage-native .n-done {
+    border: 1px solid var(--n-divider) !important;
+    border-radius: 24px;
+    text-align: center !important;
+    font-weight: 600 !important;
+    background: var(--n-panel) !important;
+  }
+  #agent-usage-native .n-list {
+    background: var(--n-panel);
+    border-radius: 23px;
+    padding: 0 15px;
+  }
+  #agent-usage-native .n-client-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 0;
+  }
+  #agent-usage-native .n-client-row + .n-client-row {
+    border-top: 1px solid var(--n-divider);
+  }
+  #agent-usage-native .n-select-client {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+  #agent-usage-native .n-select-client > svg {
+    width: 25px;
+    height: 25px;
+    flex: 0 0 25px;
+  }
+  #agent-usage-native .n-client-text {
+    flex: 1;
+    min-width: 0;
+  }
+  #agent-usage-native .n-client-name {
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+  #agent-usage-native .n-client-status {
+    font-size: 11px;
+    color: var(--n-sub);
+    margin-top: 3px;
+  }
+  #agent-usage-native .n-inline-balance {
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 9px;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  #agent-usage-native .n-inline-limits {
+    font-size: 12px;
+    margin-top: 3px;
+    color: var(--n-sub);
+    font-variant-numeric: tabular-nums;
+  }
+  #agent-usage-native .n-edit {
+    min-width: 35px;
+    font-size: 13px !important;
+    color: var(--n-blue) !important;
+    text-align: right !important;
+  }
+  #agent-usage-native .n-check {
+    width: 17px !important;
+    height: 17px !important;
+    flex: 0 0 17px !important;
+  }
+  #agent-usage-native .n-add-client {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 0 !important;
+    color: var(--n-blue) !important;
+    border-top: 1px solid var(--n-divider) !important;
+  }
+  #agent-usage-native .n-small-note {
+    color: var(--n-sub);
+    font-size: 11px;
+    margin: 12px 9px 0;
+  }
+  #agent-usage-native .n-detail {
+    position: relative;
+    min-height: 860px;
+    padding: 60px 18px 35px;
+    background: var(--n-sheet);
+  }
+  #agent-usage-native .n-detail-nav {
+    display: grid;
+    grid-template-columns: 62px 1fr 62px;
+    align-items: center;
+    margin-bottom: 26px;
+  }
+  #agent-usage-native .n-detail-nav strong {
+    font-size: 17px;
+    text-align: center;
+  }
+  #agent-usage-native .n-detail-nav button {
+    color: var(--n-blue);
+    font-size: 15px;
+  }
+  #agent-usage-native .n-detail-nav button:last-child {
+    text-align: right;
+  }
+  #agent-usage-native .n-detail-name {
+    font-size: 24px;
+    font-weight: 600;
+  }
+  #agent-usage-native .n-detail-sub {
+    font-size: 13px;
+    color: var(--n-sub);
+    margin-top: 4px;
+  }
+  #agent-usage-native .n-detail-label {
+    font-size: 13px;
+    color: var(--n-sub);
+    margin: 22px 10px 8px;
+  }
+  #agent-usage-native .n-value-row,
+  #agent-usage-native .n-limit-row {
+    padding: 17px 0;
+  }
+  #agent-usage-native .n-value-row + .n-value-row,
+  #agent-usage-native .n-limit-row + .n-limit-row {
+    border-top: 1px solid var(--n-divider);
+  }
+  #agent-usage-native .n-value-label {
+    font-size: 13px;
+    color: var(--n-sub);
+  }
+  #agent-usage-native .n-value-large {
+    font-size: 30px;
+    font-weight: 600;
+    margin: 6px 0;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  #agent-usage-native .n-value-large span {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--n-sub);
+    margin-left: 7px;
+  }
+  #agent-usage-native .n-exact {
+    font-size: 12px !important;
+    color: var(--n-blue) !important;
+  }
+  #agent-usage-native .n-exact-value {
+    font-size: 12px;
+    color: var(--n-sub);
+    overflow-wrap: anywhere;
+  }
+  #agent-usage-native .n-limit-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 15px;
+  }
+  #agent-usage-native .n-track {
+    height: 5px;
+    background: var(--n-track);
+    border-radius: 4px;
+    margin: 12px 0 8px;
+  }
+  #agent-usage-native .n-fill {
+    height: 100%;
+    background: var(--n-blue);
+    border-radius: inherit;
+  }
+  #agent-usage-native .n-reset {
+    color: var(--n-sub);
+    font-size: 12px;
+    margin-top: 8px;
+  }
+  #agent-usage-native .n-setting-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    width: 100%;
+  }
+  #agent-usage-native .n-setting-row + .n-setting-row {
+    border-top: 1px solid var(--n-divider);
+  }
+  #agent-usage-native .n-setting-row span {
+    flex: 1;
+  }
+  #agent-usage-native .n-setting-row small {
+    color: var(--n-sub);
+    font-size: 13px;
+  }
+  #agent-usage-native .n-phone[data-large='true'] .n-footer-line {
+    font-size: 13px;
+  }
+  #agent-usage-native .n-phone[data-large='true'] .n-footer-line.secondary {
+    font-size: 12px;
+  }
+  #agent-usage-native .n-phone[data-large='true'] .n-inline-balance {
+    font-size: 16px;
+  }
+  @media (max-width: 380px) {
+    #agent-usage-native .n-phone {
+      border-radius: 27px;
+    }
+    #agent-usage-native .n-phone[data-large='true'] .n-footer-line.secondary {
+      font-size: 11px;
+    }
+    #agent-usage-native .n-sheet {
+      padding-left: 11px;
+      padding-right: 11px;
+    }
+    #agent-usage-native .n-list {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    #agent-usage-native .n-client-row {
+      gap: 5px;
+    }
+    #agent-usage-native .n-select-client {
+      gap: 8px;
+    }
+    #agent-usage-native .n-client-name {
+      font-size: 16px;
+    }
+    #agent-usage-native .n-check {
+      display: none;
+    }
+    #agent-usage-native .n-select-client[aria-pressed='true'] .n-client-name::after {
+      content: ' ✓';
+    }
+  }
+</style>
+<script>
+  (() => {
+    const root = document.getElementById('agent-usage-native');
+    const phone = root.querySelector('.n-phone');
+    const profiles = {
+      pro: {
+        id: 'mac',
+        name: '我的 MacBook',
+        agent: 'Codex',
+        plan: 'Pro',
+        balance: [['可用余额', '12,480.13', 'credits', '12480.125']],
+        limits: [['7 天用量', '剩余 68%', 68, '已用 32%', '11 月 4 日 15:24 重置']],
+        short: '7 天剩余 68%',
+      },
+      windows: {
+        id: 'windows',
+        name: '工作室 Windows',
+        agent: 'Codex',
+        plan: 'Plus',
+        balance: [['可用余额', '840.25', 'credits', '840.25']],
+        limits: [
+          ['5 小时用量', '剩余 24%', 24, '已用 76%', '今天 18:40 重置'],
+          ['7 天用量', '剩余 59%', 59, '已用 41%', '11 月 2 日 10:20 重置'],
+        ],
+        short: '5 小时剩余 24% · 7 天剩余 59%',
+      },
+      compute: {
+        id: 'easywork',
+        name: '家里的 Mac mini',
+        agent: 'EasyWork',
+        plan: '',
+        balance: [['可用算力', '8,640.13', '算力点', '8640.125']],
+        limits: [['每日请求', '剩余 760 次', 76, '已用 240 / 上限 1,000 次', '明天 00:00 重置']],
+        short: '今日请求剩余 760 次',
+      },
+      mixed: {
+        id: 'easywork',
+        name: '家里的 Mac mini',
+        agent: 'EasyWork',
+        plan: '',
+        balance: [
+          ['可用算力', '8,640.13', '算力点', '8640.125'],
+          ['图像专项', '240.25', 'credits', '240.25'],
+        ],
+        limits: [['5 小时用量', '剩余 40%', 40, '已用 60%', '今天 18:40 重置']],
+        short: '5 小时剩余 40%',
+      },
+    };
+    const viewOptions = [
+      { label: '侧栏底部 · 用量圆环与两行余额', value: 'sidebar' },
+      { label: '选择客户端弹层', value: 'picker' },
+      { label: '额度详情', value: 'detail' },
+    ];
+    const profileOptions = [
+      { label: 'Codex Pro · 周窗口 + credits', value: 'pro' },
+      { label: 'Codex · 多窗口 + credits', value: 'windows' },
+      { label: 'EasyWork · 算力', value: 'compute' },
+      { label: 'EasyWork · 算力 + credits + 窗口', value: 'mixed' },
+    ];
+    const conditionOptions = [
+      { label: '正常', value: 'live' },
+      { label: '部分数据暂不可用', value: 'partial' },
+      { label: '离线缓存', value: 'offline' },
+      { label: '未提供额度', value: 'unsupported' },
+    ];
+    const prior = window.openai?.widgetState?.privateContent?.usageNativeV2;
+    let revision = Number.isSafeInteger(prior?.revision) ? prior.revision : 0;
+    const state = {
+      view: viewOptions.some((x) => x.value === prior?.view) ? prior.view : 'sidebar',
+      profile: profiles[prior?.profile] ? prior.profile : 'pro',
+      condition: conditionOptions.some((x) => x.value === prior?.condition)
+        ? prior.condition
+        : 'live',
+      large: prior?.large === true,
+      hasBalance: prior?.hasBalance !== false,
+    };
+    const icon = (name) => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+    const btn = (action, label, content, css = '', extra = '') =>
+      `<button type="button" class="${css} cursor-interaction" data-action="${action}" aria-label="${label}" ${extra}>${content}</button>`;
+    const current = () => profiles[state.profile];
+    const balances = (p) => (p.id === current().id && !state.hasBalance ? [] : p.balance);
+    const amount = (p) =>
+      balances(p)
+        .map((b) => `${b[1]} ${b[2]}`)
+        .join(' · ');
+    const condition = (p) => (p.id === current().id ? state.condition : 'live');
+    function summary(p) {
+      const c = condition(p);
+      if (c === 'unsupported')
+        return { balance: '暂未提供额度', limits: '', status: '在线 · 进行中 0 · 未读 0' };
+      return {
+        balance: amount(p),
+        limits:
+          c === 'partial'
+            ? '部分使用限制暂不可用'
+            : c === 'offline'
+              ? '上次读取 15:24 · ' + p.short
+              : p.short,
+        status:
+          c === 'offline'
+            ? '离线 · 查看缓存 · 未读 2'
+            : `在线 · 进行中 ${p.id === 'mac' ? 1 : 0} · 未读 ${p.id === 'mac' ? 2 : 0}`,
+      };
+    }
+    function chat() {
+      return `<div class="n-chat"><div class="n-chat-head">${btn('sidebar', '打开侧栏', icon('menu'), 'n-glass')}${btn('picker', '切换客户端', current().name + '⌄', 'n-glass n-client-pill')}<div class="n-glass">${icon('square-pen')}${icon('ellipsis')}</div></div><div class="n-chat-content"><div class="n-chat-bubble">帮我梳理一下这个功能</div><div class="n-chat-reply">可以先明确数据与使用场景，再逐步完成接入。</div></div><div class="n-chat-compose">给 ${current().agent} 发消息</div></div>`;
+    }
+    function footer(p) {
+      const c = condition(p);
+      const rows = c === 'unsupported' ? [] : balances(p);
+      const measured = (c === 'live' || c === 'offline') && p.limits.length > 0;
+      const used = measured ? 100 - p.limits[0][2] : null;
+      const label = used === null ? '—' : `${Math.round(used)}%`;
+      const scope = p.limits[0]?.[0] ?? '用量';
+      const stroke =
+        used === null || used === 0
+          ? ''
+          : `<circle cx="20" cy="20" r="17" pathLength="100" fill="none" stroke="var(--n-blue)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${used} ${100 - used}" transform="rotate(-90 20 20)"/>`;
+      const ring = `<span class="n-ring"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="none" stroke="var(--n-track)" stroke-width="3"/>${stroke}</svg><span class="n-ring-label">${label}</span></span>`;
+      const unit = rows.length
+        ? `${rows[0][2]}${c === 'offline' ? ' · 缓存' : rows.length > 1 ? ` +${rows.length - 1}` : ''}`
+        : '';
+      const values = rows.length
+        ? `<span class="n-metrics-values"><span class="n-footer-line">${rows[0][1]}</span><span class="n-footer-line secondary">${unit}</span></span>`
+        : '';
+      return `<div class="n-footer" aria-label="左侧设置，右侧当前客户端用量及余额"><div class="n-footer-head">${btn('settings', '打开设置', `${icon('settings')}<span>设置</span>`, 'n-footer-settings')}${btn('detail', `查看${p.name}额度，${scope}${used === null ? '暂不可用' : `已用${used}%`}${rows.length ? `，${summary(p).balance}` : ''}`, `${ring}${values}`, 'n-metrics-button', `data-tooltip="${scope}${used === null ? '暂不可用' : `已用${used}%`}"`)}${btn('chat', '收起侧栏', icon('panel-left'), 'n-icon-button')}</div></div>`;
+    }
+    function sidebar() {
+      const p = current();
+      return `${chat()}<div class="n-shade"></div><aside class="n-drawer"><div class="n-drawer-head">${btn('picker', '切换客户端，' + p.name, `<div class="n-drawer-name"><span class="n-client-heading">${p.name}</span>${icon('chevron-down')}</div><div class="n-origin">${p.agent} · 原桌面运行时</div>`, 'n-drawer-picker')}${btn('noop', '搜索项目和对话', icon('search'), 'n-icon-button')}</div>${btn('noop', '新聊天', icon('square-pen') + '新聊天', 'n-quick')}${btn('noop', '项目与任务', icon('list-checks') + '项目与任务', 'n-quick')}${btn('noop', '文件互传', icon('arrow-down-up') + '文件互传', 'n-quick')}<div class="n-drawer-scroll"><div class="n-section-name">最近 ${icon('chevron-down')}</div><div class="n-thread active">设计移动端导航</div><div class="n-thread">梳理设备配对流程</div><div class="n-section-name" style="margin-top:12px">项目 ${icon('chevron-down')}<span class="n-push">${icon('plus')}</span></div><div class="n-project">${icon('folder')}Agent Hub <span class="n-push">${icon('chevron-down')}${icon('plus')}</span></div><div class="n-thread indented active">设计移动端导航</div><div class="n-thread indented">梳理设备配对流程</div><div class="n-project">${icon('folder')}api-service <span class="n-push">${icon('chevron-right')}${icon('plus')}</span></div></div>${footer(p)}</aside>`;
+    }
+    function picker() {
+      const keys = ['pro', 'windows', state.profile === 'mixed' ? 'mixed' : 'compute'];
+      return `${chat()}<div class="n-dialog-stage"><div class="n-shade"></div><section class="n-sheet" aria-label="客户端选择弹层"><div class="n-grabber"></div><div class="n-sheet-nav"><span></span><div class="n-sheet-title">客户端</div>${btn('sidebar', '完成选择客户端', '完成', 'n-done')}</div><div class="n-list">${keys
+        .map((key) => {
+          const p = profiles[key],
+            s = summary(p),
+            selected = p.id === current().id;
+          return `<div class="n-client-row">${btn('select:' + key, '选择' + p.name, `${icon('laptop')}<div class="n-client-text"><div class="n-client-name">${p.name}</div><div class="n-origin">${p.agent} · 原桌面运行时</div><div class="n-client-status">${s.status}</div>${s.balance ? `<div class="n-inline-balance">${s.balance}</div>` : ''}${s.limits ? `<div class="n-inline-limits">${s.limits}</div>` : ''}</div>${selected ? '<i data-lucide="check" class="n-check" aria-hidden="true"></i>' : ''}`, 'n-select-client', `aria-pressed="${selected}"`)}${btn('noop', '编辑' + p.name, '编辑', 'n-edit')}</div>`;
+        })
+        .join(
+          '',
+        )}${btn('noop', '添加客户端', icon('plus') + '添加客户端', 'n-add-client')}</div><div class="n-small-note">额度按各自客户端显示</div></section></div>`;
+    }
+    function detail() {
+      const p = current(),
+        s = summary(p),
+        absent = state.condition === 'unsupported';
+      return `<div class="n-detail"><div class="n-detail-nav">${btn('sidebar', '返回侧栏', '‹ 返回')}<strong>额度与余额</strong>${btn('refresh', '刷新额度', '刷新')}</div><div class="n-detail-name">${p.name}</div><div class="n-detail-sub">${p.agent}${p.plan ? ' · ' + p.plan : ''} · 个人额度</div>${
+        absent
+          ? '<div class="n-detail-label">此客户端暂未提供额度查询</div>'
+          : `${
+              balances(p).length
+                ? `<div class="n-detail-label">余额</div><div class="n-list">${balances(p)
+                    .map(
+                      (b) =>
+                        `<div class="n-value-row"><div class="n-value-label">${b[0]}</div><div class="n-value-large">${b[1]}<span>${b[2]}</span></div>${btn('exact', '展开精确数值', '精确数值', 'n-exact')}<div class="n-exact-value" hidden>${b[3]} ${b[2]}</div></div>`,
+                    )
+                    .join('')}</div>`
+                : ''
+            }<div class="n-detail-label">使用限制</div><div class="n-list">${p.limits.map((l) => `<div class="n-limit-row"><div class="n-limit-title"><span>${l[0]}</span><span>${state.condition === 'partial' ? '暂不可用' : l[1]}</span></div>${state.condition === 'partial' ? '' : `<div class="n-track" role="progressbar" aria-label="${l[0]}剩余额度" aria-valuenow="${l[2]}" aria-valuemin="0" aria-valuemax="100"><div class="n-fill" style="width:${l[2]}%"></div></div><div class="n-reset">${l[3]}</div>`}<div class="n-reset">${l[4]}</div></div>`).join('')}</div>`
+      }<div class="n-small-note" aria-live="polite">${state.condition === 'offline' ? '离线 · 上次读取 10 月 28 日 15:24' : state.condition === 'partial' ? '部分额度暂不可用' : `由 ${p.agent} 返回 · 15:24 读取`}</div></div>`;
+    }
+    function settings() {
+      const row = (label, value, ico, action = 'noop') =>
+        btn(
+          action,
+          label,
+          icon(ico) + `<span>${label}</span><small>${value}</small>`,
+          'n-setting-row',
+        );
+      return `${chat()}<div class="n-dialog-stage"><div class="n-shade"></div><section class="n-sheet"><div class="n-grabber"></div><div class="n-sheet-nav"><span></span><div class="n-sheet-title">设置</div>${btn('sidebar', '完成设置', '完成', 'n-done')}</div><div class="n-detail-label">连接</div><div class="n-list">${row('客户端', '3 个 ›', 'laptop', 'picker')}${row('添加客户端', '', 'plus')}</div><div class="n-detail-label">管理</div><div class="n-list">${row('项目与对话管理', '›', 'list-checks')}</div><div class="n-detail-label">外观</div><div class="n-list">${row('外观', '跟随系统', 'sun-moon')}${row('语言', '跟随系统', 'languages')}</div><div class="n-detail-label">更多</div><div class="n-list">${row('通知', '›', 'bell')}${row('AI 数据共享', '›', 'hand')}</div></section></div>`;
+    }
+    function render() {
+      phone.dataset.large = String(state.large);
+      const content =
+        state.view === 'picker'
+          ? picker()
+          : state.view === 'detail'
+            ? detail()
+            : state.view === 'settings'
+              ? settings()
+              : state.view === 'chat'
+                ? `<div style="min-height:860px">${chat()}</div>`
+                : sidebar();
+      phone.innerHTML = `<div class="n-status"><span>9:41</span><span class="n-status-icons">${icon('wifi')}${icon('battery-full')}</span></div>${content}<div class="n-home" aria-hidden="true"></div>`;
+      if (globalThis.lucide) lucide.createIcons({ attrs: { width: 20, height: 20 } });
+    }
+    function persist() {
+      if (!window.openai?.setWidgetState) return;
+      revision += 1;
+      window.openai
+        .setWidgetState({
+          modelContent: { usagePlacement: '客户端列表与侧栏底部单行余额同步当前客户端' },
+          privateContent: { usageNativeV2: { ...state, revision } },
+        })
+        .catch(() => {});
+    }
+    render();
+    phone.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button || !phone.contains(button)) return;
+      const action = button.dataset.action;
+      if (action.startsWith('select:')) {
+        state.profile = action.split(':')[1];
+        state.view = 'sidebar';
+        render();
+      } else if (['sidebar', 'picker', 'detail', 'settings', 'chat'].includes(action)) {
+        state.view = action;
+        render();
+      } else if (action === 'exact') {
+        const value = button.nextElementSibling;
+        value.hidden = !value.hidden;
+        button.setAttribute('aria-expanded', String(!value.hidden));
+        button.textContent = value.hidden ? '精确数值' : '收起精确数值';
+      } else if (action === 'refresh') {
+        const line = phone.querySelector('[aria-live]');
+        if (line)
+          line.textContent =
+            state.condition === 'offline' ? '连接不可用 · 保留上次读取' : '示例已刷新 · 数值保持';
+      }
+      persist();
+    });
+    if (globalThis.Tweak) {
+      const tweak = new Tweak({
+        container: phone,
+        onChange: () => {
+          render();
+          persist();
+        },
+      });
+      tweak.addSelect(state, 'view', { label: '查看位置', options: viewOptions });
+      tweak.addSelect(state, 'profile', { label: '当前客户端额度', options: profileOptions });
+      tweak.addSelect(state, 'condition', { label: '读取状态', options: conditionOptions });
+      tweak.addToggle(state, 'large', { label: '较大字号示意' });
+      tweak.addToggle(state, 'hasBalance', { label: '来源返回余额' });
+    }
+    window.addEventListener('openai:set_globals', (event) => {
+      const next = event.detail?.globals?.widgetState?.privateContent?.usageNativeV2;
+      if (!next) return;
+      if (!Number.isSafeInteger(next.revision) || next.revision <= revision) return;
+      revision = next.revision;
+      const before = JSON.stringify(state);
+      if (['sidebar', 'picker', 'detail', 'settings', 'chat'].includes(next.view))
+        state.view = next.view;
+      if (profiles[next.profile]) state.profile = next.profile;
+      if (conditionOptions.some((x) => x.value === next.condition))
+        state.condition = next.condition;
+      if (typeof next.large === 'boolean') state.large = next.large;
+      if (typeof next.hasBalance === 'boolean') state.hasBalance = next.hasBalance;
+      if (before !== JSON.stringify(state)) render();
+    });
+  })();
+</script>

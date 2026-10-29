@@ -537,6 +537,11 @@ Mac Mini 回收增量已合入规范源码：独立桥接按本机私有配置�
 
 I4 Android将13节点/F72源码纳入对照，已有受控资源路由保持。当前模型/强度分离获得限定Native/原owner只读结果；新Markdown阅读入口和图片预览/多选仍需实施验收。既有iOS真机证明不升级，iOS A6继续暂停，见Android阶段档案。
 
+## 2026-10-29 额度来源验证
+
+本机独立 DEV Host 已通过原 Codex 只读元数据通道读取真实 account/rateLimits/read，当前 Pro 来源返回 7 天窗口和 credits，未返回 5 小时窗口；这只证明该环境实际返回形态，不将套餐名称推广为所有 Pro 账号的永久限制规则。适配器按实际时长识别窗口，余额保留精确字符串。
+
+EasyWork 原桌面已有账户摘要余额服务，标准额度适配器及固定桥接已接入；真实原 Electron 和手机双通道未验收。共享向量与双端构建属于辅助证据，物理 iPhone 自动化初始化超时不证明产品业务失败或成功。详见 [F73 记录](acceptance/agent-usage-20261028.md)。
 Android系统迁移入口和真实运行时交接已接入候选，完成catalog增量及实际IO跟踪/一次性发布边界；验收仍区分辅助编译、13项原生准备、真实SAF/DEV。超过8MiB的文本帧、EasyWork fence/孤立candidate归档及iOS互操作仍开放，不将入口实现记为完整P7。
 
 P7大文本帧按当前父线13文件精确SHA接入，排除并保留Main/Session/coordinator/voice当前接线。62.4MB文本在48MiB JVM堆的5个实际源码hash完全匹配，可匹配复用辅助结果（JSON/ICU shim限制保留）；6原生仅编译准备。当前API26低堆、API37/OEM、实际系统picker及DEV另验；EasyWork fence/孤立candidate存档仍开放。

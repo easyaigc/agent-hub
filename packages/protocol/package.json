@@ -8,7 +8,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./schemas/agent-management-v1.schema.json": "./schemas/agent-management-v1.schema.json"
+    "./schemas/agent-management-v1.schema.json": "./schemas/agent-management-v1.schema.json",
+    "./schemas/usage-v1.schema.json": "./schemas/usage-v1.schema.json"
   },
   "files": [
     "dist",

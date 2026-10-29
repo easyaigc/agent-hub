@@ -261,6 +261,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var providers=registry(reader,commandProvider)
     private var reads: HostReads = providers
     private var commands: CodexCommands = providers
+    val usage = MobileUsageStore { client -> commands.usage(client) }
     private var execution = storage?.let { NativeCodexFlow(it,reads,commands).apply { confirmedReplyReads=::confirmedReplyReads } }
     private val freshWorkspaces=mutableStateMapOf<String,Boolean>()
     private val freshHistories=mutableStateMapOf<String,Boolean>()
@@ -343,7 +344,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var historyRecoveryJob: Job?=null
     private var historyRecoveryIdentity: Triple<String,Long,Long>?=null
     private var readyHistorySelection: Triple<String,Long,Long>?=null
-    private var foreground=true
+    private var foreground by mutableStateOf(true)
+    val usageForeground: Boolean get()=foreground
     val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
     internal val attachmentRecoveryBusy: Boolean get()=documentPicker?.recovery?.let { it.loading||it.busy }==true||photoPicker?.recovery?.let { it.loading||it.busy }==true||cameraCapture?.recovery?.let { it.loading||it.busy }==true
     internal val phoneReading=NativePhoneReadingStore(storage,tasks) {syncPhoneReadAcknowledgements();chatNotifications?.reconcile()}.apply {beforeNoticeRead={chatNotifications?.invalidateBeforeChange()}}

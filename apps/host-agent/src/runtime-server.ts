@@ -1,3 +1,4 @@
+import { parseUsageTarget, usageTargetKey, usageTarget } from '@codex-manage/protocol';
 import { createServer as httpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createServer as httpsServer } from 'node:https';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -370,6 +371,24 @@ export async function startRuntimeServer() {
         throw new RuntimeError(400, '无效请求地址', 'INVALID_REQUEST_TARGET');
       }
       const url = requestURL;
+      if (request.method === 'GET' && url.pathname === '/v1/usage') {
+        response.setHeader('Cache-Control', 'no-store');
+        if (
+          [...url.searchParams.keys()].some((key) => key !== 'target') ||
+          url.searchParams.getAll('target').length !== 1
+        )
+          throw new RuntimeError(400, '额度读取必须指定完整运行目标');
+        let target;
+        try {
+          target = parseUsageTarget(JSON.parse(url.searchParams.get('target')!));
+        } catch {
+          throw new RuntimeError(400, '无效额度目标');
+        }
+        if (usageTargetKey(target) !== usageTargetKey(usageTarget(session.readingTarget())))
+          throw new RuntimeError(409, '运行目标已变化，请刷新连接');
+        json(response, 200, await session.usage(requestId));
+        return;
+      }
       const scopedTarget = url.searchParams.get('target');
       let commandTarget: ReturnType<typeof parseNotificationTarget> | undefined;
       if (scopedTarget !== null) {

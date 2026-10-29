@@ -1,0 +1,852 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:agent-hub:usage:v1",
+  "$ref": "#/definitions/response",
+  "definitions": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+    },
+    "instant": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,3})?Z$"
+    },
+    "decimal": {
+      "type": "string",
+      "maxLength": 86,
+      "pattern": "^(?:0|-[1-9][0-9]{0,59}|[1-9][0-9]{0,59}|-?(?:0|[1-9][0-9]{0,59})\\.[0-9]{0,23}[1-9])$"
+    },
+    "positiveDecimal": {
+      "type": "string",
+      "maxLength": 85,
+      "pattern": "^(?:0|[1-9][0-9]{0,59})(?:\\.[0-9]{0,23}[1-9])?$"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "not-returned",
+        "unsupported",
+        "not-authenticated",
+        "forbidden",
+        "timeout",
+        "offline",
+        "upstream-error",
+        "invalid-data",
+        "unsupported-version"
+      ]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agentId": {
+          "$ref": "#/definitions/id"
+        },
+        "hostId": {
+          "$ref": "#/definitions/id"
+        },
+        "workspaceId": {
+          "$ref": "#/definitions/id"
+        },
+        "runtimeId": {
+          "$ref": "#/definitions/id"
+        }
+      },
+      "required": ["agentId", "hostId", "workspaceId", "runtimeId"]
+    },
+    "unit": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "credits"
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            }
+          },
+          "required": ["kind", "code", "label"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "compute"
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            }
+          },
+          "required": ["kind", "code", "label"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "tokens"
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            }
+          },
+          "required": ["kind", "code", "label"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "requests"
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            }
+          },
+          "required": ["kind", "code", "label"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "currency"
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Z]{3}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            }
+          },
+          "required": ["kind", "code", "label"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "custom"
+            },
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            }
+          },
+          "required": ["kind", "code", "label"]
+        }
+      ]
+    },
+    "applies": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "all"
+            }
+          },
+          "required": ["kind"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": ["models", "features"]
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/id"
+              },
+              "minItems": 1,
+              "maxItems": 64,
+              "uniqueItems": true
+            }
+          },
+          "required": ["kind", "ids"]
+        }
+      ]
+    },
+    "measure": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "percentage"
+            },
+            "usedPercent": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": ["kind", "usedPercent"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "quantity"
+            },
+            "used": {
+              "$ref": "#/definitions/positiveDecimal"
+            },
+            "limit": {
+              "$ref": "#/definitions/positiveDecimal"
+            },
+            "unit": {
+              "$ref": "#/definitions/unit"
+            }
+          },
+          "required": ["kind", "used", "limit", "unit"]
+        }
+      ]
+    },
+    "limitReading": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "measured"
+            },
+            "usage": {
+              "$ref": "#/definitions/measure"
+            }
+          },
+          "required": ["state", "usage"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "unlimited"
+            }
+          },
+          "required": ["state"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "$ref": "#/definitions/reason"
+            }
+          },
+          "required": ["state", "reason"]
+        }
+      ]
+    },
+    "balanceReading": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "amount"
+            },
+            "amount": {
+              "$ref": "#/definitions/decimal"
+            },
+            "entitlement": {
+              "type": "string",
+              "enum": ["finite", "unlimited", "unknown"]
+            }
+          },
+          "required": ["state", "amount", "entitlement"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "unlimited"
+            }
+          },
+          "required": ["state"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "$ref": "#/definitions/reason"
+            }
+          },
+          "required": ["state", "reason"]
+        }
+      ]
+    },
+    "metricBase": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+        },
+        "appliesTo": {
+          "$ref": "#/definitions/applies"
+        },
+        "observedAt": {
+          "$ref": "#/definitions/instant"
+        },
+        "validUntil": {
+          "$ref": "#/definitions/instant"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+        }
+      },
+      "required": ["id", "label", "appliesTo", "observedAt", "validUntil", "kind"]
+    },
+    "metric": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "appliesTo": {
+              "$ref": "#/definitions/applies"
+            },
+            "observedAt": {
+              "$ref": "#/definitions/instant"
+            },
+            "validUntil": {
+              "$ref": "#/definitions/instant"
+            },
+            "kind": {
+              "const": "balance"
+            },
+            "unit": {
+              "$ref": "#/definitions/unit"
+            },
+            "reading": {
+              "$ref": "#/definitions/balanceReading"
+            },
+            "expiresAt": {
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/instant"
+                },
+                {
+                  "const": null
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "appliesTo",
+            "observedAt",
+            "validUntil",
+            "kind",
+            "unit",
+            "reading",
+            "expiresAt"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "appliesTo": {
+              "$ref": "#/definitions/applies"
+            },
+            "observedAt": {
+              "$ref": "#/definitions/instant"
+            },
+            "validUntil": {
+              "$ref": "#/definitions/instant"
+            },
+            "kind": {
+              "const": "window-limit"
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "durationSeconds": {
+                  "oneOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "const": null
+                    }
+                  ]
+                },
+                "resetsAt": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/definitions/instant"
+                    },
+                    {
+                      "const": null
+                    }
+                  ]
+                },
+                "resetPolicy": {
+                  "type": "string",
+                  "enum": ["fixed", "rolling", "provider-defined", "unknown"]
+                }
+              },
+              "required": ["durationSeconds", "resetsAt", "resetPolicy"]
+            },
+            "reading": {
+              "$ref": "#/definitions/limitReading"
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "appliesTo",
+            "observedAt",
+            "validUntil",
+            "kind",
+            "window",
+            "reading"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "appliesTo": {
+              "$ref": "#/definitions/applies"
+            },
+            "observedAt": {
+              "$ref": "#/definitions/instant"
+            },
+            "validUntil": {
+              "$ref": "#/definitions/instant"
+            },
+            "kind": {
+              "const": "capacity-limit"
+            },
+            "reading": {
+              "$ref": "#/definitions/limitReading"
+            }
+          },
+          "required": ["id", "label", "appliesTo", "observedAt", "validUntil", "kind", "reading"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/id"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            "appliesTo": {
+              "$ref": "#/definitions/applies"
+            },
+            "observedAt": {
+              "$ref": "#/definitions/instant"
+            },
+            "validUntil": {
+              "$ref": "#/definitions/instant"
+            },
+            "kind": {
+              "const": "extension"
+            },
+            "namespace": {
+              "$ref": "#/definitions/id"
+            },
+            "extensionVersion": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "valueText": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+                },
+                {
+                  "const": null
+                }
+              ]
+            },
+            "note": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+                },
+                {
+                  "const": null
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "appliesTo",
+            "observedAt",
+            "validUntil",
+            "kind",
+            "namespace",
+            "extensionVersion",
+            "valueText",
+            "note"
+          ]
+        }
+      ]
+    },
+    "combination": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "provider-defined"
+            }
+          },
+          "required": ["kind"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": ["all-of", "any-of"]
+            },
+            "metricIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/id"
+              },
+              "minItems": 2,
+              "maxItems": 64,
+              "uniqueItems": true
+            }
+          },
+          "required": ["kind", "metricIds"]
+        }
+      ]
+    },
+    "bucket": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "label": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "sharedPoolRef": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/id"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "combination": {
+          "$ref": "#/definitions/combination"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/metric"
+          },
+          "minItems": 0,
+          "maxItems": 64
+        }
+      },
+      "required": ["id", "label", "sharedPoolRef", "combination", "metrics"]
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bucketId": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/id"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "metricId": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/id"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "reason": {
+          "$ref": "#/definitions/reason"
+        }
+      },
+      "required": ["bucketId", "metricId", "reason"]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "snapshotId": {
+          "$ref": "#/definitions/id"
+        },
+        "sampledAt": {
+          "$ref": "#/definitions/instant"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "adapterId": {
+              "$ref": "#/definitions/id"
+            },
+            "scopeRef": {
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/id"
+                },
+                {
+                  "const": null
+                }
+              ]
+            },
+            "scopeLabel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+                },
+                {
+                  "const": null
+                }
+              ]
+            },
+            "planLabel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$"
+                },
+                {
+                  "const": null
+                }
+              ]
+            }
+          },
+          "required": ["adapterId", "scopeRef", "scopeLabel", "planLabel"]
+        },
+        "coverage": {
+          "type": "string",
+          "enum": ["complete", "partial"]
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/bucket"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/issue"
+          },
+          "minItems": 0,
+          "maxItems": 64
+        }
+      },
+      "required": ["snapshotId", "sampledAt", "source", "coverage", "buckets", "issues"]
+    },
+    "response": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {
+              "const": 1
+            },
+            "target": {
+              "$ref": "#/definitions/target"
+            },
+            "requestId": {
+              "$ref": "#/definitions/id"
+            },
+            "status": {
+              "const": "ok"
+            },
+            "snapshot": {
+              "$ref": "#/definitions/snapshot"
+            }
+          },
+          "required": ["schemaVersion", "target", "requestId", "status", "snapshot"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {
+              "const": 1
+            },
+            "target": {
+              "$ref": "#/definitions/target"
+            },
+            "requestId": {
+              "$ref": "#/definitions/id"
+            },
+            "status": {
+              "const": "unavailable"
+            },
+            "reason": {
+              "$ref": "#/definitions/reason"
+            }
+          },
+          "required": ["schemaVersion", "target", "requestId", "status", "reason"]
+        }
+      ]
+    }
+  }
+}

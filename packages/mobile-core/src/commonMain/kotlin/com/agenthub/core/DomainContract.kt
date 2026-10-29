@@ -66,6 +66,13 @@ internal class SchemaValidator(encoded: String) {
                 rule["pattern"]?.jsonPrimitive?.content?.let { if (!Regex(it).containsMatchIn(value.content)) return "$path:pattern" }
                 if (rule["format"]?.jsonPrimitive?.content == "uri" && (!Regex("^[A-Za-z][A-Za-z0-9+.-]*:").containsMatchIn(value.content) || value.content.any { it.code in 0x09..0x0D || it.code in 0x2000..0x200A || it.code in listOf(0x20, 0xA0, 0x1680, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF) })) return "$path:uri"
             }
+            "number" -> {
+                val primitive = value as? JsonPrimitive ?: return "$path:number"
+                val number = primitive.takeUnless { it.isString }?.doubleOrNull ?: return "$path:number"
+                if (!number.isFinite()) return "$path:number"
+                if (number < (rule["minimum"]?.jsonPrimitive?.double ?: -Double.MAX_VALUE)) return "$path:minimum"
+                if (number > (rule["maximum"]?.jsonPrimitive?.double ?: Double.MAX_VALUE)) return "$path:maximum"
+            }
             "integer" -> {
                 val primitive = value as? JsonPrimitive ?: return "$path:integer"
                 if (primitive.isString) return "$path:integer"

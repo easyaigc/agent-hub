@@ -125,11 +125,13 @@ import com.agenthub.core.WorkspaceSidebarRules
         LaunchedEffect(list.isScrollInProgress) { if(list.isScrollInProgress)finishSearchEditing() }
         HorizontalDivider(color=colors.onSurface.copy(alpha=.08f))
         Row(Modifier.fillMaxWidth().padding(top=6.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {
-            Row(Modifier.weight(1f).heightIn(min=48.dp).testTag("sidebar-settings").semantics { role=Role.Button }.clickable { close();settings() },verticalAlignment=Alignment.CenterVertically) {
-                Box(Modifier.size(30.dp).clip(CircleShape).background(colors.onSurface),contentAlignment=Alignment.Center) { Text(productText("我"),fontSize=12.sp,color=colors.surface) }
-                Spacer(Modifier.width(10.dp));Text(productText("个人空间"),fontSize=16.sp,color=colors.onSurface)
+            Row(Modifier.width(60.dp).heightIn(min=48.dp).testTag("sidebar-settings").semantics { role=Role.Button }.clickable { close();settings() },verticalAlignment=Alignment.CenterVertically) {
+                ProductIcon("settings",Modifier.size(16.dp))
+                Spacer(Modifier.width(7.dp));Text("设置",fontSize=13.sp,color=colors.onSurface)
             }
-            IconAction("sidebar",productText("收起侧栏"),"close-sidebar",onClick=close)
+            Spacer(Modifier.weight(1f))
+            UsageFooter(session,client,active)
+            IconAction("sidebar","收起侧栏","close-sidebar",onClick=close)
         }
     }
 }

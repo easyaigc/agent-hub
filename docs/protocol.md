@@ -161,6 +161,13 @@ P3-5b 已实现：workspaceManagementRequest/Operation 严格有序ID、1..100�
 
 P5-2移动建议读取使用`codex-mobile-http-v1.schema.json`中的`desktopSuggestionResponse`与可选`runtime.suggestionSourceTurnId`。Codex的具名GET继续绑定机器/聊天/来源轮次及既有鉴权/证书；EasyWork的`thread/suggestion/read`在已鉴权加密会话中映射同一响应投影，保持其账号约束。Android读取预算为八秒，接收体有界，超时可恢复，原消费者取消保持取消。响应匹配不授予命令权限或自动采用；Android会话读取器与界面仍在P5-3接通。
 
+## 已实现：usage v1 只读额度
+
+领域定义为 `packages/protocol/src/usage.ts`，对应 `schemas/usage-v1.schema.json`。Codex Host 接受鉴权 GET `/v1/usage?target=<JSON>`，仅允许一个 target 查询项，目标只含 agentId、hostId、workspaceId、runtimeId；不包含账号字段和 threadId。错误目标为 409，非法请求为 400，认证失败为 401；来源暂不可用用 200 的领域 unavailable 表示。响应禁止 HTTP 缓存。
+
+版本化响应包含独立 requestId、完整机器目标及 ok 快照／unavailable 原因。余额、窗口、总量和扩展指标分开，多个 bucket 不相加；余额／数量用规范十进制字符串，百分比仅表示已用比例。来源有效期、partial 和无限／缺失／零值分别表示。旧账号元数据不成为 Codex 连接或命令门槛。
+
+EasyWork 在原有严格认证会话中增加固定 `usage/read`，参数为 schemaVersion=1、四字段目标及 requestId。桥接只组装原桌面的权威账户服务，不增加 shell、URL 或任意 RPC 透传。来源凭据留在桌面。当前实现与验收范围见 [F73 记录](acceptance/agent-usage-20261028.md)。
 Android EasyWork canonical对象成员名与String值使用相同编码路径，统一移除可选slash转义，按现有非数字协议键与iOS/Node逐字节对齐；数值/通用RFC8785不新增承诺。解密仍认证原JWE protected段，未知原intent/raw SHA不重算，不接受重序列化替代或自动重放。新向量/Android原生门槛见phase10-canonical档案。
 
 本轮Android登记关闭修正仅恢复原operation ID及原授权下的查询，不增加命令或wire字段；未知撤销不宣称已取消，不分配替代operation或重放原操作。

@@ -313,6 +313,21 @@ private var userRequestedWorkspaceGeneration: UUID?
     if testMode && !ProcessInfo.processInfo.arguments.contains("-restore-testing") {
       enableDemo()
     }
+    #if DEBUG
+    // Only the independent F73 acceptance App may receive a real Host binding from XCTest.
+    if testMode, ProcessInfo.processInfo.arguments.contains("-usage-acceptance"),
+      Bundle.main.bundleIdentifier == "com.easyai.agenthub.usage.acceptance",
+      let raw = ProcessInfo.processInfo.environment["USAGE_ACCEPTANCE_FIXTURE"],
+      let fixture = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+      let value = fixture["client"], let data = try? JSONSerialization.data(withJSONObject: value),
+      let client = try? JSONDecoder().decode(Client.self, from: data), !client.isDemo,
+      let token = fixture["token"] as? String {
+      saved = SavedSession()
+      saved.clients = [client]; saved.selectedClientId = client.id
+      try? CredentialVault.set(token, id: client.id)
+      drawerOpen = true
+    }
+    #endif
     if saved.runtimes == nil { saved.runtimes = [:] }
     if saved.outbox == nil { saved.outbox = [:] }
     // Older versions only changed the banner when ending a wait. Move those

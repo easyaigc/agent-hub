@@ -2205,13 +2205,15 @@ struct RootView: View {
           store.drawerOpen = false
           store.sheet = .settings
         } label: {
-          HStack(spacing: 10) {
-            Text(L10n.tr("我")).font(.caption).foregroundStyle(Palette.background)
-              .frame(width: 30, height: 30).background(Color.primary, in: Circle())
-            Text(L10n.tr("个人空间")).font(.subheadline)
-            Spacer(minLength: 0)
-          }.frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
+          HStack(spacing: 7) {
+            Image(systemName: "gearshape").font(.system(size: 16))
+            Text(L10n.tr("设置")).font(.system(size: 13))
+          }.frame(width: 60).frame(minHeight: 44).contentShape(Rectangle())
         }.accessibilityIdentifier("open-settings")
+        Spacer(minLength: 12)
+        if let client = store.client {
+          UsageFooterButton(client: client, target: store.mobileReadingTarget(client), active: store.drawerOpen && store.sheet == nil) { store.sheet = .usage }
+        }
         IconButton(symbol: "sidebar.left", label: L10n.tr("收起侧栏"), id: "close-sidebar", action: closeSidebar)
       }.padding(.top, 6).overlay(alignment: .top) { Divider().allowsHitTesting(false) }
     }.padding(.horizontal, 10).padding(.top, 6).padding(.bottom, 8)
@@ -2411,6 +2413,7 @@ struct RootView: View {
     case .addClient: AddClientView(store: store)
     case .projects: ProjectPickerView(store: store)
     case .settings: SettingsView(store: store)
+    case .usage: if let client = store.client { UsageDetailsView(client: client, target: store.mobileReadingTarget(client)) }
     case .addProject: AddProjectView(store: store)
     case .generation: GenerationSettings(store: store)
     case .aiSharing: AISharingPermissionView(store: store)

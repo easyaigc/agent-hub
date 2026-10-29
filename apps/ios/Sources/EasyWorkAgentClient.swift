@@ -18,6 +18,14 @@ enum EasyWorkReceiptNormalization {
 }
 
 struct EasyWorkAgentClient: AgentClient {
+  func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data {
+    let requestId = UUID().uuidString
+    let identity = try JSONSerialization.jsonObject(with: Data(usageTargetJSON(target).utf8))
+    let data = try await session(client).request("usage/read", ["schemaVersion": 1, "target": identity, "requestId": requestId])
+    guard data.count <= 262144, let result = try JSONSerialization.jsonObject(with: data) as? [String: Any], result["requestId"] as? String == requestId else { throw HostServiceError.invalidResponse }
+    return data
+  }
+
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse {
     guard scope.target.agentId == "easywork", client.agentConnection?.target == scope.target else { throw HostServiceError.wrongHost }
     let channel = try await session(client)

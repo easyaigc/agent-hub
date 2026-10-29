@@ -1181,7 +1181,11 @@ export class DesktopRuntime {
         },
       };
     }
-    if (['thread/items/list', 'model/list'].includes(method))
+    if (
+      ['thread/items/list', 'model/list', 'account/read', 'account/rateLimits/read'].includes(
+        method,
+      )
+    )
       return this.reader.read(method, params);
     if (method === 'turn/start') {
       const state = this.ipc.state(threadId);

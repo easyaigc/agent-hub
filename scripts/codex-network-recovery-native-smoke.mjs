@@ -46,11 +46,12 @@ try {
   const swift = `import Foundation
 import Network
 struct Candidate { var endpoint: String }
-struct Connection { var candidates: [Candidate]; var fingerprint: String }
+struct Connection { var candidates: [Candidate]; var fingerprint: String; var systemRoutes: [String] { [] } }
 struct Client { var codexDirect: Connection? }
 final class PairedHostTrust: NSObject, URLSessionDelegate, @unchecked Sendable {
   init(endpoint: String, fingerprint: String) {}
 }
+enum HostServiceError: Error { case invalidResponse }
 ${routes}
 @main struct Check {
   static func main() async throws {

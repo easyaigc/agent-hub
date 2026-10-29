@@ -33,6 +33,7 @@ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands
     override suspend fun forkOptions(client: MobileClient,threadId: String)=provider(client).second.forkOptions(client,threadId)
     override suspend fun forkThread(client: MobileClient,request: ThreadForkRequest)=provider(client).second.forkThread(client,request)
     override suspend fun forkStatus(client: MobileClient,threadId: String,operationId: String)=provider(client).second.forkStatus(client,threadId,operationId)
+    override suspend fun usage(client: MobileClient)=provider(client).second.usage(client)
     override suspend fun models(client: MobileClient)=provider(client).second.models(client)
     override suspend fun events(client: MobileClient, threadId: String, epoch: String, cursor: Long)=provider(client).second.events(client,threadId,epoch,cursor)
     override suspend fun send(client: MobileClient, intent: ReplyIntent)=provider(client).second.send(client,intent)

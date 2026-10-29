@@ -1646,6 +1646,22 @@
     <string name="product_2e5d2fb7f6f7fb957a87b6ca" formatted="false">"输入消息，长按语音输入"</string>
     <string name="product_dcdddf96014730fca16b253b" formatted="false">"长按语音输入"</string>
     <string name="product_850ceeaec29fb2d16e1c5c3a" formatted="false">"录音未完成"</string>
+    <string name="product_63df5f3faf2dcf0559d93d16" formatted="false">"无限额"</string>
+    <string name="product_f36cac96220bb1e499d1e50a" formatted="false">"暂不可用"</string>
+    <string name="product_b53b025a86f15d0e8746e346" formatted="false">"暂未提供额度"</string>
+    <string name="product_846d83a8e1f302864b30fb69" formatted="false">"缓存额度"</string>
+    <string name="product_e5acbd230d4c159ac703a274" formatted="false">"部分额度暂不可用"</string>
+    <string name="product_e3ca04a9cb133d2f714ffb86" formatted="false">"缓存"</string>
+    <string name="product_52ff3a4b1c1fd39c6c2142a9" formatted="false">"当前客户端额度"</string>
+    <string name="product_0a5f9a892960a00a6c0f42d2" formatted="false">"更新时间"</string>
+    <string name="product_13585a52c95e5f131df319f0" formatted="false">"百分比为已用用量，各窗口单独计算"</string>
+    <string name="product_f90638383727a236d7cdae6d" formatted="false">"重置时间"</string>
+    <string name="product_40781b5ae18a779127b18b32" formatted="false">"适用范围"</string>
+    <string name="product_dc5053cd0052f7cc0c4659d8" formatted="false">"所有模型和功能"</string>
+    <string name="product_8400f36c837a6a8632929a7f" formatted="false">"全部限制同时生效"</string>
+    <string name="product_0bb6ef6a18e1fb128ba84d25" formatted="false">"任一限制可用"</string>
+    <string name="product_ae25ef22856b7e79855c26b5" formatted="false">"按服务端规则"</string>
+    <string name="product_ba39316da2cf42a5535f02f7" formatted="false">"观察时间"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

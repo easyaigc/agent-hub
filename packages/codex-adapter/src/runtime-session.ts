@@ -1,3 +1,5 @@
+import { usageTarget, unavailableUsage } from '@codex-manage/protocol';
+import { readCodexUsage } from './usage.js';
 import { diagnosticEvent } from './diagnostic-events.js';
 import { isDeepStrictEqual } from 'node:util';
 import { randomUUID, createHash } from 'node:crypto';
@@ -747,6 +749,7 @@ export class RuntimeSession {
             'approvals',
             'plan-mode',
             'models:read',
+            'usage:read:v1',
             'generation-settings',
             'generation-speed',
             ...(this.desktopForks &&
@@ -786,6 +789,7 @@ export class RuntimeSession {
           'steer',
           'approvals',
           'models:read',
+          'usage:read:v1',
           'plan-mode',
           'generation-settings',
           'generation-speed',
@@ -4981,6 +4985,19 @@ export class RuntimeSession {
       if (cursor) seen.add(cursor);
     } while (cursor && data.length < 1000);
     return data.map(object).filter((v) => v.hidden !== true);
+  }
+
+  async usage(requestId: string) {
+    const target = usageTarget(this.readingTarget());
+    if (!this.ready) return unavailableUsage(target, requestId, 'offline');
+    const response = await readCodexUsage(
+      (method, params) => this.runtime.call(method, params),
+      target,
+      requestId,
+    );
+    if (JSON.stringify(target) !== JSON.stringify(usageTarget(this.readingTarget())))
+      return unavailableUsage(usageTarget(this.readingTarget()), requestId, 'offline');
+    return response;
   }
 
   async models() {

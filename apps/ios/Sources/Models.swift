@@ -693,7 +693,7 @@ enum ComposerAction: String {
 }
 
 enum AppSheet: String, Identifiable {
-  case clients, addClient, projects, settings, addProject, generation, fileTransfers, aiSharing, taskHub, archivedChats, chatSearch
+  case clients, addClient, projects, settings, usage, addProject, generation, fileTransfers, aiSharing, taskHub, archivedChats, chatSearch
   var id: String { rawValue }
 }
 

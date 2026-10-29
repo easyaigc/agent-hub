@@ -184,8 +184,18 @@ export class CodexHistoryReader {
         if (!request) return;
         clearTimeout(request.timer);
         this.pending.delete(message.id);
-        if (message.error) request.reject(new Error('Codex rejected the read request'));
-        else request.resolve(message.result);
+        if (message.error) {
+          const code =
+            typeof message.error === 'object' && !Array.isArray(message.error)
+              ? (message.error as RecordValue).code
+              : undefined;
+          // Keep the numeric wire reason for narrow feature compatibility, never the raw payload.
+          request.reject(
+            Object.assign(new Error('Codex rejected the read request'), {
+              ...(typeof code === 'number' && Number.isSafeInteger(code) ? { code } : {}),
+            }),
+          );
+        } else request.resolve(message.result);
       } catch {
         this.fail(new Error('Invalid Codex transport'));
       }
@@ -236,6 +246,8 @@ export class CodexHistoryReader {
         'thread/turns/list',
         'model/list',
         'config/read',
+        'account/read',
+        'account/rateLimits/read',
       ].includes(method)
     )
       throw new Error('Read-only method required');

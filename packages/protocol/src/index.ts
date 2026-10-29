@@ -8,6 +8,7 @@ export * from './vpn-discovery.js';
 export * from './codex-private-connection.js';
 export * from './codex-connection-routes.js';
 export * from './workspace-sidebar.js';
+export * from './usage.js';
 
 export type ServiceName = 'host-agent' | 'relay';
 

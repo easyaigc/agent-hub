@@ -1,5 +1,7 @@
 # 文档索引
 
+额度与余额的新需求见[实施计划](plans/agent-usage-20261028.md)、[类型与约束](design/agent-usage-contract.md)及[手机 UI](design/agent-usage.md)：F73 已按确认的修订 6 落地协议、Codex／EasyWork 适配及双端原生入口；真实与辅助结果见[验收记录](acceptance/agent-usage-20261028.md)。
+
 Android 的当前范围、已完成/未完成、优先级与待验项统一见[开发计划与进度总表](plans/android-alignment-20261022/progress.md)；详细过程按主题保存在[分阶段档案](plans/android-alignment-20261022/records/README.md)，总表不再追加运行流水。
 
 手机附件快捷入口见 [详细执行计划](plans/mobile-quick-attachments-20261024.md)：iOS 首批已接入最近图片轻提示、加号快选、拍照、选图、文件与系统粘贴，均先加入本地草稿，点击发送后才上传。辅助检查与真实 DEV 分别记录；外部分享为后续批次，Android A6 暂停要求保持。

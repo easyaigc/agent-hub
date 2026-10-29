@@ -17,6 +17,7 @@ struct ClientPickerView: View {
                                 Image(systemName: "laptopcomputer").font(.title3)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(client.name)
+                                    ClientUsageSummary(client: client, target: store.mobileReadingTarget(client))
                                     Text(store.sourceLabel(for: client))
                                         .font(.caption).foregroundStyle(Palette.secondary)
                                     let running = store.runningConversationCount(for: client).map { $0.formatted() } ?? "—"

@@ -70,6 +70,12 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
         val wire=MobileSnapshotCodec.header(client).put("name",client.name).put("connectionMode","easywork-runtime").put("projects",JSONArray(projects.map { JSONObject().put("id",it.id).put("hostId",client.id).put("name",it.name).put("roots",JSONArray(it.roots)) })).put("threads",JSONArray(threads.map(::encodeThread))).put("nextThreadCursor",listed.optional("nextCursor")).put("capabilities",JSONArray(caps.distinct())).put("runtimeConnected",observed.getBoolean("runtimeConnected"))
         return MobileSnapshotCodec.workspace(wire.toString())
     }
+    override suspend fun usage(client: MobileClient):String {
+        val id=java.util.UUID.randomUUID().toString()
+        val value=channel(client).request("usage/read",JSONObject().put("schemaVersion",1).put("requestId",id).put("target",usageTarget(client)))
+        require(value.optString("requestId")==id)
+        return value.toString()
+    }
     override suspend fun models(client: MobileClient): List<CodexModel> {
         val v=channel(client).request("model/list");return v.getJSONArray("models").objects().map { CodexModel(it.getString("id"),it.getString("name"),it.getBoolean("isDefault"),it.optional("defaultEffort"),it.optJSONArray("supportedEfforts")?.strings().orEmpty(),null,emptyList()) }
     }

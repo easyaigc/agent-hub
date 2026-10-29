@@ -46,7 +46,8 @@ function checkSupported(rule) {
     if (key === 'items' || (key === 'additionalProperties' && typeof value === 'object'))
       checkSupported(value);
     if (key === 'oneOf') value.forEach(checkSupported);
-    if (key === 'type') assert(['object', 'array', 'string', 'integer', 'boolean'].includes(value));
+    if (key === 'type')
+      assert(['object', 'array', 'string', 'integer', 'number', 'boolean'].includes(value));
     if (key === 'format') assert.equal(value, 'uri');
     if (key === '$ref') assert(value.startsWith('#/definitions/'));
   }

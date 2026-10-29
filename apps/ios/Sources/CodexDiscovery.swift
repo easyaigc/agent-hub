@@ -134,13 +134,23 @@ final class CodexHostRoutes: @unchecked Sendable {
       }
     }
   }
-  func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+  func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) {
     let session = lock.withLock { () -> URLSession in
       guard let url = request.url, let origin = origin(url), let fingerprint = pins[origin] else { return systemSession }
       let key = origin + "|" + fingerprint
       if let session = sessions[key] { return session }
       let session = URLSession(configuration: .ephemeral, delegate: PairedHostTrust(endpoint: url.absoluteString, fingerprint: fingerprint), delegateQueue: nil)
       sessions[key] = session; return session
+    }
+    if let maxBytes {
+      let (bytes, response) = try await session.bytes(for: request)
+      defer { bytes.task.cancel() }
+      var data = Data()
+      for try await byte in bytes {
+        guard data.count < maxBytes else { throw HostServiceError.invalidResponse }
+        data.append(byte)
+      }
+      return (data, response)
     }
     return try await session.data(for: request)
   }

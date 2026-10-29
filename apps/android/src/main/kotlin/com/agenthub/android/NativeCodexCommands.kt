@@ -20,7 +20,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     companion object { private val executor=Executors.newFixedThreadPool(4) }
     private suspend fun request(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null): JSONObject =
-        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path=="v1/threads/read") 32*1024 else if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
+        exchange(client,path,query,body,definition,bytes,mediaType) { input,active -> JSONObject(NativeWireReader.read(input,if(path=="v1/usage") 262144 else if(path=="v1/threads/read") 32*1024 else if(path.startsWith("v1/voice/")) 2*1024*1024 else if(path in RESOURCE_QUERYLESS_ROUTES) 1024*1024 else 64*1024*1024,active)) }
     private suspend fun <T> exchange(client: MobileClient, path: String, query: Map<String,String> = emptyMap(),
         body: JSONObject? = null, definition: String? = null, bytes: ByteArray? = null, mediaType: String? = null,decode: (java.io.InputStream,()->Boolean)->T): T {
         require(!client.isDemo && client.id.isNotBlank() && client.scope?.hostId==client.id) { "未绑定真实电脑目标" }
@@ -34,7 +34,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
             else CodexCommandCodec.validate(body,definition)
         }
         val base=NativeHostReads.baseAddress(client.endpoint ?: throw CodexCommandError("尚未配置电脑地址")).toString().trimEnd('/')
-        val parameters=mapOf("hostId" to client.id)+query+if(path.startsWith("v1/voice/") || !post&&path in RESOURCE_QUERYLESS_ROUTES) emptyMap() else mapOf("target" to CodexCommandCodec.target(client.scope!!).toString())
+        val parameters=if(path=="v1/usage")query else mapOf("hostId" to client.id)+query+if(path.startsWith("v1/voice/") || !post&&path in RESOURCE_QUERYLESS_ROUTES) emptyMap() else mapOf("target" to CodexCommandCodec.target(client.scope!!).toString())
         val encoded=parameters.entries.joinToString("&") { (k,v)->URLEncoder.encode(k,"UTF-8")+"="+URLEncoder.encode(v,"UTF-8") }
         val url=URI("$base/$path?$encoded").toURL()
         return suspendCancellableCoroutine { continuation ->
@@ -139,6 +139,7 @@ class NativeCodexCommands(private val token: (String)->String): CodexCommands {
     override suspend fun forkStatus(client: MobileClient,threadId: String,operationId: String)=ThreadForkCodec.operation(request(client,"v1/threads/fork",mapOf("threadId" to threadId,"id" to operationId))).also {
         require(it.request.hostId==client.id && it.request.threadId==threadId && it.request.operationId==operationId) { "分支回执目标不匹配" }
     }
+    override suspend fun usage(client: MobileClient)=request(client,"v1/usage",mapOf("target" to usageTarget(client).toString())).toString()
     override suspend fun models(client: MobileClient) = CodexCommandCodec.models(request(client,"v1/models"))
     override suspend fun events(client: MobileClient,threadId: String,epoch: String,cursor: Long): EventBatch {
         require(threadId.isNotBlank() && cursor in 0..9007199254740991L)
@@ -227,4 +228,4 @@ private fun hash(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(b
 private val POST_ROUTES=setOf("v1/threads/read","v1/workspace-management","v1/threads/actions","v1/replies","v1/threads/fork","v1/threads","v1/desktop/creations","v1/desktop/creations/submit","v1/desktop/creations/detach","v1/desktop/open","v1/stop","v1/queue/execute","v1/queue/cancel","v1/approvals","v1/attachments","v1/desktop/creation-attachments","v1/voice/transcriptions","v1/voice/transcriptions/audio")
 private val RESOURCE_QUERYLESS_ROUTES=setOf("v1/attachments/resolve","v1/attachments/resolve-link")
 private val RESOURCE_READ_ROUTES=setOf("v1/attachments","v1/attachments/resolve","v1/attachments/resolve-link")
-private val ROUTES=POST_ROUTES+RESOURCE_READ_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")
+private val ROUTES=POST_ROUTES+RESOURCE_READ_ROUTES+setOf("v1/threads/fork-options","v1/models","v1/usage","v1/events","v1/receipts","v1/replies/status","v1/desktop/creation-receipts","v1/desktop/open-status","v1/voice/readiness")

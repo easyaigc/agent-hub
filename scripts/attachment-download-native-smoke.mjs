@@ -149,7 +149,7 @@ ${attachment}
 enum CredentialVault { static func token(_ id: String) -> String { "synthetic-token" } }
 final class CodexHostRoutes {
   static let shared = CodexHostRoutes()
-  func data(for request: URLRequest) async throws -> (Data, URLResponse) { try await URLSession.shared.data(for: request) }
+  func data(for request: URLRequest, maxBytes: Int? = nil) async throws -> (Data, URLResponse) { try await URLSession.shared.data(for: request) }
 }
 struct HostService {
 ${methods}

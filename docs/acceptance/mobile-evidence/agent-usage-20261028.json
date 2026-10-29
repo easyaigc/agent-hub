@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "feature": "F73",
+  "uiRevision": 6,
+  "recordedAt": "2026-10-29T12:50:04.090Z",
+  "sourceFiles": {
+    "apps/host-agent/src/runtime-server.ts": "af4fe0e85fca715026e1284c64d1a684a03a51e14bf4758e651b2938dc3dc1b1",
+    "packages/codex-adapter/src/history-reader.ts": "7e9abce6cfb680d41ae29916ca01db2d06df3bb091bf86723a17ae5d07bc6063",
+    "packages/codex-adapter/src/desktop-ipc.ts": "cb4c83973ac81fd5906789a42a81af6b70c0a3f19e681afd49e5cb4fcf1bf14d",
+    "packages/codex-adapter/src/runtime-session.ts": "2db400d23bd42a5beed33527e172fac5151099dd7b11e1c83b1c7020f737fefa",
+    "packages/codex-adapter/src/usage.ts": "af21b231b4d93f8cbdfc5623a16c5f3999315b9dfb2843254fe25c8145bd6660",
+    "packages/protocol/src/index.ts": "5e013dae0bd04ed40b6dff23243369629ff2c6fbeb4eee805dc3637efec43e25",
+    "packages/protocol/src/usage.ts": "2b1d9394cb2498972ae4f12cde9220d4df42176af9ce18bae82d6583bf436a4a",
+    "packages/protocol/schemas/usage-v1.schema.json": "7f671128f3c2cd08f00015f154fbd0f4df06c3d1a299142c0d7c9151582f3a36",
+    "packages/protocol/fixtures/mobile/usage-v1.json": "d2512e0a4a01fb21316ddf135cef1c96ae38df50e62c67be830303e822783079",
+    "packages/easywork-adapter/src/index.ts": "3990c6e381ab54c70e1de6b38f638c4c8da08864ca6c75b77ef0560a472090d2",
+    "packages/mobile-core/build.gradle.kts": "75d9ea8e69c60c105a974f4cac5427d688d268091cd862b751345068898f3f52",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DomainContract.kt": "800fe59b18b169128efed4919ed6f093e207eef549d6d9d13788b5c995cb0c63",
+    "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt": "4cd1bd547479c3ecf21fa4f5bde3f7968135c92aad2f1d6d5b5fd2474d76c402",
+    "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt": "a4e4820f1802016e141d1ab30ebdb34e873fa18a72a8891f062cf202a544595f",
+    "apps/ios/Sources/AgentClient.swift": "daba1373c42b48d61395ea12558062cfaa0f6943e61fe6bbc8dc4b7b75ea6e89",
+    "apps/ios/Sources/CodexDiscovery.swift": "3b56db06c0835f277ed712a74892eb2e507e4d2902728c85346ac434b17faf6b",
+    "apps/ios/Sources/HostService.swift": "3c69b6c26490fda30115050e1a4821ddd34e3e34a1313edd9be58455e29b8c48",
+    "apps/ios/Sources/EasyWorkAgentClient.swift": "94a5af8d568306b5140c108a3ae11358171795c997067f906c0d44245c47baf5",
+    "apps/ios/Sources/EasyWorkSession.swift": "168e859b8d7796a67e60c9c6f12a7027c468125f1d610637b9e8d609154aa560",
+    "apps/ios/Sources/Models.swift": "5702cf9c72cf4734ad96eb4d3b14b8243142f3f8de227fa3783b832ec5e68c3c",
+    "apps/ios/Sources/RootView.swift": "f7f5a71b2c9c836ff1bc167aac85a573eaae59b4ff0e6aba0c2ac5a58cd72071",
+    "apps/ios/Sources/SessionStore.swift": "07e646d30e7609b5eabd4d770258d31c7c5bb1bb2aaa66ad08d63853ca58c2c1",
+    "apps/ios/Sources/Sheets.swift": "b99a722d54b2eb518af370cb8030b52107b64631dbc358e136f63b3b0c2f703b",
+    "apps/ios/Sources/UsageViews.swift": "92162683b397567773e104438ccc67f6384d9702e2fa45629c4a9fcd55ca36bb",
+    "apps/ios/Tests/UsageUITests.swift": "4ebb4fe9166300d3e0939f37ac7bf8a70570a3db970ff9503c0a065c09de2895",
+    "apps/ios/Resources/en.lproj/Localizable.strings": "51ffb638fe788a73f4ded86fdd994157da45c42d4a4708cb5b4db640a858caf4",
+    "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "5e68bda5d840bccafe1d8606abc0fd7b45d35d0fb7a7ead88ee4da095fa1cc04",
+    "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9f6a8e9142a9a7c2d82cea38390aaace55595a46c0dd6931949cc79b03edfde4",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "980236283835b548b240b1686b46a629c82bf7741e9e0fcc268f0e6530eb3e62",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "ca54f6aaa51ab5991c77dc137879b20ac77fd97443d9abc4baef4ba3a219d6e7",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "048a8eba1e9ec8b41d91beaebe62ccee2554334340f4b0784f9abcfb83a63591",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "cc318314f0664e6b532b3f8245429660ff093a70fd664f1587b1f99ab696e21c",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "67d90b69d0f2c21e5e37992e0c13097a8bb77159c09cfa691414fc9b1b7d1cf4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "d4c6696a1ea62ee7dd2bf28ecfdf68f52720fe948f65751f39abf7e226de5c4c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "5547360d0ccf060752e9a37416cc009c4b788c9f5fa0b58dee4812b785df160e",
+    "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "4af3cd6fbf2efc31b5f2e851c788d5f00088324dfca1a2563efdd89f810e3f73",
+    "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "240e765873bbbb344dfc82b161ce3d4b88ba59b933334ae51c4237eac92b515c",
+    "apps/android/src/main/kotlin/com/agenthub/android/UsageViews.kt": "16964d781c1cf341974880e1adc9a1c03103fe24f5ce6a4df401162c9ee53a97",
+    "scripts/attachment-download-native-smoke.mjs": "92832488a2794d19a987d23a1352c03ef20ab2884216c8c08d118077a1484096",
+    "scripts/codex-network-recovery-native-smoke.mjs": "af5e5dfd89d84f3ed137fc60564e6f726ec085092845d4430c42c3e30ea71a50",
+    "scripts/mobile/check-contract.mjs": "cd09168775e3f44872f8426d6fb5958b33a00486b91a714c9cc9dd9b0c80f8e0",
+    "scripts/distribute-usage-runtime.mjs": "af1457b04e3f0328eaf6e3b3416d3465344bf53963b51044ace757fa8994eae0",
+    "scripts/usage.test.mjs": "307ff0482636b75c1874c503211b60cf122b6678c42ff52ea71931ea2fb5ad98",
+    "packages/protocol/package.json": "547548b294b022564b3313a5158ea2863bd2388d159bcfb7e0336d3dae8c4a09",
+    "packages/easywork-adapter/package.json": "fa28a1a61af19fe6839560f2c6cec29a24a89df8a1d21412366d652a8599a103",
+    "packages/easywork-adapter/tsconfig.json": "2c96b0a49df03328ba9b234a0c59ff16ee00da3fb5625954fc8d54e4d80e255e"
+  },
+  "sourceSetSha256": "858ffea7531ec817e955f9b9f1723a55d0aa28c96d92c722cbe2737e5c9d1054",
+  "checks": {
+    "rootPnpmCheck": {
+      "status": "passed",
+      "sourceFiles": {
+        "apps/host-agent/src/runtime-server.ts": "af4fe0e85fca715026e1284c64d1a684a03a51e14bf4758e651b2938dc3dc1b1",
+        "packages/codex-adapter/src/history-reader.ts": "7e9abce6cfb680d41ae29916ca01db2d06df3bb091bf86723a17ae5d07bc6063",
+        "packages/codex-adapter/src/desktop-ipc.ts": "cb4c83973ac81fd5906789a42a81af6b70c0a3f19e681afd49e5cb4fcf1bf14d",
+        "packages/codex-adapter/src/runtime-session.ts": "2db400d23bd42a5beed33527e172fac5151099dd7b11e1c83b1c7020f737fefa",
+        "packages/codex-adapter/src/usage.ts": "af21b231b4d93f8cbdfc5623a16c5f3999315b9dfb2843254fe25c8145bd6660",
+        "packages/protocol/src/index.ts": "5e013dae0bd04ed40b6dff23243369629ff2c6fbeb4eee805dc3637efec43e25",
+        "packages/protocol/src/usage.ts": "2b1d9394cb2498972ae4f12cde9220d4df42176af9ce18bae82d6583bf436a4a",
+        "packages/protocol/schemas/usage-v1.schema.json": "7f671128f3c2cd08f00015f154fbd0f4df06c3d1a299142c0d7c9151582f3a36",
+        "packages/protocol/fixtures/mobile/usage-v1.json": "d2512e0a4a01fb21316ddf135cef1c96ae38df50e62c67be830303e822783079",
+        "packages/easywork-adapter/src/index.ts": "3990c6e381ab54c70e1de6b38f638c4c8da08864ca6c75b77ef0560a472090d2",
+        "packages/mobile-core/build.gradle.kts": "75d9ea8e69c60c105a974f4cac5427d688d268091cd862b751345068898f3f52",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DomainContract.kt": "800fe59b18b169128efed4919ed6f093e207eef549d6d9d13788b5c995cb0c63",
+        "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt": "be09fb671e9316625c2d331f9cb35076b53dd144cc11063aba8f7b25e4cd1321",
+        "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt": "ffda65f71e7a12650484add9ea4b447e486b2cc7605d8cc79ae727448f5e93b1",
+        "apps/ios/Sources/AgentClient.swift": "daba1373c42b48d61395ea12558062cfaa0f6943e61fe6bbc8dc4b7b75ea6e89",
+        "apps/ios/Sources/CodexDiscovery.swift": "3b56db06c0835f277ed712a74892eb2e507e4d2902728c85346ac434b17faf6b",
+        "apps/ios/Sources/HostService.swift": "3c69b6c26490fda30115050e1a4821ddd34e3e34a1313edd9be58455e29b8c48",
+        "apps/ios/Sources/EasyWorkAgentClient.swift": "94a5af8d568306b5140c108a3ae11358171795c997067f906c0d44245c47baf5",
+        "apps/ios/Sources/EasyWorkSession.swift": "168e859b8d7796a67e60c9c6f12a7027c468125f1d610637b9e8d609154aa560",
+        "apps/ios/Sources/Models.swift": "5702cf9c72cf4734ad96eb4d3b14b8243142f3f8de227fa3783b832ec5e68c3c",
+        "apps/ios/Sources/RootView.swift": "f7f5a71b2c9c836ff1bc167aac85a573eaae59b4ff0e6aba0c2ac5a58cd72071",
+        "apps/ios/Sources/SessionStore.swift": "07e646d30e7609b5eabd4d770258d31c7c5bb1bb2aaa66ad08d63853ca58c2c1",
+        "apps/ios/Sources/Sheets.swift": "b99a722d54b2eb518af370cb8030b52107b64631dbc358e136f63b3b0c2f703b",
+        "apps/ios/Sources/UsageViews.swift": "92162683b397567773e104438ccc67f6384d9702e2fa45629c4a9fcd55ca36bb",
+        "apps/ios/Tests/UsageUITests.swift": "4ebb4fe9166300d3e0939f37ac7bf8a70570a3db970ff9503c0a065c09de2895",
+        "apps/ios/Resources/en.lproj/Localizable.strings": "51ffb638fe788a73f4ded86fdd994157da45c42d4a4708cb5b4db640a858caf4",
+        "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "5e68bda5d840bccafe1d8606abc0fd7b45d35d0fb7a7ead88ee4da095fa1cc04",
+        "apps/ios/CodexManage.xcodeproj/project.pbxproj": "9f6a8e9142a9a7c2d82cea38390aaace55595a46c0dd6931949cc79b03edfde4",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "980236283835b548b240b1686b46a629c82bf7741e9e0fcc268f0e6530eb3e62",
+        "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "ca54f6aaa51ab5991c77dc137879b20ac77fd97443d9abc4baef4ba3a219d6e7",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "048a8eba1e9ec8b41d91beaebe62ccee2554334340f4b0784f9abcfb83a63591",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "cc318314f0664e6b532b3f8245429660ff093a70fd664f1587b1f99ab696e21c",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "67d90b69d0f2c21e5e37992e0c13097a8bb77159c09cfa691414fc9b1b7d1cf4",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "d4c6696a1ea62ee7dd2bf28ecfdf68f52720fe948f65751f39abf7e226de5c4c",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "5547360d0ccf060752e9a37416cc009c4b788c9f5fa0b58dee4812b785df160e",
+        "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "4af3cd6fbf2efc31b5f2e851c788d5f00088324dfca1a2563efdd89f810e3f73",
+        "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "240e765873bbbb344dfc82b161ce3d4b88ba59b933334ae51c4237eac92b515c",
+        "apps/android/src/main/kotlin/com/agenthub/android/UsageViews.kt": "16964d781c1cf341974880e1adc9a1c03103fe24f5ce6a4df401162c9ee53a97",
+        "scripts/attachment-download-native-smoke.mjs": "92832488a2794d19a987d23a1352c03ef20ab2884216c8c08d118077a1484096",
+        "scripts/codex-network-recovery-native-smoke.mjs": "af5e5dfd89d84f3ed137fc60564e6f726ec085092845d4430c42c3e30ea71a50",
+        "scripts/mobile/check-contract.mjs": "cd09168775e3f44872f8426d6fb5958b33a00486b91a714c9cc9dd9b0c80f8e0",
+        "scripts/distribute-usage-runtime.mjs": "af1457b04e3f0328eaf6e3b3416d3465344bf53963b51044ace757fa8994eae0",
+        "scripts/usage.test.mjs": "307ff0482636b75c1874c503211b60cf122b6678c42ff52ea71931ea2fb5ad98",
+        "packages/protocol/package.json": "547548b294b022564b3313a5158ea2863bd2388d159bcfb7e0336d3dae8c4a09",
+        "packages/easywork-adapter/package.json": "fa28a1a61af19fe6839560f2c6cec29a24a89df8a1d21412366d652a8599a103",
+        "packages/easywork-adapter/tsconfig.json": "2c96b0a49df03328ba9b234a0c59ff16ee00da3fb5625954fc8d54e4d80e255e"
+      },
+      "note": "Full workspace check passed; subsequent percentage text overflow fix was verified with current KMP JVM tests and rebuilt native clients."
+    },
+    "usageBoundaries": {
+      "status": "passed",
+      "groups": 7
+    },
+    "sharedKmpJvm": {
+      "status": "passed",
+      "tests": 89
+    },
+    "androidDebugBuild": {
+      "status": "passed",
+      "nativeUi": "not-verified"
+    },
+    "iosNativeBuild": {
+      "status": "passed"
+    },
+    "iosSimulatorRealHost": {
+      "status": "passed",
+      "deviceClass": "iPhone 15 Pro Max",
+      "assertions": [
+        "settings-left",
+        "usage-before-collapse",
+        "no-personal-space",
+        "real-window-ring",
+        "precise-balance-detail",
+        "client-picker",
+        "independent-settings",
+        "independent-collapse"
+      ],
+      "privateEvidenceRef": "F73-native-complete"
+    },
+    "physicalIPhone": {
+      "status": "environment-failed",
+      "deviceClass": "paired iPhone 15 Pro Max",
+      "businessAssertionsExecuted": false,
+      "reason": "XCTest timed out while enabling automation mode after exact App activation",
+      "attempts": 2,
+      "buildScope": "Earlier independent candidate built successfully; final sources require a new physical build before business acceptance."
+    },
+    "codexRealHost": {
+      "status": "passed",
+      "shape": {
+        "status": "ok",
+        "metricKinds": ["window-limit", "balance"],
+        "windowSeconds": [604800]
+      },
+      "routeCases": [
+        {
+          "case": "no-auth",
+          "http": 401,
+          "passed": true
+        },
+        {
+          "case": "wrong-machine",
+          "http": 409,
+          "passed": true
+        },
+        {
+          "case": "account-field",
+          "http": 400,
+          "passed": true
+        },
+        {
+          "case": "extra-query",
+          "http": 400,
+          "passed": true
+        },
+        {
+          "case": "valid",
+          "http": 200,
+          "passed": true
+        }
+      ],
+      "artifacts": {
+        "packages/protocol/dist/usage.js": "21b24048f0af4415f6c5c68382261cfb367b4755fb7aa09b342999fcf77fb2cf",
+        "packages/codex-adapter/dist/usage.js": "3e42b39e5017b3906e4e4f6632bd63ddecb7ea528651d418d8424d7c8959c528",
+        "packages/codex-adapter/dist/history-reader.js": "93c11c82f93145914765de0f8893254f3577b1a98d54f273af62192932641dbd",
+        "apps/host-agent/dist/runtime-server.js": "3491452d8987cb1ee0fcfb07477c1d4507f57fbd2e9e9850f8c2fae6f851d2d6"
+      },
+      "httpCache": "no-store",
+      "usageOperations": "read-only"
+    },
+    "easyworkBridgeAndController": {
+      "status": "passed",
+      "tests": 24,
+      "breakdown": {
+        "bridgeAndController": 22,
+        "authorizationLifetime": 2
+      }
+    },
+    "easyworkWorkspaceTypecheck": {
+      "status": "passed",
+      "scope": "current Gitea master baseline with pinned dependency graph",
+      "earlyFailure": {
+        "errorCount": 4,
+        "cause": "non-frozen install dependency drift; not a preexisting source defect",
+        "resolved": true
+      }
+    },
+    "easyworkRealElectronAndMobileTransports": {
+      "status": "not-verified"
+    }
+  },
+  "cleanup": {
+    "temporaryHost": "stopped-and-port-verified-closed",
+    "dedicatedSimulator": "F73 Codex and EasyWork simulators removed after evidence export",
+    "physicalAcceptanceApp": "independent App retained; native hosted XCTest passed; formal Apps preserved",
+    "temporaryWorktreesCreated": 3,
+    "temporaryWorktrees": "old frozen EasyWork DEV removed after source preservation; two delivery worktrees retained for PR delivery"
+  },
+  "privateData": "No account identifiers, balances, Host Keys, credentials or conversation exports are included.",
+  "deliveryRevalidation": {
+    "rootPnpmCheck": "passed after integrating current origin/main",
+    "kmpJvm": {
+      "tests": 95,
+      "failures": 0
+    },
+    "androidDebugBuild": "passed",
+    "canonicalEasyWorkRuntimeReproduction": {
+      "status": "passed",
+      "artifacts": 7
+    },
+    "realEasyWork": {
+      "desktop": "original Electron with original authentication service",
+      "authorityOrigin": "https://51easyai.com",
+      "independentAccountSummaryComparison": "passed",
+      "nativeIosSimulator": {
+        "status": "passed",
+        "tests": 1,
+        "transports": ["lan-wss", "relay-http"],
+        "assertions": [
+          "sidebar usage",
+          "client picker usage",
+          "precise balance details",
+          "settings left of usage",
+          "collapse right of usage",
+          "settings and collapse independently actionable"
+        ],
+        "modelStarts": 0
+      },
+      "physicalIPhone": {
+        "status": "passed",
+        "model": "iPhone 15 Pro Max",
+        "connection": "paired physical Wi-Fi device verified from XCTest result",
+        "nativeHostedXCTest": "1 test passed in the independent native App",
+        "nativeSnapshotIdMatchedDesktop": true,
+        "exactBalanceMatchedDesktop": true,
+        "nativeViews": ["usage footer", "usage details", "client picker"],
+        "touchActions": "passed independently on native iOS simulator; historical physical XCUI initialization failures retained",
+        "modelStarts": 0,
+        "earlierNetworkDenial": "resolved before this successful run"
+      },
+      "mobileIdentityScope": "explicit-loopback-DEV-only; production OIDC/public Relay not verified"
+    },
+    "sourceFiles": {
+      "apps/host-agent/src/runtime-server.ts": "9e1dfe69482b92536e4411afb84a0acd80490351e45fe06a21d07de4f6020c14",
+      "packages/codex-adapter/src/history-reader.ts": "19ad36f517175e9b24ef4adbfb2623b79b3301a7aa2d3e916514735828af5dc2",
+      "packages/codex-adapter/src/desktop-ipc.ts": "e6194895e9ee6013b882b54372fca29fd3cfc36c2b7df541981b763c3be02f72",
+      "packages/codex-adapter/src/runtime-session.ts": "57c68232d57d3dc16d341dd70e8f8a397a26697a77ae2d0f9ed3edd8965d5912",
+      "packages/codex-adapter/src/usage.ts": "af21b231b4d93f8cbdfc5623a16c5f3999315b9dfb2843254fe25c8145bd6660",
+      "packages/protocol/src/index.ts": "8153b081e8a06e8a0551d1f2e17d8c994715b7f778bf7d3dcf89df465df69610",
+      "packages/protocol/src/usage.ts": "2b1d9394cb2498972ae4f12cde9220d4df42176af9ce18bae82d6583bf436a4a",
+      "packages/protocol/schemas/usage-v1.schema.json": "7f671128f3c2cd08f00015f154fbd0f4df06c3d1a299142c0d7c9151582f3a36",
+      "packages/protocol/fixtures/mobile/usage-v1.json": "d2512e0a4a01fb21316ddf135cef1c96ae38df50e62c67be830303e822783079",
+      "packages/easywork-adapter/src/index.ts": "3990c6e381ab54c70e1de6b38f638c4c8da08864ca6c75b77ef0560a472090d2",
+      "packages/mobile-core/build.gradle.kts": "cee5f61607a8f9b132bce65cead445ad53b77ddbc50207e730e10e479f814724",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/DomainContract.kt": "800fe59b18b169128efed4919ed6f093e207eef549d6d9d13788b5c995cb0c63",
+      "packages/mobile-core/src/commonMain/kotlin/com/agenthub/core/UsageRules.kt": "4cd1bd547479c3ecf21fa4f5bde3f7968135c92aad2f1d6d5b5fd2474d76c402",
+      "packages/mobile-core/src/commonTest/kotlin/com/agenthub/core/UsageRulesTest.kt": "a4e4820f1802016e141d1ab30ebdb34e873fa18a72a8891f062cf202a544595f",
+      "apps/ios/Sources/AgentClient.swift": "daba1373c42b48d61395ea12558062cfaa0f6943e61fe6bbc8dc4b7b75ea6e89",
+      "apps/ios/Sources/CodexDiscovery.swift": "3b56db06c0835f277ed712a74892eb2e507e4d2902728c85346ac434b17faf6b",
+      "apps/ios/Sources/HostService.swift": "ed02b438e059cf8449a6a0bc4671cb4d99d1d0ceea72c600d8dacdd16f76512a",
+      "apps/ios/Sources/EasyWorkAgentClient.swift": "f0ddd79dfa9398e39d211d3434fa7d0e90b6a49c47ebb01253e4c1df3fc090b2",
+      "apps/ios/Sources/EasyWorkSession.swift": "168e859b8d7796a67e60c9c6f12a7027c468125f1d610637b9e8d609154aa560",
+      "apps/ios/Sources/Models.swift": "8ab29019c79949c495f228290b1edf23a6250ba7ab0b86344ef124c03ecbefb7",
+      "apps/ios/Sources/RootView.swift": "af4b4f19ab55ffc7c29b6ef58b6c9685a1b25c5db06746b4909443fce1cb3b07",
+      "apps/ios/Sources/SessionStore.swift": "af875be4eaae0f7c08be2d7dd15de0b94ee82c704c95565bc58bfd86325f32c9",
+      "apps/ios/Sources/Sheets.swift": "a8c2d57c78fc75dc1aa61e92ab03666bf4bb6135c98de50c40f44a78dc698ee0",
+      "apps/ios/Sources/UsageViews.swift": "e8fb010704d1d8ebd589897c110ace5dc6e0f46acfad502f1d38aba8527f6916",
+      "apps/ios/Tests/UsageUITests.swift": "f9cb05e6916ff12959d6f5f9bbf7aa049c94da606c3b3f744d7780ab1aa5a8ae",
+      "apps/ios/Resources/en.lproj/Localizable.strings": "bd79741504a73fd132273f020a6ae81878ba7e71e2fe1fdd9cc009ff0dcb542d",
+      "apps/ios/Resources/zh-Hans.lproj/Localizable.strings": "f8ce974aa4705772f19d970b3a1d988b5cdbc7c0c1de7fbd75946a60a67322e8",
+      "apps/ios/CodexManage.xcodeproj/project.pbxproj": "7b9e2671ad0a10fa8563721769cc79e1497c5f5eb9343e1a5136749b14f1996d",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "fc5931cbbb8cf2f87f86fef4dcd8131891ae6a9cb291ee5a559cb5404d346968",
+      "apps/android/src/main/kotlin/com/agenthub/android/CodexCommands.kt": "5b07bb68cd4122380922888d0b7bda18708fadf9c1f7bf7aa348259882285e2c",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "ec2c28c5ba9a815e29ee1cca19385f4cc8244a7010a90fa4c254314d9e85b50d",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "b1765118c85bcba5c70dda0804be297b671b6724459ec6205e72385028d45150",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "101c186b808aecb9d1e67d3d7db6f64d79cd2292b2f4e2071d0c97f674452fab",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexCommands.kt": "cf6588f4fe39475e923dcad920a893fe642e360f9be8e46e198b28ba26232ce1",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "f40490ce78fb3f9a6957e058c7e6a3d1d7d968cb0783362ea8343ebbff024054",
+      "apps/android/src/main/kotlin/com/agenthub/android/ProductIcons.kt": "5990f5475958811d1e1838a5d2144f3b9459c3eb3b163bf0bf5e834851c7899d",
+      "apps/android/src/main/kotlin/com/agenthub/android/Sidebar.kt": "5b91967b2b79a05a45b94a92557520bb7bb82946caf4e89c07a7c3c5f59afe55",
+      "apps/android/src/main/kotlin/com/agenthub/android/UsageViews.kt": "e8851fbf02d4925d42fe7ea02263d0b23c28d410833b19b8dc2d1119d237cb71",
+      "scripts/attachment-download-native-smoke.mjs": "6efa27c972ab4ec9978497056c15d14d058e98ee3e36bc5a1ec9eabfe665825b",
+      "scripts/codex-network-recovery-native-smoke.mjs": "af5e5dfd89d84f3ed137fc60564e6f726ec085092845d4430c42c3e30ea71a50",
+      "scripts/mobile/check-contract.mjs": "cd09168775e3f44872f8426d6fb5958b33a00486b91a714c9cc9dd9b0c80f8e0",
+      "scripts/distribute-usage-runtime.mjs": "b6300025640d665d7d69518ef07fbde814070fbbab88fbe1fa0097218faffefa",
+      "scripts/usage.test.mjs": "307ff0482636b75c1874c503211b60cf122b6678c42ff52ea71931ea2fb5ad98",
+      "packages/protocol/package.json": "547548b294b022564b3313a5158ea2863bd2388d159bcfb7e0336d3dae8c4a09",
+      "packages/easywork-adapter/package.json": "fa28a1a61af19fe6839560f2c6cec29a24a89df8a1d21412366d652a8599a103",
+      "packages/easywork-adapter/tsconfig.json": "2c96b0a49df03328ba9b234a0c59ff16ee00da3fb5625954fc8d54e4d80e255e",
+      "apps/android/src/androidTest/assets/localization-catalog.json": "587f12ee78d68be2f499bf93b4bb74c9a0eae60ef6ba43bede5e24bed1c9e3a1",
+      "apps/android/src/main/res/values-zh/product_strings.xml": "57d635071480a54e01be2fe4dd77b1f96b811e5bda7fd9abd9b997aaed5c66b8",
+      "apps/android/src/main/res/values/product_strings.xml": "7add6f00d860016547d96159d974c7c53e6014b8b6d631ab525c536a70951586",
+      "design/mobile/agent-usage-preview.html": "d9b7189ac9075b5df05b27438a8a79ada64bc219dcf9fd203ce941dfa388829f",
+      "scripts/mobile/usage-easywork-live.mjs": "a5c5539ff200fb9ae80008403624df0e2a1e20af63df1c514d10e49af1dbb7b2"
+    },
+    "integration": {
+      "agentHubBase": "fa45d4c4392d3cd64d21dfea8992757676fe7d99",
+      "easyWorkBase": "42b2b4e4cd60185075366154672a55a4d749815f",
+      "mainCheck": "passed",
+      "nativeIosSimulator": "passed again after mainline integration on LAN and Relay",
+      "physicalIPhone": "passed again after mainline integration; exact desktop snapshot and amount matched",
+      "readOnly": true,
+      "agentHubDeliveryBase": "4eb25b187617db3681b0bee342d4fd7d01497086",
+      "easyWorkDeliveryBase": "e38bf8ac0083f0e285bce30a1e098fefce261591",
+      "laterMainlineScope": "Upstream iOS retry icon and Android acceptance diagnostics preserved; F73 production source hashes unchanged, prior native results reused."
+    },
+    "liveHarnessFinalChange": "Electron ABI preparation only; targeted formatting/lint and real Electron launch passed after full workspace check"
+  },
+  "historicalChecksScope": "checks and sourceFiles preserve the initial run; deliveryRevalidation records current integrated delivery results."
+}

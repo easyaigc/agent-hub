@@ -1769,3 +1769,19 @@
 "长按语音输入" = "Touch and hold to start voice input";
 
 "录音未完成" = "Recording incomplete";
+"无限额" = "Unlimited";
+"暂不可用" = "Unavailable";
+"暂未提供额度" = "Usage unavailable";
+"缓存额度" = "Cached usage";
+"部分额度暂不可用" = "Some usage is unavailable";
+"缓存" = "Cached";
+"当前客户端额度" = "Current client usage";
+"更新时间" = "Updated";
+"百分比为已用用量，各窗口单独计算" = "Percentages show usage consumed; each window is independent";
+"重置时间" = "Resets";
+"适用范围" = "Applies to";
+"所有模型和功能" = "All models and features";
+"全部限制同时生效" = "All limits apply";
+"任一限制可用" = "Any limit may be available";
+"按服务端规则" = "Provider rules apply";
+"观察时间" = "Observed";

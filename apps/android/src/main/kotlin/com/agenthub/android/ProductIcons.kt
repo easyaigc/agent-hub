@@ -25,6 +25,16 @@ import androidx.compose.ui.unit.dp
         fun line(x: Float, y: Float, xx: Float, yy: Float) = drawLine(color, Offset(x*u,y*u), Offset(xx*u,yy*u), 1.7f*u, StrokeCap.Round)
         fun path(vararg points: Float) { val p = Path(); p.moveTo(points[0]*u, points[1]*u); for (i in 2 until points.size step 2) p.lineTo(points[i]*u,points[i+1]*u); drawPath(p,color,style=stroke) }
         when(name) {
+            "settings" -> {
+                val gear=Path()
+                for(i in 0 until 32) {
+                    val angle=i*kotlin.math.PI/16;val radius=if(i%4 in 1..2)10f else 7.5f
+                    val x=(12+radius*kotlin.math.cos(angle)).toFloat()*u;val y=(12+radius*kotlin.math.sin(angle)).toFloat()*u
+                    if(i==0)gear.moveTo(x,y) else gear.lineTo(x,y)
+                }
+                gear.close();drawPath(gear,color,style=stroke);drawCircle(color,3f*u,Offset(12f*u,12f*u),style=stroke)
+            }
+
             "doc" -> { path(5f,2f,14f,2f,19f,7f,19f,22f,5f,22f,5f,2f);path(14f,2f,14f,7f,19f,7f);line(8f,12f,16f,12f);line(8f,16f,16f,16f) }
             "camera" -> { path(2f,7f,7f,7f,9f,3f,15f,3f,17f,7f,22f,7f,22f,21f,2f,21f,2f,7f);drawCircle(color,5f*u,Offset(12f*u,14f*u),style=stroke) }
             "clipboard" -> { path(7f,4f,3f,4f,3f,22f,21f,22f,21f,4f,17f,4f);path(7f,2f,17f,2f,17f,7f,7f,7f,7f,2f);line(7f,12f,17f,12f);line(7f,17f,14f,17f) }

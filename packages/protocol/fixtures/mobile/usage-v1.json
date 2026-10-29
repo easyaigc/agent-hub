@@ -1,0 +1,761 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "agentId": "codex",
+    "hostId": "fixture-host",
+    "workspaceId": "fixture-workspace",
+    "runtimeId": "fixture-runtime"
+  },
+  "nowMillis": 1793149230000,
+  "cases": [
+    {
+      "name": "weekly-plus-precise-credits",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "measured",
+                    "usage": {
+                      "kind": "percentage",
+                      "usedPercent": 23
+                    }
+                  }
+                },
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "9007199254740993.123456789012345678901234",
+                    "entitlement": "finite"
+                  },
+                  "expiresAt": null
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "9,007,199,254,740,993.12",
+        "percent": 23,
+        "partial": false
+      }
+    },
+    {
+      "name": "zero-is-real",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "measured",
+                    "usage": {
+                      "kind": "percentage",
+                      "usedPercent": 23
+                    }
+                  }
+                },
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "0",
+                    "entitlement": "finite"
+                  },
+                  "expiresAt": null
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "0",
+        "percent": 23,
+        "partial": false
+      }
+    },
+    {
+      "name": "no-balance",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "measured",
+                    "usage": {
+                      "kind": "percentage",
+                      "usedPercent": 23
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "percent": 23,
+        "partial": false
+      }
+    },
+    {
+      "name": "balance-only",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "9007199254740993.123456789012345678901234",
+                    "entitlement": "finite"
+                  },
+                  "expiresAt": null
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "9,007,199,254,740,993.12",
+        "partial": false
+      }
+    },
+    {
+      "name": "unlimited-and-actual-balance",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "measured",
+                    "usage": {
+                      "kind": "percentage",
+                      "usedPercent": 23
+                    }
+                  }
+                },
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "9007199254740993.123456789012345678901234",
+                    "entitlement": "unlimited"
+                  },
+                  "expiresAt": null
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "9,007,199,254,740,993.12",
+        "percent": 23,
+        "partial": false
+      }
+    },
+    {
+      "name": "overage-quantity",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "measured",
+                    "usage": {
+                      "kind": "quantity",
+                      "used": "90071992547409930",
+                      "limit": "45035996273704965",
+                      "unit": {
+                        "kind": "tokens",
+                        "code": "tokens",
+                        "label": "tokens"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "9007199254740993.123456789012345678901234",
+                    "entitlement": "finite"
+                  },
+                  "expiresAt": null
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "9,007,199,254,740,993.12",
+        "percent": 200,
+        "partial": false
+      }
+    },
+    {
+      "name": "zero-denominator",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "measured",
+                    "usage": {
+                      "kind": "quantity",
+                      "used": "0",
+                      "limit": "0",
+                      "unit": {
+                        "kind": "requests",
+                        "code": "requests",
+                        "label": "requests"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "9007199254740993.123456789012345678901234",
+                    "entitlement": "finite"
+                  },
+                  "expiresAt": null
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "9,007,199,254,740,993.12",
+        "partial": false
+      }
+    },
+    {
+      "name": "unknown-v1-child",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "complete",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "measured",
+                    "usage": {
+                      "kind": "percentage",
+                      "usedPercent": 23
+                    }
+                  }
+                },
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "9007199254740993.123456789012345678901234",
+                    "entitlement": "finite"
+                  },
+                  "expiresAt": null
+                },
+                {
+                  "id": "future",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "future-limit",
+                  "opaque": {
+                    "anything": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "9,007,199,254,740,993.12",
+        "percent": 23,
+        "partial": true
+      }
+    },
+    {
+      "name": "partial-window",
+      "response": {
+        "schemaVersion": 1,
+        "target": {
+          "agentId": "codex",
+          "hostId": "fixture-host",
+          "workspaceId": "fixture-workspace",
+          "runtimeId": "fixture-runtime"
+        },
+        "requestId": "fixture-request",
+        "status": "ok",
+        "snapshot": {
+          "snapshotId": "fixture-snapshot",
+          "sampledAt": "2026-10-28T01:00:00.000Z",
+          "source": {
+            "adapterId": "codex",
+            "scopeRef": "fixture-scope",
+            "scopeLabel": null,
+            "planLabel": "Pro"
+          },
+          "coverage": "partial",
+          "buckets": [
+            {
+              "id": "pool",
+              "label": "Codex",
+              "sharedPoolRef": null,
+              "combination": {
+                "kind": "provider-defined"
+              },
+              "metrics": [
+                {
+                  "id": "weekly",
+                  "label": "7d",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "window-limit",
+                  "window": {
+                    "durationSeconds": 604800,
+                    "resetsAt": "2026-11-01T00:00:00.000Z",
+                    "resetPolicy": "provider-defined"
+                  },
+                  "reading": {
+                    "state": "unavailable",
+                    "reason": "not-returned"
+                  }
+                },
+                {
+                  "id": "credits",
+                  "label": "Credits",
+                  "appliesTo": {
+                    "kind": "all"
+                  },
+                  "observedAt": "2026-10-28T01:00:00.000Z",
+                  "validUntil": "2026-10-28T01:01:00.000Z",
+                  "kind": "balance",
+                  "unit": {
+                    "kind": "credits",
+                    "code": "codex-credit",
+                    "label": "credits"
+                  },
+                  "reading": {
+                    "state": "amount",
+                    "amount": "9007199254740993.123456789012345678901234",
+                    "entitlement": "finite"
+                  },
+                  "expiresAt": null
+                }
+              ]
+            }
+          ],
+          "issues": []
+        }
+      },
+      "expected": {
+        "balance": "9,007,199,254,740,993.12",
+        "partial": true
+      }
+    }
+  ]
+}

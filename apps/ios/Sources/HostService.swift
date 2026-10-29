@@ -144,7 +144,7 @@ struct HostService {
     guard let endpoint = client.endpoint else { throw HostServiceError.invalidAddress }
     var components = URLComponents(
       url: try baseURL(endpoint).appendingPathComponent(path), resolvingAgainstBaseURL: false)!
-    components.queryItems = (["hostId": client.id].merging(query) { _, rhs in rhs }).map {
+    components.queryItems = ((path == "v1/usage" ? [:] : ["hostId": client.id]).merging(query) { _, rhs in rhs }).map {
       URLQueryItem(name: $0.key, value: $0.value)
     }
     return components.url!
@@ -164,8 +164,8 @@ struct HostService {
     if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
     return request
   }
-  static func bytes(_ request: URLRequest) async throws -> Data {
-    let (data, response) = try await CodexHostRoutes.shared.data(for: request)
+  static func bytes(_ request: URLRequest, maxBytes: Int? = nil) async throws -> Data {
+    let (data, response) = try await CodexHostRoutes.shared.data(for: request, maxBytes: maxBytes)
     guard let http = response as? HTTPURLResponse else {
       throw HostServiceError.invalidResponse
     }

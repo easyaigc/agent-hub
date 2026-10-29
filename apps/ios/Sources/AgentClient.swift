@@ -159,6 +159,7 @@ enum AgentDomainCodec {
 
 /// Product operations. Providers own wire, authentication and target mapping.
 protocol AgentClient: Sendable {
+  func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data
   func voiceReadiness(_ client: Client) async throws -> VoiceTranscriptionReadiness
   func transcribeVoice(_ client: Client, recording: VoiceRecording, threadId: String?, draftId: String) async throws -> String
   func permissionOptions(_ client: Client) -> [AgentPermissionOption]
@@ -213,6 +214,7 @@ protocol AgentClient: Sendable {
   func uploadCreation(_ client: Client, id: String, file: LocalAttachment, data: Data) async throws
 }
 extension AgentClient {
+  func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data { throw HostServiceError.unavailable }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { throw HostServiceError.message(L10n.tr("当前连接程序不支持原消息文件解析，请更新电脑连接程序后重试。")) }
   func nextTurnSuggestion(_ client: Client, scope: DesktopSuggestionScope) async throws -> DesktopSuggestionResponse { throw HostServiceError.unavailable }
   func chatAction(_ client: Client, request: ChatActionRequest) async throws -> ChatActionReceipt { throw HostServiceError.unavailable }
@@ -418,6 +420,12 @@ struct CodexAgentClient: AgentClient {
   func upload(_ client: Client, threadId: String, file: LocalAttachment, data: Data) async throws -> RemoteAttachment { try await HostService.upload(client, threadId: threadId, file: file, data: data) }
   func download(_ client: Client, file: RemoteAttachment) async throws -> URL { try await HostService.download(client, file: file) }
   func resolveMessageFile(_ client: Client, threadId: String, messageId: String, reference: String) async throws -> RemoteAttachment { try await HostService.resolveMessageFile(client, threadId: threadId, messageId: messageId, reference: reference) }
+  func usage(_ client: Client, target: AgentRuntimeTarget) async throws -> Data {
+    CodexHostRoutes.shared.register(client)
+    var request = HostService.request(try HostService.url(client, "v1/usage", ["target": try usageTargetJSON(target)]), token: CredentialVault.token(client.id))
+    request.timeoutInterval = 8
+    return try await HostService.bytes(request, maxBytes: 262144)
+  }
   func models(_ client: Client) async throws -> ModelList { try await HostService.load(HostService.request(try HostService.url(client, "v1/models"), token: CredentialVault.token(client.id))) }
   func openThread(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { try await HostService.post(client, "v1/desktop/open", ["threadId": threadId, "clientOperationId": operationId]) }
   func openStatus(_ client: Client, threadId: String, operationId: String) async throws -> DesktopOpenOperation { try await HostService.load(HostService.request(try HostService.url(client, "v1/desktop/open-status", ["threadId": threadId, "id": operationId]), token: CredentialVault.token(client.id))) }

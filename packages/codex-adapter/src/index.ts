@@ -93,4 +93,4 @@ export { withWindowsProcessCreation } from './windows-process.js';
 // Internal fixed-category telemetry; no new remote operation or model data.
 export { createWindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
 
-export { appendRuntimeDiagnostic } from './runtime-diagnostics.js';
+export { appendRuntimeDiagnostic, startRuntimeDiagnostics } from './runtime-diagnostics.js';

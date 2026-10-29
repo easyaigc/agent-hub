@@ -1,3 +1,4 @@
+import { diagnosticEvent } from './diagnostic-events.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { MessagePort, parentPort, workerData } from 'node:worker_threads';
 import { windowsPrivateStateNativeExecutable } from './desktop-platform.js';
@@ -18,9 +19,21 @@ let pending = 0,
   ready = false,
   closing = false,
   buffered = Buffer.alloc(0);
+const started = performance.now();
+let dispatchedAt = 0;
+const record = (stage: string, extra: Record<string, unknown> = {}) =>
+  diagnosticEvent({
+    scope: 'private-native',
+    stage,
+    request: pending,
+    pid: child?.pid,
+    elapsedMs: performance.now() - started,
+    ...extra,
+  });
 let timer: NodeJS.Timeout | undefined;
 let killTimer: NodeJS.Timeout | undefined;
 function gone(): void {
+  record('cleanup-confirmed', { gone: true });
   clearTimeout(timer);
   clearTimeout(killTimer);
   // The direct child has exited (or was never spawned). Foreign inherited
@@ -35,6 +48,7 @@ function gone(): void {
 }
 function close(): void {
   if (closing) return;
+  record('closing');
   closing = true;
   clearTimeout(timer);
   Atomics.store(control, p.state, p.failed);
@@ -56,11 +70,18 @@ process.once('exit', () => {
   // Worker termination closes stdin too; the native reader exits even during Execute.
   if (Atomics.load(control, p.state) !== p.gone) child?.kill();
 });
-parentPort?.once('close', close);
+parentPort?.once('close', () => {
+  record('cancel', { initiator: 'parent-port' });
+  close();
+});
 if (ownerPort !== parentPort) parentPort?.on('message', close);
-ownerPort?.once('close', close);
+ownerPort?.once('close', () => {
+  record('cancel', { initiator: 'owner-port' });
+  close();
+});
 ownerPort?.on('message', (request: Record<string, unknown>) => {
   if (request?.kind === 'close') {
+    record('cancel', { initiator: 'owner' });
     close();
     return;
   }
@@ -80,6 +101,7 @@ ownerPort?.on('message', (request: Record<string, unknown>) => {
     !Number.isFinite(request.deadline) ||
     request.deadline <= performance.now()
   ) {
+    record('request-rejected');
     close();
     return;
   }
@@ -94,18 +116,32 @@ ownerPort?.on('message', (request: Record<string, unknown>) => {
     return;
   }
   pending = request.id as number;
-  timer = setTimeout(close, Math.min(p.operationMs, request.deadline - performance.now()));
+  dispatchedAt = performance.now();
+  record('native-dispatch', {
+    remainingMs: request.deadline - performance.now(),
+    action: request.action,
+    queueMs: typeof request.sentAt === 'number' ? performance.now() - request.sentAt : undefined,
+  });
+  timer = setTimeout(
+    () => {
+      record('execution-deadline');
+      close();
+    },
+    Math.min(p.operationMs, request.deadline - performance.now()),
+  );
   child!.stdin.write(frame + '\n');
 });
 const starting = () => Atomics.load(control, p.state) === p.starting;
 try {
   // Compile/protect/check on this Worker too, never on the caller's event loop.
+  record('prepare');
   const executable = starting() ? windowsPrivateStateNativeExecutable(starting) : undefined;
   if (!executable || !starting()) gone();
   else {
     // -1 means spawn may have happened; an abrupt Worker exit is not proof of child exit.
     Atomics.store(control, p.pid, -1);
     let startupMs = p.startupMs as number;
+    record('spawn-gate');
     child = withWindowsProcessCreation(
       p.startupMs,
       (remaining) => {
@@ -116,24 +152,49 @@ try {
       starting,
     );
     Atomics.store(control, p.pid, child.pid ?? 0);
-    timer = setTimeout(close, startupMs);
-    child.stdin.on('error', close);
-    child.stdout.on('error', close);
-    child.stdout.once('end', close);
-    child.stderr.on('error', close);
+    record('spawned');
+    timer = setTimeout(() => {
+      record('startup-deadline');
+      close();
+    }, startupMs);
+    child.stdin.on('error', () => {
+      record('stdin-error');
+      close();
+    });
+    child.stdout.on('error', () => {
+      record('stdout-error');
+      close();
+    });
+    child.stdout.once('end', () => {
+      record('stdout-eof');
+      close();
+    });
+    child.stderr.on('error', () => {
+      record('stderr-error');
+      close();
+    });
     // Native stderr contains only fixed failure types; never accumulate arbitrary output.
-    child.stderr.on('data', close);
+    child.stderr.on('data', () => {
+      record('stderr-present');
+      close();
+    });
     child.once('error', () => {
+      record('spawn-error');
       close();
       if (!child?.pid) gone();
     });
-    child.once('exit', () => {
+    child.once('exit', (exitCode) => {
+      record('native-exit', { exitCode });
       close();
       gone();
     });
     child.stdout.on('data', (chunk: Buffer) => {
-      if (closing) return;
+      if (closing) {
+        record('late-response');
+        return;
+      }
       if (buffered.length + chunk.length > p.responseBytes) {
+        record('oversized-frame');
         close();
         return;
       }
@@ -142,11 +203,13 @@ try {
       if (newline < 0) return;
       // One complete response only. No unsolicited, trailing or combined frames.
       if (newline !== buffered.length - 1) {
+        record('trailing-frame');
         close();
         return;
       }
       const line = buffered.subarray(0, newline).toString('ascii');
       if (buffered.some((byte) => byte > 127)) {
+        record('non-ascii-frame');
         close();
         return;
       }
@@ -161,6 +224,7 @@ try {
         }
         clearTimeout(timer);
         ready = true;
+        record('ready');
         Atomics.notify(control, p.state);
         return;
       }
@@ -177,6 +241,7 @@ try {
         Atomics.load(control, p.state) !== p.ready ||
         Atomics.load(control, p.result) !== p.waiting
       ) {
+        record('uncorrelated-response');
         close();
         return;
       }
@@ -185,11 +250,17 @@ try {
       bytes.set(response);
       Atomics.store(control, p.length, response.length);
       Atomics.store(control, p.response, pending);
+      record('native-response', {
+        elapsedMs: performance.now() - dispatchedAt,
+        code: match[2] === 'PRIVATE_STATE_OK' ? 'OK' : 'UNSAFE_WINDOWS_PRIVATE_STATE',
+        nativeType: match[2]?.split(':')[1],
+      });
       pending = 0;
       Atomics.store(control, p.result, match[2] === 'PRIVATE_STATE_OK' ? p.ok : p.rejected);
       Atomics.notify(control, p.result);
     });
   }
 } catch {
+  record('prepare-or-spawn-failed');
   close();
 }

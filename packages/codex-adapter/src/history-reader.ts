@@ -1,3 +1,4 @@
+import { diagnosticEvent } from './diagnostic-events.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -79,6 +80,8 @@ export class CodexHistoryReader {
   private knownThreads = new Set<string>();
   private knownProjects = new Map<string, ReadProject>();
   private sidebar: DesktopSidebar | undefined;
+  private connecting: Promise<void> | undefined;
+  private connectionEpoch = 0;
   onDisconnect: () => void = () => {};
 
   constructor(
@@ -101,7 +104,8 @@ export class CodexHistoryReader {
   private async closeAndWait(): Promise<void> {
     const child = this.process;
     if (!child) return;
-    this.close();
+    this.fail(new Error('Reader retiring'));
+    child.kill('SIGTERM');
     let timer: NodeJS.Timeout | undefined;
     try {
       await Promise.race([
@@ -124,9 +128,24 @@ export class CodexHistoryReader {
     }
   }
 
-  async connect(): Promise<void> {
+  connect(): Promise<void> {
+    if (this.connecting) return this.connecting;
+    const epoch = this.connectionEpoch;
+    const work = this.connectOnce(epoch)
+      .catch((error) => {
+        if (epoch === this.connectionEpoch) this.close();
+        throw error;
+      })
+      .finally(() => {
+        if (this.connecting === work) this.connecting = undefined;
+      });
+    this.connecting = work;
+    return work;
+  }
+  private async connectOnce(epoch: number): Promise<void> {
     if (this.ready) return;
     await this.closeAndWait();
+    if (epoch !== this.connectionEpoch) throw new Error('Reader startup cancelled');
     const child = withWindowsProcessCreation(15000, (remaining) => {
       this.startupTimeout = remaining;
       return spawn(this.executable, ['app-server', '--stdio'], {
@@ -139,11 +158,13 @@ export class CodexHistoryReader {
       });
     });
     this.process = child;
+    diagnosticEvent({ scope: 'history-reader', stage: 'spawned', pid: child.pid });
     this.processClosed = new Promise((resolve) => child.once('close', resolve));
     // Stderr may contain machine-specific data; consume it without publishing it.
     child.stderr.resume();
     const transportClosed = () => {
       if (this.process !== child) return;
+      diagnosticEvent({ scope: 'history-reader', stage: 'transport-closed', pid: child.pid });
       this.fail(new Error('Reader transport closed'));
       child.kill('SIGTERM');
     };
@@ -169,12 +190,26 @@ export class CodexHistoryReader {
         this.fail(new Error('Invalid Codex transport'));
       }
     });
-    child.once('error', () => this.fail(new Error('Codex executable unavailable')));
-    child.once('exit', () => this.fail(new Error('Codex reader disconnected')));
+    child.once('error', () => {
+      if (this.process === child) this.fail(new Error('Codex executable unavailable'));
+    });
+    child.once('exit', (exitCode) => {
+      diagnosticEvent({ scope: 'history-reader', stage: 'exit', pid: child.pid, exitCode });
+      if (this.process === child) this.fail(new Error('Codex reader disconnected'));
+    });
     await this.rpc('initialize', {
       clientInfo: { name: 'codex_manage_history', title: 'Codex Manage History', version: '0.1.0' },
       capabilities: { experimentalApi: true },
     });
+    if (
+      epoch !== this.connectionEpoch ||
+      this.process !== child ||
+      child.killed ||
+      child.exitCode !== null
+    ) {
+      child.kill();
+      throw new Error('Reader startup cancelled');
+    }
     child.stdin.write(JSON.stringify({ method: 'initialized' }) + '\n');
     this.initialized = true;
   }
@@ -584,6 +619,7 @@ export class CodexHistoryReader {
   }
 
   close(): void {
+    this.connectionEpoch++;
     this.fail(new Error('Reader closed'));
     this.process?.kill('SIGTERM');
   }

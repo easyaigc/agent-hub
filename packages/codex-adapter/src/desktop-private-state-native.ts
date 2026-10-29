@@ -1,4 +1,6 @@
 /// <reference lib="es2024.sharedmemory" />
+import { randomUUID } from 'node:crypto';
+import { diagnosticEvent, observeDiagnosticWorker } from './diagnostic-events.js';
 import {
   Worker,
   MessageChannel,
@@ -311,6 +313,7 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       });
       const record = { worker, owner, control, exited };
       registerWindowsProcessWorker(worker);
+      observeDiagnosticWorker(worker, owner);
       supervisor.workers.add(record);
       const ownerExited = () => {
         // The transport can be blocked in an atomic gate wait and cannot yet
@@ -445,6 +448,7 @@ export function createWindowsPrivateStateBackend(
       },
     });
     registerWindowsProcessWorker(worker);
+    observeDiagnosticWorker(worker);
   } else {
     if (entry.href !== new URL('./desktop-private-state-native-worker.js', import.meta.url).href)
       throw new Error('Private state supervisor requires its fixed worker entry');
@@ -461,19 +465,43 @@ export function createWindowsPrivateStateBackend(
       channel.port1.close();
     });
   }
+  const generation = randomUUID();
+  const started = performance.now();
+  let phase = 'startup',
+    waitKind = 'sync',
+    waitMs = 0;
   let closed = false,
     busy = false,
     nextId = 0;
+  const record = (stage: string, extra: Record<string, unknown> = {}) =>
+    diagnosticEvent({
+      scope: 'private-state',
+      generation,
+      stage,
+      elapsedMs: performance.now() - started,
+      state: Atomics.load(control, p.state),
+      pid: Atomics.load(control, p.pid),
+      workerId: worker instanceof Worker ? worker.threadId : undefined,
+      request: nextId,
+      waitKind,
+      ...extra,
+    });
+  record('created');
   function unavailable(): Error {
     return Object.assign(new Error('Windows private state unavailable'), {
       code: 'WINDOWS_PRIVATE_STATE_UNAVAILABLE',
+      stage: phase,
+      waitMs,
     });
   }
   function fail(): void {
     failPrivateState(control);
     worker.postMessage({ kind: 'close' });
   }
-  worker.on('error', fail);
+  worker.on('error', () => {
+    record('isolate-error');
+    fail();
+  });
   const exited = () => {
     fail();
     // Without a child PID there is no native operation or child left to retire.
@@ -482,10 +510,15 @@ export function createWindowsPrivateStateBackend(
       Atomics.notify(control, p.state);
     }
   };
-  if (worker instanceof Worker) worker.once('exit', exited);
+  if (worker instanceof Worker)
+    worker.once('exit', (exitCode) => {
+      record('isolate-exit', { exitCode });
+      exited();
+    });
   else worker.once('close', fail);
   worker.unref();
   function close(): void {
+    record('close', { initiator: 'owner' });
     closed = true;
     process.removeListener('beforeExit', cleanup);
     process.removeListener('exit', cleanup);
@@ -524,11 +557,19 @@ export function createWindowsPrivateStateBackend(
     )
       throw unavailable();
     busy = true;
+    const operationAt = performance.now();
+    waitMs = 0;
+    phase = 'startup';
+    record('call', { action });
     try {
       const startup = performance.now() + timeouts.startupMs;
       while (Atomics.load(control, p.state) === p.starting) {
         const remaining = startup - performance.now();
-        if (remaining <= 0) throw unavailable();
+        if (remaining <= 0) {
+          phase = 'startup-deadline';
+          throw unavailable();
+        }
+        record('startup-wait', { remainingMs: remaining });
         yield { index: p.state, expected: p.starting, timeout: remaining };
       }
       if (
@@ -537,14 +578,28 @@ export function createWindowsPrivateStateBackend(
         nextId === 0x7fffffff
       )
         throw unavailable();
+      phase = 'response';
+      record('startup-ready', { elapsedMs: performance.now() - operationAt });
       const id = ++nextId;
       const deadline = performance.now() + timeouts.operationMs;
       Atomics.store(control, p.request, id);
       Atomics.store(control, p.result, p.waiting);
-      worker.postMessage({ kind: 'call', id, action, path, cwd: process.cwd(), deadline });
+      worker.postMessage({
+        kind: 'call',
+        id,
+        action,
+        path,
+        cwd: process.cwd(),
+        deadline,
+        sentAt: performance.now(),
+      });
       while (Atomics.load(control, p.result) === p.waiting) {
         const remaining = deadline - performance.now();
-        if (remaining <= 0) throw unavailable();
+        if (remaining <= 0) {
+          phase = 'response-deadline';
+          throw unavailable();
+        }
+        record('response-wait', { remainingMs: remaining });
         yield { index: p.result, expected: p.waiting, timeout: remaining };
       }
       const length = Atomics.load(control, p.length);
@@ -568,9 +623,11 @@ export function createWindowsPrivateStateBackend(
         });
       throw unavailable();
     } catch (error) {
+      record(phase, { code: (error as { code?: string }).code, waitMs });
       if ((error as { code?: string }).code !== 'UNSAFE_WINDOWS_PRIVATE_STATE') fail();
       throw error;
     } finally {
+      record('call-finished', { action, elapsedMs: performance.now() - operationAt, waitMs });
       busy = false;
     }
   }
@@ -584,22 +641,29 @@ export function createWindowsPrivateStateBackend(
       };
     },
     call(action: WindowsPrivateStateAction, path: string): void {
-      for (const wait of operation(action, path))
+      waitKind = 'sync';
+      for (const wait of operation(action, path)) {
+        const before = performance.now();
         Atomics.wait(control, wait.index, wait.expected, wait.timeout);
+        waitMs += performance.now() - before;
+      }
     },
     async callAsync(action: WindowsPrivateStateAction, path: string): Promise<void> {
+      waitKind = 'async';
       const iterator = operation(action, path);
       let next = iterator.next();
       if (next.done) return;
       worker.ref();
       try {
         while (!next.done) {
+          const before = performance.now();
           await Atomics.waitAsync(
             control,
             next.value.index,
             next.value.expected,
             next.value.timeout,
           ).value;
+          waitMs += performance.now() - before;
           next = iterator.next();
         }
       } finally {

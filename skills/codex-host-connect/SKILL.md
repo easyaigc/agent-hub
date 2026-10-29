@@ -119,6 +119,10 @@ macOS 默认使用随包持久环境工具及 `status`，将其实际目录配�
 - 完整客户端密钥不进入聊天、普通探测、日志或可分享验收摘要；仅在受保护的私有配置或设备密钥库中保留。不为交付重新生成、轮换或复制另一电脑的令牌。
 - 另列软件安装、Host 自启注册与注销／重启恢复、回环 Host、HTTPS、原桌面 owner 控制、新建/打开、iPhone 跨网络、双实体电脑隔离的实际结果。尚未取得或未验证的地址/身份标明“未配置”或“未验证”及原因，不拼造可用参数，不把未通过说成成功。
 
+## Host 断连与 503 诊断
+
+先保留服务器返回的 `requestId`／`diagnosticId`、`code` 和准确 pathname；不能把所有 503 都称为 Codex 断开。`healthz` 的 HTTP 200、runtime bridge／reader、原聊天 owner、persistence 分层核对。日志在当前状态目录 `diagnostics/errors.jsonl`，独立 worker 写入、最多三份各 2 MiB、七天期限，队列／限流丢弃计数和日志故障标记必须一起记录。辅助通道仍真实校验 OWNER／DACL；不输出 query、Authorization、用户正文、原始 stderr 或凭据。恢复仅重建只读连接，关闭后不复活，未知写入查原 ID 不重发；不重启原 Codex。源码候选、目标部署和真实验收分别记录，详见随包 `docs/host-reconnect-diagnostics.md`。
+
 ## 必须保持的边界
 
 - 每次控制固定 Host/Thread，审批和停止还固定请求/Turn。本产品 HTTP 契约与 Codex 内部协议分开；需要协议检查时复用仓库 Adapter 和验收脚本。

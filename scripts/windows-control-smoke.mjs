@@ -139,6 +139,10 @@ try {
       'scripts/fixtures/windows-private-state-boundary.mjs',
     ],
     [
+      '../packages/codex-adapter/dist/diagnostic-events.js',
+      'packages/codex-adapter/dist/diagnostic-events.js',
+    ],
+    [
       '../packages/codex-adapter/dist/desktop-platform.js',
       'packages/codex-adapter/dist/desktop-platform.js',
     ],

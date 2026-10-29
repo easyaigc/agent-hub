@@ -1,3 +1,4 @@
+import { diagnosticEvent } from './diagnostic-events.js';
 import { connect } from 'node:net';
 import type { Duplex } from 'node:stream';
 import { lstatSync, readFileSync } from 'node:fs';
@@ -261,6 +262,9 @@ export class DesktopIpc {
   >();
   private modelReads = new Map<string, Promise<void>>();
   private modelEpoch = 0;
+  private connectionEpoch = 0;
+  private connecting: Promise<void> | undefined;
+  private connectionAbort: AbortController | undefined;
   ready = false;
   onSnapshot: (id: string, state: WireObject) => void = () => {};
   onUnavailable: (id: string) => void = () => {};
@@ -273,7 +277,18 @@ export class DesktopIpc {
     private readonly path: string,
     private readonly frameOptions: { drainTimeoutMs?: number } = {},
   ) {}
-  async connect(): Promise<void> {
+  connect(): Promise<void> {
+    if (this.connecting) return this.connecting;
+    const work = this.connectOnce().finally(() => {
+      if (this.connecting === work) this.connecting = undefined;
+    });
+    this.connecting = work;
+    return work;
+  }
+  private async connectOnce(): Promise<void> {
+    const epoch = this.connectionEpoch;
+    const abort = new AbortController();
+    this.connectionAbort = abort;
     if (process.platform !== 'win32') {
       const uid = process.getuid?.();
       const dir = lstatSync(dirname(this.path)),
@@ -293,8 +308,12 @@ export class DesktopIpc {
     }
     const socket =
       process.platform === 'win32'
-        ? await openWindowsDesktopPipe(this.windowsIdentity!)
+        ? await openWindowsDesktopPipe(this.windowsIdentity!, abort.signal)
         : connect(this.path);
+    if (epoch !== this.connectionEpoch) {
+      socket.destroy();
+      throw new Error('Desktop IPC startup cancelled');
+    }
     this.socket = socket;
     const frames = new DesktopFrameDecoder(
       (body) => {
@@ -343,13 +362,32 @@ export class DesktopIpc {
     });
     if (process.platform !== 'win32')
       await new Promise<void>((resolve, reject) => {
-        socket.once('connect', resolve);
-        socket.once('error', reject);
+        const connected = () => {
+          cleanup();
+          resolve();
+        };
+        const failed = () => {
+          cleanup();
+          reject(new Error('Desktop IPC startup closed'));
+        };
+        const cleanup = () => {
+          socket.removeListener('connect', connected);
+          socket.removeListener('error', failed);
+          socket.removeListener('close', failed);
+        };
+        socket.once('connect', connected);
+        socket.once('error', failed);
+        socket.once('close', failed);
       });
     const initialized = await this.request('initialize', { clientType: 'codex-manage' });
     this.clientId = string(object(initialized.result).clientId);
     if (!this.clientId) throw new Error('Desktop IPC initialization failed');
+    if (epoch !== this.connectionEpoch || socket !== this.socket || socket.destroyed) {
+      socket.destroy();
+      throw new Error('Desktop IPC startup cancelled');
+    }
     this.ready = true;
+    diagnosticEvent({ scope: 'desktop-ipc', stage: 'ready' });
   }
   private write(message: WireObject, beforeExecutionWrite?: () => void): void {
     if (!this.socket || this.socket.destroyed)
@@ -976,6 +1014,9 @@ export class DesktopIpc {
     return object(result.result);
   }
   close(): void {
+    this.connectionEpoch++;
+    this.connectionAbort?.abort();
+    this.ready = false;
     this.socket?.destroy();
   }
 }
@@ -984,6 +1025,8 @@ export class DesktopRuntime {
   readonly ipc: DesktopIpc;
   readonly reader: CodexHistoryReader;
   version = '';
+  private connecting: Promise<void> | undefined;
+  private closed = false;
   onEvent: (method: string, params: WireObject) => void = () => {};
   onRequest: (id: string | number, method: string, params: WireObject) => void = () => {};
   onDisconnect: () => void = () => {};
@@ -1075,7 +1118,23 @@ export class DesktopRuntime {
       return false;
     }
   }
-  async connect(): Promise<void> {
+  connect(): Promise<void> {
+    if (this.closed) return Promise.reject(new Error('Desktop runtime closed'));
+    if (this.connecting) return this.connecting;
+    const work = this.connectOnce().finally(() => {
+      if (this.connecting === work) this.connecting = undefined;
+    });
+    this.connecting = work;
+    return work;
+  }
+  private async connectOnce(): Promise<void> {
+    const check = () => {
+      if (this.closed) {
+        this.ipc.close();
+        this.reader.close();
+        throw new Error('Desktop runtime closed');
+      }
+    };
     // Collect optional acceptance metadata without checking build compatibility.
     let actual: string;
     if (process.platform === 'win32') {
@@ -1094,10 +1153,14 @@ export class DesktopRuntime {
       actual = readMacDesktopVersion();
     }
     this.version = actual;
+    check();
     if (!this.reader.ready) await this.reader.connect();
+    check();
     try {
       await this.ipc.connect();
+      check();
     } catch (error) {
+      this.ipc.close();
       this.reader.close();
       throw error;
     }
@@ -1293,6 +1356,7 @@ export class DesktopRuntime {
     /* Desktop retains all unsupported approvals. */
   }
   close(): void {
+    this.closed = true;
     this.ipc.close();
     this.reader.close();
   }

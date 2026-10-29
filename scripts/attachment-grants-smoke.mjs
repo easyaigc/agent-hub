@@ -195,7 +195,17 @@ try {
   assert.equal(error.code, 'ENOENT');
   assert.match(error.error, /ENOENT/);
   assert.match(error.requestId, /^[a-f0-9-]{36}$/);
-  const log = await readFile(join(state, 'diagnostics/errors.jsonl'), 'utf8');
+  let log = '';
+  const diagnosticDeadline = Date.now() + 5000;
+  while (!log.includes(error.requestId)) {
+    try {
+      log = await readFile(join(state, 'diagnostics/errors.jsonl'), 'utf8');
+    } catch {
+      /* The asynchronous writer may not have created the file yet. */
+    }
+    assert(Date.now() < diagnosticDeadline, 'Correlated diagnostic must be written asynchronously');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
   assert(!log.includes(token));
   const entry = log
     .trim()
@@ -204,7 +214,11 @@ try {
     .find((x) => x.requestId === error.requestId);
   assert.equal(entry.status, 410);
   assert.equal(entry.code, 'ENOENT');
-  assert.equal(entry.threadId, 'authorized');
+  assert.equal(
+    entry.threadId,
+    undefined,
+    'Non UUID fixture IDs are omitted by the private log schema',
+  );
   assert.equal(entry.route, '/v1/attachments/resolve-link');
   for (const authenticated of [false, true]) {
     const rejected = await new Promise((resolve, reject) => {

@@ -16980,6 +16980,32 @@
         "apps/android/src/main/res/values-zh/product_strings.xml": "1aa2f2badfeed4a5d8f890eb6acaaa9c140a405239a2513c537b70e1fdfcc6b9",
         "apps/android/src/androidTest/assets/localization-catalog.json": "653acb1377011b8357cb62517fb30334462a94df2071c1c8e04c9408f5b55885"
       }
+    },
+    {
+      "id": "host-reconnect-diagnostics-20261029",
+      "baseCommit": "0b6a60b6b8116ccc52c7271e28dff0fed49df23b",
+      "features": ["F03", "F17", "F48", "F69"],
+      "summary": "Host分层错误诊断、异步有界日志和只读连接关闭/并发恢复；两端UI不变，Windows/手机/模型未验收，见专项记录。",
+      "files": {
+        "apps/host-agent/src/runtime-server.ts": "3649f58f7a79c4b5a986c08620619849e9fe56444ff33bfea91ff8759ba56f8a",
+        "packages/codex-adapter/src/desktop-ipc.ts": "a5b056851480f5df7a30cc783bd1bd08d27bae6331e7db6aadbcf9435d4eea73",
+        "packages/codex-adapter/src/desktop-platform.ts": "5dcbf262c3db2cd0e7497184041c3636bef5e15ff71c77d410a2d6b1a612e24a",
+        "packages/codex-adapter/src/desktop-private-state-native-worker.ts": "0144faf1760e440c50d6487b0cccbff12541f63f3696a1d6ef29a2420052f9eb",
+        "packages/codex-adapter/src/desktop-private-state-native.ts": "0f851febf22a02d16bb8ceb91911637848c8368e7e5e88fdedc0eb8168c88bb9",
+        "packages/codex-adapter/src/diagnostic-events.ts": "72679b39a8b460a936ffeca4e6fd5264b675afb51bf6f81babef6ae3644a1698",
+        "packages/codex-adapter/src/history-reader.ts": "b1fc4c4d3e810464a7a31bb75e44d12a1f3caf1963eb5f22a88a17a64030805b",
+        "packages/codex-adapter/src/index.ts": "ae2e5bfa07a1e8d8aeed0aa0961bdca5a628ffa06dd15058a24abead6af9e3bb",
+        "packages/codex-adapter/src/runtime-diagnostic-writer.ts": "9954ec3922c12808c7800b738e70927a9c18b51135025d7a977b84b489dcf7ad",
+        "packages/codex-adapter/src/runtime-diagnostics.ts": "6ec3b84147b7b62a79014f2ad03c959cd48a5501033ca395e73c2cb17268e055",
+        "packages/codex-adapter/src/runtime-session.ts": "28c507b12f114534e81e0fe07e66bdd28f288a32458bb05a3f7c66ee83919004",
+        "scripts/attachment-grants-smoke.mjs": "d70444fc51b6048a683fe4b7cbfdfdd859b86b880ab1d813c6d64f618dd3c7eb",
+        "scripts/desktop-platform-smoke.mjs": "a1e4730597f14e4636c838352c57018c35597c0802ab7548040e13deafe02d34",
+        "scripts/desktop-trace-lifecycle.test.mjs": "995a25c1fb63eaa1f5846b5aa10e21c00f5ea4772d69d584b1d722db8a611813",
+        "scripts/fixtures/windows-trace-batch.mjs": "8fa21d13116b8ee5d58bc66e93d0018614e1e0883ac0d68927b7cec1e3093f82",
+        "scripts/runtime-reconnect-diagnostics.test.mjs": "138eab58cd90f1a100fc56c733ba260cdbd6c48beac4f4258388181157b168d1",
+        "scripts/windows-control-smoke.mjs": "ca6bc74007e1e25b69103c0f9a47fbe6ac82f1052db1c8ef9c5c814e5bb1c7ab",
+        "scripts/windows-private-state-native.test.mjs": "56e8b427257087e38605ae2f7d733b8293fe93a48ec815e62c68a5fee2ac9d38"
+      }
     }
   ]
 }

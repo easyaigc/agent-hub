@@ -71,3 +71,7 @@ TASK_HUB_BUNDLE="/path/to/frozen-task-hub-artifact" pnpm package:connect
 首次开启顺序以 [建议流程](desktop-suggestions.md) 为准：先检查现有配置，说明用途与本机保存范围；macOS 默认安装并核对固定登录环境，配置 Host 使用同一实际目录，再交付用户择机正常重开的动作，不使用一次性等待器。仅用户选择本次诊断时准备私有意图、启动器和备份，实际启动独立 `--wait-and-launch` 并核对存活、`waiting-for-normal-quit` 与截止时间后才提示退出。`.command` 只是正常退出后的手动入口，生成文件或 prepare/check 成功不证明等待器运行；未知启动先核对，不重放。打包器从规范目录复制顶层 SKILL 和 `assets/codex-manage/skills` 内来源；只更新文档时核对副本摘要，保留现有运行配置和匹配证明。
 
 按同一 ZIP SHA-256 分发到各目标。超过文件传输单文件上限时，只拆分同一 ZIP 字节并逐块记录 SHA-256，接收后先还原并核对完整 ZIP SHA-256，再解压部署；不是生成各机不同的程序包。升级只按变更文件合并，保存旧文件和本机独有差异，不覆盖 `.local`、私有配置、Task Hub 数据、其他工作树或目标机独有文件。手机已有正式 App 与连接优先保留。
+
+## 断连诊断候选
+
+升级后按准确包 SHA 核对实际 ESM 闭包和新进程。Host 错误诊断 ID、分层 ready／bridge／reader／存储状态，以及诊断异步写入的限额与失败计数见随包 `docs/host-reconnect-diagnostics.md`。Windows C#、正式服务、手机与模型验收分别执行，不能把 Mac Worker／HTTP 辅助检查写成 Windows 通过。保留原权限、身份和未知操作，不重放故障请求以取证。

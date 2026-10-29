@@ -1,5 +1,7 @@
 # 开发指南
 
+2026-10-29 Host 诊断与只读恢复的字段、轮转、抑制、私有权限、关闭屏障及逐平台故障验收见[专项指南](host-reconnect-diagnostics.md)。先保存具体 503 分类／诊断 ID，未知写入查原回执；不得以增加 timeout、反复重启原 Codex 或重新发送输入代替诊断。
+
 长历史性能续验见 [2026-10-24 专项](research/history-thermal-20261024.md)。`thermal-ios-comparison.mjs --cpu-profile --work-profile` 同时采集相同设备、安装路径和PID的CPU栈、Power Profiler及数值帧；`thermal-ios-results.py <本轮目录>` 只统计正式窗口中的完整手势和移动帧，保留导航/预热累计值但不混为正式最大帧。纯滚动要求24个实测手势；`testThermalMixedInteractionDEV` 与 `--mixed-targets <私有目标元数据文件>` 另要求三客户端17个具名交互步骤、22个历史手势与三次不同的在途回复。远端参数从既有私有清单读取，仅通过 `xcodebuild(1)` 的 `TEST_RUNNER_<VAR>` 内存环境传给Runner，不复制至xctestrun；驱动不导出远端既有消息正文。每轮使用新目录与原始不可变输入标识，模型原owner、轮次和无重放另核对，未知结果不能重新提交。该混合用例需人类授权所选其他客户端，不能因为脚本可用而自动联系远端Agent。
 
 混合交互可用 `--native-only --work-profile` 按普通 XCTest 路径启动 App，核对准确安装路径和 PID，采集进程 CPU、唤醒、逻辑写入及移动帧；该模式没有 Instruments 功耗数据，不能从 CPU 换算瓦特或电池消耗。完整流程缺少 END 或任何步骤时，标准解析器必须拒绝通过。另作已完成公共操作段的数值对照时，须用原 BEGIN 与实际最后共同步骤结束时间，核对目标、步骤、手势及驱动指纹，单列范围，并保留完整流程失败，不改写原始日志。

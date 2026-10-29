@@ -1,3 +1,4 @@
+import { diagnosticEvent } from './diagnostic-events.js';
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -216,6 +217,7 @@ let privateStateBackend: ReturnType<typeof createWindowsPrivateStateBackend> | u
 let privateStateAsyncBackend: ReturnType<typeof createWindowsPrivateStateBackend> | undefined;
 let privateStateAsyncQueue: Promise<void> = Promise.resolve();
 let privateStateAsyncGeneration = 0;
+let privateStateQueued = 0;
 function privateState(action: 'protect' | 'protect-file' | 'check', path: string): void {
   // A later independent call may create a new channel only after confirmed child exit.
   // Never retry this call, including when its operation may already have executed.
@@ -288,7 +290,15 @@ export function protectWindowsStateFileAsync(path: string): Promise<void> {
 function privateStateAsync(action: 'protect-file' | 'check', path: string): Promise<void> {
   if (process.platform !== 'win32') return Promise.resolve();
   const generation = privateStateAsyncGeneration;
+  const queuedAt = performance.now();
+  privateStateQueued++;
   const call = privateStateAsyncQueue.then(async () => {
+    diagnosticEvent({
+      scope: 'private-queue',
+      stage: 'dispatch',
+      pending: privateStateQueued,
+      queueMs: performance.now() - queuedAt,
+    });
     if (generation !== privateStateAsyncGeneration)
       throw Object.assign(new Error('Windows private state unavailable'), {
         code: 'WINDOWS_PRIVATE_STATE_UNAVAILABLE',
@@ -297,9 +307,13 @@ function privateStateAsync(action: 'protect-file' | 'check', path: string): Prom
     privateStateAsyncBackend ??= createWindowsPrivateStateBackend();
     await privateStateAsyncBackend.callAsync(action, path);
   });
-  privateStateAsyncQueue = call.catch(() => {
-    // A later independent operation may proceed; this caller still receives its rejection.
-  });
+  privateStateAsyncQueue = call
+    .finally(() => {
+      privateStateQueued--;
+    })
+    .catch(() => {
+      // A later independent operation may proceed; this caller still receives its rejection.
+    });
   return call;
 }
 
@@ -724,6 +738,8 @@ export function windowsAdapterDigest(): string {
     'approval-requests.js',
     'runtime-persistence.js',
     'runtime-diagnostics.js',
+    'diagnostic-events.js',
+    'runtime-diagnostic-writer.js',
     'attachment-files.js',
     'desktop-questions.js',
   ])
@@ -741,7 +757,60 @@ export function windowsAdapterDigest(): string {
   return hash.digest('hex');
 }
 
-export async function openWindowsDesktopPipe(identity: WindowsDesktopIdentity): Promise<Duplex> {
+let bridgeRetirement: Promise<void> | undefined;
+/** Consume errors immediately, including Duplex.from cancellation before IPC adopts it. */
+export function windowsDesktopBridgeStream(child: ReturnType<typeof spawn>): Duplex {
+  const started = performance.now();
+  const stream = Duplex.from({ readable: child.stdout!, writable: child.stdin! });
+  stream.on('error', (error: NodeJS.ErrnoException) => {
+    diagnosticEvent({
+      scope: 'windows-bridge',
+      stage: 'stream-error',
+      code: error.code,
+      pid: child.pid,
+    });
+  });
+  stream.on('close', () => child.kill());
+  child.once('exit', (exitCode) => {
+    diagnosticEvent({
+      scope: 'windows-bridge',
+      stage: 'exit',
+      pid: child.pid,
+      exitCode,
+      elapsedMs: performance.now() - started,
+    });
+    stream.destroy();
+  });
+  child.on('error', () => stream.destroy());
+  return stream;
+}
+export async function openWindowsDesktopPipe(
+  identity: WindowsDesktopIdentity,
+  signal?: AbortSignal,
+): Promise<Duplex> {
+  if (bridgeRetirement) {
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        bridgeRetirement,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                Object.assign(new Error('Previous bridge exit unconfirmed'), {
+                  code: 'WINDOWS_BRIDGE_EXIT_UNCONFIRMED',
+                }),
+              ),
+            1000,
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  if (signal?.aborted)
+    throw Object.assign(new Error('Bridge startup cancelled'), { code: 'ABORT_ERR' });
   let startupMs = 30_000;
   const child = withWindowsProcessCreation(startupMs, (remaining) => {
     startupMs = remaining;
@@ -762,14 +831,28 @@ export async function openWindowsDesktopPipe(identity: WindowsDesktopIdentity): 
       { stdio: 'pipe', windowsHide: true, env: windowsPowerShellEnvironment() },
     );
   });
-  const stream = Duplex.from({ readable: child.stdout, writable: child.stdin });
-  stream.on('close', () => child.kill());
-  child.on('exit', () => stream.destroy());
-  child.on('error', () => stream.destroy());
+  bridgeRetirement = new Promise<void>((resolve) => child.once('close', () => resolve()));
+  const stream = windowsDesktopBridgeStream(child);
+  const abort = () => {
+    diagnosticEvent({
+      scope: 'windows-bridge',
+      stage: 'cancel',
+      initiator: 'owner',
+      pid: child.pid,
+    });
+    stream.destroy();
+  };
+  signal?.addEventListener('abort', abort, { once: true });
+  child.once('close', () => signal?.removeEventListener('abort', abort));
+  if (signal?.aborted) abort();
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
-      child.kill();
-      reject(new Error('Windows desktop pipe timed out'));
+      stream.destroy();
+      reject(
+        Object.assign(new Error('Windows desktop pipe timed out'), {
+          code: 'WINDOWS_BRIDGE_STARTUP_TIMEOUT',
+        }),
+      );
     }, startupMs);
     let stderr = '';
     const fail = () => {
@@ -778,6 +861,8 @@ export async function openWindowsDesktopPipe(identity: WindowsDesktopIdentity): 
         stderr.match(
           /^(WINDOWS_POWERSHELL_MODULE_UNAVAILABLE|WINDOWS_DESKTOP_NOT_RUNNING)\s*$/m,
         )?.[1] ?? 'WINDOWS_DESKTOP_PIPE_REJECTED';
+      stream.destroy();
+      diagnosticEvent({ scope: 'windows-bridge', stage: 'startup-failed', code, pid: child.pid });
       reject(Object.assign(new Error('Windows desktop pipe identity rejected'), { code }));
     };
     child.once('error', fail);
@@ -788,6 +873,7 @@ export async function openWindowsDesktopPipe(identity: WindowsDesktopIdentity): 
         clearTimeout(timer);
         child.removeListener('error', fail);
         child.removeListener('exit', fail);
+        diagnosticEvent({ scope: 'windows-bridge', stage: 'ready', pid: child.pid });
         resolve();
       }
     });

@@ -366,6 +366,7 @@ export async function frozenBatchFixture() {
     'desktop-trace-native',
     'desktop-trace-native-worker',
     'desktop-private-state-native',
+    'diagnostic-events',
     'windows-process',
     'desktop-prediction-trace',
   ]) {

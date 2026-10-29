@@ -1,3 +1,4 @@
+import { diagnosticEvent } from './diagnostic-events.js';
 import { isDeepStrictEqual } from 'node:util';
 import { randomUUID, createHash } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
@@ -149,7 +150,7 @@ export class RuntimeError extends Error {
 }
 class RuntimeSaveError extends RuntimeError {
   constructor(cause: unknown) {
-    super(503, 'Host 状态保存失败；请保留原操作 ID，恢复后查询状态');
+    super(503, 'Host 状态保存失败；请保留原操作 ID，恢复后查询状态', 'HOST_STATE_SAVE_FAILED');
     this.cause = cause;
   }
 }
@@ -708,6 +709,17 @@ export class RuntimeSession {
   get ready(): boolean {
     return this.runtime.ready;
   }
+  diagnosticStatus() {
+    return {
+      ready: this.ready,
+      bridge: this.runtime instanceof DesktopRuntime ? this.runtime.ipc.ready : this.ready,
+      reader: this.runtime instanceof DesktopRuntime ? this.runtime.reader.ready : this.ready,
+      closed: this.closed,
+      commandCommitPending: this.needsCommit,
+      historyPending: this.persistence.status.historyPending,
+      historyStalled: this.persistence.status.historyStalled,
+    };
+  }
   get mode(): string {
     return this.options.mode;
   }
@@ -787,12 +799,20 @@ export class RuntimeSession {
   }
   private scheduleReconnect(): void {
     if (this.reconnectTimer || this.closed) return;
+    const delayMs = Math.round(this.reconnectDelay * (0.8 + Math.random() * 0.4));
+    diagnosticEvent({ scope: 'runtime-reconnect', stage: 'scheduled', delayMs });
     this.reconnectTimer = setTimeout(() => {
+      if (this.closed) return;
       this.reconnectTimer = undefined;
       this.reconnecting = true;
       void this.runtime
         .connect()
         .then(() => {
+          if (this.closed) {
+            this.runtime.close();
+            return;
+          }
+          diagnosticEvent({ scope: 'runtime-reconnect', stage: 'ready', ready: this.ready });
           this.reconnectDelay = 1000;
           this.epoch = randomUUID();
           for (const thread of this.state.threads) this.emit(thread.id, 'runtime-reconnected');
@@ -805,10 +825,12 @@ export class RuntimeSession {
           this.reconnecting = false;
           if (!this.ready) this.scheduleReconnect();
         });
-    }, this.reconnectDelay);
+    }, delayMs);
+    this.reconnectTimer.unref();
   }
   private requireReady(): void {
-    if (!this.ready) throw new RuntimeError(503, 'Codex 运行时未连接');
+    if (!this.ready)
+      throw new RuntimeError(503, 'Codex 运行时未连接', 'CODEX_RUNTIME_DISCONNECTED');
   }
   private save(readOnly = false): void {
     try {
@@ -1178,7 +1200,7 @@ export class RuntimeSession {
     try {
       this.requireReady();
       if (!(this.runtime instanceof DesktopRuntime))
-        throw new RuntimeError(503, '当前连接没有原桌面 owner');
+        throw new RuntimeError(503, '当前连接没有原桌面 owner', 'DESKTOP_OWNER_UNAVAILABLE');
       // Revalidation is not invalidation. Polls may publish while follow awaits;
       // preserve the last owner-confirmed source until this read settles. Live
       // new-turn/unavailable events continue clearing it immediately.
@@ -1189,7 +1211,11 @@ export class RuntimeSession {
         state.hostId !== 'local' ||
         !this.runtime.ipc.hasOwner(threadId)
       )
-        throw new RuntimeError(503, '建议来源聊天的原 owner 不可用');
+        throw new RuntimeError(
+          503,
+          '建议来源聊天的原 owner 不可用',
+          'SUGGESTION_OWNER_UNAVAILABLE',
+        );
       const sourceTurnId = this.completedDesktopSuggestionSource(threadId, state);
       if (!sourceTurnId) throw new RuntimeError(409, '建议来源必须是最新的已完成轮次');
       this.desktopSuggestionSources.set(threadId, sourceTurnId);
@@ -1757,7 +1783,7 @@ export class RuntimeSession {
           complete.hostId !== 'local' ||
           !runtime.ipc.hasOwner(threadId)
         )
-          throw new RuntimeError(503, '完整历史的原 owner 已变化，请重试');
+          throw new RuntimeError(503, '完整历史的原 owner 已变化，请重试', 'DESKTOP_OWNER_CHANGED');
         const messages = desktopTurns(complete).flatMap((turn) =>
           list(turn.items).flatMap((value) => {
             const wire = object(value);
@@ -3612,7 +3638,7 @@ export class RuntimeSession {
   }
 
   private assertReplyOpen(target: ReplyTarget): void {
-    if (this.closed) throw new RuntimeError(503, 'Host 已关闭，旧回复不能继续提交');
+    if (this.closed) throw new RuntimeError(503, 'Host 已关闭，旧回复不能继续提交', 'HOST_CLOSED');
     if (
       machineRuntimeTargetKey(this.replyNamespace) !== machineRuntimeTargetKey(target) ||
       machineRuntimeTargetKey(this.readingTarget()) !== machineRuntimeTargetKey(target)

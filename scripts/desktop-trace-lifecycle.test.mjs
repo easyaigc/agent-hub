@@ -23,6 +23,7 @@ import ts from 'typescript';
 const repository = fileURLToPath(new URL('../', import.meta.url));
 const source = join(repository, 'packages/codex-adapter/src');
 const names = [
+  'diagnostic-events',
   'windows-process',
   'windows-trace-diagnostics',
   'desktop-private-state-native',

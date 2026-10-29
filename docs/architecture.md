@@ -1,5 +1,7 @@
 # 架构设计
 
+2026-10-29 Host 诊断写入使用独立 worker 和固定事件 Schema，HTTP isolate 仅维护有界队列；Windows 辅助诊断走独立线程通道。只读连接合并并发，关闭后迟到代次不复活；命令未知状态不重放。实现与限制见[诊断与恢复](host-reconnect-diagnostics.md)，平台结果见[专项验收](research/host-reconnect-diagnostics-20261029.md)。
+
 ## Android 原录音的本机文件识别
 
 Android 以窄接口 `NativeSavedVoiceSpeech` 分离资源检查、显式模型下载与原录音文件识别；当前接入 Vosk/JNA，固定中英模型清单及完整指纹校验，资源检查不下载、不打开麦克风。识别仅消费封存的单声道 PCM16/16k WAV。原录音、原桌面操作与回执保持不可变，本机结果写入版本化私有目录；准确草稿或非敏感问题答案的持久化和读回收据成功后才能标记 applied，失败或结果未知保持 staged，晚到结果不能覆盖新 owner。关闭和迁移须等实际 worker 退出，迁移保留离开 active index 的原件与结果引用。该目录是 Android 本机格式，未据此宣称双端 KMP 规则完整迁移；真实引擎、系统与物理 DEV 的状态以[验收档案](acceptance/mobile-parity.md)为准。

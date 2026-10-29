@@ -67,6 +67,7 @@ async function fixture(t, mode = 'ok', executable) {
     'desktop-private-state-native',
     'desktop-private-state-native-worker',
     'windows-process',
+    'diagnostic-events',
   ];
   const inputs = await Promise.all(
     names.map((name) => readFile(join(source, name + '.ts'), 'utf8')),

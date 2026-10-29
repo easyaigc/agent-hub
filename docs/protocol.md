@@ -1,5 +1,7 @@
 # 应用协议与领域契约
 
+2026-10-29 Host 错误响应追加 code／requestId／diagnosticId 和 X-Agent-Hub-Diagnostic-Id；healthz 的 runtime 分别报告 ready／bridge／reader／提交门禁，原 persistence 保留。字段为向后兼容追加，200 不表示聊天原 owner 可控；具体 Schema、分类与限制见[诊断指南](host-reconnect-diagnostics.md)。
+
 ## F74：可选模型代理 HTTP 边界
 
 独立端口仅在人类明确要求后启用，全部操作要求独立 Bearer Key，拒绝浏览器 Origin。不复用手机 Host Key，不开放上游 URL、方法、认证头或任意本机方法透传。

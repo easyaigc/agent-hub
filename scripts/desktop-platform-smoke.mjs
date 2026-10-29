@@ -75,6 +75,7 @@ try {
       join(directory, 'scripts/desktop-service.mjs'),
     );
     for (const name of [
+      'diagnostic-events',
       'desktop-platform',
       'desktop-private-state-native',
       'desktop-private-state-native-worker',

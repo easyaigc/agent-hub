@@ -1,5 +1,7 @@
 # 完整运行时连接与开发验收
 
+2026-10-29 Host 错误响应现在附诊断 ID 和具体分类，HTTP 存活、bridge／reader 就绪与存储状态分开；日志异步有界写入、只读恢复与显式停止边界见[诊断与恢复](host-reconnect-diagnostics.md)。本次为源码候选，Windows 与手机未验收，不能将所有 503 显示成 Codex 断开。
+
 ## 可选模型代理（F74，默认关闭）
 
 图像生成／编辑使用单独的 `HOST_RESPONSES_PROXY_IMAGE_MODELS` 允许清单；默认为空，升级不自动开启。配置准备器可传 `--image-models '["gpt-image-2"]'`，也可同时保留文本 `--models`。图像默认 600 秒超时、并发 1、32 MiB 请求预算；变量、OpenAI SDK 格式、偏好适配和返回限制见[图像代理指南](host-images-proxy.md)。

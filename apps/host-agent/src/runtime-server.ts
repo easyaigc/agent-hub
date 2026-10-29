@@ -7,6 +7,7 @@ import { homedir } from 'node:os';
 import {
   RuntimeSession,
   appendRuntimeDiagnostic,
+  startRuntimeDiagnostics,
   NotificationObserver,
   RuntimeError,
   DesktopWorkspaceView,
@@ -59,6 +60,22 @@ async function body(request: IncomingMessage, limit: number): Promise<Buffer> {
   }
   return Buffer.concat(parts);
 }
+const unavailableReasons: Record<string, string> = {
+  原桌面建议读取暂不可用: 'SUGGESTION_SOURCE_UNAVAILABLE',
+  'Windows 建议必须异步读取': 'SUGGESTION_ASYNC_REQUIRED',
+  'Windows 建议读取未就绪': 'SUGGESTION_WORKER_UNAVAILABLE',
+  原桌面建议准备失败: 'SUGGESTION_PREPARE_FAILED',
+  原桌面建议准备失去就绪状态: 'SUGGESTION_PREPARE_NOT_READY',
+  原桌面建议收据已变化: 'SUGGESTION_RECEIPT_CHANGED',
+  原桌面建议提交失去就绪状态: 'SUGGESTION_COMMIT_NOT_READY',
+  建议采集记录过大: 'SUGGESTION_RECORD_TOO_LARGE',
+  建议采集记录无效: 'SUGGESTION_RECORD_INVALID',
+  创建桥接已关闭: 'CREATION_BRIDGE_CLOSED',
+  '附件读取繁忙，请稍后重试': 'ATTACHMENT_READ_BUSY',
+  '电脑暂时无法读取 Codex 登录状态，请稍后重试；原录音不会提交': 'TRANSCRIPTION_AUTH_UNAVAILABLE',
+  '此 Codex 专用账户路由尚未支持 Host 转写': 'TRANSCRIPTION_ROUTE_UNSUPPORTED',
+  '电脑转写连接已关闭，原录音未提交': 'TRANSCRIPTION_CLOSED',
+};
 const text = (v: unknown): string => (typeof v === 'string' ? v : '');
 const values = (v: unknown): string[] =>
   Array.isArray(v) && v.every((entry) => typeof entry === 'string') ? (v as string[]) : [];
@@ -135,6 +152,7 @@ export async function startRuntimeServer() {
     root: resolve(process.env.HOST_AGENT_ROOT ?? process.cwd()),
     name: process.env.HOST_AGENT_NAME ?? 'Codex Host',
   });
+  const diagnostics = startRuntimeDiagnostics(directory, session.hostId, mode);
   const domSuggestions = new DesktopDomSuggestions(
     session,
     mode === 'desktop-runtime' ? process.env.CODEX_DESKTOP_DOM_BRIDGE_CONFIG : undefined,
@@ -143,6 +161,7 @@ export async function startRuntimeServer() {
     await session.connect();
   } catch (error) {
     session.close();
+    void diagnostics.close();
     throw error;
   }
   const suggestionObserver = new DesktopSuggestionObserver({
@@ -188,7 +207,7 @@ export async function startRuntimeServer() {
         principal: null,
       }),
       transcribe: async () => {
-        throw new RuntimeError(503, '原桌面转写不可用');
+        throw new RuntimeError(503, '原桌面转写不可用', 'DESKTOP_TRANSCRIPTION_UNAVAILABLE');
       },
     },
   );
@@ -322,7 +341,17 @@ export async function startRuntimeServer() {
   const handler = async (request: IncomingMessage, response: ServerResponse) => {
     const requestStartedAt = performance.now();
     const requestId = randomUUID();
+    response.setHeader('X-Agent-Hub-Diagnostic-Id', requestId);
+    // Diagnostics still retain a safe pathname when auth/origin rejects before
+    // routing; raw query bytes never enter the event schema.
+    let diagnosticPathname = '/other';
+    try {
+      diagnosticPathname = new URL(request.url ?? '/', 'http://localhost').pathname;
+    } catch {
+      /* Invalid target retains only a fixed label. */
+    }
     let requestURL: URL | undefined;
+    let operationId: string | undefined;
     try {
       if (request.headers.origin) throw new RuntimeError(403, '不接受浏览器跨域请求');
       const supplied = Buffer.from((request.headers.authorization ?? '').replace(/^Bearer /, ''));
@@ -404,6 +433,12 @@ export async function startRuntimeServer() {
           protocolVersion: '0.1',
           capabilities: mergeHostCapabilities(['health', ...session.capabilities]),
           persistence: session.persistenceStatus,
+          runtime: session.diagnosticStatus(),
+          diagnostics: {
+            bootId: diagnostics.bootId,
+            fingerprint: diagnostics.fingerprint,
+            ...diagnostics.status(),
+          },
         });
         return;
       }
@@ -489,6 +524,11 @@ export async function startRuntimeServer() {
         }
         if (!data || typeof data !== 'object' || Array.isArray(data))
           throw new RuntimeError(400, '无效请求');
+        operationId =
+          text(data.clientMessageId) ||
+          text(data.clientOperationId) ||
+          text(data.operationId) ||
+          undefined;
         const required: Record<string, string[]> = {
           '/v1/projects': ['hostId', 'name', 'directory', 'clientOperationId'],
           '/v1/threads': ['hostId', 'clientOperationId'],
@@ -700,7 +740,8 @@ export async function startRuntimeServer() {
           ) => (diagnostic ? diagnostic.asyncPhase(phase, operation) : operation());
           const deadlineAt = requestStartedAt + 8000;
           const lifetime = new AbortController();
-          const timeoutError = () => new RuntimeError(503, '原桌面建议读取已结束或超时');
+          const timeoutError = () =>
+            new RuntimeError(503, '原桌面建议读取已结束或超时', 'SUGGESTION_READ_DEADLINE');
           const active = () => {
             if (lifetime.signal.aborted || response.destroyed || performance.now() >= deadlineAt)
               throw timeoutError();
@@ -734,7 +775,8 @@ export async function startRuntimeServer() {
           let resumeBackground: (() => void) | undefined;
           try {
             if (suggestionObserver.usesFencedSourceRead) {
-              if (fencedSuggestionPending) throw new RuntimeError(503, '原桌面建议读取忙碌');
+              if (fencedSuggestionPending)
+                throw new RuntimeError(503, '原桌面建议读取忙碌', 'SUGGESTION_READ_BUSY');
               fencedSuggestionPending = true;
               ownsFencedSlot = true;
             }
@@ -1260,25 +1302,40 @@ export async function startRuntimeServer() {
         error instanceof NotificationRecoveryError
           ? error.status
           : 502;
-      const resource = requestURL?.pathname.startsWith('/v1/attachments');
       const nativeCode = (error as { code?: unknown })?.code;
+      operationId ??=
+        requestURL?.searchParams.get('clientMessageId') ??
+        requestURL?.searchParams.get('operationId') ??
+        requestURL?.searchParams.get('clientOperationId') ??
+        undefined;
       const code =
         typeof nativeCode === 'string' && /^[A-Z0-9_]{1,64}$/.test(nativeCode)
           ? nativeCode
-          : 'HOST_REQUEST_FAILED';
+          : status === 503 && error instanceof Error && unavailableReasons[error.message]
+            ? unavailableReasons[error.message]!
+            : error instanceof SuggestionObservationError
+              ? 'SUGGESTION_OBSERVATION_UNAVAILABLE'
+              : error instanceof CreationError
+                ? 'DESKTOP_CREATION_REJECTED'
+                : error instanceof RuntimeError && status === 503
+                  ? 'HOST_SERVICE_UNAVAILABLE'
+                  : 'HOST_REQUEST_FAILED';
       appendRuntimeDiagnostic(
         directory,
         {
           scope: 'http',
           hostId: session.hostId,
           requestId,
-          route: requestURL?.pathname,
+          operationId,
+          route: diagnosticPathname,
           method: request.method,
           status,
           threadId: requestURL?.searchParams.get('threadId') ?? undefined,
           messageId: requestURL?.searchParams.get('messageId') ?? undefined,
           resourceId: requestURL?.searchParams.get('id') ?? undefined,
           elapsedMs: Math.round(performance.now() - requestStartedAt),
+          code,
+          ...session.diagnosticStatus(),
         },
         error,
       );
@@ -1290,7 +1347,9 @@ export async function startRuntimeServer() {
             error instanceof SuggestionObservationError
               ? error.message
               : `电脑请求失败（${code}），请根据诊断记录核对原因`,
-          ...(resource ? { code, requestId } : {}),
+          code,
+          requestId,
+          diagnosticId: requestId,
         });
     }
   };
@@ -1314,6 +1373,7 @@ export async function startRuntimeServer() {
     clearInterval(voiceExpiryTimer);
     desktopTranscription?.close();
     session.close();
+    void diagnostics.close();
     throw error;
   }
   suggestionObserver.start();
@@ -1391,6 +1451,9 @@ export async function startRuntimeServer() {
       () => desktopTranscription?.close(),
       () => suggestionObserver.close(),
       () => session.close(),
+      () => {
+        void diagnostics.close();
+      },
       () => server.close(),
       () => server.closeAllConnections(),
     ]) {
@@ -1409,6 +1472,7 @@ export async function startRuntimeServer() {
     server,
     session,
     close,
+    diagnostics,
     get direct() {
       return direct;
     },

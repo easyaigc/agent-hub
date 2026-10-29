@@ -99,26 +99,26 @@ import kotlin.math.sin
             }else Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(3.dp)) { close();activity(Modifier.weight(1f));stop() }
             if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(status,Modifier.fillMaxWidth().padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
             if(voice.provider==VoiceInputController.Provider.SYSTEM)Text(productText("手机系统语音服务可能需要联网。"),Modifier.padding(horizontal=14.dp),fontSize=12.sp,color=colors.onSurfaceVariant)
-            if(voice.canEndWaiting)TextButton(onClick=voice::endWaiting,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-end-waiting")) { Text(productText("结束等待"),fontSize=17.sp) }
-            if(voice.canFillRecognizedText)TextButton(onClick={ voice.fillRecognizedText() },modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-fill-recognized-text")) { Text(productText("填入已识别文字"),fontSize=17.sp) }
+            if(voice.canEndWaiting)VoiceRecoveryTextButton(label=productText("结束等待"),onClick=voice::endWaiting,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-end-waiting"),fontSize=17.sp)
+            if(voice.canFillRecognizedText)VoiceRecoveryTextButton(label=productText("填入已识别文字"),onClick={ voice.fillRecognizedText() },modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-fill-recognized-text"),fontSize=17.sp)
             if(voice.canInspectSavedFile || voice.savedFileBusy) {
                 Column(Modifier.fillMaxWidth().padding(horizontal=14.dp).testTag("saved-file-asr"),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                     Text(productText("在手机识别原录音"),fontSize=17.sp,modifier=Modifier.fillMaxWidth().testTag("saved-file-title"))
                     Text(productText("仅下载语言模型需要联网，录音留在本机。"),fontSize=12.sp,modifier=Modifier.fillMaxWidth().testTag("saved-file-privacy"))
                     FlowRow(Modifier.fillMaxWidth().testTag("saved-file-languages"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                        for(locale in listOf("zh-CN","en-US"))FilterChip(selected=voice.savedFileLocale==locale,
+                        for(locale in listOf("zh-CN","en-US"))VoiceRecoveryLanguageChip(selected=voice.savedFileLocale==locale,
                             onClick={voice.chooseSavedFileLocale(locale)},enabled=voice.canInspectSavedFile,
-                            label={Text(productText(if(locale=="zh-CN")"中文（普通话）"else"英语（美国）"))},modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-locale-$locale"))
+                            label=productText(if(locale=="zh-CN")"中文（普通话）"else"英语（美国）"),modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-locale-$locale"))
                     }
                     Text(productText(voice.savedFileStatusKey),fontSize=12.sp,modifier=Modifier.fillMaxWidth().testTag("saved-file-status").semantics {liveRegion=androidx.compose.ui.semantics.LiveRegionMode.Polite})
-                    TextButton(onClick=voice::inspectSavedFile,enabled=voice.canInspectSavedFile && voice.savedFileLocale.isNotEmpty(),modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-probe")) {Text(productText("检查离线模型"))}
+                    VoiceRecoveryTextButton(label=productText("检查离线模型"),onClick=voice::inspectSavedFile,enabled=voice.canInspectSavedFile && voice.savedFileLocale.isNotEmpty(),modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-probe"))
                     if(voice.savedFileProbe?.availability in setOf(SavedVoiceAvailability.MISSING,SavedVoiceAvailability.CORRUPT))
-                        TextButton(onClick=voice::downloadSavedFileModel,enabled=voice.canInspectSavedFile,modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-download")) {Text(productText("下载离线模型（约45MB）"))}
-                    TextButton(onClick=voice::transcribeSavedFile,enabled=voice.canTranscribeSavedFile,modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-transcribe")) {Text(productText("识别并填入原草稿"))}
+                        VoiceRecoveryTextButton(label=productText("下载离线模型（约45MB）"),onClick=voice::downloadSavedFileModel,enabled=voice.canInspectSavedFile,modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-download"))
+                    VoiceRecoveryTextButton(label=productText("识别并填入原草稿"),onClick=voice::transcribeSavedFile,enabled=voice.canTranscribeSavedFile,modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-transcribe"))
                 }
             }
-            if(voice.canRerecordWithSystem)TextButton(onClick=voice::recordAgainWithSystem,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-rerecord-system")) { Text(productText("改用手机重新录音"),fontSize=17.sp) }
-            if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,enabled=voice.canRecordAgain,colors=ButtonDefaults.textButtonColors(contentColor=Color(0xFF007AFF)),modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text(productText("重新录音"),fontSize=17.sp) }
+            if(voice.canRerecordWithSystem)VoiceRecoveryTextButton(label=productText("改用手机重新录音"),onClick=voice::recordAgainWithSystem,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-rerecord-system"),fontSize=17.sp)
+            if(voice.phase==VoiceInputController.Phase.FAILED) VoiceRecoveryTextButton(label=productText("重新录音"),onClick=voice::rerecord,enabled=voice.canRecordAgain,colors=ButtonDefaults.textButtonColors(contentColor=Color(0xFF007AFF)),modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again"),fontSize=17.sp)
         }
     }
 }

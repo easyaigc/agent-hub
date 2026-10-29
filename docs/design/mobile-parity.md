@@ -1482,3 +1482,5 @@ PAR47-N仅登记API37原SystemUI首击与应用原/新草稿的局部原生证�
 [PAR48](../plans/android-alignment-20261022/parallel/forty-eighth-stage-panel-native.json)：API26/37语音7个实际JUnit为3通过4失败；显式本地关闭及两类成功合成迟到返回通过，语言chip宽度/paragraph不一致、三类禁用控件owner标签为空保留失败，四份准确Window PixelCopy和原layout/AX已审。字形本身未证明裁切，实际TalkBack未验。
 
 [PAR48-P8](../plans/android-alignment-20261022/parallel/forty-eighth-stage-preference-native.json)：API37中浅/英深两个实际方法通过，四状态每例12条原生互斥trace、11次实际持久读取、15次真实触摸及关闭重开，原5秒预算保持；同场景不重复计JUnit。仅初始编辑页两张PNG，逐态菜单像素、API26/完整视口/读屏、跨进程、真实issuer/TLS/DEV和双端真机仍待验。 两phase及P8的完整默认空族、UID/证书/boot/麦克风权限和AppOps保持，未知0；不是非空恢复或整项通过。iOS源未改，A6/任务项目继续暂缓。
+
+[PAR49](../plans/android-alignment-20261022/parallel/forty-ninth-stage-recovery-controls-native.json)：同一可见文案赋予真实Material控件原生owner名称，内部文字仅隐藏AX曝光，约束内固有宽度保持小标签自然尺寸及长文换行；原role/选中/禁用/回调/字号/48dp及全部UI7断言不变。API26六个唯一方法通过；API37横屏在英语原文诊断完整性断言失败，中文两外观禁用重录标签仅局部证明，TalkBack与完整横屏仍待验。原首项完成后只读查询exit255保留；后续只读补齐原件，余五项使用新lease，未重放首项。新组件测试/F64均未采用；iOS PR60圆形重试及长按另线继续，双端影响保持登记。

@@ -506,3 +506,19 @@ Source48 P7 实际原生7个JUnit终态：3通过、4明确测试失败、0未�
 来源指纹：canonical `808153e8885b439699343d143b818cd199fde0f48136b65d68c76ff3f134a18a`（749），expanded `0bdcf4c68d27f4906df5afe1d35d834ca2101811a2998dc955354ccb4af9fce8`（758）；App `b13d530d3f18f0483d292cdffa9cc949ba858e261935093ef63715a9558fb8a1`、runner `7d3854bce29d839eda41903cd0851a5bcc49f91eeb5c0d53969215d7572b3abb`。
 
 两个独立审计已核对实际原件，合计9个JUnit终态5通过4明确失败、0未知；菜单场景2次通过是同两个JUnit，不另加计数。四项语音失败保留，后续修复使用新源码/候选继续，不重写本轮原始失败。
+
+## PAR49 恢复控件名称与固有宽度
+
+Source49 仅采用 Source48 的两个恢复控件生产文件：VoiceInputView `3e671c56…`、VoiceRecoveryControls `1ebb4200…`；原 UI7 和 fixture 与 Source48 逐字节一致。F64、组件新 test 未采用。实际候选750/759 inputs；App `eb862dd5…`，runner `7d3854bc…`。三 APK 构建/签名证明与设备实际仅 App/test 两包、unused examiner None 分开登记。
+
+本轮按7个唯一 native 方法登记6通过、1已知失败、0未知。API26 首方法 resources/languages 已正常 method0+唯一OK1+overall-1；随后只读 activity 采集35ms内 exit255、stdout/stderr均空，原阶段仍 incomplete。之后只读补采该原方法的原归档/完整保护，0 native/安装/环境写，不重跑首方法；新 lease 只执行余5方法，全部 method0+唯一OK1+overall-1。不得把补采、4个语言主题配置或 scenario readback 加成额外 JUnit。
+
+API26 六方法各覆盖中文/英文×浅色/深色，实际 OS/render font2、320×420dp 短窗；资源四状态/语言/下载与识别忙碌/关闭/原 owner 失效及结束等待后的真实 synthetic-engine 成功返回保持原断言。48个原点、27份不可变 DTO/原行/metadata 与原3244B WAV 的 native 全字节保持回执已逐项重连。音频原件为加密 binary 存储；审计核对完整原文件摘要及 manifest/native 比较回执，不声称另行解密。
+
+API37 640×240dp 实际横屏为已知 JUnit -2/overall-1/exit0，停在 en/light 原文 AX complete 断言。原 sidecar005 owner0/complete=false，3/2000ms无超时/截断/释放错误；不变 caller 顺序先过全文/owner/scope，但英文 point未返回，不能当作独立完整 AX 通过。中文 sidecar003 complete=true/owner0 提示诊断唯一性缺口。两中文重新录音 owner 完整label、disabled/visible/important、无 ACTION_CLICK16，保留 Material role 子节点；原文 TextLayout完整24行且无overflow。Root修诊断采样/完整性原因和 owner count，不放宽断言。英文重新录音未到、英文暗色未开始。4个横屏PNG仅早先中文端点，失败前PNG attempts0，单列缺证。
+
+独立只读审计重读346命令、11完整快照，重连真实 UID/boot/APK/full mic permission+flags/AppOps、whole default family与可选 examiner absence。API26仅1空目录、API37为11空目录，均0常规文件，不说成非空用户数据保护证明。3原tar共531成员，完整SHA/UID/成员前后清单/双零终块及48PNG CRC+inflate均核对；AX资源零release失败、flags恢复、原font/rotation读回及已知终态后实际device-released回执均保留。原首阶段 summary 的 finalObservationAfterAllMethods/protectionEqualityPassed=false 不改写；其 after-known快照和只读补采另列，独立全保护比较相等。
+
+本审计0设备调用、0测试/构建/新截图、0生产源码修改。实际看过两个原PNG副本后已回收151341B；四个重复JSON读回对象无损压缩净回收895705B。原归档、不可变配置/操作回执与最小审计脚本/报告保留。Source49状态仍partial；实机授权重录、声学/JNI/网络、主界面/Host/原owner/fullDEV及完整iOS对齐各自待验。任务与项目管理继续暂缓，未知操作不重放。
+
+PR61最终组合head23897239的CI10725 workspace26186/ios26187均success后，由实际运行设置已核的Terra/medium执行方单次合入main4eb25b18；Root独立API读回与本地origin/main/祖先核对一致。准确lease清远端stage10、W同HEAD detach后本地-d；固定W目录因应用primary/pin限制保留，临时formatter依赖链接已释放，Root语音stage11未提交数据保留。前置36288995本机完整build/check实际exit0、源码无漂移；当前组合头另核一致性与CI，不能把旧完整检查当成最新head的本机重跑。

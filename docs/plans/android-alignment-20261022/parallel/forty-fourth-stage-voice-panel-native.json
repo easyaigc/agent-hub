@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR44-initial-panel-diagnostic",
+  "sourceSha256": "a4099b162afd40e7040cb6fdc927222961de1ffebd758f818e4f7743903e8e7c",
+  "expandedSourceSha256": "4376b9de971bd37b4384da4aa18e9826e9687793810be6a3d08334661cc88423",
+  "appSha256": "8af5bc0ba3ae6757fc81236af4f70987e473a88339c5ebe0f573a3dee6f292a6",
+  "runnerSha256": "8157c0b81ac8f06cef8a3285424fa80ce3cf20ab0ca5a3e6fb2e4bacfbaa08c6",
+  "threeApkBuildTasks": 122,
+  "actualNativeMethods": {
+    "executed": 5,
+    "passed": 0,
+    "failed": 5
+  },
+  "methods": [
+    {
+      "method": "landscapeLongOriginalAndStatusKeepEveryCharacterAndReachBothEnds",
+      "code": -2,
+      "profile": "landscape"
+    },
+    {
+      "method": "resourcesLanguagesAndCompleteTextRemainReachableAtActualOsFontTwo",
+      "code": -2,
+      "profile": "short"
+    },
+    {
+      "method": "downloadBusyControlsAndEndWaitingJoinSyntheticWorkerWithoutChangingOriginal",
+      "code": -2,
+      "profile": "short"
+    },
+    {
+      "method": "recognitionBusyControlsAndEndWaitingRejectLateSyntheticText",
+      "code": -2,
+      "profile": "short"
+    },
+    {
+      "method": "explicitLocalClosePreservesOriginalAndDraftWithoutHostOrMicrophone",
+      "code": -2,
+      "profile": "short"
+    }
+  ],
+  "fixtureDefects": [
+    "Original created with hardcoded synthetic certificate while actual VoiceDraft certificate is null; restore properly refuses mismatch; fixture must use actual draft certificate and assert same original before UI",
+    "Cleanup zeroes captured baseline then UI cleanup calls preserved again, masking initial failure; zero only after final full assertion, retain initial and cleanup failures separately"
+  ],
+  "additionalObservation": "Landscape voice-status TextLayout overflow; remeasure actual matched-original restored status after fixture fix; original overflow guard retained",
+  "originalDataCorruptionClaim": false,
+  "controllerCertificateGuardUnchanged": true,
+  "lateSuccessCallbackCovered": false,
+  "syntheticResourceEngineOnly": true,
+  "realAcousticClaim": false,
+  "realSource42AsrFinal": "real-file-asr-final-native.json",
+  "p9Source43UpgradeSupplement": "forty-third-stage-p9-upgrade-native.json",
+  "environment": {
+    "api26RawFontRestoredAfterIndependentReconciliation": true,
+    "api37FontAndRotationRestored": true,
+    "physicalDeviceUntouched": true
+  },
+  "remaining": [
+    "Fix exact fixture certificate and final baseline zeroing",
+    "Measure native full text/AX/busy controls with matched original, do not weaken guards",
+    "Actual late successful result after cancellation/owner invalidation",
+    "Full iOS/native/physical product DEV"
+  ],
+  "fullP7Closed": false,
+  "remoteBusinessInputs": 0,
+  "unknownReplay": 0,
+  "paused": ["Task/project management", "iOS A6"]
+}

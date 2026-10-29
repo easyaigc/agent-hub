@@ -36,3 +36,5 @@ node scripts/mobile/gradle.mjs :android:testDebugUnitTest --tests com.agenthub.a
 [Provider/设备/OIDC 迁移要求](migration-contract.md)及[拟议严格 Schema](provider-descriptor.schema.json)交给 P7：只迁移描述信息，新安装本机密钥和电脑明确重新配对，不继承 grant/token/OIDC/证书信任。没有自建或接入迁移器。
 
 [parity-delta.json](parity-delta.json)供主统筹按 feature/change ID 集成中央清单，不能覆盖他人新增节点或提升产品状态。本线不创建 PR、不合主线。恢复包、APK、原始日志、文件元数据去重记录和交付/清理回执存放树外私有档案，由最终交付回执给出准确位置与摘要。
+
+[连接偏好菜单的原生选中映射](menu-platform-selection/README.md)按锁定 Compose 1.12.1 的真实角色核对：既有无 Role、无 ToggleableState 的选项必须实际 checkable，并以 checked 表示与独立期望一致的 Selected；完整 owner、窗口、唯一文本关联、可操作性及可见范围仍逐项要求，原 5 秒预算不变。该次仅修正验收断言与补全观测字段，29 个 JVM 向量和 6 个删除门槛反例属于辅助检查。Source46 因缺少 checkable 记录产生的失败仍保留，下一候选原生结果、未选中互斥项、iOS 原生菜单属性及 API26 仍待验，不注入 Tab 或沿用旧通过。

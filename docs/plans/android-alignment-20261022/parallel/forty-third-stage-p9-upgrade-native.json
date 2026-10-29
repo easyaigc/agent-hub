@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR43-P9-supplement",
+  "sourceSha256": "e12e0b8146d9ac1efee4ae0fb93a0b5208647d858fe92c283d30ec77ebb22f33",
+  "appSha256": "479321f4aca2b46e7378ccd8d79438132b9d4a646413e270f39386c7fae6afb2",
+  "runnerSha256": "e62b9a03912aaafa4faefb0139484acacad7c2dbceb24b46512c3c2dccb3e1dd",
+  "examinerSha256": "730061caa1130585b2661364f9a7b8fc2f2e3875fcebc549b46620006c6d912a",
+  "additionalMethods": {
+    "executed": 2,
+    "passed": 1,
+    "failed": 1
+  },
+  "upgradeReadOnly": {
+    "passed": true,
+    "sameUidSignerAndKernelBootVerified": true,
+    "originalBootstrapRawIntentsAndReceiptsUnchanged": true,
+    "completeOriginalDefaultFamilyNativeVerified": true,
+    "afterDiagnosticDefaultFileHashesUnchanged": true,
+    "normalProductWrites": 0
+  },
+  "storeDiagnostic": {
+    "kind": "extra-int",
+    "expectedGuard": "PAYLOAD",
+    "actualGuard": {
+      "reason": "FLAGS",
+      "code": 1,
+      "actualFlags": 18,
+      "position": 0,
+      "size": 112,
+      "available": 112
+    },
+    "clientCallerFlags": 0,
+    "exceptionType": "java.lang.IllegalArgumentException",
+    "exceptionMessage": "P9_NATURAL_PROBE_FLAGS code=1 flags=18 pos=0 size=112 avail=112",
+    "originalFixtureFilesUnchanged": true,
+    "beforeOriginalAssertions": true,
+    "flagsWhitelistUnchanged": true
+  },
+  "completeThreeApkSourceMap": {
+    "inputFiles": 743,
+    "fileSha256": "286121fab1b7622173e1bb770fc728ac6df8afe735eb8805983f641365b856ed",
+    "distinctFromCanonicalSourceHash": true
+  },
+  "nativeNaturalProof": false,
+  "oldSdkNoticeNeverCreated": true,
+  "oldFirstClickNeverConsumed": true,
+  "unknownInputsReplayed": 0,
+  "pending": [
+    "Narrow known synchronous Binder transport metadata handling under measured SDK range, keep all UID/descriptor/code/payload/claim/lock refusal assertions",
+    "Fresh independent store suite and upgrade read-only reconciliation after fix",
+    "Original natural SDK notice and actual first click",
+    "API26-33 strong observer completion"
+  ],
+  "fullP9Closed": false
+}

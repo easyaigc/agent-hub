@@ -1,0 +1,14 @@
+--- a/docs/product/mobile-parity.md
++++ b/docs/product/mobile-parity.md
+@@ -594,3 +594,11 @@
+ Android 达到完整交付前，可有分阶段版本，但必须列出待开发和未验收功能。后续新增功能默认覆盖两端；确属平台能力差异时记录适用范围与等价行为，不能只更新完成的一端。
+ 
+ 2026-10-21 F69 候选：Windows 批内并行仍执行每项完整来源校验，进程使用 fresh-open 创建映像查询；iOS 只扩展独立 bundle 的正常 UI 验收准备，不改产品界面或草稿规则。当前真实 Windows 普通模式与 iPhone15 Xcode 结果待验，macOS 与 Android 的既有状态保持。参见 [当前验收范围](../acceptance/mobile-parity.md#windows-trace-当前失败与修复候选2026-10-21)。
++
++### F64：P7 原录音面板原生矩阵准备（2026-10-29）
++
++共同断言：完整原目标（含历史账号元数据）、manifest、未知回执、attempt flags、原持久行、全部 WAV 字节及草稿版本保持；本地结束等待不重放原操作，后台识别真正退出前继续忙碌，晚到结果不填入草稿。关闭明确记录本地终态，原件和证据仍可导出。
++
++Android 提案：语言 chips 在有限宽度下换行，完整原草稿在原面板滚动；保留全部动作、禁用状态和 owner。共享调色板提取供生产 App 与独立原生窗口复用，不改 token 或 24 条双语文案。五条原生 UI selectors 覆盖中英、浅深色、实际 OS fontScale 2、最大 320×420dp 的实际受限区域及横屏，资源/工作线程为明确合成 gate，不能计作 JNI/声学或完整 DEV。
++
++iOS 不改源码：已有系统 URL 语音识别与原录音失败动作；Android 的 Vosk 双语离线模型、显式下载、校验状态及两个关闭阶段属于平台差异，不能以 iOS 的条件 on-device 请求宣称普遍离线。iOS 完整大字号/横屏/AX 仍单列待验。验收入口：NativeSavedVoicePanelUiTest 与 stage31-file-asr-panel-ui.md；本次只准备源码/辅助编译，真实 UI/AX 与引擎结果由父任务按新指纹分别采集。A6 与任务/项目管理继续暂停。

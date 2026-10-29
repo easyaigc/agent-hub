@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-source45-observer-am-cap-real-failure-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "Absence requires complete full-scope diagnostics and positive self/system/writer witnesses",
+    "A cap refusal is a failure, never an empty process set",
+    "Failed originals are preserved and never replayed"
+  ],
+  "android": {
+    "implemented": "Exact examiner proposal: PS256KiB and AM1MiB combined independent-stream caps with complete read/marker/section validation and per-kind observed-byte evidence",
+    "adopted": false,
+    "actualCommonFilesModified": [],
+    "parentReported": "Source45 upgrade/fullStore5 passed; natural observer failed before ready due256KiB cap; producer never started",
+    "environmentComparison": "Separate later global AM read401177 bytes; not the original failed body",
+    "auxiliary": "66 regression plus32 synthetic capacity/counter checks; examiner-only compilation",
+    "nativeHere": "Not run; next source/new lease required",
+    "originalFiveHooksChanged": false,
+    "eightRefusalCasesChanged": false,
+    "timeBudgetsChanged": false,
+    "lowApiStrongObserver": "Separately pending; RWE path remains API34+",
+    "fullP9": "Open"
+  },
+  "ios": {
+    "sourceChanges": [],
+    "impact": "Android examiner diagnostic only",
+    "acceptance": "No new result; A6 paused"
+  },
+  "ui": {
+    "tokensAndCopy": "Unchanged",
+    "systemDifference": "Android global diagnostics capacity; no weakened observation semantics"
+  },
+  "parentLedgersToReconcileAfterReview": [
+    "docs/product/mobile-parity.md",
+    "docs/design/mobile-parity.md",
+    "docs/acceptance/mobile-parity.md"
+  ],
+  "evidence": "api37-am-capacity.md",
+  "index": "api37-am-capacity-hooks.json"
+}

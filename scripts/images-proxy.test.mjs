@@ -55,6 +55,7 @@ async function fixture(options = {}) {
   const send = (kind) => async (body, signal, beforeSubmit) => {
     await beforeSubmit?.();
     calls.push({ kind, body: JSON.parse(body), signal });
+    await options.observeSubmission?.(path);
     const upstream = new PassThrough();
     upstream.statusCode = options.status ?? 200;
     if (options.pending)
@@ -280,8 +281,30 @@ test('Host image routes are disabled without image configuration and models stay
 });
 
 test('real HTTP generation returns OpenAI data, actual output, immutable receipts and no prompt/image logging', async () => {
-  const f = await fixture();
   const id = randomUUID();
+  async function inspectCommittedReceipt(path, phase) {
+    const directory = join(path, 'operations');
+    // Atomic-save staging names can disappear after readdir; only committed receipts are stable.
+    const records = (await readdir(directory)).filter((name) => /^[a-f0-9]{64}\.json$/.test(name));
+    assert.deepEqual(records, [sha(id) + '.json']);
+    const saved = await readFile(join(directory, records[0]), 'utf8');
+    assert(!saved.includes(request.prompt));
+    assert(!saved.includes(png.toString('base64')));
+    const value = JSON.parse(saved);
+    assert.equal(value.id, id);
+    assert.equal(value.endpoint, '/v1/images/generations');
+    assert.equal(value.phase, phase);
+    assert.equal(value.upstreamSubmissions, 1);
+    assert.equal(value.requestSha256, sha(JSON.stringify(request)));
+    return value;
+  }
+  let submitted;
+  const f = await fixture({
+    observeSubmission: async (path) => {
+      assert.equal(submitted, undefined);
+      submitted = await inspectCommittedReceipt(path, 'submitting');
+    },
+  });
   try {
     const res = await f.post(request, '/v1/images/generations', id);
     assert.equal(res.status, 200);
@@ -289,6 +312,7 @@ test('real HTTP generation returns OpenAI data, actual output, immutable receipt
     const value = await res.json();
     assert.deepEqual(value, response);
     assert.equal(f.calls.length, 1);
+    assert.equal(submitted.phase, 'submitting');
     assert.match(f.calls[0].body.prompt, /16:9/);
     const receipt = await (await f.api('/v1/requests/' + id)).json();
     assert.equal(receipt.phase, 'completed');
@@ -298,11 +322,9 @@ test('real HTTP generation returns OpenAI data, actual output, immutable receipt
     assert.notEqual(receipt.requestSha256, receipt.upstreamRequestSha256);
     assert.equal((await f.post(request, '/v1/images/generations', id)).status, 409);
     assert.equal(f.calls.length, 1);
-    for (const name of await readdir(join(f.path, 'operations'))) {
-      const saved = await readFile(join(f.path, 'operations', name), 'utf8');
-      assert(!saved.includes(request.prompt));
-      assert(!saved.includes(png.toString('base64')));
-    }
+    const saved = await inspectCommittedReceipt(f.path, 'completed');
+    assert.equal(saved.responseSha256, receipt.responseSha256);
+    assert.deepEqual(saved.imageOutput, receipt.imageOutput);
     const reservedId = randomUUID();
     await writeFile(join(f.path, 'operations', sha(reservedId) + '.json'), '', { mode: 0o600 });
     assert.equal((await f.post(request, '/v1/images/generations', reservedId)).status, 409);

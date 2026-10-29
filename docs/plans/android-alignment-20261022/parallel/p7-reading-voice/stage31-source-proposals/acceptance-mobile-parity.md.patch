@@ -1,0 +1,14 @@
+--- a/docs/acceptance/mobile-parity.md
++++ b/docs/acceptance/mobile-parity.md
+@@ -1411,3 +1411,11 @@
+ [PAR41](../plans/android-alignment-20261022/parallel/forty-first-stage-whole-original-voice-native.json)：实际9通过，完整原件元数据/准确持久化row/音频全字节不变；App相同、未变test源码15项匹配复用。旧8失败保留，仅关闭原件fixture引用比较问题，不宣称真实Vosk/JNI/声学或完整DEV。
+ 
+ PAR42仅合并经复核的真实文件识别/自然通知/AX诊断工具，122tasks三APK构建通过；P7报告文件采用实际FD权限，P9保持voice加法和严格命令完成，P8原glyph/字体/按钮/AX属性守卫保留。60aaa完整check通过仅属于其准确源码；新native结果待记，原首点与未知操作不重放。
++
++### F64：P7 stage31 原录音面板验收边界（2026-10-29）
++
++准备五个有限 NativeSavedVoicePanelUiTest selectors：资源/语言/完整文字；下载忙碌和结束等待；识别忙碌和晚到拒绝；明确本地关闭保留原件；横屏长原草稿/状态与滚动两端。每条分中英×浅深色，要求 API26/37、实际 OS fontScale 2 与声明方向，记录测得的受限视口；不能把最大 320×420dp 标签当实际完整面积。native AX 根、标签、选择/禁用状态、48dp 触点、完整 TextLayoutResult 和自有窗口 PixelCopy 分别存证。未知、缺条件、布局裁剪或 AX 不可观测均失败，不跳过计通过。
++
++辅助编译与真实执行分开：本专线只交源码/提案/辅助编译，不持设备，不执行 JNI、下载、声学、Host 或麦克风。合成 gate 仅验证 UI/生命周期，父任务独立真实 Vosk suite 才能提供引擎证明。每例核对完整 canonical original.json、原始持久行、全部 WAV、metadata/draft 和 RECORD_AUDIO 权限；关闭可新增本地终态但不改原件，结束等待不制造终态。独立空 Activity 防止默认 Session/Host 启动。
++
++真实 UI/AX、iOS 大字号/方向一致性、系统麦克风/网络观测及全 DEV：均保持待验；旧包/其他端/编译结果不可替代。本轮不解除 A6 或任务/项目业务暂停。详见 stage31-file-asr-panel-ui.md 及对应租约下不可变 intent/result 证据。

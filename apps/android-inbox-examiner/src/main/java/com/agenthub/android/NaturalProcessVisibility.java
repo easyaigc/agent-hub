@@ -8,7 +8,21 @@ import java.util.regex.*;
 
 /** Fixed acceptance diagnostics and parsers. No Android, process execution or configurable commands. */
 final class NaturalProcessVisibility {
-    static final int BUDGET=262144;
+    static final int PS_BUDGET=262144, AM_BUDGET=1048576;
+    // Historical PS alias for older auxiliary vectors; production captures select by closed kind.
+    static final int BUDGET=PS_BUDGET;
+    static int budget(Diagnostic kind){require(kind!=null,"fixed diagnostic kind");switch(kind){case PS:return PS_BUDGET;case AM:return AM_BUDGET;default:throw new Refused("unbudgeted diagnostic kind");}}
+    static final class ReadStats {
+        final int stdout,stderr,cap;final boolean stdoutEof,stderrEof;
+        private ReadStats(int stdout,int stderr,int cap,boolean stdoutEof,boolean stderrEof){this.stdout=stdout;this.stderr=stderr;this.cap=cap;this.stdoutEof=stdoutEof;this.stderrEof=stderrEof;}
+    }
+    static final class ReadBudget {
+        final int cap;private int stdout,stderr;private boolean stdoutEof,stderrEof;
+        ReadBudget(Diagnostic kind){cap=budget(kind);}
+        synchronized void read(boolean error,int n){require(n>0&&n<=4096,"bounded diagnostic read chunk");if(error)stderr+=n;else stdout+=n;require((long)stdout+stderr<=cap,"combined diagnostic budget");}
+        synchronized void eof(boolean error){if(error)stderrEof=true;else stdoutEof=true;}
+        synchronized ReadStats stats(){return new ReadStats(stdout,stderr,cap,stdoutEof,stderrEof);}
+    }
     static final String END="P9_DIAGNOSTIC_END_V1:";
     static final String APP="com.easyai.agenthub.android.acceptance", SELF=APP+".coldexaminer";
     static final String OBSERVER="com.agenthub.android.OwnedNaturalNoticeObserver";
@@ -33,7 +47,7 @@ final class NaturalProcessVisibility {
         return StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(value)).toString();
     }
     static Completed complete(Diagnostic kind,String value,byte[] stdout,byte[] stderr)throws Exception {
-        nonce(value);require(kind!=null && (long)stdout.length+stderr.length<=BUDGET,"diagnostic combined budget");
+        nonce(value);require(kind!=null && (long)stdout.length+stderr.length<=budget(kind),"diagnostic combined budget");
         require(stderr.length==0,"diagnostic stderr");String text=utf8(stdout),tail="\n"+END+kind.name()+":"+value+":0\n";
         int position=text.length()-tail.length()+1;
         require(text.endsWith(tail) && text.indexOf(END)==position && text.lastIndexOf(END)==position,"diagnostic missing/duplicate/wrong completion or nonzero exit");
@@ -51,7 +65,7 @@ final class NaturalProcessVisibility {
     }
     static Ps ps(Completed capture,int selfUid,int selfPid,int targetUid){
         require(capture!=null && capture.kind==Diagnostic.PS,"verified PS completion required");String raw=capture.body;
-        require(raw.getBytes(StandardCharsets.UTF_8).length<=BUDGET && raw.endsWith("\n") && raw.indexOf('\r')<0 && raw.indexOf('\0')<0,"ps bound/termination");
+        require(raw.getBytes(StandardCharsets.UTF_8).length<=PS_BUDGET && raw.endsWith("\n") && raw.indexOf('\r')<0 && raw.indexOf('\0')<0,"ps bound/termination");
         String[] lines=raw.split("\n",-1);require(lines.length>=4 && lines[0].trim().matches("UID\\s+PID\\s+NAME"),"exact ps columns");
         require(selfUid!=targetUid && selfPid>0,"independent observer identity");
         Map<Integer,Integer> pids=new HashMap<>();List<Integer> targets=new ArrayList<>();int system=0;
@@ -69,7 +83,7 @@ final class NaturalProcessVisibility {
     private static Matcher one(String body,String regex,String code){Matcher m=Pattern.compile(regex,Pattern.MULTILINE).matcher(body);require(m.find(),code);Matcher duplicate=Pattern.compile(regex,Pattern.MULTILINE).matcher(body);duplicate.find();require(!duplicate.find(),code+" duplicate");return m;}
     static Am am(Completed capture,int selfUid,int selfPid,int targetUid,int writerPid){
         require(capture!=null && capture.kind==Diagnostic.AM,"verified AM completion required");String raw=capture.body;
-        require(raw.getBytes(StandardCharsets.UTF_8).length<=BUDGET && raw.endsWith("\n") && raw.indexOf('\r')<0 && raw.indexOf('\0')<0,"AM bound/termination");
+        require(raw.getBytes(StandardCharsets.UTF_8).length<=AM_BUDGET && raw.endsWith("\n") && raw.indexOf('\r')<0 && raw.indexOf('\0')<0,"AM bound/termination");
         require(!raw.contains("DUMP TIMEOUT") && !raw.contains("Permission Denial") && !raw.contains("Failure dumping") && !raw.contains("Error dumping"),"AM diagnostic incomplete/restricted");
         String header="ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)\n";require(raw.startsWith(header),"exact global AM header");
         String title="  Active instrumentation:\n";int start=raw.indexOf(title);require(start>=header.length() && raw.indexOf(title,start+title.length())<0,"unique active instrumentation section");

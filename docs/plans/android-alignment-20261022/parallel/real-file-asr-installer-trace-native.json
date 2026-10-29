@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "Source45-official-installer-trace",
+  "sourceSha256": "e0ae856d4adfe73f9787c4ec9c570f8523356bc310734fc297c54e60c30c5d7f",
+  "expandedSourceSha256": "de8d3f3e2bd53ecea569d87c8f3aa942d9682360549314b433aa708543bd6294",
+  "appSha256": "6d41039fe8feabbdf6624c07770fd3100f3b6c9204fd394f00418071dddc0e26",
+  "runnerSha256": "a57a6edefab0ee040e43986c2f839a922537047bfa1b493625e4873848545e1d",
+  "verificationKind": "Fresh harness-owned local records on API26 emulator; diagnostic observer with unmodified default installer",
+  "sdk": 26,
+  "abi": "arm64-v8a",
+  "runtimePageSizeBytes": 4096,
+  "actualNativeMethods": {
+    "executed": 6,
+    "passed": 4,
+    "failed": 2,
+    "unknownWorkerExit": 0,
+    "scope": "Two fresh probe-empty/install-trace/release-cache triplets; independent of Source42 61 methods and Source45 panel/Binder 13 methods"
+  },
+  "locales": [
+    {
+      "locale": "en-US",
+      "outcome": "TIME_WINDOW_EXPIRED_UNKNOWN",
+      "failureClass": "kotlinx.coroutines.TimeoutCancellationException",
+      "productionBudgetMs": 180000,
+      "diagnosticElapsedMs": 180773,
+      "pinnedArchiveBytes": 41205931,
+      "observations": 184,
+      "maximumObservedZipFileLengthBytes": 3849987,
+      "maximumObservedZipWriteFdPositionBytes": 3849987,
+      "maximumObservedExpandedFiles": 0,
+      "maximumObservedExpandedBytes": 0,
+      "observerCheckpointOverheadNs": 68678343,
+      "overlappingSampleDurationNs": 366575956,
+      "traceSha256": "4f33ccbb6d3132483b34e0f74e6baca317db5f6cb0438129ef3423146129834d",
+      "traceBytes": 245120,
+      "actualExitAndOriginalPreserved": true,
+      "modelCacheReleased": true
+    },
+    {
+      "locale": "zh-CN",
+      "outcome": "TIME_WINDOW_EXPIRED_UNKNOWN",
+      "failureClass": "kotlinx.coroutines.TimeoutCancellationException",
+      "productionBudgetMs": 180000,
+      "diagnosticElapsedMs": 180874,
+      "pinnedArchiveBytes": 43898754,
+      "observations": 184,
+      "maximumObservedZipFileLengthBytes": 2375427,
+      "maximumObservedZipWriteFdPositionBytes": 2375427,
+      "maximumObservedExpandedFiles": 0,
+      "maximumObservedExpandedBytes": 0,
+      "observerCheckpointOverheadNs": 72270948,
+      "overlappingSampleDurationNs": 714679249,
+      "traceSha256": "1fec3a2121474a94989e7fb768b1830c2ddd94e82940f4c0abe5cc201d60bd82",
+      "traceBytes": 245492,
+      "actualExitAndOriginalPreserved": true,
+      "modelCacheReleased": true
+    }
+  ],
+  "phaseConclusion": "Observed ZIP write scope and growing ZIP bytes; no hash, extraction or publication observed. Slow download root cause remains unresolved.",
+  "timingLimit": "Synchronous observer checkpoints overlap sample durations; never sum them. Sampling contention and unobserved IO are not fully quantified, so these are not pristine performance benchmarks.",
+  "originalAndExitProof": {
+    "allSixCanonicalMetadataExactPersistedRowAndWholeWavVerified": true,
+    "allSixNativeWorkerExited": true,
+    "allSixModelFdsAndMappingsAvailableAndEmpty": true,
+    "defaultFamilyExact": true,
+    "defaultFamilyFilesBefore": 1,
+    "defaultFamilyFilesAfter": 1
+  },
+  "privacy": {
+    "microphonePermissionBeforeAndAfter": -1,
+    "microphonePermissionAndAppopsUnchanged": true,
+    "newMicrophoneGrantOrCapture": false,
+    "absoluteNoMicrophoneAndNoUploadProved": false,
+    "independentIpv6Pending": true,
+    "newFirewallRules": false
+  },
+  "cleanup": {
+    "newModelCachesReleased": true,
+    "originalsAndAliasesRetained": true,
+    "newModelZipsOrExpandedModelsOnMac": 0,
+    "previousTwoOriginalZipBytesRetained": 85104685
+  },
+  "scope": {
+    "realLocalModelInferenceInThisDiagnostic": false,
+    "realRemoteBusinessInputs": 0,
+    "noHostCalls": true,
+    "noUnknownBusinessOperationReplay": true,
+    "source42Original61AndOldFailuresUnmodified": true,
+    "source45Other13MethodsNotRecounted": true
+  },
+  "pending": [
+    "API26 official installer completion and dependent original matrix",
+    "Download performance root cause",
+    "Physical Android real acoustic/complete DEV",
+    "Independent API26 IPv6 and complete privacy audit",
+    "16 KiB native runtime"
+  ],
+  "fullP7Closed": false,
+  "phoneInstallerAcceptance": false,
+  "fullDevPassed": false,
+  "privateSourceSummarySha256": "cfc4a6bb6608a0b62416ad280cf92fdaa11b417c736b0b4c09f220353c005713",
+  "archiveSha256": [
+    "2c832e6e5a7157910730e5ee25110de030324fec7da035ea3bd3fd1473439140",
+    "f80d97540f4a3f5ae54346e98091cb7d1b644976e3ba60c89964f785c60a9a61"
+  ]
+}

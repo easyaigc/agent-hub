@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "composeVersion": "1.12.1",
+  "officialSourceArchive": "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.1/ui-android-1.12.1-sources.jar",
+  "sourceArchiveSha256": "8ddde80690da97cd840c6f8f59c608701f9e42c245f12f0eabc1434db57e0273",
+  "delegateEntry": "androidMain/androidx/compose/ui/platform/AndroidComposeViewAccessibilityDelegateCompat.android.kt",
+  "delegateSourceSha256": "fa6ee0b3459cb6529c43a663b234e5a46318f50ef271509f2393038b017414a0",
+  "sourceSections": {
+    "populateCheckable": 705,
+    "toggleableState": [707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717],
+    "selectedProjection": [718, 719, 720, 721, 722, 723, 724, 725, 726, 727],
+    "getInfoIsCheckable": [
+      3591, 3592, 3593, 3594, 3595, 3596, 3597, 3598, 3599, 3600, 3601, 3602, 3603, 3604, 3605
+    ]
+  },
+  "installedAarAndBytecode": {
+    "version": "1.12.1",
+    "aarSha256": "3f1ae17e237d9dc0a2a0f42cb04b85b8de6e12f67adc5f5c12173fe31e501cb2",
+    "classesJarSha256": "bd1c0af0de3248e0ab23805451c372d3309509c948e6472cb61c320a1d4d67e6",
+    "classes": [
+      {
+        "name": "androidx/compose/ui/platform/AndroidComposeViewAccessibilityDelegateCompat.class",
+        "sha256": "ea3702a296120cd559fff0d9e40481373ca4775f7512892c7cd13dcb6ca9c9e3"
+      },
+      {
+        "name": "androidx/compose/ui/platform/AndroidComposeViewAccessibilityDelegateCompat_androidKt.class",
+        "sha256": "4fee3b8a9261a5ca4bd91445fab40f11a7236efa58ab99a5d86541f3894bf76d"
+      }
+    ],
+    "fullBytecodeRawSha256": "b3a9012736a105f74ae601455ebc21aee9c4777d59a8a9a5bdce6cdedcaa656c",
+    "inspectionJarRemoved": true
+  },
+  "mapping": [
+    {
+      "semantic": "Selected present, Role.Tab",
+      "native": "isSelected = Selected; Selected alone does not make Tab checkable"
+    },
+    {
+      "semantic": "Selected present, role other than Tab, including absent Role",
+      "native": "isChecked = Selected; getInfoIsCheckable = true"
+    },
+    {
+      "semantic": "ToggleableState present",
+      "native": "Independently participates in checkability/checked mapping; excluded from this exact preference oracle"
+    }
+  ],
+  "narrowProfile": "Existing known connection-preference tags only; Role key absent/value null, ToggleableState absent, Selected key/value matches independent expected state, actual native android.view.View, native checkable true, checked expected, selected false",
+  "source46Checkable": "Missing in old record; unknown, not inferred and not a new pass",
+  "oracleFinding": "Universal native isSelected=true contradicts this locked role-null mapping. No product defect is demonstrated by selected=false/checked=true alone; new complete native measurement still required.",
+  "iosComparison": {
+    "sourcePath": "apps/ios/Sources/EasyWorkPairing.swift",
+    "sourceSha256": "1c443b52ac637b22fccec2df78fb6bb40290655953cf2c0471abe3ca8d5ae616",
+    "sourceRevision": "27af3eac527b11f35b0bf032c922b1fbbc02a291",
+    "pickerLines": [288, 289, 290],
+    "setterLines": [238, 239, 240, 241, 242],
+    "sourceFact": "Native SwiftUI Picker binds the current saved preference, tags each option and writes selection through the existing store setter; no custom Tab role/AX flags are injected",
+    "nativeAttributeAPIs": [
+      "https://developer.apple.com/documentation/uikit/uiaccessibilitytraits/selected",
+      "https://developer.apple.com/documentation/xcuiautomation/xcuielementattributes/isselected"
+    ],
+    "pickerDocumentation": "https://developer.apple.com/documentation/swiftui/picker",
+    "runtimeStatus": "No new iOS menu-owner AX observation; actual option trait/value still needs native verification. Public selected APIs are not proof of the exact SwiftUI menu projection.",
+    "style": "Connection-preference Picker has no explicit style override; the separate connection-method Picker uses menu. Do not assume identical option role/AX projection from either source label."
+  },
+  "newProductFix": "None: correct the exact test oracle and measure remaining fields first; no role/flag injection on either platform"
+}

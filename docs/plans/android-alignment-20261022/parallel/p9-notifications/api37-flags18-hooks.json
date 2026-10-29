@@ -1,0 +1,116 @@
+{
+  "operationId": "parent-p9-api37-observed-flags18-narrow-fix-20261029-1",
+  "baseCommit": "c22f0af7e9bb5afe3738a27414f9fa7767a583a5",
+  "patches": {
+    "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalStoreProbeService.kt": {
+      "patch": "api37-flags18-service.patch",
+      "baseSha256": "a6a413d05e7c8a17d2733866d65f957075aa73f846675ec85a95e34c6163d291",
+      "proposedSha256": "b06df82bcb8d956bfaba0243d48e88ee7a03db46e389f38af65877ab61242b02",
+      "patchSha256": "dc14db1b9067397b2014d36fb268b444827fdb768492b8bddf879f8ba155d8ce"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt": {
+      "patch": "api37-flags18-test.patch",
+      "baseSha256": "84da1cb3bb46ddfb09af3464446f33e4b6b7e1c2e84d9ddc845c838312c2b6cf",
+      "proposedSha256": "28347635225cb04b10f48c2b401784e7046238d5130492e7d02cb9776e717556",
+      "patchSha256": "f7166c745360b3e820c0de47351c3cad64766d8fc003c60206d41783cb5e57ad"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalProbeDiagnostics.kt": {
+      "patch": "api37-flags18-diagnostics.patch",
+      "baseSha256": "8f4b2d991efc7365afada4d0f86b09e474e60ba7364679935b545557b2387dd2",
+      "proposedSha256": "958cbb9cba6e97b3a93f0b688fa0547458ab5d9a2d421d193c80ce450cacd391",
+      "patchSha256": "a60c901b1656e8849b3915f38a8a651310e97f242776d1131c33422595b8878e"
+    }
+  },
+  "observedApi": 37,
+  "observedCallerFlags": 0,
+  "observedServerFlags": 18,
+  "newExactAllowedPair": {
+    "api": 37,
+    "flags": 18
+  },
+  "newBitMask": false,
+  "api26LegacyFlags": [0, 16],
+  "standalone2Allowed": false,
+  "fdRequestsAllowed": false,
+  "oldAssertionsRetained": true,
+  "nativeHere": false,
+  "devicesTouched": [],
+  "actualParentFilesModified": [],
+  "lockedApi37SourceSha256": {
+    "BinderProxy.java": "a13b8a507c9c2b751b06944c42fea4f950b4d9eec5488761909507ee2f1d15f9",
+    "IBinder.java": "20862f061bed4913746727ea6f0f5b2d11c86645d5f4df0a2e3a22a14c9ed7f5",
+    "Binder.java": "502dcd0067b3603e321086917e8e2274a8fc7beae1e9a75b335c2a035707ea6e",
+    "Parcel.java": "7e2505541149b81276e601f738b3d833f85ddbbdd595f7c2281c1baf98c77393"
+  },
+  "sources": {
+    "scripts/mobile/fixtures/native/binder-flags/NativeNaturalProbeTransportFlags.kt": "605d2ff583af53eaf055390689515d97707ffe815e81f6a6b53871d64e7550c7",
+    "scripts/mobile/fixtures/NaturalProbeFlagsVectors.kt": "92158736a437bb73dea9d124b70367f49032fdc85601242b3f9996bc4f6cde17",
+    "scripts/mobile/check-natural-probe-flags.mjs": "9b61e4f50f14c5ec6db2d3659bf596028949a7016fb053a9406878f8d3766400",
+    "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalProbeDiagnostics.kt": "958cbb9cba6e97b3a93f0b688fa0547458ab5d9a2d421d193c80ce450cacd391"
+  },
+  "debugHelperTarget": "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalProbeTransportFlags.kt",
+  "parentSource43Sha256": "e12e0b8146d9ac1efee4ae0fb93a0b5208647d858fe92c283d30ec77ebb22f33",
+  "parentExpandedSource43Sha256": "ea74375c92bde5efcd5fc32b09772882a931d6bee7b21060f8a6c6ba5e0ee2f0",
+  "parentNativeReceiptReviewSha256": "597a9245740d9ad44902e65162d776574b97b31c33f7642a775d290510e82638",
+  "nativeRefusalChecks": {
+    "originalRetained": 5,
+    "newSynchronousUnknownApplicationFlags": [256, 1073741824],
+    "newFdCase": "One short-lived pipe read-end descriptor, zero data read; FDS guard required",
+    "requiredSynchronousRefusals": 8,
+    "onewayAcknowledged": false
+  },
+  "caseBudgetSeconds": 120,
+  "bindBudgetSeconds": 15,
+  "newTimingWindows": false,
+  "storeSelector": "com.agenthub.android.NativeChatNotificationNaturalStoreTest#otherPidLockAndSingleClaimKeepOriginal",
+  "auxiliary": {
+    "exhaustiveAndEdgeDecisions": 983190,
+    "focusedAssertions": true,
+    "scope": "JVM actual debug metadata policy; no Android/Binder/Parcel/FD/native proof"
+  },
+  "compiledPrivateProposal": {
+    "sourceFingerprint": "15f56827ad0e83f880b8e924faf42175f370d86c523de9fae5bfb0e16fb4afcf",
+    "sourceFiles": 754,
+    "source43Inputs": 743,
+    "source43FourNativeChanges": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalProbeDiagnostics.kt": "958cbb9cba6e97b3a93f0b688fa0547458ab5d9a2d421d193c80ce450cacd391",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt": "28347635225cb04b10f48c2b401784e7046238d5130492e7d02cb9776e717556",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalProbeTransportFlags.kt": "605d2ff583af53eaf055390689515d97707ffe815e81f6a6b53871d64e7550c7",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalStoreProbeService.kt": "b06df82bcb8d956bfaba0243d48e88ee7a03db46e389f38af65877ab61242b02"
+    },
+    "buildScaffoldingInputs": 11,
+    "apks": {
+      "android-debug.apk": {
+        "sha256": "9bb58ff2a78e0885286a563b59db67263d6c67a36536a3bcaf73bb6dbc829586",
+        "bytes": 66396691,
+        "v2Verified": true,
+        "zipVerified": true
+      },
+      "android-debug-androidTest.apk": {
+        "sha256": "62172fe5a8af5d6b19928e34cca85ecb11472c55210b7f0a3a4cf07b0d219700",
+        "bytes": 6249342,
+        "v2Verified": true,
+        "zipVerified": true
+      },
+      "android-inbox-examiner-debug.apk": {
+        "sha256": "125b286eb3befea539e86a2c9e814331e82d8f949a1165712f9a96fc7f4d24db",
+        "bytes": 997958,
+        "v2Verified": true,
+        "zipVerified": true
+      }
+    },
+    "sameSigner": true,
+    "parentSource42ApkIdentityReused": false,
+    "independentCompileOnly": true,
+    "serviceExactNarrowPatch": true,
+    "oldBootstrapSelectorUnchanged": true,
+    "assembly": "122 tasks; App/runner/examiner debug and release Kotlin",
+    "nativeRun": false,
+    "devicesTouched": []
+  },
+  "oldNaturalFivePatchesChanged": false,
+  "lowApiStrongObserver": "Pending; this patch changes no observer SDK guard",
+  "pnpmCheck": "format/sync5/lint pass; existing synthetic-tone.m4a coverage gap; later checks not run",
+  "atomicProposalSha256": "abe601ce517bad89fa9ab66a1bd6b526d6da00b43c10f1f55e694965554de8e9",
+  "atomicProposalDefinition": "Compact sorted-key JSON {operationId,patches,sources,newExactAllowedPair,parentSource43Sha256}"
+}

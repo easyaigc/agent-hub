@@ -1,0 +1,10 @@
+{
+  "apiReference": "https://developer.android.com/reference/android/view/inspector/WindowInspector",
+  "addedApi": 29,
+  "appMinSdkUnchanged": 26,
+  "inspectedSdk": "37.0",
+  "windowInspectorSourceSha256": "9b6971cd814ec17abd8f35fa5bd84f6a036470f13b5776902b25555dc3babd3b",
+  "windowManagerGlobalSourceSha256": "a60c8b364e48df39c88b724f7921f09729fc1f54e1090863794bf56c9620108e",
+  "finding": "Public synchronous snapshot of attached current-process window views; SDK37 getWindowViews copies mViews under its lock. Timed FutureTask bounds caller waiting even when main dispatch or snapshot is blocked. No reflection/listener/Espresso root picker/global timeout change.",
+  "sourceFactIsNotNativeVerification": true
+}

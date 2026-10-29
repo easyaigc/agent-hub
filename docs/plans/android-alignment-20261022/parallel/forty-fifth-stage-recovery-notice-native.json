@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR45",
+  "sourceSha256": "e0ae856d4adfe73f9787c4ec9c570f8523356bc310734fc297c54e60c30c5d7f",
+  "expandedSourceSha256": "de8d3f3e2bd53ecea569d87c8f3aa942d9682360549314b433aa708543bd6294",
+  "appSha256": "6d41039fe8feabbdf6624c07770fd3100f3b6c9204fd394f00418071dddc0e26",
+  "runnerSha256": "a57a6edefab0ee040e43986c2f839a922537047bfa1b493625e4873848545e1d",
+  "examinerSha256": "730061caa1130585b2661364f9a7b8fc2f2e3875fcebc549b46620006c6d912a",
+  "fullSourceMap": {
+    "inputFiles": 750,
+    "fileSha256": "9aeb5d26174965cabc764dbb9d60ca7150c2ff8d1c856ccf9086fa257812fa39",
+    "canonicalFiles": 741,
+    "distinctFromCanonicalAggregate": true
+  },
+  "threeApkBuildTasks": 122,
+  "junitTerminals": {
+    "executed": 13,
+    "passed": 9,
+    "failed": 4
+  },
+  "ui": {
+    "executed": 7,
+    "passed": 3,
+    "failed": 4,
+    "methods": [
+      {
+        "test": "landscapeLongOriginalAndStatusKeepEveryCharacterAndReachBothEnds",
+        "className": "com.agenthub.android.NativeSavedVoicePanelUiTest",
+        "code": -2
+      },
+      {
+        "test": "resourcesLanguagesAndCompleteTextRemainReachableAtActualOsFontTwo",
+        "className": "com.agenthub.android.NativeSavedVoicePanelUiTest",
+        "code": -2
+      },
+      {
+        "test": "downloadBusyControlsAndEndWaitingJoinSyntheticWorkerWithoutChangingOriginal",
+        "className": "com.agenthub.android.NativeSavedVoicePanelUiTest",
+        "code": -2
+      },
+      {
+        "test": "recognitionBusyControlsAndEndWaitingRejectLateSyntheticText",
+        "className": "com.agenthub.android.NativeSavedVoicePanelUiTest",
+        "code": -2
+      },
+      {
+        "test": "explicitLocalClosePreservesOriginalAndDraftWithoutHostOrMicrophone",
+        "className": "com.agenthub.android.NativeSavedVoicePanelUiTest",
+        "code": 0
+      },
+      {
+        "test": "actualSuccessfulEngineReturnAfterOwnerInvalidationCannotStageOrFill",
+        "className": "com.agenthub.android.NativeSavedVoicePanelUiTest",
+        "code": 0
+      },
+      {
+        "test": "actualSuccessfulEngineReturnAfterEndWaitingCannotStageOrFill",
+        "className": "com.agenthub.android.NativeSavedVoicePanelUiTest",
+        "code": 0
+      }
+    ],
+    "actualLateSuccessfulReturnAfterOwnerInvalidationPassed": true,
+    "actualLateSuccessfulReturnAfterEndWaitingPassed": true,
+    "syntheticAcousticEngine": true,
+    "remainingText": "Finite Text layout measured width633/640 vs paragraph680 on OSfont2; exact text retained but didOverflowWidth true; keep overflow guard and align finite width",
+    "remainingReRecord": "Fixture allowed=false deliberately prohibits Host/mic re-record; expected enabled in landscape is wrong precondition, assert independently declared disabled and whole bounds; real authorized re-record remains pending"
+  },
+  "p9": {
+    "upgradeReadOnlyPassed": 1,
+    "fullStorePassed": 5,
+    "synchronousRefusalGuards": [
+      "PAYLOAD",
+      "PAYLOAD",
+      "PAYLOAD",
+      "INTERFACE",
+      "OPERATION",
+      "FLAGS",
+      "FLAGS",
+      "FDS"
+    ],
+    "persistedExactJsonJoins": 14,
+    "defaultBytesAndOriginalBootstrapPreserved": true,
+    "normalProductWrites": 0,
+    "oldUnknownReplay": 0
+  },
+  "separateObserverInstrumentation": {
+    "junitCounted": false,
+    "status": "failed-before-ready",
+    "failureCode": "combined diagnostic budget",
+    "internalCapBytes": 262144,
+    "postFailureEnvironmentOnlyGlobalAmBytes": 401177,
+    "producerStarted": false,
+    "sdkNotificationPosted": false,
+    "systemUiClickAccepted": false,
+    "oldAttemptWillNotReplay": true
+  },
+  "api26InstallTrace": "New independent Source45 locale leases running separately, excluded from13; oldSource42 two180s failures and8prerequisite pending preserved",
+  "mainDelivery": {
+    "pr": 57,
+    "mergeSha": "cd834164759ffb2727b3381c9fe27391d5340795",
+    "head": "3b199f7662d1fe18f53e075b21df5ae9983521b3",
+    "linuxJob": 26142,
+    "iosJob": 26143,
+    "ciPassed": true,
+    "mergedBranchLocalRemoteRemoved": true,
+    "stage9DevelopmentSeparate": true
+  },
+  "remoteBusinessInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "paused": ["Task/project management", "iOS A6"]
+}

@@ -1,0 +1,12 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt
+@@ -49,8 +49,7 @@
+ @Composable fun AgentHubApp(session: MobileSession, onThemeChanged: (Boolean) -> Unit = {}) {
+     val dark = session.appearance == "dark" || session.appearance == "system" && isSystemInDarkTheme()
+     SideEffect { onThemeChanged(dark) }
+-    val colors = if (dark) darkColorScheme(background=Color.Black, surface=Color(0xFF1C1C1E), primary=Color.White, secondary=Color(0xFF98989D), onSurfaceVariant=Color(0xFF98989D))
+-        else lightColorScheme(background=Color.White,surface=Color(0xFFF2F2F7),primary=Color.Black,secondary=Color(0xFF8A8A8E),onSurfaceVariant=Color(0xFF8A8A8E))
++    val colors = nativeThemeColors(dark)
+     ProductTextProvider(session.language) {
+     MaterialTheme(colorScheme=colors) {
+         // Original OS results outlive the visible recovery page. Known decoded

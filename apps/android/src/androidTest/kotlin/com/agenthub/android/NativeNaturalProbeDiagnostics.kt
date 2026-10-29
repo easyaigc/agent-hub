@@ -27,7 +27,7 @@ internal object NativeNaturalProbeDiagnostics {
             .put("inventoryComplete",observed.isSuccess).put("inventoryErrorType",observed.exceptionOrNull()?.javaClass?.name ?: JSONObject.NULL)
             .put("inventoryErrorMessage",observed.exceptionOrNull()?.message ?: JSONObject.NULL)
             .put("originalFilesUnchangedAtObservation",observed.getOrNull()?.let { it == original } ?: JSONObject.NULL)
-        val match = Regex("P9_NATURAL_PROBE_(UID|FLAGS|REPLY|INTERFACE|OPERATION|PAYLOAD) code=(-?[0-9]+) flags=(-?[0-9]+) pos=([0-9]+) size=([0-9]+) avail=([0-9]+)").find(error?.message ?: "")
+        val match = Regex("P9_NATURAL_PROBE_(UID|FLAGS|REPLY|FDS|INTERFACE|OPERATION|PAYLOAD) code=(-?[0-9]+) flags=(-?[0-9]+) pos=([0-9]+) size=([0-9]+) avail=([0-9]+)").find(error?.message ?: "")
         val numbers = match?.groupValues?.drop(2)?.map { it.toIntOrNull() }
         if(match != null && numbers != null && numbers.all { it != null })value.put("serverGuard",JSONObject()
             .put("reason",match.groupValues[1]).put("code",numbers[0]).put("actualFlags",numbers[1])

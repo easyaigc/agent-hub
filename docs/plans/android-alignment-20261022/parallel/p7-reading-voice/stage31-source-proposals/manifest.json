@@ -1,0 +1,45 @@
+{
+  "parentSource42Sha256": "0abb800077b072b945281bc2f35bea9368259d787113c5d94c60fac40b242bf6",
+  "sharedFilesNotAppliedToEitherCheckout": true,
+  "files": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "baseSha256": "8ca6b9175e0eb477eb777b57d72a6250eff42b729d10e5207c136e4865b574b1",
+      "proposedSha256": "8a323e69d8436d6562a7b7ce66c8cc60efd50e6988523f3b4dd33f3d5fcca6fc",
+      "patch": "docs/plans/android-alignment-20261022/parallel/p7-reading-voice/stage31-source-proposals/VoiceInputView.kt.patch"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "baseSha256": "444f68b18873b39e6a0215e8888248a39f27c32fc5590b480074de9a814b56da",
+      "proposedSha256": "cebede487bf0ab41f61c619d2b6821365e38c05be8cdac36688008f3cffb48fb",
+      "patch": "docs/plans/android-alignment-20261022/parallel/p7-reading-voice/stage31-source-proposals/AgentHubApp.kt.patch"
+    },
+    {
+      "path": "apps/android/src/debug/AndroidManifest.xml",
+      "baseSha256": "368e2a798ee7efea934ad273c25387c60c4b56d4d31f4c9dca33cd20ce6c4568",
+      "proposedSha256": "0e15ff56eac39e9043f2cfd15a0a91bcb8355f0b49aadb21a0f0b76825abc7b7",
+      "patch": "docs/plans/android-alignment-20261022/parallel/p7-reading-voice/stage31-source-proposals/AndroidManifest.xml.patch"
+    },
+    {
+      "path": "docs/product/mobile-parity.md",
+      "baseSha256": "2545aa84ac92483b5fae5350d363cd75eda2d0980ac74c44fe213e6bd37aea3a",
+      "proposedSha256": "5a165fb9d6d83953cb6388594b8a63b4fa5df3f07f3dd42c95128c65fbbc8702",
+      "patch": "docs/plans/android-alignment-20261022/parallel/p7-reading-voice/stage31-source-proposals/product-mobile-parity.md.patch",
+      "baseScope": "parent current documentation readback; Source42 freezes native inputs only"
+    },
+    {
+      "path": "docs/design/mobile-parity.md",
+      "baseSha256": "6536f0a25e510ed96ea7555ed039ff8ce342121b3767639e79c36ba9ac21bc95",
+      "proposedSha256": "ab4298c6684c97a7dd6f35cba19143496390ce29e52df5bdec1a5092c0d9f981",
+      "patch": "docs/plans/android-alignment-20261022/parallel/p7-reading-voice/stage31-source-proposals/design-mobile-parity.md.patch",
+      "baseScope": "parent current documentation readback; Source42 freezes native inputs only"
+    },
+    {
+      "path": "docs/acceptance/mobile-parity.md",
+      "baseSha256": "a8c7ba863f8d3b70f51631928a2b557e4b88c93ff50f085d2cf4f863c4bc60e4",
+      "proposedSha256": "2054bacdbef6bb072f04cfe549a1d4a6d8887536de29a0d10abcf656660ba0bf",
+      "patch": "docs/plans/android-alignment-20261022/parallel/p7-reading-voice/stage31-source-proposals/acceptance-mobile-parity.md.patch",
+      "baseScope": "parent current documentation readback; Source42 freezes native inputs only"
+    }
+  ]
+}

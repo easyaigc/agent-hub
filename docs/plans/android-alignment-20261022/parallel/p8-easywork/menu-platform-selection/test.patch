@@ -1,0 +1,81 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -26,6 +26,19 @@
+ import java.io.File
+ import java.util.UUID
+
++internal data class P8PreferenceSelectionAx(
++    val tag: String,val rolePresent: Boolean,val role: String?,val toggleableStatePresent: Boolean,
++    val selectedPresent: Boolean,val composeSelected: Boolean?,val nativeClass: String?,
++    val checkable: Boolean?,val checked: Boolean?,val selected: Boolean?
++)
++// Compose1.12.1 projects Selected to checked/checkable for this exact role-null menu profile.
++// Exact owner/window/text association and enabled/action/whole-bounds guards are separate prerequisites.
++internal fun p8ExactPreferenceSelection(observed: P8PreferenceSelectionAx,expectedSelected: Boolean): Boolean =
++    observed.tag in setOf("connection-preference-automatic","connection-preference-lan-only","connection-preference-relay-only")&&
++        !observed.rolePresent&&observed.role==null&&!observed.toggleableStatePresent&&observed.selectedPresent&&
++        observed.composeSelected==expectedSelected&&observed.nativeClass=="android.view.View"&&
++        observed.checkable==true&&observed.checked==expectedSelected&&observed.selected==false
++
+ /** Actual AgentHubApp theme/localization and real product navigation, not a copied theme.
+  * ComponentActivity hosting, controlled dialog bounds/fonts and physical display lanes
+  * are explicitly distinguished. No pairing, scan, permission or business action is tapped.
+@@ -238,7 +251,7 @@
+         return JSONObject().put("nodeIdentityHash",n.hashCode()).put("windowId",n.windowId).put("targetPackage",n.packageName?.toString()==i.targetContext.packageName)
+             .put("class",n.className?.toString()?:JSONObject.NULL).put("enabled",n.isEnabled).put("editable",n.isEditable).put("visibleToUser",n.isVisibleToUser)
+             .put("focusable",n.isFocusable).put("focused",n.isFocused).put("accessibilityFocused",n.isAccessibilityFocused).put("clickable",n.isClickable)
+-            .put("selected",n.isSelected).put("checked",n.isChecked).put("scrollable",n.isScrollable).put("importantForAccessibility",n.isImportantForAccessibility)
++            .put("selected",n.isSelected).put("checkable",n.isCheckable).put("checked",n.isChecked).put("scrollable",n.isScrollable).put("importantForAccessibility",n.isImportantForAccessibility)
+             .put("boundsInScreen",box(screen)).put("boundsInParent",box(parent)).put("childCount",n.childCount)
+             .put("actionCount",actions.size).put("actionIds",JSONArray(actions.take(64))).put("actionsTruncated",actions.size>64)
+     }
+@@ -397,6 +410,8 @@
+             for(child in n.children)walk(child,path+child.id)
+         };walk(owner,listOf(owner.id))
+         return nodeGeometry(tag).put("ownerId",owner.id).put("composeSelected",owner.config.getOrNull(SemanticsProperties.Selected)?:JSONObject.NULL)
++            .put("selectedPresent",owner.config.contains(SemanticsProperties.Selected)).put("rolePresent",owner.config.contains(SemanticsProperties.Role))
++            .put("toggleableStatePresent",owner.config.contains(SemanticsProperties.ToggleableState)).put("toggleableState",owner.config.getOrNull(SemanticsProperties.ToggleableState)?.toString()?:JSONObject.NULL)
+             .put("role",owner.config.getOrNull(SemanticsProperties.Role)?.toString()?:JSONObject.NULL).put("textMatchCount",paths.size)
+             .put("textPaths",JSONArray(paths.map {JSONArray(it)})).put("textHash",easyHash(value.toByteArray()))
+     }
+@@ -405,7 +420,7 @@
+         val evidence=JSONObject().put("kind","exact-selected-menu-before-guards").put("tag",tag).put("valueHash",easyHash(value.toByteArray())).put("totalBudgetMs",5000)
+             .put("popupInspectionMinApi",29).put("sdkInt",android.os.Build.VERSION.SDK_INT).put("phase","before-owned-popup-read")
+         var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalOwner: android.view.accessibility.AccessibilityNodeInfo?=null;var finalText: android.view.accessibility.AccessibilityNodeInfo?=null
+-        var ownerCount=0;var textCount=0;var textAssociated=false;var ownerTagMatches=false;var finalPopup: JSONObject?=null
++        var ownerCount=0;var textCount=0;var textAssociated=false;var ownerTagMatches=false;var finalPopup: JSONObject?=null;var finalAnchor: JSONObject?=null
+         val recent=mutableListOf<JSONObject>();var first: JSONObject?=null;var previous="";var sameSince=0L;var sameCount=0;var samples=0
+         val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag"
+         fun budget(){assertTrue("Selected menu shares original AX5s budget",android.os.SystemClock.uptimeMillis()<=deadline)}
+@@ -463,7 +478,7 @@
+                     val stable=exactRoot&&fresh&&sameCount>=2&&now-sameSince>=100&&now<=deadline
+                     evidence.put("phase",if(stable)"before-native-owner-guards" else "popup-owner-diagnostic").put("firstSample",first).put("recentSamples",JSONArray(recent)).put("samples",samples)
+                         .put("remainingBudgetMs",deadline-now).put("stableForMs",now-sameSince).put("nativeSelectedNotAReadinessPredicate",true);flushProbes()
+-                    if(stable){ownerCount=ownerMatches;textCount=textMatches;textAssociated=relation;ownerTagMatches=tagMatches;finalOwner=candidate;candidate=null;finalText=candidateText;candidateText=null;finalPopup=geometry}
++                    if(stable){ownerCount=ownerMatches;textCount=textMatches;textAssociated=relation;ownerTagMatches=tagMatches;finalOwner=candidate;candidate=null;finalText=candidateText;candidateText=null;finalPopup=geometry;finalAnchor=anchor}
+                     stable
+                 }catch(failure: Throwable){evidence.put("interruptedSample",sample.put("visitedNodes",visited).put("idQueries",idQueries));flushProbes();throw failure}
+                 finally {candidate?.let {@Suppress("DEPRECATION") it.recycle()};candidateText?.let {@Suppress("DEPRECATION") it.recycle()};owners.forEach {@Suppress("DEPRECATION") it.recycle()};texts.forEach {@Suppress("DEPRECATION") it.recycle()};root?.let {@Suppress("DEPRECATION") it.recycle()}}
+@@ -476,14 +491,20 @@
+             val clip=android.graphics.Rect(maxOf(geometry.getInt("left"),frame.getInt("left")),maxOf(geometry.getInt("top"),frame.getInt("top")),minOf(geometry.getInt("right"),frame.getInt("right")),minOf(geometry.getInt("bottom"),frame.getInt("bottom")))
+             fun box(b: android.graphics.Rect)=JSONObject().put("left",b.left).put("top",b.top).put("right",b.right).put("bottom",b.bottom)
+             evidence.put("ownerBoundsScreen",box(ownerBounds)).put("textBoundsScreen",box(textBounds)).put("actualPopupClipScreen",box(clip));flushProbes()
+-            assertTrue("Native menu owner selected",owner.isSelected);assertTrue("Native menu owner enabled",owner.isEnabled);assertTrue("Native menu owner clickable",owner.isClickable);assertTrue("Native menu owner visible",owner.isVisibleToUser)
++            val anchor=checkNotNull(finalAnchor)
++            val selection=P8PreferenceSelectionAx(tag,anchor.getBoolean("rolePresent"),if(anchor.isNull("role"))null else anchor.getString("role"),anchor.getBoolean("toggleableStatePresent"),
++                anchor.getBoolean("selectedPresent"),if(anchor.isNull("composeSelected"))null else anchor.getBoolean("composeSelected"),owner.className?.toString(),owner.isCheckable,owner.isChecked,owner.isSelected)
++            evidence.put("selectionProjection",JSONObject().put("profile","compose1.12.1-preference-role-null-selected-no-toggle").put("expectedSelected",true)
++                .put("compose",anchor).put("native",axNodeFlags(owner)).put("matchesExactProfile",p8ExactPreferenceSelection(selection,true)).put("projectionNotAReadinessPredicate",true));flushProbes()
++            assertTrue("Native selected choice uses exact role-null preference checked/checkable projection",p8ExactPreferenceSelection(selection,true))
++            assertTrue("Native menu owner enabled",owner.isEnabled);assertTrue("Native menu owner clickable",owner.isClickable);assertTrue("Native menu owner visible",owner.isVisibleToUser)
+             assertTrue("Native owner exposes actual click action",owner.actionList.any {it.id==android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK})
+             fun whole(b: android.graphics.Rect)=b.width()>0&&b.height()>0&&b.left>=clip.left-1&&b.top>=clip.top-1&&b.right<=clip.right+1&&b.bottom<=clip.bottom+1
+             assertTrue("Whole native owner visible",whole(ownerBounds));assertTrue("Whole unique native text visible",whole(textBounds))
+             assertTrue("Text bounds inside exact owner",textBounds.left>=ownerBounds.left-1&&textBounds.top>=ownerBounds.top-1&&textBounds.right<=ownerBounds.right+1&&textBounds.bottom<=ownerBounds.bottom+1)
+             val n=ui.onNodeWithTag(tag).assertIsDisplayed();val b=n.fetchSemanticsNode().boundsInWindow;val raw=n.getUnclippedBoundsInRoot();val density=ui.density.density
+             assertTrue("Whole Compose menu owner visible",b.width>=(raw.right.value-raw.left.value)*density-1.5f&&b.height>=(raw.bottom.value-raw.top.value)*density-1.5f)
+-            evidence.put("phase","native-selected-owner-and-text-all-guards-passed");flushProbes()
++            evidence.put("phase","native-platform-choice-owner-and-text-all-guards-passed");flushProbes()
+         }catch(failure: Throwable){evidence.put("phase","failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes();throw failure}
+         finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalOwner?.let {@Suppress("DEPRECATION") it.recycle()};finalText?.let {@Suppress("DEPRECATION") it.recycle()}}
+     }

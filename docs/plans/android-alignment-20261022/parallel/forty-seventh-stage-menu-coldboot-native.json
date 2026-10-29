@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "stage": "Source47",
+  "review": "actual native components; natural OS launch has a separate attempt and is outside this review",
+  "sourceSha256": "dbcfb15d1b3032e92f738e397fd4c47815f42f1ba9f63ad48c3243686c5404ee",
+  "expandedSourceSha256": "df86c9811e9f9d08a95ee1635cf6080a61b2fcd824988bcd2e938a687726c90b",
+  "canonicalInputs": 745,
+  "expandedInputs": 754,
+  "apks": {
+    "app": "7ca545d92b88b0e0dcfc2df7eeb637ed51830ce9875bed06b86c0cc1e4826449",
+    "examiner": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+    "runner": "9149f5b8eb3618c2e22616d9271592b35fbdaee37de612d077c95fa35b1a9fa6"
+  },
+  "p9": {
+    "api": 37,
+    "actualJUnitMethods": 6,
+    "passed": 6,
+    "failed": 0,
+    "coldBootOriginalReadOnlyPassed": true,
+    "originalBootCount": 1,
+    "currentBootCount": 2,
+    "existingKeyAuthenticatesOriginal163ByteCiphertext": true,
+    "newKeyCreated": false,
+    "oldBootstrapReplayed": false,
+    "oldSameBootTestRun": false,
+    "persistentJsonJoins": 14,
+    "actualRefusals": 8,
+    "originalDefaultNonemptyFamilyUnchanged": true,
+    "originalReceiptsAndCiphertextUnchanged": true,
+    "micPermissionFalseAndAppOpsIgnoreUnchanged": true,
+    "normalProductWrites": 0,
+    "remoteBusinessInputs": 0
+  },
+  "p8": {
+    "api": 37,
+    "case": "chineseLightPortraitUsesProductNavigationAndSavedPreference",
+    "actualJUnitMethods": 1,
+    "passed": 1,
+    "failed": 0,
+    "mode": "Chinese/light/portrait/font1",
+    "originalDefaultsAndPermissionsUnchanged": true,
+    "priorFailuresNotReclassified": true
+  },
+  "limitations": [
+    "P9 result is component/cold-key proof; it does not establish natural notification delivery or post-consumer process-exit inspection.",
+    "P8 current native case is one portrait preference/persistence case; three-choice mutual exclusion, broader variants, iOS native comparison and physical Android remain pending.",
+    "No new device commands or native reruns were issued by this reviewer."
+  ],
+  "checkpoint": "PAR47",
+  "junitTerminals": {
+    "executed": 7,
+    "passed": 7,
+    "failed": 0
+  },
+  "naturalSeparateAttempt": {
+    "observerTerminal": "passed",
+    "producerJUnit": "passed1",
+    "originalBusinessReplayed": false,
+    "finalJoinedAudit": "pending read-only collection recovery; original optional missing-file cat was emitted on stdout and cannot parse as JSON",
+    "sourceAndRawFailureRetained": true,
+    "postConsumerExitInspector": "pending"
+  }
+}

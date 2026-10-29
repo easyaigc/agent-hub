@@ -13,9 +13,6 @@ internal class NativeNaturalStoreProbeService : Service() {
         const val ACTION = "com.agenthub.android.P9_NATURAL_STORE_FIXTURE"
         const val DESCRIPTOR = "com.agenthub.android.p9NaturalStoreFixture.v1"
         const val HOLD = 1; const val RELEASE = 2; const val CLAIM = 3
-        // AOSP IPCThreadState::transact adds this native transport flag, including on API26.
-        // It does not authorize an application operation or any Parcel payload.
-        private const val TF_ACCEPT_FDS = 0x10
     }
     private lateinit var run: String
     private var held: Closeable? = null
@@ -24,8 +21,9 @@ internal class NativeNaturalStoreProbeService : Service() {
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
             fun diagnostic(reason: String)="P9_NATURAL_PROBE_$reason code=$code flags=$flags pos=${data.dataPosition()} size=${data.dataSize()} avail=${data.dataAvail()}"
             require(Binder.getCallingUid() == Process.myUid()) {diagnostic("UID")}
-            require(flags == 0 || flags == TF_ACCEPT_FDS) {diagnostic("FLAGS")}
+            require(NativeNaturalProbeTransportFlags.admitted(Build.VERSION.SDK_INT, flags)) {diagnostic("FLAGS")}
             require(reply != null) {diagnostic("REPLY")}
+            require(!data.hasFileDescriptors()) {diagnostic("FDS")}
             try {data.enforceInterface(DESCRIPTOR)}catch(_: SecurityException){throw SecurityException(diagnostic("INTERFACE"))}
             require(code in setOf(HOLD, RELEASE, CLAIM)) {diagnostic("OPERATION")}
             // The platform consumes its complete version-specific interface header. Never skip

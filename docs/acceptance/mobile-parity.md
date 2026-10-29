@@ -1419,3 +1419,17 @@ PAR42仅合并经复核的真实文件识别/自然通知/AX诊断工具，122ta
 [PAR42](../plans/android-alignment-20261022/parallel/forty-second-stage-three-line-native.json)：纳入原生43项39通过4失败。API37真Vosk两语完整16项通过，实际4KiB页；API26基础17通过，安装路径/本机引擎另记。P9前4存储及原bootstrap只读通过，第5跨PID拒绝断言失败，原SDK通知/首点未创建；AX稳定说明节点与真实EditText分开，待准确字段选择器。独立完整三APK来源/同签名已核；不宣称完整16KiB/隐私/物理/双端DEV。
 
 [PAR43](../plans/android-alignment-20261022/parallel/forty-third-stage-session-field-native.json)：21项原生终态20通过1失败。完整Session7+控制不同PID冷恢复2在API26/API37分别通过，识别器synthetic且未覆盖post-write/pre-applied kill；连接原生字段与完整48dp控件、真实横屏及OSfont2短窗通过，中文“自动”菜单native owner仍待诊断。相同字号/内边距/可见性/可编辑/选中/完整文本及原5秒守卫保留。P9只读升级与断言前异常诊断实现已编译，尚无本候选设备结果，不把旧bootstrap复写成新证据。iOS源码影响无，完整双端DEV仍待。
+
+[Source42真实文件引擎最终矩阵](../plans/android-alignment-20261022/parallel/real-file-asr-final-native.json)：61实际原生终态59通过2安装预算失败，原32项计划尚有8项前置待验。API37中英官方16通过；API26官方安装两次180秒预算耗尽，独立校验模型预载20通过不替代下载安装。44引擎case全部原canonical元数据/精确row/整WAV及实际退出/FD映射核对，8档原件父另核SHA/成员。麦克风权限不变；API37双栈UID控制下10阶段0包，API26 IPv6前置未建立保持待验。实际页4096，物理/全DEV/绝对隐私均未宣称；回收139191238B展开树与发布缓存，只留两原ZIP85104685B供当前来源核验，24小时内复核。
+
+[PAR43通知升级补充](../plans/android-alignment-20261022/parallel/forty-third-stage-p9-upgrade-native.json)：新只读升级1通过、新跨PID1失败；同UID/证书/内核boot/默认原family保持且原bootstrap0复写。实际server18/client0传输标志导致FLAGS先拒，非payload通过；SDK窄位修复和完整拒绝回归待验，原SDK notice/firstclick未开始。
+
+[PAR44初轮面板](../plans/android-alignment-20261022/parallel/forty-fourth-stage-voice-panel-native.json)：API26短窗4及API37真实横屏1、实际OSfont2，全5失败。fixture硬编码证书而draft实际null，production restore证书守卫保持；cleanup第二次断言前baseline已零化，非原件损坏证明。首failure、状态文字overflow、旧claims均保留，未关闭UI；先修确定fixture再新source/新lease测量。P9三份新持久proof与stdout已另作唯一准确join，无重跑。
+
+[PAR45](../plans/android-alignment-20261022/parallel/forty-fifth-stage-recovery-notice-native.json)：13个JUnit终态9通过4失败，另1个observer instrumentation在ready前明确失败且无producer/post/click。语音原件/默认草稿/mic守卫与两类真正成功迟到返回拒绝通过；文本布局size小于paragraph触发widthOverflow，按原容器有限宽度修复，原字体/完整文字/overflow/AX守卫保留。重录fixture权限未允许需独立预期disabled，不启用Host或麦克风来凑通过。P9 API37 exact18同步元数据、8拒绝及14持久原回执全通过，原默认family与bootstrap保持；完整全局诊断256KiB容量失败仍待窄修，未降低全UID/完成/独立stderr/正向见证要求。iOS代码无影响，平台完整DEV/物理/低API继续待验。
+
+[PAR46](../plans/android-alignment-20261022/parallel/forty-sixth-stage-panel-owner-native.json)：本次13个JUnit终态8通过5失败（含新boot独立Store5）；语音初始finite文字布局通过后出现语言chip换行与禁用按钮AX标签，菜单exact popup/owner/leaf已核但selected=false/checked=true尚未建立角色限定等价。保留字号/完整文字/48dp/原生身份路径/5s预算及旧失败，iOS源未改，完整双端UI待验。写入后冷恢复及通知新启动前置独立推进；[Source45安装诊断](../plans/android-alignment-20261022/parallel/real-file-asr-installer-trace-native.json)另6项4通过2超时，未观察到哈希/解包/发布，不重计旧矩阵。
+
+[PAR46-PW1](../plans/android-alignment-20261022/parallel/postwrite-boundary-one-native.json)：API26 composer/question实际metadata写入后受控精确终止，两个reader正常通过；writer中断不计第三个通过。当前为专用DEBUG模拟器同UID特权执行，默认仅空集合/null metadata；完整原件与no duplicate/newdraft overwrite断言保留。两次先前父脚本兼容失败与剩余自然/物理/声学/其它边界均单列，iOS源及产品界面无变化。
+
+[PAR47](../plans/android-alignment-20261022/parallel/forty-seventh-stage-menu-coldboot-native.json)：API37中文浅色竖屏exact菜单角色/checked/selected映射与持久值1项通过，原owner/path/actions/bounds/5秒断言保留；iOS原生、API26与互斥全矩阵继续待验。通知新增original/current boot只读契约，原key/非空default及原163B密文在count1→2核对，cold1/store5共6项和14持久join通过，不重bootstrap。自然首点双方实际成功终态另存，最终补证与退出后inspector待验；旧失败不覆盖，iOS源未改/A6暂停。

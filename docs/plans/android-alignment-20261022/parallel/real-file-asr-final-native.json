@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "Source42-real-file-asr-final",
+  "sourceSha256": "0abb800077b072b945281bc2f35bea9368259d787113c5d94c60fac40b242bf6",
+  "expandedSourceSha256": "8b954746606440005beb024f91f77b4fbef82b7c7b8d9ddac8096c6a975e66e1",
+  "appSha256": "bdce71293f6039d0c2bf94b9527952cb862acffb2b5df1d5ed3f907746e533a5",
+  "runnerSha256": "7dcd209389477f0af7dc8431f4b067a2d422e1ddedc9861b9ca83e0b587a7443",
+  "verificationKind": "Native adapter/resource acceptance with declared synthetic TTS; no full product DEV claim",
+  "actualNativeMethods": {
+    "executed": 61,
+    "passed": 59,
+    "failed": 2,
+    "unknownWorkerExit": 0,
+    "junitProgressNotCounted": true
+  },
+  "basicApi26": {
+    "executed": 17,
+    "passed": 17,
+    "contractVectors": 6,
+    "controller": 9,
+    "typedFramedOffIndexMigration": 2,
+    "mainForegroundLaunch": false
+  },
+  "originalOfficialInstallMatrix": {
+    "planned": 32,
+    "executed": 24,
+    "passed": 22,
+    "failed": 2,
+    "modelPrerequisitePending": 8,
+    "api37": {
+      "locales": 2,
+      "executed": 16,
+      "passed": 16
+    },
+    "api26": {
+      "locales": 2,
+      "executed": 8,
+      "passed": 6,
+      "failedInstallBudget": 2,
+      "dependentCasesPending": 8
+    },
+    "failures": [
+      {
+        "locale": "en-US",
+        "outcome": "TIME_WINDOW_EXPIRED_UNKNOWN",
+        "failureClass": "kotlinx.coroutines.TimeoutCancellationException",
+        "durationMs": 180329,
+        "budgetMs": 180000,
+        "actualExitAndOriginalSafe": true,
+        "originalInstallNotRepeated": true,
+        "classification": "Installer budget exhausted; exact download/hash/extract/publish subphase and root cause not isolated"
+      },
+      {
+        "locale": "zh-CN",
+        "outcome": "TIME_WINDOW_EXPIRED_UNKNOWN",
+        "failureClass": "kotlinx.coroutines.TimeoutCancellationException",
+        "durationMs": 180645,
+        "budgetMs": 180000,
+        "actualExitAndOriginalSafe": true,
+        "originalInstallNotRepeated": true,
+        "classification": "Installer budget exhausted; exact download/hash/extract/publish subphase and root cause not isolated"
+      }
+    ],
+    "androidApi26InstallerPassed": false
+  },
+  "independentApi26VerifiedModelPreload": {
+    "leases": 4,
+    "variants": 2,
+    "executed": 20,
+    "passed": 20,
+    "scope": "Real default Vosk/JNA probe, exact declared synthetic phrase recognition, observed native-window cancellation/join, corruption rejection/restoration and owned-cache release",
+    "resourceSource": "One verified Mac HTTPS GET per exact official pinned model URL, then complete ZIP and file inventory/hash/path/permission verification",
+    "originalContractAndDefaultFactoryUnchanged": true,
+    "canonicalLeaseNotExtended": true,
+    "notAndroidDownloadOrInstallerAcceptance": true,
+    "priorFailuresAndPendingCasesPreserved": true
+  },
+  "originalAndExitProof": {
+    "executedEngineCases": 44,
+    "allActualWorkerApiExitVerified": true,
+    "allFdAndMappingReferenceObservationsAvailableAndEmpty": true,
+    "allWholeCanonicalMetadataExactPersistedRowAndFullWavVerified": true,
+    "originalArchives": 8,
+    "parentIndependentlyVerifiedArchiveSizeHashMembersAndPaths": true,
+    "noDesktopUnknownOperationQueriedOrReplayed": true,
+    "directNativeFreeTracing": false
+  },
+  "independentPrivacyObservations": {
+    "api37": {
+      "blockedLocalCases": 10,
+      "sameTargetUidIpv4Ipv6PositiveControls": true,
+      "blockedPhasePacketCountersZero": true,
+      "ownRulesRemovedAndAbsenceReadBack": true,
+      "recordAudioPermissionBeforeAndAfter": -1,
+      "appopsModeUnchanged": "ignore"
+    },
+    "api26": {
+      "blockedAsrCases": 0,
+      "privacyPending": true,
+      "initialHelperIssue": "run-as lacked the package existing network group",
+      "ipv4ControlWithExistingNetworkGroup": true,
+      "ipv6ControlIssue": "Stock nc could not establish the ::1 control",
+      "noAppPermissionAdded": true,
+      "recordAudioPermissionBeforeAndAfter": -1,
+      "appopsUnchanged": "No operations"
+    },
+    "absoluteNoMicrophoneOrUploadClaim": false,
+    "uidCountersAndRecordingCallbacksAreFiniteObservations": true
+  },
+  "runtimePageSizeBytes": [4096],
+  "runtime16KiBVerified": false,
+  "cleanup": {
+    "allPublishedOwnedModelCachesReleased": true,
+    "macExpandedBytesRemoved": 139191238,
+    "duplicateExpandedTreesRetained": false,
+    "apkCopiesCreated": 0,
+    "transcodesCreated": 0,
+    "rebuildablePythonCacheRemaining": false,
+    "retainedOriginalZipSet": {
+      "files": 2,
+      "bytes": 85104685,
+      "oneSetOnly": true,
+      "dependency": "Parent audit of pinned resource/preload provenance or reuse of this sole corpus for the next actual Session acceptance",
+      "releaseCondition": "Release after provenance review when the corpus has no further explicit native acceptance dependency",
+      "reviewAt": "2026-10-29T20:00:00+08:00"
+    },
+    "retainedOriginalsAndAliases": 8,
+    "bothAssignedEmulatorsReleased": true
+  },
+  "scope": {
+    "repositoryModified": false,
+    "apkRebuilt": false,
+    "physicalOrOtherEmulatorsTouched": false,
+    "protectedEasyWorkPackageTouched": false,
+    "mainForegroundLaunched": false,
+    "appUninstalledOrCleared": false,
+    "runtimePermissionsChanged": false,
+    "hostBusinessInputs": 0,
+    "realLlmInputs": 0
+  },
+  "paused": ["Task/project management", "iOS A6"],
+  "pending": [
+    "API26 original official installer budget/subphase diagnosis and eight dependent original cases",
+    "API26 independent IPv6 and network-denial evidence",
+    "16KiB runtime, physical, full Session/UI/iOS parity and full DEV"
+  ],
+  "fullP7Closed": false,
+  "fullAcousticOrPrivacyMatrixClosed": false,
+  "fullDevPassed": false,
+  "privateSourceSummarySha256": "a9a2e317723a88bb4cd9b9ccd92b0adec93ef10f15045aa36b7ab70116c2f6ab"
+}

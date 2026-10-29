@@ -1,0 +1,529 @@
+{
+  "cases": [
+    {
+      "name": "selected automatic",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": true
+    },
+    {
+      "name": "unselected automatic",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": false,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": false,
+        "selected": false
+      },
+      "expectedSelected": false,
+      "accepted": true
+    },
+    {
+      "name": "selected lan-only",
+      "observation": {
+        "tag": "connection-preference-lan-only",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": true
+    },
+    {
+      "name": "unselected lan-only",
+      "observation": {
+        "tag": "connection-preference-lan-only",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": false,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": false,
+        "selected": false
+      },
+      "expectedSelected": false,
+      "accepted": true
+    },
+    {
+      "name": "selected relay-only",
+      "observation": {
+        "tag": "connection-preference-relay-only",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": true
+    },
+    {
+      "name": "unselected relay-only",
+      "observation": {
+        "tag": "connection-preference-relay-only",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": false,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": false,
+        "selected": false
+      },
+      "expectedSelected": false,
+      "accepted": true
+    },
+    {
+      "name": "checkable missing",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": null,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "checkable false",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": false,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "checked missing",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": null,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "native selected missing",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": null
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "ambiguous native selected true",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": true
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "checkbox class",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.widget.CheckBox",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "text leaf even if checked",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.widget.TextView",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Tab native selected projection",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": true,
+        "role": "Tab",
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": false,
+        "checked": false,
+        "selected": true
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Tab checked projection",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": true,
+        "role": "Tab",
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Switch role",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": true,
+        "role": "Switch",
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "RadioButton role",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": true,
+        "role": "RadioButton",
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Button role",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": true,
+        "role": "Button",
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "role key with null value",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": true,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "role value without key",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": "Tab",
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "ToggleableState present",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": true,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Selected key missing",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": false,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Compose selected missing",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": null,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Compose selection contradicts expected",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": false,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "native checked contradicts expected",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": false,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "unknown preference tag",
+      "observation": {
+        "tag": "connection-preference-other",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "method tag",
+      "observation": {
+        "tag": "easywork-method-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "Source46 legacy unknown checkable",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": true,
+        "nativeClass": "android.view.View",
+        "checkable": null,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": true,
+      "accepted": false
+    },
+    {
+      "name": "unselected cannot be checked",
+      "observation": {
+        "tag": "connection-preference-automatic",
+        "rolePresent": false,
+        "role": null,
+        "toggleableStatePresent": false,
+        "selectedPresent": true,
+        "composeSelected": false,
+        "nativeClass": "android.view.View",
+        "checkable": true,
+        "checked": true,
+        "selected": false
+      },
+      "expectedSelected": false,
+      "accepted": false
+    }
+  ],
+  "mutations": [
+    {
+      "name": "missing checkable gate",
+      "function": "selectionMutant0",
+      "sourceSha256": "b875e88c0db6a3aeb11a21ba74fe10f8a4a1cc0f9ef8b30f4335ebb1decf80ed"
+    },
+    {
+      "name": "missing role gate",
+      "function": "selectionMutant1",
+      "sourceSha256": "f7ad91bfee1ccb791e218c6363076004c70a453e90aaf0424108c86af24595a7"
+    },
+    {
+      "name": "missing toggle-state gate",
+      "function": "selectionMutant2",
+      "sourceSha256": "6669e87402bc487760aa3e9de38f6b862f9675334650a0aec1e9b02fe15a8251"
+    },
+    {
+      "name": "missing native class gate",
+      "function": "selectionMutant3",
+      "sourceSha256": "f89e10b16c0a80c305d5e1fdf03871e97fa83cff7fe9aec1c794e133917399d7"
+    },
+    {
+      "name": "missing checked-state gate",
+      "function": "selectionMutant4",
+      "sourceSha256": "1aaf2900fa7047609f3253b7b72a56b4448dde68d405f46afe1e710f21e2db69"
+    },
+    {
+      "name": "missing Compose expected-state gate",
+      "function": "selectionMutant5",
+      "sourceSha256": "db857ec0cb045e0d6f929c465ce0dcfbd01251652e6456c7c0a9829dceb21bdc"
+    }
+  ]
+}

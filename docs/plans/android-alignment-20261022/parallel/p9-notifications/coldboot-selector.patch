@@ -1,0 +1,104 @@
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapColdBootReadOnlyTest.kt
+@@ -0,0 +1,101 @@
++package com.agenthub.android
++
++import android.os.Build
++import android.os.Process
++import android.os.SystemClock
++import android.os.UserManager
++import androidx.test.ext.junit.runners.AndroidJUnit4
++import androidx.test.platform.app.InstrumentationRegistry
++import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
++import androidx.test.runner.lifecycle.Stage
++import kotlinx.coroutines.*
++import org.json.JSONObject
++import org.junit.*
++import org.junit.runner.RunWith
++import java.io.File
++import java.nio.ByteBuffer
++import java.nio.channels.FileChannel
++import java.nio.file.Files
++import java.nio.file.LinkOption.NOFOLLOW_LINKS
++import java.nio.file.StandardOpenOption.READ
++import java.util.UUID
++import java.security.KeyStore
++import javax.crypto.SecretKey
++
++/** Explicit new-kernel-boot read-only contract. Old sameBoot contract and receipts remain unchanged. */
++@RunWith(AndroidJUnit4::class)
++class NativeNaturalBootstrapColdBootReadOnlyTest {
++    @get:Rule(order=0) internal val evidence=NativeNaturalPreflightEvidence("bootstrap-coldboot")
++    @get:Rule(order=1) val timeout:org.junit.rules.TestRule=org.junit.rules.Timeout.seconds(120)
++    private val context get()=InstrumentationRegistry.getInstrumentation().targetContext
++    private fun keys(v:JSONObject,wanted:Set<String>){require(v.keys().asSequence().toSet()==wanted)}
++    private fun uuid(s:String):String{require(UUID.fromString(s).toString()==s);return s}
++    private fun hash(s:String):String{require(s.matches(Regex("[0-9a-f]{64}")));return s}
++    private fun identity(v:JSONObject){keys(v,setOf("uid","appSha256","runnerSha256","signerSetSha256"));require(v.get("uid") is Int&&v.getInt("uid")>=10000);for(k in listOf("appSha256","runnerSha256","signerSetSha256"))hash(v.getString(k))}
++    private fun same(a:JSONObject,b:JSONObject){for(k in listOf("uid","appSha256","runnerSha256","signerSetSha256"))require(a.get(k)==b.get(k))}
++    private fun device(v:JSONObject){keys(v,setOf("serial","avd","api","bootCount","bootId"));require(v.getString("serial").matches(Regex("[A-Za-z0-9._:-]{1,120}"))&&v.getString("avd").matches(Regex("[A-Za-z0-9._-]{1,120}")));require(v.get("api") is Int&&v.getInt("api")==37&&v.get("bootCount") is Int&&v.getInt("bootCount")>=0);uuid(v.getString("bootId"))}
++    private fun saveIntent(id:String,run:String,raw:ByteArray){
++        var parent=context.filesDir.canonicalFile
++        for(name in listOf("acceptance","P9-natural-coldboot",id)){
++            val next=File(parent,name);if(Files.notExists(next.toPath(),NOFOLLOW_LINKS))Files.createDirectory(next.toPath(),java.nio.file.attribute.PosixFilePermissions.asFileAttribute(java.nio.file.attribute.PosixFilePermissions.fromString("rwx------")))
++            require(Files.isDirectory(next.toPath(),NOFOLLOW_LINKS)&&!Files.isSymbolicLink(next.toPath())&&next.canonicalFile.parentFile==parent);parent=next
++        }
++        val file=File(parent,"$run-intent.json");require(file.createNewFile()){ "Cold-boot inspection operation already submitted; preserve its receipt" };android.system.Os.chmod(file.absolutePath,384)
++        java.io.FileOutputStream(file).use{it.write(raw);it.fd.sync()};NativeNaturalPreflightEvidence.sync(parent);require(file.readBytes().contentEquals(raw))
++    }
++    private fun cipherBytes(file:File):ByteArray {
++        val path=file.toPath();require(Files.isRegularFile(path,NOFOLLOW_LINKS)&&!Files.isSymbolicLink(path))
++        require(((Files.getAttribute(path,"unix:mode",NOFOLLOW_LINKS) as Number).toInt() and 511)==384)
++        require((Files.getAttribute(path,"unix:nlink",NOFOLLOW_LINKS) as Number).toLong()==1L&&(Files.getAttribute(path,"unix:uid",NOFOLLOW_LINKS) as Number).toInt()==Process.myUid())
++        val size=Files.size(path);require(size in 29..8192)
++        return FileChannel.open(path,READ,java.nio.file.LinkOption.NOFOLLOW_LINKS).use{channel->require(channel.size()==size);val bytes=ByteBuffer.allocate(size.toInt());while(bytes.hasRemaining())check(channel.read(bytes)>0);require(channel.read(ByteBuffer.allocate(1))==-1&&Files.size(path)==size);bytes.array()}
++    }
++    @Test fun restoreOriginalBootstrapOnExplicitCurrentBootReadOnly():Unit=runBlocking{withContext(Dispatchers.IO){
++        val args=InstrumentationRegistry.getArguments();Assume.assumeTrue("Explicit frozen cold-boot plan required; skip is not acceptance",args.getString("p9BootstrapColdBootPlanBase64")!=null&&args.getString("p9BootstrapColdBootPlanSha256")!=null)
++        val encoded=checkNotNull(args.getString("p9BootstrapColdBootPlanBase64"));require(encoded.length in 1..22000&&encoded.matches(Regex("[A-Za-z0-9+/]*={0,2}")))
++        val raw=java.util.Base64.getDecoder().decode(encoded);require(raw.size in 1..16384&&java.util.Base64.getEncoder().encodeToString(raw)==encoded)
++        val planHash=hash(checkNotNull(args.getString("p9BootstrapColdBootPlanSha256")));require(NativeBootstrapCiphertextProof.sha(raw)==planHash)
++        val text=Charsets.UTF_8.newDecoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT).onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT).decode(ByteBuffer.wrap(raw)).toString();val plan=JSONObject(text)
++        keys(plan,setOf("version","action","bootstrapId","recoveryRun","intentSha256","completedSha256","originalBootstrapLogSha256","familyDigest","ciphertextSha256","ciphertextBytes","originalInstalled","currentInstalled","originalDevice","currentDevice","originalDeviceProofSha256","currentDeviceProofSha256","currentObservationId","currentBootIdReadSha256","currentBootCountReadSha256"))
++        require(plan.get("version") is Int&&plan.getInt("version")==1&&plan.getString("action")=="restore-original-on-explicit-coldboot-read-only")
++        val id=uuid(plan.getString("bootstrapId"));val run=uuid(plan.getString("recoveryRun"));val observation=uuid(plan.getString("currentObservationId"));require(setOf(id,run,observation).size==3)
++        evidence.lease=id;evidence.run=run;evidence.stage="coldboot-scope";NativeChatNotificationNaturalStore.guard(context);require(Build.VERSION.SDK_INT==37)
++        val old=plan.getJSONObject("originalInstalled");val current=plan.getJSONObject("currentInstalled");identity(old);identity(current)
++        require(old.getInt("uid")==current.getInt("uid")&&old.getString("signerSetSha256")==current.getString("signerSetSha256"))
++        val originalDevice=plan.getJSONObject("originalDevice");val currentDevice=plan.getJSONObject("currentDevice");device(originalDevice);device(currentDevice)
++        for(k in listOf("serial","avd","api"))require(originalDevice.get(k)==currentDevice.get(k))
++        require(currentDevice.getInt("bootCount")>originalDevice.getInt("bootCount")&&currentDevice.getString("bootId")!=originalDevice.getString("bootId"))
++        require(setOf(id,run,observation,originalDevice.getString("bootId"),currentDevice.getString("bootId")).size==5)
++        for(k in listOf("intentSha256","completedSha256","originalBootstrapLogSha256","familyDigest","ciphertextSha256","originalDeviceProofSha256","currentDeviceProofSha256","currentBootIdReadSha256","currentBootCountReadSha256"))hash(plan.getString(k))
++        require(plan.getString("currentDeviceProofSha256")!=plan.getString("originalDeviceProofSha256")&&plan.get("ciphertextBytes") is Int&&plan.getInt("ciphertextBytes") in 29..8192)
++        val joined=JSONObject().put("planSha256",planHash).put("originalInstalled",old).put("currentInstalled",current).put("originalDevice",originalDevice).put("currentDevice",currentDevice)
++            .put("originalDeviceProofSha256",plan.getString("originalDeviceProofSha256")).put("currentDeviceProofSha256",plan.getString("currentDeviceProofSha256"))
++            .put("currentBootIdReadSha256",plan.getString("currentBootIdReadSha256")).put("currentBootCountReadSha256",plan.getString("currentBootCountReadSha256"))
++            .put("originalBootstrapLogSha256",plan.getString("originalBootstrapLogSha256")).put("originalIntentSha256",plan.getString("intentSha256")).put("originalCompletedSha256",plan.getString("completedSha256")).put("familyDigest",plan.getString("familyDigest"))
++            .put("currentObservationId",observation).put("recoveryRun",run).put("normalProductWrites",0).put("originalReceiptContainsBoot",false)
++            .put("kernelBootIdCheckedByNativeTest",false).put("parentCurrentKernelBootIdPrePostRequired",true)
++        evidence.details=joined;evidence.bodyEntered=true;evidence.stage="coldboot-new-readonly-intent";saveIntent(id,run,raw)
++        evidence.stage="coldboot-no-activity";InstrumentationRegistry.getInstrumentation().runOnMainSync{check(Stage.values().flatMap{ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(it)}.none{it is MainActivity})}
++        require(checkNotNull(context.getSystemService(UserManager::class.java)).isUserUnlocked);same(NativeNaturalPreflightEvidence.installed(context),current)
++        val boot=android.provider.Settings.Global.getInt(context.contentResolver,android.provider.Settings.Global.BOOT_COUNT);require(boot==currentDevice.getInt("bootCount"));joined.put("observedBootCount",boot).put("observedElapsedRealtime",SystemClock.elapsedRealtime())
++        evidence.stage="coldboot-original-receipts";val root=File(context.noBackupFilesDir.canonicalFile,"P9-natural-bootstrap-v1");val fence=NativeNaturalBootstrapFence(root,NativeNaturalPreflightEvidence::sync);val (intentBytes,completedBytes)=fence.readCompleted()
++        require(NativeBootstrapCiphertextProof.sha(intentBytes)==plan.getString("intentSha256")&&NativeBootstrapCiphertextProof.sha(completedBytes)==plan.getString("completedSha256"))
++        val intent=JSONObject(intentBytes.toString(Charsets.UTF_8));val completed=JSONObject(completedBytes.toString(Charsets.UTF_8));require(intent.getInt("version")==1&&completed.getInt("version")==1&&intent.getString("bootstrapId")==id&&completed.getString("bootstrapId")==id)
++        require(intent.getString("phase")=="normal-write-intent"&&completed.getString("phase")=="complete"&&intent.getInt("normalProductWritesPlanned")==1&&completed.getInt("normalProductWrites")==1&&completed.getString("intentSha256")==plan.getString("intentSha256"))
++        same(intent.getJSONObject("installed"),old);same(completed.getJSONObject("installed"),old);require(completed.getJSONObject("familiesAfter").getString("familyDigest")==plan.getString("familyDigest"))
++        val nameHash=NativeBootstrapCiphertextProof.sha(NativeBootstrapCiphertextProof.RECORD.toByteArray());require(completed.getString("localRecordNameSha256")==nameHash)
++        evidence.stage="coldboot-complete-default-inventory";val before=NativeNaturalFamilyInventory.scan(context.noBackupFilesDir.canonicalFile,true);evidence.before=before
++        require(before.complete&&before.contentHashes&&before.digest==plan.getString("familyDigest")&&before.filePaths==setOf(NativeBootstrapCiphertextProof.relativePath))
++        val file=File(context.noBackupFilesDir.canonicalFile,NativeBootstrapCiphertextProof.relativePath);val encrypted=cipherBytes(file)
++        require(encrypted.size==plan.getInt("ciphertextBytes")&&NativeBootstrapCiphertextProof.sha(encrypted)==plan.getString("ciphertextSha256")&&NativeBootstrapCiphertextProof.familyDigest(encrypted)==before.digest)
++        evidence.stage="coldboot-original-key-authentication";val keyStore=KeyStore.getInstance("AndroidKeyStore").apply{load(null)};require(keyStore.aliases().asSequence().count()==1);val key=keyStore.getKey(NativeChatNotificationNaturalStore.KEY,null);require(key is SecretKey)
++        val payload=NativeBootstrapCiphertextProof.authenticatedPayload(encrypted,key)
++        try{val value=JSONObject(payload.toString(Charsets.UTF_8));keys(value,setOf("version","purpose","bootstrapId"));require(value.get("version") is Int&&value.getInt("version")==1&&value.getString("purpose")=="p9-native-key-bootstrap"&&value.getString("bootstrapId")==id)}finally{payload.fill(0)}
++        joined.put("existingKeyAuthenticatesOriginalCiphertext",true).put("ciphertextSha256",plan.getString("ciphertextSha256")).put("ciphertextBytes",encrypted.size).put("keyCreated",false)
++        evidence.stage="coldboot-originals-reread";require(cipherBytes(file).contentEquals(encrypted));val reread=fence.readCompleted();require(reread.first.contentEquals(intentBytes)&&reread.second.contentEquals(completedBytes)&&File(root,NativeNaturalBootstrapFence.LOCK).length()==0L)
++        val after=NativeNaturalFamilyInventory.scan(context.noBackupFilesDir.canonicalFile,true);evidence.after=after;require(after.complete&&after.contentHashes&&after.digest==before.digest)
++        same(NativeNaturalPreflightEvidence.installed(context),current);require(android.provider.Settings.Global.getInt(context.contentResolver,android.provider.Settings.Global.BOOT_COUNT)==boot);val finalKeys=NativeNaturalPreflightEvidence.keyCounts();require(finalKeys.getInt("aliasCount")==1&&finalKeys.getBoolean("installationAliasPresent"))
++        joined.put("originalReceiptsUnchanged",true).put("originalCiphertextUnchanged",true).put("defaultBytesUnchanged",true).put("newStoreLeaseAndNaturalAttemptRequired",true)
++        evidence.stage="coldboot-original-restored-read-only";Unit
++    }}
++}

@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-source43-selected-menu-native-owner-20261029-1",
+  "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S14", "S18"],
+  "commonAssertion": "The unique selected preference menu text must strictly belong to the independently identified native menu owner in the real same-App Popup; native selected/enabled/clickable/visible and full bounds remain mandatory, not substituted by Compose state or native checked.",
+  "dualPlatformImpact": {
+    "android": "Only owned selected-menu diagnostic and exact owner lookup; all field/padding/landscape/OS2 guards preserved",
+    "ios": "No source or new acceptance change; choice selection accessibility remains required"
+  },
+  "source43": {
+    "sourceSha256": "e12e0b8146d9ac1efee4ae0fb93a0b5208647d858fe92c283d30ec77ebb22f33",
+    "appSha256": "479321f4aca2b46e7378ccd8d79438132b9d4a646413e270f39386c7fae6afb2",
+    "runnerSha256": "e62b9a03912aaafa4faefb0139484acacad7c2dbceb24b46512c3c2dccb3e1dd",
+    "inputs": 734,
+    "allBytesAndAggregateVerified": true
+  },
+  "originalNativeEvidence": {
+    "exactTupleCases": 3,
+    "landscapePassed": true,
+    "actualOs2ShortPassed": true,
+    "chineseFailedAfterFieldGuardAndRawNamePassed": "Parent reports prior guards passed; instrumentation confirms nativeTextAx failure at preference automatic call; original tuple failure retained",
+    "preGuardMenuOwnerFlagsAvailable": false,
+    "instrumentationSha256": "6fe8d7b8bfed3c5c216fedce7f212c0cb4e933d92c4f6a0202d4b3595a239629",
+    "newLeafCalls": 0
+  },
+  "testOverlay": {
+    "version": 1,
+    "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+    "baseSource": "Source43",
+    "baseSha256": "37337d458f734d2dede47548f96a75b549749857d7cc4bca038186c9f5c12f42",
+    "proposedSha256": "b0107d5f57770ff1a23da368939c8b829e64acc54fd7b6e8b99db6757e6e70c4",
+    "changeMap": [
+      "Dedicated selected menu dispatch carries exact expected existing automatic-option tag; readonly text path preserves prior checks",
+      "Bind actual own PopupLayout platform-popup view/window and native root package/ID before querying any subtree",
+      "Anchor actual unmerged Compose owner semantic ID and unique owner-subtree text-ID path; native tree independently matches exact owner ID and exact unique text",
+      "Require actual owner test-tag extra and strict native text-to-owner semantic-ID path equal to actual Compose path, terminal native node equal to independently selected owner; no ancestor fallback",
+      "Persist full native text/owner flags, selected/checked/actions/bounds, Compose selected/role diagnostic, exact Popup geometry and source identities before original native selected/enabled/clickable/full visibility assertions",
+      "All sampling/ID/refresh/path/stability shares original5s; no native selected/checked/Compose flag as readiness substitute, no action execution or role/property override",
+      "Use exact own Compose PopupLayout decor matcher; verify real sub-panel type/package/window. Locked Espresso native PopupWindow matcher is not used for Compose."
+    ],
+    "protectedSectionsSha256": {
+      "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+      "nativeFieldAx": "ccd74db4422687d258e4f46ef129812195f469024d60b09cbcdc5c99e2539fa1",
+      "fourTestBodiesExceptExpectedMenuTag": "fe9f0985e506c89eae2c1a210d02e6db36da4d54795eeded43638e8437f56c18"
+    },
+    "totalAxBudgetMs": 5000,
+    "newBudgetMs": 0,
+    "treeNodeLimit": 2048,
+    "composeSubtreeLimit": 256,
+    "pathDepthLimit": 16,
+    "recentObservationLimit": 8,
+    "detailedMatchLimit": 2,
+    "nativeSelectedStillRequired": true,
+    "nativeCheckedDoesNotSubstitute": true,
+    "productSourceChanged": false,
+    "newNativeExecutions": 0
+  },
+  "compile": {
+    "variant": "menu-owner",
+    "compileExit": 0,
+    "inputs": 734,
+    "sourceSha256": "f76d226b009219326266c02c40d38bcea015a264163c9254cd491e744c13ad17",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 4
+  },
+  "nativeExecution": {
+    "status": "unexecuted for this source",
+    "classMethods": 4,
+    "newApks": 0,
+    "executedMethods": 0,
+    "menuScenarios": 1,
+    "owner": "Current unmerged expected-tag semanticID; independent complete native Popup ID scan and actual tag extra",
+    "association": "Unique native text and live Compose subtree text ID/path; exact native parent-ID path terminates at the independently selected owner, no arbitrary parent fallback",
+    "window": "Exact own Compose PopupLayout decor/class plus real sub-panel type/package/native window ID; Espresso native PopupWindow-only matcher not used",
+    "required": "Native selected/enabled/clickable/visible and Click action; original unique text visible plus whole owner/text/Compose clip; native checked and Compose selected never substitute",
+    "budgetMs": 5000,
+    "newAdditionalBudgets": 0,
+    "limits": {
+      "nativeNodes": 2048,
+      "composeSubtree": 256,
+      "pathDepth": 16,
+      "detailedMatches": 2,
+      "recentObservations": 8,
+      "evidenceBytes": 2097152
+    },
+    "diagnostics": "Native leaf/owner selected/checked/flags/actions/geometry, IDs/path and role/Compose state before guard; no body, action labels, exception message or foreign subtree saved"
+  },
+  "productProposal": "No Source43 actual owner selected measurement yet. Preserve guard; collect exact owner first. If native selected is false, retain actual failure and provide a measured truthful narrow product fix, not checked substitution or false Tab role.",
+  "sharedMainSessionPageSheetOldUiCentralOrManifestChanged": false,
+  "centralRegistrationOwner": "parent",
+  "deviceHostModelMicrophoneProtectedEasyWorkActionsByLeaf": 0,
+  "open": [
+    "Named Chinese exact menu owner native run under new source/App/runner",
+    "Actual owner selected vs checked/role and text relation; production proposal only after exact owner evidence",
+    "All preserved full-field/landscape/OS2/IME/Cancel/Done checks and full native matrix",
+    "Full issuer/Desktop/TLS/model/physical/DEV gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "github-sync:5", "lint"],
+    "stoppedAt": "mobile parity: existing missing/stale apps/android/localization/native-copy.json feature record",
+    "laterChecks": "not run",
+    "centralRegistrationOwner": "parent",
+    "evidenceRawSha256": "1bec98628b08a51d99e84fdc1873e24179cbd39906ec75d2d2e9a2a2cd9f65be"
+  },
+  "stageCleanup": {
+    "gradleCleanPassed": true,
+    "ownBuildCachesRemoved": true,
+    "rawLogsAndSourceLosslesslyCompressedAndVerified": true,
+    "newApks": 0,
+    "temporaryInspectionJarAbsent": true
+  }
+}

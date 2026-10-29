@@ -97,7 +97,7 @@
       "allowedCases": {
         "type": "array",
         "minItems": 1,
-        "maxItems": 8,
+        "maxItems": 9,
         "uniqueItems": true,
         "items": {
           "enum": [
@@ -108,7 +108,8 @@
             "cancel-model",
             "cancel-feed",
             "corrupt",
-            "release-cache"
+            "release-cache",
+            "install-trace"
           ]
         }
       }
@@ -169,6 +170,12 @@
       "case": "release-cache",
       "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#releaseOnlyOwnedVerifiedModelCachePreservingInputsAndOriginals",
       "locale": "both; one locale per lease"
+    },
+    {
+      "case": "install-trace",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#explicitOfficialInstallRecordsActualPhasesAndByteOffsets",
+      "locale": "both; one fresh locale/API lease per execution",
+      "precondition": "Empty private model cache; real official install required; no preloaded ZIP/model accepted"
     }
   ],
   "wave": {
@@ -210,5 +217,26 @@
     "comparison": "exact canonical JSON string, exact persisted row string, full decrypted WAV byte-array equality with declared input",
     "metadata": "No target/account/certificate/manifest/receipt/attempt fields excluded; no DTO reference equality",
     "unknown": "fail without synthesizing a replacement original or overwriting its baseline"
+  },
+  "installerDiagnostic": {
+    "journal": "cases/install-trace/installer-observations.jsonl",
+    "maxBytes": 2097152,
+    "maxEvents": 512,
+    "samplerIntervalMs": 1000,
+    "unchangedProductionBudgetMs": 180000,
+    "observations": [
+      "Stable self-FD target before/after fdinfo read; actual access and byte position",
+      "Observed ZIP length and expanded count/bytes",
+      "Actual worker source frames and monotonic observation elapsed/duration",
+      "Whole-UID counters explicitly separate from exact ZIP-file observations",
+      "Actual API exit and observer join; final production probe and pinned-file inventory"
+    ],
+    "limits": [
+      "Snapshots are not atomic filesystem transactions",
+      "Phase times are observed brackets; unobserved transitions remain unknown",
+      "Archive read may be hash or ZIP index if stack does not resolve it",
+      "Self-FD/proc permission failures are unknown; never zero",
+      "Not full network/microphone or 16KiB acceptance"
+    ]
   }
 }

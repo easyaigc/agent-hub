@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag as semanticTestTag
 import androidx.compose.ui.text.style.TextAlign
@@ -60,6 +61,7 @@ import kotlin.math.sin
         }
     }
 }
+@OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun VoiceInputStrip(voice: VoiceInputController,text: String) {
     val colors=MaterialTheme.colorScheme
     val status=voice.statusCopyKey?.let {productText(it)} ?: voice.status
@@ -71,7 +73,7 @@ import kotlin.math.sin
         val scrolling=if(maxHeight!=Dp.Infinity)Modifier.verticalScroll(scroll) else Modifier
         Column(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp).floatingProduct(MobileDesign.composerRadius).then(scrolling).padding(4.dp).testTag("voice-panel"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             val displayedText=if(voice.transcript.isEmpty())text else text+if(text.isEmpty() || text.last().isWhitespace())voice.transcript else "\n"+voice.transcript
-            Text(if(displayedText.isEmpty())productText("随心输入") else displayedText,Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(displayedText.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
+            Text(if(displayedText.isEmpty())productText("随心输入") else displayedText,Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(displayedText.isEmpty()) colors.onSurfaceVariant else colors.onSurface)
             val activity: @Composable (Modifier)->Unit={ modifier ->
                 when(voice.phase) {
                     VoiceInputController.Phase.FINISHING->VoiceTranscriptionActivity(status,modifier)
@@ -95,20 +97,20 @@ import kotlin.math.sin
                 activity(Modifier.fillMaxWidth())
                 Row(Modifier.fillMaxWidth().testTag("voice-compact-controls"),verticalAlignment=Alignment.CenterVertically) { close();Spacer(Modifier.weight(1f));stop() }
             }else Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(3.dp)) { close();activity(Modifier.weight(1f));stop() }
-            if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
+            if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(status,Modifier.fillMaxWidth().padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
             if(voice.provider==VoiceInputController.Provider.SYSTEM)Text(productText("手机系统语音服务可能需要联网。"),Modifier.padding(horizontal=14.dp),fontSize=12.sp,color=colors.onSurfaceVariant)
             if(voice.canEndWaiting)TextButton(onClick=voice::endWaiting,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-end-waiting")) { Text(productText("结束等待"),fontSize=17.sp) }
             if(voice.canFillRecognizedText)TextButton(onClick={ voice.fillRecognizedText() },modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-fill-recognized-text")) { Text(productText("填入已识别文字"),fontSize=17.sp) }
             if(voice.canInspectSavedFile || voice.savedFileBusy) {
                 Column(Modifier.fillMaxWidth().padding(horizontal=14.dp).testTag("saved-file-asr"),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                    Text(productText("在手机识别原录音"),fontSize=17.sp)
-                    Text(productText("仅下载语言模型需要联网，录音留在本机。"),fontSize=12.sp)
-                    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text(productText("在手机识别原录音"),fontSize=17.sp,modifier=Modifier.fillMaxWidth().testTag("saved-file-title"))
+                    Text(productText("仅下载语言模型需要联网，录音留在本机。"),fontSize=12.sp,modifier=Modifier.fillMaxWidth().testTag("saved-file-privacy"))
+                    FlowRow(Modifier.fillMaxWidth().testTag("saved-file-languages"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                         for(locale in listOf("zh-CN","en-US"))FilterChip(selected=voice.savedFileLocale==locale,
                             onClick={voice.chooseSavedFileLocale(locale)},enabled=voice.canInspectSavedFile,
-                            label={Text(productText(if(locale=="zh-CN")"中文（普通话）"else"英语（美国）"))},modifier=Modifier.testTag("saved-file-locale-$locale"))
+                            label={Text(productText(if(locale=="zh-CN")"中文（普通话）"else"英语（美国）"))},modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-locale-$locale"))
                     }
-                    Text(productText(voice.savedFileStatusKey),fontSize=12.sp,modifier=Modifier.testTag("saved-file-status"))
+                    Text(productText(voice.savedFileStatusKey),fontSize=12.sp,modifier=Modifier.fillMaxWidth().testTag("saved-file-status").semantics {liveRegion=androidx.compose.ui.semantics.LiveRegionMode.Polite})
                     TextButton(onClick=voice::inspectSavedFile,enabled=voice.canInspectSavedFile && voice.savedFileLocale.isNotEmpty(),modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-probe")) {Text(productText("检查离线模型"))}
                     if(voice.savedFileProbe?.availability in setOf(SavedVoiceAvailability.MISSING,SavedVoiceAvailability.CORRUPT))
                         TextButton(onClick=voice::downloadSavedFileModel,enabled=voice.canInspectSavedFile,modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-download")) {Text(productText("下载离线模型（约45MB）"))}

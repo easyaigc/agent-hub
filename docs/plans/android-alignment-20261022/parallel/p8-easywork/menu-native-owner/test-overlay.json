@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+  "baseSource": "Source43",
+  "baseSha256": "37337d458f734d2dede47548f96a75b549749857d7cc4bca038186c9f5c12f42",
+  "proposedSha256": "b0107d5f57770ff1a23da368939c8b829e64acc54fd7b6e8b99db6757e6e70c4",
+  "changeMap": [
+    "Dedicated selected menu dispatch carries exact expected existing automatic-option tag; readonly text path preserves prior checks",
+    "Bind actual own PopupLayout platform-popup view/window and native root package/ID before querying any subtree",
+    "Anchor actual unmerged Compose owner semantic ID and unique owner-subtree text-ID path; native tree independently matches exact owner ID and exact unique text",
+    "Require actual owner test-tag extra and strict native text-to-owner semantic-ID path equal to actual Compose path, terminal native node equal to independently selected owner; no ancestor fallback",
+    "Persist full native text/owner flags, selected/checked/actions/bounds, Compose selected/role diagnostic, exact Popup geometry and source identities before original native selected/enabled/clickable/full visibility assertions",
+    "All sampling/ID/refresh/path/stability shares original5s; no native selected/checked/Compose flag as readiness substitute, no action execution or role/property override",
+    "Use exact own Compose PopupLayout decor matcher; verify real sub-panel type/package/window. Locked Espresso native PopupWindow matcher is not used for Compose."
+  ],
+  "protectedSectionsSha256": {
+    "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+    "nativeFieldAx": "ccd74db4422687d258e4f46ef129812195f469024d60b09cbcdc5c99e2539fa1",
+    "fourTestBodiesExceptExpectedMenuTag": "fe9f0985e506c89eae2c1a210d02e6db36da4d54795eeded43638e8437f56c18"
+  },
+  "totalAxBudgetMs": 5000,
+  "newBudgetMs": 0,
+  "treeNodeLimit": 2048,
+  "composeSubtreeLimit": 256,
+  "pathDepthLimit": 16,
+  "recentObservationLimit": 8,
+  "detailedMatchLimit": 2,
+  "nativeSelectedStillRequired": true,
+  "nativeCheckedDoesNotSubstitute": true,
+  "productSourceChanged": false,
+  "newNativeExecutions": 0
+}

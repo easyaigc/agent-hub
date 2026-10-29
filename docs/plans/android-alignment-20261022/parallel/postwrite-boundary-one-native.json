@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR46-PW1",
+  "sourceSha256": "ba98948f6e92b68c3327258f1a777c52895a80c0f96f147f3e454ae5c4db92c6",
+  "expandedSourceSha256": "95223338e9b00a9109f18cdf1b6c5975312edaa6ffa6dbf6a20f6dfa7da6b03d",
+  "appSha256": "7ca545d92b88b0e0dcfc2df7eeb637ed51830ce9875bed06b86c0cc1e4826449",
+  "runnerSha256": "10fc45543ea0ecdd40ff775b5dc6c37feb79274524ecf8af1c0ccd16e6bfe300",
+  "sdk": 26,
+  "boundary": 1,
+  "owners": ["composer", "question"],
+  "writer": {
+    "armedAfterActualEncryptedMetadataWrite": true,
+    "controlledExactPidTermination": true,
+    "processStartTimeBound": true,
+    "sameUidPrivilegedDebugExecutor": true,
+    "acceptedCommandExit": 0,
+    "originalPidAbsentAfterwards": true,
+    "heartbeatMaximumAgeMs": 3000,
+    "readyMaximumAgeMs": 20000,
+    "observedReadyAgeAtAckMs": 282.4862499999998,
+    "normalJunitPass": false,
+    "junitTerminalMethods": 0,
+    "doNotCountAsThirdPass": true
+  },
+  "readers": {
+    "executed": 2,
+    "passed": 2,
+    "distinctFromWriterPid": true,
+    "readOnlyInspectorDidNotConstructSession": true,
+    "explicitContinuationUsedActualSession": true,
+    "noDuplicateAppendOrNewDraftOverwrite": true,
+    "productAppliedMarked": false,
+    "syntheticEngineOnly": true,
+    "acousticClaim": false
+  },
+  "originals": {
+    "fullCanonicalAndExactRowAndAllWavNativeAssertions": true,
+    "externalDecryptedRecomparison": false,
+    "twoNonemptyFixtureNamespaces": true
+  },
+  "defaultBaseline": {
+    "beforeFileCount": 0,
+    "afterFileCount": 0,
+    "ciphertextSetUnchanged": true,
+    "metadataSha256": null,
+    "defaultMetadataPresent": false,
+    "emptyDefaultBaselineOnly": true,
+    "nonEmptyDefaultCiphertextSetCompared": false,
+    "scope": "empty-default-set-only"
+  },
+  "defaultChecks": [
+    {
+      "phase": "after-kill",
+      "beforeFileCount": 0,
+      "afterFileCount": 0,
+      "unchanged": true,
+      "emptyDefaultBaselineOnly": true
+    },
+    {
+      "phase": "after-inspector",
+      "beforeFileCount": 0,
+      "afterFileCount": 0,
+      "unchanged": true,
+      "emptyDefaultBaselineOnly": true
+    },
+    {
+      "phase": "after-continuation",
+      "beforeFileCount": 0,
+      "afterFileCount": 0,
+      "unchanged": true,
+      "emptyDefaultBaselineOnly": true
+    }
+  ],
+  "microphonePermissionAndAppOpsUnchanged": true,
+  "priorParentHarnessFailures": [
+    {
+      "version": 2,
+      "writerJunitPassed": false,
+      "writerJunitFailed": 1,
+      "reason": "Readiness attempted nonexistent external test command",
+      "writerExitedAtOwnTimeout": true,
+      "killCommandInvoked": false,
+      "originalFailurePreserved": true
+    },
+    {
+      "version": 3,
+      "writerJunitPassed": false,
+      "writerJunitFailed": 1,
+      "reason": "Run-as SELinux denied uptime during set-e preflight before signal",
+      "writerExitedAtOwnTimeout": true,
+      "killPreflightInvoked": true,
+      "killAccepted": false,
+      "originalFailurePreserved": true
+    }
+  ],
+  "cumulativeAttemptAccounting": {
+    "normalReaderPass": 2,
+    "priorHarnessWriterFailures": 2,
+    "controlledInterruptedWriter": 1,
+    "noOldUuidReplayed": true
+  },
+  "limits": [
+    "API37 and boundaries2/3 pending",
+    "Nonempty default content pending",
+    "Natural crash, memory pressure, power loss and OEM lifecycle pending",
+    "Physical device, actual microphone/ASR and full DEV pending"
+  ],
+  "remoteBusinessInputs": 0,
+  "paused": ["Task/project management", "iOS A6"]
+}

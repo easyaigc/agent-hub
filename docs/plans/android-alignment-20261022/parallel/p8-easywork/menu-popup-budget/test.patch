@@ -1,0 +1,79 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -358,22 +358,37 @@
+         }catch(failure: Throwable){evidence.put("phase","failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-started);flushProbes();throw failure}
+         finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalField?.let {@Suppress("DEPRECATION") it.recycle()};finalLabel?.let {@Suppress("DEPRECATION") it.recycle()}}
+     }
+-    private fun preferencePopupView(): android.view.View {
+-        var result: android.view.View?=null
+-        androidx.test.espresso.Espresso.onView(androidx.test.espresso.matcher.ViewMatchers.isRoot()).inRoot(androidx.test.espresso.matcher.RootMatchers.withDecorView(androidx.test.espresso.matcher.ViewMatchers.withClassName(org.hamcrest.CoreMatchers.equalTo("androidx.compose.ui.window.PopupLayout")))).check {view,error->
+-            if(error!=null)throw error;assertEquals(i.targetContext.packageName,view.context.packageName);assertSame(view,view.rootView)
+-            assertEquals("androidx.compose.ui.window.PopupLayout",view.javaClass.name);assertEquals(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL,(view.layoutParams as android.view.WindowManager.LayoutParams).type);result=view
+-        };return checkNotNull(result)
+-    }
+-    private fun popupGeometry(view: android.view.View): JSONObject {
+-        val result=JSONObject();i.runOnMainSync {
++    private fun <T> menuMainRead(deadline: Long,read: ()->T): T {
++        check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
++        val handler=android.os.Handler(android.os.Looper.getMainLooper())
++        val task=java.util.concurrent.FutureTask<T> {check(android.os.SystemClock.uptimeMillis()<deadline);read()}
++        try {
++            check(android.os.SystemClock.uptimeMillis()<deadline);check(handler.post(task))
++            val remaining=deadline-android.os.SystemClock.uptimeMillis();check(remaining>0)
++            val result=task.get(remaining,java.util.concurrent.TimeUnit.MILLISECONDS);check(android.os.SystemClock.uptimeMillis()<=deadline);return result
++        }catch(failure: java.util.concurrent.ExecutionException){throw failure.cause?:failure}
++        finally {handler.removeCallbacks(task);task.cancel(false)}
++    }
++    private fun preferencePopupView(deadline: Long): android.view.View {
++        check(android.os.Build.VERSION.SDK_INT>=29){"Exact menu Popup inspection requires API29+"}
++        return menuMainRead(deadline){
++            val roots=android.view.inspector.WindowInspector.getGlobalWindowViews();check(roots.size<=64)
++            val own=roots.filter {it.javaClass.name=="androidx.compose.ui.window.PopupLayout"&&it.context.packageName==i.targetContext.packageName}
++            assertEquals("Unique exact owned Compose Popup root",1,own.size);val view=own.single();assertSame(view,view.rootView)
++            assertTrue("Owned Popup still attached",view.isAttachedToWindow)
++            assertEquals(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL,(view.layoutParams as android.view.WindowManager.LayoutParams).type);view
++        }
++    }
++    private fun popupGeometry(view: android.view.View,deadline: Long): JSONObject =menuMainRead(deadline){
++            assertTrue("Owned Popup remains attached",view.isAttachedToWindow);assertSame(view,view.rootView)
++            assertEquals("androidx.compose.ui.window.PopupLayout",view.javaClass.name);assertEquals(i.targetContext.packageName,view.context.packageName)
++            assertEquals(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL,(view.layoutParams as android.view.WindowManager.LayoutParams).type)
+             val info=view.createAccessibilityNodeInfo();val id=info?.windowId?:-1;info?.let {@Suppress("DEPRECATION") it.recycle()}
+             val visible=android.graphics.Rect();view.getWindowVisibleDisplayFrame(visible);val origin=IntArray(2);view.getLocationOnScreen(origin)
+-            result.put("windowId",id).put("class",view.javaClass.name).put("targetPackage",view.context.packageName==i.targetContext.packageName)
++            JSONObject().put("windowId",id).put("class",view.javaClass.name).put("targetPackage",view.context.packageName==i.targetContext.packageName)
+                 .put("type",(view.layoutParams as? android.view.WindowManager.LayoutParams)?.type?:-1).put("hasWindowFocus",view.hasWindowFocus()).put("shown",view.isShown)
+                 .put("left",origin[0]).put("top",origin[1]).put("right",origin[0]+view.width).put("bottom",origin[1]+view.height)
+                 .put("visibleFrame",JSONObject().put("left",visible.left).put("top",visible.top).put("right",visible.right).put("bottom",visible.bottom))
+-        };return result
+     }
+     private fun preferenceComposeIdentity(value: String,tag: String): JSONObject {
+         val owner=ui.onNodeWithTag(tag,useUnmergedTree=true).fetchSemanticsNode();val paths=mutableListOf<List<Int>>();var count=0
+@@ -386,9 +401,9 @@
+             .put("textPaths",JSONArray(paths.map {JSONArray(it)})).put("textHash",easyHash(value.toByteArray()))
+     }
+     private fun nativeSelectedMenuAx(value: String,tag: String){
+-        val start=android.os.SystemClock.uptimeMillis();val deadline=start+5000;val automation=i.uiAutomation;val popup=preferencePopupView()
++        val start=android.os.SystemClock.uptimeMillis();val deadline=start+5000
+         val evidence=JSONObject().put("kind","exact-selected-menu-before-guards").put("tag",tag).put("valueHash",easyHash(value.toByteArray())).put("totalBudgetMs",5000)
+-            .put("initialPopup",popupGeometry(popup)).put("phase","root-readiness");saveProbe(evidence)
++            .put("popupInspectionMinApi",29).put("sdkInt",android.os.Build.VERSION.SDK_INT).put("phase","before-owned-popup-read")
+         var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalOwner: android.view.accessibility.AccessibilityNodeInfo?=null;var finalText: android.view.accessibility.AccessibilityNodeInfo?=null
+         var ownerCount=0;var textCount=0;var textAssociated=false;var ownerTagMatches=false;var finalPopup: JSONObject?=null
+         val recent=mutableListOf<JSONObject>();var first: JSONObject?=null;var previous="";var sameSince=0L;var sameCount=0;var samples=0
+@@ -396,11 +411,14 @@
+         fun budget(){assertTrue("Selected menu shares original AX5s budget",android.os.SystemClock.uptimeMillis()<=deadline)}
+         fun owned(n: android.view.accessibility.AccessibilityNodeInfo,id: Int)=n.packageName?.toString()==i.targetContext.packageName&&n.windowId==id
+         try {
++            saveProbe(evidence)
++            val popup=preferencePopupView(deadline);evidence.put("initialPopup",popupGeometry(popup,deadline)).put("phase","root-readiness");flushProbes()
++            val automation=i.uiAutomation
+             firstRoot=activeAppRoot(deadline);val remaining=deadline-android.os.SystemClock.uptimeMillis();assertTrue("Original menu AX5s remains",remaining>0)
+             ui.waitUntil(remaining){
+                 val anchor=preferenceComposeIdentity(value,tag);val ownerId=anchor.getInt("ownerId");val paths=anchor.getJSONArray("textPaths")
+                 val expectedPath=if(paths.length()==1)(0 until paths.getJSONArray(0).length()).map {paths.getJSONArray(0).getInt(it)}else emptyList()
+-                val geometry=popupGeometry(popup);val windowId=geometry.getInt("windowId");val root=firstRoot?:automation.rootInActiveWindow;firstRoot=null
++                val geometry=popupGeometry(popup,deadline);val windowId=geometry.getInt("windowId");val root=firstRoot?:automation.rootInActiveWindow;firstRoot=null
+                 val owners=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();val texts=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>()
+                 var ownerMatches=0;var textMatches=0;var visited=0;var idQueries=0;var fresh=true;var relation=false;var tagMatches=false
+                 var candidate: android.view.accessibility.AccessibilityNodeInfo?=null;var candidateText: android.view.accessibility.AccessibilityNodeInfo?=null

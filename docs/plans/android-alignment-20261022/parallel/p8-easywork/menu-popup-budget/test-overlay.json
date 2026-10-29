@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+  "baseCommit": "9de6739a2f68bd44773c0e8fa78b119982221090",
+  "baseSha256": "b0107d5f57770ff1a23da368939c8b829e64acc54fd7b6e8b99db6757e6e70c4",
+  "proposedSha256": "96c4cb13ef2d6c1bad649d80508d34aefb5ce463eadeb7aba0e4e4a39542cb7c",
+  "patchSha256": "10ebda477798b4d80d142ccf8434847912d0e7fb02f38b52b0cf8b49c0b4d008",
+  "protectedSectionsSha256": {
+    "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+    "nativeTextAx": "b855dc0a500c86284ba3805adf2d804724794bdf2bcd80b59578365ae95b4b9f",
+    "composeOwnerIdentity": "3bf1a36c0c1fc216de5a1d5e3d5b6b798d1d20f0634e91beb6feb2ddc6f65b20",
+    "nativeFieldAx": "ccd74db4422687d258e4f46ef129812195f469024d60b09cbcdc5c99e2539fa1",
+    "allFourTestBodies": "b929d96e07435b41ef1e91ab8058ef29fa0a6f29d092cf6a4ebad0a15f108cc2",
+    "allOwnerIdPathNativeFlagsFullBoundsAndCatchFinallyAfterRoot": "4a88fa69d83fc9ff43bdbacc1e8aac74b10f6e4da94a72c31b2e967ab4e2957d"
+  },
+  "changeMap": [
+    "Persist initial evidence inside failure-recording try before Popup/UiAutomation acquisition",
+    "Use actual current-process WindowInspector snapshot; require unique exact own PopupLayout root, attachment and actual sub-panel, cap64 roots, no generic fallback",
+    "Main-thread FutureTask.get only remaining original5s; expired/rejected read fails, queued callback removed/cancelled; running read has no evidence/input side effects, late result discarded",
+    "Popup geometry uses same deadline/dispatcher and rechecks attachment/class/package/type; no Espresso root picker or runOnMainSync in this path",
+    "All native owner/tag/text/path, selected/enabled/clickable/visible/action/full bounds and four test bodies unchanged"
+  ],
+  "explicitPopupMinimumApi": 29,
+  "lowerApiBehavior": "Saved initial evidence then explicit failure; no skip, alternate generic root or lower-platform pass",
+  "rootSnapshotLimit": 64,
+  "newBudgetMs": 0,
+  "productSourceChanged": false,
+  "newNativeExecutions": 0
+}

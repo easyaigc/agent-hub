@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "lockedComposeVersion": "1.12.1",
+  "delegateSourceSha256": "fa6ee0b3459cb6529c43a663b234e5a46318f50ef271509f2393038b017414a0",
+  "delegateSourceArtifact": "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.1/ui-android-1.12.1-sources.jar",
+  "popupSource": {
+    "url": "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.1/ui-android-1.12.1-sources.jar",
+    "jarSha256": "8ddde80690da97cd840c6f8f59c608701f9e42c245f12f0eabc1434db57e0273",
+    "entry": "androidMain/androidx/compose/ui/window/AndroidPopup.android.kt",
+    "sourceSha256": "78263560a873cddab9670fd0679e129515354584a57e38c98f5009bde2081f00",
+    "version": "1.12.1"
+  },
+  "findings": [
+    {
+      "finding": "The delegate maps Selected to native isSelected for Tab, and to checked for other roles. Actual owner flags/role still require runtime observation.",
+      "status": "Version-locked source fact, not a Source43 owner measurement"
+    },
+    {
+      "finding": "Compose PopupLayout uses an actual platform sub-panel by default; the diagnostic binds its own root view/window/package and exact owner semanticID.",
+      "status": "Source fact and prepared native verification"
+    },
+    {
+      "finding": "A checked native owner or Compose selected=true cannot satisfy the retained native selected guard.",
+      "status": "Acceptance requirement retained"
+    },
+    {
+      "finding": "Do not mark a preference menu as Tab or set native selected statically to make a guard pass. Any real product gap needs owner evidence and a truthful narrow implementation.",
+      "status": "No product patch claimed before owner data"
+    }
+  ],
+  "espressoPopupMatcher": {
+    "version": "3.7.0",
+    "aarSha256": "5dd90e366838bf044cb52eae06474debd285df18a7a77c40441ac8e8951bb00f",
+    "class": "androidx/test/espresso/matcher/RootMatchers$IsPlatformPopup.class",
+    "classSha256": "9397b5291fd6de70b398b016645ffdd1079468e04f37a974c3c51952c4631bbf",
+    "finding": "isPlatformPopup matches native PopupWindow PopupDecorView class on SDK23+, not Compose PopupLayout; use exact own Compose decor class plus actual package/sub-panel/native window checks",
+    "temporaryJarRemoved": true
+  }
+}

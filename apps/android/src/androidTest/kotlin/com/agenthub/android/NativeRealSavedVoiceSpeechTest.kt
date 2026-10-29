@@ -11,6 +11,7 @@ import org.junit.Test
 import java.io.File
 import java.io.RandomAccessFile
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
@@ -178,6 +179,39 @@ class NativeRealSavedVoiceSpeechTest {
         assertEquals(SavedVoiceAvailability.INSTALLED,probe("resourceAfter"))
         val actual=NativeRealFileAsrFiles.inventory(models);val expected=spec.getJSONArray("files").objects().associate {spec.getString("id")+"/"+it.getString("path") to it.getString("sha256")}
         assertEquals(expected,actual);report.put("installedFiles",actual.size).put("installedTreeFingerprint",voiceSHA(JSONArray(actual.toSortedMap().map {(path,hash)->JSONArray(listOf(path,hash))}).toString().toByteArray(Charsets.UTF_8)))
+    }
+    @Test fun explicitOfficialInstallRecordsActualPhasesAndByteOffsets()=scenario("install-trace") {
+        require(NativeRealFileAsrFiles.inventory(models).isEmpty()) {"Diagnostic must not reuse a preloaded model"}
+        assertEquals(SavedVoiceAvailability.MISSING,probe("diagnosticResourceBefore"))
+        val diagnostic=NativeRealFileAsrInstallDiagnostics(models,spec,folder)
+        val exited=AtomicBoolean();val returned=AtomicBoolean()
+        observations.sample("explicit-install-before")
+        val job=worker {
+            try {
+                engine.install(lease.input.locale) {diagnostic.checkpoint();checkpoint()}
+                returned.set(true)
+            }finally{exited.set(true)}
+        }
+        var summary: JSONObject?=null
+        try {
+            job.await()
+        }finally {
+            withContext(NonCancellable) {
+                job.cancel();job.join()
+                summary=diagnostic.finish(exited.get()&&job.isCompleted,returned.get())
+                report.put("installerDiagnostic",summary).put("installerProductionTimeoutUnchangedMs",180000)
+                observations.sample("explicit-install-after-actual-api-exit")
+            }
+        }
+        // Stop observing install before the independent post-install hash/probe begins.
+        assertEquals(SavedVoiceAvailability.INSTALLED,probe("diagnosticResourceAfter"))
+        val expected=spec.getJSONArray("files").objects().associate {spec.getString("id")+"/"+it.getString("path") to it.getString("sha256")}
+        assertEquals(expected,NativeRealFileAsrFiles.inventory(models))
+        val final=checkNotNull(summary)
+        assertTrue(final.getBoolean("actualWorkerApiExit"));assertTrue(final.getBoolean("installReturned"))
+        assertTrue(final.getBoolean("ownedObserverExited"));assertTrue(final.isNull("samplerFailure"));assertFalse(final.getBoolean("traceBudgetTruncated"))
+        assertTrue("Unobservable FD/file state is not an installer diagnostic pass",final.getInt("observationsAvailable")>0)
+        assertTrue("A real archive write scope must be observed; preloading is not installer acceptance",final.getInt("archiveWriteScopesObserved")>0)
     }
     private suspend fun Fixture.recognize() {
         installed();val bytes=wav()

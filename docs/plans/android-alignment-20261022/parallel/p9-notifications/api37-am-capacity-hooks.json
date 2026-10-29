@@ -1,0 +1,77 @@
+{
+  "operationId": "parent-p9-source45-observer-am-cap-real-failure-20261029-1",
+  "baseCommit": "aff9cdaac230a5a92a1a4a6b3d9fc8d01313197d",
+  "patches": {
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java": {
+      "path": "api37-am-capacity-parser.patch",
+      "baseSha256": "b95e562680e0831284b5909cdefaadf73a95bd3ac1057a4f3e64d59b8b6720c1",
+      "proposedSha256": "9959b8f320759abeb525e1b344cd3f5747333fa9bf66bf451d03197807a5d83b",
+      "patchSha256": "28fdc0241b70ec03edefe291cfdd88a5a2f551af8c7d63af5c0e39701725600e"
+    },
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java": {
+      "path": "api37-am-capacity-observer.patch",
+      "baseSha256": "4096d2d2e384b3d803faf75af80b025678143969e068c8e9ff6e171670df3d06",
+      "proposedSha256": "f4e555c2a35e7a87632c5ad98f7ccba6dc796052e3391fd7910d10746163aa8e",
+      "patchSha256": "9654f06ce42394a1665dcd7703f78ab4180ba8708f1afd095f38e95c30eb2236"
+    }
+  },
+  "capsBytes": {
+    "PS": 262144,
+    "AM": 1048576,
+    "parentCollectorUnchanged": 2097152
+  },
+  "capIncludes": "Actual independent stdout plus stderr including completion footer, per diagnostic invocation",
+  "timingChanged": false,
+  "commandsChanged": false,
+  "originalFiveProductionHooksChanged": false,
+  "eightRefusalCasesChanged": false,
+  "nativeHere": false,
+  "actualParentFilesModified": [],
+  "lowApiStrongObserver": "Still pending; this RWE fix remains API34+",
+  "sources": {
+    "scripts/mobile/check-natural-diagnostic-capacity.mjs": "7fc69a701055a9d3a3820015523b7d29ff7c04f521f3ec74ed935fb58725aef5",
+    "scripts/mobile/fixtures/NaturalDiagnosticCapacityVectors.java": "b764dfe1e77d4125d4a34f527b25a63d35c91a05abcc12c8542aa14336191b81",
+    "scripts/mobile/fixtures/NaturalVisibilityVectors.java": "476e771b8d20730f979a8f7e9dd3e7aff4524b0f45f2f018cdbe25544261898c"
+  },
+  "source45CompleteMapSha256": "9aeb5d26174965cabc764dbb9d60ca7150c2ff8d1c856ccf9086fa257812fa39",
+  "auxiliary": {
+    "regression": 66,
+    "capacity": 32,
+    "scope": "Synthetic parser/counter and original fixed-fake host pipes only; no Android/native proof"
+  },
+  "compiledPrivateProposal": {
+    "sourceFingerprint": "d64910a149cd4dd85b3627446e8933e1b495a11b2ea6f7d248e1bb3c5a4b1a8e",
+    "files": 760,
+    "source45Matched": 750,
+    "changes": {
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java": "9959b8f320759abeb525e1b344cd3f5747333fa9bf66bf451d03197807a5d83b",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java": "f4e555c2a35e7a87632c5ad98f7ccba6dc796052e3391fd7910d10746163aa8e"
+    },
+    "examiner": {
+      "sha256": "0485ccb566848cb2d8da9f36e6b84b212e7a44a3db9adc70545938ea04d19bd7",
+      "bytes": 1000074,
+      "zipVerified": true,
+      "v2Verified": true,
+      "signerMatchesParentDebugCertificate": true
+    },
+    "assembly": "Examiner debug only;33 tasks",
+    "appRunnerRebuilt": false,
+    "nativeHere": false
+  },
+  "captureMetadata": [
+    "kind",
+    "commandNonce",
+    "capBytes",
+    "stdoutBytesObserved",
+    "stderrBytesObserved",
+    "combinedBytesObserved",
+    "stdoutEof",
+    "stderrEof",
+    "byteCountsAreLowerBounds",
+    "independentStderrAvailable",
+    "completionVerified"
+  ],
+  "pnpmCheck": "format/sync5/lint passed;existing synthetic-tone.m4a feature coverage;later checks not run",
+  "atomicProposalSha256": "5976c55330e80249d3b5beecc1eede86a62f8182ae0cc9dce46580b4e5a701d1",
+  "atomicProposalDefinition": "Compact sorted-key JSON {operationId,patches,sources,capsBytes,source45CompleteMapSha256}"
+}

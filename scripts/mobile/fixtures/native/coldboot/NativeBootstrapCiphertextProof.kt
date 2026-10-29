@@ -1,0 +1,37 @@
+package com.agenthub.android
+
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
+import java.security.MessageDigest
+import javax.crypto.Cipher
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+
+/** Test-only fixed bootstrap record v3 authenticator. No storage constructor, key creation or write. */
+internal object NativeBootstrapCiphertextProof {
+    const val RECORD="p9-native-local-bootstrap-v1"
+    fun sha(bytes:ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString(""){"%02x".format(it)}
+    val relativePath get()="mobile-v1/"+sha(RECORD.toByteArray(Charsets.UTF_8))+".bin"
+    fun familyDigest(bytes:ByteArray):String {
+        require(bytes.size in 29..8192)
+        val rows=listOf("d:"+sha("mobile-v1".toByteArray()),"f:"+sha(relativePath.toByteArray())+":"+bytes.size+":"+sha(bytes))
+        return sha(rows.sorted().joinToString("\n").toByteArray())
+    }
+    fun authenticatedPayload(bytes:ByteArray,key:SecretKey):ByteArray {
+        require(bytes.size in 29..8192&&bytes[0]==3.toByte()) {"Only the pinned original bootstrap v3 format is supported"}
+        val iv=bytes.copyOfRange(1,13)
+        val cipher=Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE,key,GCMParameterSpec(128,iv))
+        cipher.updateAAD(byteArrayOf(0xff.toByte(),3)+"agent-hub/android-local-record/v3".toByteArray(Charsets.UTF_8))
+        val clear=try {cipher.doFinal(bytes,13,bytes.size-13)} finally {iv.fill(0)}
+        try {
+            val frame=ByteBuffer.wrap(clear);require(frame.remaining()>=4)
+            val count=frame.int;val name=RECORD.toByteArray(Charsets.UTF_8)
+            require(count==name.size&&frame.remaining()>count)
+            val actual=ByteArray(count);frame.get(actual);try{require(actual.contentEquals(name))}finally{actual.fill(0);name.fill(0)}
+            val payload=ByteArray(frame.remaining());frame.get(payload)
+            try{Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(payload))}catch(error:Throwable){payload.fill(0);throw error}
+            return payload
+        }finally{clear.fill(0)}
+    }
+}

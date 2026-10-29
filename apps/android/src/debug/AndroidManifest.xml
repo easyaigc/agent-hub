@@ -13,6 +13,7 @@
         </intent>
     </queries>
     <application>
+        <activity android:name="com.agenthub.android.NativeSavedVoicePanelActivity" android:exported="false" />
         <!-- Fixed same-UID component fixture only. No receiver, provider or production startup hook. -->
         <service android:name="com.agenthub.android.NativeNaturalStoreProbeService"
             android:exported="false" android:process=":p9NaturalStore" />

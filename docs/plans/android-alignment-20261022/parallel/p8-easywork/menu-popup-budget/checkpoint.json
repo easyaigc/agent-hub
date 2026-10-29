@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-menu-popup-original-budget-review-fix-20261029-1",
+  "testOverlay": {
+    "version": 1,
+    "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+    "baseCommit": "9de6739a2f68bd44773c0e8fa78b119982221090",
+    "baseSha256": "b0107d5f57770ff1a23da368939c8b829e64acc54fd7b6e8b99db6757e6e70c4",
+    "proposedSha256": "96c4cb13ef2d6c1bad649d80508d34aefb5ce463eadeb7aba0e4e4a39542cb7c",
+    "patchSha256": "10ebda477798b4d80d142ccf8434847912d0e7fb02f38b52b0cf8b49c0b4d008",
+    "protectedSectionsSha256": {
+      "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+      "nativeTextAx": "b855dc0a500c86284ba3805adf2d804724794bdf2bcd80b59578365ae95b4b9f",
+      "composeOwnerIdentity": "3bf1a36c0c1fc216de5a1d5e3d5b6b798d1d20f0634e91beb6feb2ddc6f65b20",
+      "nativeFieldAx": "ccd74db4422687d258e4f46ef129812195f469024d60b09cbcdc5c99e2539fa1",
+      "allFourTestBodies": "b929d96e07435b41ef1e91ab8058ef29fa0a6f29d092cf6a4ebad0a15f108cc2",
+      "allOwnerIdPathNativeFlagsFullBoundsAndCatchFinallyAfterRoot": "4a88fa69d83fc9ff43bdbacc1e8aac74b10f6e4da94a72c31b2e967ab4e2957d"
+    },
+    "changeMap": [
+      "Persist initial evidence inside failure-recording try before Popup/UiAutomation acquisition",
+      "Use actual current-process WindowInspector snapshot; require unique exact own PopupLayout root, attachment and actual sub-panel, cap64 roots, no generic fallback",
+      "Main-thread FutureTask.get only remaining original5s; expired/rejected read fails, queued callback removed/cancelled; running read has no evidence/input side effects, late result discarded",
+      "Popup geometry uses same deadline/dispatcher and rechecks attachment/class/package/type; no Espresso root picker or runOnMainSync in this path",
+      "All native owner/tag/text/path, selected/enabled/clickable/visible/action/full bounds and four test bodies unchanged"
+    ],
+    "explicitPopupMinimumApi": 29,
+    "lowerApiBehavior": "Saved initial evidence then explicit failure; no skip, alternate generic root or lower-platform pass",
+    "rootSnapshotLimit": 64,
+    "newBudgetMs": 0,
+    "productSourceChanged": false,
+    "newNativeExecutions": 0
+  },
+  "source43": {
+    "sourceSha256": "e12e0b8146d9ac1efee4ae0fb93a0b5208647d858fe92c283d30ec77ebb22f33",
+    "appSha256": "479321f4aca2b46e7378ccd8d79438132b9d4a646413e270f39386c7fae6afb2",
+    "runnerSha256": "e62b9a03912aaafa4faefb0139484acacad7c2dbceb24b46512c3c2dccb3e1dd",
+    "inputs": 734,
+    "allBytesAndAggregateVerified": true
+  },
+  "originalNativeEvidence": {
+    "exactTupleCases": 3,
+    "landscapePassed": true,
+    "actualOs2ShortPassed": true,
+    "chineseFailedAfterFieldGuardAndRawNamePassed": "Parent reports prior guards passed; instrumentation confirms nativeTextAx failure at preference automatic call; original tuple failure retained",
+    "preGuardMenuOwnerFlagsAvailable": false,
+    "instrumentationSha256": "6fe8d7b8bfed3c5c216fedce7f212c0cb4e933d92c4f6a0202d4b3595a239629",
+    "newLeafCalls": 0
+  },
+  "prior9deAdoptedOrNativeRunByParent": false,
+  "prior9deBudgetClaim": "Parent review invalidated initial Espresso root acquisition5s guarantee before first probe/try; this incremental patch corrects that boundary",
+  "compile": {
+    "variant": "popup-budget",
+    "compileExit": 0,
+    "inputs": 734,
+    "sourceSha256": "dbf997e02da2ef51c9303cf00f91293427465855e8212357027858ec10edfe2c",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 4
+  },
+  "auxiliaryDeadlineBoundary": {
+    "status": "passed",
+    "cases": 8,
+    "actualExtractedHelperSha256": "df32324e8f8e7d395d448747512f217f705012801f4fc9d13366ecef488ceb20",
+    "result": "passed=8 actual-extracted-helper auxiliary JVM boundary cases; native=0",
+    "kind": "Auxiliary JVM concurrency boundary, actual helper with Handler/Looper/clock stubs; not Android framework/native window or device evidence",
+    "compilerVersion": "2.4.21",
+    "compilerJarSha256": "ef19419c765e7ac8404465fa026ca8fc4dbb8a822de0fc79aa53c8dce29f1d02",
+    "scratchBytesRemoved": 20283,
+    "scratchRemoved": true,
+    "newNativeExecutions": 0
+  },
+  "nativeExecution": {
+    "status": "unexecuted",
+    "newApks": 0,
+    "newNativeExecutions": 0,
+    "actualOwnerSelectedMeasurement": "pending parent",
+    "actualWindowMissingOrMainBlockedBehavior": "not natively executed;8 JVM auxiliary cases only"
+  },
+  "sharedProductOrCentralFilesChanged": false,
+  "deviceHostModelMicrophoneProtectedEasyWorkActionsByLeaf": 0,
+  "centralRegistrationOwner": "parent",
+  "open": [
+    "Fresh matching source/App/runner exact native menu owner measurement",
+    "API26-28 diagnostic/native support unverified; this helper explicitly requires API29+",
+    "Preserved native/API/physical/AX/font/issuer/Desktop/TLS/model/DEV gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "github-sync:5", "lint"],
+    "stoppedAt": "mobile parity: existing missing/stale apps/android/localization/native-copy.json feature record",
+    "laterChecks": "not run",
+    "centralRegistrationOwner": "parent",
+    "evidenceRawSha256": "806d36a9800c621940016501cacdebef5c1136098c784fd6ef4cfd9e64c8b684"
+  },
+  "stageCleanup": {
+    "gradleCleanPassed": true,
+    "ownBuildCachesRemoved": true,
+    "auxiliaryJVMClassesRemoved": true,
+    "rawLogsAndBaseLosslesslyCompressedAndVerified": true,
+    "newApks": 0
+  }
+}

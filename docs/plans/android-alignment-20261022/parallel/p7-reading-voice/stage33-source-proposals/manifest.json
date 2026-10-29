@@ -1,0 +1,13 @@
+{
+  "parentSource45Sha256": "e0ae856d4adfe73f9787c4ec9c570f8523356bc310734fc297c54e60c30c5d7f",
+  "sharedFilesNotAppliedToEitherCheckout": true,
+  "files": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "baseSha256": "8a323e69d8436d6562a7b7ce66c8cc60efd50e6988523f3b4dd33f3d5fcca6fc",
+      "proposedSha256": "0cb42c2f49404110db31cf3684931ee5080f3ec27219de32d35e40f19780ed11",
+      "patch": "docs/plans/android-alignment-20261022/parallel/p7-reading-voice/stage33-source-proposals/VoiceInputView.kt.patch"
+    }
+  ],
+  "scope": "Exactly four fillMaxWidth additions: voice-status, saved-file-title, saved-file-privacy, saved-file-status. No font/spacing/text/overflow/owner/action changes."
+}

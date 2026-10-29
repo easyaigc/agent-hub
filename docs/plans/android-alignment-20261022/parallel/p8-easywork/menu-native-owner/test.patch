@@ -1,0 +1,132 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -358,7 +358,119 @@
+         }catch(failure: Throwable){evidence.put("phase","failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-started);flushProbes();throw failure}
+         finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalField?.let {@Suppress("DEPRECATION") it.recycle()};finalLabel?.let {@Suppress("DEPRECATION") it.recycle()}}
+     }
+-    private fun nativeTextAx(value: String,readonly: Boolean=false,selected: Boolean=false){
++    private fun preferencePopupView(): android.view.View {
++        var result: android.view.View?=null
++        androidx.test.espresso.Espresso.onView(androidx.test.espresso.matcher.ViewMatchers.isRoot()).inRoot(androidx.test.espresso.matcher.RootMatchers.withDecorView(androidx.test.espresso.matcher.ViewMatchers.withClassName(org.hamcrest.CoreMatchers.equalTo("androidx.compose.ui.window.PopupLayout")))).check {view,error->
++            if(error!=null)throw error;assertEquals(i.targetContext.packageName,view.context.packageName);assertSame(view,view.rootView)
++            assertEquals("androidx.compose.ui.window.PopupLayout",view.javaClass.name);assertEquals(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL,(view.layoutParams as android.view.WindowManager.LayoutParams).type);result=view
++        };return checkNotNull(result)
++    }
++    private fun popupGeometry(view: android.view.View): JSONObject {
++        val result=JSONObject();i.runOnMainSync {
++            val info=view.createAccessibilityNodeInfo();val id=info?.windowId?:-1;info?.let {@Suppress("DEPRECATION") it.recycle()}
++            val visible=android.graphics.Rect();view.getWindowVisibleDisplayFrame(visible);val origin=IntArray(2);view.getLocationOnScreen(origin)
++            result.put("windowId",id).put("class",view.javaClass.name).put("targetPackage",view.context.packageName==i.targetContext.packageName)
++                .put("type",(view.layoutParams as? android.view.WindowManager.LayoutParams)?.type?:-1).put("hasWindowFocus",view.hasWindowFocus()).put("shown",view.isShown)
++                .put("left",origin[0]).put("top",origin[1]).put("right",origin[0]+view.width).put("bottom",origin[1]+view.height)
++                .put("visibleFrame",JSONObject().put("left",visible.left).put("top",visible.top).put("right",visible.right).put("bottom",visible.bottom))
++        };return result
++    }
++    private fun preferenceComposeIdentity(value: String,tag: String): JSONObject {
++        val owner=ui.onNodeWithTag(tag,useUnmergedTree=true).fetchSemanticsNode();val paths=mutableListOf<List<Int>>();var count=0
++        fun walk(n: androidx.compose.ui.semantics.SemanticsNode,path: List<Int>){check(++count<=256);check(path.size<=16)
++            if(n.config.getOrNull(SemanticsProperties.Text)?.any {it.text==value}==true)paths.add(path)
++            for(child in n.children)walk(child,path+child.id)
++        };walk(owner,listOf(owner.id))
++        return nodeGeometry(tag).put("ownerId",owner.id).put("composeSelected",owner.config.getOrNull(SemanticsProperties.Selected)?:JSONObject.NULL)
++            .put("role",owner.config.getOrNull(SemanticsProperties.Role)?.toString()?:JSONObject.NULL).put("textMatchCount",paths.size)
++            .put("textPaths",JSONArray(paths.map {JSONArray(it)})).put("textHash",easyHash(value.toByteArray()))
++    }
++    private fun nativeSelectedMenuAx(value: String,tag: String){
++        val start=android.os.SystemClock.uptimeMillis();val deadline=start+5000;val automation=i.uiAutomation;val popup=preferencePopupView()
++        val evidence=JSONObject().put("kind","exact-selected-menu-before-guards").put("tag",tag).put("valueHash",easyHash(value.toByteArray())).put("totalBudgetMs",5000)
++            .put("initialPopup",popupGeometry(popup)).put("phase","root-readiness");saveProbe(evidence)
++        var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalOwner: android.view.accessibility.AccessibilityNodeInfo?=null;var finalText: android.view.accessibility.AccessibilityNodeInfo?=null
++        var ownerCount=0;var textCount=0;var textAssociated=false;var ownerTagMatches=false;var finalPopup: JSONObject?=null
++        val recent=mutableListOf<JSONObject>();var first: JSONObject?=null;var previous="";var sameSince=0L;var sameCount=0;var samples=0
++        val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag"
++        fun budget(){assertTrue("Selected menu shares original AX5s budget",android.os.SystemClock.uptimeMillis()<=deadline)}
++        fun owned(n: android.view.accessibility.AccessibilityNodeInfo,id: Int)=n.packageName?.toString()==i.targetContext.packageName&&n.windowId==id
++        try {
++            firstRoot=activeAppRoot(deadline);val remaining=deadline-android.os.SystemClock.uptimeMillis();assertTrue("Original menu AX5s remains",remaining>0)
++            ui.waitUntil(remaining){
++                val anchor=preferenceComposeIdentity(value,tag);val ownerId=anchor.getInt("ownerId");val paths=anchor.getJSONArray("textPaths")
++                val expectedPath=if(paths.length()==1)(0 until paths.getJSONArray(0).length()).map {paths.getJSONArray(0).getInt(it)}else emptyList()
++                val geometry=popupGeometry(popup);val windowId=geometry.getInt("windowId");val root=firstRoot?:automation.rootInActiveWindow;firstRoot=null
++                val owners=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();val texts=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>()
++                var ownerMatches=0;var textMatches=0;var visited=0;var idQueries=0;var fresh=true;var relation=false;var tagMatches=false
++                var candidate: android.view.accessibility.AccessibilityNodeInfo?=null;var candidateText: android.view.accessibility.AccessibilityNodeInfo?=null
++                val sample=JSONObject().put("compose",anchor).put("popup",geometry).put("rootPresent",root!=null)
++                fun id(n: android.view.accessibility.AccessibilityNodeInfo): Int? {
++                    budget();if(!owned(n,windowId)){fresh=false;return null}
++                    if(!n.availableExtraData.contains(idKey)){if(!n.refresh()||!owned(n,windowId))fresh=false;return null}
++                    idQueries++;val ok=n.refreshWithExtraData(idKey,android.os.Bundle());if(!ok||!owned(n,windowId)||!n.extras.containsKey(idKey)){fresh=false;return null};return n.extras.getInt(idKey)
++                }
++                try {
++                    val exactRoot=root!=null&&root.packageName?.toString()==i.targetContext.packageName&&root.refresh()&&windowId>=0&&owned(root,windowId)
++                    sample.put("exactPopupRoot",exactRoot)
++                    if(exactRoot){
++                        fun walk(n: android.view.accessibility.AccessibilityNodeInfo){budget();check(++visited<=2048);val nodeId=id(n)
++                            if(nodeId==ownerId){ownerMatches++;if(owners.size<2)owners.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n))}
++                            if(n.text?.toString()==value){textMatches++;if(texts.size<2)texts.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n))}
++                            for(k in 0 until n.childCount){budget();val c=n.getChild(k)?:continue;try{if(owned(c,windowId))walk(c)else fresh=false}finally{@Suppress("DEPRECATION") c.recycle()}}
++                        };walk(root!!);sample.put("root",axNodeFlags(root))
++                        val ownerDetails=JSONArray();for(n in owners){val before=axNodeFlags(n);val nativeId=id(n);ownerDetails.put(JSONObject().put("id",nativeId?:JSONObject.NULL).put("beforeRefresh",before).put("afterRefresh",axNodeFlags(n)))}
++                        val textDetails=JSONArray();for(n in texts){val nativeId=id(n);textDetails.put(JSONObject().put("id",nativeId?:JSONObject.NULL).put("flags",axNodeFlags(n)))}
++                        sample.put("ownerCount",ownerMatches).put("uniqueTextCount",textMatches).put("ownerDetails",ownerDetails).put("textDetails",textDetails)
++                        if(ownerMatches==1&&textMatches==1){
++                            val owner=owners.single();val text=texts.single();val nativeOwnerId=id(owner);val textId=id(text)
++                            if(owner.availableExtraData.contains(tagKey)){budget();val ok=owner.refreshWithExtraData(tagKey,android.os.Bundle());fresh=fresh&&ok;tagMatches=ok&&owner.extras.getCharSequence(tagKey)?.toString()==tag}
++                            val actualPath=mutableListOf<Int>();var cursor: android.view.accessibility.AccessibilityNodeInfo?=android.view.accessibility.AccessibilityNodeInfo.obtain(text);var terminalIsOwner=false
++                            try {for(k in expectedPath.indices.reversed()){
++                                val n=cursor?:break;val currentId=id(n);if(currentId!=null)actualPath.add(currentId)
++                                if(k==0){terminalIsOwner=n==owner;break}
++                                val parent=n.parent;@Suppress("DEPRECATION") n.recycle();cursor=parent
++                            }}finally {cursor?.let {@Suppress("DEPRECATION") it.recycle()}}
++                            relation=expectedPath.isNotEmpty()&&nativeOwnerId==ownerId&&textId==expectedPath.last()&&actualPath==expectedPath.reversed()&&terminalIsOwner
++                            sample.put("nativeTextToOwnerPath",JSONArray(actualPath)).put("terminalIsIndependentlySelectedOwner",terminalIsOwner).put("strictTextAssociation",relation)
++                                .put("nativeOwnerId",nativeOwnerId?:JSONObject.NULL).put("nativeTextId",textId?:JSONObject.NULL).put("ownerTagMatches",tagMatches)
++                                .put("selectedOwner",axNodeFlags(owner)).put("uniqueTextLeaf",axNodeFlags(text))
++                            candidate=android.view.accessibility.AccessibilityNodeInfo.obtain(owner);candidateText=android.view.accessibility.AccessibilityNodeInfo.obtain(text)
++                            fresh=fresh&&owned(owner,windowId)&&owned(text,windowId)&&text.text?.toString()==value&&tagMatches
++                        }
++                    }
++                    val after=preferenceComposeIdentity(value,tag);fresh=fresh&&after.toString()==anchor.toString();sample.put("composeAfter",after).put("visitedNodes",visited).put("idQueries",idQueries)
++                    val now=android.os.SystemClock.uptimeMillis();val signature=sample.toString();samples++;if(signature!=previous){previous=signature;sameSince=now;sameCount=1}else sameCount++
++                    if(first==null)first=JSONObject(sample.toString());recent.add(JSONObject(sample.toString()).put("sampleUptimeMs",now));if(recent.size>8)recent.removeAt(0)
++                    val stable=exactRoot&&fresh&&sameCount>=2&&now-sameSince>=100&&now<=deadline
++                    evidence.put("phase",if(stable)"before-native-owner-guards" else "popup-owner-diagnostic").put("firstSample",first).put("recentSamples",JSONArray(recent)).put("samples",samples)
++                        .put("remainingBudgetMs",deadline-now).put("stableForMs",now-sameSince).put("nativeSelectedNotAReadinessPredicate",true);flushProbes()
++                    if(stable){ownerCount=ownerMatches;textCount=textMatches;textAssociated=relation;ownerTagMatches=tagMatches;finalOwner=candidate;candidate=null;finalText=candidateText;candidateText=null;finalPopup=geometry}
++                    stable
++                }catch(failure: Throwable){evidence.put("interruptedSample",sample.put("visitedNodes",visited).put("idQueries",idQueries));flushProbes();throw failure}
++                finally {candidate?.let {@Suppress("DEPRECATION") it.recycle()};candidateText?.let {@Suppress("DEPRECATION") it.recycle()};owners.forEach {@Suppress("DEPRECATION") it.recycle()};texts.forEach {@Suppress("DEPRECATION") it.recycle()};root?.let {@Suppress("DEPRECATION") it.recycle()}}
++            }
++            assertEquals("Unique exact native menu owner",1,ownerCount);assertEquals("Original unique native menu text",1,textCount);assertTrue("Owner actual public tag matches",ownerTagMatches)
++            assertTrue("Text path strictly links to independently selected menu owner",textAssociated)
++            val owner=checkNotNull(finalOwner);val text=checkNotNull(finalText);val geometry=checkNotNull(finalPopup)
++            assertTrue("Original native text visible",text.isVisibleToUser)
++            val ownerBounds=android.graphics.Rect();owner.getBoundsInScreen(ownerBounds);val textBounds=android.graphics.Rect();text.getBoundsInScreen(textBounds);val frame=geometry.getJSONObject("visibleFrame")
++            val clip=android.graphics.Rect(maxOf(geometry.getInt("left"),frame.getInt("left")),maxOf(geometry.getInt("top"),frame.getInt("top")),minOf(geometry.getInt("right"),frame.getInt("right")),minOf(geometry.getInt("bottom"),frame.getInt("bottom")))
++            fun box(b: android.graphics.Rect)=JSONObject().put("left",b.left).put("top",b.top).put("right",b.right).put("bottom",b.bottom)
++            evidence.put("ownerBoundsScreen",box(ownerBounds)).put("textBoundsScreen",box(textBounds)).put("actualPopupClipScreen",box(clip));flushProbes()
++            assertTrue("Native menu owner selected",owner.isSelected);assertTrue("Native menu owner enabled",owner.isEnabled);assertTrue("Native menu owner clickable",owner.isClickable);assertTrue("Native menu owner visible",owner.isVisibleToUser)
++            assertTrue("Native owner exposes actual click action",owner.actionList.any {it.id==android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK})
++            fun whole(b: android.graphics.Rect)=b.width()>0&&b.height()>0&&b.left>=clip.left-1&&b.top>=clip.top-1&&b.right<=clip.right+1&&b.bottom<=clip.bottom+1
++            assertTrue("Whole native owner visible",whole(ownerBounds));assertTrue("Whole unique native text visible",whole(textBounds))
++            assertTrue("Text bounds inside exact owner",textBounds.left>=ownerBounds.left-1&&textBounds.top>=ownerBounds.top-1&&textBounds.right<=ownerBounds.right+1&&textBounds.bottom<=ownerBounds.bottom+1)
++            val n=ui.onNodeWithTag(tag).assertIsDisplayed();val b=n.fetchSemanticsNode().boundsInWindow;val raw=n.getUnclippedBoundsInRoot();val density=ui.density.density
++            assertTrue("Whole Compose menu owner visible",b.width>=(raw.right.value-raw.left.value)*density-1.5f&&b.height>=(raw.bottom.value-raw.top.value)*density-1.5f)
++            evidence.put("phase","native-selected-owner-and-text-all-guards-passed");flushProbes()
++        }catch(failure: Throwable){evidence.put("phase","failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes();throw failure}
++        finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalOwner?.let {@Suppress("DEPRECATION") it.recycle()};finalText?.let {@Suppress("DEPRECATION") it.recycle()}}
++    }
++    private fun nativeTextAx(value: String,readonly: Boolean=false,selected: Boolean=false,expectedMenuTag: String?=null){
++        if(selected){nativeSelectedMenuAx(value,requireNotNull(expectedMenuTag));return}
+         val root=activeAppRoot();val found=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();var count=0
+         fun walk(n: android.view.accessibility.AccessibilityNodeInfo){check(++count<=2048);if(n.text?.toString()==value)found.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n));for(k in 0 until n.childCount){val c=n.getChild(k)?:continue;try{walk(c)}finally{@Suppress("DEPRECATION") c.recycle()}}}
+         try{assertEquals(i.targetContext.packageName,root.packageName?.toString());walk(root);assertEquals(1,found.size);val n=found.single();assertTrue(n.isVisibleToUser);if(readonly){assertFalse(n.isEditable);assertFalse(n.isClickable)};if(selected){assertTrue(n.isSelected);assertTrue(n.isEnabled);assertTrue(n.isClickable)}
+@@ -371,7 +483,7 @@
+         val name=ui.onNodeWithTag("easywork-name").performScrollTo();name.assertContentDescriptionEquals(text.tr("名称"));name.performTextReplacement(raw)
+         name.assert(SemanticsMatcher("full editable UTF16 retained"){p8ExactInput(raw,it.config.getOrNull(SemanticsProperties.EditableText)?.text,it.config.getOrNull(SemanticsProperties.InputText)?.text)})
+         name.performImeAction();nativeFieldAx(text.tr("名称"),"easywork-name");ui.runOnIdle {assertEquals(raw,fixture.live().name)}
+-        touch("connection-preference");ui.onNodeWithTag("connection-preference-automatic").assertIsSelected();nativeTextAx(text.tr("自动"),selected=true);touch("connection-preference-relay-only")
++        touch("connection-preference");ui.onNodeWithTag("connection-preference-automatic").assertIsSelected();nativeTextAx(text.tr("自动"),selected=true,expectedMenuTag="connection-preference-automatic");touch("connection-preference-relay-only")
+         touch("connection-preference");ui.onNodeWithTag("connection-preference-relay-only").assertIsSelected();touch("connection-preference-relay-only")
+         ui.runOnIdle {fixture.session.connectionBusy=true};ui.onNodeWithTag("cancel-client-form").assertIsNotEnabled();ui.runOnIdle {fixture.session.connectionBusy=false}
+         capture("zh-light-renamed");runBlocking {fixture.store.awaitQueuedWrites()}

@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "status": "source-and-auxiliary-compilation-only",
+  "featureIds": ["F64"],
+  "package": "com.easyai.agenthub.android.acceptance",
+  "runnerPackage": "com.easyai.agenthub.android.acceptance.test",
+  "parentSource42Sha256": "0abb800077b072b945281bc2f35bea9368259d787113c5d94c60fac40b242bf6",
+  "arguments": {
+    "additionalProperties": false,
+    "required": ["panelUiLease", "panelUiProfile"],
+    "properties": {
+      "panelUiLease": {
+        "format": "canonical lowercase UUID"
+      },
+      "panelUiProfile": {
+        "enum": ["short", "landscape"]
+      }
+    }
+  },
+  "sdk": [26, 37],
+  "actualOsFontScale": 2,
+  "composedFontOverrideAllowed": false,
+  "selectors": [
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePanelUiTest#resourcesLanguagesAndCompleteTextRemainReachableAtActualOsFontTwo",
+      "profile": "short",
+      "locale": ["zh-Hans", "en"],
+      "themes": ["light", "dark"]
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePanelUiTest#downloadBusyControlsAndEndWaitingJoinSyntheticWorkerWithoutChangingOriginal",
+      "profile": "short",
+      "locale": ["zh-Hans", "en"],
+      "themes": ["light", "dark"]
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePanelUiTest#recognitionBusyControlsAndEndWaitingRejectLateSyntheticText",
+      "profile": "short",
+      "locale": ["zh-Hans", "en"],
+      "themes": ["light", "dark"]
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePanelUiTest#explicitLocalClosePreservesOriginalAndDraftWithoutHostOrMicrophone",
+      "profile": "short",
+      "locale": ["zh-Hans", "en"],
+      "themes": ["light", "dark"]
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePanelUiTest#landscapeLongOriginalAndStatusKeepEveryCharacterAndReachBothEnds",
+      "profile": "landscape",
+      "locale": ["zh-Hans", "en"],
+      "themes": ["light", "dark"]
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePanelUiTest#actualSuccessfulEngineReturnAfterOwnerInvalidationCannotStageOrFill",
+      "profile": "short",
+      "locale": ["zh-Hans", "en"],
+      "themes": ["light", "dark"],
+      "successfulEngineReturnRequired": true,
+      "forwardedSuccessfulReturnRequired": true
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePanelUiTest#actualSuccessfulEngineReturnAfterEndWaitingCannotStageOrFill",
+      "profile": "short",
+      "locale": ["zh-Hans", "en"],
+      "themes": ["light", "dark"],
+      "successfulEngineReturnRequired": true,
+      "forwardedSuccessfulReturnRequired": true
+    }
+  ],
+  "maximumComposedViewportDp": {
+    "short": [320, 420],
+    "landscape": [640, 240]
+  },
+  "measuredViewportRequired": true,
+  "singleSelectorPerInvocation": true,
+  "maxFixturesPerMethod": 4,
+  "maxEvidencePointsPerMethod": 24,
+  "evidenceDirectory": "files/acceptance/P7-saved-panel/<lease>/<method>/",
+  "noReplay": "existing method claim rejects; failed/unknown proof is preserved",
+  "actualProductionPanel": "VoiceInputStrip",
+  "theme": "NativeTheme shared production palette extraction; AgentHubApp uses nativeThemeColors",
+  "l10n": "NativeL10n existing parent resources unchanged",
+  "engine": "synthetic resource and cancellation gates; no JNI/acoustic pass",
+  "activity": "NativeSavedVoicePanelActivity; no MainActivity/Session startup",
+  "originalAssertions": [
+    "whole canonical DTO including complete target/account",
+    "exact raw original row including unknown receipt and attempt flags",
+    "every decrypted WAV byte",
+    "exact metadata/draft/version",
+    "RECORD_AUDIO unchanged",
+    "Host/microphone factory errors and zero calls"
+  ],
+  "resultSuccess": "COMPONENT_ASSERTIONS_PASSED_REAL_ENGINE_AND_FULL_DEV_SEPARATE",
+  "nativeUiRunsHere": 0,
+  "deviceActionsHere": 0,
+  "modelsDownloadedOrLoadedHere": 0,
+  "featuresClosed": [],
+  "a6AndTaskProjectBusiness": "paused",
+  "coverageCorrection": "The historical recognitionBusy...RejectLateSyntheticText selector proves cancellation/join/no result; its gate checkpoint throws before successful text return. Actual late-success return is covered only by the two independent new selectors.",
+  "stage44ParentNativeUiResult": {
+    "executed": 5,
+    "failed": 5,
+    "passed": 0,
+    "notReclassified": true
+  },
+  "fixtureCorrections": [
+    "Use actual draft.certificate; exact original restore and canInspect required",
+    "Last immutable action-before WAV assertion before zeroization; no second comparison against cleared baseline",
+    "Preserve primary/cleanup failures separately",
+    "Preserve overflow guard and record real layout before asserting"
+  ],
+  "fixedFixtureInputs": {
+    "originalHostRerecordAuthorized": false,
+    "localSavedFileRecognitionAuthorized": true,
+    "microphoneInvocationsAuthorized": false,
+    "expectedRerecordEnabled": false,
+    "expectationSource": "Independent immutable fixture input; not current controller/semantics state",
+    "reason": "Original sharing/Host rerecord is not authorized in this recovery fixture",
+    "landscapeAssertions": [
+      "button exists",
+      "full 48dp control is scroll-reachable and inside measured viewport",
+      "native AX disabled with full localized label",
+      "original/row/WAV/metadata/permission unchanged"
+    ],
+    "authorizedLiveRerecord": "pending separate authorized scenario"
+  },
+  "stage45ParentNativeUiResult": {
+    "executed": 7,
+    "passed": 3,
+    "failed": 4,
+    "shortApi26": {
+      "passed": 3,
+      "failed": 3
+    },
+    "landscapeApi37": {
+      "passed": 0,
+      "failed": 1
+    },
+    "sourceSha256": "e0ae856d4adfe73f9787c4ec9c570f8523356bc310734fc297c54e60c30c5d7f",
+    "oldClaimsPreserved": true,
+    "childRerun": false
+  }
+}

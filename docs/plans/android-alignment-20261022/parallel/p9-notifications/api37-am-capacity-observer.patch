@@ -1,0 +1,78 @@
+diff --git a/apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java b/apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java
+--- a/apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java
++++ b/apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java
+@@ -16,7 +16,6 @@
+ import java.util.*;
+ import java.util.concurrent.*;
+ import java.util.concurrent.atomic.AtomicBoolean;
+-import java.util.concurrent.atomic.AtomicInteger;
+ 
+ /** Separate-UID self instrumentation. Fixed read-only diagnostics, one SystemUI click and one owned
+  * draft edit. No target start/instrumentation, PendingIntent.send, force-stop, permission or post. */
+@@ -48,20 +47,24 @@
+             byte[] b=new byte[4096];int n;while((n=input.read(b))!=-1){check(out.size()+n<=262144,"diagnostic bound");out.write(b,0,n);}return out.toString("UTF-8");
+         }
+     }
+-    private byte[] diagnosticBytes(ParcelFileDescriptor fd,AtomicInteger total)throws Exception{
++    private volatile JSONObject psCapture,amCapture;
++    private JSONObject diagnosticCaptures()throws Exception{return new JSONObject().put("PS",psCapture==null?JSONObject.NULL:psCapture).put("AM",amCapture==null?JSONObject.NULL:amCapture);}
++    private byte[] diagnosticBytes(ParcelFileDescriptor fd,NaturalProcessVisibility.ReadBudget budget,boolean error)throws Exception{
+         try(InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd);ByteArrayOutputStream out=new ByteArrayOutputStream()){
+-            byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1){NaturalProcessVisibility.require(total.addAndGet(n)<=NaturalProcessVisibility.BUDGET,"combined diagnostic budget");out.write(b,0,n);}return out.toByteArray();
++            byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1){budget.read(error,n);out.write(b,0,n);}budget.eof(error);return out.toByteArray();
+         }
+     }
+     private NaturalProcessVisibility.Completed diagnostic(NaturalProcessVisibility.Diagnostic kind)throws Exception{
+         // Only fixed sh + stdin generated from the closed enum and a fresh canonical UUID.
+-        String nonce=UUID.randomUUID().toString();ParcelFileDescriptor[] io=getUiAutomation().executeShellCommandRwe("/system/bin/sh");
+-        AtomicInteger total=new AtomicInteger();ExecutorService drains=Executors.newFixedThreadPool(2);
++        String nonce=UUID.randomUUID().toString();ParcelFileDescriptor[] io=null;
++        NaturalProcessVisibility.ReadBudget budget=new NaturalProcessVisibility.ReadBudget(kind);boolean independentStderr=false,verified=false;ExecutorService drains=Executors.newFixedThreadPool(2);
+         CompletionService<Map.Entry<Boolean,byte[]>> completed=new ExecutorCompletionService<>(drains);
+         try{
++            io=getUiAutomation().executeShellCommandRwe("/system/bin/sh");final ParcelFileDescriptor[] streams=io;
+             check(io!=null && io.length==3 && io[0]!=null && io[1]!=null && io[2]!=null,"diagnostic stdout/stdin/stderr unavailable");
+-            completed.submit(()->new AbstractMap.SimpleImmutableEntry<>(false,diagnosticBytes(io[0],total)));
+-            completed.submit(()->new AbstractMap.SimpleImmutableEntry<>(true,diagnosticBytes(io[2],total)));
++            independentStderr=true;
++            completed.submit(()->new AbstractMap.SimpleImmutableEntry<>(false,diagnosticBytes(streams[0],budget,false)));
++            completed.submit(()->new AbstractMap.SimpleImmutableEntry<>(true,diagnosticBytes(streams[2],budget,true)));
+             try(OutputStream input=new ParcelFileDescriptor.AutoCloseOutputStream(io[1])){input.write(NaturalProcessVisibility.script(kind,nonce));}
+             byte[] stdout=null,stderr=null;
+             // Wait for whichever drain completes/fails first so an over-cap stderr cannot deadlock stdout.
+@@ -71,8 +74,15 @@
+                 try{value=completed.take().get();}catch(ExecutionException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;if(cause instanceof Error)throw (Error)cause;throw error;}
+                 if(value.getKey())stderr=value.getValue();else stdout=value.getValue();
+             }
+-            return NaturalProcessVisibility.complete(kind,nonce,checkNotNull(stdout),checkNotNull(stderr));
+-        }finally{if(io!=null)for(ParcelFileDescriptor fd:io)if(fd!=null)try{fd.close();}catch(Exception ignored){}drains.shutdownNow();}
++            NaturalProcessVisibility.ReadStats done=budget.stats();check(done.stdoutEof&&done.stderrEof&&done.stdout==checkNotNull(stdout).length&&done.stderr==checkNotNull(stderr).length,"both diagnostic EOF/counts required");
++            NaturalProcessVisibility.Completed capture=NaturalProcessVisibility.complete(kind,nonce,checkNotNull(stdout),checkNotNull(stderr));verified=true;return capture;
++        }finally{if(io!=null)for(ParcelFileDescriptor fd:io)if(fd!=null)try{fd.close();}catch(Exception ignored){}drains.shutdownNow();
++            NaturalProcessVisibility.ReadStats s=budget.stats();JSONObject record=new JSONObject().put("kind",kind.name()).put("commandNonce",nonce).put("capBytes",s.cap)
++                .put("stdoutBytesObserved",s.stdout).put("stderrBytesObserved",s.stderr).put("combinedBytesObserved",(long)s.stdout+s.stderr)
++                .put("stdoutEof",s.stdoutEof).put("stderrEof",s.stderrEof).put("byteCountsAreLowerBounds",!s.stdoutEof||!s.stderrEof)
++                .put("independentStderrAvailable",independentStderr).put("completionVerified",verified);
++            if(kind==NaturalProcessVisibility.Diagnostic.PS)psCapture=record;else amCapture=record;
++        }
+     }
+     private static byte[] checkNotNull(byte[] value){check(value!=null,"both diagnostic streams required");return value;}
+     private NaturalProcessVisibility.Ps processes()throws Exception{
+@@ -91,7 +101,7 @@
+     private JSONObject visibility()throws Exception{
+         return new JSONObject().put("version",1).put("currentSelfPidUidSeen",true).put("crossUidSystemServerPid",systemServerPid).put("systemServerUid",1000)
+             .put("selfInstrumentationComponent",SELF+"/"+getClass().getName()).put("selfInstrumentationOwnerVerified",true).put("psSha256",psHash).put("amSha256",amHash).put("completeReadAndStructure",true)
+-            .put("psCommandNonce",psCommandNonce).put("amCommandNonce",amCommandNonce).put("commandExitStatus",0).put("uniqueLastCompletionMarkers",true).put("stderrEmpty",true).put("amSectionBoundary",amSectionBoundary);
++            .put("psCommandNonce",psCommandNonce).put("amCommandNonce",amCommandNonce).put("commandExitStatus",0).put("uniqueLastCompletionMarkers",true).put("stderrEmpty",true).put("amSectionBoundary",amSectionBoundary).put("diagnosticCaptures",diagnosticCaptures());
+     }
+     private String apk(String name)throws Exception{
+         ApplicationInfo info=getTargetContext().getPackageManager().getApplicationInfo(name,0);check(info.splitSourceDirs==null||info.splitSourceDirs.length==0,"single frozen APK required");File file=new File(info.sourceDir);check(file.length()>0&&file.length()<=134217728,"bounded APK");
+@@ -186,7 +196,7 @@
+             editOwnedDraftOnce();JSONObject newer=targetProof("new-draft");check("new-draft-observed".equals(newer.getString("phase"))&&newer.getInt("pid")==first.getInt("pid")&&newer.getString("ticket").equals(first.getString("ticket"))&&newer.getString("draftHash").equals(sha(("Owned natural OS new draft "+lease).getBytes("UTF-8")))&&newer.getInt("commands")==0,"new owned draft retained");
+             check(custodyError==null&&targetPids().equals(newPids)&&noTargetInstrumentation(),"same independent consumer after edit");
+             result.put("status","passed").put("systemUiClicks",1).put("targetUidAbsentBefore",true).put("targetInstrumentationAbsent",true).put("newTargetPid",first.getInt("pid")).put("newTargetNonce",first.getString("nonce")).put("bootCount",first.getInt("bootCount")).put("clickElapsed",clickElapsed).put("defaultSelections",0).put("commands",0).put("originalTokenHeldNotSent",true).put("firstProofSha256",sha(first.toString().getBytes("UTF-8"))).put("newDraftProofSha256",sha(newer.toString().getBytes("UTF-8"))).put("writerPreviouslyVisible",writerVisible).put("visibility",visibility());
+-        }catch(Throwable error){try{result.put("status","failed").put("failureType",error.getClass().getName()).put("failureCode",error instanceof AssertionError || error instanceof NaturalProcessVisibility.Refused?String.valueOf(error.getMessage()):"external API failure").put("systemUiClickAccepted",clicked);}catch(Exception ignored){}}
++        }catch(Throwable error){try{result.put("status","failed").put("failureType",error.getClass().getName()).put("failureCode",error instanceof AssertionError || error instanceof NaturalProcessVisibility.Refused?String.valueOf(error.getMessage()):"external API failure").put("systemUiClickAccepted",clicked).put("diagnosticCaptures",diagnosticCaptures());}catch(Exception ignored){}}
+         finally{
+             stopping=true;
+             // Release each observer-owned resource independently, then attempt the original result write.

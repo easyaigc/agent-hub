@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "productionBehaviorChange": false,
+  "assertions": [
+    "A real destination can be observed stored before product acknowledgement or before applied",
+    "Composer/question share one terminated writer process with distinct owned namespaces",
+    "A different-PID existing-key-only inspector leaves all source ciphertext unchanged",
+    "Accepted text and an unmarked staged catalog are separate durable facts",
+    "Explicit saved-file actions cannot duplicate append or overwrite a newer draft",
+    "Whole original/default metadata/microphone proof and immutable intent/claims remain protected"
+  ],
+  "android": {
+    "source": "owned post-write process-window fixture and contract proposed",
+    "auxiliary": "separate compile receipt",
+    "native": "not run here; parent must actually terminate the held writer and execute both readers"
+  },
+  "ios": {
+    "changed": false,
+    "sourceComparison": "paused",
+    "newAcceptance": false
+  },
+  "design": {
+    "productUIChanged": false,
+    "visualProof": false
+  },
+  "centralManifests": "parent merges this case/assertion increment and records actual results separately",
+  "closedFeatures": [],
+  "paused": ["A6", "task/project business work"]
+}

@@ -39,3 +39,7 @@ P9-2/F53 声音后续见 [本地声音阶段](sounds.md)。上文保留 P9-1 的
 设置读取失败的独立检查点见 [设置恢复](settings-recovery.md)（`8b3af30d`）。P9-3 的前台注册、原事件批次、未知操作和异步声音设置见 [前台通知阶段](foreground.md) 与 [Host 契约缺口](foreground-contract.md)。分阶段哈希与证据分别保留；后续不倒填任何原生或真实 DEV 通过。
 
 P9 恢复 v2 设计检查点为 `4df98a64`，见[设计／契约](recovery-v2-design.md)；服务端当前源码、兼容／降级与辅助范围见[服务端阶段](recovery-v2-server.md)。Android v2 接线仍属于下一阶段，不以 Node 结果替代原生／真实 DEV。
+
+Source43 已观察到 flags0→server0x12 后的窄修复见 [API37 精确元数据](api37-flags18.md) 与[补丁索引](api37-flags18-hooks.json)。只为 API37 增加0x12，拒绝真实 FD／未知位／oneway，原五拒绝断言保留；下一新 source 的 full5、升级只读和自然原首点仍待父执行。
+
+Source45 observer ready 前真实容量失败的窄修复见 [AM 完整有界捕获](api37-am-capacity.md)：PS仍256KiB，AM明确1MiB，独立stderr／完整结束／正向见证与时间窗口保留。失败原attempt不重跑；新source／新lease的自然验收待父执行。

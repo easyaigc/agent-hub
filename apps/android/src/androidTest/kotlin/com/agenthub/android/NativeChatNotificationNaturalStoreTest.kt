@@ -123,12 +123,12 @@ class NativeChatNotificationNaturalStoreTest {
             override fun onServiceDisconnected(name: ComponentName) { remote.set(null) }
         }
         var lastRequest = JSONObject()
-        fun call(code: Int, descriptor: String = NativeNaturalStoreProbeService.DESCRIPTOR, extra: (Parcel)->Unit = {}): Triple<Int, String, String> {
+        fun call(code: Int, descriptor: String = NativeNaturalStoreProbeService.DESCRIPTOR, extra: (Parcel)->Unit = {}, callerFlags: Int = 0): Triple<Int, String, String> {
             val data = Parcel.obtain(); val reply = Parcel.obtain()
-            lastRequest = JSONObject().put("code", code).put("callerFlags", 0).put("descriptorSha256", NativeChatNotificationNaturalFiles.sha(descriptor.toByteArray()))
+            lastRequest = JSONObject().put("code", code).put("callerFlags", callerFlags).put("descriptorSha256", NativeChatNotificationNaturalFiles.sha(descriptor.toByteArray()))
             try { data.writeInterfaceToken(descriptor); extra(data)
                 lastRequest.put("requestBeforeTransact", NativeNaturalProbeDiagnostics.parcel(data))
-                val returned = checkNotNull(remote.get()).transact(code, data, reply, 0)
+                val returned = checkNotNull(remote.get()).transact(code, data, reply, callerFlags)
                 lastRequest.put("transactReturned", returned).put("replyBeforeReadException", NativeNaturalProbeDiagnostics.parcel(reply))
                 check(returned); reply.readException()
                 return Triple(reply.readInt(), checkNotNull(reply.readString()), checkNotNull(reply.readString()))
@@ -139,8 +139,8 @@ class NativeChatNotificationNaturalStoreTest {
         }
         val refusals = org.json.JSONArray(); val diagnostics = org.json.JSONArray()
         evidence.details = JSONObject().put("refusalDiagnosticsBeforeAssertions", diagnostics).put("originalFixtureInventory", JSONObject(before))
-        fun refused(kind: String, guard: String, code: Int = NativeNaturalStoreProbeService.HOLD, descriptor: String = NativeNaturalStoreProbeService.DESCRIPTOR, extra: (Parcel)->Unit = {}) {
-            val error = runCatching {call(code, descriptor, extra)}.exceptionOrNull()
+        fun refused(kind: String, guard: String, code: Int = NativeNaturalStoreProbeService.HOLD, descriptor: String = NativeNaturalStoreProbeService.DESCRIPTOR, extra: (Parcel)->Unit = {}, callerFlags: Int = 0) {
+            val error = runCatching {call(code, descriptor, extra, callerFlags)}.exceptionOrNull()
             // Persist the actual exception and original inventories BEFORE either existing assertion.
             val observation = NativeNaturalProbeDiagnostics.observation(kind, guard, code, error, lastRequest, before, runCatching { inventory(root) })
             diagnostics.put(observation)
@@ -159,6 +159,11 @@ class NativeChatNotificationNaturalStoreTest {
             refused("extra-byte", "PAYLOAD", extra = {it.writeByte(1.toByte())})
             refused("wrong-descriptor", "INTERFACE", descriptor = NativeNaturalStoreProbeService.DESCRIPTOR + ".wrong")
             refused("unknown-operation", "OPERATION", code = 4)
+            for(flags in listOf(0x100,0x40000000))refused("unknown-flags-$flags","FLAGS",callerFlags=flags)
+            val descriptorPipe=ParcelFileDescriptor.createPipe()
+            descriptorPipe[0].use { readEnd -> descriptorPipe[1].use {
+                refused("file-descriptor","FDS",extra={it.writeFileDescriptor(readEnd.fileDescriptor)})
+            } }
             val oneWayData = Parcel.obtain()
             val oneWayReturned = try {
                 oneWayData.writeInterfaceToken(NativeNaturalStoreProbeService.DESCRIPTOR)

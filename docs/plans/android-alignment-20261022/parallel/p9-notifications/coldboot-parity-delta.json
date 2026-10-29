@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-source46-newboot-explicit-proof-contract-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "Original credentials and submitted input remain immutable",
+    "An unknown old operation is sealed, never replayed",
+    "Complete default bytes and original authenticated record remain unchanged",
+    "Exact target and explicit observed boot, no arbitrary-boot admission"
+  ],
+  "android": {
+    "implemented": "Two additive androidTest proposal files and offline closed-schema intent builder",
+    "actualCommonFilesModified": [],
+    "parentAdopted": false,
+    "auxiliary": "35 new plan /14 old plan /149 actual decoder JVM checks; Source46 test APK compiled",
+    "nativeHere": "Not executed; original target current-boot read-only inputs and parent independent pre/post verification required",
+    "productWrites": 0,
+    "keystore": "Existing alias only; authenticate exact original v3 ciphertext, no key generation",
+    "originalFiveHooksChanged": false,
+    "eightRefusalsChanged": false,
+    "fullP9": "Open; producer/observer require fresh current-boot lease and attempt"
+  },
+  "ios": {
+    "sourceChanges": [],
+    "impact": "Android acceptance-only contract; no production behavior change",
+    "acceptance": "No new result; A6 paused"
+  },
+  "ui": {
+    "tokensAndCopy": "Unchanged",
+    "systemDifference": "Android kernel-boot proof remains parent external observation, not native attestation"
+  },
+  "parentLedgersToReconcileAfterReview": [
+    "docs/product/mobile-parity.md",
+    "docs/design/mobile-parity.md",
+    "docs/acceptance/mobile-parity.md"
+  ],
+  "evidence": "coldboot-readonly.md",
+  "index": "coldboot-hooks.json"
+}

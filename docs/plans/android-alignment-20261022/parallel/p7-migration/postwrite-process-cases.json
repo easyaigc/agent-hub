@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "parentOperation": "parent-p7-postwrite-reader-expectation-review-fix-20261029-1",
+  "baseOwnedCommit": "a89197d11723afcf82ba969d37d97828b1797279",
+  "requiredSessionSha256": "f4b2a1352321b7700268418a634ba04b0f9e269b6f131994ebfa781f34f6840d",
+  "requiredStorageSha256": "306e0bb9d918ef923462c22a685be7c89edc0ff1f89b0c518f3dc092f32e1fd4",
+  "productionChanges": 0,
+  "oldThreeFixtureFilesChanged": false,
+  "sourceFiles": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePostWriteColdTest.kt",
+      "baseSha256": null,
+      "proposedSha256": "60a9cf43738a80e8eb35e27b7876d8221d25197752d10caae2bcb45a86626236"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePostWriteProtocol.kt",
+      "baseSha256": null,
+      "proposedSha256": "2f25130a482d199523afd07090e86df830ac58f1d7e0805c8cd4dda63c332897"
+    }
+  ],
+  "cases": [
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePostWriteColdTest#holdBothActualDestinationsAfterWriteUntilParentTerminatesThisPid",
+      "role": "held-writer",
+      "coordinatorRequired": true,
+      "autoRun": false,
+      "expectedTerminalMethods": 0,
+      "expectedNormalSuccess": false,
+      "nativeStatus": "not-run",
+      "differentPidFromWriter": false
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePostWriteColdTest#inspectSamePostWriteDataUnderDifferentPidWithoutChangingAnySourceRecord",
+      "role": "read-only-inspector",
+      "coordinatorRequired": true,
+      "autoRun": false,
+      "expectedTerminalMethods": 1,
+      "expectedNormalSuccess": true,
+      "nativeStatus": "not-run",
+      "differentPidFromWriter": true
+    },
+    {
+      "selector": "com.agenthub.android.NativeSavedVoicePostWriteColdTest#explicitRecoveryKeepsAlreadyWrittenTextAndNeverAppendsIntoANewerDraft",
+      "role": "explicit-recovery",
+      "coordinatorRequired": true,
+      "autoRun": false,
+      "expectedTerminalMethods": 1,
+      "expectedNormalSuccess": true,
+      "nativeStatus": "not-run",
+      "differentPidFromWriter": true
+    }
+  ],
+  "targetPackage": "com.easyai.agenthub.android.acceptance",
+  "runner": "com.easyai.agenthub.android.acceptance.test/androidx.test.runner.AndroidJUnitRunner",
+  "arguments": {
+    "savedVoicePostWriteRun": "fresh canonical UUID, identical for all3 selectors",
+    "savedVoicePostWriteBoundary": "1 default;2 product readback;3 actual publication before catalog terminal",
+    "ownerCallbacksRun": "unique parent evidence group"
+  },
+  "runProofPath": "files/acceptance/saved-voice-postwrite-<UUID>/",
+  "gateBudgetMs": 120000,
+  "parentKillWithinReadyMs": 20000,
+  "maximumHeartbeatAgeMs": 3000,
+  "oneWriterProcessForBothOwners": true,
+  "oneTerminationPerFreshRun": true,
+  "sameNamespaceKeyOriginalAndActionRequired": true,
+  "claimPolicy": "Existing intent/run/claim rejects blind replay. Reconcile unknown outcome first.",
+  "limits": {
+    "nativeExecutedHere": 0,
+    "processTerminatedHere": 0,
+    "realEngineOrAcoustic": 0,
+    "HostOrMicrophone": 0,
+    "naturalKillClaim": false
+  },
+  "acceptance": "postwrite-process-window.md",
+  "requiredNativeResults": "parent records writer armed+actual termination separately; inspector and continuation need normal native success under different writer PID",
+  "reviewFixBaseCommit": "01c056221abc981b22d4ded762097ad6c354b0b2"
+}

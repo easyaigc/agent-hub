@@ -14,7 +14,7 @@ internal object NativeRealFileAsrContract {
     const val PACKAGE="com.easyai.agenthub.android.acceptance"
     const val DIRECTORY="acceptance/P7-real-file-asr"
     const val MODEL_MANIFEST_SHA256="70003a068c5ebc69e7babc77e5c3009a36ec4bd0e68714d0e37d96e6c9e92f42"
-    val cases=setOf("probe-empty","cancel-download","install","decode","cancel-model","cancel-feed","corrupt","release-cache")
+    val cases=setOf("probe-empty","cancel-download","install","decode","cancel-model","cancel-feed","corrupt","release-cache","install-trace")
     data class Input(val lease: String,val locale: String,val audioSha256: String)
     fun parse(values: Map<String,String?>): Input {
         require(values.keys==setOf("fileAsrLease","fileAsrLocale","fileAsrAudioSha256"))

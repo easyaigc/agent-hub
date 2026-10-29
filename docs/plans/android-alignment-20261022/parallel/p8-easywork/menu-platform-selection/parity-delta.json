@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-source46-exact-menu-owner-platform-state-20261029-1",
+  "testOverlay": {
+    "version": 1,
+    "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+    "baseSource": "Source46",
+    "baseCommit": "27af3eac527b11f35b0bf032c922b1fbbc02a291",
+    "baseSha256": "96c4cb13ef2d6c1bad649d80508d34aefb5ce463eadeb7aba0e4e4a39542cb7c",
+    "proposedSha256": "419a593b11a51947cdeaaa3079c5545bbb43ed9ed2ed54c4d656e2d4c039b69d",
+    "patchSha256": "3d4608d561c7cf738c2d4493456e650669228841969b0a45a3e81e1aacd354dd",
+    "protectedSectionsSha256": {
+      "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+      "nativeFieldAx": "ccd74db4422687d258e4f46ef129812195f469024d60b09cbcdc5c99e2539fa1",
+      "popupBudgetAndGeometry": "3f28536379e8e044e3d9af2656b309071169a81633bf338debe0c0a3ee3e38a6",
+      "nativeTextAx": "b855dc0a500c86284ba3805adf2d804724794bdf2bcd80b59578365ae95b4b9f",
+      "allFourTestBodies": "b929d96e07435b41ef1e91ab8058ef29fa0a6f29d092cf6a4ebad0a15f108cc2",
+      "entireBaseAfterReversingOnlyDeclaredChanges": "96c4cb13ef2d6c1bad649d80508d34aefb5ce463eadeb7aba0e4e4a39542cb7c"
+    },
+    "changes": [
+      "Record actual native isCheckable on owner and text, plus actual Compose Role/Selected/ToggleableState key presence and values before guards",
+      "Retain final independent owner anchor from stable observation; record complete profile/raw native state before checking",
+      "Replace incorrect universal owner.isSelected oracle with version-locked exact known preference role-null/no-toggle/Selected profile; require actual View class, checkable=true, checked=expected, raw selected=false and independent expected Compose state",
+      "Keep all exact Popup/window/owner ID/tag/unique text/strict path, native enabled/visible/clickable/Click/full owner/text/Compose bounds and original5s deadline; no new native calls or bodies",
+      "Pure oracle accepts explicit selected/unselected expectations;29 independent JVM vectors and6 gate-removal counterexamples; not a broad checked fallback"
+    ],
+    "newBudgetsMs": 0,
+    "productSourceChanged": false,
+    "newNativeExecutions": 0
+  },
+  "source46": {
+    "sourceSha256": "ba98948f6e92b68c3327258f1a777c52895a80c0f96f147f3e454ae5c4db92c6",
+    "appSha256": "7ca545d92b88b0e0dcfc2df7eeb637ed51830ce9875bed06b86c0cc1e4826449",
+    "runnerSha256": "10fc45543ea0ecdd40ff775b5dc6c37feb79274524ecf8af1c0ccd16e6bfe300",
+    "inputs": 743
+  },
+  "originalNativeEvidence": {
+    "source46": {
+      "sourceSha256": "ba98948f6e92b68c3327258f1a777c52895a80c0f96f147f3e454ae5c4db92c6",
+      "appSha256": "7ca545d92b88b0e0dcfc2df7eeb637ed51830ce9875bed06b86c0cc1e4826449",
+      "runnerSha256": "10fc45543ea0ecdd40ff775b5dc6c37feb79274524ecf8af1c0ccd16e6bfe300",
+      "inputs": 743
+    },
+    "exactCaseCount": 1,
+    "junitResult": "failed",
+    "failureClass": "java.lang.AssertionError",
+    "resultMemberSha256": "e1eb6e0b22f3271234a6598b84af5ebb2f0a0478d58b7a55dab108f03e13a80d",
+    "measurementsMemberSha256": "6c982a590942c6d751ae3a71b427cc23e0af6d76b708a402b2b04dbcae216714",
+    "sdk": 37,
+    "osFontScale": 1,
+    "popupWindowId": 23,
+    "popupType": 1002,
+    "ownerId": 209,
+    "textId": 211,
+    "strictPath": [211, 209],
+    "role": null,
+    "composeSelected": true,
+    "nativeSelected": false,
+    "nativeChecked": true,
+    "nativeCheckable": "not recorded; unknown, not inferred",
+    "nativeClass": "android.view.View",
+    "nativeEnabled": true,
+    "nativeVisible": true,
+    "nativeClickable": true,
+    "nativeActionIds": [1, 16, 64],
+    "allBoundsInsideActualClipByNumericReview": true,
+    "postSelectedHardGuards": "not executed after original selected failure",
+    "elapsedMs": 315,
+    "oldFailurePreserved": true,
+    "newLeafNativeExecutions": 0
+  },
+  "compile": {
+    "variant": "platform-selection",
+    "compileExit": 0,
+    "inputs": 743,
+    "sourceSha256": "c42c8fdea2dd29dcd5a41b6a54db064eda74e581dbca01b7d5d3316df649dd0c",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 4
+  },
+  "auxiliarySelectionVectors": {
+    "status": "passed",
+    "vectors": 29,
+    "acceptedProfiles": 6,
+    "negativeVectors": 23,
+    "mutationControlsRejected": 6,
+    "actualPureHelperSha256": "0f94fb4fe0309e8689f2572e101d7bd9c91ce73010913f274f9832a6b26fba18",
+    "result": "mutant0 mismatches=3\nmutant1 mismatches=6\nmutant2 mismatches=1\nmutant3 mismatches=2\nmutant4 mismatches=3\nmutant5 mismatches=2\npassed=29; mutantsRejected=6; native=0",
+    "kind": "Actual extracted test oracle JVM vectors/counterexamples; no Android AX/native or iOS execution",
+    "newNativeExecutions": 0,
+    "scratchBytesRemoved": 28633,
+    "scratchRemoved": true
+  },
+  "initialAuxiliaryFailure": "Standalone compiler initially lacked annotations on execution classpath; corrected without changing oracle; production743 compile passed independently",
+  "commonSelectedAssertion": "The exact current native menu-option owner must expose the expected selected/unselected choice under its truthful platform/control role, match saved/bound preference and unique label, stay enabled/actionable/full visible; unrelated checked or role-spoofed controls cannot substitute",
+  "nativeExecution": {
+    "status": "unexecuted for proposed source",
+    "newApks": 0,
+    "newNativeExecutions": 0,
+    "actualCheckableAndRoleToggleMetadata": "pending next parent native run",
+    "source46OldFailure": "retained; not converted to pass",
+    "api26WindowInspector": "pending unsupported by this diagnostic; no skip counted as pass",
+    "iosNativeMenuOwner": "pending; no iOS source or native run"
+  },
+  "sharedProductOrCentralFilesChanged": false,
+  "deviceHostModelMicrophoneProtectedEasyWorkActionsByLeaf": 0,
+  "centralRegistrationOwner": "parent",
+  "open": [
+    "Fresh matching source/App/runner complete exact owner checkable/profile/native state",
+    "Existing enabled/clickable/action/full-bounds and saved preference behavior must actually reach/pass after corrected oracle",
+    "Native unselected counterpart/choice exclusivity and iOS menu option mapping; auxiliary vectors do not close either",
+    "API26 diagnostic/native support plus full physical/AX/font/issuer/Desktop/TLS/model/DEV matrix"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S14", "S18"],
+  "dualPlatformImpact": {
+    "android": "Test-only exact role-aware platform selection oracle and complete native diagnostics; product semantics unchanged",
+    "ios": "Compare existing native Picker binding and public selected traits; actual native menu option mapping unverified, no source change or pass"
+  },
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "github-sync:5", "lint"],
+    "stoppedAt": "mobile parity: existing missing/stale apps/android/localization/native-copy.json feature record",
+    "laterChecks": "not run",
+    "centralRegistrationOwner": "parent",
+    "evidenceRawSha256": "3a3ecda834d9f23e9221748ffc9161024b7dfe6127f85ec5b8a2156b05e45574"
+  },
+  "stageCleanup": {
+    "gradleCleanPassed": true,
+    "ownBuildCachesRemoved": true,
+    "auxiliaryJVMClassesAndInspectionJarRemoved": true,
+    "rawLogsBaseAndExcerptsLosslesslyCompressedAndVerified": true,
+    "newApks": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+  "baseSource": "Source46",
+  "baseCommit": "27af3eac527b11f35b0bf032c922b1fbbc02a291",
+  "baseSha256": "96c4cb13ef2d6c1bad649d80508d34aefb5ce463eadeb7aba0e4e4a39542cb7c",
+  "proposedSha256": "419a593b11a51947cdeaaa3079c5545bbb43ed9ed2ed54c4d656e2d4c039b69d",
+  "patchSha256": "3d4608d561c7cf738c2d4493456e650669228841969b0a45a3e81e1aacd354dd",
+  "protectedSectionsSha256": {
+    "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+    "nativeFieldAx": "ccd74db4422687d258e4f46ef129812195f469024d60b09cbcdc5c99e2539fa1",
+    "popupBudgetAndGeometry": "3f28536379e8e044e3d9af2656b309071169a81633bf338debe0c0a3ee3e38a6",
+    "nativeTextAx": "b855dc0a500c86284ba3805adf2d804724794bdf2bcd80b59578365ae95b4b9f",
+    "allFourTestBodies": "b929d96e07435b41ef1e91ab8058ef29fa0a6f29d092cf6a4ebad0a15f108cc2",
+    "entireBaseAfterReversingOnlyDeclaredChanges": "96c4cb13ef2d6c1bad649d80508d34aefb5ce463eadeb7aba0e4e4a39542cb7c"
+  },
+  "changes": [
+    "Record actual native isCheckable on owner and text, plus actual Compose Role/Selected/ToggleableState key presence and values before guards",
+    "Retain final independent owner anchor from stable observation; record complete profile/raw native state before checking",
+    "Replace incorrect universal owner.isSelected oracle with version-locked exact known preference role-null/no-toggle/Selected profile; require actual View class, checkable=true, checked=expected, raw selected=false and independent expected Compose state",
+    "Keep all exact Popup/window/owner ID/tag/unique text/strict path, native enabled/visible/clickable/Click/full owner/text/Compose bounds and original5s deadline; no new native calls or bodies",
+    "Pure oracle accepts explicit selected/unselected expectations;29 independent JVM vectors and6 gate-removal counterexamples; not a broad checked fallback"
+  ],
+  "newBudgetsMs": 0,
+  "productSourceChanged": false,
+  "newNativeExecutions": 0
+}

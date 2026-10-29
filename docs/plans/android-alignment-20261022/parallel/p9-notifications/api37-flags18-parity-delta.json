@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-api37-observed-flags18-narrow-fix-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "Only observed closed transport metadata is admitted; application payload and FD remain rejected",
+    "Original failures and immutable receipts are not relabelled or replayed",
+    "Current executable identity and original data identity remain separately joined"
+  ],
+  "android": {
+    "implemented": "Source proposal: exact API37 incoming flags0x12 addition, explicit FD refusal, preserved original five guards plus three new native refusal cases",
+    "adopted": false,
+    "actualCommonFilesModified": [],
+    "parentObserved": "Source43 flags18 on flags0 synchronous extra-int; rejected at FLAGS before payload; original fixture unchanged",
+    "parentReportedUpgrade": "Source43 read-only upgrade1/1 passed; not this new source fingerprint",
+    "nativeHere": "Not run",
+    "api26": "Existing flags0/16 retained",
+    "otherApis": "New0x12 remains unimplemented outside API37; no inferred broader native proof",
+    "auxiliary": "983190 host JVM metadata decisions; native refusal/FD/process checks compile only",
+    "productUiChanged": false,
+    "fullP9": "Open"
+  },
+  "ios": {
+    "sourceChanges": [],
+    "impact": "Android debug acceptance only",
+    "acceptance": "No new result; A6 paused"
+  },
+  "ui": {
+    "tokensAndCopy": "Unchanged",
+    "systemDifference": "Android Binder transport metadata only"
+  },
+  "parentLedgersToReconcileAfterReview": [
+    "docs/product/mobile-parity.md",
+    "docs/design/mobile-parity.md",
+    "docs/acceptance/mobile-parity.md"
+  ],
+  "evidence": "api37-flags18.md",
+  "index": "api37-flags18-hooks.json"
+}

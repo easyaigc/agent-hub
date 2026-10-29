@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-source46-newboot-explicit-proof-contract-20261029-1",
+  "taskId": "android-parallel-p9-notifications-20261028",
+  "scope": "Independent exact-current-coldboot read-only acceptance proposal; no device operation",
+  "baseSource46ExpandedSha256": "95223338e9b00a9109f18cdf1b6c5975312edaa6ffa6dbf6a20f6dfa7da6b03d",
+  "patches": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeBootstrapCiphertextProof.kt": {
+      "baseState": "absent",
+      "baseSha256": null,
+      "proposedSha256": "ac6d66e161104c90e26b88ee1fcf355c7179d63512fbc40f09150067d8a1f230",
+      "fixture": "scripts/mobile/fixtures/native/coldboot/NativeBootstrapCiphertextProof.kt",
+      "path": "coldboot-cipher.patch",
+      "patchSha256": "622260d02c065fb00caa97260c38ad60cd81508868370a6303e54868e3cf113b"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapColdBootReadOnlyTest.kt": {
+      "baseState": "absent",
+      "baseSha256": null,
+      "proposedSha256": "1e8c28e097e6a481b77a974172e7364a50db1f249f2a383a2939ab49b2e00403",
+      "fixture": "scripts/mobile/fixtures/native/coldboot/NativeNaturalBootstrapColdBootReadOnlyTest.kt",
+      "path": "coldboot-selector.patch",
+      "patchSha256": "28c50a82eef5687b6088fd5a3ebf0dae54a725f4a57ff70f75196b2f884bb639"
+    }
+  },
+  "unchangedSameBootSha256": {
+    "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalBootstrapUpgradeReadOnlyTest.kt": "e5a9212c5ae3198e48dca408e9c6359a009acb163e1a57db3e7bb57552951fc3",
+    "scripts/mobile/fixtures/native/binder-diagnostics/prepare-upgrade-plan.py": "46ce2f5e9147c4f4cd17d6a27966c03302c4e0fe7d9a51d03c92a8e4f15496e5",
+    "scripts/mobile/fixtures/native/binder-diagnostics/upgrade-plan-vectors.py": "2676bb935d28ddffc72bbb0dfac5df87a92f9650814ab6d7e9886710332d28e8"
+  },
+  "originalStorageFormat": {
+    "source42Sha256": "306e0bb9d918ef923462c22a685be7c89edc0ff1f89b0c518f3dc092f32e1fd4",
+    "formatVersion": 3,
+    "scope": "fixed synthetic bootstrap record only"
+  },
+  "selector": "com.agenthub.android.NativeNaturalBootstrapColdBootReadOnlyTest#restoreOriginalBootstrapOnExplicitCurrentBootReadOnly",
+  "arguments": ["p9BootstrapColdBootPlanBase64", "p9BootstrapColdBootPlanSha256"],
+  "planBuilder": "scripts/mobile/fixtures/native/coldboot/prepare-coldboot-plan.py",
+  "auxiliary": {
+    "planVectors": 35,
+    "sameBootRegressionVectors": 14,
+    "actualDecoderJvmChecks": 149,
+    "androidTestApkCompile": "Source46 frozen copy +2 additive test-only sources; 65 tasks, no device",
+    "nativeExecuted": false
+  },
+  "kernelBootProof": "Parent independent exact-current pre/post proof mandatory; native checks BOOT_COUNT only",
+  "originalFiveHooksChanged": false,
+  "eightRefusalCasesChanged": false,
+  "timeoutsChanged": false,
+  "businessTaskProjectA6": "paused",
+  "contract": "coldboot-readonly.md",
+  "parityDelta": "coldboot-parity-delta.json"
+}

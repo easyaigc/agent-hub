@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference
 /** Separate failure-only budget. Every failure is diagnostic data, never a replacement assertion.
  * PixelCopy always receives this exact Activity's Window; no display/global screenshot API. */
 internal class NativeSavedVoicePanelFailureFrame(private val activity: NativeSavedVoicePanelActivity,private val folder: File) {
-    enum class Reason(val fileValue: String) { BUTTON_OVERFLOW("button-overflow"),AX_OWNER_LABEL("ax-owner-label") }
+    enum class Reason(val fileValue: String) { BUTTON_OVERFLOW("button-overflow"),AX_OWNER_LABEL("ax-owner-label"),AX_DIAGNOSTIC_INCOMPLETE("ax-diagnostic-incomplete") }
     private var attempts=0;private var captured=0;private var failures=0;private var omitted=0
     private var encodedBytes=0L
     private val pendingBitmaps=AtomicInteger()

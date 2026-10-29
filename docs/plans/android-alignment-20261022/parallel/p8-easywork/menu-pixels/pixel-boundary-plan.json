@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "cases": 42,
+  "deliveryRaceRounds": 500,
+  "actualExtractedPixelHelpersSha256": "1f93c00fc7defb1fcf11db1112cf3e545bad92c6a23dccefcda74c2373a80527",
+  "result": "passed=42; deliveryRaceRounds=500; nativePixels=0",
+  "kind": "Actual pure pixel budget/PNG output/late-delivery ownership JVM checks; no Android framework/Bitmap/native pixel execution",
+  "scratchBytesRemoved": 32532,
+  "scratchRemoved": true,
+  "newNativeExecutions": 0,
+  "newImages": 0
+}

@@ -522,3 +522,35 @@ API37 640×240dp 实际横屏为已知 JUnit -2/overall-1/exit0，停在 en/ligh
 本审计0设备调用、0测试/构建/新截图、0生产源码修改。实际看过两个原PNG副本后已回收151341B；四个重复JSON读回对象无损压缩净回收895705B。原归档、不可变配置/操作回执与最小审计脚本/报告保留。Source49状态仍partial；实机授权重录、声学/JNI/网络、主界面/Host/原owner/fullDEV及完整iOS对齐各自待验。任务与项目管理继续暂缓，未知操作不重放。
 
 PR61最终组合head23897239的CI10725 workspace26186/ios26187均success后，由实际运行设置已核的Terra/medium执行方单次合入main4eb25b18；Root独立API读回与本地origin/main/祖先核对一致。准确lease清远端stage10、W同HEAD detach后本地-d；固定W目录因应用primary/pin限制保留，临时formatter依赖链接已释放，Root语音stage11未提交数据保留。前置36288995本机完整build/check实际exit0、源码无漂移；当前组合头另核一致性与CI，不能把旧完整检查当成最新head的本机重跑。
+
+### Source50：短窗原断言重验与横屏启动前失败
+
+Source50 原 UI7 本次实际7个唯一 JUnit：API26短窗6通过，API37横屏1个正常setup失败，0未知。每个成功方法都核了 method0、唯一OK(1 test)、overall-1及原ADB exit0；横屏为 method-2、FAILURES!!!、overall-1、ADB exit0。只读补证增加0 JUnit，不把场景点/主题配置另加为测试次数。
+
+绑定候选 canonical `c4d6849367…` 750 inputs、expanded `fd3cfd81ee…` 759；App `eb862dd5…` 与49逐字节一致，runner `8cdfd3be…` 新，examiner `4cfccbb5…` 仅构建产物且设备known absent。frozen config `13325df591…`、candidate `f06e79a269…`、identity `4b769e36aa…`、4driver SHA及原APK已只读重新绑定，复用相同原件的已审构建/ZIP/v2证明，不新跑SDK。Source50无Android/iOS生产源码新增delta，不含新main F73；不引用新main或别平台作为本候选证明。
+
+短窗6方法覆盖中文/英文×浅色/深色、实际OS/render font2和320×420dp：资源四状态与语言、下载/识别忙碌、关闭、原owner失效及结束等待后的synthetic-engine成功返回均保留原断言。独立读回44场景点、24份原canonical DTO/原持久行/metadata及原3244B WAV的native全字节保持回执；音频实际为加密binary原文件，绑定manifest/文件全摘要/native比较回执，不声称审计另行解密。40份AX全部complete且exactOwnerCountRequired=exactOwnerCount=1，nullChildReads/budgetReadMisses均0、incompleteReasons为空，同包同window的真实owner/children/ancestors逐项核对，资源释放错误0、flags恢复。104份布局诊断全部complete，root quiet50ms/global600ms仍在原root1000ms预算内，未放宽原断言。
+
+横屏失败在 setup:91 `Parent must provide the declared actual OS orientation`，尚未进入body，源码创建lease/case目录在该require之后。随后原find对未创建namespace输出错误正文而无NUL，collector AssertionError；原summary `proofCollectionComplete=false`、`protectionEqualityPassed=false`与原phaseError一字不改，不能改判通过。独立fixed read-only collector实际0 native/安装/settings/signals，用祖先和目标symlink/existence/read/execute guard读回 `ABSENT\0`，确认未创建原namespace。当前free rotation、font1、global port和其他当前窗口观测仅代表补证时刻，不能据此归因原setup。Source49旧横屏完整AX/body问题没有被这次setup失败复测。
+
+独立审计259条原命令回执、8份完整快照，实际重连UID/boot/APK/full microphone permission及flags/AppOps/optional examiner完整包清单见证、whole default family tar与内容。API26为1个空目录，API37为11个空目录，均0常规文件，不说成非空用户数据证明。原after-install/after-native-terminal和新只读前后快照逐完整字段独立比较相等，但此项独立证明不覆盖原summary的false。原font/rotation恢复读回、known native终态和实际released回执保留。
+
+短窗原tar `1bca1dbea901…`/4697600B/475成员，全部内容SHA、UID、前后member清单、双零终块及44张PNG CRC/解压结构核对通过。没有逐张查看PNG，不能写成44张视觉通过；没有新截图或整屏采集，横屏setup没有body像素原件。P8两方法及新menu pixel parser单独档案，尚不计入这份UI7验收。真实声学/JNI/网络、授权重录、MainActivity/Host/原owner/fullDEV和完整iOS对齐仍单列；任务与项目管理暂缓，未知操作不重放。
+
+本审计0设备/测试/vector/helper/prepare/build/SDK、0R改动；未产生源码/APK/PNG副本，3份重复读回索引在写出时无损压缩并读回，最小审计材料保留，原证据未改。Source50 UI7状态partial，继续修实际Activity方向并以新lease验收横屏body。
+
+### Source50：P8 两组真实Popup四态像素
+
+Source50 P8 本次实际2个唯一JUnit均通过，两个scenario对应同样两个case，不加成4个JUnit。中文浅色、英文暗色分别在API37实际OS/render font1、portrait执行；每个原stdout都有准确class/method、method0、唯一OK(1 test)、唯一overall-1，实际caller exit0、完整有界输出、stderr空。原summary `3631a157759c…` 无phaseError/cleanupFailure/unknown，实际released。全新cfg `f04ba0fde873…`、lease、两个新case、6脚本及payload与已审Source50 tuple绑定；没有复用Source48旧native通过。
+
+原tar分别 `44551f7e7939…`/715776B、`c5e35f7a7a0a…`/734720B。每case为1个准确owned目录+7个常规文件：result、measurements、edit-open和4张literal preference状态PNG。两个归档累计1450496B，全部成员内容SHA/UID/安全路径、前后NUL清单和双零结束块独立核对，收集发生在两个真实native终态之后。旧case只枚举目录元数据，不读取旧body、不删除旧原件。
+
+每case独立重读4个自动→仅直连→仅中继→自动状态、12个完整owner/text trace、11次真实fresh AtomicFile/live保存核对及15次产品touch/关闭重开。全部旧原state5000ms、expected独立来源、唯一checked两项unchecked、无Role.Tab/profile伪造、原生rawSelected=false、真实click16、完整path/labels/PopupLayout type1002/window/visible clip/bounds守卫均成立。新4次capture的build/phase/expected、同一before=after Popup/native状态、3000ms独立deadline及原state5秒预算、PNG尺寸/CRC/有界IDAT完整EOF/hash/byte与累计资源上限逐项核对，并独立重算完整derived validation/index，与原归档和summary一致。两case共24行trace、22次真实保存、30次touch，不是新增JUnit次数。
+
+8张菜单PNG及2张edit PNG均核了结构/CRC/完整有界解压。菜单原件实际为中文294×420、英文335×420；每case菜单累计493920/562800pixels、44398/55965B，符合每态1Mi pixels/2MiB及每case4Mi pixels/8MiB。Root另实际查看全部8张原Popup图，三中英label完整、每态唯一正确勾选、未见字形/勾选裁切，视觉记录 `547ac9a84679…` 已按每图SHA/byte与本次原tar绑定；本审计未复制/查看图片或新截图。Root手审保留为独立来源，没有执行当前iOS设备/截图比较。
+
+207条命令和7份完整快照逐实际raw重连。App10231/test10232、boot、Source50实际APK、完整麦克风permission+flags/AppOps、optional unused examiner None、whole default family及字节hash保持。11个默认目录均空、0常规文件，不声称非空用户数据证明。font/rotation设置与原值恢复读回、每次真实终态后及最终保护采样、known release均核对。本轮无安装；三APK构建/签名产物与实际仅App/test两包分开，unused observer不安装/不使用。
+
+sourceRect原点独立绑定继续待验：本次8个request.sourceRect报告left/top为0且尺寸与实际Popup/PNG一致，但没有第二个独立native origin参照。当前全量native状态/像素原件及Root手审不能升级为origin独立验证或all-sourceRect篡改拒绝，更不能升级完整A5。API26、其余矩阵、TalkBack/字段IME/忙碌/import/process-death及真实issuer/TLS/Host/desktop、物理设备、完整当前iOS视觉对齐仍单列。Source50 UI7的6短窗通过/1横屏setup已知失败、Source49旧横屏body待验仍分开保留，P8不改判它们，也不使用新main F73/别平台代替当前750/759冻结输入。
+
+本审计0native/安装/settings/helper/测试/SDK/build/源码改动，未复制完整原件/源码或生成PNG副本。3份最小读回索引直接无损压缩并读回，原归档/配置/操作回执完整保留，无临时运行资源。Root已报告8个视觉副本回收100363B，原tar仍在；任务和项目管理、A6保持暂缓，未知操作不重放。

@@ -1,0 +1,149 @@
+{
+  "sdkApiVersionsSha256": "9fd47aaab29946a5f5d179797365b2d04e38132d2e7e942f5ea8504e41e6c8e5",
+  "apiAvailability": [
+    {
+      "class": {
+        "name": "android/app/UiAutomation",
+        "since": "18"
+      },
+      "members": [
+        {
+          "name": "getRootInActiveWindow()Landroid/view/accessibility/AccessibilityNodeInfo;"
+        },
+        {
+          "name": "getWindows()Ljava/util/List;",
+          "since": "21"
+        },
+        {
+          "name": "getWindowsOnAllDisplays()Landroid/util/SparseArray;",
+          "since": "30"
+        },
+        {
+          "name": "takeScreenshot()Landroid/graphics/Bitmap;"
+        },
+        {
+          "name": "takeScreenshot(Landroid/view/Window;)Landroid/graphics/Bitmap;",
+          "since": "34"
+        }
+      ]
+    },
+    {
+      "class": {
+        "name": "android/view/PixelCopy",
+        "since": "24"
+      },
+      "members": [
+        {
+          "name": "request(Landroid/view/PixelCopy$Request;Ljava/util/concurrent/Executor;Ljava/util/function/Consumer;)V",
+          "since": "34"
+        },
+        {
+          "name": "request(Landroid/view/Surface;Landroid/graphics/Bitmap;Landroid/view/PixelCopy$OnPixelCopyFinishedListener;Landroid/os/Handler;)V"
+        },
+        {
+          "name": "request(Landroid/view/Surface;Landroid/graphics/Rect;Landroid/graphics/Bitmap;Landroid/view/PixelCopy$OnPixelCopyFinishedListener;Landroid/os/Handler;)V",
+          "since": "26"
+        },
+        {
+          "name": "request(Landroid/view/SurfaceView;Landroid/graphics/Bitmap;Landroid/view/PixelCopy$OnPixelCopyFinishedListener;Landroid/os/Handler;)V"
+        },
+        {
+          "name": "request(Landroid/view/SurfaceView;Landroid/graphics/Rect;Landroid/graphics/Bitmap;Landroid/view/PixelCopy$OnPixelCopyFinishedListener;Landroid/os/Handler;)V",
+          "since": "26"
+        },
+        {
+          "name": "request(Landroid/view/Window;Landroid/graphics/Bitmap;Landroid/view/PixelCopy$OnPixelCopyFinishedListener;Landroid/os/Handler;)V",
+          "since": "26"
+        },
+        {
+          "name": "request(Landroid/view/Window;Landroid/graphics/Rect;Landroid/graphics/Bitmap;Landroid/view/PixelCopy$OnPixelCopyFinishedListener;Landroid/os/Handler;)V",
+          "since": "26"
+        }
+      ]
+    },
+    {
+      "class": {
+        "name": "android/view/PixelCopy$Request$Builder",
+        "since": "34"
+      },
+      "members": [
+        {
+          "name": "ofWindow(Landroid/view/View;)Landroid/view/PixelCopy$Request$Builder;"
+        },
+        {
+          "name": "ofWindow(Landroid/view/Window;)Landroid/view/PixelCopy$Request$Builder;"
+        }
+      ]
+    },
+    {
+      "class": {
+        "name": "android/view/accessibility/AccessibilityWindowInfo",
+        "since": "21"
+      },
+      "members": [
+        {
+          "name": "getBoundsInScreen(Landroid/graphics/Rect;)V"
+        },
+        {
+          "name": "getRoot()Landroid/view/accessibility/AccessibilityNodeInfo;"
+        },
+        {
+          "name": "getRoot(I)Landroid/view/accessibility/AccessibilityNodeInfo;",
+          "since": "33"
+        },
+        {
+          "name": "getType()I"
+        }
+      ]
+    },
+    {
+      "class": {
+        "name": "android/view/inspector/WindowInspector",
+        "since": "29"
+      },
+      "members": [
+        {
+          "name": "getGlobalWindowViews()Ljava/util/List;"
+        }
+      ]
+    }
+  ],
+  "composePublicRootSources": [
+    {
+      "entry": "androidMain/androidx/compose/ui/platform/ViewRootForTest.android.kt",
+      "sourceSha256": "f617888012281f076c8516fecfbdcb8e21fb67f65d1a35e60898309efcf19806",
+      "path": "locked-ViewRootForTest.android.kt.gz"
+    },
+    {
+      "entry": "commonMain/androidx/compose/ui/node/RootForTest.kt",
+      "sourceSha256": "244dc20707e0c1a457628150da17922e8d7b35cc9a2bbe4653c8c5ed1a109408",
+      "path": "locked-RootForTest.kt.gz"
+    },
+    {
+      "entry": "commonMain/androidx/compose/ui/semantics/SemanticsNode.kt",
+      "sourceSha256": "ea727306a72692f7f9a99572f7f8aa38065995cab9d7cd5a7a3d2eec386a8652",
+      "path": "locked-SemanticsNode.kt.gz"
+    }
+  ],
+  "sourceJarSha256": "8ddde80690da97cd840c6f8f59c608701f9e42c245f12f0eabc1434db57e0273",
+  "nativeAXWindowTypeIsNotLayoutParamsSubpanel": true,
+  "api26NativeCompleteGetter": "pending: existing WindowInspector requires29; AX window exposes coarse type only; supplied-known SemanticsNode/RootForTest View bridge is a candidate, but currently public Compose fetch can idle/root-wait outside the5s acquisition contract",
+  "pixelCopyViewSourceMinimumApi": 34,
+  "api26PixelCandidate": "Official Compose Popup path uses synchronous full-device UiAutomation screenshot/crop; it lacks this implementation scoped callback ownership/crop allocation guarantees. Not adopted as same-equivalence pass.",
+  "candidateCompile": {
+    "candidateSourceSha256": "3d07a7765bd210da5008f871ae0de65dcbb8bb4889b822341e9a55ce8f0b868d",
+    "compiledAgainst": "Local SDK37.0 public android.jar and locked Compose1.12.1 AAR, Kotlin2.4.21",
+    "compilePassed": true,
+    "api26DeviceExecution": false,
+    "installedInNativeGetter": false,
+    "missing": [
+      "Bounded initial fresh unique owner acquisition without global idle/root wait",
+      "Global same-App Popup uniqueness equivalent to WindowInspector",
+      "Equivalent API26 bounded Popup pixel capture source/lifecycle"
+    ],
+    "noHiddenApiOrReservedCallback": "Uses supplied public SemanticsNode.root/ViewRootForTest.view/rootView only; reserved root registry callback untouched",
+    "status": "candidate bridge only; API26 native complete profile/pixels pending",
+    "scratchBytesRemoved": 3043850,
+    "scratchRemoved": true
+  }
+}

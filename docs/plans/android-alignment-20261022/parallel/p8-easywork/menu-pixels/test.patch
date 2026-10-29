@@ -1,0 +1,127 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -53,6 +53,25 @@
+         }&&options.count {it.selection.checked==true}==1&&options.count {it.selection.checked==false}==2
+ }
+
++internal fun p8MenuPixelBudget(phase: String,expected: String,width: Int,height: Int,completed: Set<String>,pixels: Long,bytes: Long): Boolean {
++    val states=mapOf("known-initial-automatic" to "automatic","after-click-and-form-reopen-lan-only" to "lan-only",
++        "after-click-and-form-reopen-relay-only" to "relay-only","after-click-and-form-reopen-automatic" to "automatic")
++    return states[phase]==expected&&phase !in completed&&completed.size<4&&completed.all {it in states}&&width in 1..4096&&height in 1..4096&&
++        width.toLong()*height<=1_048_576&&pixels in 0..4_194_304&&pixels+width.toLong()*height<=4_194_304&&bytes in 0..8_388_608
++}
++internal class P8PixelDelivery<T: Any>(private val dispose: (T)->Unit){
++    private var closed=false;private var offered=false;private var value: T?=null
++    fun offer(next: T){val accepted=synchronized(this){if(closed||offered)false else{offered=true;value=next;true}};if(!accepted)dispose(next)}
++    fun take(): T=synchronized(this){check(!closed&&offered);closed=true;checkNotNull(value).also {value=null}}
++    fun close(){val discarded=synchronized(this){closed=true;value.also {value=null}};discarded?.let(dispose)}
++}
++internal class P8BoundedPng(private val maxBytes: Int,private val withinBudget: ()->Boolean): java.io.OutputStream(){
++    private val data=java.io.ByteArrayOutputStream()
++    override fun write(value: Int){check(withinBudget()&&data.size()<maxBytes);data.write(value)}
++    override fun write(bytes: ByteArray,offset: Int,length: Int){check(offset>=0&&length>=0&&offset<=bytes.size-length);check(withinBudget()&&length<=maxBytes-data.size());data.write(bytes,offset,length)}
++    fun bytes(): ByteArray {check(withinBudget());return data.toByteArray()}
++}
++
+ /** Actual AgentHubApp theme/localization and real product navigation, not a copied theme.
+  * ComponentActivity hosting, controlled dialog bounds/fonts and physical display lanes
+  * are explicitly distinguished. No pairing, scan, permission or business action is tapped.
+@@ -93,6 +112,7 @@
+     private var protectedEvidence: JSONObject?=null
+     private val touches=mutableListOf<String>()
+     private val probes=JSONArray()
++    private val menuPixelPhases=mutableSetOf<String>();private var menuPixelCount=0L;private var menuPngBytes=0L
+     private var probe=0
+     @Before fun setup(){
+         folder=File(i.targetContext.filesDir,"acceptance/p8-presentation/$id").apply {check(!exists()&&mkdirs())}
+@@ -574,6 +594,90 @@
+             assertTrue("Exact three native options expose one known active and two inactive choices",matches);check(android.os.SystemClock.uptimeMillis()<=deadline)
+             evidence.put("phase",phase+"-all-native-and-persisted-guards-passed");flushProbes()
+         }catch(failure: Throwable){evidence.put("phase",phase+"-failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes();throw failure}
++        capturePreferencePopup(expected,labels,rows,phase)
++    }
++    private fun menuPixelState(view: android.view.View,rows: List<P8PreferenceOptionAx>,labels: Map<String,String>,expected: String,deadline: Long,result: JSONObject){
++        fun budget(){check(android.os.SystemClock.uptimeMillis()<deadline)}
++        budget();assertSame("Same unique owned Popup",view,preferencePopupView(deadline));val geometry=popupGeometry(view,deadline);result.put("popup",geometry)
++        assertTrue("Actual Popup focused and shown",geometry.getBoolean("hasWindowFocus")&&geometry.getBoolean("shown"));assertEquals(rows.first().windowId,geometry.getInt("windowId"))
++        val live=menuMainRead(deadline){fixture.live().agentConnection?.preference};result.put("actualLiveChoice",live?:JSONObject.NULL);assertEquals(expected,live)
++        val root=checkNotNull(i.uiAutomation.rootInActiveWindow);val nodes=mutableMapOf<Int,android.view.accessibility.AccessibilityNodeInfo>();val labelCounts=labels.values.associateWith {0}.toMutableMap();var count=0
++        val idKey="androidx.compose.ui.semantics.id";val expectedIds=rows.flatMap {listOf(it.ownerId,it.textId)}.toSet();val details=JSONArray();result.put("options",details)
++        fun owned(n: android.view.accessibility.AccessibilityNodeInfo)=n.windowId==geometry.getInt("windowId")&&n.packageName?.toString()==i.targetContext.packageName
++        fun nativeId(n: android.view.accessibility.AccessibilityNodeInfo): Int? {
++            budget();assertTrue("Same native Popup package/window",owned(n));if(!n.availableExtraData.contains(idKey)){check(n.refresh());return null}
++            check(n.refreshWithExtraData(idKey,android.os.Bundle())&&owned(n)&&n.extras.containsKey(idKey));return n.extras.getInt(idKey)
++        }
++        try {
++            check(root.refresh()&&owned(root));fun walk(n: android.view.accessibility.AccessibilityNodeInfo){budget();check(++count<=2048);val id=nativeId(n)
++                if(id in expectedIds){check(!nodes.containsKey(id));nodes[checkNotNull(id)]=android.view.accessibility.AccessibilityNodeInfo.obtain(n)}
++                n.text?.toString()?.let {label->if(label in labelCounts)labelCounts[label]=checkNotNull(labelCounts[label])+1}
++                for(k in 0 until n.childCount){val child=n.getChild(k)?:continue;try{walk(child)}finally{@Suppress("DEPRECATION") child.recycle()}}
++            };walk(root);assertEquals(expectedIds,nodes.keys)
++            for(row in rows){
++                budget();val owner=checkNotNull(nodes[row.ownerId]);val text=checkNotNull(nodes[row.textId]);val observed=row.selection.copy(nativeClass=owner.className?.toString(),checkable=owner.isCheckable,checked=owner.isChecked,selected=owner.isSelected)
++                val record=JSONObject().put("value",row.value).put("ownerId",row.ownerId).put("textId",row.textId).put("windowId",owner.windowId)
++                    .put("owner",axNodeFlags(owner)).put("text",axNodeFlags(text)).put("expectedSelected",row.value==expected);details.put(record);flushProbes()
++                assertTrue("Native captured choice matches known closed profile",p8ExactPreferenceSelection(observed,row.value==expected))
++                assertTrue("Owner remains enabled visible clickable with real action",owner.isEnabled&&owner.isVisibleToUser&&owner.isClickable&&owner.actionList.any {it.id==android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK})
++                assertEquals(labels[row.value],text.text?.toString());assertEquals(1,labelCounts[labels[row.value]]);assertTrue(text.isVisibleToUser)
++                val tagKey="androidx.compose.ui.semantics.testTag";check(owner.availableExtraData.contains(tagKey));budget();check(owner.refreshWithExtraData(tagKey,android.os.Bundle()));assertEquals(row.selection.tag,owner.extras.getCharSequence(tagKey)?.toString())
++                val path=mutableListOf<Int>();var current: android.view.accessibility.AccessibilityNodeInfo?=android.view.accessibility.AccessibilityNodeInfo.obtain(text)
++                try{for(j in row.nativeTextToOwnerPath.indices){val n=checkNotNull(current);path.add(checkNotNull(nativeId(n)))
++                    if(j==row.nativeTextToOwnerPath.lastIndex){assertEquals(owner,n);break};val parent=n.parent;@Suppress("DEPRECATION") n.recycle();current=parent
++                }}finally {current?.let {@Suppress("DEPRECATION") it.recycle()}}
++                record.put("nativeTextToOwnerPath",JSONArray(path));assertEquals(row.nativeTextToOwnerPath,path)
++            }
++            result.put("visitedNodes",count).put("expectedCheckedValue",expected);budget();flushProbes()
++        }finally {nodes.values.forEach {@Suppress("DEPRECATION") it.recycle()};@Suppress("DEPRECATION") root.recycle()}
++    }
++    private fun capturePreferencePopup(expected: String,labels: Map<String,String>,rows: List<P8PreferenceOptionAx>,phase: String){
++        val start=android.os.SystemClock.uptimeMillis();val deadline=start+3000;val beforeTouches=touches.size
++        val evidence=JSONObject().put("kind","actual-owned-popup-PixelCopy").put("phase",phase+"-before-capture").put("tripletPhase",phase)
++            .put("expected",expected).put("expectedSource","independent scripted choice").put("captureBudgetMs",3000).put("originalTripletBudgetMs",5000)
++            .put("source","PixelCopy.Request.Builder.ofWindow(actual PopupLayout View), actual attached Surface buffer").put("build",build)
++            .put("maxStatePixels",1_048_576).put("maxCasePixels",4_194_304).put("maxStatePngBytes",2_097_152).put("maxCasePngBytes",8_388_608)
++        data class Copied(val status: Int,val bitmap: Bitmap?)
++        val delivery=P8PixelDelivery<Copied>{it.bitmap?.let {bitmap->if(!bitmap.isRecycled)bitmap.recycle()}};val done=java.util.concurrent.CountDownLatch(1)
++        val main=android.os.Handler(android.os.Looper.getMainLooper());val frameDone=java.util.concurrent.CountDownLatch(1);val frame=Runnable {frameDone.countDown()}
++        val observer=java.util.concurrent.atomic.AtomicReference<android.view.ViewTreeObserver?>();var bitmap: Bitmap?=null
++        fun remaining(): Long=(deadline-android.os.SystemClock.uptimeMillis()).also {check(it>0)}
++        saveProbe(evidence)
++        try {
++            check(android.os.Build.VERSION.SDK_INT>=34){"Exact Popup View PixelCopy requires API34+; lower API remains pending"}
++            val view=preferencePopupView(deadline);val before=JSONObject();evidence.put("before",before);menuPixelState(view,rows,labels,expected,deadline,before)
++            val geometry=before.getJSONObject("popup");val width=geometry.getInt("right")-geometry.getInt("left");val height=geometry.getInt("bottom")-geometry.getInt("top")
++            assertTrue("Bounded unique four-state capture",p8MenuPixelBudget(phase,expected,width,height,menuPixelPhases,menuPixelCount,menuPngBytes))
++            menuMainRead(deadline){check(view.isHardwareAccelerated);val current=view.viewTreeObserver;observer.set(current);current.registerFrameCommitCallback(frame);view.invalidate()}
++            assertTrue("One actual Popup frame committed within capture deadline",frameDone.await(remaining(),java.util.concurrent.TimeUnit.MILLISECONDS))
++            val request=menuMainRead(deadline){
++                val origin=IntArray(2);view.getLocationInWindow(origin);val crop=android.graphics.Rect(origin[0],origin[1],origin[0]+width,origin[1]+height)
++                check(origin[0]>=0&&origin[1]>=0&&view.isAttachedToWindow&&view.width==width&&view.height==height)
++                android.view.PixelCopy.Request.Builder.ofWindow(view).setSourceRect(crop).build()
++            }
++            val sourceRect=checkNotNull(request.sourceRect);evidence.put("sourceRectInPopupWindow",JSONObject().put("left",sourceRect.left).put("top",sourceRect.top).put("right",sourceRect.right).put("bottom",sourceRect.bottom));flushProbes()
++            remaining();android.view.PixelCopy.request(request,java.util.concurrent.Executor {it.run()}) {copy->
++                try {delivery.offer(Copied(copy.status,if(copy.status==android.view.PixelCopy.SUCCESS)copy.bitmap else null))}finally {done.countDown()}
++            }
++            assertTrue("Single PixelCopy completed within independent deadline",done.await(remaining(),java.util.concurrent.TimeUnit.MILLISECONDS))
++            val copied=delivery.take();bitmap=copied.bitmap;evidence.put("pixelCopyStatus",copied.status);flushProbes();assertEquals(android.view.PixelCopy.SUCCESS,copied.status)
++            val image=checkNotNull(bitmap);assertEquals(width,image.width);assertEquals(height,image.height);assertEquals(Bitmap.Config.ARGB_8888,image.config);check(image.allocationByteCount<=4_194_304)
++            val after=JSONObject();evidence.put("after",after);menuPixelState(view,rows,labels,expected,deadline,after)
++            assertEquals("Capture preserved exact Popup/native state",before.toString(),after.toString());assertEquals("No input during capture",beforeTouches,touches.size)
++            val output=P8BoundedPng(minOf(2_097_152,(8_388_608-menuPngBytes).toInt())) {android.os.SystemClock.uptimeMillis()<deadline}
++            assertTrue(image.compress(Bitmap.CompressFormat.PNG,100,output));val bytes=output.bytes();check(bytes.isNotEmpty());remaining()
++            val name="preference-$phase.png";evidence.put("intendedFile",name);flushProbes();remaining();val file=File(folder,name);check(file.createNewFile());file.outputStream().use {it.write(bytes)}
++            assertEquals(bytes.size.toLong(),file.length());assertEquals(easyHash(bytes),EasyWorkPresentationFixture.hash(file));remaining()
++            menuPixelPhases.add(phase);menuPixelCount+=width.toLong()*height;menuPngBytes+=bytes.size
++            evidence.put("file",name).put("sha256",easyHash(bytes)).put("widthPx",width).put("heightPx",height).put("pngBytes",bytes.size)
++                .put("caseStateCount",menuPixelPhases.size).put("casePixels",menuPixelCount).put("casePngBytes",menuPngBytes).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start)
++                .put("frameCommitObserved",true).put("callbackWritesFilesOrProbes",false).put("phase",phase+"-captured-same-popup");flushProbes()
++        }catch(failure: Throwable){evidence.put("phase",phase+"-capture-failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes();throw failure}
++        finally {
++            delivery.close();bitmap?.let {if(!it.isRecycled)it.recycle()}
++            // Ordered after any running registration. Only this owned one-shot listener is removed.
++            main.post {observer.getAndSet(null)?.let {if(it.isAlive)it.unregisterFrameCommitCallback(frame)}}
++        }
+     }
+     private fun preferenceExclusiveScenario(language: String,dark: Boolean){
+         launch(language,dark,false)

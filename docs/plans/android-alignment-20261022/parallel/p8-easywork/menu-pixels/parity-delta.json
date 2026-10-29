@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-source48-two-passed-menu-pixels-api26-next-20261029-1",
+  "source48": {
+    "sourceSha256": "808153e8885b439699343d143b818cd199fde0f48136b65d68c76ff3f134a18a",
+    "appSha256": "b13d530d3f18f0483d292cdffa9cc949ba858e261935093ef63715a9558fb8a1",
+    "runnerSha256": "7d3854bce29d839eda41903cd0851a5bcc49f91eeb5c0d53969215d7572b3abb",
+    "inputs": 749
+  },
+  "originalNativeEvidence": {
+    "matchingOldPassedCases": 2,
+    "cases": [
+      {
+        "method": "chineseLightPreferenceOptionsStayNativeExclusiveAndPersist",
+        "junitResult": "passed",
+        "sdk": 37,
+        "font": 1,
+        "stateCount": 4,
+        "nativeTraceCount": 12,
+        "savedReadCount": 11,
+        "productTouchCount": 15,
+        "fourStateMenuPixels": "not captured; only edit-open.png, not pixel acceptance",
+        "resultMemberSha256": "c00e9d416e4f364cca19618527a8835779718243994a476cb2cff539f1c435a4"
+      },
+      {
+        "method": "englishDarkPreferenceOptionsStayNativeExclusiveAndPersist",
+        "junitResult": "passed",
+        "sdk": 37,
+        "font": 1,
+        "stateCount": 4,
+        "nativeTraceCount": 12,
+        "savedReadCount": 11,
+        "productTouchCount": 15,
+        "fourStateMenuPixels": "not captured; only edit-open.png, not pixel acceptance",
+        "resultMemberSha256": "309055cc7487616795347ceb64cbc15fe936617f396296553230f895687591b2"
+      }
+    ],
+    "oldFourStateMenuPixelImages": 0,
+    "onlyExistingImage": "edit-open.png per case; lower Dialog/form proof, not four-state Popup pixels",
+    "source46Failure": "unchanged failed"
+  },
+  "testOverlay": {
+    "version": 1,
+    "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+    "baseSource": "Source48",
+    "baseCommit": "7c0bbc51d195a03fe004b17380bc15a509eceed0",
+    "baseSha256": "46a4703e2573f890e03e51102c15a088ff2ba439abee2c6c22f38a0866ccfe93",
+    "proposedSha256": "4fff6f0e8271979d7d4f1cdd15385e4e178818658e61e5d17efc8cc7409b0d93",
+    "patchSha256": "71351d3cf927728b82ba6dff36f71341cbc2f07158548b2a0047b02c06635842",
+    "protectedSectionsSha256": {
+      "allSixMethodBodies": "683b82428cb615a88222b1094bdb56d2976384a60f68ead5cccae1816fba756e",
+      "existingRoleClosedAndExclusivePureOracles": "e02d5e64e1cded8152a4201474c6257a873e548453ee581cecaaab3b501af244",
+      "allExistingFullTextNativeFieldPopupGeometryAndOwnerGuards": "062f34092efa738d819959faecd16252cb4df1af6150e4a83bd5e1ffbf8d9d96",
+      "tripletBodyExceptPostGuardPixelCall": "341fcdb69866afd87410e27eca0146028b14242875e476467e18edeccfe33746",
+      "independentExpectedLabelsChoiceSequenceAndReopenScenario": "37699f41c7bf9e3684c93099686827d7a4c1cd4ba17f01b6ece6bd9769e69d2a"
+    },
+    "changes": [
+      "After unchanged triplet5s native/persisted guards succeed, call one independent3s capture phase for that exact open menu; all6 test bodies and scripted expectations unchanged",
+      "Use API34 public PixelCopy.Request.Builder.ofWindow with the actual verified own PopupLayout View and exact window-local crop; no Activity/Dialog substitution, full-device screenshot, View.draw or offscreen UI rendering",
+      "Pre/post single native snapshots recheck unique Popup View/class/type/package/window/focus/geometry, same live expected value, all3 known owner/text IDs/strict paths/tags/labels and closed native choice state; no input between snapshots",
+      "Commit one real hardware Popup frame via owned one-shot callback, then one PixelCopy request; no retry-until-ready, flags or images",
+      "Bound each bitmap to1048576 pixels/4194304 ARGB bytes;4 unique states/4194304 pixels per case, PNG2097152 bytes per state/8388608 per case; enforce bounded in-memory output",
+      "Late completed PixelCopy delivery is discarded/recycled by synchronized single-result ownership; callback only offers result and signals latch, never writes files/probes; consumed Bitmap recycled in finally; owned frame listener cleanup queued in order",
+      "API26 known-owner bridge is proposal only, not installed: initial bounded acquisition/global uniqueness/equivalent pixel-source gaps remain explicit"
+    ],
+    "classMethods": 6,
+    "pixelStatesPerNewCase": 4,
+    "newPixelBudgetMs": 3000,
+    "originalTripletBudgetMs": 5000,
+    "newPixelBudgetUsedForNativeReadiness": false,
+    "productSourcesChanged": false,
+    "api26GetterChanged": false,
+    "newNativeExecutions": 0,
+    "newImages": 0
+  },
+  "compile": {
+    "variant": "menu-pixels",
+    "compileExit": 0,
+    "inputs": 749,
+    "sourceSha256": "70f0e086bce693104841ea87be4a66b718ddb5fcb874c8b274c0e73ce7793872",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 6
+  },
+  "auxiliaryPixelBoundary": {
+    "status": "passed",
+    "cases": 42,
+    "deliveryRaceRounds": 500,
+    "actualExtractedPixelHelpersSha256": "1f93c00fc7defb1fcf11db1112cf3e545bad92c6a23dccefcda74c2373a80527",
+    "result": "passed=42; deliveryRaceRounds=500; nativePixels=0",
+    "kind": "Actual pure pixel budget/PNG output/late-delivery ownership JVM checks; no Android framework/Bitmap/native pixel execution",
+    "scratchBytesRemoved": 32532,
+    "scratchRemoved": true,
+    "newNativeExecutions": 0,
+    "newImages": 0
+  },
+  "api26Candidate": {
+    "candidateSourceSha256": "3d07a7765bd210da5008f871ae0de65dcbb8bb4889b822341e9a55ce8f0b868d",
+    "compiledAgainst": "Local SDK37.0 public android.jar and locked Compose1.12.1 AAR, Kotlin2.4.21",
+    "compilePassed": true,
+    "api26DeviceExecution": false,
+    "installedInNativeGetter": false,
+    "missing": [
+      "Bounded initial fresh unique owner acquisition without global idle/root wait",
+      "Global same-App Popup uniqueness equivalent to WindowInspector",
+      "Equivalent API26 bounded Popup pixel capture source/lifecycle"
+    ],
+    "noHiddenApiOrReservedCallback": "Uses supplied public SemanticsNode.root/ViewRootForTest.view/rootView only; reserved root registry callback untouched",
+    "status": "candidate bridge only; API26 native complete profile/pixels pending",
+    "scratchBytesRemoved": 3043850,
+    "scratchRemoved": true
+  },
+  "newNativePixelExecution": {
+    "status": "unexecuted",
+    "methods": [
+      "chineseLightPreferenceOptionsStayNativeExclusiveAndPersist",
+      "englishDarkPreferenceOptionsStayNativeExclusiveAndPersist"
+    ],
+    "fourPhases": [
+      "known-initial-automatic",
+      "after-click-and-form-reopen-lan-only",
+      "after-click-and-form-reopen-relay-only",
+      "after-click-and-form-reopen-automatic"
+    ],
+    "target": "Exact currently open validated Popup Surface, all3 owner IDs/window/labels/expected state bound before/after copy",
+    "budget": "Independent3s after native triplet guards; includes current-state checks, one frame commit, one PixelCopy, encoding and persistence deadline checks; no guard budget/reset/ready retry",
+    "synchronousLimit": "Android IPC and PNG/AtomicFile/file operations remain synchronous with deadline checks; no universal interruptible real-time guarantee",
+    "resourceLimits": {
+      "perStatePixels": 1048576,
+      "perStateArgbBytes": 4194304,
+      "casePixels": 4194304,
+      "perStatePngBytes": 2097152,
+      "casePngBytes": 8388608,
+      "statesPerCase": 4,
+      "nativeSnapshotNodeCap": 2048
+    },
+    "lateCallback": "No file/probe writes; late completed success Bitmap recycled, consumed Bitmap recycled in finally; ordered cleanup removes only owned frame listener",
+    "apiSupport": "Native getter remainsAPI29+, new PixelCopy View API34+ and current lease testsAPI37; API26 not upgraded",
+    "newApks": 0,
+    "newNativeExecutions": 0,
+    "newImages": 0,
+    "manualPixelReview": "pending fresh parent native images; code/AX/source facts do not pass visual acceptance"
+  },
+  "productOrCentralFilesChanged": false,
+  "deviceHostModelMicrophoneProtectedEasyWorkActionsByLeaf": 0,
+  "centralRegistrationOwner": "parent",
+  "open": [
+    "Fresh matching source/App/runner two methods,4 actual Popup images each, image hash/dimensions/state binding and manual visual review",
+    "Native Android late-callback/frame listener/bitmap cleanup and caps remain unexecuted; JVM checks auxiliary only",
+    "API26 initial bounded unique owner/root acquisition, actual global Popup uniqueness and equivalent bounded pixel capture",
+    "iOS actual menu attributes, remaining physical/font/AX/issuer/Desktop/TLS/model/DEV gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S14", "S18"],
+  "commonAssertion": "Every independently specified menu state must retain strict native choice/label/path/action/full-bounds proof and actual same-Popup rendered pixel evidence without input, guard substitution or resource leaks",
+  "dualPlatformImpact": {
+    "android": "Owned test-only API37 true Popup Surface pixels after original guards; API26 explicit pending",
+    "ios": "No source/native change or new image; actual menu selected attributes/pixel proof remain pending"
+  },
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "github-sync:5", "lint"],
+    "stoppedAt": "mobile parity: existing missing/stale apps/android/localization/native-copy.json feature record",
+    "laterChecks": "not run",
+    "centralRegistrationOwner": "parent",
+    "evidenceRawSha256": "ac342372224da14aeef7ffa7979384f1fa92b22198e8272ecb379a5a3cb8e142"
+  },
+  "recipeReproduced": {
+    "cases": 42,
+    "deliveryRaceRounds": 500,
+    "exactHelperHashMatched": true
+  },
+  "stageCleanup": {
+    "gradleCleanPassed": true,
+    "ownBuildCachesRemoved": true,
+    "auxiliaryJVMBridgeClassesAndInspectionJarRemoved": true,
+    "duplicateRecipeProofRemoved": true,
+    "rawLogsAndBaseCompressedAndReadbackVerified": true,
+    "newNativePixels": 0
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "lockedUiTestSources": {
+    "url": "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-test-android/1.12.1/ui-test-android-1.12.1-sources.jar",
+    "jarSha256": "4d717fe2140cc95878df19d830c297ff65e3a1c6128be52873f66062d7c70636",
+    "jarBytes": 220376,
+    "version": "1.12.1",
+    "sources": [
+      {
+        "entry": "androidMain/androidx/compose/ui/test/AndroidImageHelpers.android.kt",
+        "sourceSha256": "a7d990c0b5aa9e7b871d9a6e3316547fdcff98da2d40186dccc14dba2ac6c02f",
+        "bytes": 11249,
+        "path": "locked-AndroidImageHelpers.android.kt.gz"
+      },
+      {
+        "entry": "androidMain/androidx/compose/ui/test/android/WindowCapture.android.kt",
+        "sourceSha256": "63d8b0971f4d8ffc810010c816c4648786fceae5491312a1f2b2f46fe3fec976",
+        "bytes": 9412,
+        "path": "locked-WindowCapture.android.kt.gz"
+      },
+      {
+        "entry": "commonMain/androidx/compose/ui/test/MainTestClock.kt",
+        "sourceSha256": "ae99e952500ab90cd5af76afd2c54b970b19eceeeb2c783fe61bf7aba4667ed0",
+        "bytes": 10392,
+        "path": "locked-MainTestClock.kt.gz"
+      }
+    ],
+    "jarRetained": false
+  },
+  "installedUiTestBytecode": {
+    "version": "1.12.1",
+    "aarSha256": "2beafe8ba6c4ac2335159a7bdc08ac3eaac205f183d5d6b29b2eb87a2458b7ff",
+    "classesJarSha256": "1a7cbc0e30184fb57433716cacc4db26260f6dbd75faaaf7f00c4998576a3787",
+    "classes": [
+      {
+        "name": "androidx/compose/ui/test/AndroidImageHelpers_androidKt.class",
+        "sha256": "c75bd9ddb2c458d2cab54c6785589160de03a0882b245c821e6492899763035f"
+      },
+      {
+        "name": "androidx/compose/ui/test/android/PixelCopyHelper.class",
+        "sha256": "d2245c45cd4d51a0269c68933b8a41d75b4ec482b1de4fcd8f1d762bf2ddb196"
+      },
+      {
+        "name": "androidx/compose/ui/test/android/WindowCapture_androidKt$forceRedraw$1$2.class",
+        "sha256": "614237441a31e3ee3614228d42b6472bb16831a669bdfc1428cd32563e5e5694"
+      },
+      {
+        "name": "androidx/compose/ui/test/android/WindowCapture_androidKt.class",
+        "sha256": "1f821acf580567aff074f3d31f6d1f38b623be50424e7e5834d49d79de8df583"
+      }
+    ],
+    "bytecodeRawSha256": "bbbe3e87c383369fa4f5d805d4783fb04aa2fd8f5c821f38135995e0f03c0c72",
+    "popupTakeScreenshotAndWindowPixelCopyVerified": true,
+    "inspectionJarRemoved": true
+  },
+  "sdkSources": [
+    {
+      "sdk": "37.0",
+      "source": "android/view/PixelCopy.java",
+      "sha256": "42f46fe99a3c9d28e413ea63d825a2c60f0f74bfcee5490e691d557a64908bbf"
+    },
+    {
+      "sdk": "37.0",
+      "source": "android/view/ViewTreeObserver.java",
+      "sha256": "3d59e34127c0004f8f385e2836a39f4f1a9e33ce626fef356fd1396c30461f18"
+    },
+    {
+      "sdk": "37.0",
+      "source": "android/view/inspector/WindowInspector.java",
+      "sha256": "9b6971cd814ec17abd8f35fa5bd84f6a036470f13b5776902b25555dc3babd3b"
+    },
+    {
+      "sdk": "37.0",
+      "source": "android/view/accessibility/AccessibilityWindowInfo.java",
+      "sha256": "a86aeee18bdc5d5c01c95218236ef9cbab02df102e1aa4e9204dbb8c43f19368"
+    }
+  ],
+  "findings": [
+    "Locked1.12.1 captureToImage() routes Popup/multi-root to UiAutomation.takeScreenshot and crops screen bounds; ordinary Window branch uses PixelCopy with internal redraw/wait/retry behavior",
+    "This implementation instead copies the actual Popup View attached Surface via public API34 builder, which SDK37 resolves using its ViewRoot native Surface and actual surfaceInsets; exact source rect recorded",
+    "PixelCopy copies queued Android-rendered Surface buffers; it does not synthesize controls. One hardware frame commit is observed before requesting the copy",
+    "The new capture is scoped to Popup Surface pixels; it is not whole-display occlusion/foreign-window or TalkBack proof",
+    "The platform auto-allocates only the bounded requested crop; Bitmap is owned by framework until completion and by delivery/caller after callback. Errors have no success bitmap getter; no early recycle of an in-flight destination",
+    "No hidden API, root registry callback override, global timeout change, input or polling retry is introduced"
+  ],
+  "publicReferences": [
+    "https://developer.android.com/reference/android/view/PixelCopy.Request.Builder",
+    "https://developer.android.com/reference/android/view/ViewTreeObserver",
+    "https://developer.android.com/reference/kotlin/androidx/compose/ui/test/package-summary"
+  ],
+  "sourceFactsAreNotNewNativePixelEvidence": true
+}

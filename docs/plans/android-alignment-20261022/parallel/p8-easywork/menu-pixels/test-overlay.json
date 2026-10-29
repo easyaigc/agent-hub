@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+  "baseSource": "Source48",
+  "baseCommit": "7c0bbc51d195a03fe004b17380bc15a509eceed0",
+  "baseSha256": "46a4703e2573f890e03e51102c15a088ff2ba439abee2c6c22f38a0866ccfe93",
+  "proposedSha256": "4fff6f0e8271979d7d4f1cdd15385e4e178818658e61e5d17efc8cc7409b0d93",
+  "patchSha256": "71351d3cf927728b82ba6dff36f71341cbc2f07158548b2a0047b02c06635842",
+  "protectedSectionsSha256": {
+    "allSixMethodBodies": "683b82428cb615a88222b1094bdb56d2976384a60f68ead5cccae1816fba756e",
+    "existingRoleClosedAndExclusivePureOracles": "e02d5e64e1cded8152a4201474c6257a873e548453ee581cecaaab3b501af244",
+    "allExistingFullTextNativeFieldPopupGeometryAndOwnerGuards": "062f34092efa738d819959faecd16252cb4df1af6150e4a83bd5e1ffbf8d9d96",
+    "tripletBodyExceptPostGuardPixelCall": "341fcdb69866afd87410e27eca0146028b14242875e476467e18edeccfe33746",
+    "independentExpectedLabelsChoiceSequenceAndReopenScenario": "37699f41c7bf9e3684c93099686827d7a4c1cd4ba17f01b6ece6bd9769e69d2a"
+  },
+  "changes": [
+    "After unchanged triplet5s native/persisted guards succeed, call one independent3s capture phase for that exact open menu; all6 test bodies and scripted expectations unchanged",
+    "Use API34 public PixelCopy.Request.Builder.ofWindow with the actual verified own PopupLayout View and exact window-local crop; no Activity/Dialog substitution, full-device screenshot, View.draw or offscreen UI rendering",
+    "Pre/post single native snapshots recheck unique Popup View/class/type/package/window/focus/geometry, same live expected value, all3 known owner/text IDs/strict paths/tags/labels and closed native choice state; no input between snapshots",
+    "Commit one real hardware Popup frame via owned one-shot callback, then one PixelCopy request; no retry-until-ready, flags or images",
+    "Bound each bitmap to1048576 pixels/4194304 ARGB bytes;4 unique states/4194304 pixels per case, PNG2097152 bytes per state/8388608 per case; enforce bounded in-memory output",
+    "Late completed PixelCopy delivery is discarded/recycled by synchronized single-result ownership; callback only offers result and signals latch, never writes files/probes; consumed Bitmap recycled in finally; owned frame listener cleanup queued in order",
+    "API26 known-owner bridge is proposal only, not installed: initial bounded acquisition/global uniqueness/equivalent pixel-source gaps remain explicit"
+  ],
+  "classMethods": 6,
+  "pixelStatesPerNewCase": 4,
+  "newPixelBudgetMs": 3000,
+  "originalTripletBudgetMs": 5000,
+  "newPixelBudgetUsedForNativeReadiness": false,
+  "productSourcesChanged": false,
+  "api26GetterChanged": false,
+  "newNativeExecutions": 0,
+  "newImages": 0
+}

@@ -1,0 +1,135 @@
+{
+  "stage": "P7 saved voice recovery controls / Source50 originalUI7",
+  "status": "partial",
+  "sourceSha256": "c4d6849367fae79d54808220b151e1552ed865a912096dd3c6d9aba5fe508411",
+  "expandedSourceSha256": "fd3cfd81ee32d69358d85cff472f89d8084c5c27c9148492fa0424d30289c8cd",
+  "canonicalInputCount": 750,
+  "expandedInputCount": 759,
+  "configSha256": "13325df5914cf4b536af9159ae6c1f2d23e8edcc4cc6f8a845dc6921da666e6e",
+  "artifacts": {
+    "appSha256": "eb862dd5b529f9016463e2249e4d414c863650bc0e3227aed43ba60a20d5facb",
+    "runnerSha256": "8cdfd3be887d41d65b78b4f140715dcc3de0b9b851c65870dad323f3a0ca6508",
+    "unusedExaminerArtifactSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+    "appByteIdenticalToSource49": true,
+    "threeArtifactsBuildSigningSeparateFromActualTwoInstalledTargets": true,
+    "unusedExaminerActuallyInstalled": false
+  },
+  "actualNative": {
+    "uniqueJUnitMethods": 7,
+    "passed": 6,
+    "knownSetupFailed": 1,
+    "unknown": 0,
+    "shortApi26Pass": 6,
+    "landscapeApi37BodyRuns": 0,
+    "readonlySupplementAdditionalJUnit": 0
+  },
+  "passedMethods": [
+    "resourcesLanguagesAndCompleteTextRemainReachableAtActualOsFontTwo",
+    "downloadBusyControlsAndEndWaitingJoinSyntheticWorkerWithoutChangingOriginal",
+    "recognitionBusyControlsAndEndWaitingRejectLateSyntheticText",
+    "explicitLocalClosePreservesOriginalAndDraftWithoutHostOrMicrophone",
+    "actualSuccessfulEngineReturnAfterOwnerInvalidationCannotStageOrFill",
+    "actualSuccessfulEngineReturnAfterEndWaitingCannotStageOrFill"
+  ],
+  "landscape": {
+    "method": "landscapeLongOriginalAndStatusKeepEveryCharacterAndReachBothEnds",
+    "methodCode": -2,
+    "overallCode": -1,
+    "actualAdbExit": 0,
+    "normalJUnitFailure": true,
+    "failureClass": "IllegalArgumentException",
+    "assertion": "Parent must provide the declared actual OS orientation",
+    "location": "NativeSavedVoicePanelUiTest.setup:91",
+    "bodyEntered": false,
+    "originalCaseNamespaceCreated": false,
+    "originalNamespaceAbsenceIndependentlyReadBack": true,
+    "originalCollectorFailureRetained": true,
+    "originalProofCollectionComplete": false,
+    "originalProtectionEqualityPassed": false,
+    "independentFullSnapshotEquality": true,
+    "independentSnapshotEqualityDoesNotRewriteOriginalBooleans": true,
+    "originalOrientationFailureSpecificCause": "pending; current free rotation/font1/port config cannot establish original Activity orientation cause",
+    "source49PreviousLandscapeDiagnosticBodyIssue": "not re-exercised by this Source50 setup failure"
+  },
+  "shortNativeComponentEvidence": {
+    "profilesPerMethod": ["zh-Hans/light", "zh-Hans/dark", "en/light", "en/dark"],
+    "actualOsAndRenderedFontScale": 2,
+    "viewportDp": "320x420",
+    "cases": 6,
+    "nativeScopePoints": 44,
+    "originalImmutableComparisons": 24,
+    "nativeFullWavBytesPerComparison": 3244,
+    "nativeExactCanonicalRowMetadataAndWholeWavReceiptBound": true,
+    "externalAudioDecryptionClaim": false,
+    "axDiagnostics": 40,
+    "allAXCompleteAndExactOwner1": true,
+    "nullChildReads": 0,
+    "budgetReadMisses": 0,
+    "incompleteReasons": 0,
+    "allOwnersChildrenAndAncestorsSamePackageAndWindow": true,
+    "completeTextLayoutDiagnostics": 104,
+    "allAxReleasesAndFlagsRestored": true
+  },
+  "protection": {
+    "rawCommandReceiptsReadBack": 259,
+    "completeSnapshotsReadBack": 8,
+    "fullUidBootApkMicPermissionFlagsAndAppOpsBound": true,
+    "wholeDefaultFamilyEqualByIndependentReadback": true,
+    "defaultDirectories": {
+      "API26": 1,
+      "API37": 11
+    },
+    "defaultRegularFiles": 0,
+    "emptyDirectoriesNotNonemptyUserDataProof": true,
+    "unusedExaminerAbsentViaFullPackageWitness": true,
+    "recordedFontRotationRestorationReadBack": true,
+    "recordedKnownTerminalDeviceRelease": true,
+    "unknownOperationReplay": false
+  },
+  "archive": {
+    "shortOriginalTarSha256": "1bca1dbea901e031b6759223757c800946bceefb1b9ce4618f236b022f3c4850",
+    "bytes": 4697600,
+    "members": 475,
+    "allMemberContentHashesAndUid": true,
+    "beforeAfterMemberInventoriesMatch": true,
+    "twoZeroTarTerminatorBlocks": true,
+    "pngStructureCrcAndInflationChecked": 44,
+    "pngActuallyViewedHere": 0,
+    "newScreenshots": 0,
+    "notFullPixelOrTalkBackAcceptance": true
+  },
+  "readOnlySupplement": {
+    "additionalNative": 0,
+    "installs": 0,
+    "settingsWrites": 0,
+    "signals": 0,
+    "unknown": false,
+    "released": true,
+    "originalFailureAndFalseBooleansRetained": true
+  },
+  "remainingAcceptance": [
+    "Correct and durably record actual test Activity orientation under a new independent lease, then run landscape body with original assertions.",
+    "Source49 landscape complete-owner diagnostic and English profile still need actual body acceptance; Source50 setup failure does not replace it.",
+    "P8 two native methods and new menu-pixel parser are separate and were not executed in this UI7 record.",
+    "Authorized live rerecord, real acoustic/JNI/network ASR, MainActivity/Host/original-owner/full DEV and complete iOS parity remain separate."
+  ],
+  "productionCodeDeltaFromSource49": 0,
+  "newMainF73OrOtherPlatformEvidenceUsed": false,
+  "taskAndProjectManagement": "paused",
+  "reviewerActions": {
+    "device": 0,
+    "tests": 0,
+    "vectors": 0,
+    "driverHelpers": 0,
+    "prepare": 0,
+    "build": 0,
+    "sdk": 0,
+    "sourceWrites": 0
+  },
+  "resourceCleanup": {
+    "temporarySourceOrApkOrPngCopiesCreated": 0,
+    "temporaryResourcesRemaining": 0,
+    "derivedIndexesCompressedAtCreation": 3,
+    "originalNativeEvidencePreserved": true
+  }
+}

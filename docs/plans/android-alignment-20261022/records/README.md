@@ -151,3 +151,5 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [P7-5s 多块原候选冷恢复](p7-migration.md#p7-5s-多块候选真实进程冷恢复与膨胀预检)：4条真实PID边界、3块断言、精确膨胀拒绝与新增上游节点逐项分列。
 
 - [并行统筹交付](parallel-delivery.md)：四线隔离/共同接口、N067/N068合并及当前组合原生恢复态证明；未验项继续单列。
+
+- [Source50 原UI7](../parallel/fiftieth-stage-owned-ax-native.json)与[四态菜单像素](../parallel/fiftieth-stage-p8-menu-pixels-native.json)：限定原生结果、保留失败与独立图审；过程见[并行交付档案](parallel-delivery.md)。

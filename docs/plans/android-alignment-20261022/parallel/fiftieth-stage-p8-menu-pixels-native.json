@@ -1,0 +1,141 @@
+{
+  "stage": "P8 Source50 preference-menu native evidence",
+  "status": "two_current_native_methods_and_component_scenarios_passed_with_origin_binding_pending",
+  "sourceSha256": "c4d6849367fae79d54808220b151e1552ed865a912096dd3c6d9aba5fe508411",
+  "expandedSourceSha256": "fd3cfd81ee32d69358d85cff472f89d8084c5c27c9148492fa0424d30289c8cd",
+  "canonicalInputs": 750,
+  "expandedInputs": 759,
+  "configSha256": "f04ba0fde8730ea1912b131b3ce627d92e86a0752ff796d78590033aca47f0b9",
+  "nativeSummarySha256": "3631a157759cddb0104153bc9786aa4f40a80d91cb7aee1527d93d3ba98139e9",
+  "apk": {
+    "appSha256": "eb862dd5b529f9016463e2249e4d414c863650bc0e3227aed43ba60a20d5facb",
+    "runnerSha256": "8cdfd3be887d41d65b78b4f140715dcc3de0b9b851c65870dad323f3a0ca6508",
+    "unusedExaminerArtifactSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+    "builtArtifacts": 3,
+    "actualInstalledTargets": 2,
+    "unusedExaminerActuallyInstalled": false,
+    "installsInThisPhase": 0
+  },
+  "actualNative": {
+    "uniqueJUnitMethods": 2,
+    "junitPass": 2,
+    "junitFail": 0,
+    "scenarioPass": 2,
+    "countsAreSameTwoCasesNotFourJUnit": true,
+    "unknown": 0,
+    "phaseError": null,
+    "cleanupFailures": [],
+    "recordedDeviceReleased": true
+  },
+  "profiles": [
+    {
+      "language": "zh-Hans",
+      "theme": "light",
+      "sdk": 37,
+      "osAndRenderedFontScale": 1,
+      "orientation": "portrait",
+      "archiveSha256": "44551f7e793942abf16d2bbd7be9e9f55e8add43786fa2c113f686452b5549ad",
+      "archiveBytes": 715776,
+      "regularFiles": 7,
+      "extraOwnedDirectory": 1,
+      "states": 4,
+      "nativeOwnerTextRows": 12,
+      "freshAtomicSavedReads": 11,
+      "realProductTouches": 15,
+      "menuPixels": 493920,
+      "menuPngBytes": 44398
+    },
+    {
+      "language": "en",
+      "theme": "dark",
+      "sdk": 37,
+      "osAndRenderedFontScale": 1,
+      "orientation": "portrait",
+      "archiveSha256": "c5e35f7a7a0a73cfee7fa6a77cb6468154050455808a64534d9f38f2670a409d",
+      "archiveBytes": 734720,
+      "regularFiles": 7,
+      "extraOwnedDirectory": 1,
+      "states": 4,
+      "nativeOwnerTextRows": 12,
+      "freshAtomicSavedReads": 11,
+      "realProductTouches": 15,
+      "menuPixels": 562800,
+      "menuPngBytes": 55965
+    }
+  ],
+  "evidence": {
+    "rawCommandsReadBack": 207,
+    "fullSnapshotsReadBack": 7,
+    "fullSnapshotFieldsEqual": true,
+    "actualUidBootApkAndFullMicPermissionFlagsAppOpsBound": true,
+    "wholeDefaultFamily": {
+      "directories": 11,
+      "regularFiles": 0,
+      "emptyDirectoriesNotNonemptyUserDataProof": true
+    },
+    "nativeTerminals": "Each exact method0 + unique OK(1 test) + unique overall-1, actual caller exit0, complete bounded stdout and empty stderr.",
+    "newOwnedCasesOnly": true,
+    "oldCaseBodiesRead": false,
+    "archiveRegularMembersTotal": 14,
+    "allTarMembersWithDirectoryTotal": 16,
+    "fullMemberHashesUidInventoriesAndTwoZeroFooter": true,
+    "phaseArchiveBytes": 1450496,
+    "allNativeTerminalsBeforeCollection": true,
+    "menus": 8,
+    "editImages": 2,
+    "allPngStructureCrcAndBoundedIdatInflationValidated": 10,
+    "allRawMeasurementsAndDerivedIndexesExactlyRecomputed": true,
+    "originalStateBudgetMs": 5000,
+    "independentCaptureBudgetMs": 3000,
+    "perStatePixelCap": 1048576,
+    "perStatePngByteCap": 2097152,
+    "perCasePixelCap": 4194304,
+    "perCasePngByteCap": 8388608
+  },
+  "manualVisualReview": {
+    "reviewer": "Root",
+    "originalPopupImagesActuallyViewed": 8,
+    "allThreeLabelsCompleteAndOneCorrectCheckmarkPerState": true,
+    "clippedGlyphOrCheckmarkObserved": false,
+    "reviewSha256": "547ac9a84679e4fffa06cf62cb1e7750067c94fd44d5da014262f6cbdb78733b",
+    "thisAuditViewedNewImages": 0,
+    "currentIOSDeviceScreenshotComparison": false
+  },
+  "originBinding": {
+    "independentlyPassed": false,
+    "observedSourceRectsHaveZeroLeftAndTop": true,
+    "observedZeroOriginDoesNotCreateIndependentReference": true,
+    "allSourceRectTamperRejectionClaimAllowed": false
+  },
+  "previousEvidence": {
+    "Source48OriginalNativePasses": "kept separate; not reused as these two current native results",
+    "Source50Ui7": "six short passes and one known landscape setup failure remain separate; landscape body not retested by P8",
+    "newMainF73OrOtherPlatformProofSubstitution": false
+  },
+  "remainingAcceptance": [
+    "Independent native sourceRect origin binding.",
+    "API26 menu capture and remaining language/theme/font/orientation combinations.",
+    "TalkBack, field/IME/busy/import/process-death scope beyond these two preference methods.",
+    "Real issuer/TLS/Host/desktop/full A5, physical devices and complete current iOS visual parity."
+  ],
+  "taskAndProjectManagement": "paused",
+  "A6": "paused",
+  "unknownOperationsReplayed": false,
+  "reviewerActions": {
+    "newNative": 0,
+    "installs": 0,
+    "settingsWrites": 0,
+    "helperRuns": 0,
+    "tests": 0,
+    "sdkOrBuild": 0,
+    "sourceChanges": 0,
+    "newScreenshotsOrPngCopies": 0
+  },
+  "resources": {
+    "temporaryCopiesCreatedByThisAudit": 0,
+    "temporaryResourcesRemaining": 0,
+    "compressedDerivedIndexesWrittenDirectly": 3,
+    "originalEvidencePreserved": true,
+    "RootVisualCopiesCleanupReportedBytes": 100363
+  }
+}

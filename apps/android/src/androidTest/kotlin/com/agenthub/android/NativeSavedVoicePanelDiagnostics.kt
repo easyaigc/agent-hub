@@ -63,8 +63,13 @@ internal class NativeSavedVoicePanelDiagnostics(private val folder: File) {
         val data=JSONObject().put("version",1).put("tag",tag).put("expected",budget.clip(expected,2048)).put("expectedEnabled",enabled)
             .put("expectedSelected",selected ?: JSONObject.NULL).put("uiAutomationServiceFlags",serviceFlags)
         if(root==null)return write("ax-owner",axSnapshots,tag,data.put("complete",false).put("observation","root-unavailable"),budget)
-        val owned=Owned(root);var complete=true
-        fun <T> read(block: ()->T)=budget.read(block)?.value
+        val owned=Owned(root);var complete=true;var nullChildReads=0;var budgetReadMisses=0
+        val incompleteReasons=linkedSetOf<String>()
+        fun <T> read(block: ()->T): T? {
+            val result=budget.read(block)
+            if(result==null){complete=false;budgetReadMisses++;if(incompleteReasons.size<16)incompleteReasons.add("budget-read-missed")}
+            return result?.value
+        }
         fun same(value: CharSequence?,constant: String)=value!=null&&value.length==constant.length&&constant.indices.all {value[it]==constant[it]}
         val rootWindow=read {root.windowId}
         fun verified(n: AccessibilityNodeInfo)=rootWindow!=null&&rootWindow>=0&&read {n.windowId}==rootWindow&&read {same(n.packageName,target)}==true
@@ -96,10 +101,12 @@ internal class NativeSavedVoicePanelDiagnostics(private val folder: File) {
                     for(i in 0 until minOf(count,512)) {
                         if(!budget.active())return
                         val child=read {owned.node(n.getChild(i))}
-                        if(child==null)complete=false else search(child,depth+1,parents+meta(n))
+                        if(child==null){complete=false;nullChildReads++;if(incompleteReasons.size<16)incompleteReasons.add("null-child-during-owner-search")}else search(child,depth+1,parents+meta(n))
                     }
                 }
-                search(root,0,emptyList());var dumped=0;var descendantMatch=false
+                search(root,0,emptyList())
+                if(owners.size!=1){complete=false;if(incompleteReasons.size<16)incompleteReasons.add("exact-owner-count-must-be-one")}
+                var dumped=0;var descendantMatch=false
                 fun dump(n: AccessibilityNodeInfo,depth: Int,path: String): JSONObject {
                     if(!budget.active()||depth>16||dumped>=48){complete=false;return JSONObject().put("path",path).put("truncated",true)};dumped++
                     val value=meta(n).put("path",path)
@@ -121,7 +128,7 @@ internal class NativeSavedVoicePanelDiagnostics(private val folder: File) {
                     for(i in 0 until minOf(count,48)) {
                         if(!budget.active()||dumped>=48){complete=false;break}
                         val child=read {owned.node(n.getChild(i))}
-                        if(child==null)complete=false else children.put(dump(child,depth+1,"$path/$i"))
+                        if(child==null){complete=false;nullChildReads++;if(incompleteReasons.size<16)incompleteReasons.add("null-child-during-owner-dump")}else children.put(dump(child,depth+1,"$path/$i"))
                     }
                     if(count>48)complete=false
                     return value.put("children",children)
@@ -147,6 +154,7 @@ internal class NativeSavedVoicePanelDiagnostics(private val folder: File) {
             }
         }catch(t: Throwable){complete=false;data.put("observationFailure",t.javaClass.name)}
         finally {owned.close();if(owned.failures>0)complete=false}
-        return write("ax-owner",axSnapshots,tag,data.put("complete",complete&&budget.active()&&!budget.truncated).put("resources",owned.summary()),budget)
+        return write("ax-owner",axSnapshots,tag,data.put("complete",complete&&budget.active()&&!budget.truncated).put("exactOwnerCountRequired",1)
+            .put("nullChildReads",nullChildReads).put("budgetReadMisses",budgetReadMisses).put("incompleteReasons",JSONArray(incompleteReasons.toList())).put("resources",owned.summary()),budget)
     }
 }

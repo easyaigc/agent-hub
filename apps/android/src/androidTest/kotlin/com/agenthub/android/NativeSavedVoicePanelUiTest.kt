@@ -284,7 +284,11 @@ class NativeSavedVoicePanelUiTest {
         if(literal)node(tag)else control(tag,enabled);instrumentation.waitForIdleSync()
         val layoutCapture=recordButtonLayouts(tag,if(literal)key else text(key))
         val rootBudget=NativeSavedVoiceReadBudget(1000);var observedRoot: AccessibilityNodeInfo?=null
-        val rootRead=rootBudget.read {instrumentation.uiAutomation.rootInActiveWindow.also {observedRoot=it}}
+        val rootRead=rootBudget.read {
+            instrumentation.uiAutomation.waitForIdle(50,600)
+            instrumentation.uiAutomation.rootInActiveWindow.also {observedRoot=it}
+        }
+        report.put("nativeAxRootReadiness",JSONObject().put("quietMs",50).put("globalTimeoutMs",600).put("insideOriginalRootBudgetMs",1000))
         val ownedChildren=java.util.IdentityHashMap<AccessibilityNodeInfo,Boolean>()
         var callerSearchBudget: NativeSavedVoiceReadBudget?=null;var callerSearchTiming: JSONObject?=null
         report.put("nativeAxRootReadBudget",rootBudget.timing())
@@ -321,6 +325,10 @@ class NativeSavedVoicePanelUiTest {
         assertTrue("Actual AX must retain the full localized label: $tag",spoken.contains(if(literal)key else text(key)))
         if(selected!=null)assertEquals(selected,n.isSelected||n.isCheckable&&n.isChecked)
         assertTrue("Native AX search must stay in the verified owned window/package",ownedScopeComplete)
+        if(!captured.getBoolean("complete"))captureGuardFrame(NativeSavedVoicePanelFailureFrame.Reason.AX_DIAGNOSTIC_INCOMPLETE,tag) {
+            JSONObject().put("expectedLabel",if(literal)key else text(key)).put("callerFoundUniqueOwner",true)
+                .put("callerOwnerSearchTiming",callerSearchTiming).put("axOwnerDiagnostic",captured).put("buttonLayoutDiagnostic",layoutCapture)
+        }
         assertTrue("Complete exact-owner/descendant diagnosis required",captured.getBoolean("complete"))
         assertTrue("Complete associated TextLayoutResult diagnosis required",layoutCapture.getBoolean("complete"))
         return JSONObject().put("tag",tag).put("text",spoken).put("class",n.className.toString()).put("enabled",n.isEnabled)

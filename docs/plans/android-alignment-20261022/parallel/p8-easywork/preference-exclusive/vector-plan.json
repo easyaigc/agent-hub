@@ -1,0 +1,93 @@
+{
+  "helperSha256": "e02d5e64e1cded8152a4201474c6257a873e548453ee581cecaaab3b501af244",
+  "expandedVectorsRawSha256": "a3adbdf14f6ad2a447ff62a2bda3c6202273d2ae560a2c8f24c96afad5ededd7",
+  "positiveConstruction": {
+    "languages": ["en", "zh-Hans"],
+    "independentExpectedChoices": ["automatic", "lan-only", "relay-only"],
+    "allNativeObservationPermutations": 6,
+    "vectors": 36
+  },
+  "negativeVectors": [
+    "all unchecked",
+    "two checked",
+    "three checked",
+    "inactive checkable False",
+    "inactive checkable None",
+    "inactive checked None",
+    "inactive selected True",
+    "inactive selected None",
+    "inactive nativeClass android.widget.TextView",
+    "inactive selectedPresent False",
+    "inactive composeSelected None",
+    "inactive toggleableStatePresent True",
+    "inactive rolePresent True",
+    "closed profile rejects Tab",
+    "closed profile rejects Switch",
+    "closed profile rejects RadioButton",
+    "wrong known tag for owner value",
+    "unknown tag",
+    "unknown value",
+    "unknown expected",
+    "missing option",
+    "extra option",
+    "duplicate value with distinct native nodes",
+    "duplicate owner",
+    "duplicate text",
+    "mixed popup windows",
+    "invalid popup window",
+    "wrong native label",
+    "cross-language native label",
+    "duplicate expected labels",
+    "missing expected label",
+    "extra expected label",
+    "invalid expected hash",
+    "reversed native path",
+    "wrong path terminal",
+    "wrong path start",
+    "path passes sibling owner",
+    "path cycle",
+    "empty path",
+    "self-projected text owner",
+    "path depth beyond original cap",
+    "negative owner",
+    "negative text",
+    "independent expected differs from otherwise consistent native state",
+    "Compose contradicts expected but native otherwise right"
+  ],
+  "mutationControls": [
+    {
+      "name": "remove closed native profile",
+      "sourceSha256": "b2e4f364feb46c4a0a480a6b84c29d3a407ceccf896d3187c0521e19dff65bfa"
+    },
+    {
+      "name": "remove same-window gate",
+      "sourceSha256": "7797437f05d5f8a18c29887ca3d69ad0ae768dcd155eaee75f37357989c7fa06"
+    },
+    {
+      "name": "remove distinct owners",
+      "sourceSha256": "24143213ec9e0d25ef06d8d765a8538fe85e7ee89011184543e99a0e32fc3b90"
+    },
+    {
+      "name": "remove native label association",
+      "sourceSha256": "ea81ce857a87477e16aa2326e3d78cc663fe9c2459d14c9aa49773e5249decae"
+    },
+    {
+      "name": "remove path terminal",
+      "sourceSha256": "c8cbffc64f0858be71c95ca50ae0576883c76cd8ca9dc0060e3d8f242e12031b"
+    },
+    {
+      "name": "derive expected from observed checked",
+      "sourceSha256": "40df793ad7901eadf369608e6e3accdc30596c63d5e771f9651f92021f733b11"
+    },
+    {
+      "name": "remove tag/value association",
+      "sourceSha256": "2023af701787e477150cd3a6cf223697af0a442df6937f0525295875cdc081cc"
+    },
+    {
+      "name": "remove exact known option set",
+      "sourceSha256": "a08833e4aed061b8867efaf3d647c9cedbfc3bf65f67ba4a679be82172602845"
+    }
+  ],
+  "result": "mutant0 mismatches=14\nmutant1 mismatches=1\nmutant2 mismatches=1\nmutant3 mismatches=2\nmutant4 mismatches=1\nmutant5 mismatches=1\nmutant6 mismatches=1\nmutant7 mismatches=1\npassed=81; positives=36; negatives=45; mutantsRejected=8; native=0",
+  "status": "81 vectors passed,8 mutations rejected; auxiliary only"
+}

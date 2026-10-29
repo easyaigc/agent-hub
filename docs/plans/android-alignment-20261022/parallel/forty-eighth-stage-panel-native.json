@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "Source48-P7-panel-failure-window-native",
+  "sourceSha256": "808153e8885b439699343d143b818cd199fde0f48136b65d68c76ff3f134a18a",
+  "expandedSourceSha256": "0bdcf4c68d27f4906df5afe1d35d834ca2101811a2998dc955354ccb4af9fce8",
+  "canonicalInputs": 749,
+  "expandedInputs": 758,
+  "appSha256": "b13d530d3f18f0483d292cdffa9cc949ba858e261935093ef63715a9558fb8a1",
+  "runnerSha256": "7d3854bce29d839eda41903cd0851a5bcc49f91eeb5c0d53969215d7572b3abb",
+  "examinerSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+  "actualCounts": {
+    "normalJUnitMethods": 7,
+    "passed": 3,
+    "knownTestFailures": 4,
+    "unknown": 0,
+    "explicitLocalCloseMethodsPassed": 1,
+    "actualSuccessfulSyntheticLateReturnMethodsPassed": 2,
+    "matrixPointsForPassedMethods": 12,
+    "actualSuccessfulSyntheticLateReturnMatrixPoints": 8,
+    "oldZeroMethodPreflightFailuresNotAdded": true
+  },
+  "phases": [
+    {
+      "profile": "short",
+      "api": 26,
+      "actualJUnitMethods": 6,
+      "passed": 3,
+      "knownTestFailures": 3,
+      "unknown": 0,
+      "cases": [
+        {
+          "method": "resourcesLanguagesAndCompleteTextRemainReachableAtActualOsFontTwo",
+          "methodCode": -2,
+          "passed": false,
+          "overallCode": -1,
+          "localAdbExit": 0,
+          "stdoutSha256": "c24423527ca5931207d61ca35b32f802a8976b1951926166ed836227726b9da6"
+        },
+        {
+          "method": "downloadBusyControlsAndEndWaitingJoinSyntheticWorkerWithoutChangingOriginal",
+          "methodCode": -2,
+          "passed": false,
+          "overallCode": -1,
+          "localAdbExit": 0,
+          "stdoutSha256": "d1dfac15fb700e9e52ec2365c804da421a0773d84cde6c739fb1d27ab9b9f0fb"
+        },
+        {
+          "method": "recognitionBusyControlsAndEndWaitingRejectLateSyntheticText",
+          "methodCode": -2,
+          "passed": false,
+          "overallCode": -1,
+          "localAdbExit": 0,
+          "stdoutSha256": "13be7b4bda067e7727ef8091f46365a3f8172771217064441fdcb3511f39c1b6"
+        },
+        {
+          "method": "explicitLocalClosePreservesOriginalAndDraftWithoutHostOrMicrophone",
+          "methodCode": 0,
+          "passed": true,
+          "overallCode": -1,
+          "localAdbExit": 0,
+          "stdoutSha256": "7c84d99c98883c7ee498318a7815757f467e4e6928baa43df94db80867bedc7c"
+        },
+        {
+          "method": "actualSuccessfulEngineReturnAfterOwnerInvalidationCannotStageOrFill",
+          "methodCode": 0,
+          "passed": true,
+          "overallCode": -1,
+          "localAdbExit": 0,
+          "stdoutSha256": "409febca18d004aa02bae3581f66e405624f0a5dc4fa6a76adc7bde6b8f26de9"
+        },
+        {
+          "method": "actualSuccessfulEngineReturnAfterEndWaitingCannotStageOrFill",
+          "methodCode": 0,
+          "passed": true,
+          "overallCode": -1,
+          "localAdbExit": 0,
+          "stdoutSha256": "69c74079441b13cfe8ebe7c2ae1d9a75ced555ae96216f97c2d43a7d8fdc7e65"
+        }
+      ],
+      "wholeDefaultRoots": 1,
+      "defaultFilesBeforeAfter": [0, 0],
+      "fullPermissionAndAppOpsIdentityUnchanged": true,
+      "bootUidApkPreservationVerified": true,
+      "optionalExaminerAbsentWithPositiveAppTestUidWitnesses": true,
+      "nativeArchiveMembers": 203,
+      "nativeArchiveSha256": "31035d188aaa9dc4631c60af7b85f6ec7a5bf380c765eace89c70581fbb8c506",
+      "actualCommandReceipts": 110,
+      "phaseError": null,
+      "cleanupFailures": [],
+      "deviceReleased": true
+    },
+    {
+      "profile": "landscape",
+      "api": 37,
+      "actualJUnitMethods": 1,
+      "passed": 0,
+      "knownTestFailures": 1,
+      "unknown": 0,
+      "cases": [
+        {
+          "method": "landscapeLongOriginalAndStatusKeepEveryCharacterAndReachBothEnds",
+          "methodCode": -2,
+          "passed": false,
+          "overallCode": -1,
+          "localAdbExit": 0,
+          "stdoutSha256": "7df2dd83cfe2043cca0d7afb83bd0a920db242a942499c45f38478413d9ee2c5"
+        }
+      ],
+      "wholeDefaultRoots": 11,
+      "defaultFilesBeforeAfter": [0, 0],
+      "fullPermissionAndAppOpsIdentityUnchanged": true,
+      "bootUidApkPreservationVerified": true,
+      "optionalExaminerAbsentWithPositiveAppTestUidWitnesses": true,
+      "nativeArchiveMembers": 21,
+      "nativeArchiveSha256": "a17af80c730fb630fff17fdb297945ad114897815b696077fe7395489f88e877",
+      "actualCommandReceipts": 96,
+      "phaseError": null,
+      "cleanupFailures": [],
+      "deviceReleased": true
+    }
+  ],
+  "measuredFailures": {
+    "beforeHardAssertionOwnedFrames": 4,
+    "framesCapturedOutOfAttempts": [1, 1, 1, 1],
+    "allAxFlagsRestored": true,
+    "axAndBitmapReleaseFailures": 0,
+    "languageLayout": {
+      "reportedHasVisualOverflow": true,
+      "layoutWidth": 484,
+      "paragraphWidth": 596,
+      "constraintMaxWidth": 596,
+      "glyphRight": 483,
+      "lineCount": 1,
+      "ellipsized": false,
+      "scope": "Measured assertion failure; do not infer visible glyph clipping solely from paragraph/layout width."
+    },
+    "disabledOwnerLabels": [
+      {
+        "tag": "voice-record-again",
+        "expectedLabelPresentOnDirectTextView": true,
+        "exactDisabledOwnerLabelEmpty": true,
+        "resourcesReleased": true,
+        "actualTalkBackSpeechNotTested": true
+      },
+      {
+        "tag": "saved-file-transcribe",
+        "expectedLabelPresentOnDirectTextView": true,
+        "exactDisabledOwnerLabelEmpty": true,
+        "resourcesReleased": true,
+        "actualTalkBackSpeechNotTested": true
+      },
+      {
+        "tag": "saved-file-transcribe",
+        "expectedLabelPresentOnDirectTextView": true,
+        "exactDisabledOwnerLabelEmpty": true,
+        "resourcesReleased": true,
+        "actualTalkBackSpeechNotTested": true
+      }
+    ],
+    "unreadyOrTimeoutExplanationSupported": false,
+    "oldFailuresRetained": true
+  },
+  "preservation": {
+    "sourceOriginalFixtures": 16,
+    "canonicalOriginalAndExactRawRowBaselinesVerified": true,
+    "wholeFixedWavBytes": 3244,
+    "wholeFixedWavSha256": "9d926e59a8259999491bddd13cd65ad6ff3f63916a9dd10a86d8594169ad9550",
+    "nativeStoredWholeWavCompared": true,
+    "parentDecryptedStoredWav": false,
+    "beforeAfterActualCompleteDefaultArchives": 6,
+    "defaultFilesBothDevices": [0, 0],
+    "defaultContentScope": "empty directories only; no nonempty default content claim",
+    "fullMicrophonePermissionRuntimeFlagsAndAppOpsUnchanged": true,
+    "onlyAppAndRunnerRUpgrades": true,
+    "uidAndKnownOriginalCertificatePreserved": true,
+    "sameBootWithinEachPhase": true,
+    "environmentRestoredAfterAllActualNativeTerminals": true,
+    "strictOptionalExaminerAbsenceProved": true,
+    "allNativeOriginalArchiveMembersPreserved": 224,
+    "remoteBusinessInputs": 0,
+    "realHostFactoryOrMicrophoneFactoryCalls": 0
+  },
+  "priorPreparation": {
+    "v1NativeExecuted": false,
+    "v2BeforeInstallKnownFailures": [
+      {
+        "phase": "landscape",
+        "normalJUnitMethods": 0,
+        "uiFailures": 0,
+        "stage": "before-install preflight transport/parse failure",
+        "knownFailureNotUnknown": true,
+        "deviceReleased": true
+      },
+      {
+        "phase": "short",
+        "normalJUnitMethods": 0,
+        "uiFailures": 0,
+        "stage": "before-install preflight transport/parse failure",
+        "knownFailureNotUnknown": true,
+        "deviceReleased": true
+      }
+    ],
+    "v2InstallOrNativeOrEnvironmentChange": 0
+  },
+  "scope": "Actual native UI/controller and encrypted synthetic fixture acceptance; no real Host/model, real ASR/JNI, microphone/acoustic, physical Android or iOS native result.",
+  "remaining": [
+    "Language/chip layout overflow assertion and exact disabled-owner AX labels",
+    "Remaining view/language/theme/action matrix after each failed assertion",
+    "Authorized live rerecord/microphone and acoustic path",
+    "Physical Android, real Host/model DEV and complete native iOS parity"
+  ],
+  "fullP7Complete": false,
+  "fullDevPassed": false
+}

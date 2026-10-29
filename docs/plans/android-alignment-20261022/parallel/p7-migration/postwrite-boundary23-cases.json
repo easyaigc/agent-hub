@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operation": "parent-p7-postwrite-boundary2-and3-preparation-20261029-1",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "productionChanges": 0,
+  "nativeFixtureChanges": 0,
+  "existingSelectorsReused": 3,
+  "nativeStatusHere": "not-run",
+  "fullP7Closed": false,
+  "cases": [
+    {
+      "boundary": 2,
+      "state": "prepared",
+      "metadataWrite": true,
+      "productReadback": true,
+      "SessionPublished": false,
+      "receiptReturned": false,
+      "catalogApplied": false,
+      "freshRunRequired": true
+    },
+    {
+      "boundary": 3,
+      "state": "prepared",
+      "metadataWrite": true,
+      "productReadback": true,
+      "SessionPublished": true,
+      "receiptReturned": true,
+      "catalogApplied": false,
+      "freshRunRequired": true
+    }
+  ],
+  "inspector": {
+    "sourceReadOnly": true,
+    "wholeProcessWriteFree": false,
+    "SessionConstructed": false,
+    "fullCiphertextAndOriginalAndAudio": true
+  },
+  "continuation": {
+    "sourceReadOnly": false,
+    "actualSession": true,
+    "intentionalNewDraftWrite": true,
+    "voiceDestinationWritesExpected": 0,
+    "catalogAppliedExpected": false,
+    "noRecognitionOrOperationReplay": true
+  },
+  "defaultScope": "existing proposed executor remains pinned to historical empty0-to-0; nonempty native gate open",
+  "proposedExecutor": {
+    "baseSha256": "3627ef9cc5e3fe789bf0b812120e3bde668e46b83c86a7e5fd5f7c3bed44bbf5",
+    "proposedSha256": "ba1801082cc5e14baef85a7412a8ac80815275e150bbe2d382858fe0db94922a",
+    "patchSha256": "40cfc8d409535a9e416b862551738e5726a6989e8f7b06aac7d8d3c8f6b16b5b",
+    "appliedToParent": false,
+    "source46Only": true,
+    "newCandidateRepinRequired": true,
+    "debugPrivilegedSameUidEmulatorOnly": true,
+    "ordinaryAppPermissionClaim": false,
+    "unchangedGuardFunctions": 12,
+    "hostOnlyVectors": 128
+  },
+  "sharedAssertions": [
+    "same complete original and old action",
+    "no automatic retry or reapply",
+    "accepted and newer draft preserved",
+    "full default metadata and microphone protection"
+  ],
+  "ios": {
+    "sourceAssertionsCompared": true,
+    "newExecution": false,
+    "equivalentEncryptedReceiptProtocolEstablished": false,
+    "A6": "paused"
+  },
+  "design": { "UIChanged": false, "newVisualAcceptance": false },
+  "centralManifests": "parent adopts this assertion/status delta with actual per-boundary native results; no feature closed here",
+  "contract": "postwrite-boundary23-review.md",
+  "paused": ["task/project business work", "iOS A6"]
+}

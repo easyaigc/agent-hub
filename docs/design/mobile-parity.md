@@ -1460,3 +1460,11 @@ PAR44语音面板使用同一生产palette/native文案，原录音全文沿既�
 [PAR46-PW1](../plans/android-alignment-20261022/parallel/postwrite-boundary-one-native.json)：API26 composer/question实际metadata写入后受控精确终止，两个reader正常通过；writer中断不计第三个通过。当前为专用DEBUG模拟器同UID特权执行，默认仅空集合/null metadata；完整原件与no duplicate/newdraft overwrite断言保留。两次先前父脚本兼容失败与剩余自然/物理/声学/其它边界均单列，iOS源及产品界面无变化。
 
 [PAR47](../plans/android-alignment-20261022/parallel/forty-seventh-stage-menu-coldboot-native.json)：API37中文浅色竖屏exact菜单角色/checked/selected映射与持久值1项通过，原owner/path/actions/bounds/5秒断言保留；iOS原生、API26与互斥全矩阵继续待验。通知新增original/current boot只读契约，原key/非空default及原163B密文在count1→2核对，cold1/store5共6项和14持久join通过，不重bootstrap。自然首点双方实际成功终态另存，最终补证与退出后inspector待验；旧失败不覆盖，iOS源未改/A6暂停。
+
+PAR47-N仅登记API37原SystemUI首击与应用原/新草稿的局部原生证据；未改变产品UI或iOS代码，完整双端视觉/读屏/低API/真机及consumer退出后恢复继续待验。
+
+[PAR46-PW23](../plans/android-alignment-20261022/parallel/postwrite-boundaries-two-three-native.json)：Source46 API26原两目标在Session发布后及原回执返回后受控中断，4次正常reader执行通过、2次writer中断单列；全原件/WAV/metadata、已写文字与新草稿及无重复追加保持。默认仅empty0→0；自然/OEM/普通App权限、非空baseline与其它平台仍待验。iOS源与产品UI无新增变化，未知原操作不查询/重放。
+
+[PAR48](../plans/android-alignment-20261022/parallel/forty-eighth-stage-panel-native.json)：API26/37语音7个实际JUnit为3通过4失败；显式本地关闭及两类成功合成迟到返回通过，语言chip宽度/paragraph不一致、三类禁用控件owner标签为空保留失败，四份准确Window PixelCopy和原layout/AX已审。字形本身未证明裁切，实际TalkBack未验。
+
+[PAR48-P8](../plans/android-alignment-20261022/parallel/forty-eighth-stage-preference-native.json)：API37中浅/英深两个实际方法通过，四状态每例12条原生互斥trace、11次实际持久读取、15次真实触摸及关闭重开，原5秒预算保持；同场景不重复计JUnit。仅初始编辑页两张PNG，逐态菜单像素、API26/完整视口/读屏、跨进程、真实issuer/TLS/DEV和双端真机仍待验。 两phase及P8的完整默认空族、UID/证书/boot/麦克风权限和AppOps保持，未知0；不是非空恢复或整项通过。iOS源未改，A6/任务项目继续暂缓。

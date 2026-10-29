@@ -39,6 +39,20 @@ internal fun p8ExactPreferenceSelection(observed: P8PreferenceSelectionAx,expect
         observed.composeSelected==expectedSelected&&observed.nativeClass=="android.view.View"&&
         observed.checkable==true&&observed.checked==expectedSelected&&observed.selected==false
 
+internal data class P8PreferenceOptionAx(val value: String,val ownerId: Int,val textId: Int,val windowId: Int,
+    val nativeTextToOwnerPath: List<Int>,val labelHash: String,val selection: P8PreferenceSelectionAx)
+internal fun p8ExclusivePreferenceState(expected: String,labelHashes: Map<String,String>,options: List<P8PreferenceOptionAx>): Boolean {
+    val values=setOf("automatic","lan-only","relay-only")
+    return expected in values&&labelHashes.keys==values&&labelHashes.values.toSet().size==3&&labelHashes.values.all {it.matches(Regex("[a-f0-9]{64}"))}&&
+        options.size==3&&options.map {it.value}.toSet()==values&&options.map {it.ownerId}.toSet().size==3&&options.map {it.textId}.toSet().size==3&&
+        options.map {it.windowId}.toSet().size==1&&options.all {row->
+            row.ownerId>=0&&row.textId>=0&&row.windowId>=0&&row.ownerId!=row.textId&&row.nativeTextToOwnerPath.size in 2..16&&
+                row.nativeTextToOwnerPath.first()==row.textId&&row.nativeTextToOwnerPath.last()==row.ownerId&&row.nativeTextToOwnerPath.distinct().size==row.nativeTextToOwnerPath.size&&
+                row.nativeTextToOwnerPath.dropLast(1).none {id->options.any {it.ownerId==id}}&&row.labelHash==labelHashes[row.value]&&
+                row.selection.tag=="connection-preference-${row.value}"&&p8ExactPreferenceSelection(row.selection,row.value==expected)
+        }&&options.count {it.selection.checked==true}==1&&options.count {it.selection.checked==false}==2
+}
+
 /** Actual AgentHubApp theme/localization and real product navigation, not a copied theme.
  * ComponentActivity hosting, controlled dialog bounds/fonts and physical display lanes
  * are explicitly distinguished. No pairing, scan, permission or business action is tapped.
@@ -93,12 +107,13 @@ class NativeEasyWorkConnectionPresentationTest {
         assertEquals(defaults,EasyWorkPresentationFixture.defaults(i.targetContext))
     }
     private fun record(d: Description,result: String,error: String?=null){if(!::folder.isInitialized)return
+        val preferenceOnly=d.methodName in setOf("chineseLightPreferenceOptionsStayNativeExclusiveAndPersist","englishDarkPreferenceOptionsStayNativeExclusiveAndPersist")
         File(folder,"result.json").writeText(JSONObject().put("caseId",id).put("method",d.methodName).put("junitResult",result).put("failureClass",error).put("build",build)
             .put("pid",android.os.Process.myPid()).put("deviceFingerprint",android.os.Build.FINGERPRINT).put("touchTags",JSONArray(touches)).put("measurements",probes)
             .put("protectedOriginals",protectedEvidence).put("host","ComponentActivity with actual AgentHubApp; not MainActivity lifecycle proof")
-            .put("controlledDialogBounds",controlledBounds).put("busyCoverage","injected global close guard only; actual connection action busy/error not exercised")
+            .put("controlledDialogBounds",controlledBounds).put("busyCoverage",if(preferenceOnly)"not exercised by this preference-only method" else "injected global close guard only; actual connection action busy/error not exercised")
             .put("appLanguage",presentationLanguage).put("resolvedProductLanguage",if(::text.isInitialized)text.language else JSONObject.NULL)
-            .put("accessibilityCoverage","rendered Compose and Android node labels/selection/editability; not TalkBack speech or traversal")
+            .put("accessibilityCoverage",if(preferenceOnly)"native preference owners/labels/selection/actions/bounds; no new field-editability, IME or TalkBack coverage" else "rendered Compose and Android node labels/selection/editability; not TalkBack speech or traversal")
             .put("forbiddenTouchActionsRejected",true).put("networkOrModelAcceptance",false).toString())
     }
     private fun launch(language: String,dark: Boolean,landscape: Boolean,fontOverride: Float?=null,imported: Boolean=false){
@@ -415,9 +430,10 @@ class NativeEasyWorkConnectionPresentationTest {
             .put("role",owner.config.getOrNull(SemanticsProperties.Role)?.toString()?:JSONObject.NULL).put("textMatchCount",paths.size)
             .put("textPaths",JSONArray(paths.map {JSONArray(it)})).put("textHash",easyHash(value.toByteArray()))
     }
-    private fun nativeSelectedMenuAx(value: String,tag: String){
-        val start=android.os.SystemClock.uptimeMillis();val deadline=start+5000
+    private fun nativeSelectedMenuAx(value: String,tag: String,expectedSelected: Boolean=true,sharedDeadline: Long?=null): P8PreferenceOptionAx {
+        val start=android.os.SystemClock.uptimeMillis();val deadline=sharedDeadline?:start+5000
         val evidence=JSONObject().put("kind","exact-selected-menu-before-guards").put("tag",tag).put("valueHash",easyHash(value.toByteArray())).put("totalBudgetMs",5000)
+            .put("expectedSelected",expectedSelected).put("sharedStateDeadline",sharedDeadline!=null).put("remainingAtEntryMs",deadline-start)
             .put("popupInspectionMinApi",29).put("sdkInt",android.os.Build.VERSION.SDK_INT).put("phase","before-owned-popup-read")
         var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalOwner: android.view.accessibility.AccessibilityNodeInfo?=null;var finalText: android.view.accessibility.AccessibilityNodeInfo?=null
         var ownerCount=0;var textCount=0;var textAssociated=false;var ownerTagMatches=false;var finalPopup: JSONObject?=null;var finalAnchor: JSONObject?=null
@@ -427,6 +443,7 @@ class NativeEasyWorkConnectionPresentationTest {
         fun owned(n: android.view.accessibility.AccessibilityNodeInfo,id: Int)=n.packageName?.toString()==i.targetContext.packageName&&n.windowId==id
         try {
             saveProbe(evidence)
+            check(deadline>start&&deadline<=start+5000){"Original menu AX5s remaining budget"}
             val popup=preferencePopupView(deadline);evidence.put("initialPopup",popupGeometry(popup,deadline)).put("phase","root-readiness");flushProbes()
             val automation=i.uiAutomation
             firstRoot=activeAppRoot(deadline);val remaining=deadline-android.os.SystemClock.uptimeMillis();assertTrue("Original menu AX5s remains",remaining>0)
@@ -494,9 +511,9 @@ class NativeEasyWorkConnectionPresentationTest {
             val anchor=checkNotNull(finalAnchor)
             val selection=P8PreferenceSelectionAx(tag,anchor.getBoolean("rolePresent"),if(anchor.isNull("role"))null else anchor.getString("role"),anchor.getBoolean("toggleableStatePresent"),
                 anchor.getBoolean("selectedPresent"),if(anchor.isNull("composeSelected"))null else anchor.getBoolean("composeSelected"),owner.className?.toString(),owner.isCheckable,owner.isChecked,owner.isSelected)
-            evidence.put("selectionProjection",JSONObject().put("profile","compose1.12.1-preference-role-null-selected-no-toggle").put("expectedSelected",true)
-                .put("compose",anchor).put("native",axNodeFlags(owner)).put("matchesExactProfile",p8ExactPreferenceSelection(selection,true)).put("projectionNotAReadinessPredicate",true));flushProbes()
-            assertTrue("Native selected choice uses exact role-null preference checked/checkable projection",p8ExactPreferenceSelection(selection,true))
+            evidence.put("selectionProjection",JSONObject().put("profile","compose1.12.1-preference-role-null-selected-no-toggle").put("expectedSelected",expectedSelected)
+                .put("compose",anchor).put("native",axNodeFlags(owner)).put("matchesExactProfile",p8ExactPreferenceSelection(selection,expectedSelected)).put("projectionNotAReadinessPredicate",true));flushProbes()
+            assertTrue("Native choice matches independent expected state under exact role-null preference projection",p8ExactPreferenceSelection(selection,expectedSelected))
             assertTrue("Native menu owner enabled",owner.isEnabled);assertTrue("Native menu owner clickable",owner.isClickable);assertTrue("Native menu owner visible",owner.isVisibleToUser)
             assertTrue("Native owner exposes actual click action",owner.actionList.any {it.id==android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK})
             fun whole(b: android.graphics.Rect)=b.width()>0&&b.height()>0&&b.left>=clip.left-1&&b.top>=clip.top-1&&b.right<=clip.right+1&&b.bottom<=clip.bottom+1
@@ -504,7 +521,11 @@ class NativeEasyWorkConnectionPresentationTest {
             assertTrue("Text bounds inside exact owner",textBounds.left>=ownerBounds.left-1&&textBounds.top>=ownerBounds.top-1&&textBounds.right<=ownerBounds.right+1&&textBounds.bottom<=ownerBounds.bottom+1)
             val n=ui.onNodeWithTag(tag).assertIsDisplayed();val b=n.fetchSemanticsNode().boundsInWindow;val raw=n.getUnclippedBoundsInRoot();val density=ui.density.density
             assertTrue("Whole Compose menu owner visible",b.width>=(raw.right.value-raw.left.value)*density-1.5f&&b.height>=(raw.bottom.value-raw.top.value)*density-1.5f)
+            assertEquals("Original exact native option label after guards",value,text.text?.toString())
             evidence.put("phase","native-platform-choice-owner-and-text-all-guards-passed");flushProbes()
+            val observed=recent.last();val path=observed.getJSONArray("nativeTextToOwnerPath")
+            return P8PreferenceOptionAx(tag.removePrefix("connection-preference-"),observed.getInt("nativeOwnerId"),observed.getInt("nativeTextId"),owner.windowId,
+                (0 until path.length()).map {path.getInt(it)},easyHash(checkNotNull(text.text).toString().toByteArray()),selection)
         }catch(failure: Throwable){evidence.put("phase","failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes();throw failure}
         finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalOwner?.let {@Suppress("DEPRECATION") it.recycle()};finalText?.let {@Suppress("DEPRECATION") it.recycle()}}
     }
@@ -517,6 +538,59 @@ class NativeEasyWorkConnectionPresentationTest {
         }finally {found.forEach {@Suppress("DEPRECATION") it.recycle()};@Suppress("DEPRECATION") root.recycle()}
     }
     private fun method(value: String){touch("easywork-connection-method");val item=ui.onNodeWithTag("easywork-method-$value").performScrollTo().assertIsDisplayed();item.assertIsEnabled();touch("easywork-method-$value")}
+    private fun preferenceSaved(expected: String,phase: String,deadline: Long){
+        val evidence=JSONObject().put("kind","preference-live-and-atomic-saved-read").put("phase",phase).put("expected",expected).put("expectedSource","independent scripted choice")
+        saveProbe(evidence)
+        try {
+            val remaining=deadline-android.os.SystemClock.uptimeMillis();check(remaining>0)
+            runBlocking {kotlinx.coroutines.withTimeout(remaining){fixture.store.awaitQueuedWrites()}}
+            val live=menuMainRead(deadline){fixture.live().agentConnection?.preference}
+            val raw=checkNotNull(fixture.store.read("metadata"));val saved=JSONObject(raw).getJSONArray("clients").objects().single()
+            assertEquals("Exact fixture client owns persisted preference",fixture.client.id,saved.getString("id"))
+            val persisted=saved.getJSONObject("agentConnection").getString("preference")
+            evidence.put("actualLive",live?:JSONObject.NULL).put("actualSaved",persisted).put("metadataSha256",easyHash(raw.toByteArray()))
+                .put("freshAtomicRead",true).put("clientIdHash",easyHash(fixture.client.id.toByteArray()));flushProbes()
+            assertEquals("Live preference matches independent choice",expected,live);assertEquals("Atomic saved preference matches independent choice",expected,persisted)
+            check(android.os.SystemClock.uptimeMillis()<=deadline);evidence.put("phase",phase+"-passed");flushProbes()
+        }catch(failure: Throwable){evidence.put("phase",phase+"-failed").put("failureClass",failure.javaClass.name);flushProbes();throw failure}
+    }
+    private fun preferenceTriplet(expected: String,labels: Map<String,String>,phase: String){
+        val start=android.os.SystemClock.uptimeMillis();val deadline=start+5000;val rows=mutableListOf<P8PreferenceOptionAx>()
+        val evidence=JSONObject().put("kind","native-exclusive-preference-triplet").put("phase",phase).put("expected",expected)
+            .put("expectedSource","independent scripted choice; never Compose selection").put("totalBudgetMs",5000)
+        fun rowJson(row: P8PreferenceOptionAx)=JSONObject().put("value",row.value).put("ownerId",row.ownerId).put("textId",row.textId).put("windowId",row.windowId)
+            .put("nativeTextToOwnerPath",JSONArray(row.nativeTextToOwnerPath)).put("labelHash",row.labelHash).put("checkable",row.selection.checkable)
+            .put("checked",row.selection.checked).put("selected",row.selection.selected).put("nativeClass",row.selection.nativeClass)
+            .put("rolePresent",row.selection.rolePresent).put("role",row.selection.role?:JSONObject.NULL).put("toggleableStatePresent",row.selection.toggleableStatePresent)
+            .put("composeSelectedDiagnostic",row.selection.composeSelected?:JSONObject.NULL)
+        saveProbe(evidence)
+        try {
+            preferenceSaved(expected,phase+"-before",deadline);val beforeTouches=touches.size
+            for((id,label) in labels){rows.add(nativeSelectedMenuAx(label,"connection-preference-$id",id==expected,deadline));evidence.put("completedNativeRows",JSONArray(rows.map {rowJson(it)}));flushProbes()}
+            preferenceSaved(expected,phase+"-after",deadline);assertEquals("No input between triplet observations",beforeTouches,touches.size)
+            val hashes=labels.mapValues {easyHash(it.value.toByteArray())};val matches=p8ExclusivePreferenceState(expected,hashes,rows)
+            evidence.put("nativeCheckedCount",rows.count {it.selection.checked==true}).put("nativeUncheckedCount",rows.count {it.selection.checked==false})
+                .put("matchesExactExclusiveState",matches).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes()
+            assertTrue("Exact three native options expose one known active and two inactive choices",matches);check(android.os.SystemClock.uptimeMillis()<=deadline)
+            evidence.put("phase",phase+"-all-native-and-persisted-guards-passed");flushProbes()
+        }catch(failure: Throwable){evidence.put("phase",phase+"-failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes();throw failure}
+    }
+    private fun preferenceExclusiveScenario(language: String,dark: Boolean){
+        launch(language,dark,false)
+        val labels=when(language){
+            "zh-Hans"->linkedMapOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继")
+            "en"->linkedMapOf("automatic" to "Automatic","lan-only" to "Direct only","relay-only" to "Relay only")
+            else->error("Explicit expected preference labels required")
+        }
+        touch("connection-preference");preferenceTriplet("automatic",labels,"known-initial-automatic")
+        for(next in listOf("lan-only","relay-only","automatic")){
+            touch("connection-preference-$next");labels.keys.forEach {ui.onNodeWithTag("connection-preference-$it").assertDoesNotExist()}
+            preferenceSaved(next,"after-selection-click-$next",android.os.SystemClock.uptimeMillis()+5000)
+            touch("cancel-client-form",false);touch("edit-client-${fixture.client.id}");touch("connection-preference")
+            preferenceTriplet(next,labels,"after-click-and-form-reopen-$next")
+        }
+        fixture.noActivation()
+    }
     @Test fun chineseLightPortraitUsesProductNavigationAndSavedPreference(){
         launch("zh-Hans",false,false);targets();val raw="  Renamed 中文 😀 %@  "
         val name=ui.onNodeWithTag("easywork-name").performScrollTo();name.assertContentDescriptionEquals(text.tr("名称"));name.performTextReplacement(raw)
@@ -593,4 +667,6 @@ class NativeEasyWorkConnectionPresentationTest {
         capture("en-dark-landscape-ime");field.performImeAction();ui.waitUntil(8000){ViewCompat.getRootWindowInsets(w.decorView)?.isVisible(WindowInsetsCompat.Type.ime())!=true};field.assertIsNotFocused()
         field.performScrollTo();nativeFieldAx(text.tr("中继服务地址"),"easywork-relay-url");capture("en-dark-landscape-done")
     }
+    @Test fun chineseLightPreferenceOptionsStayNativeExclusiveAndPersist(){preferenceExclusiveScenario("zh-Hans",false)}
+    @Test fun englishDarkPreferenceOptionsStayNativeExclusiveAndPersist(){preferenceExclusiveScenario("en",true)}
 }

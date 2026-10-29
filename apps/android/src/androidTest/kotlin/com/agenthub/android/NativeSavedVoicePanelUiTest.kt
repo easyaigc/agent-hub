@@ -71,9 +71,13 @@ class NativeSavedVoicePanelUiTest {
     @get:Rule(order=3) val ui=createAndroidComposeRule<NativeSavedVoicePanelActivity>()
     @get:Rule(order=4) val name=TestName()
     private lateinit var folder: File
+    private lateinit var diagnostics: NativeSavedVoicePanelDiagnostics
+    private lateinit var failureFrames: NativeSavedVoicePanelFailureFrame
+    private var failureViewport: JSONObject?=null
     private val fixtures=mutableListOf<NativeSavedVoicePanelFixture>()
     private var permissionBefore=0
     private var axFlagsBefore=0
+    private var axFlagsCaptured=false
     private var language by mutableStateOf("zh-Hans")
     private var dark by mutableStateOf(false)
     private var checked=false
@@ -90,15 +94,19 @@ class NativeSavedVoicePanelUiTest {
         val owned=NativeRealFileAsrContract.privateDirectory(root,lease)
         folder=File(owned,name.methodName);require(!folder.exists()) {"UI case already claimed; preserve its original proof instead of replaying"}
         folder=NativeRealFileAsrContract.privateDirectory(owned,name.methodName)
+        diagnostics=NativeSavedVoicePanelDiagnostics(folder)
+        failureFrames=NativeSavedVoicePanelFailureFrame(ui.activity,folder)
         assertFalse("Fixed input has no original sharing/Host rerecord authority",NativeSavedVoicePanelInputs.originalHostRerecordAuthorized)
         assertFalse("Fixed input must not enable live microphone invocation",NativeSavedVoicePanelInputs.microphoneInvocationsAuthorized)
         assertTrue("Saved-file recognition remains separately authorized",NativeSavedVoicePanelInputs.localSavedFileRecognitionAuthorized)
         assertFalse("Rerecord must be disabled under this independent input",NativeSavedVoicePanelInputs.expectedRerecordEnabled)
         report.put("fixtureInputs",NativeSavedVoicePanelInputs.json()).put("authorizedLiveRerecordAcceptance","pending separate authorized scenario")
         permissionBefore=instrumentation.targetContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-        val service=instrumentation.uiAutomation.serviceInfo;axFlagsBefore=service.flags
-        service.flags=service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
+        val service=instrumentation.uiAutomation.serviceInfo;axFlagsBefore=service.flags;axFlagsCaptured=true
+        service.flags=service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
+            android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
         instrumentation.uiAutomation.serviceInfo=service
+        report.put("axServiceFlagsBefore",axFlagsBefore).put("axServiceFlagsObserved",service.flags)
         report.put("version",1).put("lease",lease).put("case",name.methodName).put("profile",profile)
             .put("sdk",android.os.Build.VERSION.SDK_INT).put("buildFingerprint",android.os.Build.FINGERPRINT)
             .put("package",ui.activity.packageName).put("fontScale",ui.activity.resources.configuration.fontScale)
@@ -121,9 +129,17 @@ class NativeSavedVoicePanelUiTest {
                 .put("outcome",if(checked&&cleanupErrors.isEmpty())"COMPONENT_ASSERTIONS_PASSED_REAL_ENGINE_AND_FULL_DEV_SEPARATE"else"FAILED_OR_UNKNOWN")
                 .put("cleanupFailures",JSONArray(cleanupErrors.map(::failureJson)))
         }finally {
-            val service=instrumentation.uiAutomation.serviceInfo;service.flags=axFlagsBefore;instrumentation.uiAutomation.serviceInfo=service
-            report.put("axServiceFlagsRestored",instrumentation.uiAutomation.serviceInfo.flags==axFlagsBefore)
-                .put("evidencePoints",evidence).put("finishedAtMs",System.currentTimeMillis())
+            try {
+                if(axFlagsCaptured) {
+                val service=instrumentation.uiAutomation.serviceInfo;service.flags=axFlagsBefore;instrumentation.uiAutomation.serviceInfo=service
+                val restored=instrumentation.uiAutomation.serviceInfo.flags==axFlagsBefore
+                report.put("axServiceFlagsRestored",restored)
+                if(!restored)cleanupErrors.add(AssertionError("UIAutomation flags restore readback mismatch"))
+                }else report.put("axServiceFlagsRestored",true).put("axFlagsObservation","not-captured-or-modified")
+            }catch(t: Throwable){cleanupErrors.add(t);report.put("axServiceFlagsRestored",false).put("axFlagsRestoreFailure",t.javaClass.name)}
+            report.put("failureFrameDiagnostics",if(::failureFrames.isInitialized)failureFrames.summary()else JSONObject.NULL)
+                .put("cleanupFailures",JSONArray(cleanupErrors.map(::failureJson))).put("evidencePoints",evidence).put("finishedAtMs",System.currentTimeMillis())
+            if(cleanupErrors.isNotEmpty())report.put("outcome","FAILED_OR_UNKNOWN")
             NativeRealFileAsrContract.atomic(File(folder,"result.json"),report)
         }
         MultipleFailureException.assertEmpty(cleanupErrors)
@@ -134,7 +150,7 @@ class NativeSavedVoicePanelUiTest {
         return checkNotNull(result).also(fixtures::add)
     }
     private fun content(f: NativeSavedVoicePanelFixture) {
-        ui.runOnIdle {ui.activity.setContent {
+        ui.runOnIdle {failureViewport=null;ui.activity.setContent {
             // The OS density/font are inherited without replacement. Only the component viewport is bounded.
             NativeTheme(dark,language) {
                 BoxWithConstraints(Modifier.fillMaxSize().semantics {testTagsAsResourceId=true}) {
@@ -165,56 +181,159 @@ class NativeSavedVoicePanelUiTest {
     private fun control(tag: String,enabled: Boolean=true): SemanticsNodeInteraction {
         val n=node(tag);if(enabled)n.assertIsEnabled()else n.assertIsNotEnabled()
         n.assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
-        val b=n.fetchSemanticsNode().boundsInRoot;val v=ui.onNodeWithTag("saved-panel-viewport").fetchSemanticsNode().boundsInRoot
+        val b=n.fetchSemanticsNode().boundsInRoot;val viewport=ui.onNodeWithTag("saved-panel-viewport").fetchSemanticsNode();val v=viewport.boundsInRoot
+        failureViewport=JSONObject().put("boundsInComposeRoot",JSONArray(listOf(v.left,v.top,v.right,v.bottom)))
+            .put("positionInWindow",JSONArray(listOf(viewport.positionInWindow.x,viewport.positionInWindow.y)))
+            .put("sizePx",JSONArray(listOf(viewport.size.width,viewport.size.height)))
         assertTrue("Complete control bounds must be inside the measured viewport: $tag",b.left>=v.left-1f&&b.right<=v.right+1f&&b.top>=v.top-1f&&b.bottom<=v.bottom+1f)
         return n
     }
     private fun tap(tag: String) {control(tag).performTouchInput {click(center)};ui.waitForIdle()}
+    private fun layoutRow(l: TextLayoutResult,budget: NativeSavedVoiceReadBudget): JSONObject {
+        val c=l.layoutInput.constraints;val lines=JSONArray();val count=budget.takeLines(l.lineCount)
+        for(line in 0 until count) {
+            val value=budget.read {JSONObject().put("start",l.getLineStart(line)).put("end",l.getLineEnd(line))
+                .put("ellipsized",l.isLineEllipsized(line)).put("left",l.getLineLeft(line)).put("right",l.getLineRight(line))
+                .put("top",l.getLineTop(line)).put("bottom",l.getLineBottom(line))}?:break
+            lines.put(value.value)
+        }
+        return JSONObject().put("text",budget.clip(l.layoutInput.text.text,2048)).put("size",JSONArray(listOf(l.size.width,l.size.height)))
+            .put("paragraph",JSONArray(listOf(l.multiParagraph.width,l.multiParagraph.height))).put("constraints",budget.clip(c.toString(),200))
+            .put("minWidth",c.minWidth).put("maxWidth",c.maxWidth).put("minHeight",c.minHeight).put("maxHeight",c.maxHeight)
+            .put("fontScale",l.layoutInput.density.fontScale).put("density",l.layoutInput.density.density)
+            .put("fontSize",budget.clip(l.layoutInput.style.fontSize.toString(),64)).put("lineHeight",budget.clip(l.layoutInput.style.lineHeight.toString(),64))
+            .put("maxLines",l.layoutInput.maxLines).put("softWrap",l.layoutInput.softWrap).put("overflow",budget.clip(l.layoutInput.overflow.toString(),64))
+            .put("hasVisualOverflow",l.hasVisualOverflow).put("didOverflowWidth",l.didOverflowWidth).put("didOverflowHeight",l.didOverflowHeight)
+            .put("lineCount",l.lineCount).put("linesCaptured",lines.length()).put("lines",lines)
+    }
     private fun layout(tag: String,expected: String): JSONObject {
         val n=ui.onNodeWithTag(tag,useUnmergedTree=true).performScrollTo().assertIsDisplayed()
-        val layouts=mutableListOf<TextLayoutResult>();n.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
+        val budget=NativeSavedVoiceReadBudget();val layouts=mutableListOf<TextLayoutResult>()
+        n.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
         assertEquals("One actual Text layout for $tag",1,layouts.size);val l=layouts.single()
-        val diagnostic=JSONObject().put("tag",tag).put("expected",expected).put("actual",l.layoutInput.text.text)
-            .put("size",JSONArray(listOf(l.size.width,l.size.height))).put("paragraph",JSONArray(listOf(l.multiParagraph.width,l.multiParagraph.height)))
-            .put("constraints",l.layoutInput.constraints.toString()).put("fontScale",l.layoutInput.density.fontScale)
-            .put("fontSize",l.layoutInput.style.fontSize.toString()).put("lineHeight",l.layoutInput.style.lineHeight.toString())
-            .put("didOverflowWidth",l.didOverflowWidth).put("didOverflowHeight",l.didOverflowHeight)
-            .put("lineCount",l.lineCount).put("lineEnds",JSONArray((0 until l.lineCount).map {l.getLineEnd(it)}))
-        require(++layoutEvidence<=160)
-        NativeRealFileAsrContract.immutable(File(folder,"layout-%03d-%s.json".format(layoutEvidence,tag)),diagnostic)
+        val rows=JSONArray();if(budget.active())rows.put(layoutRow(l,budget))
+        val diagnostic=diagnostics.textLayout(tag,expected,rows,budget.active()&&!budget.truncated,budget)
         assertEquals(expected,l.layoutInput.text.text);assertFalse("No clipped or ellipsized text for $tag; immutable layout diagnostic retained",l.hasVisualOverflow)
         assertTrue(l.lineCount>0);assertEquals(expected.length,l.getLineEnd(l.lineCount-1))
         assertTrue((0 until l.lineCount).none {l.isLineEllipsized(it)})
+        assertTrue("Complete bounded TextLayoutResult diagnosis required",diagnostic.getBoolean("complete"))
         return JSONObject().put("tag",tag).put("text",expected).put("lines",l.lineCount).put("fontScale",l.layoutInput.density.fontScale)
             .put("size",JSONArray(listOf(l.size.width,l.size.height))).put("constraints",l.layoutInput.constraints.toString())
             .put("hasVisualOverflow",l.hasVisualOverflow).put("lastCharacter",l.getLineEnd(l.lineCount-1))
     }
+    private fun recordButtonLayouts(tag: String,expected: String): JSONObject {
+        val budget=NativeSavedVoiceReadBudget();val rows=JSONArray();var complete=true
+        val candidates=budget.read {ui.onAllNodes((hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag))) and
+            SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult),useUnmergedTree=true).fetchSemanticsNodes()}?.value.orEmpty()
+        if(candidates.size>16)complete=false
+        for(n in candidates.take(16)) {
+            if(!budget.active()){complete=false;break}
+            val layouts=mutableListOf<TextLayoutResult>()
+            try {
+                val observed=budget.read {
+                    ui.onNode(SemanticsMatcher("Exact diagnostic semantics id ${n.id}"){it.id==n.id},useUnmergedTree=true)
+                        .performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
+                }
+                if(observed==null){layouts.clear();complete=false;break}
+                if(layouts.size>4)complete=false
+                for(l in layouts.take(4)) {
+                    if(!budget.active()){complete=false;break}
+                    val b=n.boundsInRoot
+                    rows.put(layoutRow(l,budget).put("semanticsId",n.id)
+                        .put("testTag",budget.clip(n.config.getOrNull(SemanticsProperties.TestTag),128))
+                        .put("boundsInRoot",JSONArray(listOf(b.left,b.top,b.right,b.bottom))))
+                }
+            }catch(t: Throwable){complete=false;if(budget.active())rows.put(JSONObject().put("semanticsId",n.id).put("observation","layout-unavailable").put("failureClass",t.javaClass.name))}
+        }
+        return diagnostics.buttonLayouts(tag,expected,rows,complete&&budget.active()&&!budget.truncated,budget)
+    }
+    private fun captureGuardFrame(reason: NativeSavedVoicePanelFailureFrame.Reason,tag: String,detail: ()->JSONObject) {
+        try {
+            failureFrames.capture(reason,tag) {
+                val f=fixtures.lastOrNull();val controller=f?.controller
+                JSONObject().put("viewport",checkNotNull(failureViewport){"No measured viewport cached; no frame proof"})
+                    .put("language",language).put("dark",dark).put("profile",profile).put("composedFontScale",report.opt("composedFontScale"))
+                    .put("provider",controller?.provider?.name ?: JSONObject.NULL).put("phase",controller?.phase?.name ?: JSONObject.NULL)
+                    .put("savedFileBusy",controller?.savedFileBusy ?: JSONObject.NULL).put("savedFileStatus",controller?.savedFileStatusKey ?: JSONObject.NULL)
+                    .put("controllerStatus",controller?.status ?: JSONObject.NULL).put("guardDetail",detail())
+            }
+        }catch(t: Throwable) {
+            // Screenshot/metadata failures must never replace the original hard assertion below.
+            try {report.put("failureFrameBoundaryError",t.javaClass.name)}catch(_: Throwable){}
+        }
+    }
     private fun buttonLayout(tag: String,key: String): JSONObject {
         control(tag,ui.onNodeWithTag(tag).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Disabled)==null)
+        val captured=recordButtonLayouts(tag,text(key)) // Persist actual layouts before expected-label/overflow assertions.
         val label=ui.onNode(hasText(text(key)) and hasAnyAncestor(hasTestTag(tag)),useUnmergedTree=true)
         val list=mutableListOf<TextLayoutResult>();label.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(list)}
         assertEquals(1,list.size);val l=list.single();assertEquals(text(key),l.layoutInput.text.text)
+        if(l.hasVisualOverflow)captureGuardFrame(NativeSavedVoicePanelFailureFrame.Reason.BUTTON_OVERFLOW,tag) {
+            JSONObject().put("expectedLabel",text(key)).put("actualText",l.layoutInput.text.text).put("hasVisualOverflow",true)
+                .put("constraints",l.layoutInput.constraints.toString()).put("size",JSONArray(listOf(l.size.width,l.size.height)))
+                .put("paragraph",JSONArray(listOf(l.multiParagraph.width,l.multiParagraph.height))).put("fontScale",l.layoutInput.density.fontScale)
+                .put("fontSize",l.layoutInput.style.fontSize.toString()).put("lineHeight",l.layoutInput.style.lineHeight.toString())
+                .put("buttonLayoutDiagnostic",captured)
+        }
         assertFalse("Full button/chip label must wrap: $tag",l.hasVisualOverflow)
         assertEquals(text(key).length,l.getLineEnd(l.lineCount-1));assertTrue((0 until l.lineCount).none {l.isLineEllipsized(it)})
-        return JSONObject().put("tag",tag).put("text",text(key)).put("lines",l.lineCount).put("noOverflowOrEllipsis",true)
+        assertTrue("Complete button layout diagnosis required",captured.getBoolean("complete"))
+        return JSONObject().put("tag",tag).put("text",text(key)).put("lines",l.lineCount).put("noOverflowOrEllipsis",true).put("diagnostic",captured)
     }
     private fun nativeAx(tag: String,key: String,enabled: Boolean,selected: Boolean?=null,literal: Boolean=false): JSONObject {
         if(literal)node(tag)else control(tag,enabled);instrumentation.waitForIdleSync()
-        val root=checkNotNull(instrumentation.uiAutomation.rootInActiveWindow) {"Native AX root unavailable"}
+        val layoutCapture=recordButtonLayouts(tag,if(literal)key else text(key))
+        val rootBudget=NativeSavedVoiceReadBudget(1000);var observedRoot: AccessibilityNodeInfo?=null
+        val rootRead=rootBudget.read {instrumentation.uiAutomation.rootInActiveWindow.also {observedRoot=it}}
+        val ownedChildren=java.util.IdentityHashMap<AccessibilityNodeInfo,Boolean>()
+        var callerSearchBudget: NativeSavedVoiceReadBudget?=null;var callerSearchTiming: JSONObject?=null
+        report.put("nativeAxRootReadBudget",rootBudget.timing())
+        try {
+        val captured=diagnostics.ax(if(rootRead!=null)observedRoot else null,tag,if(literal)key else text(key),enabled,selected,instrumentation.uiAutomation.serviceInfo.flags)
+        val root=checkNotNull(if(rootRead!=null)observedRoot else null) {"Native AX root unavailable"}
         assertEquals(NativeRealFileAsrContract.PACKAGE,root.packageName.toString())
-        val matches=mutableListOf<AccessibilityNodeInfo>();var nodes=0
+        require(root.windowId>=0) {"Native AX owned window unavailable"}
+        val searchBudget=NativeSavedVoiceReadBudget();callerSearchBudget=searchBudget;val matches=mutableListOf<AccessibilityNodeInfo>();var nodes=0;var ownedScopeComplete=true
+        fun inOwnedScope(n: AccessibilityNodeInfo): Boolean {
+            val pkg=n.packageName;val target=NativeRealFileAsrContract.PACKAGE
+            return n.windowId==root.windowId&&pkg!=null&&pkg.length==target.length&&target.indices.all {pkg[it]==target[it]}
+        }
         fun visit(n: AccessibilityNodeInfo,depth: Int) {
             require(depth<=32&&++nodes<=512)
+            if(!searchBudget.active()||searchBudget.read {inOwnedScope(n)}?.value!=true){ownedScopeComplete=false;return}
             if(n.viewIdResourceName==tag)matches.add(n)
-            for(index in 0 until n.childCount)n.getChild(index)?.let {visit(it,depth+1)}
+            val count=searchBudget.read {n.childCount}?.value ?: return
+            for(index in 0 until minOf(count,512)) {
+                val child=searchBudget.read {n.getChild(index)?.also {if(it!==root)ownedChildren[it]=true}}?.value
+                if(child==null){ownedScopeComplete=false;if(!searchBudget.active())return}else visit(child,depth+1)
+            }
+            if(count>512)ownedScopeComplete=false
         }
         visit(root,0);assertEquals("Exactly one real AX node for $tag",1,matches.size);val n=matches.single()
         assertEquals(enabled,n.isEnabled);assertTrue(n.isVisibleToUser)
-        val spoken=listOfNotNull(n.text?.toString(),n.contentDescription?.toString()).joinToString(" ")
+        val spoken=checkNotNull(searchBudget.read {listOfNotNull(n.text?.toString(),n.contentDescription?.toString()).joinToString(" ")}) {"Native AX owner label read exceeded diagnostic budget"}.value
+        callerSearchTiming=searchBudget.timing()
+        report.put("nativeAxOwnerSearchBudget",callerSearchTiming)
+        if(!spoken.contains(if(literal)key else text(key)))captureGuardFrame(NativeSavedVoicePanelFailureFrame.Reason.AX_OWNER_LABEL,tag) {
+            JSONObject().put("expectedLabel",if(literal)key else text(key)).put("actualOwnerLabel",spoken).put("ownerWindowId",n.windowId)
+                .put("ownerEnabled",n.isEnabled).put("ownerVisible",n.isVisibleToUser).put("axOwnerDiagnostic",captured).put("buttonLayoutDiagnostic",layoutCapture)
+        }
         assertTrue("Actual AX must retain the full localized label: $tag",spoken.contains(if(literal)key else text(key)))
         if(selected!=null)assertEquals(selected,n.isSelected||n.isCheckable&&n.isChecked)
+        assertTrue("Native AX search must stay in the verified owned window/package",ownedScopeComplete)
+        assertTrue("Complete exact-owner/descendant diagnosis required",captured.getBoolean("complete"))
+        assertTrue("Complete associated TextLayoutResult diagnosis required",layoutCapture.getBoolean("complete"))
         return JSONObject().put("tag",tag).put("text",spoken).put("class",n.className.toString()).put("enabled",n.isEnabled)
             .put("selected",n.isSelected).put("checkable",n.isCheckable).put("checked",n.isChecked).put("clickable",n.isClickable).put("nativeWindowId",n.windowId)
+            .put("ownerDiagnostic",captured).put("layoutDiagnostic",layoutCapture)
+        }finally {
+            try {report.put("nativeAxOwnerSearchBudget",callerSearchTiming ?: callerSearchBudget?.timing() ?: JSONObject.NULL)}catch(t: Throwable){cleanupErrors.add(t)}
+            val cleanupBefore=cleanupErrors.size
+            ownedChildren.keys.forEach {child->try{child.recycle()}catch(t: Throwable){cleanupErrors.add(t)}}
+            observedRoot?.let {ownedRoot->try{ownedRoot.recycle()}catch(t: Throwable){cleanupErrors.add(t)}}
+            try {report.put("nativeAxCallerResources",JSONObject().put("childrenAcquired",ownedChildren.size).put("rootAcquired",observedRoot!=null)
+                .put("releaseFailures",cleanupErrors.size-cleanupBefore))}catch(t: Throwable){cleanupErrors.add(t)}
+        }
     }
     private fun point(label: String,details: JSONObject) {
         require(++evidence<=24);val stem="%02d-%s".format(evidence,label);require(stem.matches(Regex("[a-zA-Z0-9_-]{1,100}")))

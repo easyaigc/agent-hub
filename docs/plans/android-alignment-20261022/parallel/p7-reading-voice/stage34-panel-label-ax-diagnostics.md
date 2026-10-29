@@ -1,0 +1,32 @@
+# P7 stage34: pre-assert label layout and exact-owner AX diagnosis
+
+Parent Source46 is `ba98948f6e92b68c3327258f1a777c52895a80c0f96f147f3e454ae5c4db92c6`. Its seven actual native UI methods remain three passes/four failures. The four Source45 Text-width additions passed their relevant checks; this does not close the remaining panel matrix. The old claims/results are preserved. This child prepares owned diagnostics and auxiliary checks only; no native/device/Host/microphone/model/download/replay action runs here.
+
+Source46 production VoiceInputView remains exactly SHA `0cb42c2f49404110db31cf3684931ee5080f3ec27219de32d35e40f19780ed11`. The fixture and independent authorization inputs remain exactly SHA `9f4b4cb7a530cd5d187611dae8d4ba81cd31f8c652750d0ce7686df8b1b928fd`. The existing UiTest base is SHA `af4525d4da8c2b3ae8757c38296212ff559491076cc475d2ba93d9b4b13d013c`. Only its diagnostic preparation changes; the seven test bodies, expected disabled inputs, whole original/row/WAV/metadata/permission checks and original hard assertions remain.
+
+## What is recorded before the existing failures
+
+`buttonLayout` first captures actual GetTextLayoutResult actions from the exact tagged control and its unmerged descendants, without selecting nodes by the expected label. Each record includes semantics ID/tag, full text, root bounds, integer min/max constraints, measured size, paragraph width/height, density/fontScale/font/lineHeight, maxLines/softWrap/overflow, width/height overflow and every line's start/end/ellipsis/geometry. Only after the immutable file is written does the original expected-label query, one-layout assertion, full-text/last-character/no-ellipsis/hasVisualOverflow guard run. A missing or unexpected label is not made into a passing match.
+
+Before native AX package/count/enabled/visible/owner-label/selection assertions, the harness saves an exact tagged owner snapshot. It records root metadata, exact-owner count, ancestor metadata, owner and bounded full native descendant chain, package/window IDs, screen/parent bounds, class, text/contentDescription/hint/error, labelFor/labeledBy, actions, selection/check/enabled/visible/click/focus/importance flags and version-appropriate state/pane/tooltip fields. Owner window type/layer/title/focus/bounds are separate. The same associated TextLayoutResult capture is also saved before these native assertions.
+
+The snapshot explicitly records whether the exact owner contains the expected label and whether a descendant contains it. These are separate observations. Descendant text does **not** satisfy the existing exact-owner text/contentDescription assertion. No contentDescription, product label, semantics merge, font, spacing, touch target, text wrapping or chip width is changed. The new data is intended to distinguish absent product labels from disabled Compose owner/child/label relations before proposing a fix.
+
+Only a root from the exact acceptance package is traversed. A foreign root records metadata only, never its text or descendants. An exact-owner descendant with unreported package may be recorded only in the same owned window and is explicitly marked package-unreported; it is not relabeled as the target package. Explicit foreign package/window labels and children are omitted and the observation is incomplete. The observer temporarily adds report-view-IDs and retrieve-interactive-windows flags to its own UIAutomation service, records them and restores its original flags; it does not enumerate other app windows or alter product/runtime permissions.
+
+## Bounded independent contract
+
+The unchanged UI custom arguments are `panelUiLease` plus `panelUiProfile`; selectors and actual OS fontScale2/profile requirements remain unchanged. New artifacts live only in the existing immutable case folder:
+
+- `button-layout-<index>-<tag>.json`: up to 96 captures, 16 semantics nodes and four layout results per node.
+- `ax-owner-<index>-<tag>.json`: up to 64 captures; native search at most 512 nodes/depth32; at most four matching owners; combined owner subtrees at most 48 nodes/depth16; up to eight actions per node and a shared 8192-character label budget.
+
+Each JSON is bounded to 96KiB, the diagnostic group to 8MiB. Truncation, unknown roots/windows, missing children, foreign scope and byte limits are explicit incomplete observations. Data is saved before hard assertions; an incomplete diagnostic cannot establish a pass. New filenames are immutable and never overwrite old case claims. Whole-value assertions still use the untruncated real owner/text values. Existing primary and cleanup failure separation, final baseline comparison-before-zeroization, defaults and permissions remain intact.
+
+The auxiliary guard-retention check independently compares the unchanged native test-body suffix and original hard assertion expressions with exact Source46. It also verifies the fixture/production source hashes and compiles the actual SDK-bound tree. Host coroutine/lease contract vectors remain auxiliary evidence; no new real layout/AX outcome is inferred from compilation.
+
+## iOS comparison and next gate
+
+The inspected current iOS VoiceInputControls retains its native 44pt actions, caption status and failure HStack; failure actions expose retry/local transcription. LocalVoiceInput chooses a system-supported locale, with iOS26 DictationTranscriber or SFSpeechURLRecognitionRequest fallback and conditional requiresOnDeviceRecognition. It has no equivalent explicit Vosk language-model chips/download panel. Android retains its complete original labels/font, no ellipsis and 48dp controls. Native SwiftUI and Compose AX owner/child grouping cannot serve as each other's proof. No iOS code or subsequent discard behavior is changed.
+
+Source46's first chip overflow happened before the old helper saved its layout; its disabled-owner failures happened before a descendant snapshot. Those archives are insufficient to select a chip-width or label-semantic fix. Parent first runs a new candidate and fresh leases with these diagnostics, then uses the actual label layouts and owner/descendant/window evidence for any smallest necessary proposal. Do not guess a duplicate contentDescription, weaken owner-label/overflow guards, preemptively resize other chips or count the old failures as passed. Parent owns overall parity/acceptance tables and native execution. A6/task/project work remains paused; original unknown operations remain sealed.

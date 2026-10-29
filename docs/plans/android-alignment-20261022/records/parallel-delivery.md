@@ -467,3 +467,42 @@ PAR46-PW1：Source46原两namespace composer/question的真实加密metadata写�
 采用P9 a0f96f56的两个新增native与严格离线计划；Source47为745 canonical/754 expanded输入，三APK和原签名逐项核验。当前BOOT_COUNT2及kernel UUID前后原始读取独立绑定原count1，已有key完整认证原163B密文。cold1/store5实际JUnit6通过，8拒绝与14份持久JSON逐条精确join；原bootstrap raw/default非空家族/UID/证书/mic permission和AppOps保持，无新key、bootstrap、旧sameBoot重跑或产品写入。对应35新计划/14旧计划/149 cipher检查仅辅助。
 
 同一Source47之后只启动一组全新natural observer/producer，精确ready+code2后才发布唯一SDK原通知；双方实际native成功终态、新consumer和一次新UI草稿均取得原证明。父收集器在可选failed.json缺失时遇到ADB exec-out把cat诊断放stdout、exit0，JSONDecode失败；原日志和不可变attempt保留，后续仅只读补证，不重新发布/点击/重放。最终join及post-consumer退出后inspector分别待验，不把native局部终态升级为整P9。结果见[PAR47](../parallel/forty-seventh-stage-menu-coldboot-native.json)。
+
+## PAR47-N 原通知自然首击与原/新草稿关联
+
+Source47 API37 本地合成通知取得生产者1个实际JUnit通过、独立观察器1个非JUnit原生成功终态；两者分别计数。完整离线关联已由独立审计和Root再次执行通过：精确ready/code2先于唯一SDK原通知，独立UID观察器正向见证writer后确认目标UID及其instrumentation缺席，再由SystemUI实际点击一次；新consumer PID/nonce、完整四字段target（含agentId=codex）、原thread/planHash/receiptHash、三APK/签名、12页定位、durable claim及原草稿与后续一次新UI草稿全部相符。原非空163B默认家族、bootstrap不可变原字节、UID/证书、当前kernel boot与麦克风权限/AppOps保持。原本地SDK/存储/草稿写入已发生，次数未测；远端业务输入0，不能写成本地零写入。
+
+本阶段父验收工具过程问题分别保留：①原收集器在可选failed.json缺失时收到ADB exec-out的149B精确cat诊断（stdout、localExit0），直接JSONDecode失败；原raw/attempt不改，双方真实终态确认后仅补48条固定只读命令。3个可选缺失均以原cat诊断和同路径独立可读祖先目录/非symlink/-e/-L证明关联，不补写旧absent/result，不重读或重放原app-failed/SDK/点击。②原冻结checker的visibility值误索引module x[k]是源码复核发现，原checker未运行也未改；独立第二份保留其余全部join并明确索引visibility。③第二份offline checker实际在完整target断言失败，预期对象遗漏原codec固定的agentId；第三份在核对第二份准确SHA与5份冻结native来源后，仅把该处改为producer和consumer均精确四字段闭集及固定值，未改成subset，其他业务断言逐字保留。原第二次失败由独立报告注明工具观察来源，未伪造未留存的原stderr；第三份独立和Root真实exit0、stderr空。
+
+通过范围仍是API37本地合成自然首击与草稿。consumer退出后的独立inspector尚未实现，API26/31–33强自然路径、真机/OEM/供应商到达、真实Host/模型DEV及完整iOS交互/视觉对照均未关闭；任务与项目管理、iOS A6继续暂缓，未知操作不重放。结果见[PAR47-N](../parallel/forty-seventh-stage-natural-first-click-native.json)。
+
+## PAR47 主线交付与下一阶段
+
+PR59准确head7af8ee70本机pnpm build/check实际exit0，完整输出与无source drift回执已树外保存；Gitea CI10713的workspace26167及ios26168均success后，独立核对head/base/mergeable并合入main ab34102d。已核主线祖先与准确远端SHA，stage9分支按精确lease删除远端并本地-d清理；临时main-sync在原77fd同HEAD安全detach后本地分支-d删除。固定W目录与唯一ignored仍保留，2107文件/17,733,796B已树外私有压缩并逐件核验，应用pin释放后才可归档，不能声称目录已删。
+
+自然首击独立证据3944aa1f已推送stage10；随后精确采用bf193402的9路径与7c0bbc51的8路径。当前Source48三APK115tasks构建及749/758输入、ZIP/v2/原同证书/manifest核验通过；仅新增诊断和测试，语音四项旧UI失败未改判，尚待新的原生测量与两个菜单方法。
+
+Source46 API26 在两个全新租约分别完成写后边界2/3：每个composer与非秘密question同时停在准确检查点，经源包/v2证书/UID/boot、精确PID/startTicks/cmdline和ready/heartbeat/expiry时窗校验后只对原writer单次SIGKILL，原进程实际消失。各有两个不同新reader进程正常JUnit通过，合计4个JUnit通过+2个受控writer中断；writer无正常JUnit终态，不计通过。两轮212条实际命令回执、12份阶段archive、26份关键原生证明逐条复核，完整canonical原件/原整行/3244B整WAV、实际已写metadata/accepted version与原staged action相符。边界2 held时无destinationReceipt；边界3两owner receipt与原action/fingerprint/owner/sourceVersion/acceptedVersion/text及metadata hash精确关联。只读inspector不构造Session/不写源，显式continuation使用实际Session，原已写文字不重复append、新草稿不覆盖、catalog仍staged且不标applied。
+
+执行器仍是仅自有DEBUG模拟器同UID特权su上下文；两次默认文件均实际0→0且三角色metadata为null，只证明空基线保护。源App/runner、原证书、UID、boot、原件与麦克风权限/AppOps保持，原v4和v2/v3失败不重跑。非空默认内容、自然/OEM/普通App权限、物理/完整DEV/真实声学及API37边界2/3继续待验；远端业务输入0，本地合成fixture与恢复写入真实发生。
+
+## PAR48 语音失败现场与连接偏好互斥
+
+Source48 P7 实际原生7个JUnit终态：3通过、4明确测试失败、0未知；两phase均phaseError为空、cleanup为空、全量保护相等、完整证据发布后安全释放。通过具体为显式本地关闭和两类真正成功的合成引擎迟到返回，3方法各覆盖中英/明暗4点共12点；两late方法共8点实际成功返回已转交production caller后被owner或end-waiting代次保护拒绝，未staged/applied，不把本地关闭计为第三个迟到场景。206条实际命令回执、224个native归档成员、6份wholedefault archive及16个完整原件baseline读回；canonical、准确持久化row、3244B原WAV和metadata由原生全字节核对，原Host/mic工厂调用0。App与runner仅-r升级，同UID/已知原证书与各phase内boot保持，examiner缺席由准确pm-path exit1双空和完整user0正向App/TestUID清单证明；权限runtime完整flags与AppOps在安装前/安装后/终态后精确不变。两个设备默认均只有空目录/0文件，不宣称非空默认内容。
+
+四失败各有1/1张hard assertion前的准确NativeSavedVoicePanelActivity Window PixelCopy及layout/AX证明，bitmap/AX释放零失败、服务flags恢复；不是等待未就绪。语言chip记录text size484、paragraph596、constraint max596、glyphRight483及hasVisualOverflow=true，实际失败保持，不仅凭该标志宣称可见字形裁切。三类禁用控件exact owner文本为空而直属TextView保留完整文案，原owner断言失败保持，实际TalkBack朗读未验。四张原PNG已独立查看，仅为自有Window和受控viewport，非完整系统或双端视觉。
+
+旧v1零设备phase；v2两次均在安装前只读roots传输/解析失败，0安装/0native/0环境修改，明确失败且释放，不加入7个UI方法的失败计数。原cfg/UUID/失败raw保留，仅用独立只读transport证明和新v3 cfg/UUID继续，未重放原业务。真实Host/模型、真实ASR/JNI、授权重录/麦克风声学、物理Android/iOS及失败断言后的完整矩阵仍待验；任务/项目管理暂缓，未知操作不重放。
+
+### Source48：P8 连接偏好互斥与表单关闭重开
+
+- API37 专用 arm64 模拟器，实际 OS/渲染字体 1、竖屏；中文浅色、英文深色两个原生方法本次均通过。独立场景验收也为同两个方法的 2/2，不额外计为 4 个 JUnit。
+- 每例从原始 measurements 重算四个独立脚本状态（自动→仅直连→仅中继→自动），每状态三个 native 选项严格一选中、两未选；每例 12 条 owner/标签/窗口/路径/动作/完整边界 trace、11 次 live/AtomicFile 读取、15 次真实产品触摸，验证取消关闭表单后重开仍为原选择。保持原共享 5,000 ms 预算；中文四状态 1591/1371/2014/2247 ms，英文 1479/1285/1487/1717 ms。
+- 原生非 Tab profile：Compose Selected 存在、role 和 ToggleableState 不存在；native View checkable=true，checked 精确对应独立预期，raw selected=false。未用伪 Tab、宽松 OR 或期望值充当 readiness。
+- 独立读回 207 个完整命令回执、两组唯一 method0 + OK(1 test) + overall -1；两新 UUID 案例各三个原件，tar 前后全成员清单一致、完整双零尾、PNG CRC 与派生索引重算一致，合计 1,214,976 B；两真实终态均先于原件收集。
+- 七份完整保护快照一致：default family 为 11 个空目录、0 个文件；准确保留“空族”口径，不证明非空恢复。App/runner UID、SHA、boot、麦克风权限及 flags、原始 AppOps 均保持。三份构建 APK 的签名验证与设备实际仅 App/test 两目标分开；闲置 examiner 的缺失由完整用户0包列表及两个正向 UID 见证核实。无新安装，font/rotation 读回恢复，设备已释放。
+- 已查看两张原始初始编辑页 owned Window PNG：中文浅色与英文深色、对应语言和初始自动值可见。四个菜单状态未拍逐态 PNG；初始视口也不证明全部长字段尾部/滚动可达。TalkBack/IME、完整字号/横竖屏矩阵、MainActivity/跨进程/冷启动、真实 issuer/TLS/peer、iOS/真机与完整 DEV 继续单列。任务与项目管理及 iOS A6 保持暂缓。
+
+来源指纹：canonical `808153e8885b439699343d143b818cd199fde0f48136b65d68c76ff3f134a18a`（749），expanded `0bdcf4c68d27f4906df5afe1d35d834ca2101811a2998dc955354ccb4af9fce8`（758）；App `b13d530d3f18f0483d292cdffa9cc949ba858e261935093ef63715a9558fb8a1`、runner `7d3854bce29d839eda41903cd0851a5bcc49f91eeb5c0d53969215d7572b3abb`。
+
+两个独立审计已核对实际原件，合计9个JUnit终态5通过4明确失败、0未知；菜单场景2次通过是同两个JUnit，不另加计数。四项语音失败保留，后续修复使用新源码/候选继续，不重写本轮原始失败。

@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+  "baseSource": "Source47",
+  "baseCommit": "46abb854d50e32d43bb1af2a61b9297f074fe7d7",
+  "baseSha256": "419a593b11a51947cdeaaa3079c5545bbb43ed9ed2ed54c4d656e2d4c039b69d",
+  "proposedSha256": "46a4703e2573f890e03e51102c15a088ff2ba439abee2c6c22f38a0866ccfe93",
+  "patchSha256": "95d0aec94f58c82e959f5df41ee6364e0737abee75398ae1cd13a3503be18755",
+  "protectedSectionsSha256": {
+    "roleClosedOracle": "0f94fb4fe0309e8689f2572e101d7bd9c91ce73010913f274f9832a6b26fba18",
+    "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+    "activeNativeRootAndFlags": "9e964fb3f7cadf2ec0bfa58a73c069dd672a989dffefd039771c1dc2295b473d",
+    "nativeFieldAndPopupBudgetGeometry": "043b1564883d0913e84c6fb325dce6927fb1ffec443572ba1a36ae61c17d0e91",
+    "composeOwnerIdentity": "c9d94813976105a6eb7de79773ff0efd5432429790b834b8538fc581be3f75d5",
+    "nativeTextAx": "240c22195bf61f739ad0396ad1e9d3506dc8402fc6b1f3932d202e552e6d0de7",
+    "allOriginalFourMethodBodies": "7adb037b421c4dcfde5de0d77a4dfd51e4fead8a355fd8536e7f465b39125da6",
+    "nativeOwnerHelperAfterReversingOnlyDeclaredParametersEvidenceAndReturn": "f5d623f583a5d277fa4e92fa6accbe3674c398b89c4a7d5559532d24638c2b69"
+  },
+  "changeMap": [
+    "Reuse exact native owner helper with explicit expectedSelected default true and optional existing absolute deadline; return immutable raw native option/profile identity only after all original guards",
+    "Add triplet aggregator requiring exactly3 known values/tags, distinct owners/texts, same real native window, independently expected labels/path/profile and1 checked+2 unchecked; expectation never derived from Compose/native flags",
+    "Add atomic saved/live value reads around triplet and after each click; check exact fixture client ID and actual serialized metadata preference, never write expected state directly",
+    "Add two independent portrait scenarios zh-Hans light/en dark with fixed literal labels and scripted automatic\u2192lan-only\u2192relay-only\u2192automatic; after each real option touch assert Popup semantics gone, close/reopen edit form via product navigation, reopen Popup and verify full triplet",
+    "One original5s budget shared across each triplet including before/after saved reads and all3 native helper invocations; no per-option budget reset or retry until expected flags",
+    "Preserve all four existing test method bodies and role-closed profile oracle; correct case-specific busy/editability coverage metadata only for new methods"
+  ],
+  "presentationMethods": 6,
+  "existingMethods": 4,
+  "newMethods": [
+    "chineseLightPreferenceOptionsStayNativeExclusiveAndPersist",
+    "englishDarkPreferenceOptionsStayNativeExclusiveAndPersist"
+  ],
+  "newNativeExecutions": 0,
+  "newApks": 0,
+  "productSourceChanged": false,
+  "sharedCentralFilesChanged": false,
+  "additionalBudgetPerOptionMs": 0,
+  "tripletTotalBudgetMs": 5000
+}

@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "baseCommit": "c6b97a50931832affa068eb80307cef532f0fe14",
+  "parentSource46BaseUiSha256": "af4525d4da8c2b3ae8757c38296212ff559491076cc475d2ba93d9b4b13d013c",
+  "sourceFingerprints": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePanelUiTest.kt",
+      "oldSha256": "dd5f141d55366eeee386dcae56d2a084e76da1743d1dcece45d8a272a48a98b7",
+      "proposedSha256": "95279a4c0b3c6bb6e4e1e60f5a3a0c8b5f40e88acf22e5c558e1219c051427b8"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePanelDiagnostics.kt",
+      "oldSha256": "3046c420c54a395ea5c8849b3e35c605d861997cfdfb0b9540639e85be84b99e",
+      "proposedSha256": "dc7e064503fe91bc669e0f680c8599a53b6cec4b64c02cfb957da0dbef111642"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePanelFailureFrame.kt",
+      "oldSha256": null,
+      "proposedSha256": "3378279962e68af7f9424b0c478aa6e3757bb4d8418132ea99df7987b2447b35"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceDiagnosticBudget.kt",
+      "oldSha256": null,
+      "proposedSha256": "0e9cbf7dbeb3735edecbb16b1ecdc682353f8399b7f99fed32e9a0c4de75347b"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceDiagnosticBudgetTest.kt",
+      "oldSha256": null,
+      "proposedSha256": "e4971fae124914bb12b0265f3ea2a4f81fe216a9403f4e46651f112eac6970cd"
+    }
+  ],
+  "productionChanged": false,
+  "fixtureChanged": false,
+  "selectorsUnchanged": 7,
+  "normalPointBodyAnd24BudgetUnchanged": true,
+  "failureFrame": {
+    "triggers": [
+      "actual button/chip hasVisualOverflow",
+      "actual exact-owner full-label guard false"
+    ],
+    "beforeOriginalHardAssertion": true,
+    "maxAttemptsPerMethod": 2,
+    "maxEdgePx": 4096,
+    "maxPixels": 6291456,
+    "maxBitmapBytes": 25165824,
+    "maxPngBytesPerAttempt": 2097152,
+    "deadlineMs": 5000,
+    "prepareWaitMs": 1000,
+    "callbackWaitMs": 2000,
+    "lateCallback": "bitmap release only; no file publication or input",
+    "screenshotErrorMayReplaceOriginalAssertion": false,
+    "countsAsPass": false
+  },
+  "axOwnership": "borrow root; finally recycle all newly acquired children, label relations and window infos; caller finally recycles its own root/children",
+  "contentScope": "verified exact target package AND same known owned window; package null is metadata-only association",
+  "flagsRestoreMismatchFailsJUnit": true,
+  "readBudgetsMs": {
+    "root": 1000,
+    "axCollector": 2000,
+    "ownerSearch": 2000,
+    "textLayout": 2000
+  },
+  "generationLimits": {
+    "charsTotal": 8192,
+    "linesTotal": 128,
+    "linesPerLayout": 64,
+    "jsonBytes": 98304,
+    "diagnosticGroupBytes": 8388608
+  },
+  "frameworkCallsForciblyInterruptible": false,
+  "lateReadPayloadPublished": false,
+  "nativeRunsHere": 0,
+  "hostMicDownloadActionsHere": 0,
+  "featuresClosed": []
+}

@@ -1,0 +1,308 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-source47-native-pass-next-exclusive-menu-20261029-1",
+  "source47": {
+    "sourceSha256": "dbcfb15d1b3032e92f738e397fd4c47815f42f1ba9f63ad48c3243686c5404ee",
+    "appSha256": "7ca545d92b88b0e0dcfc2df7eeb637ed51830ce9875bed06b86c0cc1e4826449",
+    "runnerSha256": "9149f5b8eb3618c2e22616d9271592b35fbdaee37de612d077c95fa35b1a9fa6",
+    "inputs": 745
+  },
+  "originalNativeEvidence": {
+    "source47": {
+      "sourceSha256": "dbcfb15d1b3032e92f738e397fd4c47815f42f1ba9f63ad48c3243686c5404ee",
+      "appSha256": "7ca545d92b88b0e0dcfc2df7eeb637ed51830ce9875bed06b86c0cc1e4826449",
+      "runnerSha256": "9149f5b8eb3618c2e22616d9271592b35fbdaee37de612d077c95fa35b1a9fa6",
+      "inputs": 745
+    },
+    "caseCount": 1,
+    "method": "chineseLightPortraitUsesProductNavigationAndSavedPreference",
+    "junitResult": "passed",
+    "sdk": 37,
+    "osFontScale": 1,
+    "memberSha256": "5d9ef998853dab7df6e508c06c813bb37fce024ce2f3954250f976f1d8bfdff8",
+    "proofTarSha256": "490b5ff80b7535b59bb47c5d58df88f38208194316e1d7f19f5868355f821244",
+    "exactMenuProjection": {
+      "profile": "compose1.12.1-preference-role-null-selected-no-toggle",
+      "expectedSelected": true,
+      "compose": {
+        "tag": "connection-preference-automatic",
+        "present": true,
+        "boundsInRootPx": {
+          "left": 0,
+          "top": 21,
+          "right": 294,
+          "bottom": 147
+        },
+        "boundsInWindowPx": {
+          "left": 0,
+          "top": 21,
+          "right": 294,
+          "bottom": 147
+        },
+        "unclippedRootPx": {
+          "left": 0,
+          "top": 21,
+          "right": 294,
+          "bottom": 147
+        },
+        "focused": false,
+        "disabled": false,
+        "verticalScrollValue": null,
+        "verticalScrollMaximum": null,
+        "ownerId": 209,
+        "composeSelected": true,
+        "selectedPresent": true,
+        "rolePresent": false,
+        "toggleableStatePresent": false,
+        "toggleableState": null,
+        "role": null,
+        "textMatchCount": 1,
+        "textPaths": [[209, 211]],
+        "textHash": "7eb336e42cb5076b0eac0305418ecd8ff2833ad84645aedbe0d315ac017c798b"
+      },
+      "native": {
+        "nodeIdentityHash": 53605,
+        "windowId": 37,
+        "targetPackage": true,
+        "class": "android.view.View",
+        "enabled": true,
+        "editable": false,
+        "visibleToUser": true,
+        "focusable": true,
+        "focused": false,
+        "accessibilityFocused": false,
+        "clickable": true,
+        "selected": false,
+        "checkable": true,
+        "checked": true,
+        "scrollable": false,
+        "importantForAccessibility": true,
+        "boundsInScreen": {
+          "left": 42,
+          "top": 880,
+          "right": 336,
+          "bottom": 1006
+        },
+        "boundsInParent": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "childCount": 1,
+        "actionCount": 3,
+        "actionIds": [1, 16, 64],
+        "actionsTruncated": false
+      },
+      "matchesExactProfile": true,
+      "projectionNotAReadinessPredicate": true
+    },
+    "oldSource46Failure": "unchanged failed",
+    "newLeafNativeExecutions": 0
+  },
+  "testOverlay": {
+    "version": 1,
+    "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+    "baseSource": "Source47",
+    "baseCommit": "46abb854d50e32d43bb1af2a61b9297f074fe7d7",
+    "baseSha256": "419a593b11a51947cdeaaa3079c5545bbb43ed9ed2ed54c4d656e2d4c039b69d",
+    "proposedSha256": "46a4703e2573f890e03e51102c15a088ff2ba439abee2c6c22f38a0866ccfe93",
+    "patchSha256": "95d0aec94f58c82e959f5df41ee6364e0737abee75398ae1cd13a3503be18755",
+    "protectedSectionsSha256": {
+      "roleClosedOracle": "0f94fb4fe0309e8689f2572e101d7bd9c91ce73010913f274f9832a6b26fba18",
+      "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+      "activeNativeRootAndFlags": "9e964fb3f7cadf2ec0bfa58a73c069dd672a989dffefd039771c1dc2295b473d",
+      "nativeFieldAndPopupBudgetGeometry": "043b1564883d0913e84c6fb325dce6927fb1ffec443572ba1a36ae61c17d0e91",
+      "composeOwnerIdentity": "c9d94813976105a6eb7de79773ff0efd5432429790b834b8538fc581be3f75d5",
+      "nativeTextAx": "240c22195bf61f739ad0396ad1e9d3506dc8402fc6b1f3932d202e552e6d0de7",
+      "allOriginalFourMethodBodies": "7adb037b421c4dcfde5de0d77a4dfd51e4fead8a355fd8536e7f465b39125da6",
+      "nativeOwnerHelperAfterReversingOnlyDeclaredParametersEvidenceAndReturn": "f5d623f583a5d277fa4e92fa6accbe3674c398b89c4a7d5559532d24638c2b69"
+    },
+    "changeMap": [
+      "Reuse exact native owner helper with explicit expectedSelected default true and optional existing absolute deadline; return immutable raw native option/profile identity only after all original guards",
+      "Add triplet aggregator requiring exactly3 known values/tags, distinct owners/texts, same real native window, independently expected labels/path/profile and1 checked+2 unchecked; expectation never derived from Compose/native flags",
+      "Add atomic saved/live value reads around triplet and after each click; check exact fixture client ID and actual serialized metadata preference, never write expected state directly",
+      "Add two independent portrait scenarios zh-Hans light/en dark with fixed literal labels and scripted automatic→lan-only→relay-only→automatic; after each real option touch assert Popup semantics gone, close/reopen edit form via product navigation, reopen Popup and verify full triplet",
+      "One original5s budget shared across each triplet including before/after saved reads and all3 native helper invocations; no per-option budget reset or retry until expected flags",
+      "Preserve all four existing test method bodies and role-closed profile oracle; correct case-specific busy/editability coverage metadata only for new methods"
+    ],
+    "presentationMethods": 6,
+    "existingMethods": 4,
+    "newMethods": [
+      "chineseLightPreferenceOptionsStayNativeExclusiveAndPersist",
+      "englishDarkPreferenceOptionsStayNativeExclusiveAndPersist"
+    ],
+    "newNativeExecutions": 0,
+    "newApks": 0,
+    "productSourceChanged": false,
+    "sharedCentralFilesChanged": false,
+    "additionalBudgetPerOptionMs": 0,
+    "tripletTotalBudgetMs": 5000
+  },
+  "compile": {
+    "variant": "preference-exclusive",
+    "compileExit": 0,
+    "inputs": 745,
+    "sourceSha256": "36f83aa1b792d1974a2cf559d937bc0085f650147c86baab15ee087a468783dd",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 6
+  },
+  "auxiliaryExclusiveVectors": {
+    "status": "passed",
+    "vectors": 81,
+    "positiveVectors": 36,
+    "negativeVectors": 45,
+    "mutationControlsRejected": 8,
+    "actualPureHelperSha256": "e02d5e64e1cded8152a4201474c6257a873e548453ee581cecaaab3b501af244",
+    "expandedVectorsRawSha256": "a3adbdf14f6ad2a447ff62a2bda3c6202273d2ae560a2c8f24c96afad5ededd7",
+    "result": "mutant0 mismatches=14\nmutant1 mismatches=1\nmutant2 mismatches=1\nmutant3 mismatches=2\nmutant4 mismatches=1\nmutant5 mismatches=1\nmutant6 mismatches=1\nmutant7 mismatches=1\npassed=81; positives=36; negatives=45; mutantsRejected=8; native=0",
+    "kind": "Actual extracted role-closed profile and triplet aggregator JVM vectors; no Android UI/persistence/native execution",
+    "negativeNames": [
+      "all unchecked",
+      "two checked",
+      "three checked",
+      "inactive checkable False",
+      "inactive checkable None",
+      "inactive checked None",
+      "inactive selected True",
+      "inactive selected None",
+      "inactive nativeClass android.widget.TextView",
+      "inactive selectedPresent False",
+      "inactive composeSelected None",
+      "inactive toggleableStatePresent True",
+      "inactive rolePresent True",
+      "closed profile rejects Tab",
+      "closed profile rejects Switch",
+      "closed profile rejects RadioButton",
+      "wrong known tag for owner value",
+      "unknown tag",
+      "unknown value",
+      "unknown expected",
+      "missing option",
+      "extra option",
+      "duplicate value with distinct native nodes",
+      "duplicate owner",
+      "duplicate text",
+      "mixed popup windows",
+      "invalid popup window",
+      "wrong native label",
+      "cross-language native label",
+      "duplicate expected labels",
+      "missing expected label",
+      "extra expected label",
+      "invalid expected hash",
+      "reversed native path",
+      "wrong path terminal",
+      "wrong path start",
+      "path passes sibling owner",
+      "path cycle",
+      "empty path",
+      "self-projected text owner",
+      "path depth beyond original cap",
+      "negative owner",
+      "negative text",
+      "independent expected differs from otherwise consistent native state",
+      "Compose contradicts expected but native otherwise right"
+    ],
+    "mutations": [
+      {
+        "name": "remove closed native profile",
+        "sourceSha256": "b2e4f364feb46c4a0a480a6b84c29d3a407ceccf896d3187c0521e19dff65bfa"
+      },
+      {
+        "name": "remove same-window gate",
+        "sourceSha256": "7797437f05d5f8a18c29887ca3d69ad0ae768dcd155eaee75f37357989c7fa06"
+      },
+      {
+        "name": "remove distinct owners",
+        "sourceSha256": "24143213ec9e0d25ef06d8d765a8538fe85e7ee89011184543e99a0e32fc3b90"
+      },
+      {
+        "name": "remove native label association",
+        "sourceSha256": "ea81ce857a87477e16aa2326e3d78cc663fe9c2459d14c9aa49773e5249decae"
+      },
+      {
+        "name": "remove path terminal",
+        "sourceSha256": "c8cbffc64f0858be71c95ca50ae0576883c76cd8ca9dc0060e3d8f242e12031b"
+      },
+      {
+        "name": "derive expected from observed checked",
+        "sourceSha256": "40df793ad7901eadf369608e6e3accdc30596c63d5e771f9651f92021f733b11"
+      },
+      {
+        "name": "remove tag/value association",
+        "sourceSha256": "2023af701787e477150cd3a6cf223697af0a442df6937f0525295875cdc081cc"
+      },
+      {
+        "name": "remove exact known option set",
+        "sourceSha256": "a08833e4aed061b8867efaf3d647c9cedbfc3bf65f67ba4a679be82172602845"
+      }
+    ],
+    "newNativeExecutions": 0,
+    "scratchBytesRemoved": 198260,
+    "scratchRemoved": true
+  },
+  "initialAuxiliaryFailure": "Harness-only public V exposed internal type; first harness compilation failed before vectors ran, corrected V to internal without changing actual test/oracle. Failure log/source retained.",
+  "newNativeExecution": {
+    "status": "unexecuted",
+    "methods": [
+      "chineseLightPreferenceOptionsStayNativeExclusiveAndPersist",
+      "englishDarkPreferenceOptionsStayNativeExclusiveAndPersist"
+    ],
+    "languageAppearancePairs": ["zh-Hans/light", "en/dark"],
+    "orientation": "actual portrait only",
+    "font": "parent lease actual OS font, no override; new font lanes not executed",
+    "fixture": "normal synthetic saved client, independent storage; no imported connection or real peer action",
+    "scriptedExpectedSequence": ["automatic", "lan-only", "relay-only", "automatic"],
+    "eachMethodPlannedStates": 4,
+    "eachMethodPlannedOptionChecks": 12,
+    "eachTripletSelectedCount": 1,
+    "eachTripletUnselectedCount": 2,
+    "afterClick": "assert menu semantics closed, read actual live/saved value, close edit form to clients, reopen exact same fixture client and Popup, recheck native triplet",
+    "saveProof": "await actual queued writes, read actual metadata through NativeSessionStorage AtomicFile/decryption and exact fixture client ID; not merely cached Compose or in-memory equality",
+    "persistenceLimit": "same process, UI close/reopen plus actual stored bytes; no process death/relaunch/Keystore recovery claim",
+    "tripletBudgetMs": 5000,
+    "newPerOptionBudgetsMs": 0,
+    "observationLimit": "3 sequential native stable observations in the same window with no touches and live/saved checks before/after; not one atomic all-node snapshot",
+    "newApks": 0,
+    "newNativeExecutions": 0
+  },
+  "productOrSharedCentralFilesChanged": false,
+  "deviceHostModelMicrophoneProtectedEasyWorkActionsByLeaf": 0,
+  "centralRegistrationOwner": "parent",
+  "open": [
+    "Parent native execution of both exact new methods under fresh source/App/runner",
+    "Other language/appearance cross combinations, OS font/landscape/physical/AX lanes not added here",
+    "Imported preference behavior and process-death persistence not claimed",
+    "API26 WindowInspector and iOS actual menu native attributes pending",
+    "Seven groups and full issuer/Desktop/TLS/model/DEV gates remain open"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "github-sync:5", "lint"],
+    "stoppedAt": "mobile parity: existing missing/stale apps/android/localization/native-copy.json feature record",
+    "laterChecks": "not run",
+    "centralRegistrationOwner": "parent",
+    "evidenceRawSha256": "9fc4d0e8ceed58804fe2f04ab6098b1ebbe74a525075d919f0322595bae69678"
+  },
+  "vectorRecipeReproduced": {
+    "vectors": 81,
+    "mutationControlsRejected": 8,
+    "exactExpandedVectorHashMatched": true,
+    "privateProofCopiesRemoved": true
+  },
+  "stageCleanup": {
+    "gradleCleanPassed": true,
+    "ownBuildCachesRemoved": true,
+    "auxiliaryJVMClassesRemoved": true,
+    "supersededInitialCompileAndDuplicateRecipeProofRemoved": true,
+    "rawLogsAndBaseCompressedAndReadbackVerified": true,
+    "newApks": 0
+  }
+}

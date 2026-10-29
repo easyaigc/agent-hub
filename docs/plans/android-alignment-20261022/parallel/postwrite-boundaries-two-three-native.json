@@ -1,0 +1,145 @@
+{
+  "abi": "arm64-v8a",
+  "actualCounts": {
+    "controlledInterruptedWriters": 2,
+    "failed": 0,
+    "normalJUnitMethods": 4,
+    "passed": 4,
+    "priorBoundary1AndFailedV2V3NotRecounted": true,
+    "writersCountAsNormalJUnitPassed": 0
+  },
+  "appSha256": "7ca545d92b88b0e0dcfc2df7eeb637ed51830ce9875bed06b86c0cc1e4826449",
+  "boundaries": [
+    {
+      "actualCommandReceiptsReviewed": 106,
+      "actualExactSinglePidSigkillAccepted": true,
+      "actualNormalJUnitMethods": 2,
+      "allSourceCiphertextUnchangedDuringInspector": true,
+      "allThreeRoleArchiveSha256": "22b1cdafff771fe1abca1eb9f4b89de08ae5ed99065b2845b9bd97e6d23adc25",
+      "alreadyWrittenTextNotAppendedAgain": true,
+      "boundary": 2,
+      "catalogStillStaged": true,
+      "composerAndQuestionCanonicalRawRowAndWhole3244ByteWavVerified": true,
+      "controlledInterruptedWriters": 1,
+      "defaultMetadataHashes": [null, null, null],
+      "defaultProtectionScope": "empty-default-set-only",
+      "destinationReceipts": [
+        {
+          "destinationReceiptPresent": false,
+          "exactOriginalStagedActionAndMetadataJoin": true,
+          "owner": "composer"
+        },
+        {
+          "destinationReceiptPresent": false,
+          "exactOriginalStagedActionAndMetadataJoin": true,
+          "owner": "question"
+        }
+      ],
+      "explicitContinuationUsedActualSession": true,
+      "failed": 0,
+      "microphonePermissionAndAppOpsBeforeAfterUnchanged": true,
+      "nativeProofJoins": 13,
+      "nativeStoredWavFullBytesVerifiedByReaders": true,
+      "newerDraftNotOverwritten": true,
+      "nonemptyDefaultContentProved": false,
+      "normalReaderRecognitionOrDestinationWrites": 0,
+      "originalV4AndFailedV2V3NotReplayed": true,
+      "outcomeSha256": "b339f22e40ca248e53b4ceb2e8bbd72b760852469042a2d2c5b62130a4bcf4a5",
+      "parentIndependentlyDecryptedStoredWav": false,
+      "passed": 2,
+      "pidStartTicksUidCmdlineReadyHeartbeatAndExpiryVerified": true,
+      "productAppliedMarked": false,
+      "readOnlyInspectorConstructedSession": false,
+      "remoteBusinessInputs": 0,
+      "safeReleasedAfterActualReaderTerminals": true,
+      "sourceApkV2CertificateUidAndBootIdentityMatched": true,
+      "sourceBaselineOwners": 2,
+      "stageArchivesReviewed": 6,
+      "threeDistinctNativePids": true,
+      "wholeDefaultFilesAfter": 0,
+      "wholeDefaultFilesBefore": 0,
+      "writerDeathProvedBeforeReaders": true,
+      "writerJUnitTerminalCount": 0,
+      "writerNormalJUnitPass": false
+    },
+    {
+      "actualCommandReceiptsReviewed": 106,
+      "actualExactSinglePidSigkillAccepted": true,
+      "actualNormalJUnitMethods": 2,
+      "allSourceCiphertextUnchangedDuringInspector": true,
+      "allThreeRoleArchiveSha256": "f519db9ae89b3bc6e8db99a17a3c99c159b1125851c82a5ff197d9c20334771d",
+      "alreadyWrittenTextNotAppendedAgain": true,
+      "boundary": 3,
+      "catalogStillStaged": true,
+      "composerAndQuestionCanonicalRawRowAndWhole3244ByteWavVerified": true,
+      "controlledInterruptedWriters": 1,
+      "defaultMetadataHashes": [null, null, null],
+      "defaultProtectionScope": "empty-default-set-only",
+      "destinationReceipts": [
+        {
+          "destinationReceiptPresent": true,
+          "exactOriginalStagedActionAndMetadataJoin": true,
+          "owner": "composer"
+        },
+        {
+          "destinationReceiptPresent": true,
+          "exactOriginalStagedActionAndMetadataJoin": true,
+          "owner": "question"
+        }
+      ],
+      "explicitContinuationUsedActualSession": true,
+      "failed": 0,
+      "microphonePermissionAndAppOpsBeforeAfterUnchanged": true,
+      "nativeProofJoins": 13,
+      "nativeStoredWavFullBytesVerifiedByReaders": true,
+      "newerDraftNotOverwritten": true,
+      "nonemptyDefaultContentProved": false,
+      "normalReaderRecognitionOrDestinationWrites": 0,
+      "originalV4AndFailedV2V3NotReplayed": true,
+      "outcomeSha256": "bd768741ba3a78e8dbf61c1c7ce058f9453de305ef7a31aa65110a45d4821a9e",
+      "parentIndependentlyDecryptedStoredWav": false,
+      "passed": 2,
+      "pidStartTicksUidCmdlineReadyHeartbeatAndExpiryVerified": true,
+      "productAppliedMarked": false,
+      "readOnlyInspectorConstructedSession": false,
+      "remoteBusinessInputs": 0,
+      "safeReleasedAfterActualReaderTerminals": true,
+      "sourceApkV2CertificateUidAndBootIdentityMatched": true,
+      "sourceBaselineOwners": 2,
+      "stageArchivesReviewed": 6,
+      "threeDistinctNativePids": true,
+      "wholeDefaultFilesAfter": 0,
+      "wholeDefaultFilesBefore": 0,
+      "writerDeathProvedBeforeReaders": true,
+      "writerJUnitTerminalCount": 0,
+      "writerNormalJUnitPass": false
+    }
+  ],
+  "checkpoint": "Source46-controlled-postwrite-boundaries2-and3",
+  "controlledExecutor": {
+    "naturalOemLifecycleClaim": false,
+    "ordinaryApplicationOnlyPermissionProved": false,
+    "ownDebugEmulatorOnly": true,
+    "sameTargetUid": true,
+    "selinuxContext": "u:r:su:s0"
+  },
+  "defaultStorageScope": "Both runs observed only empty default file sets0→0 and null metadata; nonempty default content is not proved.",
+  "expandedSourceSha256": "95223338e9b00a9109f18cdf1b6c5975312edaa6ffa6dbf6a20f6dfa7da6b03d",
+  "fullDevPassed": false,
+  "fullP7Closed": false,
+  "pending": [
+    "Nonempty default content preservation",
+    "Natural/OEM lifecycle and ordinary application permissions",
+    "Physical Android full DEV and real acoustic recovery",
+    "API37 controlled boundary2/3 acceptance"
+  ],
+  "runnerSha256": "10fc45543ea0ecdd40ff775b5dc6c37feb79274524ecf8af1c0ccd16e6bfe300",
+  "schemaVersion": 1,
+  "sdk": 26,
+  "sourceSha256": "ba98948f6e92b68c3327258f1a777c52895a80c0f96f147f3e454ae5c4db92c6",
+  "verificationKind": "Controlled privileged own debug-emulator process interruption with actual Session/encrypted writer and synthetic saved-file speech",
+  "writeAccounting": {
+    "actualLocalSyntheticFixtureAndRecoveryWritesOccurred": true,
+    "remoteBusinessInputs": 0
+  }
+}

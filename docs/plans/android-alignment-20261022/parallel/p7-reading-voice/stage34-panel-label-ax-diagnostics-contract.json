@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "parentSource46Sha256": "ba98948f6e92b68c3327258f1a777c52895a80c0f96f147f3e454ae5c4db92c6",
+  "package": "com.easyai.agenthub.android.acceptance",
+  "selectorsUnchanged": 7,
+  "argumentsUnchanged": ["panelUiLease", "panelUiProfile"],
+  "sdk": [26, 37],
+  "actualOsFontScale": 2,
+  "preAssertEvidence": [
+    "button TextLayoutResult from exact owner/unmerged descendant without expected-label lookup",
+    "exact native owner plus bounded ancestor/subtree/window/package/bounds/actions/labels/flags"
+  ],
+  "hardAssertionsPreserved": [
+    "exact root package",
+    "exact owner count",
+    "expected enabled and actual visibility",
+    "exact owner full text/contentDescription",
+    "selected/check state",
+    "full expected Text",
+    "no hasVisualOverflow",
+    "last character and no ellipsis",
+    "whole48dp/scroll reachability",
+    "original/row/fullWav/metadata/permission"
+  ],
+  "descendantLabelMayReplaceOwnerAssertion": false,
+  "productionChanged": false,
+  "fixtureChanged": false,
+  "chipWidthFixProposed": false,
+  "limits": {
+    "axSnapshots": 64,
+    "buttonLayoutSnapshots": 96,
+    "nativeSearchNodes": 512,
+    "nativeSearchDepth": 32,
+    "owners": 4,
+    "ownerSubtreeNodes": 48,
+    "ownerSubtreeDepth": 16,
+    "labelCharsTotal": 8192,
+    "actionsPerNode": 8,
+    "jsonBytes": 98304,
+    "diagnosticBytesTotal": 8388608
+  },
+  "incompleteObservationPasses": false,
+  "parentSource46UiResult": {
+    "executed": 7,
+    "passed": 3,
+    "failed": 4,
+    "claimsPreserved": true
+  },
+  "deviceRunsHere": 0,
+  "hostMicModelDownloadActionsHere": 0,
+  "next": "parent actual native diagnostics before any chip-width or semantics fix",
+  "featuresClosed": [],
+  "sourceFingerprints": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePanelUiTest.kt",
+      "oldSha256": "af4525d4da8c2b3ae8757c38296212ff559491076cc475d2ba93d9b4b13d013c",
+      "proposedSha256": "dd5f141d55366eeee386dcae56d2a084e76da1743d1dcece45d8a272a48a98b7"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePanelDiagnostics.kt",
+      "oldSha256": null,
+      "proposedSha256": "3046c420c54a395ea5c8849b3e35c605d861997cfdfb0b9540639e85be84b99e"
+    }
+  ],
+  "unchangedProductionVoiceInputViewSha256": "0cb42c2f49404110db31cf3684931ee5080f3ec27219de32d35e40f19780ed11",
+  "unchangedFixtureSha256": "9f4b4cb7a530cd5d187611dae8d4ba81cd31f8c652750d0ce7686df8b1b928fd"
+}

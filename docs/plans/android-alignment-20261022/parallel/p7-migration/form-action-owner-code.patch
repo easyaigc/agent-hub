@@ -1,0 +1,215 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -188,6 +188,14 @@
+     private val migrationIo=NativeMigrationIoWork()
+     private val migrationEasyWork=NativeEasyWorkMigrationOwners()
+     internal val easyWorkMigrationContext get()=migrationIo+migrationEasyWork
++    /** Compose can leave before an authorization's blocking IO exits. Session and registry keep
++     * the complete action owned; releasing form UI is never an IO completion proof. */
++    internal suspend fun <T> runEasyWorkConnectionFormAction(action: EasyWorkConnectionActionLease,work: suspend ()->T): T {
++        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
++        if(!localReady||migrationEasyWork.stopping)throw EasyWorkConnectionAbandoned()
++        tasks.coroutineContext.ensureActive();action.checkpoint()
++        return NativeEasyWorkFormAction.run(tasks,easyWorkMigrationContext,action,work)
++    }
+     private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!,easyWorkMigrationContext) }
+     private val easyWorkAgent=easyWorkSessions?.let(::EasyWorkAgentClient)
+     private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate+migrationIo)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
+@@ -90,7 +90,7 @@
+         val action=try {owner.begin(input,currentInput)}catch(_: EasyWorkConnectionAbandoned){return}
+         busy=true;session.connectionBusy=true;error=null;pairingStatus=null;focus.clearFocus();keyboard?.hide()
+         tasks.launch {
+-            try { withContext(action) {work {if(action.currentForUi())pairingStatus=it}};if(action.currentForUi())saved() }
++            try { session.runEasyWorkConnectionFormAction(action) {work {if(action.currentForUi())pairingStatus=it};if(action.currentForUi())saved()} }
+             catch(cancel: kotlinx.coroutines.CancellationException) { throw cancel }
+             catch(failure: Exception) { if(action.currentForUi())error=EasyWorkConnectionMessage.failure(failure) }
+             finally { if(action.releaseBusy()){busy=false;session.connectionBusy=false;pairingStatus=null} }
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkFormAction.kt
+@@ -0,0 +1,19 @@
++package com.agenthub.android
++
++import kotlinx.coroutines.*
++import kotlin.coroutines.CoroutineContext
++
++/** The caller's Compose Job owns waiting/UI only. The Session Job and migration registry own
++ * the whole authorization action, through blocking IO/finally exit, even after the caller leaves.
++ */
++internal object NativeEasyWorkFormAction {
++    suspend fun <T> run(sessionTasks: CoroutineScope,ownerContext: CoroutineContext,action: EasyWorkConnectionActionLease,work: suspend ()->T): T {
++        val owners=requireNotNull(ownerContext[NativeEasyWorkMigrationOwners])
++        val running=sessionTasks.async(ownerContext.easyWorkOwnerContext()+action,start=CoroutineStart.LAZY) {action.checkpoint();work()}
++        val owner=try {owners.register({running.cancel()},{running.join()})}
++            catch(failure: Throwable){running.cancel();throw failure}
++        running.invokeOnCompletion {owner.retire()}
++        running.start()
++        return try {running.await()}finally {running.cancel()}
++    }
++}
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormActionTest.kt
+@@ -0,0 +1,52 @@
++package com.agenthub.android
++
++import kotlinx.coroutines.*
++import org.json.JSONObject
++import org.junit.Assert.*
++import org.junit.Test
++import java.util.concurrent.ConcurrentHashMap
++import java.util.concurrent.CountDownLatch
++import java.util.concurrent.TimeUnit
++import java.util.concurrent.atomic.AtomicInteger
++
++/** Production form bridge/registry and actual authorization coordinator; JVM-compatible auxiliary.
++ * This adapter holds a real install transaction before storage acquisition. Native tests use Keystore.
++ */
++class NativeMigrationEasyWorkFormActionTest {
++    private fun action()=EasyWorkConnectionAuthority().form {EasyWorkConnectionOrigin("target","navigation","revision","digest")}.begin(EasyWorkConnectionInput("code","synthetic","https://relay.invalid","0123456789ABCDEF"))
++    @Test(timeout=15_000) fun leavingCallerDoesNotReleaseTheActualAuthorizationInstallOrCancelledMigrationWait()=runBlocking {
++        val io=NativeMigrationIoWork();val owners=NativeEasyWorkMigrationOwners();val scope=CoroutineScope(SupervisorJob()+Dispatchers.Default)
++        val caller=CoroutineScope(SupervisorJob()+Dispatchers.Default);val entered=CountDownLatch(1);val release=CountDownLatch(1);val written=AtomicInteger();val values=ConcurrentHashMap<String,String>()
++        val ref="easywork-device-grant:synthetic-form";val grant=JSONObject().put("grantId","synthetic-form-grant").put("binding",JSONObject().put("bindingId","synthetic-binding"))
++        val coordinator=EasyWorkAuthorizationCoordinator(object: EasyWorkAuthorizationRecords {
++            override val root="synthetic-form-owned-root"
++            override fun <T> transaction(block: ()->T): T {entered.countDown();while(true)try{release.await();break}catch(_: InterruptedException){};return synchronized(values){block()}}
++            override fun read(key: String)=values[key]
++            override fun write(key: String,value: String){values[key]=value;if(key==ref)written.incrementAndGet()}
++            override fun remove(key: String){values.remove(key)}
++        })
++        val lease=action();val running=caller.launch {NativeEasyWorkFormAction.run(scope,io+owners,lease){withContext(Dispatchers.IO){coordinator.install(ref,"https://relay.invalid",grant)}}}
++        try {
++            withContext(Dispatchers.IO){check(entered.await(5,TimeUnit.SECONDS))};lease.form.close();caller.cancel();running.join()
++            assertEquals(0,written.get());assertFalse(lease.currentForUi());assertTrue(scope.coroutineContext[Job]!!.children.any())
++            val first=async(Dispatchers.Default){owners.stopAndJoin();io.awaitIdle()};assertNull(withTimeoutOrNull(100){first.await();true});first.cancelAndJoin()
++            assertTrue(owners.stopping);val second=async(Dispatchers.Default){owners.stopAndJoin();io.awaitIdle()}
++            assertNull(withTimeoutOrNull(100){second.await();true});assertEquals(0,written.get())
++            release.countDown();withTimeout(5_000){second.await()};assertEquals(1,written.get())
++            assertEquals("synthetic-form-grant",JSONObject(values.getValue(ref)).getJSONObject("grant").getString("grantId"))
++            owners.reopen();assertFalse(owners.stopping)
++        }finally {release.countDown();caller.cancel();scope.cancel()}
++    }
++    @Test(timeout=5_000) fun sealedOwnerRejectsTheWholeFormBeforeAnyAuthorizationWorkStarts()=runBlocking {
++        val io=NativeMigrationIoWork();val owners=NativeEasyWorkMigrationOwners();val scope=CoroutineScope(SupervisorJob()+Dispatchers.Default);var started=0
++        try {owners.seal();assertTrue(runCatching {NativeEasyWorkFormAction.run(scope,io+owners,action()){started++}}.isFailure);assertEquals(0,started);owners.stopAndJoin();io.awaitIdle()}
++        finally {scope.cancel()}
++    }
++    @Test(timeout=5_000) fun completedActionKeepsTheOriginalLeaseContextAndDoesNotCancelTheCallerOrSession()=runBlocking {
++        val io=NativeMigrationIoWork();val owners=NativeEasyWorkMigrationOwners();val scope=CoroutineScope(SupervisorJob()+Dispatchers.Default);val lease=action();val caller=currentCoroutineContext()[Job]
++        try {
++            assertEquals("original result",NativeEasyWorkFormAction.run(scope,io+owners,lease){assertSame(lease,currentCoroutineContext()[EasyWorkConnectionActionLease]);assertSame(io,currentCoroutineContext()[NativeMigrationIoWork]);"original result"})
++            assertTrue(caller!!.isActive);assertTrue(scope.coroutineContext[Job]!!.isActive);owners.stopAndJoin();io.awaitIdle()
++        }finally {scope.cancel();lease.releaseBusy()}
++    }
++}
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt
+@@ -0,0 +1,107 @@
++package com.agenthub.android
++
++import androidx.activity.compose.setContent
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.runtime.*
++import androidx.compose.ui.test.*
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import androidx.lifecycle.Lifecycle
++import kotlinx.coroutines.*
++import okhttp3.*
++import org.json.JSONObject
++import org.junit.*
++import org.junit.Assert.*
++import java.util.UUID
++import java.util.concurrent.CountDownLatch
++import java.util.concurrent.TimeUnit
++import java.util.concurrent.atomic.AtomicInteger
++
++/** Real Composition disposal/Activity pause, Session bridge, coordinator+Keystore write and OkHttp
++ * callback/cleanup. Invokes the exact Page-used bridge directly: no real pairing button/peer/model claim.
++ */
++class NativeMigrationEasyWorkFormLifecycleTest {
++    @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    private lateinit var previous: MainActivity.AcceptanceSessionState
++    private lateinit var caller: CoroutineScope
++    private lateinit var draft: EasyWorkConnectionDraft
++    private val shown=mutableStateOf(true)
++    private val originalDraft="Original unsent form-exit draft 中文 %@"
++    @Before fun setup() {
++        ui.waitUntil(30_000){!ui.activity.session.restoring}
++        ui.runOnIdle {owned=OwnedControlAcceptance(ui.activity,"migration-form-action");owned.session.restore()}
++        ui.waitUntil(30_000){!owned.session.restoring&&owned.session.phoneReading.ready}
++        ui.runOnIdle {previous=ui.activity.adoptSessionForAcceptance(owned.session);owned.session.text=originalDraft;owned.session.bindStoredVoicePreferencesIfReady()}
++        ui.waitUntil(30_000){owned.session.migrationReady&&owned.session.voiceSettings.persisted}
++        draft=EasyWorkConnectionDraft("Synthetic form action","https://relay.invalid").apply{method="通过中继连接";code="0123456789ABCDEF"}
++        ui.runOnIdle {ui.activity.setContent {MaterialTheme {ProductTextProvider("en") {if(shown.value){val scope=rememberCoroutineScope();SideEffect{caller=scope};ConnectionPage(owned.session,null,draft){}}}}}}
++        ui.onNodeWithTag("agent-provider-easywork").performScrollTo().performClick()
++        ui.waitUntil(5_000){draft.formOwner!=null}
++    }
++    @After fun finish(){if(::previous.isInitialized)ui.runOnIdle{ui.activity.restoreSessionForAcceptance(previous);owned.verifyDefault()}}
++    private fun begin(work: suspend (EasyWorkConnectionActionLease)->Unit): Pair<Job,EasyWorkConnectionActionLease> {
++        lateinit var job: Job;lateinit var action: EasyWorkConnectionActionLease
++        ui.runOnIdle {
++            action=draft.formOwner!!.begin(EasyWorkConnectionInput("code",draft.name,draft.relay,draft.code));owned.session.connectionBusy=true
++            job=caller.launch {
++                try {owned.session.runEasyWorkConnectionFormAction(action){work(action)}}
++                finally {if(action.releaseBusy())owned.session.connectionBusy=false}
++            }
++        }
++        return job to action
++    }
++    private suspend fun CountDownLatch.entered(){withContext(Dispatchers.IO){check(await(5,TimeUnit.SECONDS))}}
++    private fun CountDownLatch.releaseOnlyWhenSignalled(){while(true)try{await();return}catch(_: InterruptedException){}}
++    private suspend fun migration(): Deferred<NativeMigrationOwnerLease> = CoroutineScope(currentCoroutineContext()).async(Dispatchers.Main.immediate){owned.session.quiesceForMigration(UUID.randomUUID().toString())}
++    private suspend fun rejectSecond() {
++        val outcome=withContext(Dispatchers.Main.immediate){runCatching{owned.session.quiesceForMigration(UUID.randomUUID().toString())}}
++        assertTrue(outcome.isFailure);assertNull(owned.storage.migrationPublicationReceipt())
++    }
++    @Test fun disposedFormKeepsActualCoordinatorInstallAndBlocksSecondMigrationUntilEncryptedWriteExits()=runBlocking {
++        val seed=withContext(Dispatchers.IO){NativeMigrationEasyWorkFixtures.seed(ui.activity,owned.storage.child(ui.activity,"form-grant-seed"),"active")}
++        val grant=JSONObject(seed.storage.read(seed.grantRef)!!).getJSONObject("grant");val claim=seed.storage.read(seed.claimName)!!
++        withContext(Dispatchers.IO){owned.storage.write(NativeMigrationEasyWorkOriginals.IDENTITY,seed.identity.json().toString());owned.storage.write(seed.claimName,claim)}
++        val entered=CountDownLatch(1);val release=CountDownLatch(1);val writes=AtomicInteger();val activated=AtomicInteger()
++        val coordinator=EasyWorkAuthorizationCoordinator(object: EasyWorkAuthorizationRecords {
++            override val root get()=owned.storage.coordinationKey
++            // Hold at actual install's transaction entry, before acquiring the native storage lock.
++            override fun <T> transaction(block: ()->T): T {entered.countDown();release.releaseOnlyWhenSignalled();return owned.storage.operationTransaction(block)}
++            override fun read(key: String)=owned.storage.read(key)
++            override fun write(key: String,value: String){owned.storage.write(key,value);if(key==seed.grantRef)writes.incrementAndGet()}
++            override fun remove(key: String){owned.storage.remove(key)}
++        })
++        val (job,action)=begin {lease->withContext(Dispatchers.IO){coordinator.install(seed.grantRef,"https://relay.example.invalid",grant)};lease.checkpoint();activated.incrementAndGet()}
++        var waiting: Deferred<NativeMigrationOwnerLease>?=null
++        try {
++            entered.entered();ui.runOnIdle{shown.value=false};ui.waitForIdle();withTimeout(5_000){job.join()}
++            assertFalse(action.currentForUi());ui.runOnIdle{assertFalse(owned.session.connectionBusy)}
++            waiting=migration();ui.waitUntil(5_000){owned.session.migrationPaused}
++            assertNull(withTimeoutOrNull(150){waiting.await();true});assertEquals(0,writes.get());assertNull(owned.storage.migrationPublicationReceipt())
++            waiting.cancelAndJoin();ui.runOnIdle{assertFalse(owned.session.migrationPaused);assertFalse(owned.session.migrationReady)};rejectSecond()
++            release.countDown();ui.waitUntil(10_000){owned.session.migrationReady}
++            assertEquals(1,writes.get());assertEquals(0,activated.get());assertEquals(claim,owned.storage.read(seed.claimName))
++            assertEquals(easyCanonical(grant),easyCanonical(JSONObject(owned.storage.read(seed.grantRef)!!).getJSONObject("grant")))
++            ui.runOnIdle{assertSame(owned.session,ui.activity.session);assertEquals(originalDraft,owned.session.text);assertTrue(owned.session.clients.none{!it.isDemo})}
++        }finally{release.countDown();waiting?.cancel();job.cancel()}
++    }
++    @Test fun pausedFormStillOwnsActualHttpCallbackAndOuterCleanupAfterWaitCancellation()=runBlocking {
++        val body=NativeMigrationHeldResponse();val requests=AtomicInteger()
++        val client=EasyWorkHttp.isolatedClient(OkHttpClient.Builder().addInterceptor {chain->requests.incrementAndGet();Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("synthetic").body(body).build()})
++        val (job,action)=begin {try{EasyWorkHttp.request(client,"https://synthetic.invalid/form-cleanup")}finally{EasyWorkHttp.dispose(client)}}
++        var waiting: Deferred<NativeMigrationOwnerLease>?=null
++        try {
++            body.reading.entered();ui.activityRule.scenario.moveToState(Lifecycle.State.STARTED)
++            withContext(Dispatchers.Main.immediate){assertFalse(owned.session.connectionBusy);assertFalse(action.currentForUi())}
++            waiting=migration();withTimeout(5_000){while(!withContext(Dispatchers.Main.immediate){owned.session.migrationPaused})delay(20)}
++            assertNull(withTimeoutOrNull(150){waiting.await();true});assertFalse(EasyWorkHttp.dispose(client).isCompleted)
++            waiting.cancelAndJoin();rejectSecond()
++            body.releaseRead.countDown();body.closing.entered()
++            withContext(Dispatchers.Main.immediate){assertFalse(owned.session.migrationReady)};assertFalse(EasyWorkHttp.dispose(client).isCompleted)
++            body.releaseClose.countDown();withTimeout(10_000){while(!withContext(Dispatchers.Main.immediate){owned.session.migrationReady})delay(20)}
++            withTimeout(5_000){EasyWorkHttp.dispose(client).await()};assertEquals(1,requests.get());assertEquals(1,body.closeCount.get())
++            withContext(Dispatchers.Main.immediate){assertEquals(originalDraft,owned.session.text);assertTrue(owned.session.clients.none{!it.isDemo})}
++            assertNull(owned.storage.migrationPublicationReceipt())
++        }finally{body.releaseRead.countDown();body.releaseClose.countDown();waiting?.cancel();job.cancel();EasyWorkHttp.dispose(client);ui.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)}
++    }
++}

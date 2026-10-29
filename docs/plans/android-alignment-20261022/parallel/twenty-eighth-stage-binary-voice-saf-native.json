@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR28",
+  "sourceSha256": "9d76c1a0d27d4c1d5ba105b6b2f6fef6210a63583266c8b6bafd9d522e1d78b8",
+  "appSha256": "3a2fdeb9855bb52e72e2a705da3e9b14e45d26e8f012a510b272a46a4f0ccef0",
+  "runnerSha256": "3a9e73a62df590c5c2ba192cb4f124a1d37eac543023d53a6f3890f4ca1b9f9f",
+  "api26": {
+    "passed": 19,
+    "failed": 1,
+    "skipped": 0,
+    "binaryFramingDecoder": 2,
+    "actualBinaryTypedAndFramedInventory": 2,
+    "originalMigrationVoice": 8,
+    "newSavedVoiceUi": 2,
+    "cancellationPolicy": 5,
+    "remainingFailed": "old importedVoice UI line65 clicked discard while expecting preserve/no-write; ends-waiting test fix separately prepared"
+  },
+  "api37": {
+    "actualOriginalCreateAndOpenCancellationPassed": 1,
+    "observedBacks": {
+      "CREATE": 3,
+      "OPEN": 3
+    },
+    "originalBothCallbacksObserved": true,
+    "exportPreviewFailed": 1,
+    "exportFailure": "immediate exact folder readiness check before filename/Save; later read-only own DocsUI showed exact UUID directory",
+    "explicitConfirmNotStarted": true
+  },
+  "totals": {
+    "passed": 20,
+    "failed": 2
+  },
+  "defaultProofs": 14,
+  "defaultPreservedFields": [
+    "draftsPreserved",
+    "draftFilesPreserved",
+    "draftVersionsPreserved",
+    "attachmentImportGenerationsPreserved",
+    "photoSourcesPreserved",
+    "recentPhotoPreferencesPreserved",
+    "photoAuthorizationPreserved",
+    "documentRequestsPreserved",
+    "photoRequestsPreserved",
+    "cameraRequestsPreserved",
+    "cameraOutputsPreserved"
+  ],
+  "failedExport": {
+    "originalPickerId": "f34ffe43-0b4f-4b46-b3c2-4badb1adadd5",
+    "saveInputs": 0,
+    "documentCreated": false,
+    "sourceAndPendingRecordRetained": true,
+    "actualCallerProcessGoneAfterJUnit": true,
+    "onlyExactOwnDanglingChooserClosedWithThreeBacks": true,
+    "callbackObserved": false,
+    "notRetried": true,
+    "caseStillFailed": true
+  },
+  "currentGrant": "PAR26 original persisted App callback remains separate old-source proof;not replayed",
+  "checks": {
+    "build82": "passed",
+    "mobileParity": "passed",
+    "fullWorkspace": "source27 exit0;new Android changes separately compiled/native,not same source claim"
+  },
+  "realHostBusinessWrites": 0,
+  "realModelInputs": 0,
+  "unknownOperationsReplayed": 0,
+  "ios": "no change;A6 paused",
+  "fullP7Closed": false
+}

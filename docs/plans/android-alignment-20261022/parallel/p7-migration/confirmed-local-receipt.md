@@ -1,0 +1,15 @@
+# Confirmed revoke local receipt format correction
+
+Parent integrated cc340685 and ran the six hot residual-archive methods on API26: four passed and two failed before cold execution. Both failures were the reader casting the actual confirmed localReceipt object to String. Original source920d8476/Appbd0260c2/runner634bb8b3 and the original failure remain historical evidence; these are reported short fingerprints, not current matches.
+
+The unchanged EasyWorkAuthorizationCoordinator writes Revoke.saved as a String snapshot. Both revoked and confirmed-resume revocation instead put read(ref), a JSONObject, directly into localReceipt. The reader now requires that object and validates the same saved-grant/ref/identity graph. Neither raw field is coerced, re-encoded, normalized or removed from the source/archive. String-valued localReceipt is rejected: no actual producer examined writes that representation. Missing localReceipt remains accepted where the producer has no local grant to capture.
+
+The exact three-file overlay relative a56c7225 is confirmed-local-receipt.patch with per-file base/proposed digests in the source audit. No production writer, Main, Session, notification coordinator, P8 pairing/lease producer, voice or shared UI is replaced. The active-business descriptor WIP is excluded.
+
+Existing native methods now explicitly assert the saved String/localReceipt object distinction. Two additional prepared methods cover actual confirmed-resume cleanup and six wrong type/identity variants, preserving original operation/body/hash and unknown owner/grant/pending fields. Invalid sources must leave the prior candidate and source bytes unchanged. The original six hot methods plus these two and the two fresh-UUID cold methods compile; none was executed by this owner.
+
+A JVM17 auxiliary probe uses the actual compiled production coordinator and reader. The old reader reproduces the same ClassCastException; the correction accepts refresh audit, pending revoke, confirmed revoke and confirmed local-cleanup resume, and rejects six wrong type/identity variants without changing the original map. Only host JSON parsing and Base64 facades replace Android APIs; native parser, encrypted storage, Keystore, cold process, SAF and real DEV remain separate gates.
+
+App and runner assemble successfully for source ef77d1ee887063db67b8c9fe5978db60aa39e3be4b0e031d9465f1e66d1b8fa7 (772 inputs), parent a56c7225a7453374fd9904c3811e425479a69714. This source fingerprint includes the original parent shared files. Parent must use a new candidate/UUID for device acceptance and preserve the original failures.
+
+F07/F09/F43/F44/F46/F47/F55 remain affected only through existing migration boundaries. UI12/UI21 design/tokens/copy are unchanged in this fix. iOS code is unchanged; its separate object/string writer format and current credential-copy migration need their own audit. Android native passes are not inferred from JVM or iOS evidence. Active EasyWork business projection and full P7 remain open; A6 and task/project management remain paused. Parent owns central parity/acceptance table reconciliation.

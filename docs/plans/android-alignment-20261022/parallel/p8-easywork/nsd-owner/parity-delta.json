@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-actual-nsd-stop-owner-next-20261029-1",
+  "features": ["F06", "F08", "F46", "F55"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S11", "S14", "S18"],
+  "commonAssertion": "Each retired discovery generation joins its actual SDK listener/resolver terminals and its independent coroutine scope. Cancellation, expiry, SDK stop request/failure and epoch fencing never release unknown ownership or admit the next migration. Queued callbacks cannot project into a new generation.",
+  "dualPlatformImpact": {
+    "android": "Narrow SDK handles/state machine plus frozen Discovery generation patch; existing common registry and Session timeout unchanged",
+    "ios": "Reviewed NetService/Browser and Combine paths remain unchanged; their terminal join is not established by this Android stage and no iOS acceptance is claimed"
+  },
+  "iosSourceSha256": "d404184238dc74e2c747c4204b3d4564ce3f015e59f1d6d77911452aec4612e1",
+  "tokensOrCopyChanged": false,
+  "sharedSessionPageRegistryOrWireChanged": false,
+  "architectureDelta": "Typed per-generation OS handles behind AndroidNsdPlatform; both coroutine and SDK shutdown are required before existing migration owner releases. Stop uncertainty remains owned; network unregister return and queue fencing are separate. No second migration controller.",
+  "controlledJvm": {
+    "compileExit": 0,
+    "junitExit": 0,
+    "tests": 19,
+    "scope": "Exact production lifetime and unchanged frozen common owner; controlled platform outcomes on host JVM",
+    "registrySha256": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+    "actualSdkTestsExecuted": 0,
+    "publicReproductionRunner": "passed, final19 methods; exact production/common-owner hashes checked"
+  },
+  "nativeCompile": {
+    "compileExit": 0,
+    "inputs": 699,
+    "sourceSha256": "2de4fd48c7c5e592a0cbe629f0735d6e5c6a786ebee7d4bb2dd77da1e1bc8a4f",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "controlledNativeMethods": 19,
+    "realSdkNativeMethods": 2
+  },
+  "nativeExecution": {
+    "status": "unexecuted for this source",
+    "controlledAndroidMethods": 19,
+    "realSdkMethods": 2,
+    "expectedSdk": [26, 37],
+    "buildArgument": "p8NsdBuild with sourceSha256/appSha256/runnerSha256/expectedSdk",
+    "naturalResolveAndModernStopAckSeparate": true,
+    "missingOwnedPeer": "failed/unverified, never fake success",
+    "executedByLeaf": 0,
+    "newApks": 0
+  },
+  "sourceOverlay": {
+    "version": 1,
+    "taskId": "android-parallel-p8-easywork-20261028",
+    "operationId": "parent-p8-actual-nsd-stop-owner-next-20261029-1",
+    "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt",
+    "baseSha256": "22d48085701e622daf7567dd232282be40a9965b425f46fa04b3866b8b236f66",
+    "proposedSha256": "91b63e99c25ca211dbff22b2453e063022b4bcba7d2f7f79696dc554185d6853",
+    "patchSha256": "43f166f78eb7bd46f12688d7bae5448a116782c201dff7a00a77992aa4dbbee4",
+    "registryContract": "Unchanged NativeEasyWorkMigrationOwners.register(stop, join); each closure captures one immutable generation",
+    "sessionPageAndRegistryChanged": false,
+    "parentWritten": false,
+    "registryBaseSha256": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+    "newSourceFiles": {
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeNsdLifetime.kt": "41ad1bbe19b919324a9644fbefaf7a9f048f1617dab8bfb2ba224182ef174cbb",
+      "apps/android/src/main/kotlin/com/agenthub/android/AndroidNsdPlatform.kt": "887bf42d8523b4687830464d4d790e6f32b2958ea410db089d9d1bb7920e9f4c",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdControlledLifetimeTest.kt": "67b452534363a53eee03b5da8f447dfcedb285b28a4e3842fe454260e2a145b9",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdSdkTest.kt": "8eb2de7326791530170bd69b58551f0f964a7f8b656eb5fea277eca76fa412f0"
+    },
+    "frozenContextSourceSha256": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+    "parentObservedDiscoverySha256": "22d48085701e622daf7567dd232282be40a9965b425f46fa04b3866b8b236f66",
+    "parentMatchesFrozenDiscovery": true
+  },
+  "parentCentralRegistration": "Parent-owned architecture/product/design/acceptance merge; retain old36/4 and all unrelated evidence unchanged",
+  "open": [
+    "ActualAPI26/37 SDK discover start/stop callbacks",
+    "Owned-peer resolve natural/stop terminals and registration cleanup",
+    "API34+ stop-ack branch if natural resolve wins",
+    "Integrated actual Discovery/Session migration with P7 current form ownership",
+    "iOS matching shutdown proof",
+    "Physical/full-default-scale, real issuer/Desktop DEV/system-trusted Relay and other P8 gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "deviceHostModelActionsByLeaf": 0,
+  "rootCheck": {
+    "exitCode": 1,
+    "context": "Restored own leaf checkout, frozen proposal compiled separately",
+    "formatGithubSyncLintPassed": true,
+    "stoppedAt": "check:mobile-parity",
+    "reason": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "preExistingLeafCentralLedgerGap": true,
+    "parentOwnsCentralMerge": true,
+    "remainingRootChecksNotExecuted": true
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "readOnly": true,
+  "device": "own API37 emulator",
+  "exitCode": 0,
+  "fullBytes": 501139,
+  "fullSha256": "3a48f4332f7646883954e6efacad452dc76ef9b02ddb35bee4175628bc448462",
+  "headers": [
+    {
+      "header": "ACTIVITY MANAGER SETTINGS (dumpsys activity settings) activity_manager_constants:",
+      "bodyBytes": 45806
+    },
+    {
+      "header": "ACTIVITY MANAGER ALLOWED ASSOCIATION STATE (dumpsys activity allowed-associations)",
+      "bodyBytes": 714
+    },
+    {
+      "header": "ACTIVITY MANAGER PENDING INTENTS (dumpsys activity intents)",
+      "bodyBytes": 14524
+    },
+    {
+      "header": "ACTIVITY MANAGER BROADCAST STATE (dumpsys activity broadcasts)",
+      "bodyBytes": 252778
+    },
+    {
+      "header": "ACTIVITY MANAGER CONTENT PROVIDERS (dumpsys activity providers)",
+      "bodyBytes": 61560
+    },
+    {
+      "header": "ACTIVITY MANAGER URI PERMISSIONS (dumpsys activity permissions)",
+      "bodyBytes": 425
+    },
+    {
+      "header": "ACTIVITY MANAGER SERVICES (dumpsys activity services)",
+      "bodyBytes": 34821
+    },
+    {
+      "header": "ACTIVITY MANAGER RECENT TASKS (dumpsys activity recents)",
+      "bodyBytes": 2714
+    },
+    {
+      "header": "ACTIVITY MANAGER LAST ANR (dumpsys activity lastanr)",
+      "bodyBytes": 32
+    },
+    {
+      "header": "ACTIVITY MANAGER STARTER (dumpsys activity starter)",
+      "bodyBytes": 9352
+    },
+    {
+      "header": "ACTIVITY MANAGER CONTAINERS (dumpsys activity containers)",
+      "bodyBytes": 8831
+    },
+    {
+      "header": "ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)",
+      "bodyBytes": 23044
+    },
+    {
+      "header": "ACTIVITY MANAGER LMK KILLS (dumpsys activity lmk)",
+      "bodyBytes": 466
+    },
+    {
+      "header": "ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)",
+      "bodyBytes": 44311
+    },
+    {
+      "header": "ACTIVITY MANAGER USERS (dumpsys activity users)",
+      "bodyBytes": 693
+    },
+    {
+      "header": "ACTIVITY MANAGER COMPONENT-ALIAS (dumpsys activity component-alias)",
+      "bodyBytes": 25
+    }
+  ],
+  "activeInstrumentation": false,
+  "nativeCasesStarted": 0
+}

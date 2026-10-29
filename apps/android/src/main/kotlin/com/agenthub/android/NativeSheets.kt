@@ -177,7 +177,7 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
         } }
     }
 }
-@Composable internal fun SettingsRow(label: String,detail: String,tag: String,icon: String?=null,click: () -> Unit) {
+@Composable internal fun SettingsRow(label: String,detail: String,tag: String,icon: String?=null,enabled: Boolean=true,click: () -> Unit) {
     val colors=MaterialTheme.colorScheme
     val labelColor=if(icon==null) colors.onSurface else androidx.compose.ui.graphics.Color(0xFF007AFF)
     val measure=androidx.compose.ui.text.rememberTextMeasurer()
@@ -189,7 +189,7 @@ private fun languageTitle(value: String,t: NativeL10n)=when(NativeAppLanguage.fr
         val needed=measure.measure(label,labelStyle,softWrap=false,maxLines=1).size.width+
             measure.measure(detail,detailStyle,softWrap=false,maxLines=1).size.width+with(density) { 8.dp.toPx() }
         val stacked=detail.isNotEmpty()&&needed>room
-        Row(Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).clickable(onClick=click).padding(horizontal=16.dp,vertical=if(stacked)10.dp else 0.dp),verticalAlignment=Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).clickable(enabled=enabled,onClick=click).padding(horizontal=16.dp,vertical=if(stacked)10.dp else 0.dp),verticalAlignment=Alignment.CenterVertically) {
             if(icon!=null) { ProductIcon(icon,Modifier.testTag("$tag-icon"),color=labelColor); Spacer(Modifier.width(10.dp)) }
             if(stacked) Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                 Text(label,Modifier.fillMaxWidth().testTag("$tag-label"),style=labelStyle,color=labelColor)

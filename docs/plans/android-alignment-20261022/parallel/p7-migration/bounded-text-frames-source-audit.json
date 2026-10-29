@@ -1,0 +1,43 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-bounded-text-frame-candidate",
+  "ownBase": "d83d2e78403b3bc3723123a9354a521bb2eac033",
+  "parentCommittedBase": "cb2135389efb0eca8626654d3ea7a97ddc734809",
+  "frozenCombinationBase": "61397f04f65c005e16ffff1fb599deb8bff3017a9924093e2726d9c7acadf034",
+  "sourceFingerprint": "373128f0b5bd1de6b8971cb16db016f42185ab9a2b55a6dcaac2e2a44ab55da4",
+  "sourceFiles": 748,
+  "outputs": {
+    "app.apk": {
+      "sha256": "399f2fd88cd0cf7d8fd011667e4f776161d50c1c3bc5751aa276ef609b7d0f10",
+      "bytes": 28394228
+    },
+    "runner.apk": {
+      "sha256": "e6ee1e1caa17f61896c0b456d67fe73673da497ce332f7af13f8d2fd2b6b03c8",
+      "bytes": 9695016
+    }
+  },
+  "sharedAndProducerOverlays": "Unchanged from independent ui-entry-correction, exact eight plus four overlays; not edited in parent checkout.",
+  "sourceDeltaFiles": 39,
+  "validation": {
+    "combinedAppRunnerBuild": "passed",
+    "nativeNewMethodsCompiled": 4,
+    "priorCorrectionMethodsCompiled": 13,
+    "nativeExecutedHere": false,
+    "jvmActualFramingEnvelopeKdfProbe": {
+      "icuShim": "JDK BreakIterator, ASCII password only",
+      "textRecords": 16,
+      "heapBytes": 50331648,
+      "lazyAliasAndUtf8": true,
+      "jsonShim": "org.json header parser only; native graph/depth not executed",
+      "payloadBytes": 62400000,
+      "digestCorruptionRejected": true,
+      "envelopeNegativeCases": 4,
+      "malformedUtf8Rejected": true,
+      "quotaRejectsBeforeRead": true,
+      "passed": true,
+      "androidNativeGraphAndKeystore": false,
+      "boundedFrameRoundtrip": true
+    },
+    "fullP7Passed": false
+  }
+}

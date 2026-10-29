@@ -1,0 +1,16 @@
+{
+  "readOnly": true,
+  "sourceFiles": {
+    "cold_controller.py": "63da9e4da133d55a4de4f8ade8f8fce20b1975c57f33aa1ef6a587d7eb274215",
+    "cold_contract.py": "0aa203767740ec8f09048e745eef31f0738bfc00910321e9521ef3814a42a579",
+    "cold_device.py": "70815860f819c8eee747875653b6e1b2890d18c7233a69159450deada1884514",
+    "fixture-source-lock.json": "651a8637aaf40747aaae3f05f75b42f4765bbb62bea93a1871e00bf9f196d228"
+  },
+  "activeInstrumentation": false,
+  "caseStarted": false,
+  "appLaunched": false,
+  "sidecarOrReverse": false,
+  "targetPid": null,
+  "defaultsError": "Default snapshot stage=family-names: ValueError: Bounded device output exceeded",
+  "errorType": "ValueError"
+}

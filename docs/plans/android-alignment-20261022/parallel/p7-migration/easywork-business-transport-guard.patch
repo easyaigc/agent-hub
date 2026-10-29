@@ -1,0 +1,10 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt
+@@ -225,6 +225,7 @@
+     private val lock=Mutex()
+     private val sessions=mutableMapOf<String,Pair<String,EasyWorkRemoteSession>>()
+     override suspend fun session(client: MobileClient): EasyWorkRemoteSession = lock.withLock {
++        NativeMigrationEasyWorkGate.requireReady(client)
+         val connection=client.agentConnection?:error("缺少电脑连接")
+         val credential=withContext(Dispatchers.IO) { EasyWorkCredential.decode(JSONObject(storage.read("easywork-credential:${connection.credentialRef}")?:error("配对授权已失效"))) }
+         val signature=easyCanonical(connection.json().put("candidates",org.json.JSONArray()).put("credentialRevision",easyHash(credential.json().toString().toByteArray())))

@@ -1,0 +1,917 @@
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusiness.kt
+@@ -0,0 +1,128 @@
++package com.agenthub.android
++
++import org.json.JSONArray
++import org.json.JSONObject
++import java.net.URI
++
++/** Closed descriptive business projection. Original authority remains in its installation archive. */
++internal object NativeMigrationEasyWorkBusiness {
++    const val RECORD="migration-easywork-business-v1"
++    private const val MAX_ENTRIES=256
++    private const val MAX_CATALOG_BYTES=2*1024*1024
++    private fun hash(raw: String)=NativeChatNotificationWire.hash(raw)
++    private fun json(raw: String)=StrictMigrationJson.parse(NativeMigrationTextFrames.bytes(raw))
++    private fun original(entry: JSONObject): JSONObject {
++        val raw=entry.get("originalClient") as String
++        require(NativeMigrationTextFrames.bytes(raw).size<=256*1024&&hash(raw)==entry.get("originalClientSha256"))
++        return json(raw).also {row->
++            NativeMigrationMetadata.validateClient(row,allowSourceEasyWork=true)
++            require(row.optJSONObject("migrationEasyWork")==null&&row.getJSONObject("scope").get("agentId")=="easywork"&&row.optJSONObject("agentConnection")!=null)
++        }
++    }
++    private fun entries(records: Map<String,String>): Map<String,JSONObject> {
++        val raw=records[RECORD]?:return emptyMap();require(NativeMigrationTextFrames.bytes(raw).size<=MAX_CATALOG_BYTES)
++        val root=json(raw);NativeChatNotificationWire.keys(root,setOf("version","clients"));require(root.get("version")==1)
++        val rows=root.getJSONArray("clients").objects();require(rows.size in 1..MAX_ENTRIES)
++        return rows.associateBy {entry->
++            NativeChatNotificationWire.keys(entry,setOf("archiveId","originalClient","originalClientSha256","installationArchiveId","credentialName","credentialSha256"))
++            for(key in listOf("archiveId","originalClientSha256","installationArchiveId","credentialSha256"))require((entry.get(key) as String).matches(Regex("[a-f0-9]{64}")))
++            val body=JSONObject(entry.toString()).apply {remove("archiveId")}
++            val id=entry.getString("archiveId");require(hash(easyCanonical(body))==id)
++            val row=original(entry);val connection=AgentConnection.decode(row.getJSONObject("agentConnection"))
++            require(entry.get("credentialName")==NativeMigrationEasyWorkOriginals.CREDENTIAL+connection.credentialRef)
++            id
++        }.also {require(it.size==rows.size)}
++    }
++    private fun requireBudget(rows: Collection<JSONObject>) {
++        var bytes=64L
++        for(row in rows){bytes+=NativeMigrationTextFrames.bytes(easyCanonical(row)).size+1L;require(bytes<=MAX_CATALOG_BYTES)}
++    }
++    private fun encode(rows: Collection<JSONObject>): String {
++        requireBudget(rows)
++        return easyCanonical(JSONObject().put("version",1).put("clients",JSONArray(rows.sortedBy {it.getString("archiveId")}))).also {require(NativeMigrationTextFrames.bytes(it).size<=MAX_CATALOG_BYTES)}
++    }
++    private fun candidateOrigin(endpoint: String): String {
++        val uri=URI(endpoint);require(uri.rawUserInfo==null&&uri.rawQuery==null&&uri.rawFragment==null)
++        return MigratedEasyWorkConnection.origin(URI(uri.scheme,null,uri.host,uri.port,null,null,null).toASCIIString())
++    }
++    private fun marker(entry: JSONObject): MigratedEasyWorkConnection {
++        val row=original(entry);val connection=AgentConnection.decode(row.getJSONObject("agentConnection"))
++        val origins=connection.candidates.map {candidateOrigin(it.endpoint)}.distinct()
++        return MigratedEasyWorkConnection.decode(JSONObject().put("version",1).put("provider","easywork").put("archiveId",entry.getString("archiveId"))
++            .put("target",CodexCommandCodec.target(connection.target)).put("requiresPairing",true).put("credentialState","none")
++            .put("preference",connection.preference).put("candidateOrigins",JSONArray(origins)))
++    }
++    private fun validateCatalog(records: Map<String,String>): Map<String,JSONObject> = entries(records).also {rows->
++        for(entry in rows.values) {
++            val raw=NativeMigrationEasyWorkArchives.readOnlyOriginal(records,entry.getString("installationArchiveId"),entry.getString("credentialName"),entry.getString("credentialSha256"))
++            val credential=EasyWorkCredential.decode(json(raw));val client=decodeClient(original(entry))
++            require(sameScope(credential.binding.target.scope(),client.scope))
++            credential.relayBinding?.let {require(sameScope(it.target.scope(),client.scope))}
++        }
++    }
++    fun validatePortable(records: Map<String,String>): Set<String> {
++        val rows=validateCatalog(records)
++        records["metadata"]?.let {raw->
++            val metadata=json(raw);NativeMigrationMetadata.validate(metadata)
++            metadata.getJSONArray("clients").objects().filter {it.getJSONObject("scope").get("agentId")=="easywork"}.forEach {row->
++                val state=MigratedEasyWorkConnection.decode(row.getJSONObject("migrationEasyWork"));val entry=rows.getValue(state.archiveId)
++                val original=original(entry);val expected=marker(entry)
++                // The user's current path preference/name are editable; original descriptor remains exact.
++                require(easyCanonical(state.json().put("preference",expected.preference))==easyCanonical(expected.json()))
++                require(row.get("id")==original.get("id")&&row.get("endpoint")==original.get("endpoint")&&sameScope(decodeClient(row).scope,expected.target))
++            }
++        }
++        return if(RECORD in records)setOf(RECORD)else emptySet()
++    }
++    /** Called after private originals have been archived, with their unmodified source inventory. */
++    fun projectSource(portable: Map<String,String>,sourceOriginals: Map<String,String>): Map<String,String> = prepareSource(portable,sourceOriginals).also {validatePortable(it)}
++    // Leave the mutable metadata parse behind before validating the resulting portable graph.
++    private fun prepareSource(portable: Map<String,String>,sourceOriginals: Map<String,String>): Map<String,String> {
++        val result=NativeMigrationTextMap.copy(portable);val rows=validateCatalog(portable).toMutableMap()
++        val metadata=json(portable.getValue("metadata"));NativeMigrationMetadata.validate(metadata,allowSourceEasyWork=true)
++        val installation by lazy {requireNotNull(NativeMigrationEasyWorkArchives.sourceArchiveId(sourceOriginals)) {"EasyWork source installation missing"}}
++        for(row in metadata.getJSONArray("clients").objects()) {
++            if(row.getJSONObject("scope").get("agentId")!="easywork"||row.optJSONObject("migrationEasyWork")!=null)continue
++            val client=decodeClient(row);val connection=requireNotNull(client.agentConnection)
++            val name=NativeMigrationEasyWorkOriginals.CREDENTIAL+connection.credentialRef
++            val raw=sourceOriginals.getValue(name);require(sameScope(EasyWorkCredential.decode(json(raw)).binding.target.scope(),client.scope))
++            val rawClient=row.toString();require(NativeMigrationTextFrames.bytes(rawClient).size<=256*1024)
++            val body=JSONObject().put("originalClient",rawClient).put("originalClientSha256",hash(rawClient))
++                .put("installationArchiveId",installation).put("credentialName",name).put("credentialSha256",hash(raw))
++            val id=hash(easyCanonical(body));body.put("archiveId",id);rows[id]?.let {require(easyCanonical(it)==easyCanonical(body))};rows[id]=body;require(rows.size<=MAX_ENTRIES);requireBudget(rows.values)
++            row.put("agentConnection",JSONObject.NULL).put("codexDirect",JSONObject.NULL).put("storageIdentity",JSONObject.NULL)
++                .put("requiresReadTarget",true).put("migrationEasyWork",marker(body).json())
++        }
++        require(rows.size<=MAX_ENTRIES);if(rows.isNotEmpty())result[RECORD]=encode(rows.values)
++        result["metadata"]=metadata.toString();return result
++    }
++    /** Previous local audit rows are preserved even if their old client was explicitly removed. */
++    fun mergeDestination(source: Map<String,String>,destination: Map<String,String>): Map<String,String> {
++        val rows=entries(source).toMutableMap();for((id,row)in entries(destination)){rows[id]?.let {require(easyCanonical(it)==easyCanonical(row))};rows[id]=row}
++        require(rows.size<=MAX_ENTRIES);val result=NativeMigrationTextMap.copy(source);if(rows.isNotEmpty())result[RECORD]=encode(rows.values)
++        validatePortable(result);return result
++    }
++    fun captureDestination(storage: NativeSessionStorage)=storage.migrationSelectedTextFrames({it==RECORD},{_,_->setOf(RECORD)})
++
++    /** Business keys retain every EasyWork account/runtime component; no Codex alias policy applies. */
++    fun validateMetadataGraph(metadata: JSONObject,clients: List<MobileClient>) {
++        val easy=clients.filter {it.scope?.agentId=="easywork"};if(easy.isEmpty())return
++        val fields=listOf("drafts","draftVersions","draftFiles","attachmentImportGenerations","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces")
++        for(field in fields)metadata.optJSONObject(field)?.let {map->map.keys().forEach {key->
++            if(key.startsWith("agent-v1:")) {
++                val bytes=java.util.Base64.getDecoder().decode(key.removePrefix("agent-v1:"));require(bytes.size<=8192)
++                val tuple=StrictMigrationJson.value(bytes) as JSONArray
++                if(tuple.opt(0)=="easywork") {
++                    require(tuple.length()==8&&tuple.get(6) in setOf("draft","thread"))
++                    val thread=if(tuple.get(6)=="thread")tuple.get(7) as String else null
++                    val project=if(tuple.get(6)=="draft"&&tuple.get(7)!=JSONObject.NULL)tuple.get(7) as String else null
++                    require(easy.count {it.cacheKey(thread,project)==key}==1) {"EasyWork business cache target is missing or ambiguous"}
++                }
++            }
++            if(field=="workspaces") {
++                val workspace=MobileSnapshotCodec.workspace(map.getJSONObject(key).toString())
++                if(workspace.scope?.agentId=="easywork")require(easy.any {it.id==workspace.hostId&&sameScope(it.scope,workspace.scope)&&it.cacheKey(null)==key})
++            }
++        }}
++    }
++}
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MigratedEasyWorkConnection.kt
+@@ -0,0 +1,56 @@
++package com.agenthub.android
++
++import com.agenthub.core.TargetScope
++import org.json.JSONObject
++import java.net.URI
++
++/** Descriptive imported state. It deliberately has no credential reference, pin or device identity. */
++class MigratedEasyWorkConnection private constructor(private val encoded: String) {
++    private val value get()=JSONObject(encoded)
++    val archiveId get()=value.getString("archiveId")
++    val target: TargetScope get()=HostReadCodec.target(value.getJSONObject("target"))!!
++    val preference get()=value.getString("preference")
++    val candidateOrigins get()=value.getJSONArray("candidateOrigins").strings()
++    val requiresPairing get()=true
++    val credentialState get()="none"
++    fun json()=value
++    fun withPreference(preference: String)=decode(value.put("preference",preference))
++    override fun equals(other: Any?)=other is MigratedEasyWorkConnection&&encoded==other.encoded
++    override fun hashCode()=encoded.hashCode()
++    override fun toString()="MigratedEasyWorkConnection(requiresPairing=true)"
++    companion object {
++        fun decode(value: JSONObject): MigratedEasyWorkConnection {
++            NativeChatNotificationWire.keys(value,setOf("version","provider","archiveId","target","requiresPairing","credentialState","preference","candidateOrigins"))
++            require(value.get("version")==1&&value.get("provider")=="easywork"&&value.get("requiresPairing")==true&&value.get("credentialState")=="none")
++            require((value.get("archiveId") as String).matches(Regex("[a-f0-9]{64}")))
++            CodexCommandCodec.validate(value.getJSONObject("target"),"target")
++            val target=requireNotNull(HostReadCodec.target(value.getJSONObject("target")))
++            require(target.agentId=="easywork"&&!target.accountAuthority.isNullOrBlank()&&!target.accountSubject.isNullOrBlank())
++            require(value.get("preference") in listOf("automatic","lan-only","relay-only"))
++            val origins=value.getJSONArray("candidateOrigins").strings();require(origins.size<=32&&origins.distinct()==origins)
++            origins.forEach {require(origin(it)==it)}
++            return MigratedEasyWorkConnection(easyCanonical(value))
++        }
++        /** Parse inert display addresses only. Never uses a network client or imports certificate trust. */
++        internal fun origin(endpoint: String): String {
++            require(endpoint.length in 1..8192&&!endpoint.any {it.isISOControl()})
++            val uri=URI(endpoint)
++            require(uri.scheme in setOf("https","http","wss","ws")&&uri.host!=null&&uri.rawUserInfo==null&&uri.rawQuery==null&&uri.rawFragment==null&&uri.port in -1..65535&&uri.port!=0)
++            require(uri.rawPath in listOf("","/"))
++            return endpoint.trimEnd('/')
++        }
++    }
++}
++
++/** All reads, command-status queries and writes stop before resolving an imported provider. */
++internal object NativeMigrationEasyWorkGate {
++    const val STATUS="需要重新配对 · 查看缓存"
++    const val MESSAGE="迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。"
++    fun previousCredentialRef(client: MobileClient?): String?=client?.takeIf {it.migrationEasyWork==null}?.agentConnection?.credentialRef
++    fun requireReady(client: MobileClient) {require(client.migrationEasyWork==null) {MESSAGE}}
++    fun validate(client: MobileClient) {
++        client.migrationEasyWork?.let {
++            require(client.mode=="easywork-runtime"&&sameScope(client.scope,it.target)&&client.agentConnection==null&&client.codexDirect==null&&client.storageIdentity==null&&client.requiresReadTarget&&!client.isDemo)
++        }
++    }
++}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt
+@@ -15,38 +15,49 @@
+         return (0 until array.length()).map{text(array.get(it),16384,true)}.also{require(it.distinct()==it)}
+     }
+     private fun fields(root: JSONObject,name: String,check: (Any)->Unit){if(root.has(name))map(root.get(name)).let{rows->rows.keys().forEach{check(rows.get(it))}}}
+-    fun validate(root: JSONObject) {
++    internal fun validateClient(row: JSONObject,allowSourceEasyWork: Boolean=false) {
++        val mandatory=setOf("id","name","endpoint","mode","scope")
++        val allowed=mandatory+setOf("readerId","requiresReadTarget","codexDirect","agentConnection","storageIdentity","migrationEasyWork")
++        require(row.keys().asSequence().toSet().containsAll(mandatory)&&row.keys().asSequence().all{it in allowed})
++        text(row.get("id"),16384,true);text(row.get("name"),4096);val endpoint=text(row.get("endpoint"),8192,true);NativeHostReads.baseAddress(endpoint)
++        require(row.get("mode") in listOf("desktop-runtime","managed-runtime","shared-runtime","history","easywork-runtime"))
++        if(row.has("requiresReadTarget"))require(row.get("requiresReadTarget") is Boolean)
++        if(row.has("readerId")&&row.get("readerId")!=JSONObject.NULL)text(row.get("readerId"),1024,true)
++        for(name in listOf("scope","codexDirect","agentConnection","storageIdentity","migrationEasyWork"))if(row.has(name))require(row.get(name)==JSONObject.NULL||row.get(name)is JSONObject)
++        CodexCommandCodec.validate(row.getJSONObject("scope"),"target")
++        row.optJSONObject("codexDirect")?.let {direct->
++            val mandatoryDirect=setOf("target","fingerprint","routes");val allowedDirect=mandatoryDirect+"systemEndpoints"
++            require(direct.keys().asSequence().toSet().containsAll(mandatoryDirect)&&direct.keys().asSequence().all{it in allowedDirect})
++            CodexCommandCodec.validate(direct.getJSONObject("target"),"target");text(direct.get("fingerprint"),64,true)
++            val routes=direct.get("routes") as JSONArray;require(routes.length() in 1..32)
++            for(index in 0 until routes.length()) {val route=routes.get(index) as JSONObject;require(route.keys().asSequence().toSet()==setOf("endpoint","networkKind"));text(route.get("endpoint"),8192,true);text(route.get("networkKind"),64,true)}
++            if(direct.has("systemEndpoints"))strings(direct.get("systemEndpoints")).also{require(it.size<=4)}
++        }
++        row.optJSONObject("storageIdentity")?.let {identity->
++            require(identity.keys().asSequence().toSet()==setOf("version","legacyTarget","keys","selections")&&identity.get("version")==1)
++            if(identity.get("legacyTarget")!=JSONObject.NULL)CodexCommandCodec.validate(identity.getJSONObject("legacyTarget"),"target")
++            strings(identity.get("keys"));val selections=map(identity.get("selections"));selections.keys().forEach{key->text(selections.get(key),16384,true)}
++        }
++        val client=decodeClient(row);val scope=requireNotNull(client.scope)
++        when(scope.agentId) {
++            "codex"->require(scope.hostId==client.id&&row.optJSONObject("migrationEasyWork")==null)
++            "easywork"->{
++                require(client.mode=="easywork-runtime"&&client.codexDirect==null&&client.storageIdentity==null&&client.requiresReadTarget)
++                require(!scope.accountAuthority.isNullOrBlank()&&!scope.accountSubject.isNullOrBlank())
++                require(client.id=="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray(Charsets.UTF_8)))
++                if(row.optJSONObject("migrationEasyWork")!=null)NativeMigrationEasyWorkGate.validate(client)
++                else require(allowSourceEasyWork&&client.agentConnection!=null&&sameScope(client.agentConnection.target,scope))
++            }
++            else->error("Unsupported migration provider")
++        }
++    }
++    fun validate(root: JSONObject,allowSourceEasyWork: Boolean=false) {
+         val keys=root.keys().asSequence().toSet();require(keys.containsAll(required)&&keys.all{it in required||it in optional})
+         require(root.get("version")==1&&root.get("appearance") in listOf("system","light","dark")&&root.get("demo") is Boolean)
+         text(root.get("selected"),16384,true)
+         if(root.has("language"))require(root.get("language") in listOf("system","zh-Hans","en"))
+         val clients=root.get("clients") as JSONArray;require(clients.length()<=128)
+-        for(index in 0 until clients.length()) {
+-            val row=clients.get(index) as JSONObject
+-            val mandatory=setOf("id","name","endpoint","mode","scope")
+-            val allowed=mandatory+setOf("readerId","requiresReadTarget","codexDirect","agentConnection","storageIdentity")
+-            require(row.keys().asSequence().toSet().containsAll(mandatory)&&row.keys().asSequence().all{it in allowed})
+-            text(row.get("id"),16384,true);text(row.get("name"),4096);val endpoint=text(row.get("endpoint"),8192,true);NativeHostReads.baseAddress(endpoint)
+-            require(row.get("mode") in listOf("desktop-runtime","managed-runtime","shared-runtime","history"))
+-            if(row.has("requiresReadTarget"))require(row.get("requiresReadTarget") is Boolean)
+-            if(row.has("readerId")&&row.get("readerId")!=JSONObject.NULL)text(row.get("readerId"),1024,true)
+-            for(name in listOf("scope","codexDirect","agentConnection","storageIdentity"))if(row.has(name))require(row.get(name)==JSONObject.NULL||row.get(name)is JSONObject)
+-            CodexCommandCodec.validate(row.getJSONObject("scope"),"target")
+-            row.optJSONObject("codexDirect")?.let {direct->
+-                val mandatoryDirect=setOf("target","fingerprint","routes");val allowedDirect=mandatoryDirect+"systemEndpoints"
+-                require(direct.keys().asSequence().toSet().containsAll(mandatoryDirect)&&direct.keys().asSequence().all{it in allowedDirect})
+-                CodexCommandCodec.validate(direct.getJSONObject("target"),"target");text(direct.get("fingerprint"),64,true)
+-                val routes=direct.get("routes") as JSONArray;require(routes.length() in 1..32)
+-                for(index in 0 until routes.length()) {val route=routes.get(index) as JSONObject;require(route.keys().asSequence().toSet()==setOf("endpoint","networkKind"));text(route.get("endpoint"),8192,true);text(route.get("networkKind"),64,true)}
+-                if(direct.has("systemEndpoints"))strings(direct.get("systemEndpoints")).also{require(it.size<=4)}
+-            }
+-            row.optJSONObject("storageIdentity")?.let {identity->
+-                require(identity.keys().asSequence().toSet()==setOf("version","legacyTarget","keys","selections")&&identity.get("version")==1)
+-                if(identity.get("legacyTarget")!=JSONObject.NULL)CodexCommandCodec.validate(identity.getJSONObject("legacyTarget"),"target")
+-                strings(identity.get("keys"));val selections=map(identity.get("selections"));selections.keys().forEach{key->text(selections.get(key),16384,true)}
+-            }
+-            val client=decodeClient(row);require(client.scope?.agentId=="codex"&&client.scope.hostId==client.id)
+-        }
++        for(index in 0 until clients.length())validateClient(clients.getJSONObject(index),allowSourceEasyWork)
+         require((0 until clients.length()).map{clients.getJSONObject(it).getString("id")}.distinct().size==clients.length())
+         fields(root,"drafts"){text(it,100000)};fields(root,"selectedThreads"){text(it,16384)}
+         fields(root,"draftVersions"){text(it,1024,true)}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt
+@@ -38,7 +38,8 @@
+         value.getJSONArray("rows").objects().forEach {row->
+             require(row.keys().asSequence().all {it in setOf("target","threadId","latest","read","pendingReader","replyUnread","notices")})
+             targetShape(row.getJSONObject("target"))
+-            val target=HostReadCodec.target(row.getJSONObject("target"))!!;require(target.agentId=="codex")
++            val target=HostReadCodec.target(row.getJSONObject("target"))!!;require(target.agentId in setOf("codex","easywork"))
++            if(target.agentId=="easywork"){require(!target.accountAuthority.isNullOrBlank()&&!target.accountSubject.isNullOrBlank());if(clients!=null&&ThreadReadingIdentity.scopeKey(target) in scopes)require(clients.any {sameScope(it.scope,target)})}
+             ThreadReadingIdentity.key(target,row.getString("threadId"))
+             for(field in listOf("latest","read"))row.optJSONObject(field)?.let {exact(it,setOf("revision","messageId","contentVersion"))}
+             row.getJSONObject("notices").let {notices->notices.keys().forEach {id->
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
+@@ -16,26 +16,27 @@
+         val destination=NativeMigrationForeground.preserveDestination(storage)
+         val localRecords=NativeVoicePreferenceRecord.preserveDestination(storage)
+         val easyWorkDestination=NativeMigrationEasyWorkArchives.captureDestination(storage)
++        val easyWorkBusinessDestination=NativeMigrationEasyWorkBusiness.captureDestination(storage)
+         fun guarded(original: Map<String,String>): (Int)->Unit {
+-            val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()
++            val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()||NativeMigrationEasyWorkBusiness.RECORD in original||easyWorkBusinessDestination.isNotEmpty()
+             fun checkBoundary(){if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
+             checkBoundary()
+             return {point->if(point==0)checkBoundary();checkpoint(point);if(point==0)checkBoundary()}
+         }
+         val stream=NativeMigrationStreamCandidate(context,storage)
+         if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
+-            withPrepared(receipt,records.text,localRecords,destination,easyWorkDestination) {prepared->
++            withPrepared(receipt,records.text,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination) {prepared->
+                 storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepared,records.binary,4),receipt.recordCount,guarded(records.text))
+             }
+         }
+         val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
+-        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords,destination,easyWorkDestination),records.binary),receipt.recordCount,guarded(records.text))
++        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination),records.binary),receipt.recordCount,guarded(records.text))
+     }
+     /** Only transformed values use encrypted scratch cells; root generations receive independent text. */
+-    private fun <T> withPrepared(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,consume: (Map<String,String>)->T): T {
++    private fun <T> withPrepared(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,easyWorkBusinessDestination: Map<String,String>,consume: (Map<String,String>)->T): T {
+         val scratch=storage.child(context,"migration-candidates");val prefix="migration-text-transform:"+UUID.randomUUID();val created=mutableListOf<String>()
+         try {
+-            val prepared=prepare(receipt,original,localRecords,destination,easyWorkDestination) {_,raw->
++            val prepared=prepare(receipt,original,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination) {_,raw->
+                 val bytes=NativeMigrationTextFrames.bytes(raw);val size=bytes.size;val name="$prefix:${created.size}";created.add(name)
+                 try {
+                     val probe=NativeMigrationProbe();probe.write(bytes)
+@@ -46,8 +47,8 @@
+             return consume(prepared)
+         }finally {created.forEach(scratch::remove)}
+     }
+-    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
+-        val records=NativeMigrationTextMap.copy(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),persist);val metadata=JSONObject(records.getValue("metadata"))
++    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,easyWorkBusinessDestination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
++        val records=NativeMigrationTextMap.copy(NativeMigrationEasyWorkBusiness.mergeDestination(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),easyWorkBusinessDestination),persist);val metadata=JSONObject(records.getValue("metadata"))
+         val clients=metadata.getJSONArray("clients").objects()
+         val readers=clients.associate {row->val id=row.getString("id");id to UUID.nameUUIDFromBytes(("android-migration-reader-v1\u0000"+receipt.id+"\u0000"+id).toByteArray(Charsets.UTF_8)).toString()}
+         clients.forEach {it.put("readerId",readers.getValue(it.getString("id")))}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
+@@ -177,7 +177,7 @@
+     }
+ 
+     private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
+-        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)
++        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)
+         require("metadata" in records)
+         // Frozen archive readers already checked their claimed records. Parse each other value once
+         // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.
+@@ -195,7 +195,7 @@
+         metadata.getJSONObject("expanded"); metadata.getJSONObject("workspaces")
+         val clients = metadata.getJSONArray("clients").objects().map(::decodeClient)
+         require(clients.size <= 128 && clients.map { it.id }.distinct().size == clients.size)
+-        require(clients.all { it.scope?.agentId == "codex" }) // EasyWork device re-pairing is not an identity copy.
++        NativeMigrationEasyWorkBusiness.validateMetadataGraph(metadata,clients)
+         val historyNames = NativeMigrationHistory.validate(allValues,clients)
+         val ancillaryNames = NativeMigrationAncillary.validate(parsed)
+         val deviceNames = NativeMigrationDeviceState.validate(records,clients)
+@@ -244,6 +244,7 @@
+                     val intent = objectValue(row.intent)
+                     val client = clients.single { it.id == intent.getString("hostId") }
+                     require(target in client.operationTargets(intent.optional("threadId")))
++                    if(client.scope?.agentId=="easywork")require(row.kind in setOf("reply","creation","open","thread-create","chat-action")) {"EasyWork task/project management migration is not enabled"}
+                     row.replyRecovery?.let { require(it.matchesObservation(client, row)) }
+                 }
+                 rows.forEach {require(operationIds.add(it.id))}
+@@ -257,8 +258,8 @@
+         }
+         require((streams?.keys?:binaries.keys)==(voiceStreams?.keys?:voiceBinaries.keys)+attachmentBinaries+soundBinaries)
+         NativeMigrationReferences.validate(parsed,clients,operations())
+-        // Only verified Codex credentials are supported here. Device keys, grants, push bindings
+-        // and other provider re-pairing remain explicit boundaries, never silently discarded.
++        // EasyWork credentials stay only in exact original-installation archives; projected
++        // clients cannot use a credential reference or inherit execution authority.
+         require(parsed.keys.filter {it.startsWith("submission:")}.all {it.removePrefix("submission:") in operationIds})
+         for ((id, _) in manifests) require("draft-file:$id" in records)
+         for (row in operations()) {
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt
+@@ -58,15 +58,27 @@
+         val names=records.keys.filter(NativeMigrationEasyWorkOriginals::owns).toSet()
+         val result=NativeMigrationTextMap.copy(records).apply {forget(names)};validatePortable(result)
+         val context=NativeMigrationEasyWorkOriginals.validate(records)?:return result
+-        // Current scope covers authorization residue/orphan candidates. Active EasyWork clients
+-        // still reject through the existing metadata validator; none is silently demoted/dropped.
+-        records["metadata"]?.let {NativeMigrationMetadata.validate(StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8)))}
++        // Raw source business descriptors are validated here; their explicit read-only projection
++        // follows at the export boundary before any candidate is accepted.
++        records["metadata"]?.let {NativeMigrationMetadata.validate(StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8)),allowSourceEasyWork=true)}
+         val descriptors=JSONArray(names.sorted().map {name->val blob=frame(records,name)
+             JSONObject().put("name",name).put("size",blob.size).put("sha256",blob.sha256).put("role",role(name))})
+         val body=JSONObject().put("context",context).put("requiresOriginalInstallation",true).put("records",descriptors)
+         val id=hash(canonical(body));body.put("archiveId",id)
+         val rows=entries(result).toMutableMap();rows[id]?.let {require(canonical(it)==canonical(body))};rows[id]=body;require(rows.size<=MAX_INSTALLATIONS)
+         names.forEach {result.alias(records,it,alias(id,it))};result[RECORD]=catalog(rows.values);validatePortable(result);return result
++    }
++    internal fun sourceArchiveId(records: Map<String,String>): String? {
++        val context=NativeMigrationEasyWorkOriginals.validate(records)?:return null
++        val descriptors=JSONArray(records.keys.filter(NativeMigrationEasyWorkOriginals::owns).sorted().map {name->val blob=frame(records,name)
++            JSONObject().put("name",name).put("size",blob.size).put("sha256",blob.sha256).put("role",role(name))})
++        return hash(canonical(JSONObject().put("context",context).put("requiresOriginalInstallation",true).put("records",descriptors)))
++    }
++    internal fun readOnlyOriginal(records: Map<String,String>,archiveId: String,name: String,digest: String): String {
++        val entry=entries(records).getValue(archiveId);val descriptor=originals(entry).getValue(name)
++        require(descriptor.get("sha256")==digest)
++        val value=frame(records,alias(archiveId,name));require(value.sha256==digest&&value.size==descriptor.getInt("size"))
++        return records.getValue(alias(archiveId,name))
+     }
+     fun mergeDestination(source: Map<String,String>,destination: Map<String,String>): Map<String,String> {
+         validatePortable(source)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt
+@@ -18,7 +18,7 @@
+         require(!destination.canonicalPath.startsWith(context.noBackupFilesDir.canonicalPath + java.io.File.separator))
+         storage.migrationStreamSnapshot(::legacyNames,NativeMigrationEasyWorkArchives::legacyNames) { records ->
+             requireSupportedScopes()
+-            val portable=records.copy(text=NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(records.text)))
++            val portable=records.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(records.text)),records.text))
+             NativeMigrationCandidateStore(context, storage).validateStreamRecords(portable)
+             val atomic = android.util.AtomicFile(destination); val output = atomic.startWrite()
+             try {
+@@ -35,7 +35,7 @@
+     }
+     internal fun capture(): ByteArray {
+         val original=storage.migrationTypedArchiveSnapshot(::legacyNames,resolveModernAliases=NativeMigrationEasyWorkArchives::legacyNames)
+-        val records=original.copy(text=NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(original.text)))
++        val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(original.text)),original.text))
+         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
+         try {
+             require(clear.size<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+@@ -44,7 +44,7 @@
+         }catch(error: Exception){clear.fill(0);throw error}
+     }
+     private fun legacyNames(read: (String)->String?): Set<String> {
+-        val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1",NativeMigrationDeviceState.READING,NativeMigrationDeviceState.NOTIFICATIONS,NativeMigrationDeviceState.AUDIT,NativeMigrationNotificationTombstones.RECORD,NativeMigrationSounds.RECORD)
++        val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1",NativeMigrationDeviceState.READING,NativeMigrationDeviceState.NOTIFICATIONS,NativeMigrationDeviceState.AUDIT,NativeMigrationEasyWorkBusiness.RECORD,NativeMigrationNotificationTombstones.RECORD,NativeMigrationSounds.RECORD)
+         fun add(name: String){require(name.length<=8192&&!name.contains('\u0000'));names.add(name);require(names.size<=1024)}
+         fun value(name: String)=read(name)?.let{StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))}
+         NativeMigrationForeground.ACTIVE_NAMES.forEach(::add)
+@@ -53,7 +53,7 @@
+         add(NativeVoicePreferenceRecord.RECORD)
+         add(NativeVoiceDiscardCatalog.RECORD)
+         read(NativeMigrationSounds.RECORD)?.let {raw->NativeChatNotificationSoundLibrary.binaryInventory(raw).keys.forEach(::add)}
+-        val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata)
++        val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata,allowSourceEasyWork=true)
+         val keys=mutableSetOf<String>()
+         for(field in listOf("drafts","draftVersions","draftFiles","attachmentImportGenerations","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces"))
+             metadata.optJSONObject(field)?.keys()?.forEach{keys.add(it)}
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt
+@@ -17,7 +17,7 @@
+     private fun encoded(bytes: ByteArray)=java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+     private fun unsigned(value: BigInteger)=value.toByteArray().let {raw->if(raw.size==33)raw.copyOfRange(1,33)else ByteArray(32-raw.size)+raw}
+     fun seed(context: Context,storage: NativeSessionStorage,mode: String="pending",refreshAudit: Boolean=false): Seed {
+-        require(mode in setOf("pending","confirmed","confirmed-missing","guard-only"))
++        require(mode in setOf("pending","confirmed","confirmed-missing","guard-only","active"))
+         val vector=JSONObject(InstrumentationRegistry.getInstrumentation().context.assets.open("easywork-crypto-vector.json").use {String(it.readBytes(),Charsets.UTF_8)}).getJSONObject("credential")
+         val binding=JSONObject(vector.getJSONObject("binding").toString()).put("mobileDeviceId","p7-original-"+UUID.randomUUID())
+         val identity=EasyWorkIdentity(binding.getString("mobileDeviceId"),vector.getString("privateKey"),binding.getString("mobilePublicKey"))
+@@ -41,7 +41,7 @@
+             call(coordinator,"refreshed",ref,refresh,next)
+         }
+         val verify: (JSONObject)->Unit={value->require(value.getJSONObject("grant").getString("grantId")==grantId)}
+-        val revoke=if(mode=="guard-only")null else call(coordinator,"revocation",ref,verify)
++        val revoke=if(mode in setOf("guard-only","active"))null else call(coordinator,"revocation",ref,verify)
+         if(mode in setOf("confirmed","confirmed-missing"))call(coordinator,"revoked",ref,requireNotNull(revoke))
+         if(mode=="confirmed-missing")check(storage.read(ref)==null)
+         if(mode=="guard-only")storage.remove(ref)
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessFixtures.kt
+@@ -0,0 +1,57 @@
++package com.agenthub.android
++
++import android.content.Context
++import kotlinx.coroutines.runBlocking
++import org.json.JSONArray
++import org.json.JSONObject
++import java.util.UUID
++
++/** Actual local P8 credential/journal/history writers with public/synthetic data only. */
++internal object NativeMigrationEasyWorkBusinessFixtures {
++    const val THREAD="synthetic-thread"
++    class Seed(val storage: NativeSessionStorage,val client: MobileClient,val authority: NativeMigrationEasyWorkFixtures.Seed,
++        val reply: SavedOperation,val completed: SavedOperation,val creation: SavedOperation,val open: SavedOperation,val fileName: String)
++    fun seed(context: Context,storage: NativeSessionStorage): Seed=runBlocking {
++        val authority=NativeMigrationEasyWorkFixtures.seed(context,storage,"active")
++        val credential=EasyWorkCredential.decode(JSONObject(requireNotNull(storage.read(authority.credentialName))))
++        val target=credential.binding.target.scope();val id="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(target)).toByteArray())
++        val connection=AgentConnection(target,listOf(AgentCandidate("synthetic-lan","lan-wss","https://127.0.0.1:1","a".repeat(64),"lan"),AgentCandidate("synthetic-relay","relay-http","https://relay.example.invalid")),authority.credentialName.removePrefix(NativeMigrationEasyWorkOriginals.CREDENTIAL),"lan-only")
++        val client=MobileClient(id,"Synthetic imported EasyWork",target,connection.candidates.first().endpoint,false,"easywork-runtime",false,readerId="original-phone-reader",requiresReadTarget=true,agentConnection=connection)
++        val rows=NativeMigrationCandidateTest().syntheticPayload().getJSONObject("records");val old=JSONObject(rows.getString("metadata"));val oldKey=old.getJSONObject("drafts").keys().next();val key=client.cacheKey(THREAD)
++        val manifest=old.getJSONObject("draftFiles").getJSONArray(oldKey).getJSONObject(0);val fileName="draft-file:"+manifest.getString("id")
++        storage.write(fileName,rows.getString(fileName))
++        val metadata=JSONObject().put("version",1).put("appearance","dark").put("language","en").put("demo",false).put("selected",id)
++            .put("clients",JSONArray().put(encodeClient(client))).put("drafts",JSONObject().put(key,"later editable draft, never the original submission"))
++            .put("draftFiles",JSONObject().put(key,JSONArray().put(manifest))).put("draftVersions",JSONObject().put(key,"later-version"))
++            .put("selectedThreads",JSONObject().put(client.cacheKey(null),THREAD)).put("expanded",JSONObject()).put("workspaces",JSONObject())
++        val thread=MobileThread(THREAD,id,"Original cached chat","idle",null)
++        val workspace=MobileSnapshotCodec.header(client).put("name",client.name).put("connectionMode","easywork-runtime").put("projects",JSONArray())
++            .put("threads",JSONArray().put(encodeThread(thread))).put("capabilities",JSONArray(listOf("commands:target-bound:v1","events","models:read"))).put("runtimeConnected",true)
++        metadata.getJSONObject("workspaces").put(client.cacheKey(null),workspace)
++        storage.write("metadata",metadata.toString())
++        val file=CreationFile(manifest.getString("id"),manifest.getString("name"),manifest.getString("mediaType"),manifest.getLong("sizeBytes"),manifest.getString("sha256"))
++        val journal=NativeOperationJournal(storage);val intent=ReplyIntent(id,THREAD,UUID.randomUUID().toString()," original submitted body ",listOf(file.id),"next-turn").body()
++        var reply=journal.prepare(client,THREAD,"reply",intent,key,"original-version");reply=journal.markSubmitting(reply.target,reply.id);reply=journal.uncertain(reply.target,reply.id,"original result unknown")
++        storage.write("submission:"+reply.id,JSONObject().put("hostId",id).put("target",CodexCommandCodec.target(target)).put("sourceKey",key)
++            .put("sourceVersion","original-version").put("text"," original submitted body ").put("files",JSONArray().put(manifest)).toString())
++        val completedText=" original completed body "
++        val completedIntent=ReplyIntent(id,THREAD,UUID.randomUUID().toString(),completedText,listOf(file.id),"next-turn").body()
++        var completed=journal.prepare(client,THREAD,"reply",completedIntent,key,"completed-original-version")
++        completed=journal.markSubmitting(completed.target,completed.id)
++        val completedReceipt=DeliveryReceipt(id,THREAD,completed.id,"completed","synthetic-original-turn",null,null," original completed receipt ",listOf(file.id))
++        completed=journal.observed(completed.target,completed.id,"completed",encodeReceipt(completedReceipt))
++        storage.write("submission:"+completed.id,JSONObject().put("hostId",id).put("target",CodexCommandCodec.target(target)).put("sourceKey",key)
++            .put("sourceVersion","completed-original-version").put("text",completedText).put("files",JSONArray().put(manifest)).toString())
++        val creation=journal.prepare(client,null,"creation",CreationIntent(id,UUID.randomUUID().toString(),null," original unsubmitted creation ",emptyList()).body())
++        val openIntent=JSONObject().put("hostId",id).put("threadId",THREAD).put("clientOperationId",UUID.randomUUID().toString())
++        var open=journal.prepare(client,THREAD,"open",openIntent);open=journal.markSubmitting(open.target,open.id);open=journal.uncertain(open.target,open.id,"original opening result unknown")
++        val messages=listOf(MobileMessage("original-message","assistant","Original cached body",status="complete"))
++        val history=MobileSnapshotCodec.history(MobileSnapshotCodec.header(client).put("threadId",THREAD).put("messages",JSONArray(messages.map(::encodeMessage))).put("nextCursor",JSONObject.NULL).toString())
++        NativeHistoryCache(storage).save(key,client,THREAD,history,messages)
++        val ledger=NativeReadingLedger(storage);ledger.reconcile(listOf(target),listOf(NativeReadingSnapshot(target,THREAD,ThreadReadPosition(7,"original-message",ThreadReadPosition.contentVersion("original-message","Original cached body","complete")),true)))
++        Seed(storage,client,authority,reply,completed,creation,open,fileName)
++    }
++    fun operationRows(seed: Seed)=runBlocking {NativeOperationJournal(seed.storage).let {journal->
++        (journal.records(seed.client.cacheKey(THREAD))+journal.records(seed.client.cacheKey(null))).associate {it.id to it}
++    }}
++}
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessTest.kt
+@@ -0,0 +1,119 @@
++package com.agenthub.android
++
++import androidx.activity.compose.setContent
++import androidx.compose.ui.test.*
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import kotlinx.coroutines.runBlocking
++import org.json.JSONArray
++import org.json.JSONObject
++import org.junit.*
++import org.junit.Assert.*
++import java.io.File
++import java.util.UUID
++
++/** Full ordinary-chat import boundary; actual storage/journal/history, no network or live input. */
++class NativeMigrationEasyWorkBusinessTest {
++    @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    private val password="owned EasyWork descriptive business password"
++    @Before fun setup(){ui.waitUntil(30_000){!ui.activity.session.restoring};ui.runOnIdle{owned=OwnedControlAcceptance(ui.activity,"migration-easywork-business")}}
++    @After fun finish(){if(::owned.isInitialized)ui.runOnIdle{owned.session.leaveForeground();owned.verifyDefault()}}
++    private fun source()=owned.storage.child(ui.activity,"ew-business-source-"+UUID.randomUUID().toString().take(8))
++    private fun envelope(storage: NativeSessionStorage)=File(owned.folder,"business-"+UUID.randomUUID()+".encrypted").also {NativeMigrationExport(ui.activity,storage).sealFile(it,password)}
++    private fun stage(storage: NativeSessionStorage,destination: NativeSessionStorage=owned.storage)=NativeMigrationCandidateStore(ui.activity,destination).stageFile(UUID.randomUUID().toString(),envelope(storage),password)
++    private fun activate(receipt: NativeMigrationCandidateStore.Receipt,destination: NativeSessionStorage=owned.storage)=NativeMigrationActivation(ui.activity,destination,NativeMigrationNotificationActivationLease(destination,receipt){true}).activate(receipt)
++    @Test fun activeSourceBecomesExplicitUnpairedCacheAndOriginalImmutableGraph()=runBlocking {
++        val source=source();val seed=NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source);val before=MigrationActivationFixtures.tree(source);val originals=NativeMigrationEasyWorkBusinessFixtures.operationRows(seed)
++        val receipt=stage(source);val candidate=owned.storage.child(ui.activity,"migration-candidates");val candidateBefore=MigrationActivationFixtures.tree(candidate)
++        assertTrue(runCatching {NativeMigrationActivation(ui.activity,owned.storage).activate(receipt)}.isFailure)
++        activate(receipt);val current=owned.storage.reopen(ui.activity);val metadata=current.metadata()!!;val client=decodeClient(metadata.getJSONArray("clients").getJSONObject(0))
++        assertEquals(seed.client.id,client.id);assertTrue(sameScope(seed.client.scope,client.scope));assertNull(client.agentConnection);assertNull(client.codexDirect);assertNotNull(client.migrationEasyWork)
++        assertTrue(client.migrationEasyWork!!.requiresPairing);assertEquals("none",client.migrationEasyWork!!.credentialState);assertEquals("lan-only",client.migrationEasyWork!!.preference)
++        assertFalse(client.online);assertFalse(client.isConnecting);assertEquals(NativeMigrationEasyWorkGate.STATUS,client.connectionLabel);assertNotEquals(seed.client.readerId,client.readerId)
++        assertEquals("later editable draft, never the original submission",metadata.getJSONObject("drafts").getString(client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD)))
++        assertEquals(source.read(seed.fileName),current.read(seed.fileName));assertEquals("Original cached body",NativeHistoryCache(current).read(client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD))!!.messages.single().text)
++        val journal=NativeOperationJournal(current)
++        for(row in journal.records(client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD))+journal.records(client.cacheKey(null))) {
++            val original=originals.getValue(row.id);assertTrue(row.migrationReadOnly)
++            for(field in listOf("id","kind","target","intent","intentSha256","phase","result","submissionAttempted","sourceKey","sourceVersion"))assertEquals(original.body().get(field),row.body().get(field))
++            assertTrue(runCatching {journal.markSubmitting(row.target,row.id)}.isFailure)
++        }
++        assertEquals(source.read("submission:"+seed.reply.id),current.read("submission:"+seed.reply.id))
++        assertEquals(source.read("submission:"+seed.completed.id),current.read("submission:"+seed.completed.id))
++        val completed=journal.records(client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD)).single {it.id==seed.completed.id}
++        assertEquals("completed",completed.phase);assertNotNull(completed.result);assertEquals(seed.completed.result,completed.result)
++        val readingAudit=JSONObject(current.read(NativeMigrationDeviceState.AUDIT)!!).getJSONArray("entries").getJSONObject(0)
++        assertEquals(source.read(NativeMigrationDeviceState.READING),readingAudit.getString("reading"))
++        assertEquals(0,JSONObject(current.read(NativeMigrationDeviceState.READING)!!).getJSONArray("scopes").length())
++        seed.authority.originalNames.forEach {assertNull(current.read(it))};assertEquals(before,MigrationActivationFixtures.tree(source));assertEquals(candidateBefore,MigrationActivationFixtures.tree(candidate))
++        val audit=JSONObject(current.read(NativeMigrationEasyWorkBusiness.RECORD)!!).getJSONArray("clients").getJSONObject(0)
++        assertEquals(easyCanonical(encodeClient(seed.client)),easyCanonical(JSONObject(audit.getString("originalClient"))))
++        val after=MigrationActivationFixtures.tree(current);NativeMigrationActivation(ui.activity,current).activate(receipt);assertEquals(after,MigrationActivationFixtures.tree(current))
++    }
++    @Test fun registryAdapterAndTransportStopBeforeAnyImportedReadQueryOrWrite()=runBlocking {
++        val source=source();NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source);activate(stage(source));val current=owned.storage.reopen(ui.activity);val client=decodeClient(current.metadata()!!.getJSONArray("clients").getJSONObject(0));var opened=0
++        val adapter=EasyWorkAgentClient(EasyWorkChannels {opened++;error("Imported target must not resolve a channel")});val registry=AgentRegistry(NativeHostReads {""},NativeCodexCommands {""}).apply {register("easywork",adapter,adapter)}
++        assertEquals("EasyWork",registry.agentTitle(client));assertTrue(registry.permissionOptions(client).isNotEmpty())
++        val work=listOf<suspend ()->Unit>({registry.workspace(client,null,null)},{registry.history(client,NativeMigrationEasyWorkBusinessFixtures.THREAD,null)},
++            {registry.models(client)},{registry.receipt(client,NativeMigrationEasyWorkBusinessFixtures.THREAD,UUID.randomUUID().toString())},
++            {registry.send(client,ReplyIntent(client.id,NativeMigrationEasyWorkBusinessFixtures.THREAD,UUID.randomUUID().toString(),"synthetic unsent",emptyList(),"next-turn"))},
++            {adapter.workspace(client,null,null)},{adapter.models(client)},{EasyWorkSessions(current,EasyWorkLogin(current)).session(client)},
++            {NativeOperationJournal(current).prepare(client,NativeMigrationEasyWorkBusinessFixtures.THREAD,"reply",ReplyIntent(client.id,NativeMigrationEasyWorkBusinessFixtures.THREAD,UUID.randomUUID().toString(),"new blocked intent",emptyList(),"next-turn").body())})
++        val before=MigrationActivationFixtures.tree(current)
++        for(action in work)assertEquals(NativeMigrationEasyWorkGate.MESSAGE,runCatching {action()}.exceptionOrNull()?.message)
++        assertEquals(0,opened);assertEquals(before,MigrationActivationFixtures.tree(current));assertNull(current.read(NativeMigrationEasyWorkOriginals.IDENTITY))
++    }
++    @Test fun actualSessionRestoresCacheDraftAndDisabledActionsWithoutAutomaticQueries() {
++        val source=source();val seed=NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source);activate(stage(source));val current=owned.storage.reopen(ui.activity);lateinit var session: MobileSession
++        ui.runOnIdle {session=MobileSession(current);session.restore();session.enterForeground()};ui.waitUntil(30_000){!session.restoring&&session.hasClient&&session.messages.any {it.id=="original-message"}}
++        ui.runOnIdle {ui.activity.setContent {AgentHubApp(session) { }}}
++        ui.onNodeWithTag("readonly-notice").assertIsDisplayed().assertTextContains("Pair again",substring=true)
++        ui.onNodeWithTag("message-input").assertIsEnabled()
++        try {ui.runOnIdle {
++            assertEquals(seed.client.id,session.selectedClient.id);assertNotNull(session.selectedClient.migrationEasyWork);assertEquals(NativeMigrationEasyWorkBusinessFixtures.THREAD,session.selectedThread)
++            assertFalse(session.canCreateThread);assertFalse(session.canCreateProjectless);assertFalse(session.selectedClient.online)
++            session.refresh(userInitiated=true);assertEquals(NativeMigrationEasyWorkGate.MESSAGE,session.error)
++            assertNull(session.loadHistory(userInitiated=true));session.renameEasyWork(session.selectedClient,"Renamed imported cache")
++            session.setEasyWorkPreference(session.selectedClient,"relay-only");assertEquals("relay-only",session.selectedClient.migrationEasyWork!!.preference)
++            session.text="editable local draft after import";assertEquals("editable local draft after import",session.text)
++        }}finally {ui.runOnIdle {session.leaveForeground()}}
++        runBlocking {current.awaitQueuedWrites()}
++        assertEquals("editable local draft after import",current.metadata()!!.getJSONObject("drafts").getString(seed.client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD)))
++        assertEquals(source.read("submission:"+seed.reply.id),current.read("submission:"+seed.reply.id))
++        assertNull(current.read(NativeMigrationEasyWorkOriginals.IDENTITY));assertTrue(NativeMigrationExport(ui.activity,current).capture().isNotEmpty())
++    }
++    @Test fun corruptedOrActiveDescriptorsAndForeignAccountCacheRefuseAtomically() {
++        val source=source();val seed=NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source);val store=NativeMigrationCandidateStore(ui.activity,owned.storage);val prior=stage(source);val candidate=owned.storage.child(ui.activity,"migration-candidates");val before=MigrationActivationFixtures.tree(candidate)
++        val payload=JSONObject(String(NativeMigrationExport(ui.activity,source).capture(),Charsets.UTF_8))
++        val mutations=listOf<(JSONObject)->Unit>(
++            {records->val m=JSONObject(records.getString("metadata"));m.getJSONArray("clients").getJSONObject(0).getJSONObject("migrationEasyWork").put("credentialState","active");records.put("metadata",m.toString())},
++            {records->val m=JSONObject(records.getString("metadata"));m.getJSONArray("clients").getJSONObject(0).put("agentConnection",seed.client.agentConnection!!.json());records.put("metadata",m.toString())},
++            {records->val m=JSONObject(records.getString("metadata"));m.getJSONArray("clients").getJSONObject(0).getJSONObject("migrationEasyWork").put("privateKey","not an allowed descriptor");records.put("metadata",m.toString())},
++            {records->val m=JSONObject(records.getString("metadata"));m.getJSONObject("workspaces").getJSONObject(seed.client.cacheKey(null)).getJSONObject("target").getJSONObject("account").put("subject","foreign-account");records.put("metadata",m.toString())},
++            {records->val entry=JSONObject(records.getString(NativeMigrationEasyWorkBusiness.RECORD)).getJSONArray("clients").getJSONObject(0);records.remove(NativeMigrationEasyWorkArchives.PREFIX+entry.getString("installationArchiveId")+":"+NativeChatNotificationWire.hash(entry.getString("credentialName")))},
++            {records->val old="operations:"+seed.client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD);val body=JSONObject(records.getString(old));val foreign=seed.client.copy(scope=com.agenthub.core.TargetScope("easywork",seed.client.scope!!.accountAuthority,"foreign-account",seed.client.scope!!.hostId,seed.client.scope!!.workspaceId,seed.client.scope!!.runtimeId),agentConnection=null).cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD);body.put("target",foreign);body.getJSONArray("operations").objects().forEach {it.put("target",foreign)};records.remove(old);records.put("operations:"+foreign,body.toString())},
++            {records->records.put(NativeMigrationEasyWorkBusiness.RECORD,JSONObject(records.getString(NativeMigrationEasyWorkBusiness.RECORD)).put("version",2).toString())},
++            {records->records.put(NativeMigrationEasyWorkBusiness.RECORD," ".repeat(2*1024*1024+1))})
++        for(mutation in mutations) {
++            val changed=JSONObject(payload.toString());mutation(changed.getJSONObject("records"));val encrypted=NativeMigrationCrypto.seal(changed.toString().toByteArray(),password)
++            assertTrue(runCatching {store.stage(UUID.randomUUID().toString(),encrypted,password,prior)}.isFailure)
++            assertEquals(prior,store.currentReceipt());assertEquals(before,MigrationActivationFixtures.tree(candidate))
++        }
++    }
++    @Test fun reexportKeepsOriginalAccountAndDescriptorAfterLocalNameAndPathEdits() {
++        val source=source();val seed=NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source);activate(stage(source));val current=owned.storage.reopen(ui.activity);val original=requireNotNull(current.read(NativeMigrationEasyWorkBusiness.RECORD))
++        val metadata=current.metadata()!!;val row=metadata.getJSONArray("clients").getJSONObject(0);row.put("name","Local imported label");row.put("migrationEasyWork",MigratedEasyWorkConnection.decode(row.getJSONObject("migrationEasyWork")).withPreference("relay-only").json());current.write("metadata",metadata.toString())
++        val destination=current.child(ui.activity,"ew-business-reexport-"+UUID.randomUUID().toString().take(8));val receipt=stage(current,destination);activate(receipt,destination);val reopened=destination.reopen(ui.activity)
++        assertEquals(original,reopened.read(NativeMigrationEasyWorkBusiness.RECORD));val client=decodeClient(reopened.metadata()!!.getJSONArray("clients").getJSONObject(0));assertEquals("Local imported label",client.name);assertEquals("relay-only",client.migrationEasyWork!!.preference);assertTrue(sameScope(seed.client.scope,client.scope));assertNull(client.agentConnection)
++    }
++    @Test fun freshPairingModelCannotThawOriginalUncertainOrUnsubmittedOperations()=runBlocking {
++        val source=source();val seed=NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source);activate(stage(source));val current=owned.storage.reopen(ui.activity);val imported=decodeClient(current.metadata()!!.getJSONArray("clients").getJSONObject(0))
++        val fresh=imported.copy(migrationEasyWork=null,agentConnection=seed.client.agentConnection!!.copy(credentialRef="synthetic-new-action-"+UUID.randomUUID()))
++        assertNull(NativeMigrationEasyWorkGate.previousCredentialRef(imported));assertNull(NativeMigrationEasyWorkGate.previousCredentialRef(null));assertEquals(fresh.agentConnection!!.credentialRef,NativeMigrationEasyWorkGate.previousCredentialRef(fresh))
++        NativeMigrationEasyWorkGate.requireReady(fresh);val journal=NativeOperationJournal(current);val reply=journal.records(imported.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD)).single {it.id==seed.reply.id}
++        assertTrue(reply.migrationReadOnly);assertTrue(runCatching {journal.markSubmitting(reply.target,reply.id)}.isFailure)
++        val creation=journal.records(imported.cacheKey(null)).single();assertTrue(creation.migrationReadOnly);assertTrue(runCatching {journal.markPreparing(creation.target,creation.id)}.isFailure)
++        assertEquals(seed.reply.intent,reply.intent);assertEquals(seed.creation.intent,creation.intent);assertNotEquals(seed.client.agentConnection!!.credentialRef,fresh.agentConnection!!.credentialRef)
++    }
++}
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessColdTest.kt
+@@ -0,0 +1,66 @@
++package com.agenthub.android
++
++import android.os.Process
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import androidx.test.platform.app.InstrumentationRegistry
++import kotlinx.coroutines.runBlocking
++import org.json.JSONObject
++import org.junit.*
++import org.junit.Assert.*
++import java.io.File
++import java.util.UUID
++
++/** A separate opt-in cold pair. Old residual/frame writers are never reused. */
++class NativeMigrationEasyWorkBusinessColdTest {
++    @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    private val password="owned fresh EasyWork business cold password"
++    @Before fun setup(){ui.waitUntil(30_000){!ui.activity.session.restoring};ui.runOnIdle{owned=OwnedControlAcceptance(ui.activity,"migration-ew-business-cold")}}
++    @After fun finish(){if(::owned.isInitialized)ui.runOnIdle{owned.session.leaveForeground();owned.verifyDefault()}}
++    private fun runId()=requireNotNull(InstrumentationRegistry.getArguments().getString("easyWorkBusinessColdRun")){"Fresh parent-owned business UUID required"}.also {require(UUID.fromString(it).toString()==it)}
++    private fun namespace(run: String,source: Boolean)="P7-ew-business-"+(if(source)"source-"else"cold-")+run
++    private fun storage(run: String,source: Boolean)=namespace(run,source).let {NativeSessionStorage(ui.activity,it,it)}
++    private fun proof(run: String)=File(ui.activity.filesDir,"acceptance/easywork-business-cold-$run.json").also {require(it.canonicalFile==File(File(ui.activity.filesDir,"acceptance").canonicalFile,it.name))}
++    private fun hashes(value: JSONObject)=value.keys().asSequence().associateWith {value.getString(it)}
++    @Test fun stageFreshOrdinaryBusinessCandidateForDifferentProcess() {
++        val run=runId();require(!proof(run).exists());for(source in listOf(true,false))require(!File(ui.activity.noBackupFilesDir,namespace(run,source)).exists()){ "Original business writer must not be replayed" }
++        val source=storage(run,true);val destination=storage(run,false);NativeMigrationEasyWorkBusinessFixtures.seed(ui.activity,source)
++        val originals=source.migrationTypedArchiveSnapshot({emptySet()}).text;val rawHashes=originals.mapValues {NativeChatNotificationWire.hash(it.value)}
++        val sourceBefore=MigrationActivationFixtures.tree(source);val encrypted=File(owned.folder,"fresh-business.encrypted")
++        NativeMigrationExport(ui.activity,source).sealFile(encrypted,password)
++        val receipt=NativeMigrationCandidateStore(ui.activity,destination).stageFile(UUID.randomUUID().toString(),encrypted,password)
++        assertEquals(sourceBefore,MigrationActivationFixtures.tree(source))
++        proof(run).writeText(JSONObject().put("version",1).put("kind","p7-easywork-business-cold-v1").put("run",run).put("writerPid",Process.myPid())
++            .put("candidateId",receipt.id).put("candidateSha256",receipt.sha256).put("recordCount",receipt.recordCount)
++            .put("rawHashes",JSONObject(rawHashes)).put("sourceCiphertext",JSONObject(sourceBefore)).put("rootCiphertext",JSONObject(MigrationActivationFixtures.tree(destination)))
++            .put("candidateCiphertext",JSONObject(MigrationActivationFixtures.tree(destination.child(ui.activity,"migration-candidates")))).toString())
++        assertTrue(encrypted.delete());owned.verifyDefault()
++    }
++    @Test fun readSameBusinessCandidateUnderDifferentPidWithoutAuthorityOrReplay()=runBlocking {
++        val run=runId();val file=proof(run);require(file.isFile&&file.length() in 1..256*1024);val fixture=StrictMigrationJson.parse(file.readBytes())
++        require(fixture.keys().asSequence().toSet()==setOf("version","kind","run","writerPid","candidateId","candidateSha256","recordCount","rawHashes","sourceCiphertext","rootCiphertext","candidateCiphertext"))
++        require(fixture.get("version")==1&&fixture.get("kind")=="p7-easywork-business-cold-v1"&&fixture.get("run")==run);assertNotEquals(fixture.getInt("writerPid"),Process.myPid())
++        for(source in listOf(true,false))require(File(ui.activity.noBackupFilesDir,namespace(run,source)).isDirectory)
++        val source=storage(run,true);val destination=storage(run,false);val candidate=destination.child(ui.activity,"migration-candidates")
++        assertEquals(hashes(fixture.getJSONObject("sourceCiphertext")),MigrationActivationFixtures.tree(source));assertEquals(hashes(fixture.getJSONObject("rootCiphertext")),MigrationActivationFixtures.tree(destination))
++        val candidateBefore=MigrationActivationFixtures.tree(candidate);assertEquals(hashes(fixture.getJSONObject("candidateCiphertext")),candidateBefore)
++        val receipt=NativeMigrationCandidateStore.Receipt(fixture.getString("candidateId"),fixture.getString("candidateSha256"),fixture.getInt("recordCount"));assertEquals(receipt,NativeMigrationCandidateStore(ui.activity,destination).currentReceipt())
++        val generation=NativeMigrationActivation(ui.activity,destination,NativeMigrationNotificationActivationLease(destination,receipt){true}).activate(receipt)
++        val current=destination.reopen(ui.activity);val client=decodeClient(current.metadata()!!.getJSONArray("clients").getJSONObject(0));assertNotNull(client.migrationEasyWork);assertNull(client.agentConnection);assertFalse(client.online)
++        assertEquals("none",client.migrationEasyWork!!.credentialState);assertTrue(client.migrationEasyWork!!.requiresPairing);assertEquals("Original cached body",NativeHistoryCache(current).read(client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD))!!.messages.single().text)
++        val originalClient=decodeClient(source.metadata()!!.getJSONArray("clients").getJSONObject(0));assertTrue(sameScope(client.scope,originalClient.scope));assertNotEquals(client.readerId,originalClient.readerId)
++        val rawHashes=fixture.getJSONObject("rawHashes");val archives=NativeMigrationEasyWorkArchives.readOnlyArchives(current).single()
++        for(name in archives.names()){assertEquals(rawHashes.getString(name),NativeChatNotificationWire.hash(requireNotNull(archives.readOnly(name))));assertNull(current.read(name))}
++        val originalJournal=NativeOperationJournal(source);val journal=NativeOperationJournal(current)
++        for(target in listOf(client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD),client.cacheKey(null))) {
++            val originals=originalJournal.records(target).associateBy {it.id}
++            for(row in journal.records(target)){val old=originals.getValue(row.id);assertTrue(row.migrationReadOnly);assertEquals(old.intent,row.intent);assertEquals(old.intentSha256,row.intentSha256);assertEquals(old.result,row.result);assertEquals(old.phase,row.phase);assertTrue(runCatching {journal.markSubmitting(row.target,row.id)}.isFailure)}
++        }
++        val metadata=current.metadata()!!;metadata.getJSONObject("drafts").put(client.cacheKey(NativeMigrationEasyWorkBusinessFixtures.THREAD),"later independent business draft");current.write("metadata",metadata.toString());val after=MigrationActivationFixtures.tree(current)
++        assertEquals(generation,NativeMigrationActivation(ui.activity,current).activate(receipt));assertEquals(after,MigrationActivationFixtures.tree(current))
++        assertEquals(candidateBefore,MigrationActivationFixtures.tree(candidate));assertEquals(hashes(fixture.getJSONObject("sourceCiphertext")),MigrationActivationFixtures.tree(source))
++        File(owned.folder,"business-cold-reader.json").writeText(JSONObject().put("writerPid",fixture.getInt("writerPid")).put("readerPid",Process.myPid()).put("sameCandidate",true)
++            .put("sourceAndCandidateUnchanged",true).put("exactCacheAndImmutableOperations",true).put("incomingAuthority",0).put("requestsSignerRefreshRevokeOrReplay",0).toString())
++    }
++}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt
+@@ -4,7 +4,8 @@
+ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands: AgentCommands): AgentReads,AgentCommands {
+     private val providers=mutableMapOf("codex" to (codexReads to codexCommands))
+     fun register(id: String,reads: AgentReads,commands: AgentCommands) { require(id.isNotBlank()&&id !in providers);providers[id]=reads to commands }
+-    private fun provider(client: MobileClient): Pair<AgentReads,AgentCommands> {
++    private fun provider(client: MobileClient,presentationOnly: Boolean=false): Pair<AgentReads,AgentCommands> {
++        if(!presentationOnly)NativeMigrationEasyWorkGate.requireReady(client)
+         val id=client.agentConnection?.target?.agentId?:client.scope?.agentId?:"codex"
+         require(client.agentConnection==null||sameScope(client.scope,client.agentConnection.target)) { "客户端完整目标不匹配" }
+         return providers[id]?:error("未注册此 Agent")
+@@ -24,8 +25,8 @@
+     override suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String?)=provider(client).first.searchHistory(client,threadId,cursor)
+     override suspend fun nextTurnSuggestion(client: MobileClient,scope: com.agenthub.core.SuggestionScope)=provider(client).first.nextTurnSuggestion(client,scope)
+     override fun creationOperationId(client: MobileClient,parent: String)=provider(client).second.creationOperationId(client,parent)
+-    override fun permissionOptions(client: MobileClient)=provider(client).second.permissionOptions(client)
+-    override fun agentTitle(client: MobileClient)=provider(client).second.agentTitle(client)
++    override fun permissionOptions(client: MobileClient)=provider(client,presentationOnly=true).second.permissionOptions(client)
++    override fun agentTitle(client: MobileClient)=provider(client,presentationOnly=true).second.agentTitle(client)
+     override suspend fun createProject(client: MobileClient,name: String,directory: String,operationId: String)=provider(client).second.createProject(client,name,directory,operationId)
+     override suspend fun createdProject(client: MobileClient,operationId: String)=provider(client).second.createdProject(client,operationId)
+     override suspend fun createdThread(client: MobileClient,operationId: String)=provider(client).second.createdThread(client,operationId)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt
+@@ -24,7 +24,7 @@
+     }
+     override fun agentTitle(client: MobileClient)="EasyWork"
+     override fun permissionOptions(client: MobileClient)=listOf(AgentPermissionOption("confirm_every_operation","逐项确认","每项受权限管理的工具操作都请求确认",appOwnedCopy=true),AgentPermissionOption("confirm_high_risk","高风险确认","按 EasyWork 风险策略对高风险操作请求确认",appOwnedCopy=true),AgentPermissionOption("allow_all","允许已授权操作","免去任务工具确认，仍受设备授权和 Host 边界约束",true,appOwnedCopy=true))
+-    private suspend fun channel(client: MobileClient)=sessions.session(client)
++    private suspend fun channel(client: MobileClient): EasyWorkRemoteSession {NativeMigrationEasyWorkGate.requireReady(client);return sessions.session(client)}
+     private fun project(client: MobileClient,v: JSONObject)=MobileProject(v.getString("id"),client.id,v.getString("name"),listOfNotNull(v.optional("workspacePath")))
+     override suspend fun createProject(client: MobileClient,name: String,directory: String,operationId: String): MobileProject {
+         require(name.isNotBlank()&&name.length<=500&&directory.isNotBlank()&&directory.length<=4096)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt
+@@ -66,6 +66,7 @@
+         sourceKey: String? = null,sourceVersion: String? = null,parentOperationId: String? = null,sharingScope: String? = null): SavedOperation = withContext(Dispatchers.IO) {
+         mutex.withLock {
+           storage.operationTransaction transaction@{
++            NativeMigrationEasyWorkGate.requireReady(client)
+             val scope=client.scope
+             require(scope!=null&&!client.isDemo&&intent.getString("hostId")==client.id&&
+                 (client.agentConnection?.let { sameScope(scope,it.target) }?: (scope.hostId==client.id))) { "提交记录缺少真实目标" }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -19,9 +19,10 @@
+     val requiresReadTarget: Boolean = false, val codexDirect: PairedCodexConnection? = null,
+     val connectionPhase: ConnectionPhase = ConnectionPhase.CONNECTING,
+     val agentConnection: AgentConnection? = null,
+-    val storageIdentity: MobileStorageIdentity? = null) {
+-    val isConnecting get() = !isDemo && !online && connectionPhase != ConnectionPhase.FAILED
+-    val connectionLabel get() = if(online) "已连接" else if(isDemo) "离线 · 查看缓存" else when(connectionPhase) {
++    val storageIdentity: MobileStorageIdentity? = null,
++    val migrationEasyWork: MigratedEasyWorkConnection? = null) {
++    val isConnecting get() = migrationEasyWork==null && !isDemo && !online && connectionPhase != ConnectionPhase.FAILED
++    val connectionLabel get() = if(migrationEasyWork!=null) NativeMigrationEasyWorkGate.STATUS else if(online) "已连接" else if(isDemo) "离线 · 查看缓存" else when(connectionPhase) {
+         ConnectionPhase.CONNECTING -> "正在连接…"
+         ConnectionPhase.WAITING -> "正在重新连接…"
+         ConnectionPhase.FAILED -> "连接未完成 · 查看缓存"
+@@ -757,6 +758,7 @@
+         if(!baseline&&previous!=null&&previous!=signature)recoverNetworkReads()
+     }
+     internal fun recoverNetworkReads() {
++        if(selectedClient.migrationEasyWork!=null)return
+         if(!foreground||!hasClient||selectedClient.isDemo||incomingEasyWorkLink!=null||networkRecoveryJob?.isActive==true)return
+         val client=selectedClient;val key=clientKey;val navigation=clientNavigationRevision;val revision=revisions[client.id] ?: 0
+         networkRecoveryJob=tasks.launch {
+@@ -1227,7 +1229,7 @@
+     private val access: SessionAccess get() {
+         if(!localReady) return SessionAccess(false,false,false,emptyList(),false,false,false,false,false)
+         val local=demo && selectedClient.isDemo
+-        val fresh=freshWorkspaces[clientKey]==true && foreground && execution!=null && "commands:target-bound:v1" in workspace?.capabilities.orEmpty()
++        val fresh=selectedClient.migrationEasyWork==null && freshWorkspaces[clientKey]==true && foreground && execution!=null && "commands:target-bound:v1" in workspace?.capabilities.orEmpty()
+         return SessionAccess(local,local || selectedClient.online && fresh,
+             if(local) null else if(fresh) workspace?.runtimeConnected else false,
+             if(local) emptyList() else if(fresh) workspace?.capabilities.orEmpty() else emptyList(),
+@@ -1403,6 +1405,7 @@
+     }
+     fun refresh(more: Boolean = false, userInitiated: Boolean = false) {
+         val client = selectedClient
++        if(client.migrationEasyWork!=null) {if(userInitiated)error=NativeMigrationEasyWorkGate.MESSAGE;return}
+         if (!localReady || client.isDemo || !hasClient || loading || incomingEasyWorkLink!=null) return
+         val key = clientKey; val revision = revisions[client.id] ?: 0
+         val old = workspace
+@@ -1456,6 +1459,7 @@
+     fun loadHistory(more: Boolean = false, userInitiated: Boolean = false): Job? {
+         val acceptanceTiming=NativeReadAcceptanceTiming.capture()
+         val client = selectedClient; val thread = selectedThread; val key = targetKey
++        if(client.migrationEasyWork!=null)return null
+         if (client.isDemo || incomingEasyWorkLink!=null || thread.isEmpty() || thread.startsWith("draft-") || historyLoading) return null
+         if(!more && userInitiated) { pagedSelections.remove(key); loadedHistorySelections.remove(key) }
+         val selection = selectionRevision; val revision = revisions[client.id] ?: 0
+@@ -1571,6 +1575,7 @@
+         }
+     }
+     private fun observeOperation(client: MobileClient,record: SavedOperation) {
++        if(client.migrationEasyWork!=null)return
+         val flow=execution ?: return; val operationKey=record.target+":"+record.id
+         if(!foreground || record.detached || record.kind=="thread-create" || record.phase !in listOf("submitting","received","uncertain","outcome-unknown","submitted","opening","preparing") ||
+             record.kind=="reply" && record.phase=="submitted" || observingOperations[operationKey]?.isActive==true) return
+@@ -2092,6 +2097,7 @@
+         return PreparedMessageResource(file.name,file.mediaType,local)
+     }
+     private fun startEvents(initialReadGraceMillis: Long=0) {
++        if(selectedClient.migrationEasyWork!=null)return
+         if(!foreground || incomingEasyWorkLink!=null || selectedClient.isDemo || selectedThread.isEmpty() || "events" !in workspace?.capabilities.orEmpty() || "commands:target-bound:v1" !in workspace?.capabilities.orEmpty()) return
+         val client=selectedClient; val thread=selectedThread; val key=targetKey; val selection=selectionRevision; val revision=revisions[client.id] ?: 0
+         val recoveryIdentity=Triple(key,selection,revision)
+@@ -2272,11 +2278,11 @@
+         val identity=EasyWorkIdentity.load(store);binding.verify(identity)
+         val scope=binding.target.scope();val id="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray())
+         val existing=realClients.firstOrNull { it.id==id };val revision=revisions[id]?:0L
+-        val previousRef=existing?.agentConnection?.credentialRef?:"agent-$id"
++        val previousRef=NativeMigrationEasyWorkGate.previousCredentialRef(existing)
+         // Candidate bytes are unactivated until this action commits the metadata pointer.
+         // A crash leaves an unreferenced original; recovery never promotes or replays it.
+         val ref="agent-$id-${lease.id}"
+-        val previous=withContext(Dispatchers.IO) { store.read("easywork-credential:$previousRef") }
++        val previous=if(previousRef==null)null else withContext(Dispatchers.IO) { store.read("easywork-credential:$previousRef") }
+         lease.checkpoint()
+         val old=previous?.let { EasyWorkCredential.decode(JSONObject(it)) }
+         require(old==null||old.binding.target==binding.target&&old.privateKey==identity.privateKey)
+@@ -2287,7 +2293,7 @@
+         val pin=candidates.firstOrNull { it.transportId=="lan-wss" }?.peerFingerprint
+         val saved=existing?.agentConnection?.candidates.orEmpty().filter { (grantRef!=null||old?.grantRef==null)&&(it.transportId!="lan-wss"||pin==null||it.peerFingerprint==pin) }
+         val merged=(candidates+saved).distinctBy { it.transportId to it.endpoint }.take(32)
+-        var connection=AgentConnection(scope,merged,ref,existing?.agentConnection?.preference?:"automatic")
++        var connection=AgentConnection(scope,merged,ref,existing?.agentConnection?.preference?:existing?.migrationEasyWork?.preference?:"automatic")
+         lease.checkpoint()
+         easyWorkSessions!!.remove(id)
+         val authorization: EasyWorkRequestHeaders?=grantRef?.let { grant->{ method,url,body->easyWorkDeviceAuthorization!!.headers(grant,binding,method,url,body) } }
+@@ -2323,6 +2329,9 @@
+         }
+     }
+     fun setEasyWorkPreference(client: MobileClient,preference: String) {
++        require(preference in listOf("automatic","lan-only","relay-only"))
++        val imported=realClients.firstOrNull {it.id==client.id&&sameScope(it.scope,client.scope)}
++        imported?.migrationEasyWork?.let {replaceClient(imported.copy(migrationEasyWork=it.withPreference(preference)));persistMetadata();return}
+         require(preference in listOf("automatic","lan-only","relay-only"));val latest=realClients.firstOrNull { it.id==client.id }?:return
+         val connection=latest.agentConnection?:return;replaceClient(latest.copy(agentConnection=connection.copy(preference=preference),online=false))
+         val revision=(revisions[client.id]?:0)+1;revisions[client.id]=revision;persistMetadata()
+@@ -2339,7 +2348,7 @@
+     }
+     fun renameEasyWork(client: MobileClient,name: String) {
+         if(name.isBlank()||name.length>256)return
+-        realClients.firstOrNull { it.id==client.id&&it.agentConnection!=null }?.let { replaceClient(it.copy(name=name.trim()));persistMetadata() }
++        realClients.firstOrNull { it.id==client.id&&(it.agentConnection!=null||it.migrationEasyWork!=null) }?.let { replaceClient(it.copy(name=name.trim()));persistMetadata() }
+     }
+     internal suspend fun updateEasyWorkCandidates(client: MobileClient,binding: EasyWorkBinding,candidates: List<AgentCandidate>): Boolean {
+         val current=realClients.firstOrNull { it.id==client.id }?:return false;val connection=current.agentConnection?:return false
+@@ -2667,9 +2676,9 @@
+     internal fun installAcceptanceHistory(messages: List<MobileMessage>, cursor: String? = null) { histories[targetKey] = messages; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false;presentationTargetKey=targetKey }
+ }
+ 
+-internal fun encodeClient(client: MobileClient) = JSONObject().put("id", client.id).put("name", client.name).put("endpoint", client.endpoint).put("requiresReadTarget", client.requiresReadTarget).put("codexDirect", client.codexDirect?.let(::encodeCodexDirect)).put("agentConnection",client.agentConnection?.json())
++internal fun encodeClient(client: MobileClient) = JSONObject().put("id", client.id).put("name", client.name).put("endpoint", client.endpoint).put("requiresReadTarget", client.requiresReadTarget).put("codexDirect", client.codexDirect?.let(::encodeCodexDirect)).put("agentConnection",client.agentConnection?.json()).put("migrationEasyWork",client.migrationEasyWork?.json())
+     .put("storageIdentity",client.storageIdentity?.json() ?: JSONObject.NULL).put("mode", client.mode).put("readerId", client.readerId).put("scope", client.scope?.let { s -> JSONObject().put("agentId", s.agentId).put("hostId", s.hostId).put("workspaceId", s.workspaceId).put("runtimeId", s.runtimeId).apply { if (s.accountAuthority != null) put("account", JSONObject().put("authority", s.accountAuthority).put("subject", s.accountSubject)) } })
+-internal fun decodeClient(json: JSONObject) = MobileClient(json.getString("id"), json.getString("name"), HostReadCodec.target(json.optJSONObject("scope")), json.getString("endpoint"), false, json.getString("mode"), false, json.optional("readerId"), json.optBoolean("requiresReadTarget"), json.optJSONObject("codexDirect")?.let(::decodeCodexDirect),agentConnection=json.optJSONObject("agentConnection")?.let(AgentConnection::decode),storageIdentity=json.optJSONObject("storageIdentity")?.let(MobileStorageIdentity::decode) ?: if(json.has("storageIdentity")) null else HostReadCodec.target(json.optJSONObject("scope"))?.takeIf { it.agentId=="codex" }?.let { MobileStorageIdentity(it,emptyList()) }).also { require(it.codexDirect == null || sameScope(it.scope, it.codexDirect.target));require(it.agentConnection==null||sameScope(it.scope,it.agentConnection.target)) }
++internal fun decodeClient(json: JSONObject) = MobileClient(json.getString("id"), json.getString("name"), HostReadCodec.target(json.optJSONObject("scope")), json.getString("endpoint"), false, json.getString("mode"), false, json.optional("readerId"), json.optBoolean("requiresReadTarget"), json.optJSONObject("codexDirect")?.let(::decodeCodexDirect),agentConnection=json.optJSONObject("agentConnection")?.let(AgentConnection::decode),migrationEasyWork=json.optJSONObject("migrationEasyWork")?.let(MigratedEasyWorkConnection::decode),storageIdentity=json.optJSONObject("storageIdentity")?.let(MobileStorageIdentity::decode) ?: if(json.has("storageIdentity")) null else HostReadCodec.target(json.optJSONObject("scope"))?.takeIf { it.agentId=="codex" }?.let { MobileStorageIdentity(it,emptyList()) }).also { require(it.codexDirect == null || sameScope(it.scope, it.codexDirect.target));require(it.agentConnection==null||sameScope(it.scope,it.agentConnection.target));NativeMigrationEasyWorkGate.validate(it) }
+ internal fun encodeWorkspace(w: MobileWorkspace) = MobileWorkspaceMetadata.encode(w)
+ internal fun encodeMessage(m: MobileMessage) = JSONObject().put("id", m.id).put("role", m.role).put("text", m.text).put("status", m.status).put("kind", m.kind).put("detail", m.detail).put("runId", m.runId).put("replyPhase", m.replyPhase).put("replyMessageId", m.replyMessageId).put("files", JSONArray(m.files)).put("blocks", m.blocks?.let(::JSONArray)).put("attachments", JSONArray(m.attachments.map { f -> JSONObject().put("id", f.id).put("name", f.name).put("mediaType", f.mediaType).put("sizeBytes", f.sizeBytes).put("hostId", f.hostId).put("threadId", f.threadId).put("sha256", f.sha256).put("resourceId",f.resourceId) }))
+ 
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
+@@ -39,7 +39,7 @@
+ 
+ @Composable internal fun ConnectionPage(session: MobileSession,editing: MobileClient?,draftOverride: EasyWorkConnectionDraft?=null,saved: ()->Unit) {
+     var provider by remember { mutableStateOf(editing?.scope?.agentId?:if(session.incomingEasyWorkLink!=null)"easywork" else "codex") }
+-    val rememberedDraft=remember(editing?.id) { EasyWorkConnectionDraft(editing?.name?:"EasyWork",editing?.agentConnection?.candidates?.firstOrNull { it.transportId=="relay-http" }?.endpoint?:"https://51easyai.com") }
++    val rememberedDraft=remember(editing?.id) { EasyWorkConnectionDraft(editing?.name?:"EasyWork",editing?.agentConnection?.candidates?.firstOrNull { it.transportId=="relay-http" }?.endpoint?:"https://51easyai.com").apply {if(editing?.migrationEasyWork!=null)method="扫码连接"} }
+     val easyWorkDraft=draftOverride?:rememberedDraft
+     LaunchedEffect(session.incomingEasyWorkLink,session.connectionBusy) { if(session.incomingEasyWorkLink!=null&&!session.connectionBusy)provider="easywork" }
+     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).testTag("connection-page")) {
+@@ -99,11 +99,12 @@
+     fun codeInput()=EasyWorkConnectionInput("code",name,relay,code)
+     fun pair(value: String) { val input=EasyWorkConnectionInput("qr",name,"",value);perform(input,::qrInput) {pending->session.connectEasyWorkQR(input.value,input.name,pending)} }
+     Column(Modifier.fillMaxWidth()) {
++        if(editing?.migrationEasyWork!=null)Text(productText(NativeMigrationEasyWorkGate.MESSAGE),Modifier.padding(16.dp).testTag("easywork-migration-pairing-required"),color=colors.onSurfaceVariant)
+         GroupTitle("EasyWork")
+         GroupCard {
+             EasyWorkFormField(name,{ name=it;editing?.let { client->session.renameEasyWork(client,it) } },productText("名称"),"easywork-name",!busy)
+             if(editing!=null)Box {
+-                val preference=session.clients.firstOrNull { it.id==editing.id }?.agentConnection?.preference?:"automatic"
++                val preference=session.clients.firstOrNull { it.id==editing.id }?.let {it.agentConnection?.preference?:it.migrationEasyWork?.preference}?:"automatic"
+                 SettingsRow(productText("连接偏好"),productText(mapOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继")[preference]!!),"connection-preference") { if(!busy)preferenceMenu=true }
+                 DropdownMenu(preferenceMenu,{ preferenceMenu=false }) { listOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继").forEach { (id,title)->DropdownMenuItem(text={ Text(productText(title)) },onClick={ session.setEasyWorkPreference(editing,id);preferenceMenu=false },modifier=Modifier.testTag("connection-preference-$id")) } }
+             }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt
+@@ -225,6 +225,7 @@
+     private val lock=Mutex()
+     private val sessions=mutableMapOf<String,Pair<String,EasyWorkRemoteSession>>()
+     override suspend fun session(client: MobileClient): EasyWorkRemoteSession = lock.withLock {
++        NativeMigrationEasyWorkGate.requireReady(client)
+         val connection=client.agentConnection?:error("缺少电脑连接")
+         val credential=withContext(Dispatchers.IO) { EasyWorkCredential.decode(JSONObject(storage.read("easywork-credential:${connection.credentialRef}")?:error("配对授权已失效"))) }
+         val signature=easyCanonical(connection.json().put("candidates",org.json.JSONArray()).put("credentialRevision",easyHash(credential.json().toString().toByteArray())))
+--- a/apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt
+@@ -154,7 +154,7 @@
+                         // Keep natural control heights when the IME leaves a short
+                         // viewport; every control can then be scrolled into view.
+                         Column(Modifier.fillMaxWidth().verticalScroll(bottomScroll).testTag("bottom-controls")) {
+-                            if (!session.selectedClient.isDemo && !session.canCompose) Text(productText(if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。"),Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
++                            if (!session.selectedClient.isDemo && !session.canCompose) Text(productText(if(session.selectedClient.migrationEasyWork!=null) NativeMigrationEasyWorkGate.STATUS else if(session.currentChat?.archived==true) { if(session.supportsChatManagement) "对话已归档，仅支持查看，可在对话选项中恢复。" else "对话已归档，仅支持查看，可在电脑端恢复。" } else if(session.selectedClient.mode in listOf("history", "history-only")) "历史连接仅支持查看，草稿保存在手机。" else "等待电脑确认连接与控制权，草稿保存在手机。"),Modifier.padding(horizontal=16.dp,vertical=4.dp).testTag("readonly-notice"),fontSize=12.sp,color=colors.onSurfaceVariant)
+                             if(!session.selectedClient.isDemo) { ExecutionPanels(session,executionMaxHeight,autoPresentQuestions=effectiveSheet==null && !sidebar && session.error==null,inlineToolApprovals=inlineToolApprovals,noticeVisibility=noticeBinding); GenerationControls(session,compactLayout=inlineToolApprovals) { openSheet("generation") } }
+                             QueuedCommands(session,interactive=!sidebar && effectiveSheet==null && session.error==null)
+                             StorageIdentityNotice(session)

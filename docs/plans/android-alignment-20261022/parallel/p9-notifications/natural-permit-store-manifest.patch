@@ -1,0 +1,13 @@
+diff --git a/apps/android/src/debug/AndroidManifest.xml b/apps/android/src/debug/AndroidManifest.xml
+--- a/apps/android/src/debug/AndroidManifest.xml
++++ b/apps/android/src/debug/AndroidManifest.xml
+@@ -3,4 +3,9 @@
+     <queries>
+         <provider android:authorities="${applicationId}.test.sound-witness" />
+     </queries>
++    <application>
++        <!-- Fixed same-UID component fixture only. No receiver, provider or production startup hook. -->
++        <service android:name="com.agenthub.android.NativeNaturalStoreProbeService"
++            android:exported="false" android:process=":p9NaturalStore" />
++    </application>
+ </manifest>

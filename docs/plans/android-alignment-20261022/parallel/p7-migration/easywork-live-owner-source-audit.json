@@ -1,0 +1,120 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "requiresBusiness": "35ad3cf7aa43edbc1ff730bd54d9f63946aa1d02",
+  "separateBinaryFix": "823dc8513b556ee83f8c48ce3ec345e86af176e9",
+  "baseCombinedSource": "159ce4d79a454fb88e963f1ebf4344ec687ab0d630605da378839659c2992ae3",
+  "compile": {
+    "at": "2026-10-28T23:59:13.378694+00:00",
+    "source": "3ccf4be3ac895e12c1db077b27c47baa7b86f5a6a981cc0216d4570af373f833",
+    "inputs": 793,
+    "base": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+    "requiredBusinessHead": "35ad3cf7aa43edbc1ff730bd54d9f63946aa1d02",
+    "requiredBinaryFix": "823dc851",
+    "preservedP9": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+    "appRunnerBuild": "passed",
+    "nativeNewPreparedMethods": 10,
+    "nativeExecutedHere": false,
+    "hostAuxiliary": {
+      "cases": 7,
+      "actualOkHttpCallbackAndResponseClose": true,
+      "independentRelayAck": true,
+      "sameOwnerAfterCancelledWait": true,
+      "customProofFailClosed": true,
+      "networkRequests": 0,
+      "nativeExecuted": false
+    },
+    "artifacts": {
+      "app.apk": {
+        "sha256": "9d2abb995060e7fe14021581d8775df1bde6a1d66d79503105712121f138a33b",
+        "bytes": 28520103
+      },
+      "runner.apk": {
+        "sha256": "a249586ec08fdb1e307ebacf1eed9779c10b774d0e513cb1e7423f8644b72b81",
+        "bytes": 10329699
+      }
+    },
+    "TLSDiscoveryActualSessionNative": "pending; compile and intercepted JVM do not substitute",
+    "fullP7Passed": false
+  },
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt": {
+      "baseSha256": "2e219f12d0c785b4b4c71d0326be462706778030d4a096896805bf1d23a73d99",
+      "proposedSha256": "98084291ca1f31356402605b22ff59907e7689afdfd155cbdeb0637549a53dc5"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkOkHttp55.kt": {
+      "baseSha256": null,
+      "proposedSha256": "8885bfea167debd7e250b64a7d90532fe7cbe42281fa0e091be7dbafc0bfa720"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkMigrationOwners.kt": {
+      "baseSha256": null,
+      "proposedSha256": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": {
+      "baseSha256": "43d25b9209c2e1bfd729d188115950fadde1423eaa652c7e9d8745f608912491",
+      "proposedSha256": "1b1278fa17b9bbda414045b11539a788b0481a2275f0c0a2c6e53987b1f8ccc9"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": {
+      "baseSha256": "f90f42e31247d41044c507d06c58064182240a1730b1d00c45e7cede11aca718",
+      "proposedSha256": "d238d6b399682a81228680e753f6fad79e9db4e9ca3a769d845dfb99eb578f4d"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt": {
+      "baseSha256": "79d5be5dc30e8b63cc3303aa6ac78135e36196ea07adebe138427e28b096c809",
+      "proposedSha256": "22d48085701e622daf7567dd232282be40a9965b425f46fa04b3866b8b236f66"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+      "baseSha256": "51e617b4df8a00428c1fd67e43ec57a77e80e3f34c6fd7dc612af13c2d0281ea",
+      "proposedSha256": "099a384a19304bc2e5ee32fd8aa0ba5af72063ce9cde4f749257e9f28ef65d8f"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "c7a1add5c778647c5de98a05ce4d60cc03a3fb10644ae16cdee3cbdb2db89c68"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoLifecycleTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "6f1d92f001bf13105ee9c79b5653b69438abaa07ca0990e3019cc27651a14c7b"
+    }
+  },
+  "auxiliary": {
+    "at": "2026-10-28T23:58:15.690899+00:00",
+    "source": "3ccf4be3ac895e12c1db077b27c47baa7b86f5a6a981cc0216d4570af373f833",
+    "runtime": "JVM17 -Xmx48m",
+    "result": {
+      "cases": 7,
+      "actualOkHttpCallbackAndResponseClose": true,
+      "independentRelayAck": true,
+      "sameOwnerAfterCancelledWait": true,
+      "customProofFailClosed": true,
+      "networkRequests": 0,
+      "nativeExecuted": false
+    },
+    "hostFacade": "org.json JVM implementation; Android Log no-op and SDK_INT=0 select actual OkHttp JDK9 platform; no Android JSON parser, storage, UI, device, TLS/network, Host/model, native acceptance",
+    "coveredSource": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "d238d6b399682a81228680e753f6fad79e9db4e9ca3a769d845dfb99eb578f4d",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": "1b1278fa17b9bbda414045b11539a788b0481a2275f0c0a2c6e53987b1f8ccc9",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt": "98084291ca1f31356402605b22ff59907e7689afdfd155cbdeb0637549a53dc5",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkOkHttp55.kt": "8885bfea167debd7e250b64a7d90532fe7cbe42281fa0e091be7dbafc0bfa720",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkMigrationOwners.kt": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormat.kt": "cd8e06e87e24fa0bb1e40be5f7a9e661c1b639266089907d1894371cc8b22e91",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoTest.kt": "c7a1add5c778647c5de98a05ce4d60cc03a3fb10644ae16cdee3cbdb2db89c68",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormatTest.kt": "3dcf380a89503b6c948cb07d76f27980f7d96aa86748785eece1ef69664e700d"
+    }
+  },
+  "exactApply": {
+    "base": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+    "orderedPatches": [
+      "business-code.patch",
+      "binary-inventory-code.patch",
+      "live-owner-code.patch"
+    ],
+    "allProposedCodeBodiesMatched": true,
+    "parentCheckoutMutated": false
+  },
+  "native": {
+    "newIO": 5,
+    "actualSessionLifecycle": 1,
+    "separateBinaryAndFraming": 4,
+    "executedHere": false,
+    "required": "coordinator fresh native and actual pinned LAN/WebSocket/relay/discovery closure; interrupted wait and second-migration gate"
+  },
+  "fullP7Passed": false
+}

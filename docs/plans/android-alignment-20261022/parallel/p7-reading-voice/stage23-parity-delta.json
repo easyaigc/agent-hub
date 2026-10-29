@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "23-fixture-cancel-observation",
+  "featureIds": ["F33", "F42", "F55", "F56", "F58", "F64"],
+  "implementation": "test-only: short voice child namespace and bounded original product SAF cancellation observation; production behavior and constraints unchanged",
+  "commonAssertions": [
+    "original recording and immutable input remain preserved",
+    "native input requires exact owner and original picker identity; actual cancellation callback must retire only that original",
+    "unknown results stop input and retain original caller without replay or fabricated callback"
+  ],
+  "productDesignImpact": "No product page, copy or token change; corrected UI fixture reaches existing bilingual light/dark bounded/outer-scroll assertions",
+  "platformImpact": {
+    "android": "two UI fixtures require fresh native verification; SAF observation is prepared",
+    "ios": "no source change or new acceptance; A6 paused"
+  },
+  "sourceInventoryCorrection": {
+    "controller": 5,
+    "ui": 2,
+    "total": 7,
+    "supersedes": "earlier 4+2 reporting; historical evidence retained"
+  },
+  "parentMatchingEvidence": "Stage26 frozen source: controller5+system8+discard7 passed20; permission4 and Home/confirmation17 passed; UI2 precondition failures retained, migration voice8 owned separately",
+  "nativeExecutedHere": 0,
+  "acceptance": "parallel/p7-reading-voice/stage23-fixture-and-cancellation.md",
+  "centralManifests": "parent integrates product/mobile-parity.md, design/mobile-parity.md and acceptance/mobile-parity.md without overwriting prior results",
+  "remaining": [
+    "corrected UI2 native run",
+    "actual CREATE/OPEN cancellation on original product registry",
+    "full SAF/voice acoustic/DEV",
+    "Android saved-file ASR provider and local-resolution storage"
+  ],
+  "scope": "No device, ADB, Host, microphone/model or iOS action; task/project management and A6 remain paused"
+}

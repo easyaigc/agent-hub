@@ -1,0 +1,56 @@
+{
+  "parentBase": "a56c7225a7453374fd9904c3811e425479a69714",
+  "sources": {
+    "EasyWorkAuthorizationCoordinator.kt": "478c572ab47a6b7a328bfdba0fdeb2bf03708b0f556c35e81f0b2309602bbd6e",
+    "EasyWorkDeviceAuthorization.kt": "1b8681f4fb686fe877eb914e74260fc825dc65fa764e9c3ac938c9ca49ad2256",
+    "EasyWorkConnectionLeaseBinding.kt": "6a42b37ee1e3b4ae6f995205acb1799ad5a9085cff6366ffb43594fcdcc1a4bb",
+    "EasyWorkLogin.kt": "0b63f3f51435986be1f9b6f413a26a31dbf9a7ce6fb25789e81f183d4a0db99d"
+  },
+  "contracts": [
+    {
+      "writer": "EasyWorkAuthorizationCoordinator.revocation",
+      "field": "revoke.saved",
+      "type": "String",
+      "source": "Revoke.saved snapshots saved.toString(); preserved unchanged"
+    },
+    {
+      "writer": "EasyWorkAuthorizationCoordinator.revoked",
+      "field": "revoke.localReceipt",
+      "type": "JSONObject",
+      "source": "read(ref) is parsed JSON and put directly"
+    },
+    {
+      "writer": "EasyWorkAuthorizationCoordinator.revocation confirmed-resume",
+      "field": "revoke.localReceipt",
+      "type": "JSONObject",
+      "source": "same direct read(ref); only local cleanup is retried"
+    },
+    {
+      "writer": "EasyWorkAuthorizationCoordinator.refreshed",
+      "field": "refreshResults.<operation> / originalPending",
+      "type": "JSONObject / JSONObject",
+      "source": "token omitted; tokenHash/body/grantHash are String; unknown pending/grant fields preserved"
+    },
+    {
+      "writer": "EasyWorkDeviceAuthorization.pair",
+      "field": "claim.body / claim.grantRef / claim reply fields",
+      "type": "String / String / named typed scalars",
+      "source": "matches existing strict reader; not exercised by network here"
+    },
+    {
+      "writer": "EasyWorkConnectionCredentialWrites.write",
+      "field": "credential record",
+      "type": "String serialized EasyWorkCredential object",
+      "source": "per-action ref and metadata commit separation unchanged; actual native fixture writer retained"
+    },
+    {
+      "writer": "EasyWorkLogin",
+      "field": "OIDC state/session records",
+      "type": "String serialized JSON",
+      "source": "pending/session named fields match frozen reader; no token exchange here"
+    }
+  ],
+  "productionWritersModified": false,
+  "readerCoercesLocalReceiptToString": false,
+  "evidence": "Exact current source audit plus real compiled writer/reader JVM probe and compiled native vectors; network/Keystore/DEV not executed"
+}

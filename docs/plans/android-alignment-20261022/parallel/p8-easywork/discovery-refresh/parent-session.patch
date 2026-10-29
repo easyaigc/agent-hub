@@ -1,0 +1,20 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -2344,10 +2344,15 @@
+     internal suspend fun updateEasyWorkCandidates(client: MobileClient,binding: EasyWorkBinding,candidates: List<AgentCandidate>): Boolean {
+         val current=realClients.firstOrNull { it.id==client.id }?:return false;val connection=current.agentConnection?:return false
+         if(!sameScope(connection.target,binding.target.scope()))return false
++        val revision=revisions[client.id]?:0L
+         val saved=withContext(Dispatchers.IO) { storage?.read("easywork-credential:${connection.credentialRef}") }?:return false
+         if(EasyWorkCredential.decode(JSONObject(saved)).binding!=binding)return false
+-        val merged=(candidates+connection.candidates).distinctBy { it.transportId to it.endpoint }.take(32)
+-        if(merged!=connection.candidates) { replaceClient(current.copy(agentConnection=connection.copy(candidates=merged)));persistMetadata() }
++        // Credential IO yields Main. Never publish the pre-read client/connection snapshot.
++        val latest=realClients.firstOrNull {it.id==client.id}?:return false
++        val live=latest.agentConnection?:return false
++        if((revisions[client.id]?:0L)!=revision||!sameScope(live.target,connection.target)||live.credentialRef!=connection.credentialRef||live.preference!=connection.preference)return false
++        val merged=(candidates+live.candidates).distinctBy { it.transportId to it.endpoint }.take(32)
++        if(merged!=live.candidates) { replaceClient(latest.copy(agentConnection=live.copy(candidates=merged)));persistMetadata() }
+         return true
+     }
+     suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { lease->

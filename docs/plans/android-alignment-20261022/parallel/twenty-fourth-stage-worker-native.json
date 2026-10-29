@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "checkpoint": "PAR24-worker-close-native",
+  "date": "2026-10-29",
+  "groups": [
+    {
+      "label": "worker-case-1",
+      "status": "passed",
+      "sourceSha256": "6148da1a8db82112c7542f697b1a9d19b082ff4e9b5351bbac08f66251cba3fc",
+      "appSha256": "5b6a816d99aafbc5fd8a610b7fdaffdfef8ee9f6d8a918e077e0d7c54ba78dc9",
+      "runnerSha256": "d9daabf3d893e6302dd8e6b6b40703d7235c80f193d97275fbf4e0fc4d608a38",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationWorkerCloseTest#synchronousEntryReentryFindsRegisteredJobAndCancelsBeforeFirstSync"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "9db69cc882b919bcb60d0c0b4c3bfafd4abd9bd241a97db0e49bf00b682d62ed"
+    },
+    {
+      "label": "worker-case-2",
+      "status": "passed",
+      "sourceSha256": "6148da1a8db82112c7542f697b1a9d19b082ff4e9b5351bbac08f66251cba3fc",
+      "appSha256": "5b6a816d99aafbc5fd8a610b7fdaffdfef8ee9f6d8a918e077e0d7c54ba78dc9",
+      "runnerSha256": "d9daabf3d893e6302dd8e6b6b40703d7235c80f193d97275fbf4e0fc4d608a38",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationWorkerCloseTest#synchronousRetirementDuringCancelReturnsWithoutClosedWaitOrReplay"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "46232c3d65b23b81ca8fd92389849556c9d1996d278a0d88dcc1b0a7b34d1741"
+    },
+    {
+      "label": "coordinator-first",
+      "status": "passed",
+      "sourceSha256": "6148da1a8db82112c7542f697b1a9d19b082ff4e9b5351bbac08f66251cba3fc",
+      "appSha256": "5b6a816d99aafbc5fd8a610b7fdaffdfef8ee9f6d8a918e077e0d7c54ba78dc9",
+      "runnerSha256": "d9daabf3d893e6302dd8e6b6b40703d7235c80f193d97275fbf4e0fc4d608a38",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#oldCallbackCannotPostAfterNavigation",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#permissionDenialAndRecoveryShowOnlyNewEventThroughRequiredReadingPort",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#settingsEntryRoutesActualPageAndDefaultOffCreatesNoIdentity",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#navigationDuringOriginalLookupDoesNotConsumeOrOpenTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#warmIntentAndDuplicateTicketOpenExactlyOnce",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unavailableOriginalThreadIsNotSynthesized",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#backgroundInvalidatesSuspendedPresentationBeforeSystemPost",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#invalidOpaqueIntentIsRecognizedAndNeverBecomesPairingLink",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foregroundPresentationUsesOpaqueIntentAndP7UnreadCount",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#stableSnapshotPublicationDoesNotRestartOrAcceleratePoll",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#readingRecheckAfterChannelPreparationPreventsOldBanner",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#coldIntentWaitsForRealSessionReadyThenPreservesOtherDraft",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#foreignTargetAndCredentialNeverUseAnotherConnection"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "7263c3a2637ed3ed08b980309246ecb267f2308904511c6b2fad674fc7fb102c"
+    },
+    {
+      "label": "coordinator-second",
+      "status": "passed",
+      "sourceSha256": "6148da1a8db82112c7542f697b1a9d19b082ff4e9b5351bbac08f66251cba3fc",
+      "appSha256": "5b6a816d99aafbc5fd8a610b7fdaffdfef8ee9f6d8a918e077e0d7c54ba78dc9",
+      "runnerSha256": "d9daabf3d893e6302dd8e6b6b40703d7235c80f193d97275fbf4e0fc4d608a38",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#restoredSessionCanOpenOriginalBeforeReadingLedgerAllowsPolling",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#credentialReplacementDuringLookupKeepsOriginalTicketAndDraft",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#wrongFullTargetTicketNeverSelectsKnownHostWithDifferentRuntime",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#newerIntentSupersedesOldLookupWithoutConsumingOldTicket",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#actualSessionRestoreRetainsOriginalUnknownWithoutAnotherSubmit",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#removedConnectionKeepsOriginalTargetAndRetainedQueryVisible",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#missingRetainedAuthorityShowsRecoveryInsteadOfNewId",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#disposedBindingCannotPublishLateLookupIntoReplacementStorage",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#queryButtonOnDefaultOffDoesNotCreateIdentityOrRegister",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#unknownQueryButtonUsesRetainedOriginalAndNeverPostsAgain",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#expiredTicketCannotReadOrNavigate",
+        "com.agenthub.android.NativeChatNotificationCoordinatorTest#restoredOriginalAuthoritySurvivesCredentialRotation"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "d17164364407ee26442e78905c53cdb0897f6b25d00754e66c704418a0c9417c"
+    },
+    {
+      "label": "closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority",
+      "status": "passed",
+      "sourceSha256": "6148da1a8db82112c7542f697b1a9d19b082ff4e9b5351bbac08f66251cba3fc",
+      "appSha256": "5b6a816d99aafbc5fd8a610b7fdaffdfef8ee9f6d8a918e077e0d7c54ba78dc9",
+      "runnerSha256": "d9daabf3d893e6302dd8e6b6b40703d7235c80f193d97275fbf4e0fc4d608a38",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedMigrationGateQueriesOriginalUnknownRevokeWithRetainedAuthority"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "fc048736a5d4a15f842bf7311b31fa2c277a9cd1027ae8051caf7bd3a25d16d6"
+    },
+    {
+      "label": "closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke",
+      "status": "passed",
+      "sourceSha256": "6148da1a8db82112c7542f697b1a9d19b082ff4e9b5351bbac08f66251cba3fc",
+      "appSha256": "5b6a816d99aafbc5fd8a610b7fdaffdfef8ee9f6d8a918e077e0d7c54ba78dc9",
+      "runnerSha256": "d9daabf3d893e6302dd8e6b6b40703d7235c80f193d97275fbf4e0fc4d608a38",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedOffCallbacksQueryUnknownRegistrationWithoutCreatingRevoke"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "6abb160dca27091010801e7f95b99f70f89659c6c6e6eb33cca758b2993b7405"
+    },
+    {
+      "label": "closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing",
+      "status": "passed",
+      "sourceSha256": "6148da1a8db82112c7542f697b1a9d19b082ff4e9b5351bbac08f66251cba3fc",
+      "appSha256": "5b6a816d99aafbc5fd8a610b7fdaffdfef8ee9f6d8a918e077e0d7c54ba78dc9",
+      "runnerSha256": "d9daabf3d893e6302dd8e6b6b40703d7235c80f193d97275fbf4e0fc4d608a38",
+      "passedMethods": [
+        "com.agenthub.android.NativeChatNotificationEnrollmentOriginalsTest#closedQueryCannotBorrowRotatedOrArchivedAuthorityWhenOriginalMissing"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "d13ef013e519e3bbaa9ed40511f2e72dc5beff6f00710c9c0b5554c2a647dcb8"
+    }
+  ],
+  "passedNativeMethods": 30,
+  "failedNativeMethods": 0,
+  "originalOptInSkips": {
+    "count": 3,
+    "status": "Parent initially omitted explicit lease/run; all3 method bodies skipped before fixtures, not acceptance; new explicit selector UUIDs then passed",
+    "originalRawRetained": true
+  },
+  "workerProofs": [
+    {
+      "case": "entry-reentry",
+      "api": 26,
+      "passed": true,
+      "result": {
+        "case": "entry-reentry",
+        "registeredBeforeEntry": true,
+        "workerCompleted": true,
+        "workerCancelled": true,
+        "retiredAtEntry": true,
+        "uncaughtTypes": [],
+        "submitted": 0,
+        "capabilities": 0,
+        "feedReads": 0,
+        "v1Calls": 0,
+        "forbiddenSystemCalls": 0,
+        "originalIntentHash": null
+      }
+    },
+    {
+      "case": "sync-return-retire",
+      "api": 26,
+      "passed": true,
+      "result": {
+        "case": "sync-return-retire",
+        "registeredBeforeEntry": true,
+        "workerCompleted": true,
+        "workerCancelled": true,
+        "retiredAtEntry": false,
+        "uncaughtTypes": [],
+        "submitted": 0,
+        "capabilities": 1,
+        "feedReads": 0,
+        "v1Calls": 0,
+        "forbiddenSystemCalls": 0,
+        "originalIntentHash": null
+      }
+    }
+  ],
+  "queryCounts": [0, 1, 2],
+  "default11FieldProofCount": 25,
+  "originalPar21FailureRetained": true,
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "limits": [
+    "Actual OS post/tap/Delivery/natural process creation and physical OEM remain open",
+    "PR51 exact backport package and current head CI pending",
+    "Pure fixture transport/system ports are synthetic; no real Host/vendor/full DEV"
+  ]
+}

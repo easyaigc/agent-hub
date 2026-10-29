@@ -7,13 +7,17 @@ import org.json.JSONObject
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 class EasyWorkRemoteSession(val connection: AgentConnection,private val credential: EasyWorkCredential,private val token: suspend ()->String,
-    private val transports: AgentTransportRegistry = AgentTransportRegistry(),private val authorize: EasyWorkRequestHeaders?=null) {
+    private val transports: AgentTransportRegistry = AgentTransportRegistry(),private val authorize: EasyWorkRequestHeaders?=null,ownerContext: CoroutineContext=EmptyCoroutineContext) {
     val target=credential.binding.target
-    private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.IO)
+    private val migrationContext=ownerContext.easyWorkOwnerContext()
+    private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.IO+migrationContext)
     private val connecting=Mutex()
     private val sending=Mutex()
+    private val routeLock=Any()
     @Volatile private var route: AgentFrameTransport?=null
     @Volatile private var crypto: EasyWorkCrypto?=null
     @Volatile private var closed=false
@@ -33,12 +37,15 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
     private val received=mutableMapOf<String,Pair<Long,MutableSet<Long>>>()
     private var pump: Job?=null
     init { require(sameScope(target.scope(),connection.target)) { "连接运行时身份不匹配" };require(credential.grantRef==null||authorize!=null) { "设备授权不可降级为旧登录凭据" };require(credential.binding.json.optJSONObject("deviceAuthorization")==null||credential.grantRef!=null) { "设备授权凭据缺失，请重新配对" } }
-    private fun disconnect() {
+    private fun disconnect() = synchronized(routeLock) {
         val previous=route;route=null;crypto=null;confirmed=false;pump?.cancel();pump=null;previous?.close()
         synchronized(threadSyncs) { threadSyncs.clear() }
         eventChanges.signal()
     }
-    fun close() { closed=true;disconnect();tasks.cancel();pending.values.forEach { it.cancel() };pending.clear() }
+    private val retirement=ownerContext[NativeEasyWorkMigrationOwners]?.register({stop()},{tasks.coroutineContext[Job]!!.join()})
+    private fun stop() {synchronized(routeLock){closed=true;disconnect()};tasks.cancel();pending.values.forEach { it.cancel() };pending.clear() }
+    fun close() {retirement?.retire()?:stop()}
+    suspend fun closeAndJoinForMigration(){close();retirement?.await()?:tasks.coroutineContext[Job]!!.join()}
     private suspend fun connect(excluding: String? = null) = connecting.withLock {
         check(!closed)
         if(route!=null&&confirmed&&(excluding==null||activeCandidate?.id!=excluding))return@withLock
@@ -56,9 +63,11 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
                 require(binding.target==target) { "双通道运行时身份不匹配" }
                 val channel=EasyWorkCrypto(credential,binding)
                 val transport=transports.make(candidate,binding,token,authorize)
-                route=transport;crypto=channel;sequence.set(1);confirmed=false;lastError=null;activeCandidate=candidate;epoch=UUID.randomUUID().toString()
-                val attemptEpoch=epoch
-                pump=tasks.launch { receive(transport,channel,attemptEpoch) }
+                val attemptEpoch=synchronized(routeLock) {
+                    if(closed){transport.close();throw CancellationException("EasyWork session is closed")}
+                    route=transport;crypto=channel;sequence.set(1);confirmed=false;lastError=null;activeCandidate=candidate;epoch=UUID.randomUUID().toString()
+                    epoch.also {value->pump=tasks.launch {receive(transport,channel,value)}}
+                }
                 withTimeout(8_000) {
                     publish(JSONObject().put("kind","key-confirmation").put("value",channel.confirmation))
                     while(!confirmed&&lastError==null&&!closed)delay(25)
@@ -111,7 +120,9 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
             }
         } catch(cancel: CancellationException) { throw cancel }
         catch(e: Exception) {
-            if(!closed&&epoch==pumpEpoch) { lastError=e;confirmed=false;route=null;transport.close();eventChanges.signal() }
+            synchronized(routeLock) {
+                if(!closed&&epoch==pumpEpoch) {lastError=e;confirmed=false;route=null;transport.close();eventChanges.signal()}
+            }
         }
     }
     suspend fun synchronizedThread(threadId: String): JSONObject = syncReads.withLock {
@@ -143,7 +154,9 @@ class EasyWorkRemoteSession(val connection: AgentConnection,private val credenti
         next.second
     }
     /** Wire method whitelist is internal to this adapter; native UI uses named domain operations. */
-    suspend fun request(method: String,params: JSONObject=JSONObject(),id: String=UUID.randomUUID().toString()): JSONObject {
+    suspend fun request(method: String,params: JSONObject=JSONObject(),id: String=UUID.randomUUID().toString()): JSONObject =
+        withContext(migrationContext){requestOwned(method,params,id)}
+    private suspend fun requestOwned(method: String,params: JSONObject,id: String): JSONObject {
         require(method in READ_METHODS||method in WRITE_METHODS) { "未注册此电脑操作" }
         val response=CompletableDeferred<JSONObject>()
         require(pending.putIfAbsent(id,response)==null) { "同一操作正在等待电脑回执" }
@@ -220,17 +233,18 @@ class EasyWorkRejection(message: String): Exception(message)
 
 fun interface EasyWorkChannels { suspend fun session(client: MobileClient): EasyWorkRemoteSession }
 
-class EasyWorkSessions(private val storage: NativeSessionStorage,private val login: EasyWorkLogin): EasyWorkChannels {
+class EasyWorkSessions(private val storage: NativeSessionStorage,private val login: EasyWorkLogin,private val ownerContext: CoroutineContext=EmptyCoroutineContext): EasyWorkChannels {
     private val deviceAuthorization=EasyWorkDeviceAuthorization(storage)
     private val lock=Mutex()
     private val sessions=mutableMapOf<String,Pair<String,EasyWorkRemoteSession>>()
     override suspend fun session(client: MobileClient): EasyWorkRemoteSession = lock.withLock {
+        NativeMigrationEasyWorkGate.requireReady(client)
         val connection=client.agentConnection?:error("缺少电脑连接")
         val credential=withContext(Dispatchers.IO) { EasyWorkCredential.decode(JSONObject(storage.read("easywork-credential:${connection.credentialRef}")?:error("配对授权已失效"))) }
         val signature=easyCanonical(connection.json().put("candidates",org.json.JSONArray()).put("credentialRevision",easyHash(credential.json().toString().toByteArray())))
         sessions[client.id]?.let { (old,value)->if(old==signature) { value.candidates=connection.candidates;return@withLock value } else value.close() }
         val authorization: EasyWorkRequestHeaders?=credential.grantRef?.let { ref->{ method,url,body->deviceAuthorization.headers(ref,credential.binding,method,url,body) } }
-        val value=EasyWorkRemoteSession(connection,credential,{ login.validToken(credential.accessToken,credential.binding.target) },authorize=authorization);sessions[client.id]=signature to value;value
+        val value=EasyWorkRemoteSession(connection,credential,{ login.validToken(credential.accessToken,credential.binding.target) },authorize=authorization,ownerContext=ownerContext);sessions[client.id]=signature to value;value
     }
     suspend fun remove(id: String)=lock.withLock { sessions.remove(id)?.second?.close() }
     suspend fun closeAll()=lock.withLock { sessions.values.forEach { it.second.close() };sessions.clear() }

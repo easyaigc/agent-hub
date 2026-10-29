@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-natural-store-implementation-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "Original full target, authority, token, ticket and receipt remain immutable",
+    "Existing device key only; unknown/partial/attempted state cannot rearm or replay",
+    "A committed claim requires authenticated sync/readback under cross-process exclusion"
+  ],
+  "android": {
+    "implemented": "Debug acceptance-only existing-key authenticated append-only store and fixed same-UID second-PID fixture",
+    "auxiliary": "Model64 and store17 pass; real JVM crypto/files/sync/child PIDs; key/install/OS seams remain explicit",
+    "assembly": "Frozen merged PR51 plus independent overlays compiles; exact source/APKs in private delivery",
+    "native": "Five selectors prepared; not run here",
+    "naturalOsProcessCreation": "No hook/caller installed; still unverified",
+    "existingInstrumentedReaderOsScenario": "Source8c648123 unchanged; parent native queue pending",
+    "sharedProductionFilesChanged": [],
+    "defaultStoragePermissionAndBusinessEffects": "none"
+  },
+  "ios": {
+    "sourceChanges": [],
+    "acceptance": "No new result; A6 paused",
+    "impact": "Android debug persistence/notification acceptance only"
+  },
+  "ui": {
+    "tokensAndCopy": "unchanged",
+    "systemDifference": "Store/native component proof is separate from OS process creation and SystemUI original-token provenance"
+  },
+  "evidence": "natural-permit-store.md",
+  "openGates": [
+    "Actual AndroidKeyStore/filesystem/other-PID native selectors",
+    "Trusted original OS arm and asynchronous narrow cold hookup",
+    "Actual completion and independent UID SystemUI/process observer",
+    "Natural OS/OEM/full DEV"
+  ]
+}

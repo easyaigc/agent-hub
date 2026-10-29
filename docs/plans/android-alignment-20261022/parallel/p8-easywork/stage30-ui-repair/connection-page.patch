@@ -1,0 +1,11 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
+@@ -116,7 +116,7 @@
+             if(busy&&pairingStatus!=null)EasyWorkConnectionStatus(pairingStatus!!)
+             error?.let { EasyWorkConnectionFailure(it) }
+         }
+-        editing?.agentConnection?.target?.let { target->
++        (editing?.agentConnection?.target?:editing?.migrationEasyWork?.target)?.let { target->
+             GroupTitle(productText("连接目标"))
+             GroupCard {
+                 val fields=listOf("agent" to (productText("Agent 客户端") to target.agentId),"authority" to (productText("账号发行方") to target.accountAuthority.orEmpty()),"subject" to (productText("账号") to target.accountSubject.orEmpty()),"host" to (productText("电脑") to target.hostId),"workspace" to (productText("工作区") to target.workspaceId),"runtime" to (productText("运行时") to target.runtimeId))

@@ -1,0 +1,46 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "input": {
+    "parentSource": "a608c48c21d6e5313b96fd449afbb60961af11d91750966880cd4ee95d4229e8",
+    "parentApp": "47ff2558d50384358e6c7d3dd10159785dd99afa20994be77a0d954ae3179874",
+    "parentRunner": "e232e9094bd53c90b4830e9ee90481285fcf387954cf5436a7f828e95e7dfa25",
+    "originalLogSha256": "bc5b4ba65abc3d61df7817114cecbdd2eaa8d38332447d1621f2a0642a065f6d"
+  },
+  "finding": "Production modern-name discovery reads one unsigned byte but sealed binary formats2/4 begin with a four-byte int (00 00 00 02/04). Both typed and streaming snapshots share that resolver; neither can inventory actual sealed binary originals. Not a frame/text fixture or tolerated unknown directory issue.",
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": {
+      "baseSha256": "ce4f8a025e99fcf305c719478b8b538d3c31f17977347d133fb81f428d8580be",
+      "proposedSha256": "a99cf211334dabc6b3fed809332ba57c89fa5d446753556d017ec2a511e584bb"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormat.kt": {
+      "baseSha256": null,
+      "proposedSha256": "cd8e06e87e24fa0bb1e40be5f7a9e661c1b639266089907d1894371cc8b22e91"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationBinaryInventoryTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "5232bd4c2d391c33f553e9162486ea39103186c376010e247867d26c1e8152a5"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormatTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "3dcf380a89503b6c948cb07d76f27980f7d96aa86748785eece1ef69664e700d"
+    }
+  },
+  "scope": "one production storage discovery line + exact framing classifier +4 prepared native methods; both typed/stream unchanged authentication and graph guards",
+  "auxiliary": {
+    "combinedCompileSource": "3ccf4be3ac895e12c1db077b27c47baa7b86f5a6a981cc0216d4570af373f833",
+    "appAndRunnerBuilt": true,
+    "jvmFraming": {
+      "validTextVersions": [1, 3],
+      "validFourByteBinaryVersions": [2, 4],
+      "invalidOrTruncatedVectors": 9,
+      "AndroidStorageOrKeystoreExercised": false
+    }
+  },
+  "native": {
+    "preparedNewMethods": 4,
+    "executedHere": false,
+    "parentEightVoiceRegressions": "rerun existing original classes on fresh UUID after parent integration",
+    "legacyVoiceDrivers": "unchanged; no workaround or weakened assertions",
+    "fullP7Passed": false
+  }
+}

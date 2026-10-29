@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "19-saved-file-audit-and-preserving-phone-recovery",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "commonAssertions": [
+    "ending waiting preserves original operation/audio and is not remote cancellation",
+    "new phone recording is explicit and cannot masquerade as saved-file ASR",
+    "old unknown original remains offerable and unchanged after preserving phone capture",
+    "changed target/draft/permission generation and old callbacks cannot overwrite current input",
+    "provisional recording/failed discard cannot bypass the existing original lifecycle",
+    "recovery controls remain reachable, bilingual and disabled when authority is absent"
+  ],
+  "bothPlatforms": {
+    "ios": "existing saved-file input, generation checks and local resolution; unchanged and unrun here",
+    "android": "file adapter still unsupported; preserving recovery actions and adaptive scrolling implemented"
+  },
+  "design": {
+    "surfaces": ["shared composer voice strip", "shared question voice strip"],
+    "labelsAndTokens": "current parent catalog keys, active colors and48dp actions; standard disabled button color",
+    "states": [
+      "failed original",
+      "unknown waiting",
+      "fresh phone capture",
+      "changed draft",
+      "provisional original",
+      "failed discard",
+      "bounded/outer-scroll short viewport"
+    ],
+    "explicitPlatformDifference": "Android exposes preserving end-wait separately from the close icon now labelled discard like current iOS; current iOS has preserving cancel API but no extra strip action. Parent common-surface review remains open; no iOS change",
+    "systemUi": "unchanged; no dialog or actual system-font proof"
+  },
+  "newPreparedNativeMethods": { "controller": 5, "ui": 2 },
+  "nativeExecutedHere": false,
+  "savedFileAsrImplemented": false,
+  "acceptance": "parallel/p7-reading-voice/stage19-saved-file-voice.md",
+  "dependencies": "parallel/p7-reading-voice/stage19-saved-file-dependency.json",
+  "centralOwner": "parent coordinator for manifests, frozen integration and actual native/real DEV results",
+  "scope": "Only voice-owned files/docs; no Main/Session/P9/storage/transport/iOS changes or device/ADB/Host/microphone/model action; A6/task/project management paused"
+}

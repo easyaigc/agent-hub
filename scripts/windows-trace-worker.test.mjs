@@ -840,6 +840,12 @@ for (const mode of ['prefix-append-after', 'prefix-rewrite-after', 'ordinary-rew
       fs.mkdirSync(local(bundle));
       fs.writeFileSync(local(first), 'AAAA');
       fs.writeFileSync(local(second), 'CCCC');
+      // This interleaving exercises metadata drift after the native byte read.
+      // Linux may coalesce immediate same-size rewrites into one timestamp tick;
+      // an old, exactly representable mtime makes the real write observable.
+      fs.utimesSync(local(first), 1_700_000_000, 1_700_000_000);
+      const before = fs.statSync(local(first), { bigint: true });
+      let after;
       const snapshot = new TraceSnapshot();
       snapshot.root(root);
       snapshot.directory(bundle);
@@ -850,10 +856,20 @@ for (const mode of ['prefix-append-after', 'prefix-rewrite-after', 'ordinary-rew
         if (when === 'after' && index === 0 && item.path === first) {
           if (mode === 'prefix-append-after') fs.appendFileSync(local(first), 'APPEND');
           else fs.writeFileSync(local(first), 'BBBB');
+          after = fs.statSync(local(first), { bigint: true });
         }
       });
       if (mode === 'prefix-append-after') snapshot.verify();
-      else assert.throws(() => snapshot.verify());
+      else assert.throws(() => snapshot.verify(), { message: 'Unavailable prediction trace' });
+      assert(after, 'The intended post-read mutation must actually occur');
+      assert.equal(after.dev, before.dev);
+      assert.equal(after.ino, before.ino);
+      assert.notEqual(after.mtimeNs, before.mtimeNs, 'The write must produce metadata drift');
+      assert.equal(after.size, mode === 'prefix-append-after' ? 10n : before.size);
+      assert.equal(
+        fs.readFileSync(local(first), 'utf8'),
+        mode === 'prefix-append-after' ? 'AAAAAPPEND' : 'BBBB',
+      );
       assert.equal(counts.batch, 2);
       assert.equal(counts.single, 0);
       assert.equal(counts.snapshots, 4);

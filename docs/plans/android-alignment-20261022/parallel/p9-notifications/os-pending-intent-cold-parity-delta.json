@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-native20-accepted-system-cold-next-20261029-1",
+  "features": ["F52", "F53"],
+  "ui": ["UI11"],
+  "scenarios": ["S15", "S16"],
+  "commonAssertion": "Actual platform posting and unique own SystemUI first click retain original ticket/target/authority/draft; duplicate SDK delivery never replays business input or replaces a new draft.",
+  "implementation": "androidTest-only three-role Spec; existing version1 cold hooks; no production/shared source edits",
+  "androidVerification": "Preparation/combined compile only here; no device/ADB/native result",
+  "iosImpact": "No source/results change; A6 paused",
+  "productionPoliciesChanged": [],
+  "source": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt": "d6a2ec22abe32139c160c7c8f2e514b14b67c5f4f3c3d8c583f11c9dcaf82089"
+  },
+  "parentFrozenHead": "f73c036a67607a40ea6b3d39e0df43088f66f9b6",
+  "requiredHookVersion": 1,
+  "sharedFingerprints": {
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt": "25a1a3f830dad3eae47175894b56666452328f45bffee3feb76934bc68d91049",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": "ee4eef9771fc56c182826c1ece367697746ece7e72edc0bc11a834fea77ebb4a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt": "eeb55e8ff726b8b7f25f5789291b10c1ec01fc78427f64041d458a3744ea17f0"
+  },
+  "processScope": "Fresh instrumented reader, zero Activities before SystemUI; no OS process-spawn claim",
+  "receiptScope": "Original claimed receipt unchanged; actual Platform.post observed through NotificationManager/SystemUI; no same-run Delivery.finish claim",
+  "blockedPolicy": "No exact SDK row/token/SystemUI control => stop, preserve incomplete lease, no direct Intent/repost fallback"
+}

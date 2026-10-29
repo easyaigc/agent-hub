@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "EasyWork-authorization-residue-audit-candidate",
+  "features": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+  "pages": ["UI12", "UI21"],
+  "commonAssertions": [
+    "Complete current fence/grant/claim/OIDC/identity/orphan-credential originals retain exact bytes, references, IDs, unknown states and opaque extensions under inert archive aliases.",
+    "Unreferenced P8 candidate writes are inventoried independently of metadata activation. No incoming active identity/credentialRef/callback/grant/token mapping is installed.",
+    "Destination originals stay local/exact; no source/current credential borrowing, refresh, revoke, new signer, pairing, callback exchange or replay.",
+    "Exact original body/tokenHash/intentHash/current schema relationships are validated; tokens are opaque ASCII and grant/offer IDs remain strings.",
+    "Known legacy aliases resolve from authenticated original references; unknown or unfinished source/candidate/root pointer state refuses whole migration without reader recovery.",
+    "Cold writer requires fresh UUID/namespaces; reader requires original proof/receipt and a distinct PID.",
+    "Active EasyWork business metadata remains an explicit guard; this candidate does not silently drop or demote its clients/data."
+  ],
+  "dualEndImpact": {
+    "android": "Audit catalog/reader/inventory/activation candidate plus8 compiled native preparation methods. Existing pairing/product UI unchanged.",
+    "ios": "No Keychain/source/catalog/schema change or new native pass; cross-format support remains open."
+  },
+  "designDelta": {
+    "copyAndTokens": "Existing migration page/progress/result text and NativeL10n/productText unchanged.",
+    "states": "No new active EasyWork connection; archive-only backend facts, explicit existing re-pairing remains required.",
+    "systemDifference": "Android system DPoP private keys remain original nonexportable keys; no alias or signer is exported/created."
+  },
+  "documentationDeltas": {
+    "docs/architecture.md": "Add inert EasyWork residue/orphan archive graph with lazy exact originals, no execution mappings and pending-pointer preflight. Active business graph still unsupported.",
+    "docs/feasibility.md": "Separate current App/runner compilation and8 native methods prepared from pending native/DEV. Prior frame JVM proof is not a pass for changed fence source."
+  },
+  "validation": {
+    "appRunnerBuild": "passed",
+    "nativePreparedMethods": 8,
+    "nativeExecutedHere": false,
+    "realDev": "not run by this owner",
+    "fullP7Passed": false
+  },
+  "remaining": [
+    "Current native/SAF/real DEV including actual EasyWork lifecycle and re-pairing boundaries",
+    "Active EasyWork client/cache/business-operation migration",
+    "Cross-format interoperability and full P7"
+  ],
+  "centralRegistration": "Parent merges exact feature/design/acceptance/source deltas; preserve old failure/pass fingerprints and incomplete items. A6 and business tasks/projects paused."
+}

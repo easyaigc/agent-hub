@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "25-original-picker-child-readiness",
+  "featureIds": ["F55", "F56"],
+  "implementation": "test-only original-picker child readiness;production/debug queries/URI/file guards unchanged",
+  "commonAssertions": [
+    "owner readiness does not imply child-control readiness",
+    "all readiness/input stays within the same original picker and existing deadline",
+    "complete own UUID and exact file/hash safeguards remain required",
+    "retained metadata does not prove post-JUnit runtime survival"
+  ],
+  "budgets": {
+    "sharedOwnerAndChildReadinessMs": 15000,
+    "existingOptionalOpenConfirmMs": 5000,
+    "cancellationPolicyChanged": false
+  },
+  "productDesignImpact": "No product UI, copy or token change",
+  "platformImpact": {
+    "android": "shared native SAF fixture readiness corrected;fresh candidate/UUID and native verification required",
+    "ios": "no source or acceptance change;A6 paused"
+  },
+  "parentEvidence": "Stage28 actual cancellation method passed;export own-breadcrumb pre-input failure retained;third SAF method unstarted;late observation after original App exited is not live-caller proof",
+  "sdkOrNativeExecutedHere": false,
+  "acceptance": "parallel/p7-reading-voice/stage25-original-picker-child-readiness.md",
+  "centralManifests": "parent reconciles product/design/acceptance mobile-parity records;historical results stay fingerprinted",
+  "scope": "One shared test plus owned docs;no device/ADB/Host/model/iOS or production change;A6/task/project management paused"
+}

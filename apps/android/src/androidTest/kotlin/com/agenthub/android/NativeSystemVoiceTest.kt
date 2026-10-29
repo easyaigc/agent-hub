@@ -3,6 +3,7 @@ package com.agenthub.android
 import androidx.test.platform.app.InstrumentationRegistry
 import com.agenthub.core.TargetScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -16,8 +17,9 @@ class NativeSystemVoiceTest {
         lateinit var listener: NativeSystemVoice.Listener
         var stops = 0; var cancels = 0
         var failure: Exception? = null
+        var onFinish: (() -> Unit)? = null
         override fun start(listener: NativeSystemVoice.Listener) { this.listener = listener; failure?.let { throw it } }
-        override fun finish() { stops++ }
+        override fun finish() { stops++; onFinish?.invoke() }
         override fun cancel() { cancels++ }
     }
     private fun main(action: suspend () -> Unit) = runBlocking { withContext(Dispatchers.Main) { action() } }
@@ -45,6 +47,40 @@ class NativeSystemVoiceTest {
             engine.listener.result("late duplicate"); assertEquals(1, applied.size)
             assertEquals(1, engine.cancels)
         }
+    }
+    @Test fun synchronousFinishResultCannotStartAnIdleTimeoutOrApplyDuplicateText() {
+        val engine=Engine();val controller=controller(engine);val applied=mutableListOf<String>()
+        try { main {
+            controller.start(draft(),{true},{_,text->applied.add(text);true},provider=VoiceInputController.Provider.SYSTEM)
+            controller.permissionRequest?.let { controller.permissionResult(it,true) };yield()
+            engine.listener.ready();engine.onFinish={engine.listener.result("synchronous final")}
+            controller.finish();controller.finish()
+            assertEquals(1,engine.stops);assertEquals(1,engine.cancels)
+            assertEquals(listOf("synchronous final"),applied);assertEquals(VoiceInputController.Phase.IDLE,controller.phase)
+            engine.listener.result("late duplicate");engine.listener.failed(7)
+            // Observe the real 15-second finish deadline, rather than inspecting a private Job.
+            delay(16_000)
+            assertEquals(VoiceInputController.Phase.IDLE,controller.phase);assertNull(controller.error)
+            assertEquals(listOf("synchronous final"),applied)
+        } } finally { main {controller.cancel()} }
+    }
+    @Test fun synchronousFinishFailureThenThrowCannotReplaceTheOriginalTerminalReceipt() {
+        val engine=Engine();val controller=controller(engine);var applies=0
+        try { main {
+            controller.start(draft(),{true},{_,_->applies++;true},provider=VoiceInputController.Provider.SYSTEM)
+            controller.permissionRequest?.let { controller.permissionResult(it,true) };yield()
+            engine.listener.ready();engine.listener.partial("original partial")
+            engine.onFinish={engine.listener.failed(7);throw IllegalStateException("late finish exception")}
+            controller.finish()
+            assertEquals(VoiceInputController.Phase.FAILED,controller.phase)
+            assertEquals("没有识别到语音，请重新录音。",controller.error)
+            assertEquals(controller.error,controller.statusCopyKey)
+            assertEquals("original partial",controller.transcript);assertTrue(controller.canFillRecognizedText)
+            engine.listener.result("old final");assertEquals(0,applies)
+            assertEquals(1,engine.stops);assertEquals(1,engine.cancels)
+            assertTrue(controller.fillRecognizedText());assertEquals(1,applies)
+            assertEquals(VoiceInputController.Phase.IDLE,controller.phase)
+        } } finally { main {controller.cancel()} }
     }
     @Test fun backgroundAndChangedDraftFencePartialFinalAndOldErrors() {
         for (background in listOf(true, false)) {

@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "scope": "Structural import-state fragments only. A valid fragment cannot establish a catalog, original credential relationship, active client, native storage or pairing. Full graph tests are separate.",
+  "vectors": [
+    {
+      "id": "explicit-unpaired-descriptor",
+      "expectedFragmentDecode": true,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"]
+      }
+    },
+    {
+      "id": "no-credential-reference",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"],
+        "credentialRef": "fixture-only"
+      }
+    },
+    {
+      "id": "no-private-key",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"],
+        "privateKey": "fixture-only"
+      }
+    },
+    {
+      "id": "requires-fresh-pairing",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": false,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"]
+      }
+    },
+    {
+      "id": "no-active-state",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "active",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"]
+      }
+    },
+    {
+      "id": "future-version",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 2,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"]
+      }
+    },
+    {
+      "id": "other-provider",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "codex",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"]
+      }
+    },
+    {
+      "id": "full-account-required",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"]
+      }
+    },
+    {
+      "id": "no-userinfo-or-credential-origin",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          }
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://fixture:placeholder@relay.example.invalid"]
+      }
+    },
+    {
+      "id": "no-unknown-target-field",
+      "expectedFragmentDecode": false,
+      "value": {
+        "version": 1,
+        "provider": "easywork",
+        "archiveId": "0000000000000000000000000000000000000000000000000000000000000000",
+        "target": {
+          "agentId": "easywork",
+          "hostId": "synthetic-original-desktop",
+          "workspaceId": "synthetic-original-workspace",
+          "runtimeId": "synthetic-original-runtime",
+          "account": {
+            "authority": "https://accounts.example.invalid",
+            "subject": "synthetic-original-subject"
+          },
+          "futureAuthority": "fixture"
+        },
+        "requiresPairing": true,
+        "credentialState": "none",
+        "preference": "lan-only",
+        "candidateOrigins": ["https://127.0.0.1:1", "https://relay.example.invalid"]
+      }
+    }
+  ]
+}

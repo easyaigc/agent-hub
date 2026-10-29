@@ -1,0 +1,116 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "ownBase": "084517e2104ac994b525bd61976a1361ccf4c1d8",
+  "parentNative": {
+    "source": "4dbad38275ff2d33a7e5794ac619506b192fc04c53cac00caebaf3b7766f57e3",
+    "app": "24e2bce74a9cb273f98b3e94a58e52ad719529ac950880baf26be08c3d401111",
+    "runner": "6cef7d672f67dc2ac73aa204b259bc19999283c79d907f3abaafc793ebbb246c",
+    "auxiliary3": {
+      "passed": true,
+      "logSha256": "3650ec4deca997baeb34e419d804343db3d6fe43db81bca336d6f22e17279aca"
+    },
+    "lifecycle2": {
+      "passed": false,
+      "failure": "original5s entry latch timeout before actual work; diagnostics absent in original runner"
+    },
+    "currentDriverNativeExecutedHere": false,
+    "noNativeCauseConfirmation": true
+  },
+  "change": "one test file; diagnostics and same-budget owning-rule wait",
+  "productionChanged": false,
+  "overlay": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt": {
+      "baseSha256": "75e422223bbd1a30ea727601cbe49d32cc8d3a23db00e12340df23bbe000f5a4",
+      "proposedSha256": "0af1a4a5b5456f3d8090adb668f5b4b1938ae503ca376abd0693cb67d5bd594f"
+    }
+  },
+  "assertionAudit": {
+    "at": "2026-10-29T01:39:50.453724+00:00",
+    "oneTestFileChanged": true,
+    "allOtherParentSourceInputsUnchanged": true,
+    "allOriginalAssertionLinesPreserved": [
+      "assertTrue(outcome.isFailure);assertNull(owned.storage.migrationPublicationReceipt())",
+      "assertFalse(action.currentForUi());ui.runOnIdle{assertFalse(owned.session.connectionBusy)}",
+      "assertNull(withTimeoutOrNull(150){waiting.await();true});assertEquals(0,writes.get());assertNull(owned.storage.migrationPublicationReceipt())",
+      "waiting.cancelAndJoin();ui.runOnIdle{assertFalse(owned.session.migrationPaused);assertFalse(owned.session.migrationReady)};rejectSecond()",
+      "assertEquals(1,writes.get());assertEquals(0,activated.get());assertEquals(claim,owned.storage.read(seed.claimName))",
+      "assertEquals(easyCanonical(grant),easyCanonical(JSONObject(owned.storage.read(seed.grantRef)!!).getJSONObject(\"grant\")))",
+      "ui.runOnIdle{assertSame(owned.session,ui.activity.session);assertEquals(originalDraft,owned.session.text);assertTrue(owned.session.clients.none{!it.isDemo})}",
+      "withContext(Dispatchers.Main.immediate){assertFalse(owned.session.connectionBusy);assertFalse(action.currentForUi())}",
+      "assertNull(withTimeoutOrNull(150){waiting.await();true});assertFalse(EasyWorkHttp.dispose(client).isCompleted)",
+      "withContext(Dispatchers.Main.immediate){assertFalse(owned.session.migrationReady)};assertFalse(EasyWorkHttp.dispose(client).isCompleted)",
+      "withTimeout(5_000){EasyWorkHttp.dispose(client).await()};assertEquals(1,requests.get());assertEquals(1,body.closeCount.get())",
+      "withContext(Dispatchers.Main.immediate){assertEquals(originalDraft,owned.session.text);assertTrue(owned.session.clients.none{!it.isDemo})}",
+      "assertNull(owned.storage.migrationPublicationReceipt())"
+    ],
+    "originalQuiesceWaitCancellationAndSecondMigrationAssertionsPreserved": true,
+    "nativeEntryBudgetMs": 5000,
+    "actualLatchRequired": true,
+    "diagnosticNeverCallsCountDown": true,
+    "newTraceBounds": {
+      "events": 160,
+      "utf8Bytes": 262144
+    },
+    "exactPatchAppliedAndReadback": true,
+    "productionChanged": false,
+    "nativeCauseConfirmedHere": false
+  },
+  "installedPrimaryLibraryEvidence": {
+    "version": "1.12.1",
+    "jarSha256": "1a7cbc0e30184fb57433716cacc4db26260f6dbd75faaaf7f00c4998576a3787",
+    "runOnIdle": "waitForIdle BEFORE runOnUiThread(action), no drain after action",
+    "waitUntil": "runCurrent for StandardTestDispatcher before condition; advanceTimeByFrame when autoAdvance; wall-clock timeout check"
+  },
+  "compile": {
+    "at": "2026-10-29T01:39:50.482413+00:00",
+    "parentSource": "4dbad38275ff2d33a7e5794ac619506b192fc04c53cac00caebaf3b7766f57e3",
+    "source": "92cb78491eefe24bd6587b71fffe11d3d4de1d309f97be9e9fd767ceb203edf6",
+    "inputs": 698,
+    "buildScaffoldGit": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+    "build": "App/runner pass",
+    "artifacts": {
+      "app.apk": {
+        "sha256": "abc3ed2d300ba0d910156e3fc2d054d474b1b8f3c27682a7ca3135de472de2c8",
+        "bytes": 25362223
+      },
+      "runner.apk": {
+        "sha256": "47ac44036075513aa17fe5caa6b713f122955f97d8d34bd95154f5bd62c3ff23",
+        "bytes": 5935822
+      }
+    },
+    "productionChanged": false,
+    "nativeMethods": "same2 lifecycle scenarios, diagnostic driver only, not executed here",
+    "nativeCause": "unconfirmed here; parent must read queued-start vs completion/lease/session observations",
+    "fullP7Passed": false
+  },
+  "schedulerAuxiliary": {
+    "at": "2026-10-29T01:38:58.841746+00:00",
+    "source": "92cb78491eefe24bd6587b71fffe11d3d4de1d309f97be9e9fd767ceb203edf6",
+    "productionFiles": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "305569bddc68620269a0a33629ee8d0eda39ef0358bd027c222fb6496f4924db",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkFormAction.kt": "9a27edacef80c402af0bbc2442311ceb8f3f08501831650e8c6c6fb7c9747551",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkMigrationOwners.kt": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt": "98084291ca1f31356402605b22ff59907e7689afdfd155cbdeb0637549a53dc5"
+    },
+    "actualLibraries": {
+      "compiler": "Kotlin2.4.21",
+      "coroutineCoreAndTest": "1.11.0"
+    },
+    "hostSourceSha256": "18ba6e5b2297dc3b19a602296aebe5cf7af5882bf13be5283ea1f24762c61f06",
+    "runtime": "JVM17 -Xmx48m",
+    "result": {
+      "passiveBudgetMs": 5000,
+      "actualPassiveWaitMs": 5004,
+      "passiveDidNotEnter": true,
+      "callerNotStartedBeforeSchedulerRunCurrent": true,
+      "realSchedulerRunCurrentEnteredSameActualBodyOnce": true,
+      "retirementStillWaitsForBodyExit": true,
+      "androidComposeClockOrNativeCauseConfirmed": false,
+      "nativeExecuted": false
+    },
+    "limits": "actual StandardTestDispatcher reproduces queue starvation and flush; not Android Composition/Choreographer/lease/native-failure proof. Native diagnostics must classify actual cause."
+  },
+  "nativeCauseConfirmed": false,
+  "nativeOrFullDEVNewPass": false,
+  "fullP7Passed": false
+}

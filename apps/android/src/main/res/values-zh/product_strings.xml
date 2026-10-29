@@ -1879,4 +1879,6 @@
     <string name="product_7ddac58171d2538dd8a03864" formatted="false">"另选文件会更换本次待导入资料，原文件和本机资料不变。"</string>
     <string name="product_9475eb93689f5833fedbef9e" formatted="false">"另选文件"</string>
     <string name="product_8c56d9ef0d604131101c7b77" formatted="false">"迁移后需明确开启通知，原记录已保留。"</string>
+    <string name="product_0f8b78e3332ac7e4750f51cc" formatted="false">"需要重新配对 · 查看缓存"</string>
+    <string name="product_20cbe53129b2b62d26690f9d" formatted="false">"迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。"</string>
 </resources>

@@ -842,3 +842,5 @@ CPU百分比是单核等价；帧间隔不是系统hitch，充电不能用于电
 超快模式专项：先 `pnpm build`，为独立模拟器设置 `IOS_SIMULATOR_ID`、`GENERATION_ULTRAFAST=1`，运行 `node scripts/generation-settings-desktop-ios-acceptance.mjs`。隔离工作树可用 `GENERATION_PROJECT_ROOT` 指定真实已保存项目的根目录，`GENERATION_ACCEPTANCE_DIRECTORY` 将私有记录保存到树外。核对两条 ultrafast 首条（含重启与项目继承）、快速与标准切回，以及原 owner 的唯一输入和实际 serviceTier；不支持的模型由辅助 IPC 边界拒绝。模拟器不代替真机或其他 Host 部署，见[本轮验收](acceptance/host-ultrafast-20261028.md)。
 
 生成设置的原生测试已通过、仅独立核对需要恢复时，使用 `GENERATION_VERIFY_DIRECTORY=<original-run-directory> GENERATION_PROJECT_ROOT=<saved-project-root> node scripts/generation-settings-desktop-ios-acceptance.mjs`。该入口保留原报告，要求相同 Adapter／原生源码／断言与准确模拟器证据，只查询原 owner 和回执，不再次启动 UI 测试或提交模型输入；标准速度接受桌面规范化的 null，未知档位保持拒绝。
+
+协调客户端私有目录的tlsPin为sha256与certificatePath嵌套对象，只接受一张公有自签PEM和精确DER SHA256。先验证源码/真实TLS与完整包，再安装本机客户端，核对目标Host/desktop-runtime和实际workspace后新建专用对话。证书不加入全局信任；标准HTTPS无pin路径保持原行为。源码包的既有声音向量按固定路径及字节指纹登记，未知音频/源码仍拒绝。

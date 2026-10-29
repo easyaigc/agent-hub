@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "checkpoint": "PAR22-EasyWork-residue-and-voice",
+  "date": "2026-10-29",
+  "source": "920d8476ddaebc337aebba35e9319d5c016f869a77dc0f6b9e3aa825586e46fc",
+  "app": "bd0260c2fe6b339759012184a78afc0eed7ef30dbfbf718d63491100d8a9f41a",
+  "runner": "634bb8b3a13a7eee872ce74a2a70fdec1637444b8d7e1c0859208ede8aee86e6",
+  "api26HotAndVoiceGroups": [
+    {
+      "label": "easywork-residue-hot",
+      "status": "failed",
+      "sourceSha256": "920d8476ddaebc337aebba35e9319d5c016f869a77dc0f6b9e3aa825586e46fc",
+      "appSha256": "bd0260c2fe6b339759012184a78afc0eed7ef30dbfbf718d63491100d8a9f41a",
+      "runnerSha256": "634bb8b3a13a7eee872ce74a2a70fdec1637444b8d7e1c0859208ede8aee86e6",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#actualRefreshResultsKeepOriginalBodyTokenHashAndUnknownExtensions",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#actualUnactivatedCredentialAndPendingRevokeOriginalsStayInertAndExactThroughPublication",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#malformedFenceUnclaimedOriginalAndActiveEasyWorkMetadataRefuseWithoutChangingOriginalCandidate",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#modernOrphanReferencesResolveExactLegacyGrantAndFenceWithoutAtomicRecovery"
+      ],
+      "failedMethods": [
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#destinationOriginalAuthorityAndUnknownRemainExactWhileSourceArchivesMergeAcrossReexport",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#confirmedFenceWithoutGrantAndGuardOnlyCrashAreNeverOmittedOrReactivated"
+      ],
+      "instrumentationSha256": "655133733c91f434737d695bbcd49f5d8cab3aec52dca4233de8044ea505dc63"
+    },
+    {
+      "label": "voice-original-finish",
+      "status": "passed",
+      "sourceSha256": "920d8476ddaebc337aebba35e9319d5c016f869a77dc0f6b9e3aa825586e46fc",
+      "appSha256": "bd0260c2fe6b339759012184a78afc0eed7ef30dbfbf718d63491100d8a9f41a",
+      "runnerSha256": "634bb8b3a13a7eee872ce74a2a70fdec1637444b8d7e1c0859208ede8aee86e6",
+      "passedMethods": [
+        "com.agenthub.android.NativeSystemVoiceTest#synchronousFinishFailureThenThrowCannotReplaceTheOriginalTerminalReceipt",
+        "com.agenthub.android.NativeSystemVoiceTest#synchronousFinishResultCannotStartAnIdleTimeoutOrApplyDuplicateText"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "c26c9c9e7cd2cbc1551b3e8a21dc3f42becf396a896e02f0186446837f9b6478"
+    }
+  ],
+  "api26FrameRegressionGroups": [
+    {
+      "label": "independent-text-frame-hot",
+      "status": "passed",
+      "sourceSha256": "920d8476ddaebc337aebba35e9319d5c016f869a77dc0f6b9e3aa825586e46fc",
+      "appSha256": "bd0260c2fe6b339759012184a78afc0eed7ef30dbfbf718d63491100d8a9f41a",
+      "runnerSha256": "634bb8b3a13a7eee872ce74a2a70fdec1637444b8d7e1c0859208ede8aee86e6",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationTextFrameTest#textQuotasRejectBeforeReadingAndSparseIndexesDoNotLoadUnrelatedValues",
+        "com.agenthub.android.NativeMigrationTextFrameTest#authenticatedInvalidUtf8DuplicateJsonReorderedAndFutureFramesPreserveOriginalSlot",
+        "com.agenthub.android.NativeMigrationTextFrameTest#v3AndLegacySlotsRemainReadableAndOnlyExplicitReplacementSelectsV4",
+        "com.agenthub.android.NativeMigrationTextFrameTest#nearMaximumActualP9OriginalsAboveEightMiBStayExactAfterColdCandidateAndActivation"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "de791e1b893d085e81314bbfaf8c348626a276f8eb2650e2d8f2dda341ddebfc"
+    },
+    {
+      "label": "independent-text-cold-writer",
+      "status": "passed",
+      "sourceSha256": "920d8476ddaebc337aebba35e9319d5c016f869a77dc0f6b9e3aa825586e46fc",
+      "appSha256": "bd0260c2fe6b339759012184a78afc0eed7ef30dbfbf718d63491100d8a9f41a",
+      "runnerSha256": "634bb8b3a13a7eee872ce74a2a70fdec1637444b8d7e1c0859208ede8aee86e6",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationTextFrameColdTest#stageFreshMaximumTextCandidateForDifferentProcess"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "cbd46da749a7d852dddad9462b8440d3b3456ca4210e20c48b781dee836d2982"
+    },
+    {
+      "label": "independent-text-cold-reader",
+      "status": "passed",
+      "sourceSha256": "920d8476ddaebc337aebba35e9319d5c016f869a77dc0f6b9e3aa825586e46fc",
+      "appSha256": "bd0260c2fe6b339759012184a78afc0eed7ef30dbfbf718d63491100d8a9f41a",
+      "runnerSha256": "634bb8b3a13a7eee872ce74a2a70fdec1637444b8d7e1c0859208ede8aee86e6",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationTextFrameColdTest#readAndActivateSameMaximumTextCandidateUnderDifferentPidWithoutReplacingIt"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "274899a080d12698ceb11a7b399cbe5295c863948b74c7d789191f918a4b6aff"
+    }
+  ],
+  "api37EnvironmentGroup": {
+    "label": null,
+    "status": "failed",
+    "sourceSha256": "920d8476ddaebc337aebba35e9319d5c016f869a77dc0f6b9e3aa825586e46fc",
+    "appSha256": "bd0260c2fe6b339759012184a78afc0eed7ef30dbfbf718d63491100d8a9f41a",
+    "runnerSha256": "634bb8b3a13a7eee872ce74a2a70fdec1637444b8d7e1c0859208ede8aee86e6",
+    "passedMethods": [],
+    "failedMethods": [
+      "com.agenthub.android.NativeMigrationTreeGrantPreparationTest#acquireExactOwnedTreeThroughActualAcceptanceActivityResultRegistry"
+    ],
+    "instrumentationSha256": "162ba501a33c620e1b19acab98ea004843d5a259da36c8bbdbc03d127476f809"
+  },
+  "passedNativeMethods": 12,
+  "failedMigrationMethods": 2,
+  "failedPreparationMethods": 1,
+  "default11FieldProofs": 12,
+  "failures": [
+    {
+      "scope": "Read-only EasyWork confirmed fence parser",
+      "error": "localReceipt actual producer JSONObject cast to String",
+      "methods": [
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#destinationOriginalAuthorityAndUnknownRemainExactWhileSourceArchivesMergeAcrossReexport",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#confirmedFenceWithoutGrantAndGuardOnlyCrashAreNeverOmittedOrReactivated"
+      ],
+      "assigned": "P7 migration owner; exact producer schema fix pending"
+    },
+    {
+      "scope": "Tree grant preparation before Main or request reservation",
+      "error": "Immediate Home AX check refused despite subsequent independently observed/resolved exact system launcher",
+      "requestReserved": false,
+      "mainOrPickerLaunched": false,
+      "grantChanged": false,
+      "assigned": "P7 system/voice owner for bounded readiness and scalar diagnosis"
+    }
+  ],
+  "passedVoice": "Synchronous success keeps idle after real16s deadline and applies once; synchronous terminal failure then throw keeps original error/partial and explicit draft fill once",
+  "originalFailuresRetained": true,
+  "coldEasyWorkNotStarted": true,
+  "fullP7Passed": false,
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "limits": [
+    "Actual tree grant and product SAF3 remain unrun",
+    "EasyWork cold2 not started, active business graph and full DEV open",
+    "Real acoustic/OS permission/saved-file ASR and iOS/A6 not validated"
+  ]
+}

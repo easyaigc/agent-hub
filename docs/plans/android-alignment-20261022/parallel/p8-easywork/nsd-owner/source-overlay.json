@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-actual-nsd-stop-owner-next-20261029-1",
+  "file": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt",
+  "baseSha256": "22d48085701e622daf7567dd232282be40a9965b425f46fa04b3866b8b236f66",
+  "proposedSha256": "91b63e99c25ca211dbff22b2453e063022b4bcba7d2f7f79696dc554185d6853",
+  "patchSha256": "43f166f78eb7bd46f12688d7bae5448a116782c201dff7a00a77992aa4dbbee4",
+  "registryContract": "Unchanged NativeEasyWorkMigrationOwners.register(stop, join); each closure captures one immutable generation",
+  "sessionPageAndRegistryChanged": false,
+  "parentWritten": false,
+  "registryBaseSha256": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+  "newSourceFiles": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeNsdLifetime.kt": "41ad1bbe19b919324a9644fbefaf7a9f048f1617dab8bfb2ba224182ef174cbb",
+    "apps/android/src/main/kotlin/com/agenthub/android/AndroidNsdPlatform.kt": "887bf42d8523b4687830464d4d790e6f32b2958ea410db089d9d1bb7920e9f4c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdControlledLifetimeTest.kt": "67b452534363a53eee03b5da8f447dfcedb285b28a4e3842fe454260e2a145b9",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdSdkTest.kt": "8eb2de7326791530170bd69b58551f0f964a7f8b656eb5fea277eca76fa412f0"
+  },
+  "frozenContextSourceSha256": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+  "parentObservedDiscoverySha256": "22d48085701e622daf7567dd232282be40a9965b425f46fa04b3866b8b236f66",
+  "parentMatchesFrozenDiscovery": true
+}

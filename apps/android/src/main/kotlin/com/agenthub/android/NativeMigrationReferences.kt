@@ -14,7 +14,7 @@ internal object NativeMigrationReferences {
         a is JSONArray&&b is JSONArray -> a.length()==b.length()&&(0 until a.length()).all{equal(a.get(it),b.get(it))}
         else -> a==b
     }
-    fun validate(records: Map<String,JSONObject>,clients: List<MobileClient>,operations: List<SavedOperation>) {
+    fun validate(records: Map<String,JSONObject>,clients: List<MobileClient>,operations: Sequence<SavedOperation>) {
         val metadata=records.getValue("metadata")
         val references=mutableMapOf<String,JSONObject>()
         fun reference(file: JSONObject) {

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "27-original-null-owner-sampling",
+  "featureIds": ["F55", "F56"],
+  "implementation": "test-only:null owner permits read-only sampling inside original15s;full original scope is continuously pinned",
+  "commonAssertions": [
+    "null owner permits no AX traversal or native input",
+    "explicit third owner or changed original scope stops immediately",
+    "Activity/controller/session/storage/target/issuedID stay bound to the actual original picker",
+    "input requires DocsUI and original caller;no replay or fabricated callback"
+  ],
+  "budgets": {
+    "originalDocsUiSharedMs": 15000,
+    "newBudgetAdded": false,
+    "sensitiveAppBudgetsChanged": false,
+    "cancellationDecisionPolicyChanged": false
+  },
+  "productDesignImpact": "No product UI, copy, token or production change",
+  "platformImpact": {
+    "android": "native test owner sampling corrected;fresh candidate/UUID required",
+    "ios": "no source or acceptance change;A6 paused"
+  },
+  "parentEvidence": "Source30 sensitive App phases passed;thirdnull owner stopped original EXPORT after157ms;original failure remains;postRule runtime not established",
+  "nativeExecutedHere": 0,
+  "acceptance": "parallel/p7-reading-voice/stage27-original-null-owner-sampling.md",
+  "centralManifests": "parent reconciles F55/F56 product/design/acceptance evidence without promoting old failures",
+  "scope": "one shared test +owned docs;no device/Host/model/independentEasyWork/iOS;taskproject business andA6 paused",
+  "auxiliarySdk": "android:compileDebugAndroidTestKotlin passed;finalsubmitted-target binding compiled;noAPK/native"
+}

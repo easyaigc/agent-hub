@@ -36,6 +36,18 @@ internal class NativeMigrationIoWork: AbstractCoroutineContextElement(Key) {
                 override fun get(timeout: Long,unit: TimeUnit): Any?=task.get(timeout,unit)
             }
         }
+        /** One callback keeps ownership through its outermost finally, including response close. */
+        fun callback(context: CoroutineContext): ()->Unit {
+            val unit=context[Key]?.begin(false)
+            return {unit?.finish()}
+        }
+        /** Cleanup remains admissible after close and completes only on actual executor exit. */
+        fun cleanup(executor: ExecutorService,context: CoroutineContext,action: ()->Unit) {
+            val unit=context[Key]?.begin(true)
+            try {executor.execute {
+                try {action()}catch(failure: Throwable){context[Key]?.failedCleanup(failure)}finally {unit?.finish()}
+            }}catch(failure: Throwable){context[Key]?.failedCleanup(failure);unit?.finish();throw failure}
+        }
         /** Invoked by cancellation handlers on Main: capture and enqueue only. */
         fun cancelHttp(context: CoroutineContext,active: AtomicReference<HttpURLConnection?>,future: Future<*>) {
             val connection=active.getAndSet(null)
@@ -47,6 +59,8 @@ internal class NativeMigrationIoWork: AbstractCoroutineContextElement(Key) {
     private val lock=Any()
     private val pending=mutableSetOf<Work>()
     private var closed=false
+    private var cleanupFailure: Throwable?=null
+    private fun failedCleanup(failure: Throwable){synchronized(lock){if(cleanupFailure==null)cleanupFailure=failure}}
     private var idle=CompletableDeferred<Unit>().apply {complete(Unit)}
     private inner class Work {
         fun finish() {
@@ -62,7 +76,9 @@ internal class NativeMigrationIoWork: AbstractCoroutineContextElement(Key) {
     fun close(){synchronized(lock){closed=true}}
     suspend fun awaitIdle() {
         while(true) {
-            val waiting=synchronized(lock){if(pending.isEmpty())null else idle}?:return
+            val waiting=synchronized(lock){
+                if(pending.isEmpty()){cleanupFailure?.let {throw IllegalStateException("Native IO cleanup did not complete",it)};null}else idle
+            }?:return
             waiting.await()
         }
     }

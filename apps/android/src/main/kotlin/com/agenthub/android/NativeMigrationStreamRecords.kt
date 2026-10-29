@@ -29,18 +29,30 @@ internal class NativeMigrationProbe(private val output: OutputStream? = null) : 
     fun sha256() = digest.digest().joinToString("") { "%02x".format(it) }
 }
 
-internal data class NativeMigrationStreamRecords(val text: Map<String, String>, val binary: Map<String, NativeMigrationBlob>) {
+internal data class NativeMigrationStreamRecords(val text: Map<String, String>, val binary: Map<String, NativeMigrationBlob>, val version: Int=3) {
     val size get() = text.size + binary.size
     init {
-        require(size in 1..1024 && text.keys.intersect(binary.keys).isEmpty())
-        require(binary.values.all { it.size in 1..21 * 1024 * 1024 && it.sha256.matches(Regex("[a-f0-9]{64}")) && it.prefix.size == minOf(44, it.size) })
+        require(version in setOf(3,4)&&size in 1..1024 && text.keys.intersect(binary.keys).isEmpty())
+        require(binary.values.all { valid(it,21 * 1024 * 1024) })
         require(binary.values.sumOf { it.size.toLong() } <= MAX_TOTAL_BYTES)
+        val frames=textFrames()
+        require(frames.values.all {valid(it,NativeMigrationTextFrames.MAX_RECORD_BYTES)})
+        val textBytes=frames.values.sumOf {it.size.toLong()}
+        require(textBytes+binary.values.sumOf {it.size.toLong()}<=MAX_TOTAL_BYTES)
+        if(version==3)require(textBytes<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+    }
+    fun textFrames(): Map<String,NativeMigrationBlob> = if(text is NativeMigrationTextMap)text.frames() else text.mapValues {NativeMigrationTextFrames.retained(it.value)}
+    fun frames(): Map<String,NativeMigrationBlob> = linkedMapOf<String,NativeMigrationBlob>().apply {
+        if(version==4)putAll(textFrames().toSortedMap())
+        putAll(binary.toSortedMap())
     }
     fun header(applicationId: String) = JSONObject().put("format", "agent-hub/android-migration-stream")
-        .put("version", 3).put("applicationId", applicationId).put("records", JSONObject(text))
-        .put("binaries", JSONObject().also { body -> binary.toSortedMap().forEach { (name, blob) -> body.put(name, blob.json()) } })
+        .put("version", version).put("applicationId", applicationId)
+        .put("records",if(version==3)JSONObject(text)else descriptors(textFrames()))
+        .put("binaries",descriptors(binary))
     companion object {
-        // Raw binary budget is independent of the unchanged 8MiB legacy text/JSON budget.
         const val MAX_TOTAL_BYTES = 192L * 1024 * 1024
+        private fun valid(blob: NativeMigrationBlob,maximum: Int)=blob.size in 1..maximum&&blob.sha256.matches(Regex("[a-f0-9]{64}"))&&blob.prefix.size==minOf(44,blob.size)
+        private fun descriptors(values: Map<String,NativeMigrationBlob>)=JSONObject().also {body->values.toSortedMap().forEach {(name,blob)->body.put(name,blob.json())}}
     }
 }

@@ -532,3 +532,9 @@ Mac Mini 回收增量已合入规范源码：独立桥接按本机私有配置�
 I4 Android将13节点/F72源码纳入对照，已有受控资源路由保持。当前模型/强度分离获得限定Native/原owner只读结果；新Markdown阅读入口和图片预览/多选仍需实施验收。既有iOS真机证明不升级，iOS A6继续暂停，见Android阶段档案。
 
 Android系统迁移入口和真实运行时交接已接入候选，完成catalog增量及实际IO跟踪/一次性发布边界；验收仍区分辅助编译、13项原生准备、真实SAF/DEV。超过8MiB的文本帧、EasyWork fence/孤立candidate归档及iOS互操作仍开放，不将入口实现记为完整P7。
+
+P7大文本帧按当前父线13文件精确SHA接入，排除并保留Main/Session/coordinator/voice当前接线。62.4MB文本在48MiB JVM堆的5个实际源码hash完全匹配，可匹配复用辅助结果（JSON/ICU shim限制保留）；6原生仅编译准备。当前API26低堆、API37/OEM、实际系统picker及DEV另验；EasyWork fence/孤立candidate存档仍开放。
+
+Android EasyWork残留/孤立credential只读归档实现已接入，包含无grant fence、撤销中/已确认和OIDC历史；不能据此宣称活动业务完整迁移、跨端互通、登录或当前授权有效。8项原生准备仅编译，父当前候选验证与真实DEV未完成。
+
+Android P7活动EasyWork业务图与实际owner退出已形成待原生候选：保客户端/草稿/附件/历史和原不可变操作，原授权只读归档、显式重新配对；热6/冷2/IO5/生命周期1尚未在父候选运行。P8组合UI5和P9既有key store5也仅准备；JVM/编译、实际系统/网络、物理多端和真实DEV分别留证，当前不能宣称完整P7/A5/自然OS通知已通过。iOS原凭据迁移策略与跨格式仍待专门对齐，A6保持暂停。

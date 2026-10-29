@@ -11,13 +11,14 @@
     "pending/confirmed revoke retains original saved grant/token/body/operation/intent hash/localReceipt",
     "refreshResults audit retains originalPending opaque unknown fields without exposing original token"
   ],
-  "migrationStatus": "unsupported-whole-archive-refusal",
-  "reason": "Existing migration supports Codex connections only. Copying live EasyWork grant while omitting a pending/confirmed fence could resurrect revoked authority; copying fence must never create destination device authority. No authorized new migration policy or cross-device identity mapping is supplied in this narrow task.",
-  "inventory": "Every active encrypted record is captured by NativeSessionStorage inventory. New header names are read exactly then fail closed graph allowlist. Unsupported legacy unnamed entries also refuse inventory. No alias is added to silently omit or reinterpret fence.",
-  "regression": "NativeVoiceDiscardStorageTest.easyWorkAuthorizationFencesAreAnExplicitWholeArchiveGapAndNeverDropped: pending/confirmed/future source export and candidate replacement refuse with original/candidate ciphertext unchanged; compiled, not device-executed.",
+  "migrationStatus": "implemented-audit-only-candidate-native-unverified",
+  "reason": "Current candidate preserves complete authorization residue/orphan graphs under inert versioned archive aliases. Active EasyWork metadata/business graphs remain a whole-archive boundary; no incoming authority or replay is created.",
+  "inventory": "Authenticated modern names include unreferenced per-action credentials. Exact referenced legacy grant/fence names resolve from original records; unknown hash-only originals and pending AtomicFile state refuse without recovery.",
+  "regression": "Existing missing-context/future fence vectors remain negative. New actual P8-writer hot6 and fresh-PID cold2 methods are prepared; current native/DEV acceptance pending.",
   "remaining": [
-    "Define versioned lossless audit-only portability graph for all EasyWork keys/grants/fences before accepting any EasyWork archive.",
-    "Preserve all unknown/unsupported fields and original pending/confirmed IDs; no grant resurrection or automatic revoke replay.",
-    "Independently execute Android/iOS native/device migration before claiming full migration."
-  ]
+    "Current-source Android API26/API37/OEM native, exact cold pair, SAF and real DEV.",
+    "Active EasyWork descriptors/cache/business-operation projection with fresh explicit pairing and no authority copy.",
+    "Android/iOS interoperability and full P7."
+  ],
+  "implementation": "easywork-audit-archives.md"
 }

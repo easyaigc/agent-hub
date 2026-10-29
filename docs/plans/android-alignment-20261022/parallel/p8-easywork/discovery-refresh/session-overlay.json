@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-cold-accepted-a5-next-20261029-1",
+  "base": "cd3c9a127b126eaf988eb06cae6610ea616be441 / exact accepted candidate20 frozen Session",
+  "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+  "baseSha256": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+  "proposedSha256": "91ad035f2a2c1913185f39c646daaea384ded11b9b56e7af14ed0e5f4f8808f1",
+  "originalMethodSha256": "652d4eaee475c192aec198f6fa79c1a4284b6393031c2ff30c58b9458b42e99f",
+  "proposedMethodSha256": "95667c00d4790b234a1ad353b89d9e7586a0a74ac3508c92561d08f1635c8720",
+  "sharedMainVoiceP9Changed": false,
+  "sourceStatus": "proposed narrow shared Session patch; parent owns integration",
+  "nativeExecution": 0,
+  "ownLeafBaseSha256": "05c068636edbf1ed4368af48008376de517b868eb1fadae05eea6dc949100ad1",
+  "ownLeafProposedSha256": "4f74ee2567c7d1a2a97cc713c79f6c7c75c905ca4c646dc6e4b74d36b21908ba",
+  "patches": {
+    "parent-session.patch": "2f2795b90316b560d6b156a8fef946e44c24ccfca8b51cf5a016a940d12c2f29",
+    "own-session.patch": "7597a1ff80723faed636c18fd78232ee0965793e7b83c1d11130eb7389c61541"
+  }
+}

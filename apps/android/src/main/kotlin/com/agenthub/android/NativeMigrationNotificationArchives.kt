@@ -48,14 +48,15 @@ internal object NativeMigrationNotificationArchives {
         require(NativeMigrationForeground.ACTIVE_NAMES.none {it in records}) {"Installation authority cannot be imported as active records"}
         val rows=entries(records);val claimed=mutableSetOf<String>();if(rows.isNotEmpty())claimed.add(RECORD)
         for((id,entry)in rows) {
-            val raw=mutableMapOf<String,String>()
+            val aliases=linkedMapOf<String,String>()
             for((kind,record)in originals) {
                 val digest=entry.get(kind)
                 if(digest!=JSONObject.NULL) {
                     require(digest is String&&chatNoticeHash(digest));val key=name(id,kind);require(claimed.add(key))
-                    val text=records.getValue(key);require(hash(text)==digest);raw[record]=text
+                    require(hash(records.getValue(key))==digest);aliases[record]=key
                 }
             }
+            val raw=NativeMigrationValueMap(aliases.keys){record->records.getValue(aliases.getValue(record))}
             val context=if(entry.get("installation")==JSONObject.NULL)null else entry.getJSONObject("installation")
             val identity=if(entry.get("originalIdentitySha256")==JSONObject.NULL)null else entry.get("originalIdentitySha256") as String
             val state=NativeMigrationForeground.validateArchived(context,identity,raw);require(state.nonempty)
@@ -68,31 +69,31 @@ internal object NativeMigrationNotificationArchives {
     }
     /** Exact raw journals/authority are renamed into the archive; no source private identity survives. */
     fun projectSource(records: Map<String,String>): Map<String,String> {
-        val portable=(records-NativeMigrationForeground.ACTIVE_NAMES).toMutableMap();validatePortable(portable)
+        val portable=NativeMigrationTextMap.copy(records).apply {forget(NativeMigrationForeground.ACTIVE_NAMES)};validatePortable(portable)
         val state=NativeMigrationForeground.validateActive(records);if(!state.nonempty)return portable
         val row=descriptor(state,records);val id=row.getString("archiveId");val previous=entries(portable).toMutableMap()
         previous[id]?.let {require(NativeMigrationRecoveryCanonical.value(it)==NativeMigrationRecoveryCanonical.value(row))}
         previous[id]=row;require(previous.size<=MAX_INSTALLATIONS)
-        originals.forEach {(kind,record)->records[record]?.let {raw->val key=name(id,kind);portable[key]?.let {require(it==raw)};portable[key]=raw}}
+        originals.forEach {(kind,record)->if(record in records)portable.alias(records,record,name(id,kind))}
         portable[RECORD]=catalog(previous.values);validatePortable(portable);return portable
     }
     /** Read selected local records safely, including archive descendants, without AtomicFile recovery. */
     fun captureDestination(storage: NativeSessionStorage): Map<String,String> = storage.snapshotTransaction {storage.operationTransaction {
-        val first=storage.migrationReadTextRecords(NativeMigrationForeground.ACTIVE_NAMES+RECORD).toMutableMap()
+        val first=storage.migrationReadTextFrames(NativeMigrationForeground.ACTIVE_NAMES+RECORD)
         val names=entries(first).flatMap {(id,entry)->originals.keys.filter {entry.get(it)!=JSONObject.NULL}.map {name(id,it)}}
-        names.chunked(16).forEach {first.putAll(storage.migrationReadTextRecords(it.toSet()))}
-        validatePortable(first-NativeMigrationForeground.ACTIVE_NAMES);NativeMigrationForeground.validateActive(first);first
+        names.chunked(16).forEach {chunk->val next=storage.migrationReadTextFrames(chunk.toSet());chunk.filter {it in next}.forEach {first.alias(next,it,it)}}
+        validatePortable(NativeMigrationTextMap.copy(first).apply {forget(NativeMigrationForeground.ACTIVE_NAMES)});NativeMigrationForeground.validateActive(first);first
     }}
     /** Local original identities/journals remain active only under their original installation. */
     fun mergeDestination(source: Map<String,String>,destination: Map<String,String>): Map<String,String> {
-        validatePortable(source);validatePortable(destination-NativeMigrationForeground.ACTIVE_NAMES);NativeMigrationForeground.validateActive(destination)
-        val result=source.toMutableMap();val all=entries(source).toMutableMap()
+        validatePortable(source);validatePortable(NativeMigrationTextMap.copy(destination).apply {forget(NativeMigrationForeground.ACTIVE_NAMES)});NativeMigrationForeground.validateActive(destination)
+        val result=NativeMigrationTextMap.copy(source);val all=entries(source).toMutableMap()
         for((id,row)in entries(destination)) {
             all[id]?.let {require(NativeMigrationRecoveryCanonical.value(it)==NativeMigrationRecoveryCanonical.value(row))};all[id]=row
-            originals.keys.filter {row.get(it)!=JSONObject.NULL}.forEach {kind->val key=name(id,kind);val raw=destination.getValue(key);result[key]?.let {require(it==raw)};result[key]=raw}
+            originals.keys.filter {row.get(it)!=JSONObject.NULL}.forEach {kind->val key=name(id,kind);result.alias(destination,key,key)}
         }
         require(all.size<=MAX_INSTALLATIONS);if(all.isNotEmpty())result[RECORD]=catalog(all.values)
-        validatePortable(result);result.putAll(destination.filterKeys {it in NativeMigrationForeground.ACTIVE_NAMES});return result
+        validatePortable(result);NativeMigrationForeground.ACTIVE_NAMES.filter {it in destination}.forEach {result.alias(destination,it,it)};return result
     }
     fun requiresBoundary(source: Map<String,String>,destination: Map<String,String>)=RECORD in source||RECORD in destination||NativeMigrationForeground.validateActive(destination).nonempty
     /** Parent reads this after activation before creating/rebinding any notification coordinator. */
@@ -104,7 +105,7 @@ internal object NativeMigrationNotificationArchives {
         val records=captureDestination(storage)
         return entries(records).map {(id,row)->val context=row.optJSONObject("installation")
             ArchivedOriginals(id,context?.getString("deviceId"),context?.getString("fingerprint"),row.getJSONArray("missingAuthorizations").strings(),
-                originals.keys.mapNotNull {kind->records[name(id,kind)]?.let {kind to it}}.toMap())
+                NativeMigrationValueMap(originals.keys.filter {kind->name(id,kind) in records}.toSet()){kind->records.getValue(name(id,kind))})
         }
     }
 }

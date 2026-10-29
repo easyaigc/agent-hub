@@ -19,9 +19,10 @@ data class MobileClient(val id: String, val name: String, val scope: TargetScope
     val requiresReadTarget: Boolean = false, val codexDirect: PairedCodexConnection? = null,
     val connectionPhase: ConnectionPhase = ConnectionPhase.CONNECTING,
     val agentConnection: AgentConnection? = null,
-    val storageIdentity: MobileStorageIdentity? = null) {
-    val isConnecting get() = !isDemo && !online && connectionPhase != ConnectionPhase.FAILED
-    val connectionLabel get() = if(online) "已连接" else if(isDemo) "离线 · 查看缓存" else when(connectionPhase) {
+    val storageIdentity: MobileStorageIdentity? = null,
+    val migrationEasyWork: MigratedEasyWorkConnection? = null) {
+    val isConnecting get() = migrationEasyWork==null && !isDemo && !online && connectionPhase != ConnectionPhase.FAILED
+    val connectionLabel get() = if(migrationEasyWork!=null) NativeMigrationEasyWorkGate.STATUS else if(online) "已连接" else if(isDemo) "离线 · 查看缓存" else when(connectionPhase) {
         ConnectionPhase.CONNECTING -> "正在连接…"
         ConnectionPhase.WAITING -> "正在重新连接…"
         ConnectionPhase.FAILED -> "连接未完成 · 查看缓存"
@@ -184,9 +185,19 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         set(value) {if(incomingEasyWorkLinkState!=value){easyWorkConnectionAuthority(this).invalidate();incomingEasyWorkLinkState=value}}
     val easyWorkLogin=storage?.let(::EasyWorkLogin)
     private val easyWorkDeviceAuthorization=storage?.let(::EasyWorkDeviceAuthorization)
-    private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!) }
-    private val easyWorkAgent=easyWorkSessions?.let(::EasyWorkAgentClient)
     private val migrationIo=NativeMigrationIoWork()
+    private val migrationEasyWork=NativeEasyWorkMigrationOwners()
+    internal val easyWorkMigrationContext get()=migrationIo+migrationEasyWork
+    /** Compose can leave before an authorization's blocking IO exits. Session and registry keep
+     * the complete action owned; releasing form UI is never an IO completion proof. */
+    internal suspend fun <T> runEasyWorkConnectionFormAction(action: EasyWorkConnectionActionLease,work: suspend ()->T): T {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+        if(!localReady||migrationEasyWork.stopping)throw EasyWorkConnectionAbandoned()
+        tasks.coroutineContext.ensureActive();action.checkpoint()
+        return NativeEasyWorkFormAction.run(tasks,easyWorkMigrationContext,action,work)
+    }
+    private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!,easyWorkMigrationContext) }
+    private val easyWorkAgent=easyWorkSessions?.let(::EasyWorkAgentClient)
     private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate+migrationIo)
     internal val desktopSuggestionReader=NativeDesktopSuggestionReader(tasks)
     private val suggestionReadAhead=NativeSuggestionReadAhead(tasks)
@@ -647,7 +658,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         !connectionBusy && !projectBusy && !importing && !attachmentRecoveryBusy &&
         externalInbox?.let {!it.loading&&!it.receiving&&!it.adding}!=false &&
         recentPhotos?.let {it.ready&&!it.saving}!=false &&
-        documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !NativeChatNotificationColdStart.bound(this)
+        documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !migrationEasyWork.stopping && !NativeChatNotificationColdStart.bound(this)
     internal val migrationCanImport get()=migrationReady&&realClients.isEmpty()
     internal fun invalidateMigrationLease(){migrationQuiescent=false;migrationEpoch++}
     internal fun ownsMigrationLease(lease: NativeMigrationOwnerLease)=migrationPaused&&migrationOperation==lease.operationId&&storage===lease.storage
@@ -661,17 +672,21 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         check(migrationReady)
         migrationPaused=true;migrationQuiescent=false;val epoch=++migrationEpoch
         migrationOperation=operationId
+        migrationEasyWork.seal()
         try {
             val original=tasks.coroutineContext[Job]!!.children.toList()
             val notifications=chatNotifications
             notifications?.let {migrationNotificationOwners.add(it);it.dispose()};easyWorkConnectionAuthority(this).invalidate()
             leaveForeground()
+            easyWorkDiscovery?.stop()
             withTimeout(30_000) {
                 notifications?.stopAndJoinForMigration();migrationNotificationOwners.remove(notifications);chatNotifications=null
                 voice?.quiesceForMigration();questionVoice?.quiesceForMigration()
                 val children=(original+tasks.coroutineContext[Job]!!.children.toList()).distinct()
                 children.forEach {it.cancel()};children.forEach {it.join()}
                 check(tasks.coroutineContext[Job]!!.children.none {it.isActive})
+                easyWorkSessions?.closeAll()
+                migrationEasyWork.stopAndJoin()
                 migrationIo.awaitIdle()
                 // Snapshot after the real producers stop. This includes the latest in-memory draft.
                 val metadata=metadataSnapshot()
@@ -682,8 +697,19 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             migrationQuiescent=true
             return NativeMigrationOwnerLease(store,operationId) {migrationQuiescent&&migrationEpoch==epoch}
         }catch(failure: Throwable) {
-            migrationQuiescent=false;migrationPaused=false;migrationOperation=null;chatNotifications=null;resumeMigrationNotificationCleanup()
+            migrationQuiescent=false;migrationPaused=false;migrationOperation=null;chatNotifications=null;resumeMigrationNotificationCleanup();resumeMigrationEasyWorkCleanup()
             throw failure // Main resumes this same model, preserving any unsaved draft.
+        }
+    }
+    private var migrationEasyWorkCleanup: Job?=null
+    private fun resumeMigrationEasyWorkCleanup() {
+        if(migrationEasyWorkCleanup?.isActive==true)return
+        migrationEasyWorkCleanup=tasks.launch {
+            // A cancelled wait does not release retiring owners or make the next migration ready.
+            runCatching {
+                easyWorkSessions?.closeAll();migrationEasyWork.stopAndJoin();migrationIo.awaitIdle()
+                migrationEasyWork.reopen()
+            }
         }
     }
     private fun resumeMigrationNotificationCleanup() {
@@ -703,7 +729,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         restoreJob?.join();check(!restoring&&!localRecoveryRequired)
         phoneReading.awaitReconciliation()
     }
-    internal suspend fun abandonMigrationRestore(){migrationIo.close();tasks.coroutineContext[Job]!!.cancelAndJoin();migrationIo.awaitIdle()}
+    internal suspend fun abandonMigrationRestore(){
+        migrationEasyWork.seal();easyWorkDiscovery?.stop();easyWorkSessions?.closeAll()
+        migrationIo.close();tasks.coroutineContext[Job]!!.cancelAndJoin()
+        migrationEasyWork.stopAndJoin();migrationIo.awaitIdle()
+    }
     internal fun retireForMigration(operationId: String) {
         check(migrationPaused&&migrationOperation==operationId)
         migrationQuiescent=false;migrationEpoch++;migrationIo.close();tasks.cancel();storage?.retireWriter()
@@ -757,6 +787,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         if(!baseline&&previous!=null&&previous!=signature)recoverNetworkReads()
     }
     internal fun recoverNetworkReads() {
+        if(selectedClient.migrationEasyWork!=null)return
         if(!foreground||!hasClient||selectedClient.isDemo||incomingEasyWorkLink!=null||networkRecoveryJob?.isActive==true)return
         val client=selectedClient;val key=clientKey;val navigation=clientNavigationRevision;val revision=revisions[client.id] ?: 0
         networkRecoveryJob=tasks.launch {
@@ -1227,7 +1258,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private val access: SessionAccess get() {
         if(!localReady) return SessionAccess(false,false,false,emptyList(),false,false,false,false,false)
         val local=demo && selectedClient.isDemo
-        val fresh=freshWorkspaces[clientKey]==true && foreground && execution!=null && "commands:target-bound:v1" in workspace?.capabilities.orEmpty()
+        val fresh=selectedClient.migrationEasyWork==null && freshWorkspaces[clientKey]==true && foreground && execution!=null && "commands:target-bound:v1" in workspace?.capabilities.orEmpty()
         return SessionAccess(local,local || selectedClient.online && fresh,
             if(local) null else if(fresh) workspace?.runtimeConnected else false,
             if(local) emptyList() else if(fresh) workspace?.capabilities.orEmpty() else emptyList(),
@@ -1403,6 +1434,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun refresh(more: Boolean = false, userInitiated: Boolean = false) {
         val client = selectedClient
+        if(client.migrationEasyWork!=null) {if(userInitiated)error=NativeMigrationEasyWorkGate.MESSAGE;return}
         if (!localReady || client.isDemo || !hasClient || loading || incomingEasyWorkLink!=null) return
         val key = clientKey; val revision = revisions[client.id] ?: 0
         val old = workspace
@@ -1456,6 +1488,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     fun loadHistory(more: Boolean = false, userInitiated: Boolean = false): Job? {
         val acceptanceTiming=NativeReadAcceptanceTiming.capture()
         val client = selectedClient; val thread = selectedThread; val key = targetKey
+        if(client.migrationEasyWork!=null)return null
         if (client.isDemo || incomingEasyWorkLink!=null || thread.isEmpty() || thread.startsWith("draft-") || historyLoading) return null
         if(!more && userInitiated) { pagedSelections.remove(key); loadedHistorySelections.remove(key) }
         val selection = selectionRevision; val revision = revisions[client.id] ?: 0
@@ -1571,6 +1604,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         }
     }
     private fun observeOperation(client: MobileClient,record: SavedOperation) {
+        if(client.migrationEasyWork!=null)return
         val flow=execution ?: return; val operationKey=record.target+":"+record.id
         if(!foreground || record.detached || record.kind=="thread-create" || record.phase !in listOf("submitting","received","uncertain","outcome-unknown","submitted","opening","preparing") ||
             record.kind=="reply" && record.phase=="submitted" || observingOperations[operationKey]?.isActive==true) return
@@ -2092,6 +2126,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         return PreparedMessageResource(file.name,file.mediaType,local)
     }
     private fun startEvents(initialReadGraceMillis: Long=0) {
+        if(selectedClient.migrationEasyWork!=null)return
         if(!foreground || incomingEasyWorkLink!=null || selectedClient.isDemo || selectedThread.isEmpty() || "events" !in workspace?.capabilities.orEmpty() || "commands:target-bound:v1" !in workspace?.capabilities.orEmpty()) return
         val client=selectedClient; val thread=selectedThread; val key=targetKey; val selection=selectionRevision; val revision=revisions[client.id] ?: 0
         val recoveryIdentity=Triple(key,selection,revision)
@@ -2272,11 +2307,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val identity=EasyWorkIdentity.load(store);binding.verify(identity)
         val scope=binding.target.scope();val id="easywork-"+easyHash(easyCanonical(CodexCommandCodec.target(scope)).toByteArray())
         val existing=realClients.firstOrNull { it.id==id };val revision=revisions[id]?:0L
-        val previousRef=existing?.agentConnection?.credentialRef?:"agent-$id"
+        val previousRef=NativeMigrationEasyWorkGate.previousCredentialRef(existing)
         // Candidate bytes are unactivated until this action commits the metadata pointer.
         // A crash leaves an unreferenced original; recovery never promotes or replays it.
         val ref="agent-$id-${lease.id}"
-        val previous=withContext(Dispatchers.IO) { store.read("easywork-credential:$previousRef") }
+        val previous=if(previousRef==null)null else withContext(Dispatchers.IO) { store.read("easywork-credential:$previousRef") }
         lease.checkpoint()
         val old=previous?.let { EasyWorkCredential.decode(JSONObject(it)) }
         require(old==null||old.binding.target==binding.target&&old.privateKey==identity.privateKey)
@@ -2287,11 +2322,11 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val pin=candidates.firstOrNull { it.transportId=="lan-wss" }?.peerFingerprint
         val saved=existing?.agentConnection?.candidates.orEmpty().filter { (grantRef!=null||old?.grantRef==null)&&(it.transportId!="lan-wss"||pin==null||it.peerFingerprint==pin) }
         val merged=(candidates+saved).distinctBy { it.transportId to it.endpoint }.take(32)
-        var connection=AgentConnection(scope,merged,ref,existing?.agentConnection?.preference?:"automatic")
+        var connection=AgentConnection(scope,merged,ref,existing?.agentConnection?.preference?:existing?.migrationEasyWork?.preference?:"automatic")
         lease.checkpoint()
         easyWorkSessions!!.remove(id)
         val authorization: EasyWorkRequestHeaders?=grantRef?.let { grant->{ method,url,body->easyWorkDeviceAuthorization!!.headers(grant,binding,method,url,body) } }
-        val incoming=EasyWorkRemoteSession(connection.copy(candidates=candidates,preference="automatic"),credential,{ easyWorkLogin!!.validToken(token,binding.target) },authorize=authorization)
+        val incoming=EasyWorkRemoteSession(connection.copy(candidates=candidates,preference="automatic"),credential,{ easyWorkLogin!!.validToken(token,binding.target) },authorize=authorization,ownerContext=easyWorkMigrationContext)
         try {
             val context=incoming.request("runtime/context");lease.checkpoint();require(EasyWorkTarget.decode(context.getJSONObject("target"))==binding.target)
             if(grantRef!=null) {
@@ -2323,6 +2358,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         }
     }
     fun setEasyWorkPreference(client: MobileClient,preference: String) {
+        require(preference in listOf("automatic","lan-only","relay-only"))
+        val imported=realClients.firstOrNull {it.id==client.id&&sameScope(it.scope,client.scope)}
+        imported?.migrationEasyWork?.let {replaceClient(imported.copy(migrationEasyWork=it.withPreference(preference)));persistMetadata();return}
         require(preference in listOf("automatic","lan-only","relay-only"));val latest=realClients.firstOrNull { it.id==client.id }?:return
         val connection=latest.agentConnection?:return;replaceClient(latest.copy(agentConnection=connection.copy(preference=preference),online=false))
         val revision=(revisions[client.id]?:0)+1;revisions[client.id]=revision;persistMetadata()
@@ -2339,15 +2377,20 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun renameEasyWork(client: MobileClient,name: String) {
         if(name.isBlank()||name.length>256)return
-        realClients.firstOrNull { it.id==client.id&&it.agentConnection!=null }?.let { replaceClient(it.copy(name=name.trim()));persistMetadata() }
+        realClients.firstOrNull { it.id==client.id&&(it.agentConnection!=null||it.migrationEasyWork!=null) }?.let { replaceClient(it.copy(name=name.trim()));persistMetadata() }
     }
     internal suspend fun updateEasyWorkCandidates(client: MobileClient,binding: EasyWorkBinding,candidates: List<AgentCandidate>): Boolean {
         val current=realClients.firstOrNull { it.id==client.id }?:return false;val connection=current.agentConnection?:return false
         if(!sameScope(connection.target,binding.target.scope()))return false
+        val revision=revisions[client.id]?:0L
         val saved=withContext(Dispatchers.IO) { storage?.read("easywork-credential:${connection.credentialRef}") }?:return false
         if(EasyWorkCredential.decode(JSONObject(saved)).binding!=binding)return false
-        val merged=(candidates+connection.candidates).distinctBy { it.transportId to it.endpoint }.take(32)
-        if(merged!=connection.candidates) { replaceClient(current.copy(agentConnection=connection.copy(candidates=merged)));persistMetadata() }
+        // Credential IO yields Main. Never publish the pre-read client/connection snapshot.
+        val latest=realClients.firstOrNull {it.id==client.id}?:return false
+        val live=latest.agentConnection?:return false
+        if((revisions[client.id]?:0L)!=revision||!sameScope(live.target,connection.target)||live.credentialRef!=connection.credentialRef||live.preference!=connection.preference)return false
+        val merged=(candidates+live.candidates).distinctBy { it.transportId to it.endpoint }.take(32)
+        if(merged!=live.candidates) { replaceClient(latest.copy(agentConnection=live.copy(candidates=merged)));persistMetadata() }
         return true
     }
     suspend fun connectDiscoveredEasyWork(host: DiscoveredEasyWorkHost): MobileClient = withEasyWorkConnectionAction(this,EasyWorkConnectionInput("discovered",host.name,host.endpoint,host.deviceId.orEmpty())) { lease->
@@ -2667,9 +2710,9 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     internal fun installAcceptanceHistory(messages: List<MobileMessage>, cursor: String? = null) { histories[targetKey] = messages; visibleMessageLimit = ReadingPolicy.initialMessageLimit().toInt(); revealedEarlier = false;presentationTargetKey=targetKey }
 }
 
-internal fun encodeClient(client: MobileClient) = JSONObject().put("id", client.id).put("name", client.name).put("endpoint", client.endpoint).put("requiresReadTarget", client.requiresReadTarget).put("codexDirect", client.codexDirect?.let(::encodeCodexDirect)).put("agentConnection",client.agentConnection?.json())
+internal fun encodeClient(client: MobileClient) = JSONObject().put("id", client.id).put("name", client.name).put("endpoint", client.endpoint).put("requiresReadTarget", client.requiresReadTarget).put("codexDirect", client.codexDirect?.let(::encodeCodexDirect)).put("agentConnection",client.agentConnection?.json()).put("migrationEasyWork",client.migrationEasyWork?.json())
     .put("storageIdentity",client.storageIdentity?.json() ?: JSONObject.NULL).put("mode", client.mode).put("readerId", client.readerId).put("scope", client.scope?.let { s -> JSONObject().put("agentId", s.agentId).put("hostId", s.hostId).put("workspaceId", s.workspaceId).put("runtimeId", s.runtimeId).apply { if (s.accountAuthority != null) put("account", JSONObject().put("authority", s.accountAuthority).put("subject", s.accountSubject)) } })
-internal fun decodeClient(json: JSONObject) = MobileClient(json.getString("id"), json.getString("name"), HostReadCodec.target(json.optJSONObject("scope")), json.getString("endpoint"), false, json.getString("mode"), false, json.optional("readerId"), json.optBoolean("requiresReadTarget"), json.optJSONObject("codexDirect")?.let(::decodeCodexDirect),agentConnection=json.optJSONObject("agentConnection")?.let(AgentConnection::decode),storageIdentity=json.optJSONObject("storageIdentity")?.let(MobileStorageIdentity::decode) ?: if(json.has("storageIdentity")) null else HostReadCodec.target(json.optJSONObject("scope"))?.takeIf { it.agentId=="codex" }?.let { MobileStorageIdentity(it,emptyList()) }).also { require(it.codexDirect == null || sameScope(it.scope, it.codexDirect.target));require(it.agentConnection==null||sameScope(it.scope,it.agentConnection.target)) }
+internal fun decodeClient(json: JSONObject) = MobileClient(json.getString("id"), json.getString("name"), HostReadCodec.target(json.optJSONObject("scope")), json.getString("endpoint"), false, json.getString("mode"), false, json.optional("readerId"), json.optBoolean("requiresReadTarget"), json.optJSONObject("codexDirect")?.let(::decodeCodexDirect),agentConnection=json.optJSONObject("agentConnection")?.let(AgentConnection::decode),migrationEasyWork=json.optJSONObject("migrationEasyWork")?.let(MigratedEasyWorkConnection::decode),storageIdentity=json.optJSONObject("storageIdentity")?.let(MobileStorageIdentity::decode) ?: if(json.has("storageIdentity")) null else HostReadCodec.target(json.optJSONObject("scope"))?.takeIf { it.agentId=="codex" }?.let { MobileStorageIdentity(it,emptyList()) }).also { require(it.codexDirect == null || sameScope(it.scope, it.codexDirect.target));require(it.agentConnection==null||sameScope(it.scope,it.agentConnection.target));NativeMigrationEasyWorkGate.validate(it) }
 internal fun encodeWorkspace(w: MobileWorkspace) = MobileWorkspaceMetadata.encode(w)
 internal fun encodeMessage(m: MobileMessage) = JSONObject().put("id", m.id).put("role", m.role).put("text", m.text).put("status", m.status).put("kind", m.kind).put("detail", m.detail).put("runId", m.runId).put("replyPhase", m.replyPhase).put("replyMessageId", m.replyMessageId).put("files", JSONArray(m.files)).put("blocks", m.blocks?.let(::JSONArray)).put("attachments", JSONArray(m.attachments.map { f -> JSONObject().put("id", f.id).put("name", f.name).put("mediaType", f.mediaType).put("sizeBytes", f.sizeBytes).put("hostId", f.hostId).put("threadId", f.threadId).put("sha256", f.sha256).put("resourceId",f.resourceId) }))
 

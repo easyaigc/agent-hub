@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-cold-accepted-a5-next-20261029-1",
+  "sourceBase": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+  "proposal": "91ad035f2a2c1913185f39c646daaea384ded11b9b56e7af14ed0e5f4f8808f1",
+  "selection": "Confirmed suspend-before-publication race, not more protocol fixture modes",
+  "groups": [
+    {
+      "id": "A5-1",
+      "status": "open",
+      "thisStage": "Six-coordinate guard covered in local source test; no provider capability/real-target switching closure"
+    },
+    {
+      "id": "A5-2",
+      "status": "open",
+      "thisStage": "Discovery result publication race proposed fix; camera/real Desktop/actual native discovery remain separate"
+    },
+    {
+      "id": "A5-3",
+      "status": "open",
+      "thisStage": "Keep current route preference and credential pointer across IO; both real paths/failover/receipt recovery not closed"
+    },
+    {
+      "id": "A5-4",
+      "status": "open",
+      "thisStage": "History/search/plan presentation remains with existing owners; no duplicate work"
+    },
+    {
+      "id": "A5-5",
+      "status": "open",
+      "thisStage": "No real commands/models/attachments; original unknown journal not replayed"
+    },
+    {
+      "id": "A5-6",
+      "status": "open",
+      "thisStage": "Preserve accepted source090df0cc/Appc07/runner95 cold result only; real issuer/Desktop/revocation and current source still separate"
+    },
+    {
+      "id": "A5-7",
+      "status": "open",
+      "thisStage": "Five genuine native local-storage regressions compiled/not run; API26/API37/physical and Codex regressions separate"
+    }
+  ],
+  "iosActualSourceEvidence": {
+    "apps/ios/Sources/EasyWorkDiscovery.swift": {
+      "leafSha256": "d404184238dc74e2c747c4204b3d4564ce3f015e59f1d6d77911452aec4612e1",
+      "acceptedCommitSha256": "d404184238dc74e2c747c4204b3d4564ce3f015e59f1d6d77911452aec4612e1",
+      "matchesAcceptedCommit": true
+    },
+    "apps/ios/Sources/EasyWorkSession.swift": {
+      "leafSha256": "2de9425769e9e6c0928356cb88914648c2aae4ac8103dc651eb773d20faa8e3d",
+      "acceptedCommitSha256": "2de9425769e9e6c0928356cb88914648c2aae4ac8103dc651eb773d20faa8e3d",
+      "matchesAcceptedCommit": true
+    },
+    "apps/ios/Sources/SessionStore.swift": {
+      "leafSha256": "9f89b0ae1b280e8c69e4096062e0ef237508f51286139bafc1520eac021c0871",
+      "acceptedCommitSha256": "9f89b0ae1b280e8c69e4096062e0ef237508f51286139bafc1520eac021c0871",
+      "matchesAcceptedCommit": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt": {
+      "leafSha256": "79d5be5dc30e8b63cc3303aa6ac78135e36196ea07adebe138427e28b096c809",
+      "acceptedCommitSha256": "79d5be5dc30e8b63cc3303aa6ac78135e36196ea07adebe138427e28b096c809",
+      "matchesAcceptedCommit": true
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": {
+      "leafSha256": "3977703c145c283cd643e3cd20df709a2a81378fd625e8fff8728767c331ad58",
+      "acceptedCommitSha256": "3977703c145c283cd643e3cd20df709a2a81378fd625e8fff8728767c331ad58",
+      "matchesAcceptedCommit": true
+    }
+  },
+  "environmentGates": [
+    "Real issuer and original authorized Desktop",
+    "System-trusted Relay/TLS and real cross-network paths",
+    "Physical complete default-family file inventory remains over original cap",
+    "Camera, permissions, actual UI and platform lifecycle",
+    "Real model/canonical input/resource bytes and all applicable seven-group matrices"
+  ],
+  "a5Complete": false,
+  "a6": "paused"
+}

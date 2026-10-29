@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "sourceGraph": {
+    "form-lease/phase7/fixture.mjs": "f9a8f840eaca987411edb23bff1caa09daa00724f599ae87ee3333c6ec1b56a9",
+    "pairing-ui/fixture.mjs": "322cd03880dfa64d5a095719ee3cbf030b68430b9e4e78b89ba312d77e2a4f38",
+    "authorization-fence/phase2/fixture.mjs": "b91aff98e2f40cce295086dae2d0190540481a4314f6b98c7c7b81e31fe7fe7c",
+    "authorization-boundaries/fixture.mjs": "cf13fe86f506829132b55085fbb63177da5db3ed3a6b731ece527c4c57c8375a"
+  },
+  "sourceGraphSha256": "76c85c26c22aa9ef0cf1025e5ca58ef52d1dbbbb234fe58894ab0fbb345b3852",
+  "sourceFixtureSha256": "b511e868a6c893552ba9bc554f1ff57dfb052524420d181dcbc6454dff288104"
+}

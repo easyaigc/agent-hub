@@ -30,9 +30,9 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             val count=if(saved.get("version")==1) {
                 val bytes=legacyPayload(saved)
                 try {require(sha(bytes)==digest);validateArchive(bytes).size}finally{bytes.fill(0)}
-            }else {require(saved.get("version") in setOf(2,3));saved.get("records") as Int}
+            }else {require(saved.get("version") in setOf(2,3,4));saved.get("records") as Int}
             val receipt=Receipt(id,digest,count);require(count in 1..1024)
-            if(saved.get("version")==3)stream.read(receipt){}else readArchive(receipt)
+            if(saved.get("version") in setOf(3,4))stream.read(receipt){}else readArchive(receipt)
             receipt
         }}
     }
@@ -71,7 +71,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             // Acquire child handles before the candidate lock; activation locks parent then child.
             val streamBackend = if (replacing != null) NativeMigrationStreamCandidate(context,parent) else null
             storage.operationTransaction {
-                val prior = storage.read(SLOT)?.let(::objectValue)
+                val prior = storage.migrationReadTextRecords(setOf(SLOT))[SLOT]?.let(::objectValue)
                 if (prior?.getString("id") == candidateId) {
                     require(prior.getString("sha256") == receipt.sha256)
                     readArchive(receipt) // Exact original result; no ciphertext rewrite.
@@ -79,7 +79,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
                     require(if (prior == null) replacing == null else replacing != null &&
                         prior.getString("id") == replacing.id && prior.getString("sha256") == replacing.sha256)
                     if (replacing != null) {
-                        if (prior!!.get("version") == 3) streamBackend!!.read(replacing) {} else readArchive(replacing)
+                        if (prior!!.get("version") in setOf(3,4)) streamBackend!!.read(replacing) {} else readArchive(replacing)
                     }
                     val generation=UUID.randomUUID().toString();val chunks=JSONArray();val created=mutableListOf<String>()
                     var published=false
@@ -104,7 +104,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
                         // An acknowledgement may fail after publication. Keep chunks if the pointer is
                         // ours or cannot be read; never destroy a possibly committed candidate.
                         if(!published) {
-                            val observed=runCatching {storage.read(SLOT)?.let(::objectValue)?.optString("generation")}
+                            val observed=runCatching {storage.migrationReadTextRecords(setOf(SLOT))[SLOT]?.let(::objectValue)?.optString("generation")}
                             if(observed.isSuccess&&observed.getOrNull()!=generation)created.forEach(storage::remove)
                         }
                     }
@@ -122,7 +122,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
 
     internal fun readArchive(receipt: Receipt): NativeMigrationRecords = storage.operationTransaction {
         require(UUID.fromString(receipt.id).toString() == receipt.id && receipt.sha256.matches(Regex("[a-f0-9]{64}"))&&receipt.recordCount in 1..1024)
-        val saved = objectValue(storage.read(SLOT) ?: error("Migration candidate unavailable"))
+        val saved = objectValue(storage.migrationReadTextRecords(setOf(SLOT))[SLOT] ?: error("Migration candidate unavailable"))
         require(saved.getString("id") == receipt.id && saved.getString("sha256") == receipt.sha256)
         val clear=when(saved.get("version")) {
             1 -> {
@@ -140,7 +140,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
                         val row=chunks.getJSONObject(index);exact(row,setOf("size","sha256"))
                         val count=minOf(CANDIDATE_CHUNK_BYTES,size-offset);require(row.get("size")==count)
                         val digest=row.getString("sha256");require(digest.matches(Regex("[a-f0-9]{64}")))
-                        val chunk=storage.readBinary(chunkName(generation,index),count,CANDIDATE_CHUNK_BYTES)
+                        val chunk=storage.migrationReadBinary(chunkName(generation,index),count,CANDIDATE_CHUNK_BYTES)
                         try {require(sha(chunk)==digest);System.arraycopy(chunk,0,bytes,offset,count)}finally {chunk.fill(0)}
                         offset+=count
                     }
@@ -177,11 +177,15 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
     }
 
     private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
-        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)
+        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)
         require("metadata" in records)
-        // Parse every record with duplicate/depth/UTF-8 checks, preserving its exact original text for later activation.
-        val allValues = records.mapValues { StrictMigrationJson.value(it.value.toByteArray(Charsets.UTF_8)) }
-        val parsed = allValues.filterValues { it is JSONObject }.mapValues { it.value as JSONObject }
+        // Frozen archive readers already checked their claimed records. Parse each other value once
+        // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.
+        val names=records.keys-foregroundNames
+        fun value(name: String)=StrictMigrationJson.value(records.getValue(name).toByteArray(Charsets.UTF_8))
+        val objects=names.filter {value(it) is JSONObject}.toSet()
+        val allValues=NativeMigrationValueMap(names,::value)
+        val parsed=NativeMigrationValueMap(objects){name->value(name) as JSONObject}
         val metadata = parsed.getValue("metadata")
         NativeMigrationMetadata.validate(metadata)
         require(metadata.get("version") == 1)
@@ -191,7 +195,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         metadata.getJSONObject("expanded"); metadata.getJSONObject("workspaces")
         val clients = metadata.getJSONArray("clients").objects().map(::decodeClient)
         require(clients.size <= 128 && clients.map { it.id }.distinct().size == clients.size)
-        require(clients.all { it.scope?.agentId == "codex" }) // EasyWork device re-pairing is not an identity copy.
+        NativeMigrationEasyWorkBusiness.validateMetadataGraph(metadata,clients)
         val historyNames = NativeMigrationHistory.validate(allValues,clients)
         val ancillaryNames = NativeMigrationAncillary.validate(parsed)
         val deviceNames = NativeMigrationDeviceState.validate(records,clients)
@@ -202,7 +206,10 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         val voiceNames=if(streams==null)NativeMigrationVoice.validate(allValues,voiceBinaries,clients,records)else NativeMigrationVoice.validateStreams(allValues,voiceStreams!!,clients,records)
         val attachmentBinaries=mutableSetOf<String>()
         require(allValues.keys.all { it in parsed || it in historyNames || it in voiceNames })
-        val operations = mutableListOf<SavedOperation>()
+        val operationIds=mutableSetOf<String>()
+        fun operations()=sequence {
+            for(name in objects.filter {it.startsWith("operations:")})yieldAll(journal.validateMigrationRecords(name.removePrefix("operations:"),parsed.getValue(name)))
+        }
         val manifests = mutableMapOf<String, JSONObject>()
         fun manifest(value: JSONObject) {
             CodexCommandCodec.validate(value, "creationFile")
@@ -237,9 +244,10 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
                     val intent = objectValue(row.intent)
                     val client = clients.single { it.id == intent.getString("hostId") }
                     require(target in client.operationTargets(intent.optional("threadId")))
+                    if(client.scope?.agentId=="easywork")require(row.kind in setOf("reply","creation","open","thread-create","chat-action")) {"EasyWork task/project management migration is not enabled"}
                     row.replyRecovery?.let { require(it.matchesObservation(client, row)) }
                 }
-                operations.addAll(rows)
+                rows.forEach {require(operationIds.add(it.id))}
             }
             name.startsWith("submission:") -> {
                 body.getJSONArray("files").objects().forEach(::manifest)
@@ -249,13 +257,13 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             else -> error("Unsupported migration record")
         }
         require((streams?.keys?:binaries.keys)==(voiceStreams?.keys?:voiceBinaries.keys)+attachmentBinaries+soundBinaries)
-        NativeMigrationReferences.validate(parsed,clients,operations)
-        // Only verified Codex credentials are supported here. Device keys, grants, push bindings
-        // and other provider re-pairing remain explicit boundaries, never silently discarded.
-        require(operations.map { it.id }.distinct().size == operations.size)
+        NativeMigrationReferences.validate(parsed,clients,operations())
+        // EasyWork credentials stay only in exact original-installation archives; projected
+        // clients cannot use a credential reference or inherit execution authority.
+        require(parsed.keys.filter {it.startsWith("submission:")}.all {it.removePrefix("submission:") in operationIds})
         for ((id, _) in manifests) require("draft-file:$id" in records)
-        for ((name, body) in parsed) if (name.startsWith("submission:")) {
-            val row = operations.single { it.id == name.removePrefix("submission:") }
+        for (row in operations()) {
+            val body=parsed["submission:${row.id}"]?:continue
             require(row.sourceKey == body.getString("sourceKey") && row.sourceVersion == body.getString("sourceVersion"))
             val intent = objectValue(row.intent)
             require(intent.getString("hostId") == body.getString("hostId"))

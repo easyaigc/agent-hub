@@ -155,7 +155,7 @@ internal object NativeMigrationForeground {
             key(public).fill(0);require(text(v,"fingerprint")==sha(public))}
         require((context==null)==(identitySha256==null));identitySha256?.let {require(chatNoticeHash(it))}
         val v1=records[JOURNAL]?.let(::journal)
-        val v2=records[RECOVERY]?.let {raw->objectValue(raw,4*1024*1024);NativeMigrationForegroundV2.decodeEncoded(raw)}
+        val v2=records[RECOVERY]?.let(NativeMigrationForegroundV2::decodeSummary)
         require(v1==null&&v2==null||context!=null) {"Original notification identity missing"}
         if(v1!=null)require(context!!.getString("deviceId")==v1.device&&context.getString("fingerprint")==v1.fingerprint)
         if(v2!=null)require(context!!.getString("deviceId")==v2.getString("deviceId")&&context.getString("fingerprint")==v2.getString("identity"))
@@ -174,7 +174,7 @@ internal object NativeMigrationForeground {
     }
     /** IO caller gets exact immutable journal bytes, not a recovered identity or command port. */
     fun audit(storage: NativeSessionStorage): SourceAudit=storage.snapshotTransaction {storage.operationTransaction {
-        inspect(storage.migrationReadTextRecords(ACTIVE_NAMES))
+        inspect(storage.migrationReadTextFrames(ACTIVE_NAMES))
     }}
     fun projectSource(records: Map<String,String>): Map<String,String> {
         return NativeMigrationNotificationArchives.projectSource(records)

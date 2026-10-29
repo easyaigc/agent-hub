@@ -1,0 +1,165 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "parentBase": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+  "requiresCorrectedOriginalsSourceSha256": "ce898490bd0de18fb09e2944b9a4fc425584d7e93234a0e547ce690b54d43ec5",
+  "ownPriorCommit": "7570659f1d6388d2025fa158c8339be30c60de49",
+  "sourceFingerprint": "159ce4d79a454fb88e963f1ebf4344ec687ab0d630605da378839659c2992ae3",
+  "sourceFiles": 786,
+  "overlays": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusiness.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": null,
+      "proposedSha256": "3e24ed51b17fa94a3d2631a0bd37dd976044f852260a52ccd44ffca8cd95001a"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/MigratedEasyWorkConnection.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": null,
+      "proposedSha256": "2156e0b3af352c3e2f47b6b493afdcd01b0eb11198ac8d499503dd087ddbe9d6"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "7adf6f4a9544e0581d59797340a75b6d45f8824f040a656d5c24ba9abad3949f",
+      "proposedSha256": "6c5e5ad17a022c6830daa296fcc49ab9e1f9149f2ce51ae2717922c41da2fcbd"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "31c51e917d2ac098038514e2253bf0ad60429278cfa6e6b46a07b929c215ebb1",
+      "proposedSha256": "758e1604a95cc28986ac44e8df8408cdd77394d397d9a947504173268835ca6c"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "dcd0fd0c4ffc995036ae5293b48cc1b040ee6583df27f6199649fd979ba69405",
+      "proposedSha256": "558d2def2c43aad0397d1270ffe2869e2dbb290978b2df9d44371ee32bd2e4c1"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "ab7242a4478a4456b415024fb5c97e59ff1df4d92f9846b8d1e5316f176e1e39",
+      "proposedSha256": "ca23e60dbef87ab0a96a772c3d8e07ccdb334c0e3ee5c097ddfb8016de11eae4"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "8a8910e5f490f0007a42c80a9db5d68235e67b374932d1c5eed02751ef01ba07",
+      "proposedSha256": "33ef1e97a31c34641e3d025662e4264d8896e546479baa043caeb2e472fab32e"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "5a91ce066a0a12edfbe94f4965a6f4227daafefb2518e7235de4caf2e0bb884a",
+      "proposedSha256": "03f4bc1e3ca80382c80fc2d53493fc52f80985ad78fd016168e0b9c4fa04d6b8"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt": {
+      "baseRevision": "7570659f1d6388d2025fa158c8339be30c60de49",
+      "baseSha256": "904c807158a3518800d267b85db2f0a62dd3e6c7b0de72ee583731a127cb5442",
+      "proposedSha256": "6a8c47990e5058b24e5e5579cb6f94ec1a04fe873d3b3ef7ed51f96274f5cf84"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessFixtures.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": null,
+      "proposedSha256": "df61c232cdf66a9cb57cf2465ef1630872c6f6474daec787534ea2d0fd05faa1"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessTest.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": null,
+      "proposedSha256": "106b4892cee429d7ebb18ae17221a545671330b3a430a98cb24440cd9e606f57"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessColdTest.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": null,
+      "proposedSha256": "978dccb2be2a74250778d86e55c481a8086c09e754233ae951cecc68555c8943"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "d327caf3d653946a5b6912ecd4ceb2bfff1358dddd32c784cb12d738dd9b3521",
+      "proposedSha256": "17064b137e687e0e899b4aa36ee93b7c00c174e074deb96ee59343deff853a47"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "2487ed49d0ea3db78eaec8f71d79e422f1f0dde865bb3ba44154eba946961094",
+      "proposedSha256": "0b902a299468ed6294e01345c65e6b5c03c04af32c4a529c8794210e35950158"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "bff0dfc6a8ae62a703b2e868abcf0c065846d1cd3832d65b95b421fd4696ad94",
+      "proposedSha256": "e9367b76dd884a64c1dd63b54bb0db83ac2226f896f71020e1e0f30f26f42950"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+      "proposedSha256": "51e617b4df8a00428c1fd67e43ec57a77e80e3f34c6fd7dc612af13c2d0281ea"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "da2fdf885cfb982a9d8f2f846672c4b976ac98b0fe7141ff4c2e0e2e789d02e5",
+      "proposedSha256": "93515a0d5f4b0fcae38ecbbb04361909996d58ab37d208f219946e91a1f8daae"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "3977703c145c283cd643e3cd20df709a2a81378fd625e8fff8728767c331ad58",
+      "proposedSha256": "f90f42e31247d41044c507d06c58064182240a1730b1d00c45e7cede11aca718"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "0247816330fc18b92e0ef5b9ff8831c143bd5357143b9dc3c0ece9cd79290d1a",
+      "proposedSha256": "e0d258d74e74c27b256c5a30e4592c0054bf9d14015616960167dc655ea33d36"
+    },
+    "apps/android/localization/native-copy.json": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "15e5d40d6fdf4802ab7921cde38f44c100e533a442c643aa546e4e9551402adf",
+      "proposedSha256": "ec851c5118d6eec244d56830b7dd43b1697d2a8e0cefdddb5d74b69d34e1d000"
+    },
+    "apps/android/src/main/res/values/product_strings.xml": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "061ef98b1b4d10aaa27a49950e7357bcd8afefb8c18af9f02c782742c04a638e",
+      "proposedSha256": "3bd1a5d2be22cdd89906c86be3f175a29792ea73ab3de18eb6ae2a68c41eae69"
+    },
+    "apps/android/src/main/res/values-zh/product_strings.xml": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "7534be8009560cfa2998df4df53c33547e4deb72f0d6fa4f27498428076aa8a9",
+      "proposedSha256": "a0b640e6a736d9148bfb5825cfa48c14824dd716717b5b5868dfd0cbc593b4bd"
+    },
+    "apps/android/src/androidTest/assets/localization-catalog.json": {
+      "baseRevision": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+      "baseSha256": "1da48592ba7db5cc045c5a32a71ed5e0de8de3c55664e991cf1516f382a680c6",
+      "proposedSha256": "7ff3ba0b252452bbe4b9ee76216f8fd40485423252189ba476b5d66a91d7d449"
+    }
+  },
+  "outputs": {
+    "app.apk": {
+      "sha256": "a1ebfeb4c8e26fc922aaf424d746dbe3005d082331fad951299a411339c359e8",
+      "bytes": 28486510
+    },
+    "runner.apk": {
+      "sha256": "b1546ee66024dc8e414035ee917b4e0eaa79a75f253dfc58ef2deff4ad0f896d",
+      "bytes": 10205473
+    }
+  },
+  "sharedInputSha256": {
+    "MainActivity.kt": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8",
+    "MobileSession.kt": "51e617b4df8a00428c1fd67e43ec57a77e80e3f34c6fd7dc612af13c2d0281ea",
+    "AgentHubApp.kt": "e0d258d74e74c27b256c5a30e4592c0054bf9d14015616960167dc655ea33d36",
+    "EasyWorkConnectionPage.kt": "93515a0d5f4b0fcae38ecbbb04361909996d58ab37d208f219946e91a1f8daae",
+    "EasyWorkSession.kt": "f90f42e31247d41044c507d06c58064182240a1730b1d00c45e7cede11aca718",
+    "NativeChatNotificationCoordinator.kt": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+    "VoiceInputController.kt": "25d50f8f31856fdf097def52b0653d6ddd1376257bac1aca7148a21faca1d307",
+    "VoiceInputView.kt": "e0ab4904b9d3a353519d01322c946e170c10535ef05345e933324b3a55b160ca"
+  },
+  "P9InheritedNotAnOwnOverlay": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+  "sourceAndOverlayOutputReadbackVerified": true,
+  "appRunnerBuild": "passed",
+  "nativeHotPrepared": 6,
+  "nativeColdPrepared": 2,
+  "nativeExecutedHere": false,
+  "hostProjection": "matching auxiliary reuse:7 negatives,10 Kotlin fragments,metadata-only credential reference; small JVM17/48MiB with host facades",
+  "AJVFragmentVectors": 10,
+  "localization": {
+    "parentNativeKeys": 236,
+    "byKeyAdditions": 2,
+    "currentNativeKeys": 238,
+    "perLanguage": 1881,
+    "checks": "4 matching auxiliary reuse"
+  },
+  "liveOwnerLifecycle": "identified and required next source stage; not established",
+  "explicitRealPairing": "not executed",
+  "crossFormatIos": "not established",
+  "taskProjectManagement": "not implemented; paused",
+  "fullP7Passed": false
+}

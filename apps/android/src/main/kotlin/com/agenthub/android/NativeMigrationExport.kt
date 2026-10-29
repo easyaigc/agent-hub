@@ -16,9 +16,9 @@ internal class NativeMigrationExport(private val context: Context,private val st
     fun sealFile(destination: java.io.File, password: String) {
         require(NativeMigrationCrypto.acceptsPassword(password))
         require(!destination.canonicalPath.startsWith(context.noBackupFilesDir.canonicalPath + java.io.File.separator))
-        storage.migrationStreamSnapshot(::legacyNames) { records ->
+        storage.migrationStreamSnapshot(::legacyNames,NativeMigrationEasyWorkArchives::legacyNames) { records ->
             requireSupportedScopes()
-            val portable=records.copy(text=NativeMigrationForeground.projectSource(records.text))
+            val portable=records.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(records.text)),records.text))
             NativeMigrationCandidateStore(context, storage).validateStreamRecords(portable)
             val atomic = android.util.AtomicFile(destination); val output = atomic.startWrite()
             try {
@@ -34,8 +34,8 @@ internal class NativeMigrationExport(private val context: Context,private val st
         try{return NativeMigrationCrypto.seal(clear,password)}finally{clear.fill(0)}
     }
     internal fun capture(): ByteArray {
-        val original=storage.migrationTypedArchiveSnapshot(::legacyNames)
-        val records=original.copy(text=NativeMigrationForeground.projectSource(original.text))
+        val original=storage.migrationTypedArchiveSnapshot(::legacyNames,resolveModernAliases=NativeMigrationEasyWorkArchives::legacyNames)
+        val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(original.text)),original.text))
         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
         try {
             require(clear.size<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
@@ -44,7 +44,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
         }catch(error: Exception){clear.fill(0);throw error}
     }
     private fun legacyNames(read: (String)->String?): Set<String> {
-        val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1",NativeMigrationDeviceState.READING,NativeMigrationDeviceState.NOTIFICATIONS,NativeMigrationDeviceState.AUDIT,NativeMigrationNotificationTombstones.RECORD,NativeMigrationSounds.RECORD)
+        val names=mutableSetOf("metadata","codex-private-connections-v1","ai-sharing-v1","voice-index-v1",NativeMigrationDeviceState.READING,NativeMigrationDeviceState.NOTIFICATIONS,NativeMigrationDeviceState.AUDIT,NativeMigrationEasyWorkBusiness.RECORD,NativeMigrationNotificationTombstones.RECORD,NativeMigrationSounds.RECORD)
         fun add(name: String){require(name.length<=8192&&!name.contains('\u0000'));names.add(name);require(names.size<=1024)}
         fun value(name: String)=read(name)?.let{StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))}
         NativeMigrationForeground.ACTIVE_NAMES.forEach(::add)
@@ -53,7 +53,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
         add(NativeVoicePreferenceRecord.RECORD)
         add(NativeVoiceDiscardCatalog.RECORD)
         read(NativeMigrationSounds.RECORD)?.let {raw->NativeChatNotificationSoundLibrary.binaryInventory(raw).keys.forEach(::add)}
-        val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata)
+        val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata,allowSourceEasyWork=true)
         val keys=mutableSetOf<String>()
         for(field in listOf("drafts","draftVersions","draftFiles","attachmentImportGenerations","selectedThreads","newProjects","generation","generationPreferences","replyModes","dismissedReceiptFailures","expanded","sidebar","workspaces"))
             metadata.optJSONObject(field)?.keys()?.forEach{keys.add(it)}

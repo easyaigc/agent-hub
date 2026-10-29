@@ -212,6 +212,20 @@ test(
         'apps/ios/FilePreviewKit/Package.resolved': '{"pins":[],"version":3}\n',
         ...Object.fromEntries(
           [
+            'apps/android/src/androidTest/java/com/agenthub/android/NativeSoundForeignWitnessProvider.java',
+            'scripts/mobile/fixtures/android/os/Looper.java',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/jvm/android/util/Base64.java',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase1/validation.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase2/validation.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase3/validation.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/boundaries.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase1/validation.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/validation.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase2/resource-overlay.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase5/validation.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase9-text-visibility/validation.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/native-boundaries/numeric-probe.init.gradle',
+            'docs/plans/android-alignment-20261022/parallel/p8-easywork/numeric-fix/validation.init.gradle',
             'apps/android/src/androidTest/java/com/agenthub/android/OwnedAcceptanceDocuments.java',
             'apps/android/src/androidTest/java/com/agenthub/android/OwnedExternalSourceActivity.java',
             'apps/android/src/androidTest/java/com/agenthub/android/OwnedPhotoMediaActivity.java',
@@ -223,6 +237,19 @@ test(
         ),
       };
       for (const [name, body] of Object.entries(ciSources)) await write(name, body);
+      const soundSources = [
+        'apps/android/src/main/assets/chat-notification-sounds/v1/attention.wav',
+        'apps/android/src/main/assets/chat-notification-sounds/v1/chime.wav',
+        'apps/android/src/main/assets/chat-notification-sounds/v1/soft.wav',
+        'apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.m4a',
+        'apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.mp3',
+      ];
+      const soundBytes = new Map();
+      for (const name of soundSources) {
+        const bytes = await readFile(new URL('../' + name, import.meta.url));
+        soundBytes.set(name, bytes);
+        await write(name, bytes);
+      }
       await write('skills/codex-host-connect/SKILL.md', 'Synthetic packaging fixture.\n');
       for (const name of ['bonjour-service', 'qrcode']) {
         await write(
@@ -249,6 +276,15 @@ test(
         output: join(tmp, 'valid.zip'),
       });
       assert.match(valid.sha256, /^[a-f0-9]{64}$/);
+      for (const [name, bytes] of soundBytes)
+        assert.deepEqual(
+          execFileSync('/usr/bin/unzip', [
+            '-p',
+            valid.archive,
+            'codex-host-connect/assets/codex-manage/' + name,
+          ]),
+          bytes,
+        );
       for (const [name, body] of Object.entries(ciSources))
         assert.equal(
           execFileSync(
@@ -271,6 +307,24 @@ test(
           ),
           emitted,
         );
+      const changedSound = soundSources[0];
+      await write(changedSound, Buffer.from('changed unreviewed bytes'));
+      const changedSoundOutput = join(tmp, 'changed-sound.zip');
+      await assert.rejects(
+        packageHostConnect({ repository, taskHubBundle, output: changedSoundOutput }),
+        /Reviewed synthetic source fingerprint changed/,
+      );
+      await assert.rejects(readFile(changedSoundOutput), { code: 'ENOENT' });
+      await write(changedSound, soundBytes.get(changedSound));
+      const unknownSound = 'apps/android/src/androidTest/assets/private-recording.m4a';
+      await write(unknownSound, soundBytes.get(changedSound));
+      const unknownSoundOutput = join(tmp, 'unknown-sound.zip');
+      await assert.rejects(
+        packageHostConnect({ repository, taskHubBundle, output: unknownSoundOutput }),
+        /Review unknown source file.*private-recording\.m4a/,
+      );
+      await assert.rejects(readFile(unknownSoundOutput), { code: 'ENOENT' });
+      await rm(join(repository, unknownSound));
       const unknown = 'apps/android/src/androidTest/java/Unknown.java';
       await write(unknown, '// not reviewed for distribution\n');
       const unknownOutput = join(tmp, 'unknown.zip');

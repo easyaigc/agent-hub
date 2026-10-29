@@ -1,0 +1,135 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "ownBranchBase": "7c40d07b4714da88865c2797c35e006c2f3c88be",
+  "exactSharedBase": {
+    "sourceSha256": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+    "expandedSourceSha256": "d7f4feafdd9599534863c262340900215dcb493504906fc963540c97e330223d",
+    "appSha256": "b0eb048ca470eef44468d57b506f92f7dd2bbb0fd777538b5e8a6b39904538ce",
+    "testSha256": "8a7c22d6dd577c163ef246581e57b97b48cd0a2ee5aa0b14947fd20558423c1b"
+  },
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+      "baseSha256": "f229ef5c4701101cc2571a36595b3fba17d298d36c320a480cbc8885003d23bd",
+      "proposedSha256": "20aacbc4a7947f5c9c71dbebb1df52ec30d66b7a80ac602fc1f3871fa8d59bd8"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": {
+      "baseSha256": "0b6ed97218e20f129f8ed35a38073945d93a9cf55497a3ee4528ea0409b9d4ac",
+      "proposedSha256": "da2d733e42ba2a8101757f2c24410eb428500caa6e6e5c1f26d5cfbddfbc8b59"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkFormAction.kt": {
+      "baseSha256": null,
+      "proposedSha256": "9a27edacef80c402af0bbc2442311ceb8f3f08501831650e8c6c6fb7c9747551"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormActionTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "b5a5463868700bead2bf9e07b160ca8774f5766fbc4c96d5eac9ee383fcf53da"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "75e422223bbd1a30ea727601cbe49d32cc8d3a23db00e12340df23bbe000f5a4"
+    }
+  },
+  "changes": {
+    "Page": "one perform wrapper expression only",
+    "Session": "one narrow additive method only; every other byte restored by inverse check",
+    "newCore": "NativeEasyWorkFormAction; lazy Session child + original lease/IO/registry owner before start",
+    "authorizationAndCandidateProductionFiles": "unchanged"
+  },
+  "exactApply": {
+    "at": "2026-10-29T01:18:33.150455+00:00",
+    "exactFiveFilePatchAppliedAndReadback": true,
+    "parentMutated": false,
+    "baseSource": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+    "SessionOriginalBytesRecoveredByRemovingOnlyNewMethod": true,
+    "SessionAddedLines": 8,
+    "PageOriginalBytesRecoveredByReversingOnlyPerformExpression": true,
+    "parentTargetFieldsCopyP8CandidateAndOtherFunctionsUntouched": true,
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+        "baseSha256": "f229ef5c4701101cc2571a36595b3fba17d298d36c320a480cbc8885003d23bd",
+        "proposedSha256": "20aacbc4a7947f5c9c71dbebb1df52ec30d66b7a80ac602fc1f3871fa8d59bd8"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": {
+        "baseSha256": "0b6ed97218e20f129f8ed35a38073945d93a9cf55497a3ee4528ea0409b9d4ac",
+        "proposedSha256": "da2d733e42ba2a8101757f2c24410eb428500caa6e6e5c1f26d5cfbddfbc8b59"
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkFormAction.kt": {
+        "baseSha256": null,
+        "proposedSha256": "9a27edacef80c402af0bbc2442311ceb8f3f08501831650e8c6c6fb7c9747551"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormActionTest.kt": {
+        "baseSha256": null,
+        "proposedSha256": "b5a5463868700bead2bf9e07b160ca8774f5766fbc4c96d5eac9ee383fcf53da"
+      },
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt": {
+        "baseSha256": null,
+        "proposedSha256": "75e422223bbd1a30ea727601cbe49d32cc8d3a23db00e12340df23bbe000f5a4"
+      }
+    }
+  },
+  "compile": {
+    "at": "2026-10-29T01:18:33.217712+00:00",
+    "baseGitBuildScaffold": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+    "parentSource": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+    "source": "851d0890b573b43acd4dfb85e069fde7fcdfc0f3a0b6ddc51d6e04a08fb138f7",
+    "nativeInputCount": 698,
+    "sourceMeaning": "entire exact parent native/core/protocol file set +3 files; path+NUL+raw+NUL hashing; two existing Page/Session exact overlays",
+    "appRunnerBuild": "pass",
+    "artifacts": {
+      "app.apk": {
+        "sha256": "7ea0e1aff91a1abbe1b3e534ab5669273f8dbe2e0a763f9097924d64d261a3ed",
+        "bytes": 25362223
+      },
+      "runner.apk": {
+        "sha256": "6dd18c6597d3af60cab9b083ec1d0c78c3668b4d68829846726d47a31bb1cea5",
+        "bytes": 5929018
+      }
+    },
+    "jvmAuxiliary": {
+      "cases": 3,
+      "actualCoordinatorInstall": true,
+      "actualBlockedIOBodyExit": true,
+      "sameOwnerAfterCancelledWait": true,
+      "sealedStartRejected": true,
+      "networkRequests": 0,
+      "nativeExecuted": false
+    },
+    "newNativeMethodsPrepared": 5,
+    "newNativeExecutedHere": false,
+    "twoActualLifecycleMethods": "prepared, parent execution required; direct bridge invocation with real Composition/Activity, not actual pairing button/peer acceptance",
+    "fullP7Passed": false
+  },
+  "jvmAuxiliary": {
+    "at": "2026-10-29T01:17:43.987564+00:00",
+    "source": "851d0890b573b43acd4dfb85e069fde7fcdfc0f3a0b6ddc51d6e04a08fb138f7",
+    "coveredSource": {
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAuthorizationCoordinator.kt": "478c572ab47a6b7a328bfdba0fdeb2bf03708b0f556c35e81f0b2309602bbd6e",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionLease.kt": "305569bddc68620269a0a33629ee8d0eda39ef0358bd027c222fb6496f4924db",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkMigrationOwners.kt": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt": "98084291ca1f31356402605b22ff59907e7689afdfd155cbdeb0637549a53dc5",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkFormAction.kt": "9a27edacef80c402af0bbc2442311ceb8f3f08501831650e8c6c6fb7c9747551",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormActionTest.kt": "b5a5463868700bead2bf9e07b160ca8774f5766fbc4c96d5eac9ee383fcf53da"
+    },
+    "result": {
+      "cases": 3,
+      "actualCoordinatorInstall": true,
+      "actualBlockedIOBodyExit": true,
+      "sameOwnerAfterCancelledWait": true,
+      "sealedStartRejected": true,
+      "networkRequests": 0,
+      "nativeExecuted": false
+    },
+    "runtime": "actual compiled production classes;JVM17 -Xmx48m",
+    "hostFacades": "org.json JVM; in-memory AuthorizationRecords adapter (actual coordinator) instead of Android Keystore/storage",
+    "notTested": "Session Main guard, real Composition/Activity, encrypted write, HTTP/TLS/network/device; two new native lifecycle methods prepared only"
+  },
+  "nativeNewExecution": "not executed here; two lifecycle +three auxiliary-compatible methods compiled",
+  "parentPriorNativeReuse": {
+    "source": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+    "businessColdIOAndSession": 14,
+    "binaryVoiceUI": 13,
+    "candidate": 5,
+    "meaning": "accepted prior fingerprint only; this source not natively passed"
+  },
+  "fullP7Passed": false
+}

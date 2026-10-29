@@ -1,0 +1,29 @@
+{
+  "featureIds": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+  "designIds": ["UI12", "UI21"],
+  "commonAssertions": [
+    "Leaving a connection form can release UI without declaring its authorization IO complete.",
+    "A migration lease waits for complete admitted form actions and inherited HTTP callbacks/cleanup.",
+    "Cancelling migration wait retains the same resource and blocks a second migration until actual exit.",
+    "Original unknown claim/grant operations are retained and never replayed by migration."
+  ],
+  "android": {
+    "implementation": "five-file exact parent proposal; Page perform wrapper +additive Session gate +owned child/registry bridge",
+    "auxiliary": "App/runner compile; exact inverse/shared-byte audit; JVM3",
+    "native": "Composition-dispose/grant-install and Activity-pause/HTTP-cleanup scenarios prepared only",
+    "pairingPeerSignerRealDEV": "not established"
+  },
+  "ios": {
+    "codeChanged": false,
+    "equivalentLifecycleAssertion": "requires independent URLSession/task/form acceptance; Android owner proof cannot substitute",
+    "nativeOrCrossFormatNewPass": false
+  },
+  "design": {
+    "fieldsTokensCopyChanged": false,
+    "state": "existing busy/released form UI; actual retirement retained separately",
+    "P8SixTargetFieldEdits": "separate parent-owned work, unchanged by this patch"
+  },
+  "centralTablesChangedHere": false,
+  "A6AndTaskProjectManagement": "paused",
+  "fullP7Passed": false
+}

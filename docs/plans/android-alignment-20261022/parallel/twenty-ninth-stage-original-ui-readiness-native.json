@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR29",
+  "sourceSha256": "640e6fed889e5ed2f12ba5de33bf4d78e4f7cbe0091695566934a0f510558166",
+  "appSha256": "3a2fdeb9855bb52e72e2a705da3e9b14e45d26e8f012a510b272a46a4f0ccef0",
+  "runnerSha256": "96f0be6027a906cb214c890d1f5b4a530ee13f92ddf229b0bb51c17e249c6909",
+  "productionAppExactlyMatches": "PAR28 3a2fdeb9855bb52e72e2a705da3e9b14e45d26e8f012a510b272a46a4f0ccef0",
+  "newNative": {
+    "api26ImportedVoiceEndWaitingUiPassed": 1,
+    "assertions": [
+      "actual end-waiting button and both labels",
+      "zero terminal calls",
+      "original ID/manifest/raw record/audio and draft preserved",
+      "three owned window captures"
+    ],
+    "api37SensitiveFieldPreconditionFailed": 1,
+    "actualSystemPickersStarted": 0,
+    "saveInputs": 0,
+    "exportBytes": 0,
+    "remainingSafMethodsNotStarted": 2
+  },
+  "remainingFailure": "Native password AX single-match before first actual picker;page domain state alone is insufficient UI readiness evidence",
+  "previousResults": "PAR28 binary/voice/UI/CREATE+OPEN cancel results retained at original runner;not rerun or silently upgraded",
+  "defaultProofs": 2,
+  "defaultPreservedFields": [
+    "draftsPreserved",
+    "draftFilesPreserved",
+    "draftVersionsPreserved",
+    "attachmentImportGenerationsPreserved",
+    "photoSourcesPreserved",
+    "recentPhotoPreferencesPreserved",
+    "photoAuthorizationPreserved",
+    "documentRequestsPreserved",
+    "photoRequestsPreserved",
+    "cameraRequestsPreserved",
+    "cameraOutputsPreserved"
+  ],
+  "oldFailedPicker": "f34ffe43 record/source retained;closed own dangling chooser after caller gone;not replayed",
+  "realModelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "fullP7Closed": false,
+  "ios": "unchanged;A6 paused"
+}

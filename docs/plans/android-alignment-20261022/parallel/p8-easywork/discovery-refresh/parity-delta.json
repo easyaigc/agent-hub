@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "id": "android-p8-discovery-candidate-writeback-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-cold-accepted-a5-next-20261029-1",
+  "features": ["F06", "F08", "F09", "F18", "F43", "F46"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S05", "S11", "S14", "S18"],
+  "commonAssertion": "Late descriptive route repair must not re-add a deleted target or overwrite current target/credential/preference/name/online/routes/draft/busy/unknown intent. No new authorization or command.",
+  "dualPlatformImpact": {
+    "android": "Narrow shared Session proposal for post-credential-IO generation/target/ref/preference guard and live merge",
+    "ios": "Actual MainActor path has no await before metadata publication; no code change or new acceptance"
+  },
+  "uiTokensCopyChanged": false,
+  "implementationStatus": "patch supplied, not integrated into parent production yet",
+  "auxiliary": {
+    "baseCompiled": true,
+    "tests": 12,
+    "behavioralFailures": 8,
+    "proposedCompiled": true,
+    "proposedPassed": 12,
+    "kind": "Exact source slices in synthetic outer state/store, not full Session/native proof"
+  },
+  "native": {
+    "status": "passed",
+    "inputs": 484,
+    "sourceSetSha256": "8218c837c56714ed3994e2099c26830fcc0df5a0b0752737db0ca78562015750",
+    "allFinalInputsVerified": true,
+    "sourceContext": "own shared shadows/resource overlay; parent not compiled or written",
+    "preparedMethods": 5,
+    "executedMethods": 0,
+    "newApks": 0
+  },
+  "parentCentralRegistration": "Parent-owned product/design/acceptance merge delta; do not erase other workline records or inflate A5 closure",
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCandidateRefreshTest.kt": "7c8fbc25694b383ce8c3b61f13cb36d8da4b5d8d414c11995bf70a00a84353e3",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/discovery-refresh/parent-session.patch": "2f2795b90316b560d6b156a8fef946e44c24ccfca8b51cf5a016a940d12c2f29",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/discovery-refresh/own-session.patch": "7597a1ff80723faed636c18fd78232ee0965793e7b83c1d11130eb7389c61541",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/discovery-refresh/run-source-jvm.py": "1e10d7eaf8ad4d179d2fc0ff647a236e28f8281b64b67a9044678bb0a698f4b1",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/discovery-refresh/jvm/CandidateRefreshRaceTest.kt": "1852697fb5c10d6c1597b1d10bbe23c2923e3341435f742453d1762df6b166b6"
+  },
+  "a5Closure": false,
+  "a6": "paused"
+}

@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR26",
+  "sourceSha256": "a608c48c21d6e5313b96fd449afbb60961af11d91750966880cd4ee95d4229e8",
+  "appSha256": "47ff2558d50384358e6c7d3dd10159785dd99afa20994be77a0d954ae3179874",
+  "runnerSha256": "e232e9094bd53c90b4830e9ee90481285fcf387954cf5436a7f828e95e7dfa25",
+  "api26": {
+    "methods": [
+      {
+        "label": "saved-voice-system-discard-components",
+        "expected": 20,
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0,
+        "sourceSha256": "a608c48c21d6e5313b96fd449afbb60961af11d91750966880cd4ee95d4229e8",
+        "logSha256": "94a9cc8f31589f8422334be422e370158a23030a1e1883c746214372cb6ab8c8"
+      },
+      {
+        "label": "saved-voice-ui-and-migration-regression",
+        "expected": 12,
+        "passed": 2,
+        "failed": 10,
+        "skipped": 0,
+        "sourceSha256": "a608c48c21d6e5313b96fd449afbb60961af11d91750966880cd4ee95d4229e8",
+        "logSha256": "bc5b4ba65abc3d61df7817114cecbdd2eaa8d38332447d1621f2a0642a065f6d"
+      },
+      {
+        "label": "voice-permission-lifecycle",
+        "expected": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "sourceSha256": "a608c48c21d6e5313b96fd449afbb60961af11d91750966880cd4ee95d4229e8",
+        "logSha256": "458678e42b1276294034bc16c3f2d8b748b38aa0b0e72c39dd604aa8bb7fa8d1"
+      },
+      {
+        "label": "home-and-confirmation-pure-native",
+        "expected": 17,
+        "passed": 17,
+        "failed": 0,
+        "skipped": 0,
+        "sourceSha256": "a608c48c21d6e5313b96fd449afbb60961af11d91750966880cd4ee95d4229e8",
+        "logSha256": "67003e04e11c321d3a21841a1d42a6e9ea88df88899faa715e69f132cece511c"
+      }
+    ],
+    "passed": 43,
+    "failed": 10,
+    "skipped": 0,
+    "defaultProofs": 16,
+    "preservedFields": [
+      "draftsPreserved",
+      "draftFilesPreserved",
+      "draftVersionsPreserved",
+      "attachmentImportGenerationsPreserved",
+      "photoSourcesPreserved",
+      "recentPhotoPreferencesPreserved",
+      "photoAuthorizationPreserved",
+      "documentRequestsPreserved",
+      "photoRequestsPreserved",
+      "cameraRequestsPreserved",
+      "cameraOutputsPreserved"
+    ]
+  },
+  "api37": {
+    "homeAndTreeResolverAuditPassed": 2,
+    "actualAppTreeGrantPassed": 1,
+    "originalOperation": "bce8e561-41cf-4205-881b-26b498c5c207",
+    "originalRegistryCallback": true,
+    "persistedReadWrite": true,
+    "emptyOwnedDirectory": true,
+    "singleObservedOriginalConfirmation": true,
+    "productSafPassed": false
+  },
+  "total": {
+    "passed": 46,
+    "failed": 10
+  },
+  "failures": [
+    {
+      "count": 2,
+      "scope": "new saved voice UI fixture",
+      "reason": "child suffix exceeds existing 32 character rule",
+      "assigned": "p7-reading-voice"
+    },
+    {
+      "count": 8,
+      "scope": "migration voice export regression",
+      "reason": "IncompleteMigrationInventory at typed snapshot; cause under investigation",
+      "assigned": "p7-migration"
+    }
+  ],
+  "voiceScope": "Five new component methods passed; two new UI methods failed before interaction. Synthetic original/callbacks only; no real recognizer/microphone/file ASR/Host/model.",
+  "evidenceKinds": {
+    "build": "82 tasks success",
+    "mobileParity": "passed",
+    "native": "actual Android instrumentation",
+    "ios": "source unchanged;A6 paused;no new physical result"
+  },
+  "remaining": [
+    "actual product SAF3",
+    "voice UI2 repair",
+    "migration voice8 repair",
+    "full active EasyWork graph",
+    "saved-file phone ASR/real acoustic",
+    "full P7/P8/P9 DEV"
+  ],
+  "unknownOperationsReplayed": 0,
+  "realModelInputs": 0,
+  "realHostBusinessWrites": 0
+}

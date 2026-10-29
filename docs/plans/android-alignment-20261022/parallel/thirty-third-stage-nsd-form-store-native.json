@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR33",
+  "sourceSha256": "caba792d62737d6f7600f5e0aa6743a5c67587071bd620b7570a5ea08ccb1527",
+  "expandedSourceSha256": "a0b23391f900bb5a617db6b97a5db0131857cea1005d410fdc9dfb8e6aff70b9",
+  "appSha256": "aa022797997d265324ac96569a4bb99a896c9644b6347651f590fc6f37c1f572",
+  "runnerSha256": "e163b8e74c117cfaf2353a13f2b8176857ab653fac3a542d519896c02678f33a",
+  "native": {
+    "calls": 54,
+    "passed": 51,
+    "failed": 3,
+    "formLifecyclePassed": 2,
+    "controlledNsdPassed": 19,
+    "actualBusinessIoPassed": 12,
+    "businessDifferentPidColdPassed": 2,
+    "p8UiPassed": 3,
+    "p8UiFailed": 2,
+    "candidateGuardPassed": 5,
+    "p9OneOriginalBootstrapPassed": 1,
+    "p9ExistingKeyStorePassed": 4,
+    "p9OtherPidStoreFailed": 1,
+    "p9SameOriginalReadOnlyVerifyPassed": 1,
+    "actualSdk26Passed": 2
+  },
+  "sdk": {
+    "api": 26,
+    "realDiscoveryStopped": true,
+    "realNaturalResolutionTerminal": true,
+    "ownAdvertisementJoined": true,
+    "externalPeerUsed": false,
+    "stopAck34BranchVerified": false
+  },
+  "cold": {
+    "writerPid": 20364,
+    "readerPid": 20478,
+    "sameCandidate": true
+  },
+  "defaultProofs": 11,
+  "defaultPreservedFields": [
+    "draftsPreserved",
+    "draftFilesPreserved",
+    "draftVersionsPreserved",
+    "attachmentImportGenerationsPreserved",
+    "photoSourcesPreserved",
+    "recentPhotoPreferencesPreserved",
+    "photoAuthorizationPreserved",
+    "documentRequestsPreserved",
+    "photoRequestsPreserved",
+    "cameraRequestsPreserved",
+    "cameraOutputsPreserved"
+  ],
+  "failures": [
+    "UI helper incorrectly requires wrapping for every short field including fixed agent easywork; complete text/overflow checks now pass before wrap assertion, glyph/clip rules retained for next corrected driver",
+    "CrossPID first HOLD Binder rejects with IllegalArgumentException; actual body entered, before/after default digest unchanged and existing key preserved; transport flags under source review, no asserted root cause yet"
+  ],
+  "pending": [
+    "P8 actual complete short-field and long-field UI rerun",
+    "P9 crossPID lock single-claim success before natural Main hook adoption",
+    "SDK37 NSD actual callbacks and stop-ack branch",
+    "Physical phone, full iOS source/visual matrix and real Electron/model DEV",
+    "File-only saved-recording ASR integration and actual acoustic verification",
+    "Natural OS-first-click distinct from instrumented target reader"
+  ],
+  "realModelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "ios": "A6 and task/project business paused"
+}

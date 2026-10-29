@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "16-real-system-migration-picker-ui-preparation",
+  "featureIds": ["F42", "F55", "F56"],
+  "productionChanges": false,
+  "exclusiveTestFile": "NativeMigrationSystemPickerUiTest.kt",
+  "commonAssertions": [
+    "Only actual App-launched system picker results consume original issued IDs",
+    "Exact own encrypted source bytes survive preview/cancel/explicit confirmation",
+    "Unknown and unsubmitted originals are never automatically queried, uploaded or submitted",
+    "Only the just-created own UUID document may be removed after exact fingerprint verification",
+    "Passwords and original user content are absent from evidence"
+  ],
+  "bothPlatforms": {
+    "android": "Three real-SAF native UI methods prepared against parent frozen source; compiled only",
+    "ios": "No source or XCTest change; no new execution; A6 paused"
+  },
+  "design": {
+    "surfaces": [
+      "actual settings/safe migration/password",
+      "CreateDocument/OpenDocument system UI",
+      "preview/confirm/cancel"
+    ],
+    "tokensAndCopy": "unchanged; source catalog used",
+    "systemDifference": "Observed device/API-specific DocsUI controls; no guessed cross-platform equivalence"
+  },
+  "observedAuxiliaryOnly": {
+    "operation": "parent-p7-observed-docsui-create-controls-20261029-1",
+    "probe": "e1c1e56c-4a54-4da5-96d3-f61b3889f403",
+    "appActivityResultPass": false
+  },
+  "nativeExecutedHere": false,
+  "realHostOrModel": false,
+  "transport": "owned loopback workspace component fixture",
+  "nativePending": [
+    "parent fresh exact acceptance lease",
+    "explicit own tree URI grant/preselected folder",
+    "observed cancellation count",
+    "OpenDocument search/confirmation observations if exact new filename unavailable",
+    "actual three-method execution and default11 proof"
+  ],
+  "acceptance": "parallel/p7-reading-voice/stage16-system-picker-ui.md",
+  "centralOwner": "parent coordinator",
+  "scope": "Only new exclusive test/docs; no parent or production writes; no device execution; A6/task/project paused"
+}

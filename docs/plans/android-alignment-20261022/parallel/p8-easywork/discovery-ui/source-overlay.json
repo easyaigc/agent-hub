@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "operationId": "parent-p8-discovery-reviewed-ui-next-20261029-1",
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": {
+      "parentObservedBaseSha256": "da2fdf885cfb982a9d8f2f846672c4b976ac98b0fe7141ff4c2e0e2e789d02e5",
+      "parentProposedSha256": "511ca7687db8b9c8e5569cbb4d726cf9d3b020217256a62b81a4b6874ec730cd",
+      "childCommittedBaseSha256": "da2fdf885cfb982a9d8f2f846672c4b976ac98b0fe7141ff4c2e0e2e789d02e5",
+      "childProposedSha256": "511ca7687db8b9c8e5569cbb4d726cf9d3b020217256a62b81a4b6874ec730cd",
+      "parentPatch": "connection-page.patch",
+      "parentPatchSha256": "149ed2afdd899b979f08e9eebfd0d30398cc353288bf0c82c9c6761a2a92a075",
+      "parentWritten": false,
+      "parentCompiled": false
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": {
+      "parentObservedBaseSha256": "ad0f57c112b54837c959410c6c633aa2db2ece9539e35082002aae71da0c861f",
+      "parentProposedSha256": "04e86bf72049eb952eb78d53b079f54037810fd1e22cd34c4e5b8a8aa3d90f93",
+      "childCommittedBaseSha256": "dc31d85930d5119b91777fa78f503cc1088aaaf2769265731028d33a25632e9d",
+      "childProposedSha256": "80f2a8c6cebc0f08109c8b9adba7a7d811eae24a1f2862f2866b4e0f11b8b5ca",
+      "parentPatch": "native-sheets.patch",
+      "parentPatchSha256": "20a33c5554bcd829d0c143a38b3f994054b605038d4b39bcd62b3ddcfb778edd",
+      "parentWritten": false,
+      "parentCompiled": false
+    }
+  },
+  "sharedSessionOrMainChanges": false,
+  "parentOtherWorkPreserved": true
+}

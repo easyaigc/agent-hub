@@ -1,0 +1,54 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "parentBase": "a56c7225a7453374fd9904c3811e425479a69714",
+  "sourceFingerprint": "ef77d1ee887063db67b8c9fe5978db60aa39e3be4b0e031d9465f1e66d1b8fa7",
+  "sourceFiles": 772,
+  "overlays": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt": {
+      "baseSha256": "cda5989e395becf430aa557ccc9fd282d6dc228abbe348f27ee579720dd71b21",
+      "proposedSha256": "0239a38fa0ee65c998373ca9ca73a50ec83665e9af8ac78ccfec47008938ca57"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt": {
+      "baseSha256": "abd8852f100fda6cfae9189d095d28c1f2731722536890c60a9686afd02384e9",
+      "proposedSha256": "904c807158a3518800d267b85db2f0a62dd3e6c7b0de72ee583731a127cb5442"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt": {
+      "baseSha256": "f0ff5f66861caee3b1cdeadcd11c4e64836e1e04e1317d4aed2e0a3e0e8c2969",
+      "proposedSha256": "ce898490bd0de18fb09e2944b9a4fc425584d7e93234a0e547ce690b54d43ec5"
+    }
+  },
+  "outputs": {
+    "app.apk": {
+      "sha256": "71ea356e3a249bf1c034015b30a6ad1f2049cf657618dbd8dfa47f7c26608a33",
+      "bytes": 25295355
+    },
+    "runner.apk": {
+      "sha256": "059e8d2b7f8f3d91413b540515497fb7e8ef7f365446be3f4ea716cefb9decbe",
+      "bytes": 5671822
+    }
+  },
+  "excludedAndUnchangedSharedFiles": {
+    "MainActivity.kt": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8",
+    "MobileSession.kt": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+    "NativeChatNotificationCoordinator.kt": "ee4eef9771fc56c182826c1ece367697746ece7e72edc0bc11a834fea77ebb4a",
+    "VoiceInputController.kt": "25d50f8f31856fdf097def52b0653d6ddd1376257bac1aca7148a21faca1d307",
+    "VoiceInputView.kt": "e0ab4904b9d3a353519d01322c946e170c10535ef05345e933324b3a55b160ca",
+    "EasyWorkAuthorizationCoordinator.kt": "478c572ab47a6b7a328bfdba0fdeb2bf03708b0f556c35e81f0b2309602bbd6e",
+    "EasyWorkConnectionLeaseBinding.kt": "6a42b37ee1e3b4ae6f995205acb1799ad5a9085cff6366ffb43594fcdcc1a4bb",
+    "EasyWorkDeviceAuthorization.kt": "1b8681f4fb686fe877eb914e74260fc825dc65fa764e9c3ac938c9ca49ad2256",
+    "EasyWorkConnectionPage.kt": "da2fdf885cfb982a9d8f2f846672c4b976ac98b0fe7141ff4c2e0e2e789d02e5"
+  },
+  "originalParentNativeHot": {
+    "passed": 4,
+    "failed": 2,
+    "total": 6,
+    "source": "920d8476",
+    "fullFingerprintsNotSupplied": true
+  },
+  "currentAppRunnerBuild": "passed",
+  "nativePreparedMethods": 10,
+  "nativeExecutedHere": false,
+  "hostProbe": "4 actual producer states and6 negative local receipt cases pass; old production reader reproduces original ClassCastException. JVM facades exclude native parser/storage/Keystore.",
+  "activeBusinessWipExcluded": true,
+  "fullP7Passed": false
+}

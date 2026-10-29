@@ -1,10 +1,10 @@
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, rename, mkdir, lstat, chmod } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import https from 'node:https';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomUUID, X509Certificate } from 'node:crypto';
 import { createGunzip } from 'node:zlib';
 
 const fail = (code) => {
@@ -16,6 +16,63 @@ const requireValue = (value, code) => {
   if (!value) fail(code);
 };
 const digest = (value) => createHash('sha256').update(value).digest('hex');
+const pinnedTlsOptions = async (pin) => {
+  if (pin === undefined) return {};
+  requireValue(
+    pin !== null &&
+      typeof pin === 'object' &&
+      typeof pin.sha256 === 'string' &&
+      /^[a-fA-F0-9]{64}$/.test(pin.sha256) &&
+      typeof pin.certificatePath === 'string' &&
+      isAbsolute(pin.certificatePath),
+    'INVALID_TLS_PIN',
+  );
+  const stat = await lstat(pin.certificatePath);
+  requireValue(
+    stat.isFile() && !stat.isSymbolicLink() && stat.size <= 65536,
+    'INVALID_TLS_PIN_CERTIFICATE',
+  );
+  const pem = await readFile(pin.certificatePath, 'utf8');
+  let certificate;
+  try {
+    requireValue(
+      /^\s*-----BEGIN CERTIFICATE-----\r?\n[A-Za-z0-9+/=\r\n]+-----END CERTIFICATE-----\s*$/.test(
+        pem,
+      ),
+      'INVALID_TLS_PIN_CERTIFICATE',
+    );
+    certificate = new X509Certificate(pem);
+    const now = Date.now();
+    // This directory contract supplies one self-signed leaf as its own trust anchor.
+    // OpenSSL need not verify a trust anchor's self-signature, so check it explicitly.
+    requireValue(
+      certificate.subject === certificate.issuer &&
+        certificate.verify(certificate.publicKey) &&
+        Date.parse(certificate.validFrom) <= now &&
+        now <= Date.parse(certificate.validTo),
+      'INVALID_TLS_PIN_CERTIFICATE',
+    );
+  } catch {
+    fail('INVALID_TLS_PIN_CERTIFICATE');
+  }
+  const expected = pin.sha256.toLowerCase();
+  requireValue(digest(certificate.raw) === expected, 'TLS_PIN_CERTIFICATE_MISMATCH');
+  return {
+    ca: pem,
+    rejectUnauthorized: true,
+    // A fresh agent prevents cross-Host reuse and resumed TLS sessions skipping the leaf check.
+    agent: false,
+    checkServerIdentity: (_hostname, peer) => {
+      if (!Buffer.isBuffer(peer.raw) || digest(peer.raw) !== expected) {
+        const error = new Error('TLS_PIN_MISMATCH');
+        error.code = 'TLS_PIN_MISMATCH';
+        return error;
+      }
+      // TLS has already verified the chain, signatures and validity. Only this exact
+      // leaf replaces DNS/IP name matching, including explicitly pinned leaves without SAN.
+    },
+  };
+};
 const privatePath = async (path, directory = false) => {
   const stat = await lstat(path);
   requireValue(
@@ -120,6 +177,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
       endpoint.pathname === '/',
     'HTTPS_ROOT_REQUIRED',
   );
+  const tlsOptions = await pinnedTlsOptions(host.tlsPin);
   const request =
     options.transport ??
     ((path, body, authenticated = true) =>
@@ -137,6 +195,7 @@ export async function main(args = process.argv.slice(2), options = {}) {
         const request = https.request(
           new URL(path, endpoint),
           {
+            ...tlsOptions,
             method: bytes === undefined ? 'GET' : 'POST',
             headers: {
               'Accept-Encoding': 'gzip',

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-stage30-long-ui-failure-20261029-1",
+  "source30Reference": {
+    "sourceSha256": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+    "appSha256": "b0eb048ca470eef44468d57b506f92f7dd2bbb0fd777538b5e8a6b39904538ce",
+    "runnerSha256": "8a7c22d6dd577c163ef246581e57b97b48cd0a2ee5aa0b14947fd20558423c1b",
+    "uiResult": "4 passed, 1 failed at initial exact rowName lookup, zero layout probes",
+    "candidateRegression": "Five matching Source30 local proofs; parent reports native5 passed; five unrelated historical proofs excluded",
+    "proposedSourceAcceptance": false
+  },
+  "nativeCompile": {
+    "compileExit": 0,
+    "inputs": 695,
+    "sourceSha256": "9d2eedb63fd7b22ce3331a49f4bcc426fbf2cf3cb31e9317cee12427d1c85718",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "preparedMethods": 5,
+    "extraKotlinJavaSources": [],
+    "runtimeTools": {
+      "gradlew": "ab5c0cad16305af2e619c159c1f58dd68d07fab9c11e36701e109c0277407f7a",
+      "gradle/wrapper/gradle-wrapper.properties": "e5f6f1ec1a7f6e95b2d9f2b1c1c0a27ea2190e6cf2868b6850e27495af4f3db8",
+      "scripts/mobile/gradle.mjs": "df2bb5bb8169181df83543de8ff50353dab5f0cf2c9c3e78eb1d103b57ca99dc"
+    }
+  },
+  "nativeExecution": {
+    "status": "unexecuted for proposed source",
+    "preparedMethodCountUnchanged": 5,
+    "newMethodCount": 0,
+    "extendedMethod": "importedSavedRowOnlyOffersExplicitPairingWithoutAChannelOrOriginalMutation",
+    "correctedMethod": "longSavedRowsAndTargetFieldsRemainUsableInShortViewport",
+    "buildArgument": "p8DiscoveryUiBuild exact new source/app/runner tuple",
+    "executedByLeaf": 0,
+    "newApks": 0
+  },
+  "sharedSessionMainAuthChanges": false,
+  "a5Complete": false,
+  "a6": "paused",
+  "deviceHostModelActionsByLeaf": 0,
+  "rootCheck": {
+    "exitCode": 1,
+    "context": "Restored own leaf checkout; frozen proposal compiled separately",
+    "formatGithubSyncLintPassed": true,
+    "stoppedAt": "check:mobile-parity",
+    "reason": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "preExistingLeafCentralLedgerGap": true,
+    "parentOwnsCentralMerge": true,
+    "remainingRootChecksNotExecuted": true
+  }
+}

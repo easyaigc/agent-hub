@@ -1,0 +1,767 @@
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveColdTest.kt
+@@ -0,0 +1,62 @@
++package com.agenthub.android
++
++import android.os.Process
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import androidx.test.platform.app.InstrumentationRegistry
++import org.json.JSONObject
++import org.junit.*
++import org.junit.Assert.*
++import java.io.File
++import java.util.UUID
++
++/** Fresh isolated writer/reader pair. Exact original pending/confirmed authority stays archive-only. */
++class NativeMigrationEasyWorkArchiveColdTest {
++    @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    @Before fun setup(){ui.waitUntil(30_000){!ui.activity.session.restoring};ui.runOnIdle{owned=OwnedControlAcceptance(ui.activity,"migration-easywork-cold")}}
++    @After fun finish(){if(::owned.isInitialized)ui.runOnIdle{owned.session.leaveForeground();owned.verifyDefault()}}
++    private fun runId()=requireNotNull(InstrumentationRegistry.getArguments().getString("easyWorkArchiveColdRun")){"Fresh parent-owned EasyWork cold UUID required"}.also {require(UUID.fromString(it).toString()==it)}
++    private fun namespace(run: String,source: Boolean)=if(source)"P7-ew-source-$run"else"P7-ew-cold-$run"
++    private fun storage(run: String,source: Boolean)=namespace(run,source).let {NativeSessionStorage(ui.activity,it,it)}
++    private fun file(run: String)=File(ui.activity.filesDir,"acceptance/easywork-archive-cold-$run.json").also {require(it.canonicalFile==File(File(ui.activity.filesDir,"acceptance").canonicalFile,it.name))}
++    private fun hashes(v: JSONObject)=v.keys().asSequence().associateWith {v.getString(it)}
++    @Test fun stageFreshOriginalFenceAndUnactivatedCredentialForDifferentProcess() {
++        val run=runId();for(source in listOf(false,true))require(!File(ui.activity.noBackupFilesDir,namespace(run,source)).exists()){ "Original writer must not be replayed" };require(!file(run).exists())
++        val source=storage(run,true);val destination=storage(run,false);val rows=MigrationActivationFixtures.payload().getJSONObject("records");rows.keys().forEach {source.write(it,rows.getString(it))}
++        val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"confirmed-missing");val names=seed.originalNames+NativeMigrationEasyWorkFixtures.oidc(source,seed.identity)
++        val rawHashes=names.associateWith {NativeChatNotificationWire.hash(requireNotNull(source.read(it)))};val sourceBefore=MigrationActivationFixtures.tree(source)
++        val encrypted=File(owned.folder,"original-ew.encrypted");NativeMigrationExport(ui.activity,source).sealFile(encrypted,"owned original EasyWork cold password")
++        val receipt=NativeMigrationCandidateStore(ui.activity,destination).stageFile(UUID.randomUUID().toString(),encrypted,"owned original EasyWork cold password")
++        assertEquals(sourceBefore,MigrationActivationFixtures.tree(source))
++        file(run).writeText(JSONObject().put("version",1).put("kind","p7-easywork-archive-cold-v1").put("run",run).put("writerPid",Process.myPid())
++            .put("candidateId",receipt.id).put("candidateSha256",receipt.sha256).put("recordCount",receipt.recordCount).put("sourceDeviceId",seed.identity.deviceId)
++            .put("rawHashes",JSONObject(rawHashes)).put("sourceCiphertext",JSONObject(sourceBefore)).put("rootCiphertext",JSONObject(MigrationActivationFixtures.tree(destination)))
++            .put("candidateCiphertext",JSONObject(MigrationActivationFixtures.tree(destination.child(ui.activity,"migration-candidates")))).toString())
++        assertTrue(encrypted.delete());owned.verifyDefault()
++    }
++    @Test fun readSameOriginalCandidateAndConfirmNoIncomingAuthorityUnderDifferentPid() {
++        val run=runId();val proof=file(run);require(proof.isFile&&proof.length() in 1..128*1024);val fixture=StrictMigrationJson.parse(proof.readBytes())
++        require(fixture.keys().asSequence().toSet()==setOf("version","kind","run","writerPid","candidateId","candidateSha256","recordCount","sourceDeviceId","rawHashes","sourceCiphertext","rootCiphertext","candidateCiphertext"))
++        require(fixture.get("version")==1&&fixture.get("kind")=="p7-easywork-archive-cold-v1"&&fixture.get("run")==run);assertNotEquals(fixture.getInt("writerPid"),Process.myPid())
++        for(source in listOf(false,true))require(File(ui.activity.noBackupFilesDir,namespace(run,source)).isDirectory)
++        val source=storage(run,true);val destination=storage(run,false);val candidate=destination.child(ui.activity,"migration-candidates")
++        assertEquals(hashes(fixture.getJSONObject("sourceCiphertext")),MigrationActivationFixtures.tree(source));assertEquals(hashes(fixture.getJSONObject("rootCiphertext")),MigrationActivationFixtures.tree(destination))
++        val candidateBefore=MigrationActivationFixtures.tree(candidate);assertEquals(hashes(fixture.getJSONObject("candidateCiphertext")),candidateBefore)
++        val receipt=NativeMigrationCandidateStore.Receipt(fixture.getString("candidateId"),fixture.getString("candidateSha256"),fixture.getInt("recordCount"))
++        assertEquals(receipt,NativeMigrationCandidateStore(ui.activity,destination).currentReceipt())
++        val generation=NativeMigrationActivation(ui.activity,destination,NativeMigrationNotificationActivationLease(destination,receipt){true}).activate(receipt)
++        val current=destination.reopen(ui.activity);val archive=NativeMigrationEasyWorkArchives.readOnlyArchives(current).single();val raw=fixture.getJSONObject("rawHashes")
++        assertEquals(fixture.getString("sourceDeviceId"),archive.deviceId);assertEquals(raw.keys().asSequence().toSet(),archive.names())
++        for(name in raw.keys()){assertEquals(raw.getString(name),NativeChatNotificationWire.hash(requireNotNull(archive.readOnly(name))));assertNull(current.read(name))}
++        val fence=JSONObject(requireNotNull(archive.readOnly(archive.names().single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)}))).getJSONObject("revoke")
++        assertEquals("confirmed",fence.getString("state"));assertEquals("original pending extension",JSONObject(fence.getString("saved")).getJSONObject("refreshOperation").getString("futurePending"))
++        assertTrue(current.metadata()!!.getJSONArray("clients").objects().map(::decodeClient).all {it.agentConnection==null&&it.scope?.agentId=="codex"})
++        current.write("later-local-ew-archive-draft","later independent draft");val after=MigrationActivationFixtures.tree(current)
++        assertEquals(generation,NativeMigrationActivation(ui.activity,current).activate(receipt));assertEquals(after,MigrationActivationFixtures.tree(current))
++        assertEquals(candidateBefore,MigrationActivationFixtures.tree(candidate));assertEquals(hashes(fixture.getJSONObject("sourceCiphertext")),MigrationActivationFixtures.tree(source))
++        File(owned.folder,"easywork-archive-cold-reader.json").writeText(JSONObject().put("writerPid",fixture.getInt("writerPid")).put("readerPid",Process.myPid())
++            .put("sameCandidate",true).put("sourceAndCandidateUnchanged",true).put("originalFenceAndCredentialExact",true).put("incomingActiveAuthority",0)
++            .put("newIdentitySignerRefreshRevokeOrReplay",0).toString())
++    }
++}
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt
+@@ -0,0 +1,110 @@
++package com.agenthub.android
++
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import org.json.JSONObject
++import org.junit.*
++import org.junit.Assert.*
++import java.io.File
++import java.util.UUID
++
++/** Actual native P8 durable writers and encrypted migration graph; no HTTP, signer or live account. */
++class NativeMigrationEasyWorkArchiveTest {
++    @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    private val password="owned EasyWork original archive password"
++    @Before fun setup(){ui.waitUntil(30_000){!ui.activity.session.restoring};ui.runOnIdle{owned=OwnedControlAcceptance(ui.activity,"migration-easywork-archives")}}
++    @After fun finish(){if(::owned.isInitialized)ui.runOnIdle{owned.session.leaveForeground();owned.verifyDefault()}}
++    private fun source(): NativeSessionStorage=owned.storage.child(ui.activity,"ew-source-"+UUID.randomUUID().toString().take(8)).also {store->
++        val rows=MigrationActivationFixtures.payload().getJSONObject("records");rows.keys().forEach {store.write(it,rows.getString(it))}
++    }
++    private fun envelope(source: NativeSessionStorage)=File(owned.folder,"ew-"+UUID.randomUUID()+".encrypted").also {NativeMigrationExport(ui.activity,source).sealFile(it,password)}
++    private fun stage(source: NativeSessionStorage,destination: NativeSessionStorage=owned.storage)=NativeMigrationCandidateStore(ui.activity,destination).stageFile(UUID.randomUUID().toString(),envelope(source),password)
++    private fun activate(destination: NativeSessionStorage,receipt: NativeMigrationCandidateStore.Receipt)=NativeMigrationActivation(ui.activity,destination,NativeMigrationNotificationActivationLease(destination,receipt){true}).activate(receipt)
++    private fun originals(seed: NativeMigrationEasyWorkFixtures.Seed,names: Set<String> =seed.originalNames)=names.associateWith {requireNotNull(seed.storage.read(it))}
++    @Test fun actualUnactivatedCredentialAndPendingRevokeOriginalsStayInertAndExactThroughPublication() {
++        val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"pending");val oidc=NativeMigrationEasyWorkFixtures.oidc(source,seed.identity)
++        val names=seed.originalNames+oidc;val raw=originals(seed,names);val before=MigrationActivationFixtures.tree(source)
++        assertTrue(source.metadata()!!.getJSONArray("clients").objects().map(::decodeClient).all {it.agentConnection==null})
++        val receipt=stage(source);val candidate=owned.storage.child(ui.activity,"migration-candidates");val candidateBefore=MigrationActivationFixtures.tree(candidate)
++        assertEquals(receipt,NativeMigrationCandidateStore(ui.activity,owned.storage).currentReceipt())
++        assertTrue(runCatching {NativeMigrationActivation(ui.activity,owned.storage).activate(receipt)}.isFailure)
++        activate(owned.storage,receipt);val current=owned.storage.reopen(ui.activity)
++        val archived=NativeMigrationEasyWorkArchives.readOnlyArchives(current).single();assertTrue(archived.requiresOriginalInstallation)
++        assertEquals("ArchivedEasyWorkOriginals(redacted)",archived.toString());assertEquals(names,archived.names())
++        raw.forEach {(name,value)->assertEquals(value,archived.readOnly(name));assertNull(current.read(name))}
++        assertTrue(current.metadata()!!.getJSONArray("clients").objects().map(::decodeClient).all {it.scope?.agentId=="codex"&&it.agentConnection==null})
++        val fence=JSONObject(archived.readOnly(seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)})!!).getJSONObject("revoke")
++        assertEquals("pending",fence.getString("state"));assertEquals("original unknown extension",JSONObject(fence.getString("saved")).getString("futureOwner"))
++        assertEquals("original pending extension",JSONObject(fence.getString("saved")).getJSONObject("refreshOperation").getString("futurePending"))
++        assertEquals(before,MigrationActivationFixtures.tree(source));assertEquals(candidateBefore,MigrationActivationFixtures.tree(candidate))
++        val after=MigrationActivationFixtures.tree(current);NativeMigrationActivation(ui.activity,current).activate(receipt);assertEquals(after,MigrationActivationFixtures.tree(current))
++    }
++    @Test fun actualRefreshResultsKeepOriginalBodyTokenHashAndUnknownExtensions() {
++        val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"pending",refreshAudit=true)
++        val name=seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)};val before=requireNotNull(source.read(name))
++        val results=JSONObject(before).getJSONObject("refreshResults");assertEquals(1,results.length())
++        val operation=results.keys().next();val row=results.getJSONObject(operation)
++        assertEquals("original pending extension",row.getString("futurePending"));assertEquals("original pending extension",row.getJSONObject("originalPending").getString("futurePending"))
++        assertFalse(row.has("token"));assertEquals(easyHash("b".repeat(43).toByteArray()),row.getString("tokenHash"))
++        assertEquals(easyCanonical(JSONObject().put("operationId",operation)),row.getString("body"))
++        val receipt=stage(source);activate(owned.storage,receipt);val archive=NativeMigrationEasyWorkArchives.readOnlyArchives(owned.storage.reopen(ui.activity)).single()
++        assertEquals(before,archive.readOnly(name));assertEquals(before,source.read(name))
++    }
++    @Test fun confirmedFenceWithoutGrantAndGuardOnlyCrashAreNeverOmittedOrReactivated() {
++        for(mode in listOf("confirmed-missing","guard-only")) {
++            val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,mode);assertNull(source.read(seed.grantRef))
++            val raw=originals(seed);val before=MigrationActivationFixtures.tree(source)
++            val destination=owned.storage.child(ui.activity,"ew-dest-"+UUID.randomUUID().toString().take(8));val receipt=stage(source,destination)
++            activate(destination,receipt);val current=destination.reopen(ui.activity);val archived=NativeMigrationEasyWorkArchives.readOnlyArchives(current).single()
++            raw.forEach {(name,value)->assertEquals(value,archived.readOnly(name));assertNull(current.read(name))};assertNull(current.read(seed.grantRef))
++            assertEquals(before,MigrationActivationFixtures.tree(source))
++        }
++    }
++    @Test fun destinationOriginalAuthorityAndUnknownRemainExactWhileSourceArchivesMergeAcrossReexport() {
++        val source=source();val imported=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"pending");val local=NativeMigrationEasyWorkFixtures.seed(ui.activity,owned.storage,"confirmed-missing")
++        val localRaw=originals(local);val receipt=stage(source);val before=MigrationActivationFixtures.tree(owned.storage)
++        assertTrue(runCatching {NativeMigrationActivation(ui.activity,owned.storage,NativeMigrationNotificationActivationLease(owned.storage,receipt){true}).activate(receipt){if(it==0)throw java.io.IOException("owned pre-publication interruption")}}.isFailure)
++        assertEquals(before,MigrationActivationFixtures.tree(owned.storage));activate(owned.storage,receipt);val current=owned.storage.reopen(ui.activity)
++        localRaw.forEach {(name,value)->assertEquals(value,current.read(name))}
++        val original=NativeMigrationEasyWorkArchives.readOnlyArchives(current).single();assertEquals(imported.identity.deviceId,original.deviceId)
++        assertNull(current.read(imported.credentialName));assertEquals(local.identity.json().toString(),current.read(NativeMigrationEasyWorkOriginals.IDENTITY))
++        val reexport=envelope(current);val destination=current.child(ui.activity,"ew-again-"+UUID.randomUUID().toString().take(8))
++        val again=NativeMigrationCandidateStore(ui.activity,destination).stageFile(UUID.randomUUID().toString(),reexport,password);activate(destination,again)
++        val archives=NativeMigrationEasyWorkArchives.readOnlyArchives(destination.reopen(ui.activity));assertEquals(2,archives.size)
++        assertEquals(setOf(imported.identity.deviceId,local.identity.deviceId),archives.map {it.deviceId}.toSet())
++    }
++    @Test fun modernOrphanReferencesResolveExactLegacyGrantAndFenceWithoutAtomicRecovery() {
++        val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"pending")
++        val names=setOf(seed.grantRef,seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)})
++        val key=NativeSessionStorage::class.java.getDeclaredMethod("getKey").apply {isAccessible=true}.invoke(source) as javax.crypto.SecretKey
++        for(name in names) {
++            val raw=requireNotNull(source.read(name));val cipher=javax.crypto.Cipher.getInstance("AES/GCM/NoPadding").apply {init(javax.crypto.Cipher.ENCRYPT_MODE,key);updateAAD(name.toByteArray(Charsets.UTF_8))}
++            java.io.File(source.coordinationKey,MigrationActivationFixtures.sha(name.toByteArray())+".bin").writeBytes(byteArrayOf(1)+cipher.iv+cipher.doFinal(raw.toByteArray(Charsets.UTF_8)))
++        }
++        val before=MigrationActivationFixtures.tree(source);val raw=originals(seed);val receipt=stage(source)
++        activate(owned.storage,receipt);val archive=NativeMigrationEasyWorkArchives.readOnlyArchives(owned.storage.reopen(ui.activity)).single()
++        raw.forEach {(name,value)->assertEquals(value,archive.readOnly(name))};assertEquals(before,MigrationActivationFixtures.tree(source))
++        val pending=java.io.File(source.coordinationKey,MigrationActivationFixtures.sha(names.first().toByteArray())+".bin.new").apply {writeText("owned unfinished original")}
++        val pendingBefore=MigrationActivationFixtures.tree(source);assertTrue(runCatching {envelope(source)}.isFailure)
++        assertEquals(pendingBefore,MigrationActivationFixtures.tree(source));assertTrue(pending.delete())
++        val pointer=java.io.File(source.coordinationKey,MigrationActivationFixtures.sha("migration-active-generation-v1".toByteArray())+".bin.bak").apply {writeText("owned ambiguous generation pointer")}
++        val pointerBefore=MigrationActivationFixtures.tree(source);assertTrue(runCatching {envelope(source)}.isFailure)
++        assertEquals(pointerBefore,MigrationActivationFixtures.tree(source));assertTrue(pointer.delete())
++    }
++    @Test fun malformedFenceUnclaimedOriginalAndActiveEasyWorkMetadataRefuseWithoutChangingOriginalCandidate() {
++        val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"pending");val store=NativeMigrationCandidateStore(ui.activity,owned.storage)
++        val prior=stage(source);val candidateBefore=MigrationActivationFixtures.tree(owned.storage.child(ui.activity,"migration-candidates"))
++        val name=seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)};val original=source.read(name)!!
++        for(change in listOf<(JSONObject)->Unit>({it.put("version",2)},{it.put("ref",NativeMigrationEasyWorkOriginals.GRANT+"0".repeat(64))},{it.getJSONObject("revoke").put("operationId",UUID.randomUUID().toString())},{it.getJSONObject("revoke").put("intentHash","0".repeat(64))})) {
++            source.write(name,JSONObject(original).also(change).toString());val before=MigrationActivationFixtures.tree(source)
++            assertTrue(runCatching {envelope(source)}.isFailure);assertEquals(before,MigrationActivationFixtures.tree(source));assertEquals(candidateBefore,MigrationActivationFixtures.tree(owned.storage.child(ui.activity,"migration-candidates")))
++        }
++        source.write(name,original);source.write("easywork-future-authority-v9","{\"version\":9}");val before=MigrationActivationFixtures.tree(source)
++        assertTrue(runCatching {envelope(source)}.isFailure);assertEquals(before,MigrationActivationFixtures.tree(source));source.remove("easywork-future-authority-v9")
++        // Current scope does not silently turn an active EasyWork business graph into an orphan.
++        val metadata=source.metadata()!!;metadata.getJSONArray("clients").getJSONObject(0).getJSONObject("scope").put("agentId","easywork")
++        source.write("metadata",metadata.toString());assertTrue(runCatching {envelope(source)}.isFailure)
++        assertEquals(prior,store.currentReceipt());assertEquals(candidateBefore,MigrationActivationFixtures.tree(owned.storage.child(ui.activity,"migration-candidates")))
++    }
++}
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt
+@@ -0,0 +1,89 @@
++package com.agenthub.android
++
++import android.content.Context
++import androidx.test.platform.app.InstrumentationRegistry
++import org.json.JSONArray
++import org.json.JSONObject
++import java.math.BigInteger
++import java.security.KeyPairGenerator
++import java.security.interfaces.ECPublicKey
++import java.security.spec.ECGenParameterSpec
++import java.util.UUID
++
++/** Public RFC7748 vector plus synthetic audit state. Actual native P8 writers; no network/signer. */
++internal object NativeMigrationEasyWorkFixtures {
++    class Seed(val storage: NativeSessionStorage,val identity: EasyWorkIdentity,val grantRef: String,val credentialName: String,val claimName: String,val coordinator: Any,val revoke: Any?,val originalNames: Set<String>)
++    private fun call(value: Any,name: String,vararg args: Any?): Any?=value.javaClass.methods.single {it.name==name&&it.parameterTypes.size==args.size}.invoke(value,*args)
++    private fun encoded(bytes: ByteArray)=java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
++    private fun unsigned(value: BigInteger)=value.toByteArray().let {raw->if(raw.size==33)raw.copyOfRange(1,33)else ByteArray(32-raw.size)+raw}
++    fun seed(context: Context,storage: NativeSessionStorage,mode: String="pending",refreshAudit: Boolean=false): Seed {
++        require(mode in setOf("pending","confirmed","confirmed-missing","guard-only"))
++        val vector=JSONObject(InstrumentationRegistry.getInstrumentation().context.assets.open("easywork-crypto-vector.json").use {String(it.readBytes(),Charsets.UTF_8)}).getJSONObject("credential")
++        val binding=JSONObject(vector.getJSONObject("binding").toString()).put("mobileDeviceId","p7-original-"+UUID.randomUUID())
++        val identity=EasyWorkIdentity(binding.getString("mobileDeviceId"),vector.getString("privateKey"),binding.getString("mobilePublicKey"))
++        storage.write(NativeMigrationEasyWorkOriginals.IDENTITY,identity.json().toString())
++        val public=KeyPairGenerator.getInstance("EC").apply {initialize(ECGenParameterSpec("secp256r1"))}.generateKeyPair().public as ECPublicKey
++        val jwk=JSONObject().put("kty","EC").put("crv","P-256").put("x",encoded(unsigned(public.w.affineX))).put("y",encoded(unsigned(public.w.affineY)))
++        val thumb=encoded(java.security.MessageDigest.getInstance("SHA-256").digest(easyCanonical(jwk).toByteArray()))
++        val grantId="grant-"+UUID.randomUUID();binding.put("deviceAuthorization",JSONObject().put("protocol","EWDAP/1").put("grantId",grantId).put("authKeyThumbprint",thumb).put("keyVersion",1))
++        val grant=JSONObject().put("protocol","EWDAP/1").put("grantId",grantId).put("deviceId",identity.deviceId).put("binding",binding).put("target",binding.getJSONObject("target"))
++            .put("keyVersion",1).put("scopes",JSONArray(listOf("relay:read","relay:write","runtime:read","runtime:control")))
++            .put("accessToken","a".repeat(43)).put("refreshToken","b".repeat(43)).put("accessExpiresAt","2030-01-01T00:00:00Z").put("refreshExpiresAt","2031-01-01T00:00:00Z").put("futureGrant","original extension")
++        val origin="https://relay.example.invalid";val ref=NativeMigrationEasyWorkOriginals.GRANT+easyHash((origin+"\n"+grantId).toByteArray())
++        val type=Class.forName("com.agenthub.android.EasyWorkAuthorizationCoordinator");val coordinator=type.getDeclaredConstructor(NativeSessionStorage::class.java).newInstance(storage)
++        call(coordinator,"install",ref,origin,grant)
++        val initial=JSONObject(requireNotNull(storage.read(ref))).put("futureOwner","original unknown extension")
++        initial.put("refreshOperation",JSONObject().put("operationId",UUID.randomUUID().toString()).put("token",grant.getString("refreshToken")).put("futurePending","original pending extension"));storage.write(ref,initial.toString())
++        if(refreshAudit) {
++            val unusable: (JSONObject)->String?={null}
++            val access=requireNotNull(call(coordinator,"access",ref,unusable));val refresh=requireNotNull(call(access,"getRefresh"))
++            val next=JSONObject(grant.toString()).put("accessToken","d".repeat(43)).put("refreshToken","e".repeat(43))
++            call(coordinator,"refreshed",ref,refresh,next)
++        }
++        val verify: (JSONObject)->Unit={value->require(value.getJSONObject("grant").getString("grantId")==grantId)}
++        val revoke=if(mode=="guard-only")null else call(coordinator,"revocation",ref,verify)
++        if(mode in setOf("confirmed","confirmed-missing"))call(coordinator,"revoked",ref,requireNotNull(revoke))
++        if(mode=="confirmed-missing")check(storage.read(ref)==null)
++        if(mode=="guard-only")storage.remove(ref)
++        val credential=JSONObject().put("binding",binding).put("privateKey",identity.privateKey).put("grantRef",ref).toString()
++        val credentialName=if(mode=="guard-only")"" else actualCandidateWrite(storage,credential)
++        val code="0123456789ABCDEF";val claim=NativeMigrationEasyWorkOriginals.CLAIM+easyHash((origin+"\n"+thumb+"\n"+code).toByteArray())
++        if(mode!="guard-only") {
++            val body=easyCanonical(JSONObject().put("operationId",UUID.randomUUID().toString()).put("connectionCode",code).put("device",JSONObject()
++                .put("deviceId",identity.deviceId).put("platform","android").put("name","synthetic archive phone").put("publicKey",identity.publicKey).put("authPublicKey",jwk)))
++            storage.write(claim,JSONObject().put("origin",origin).put("body",body).put("claimId",UUID.randomUUID().toString()).put("offerId","offer-"+UUID.randomUUID())
++                .put("pendingToken","c".repeat(43)).put("expiresAt","2027-01-01T00:00:00Z").put("verificationCode","synthetic-code").put("grantRef",ref).toString())
++        }
++        val names=mutableSetOf(NativeMigrationEasyWorkOriginals.IDENTITY,NativeMigrationEasyWorkOriginals.FENCE+easyHash(ref.toByteArray()))
++        if(storage.read(ref)!=null)names.add(ref)
++        if(credentialName.isNotEmpty())names.add(credentialName)
++        if(mode!="guard-only")names.add(claim)
++        requireNotNull(NativeMigrationEasyWorkOriginals.validate(names.associateWith {requireNotNull(storage.read(it))}))
++        return Seed(storage,identity,ref,credentialName,if(mode=="guard-only")""else claim,coordinator,revoke,names)
++    }
++    fun oidc(storage: NativeSessionStorage,identity: EasyWorkIdentity): Set<String> {
++        val issuer="https://acceptance.example";val subject="synthetic-original";val audience="easyai:remote-access";val client="synthetic-client"
++        val claims=JSONObject().put("iss",issuer).put("sub",subject).put("azp",client).put("aud",audience).put("exp",1L)
++            .put("device_id",identity.deviceId).put("device_public_key",identity.publicKey).put("device_platform","android")
++        val token=encoded("{\"alg\":\"none\"}".toByteArray())+"."+encoded(claims.toString().toByteArray())+".synthetic-original"
++        val session=JSONObject().put("tokenEndpoint",issuer+"/token").put("clientId",client).put("audience",audience).put("issuer",issuer)
++            .put("expiresAt",1L).put("accessToken",token).put("refreshToken","synthetic-original-refresh")
++        val key=NativeMigrationEasyWorkOriginals.OIDC+easyHash(easyCanonical(JSONArray(listOf(issuer,subject))).toByteArray())
++        storage.write(key,session.toString());storage.write("easywork-oidc-last",session.toString())
++        storage.write("easywork-oidc-pending",JSONObject().put("tokenEndpoint",issuer+"/token").put("clientId",client).put("audience",audience).put("issuer",issuer)
++            .put("expiresAt",1L).put("state",UUID.randomUUID().toString()).put("verifier",encoded(ByteArray(48){7})).toString())
++        return setOf(key,"easywork-oidc-last","easywork-oidc-pending")
++    }
++    private fun actualCandidateWrite(storage: NativeSessionStorage,raw: String): String {
++        val authorityType=Class.forName("com.agenthub.android.EasyWorkConnectionAuthority");val authority=authorityType.getDeclaredConstructor().newInstance()
++        val originType=Class.forName("com.agenthub.android.EasyWorkConnectionOrigin");val origin=originType.getDeclaredConstructor(String::class.java,String::class.java,String::class.java,String::class.java).newInstance("synthetic-target","synthetic-navigation","original-revision","0".repeat(64))
++        val inputType=Class.forName("com.agenthub.android.EasyWorkConnectionInput");val input=inputType.getDeclaredConstructor(String::class.java,String::class.java,String::class.java,String::class.java).newInstance("save","synthetic","","original")
++        val form=call(authority,"form",{origin})!!;val lease=call(form,"begin",input,{input})!!
++        val ref="agent-synthetic-"+call(lease,"getId");val name=NativeMigrationEasyWorkOriginals.CREDENTIAL+ref
++        val type=Class.forName("com.agenthub.android.EasyWorkConnectionCredentialWrites");val writes=type.getField("INSTANCE").get(null)
++        call(writes,"write",storage,name,raw,lease)
++        // Release only the in-memory write-ownership receipt. No metadata pointer is committed.
++        call(writes,"committed",storage,name,lease);call(lease,"releaseBusy")
++        require(storage.read(name)==raw);return name
++    }
++}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
+@@ -15,26 +15,27 @@
+         if(metadata?.getJSONArray("clients")?.length()?.let{it>0}==true||CodexConnectionVault(storage).clients().isNotEmpty())throw ExistingInstallation()
+         val destination=NativeMigrationForeground.preserveDestination(storage)
+         val localRecords=NativeVoicePreferenceRecord.preserveDestination(storage)
++        val easyWorkDestination=NativeMigrationEasyWorkArchives.captureDestination(storage)
+         fun guarded(original: Map<String,String>): (Int)->Unit {
+-            val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)
++            val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()
+             fun checkBoundary(){if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
+             checkBoundary()
+             return {point->if(point==0)checkBoundary();checkpoint(point);if(point==0)checkBoundary()}
+         }
+         val stream=NativeMigrationStreamCandidate(context,storage)
+         if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
+-            withPrepared(receipt,records.text,localRecords,destination) {prepared->
++            withPrepared(receipt,records.text,localRecords,destination,easyWorkDestination) {prepared->
+                 storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepared,records.binary,4),receipt.recordCount,guarded(records.text))
+             }
+         }
+         val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
+-        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords,destination),records.binary),receipt.recordCount,guarded(records.text))
++        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords,destination,easyWorkDestination),records.binary),receipt.recordCount,guarded(records.text))
+     }
+     /** Only transformed values use encrypted scratch cells; root generations receive independent text. */
+-    private fun <T> withPrepared(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,consume: (Map<String,String>)->T): T {
++    private fun <T> withPrepared(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,consume: (Map<String,String>)->T): T {
+         val scratch=storage.child(context,"migration-candidates");val prefix="migration-text-transform:"+UUID.randomUUID();val created=mutableListOf<String>()
+         try {
+-            val prepared=prepare(receipt,original,localRecords,destination) {_,raw->
++            val prepared=prepare(receipt,original,localRecords,destination,easyWorkDestination) {_,raw->
+                 val bytes=NativeMigrationTextFrames.bytes(raw);val size=bytes.size;val name="$prefix:${created.size}";created.add(name)
+                 try {
+                     val probe=NativeMigrationProbe();probe.write(bytes)
+@@ -45,8 +46,8 @@
+             return consume(prepared)
+         }finally {created.forEach(scratch::remove)}
+     }
+-    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
+-        val records=NativeMigrationTextMap.copy(NativeMigrationNotificationArchives.mergeDestination(original,destination),persist);val metadata=JSONObject(records.getValue("metadata"))
++    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
++        val records=NativeMigrationTextMap.copy(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),persist);val metadata=JSONObject(records.getValue("metadata"))
+         val clients=metadata.getJSONArray("clients").objects()
+         val readers=clients.associate {row->val id=row.getString("id");id to UUID.nameUUIDFromBytes(("android-migration-reader-v1\u0000"+receipt.id+"\u0000"+id).toByteArray(Charsets.UTF_8)).toString()}
+         clients.forEach {it.put("readerId",readers.getValue(it.getString("id")))}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
+@@ -177,7 +177,7 @@
+     }
+ 
+     private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
+-        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)
++        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)
+         require("metadata" in records)
+         // Frozen archive readers already checked their claimed records. Parse each other value once
+         // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt
+@@ -0,0 +1,102 @@
++package com.agenthub.android
++
++import org.json.JSONArray
++import org.json.JSONObject
++
++/** Inert original authorization evidence. Never pass these aliases to an EasyWork loader. */
++internal object NativeMigrationEasyWorkArchives {
++    const val RECORD="migration-easywork-archives-v1"
++    const val PREFIX="migration-easywork-original-v1:"
++    private const val MAX_INSTALLATIONS=16
++    private const val MAX_CATALOG_BYTES=512*1024
++    private fun hash(raw: String)=NativeChatNotificationWire.hash(raw)
++    private fun canonical(value: Any)=easyCanonical(value)
++    private fun alias(id: String,name: String)=PREFIX+id+":"+hash(name)
++    private fun role(name: String)=when {
++        name==NativeMigrationEasyWorkOriginals.IDENTITY->"original-device-identity"
++        name.startsWith(NativeMigrationEasyWorkOriginals.CREDENTIAL)->"unreferenced-credential-candidate"
++        name.startsWith(NativeMigrationEasyWorkOriginals.GRANT)->"original-device-grant"
++        name.startsWith(NativeMigrationEasyWorkOriginals.FENCE)->"original-authorization-fence"
++        name.startsWith(NativeMigrationEasyWorkOriginals.CLAIM)->"original-pairing-claim"
++        else->"original-oidc-session"
++    }
++    private fun entries(records: Map<String,String>): Map<String,JSONObject> {
++        val raw=records[RECORD]?:return emptyMap();val bytes=raw.toByteArray(Charsets.UTF_8);require(bytes.size<=MAX_CATALOG_BYTES)
++        val value=StrictMigrationJson.parse(bytes);NativeChatNotificationWire.keys(value,setOf("version","installations"));require(value.get("version")==1)
++        val rows=value.getJSONArray("installations");require(rows.length() in 1..MAX_INSTALLATIONS)
++        return rows.objects().associateBy {row->
++            NativeChatNotificationWire.keys(row,setOf("archiveId","context","requiresOriginalInstallation","records"));require(row.get("requiresOriginalInstallation")==true)
++            val id=row.get("archiveId") as String;require(id.matches(Regex("[a-f0-9]{64}")))
++            val body=JSONObject(row.toString()).apply {remove("archiveId")};require(hash(canonical(body))==id);id
++        }.also {require(it.size==rows.length())}
++    }
++    private fun originals(entry: JSONObject): Map<String,JSONObject> {
++        val rows=entry.getJSONArray("records");require(rows.length() in 1..1024)
++        return rows.objects().associateBy {row->
++            NativeChatNotificationWire.keys(row,setOf("name","size","sha256","role"))
++            val name=row.get("name") as String;require(name.length in 1..8192&&!name.contains('\u0000')&&NativeMigrationEasyWorkOriginals.owns(name))
++            require(row.get("size") is Int&&row.getInt("size") in 1..NativeMigrationTextFrames.MAX_RECORD_BYTES)
++            require((row.get("sha256") as String).matches(Regex("[a-f0-9]{64}"))&&row.get("role")==role(name));name
++        }.also {require(it.size==rows.length())}
++    }
++    private fun catalog(rows: Collection<JSONObject>)=canonical(JSONObject().put("version",1).put("installations",JSONArray(rows.sortedBy {it.getString("archiveId")}))).also {require(it.toByteArray(Charsets.UTF_8).size<=MAX_CATALOG_BYTES)}
++    private fun frame(records: Map<String,String>,name: String)=if(records is NativeMigrationTextMap)records.frame(name)else NativeMigrationTextFrames.retained(records.getValue(name))
++    fun validatePortable(records: Map<String,String>): Set<String> {
++        require(records.keys.none(NativeMigrationEasyWorkOriginals::owns)) {"EasyWork originals cannot become current authority"}
++        val claimed=mutableSetOf<String>();val rows=entries(records);if(rows.isNotEmpty())claimed.add(RECORD)
++        for((id,entry)in rows) {
++            val descriptors=originals(entry)
++            val aliases=descriptors.keys.associateWith {name->alias(id,name).also {require(claimed.add(it))}}
++            descriptors.forEach {(name,row)->val blob=frame(records,aliases.getValue(name));require(blob.size==row.getInt("size")&&blob.sha256==row.getString("sha256"))}
++            val originals=NativeMigrationValueMap(descriptors.keys){name->records.getValue(aliases.getValue(name))}
++            val context=requireNotNull(NativeMigrationEasyWorkOriginals.validate(originals));require(canonical(context)==canonical(entry.getJSONObject("context")))
++        }
++        require(records.keys.filter {it==RECORD||it.startsWith(PREFIX)}.all {it in claimed}) {"Orphan EasyWork archive original"}
++        return claimed
++    }
++    fun projectSource(records: Map<String,String>): Map<String,String> {
++        val names=records.keys.filter(NativeMigrationEasyWorkOriginals::owns).toSet()
++        val result=NativeMigrationTextMap.copy(records).apply {forget(names)};validatePortable(result)
++        val context=NativeMigrationEasyWorkOriginals.validate(records)?:return result
++        // Current scope covers authorization residue/orphan candidates. Active EasyWork clients
++        // still reject through the existing metadata validator; none is silently demoted/dropped.
++        records["metadata"]?.let {NativeMigrationMetadata.validate(StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8)))}
++        val descriptors=JSONArray(names.sorted().map {name->val blob=frame(records,name)
++            JSONObject().put("name",name).put("size",blob.size).put("sha256",blob.sha256).put("role",role(name))})
++        val body=JSONObject().put("context",context).put("requiresOriginalInstallation",true).put("records",descriptors)
++        val id=hash(canonical(body));body.put("archiveId",id)
++        val rows=entries(result).toMutableMap();rows[id]?.let {require(canonical(it)==canonical(body))};rows[id]=body;require(rows.size<=MAX_INSTALLATIONS)
++        names.forEach {result.alias(records,it,alias(id,it))};result[RECORD]=catalog(rows.values);validatePortable(result);return result
++    }
++    fun mergeDestination(source: Map<String,String>,destination: Map<String,String>): Map<String,String> {
++        validatePortable(source)
++        val localNames=destination.keys.filter(NativeMigrationEasyWorkOriginals::owns).toSet()
++        val localArchives=NativeMigrationTextMap.copy(destination).apply {forget(localNames)};validatePortable(localArchives)
++        NativeMigrationEasyWorkOriginals.validate(destination)
++        val result=NativeMigrationTextMap.copy(source);val rows=entries(source).toMutableMap()
++        for((id,row)in entries(localArchives)) {
++            rows[id]?.let {require(canonical(it)==canonical(row))};rows[id]=row
++            originals(row).keys.forEach {name->val key=alias(id,name);result.alias(localArchives,key,key)}
++        }
++        require(rows.size<=MAX_INSTALLATIONS);if(rows.isNotEmpty())result[RECORD]=catalog(rows.values);validatePortable(result)
++        localNames.forEach {result.alias(destination,it,it)};return result
++    }
++    fun legacyNames(discovered: Set<String>,read: (String)->String?): Set<String> {
++        val result=NativeMigrationEasyWorkOriginals.legacyNames(discovered,read).toMutableSet();result.add(RECORD)
++        read(RECORD)?.let {raw->entries(mapOf(RECORD to raw)).forEach {(id,row)->originals(row).keys.forEach {result.add(alias(id,it))}}}
++        return result
++    }
++    fun captureDestination(storage: NativeSessionStorage): Map<String,String> = storage.migrationSelectedTextFrames(
++        {name->NativeMigrationEasyWorkOriginals.owns(name)||name==RECORD||name.startsWith(PREFIX)},::legacyNames)
++    class ArchivedInstallation internal constructor(val archiveId: String,val deviceId: String,val publicKey: String,private val records: Map<String,String>) {
++        val requiresOriginalInstallation get()=true
++        fun names()=records.keys.toSet()
++        fun readOnly(name: String)=records[name]
++        override fun toString()="ArchivedEasyWorkOriginals(redacted)"
++    }
++    fun readOnlyArchives(storage: NativeSessionStorage): List<ArchivedInstallation> {
++        val all=captureDestination(storage);val portable=NativeMigrationTextMap.copy(all).apply {forget(all.keys.filter(NativeMigrationEasyWorkOriginals::owns).toSet())};validatePortable(portable)
++        return entries(portable).map {(id,row)->val context=row.getJSONObject("context");val names=originals(row).keys
++            ArchivedInstallation(id,context.getString("deviceId"),context.getString("publicKey"),NativeMigrationValueMap(names){name->portable.getValue(alias(id,name))})}
++    }
++}
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt
+@@ -0,0 +1,180 @@
++package com.agenthub.android
++
++import org.bouncycastle.crypto.params.X25519PrivateKeyParameters
++import org.json.JSONArray
++import org.json.JSONObject
++import java.net.URI
++import java.time.Instant
++import java.util.Base64
++import java.util.UUID
++
++/** Frozen read-only authorization inventory. No identity loader, signer, coordinator or channel. */
++internal object NativeMigrationEasyWorkOriginals {
++    const val IDENTITY="easywork-device-identity"
++    const val CREDENTIAL="easywork-credential:"
++    const val GRANT="easywork-device-grant:"
++    const val FENCE="easywork-authorization-fence:"
++    const val CLAIM="easywork-device-claim:"
++    const val OIDC="easywork-oidc:"
++    val fixed=setOf(IDENTITY,"easywork-oidc-pending","easywork-oidc-last")
++    private val prefixes=listOf(CREDENTIAL,GRANT,FENCE,CLAIM,OIDC)
++    fun owns(name: String)=name in fixed||prefixes.any(name::startsWith)
++    private fun hash(text: String)=NativeChatNotificationWire.hash(text)
++    private fun json(raw: String)=StrictMigrationJson.parse(raw.toByteArray(Charsets.UTF_8))
++    private fun fields(value: JSONObject,required: Set<String>,optional: Set<String> =emptySet(),extensions: Boolean=false) {
++        val keys=value.keys().asSequence().toSet();require(keys.containsAll(required)&&(extensions||keys.all {it in required||it in optional}))
++    }
++    private fun text(v: JSONObject,k: String,max: Int=8192)=(v.get(k) as String).also {require(it.isNotEmpty()&&it.length<=max&&!it.contains('\u0000'))}
++    private fun uuid(value: String)=value.also {require(it.length<=64);UUID.fromString(it)}
++    private fun number(v: JSONObject,k: String)=(v.get(k) as Number).also {require(it is Int||it is Long);require(it.toLong() in 0..9_007_199_254_740_991L)}.toLong()
++    private fun bytes(raw: String,size: Int): ByteArray {
++        require(raw.matches(Regex("[A-Za-z0-9_-]+")))
++        return Base64.getUrlDecoder().decode(raw).also {require(it.size==size&&Base64.getUrlEncoder().withoutPadding().encodeToString(it)==raw)}
++    }
++    // Access/refresh tokens are opaque ASCII originals, not encoded keys to normalize.
++    private fun token(raw: String)=raw.also {require(it.matches(Regex("[A-Za-z0-9_-]{43}")))}
++    private fun origin(raw: String): String {
++        val uri=URI(raw);require(uri.host!=null&&uri.rawUserInfo==null&&uri.rawQuery==null&&uri.rawFragment==null&&uri.rawPath in listOf("","/"))
++        require(uri.scheme=="https"||uri.scheme=="http"&&uri.host in setOf("localhost","127.0.0.1","[::1]","::1"))
++        return raw.trimEnd('/')
++    }
++    private fun https(raw: String) {val uri=URI(raw);require(uri.scheme=="https"&&uri.host!=null&&uri.rawUserInfo==null&&uri.rawFragment==null)}
++    private fun grantName(value: String)=value.also {require(it.startsWith(GRANT)&&it.removePrefix(GRANT).matches(Regex("[a-f0-9]{64}")))}
++    private fun identity(raw: String): EasyWorkIdentity {
++        val v=json(raw);fields(v,setOf("deviceId","privateKey","publicKey"));val secret=bytes(text(v,"privateKey",64),32);val public=bytes(text(v,"publicKey",64),32)
++        try {require(X25519PrivateKeyParameters(secret,0).generatePublicKey().encoded.contentEquals(public))}finally {secret.fill(0);public.fill(0)}
++        return EasyWorkIdentity(text(v,"deviceId",128),v.getString("privateKey"),v.getString("publicKey"))
++    }
++    private fun binding(v: JSONObject,id: EasyWorkIdentity): EasyWorkBinding {
++        // Peer extensions are immutable original evidence, exactly as accepted by the producer.
++        val b=EasyWorkBinding(v.toString()).verify(id)
++        text(v,"bindingId",512);require(b.desktopId==b.target.desktopDeviceId);bytes(b.desktopPublicKey,32).fill(0)
++        CodexCommandCodec.target(b.target.scope());return b
++    }
++    private fun jwk(v: JSONObject): String {
++        fields(v,setOf("kty","crv","x","y"));require(v.get("kty")=="EC"&&v.get("crv")=="P-256")
++        val x=bytes(text(v,"x",64),32);val y=bytes(text(v,"y",64),32)
++        try {val point=org.bouncycastle.asn1.sec.SECNamedCurves.getByName("secp256r1").curve.decodePoint(byteArrayOf(4)+x+y);require(!point.isInfinity&&point.isValid)}finally {x.fill(0);y.fill(0)}
++        return Base64.getUrlEncoder().withoutPadding().encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(easyCanonical(v).toByteArray(Charsets.UTF_8)))
++    }
++    private fun grant(v: JSONObject,id: EasyWorkIdentity): EasyWorkBinding {
++        fields(v,setOf("protocol","grantId","deviceId","binding","target","keyVersion","scopes","accessToken","refreshToken","accessExpiresAt","refreshExpiresAt"),extensions=true)
++        require(v.get("protocol")=="EWDAP/1"&&v.get("deviceId")==id.deviceId);text(v,"grantId",512)
++        val b=binding(v.getJSONObject("binding"),id);require(EasyWorkTarget.decode(v.getJSONObject("target"))==b.target)
++        val auth=b.json.getJSONObject("deviceAuthorization");require(auth.get("protocol")=="EWDAP/1"&&auth.get("grantId")==v.get("grantId"))
++        require(number(v,"keyVersion")>0&&number(v,"keyVersion")==number(auth,"keyVersion"));bytes(text(auth,"authKeyThumbprint",64),32).fill(0)
++        token(text(v,"accessToken",64));token(text(v,"refreshToken",64))
++        require(Instant.parse(text(v,"accessExpiresAt"))>Instant.EPOCH&&Instant.parse(text(v,"refreshExpiresAt"))>Instant.EPOCH)
++        val scopes=v.getJSONArray("scopes").strings();require(scopes.distinct().size==scopes.size&&scopes.all {it in EasyWorkDeviceGrant.SCOPES}&&scopes.containsAll(listOf("relay:read","relay:write","runtime:read","runtime:control")))
++        return b
++    }
++    private fun saved(v: JSONObject,id: EasyWorkIdentity,ref: String): EasyWorkBinding {
++        fields(v,setOf("origin","grant"),extensions=true);val endpoint=origin(text(v,"origin"));val g=v.getJSONObject("grant");val b=grant(g,id)
++        require(ref==GRANT+hash(endpoint+"\n"+g.getString("grantId")))
++        v.optJSONObject("refreshOperation")?.let {pending->uuid(text(pending,"operationId",36));token(text(pending,"token",64));require(pending.get("token")==g.get("refreshToken"))}
++        if(v.has("refreshOperation"))require(v.get("refreshOperation") is JSONObject)
++        v.optional("revokeOperationId")?.let(::uuid);return b
++    }
++    private fun sameGrant(a: JSONObject,b: JSONObject) {
++        require(a.get("origin")==b.get("origin")&&a.getJSONObject("grant").get("grantId")==b.getJSONObject("grant").get("grantId"))
++        require(easyCanonical(a.getJSONObject("grant").getJSONObject("binding"))==easyCanonical(b.getJSONObject("grant").getJSONObject("binding")))
++    }
++    private fun fenceKey(ref: String)=FENCE+hash(ref)
++    private fun fence(name: String,v: JSONObject,id: EasyWorkIdentity,records: Map<String,String>) {
++        fields(v,setOf("version","ref","epoch"),setOf("revoke","refreshResults"),extensions=true)
++        require(v.get("version")==1);val ref=grantName(text(v,"ref"));require(name==fenceKey(ref));text(v,"epoch",36).also {require(UUID.fromString(it).toString()==it)}
++        if(v.has("refreshResults")) {
++            val results=v.getJSONObject("refreshResults");require(results.length()<=10_000)
++            results.keys().forEach {operation->uuid(operation);val row=results.getJSONObject(operation)
++                fields(row,setOf("operationId","originalPending","tokenHash","body","grantHash"),extensions=true)
++                require(row.get("operationId")==operation&&row.getJSONObject("originalPending").get("operationId")==operation)
++                require(!row.has("token")&&!row.getJSONObject("originalPending").has("token"))
++                require(row.get("body")==easyCanonical(JSONObject().put("operationId",operation)))
++                for(key in listOf("tokenHash","grantHash"))require(text(row,key,64).matches(Regex("[a-f0-9]{64}")))
++            }
++        }
++        if(v.has("revoke")) {
++            val revoke=v.getJSONObject("revoke");fields(revoke,setOf("state","operationId","body","intentHash","saved"),setOf("localReceipt"),extensions=true)
++            require(revoke.get("state") in setOf("pending","confirmed"));val operation=uuid(text(revoke,"operationId",36))
++            val body=easyCanonical(JSONObject().put("operationId",operation));require(revoke.get("body")==body)
++            val original=json(text(revoke,"saved",NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES));saved(original,id,ref)
++            require(original.get("revokeOperationId")==operation)
++            val g=original.getJSONObject("grant")
++            val expected=hash(easyCanonical(JSONObject().put("ref",ref).put("origin",original.getString("origin")).put("binding",g.getJSONObject("binding"))
++                .put("grantId",g.getString("grantId")).put("body",body).put("tokenHash",hash(g.getString("accessToken")))))
++            require(revoke.get("intentHash")==expected)
++            records[ref]?.let {current->val parsed=json(current);saved(parsed,id,ref);sameGrant(parsed,original)}
++            if(revoke.has("localReceipt")){val local=json(text(revoke,"localReceipt",NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES));saved(local,id,ref);sameGrant(local,original)}
++        }
++    }
++    private fun originalGrant(ref: String,records: Map<String,String>): JSONObject?=records[ref]?.let(::json)?:records[fenceKey(ref)]?.let(::json)?.optJSONObject("revoke")?.getString("saved")?.let(::json)
++    private fun credential(v: JSONObject,id: EasyWorkIdentity,records: Map<String,String>) {
++        fields(v,setOf("binding","privateKey"),setOf("relayBinding","accessToken","grantRef"))
++        require(v.get("privateKey")==id.privateKey);val b=binding(v.getJSONObject("binding"),id)
++        if(v.has("relayBinding"))require(v.get("relayBinding")==JSONObject.NULL||v.get("relayBinding")is JSONObject)
++        v.optJSONObject("relayBinding")?.let {require(binding(it,id).target==b.target)}
++        v.optional("accessToken")?.let {require(it.length<=65_536&&it.none {c->c.code<32})}
++        v.optional("grantRef")?.let {ref->grantName(ref);val original=originalGrant(ref,records)?:error("Original grant/fence missing")
++            val bound=saved(original,id,ref);require(bound==b)}
++    }
++    private fun claim(name: String,v: JSONObject,id: EasyWorkIdentity,records: Map<String,String>) {
++        fields(v,setOf("origin","body"),setOf("claimId","offerId","pendingToken","expiresAt","verificationCode","grantRef"))
++        val endpoint=origin(text(v,"origin"));val raw=text(v,"body",65_536);val body=json(raw)
++        fields(body,setOf("operationId","connectionCode","device"));uuid(text(body,"operationId",36))
++        val code=text(body,"connectionCode",16);require(code.matches(Regex("[0-9A-HJKMNP-TV-Z]{16}")))
++        val device=body.getJSONObject("device");fields(device,setOf("deviceId","platform","name","publicKey","authPublicKey"))
++        require(device.get("deviceId")==id.deviceId&&device.get("publicKey")==id.publicKey&&device.get("platform")=="android");text(device,"name",100)
++        val thumb=jwk(device.getJSONObject("authPublicKey"));require(name==CLAIM+hash(endpoint+"\n"+thumb+"\n"+code))
++        if(v.has("claimId")) {uuid(text(v,"claimId",36));text(v,"offerId",512);token(text(v,"pendingToken",64));Instant.parse(text(v,"expiresAt"))}
++        else require(setOf("offerId","pendingToken","expiresAt","verificationCode","grantRef").none(v::has))
++        v.optional("verificationCode")?.let {require(it.length<=256)}
++        v.optional("grantRef")?.let {ref->grantName(ref);val original=originalGrant(ref,records)?:error("Claim original grant/fence missing")
++            saved(original,id,ref);require(original.get("origin")==v.get("origin"));require(original.getJSONObject("grant").getJSONObject("binding").getJSONObject("deviceAuthorization").get("authKeyThumbprint")==thumb)}
++    }
++    private fun oidc(name: String,v: JSONObject,id: EasyWorkIdentity) {
++        val pending=name=="easywork-oidc-pending"
++        fields(v,setOf("tokenEndpoint","clientId","audience","issuer","expiresAt")+if(pending)setOf("state","verifier")else setOf("accessToken"),extensions=true)
++        https(text(v,"tokenEndpoint"));https(text(v,"issuer"));text(v,"clientId",512);text(v,"audience",512);number(v,"expiresAt")
++        if(pending){uuid(text(v,"state",36));bytes(text(v,"verifier",128),48).fill(0);return}
++        val token=text(v,"accessToken",65_536);val parts=token.split('.');require(parts.size==3)
++        val claims=StrictMigrationJson.parse(Base64.getUrlDecoder().decode(parts[1]))
++        require(claims.get("iss")==v.get("issuer")&&claims.get("azp")==v.get("clientId")&&claims.get("device_id")==id.deviceId&&claims.get("device_public_key")==id.publicKey&&claims.get("device_platform")=="android")
++        val subject=text(claims,"sub",512);number(claims,"exp")
++        val audience=claims.get("aud");require(audience==v.get("audience")||audience is JSONArray&&v.get("audience") in audience.strings())
++        if(name!="easywork-oidc-last")require(name==OIDC+hash(easyCanonical(JSONArray(listOf(v.getString("issuer"),subject)))))
++        v.optional("refreshToken")?.let {require(it.length in 1..65_536)}
++    }
++    /** Full current family, including unreferenced credential candidates and fence-only crashes. */
++    fun validate(records: Map<String,String>): JSONObject? {
++        val names=records.keys.filter(::owns).toSet();if(names.isEmpty())return null
++        require(names.size<=1024);val identity=identity(records.getValue(IDENTITY))
++        for(name in names)if(name!=IDENTITY) {
++            val v=json(records.getValue(name))
++            when {
++                name.startsWith(CREDENTIAL)->{require(name.removePrefix(CREDENTIAL).length in 1..512);credential(v,identity,records)}
++                name.startsWith(GRANT)->saved(v,identity,grantName(name))
++                name.startsWith(FENCE)->fence(name,v,identity,records)
++                name.startsWith(CLAIM)->claim(name,v,identity,records)
++                name=="easywork-oidc-pending"||name=="easywork-oidc-last"||name.startsWith(OIDC)->oidc(name,v,identity)
++            }
++        }
++        return JSONObject().put("deviceId",identity.deviceId).put("publicKey",identity.publicKey).put("identitySha256",hash(records.getValue(IDENTITY)))
++    }
++    /** Modern authenticated names may reveal exact aliases for older hash-only originals. */
++    fun legacyNames(discovered: Set<String>,read: (String)->String?): Set<String> {
++        val names=(fixed+discovered.filter(::owns)).toMutableSet();val queued=java.util.ArrayDeque(names);val seen=mutableSetOf<String>()
++        fun add(name: String){require(name.length<=8192&&!name.contains('\u0000'));if(names.add(name)){require(names.size<=1024);queued.add(name)}}
++        while(queued.isNotEmpty()) {
++            val name=queued.removeFirst();if(!seen.add(name))continue
++            val raw=read(name)?:continue;val value=json(raw)
++            when {
++                name.startsWith(CREDENTIAL)->value.optional("grantRef")?.let {add(grantName(it));add(fenceKey(it))}
++                name.startsWith(FENCE)->add(grantName(value.getString("ref")))
++                name.startsWith(CLAIM)->value.optional("grantRef")?.let {add(grantName(it));add(fenceKey(it))}
++                name.startsWith(GRANT)->add(fenceKey(name))
++                name=="easywork-oidc-last"->run {val parts=value.getString("accessToken").split('.');require(parts.size==3);val claims=StrictMigrationJson.parse(Base64.getUrlDecoder().decode(parts[1]));add(OIDC+hash(easyCanonical(JSONArray(listOf(claims.getString("iss"),claims.getString("sub"))))))}
++            }
++        }
++        return names
++    }
++}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt
+@@ -16,9 +16,9 @@
+     fun sealFile(destination: java.io.File, password: String) {
+         require(NativeMigrationCrypto.acceptsPassword(password))
+         require(!destination.canonicalPath.startsWith(context.noBackupFilesDir.canonicalPath + java.io.File.separator))
+-        storage.migrationStreamSnapshot(::legacyNames) { records ->
++        storage.migrationStreamSnapshot(::legacyNames,NativeMigrationEasyWorkArchives::legacyNames) { records ->
+             requireSupportedScopes()
+-            val portable=records.copy(text=NativeMigrationForeground.projectSource(records.text))
++            val portable=records.copy(text=NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(records.text)))
+             NativeMigrationCandidateStore(context, storage).validateStreamRecords(portable)
+             val atomic = android.util.AtomicFile(destination); val output = atomic.startWrite()
+             try {
+@@ -34,8 +34,8 @@
+         try{return NativeMigrationCrypto.seal(clear,password)}finally{clear.fill(0)}
+     }
+     internal fun capture(): ByteArray {
+-        val original=storage.migrationTypedArchiveSnapshot(::legacyNames)
+-        val records=original.copy(text=NativeMigrationForeground.projectSource(original.text))
++        val original=storage.migrationTypedArchiveSnapshot(::legacyNames,resolveModernAliases=NativeMigrationEasyWorkArchives::legacyNames)
++        val records=original.copy(text=NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(original.text)))
+         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
+         try {
+             require(clear.size<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt
+@@ -51,6 +51,7 @@
+     }
+     override fun remove(key: String)=cells.remove(key)?.let(NativeMigrationTextFrames::read)
+     override fun clear()=cells.clear()
++    fun frame(name: String): NativeMigrationBlob=cells.getValue(name)
+     fun frames(): Map<String,NativeMigrationBlob> = LinkedHashMap(cells)
+     fun forget(keys: Set<String>){keys.forEach(cells::remove)}
+     fun alias(source: Map<String,String>,original: String,key: String) {
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
+@@ -202,6 +202,37 @@
+         // The closure captures only an authenticated name, never the decoded Pair/String.
+         return name to blob
+     }
++    /** Discover authenticated modern names before resolving exact legacy aliases. */
++    private fun migrationModernNames(files: Map<String,File>): Set<String> = files.mapNotNull {(filename,source)->
++        val version=source.inputStream().use {it.read()}
++        val name=when(version) {
++            3->readMigrationTextFile(source,null).first
++            4->java.io.DataInputStream(source.inputStream().buffered()).use {binaryHeader(it,null,null).name}
++            1,2->null
++            else->error("Unknown local migration format")
++        }
++        name?.also {require(it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName&&filename==digest(it)+".bin")}
++    }.toSet()
++    private fun migrationAliases(files: Map<String,File>,resolveLegacyNames: ((String)->String?)->Set<String>,resolveModernAliases: (Set<String>,(String)->String?)->Set<String>): Map<String,String> {
++        val modern=migrationModernNames(files)
++        val read: (String)->String?={name->files[digest(name)+".bin"]?.let {readMigrationTextFile(it,name).second}}
++        val names=modern+resolveLegacyNames(read)+resolveModernAliases(modern,read)
++        require(names.size<=4096&&names.all {it.length in 1..8192&&!it.contains('\u0000')})
++        return names.associateBy {digest(it)+".bin"}.also {require(it.size==names.size)}
++    }
++    /** Destination authority/audit subset, including modern unreferenced records, without recovery. */
++    internal fun migrationSelectedTextFrames(include: (String)->Boolean,resolveAliases: (Set<String>,(String)->String?)->Set<String>): NativeMigrationTextMap = snapshotTransaction {ioLock.withLock {
++        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
++        val files=migrationFiles(dataRoot()).associateBy {it.name};require(files.size<=1024)
++        val aliases=migrationAliases(files,{setOf("metadata")},resolveAliases)
++        val selected=linkedMapOf<String,NativeMigrationBlob>()
++        for((filename,source)in files) {
++            val version=source.inputStream().use {it.read()}
++            val name=aliases[filename]?:error("Unidentified legacy destination original")
++            if(include(name)) {require(version==1||version==3);selected[name]=migrationTextFrame(source,name).second}
++        }
++        NativeMigrationTextMap(selected)
++    }}
+     /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
+      * Presence is audited without opening/recovering files or borrowing OS callback authority. */
+     internal fun migrationPendingChildScopes(): Set<String> = ioLock.withLock {
+@@ -223,7 +254,7 @@
+      * Reading for discovery never invokes AtomicFile recovery or changes a pending .bak/.new. */
+     internal fun migrationArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>): Map<String,String> = try {
+         snapshotTransaction {ioLock.withLock {
+-            requireWritable();val files=migrationFiles(dataRoot()).associateBy{it.name}
++            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable();val files=migrationFiles(dataRoot()).associateBy{it.name}
+             val aliases=resolveLegacyNames {name->
+                 files[digest(name)+".bin"]?.let{file->
+                     readMigrationTextFile(file,name).second
+@@ -234,13 +265,11 @@
+     }catch(error: LegacyGcmAuthenticationLimit){throw error}catch(_: Exception){throw IncompleteMigrationInventory()}
+     /** Typed root snapshot; discovers authenticated format4 names and exact indexed legacy2 aliases.
+      * Discovery never restores AtomicFile backups or silently skips an unsupported record. */
+-    internal fun migrationTypedArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>,maximumBytes: Int=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES): NativeMigrationRecords = try {
++    internal fun migrationTypedArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>,maximumBytes: Int=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES,resolveModernAliases: (Set<String>,(String)->String?)->Set<String> = {_,_->emptySet()}): NativeMigrationRecords = try {
+         snapshotTransaction {ioLock.withLock {
+-            requireWritable();require(maximumBytes in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
++            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable();require(maximumBytes in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+             val files=migrationFiles(dataRoot()).associateBy{it.name};require(files.size in 1..1024)
+-            val aliases=resolveLegacyNames {name->files[digest(name)+".bin"]?.let {source->
+-                readMigrationTextFile(source,name,maximumBytes).second
+-            }}.associateBy{digest(it)+".bin"}
++            val aliases=migrationAliases(files,resolveLegacyNames,resolveModernAliases)
+             val text=linkedMapOf<String,String>();val binary=linkedMapOf<String,String>();var total=0L
+             for((filename,source)in files.toSortedMap()) {
+                 require(source.length() in 29..(maximumBytes+65569L+28L*((maximumBytes+65535)/65536)))
+@@ -280,7 +309,7 @@
+      * A legacy record still needs an exact caller-supplied name; binary/unknown records never disappear. */
+     internal fun migrationNames(legacyNames: Set<String> = emptySet()): Set<String> = try {
+         snapshotTransaction {ioLock.withLock {
+-            requireWritable();require(legacyNames.size<=1024)
++            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable();require(legacyNames.size<=1024)
+             val aliases=legacyNames.associateBy {digest(it)+".bin"};require(aliases.size==legacyNames.size)
+             val files=migrationFiles(dataRoot());require(files.size in 1..1024)
+             val result=files.map {file->
+@@ -296,7 +325,7 @@
+      * Callers must name every active record. Unknown/missing/binary/unfinished files reject explicitly. */
+     internal fun migrationSnapshot(names: Set<String>,maximumBytes: Int=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES): Map<String,String> = try {
+         snapshotTransaction {ioLock.withLock {
+-            requireWritable()
++            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
+             require(names.size in 1..1024&&"metadata" in names&&maximumBytes in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+             require(names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
+             val expected=names.associateBy {digest(it)+".bin"};require(expected.size==names.size)
+@@ -312,7 +341,7 @@
+     /** A retried activation reads its original commit receipt without republishing later edits. */
+     internal fun publishedMigration(candidateId: String,sha256: String,records: Int): String? = ioLock.withLock {
+         require(java.util.UUID.fromString(candidateId).toString()==candidateId&&sha256.matches(Regex("[a-f0-9]{64}"))&&records in 1..1024)
+-        checkMigrationAccess()
++        checkMigrationAccess();requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
+         val generation=activeGeneration() ?: return@withLock null
+         val pointer=JSONObject(decodeAtomic(atomic(root,migrationPointerName),migrationPointerName)!!)
+         if(pointer.getString("candidateId")!=candidateId)return@withLock null
+@@ -377,6 +406,7 @@
+     }
+ 
+     private fun publishMigrationGeneration(candidateId: String,sha256: String,recordCount: Int,recordsSha256: String,actualRecordCount: Int,checkpoint: (Int)->Unit,write: (File)->Unit): String {
++        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
+         val active=activeGeneration()
+         if(active!=null) {
+             val prior=JSONObject(decodeAtomic(atomic(root,migrationPointerName),migrationPointerName)!!)
+@@ -552,11 +582,11 @@
+     }
+     /** Discovery, verification and export share one generation lock. No whole binary or Base64 value. */
+     internal fun <T> migrationStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>, consume: (NativeMigrationStreamRecords) -> T): T =
++        migrationStreamSnapshot(resolveLegacyNames,{_,_->emptySet()},consume)
++    internal fun <T> migrationStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>,resolveModernAliases: (Set<String>,(String)->String?)->Set<String>, consume: (NativeMigrationStreamRecords) -> T): T =
+         snapshotTransaction { ioLock.withLock {
+-            requireWritable(); val files = migrationFiles(dataRoot()).associateBy { it.name }; require(files.size in 1..1024)
+-            val aliases = resolveLegacyNames { name -> files[digest(name) + ".bin"]?.let { source ->
+-                readMigrationTextFile(source,name).second
+-            } }.associateBy { digest(it) + ".bin" }
++            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable(); val files = migrationFiles(dataRoot()).associateBy { it.name }; require(files.size in 1..1024)
++            val aliases=migrationAliases(files,resolveLegacyNames,resolveModernAliases)
+             val text = linkedMapOf<String, NativeMigrationBlob>(); val binaries = linkedMapOf<String, NativeMigrationBlob>()
+             for ((filename, source) in files.toSortedMap()) {
+                 require(source.length()>=29)

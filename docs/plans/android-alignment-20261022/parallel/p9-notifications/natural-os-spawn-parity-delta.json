@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-worker30-accepted-natural-os-next-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "Original full target, authority, token, ticket and receipt remain immutable",
+    "Unknown or attempted operations are inspected without replay or rearming",
+    "No default storage, new key, permission mutation, business input or post on refusal"
+  ],
+  "android": {
+    "implemented": "Standalone fixed-schema permit proposal reducer outside Android source sets",
+    "auxiliary": "64 JVM checks; SDK, key authentication and persistence are synthetic observations",
+    "native": "not run",
+    "naturalOsProcessCreation": "not implemented or verified; minimum persistent adapter and external observer design prepared",
+    "existingInstrumentedReaderOsScenario": "unchanged source8c648123; pending parent native execution",
+    "mainSessionProductionChanges": []
+  },
+  "ios": {
+    "sourceChanges": [],
+    "acceptance": "No new result; A6 remains paused",
+    "impact": "Android system process/notification acceptance preparation only"
+  },
+  "ui": {
+    "tokensAndCopy": "unchanged",
+    "systemDifference": "Natural OS process creation requires a separate UID observer; instrumented reader only proves first Activity in an existing instrumented process"
+  },
+  "evidence": "natural-os-spawn.md",
+  "openGates": [
+    "Existing-key-only authenticated persistent permit",
+    "Cross-process claim lock, sync/readback and interrupted-write native checks",
+    "Narrow exact cold hook and actual completion observer",
+    "Independent UID SystemUI/original-token/process proof",
+    "Android compilation and native/OS/OEM/full DEV"
+  ]
+}

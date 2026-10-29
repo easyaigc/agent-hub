@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "stage": "19-saved-file-voice",
+  "status": "proposed dependencies only; no Android file-ASR adapter implemented",
+  "actualCapability": false,
+  "currentSources": [
+    "apps/ios/Sources/VoiceInput.swift",
+    "apps/ios/Sources/LocalVoiceInput.swift",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceCapability.kt",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSystemVoice.kt",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceTranscription.kt",
+    "apps/android/build.gradle.kts"
+  ],
+  "platformDependency": {
+    "owner": "voice platform adapter; parent reviews backend/dependency selection",
+    "requiredContract": [
+      "guaranteed saved-file input; never falls back to microphone",
+      "exact provider/version, supported WAV/PCM16 16kHz mono format, locale and size/duration limits",
+      "declared system-network/on-device behavior and explicit model-resource preparation",
+      "authenticated original bytes verified against the immutable manifest before file delivery",
+      "bounded streaming/private temporary-file ownership and cancellation/handle closure without deleting the encrypted original",
+      "local recognition run ID distinct from unchanged remote operation ID",
+      "result applies only to the same target, draft, permission authority and controller generation"
+    ],
+    "currentOptionalExtraIsInsufficient": "RecognizerIntent.EXTRA_AUDIO_SOURCE may open microphone if unsupported; language support is not a file-only source guarantee",
+    "officialSource": "https://developer.android.com/reference/android/speech/RecognizerIntent#EXTRA_AUDIO_SOURCE"
+  },
+  "storageDependency": {
+    "owner": "storage owner through a narrow local-resolution port; no Main/Session/P9 replacement",
+    "requiredContract": [
+      "atomically match immutable original recording fingerprint and local-run result after accepted draft fill",
+      "preserve original audio/remote operation/unknown receipt and attempt flags",
+      "record local use separately from explicit discard so it is not reoffered or resubmitted",
+      "migration and cold recovery preserve that resolution; failed/unknown local writes do not fabricate success"
+    ]
+  },
+  "sessionBoundaryProposal": "Current composer/question closures retain the original provider's desktop-sharing condition on phone retry. Keep that stricter current boundary; any future local-file fallback after sharing revocation requires a parent-owned narrow split between draft authority and desktop consent. No Main/Session change implemented.",
+  "requiredActualAcceptance": [
+    "known saved recording recognized with microphone denied and no microphone-open event",
+    "independent source/manifest SHA and recognizer provider/locale fingerprint",
+    "real locale/network/model-availability failures preserve the original",
+    "cancel/background/changed-draft/process-cold and late callbacks cannot overwrite new input",
+    "no remote query/reprepare/upload from local recognition and no new business model turn",
+    "both composer and question UI, bilingual accessibility/short viewport and separate platform evidence"
+  ],
+  "implementedHere": [
+    "end-waiting presentation preserves sealed original without terminal discard",
+    "explicit new phone microphone action preserves old original and never claims file transcription",
+    "bounded recovery UI scrolling and disabled action semantics"
+  ],
+  "iosImpact": "existing file implementation used as source reference only; no iOS source or A6 execution",
+  "nativeExecutedHere": false
+}

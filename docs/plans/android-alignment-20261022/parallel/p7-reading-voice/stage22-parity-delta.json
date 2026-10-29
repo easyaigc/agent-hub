@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "22-own-docsui-confirmation-observation",
+  "featureIds": ["F55", "F56"],
+  "productionCodeChanges": false,
+  "debugVisibility": "add exact OPEN_DOCUMENT_TREE action alongside MAIN/HOME;preserve existing audio witness provider;release/permissions unchanged",
+  "systemProvider": "resolve only after real exact App URI read/write grant;automatic provider visibility needs no extra query;missing provider still refuses",
+  "commonAssertions": [
+    "same immutable original and actual expected system DocsUI own the observation",
+    "unknown owner or incomplete folder witness stops input and omits button data",
+    "native button/root/screen bounds and monotonic device read time are observation only",
+    "AX complete folder text/geometry does not substitute for parent screenshot visual review",
+    "32 buttons/160 chars remain capped;no password/root dump or second UiAutomation connection",
+    "unknown result remains queryable and is never replayed"
+  ],
+  "bothPlatforms": {
+    "android": "native helper/resolver/observation preparation only",
+    "ios": "unchanged;A6 paused"
+  },
+  "design": {
+    "productCopyTokens": "unchanged",
+    "systemUi": "same original confirmation observation;default no guessed confirmation input"
+  },
+  "newPureObservationMethods": 5,
+  "newNativeAudit": "auditTreeResolverReadinessWithoutOpeningMainOrChangingPermissions",
+  "nativeExecutedHere": false,
+  "savedVoiceStage19": "independent0d47ef5f remains frozen;no file-ASR implementation",
+  "acceptance": "parallel/p7-reading-voice/stage22-own-confirmation-observation.md",
+  "centralOwner": "parent coordinator",
+  "scope": "test/debug/docs only;no Main/Session/P9/product/release/iOS writes or device/ADB/Host/grant/model action"
+}

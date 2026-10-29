@@ -4,7 +4,8 @@ package com.agenthub.android
 class AgentRegistry(private val codexReads: AgentReads,private val codexCommands: AgentCommands): AgentReads,AgentCommands {
     private val providers=mutableMapOf("codex" to (codexReads to codexCommands))
     fun register(id: String,reads: AgentReads,commands: AgentCommands) { require(id.isNotBlank()&&id !in providers);providers[id]=reads to commands }
-    private fun provider(client: MobileClient): Pair<AgentReads,AgentCommands> {
+    private fun provider(client: MobileClient,presentationOnly: Boolean=false): Pair<AgentReads,AgentCommands> {
+        if(!presentationOnly)NativeMigrationEasyWorkGate.requireReady(client)
         val id=client.agentConnection?.target?.agentId?:client.scope?.agentId?:"codex"
         require(client.agentConnection==null||sameScope(client.scope,client.agentConnection.target)) { "客户端完整目标不匹配" }
         return providers[id]?:error("未注册此 Agent")
@@ -24,8 +25,8 @@ class AgentRegistry(private val codexReads: AgentReads,private val codexCommands
     override suspend fun searchHistory(client: MobileClient,threadId: String,cursor: String?)=provider(client).first.searchHistory(client,threadId,cursor)
     override suspend fun nextTurnSuggestion(client: MobileClient,scope: com.agenthub.core.SuggestionScope)=provider(client).first.nextTurnSuggestion(client,scope)
     override fun creationOperationId(client: MobileClient,parent: String)=provider(client).second.creationOperationId(client,parent)
-    override fun permissionOptions(client: MobileClient)=provider(client).second.permissionOptions(client)
-    override fun agentTitle(client: MobileClient)=provider(client).second.agentTitle(client)
+    override fun permissionOptions(client: MobileClient)=provider(client,presentationOnly=true).second.permissionOptions(client)
+    override fun agentTitle(client: MobileClient)=provider(client,presentationOnly=true).second.agentTitle(client)
     override suspend fun createProject(client: MobileClient,name: String,directory: String,operationId: String)=provider(client).second.createProject(client,name,directory,operationId)
     override suspend fun createdProject(client: MobileClient,operationId: String)=provider(client).second.createdProject(client,operationId)
     override suspend fun createdThread(client: MobileClient,operationId: String)=provider(client).second.createdThread(client,operationId)

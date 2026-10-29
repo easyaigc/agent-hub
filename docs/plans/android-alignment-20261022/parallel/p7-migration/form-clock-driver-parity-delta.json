@@ -1,0 +1,27 @@
+{
+  "featureIds": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+  "designIds": ["UI12", "UI21"],
+  "commonAssertions": [
+    "A form leaving UI cannot release actual authorization IO ownership.",
+    "A cancelled migration wait retains original retirement proof and second-migration gate.",
+    "Native acceptance must actually enter and exit its original production IO boundaries."
+  ],
+  "android": {
+    "productionChanged": false,
+    "testDriver": "same5s true entry latch driven by exact owning Compose rule; bounded scheduling/lease/session observations",
+    "auxiliary": "App/runner compile, exact patch/all-original-predicate audit, actual StandardTestDispatcher reproduction",
+    "native": "source31 auxiliary3 passed separately; old lifecycle2 failed before entry; corrected2 not executed here"
+  },
+  "ios": {
+    "codeChanged": false,
+    "testHarnessAffected": false,
+    "nativeNewPass": false
+  },
+  "design": {
+    "productFieldsCopyTokensChanged": false,
+    "scope": "test scheduling/observations only"
+  },
+  "centralTablesChangedHere": false,
+  "A6AndBusinessTaskProjectManagement": "paused",
+  "fullP7Passed": false
+}

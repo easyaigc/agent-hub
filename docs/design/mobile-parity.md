@@ -1373,4 +1373,50 @@ PAR19生产界面/token/文案和iOS不变；F52/F53、UI11、S15/S16的本机�
 
 PAR20不改生产页面、token或文案，iOS程序不改。配对全目标值、实际回调和通知原回执的只读断言保持；新runner测试修正不能替代完整视觉/DEV矩阵。
 
+P7文本帧4不新建页面或token/文案；沿用安全迁移的进度、预览和明确确认。text/binary配额及完整图错误必须阻止替换并保留原件，数据大不能静默遗漏。Android格式与iOS各自验证，当前仅候选实现。
+
+PAR21仅验证Android大文本底层迁移和原件保持，未改变页面、token或文案；API26低堆/跨进程通过不能代表完整SAF、主题/字号/系统与真实DEV矩阵。通知关闭竞态待修并保留原失败；iOS设计不受本候选影响。
+
+PAR22 EasyWork授权残留迁移沿用现有迁移入口/预览/显式激活与重新配对，不新增页面/token/文案。只读授权原件不显示为已恢复活动连接；完整活动业务/重新配对及系统短视口交互待对应候选验收。iOS界面未改、A6暂停。
+
+PAR22真实系统迁移UI验收准备遵循现有UI12/UI21及已观察DocsUI控制，不增加产品页面。语音finish原代次修复保持既有状态文案/填入当前草稿/双入口；iOS源码不变。系统控件/声学/短视口和真实DEV待验。
+
+PAR23只改EasyWork迁移只读原回执解析及原生负面场景，无UI/token/文案改变；iOS源码/设计不变，完整迁移系统交互与DEV仍待对应候选。
+
+PAR23 OS通知验收只针对自身UUID的系统通知行，裁取自身row，不导出完整通知栏。SystemUI资源为显式平台前置待实际API37验证，无产品token/文案/iOS变化，不宣称完整跨平台视觉一致。
+
+PAR24只修Android通知worker生命周期，无页面/文案/token改变；正常退出不展示主线程channel异常，原目标/读取/原通知与操作保持。实际用户可见行为需新原生/OS/DEV核验，iOS未改。
+
+PAR26明确“丢弃录音”与“结束等待”：后者保留原桌面录音/未知回执；“改用手机重新录音”是新麦克风，绝不伪装原file转写。短/大字号视口自身动作滚动，48dp入口；iOS已有保存文件转写能力继续保留，Android缺口登记。debug HOME可见性只用于验收前置，不改产品UI/权限。
+
+PAR26系统确认仅记录同一原请求自有目录的有界原生几何/时间；父需同屏截图核实完整UUID与原按钮。debug TREE可见性保现有provider/HOME，release/权限/产品页面无变化。
+
 PR51 worker回补不改变页面/token/文案或iOS。通知退出与迁移owner静默边界共同受影响，按F47/F52/F53/F56登记；当前候选原生/CI另列。
+
+PAR27地址探测迟到写回保留当前连接名称/在线状态/偏好/地址与当前草稿和busy；不让旧快照复活已删除连接。无页面/token/文案改动；iOS MainActor原路径publication前无await，平台差异明确记录，实际UI矩阵继续。
+
+PAR28不改产品页面/token/文案；原生SAF仅对同一个实际picker观察BACK与原回调，回到App即停，未知或第三owner停止输入。语音测试保自有UUID根内短child约束；旧失败保留，iOS A6暂停。
+
+PAR29产品页面/文案不变；测试区分丢弃录音与结束等待，并核真正可见/可用的原DocsUI控件；原目录、URI、文件hash及未知结果守卫保持。iOS/A6不改。
+
+PAR30迁入EasyWork显示“需要重新配对 · 查看缓存”并保持本地草稿可编辑/旧原件只读，连接列表展示迁入行；点击仅进入新扫码表单，旧凭据不激活。发现名字服从当前保存名称，菜单显示选中标记且忙碌可访问性禁用。Android移除按钮/确认与iOS系统侧滑差异登记；同token/正文/长字段短视口按原生继续验。P9 debug store无用户页面/token/文案变化，natural OS UI仍未接。
+
+PAR30组合原生结果见[独立档案](../plans/android-alignment-20261022/parallel/thirtieth-stage-integrated-native.json)：P7业务/实际IO/冷恢复14和二进制/原语音回归13通过，P8同步5/UI4通过；长字段1、SAF短暂null owner1及P9两环境前置失败分别保留。迁入连接编辑页完整只读目标字段遗漏继续修复；未接natural Main、未证明完整系统/真实DEV或iOS等价。未知不重放、业务任务项目与A6暂停。
+
+PAR31迁入编辑页使用marker原完整目标展示Agent/发行方/账号/电脑/workspace/runtime六字段，只读且显式重新配对；长名称按实际保存的首尾trim核对，内部文字、完整布局、短视口滚动和忙碌/空输入禁用断言保留。配对离开释放UI与后台实际退出分开，无新增自动提交；平台权限/系统选择器完整视觉矩阵仍待。
+
+PAR31结果见[独立原生档案](../plans/android-alignment-20261022/parallel/thirty-first-stage-scoped-ui-form-native.json)：真实SDK三条迁移交互通过；form核心3、候选保护5、UI3通过。Lifecycle2与marker/长字段UI2仍失败待修，不能关闭完整P7/P8/P9或物理真实DEV；原未知操作不重放，A6和业务任务项目暂停。
+
+PAR32记录TextLayout实际尺寸、密度/字号、原布局约束和逐行边界，保留原完整字形、裁切与滚动判定；这是诊断，未将长目标字段视为已通过。P9初始化/证据为测试专用，无用户文案/token变化。
+
+PAR32实际测量区分paragraph布局宽与显示Text宽；完整字形/裁切断言仍保留，下一候选以有限完整列宽验证只读目标字段。Host管理CLI证书变化无手机token/文案/页面变化。
+
+PAR33六项只读身份值填满现有有限列宽，使paragraph与Text显示矩形一致；文字、字号/token、只读语义不变。原有长名/六目标、短视口、编辑、偏好菜单和busy断言继续执行，不用测量代理误差代替真实字形/裁切证明。完整双端视觉矩阵继续开放。
+
+[PAR33](../plans/android-alignment-20261022/parallel/thirty-third-stage-nsd-form-store-native.json)：54次原生调用51通过/3失败；表单生命周期2、NSD受控19/真实API26 SDK2、业务IO/冷恢复14、候选保护5均通过。UI短值换行前提2和P9跨PID Binder1继续修；P9既有key前4与原bootstrap只读核对通过，完整P7/P8/P9与真实DEV未关闭。
+
+PAR34仅修复原生检查前提和debug跨PID探针严格同步flag兼容；短字段完整可见、长字段真实换行、字形裁切及原文件库存检查继续保留，产品交互/文案不变。新候选原生待验；原Source33 API37 NSD发现/停止通过，自有广播注册超时单列，权限原状已恢复。
+
+[PAR34](../plans/android-alignment-20261022/parallel/thirty-fourth-stage-strict-probe-ui-native.json)：P9既有key五项原生通过，UI4通过/迁入最终窗口空1失败。长名/六值完整字形/裁切与严格跨PID拒绝有实际证据；完整iOS/物理/自然OS与API37解析停止仍待，iOS A6暂停。
+
+[PAR35](../plans/android-alignment-20261022/parallel/thirty-fifth-stage-imported-window-native.json)：原连接UI五项全部通过；null系统窗口只读等待1采样后收到准确App owner。完整值/字形/clip/readonly/原记录保护均保留；固定ComponentActivity并非完整App/系统视觉证明。工作区组合检查、iOS模拟器编译通过，完整双端/物理DEV和已登记新差异继续待验。

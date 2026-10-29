@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "17-owned-tree-grant-environment-preparation",
+  "featureIds": ["F55", "F56"],
+  "productionChanges": false,
+  "exclusiveTestFile": "NativeMigrationTreeGrantPreparationTest.kt",
+  "methods": {
+    "acquire": "actual Main ActivityResultRegistry/OpenDocumentTree, after explicit P9/Home preflight",
+    "audit": "no Activity, picker or grant mutation"
+  },
+  "commonAssertions": [
+    "Only exact authorized UUID tree can become a persisted read/write permission",
+    "The real acceptance App UID and original registry ID own the result",
+    "Unknown confirmation/receipts cause no guessed input or replay",
+    "No P9/router/default-data repair or shell permission substitute",
+    "Environment preparation never counts as product migration acceptance"
+  ],
+  "bothPlatforms": {
+    "android": "Two native environment methods prepared and compiled only",
+    "ios": "Unchanged; A6/XCTest execution remains paused"
+  },
+  "design": {
+    "productTokensAndCopy": "unchanged",
+    "systemUi": "Only observed DocsUI own-folder control; confirmation requires observation",
+    "newProductFlow": false
+  },
+  "observedAuxiliaryOnly": {
+    "operation": "parent-p7-observed-owned-tree-grant-next-20261029-1",
+    "appGrantOrResult": false,
+    "closureAssumed": false
+  },
+  "nativeExecutedHere": false,
+  "productMigrationPass": false,
+  "pending": [
+    "parent P9 release and Home/caller closure",
+    "actual original App tree callback/persisted grant",
+    "system confirmation observation or same-original parent assistance",
+    "audit and separate Stage16 product SAF methods"
+  ],
+  "centralOwner": "parent coordinator",
+  "acceptance": "parallel/p7-reading-voice/stage17-tree-grant-preparation.md",
+  "scope": "Only new test/docs; no device/system UI/install/ADB/Host/model or production changes; A6/task/project paused"
+}

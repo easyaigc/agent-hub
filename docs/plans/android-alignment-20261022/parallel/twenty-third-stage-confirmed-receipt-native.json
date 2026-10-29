@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "checkpoint": "PAR23-confirmed-receipt-API26",
+  "date": "2026-10-29",
+  "groups": [
+    {
+      "label": "easywork-fixed-hot",
+      "status": "passed",
+      "sourceSha256": "13579b744abbb80942a1b8e5f31835d6ae700f9f15946bdd86fe5e26695ead42",
+      "appSha256": "2012e8591620a0fa4c6a669f543b00ee52846edcaac27f7a11f9146002b538af",
+      "runnerSha256": "f19109f4933be67b1470a6cedb13265a1fc4889e2a7899401c017ba0f107ee64",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#destinationOriginalAuthorityAndUnknownRemainExactWhileSourceArchivesMergeAcrossReexport",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#actualRefreshResultsKeepOriginalBodyTokenHashAndUnknownExtensions",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#confirmedFenceWithoutGrantAndGuardOnlyCrashAreNeverOmittedOrReactivated",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#actualUnactivatedCredentialAndPendingRevokeOriginalsStayInertAndExactThroughPublication",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#actualConfirmedCleanupResumeKeepsReceiptObjectAndOriginalSavedStringExact",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#malformedFenceUnclaimedOriginalAndActiveEasyWorkMetadataRefuseWithoutChangingOriginalCandidate",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#incorrectLocalReceiptTypesAndChangedOriginalIdentityRefuseWithoutReplacingCandidate",
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveTest#modernOrphanReferencesResolveExactLegacyGrantAndFenceWithoutAtomicRecovery"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "6483c22cf16375002191f579a752dbf11022cd73af58f8cfb89862bfef6ca800"
+    },
+    {
+      "label": "easywork-fixed-cold-writer",
+      "status": "passed",
+      "sourceSha256": "13579b744abbb80942a1b8e5f31835d6ae700f9f15946bdd86fe5e26695ead42",
+      "appSha256": "2012e8591620a0fa4c6a669f543b00ee52846edcaac27f7a11f9146002b538af",
+      "runnerSha256": "f19109f4933be67b1470a6cedb13265a1fc4889e2a7899401c017ba0f107ee64",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveColdTest#stageFreshOriginalFenceAndUnactivatedCredentialForDifferentProcess"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "3695713cf89d48dde9ba3bb2bb9b153058d043db89c91b310186e1520d1850d0"
+    },
+    {
+      "label": "easywork-fixed-cold-reader",
+      "status": "passed",
+      "sourceSha256": "13579b744abbb80942a1b8e5f31835d6ae700f9f15946bdd86fe5e26695ead42",
+      "appSha256": "2012e8591620a0fa4c6a669f543b00ee52846edcaac27f7a11f9146002b538af",
+      "runnerSha256": "f19109f4933be67b1470a6cedb13265a1fc4889e2a7899401c017ba0f107ee64",
+      "passedMethods": [
+        "com.agenthub.android.NativeMigrationEasyWorkArchiveColdTest#readSameOriginalCandidateAndConfirmNoIncomingAuthorityUnderDifferentPid"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "5c9809e8bb0940e08f838ea5fb1e88e5e11eb608d057141ab1dec75690e0711d"
+    },
+    {
+      "label": "home-readiness-rules",
+      "status": "passed",
+      "sourceSha256": "13579b744abbb80942a1b8e5f31835d6ae700f9f15946bdd86fe5e26695ead42",
+      "appSha256": "2012e8591620a0fa4c6a669f543b00ee52846edcaac27f7a11f9146002b538af",
+      "runnerSha256": "f19109f4933be67b1470a6cedb13265a1fc4889e2a7899401c017ba0f107ee64",
+      "passedMethods": [
+        "com.agenthub.android.NativeTreeHomeReadinessRulesTest#initialNullRootsWaitForTheExactRefreshedHome",
+        "com.agenthub.android.NativeTreeHomeReadinessRulesTest#aDifferentOwnerCannotBorrowMissingWindowMetadata",
+        "com.agenthub.android.NativeTreeHomeReadinessRulesTest#aDifferentReadyOwnerFailsImmediatelyAndCannotWaitForALaterHome",
+        "com.agenthub.android.NativeTreeHomeReadinessRulesTest#anOwnerReturnedAfterBudgetCannotCreateReadiness",
+        "com.agenthub.android.NativeTreeHomeReadinessRulesTest#absentRootStopsAtItsBoundedReadinessDeadline",
+        "com.agenthub.android.NativeTreeHomeReadinessRulesTest#aStaleOrUnreadyHomeNodeCannotPass"
+      ],
+      "failedMethods": [],
+      "instrumentationSha256": "d972741955edebd0abe0859d66d4f6b177cd08aa282c839654081061283c920b"
+    }
+  ],
+  "passedNativeMethods": 16,
+  "failedNativeMethods": 0,
+  "passedResidueHot": 8,
+  "passedSameCandidateDifferentPid": 2,
+  "passedPureHomeRules": 6,
+  "coldOriginal": {
+    "writerPid": 9568,
+    "readerPid": 9679,
+    "sameCandidate": true,
+    "sourceAndCandidateUnchanged": true,
+    "originalFenceAndCredentialExact": true,
+    "incomingActiveAuthority": 0,
+    "newIdentitySignerRefreshRevokeOrReplay": 0
+  },
+  "default11FieldProofCount": 10,
+  "originalPar22FailuresRetained": true,
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "limits": [
+    "Pure Home rules do not establish actual AX/grant/product SAF",
+    "Physical/API37 residual graph and complete active EasyWork business remain open",
+    "Current P9 worker fix is separate source24; this package still carries earlier coordinator",
+    "Full P7/DEV/iOS interoperability and A6 not established"
+  ]
+}

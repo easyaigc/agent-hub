@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR27",
+  "sourceSha256": "7e8eea407399840a1ed4906df95b5cb8cc424e51d58328d3eefbbb3dab869c66",
+  "appSha256": "c7e015b73d206d8c7094c5a060b59da578b6a70cc3deed5ddc46d22446a25392",
+  "runnerSha256": "0499c5c40cd9c7839a32f029d3528dc3389e33b3f5d1116a11a3e5ce0e50052c",
+  "implementation": "Exact e9c38fe9 ->91ad035f post-credential IO current generation/full target/ref/preference recheck and live candidate merge",
+  "auxiliary": {
+    "originalSourceFailed": 8,
+    "total": 12,
+    "proposedPassed": 12,
+    "kind": "exact source slice; synthetic outer state/store"
+  },
+  "api37": {
+    "nativePassed": 5,
+    "skipped": 0,
+    "actualSessionKeystoreStorage": true,
+    "defaultFilesUnchanged": true,
+    "unknownJournalNotReplayed": true,
+    "draftAndBusyPreserved": true,
+    "noRuntimeSessionAtCheckpoints": true,
+    "networkModelAcceptance": false
+  },
+  "api26": {
+    "nativePreconditionFailed": 5,
+    "reason": "complete default family inventory exceeds unchanged 1024 file bound",
+    "ownedFixturesCreated": 0,
+    "capUnchanged": true,
+    "noDataCleared": true,
+    "remaining": "whole-family bounded inventory on this accumulated device"
+  },
+  "initialCommand": {
+    "nativeExecuted": 0,
+    "ownedFixturesCreated": 0,
+    "retained": true,
+    "reason": "unquoted remote JSON expanded before instrumentation; corrected only after raw am help and family absence verified"
+  },
+  "caseMethods": [
+    "newerCredentialReferenceCannotBeReplacedByTheOldProbe",
+    "preferenceRoundTripCannotReactivateTheOldProbe",
+    "removedSavedConnectionCannotBeResurrectedByDelayedDiscovery",
+    "unchangedConnectionRepairsOnlyRoutesAndPersistsItsOriginalPointer",
+    "validRouteRepairPreservesConcurrentNameOnlineAndRouteChanges"
+  ],
+  "candidateCaseIds": [
+    "08bbf0d8-1383-4166-bcca-c23f664fe9cc",
+    "7831563e-b370-44a4-828a-68e8238d13fd",
+    "9b4b1bad-1d09-49df-8fb8-d93a36bff9e3",
+    "e9f4d51c-4a2d-4eaa-89e4-401464569f9e",
+    "fab628f9-b403-4c71-b725-72ed0bfa681a"
+  ],
+  "build": "82 tasks passed",
+  "fullWorkspaceCheck": "in progress; recorded separately after completion",
+  "remaining": [
+    "real issuer/Desktop DEV",
+    "system-trusted LAN/Relay",
+    "actual full UI matrix",
+    "physical full-default inventory",
+    "full A5 seven groups"
+  ],
+  "ios": "reviewed MainActor path;unchanged;A6 paused",
+  "realModelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "unknownOperationsReplayed": 0
+}

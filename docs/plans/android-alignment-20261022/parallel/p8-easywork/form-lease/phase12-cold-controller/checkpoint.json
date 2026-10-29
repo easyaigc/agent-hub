@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "controllerCommit": "dc32700326c068671ed5747c883e6c3b70700ca3",
+  "scopeValueCommit": "473d3ddc1104ba9fcbf9dfc80856e4981b77fac5",
+  "selfchecks": {
+    "count": 42,
+    "status": "passed",
+    "uses": "fake device driver, static metadata and bounded local Python processes",
+    "deviceCommands": 0
+  },
+  "staticPreflight": {
+    "status": "passed initially against selected Stage18 artifacts",
+    "sourceSha256": "28bfde2bb5daba04bb29e5b3d82bcbb06a10719de3dce864ad3f76fe9225d77e",
+    "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+    "runnerSha256": "0f6d794d1e995e7d55fc5b9a846adcec8067d308e7a2462879e24be0cbcf1860",
+    "sourceFiles": 654,
+    "laterRevalidation": "correctly rejected after selected APK files became absent; original plan unchanged; parent must preflight current selected candidate"
+  },
+  "rootCheck": {
+    "status": "blocked",
+    "passedBeforeFailure": ["format:check", "check:github-sync", "lint"],
+    "failure": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "scope": "existing leaf central-registration gap; no parent check result inferred; not bypassed"
+  },
+  "native": {
+    "controllerDeviceRuns": 0,
+    "scopeFixCompile": "full AndroidTest Kotlin passed with 483 own-shadow inputs",
+    "newApks": 0,
+    "realCases": 0,
+    "a5Complete": false,
+    "a6": "paused"
+  },
+  "oemFollowup": {
+    "operationId": "parent-p8-cold-oem-inventory-20261029-1",
+    "codeCommit": "1eb12efd5361f67c84ca1d0b106ed1170b57a232",
+    "hostSelfchecks": 58,
+    "newChecks": 16,
+    "status": "passed",
+    "actualDeviceExecution": "not run by leaf",
+    "fullObservedBytes": 699491,
+    "fullBodyFixture": "synthetic projection from recorded actual header summary",
+    "defaultCause": "unknown from type-only failure; strict separator compatibility and bounded stage diagnostics added",
+    "newPlanRequired": true,
+    "oldUuidSealed": true,
+    "a5Complete": false,
+    "inventoryTimeoutSeconds": 5
+  },
+  "boundedFamilyFollowup": {
+    "operationId": "parent-p8-default-family-bounded-discovery-20261029-1",
+    "codeCommit": "2b1c736ef7e1967fe7d17a4c4f81dd6d2ba69743",
+    "hostSelfchecks": 62,
+    "newChecks": 4,
+    "status": "passed",
+    "deviceCommandsByLeaf": 0,
+    "parentPriorReadOnlyResult": "Full runtime parse passed; unrestricted ls family discovery exceeded existing output cap; source fingerprint preserved separately",
+    "currentDefaultDiscovery": "Fixed root-only pattern with exact bounded families and symlink/type rejection; native read-only verification pending",
+    "outputLimitBytes": 262144,
+    "timeoutSeconds": 5,
+    "familyLimit": 64,
+    "fileLimit": 1024,
+    "nextGate": "Parent read-only discovery before creating new plan/UUID",
+    "a5Complete": false
+  }
+}

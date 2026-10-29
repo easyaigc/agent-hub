@@ -2861,6 +2861,53 @@
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt",
       "scripts/mobile/fixtures/native/NativeChatNotificationEnrollmentOriginalsTest.kt"
     ],
+    "AndroidMigrationBoundedTextFrames": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameColdTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForegroundV2.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamArchive.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamRecords.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt"
+    ],
+    "AndroidMigrationEasyWorkAuditArchives": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveColdTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt"
+    ],
+    "AndroidMigrationRealSystemPickerPrepared": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt"
+    ],
+    "AndroidSystemVoiceOriginalFinishGeneration": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSystemVoiceTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt"
+    ],
+    "AndroidEasyWorkConfirmedReceiptReader": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt"
+    ],
+    "AndroidTreeHomeReadinessPrepared": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTreeHomeReadinessRulesTest.kt"
+    ],
+    "AndroidNotificationOriginalSystemUiColdPrepared": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt"
+    ],
     "AndroidNotificationWorkerCloseOwner": [
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseFixture.kt",
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseTest.kt",
@@ -2869,6 +2916,151 @@
       "scripts/mobile/fixtures/WorkerCloseVectors.kt",
       "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseFixture.kt",
       "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseTest.kt"
+    ],
+    "AndroidPairingOriginalColdCandidateBoundary": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCommitColdTest.kt"
+    ],
+    "AndroidSavedVoiceOriginalFallback": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceFallbackTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceFallbackUiTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt"
+    ],
+    "AndroidDebugHomeResolverVisibility": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTreeHomeResolutionRulesTest.kt",
+      "apps/android/src/debug/AndroidManifest.xml"
+    ],
+    "AndroidOwnedTreeConfirmationObservation": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTreeConfirmationObservationRulesTest.kt",
+      "apps/android/src/debug/AndroidManifest.xml"
+    ],
+    "AndroidDiscoveryCurrentCandidatePublication": [
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCandidateRefreshTest.kt"
+    ],
+    "AndroidMigrationLocalBinaryFraming": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationBinaryInventoryTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormatTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormat.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt"
+    ],
+    "AndroidOriginalSafCancellationObservation": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSafCancellationObservation.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSafCancellationObservationTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceFallbackUiTest.kt"
+    ],
+    "AndroidImportedVoiceAndPickerOriginalReadiness": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceUiTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt"
+    ],
+    "AndroidMigratedEasyWorkBusinessOwners": [
+      "apps/android/localization/native-copy.json",
+      "apps/android/src/androidTest/assets/localization-catalog.json",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessColdTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessFixtures.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoLifecycleTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/MigratedEasyWorkConnection.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkMigrationOwners.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkOkHttp55.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusiness.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt",
+      "apps/android/src/main/res/values-zh/product_strings.xml",
+      "apps/android/src/main/res/values/product_strings.xml"
+    ],
+    "AndroidDiscoveryCurrentAndImportedUi": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt"
+    ],
+    "AndroidNaturalExistingKeyPermitStore": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt",
+      "apps/android/src/debug/AndroidManifest.xml",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeChatNotificationNaturalFiles.kt",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeChatNotificationNaturalPermit.kt",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeChatNotificationNaturalStore.kt",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalStoreProbeService.kt",
+      "scripts/mobile/check-chat-notification-natural-permit.mjs",
+      "scripts/mobile/fixtures/NaturalPermitVectors.kt",
+      "scripts/mobile/fixtures/NaturalStoreVectors.kt"
+    ],
+    "AndroidSensitiveMigrationAppReadiness": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt"
+    ],
+    "AndroidSessionOwnedConnectionForm": [
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkFormAction.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormActionTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt"
+    ],
+    "AndroidImportedEditTargetAndSavedName": [
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt"
+    ],
+    "AndroidOriginalPickerNullOwnerScopedWait": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt"
+    ],
+    "AndroidNaturalStoreBootstrapPreflight": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalBootstrapTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapFence.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalEvidenceBoundary.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalPreflightEvidence.kt",
+      "scripts/mobile/check-chat-notification-natural-permit.mjs",
+      "scripts/mobile/fixtures/NaturalBootstrapVectors.kt"
+    ],
+    "AndroidDiscoveryTargetValueLayoutMeasurement": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt"
+    ],
+    "HostCoordinationReviewedSourceBundle": [
+      "scripts/package-host-connect.mjs",
+      "scripts/package-host-connect.test.mjs"
+    ],
+    "AndroidNsdSdkTerminalGenerationOwners": [
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeNsdLifetime.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/AndroidNsdPlatform.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdControlledLifetimeTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdSdkTest.kt"
+    ],
+    "AndroidFormLifecycleOwningComposeClock": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt"
+    ],
+    "AndroidReadonlyTargetFiniteColumnLayout": [
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt"
+    ],
+    "AndroidNativeProbeStrictSynchronousTransport": [
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalStoreProbeService.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt"
+    ],
+    "AndroidCompleteTextWrapPreconditions": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt"
+    ],
+    "AndroidImportedEditorActiveWindowReadiness": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt"
     ],
     "Inference": [
       "apps/host-agent/src/responses-proxy.ts",
@@ -2954,11 +3146,21 @@
         "AndroidEasyWorkPairingUi",
         "AndroidEasyWorkRevocableForm",
         "AndroidPositiveFormClock",
-        "AndroidPositiveScopeValueTest"
+        "AndroidPositiveScopeValueTest",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidPairingOriginalColdCandidateBoundary",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "HostCoordinationReviewedSourceBundle",
+        "AndroidNsdSdkTerminalGenerationOwners",
+        "AndroidReadonlyTargetFiniteColumnLayout",
+        "AndroidCompleteTextWrapPreconditions",
+        "AndroidImportedEditorActiveWindowReadiness"
       ],
       "scenarios": ["S01"],
       "ui": ["UI01", "UI03"],
-      "revision": 32,
+      "revision": 42,
       "implementation": {
         "ios": "code-present",
         "android": "implemented"
@@ -2992,11 +3194,12 @@
         "AndroidPairedTlsReadonly",
         "AndroidMainIntegration",
         "AndroidNavigationCopy",
-        "AndroidNotificationHostMainIntegration"
+        "AndroidNotificationHostMainIntegration",
+        "HostCoordinationReviewedSourceBundle"
       ],
       "scenarios": ["S01"],
       "ui": ["UI01", "UI03"],
-      "revision": 20,
+      "revision": 21,
       "implementation": {
         "ios": "code-present",
         "android": "implemented"
@@ -3031,11 +3234,13 @@
         "AndroidEasyWorkIncomingPresentationGuard",
         "AndroidEasyWorkRevocableForm",
         "AndroidPositiveFormClock",
-        "AndroidPositiveScopeValueTest"
+        "AndroidPositiveScopeValueTest",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidPairingOriginalColdCandidateBoundary"
       ],
       "scenarios": ["S01", "S11"],
       "ui": ["UI01", "UI03"],
-      "revision": 18,
+      "revision": 20,
       "implementation": {
         "ios": "code-present",
         "android": "planned"
@@ -3126,11 +3331,18 @@
         "AndroidPairingTextProof",
         "AndroidEasyWorkCanonicalKeys",
         "AndroidPositiveFormClock",
-        "AndroidPositiveScopeValueTest"
+        "AndroidPositiveScopeValueTest",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidPairingOriginalColdCandidateBoundary",
+        "AndroidDiscoveryCurrentCandidatePublication",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "AndroidNsdSdkTerminalGenerationOwners"
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 9,
+      "revision": 16,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -3158,11 +3370,24 @@
         "AndroidPairingNativeCorrections",
         "AndroidPairingTextProof",
         "AndroidPositiveFormClock",
-        "AndroidPositiveScopeValueTest"
+        "AndroidPositiveScopeValueTest",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidEasyWorkConfirmedReceiptReader",
+        "AndroidPairingOriginalColdCandidateBoundary",
+        "AndroidMigratedEasyWorkBusinessOwners",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidSessionOwnedConnectionForm",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "AndroidNsdSdkTerminalGenerationOwners",
+        "AndroidFormLifecycleOwningComposeClock",
+        "AndroidReadonlyTargetFiniteColumnLayout",
+        "AndroidCompleteTextWrapPreconditions",
+        "AndroidImportedEditorActiveWindowReadiness"
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 12,
+      "revision": 26,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -3189,11 +3414,18 @@
         "AndroidParallelEasyWorkTransport",
         "AndroidPairingNativeCorrections",
         "AndroidPairingTextProof",
-        "AndroidEasyWorkCanonicalKeys"
+        "AndroidEasyWorkCanonicalKeys",
+        "AndroidDiscoveryCurrentCandidatePublication",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "AndroidReadonlyTargetFiniteColumnLayout",
+        "AndroidCompleteTextWrapPreconditions",
+        "AndroidImportedEditorActiveWindowReadiness"
       ],
       "scenarios": ["S11", "S14"],
       "ui": ["UI03"],
-      "revision": 11,
+      "revision": 18,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -3221,11 +3453,22 @@
         "AndroidFenceVoiceCopy",
         "AndroidPairingNativeCorrections",
         "AndroidPairingTextProof",
-        "AndroidEasyWorkCanonicalKeys"
+        "AndroidEasyWorkCanonicalKeys",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidEasyWorkConfirmedReceiptReader",
+        "AndroidDiscoveryCurrentCandidatePublication",
+        "AndroidMigratedEasyWorkBusinessOwners",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidSessionOwnedConnectionForm",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "AndroidNsdSdkTerminalGenerationOwners",
+        "AndroidFormLifecycleOwningComposeClock",
+        "AndroidReadonlyTargetFiniteColumnLayout"
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 11,
+      "revision": 23,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -3666,11 +3909,12 @@
         "CompletedResourceReplyIdentity",
         "AndroidPhotoModelAndColdHistory",
         "AndroidParallelEasyWorkAudit",
-        "AndroidSystemMigrationLifecycle"
+        "AndroidSystemMigrationLifecycle",
+        "AndroidDiscoveryCurrentCandidatePublication"
       ],
       "scenarios": ["S05", "S11"],
       "ui": ["UI05"],
-      "revision": 41,
+      "revision": 42,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4434,11 +4678,15 @@
         "IOSQuestionVoiceBaseline",
         "AndroidMigrationPublication",
         "AndroidVoicePermissionLifetime",
-        "AndroidSystemMigrationLifecycle"
+        "AndroidSystemMigrationLifecycle",
+        "AndroidSystemVoiceOriginalFinishGeneration",
+        "AndroidSavedVoiceOriginalFallback",
+        "AndroidOriginalSafCancellationObservation",
+        "AndroidImportedVoiceAndPickerOriginalReadiness"
       ],
       "scenarios": ["S17"],
       "ui": ["UI07"],
-      "revision": 9,
+      "revision": 14,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4903,11 +5151,15 @@
         "IOSQuestionVoiceBaseline",
         "AndroidParallelEasyWorkAudit",
         "AndroidLongNoticeCoverage",
-        "AndroidNoticeGlyphWitness"
+        "AndroidNoticeGlyphWitness",
+        "AndroidSystemVoiceOriginalFinishGeneration",
+        "AndroidSavedVoiceOriginalFallback",
+        "AndroidOriginalSafCancellationObservation",
+        "AndroidImportedVoiceAndPickerOriginalReadiness"
       ],
       "scenarios": ["S09"],
       "ui": ["UI09"],
-      "revision": 37,
+      "revision": 42,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4943,11 +5195,15 @@
         "AndroidExecutionStateCopy",
         "AndroidParallelEasyWorkAudit",
         "AndroidLongNoticeCoverage",
-        "AndroidNoticeGlyphWitness"
+        "AndroidNoticeGlyphWitness",
+        "AndroidSystemVoiceOriginalFinishGeneration",
+        "AndroidSavedVoiceOriginalFallback",
+        "AndroidOriginalSafCancellationObservation",
+        "AndroidImportedVoiceAndPickerOriginalReadiness"
       ],
       "scenarios": ["S09", "S15"],
       "ui": ["UI09", "UI11"],
-      "revision": 24,
+      "revision": 29,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5052,11 +5308,31 @@
         "AndroidEasyWorkRevocableForm",
         "AndroidSystemMigrationLifecycle",
         "AndroidPositiveFormClock",
-        "AndroidPositiveScopeValueTest"
+        "AndroidPositiveScopeValueTest",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidMigrationRealSystemPickerPrepared",
+        "AndroidEasyWorkConfirmedReceiptReader",
+        "AndroidTreeHomeReadinessPrepared",
+        "AndroidPairingOriginalColdCandidateBoundary",
+        "AndroidDebugHomeResolverVisibility",
+        "AndroidDiscoveryCurrentCandidatePublication",
+        "AndroidMigrationLocalBinaryFraming",
+        "AndroidMigratedEasyWorkBusinessOwners",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidSensitiveMigrationAppReadiness",
+        "AndroidSessionOwnedConnectionForm",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidOriginalPickerNullOwnerScopedWait",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "AndroidNsdSdkTerminalGenerationOwners",
+        "AndroidFormLifecycleOwningComposeClock",
+        "AndroidReadonlyTargetFiniteColumnLayout",
+        "AndroidCompleteTextWrapPreconditions",
+        "AndroidImportedEditorActiveWindowReadiness"
       ],
       "scenarios": ["S03", "S10", "S11"],
       "ui": ["UI04", "UI10"],
-      "revision": 95,
+      "revision": 116,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5162,11 +5438,18 @@
         "AndroidEasyWorkIncomingPresentationGuard",
         "AndroidEasyWorkRevocableForm",
         "AndroidPositiveFormClock",
-        "AndroidPositiveScopeValueTest"
+        "AndroidPositiveScopeValueTest",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidEasyWorkConfirmedReceiptReader",
+        "AndroidPairingOriginalColdCandidateBoundary",
+        "AndroidMigrationLocalBinaryFraming",
+        "AndroidMigratedEasyWorkBusinessOwners",
+        "AndroidSessionOwnedConnectionForm",
+        "AndroidFormLifecycleOwningComposeClock"
       ],
       "scenarios": ["S10", "S11"],
       "ui": ["UI04", "UI10"],
-      "revision": 84,
+      "revision": 92,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5340,11 +5623,25 @@
         "AndroidEasyWorkIncomingPresentationGuard",
         "AndroidEasyWorkRevocableForm",
         "AndroidPositiveFormClock",
-        "AndroidPositiveScopeValueTest"
+        "AndroidPositiveScopeValueTest",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidEasyWorkConfirmedReceiptReader",
+        "AndroidPairingOriginalColdCandidateBoundary",
+        "AndroidDiscoveryCurrentCandidatePublication",
+        "AndroidMigrationLocalBinaryFraming",
+        "AndroidMigratedEasyWorkBusinessOwners",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidSessionOwnedConnectionForm",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "AndroidFormLifecycleOwningComposeClock",
+        "AndroidReadonlyTargetFiniteColumnLayout",
+        "AndroidCompleteTextWrapPreconditions",
+        "AndroidImportedEditorActiveWindowReadiness"
       ],
       "scenarios": ["S05", "S11"],
       "ui": ["UI04", "UI10"],
-      "revision": 109,
+      "revision": 124,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5449,11 +5746,22 @@
         "AndroidSystemMigrationLifecycle",
         "AndroidMigrationOwnerScope",
         "AndroidNotificationClosedEnrollmentOriginals",
-        "AndroidNotificationWorkerCloseOwner"
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidMigrationRealSystemPickerPrepared",
+        "AndroidEasyWorkConfirmedReceiptReader",
+        "AndroidTreeHomeReadinessPrepared",
+        "AndroidSavedVoiceOriginalFallback",
+        "AndroidDebugHomeResolverVisibility",
+        "AndroidNotificationWorkerCloseOwner",
+        "AndroidMigrationLocalBinaryFraming",
+        "AndroidMigratedEasyWorkBusinessOwners",
+        "AndroidSessionOwnedConnectionForm",
+        "AndroidFormLifecycleOwningComposeClock"
       ],
       "scenarios": ["S11", "S13", "S18"],
       "ui": ["UI10"],
-      "revision": 73,
+      "revision": 85,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5549,11 +5857,12 @@
         "AndroidSharedDirectoryCompatibility",
         "AndroidNativeAcceptanceFixtureCorrections",
         "AndroidLongNoticeCoverage",
-        "AndroidNoticeGlyphWitness"
+        "AndroidNoticeGlyphWitness",
+        "AndroidNativeProbeStrictSynchronousTransport"
       ],
       "scenarios": ["S12"],
       "ui": ["UI02"],
-      "revision": 21,
+      "revision": 22,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5596,11 +5905,12 @@
         "AndroidVisibleNoticePort",
         "AndroidActualVisibleNoticeSession",
         "AndroidLongNoticeCoverage",
-        "AndroidNoticeGlyphWitness"
+        "AndroidNoticeGlyphWitness",
+        "AndroidNativeProbeStrictSynchronousTransport"
       ],
       "scenarios": ["S12", "S16"],
       "ui": ["UI11"],
-      "revision": 23,
+      "revision": 24,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5643,11 +5953,16 @@
         "AndroidNotificationOwnedFixtures",
         "AndroidSystemMigrationLifecycle",
         "AndroidMigrationOwnerScope",
-        "AndroidNotificationClosedEnrollmentOriginals"
+        "AndroidNotificationClosedEnrollmentOriginals",
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidMigrationRealSystemPickerPrepared",
+        "AndroidTreeHomeReadinessPrepared",
+        "AndroidDebugHomeResolverVisibility"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 17,
+      "revision": 24,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5692,11 +6007,16 @@
         "AndroidNotificationOwnedFixtures",
         "AndroidNotificationEnrollmentNative",
         "AndroidOriginalQueryNativeIoTest",
-        "AndroidNotificationWorkerCloseOwner"
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidNotificationOriginalSystemUiColdPrepared",
+        "AndroidNotificationWorkerCloseOwner",
+        "AndroidNaturalExistingKeyPermitStore",
+        "AndroidNaturalStoreBootstrapPreflight"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 30,
+      "revision": 38,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5736,11 +6056,16 @@
         "AndroidNotificationOwnedFixtures",
         "AndroidNotificationEnrollmentNative",
         "AndroidOriginalQueryNativeIoTest",
-        "AndroidNotificationWorkerCloseOwner"
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidNotificationOriginalSystemUiColdPrepared",
+        "AndroidNotificationWorkerCloseOwner",
+        "AndroidNaturalExistingKeyPermitStore",
+        "AndroidNaturalStoreBootstrapPreflight"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 26,
+      "revision": 34,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5770,11 +6095,13 @@
         "AndroidNotificationOwnedFixtures",
         "AndroidSystemMigrationLifecycle",
         "AndroidMigrationOwnerScope",
-        "AndroidNotificationClosedEnrollmentOriginals"
+        "AndroidNotificationClosedEnrollmentOriginals",
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 14,
+      "revision": 18,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5834,11 +6161,33 @@
         "AndroidNativeAcceptanceFixtureCorrections",
         "AndroidSystemMigrationLifecycle",
         "AndroidMigrationOwnerScope",
-        "AndroidNotificationClosedEnrollmentOriginals"
+        "AndroidNotificationClosedEnrollmentOriginals",
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidMigrationRealSystemPickerPrepared",
+        "AndroidEasyWorkConfirmedReceiptReader",
+        "AndroidTreeHomeReadinessPrepared",
+        "AndroidDebugHomeResolverVisibility",
+        "AndroidOwnedTreeConfirmationObservation",
+        "AndroidMigrationLocalBinaryFraming",
+        "AndroidOriginalSafCancellationObservation",
+        "AndroidImportedVoiceAndPickerOriginalReadiness",
+        "AndroidMigratedEasyWorkBusinessOwners",
+        "AndroidDiscoveryCurrentAndImportedUi",
+        "AndroidSensitiveMigrationAppReadiness",
+        "AndroidSessionOwnedConnectionForm",
+        "AndroidImportedEditTargetAndSavedName",
+        "AndroidOriginalPickerNullOwnerScopedWait",
+        "AndroidDiscoveryTargetValueLayoutMeasurement",
+        "AndroidNsdSdkTerminalGenerationOwners",
+        "AndroidFormLifecycleOwningComposeClock",
+        "AndroidReadonlyTargetFiniteColumnLayout",
+        "AndroidCompleteTextWrapPreconditions",
+        "AndroidImportedEditorActiveWindowReadiness"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
-      "revision": 43,
+      "revision": 67,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5969,11 +6318,24 @@
         "AndroidSystemMigrationLifecycle",
         "AndroidMigrationOwnerScope",
         "AndroidNotificationClosedEnrollmentOriginals",
-        "AndroidNotificationWorkerCloseOwner"
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidMigrationRealSystemPickerPrepared",
+        "AndroidSystemVoiceOriginalFinishGeneration",
+        "AndroidTreeHomeReadinessPrepared",
+        "AndroidSavedVoiceOriginalFallback",
+        "AndroidDebugHomeResolverVisibility",
+        "AndroidOwnedTreeConfirmationObservation",
+        "AndroidNotificationWorkerCloseOwner",
+        "AndroidOriginalSafCancellationObservation",
+        "AndroidImportedVoiceAndPickerOriginalReadiness",
+        "AndroidSensitiveMigrationAppReadiness",
+        "AndroidOriginalPickerNullOwnerScopedWait",
+        "AndroidNativeProbeStrictSynchronousTransport"
       ],
       "scenarios": ["S11", "S17", "S18"],
       "ui": ["UI12"],
-      "revision": 128,
+      "revision": 142,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6141,12 +6503,13 @@
         "AndroidReadonlyNamedRoutes",
         "AndroidMainIntegration",
         "AndroidLongOwnerRead",
-        "AndroidLongRevisionReceipt"
+        "AndroidLongRevisionReceipt",
+        "HostCoordinationReviewedSourceBundle"
       ],
       "androidStages": ["A3"],
       "scenarios": ["S01", "S11"],
       "ui": ["UI01", "UI02", "UI03"],
-      "revision": 23,
+      "revision": 24,
       "implementation": {
         "ios": "implemented",
         "android": "implemented"
@@ -6226,12 +6589,18 @@
         "AndroidVoicePermissionLifetime",
         "AndroidSystemMigrationLifecycle",
         "AndroidMigrationOwnerScope",
-        "AndroidNotificationClosedEnrollmentOriginals"
+        "AndroidNotificationClosedEnrollmentOriginals",
+        "AndroidMigrationBoundedTextFrames",
+        "AndroidMigrationEasyWorkAuditArchives",
+        "AndroidSystemVoiceOriginalFinishGeneration",
+        "AndroidSavedVoiceOriginalFallback",
+        "AndroidOriginalSafCancellationObservation",
+        "AndroidImportedVoiceAndPickerOriginalReadiness"
       ],
       "androidStages": ["A6"],
       "scenarios": ["S04", "S11", "S17", "S18"],
       "ui": ["UI06", "UI21"],
-      "revision": 62,
+      "revision": 70,
       "implementation": {
         "ios": "implemented",
         "android": "in-progress"
@@ -6557,12 +6926,13 @@
         "Agent",
         "AndroidCommands",
         "AndroidPreviewUpstream",
-        "AndroidMarkdownReader"
+        "AndroidMarkdownReader",
+        "AndroidNativeProbeStrictSynchronousTransport"
       ],
       "androidStages": ["A4"],
       "scenarios": ["S04", "S18"],
       "ui": ["UI05", "UI07", "UI12"],
-      "revision": 2,
+      "revision": 3,
       "implementation": {
         "ios": "implemented",
         "android": "in-progress"
@@ -15478,10 +15848,176 @@
       }
     },
     {
+      "id": "android-migration-bounded-text-frames-20261029",
+      "baseCommit": "e13a390c821d7932a705698cc78d4ac107d381ae",
+      "features": ["F47", "F51", "F52", "F53", "F54", "F55", "F56", "F64"],
+      "summary": "Android-only payload/candidate4 text descriptors and UTF8 frames, one original record at a time; encrypted transform scratch, lazy audit views, strict original aliases/closed graph/receipt/EOF and pending-cell refusal. Keep envelope2/root storage3,8MiB per text/192MiB raw/1024 records, legacy1/2/3 readers and explicit replacement. Six native prepared including unique writer/distinct-PID reader; exact five-source 62.4MB/48MiB JVM matching auxiliary reuse only. New parent native/DEV and EasyWork archive graph pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameColdTest.kt": "0de32c84fbaf16a511599f4985f2fd187ec26029773c07dd3f233103cd759fe4",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameTest.kt": "f676ee3c4a91c5754d4c96de65e323625580072b196f02256a6676bbc5488bcf",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "68b5da635a251cd43e93f592ab0fa63df78f48f3e17906dfc8fe2f36c392db23",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "7b2fea5625eda16ebbbff391e629a7e5a29b3c05a83fe97a8233a9b4490b360f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt": "f66245fd638c45e11c45588efb415042dbdbb88cf5e277f2d780cab78547d701",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForegroundV2.kt": "597289f051565dc3c4ef92721f16e96167de4a246c539d1cd5efbbed52f231b9",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt": "dbe1a3278a337368089c6d9ba8a50f2d8090c98c6589cc42afa31ae1a4253c7f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt": "667d947166b9b20bc3f522521290895cbc3597f4d3d89fd0c641bee2a2ed3523",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamArchive.kt": "84368c9bea5987f2eede870db3c69b3944daec9897fbd05668c9e102ca2d8a1e",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt": "d551830a6b095ff8bf55c345dfd46c7e0cc146f19dccdac74849b464486b9b96",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamRecords.kt": "496ad3c0f37cc4419ab6285a89b35dff0e2e15095a034eac63e696c1bb71ae1e",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt": "6ddcd3722c52df7f328b454461f2d3b198a83fab3e16351d5f54da14aafbcbb8",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "2c4ea483cf70ee50ac3fefc96843cb73e8bbf6cab8bcaee3ce4581c909d8fdc7"
+      }
+    },
+    {
+      "id": "android-framed-api26-native-20261029",
+      "baseCommit": "ff009f37",
+      "features": ["F47", "F51", "F52", "F53", "F54", "F55", "F56", "F64"],
+      "summary": "PAR21 API26 actual48MiB: framed6 passed with9,436,416B originals and different-PID same-candidate activation; core136=135pass/1 coordinator ClosedReceiveChannelException retained/assigned;109 default11-field proofs. Zero model/Host business inputs. Physical/API37/SAF/EasyWork/fullDEV remain open; no iOS/A6 execution.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameColdTest.kt": "0de32c84fbaf16a511599f4985f2fd187ec26029773c07dd3f233103cd759fe4",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameTest.kt": "f676ee3c4a91c5754d4c96de65e323625580072b196f02256a6676bbc5488bcf",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "68b5da635a251cd43e93f592ab0fa63df78f48f3e17906dfc8fe2f36c392db23",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "7b2fea5625eda16ebbbff391e629a7e5a29b3c05a83fe97a8233a9b4490b360f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt": "f66245fd638c45e11c45588efb415042dbdbb88cf5e277f2d780cab78547d701",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForegroundV2.kt": "597289f051565dc3c4ef92721f16e96167de4a246c539d1cd5efbbed52f231b9",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt": "dbe1a3278a337368089c6d9ba8a50f2d8090c98c6589cc42afa31ae1a4253c7f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt": "667d947166b9b20bc3f522521290895cbc3597f4d3d89fd0c641bee2a2ed3523",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamArchive.kt": "84368c9bea5987f2eede870db3c69b3944daec9897fbd05668c9e102ca2d8a1e",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt": "d551830a6b095ff8bf55c345dfd46c7e0cc146f19dccdac74849b464486b9b96",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamRecords.kt": "496ad3c0f37cc4419ab6285a89b35dff0e2e15095a034eac63e696c1bb71ae1e",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt": "6ddcd3722c52df7f328b454461f2d3b198a83fab3e16351d5f54da14aafbcbb8",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "2c4ea483cf70ee50ac3fefc96843cb73e8bbf6cab8bcaee3ce4581c909d8fdc7"
+      }
+    },
+    {
+      "id": "android-easywork-residue-audit-migration-20261029",
+      "baseCommit": "cc340685c50181af4773dee16769e1defc85c3ab",
+      "features": [
+        "F02",
+        "F04",
+        "F06",
+        "F07",
+        "F47",
+        "F51",
+        "F52",
+        "F53",
+        "F54",
+        "F55",
+        "F56",
+        "F64",
+        "F09",
+        "F43",
+        "F44",
+        "F46"
+      ],
+      "summary": "Android-only inert EasyWork authorization residue/orphan credential audit graph; original identity/grant/fence/claim/OIDC records remain password-encrypted exact aliases, never incoming authority. Preserve destination local authority, lazy text frames, strict relationships/legacy aliases/quotas/pending refusal and owner lease. Eight native methods compiled by workline only; parent native/DEV and active business graph remain open. No iOS/A6 changes.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveColdTest.kt": "713b7e9411c911aa34e3ca2b9c4b7858d6dfdc807c7e2e851cc7f3b591437701",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt": "cda5989e395becf430aa557ccc9fd282d6dc228abbe348f27ee579720dd71b21",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt": "abd8852f100fda6cfae9189d095d28c1f2731722536890c60a9686afd02384e9",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "dcd0fd0c4ffc995036ae5293b48cc1b040ee6583df27f6199649fd979ba69405",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "ab7242a4478a4456b415024fb5c97e59ff1df4d92f9846b8d1e5316f176e1e39",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt": "8a8910e5f490f0007a42c80a9db5d68235e67b374932d1c5eed02751ef01ba07",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt": "f0ff5f66861caee3b1cdeadcd11c4e64836e1e04e1317d4aed2e0a3e0e8c2969",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "5a91ce066a0a12edfbe94f4965a6f4227daafefb2518e7235de4caf2e0bb884a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt": "f8c95a48de2235e139cc79ee423ce075fc53dd5ea3b51984ab3e116e49404860",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "ce4f8a025e99fcf305c719478b8b538d3c31f17977347d133fb81f428d8580be"
+      }
+    },
+    {
+      "id": "android-migration-system-picker-prepared-20261029",
+      "baseCommit": "2000630e",
+      "features": ["F43", "F47", "F51", "F55", "F56"],
+      "summary": "Test preparation only: actual App caller OpenDocumentTree scoped empty UUID grant, exact original callback and persisted App UID proof, unknown confirmation controls stop input; actual product Create/Open/preview/confirm/cancel three native UI methods. No synthetic result/shell adoption/provider injection; zero executed by owner. Parent scheduling/native/system/DEV pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt": "82fdb78e570c29d815e0757c8ad90b7fc85b156ccca7d71da2a718c491ca940e",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt": "93c0306e72c95b9c1cffae5491569975ef007418d2cae6f77e007d397d9be3c2"
+      }
+    },
+    {
+      "id": "android-system-voice-original-finish-generation-20261029",
+      "baseCommit": "d410efeb",
+      "features": ["F33", "F42", "F56", "F58", "F64"],
+      "summary": "Capture original system-recognizer finish generation before adapter call; only schedule deadline while same generation remains finishing, fence synchronous failure then throw to original ID. Two native regressions prepared only, parent execution pending; actual acoustic/OS dialogs/saved-file ASR/full lifecycle not established. Android-only, iOS unchanged/A6 paused.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSystemVoiceTest.kt": "e85d225fc3476e65007f5c7b5b82a673825867f2295d566a6dcccd4a401c1d0f",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "25d50f8f31856fdf097def52b0653d6ddd1376257bac1aca7148a21faca1d307"
+      }
+    },
+    {
+      "id": "android-residue-voice-and-picker-native-20261029",
+      "baseCommit": "a56c7225",
+      "features": [
+        "F07",
+        "F09",
+        "F33",
+        "F42",
+        "F43",
+        "F44",
+        "F46",
+        "F47",
+        "F51",
+        "F52",
+        "F53",
+        "F54",
+        "F55",
+        "F56",
+        "F58",
+        "F64"
+      ],
+      "summary": "PAR22 exact source920d8476: API26 residue6=4pass/2 actual confirmed-localReceipt parser failures; original system voice2 and framed regression6 pass. API37 grant-preparation Home precondition failed before Main/request/grant, independently actual launcher observed; no product SAF pass.12 default11-field proofs; original failures retained and assigned, EasyWork cold2 not started. Zero model/Host business writes; full P7 remains open.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveColdTest.kt": "713b7e9411c911aa34e3ca2b9c4b7858d6dfdc807c7e2e851cc7f3b591437701",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt": "cda5989e395becf430aa557ccc9fd282d6dc228abbe348f27ee579720dd71b21",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt": "abd8852f100fda6cfae9189d095d28c1f2731722536890c60a9686afd02384e9",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt": "82fdb78e570c29d815e0757c8ad90b7fc85b156ccca7d71da2a718c491ca940e",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt": "93c0306e72c95b9c1cffae5491569975ef007418d2cae6f77e007d397d9be3c2",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSystemVoiceTest.kt": "e85d225fc3476e65007f5c7b5b82a673825867f2295d566a6dcccd4a401c1d0f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "dcd0fd0c4ffc995036ae5293b48cc1b040ee6583df27f6199649fd979ba69405",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "ab7242a4478a4456b415024fb5c97e59ff1df4d92f9846b8d1e5316f176e1e39",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt": "8a8910e5f490f0007a42c80a9db5d68235e67b374932d1c5eed02751ef01ba07",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt": "f0ff5f66861caee3b1cdeadcd11c4e64836e1e04e1317d4aed2e0a3e0e8c2969",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "5a91ce066a0a12edfbe94f4965a6f4227daafefb2518e7235de4caf2e0bb884a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt": "f8c95a48de2235e139cc79ee423ce075fc53dd5ea3b51984ab3e116e49404860",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "ce4f8a025e99fcf305c719478b8b538d3c31f17977347d133fb81f428d8580be",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "25d50f8f31856fdf097def52b0653d6ddd1376257bac1aca7148a21faca1d307"
+      }
+    },
+    {
+      "id": "android-easywork-confirmed-local-receipt-reader-20261029",
+      "baseCommit": "7570659f1d6388d2025fa158c8339be30c60de49",
+      "features": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+      "summary": "Read confirmed revoke localReceipt exactly as actual P8 producer JSONObject, while saved remains original String; do not coerce or rewrite. Original writer untouched, add actual confirmed-cleanup resume and six wrong-type/identity negative vectors;3-file exact overlay. JVM4 producer states/6 negatives auxiliary only; parent native8hot+2cold and fullP7/DEV pending, original PAR22 failures retained. iOS unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt": "0239a38fa0ee65c998373ca9ca73a50ec83665e9af8ac78ccfec47008938ca57",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt": "904c807158a3518800d267b85db2f0a62dd3e6c7b0de72ee583731a127cb5442",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt": "ce898490bd0de18fb09e2944b9a4fc425584d7e93234a0e547ce690b54d43ec5"
+      }
+    },
+    {
+      "id": "android-tree-exact-home-readiness-20261029",
+      "baseCommit": "69c2f3f776e58098fc6a1e8f1375e05adde7645c",
+      "features": ["F43", "F47", "F51", "F55", "F56"],
+      "summary": "Preparation-only: wait at most5s for missing/not-ready refreshed exact Home AX root, reject any explicit different owner immediately; retain/recheck noMain/P9/grant gates, add scalar-only readiness evidence and no-launch audit. Six pure readiness-rule auxiliary checks passed at workline, parent native and real App grant/SAF remain pending; original PAR22 no-request failure retained. No product/iOS change.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt": "1821007ec3f8768434f0221a28601b2348694045c692d220c2215adbd3f948ae",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTreeHomeReadinessRulesTest.kt": "4b5e5a8ab5875e23afa98e8cc5b1f91c4fad73c792ff4e177a22a485e7102c54"
+      }
+    },
+    {
+      "id": "android-notification-original-system-ui-cold-prepared-20261029",
+      "baseCommit": "8c648123da2f1478457971c0aaa36668061c79be",
+      "features": ["F52", "F53"],
+      "summary": "Prepare API31+ actual production Platform.post, original SDK notification row/token and SystemUI first click in new instrumented process, followed by same retained PendingIntent SDK duplicate and third-process completed-lease observer. Actual OS post/click distinct from synthetic event/backend and claimed receipt, not Delivery.finish or natural absent-process spawn. Exact tag/id only cleanup and permission preservation; never force-stop between roles/repost/retry unknown. Parent native pending after worker-close fix; no iOS/A6 change.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt": "d6a2ec22abe32139c160c7c8f2e514b14b67c5f4f3c3d8c583f11c9dcaf82089"
+      }
+    },
+    {
       "id": "android-notification-worker-close-owner-20261029",
       "baseCommit": "67312681",
       "features": ["F47", "F52", "F53", "F56"],
-      "summary": "ee4eef97->aa07dc10 coordinator: publish LAZY Job/worker before immediate start, recheck active/available/reading/exact worker after synchronize, normal closed wake exits without swallowing exceptional cause. No delayed first poll/retired restart/new register/replay; exact target/authority/IO retirement unchanged. Three baseline auxiliary failures reproduced, proposed3+existing8 auxiliary passed; parent Android native2/affected25 and actual OS/DEV pending, PAR21 native failure retained. Main/Session/voice untouched, iOS/A6 unchanged. PR51 exact standalone backport: Main/Session/voice remain at frozen PR51 bytes. Current stage7 native30 is shared-boundary evidence only; standalone current-package30 and migration-owner13 pending.",
+      "summary": "ee4eef97->aa07dc10 coordinator: publish LAZY Job/worker before immediate start, recheck active/available/reading/exact worker after synchronize, normal closed wake exits without swallowing exceptional cause. No delayed first poll/retired restart/new register/replay; exact target/authority/IO retirement unchanged. Three baseline auxiliary failures reproduced, proposed3+existing8 auxiliary passed; parent Android native2/affected25 and actual OS/DEV pending, PAR21 native failure retained. Main/Session/voice untouched, iOS/A6 unchanged. Standalone PR51 backport additionally registers migration-owner F47/F56; its exact Native25/CI evidence is separate from stage7 Native24/26.",
       "files": {
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseFixture.kt": "af54d8945da432677929c8dfd0d66900c04e87b8787d3fffe09f9d0a636e682c",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseTest.kt": "134ee2a8f8195444a336d14ee3167e37856481ceb7008fca48a466a4e4e8b7eb",
@@ -15490,6 +16026,64 @@
         "scripts/mobile/fixtures/WorkerCloseVectors.kt": "be21956bbb6655d311f565cf3c7b38217afcae752b8364b640f4d88682edb23f",
         "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseFixture.kt": "af54d8945da432677929c8dfd0d66900c04e87b8787d3fffe09f9d0a636e682c",
         "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseTest.kt": "134ee2a8f8195444a336d14ee3167e37856481ceb7008fca48a466a4e4e8b7eb"
+      }
+    },
+    {
+      "id": "android-notification-worker-close-native-20261029",
+      "baseCommit": "09a5fc64",
+      "features": ["F52", "F53"],
+      "summary": "PAR24 exact6148da1a/App5b6a816d/runnerd9daabf3: API26 worker2+coordinator25+fresh explicit original-query3 all30 passed;25 default11-field proofs. Initial3 missing-optin assumptions retained/not counted, no case created; new UUID selectors passed. PAR21 original failure retained. Actual OS/physical/Host/vendor/fullDEV remain open, iOS unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseFixture.kt": "af54d8945da432677929c8dfd0d66900c04e87b8787d3fffe09f9d0a636e682c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationWorkerCloseTest.kt": "134ee2a8f8195444a336d14ee3167e37856481ceb7008fca48a466a4e4e8b7eb",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+        "scripts/mobile/check-chat-notification-enrollment.mjs": "cab925b53c501b5dd4c4ed6b7ffd6018525a833ead979b43d847f31e87b83e0e",
+        "scripts/mobile/fixtures/WorkerCloseVectors.kt": "be21956bbb6655d311f565cf3c7b38217afcae752b8364b640f4d88682edb23f",
+        "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseFixture.kt": "af54d8945da432677929c8dfd0d66900c04e87b8787d3fffe09f9d0a636e682c",
+        "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseTest.kt": "134ee2a8f8195444a336d14ee3167e37856481ceb7008fca48a466a4e4e8b7eb"
+      }
+    },
+    {
+      "id": "android-p8-original-cold-candidate-native-20261029",
+      "baseCommit": "f73c036a",
+      "features": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+      "summary": "PAR24 P8 source090df0cc/Appc07a5405/runner95b40e4f: exact API37 writer durable checkpoint intentionally interrupted (not JUnit pass), new-PID reader1 passed; original unreferenced candidate/grant/claim/journal/metadata and6 ciphertexts/default files exact,0 new claim/protocol/submit. Own sidecar/reverses closed.70 offline controller cases separate; phone bounded inventory and full A5/real issuer/Host/DEV remain pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCommitColdTest.kt": "40fb86f23f98945fbd539e7a496417f15fcdacf1b677fbe44a4b2cf14ff82f9a"
+      }
+    },
+    {
+      "id": "android-saved-voice-original-fallback-20261029",
+      "baseCommit": "0d47ef5fffba27e3b78f82cc132a60fe247943b4",
+      "features": ["F33", "F42", "F47", "F56", "F58", "F64"],
+      "summary": "Keep original sealed desktop recording/unknown ID when explicitly starting a new phone microphone capture; end-waiting only detaches/preserves original, guard provisional/discard/target changes and late callbacks. Honest discard/stop-wait labels and bounded scrolling. Four native component/two UI prepared, parent execution pending. Saved-file phone ASR remains unsupported, dependency audit explicit; no fake file transcription. iOS unchanged, A6/task-project paused.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceFallbackTest.kt": "b682f148849fa0b59d39a5396d48324b2435e44f53af128899cf7816c40513e7",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceFallbackUiTest.kt": "587accfbf9fb1d88c1fee9f182ce18253b1cd633277c07bf229a71311828b99f",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "2362de7fe64f9e17e28924f5efcb72282a46e9f4dde89621f2a7914f030daf04",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt": "0405659b5a73fc190ac182b441b2953447a233a12406bea388718b4682c7076c"
+      }
+    },
+    {
+      "id": "android-debug-home-resolver-visibility-20261029",
+      "baseCommit": "c9bd3e07",
+      "features": ["F43", "F47", "F51", "F55", "F56"],
+      "summary": "Debug-only exact MAIN/HOME query merged into parent manifest preserving audio witness; release/permissions unchanged. App UID component/candidate metadata validation rejects Settings/FallbackHome/framework chooser/self/inconsistent mappings; bounded exact-owner readiness retained.12 pure rules auxiliary only, actual App resolver/AX/grant/SAF pending; old different-owner evidence preserved, no hardcoded accepted launcher.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt": "b9a55238808d40e469172a46198aab8d00e264f4818e7a9f83778f4b06c363c3",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTreeHomeResolutionRulesTest.kt": "824c56ed352815b3a31b89a68b303862a8b90b171e6df44ceb196eeb7c80e532",
+        "apps/android/src/debug/AndroidManifest.xml": "b046ed262d4d6dfb3a51a36019890226007d0136e59ab5c36598ed727d5d7abc"
+      }
+    },
+    {
+      "id": "android-owned-tree-confirmation-observation-20261029",
+      "baseCommit": "a9c6c1aa9268afee85eca58064b7f285b5d5a326",
+      "features": ["F55", "F56"],
+      "summary": "Same-original DocsUI observation only: exact debug tree visibility, App UID resolver audit, full own folder witness, native bounded button/root/screen coordinates and monotonic times; no second automation, guessed input or permission fabrication. Five pure checks/new resolver audit prepared, actual grant/SAF unrun.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTreeGrantPreparationTest.kt": "355e2c43974e04071381e54ad224e11807fbee6cbb8e07acb605d0270939009c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTreeConfirmationObservationRulesTest.kt": "c2015cd71b73ae8e5f0da8adc42922f9a3a3025c1f268ec1e9e70968b72df52d",
+        "apps/android/src/debug/AndroidManifest.xml": "d51cde29f419a24675d4c321c1bee8011ee5e942ff89be3ab6deec4138b61f9c"
       }
     },
     {
@@ -15511,6 +16105,252 @@
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationCopyTest.kt": "917d3be41f9ff0e2f4a028fe36dc3c708511c96885c0a8ba92ef9571af527e27",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationStoragePublicationTest.kt": "1d26f681159a678d8f9954adc1f6169b67df9fc92b45b2166eb571ff2f736579",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt": "af14fccf6428d592844ea921a0a1a2aeb7f8a12f30e9b6cd8b1a1a2c6978462d"
+      }
+    },
+    {
+      "id": "android-p8-discovery-candidate-writeback-20261029",
+      "baseCommit": "6662270f",
+      "features": ["F06", "F08", "F09", "F18", "F43", "F46"],
+      "summary": "After credential IO, recheck current revision/full target/credential reference/preference and merge into latest connection so late descriptive discovery cannot revive removed clients or overwrite new display/routes/drafts/busy/original unknown journal. Existing dedupe/32 cap retained. Exact original source slices failed8/12; proposed12 auxiliary passed. Five actual Session/KeyStore native methods prepared, parent execution pending. iOS reviewed MainActor metadata path has no corresponding await; no iOS change/A6 or seven-group closure.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "91ad035f2a2c1913185f39c646daaea384ded11b9b56e7af14ed0e5f4f8808f1",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCandidateRefreshTest.kt": "7c8fbc25694b383ce8c3b61f13cb36d8da4b5d8d414c11995bf70a00a84353e3"
+      }
+    },
+    {
+      "id": "android-migration-local-binary-framing-20261029",
+      "baseCommit": "823dc851",
+      "features": ["F43", "F44", "F46", "F47", "F55"],
+      "summary": "Identify one-byte text1/3 and exact four-byte binary2/4 before unchanged full authentication/name/body/graph validation. Fix actual valid WAV migration inventory rejection; new real typed+framed storage2/decoder2 and original voice8 regression prepared, old PAR26 failures retained. No unknown/pending acceptance or rewrite.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationBinaryInventoryTest.kt": "5232bd4c2d391c33f553e9162486ea39103186c376010e247867d26c1e8152a5",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormatTest.kt": "3dcf380a89503b6c948cb07d76f27980f7d96aa86748785eece1ef69664e700d",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLocalRecordFormat.kt": "cd8e06e87e24fa0bb1e40be5f7a9e661c1b639266089907d1894371cc8b22e91",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "a99cf211334dabc6b3fed809332ba57c89fa5d446753556d017ec2a511e584bb"
+      }
+    },
+    {
+      "id": "android-original-saf-cancellation-observation-20261029",
+      "baseCommit": "831d5d17",
+      "features": ["F33", "F42", "F55", "F56", "F58", "F64"],
+      "summary": "Test-only short UUID-rooted voice child suffix; actual product original picker cancellation observes owner+original ID before at most3 BACKs, stops immediately on App return/unknown/third owner and records actual callback/count. No guessed profile instruction/cleanup cancellation/replay. Five pure policy/two UI/real SAF prepared, iOS A6 unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt": "7014dbb667a431fdd928508b5b1e9f3173b832b17e138b8c733493b68060852c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSafCancellationObservation.kt": "de2eddc7ecc12bebcff40246c17c3efced0d344df46dd9cb73a957bd553ad8ac",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSafCancellationObservationTest.kt": "dfddc412638742e5ffb5b7e7e89ed81e9a53e96c8ae488168406c33397d46557",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceFallbackUiTest.kt": "5ef846603b883c9bfe92f451ed5816d3991cc5ce919fb03f6a5d08e91d685b41"
+      }
+    },
+    {
+      "id": "android-imported-voice-and-picker-original-readiness-20261029",
+      "baseCommit": "3dc6d4a5",
+      "features": ["F33", "F42", "F55", "F56", "F58", "F64"],
+      "summary": "Test-only: imported voice preserve/no-write scenario uses actual end-waiting action and checks both labels/zero terminal/original IDs/hash/audio. Exact original picker owner and children share existing15s readiness deadline with live caller/issued ID and no unknown-owner input, budget extension or old replay. JUnit post-rule caller survival explicitly unverified. Prior PAR28 failures retained; new native1+SAF2/3 pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationVoiceUiTest.kt": "078abb0e1a32e34548e3ba0fad4c08728c4ce7f1a364732f2cd746a5ae543b96",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt": "ef5eb5d7358e78ecebdf50d086e372a1d20de8723acfc449ae4d8d85991b1258"
+      }
+    },
+    {
+      "id": "android-migrated-easywork-business-and-owner-boundaries-20261029",
+      "baseCommit": "7c40d07b",
+      "features": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+      "summary": "Inactive full-target EasyWork descriptors and original credential/intent audit; local drafts/files/history/immutable operations retained, no provider/channel/new-journal authority until explicit fresh pairing and imported old operations remain readonly. Seal/retire/join actual session/discovery/transport owners, callback outer-finally and real executor/OkHttp cleanup before migration publication; cancelled wait retains gate. P8 post-IO live publication method retained byte-exact. Native hot6/cold2/IO5/lifecycle1 prepared only;source auxiliaries not DEV. iOS credential-policy/format differences explicitly open;task-project/A6 paused. PAR30 native business hot6/cold2/actualIO5/Session lifecycle1 and binary/imported-voice13 passed; full DEV and real TLS/WS/Relay/NSD remain open.",
+      "files": {
+        "apps/android/localization/native-copy.json": "ec851c5118d6eec244d56830b7dd43b1697d2a8e0cefdddb5d74b69d34e1d000",
+        "apps/android/src/androidTest/assets/localization-catalog.json": "7ff3ba0b252452bbe4b9ee76216f8fd40485423252189ba476b5d66a91d7d449",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessColdTest.kt": "978dccb2be2a74250778d86e55c481a8086c09e754233ae951cecc68555c8943",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessFixtures.kt": "df61c232cdf66a9cb57cf2465ef1630872c6f6474daec787534ea2d0fd05faa1",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusinessTest.kt": "106b4892cee429d7ebb18ae17221a545671330b3a430a98cb24440cd9e606f57",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt": "6a8c47990e5058b24e5e5579cb6f94ec1a04fe873d3b3ef7ed51f96274f5cf84",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoLifecycleTest.kt": "6f1d92f001bf13105ee9c79b5653b69438abaa07ca0990e3019cc27651a14c7b",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoTest.kt": "c7a1add5c778647c5de98a05ce4d60cc03a3fb10644ae16cdee3cbdb2db89c68",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "e0d258d74e74c27b256c5a30e4592c0054bf9d14015616960167dc655ea33d36",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentRegistry.kt": "17064b137e687e0e899b4aa36ee93b7c00c174e074deb96ee59343deff853a47",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkAgentClient.kt": "0b902a299468ed6294e01345c65e6b5c03c04af32c4a529c8794210e35950158",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "0b6ed97218e20f129f8ed35a38073945d93a9cf55497a3ee4528ea0409b9d4ac",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt": "22d48085701e622daf7567dd232282be40a9965b425f46fa04b3866b8b236f66",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "d238d6b399682a81228680e753f6fad79e9db4e9ca3a769d845dfb99eb578f4d",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": "1b1278fa17b9bbda414045b11539a788b0481a2275f0c0a2c6e53987b1f8ccc9",
+        "apps/android/src/main/kotlin/com/agenthub/android/MigratedEasyWorkConnection.kt": "2156e0b3af352c3e2f47b6b493afdcd01b0eb11198ac8d499503dd087ddbe9d6",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "f229ef5c4701101cc2571a36595b3fba17d298d36c320a480cbc8885003d23bd",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkMigrationOwners.kt": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkOkHttp55.kt": "8885bfea167debd7e250b64a7d90532fe7cbe42281fa0e091be7dbafc0bfa720",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": "558d2def2c43aad0397d1270ffe2869e2dbb290978b2df9d44371ee32bd2e4c1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "ca23e60dbef87ab0a96a772c3d8e07ccdb334c0e3ee5c097ddfb8016de11eae4",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt": "758e1604a95cc28986ac44e8df8408cdd77394d397d9a947504173268835ca6c",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt": "33ef1e97a31c34641e3d025662e4264d8896e546479baa043caeb2e472fab32e",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusiness.kt": "3e24ed51b17fa94a3d2631a0bd37dd976044f852260a52ccd44ffca8cd95001a",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "03f4bc1e3ca80382c80fc2d53493fc52f80985ad78fd016168e0b9c4fa04d6b8",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt": "98084291ca1f31356402605b22ff59907e7689afdfd155cbdeb0637549a53dc5",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt": "6c5e5ad17a022c6830daa296fcc49ab9e1f9149f2ce51ae2717922c41da2fcbd",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeOperationJournal.kt": "e9367b76dd884a64c1dd63b54bb0db83ac2226f896f71020e1e0f30f26f42950",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "a0b640e6a736d9148bfb5825cfa48c14824dd716717b5b5868dfd0cbc593b4bd",
+        "apps/android/src/main/res/values/product_strings.xml": "3bd1a5d2be22cdd89906c86be3f175a29792ea73ab3de18eb6ae2a68c41eae69"
+      }
+    },
+    {
+      "id": "android-discovery-ui-current-and-imported-rows-20261029",
+      "baseCommit": "3fcf2425",
+      "features": ["F02", "F06", "F07", "F08", "F09", "F43", "F46", "F55"],
+      "summary": "Keep saved names authoritative over descriptive discovery; selected/checkmark menus and busy-disabled semantics. Combined Page preserves P7 marker preference and explicit pair notice; include non-demo imported saved row with no agentConnection, row only opens existing fresh QR UI without old credential/provider/action or automatic permission. Original four plus one marker native UI prepared, not run. iOS system swipe versus Android remove+confirmation explicitly recorded; no iOS/A6 claim.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "4d2b4e91a401b4d246c179bb63ea010b2a427cddfe75a5735e4a626f255b4b3a",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "0b6ed97218e20f129f8ed35a38073945d93a9cf55497a3ee4528ea0409b9d4ac",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "04e86bf72049eb952eb78d53b079f54037810fd1e22cd34c4e5b8a8aa3d90f93"
+      }
+    },
+    {
+      "id": "android-natural-existing-key-permit-store-component-20261029",
+      "baseCommit": "b6d060e5",
+      "features": ["F52", "F53"],
+      "summary": "Debug-only fixed-schema existing-key AEAD challenge/permit, append-only durable claim/complete and fsync/readback, partial/unknown/duplicate refusal;unexported same-UID separate-PID fixture Service. No key creation/import/fallback in adapter, no Main/Session/live hook. JVM64 model+17 store auxiliary; five Android KeyStore/lock/fault selectors prepared, not run. Only mobile-v1 base captured by these component tests, not whole mobile-v1 family;absent fixture alias is not original key loss;natural OS/token/permission/full DEV not proved. Parent manifest preserves sound/HOME/TREE;release unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt": "0cb5107a035e547ff62a5cc19f1c18805b73d44b4db4a71f1f00e25056711bec",
+        "apps/android/src/debug/AndroidManifest.xml": "b66de4fb53e4f24d0a1d1d8fdb3baa7fd453c0447d6d1feb33416d635ae67d4b",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeChatNotificationNaturalFiles.kt": "181a27d4133e126c2d90c3f9bc1a58ecdaa3207c65f61f1ce447233ec4a3b9f6",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeChatNotificationNaturalPermit.kt": "e0d2155cad422196096c9897ca530f0235b41dd9f8f49bc7ea1c6d3508f9d0cd",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeChatNotificationNaturalStore.kt": "97da6a164d675424090cb9cde5504e8086a06331c6d613cc48e21dbf1463c21b",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalStoreProbeService.kt": "af961d121e318bc0cce9a776b6a05eff7ccf5ddd060342a78cdfa437443e12f8",
+        "scripts/mobile/check-chat-notification-natural-permit.mjs": "e632bfccbfae7fdae672480c34d84b8cba9ec7ac2f3cc6cba6d6a37311e657ec",
+        "scripts/mobile/fixtures/NaturalPermitVectors.kt": "e4c14fafe4e51919e399f04d6d99940fde5fd3132bb16e9fb3a447a4c4771611",
+        "scripts/mobile/fixtures/NaturalStoreVectors.kt": "ac4028c818345e6dd73ee543623d2ade76683c5316fe8b47cfbe163c6126e208"
+      }
+    },
+    {
+      "id": "android-sensitive-migration-app-readiness-20261029",
+      "baseCommit": "6c3e2bd9",
+      "features": ["F43", "F55", "F56"],
+      "summary": "Test-only App sensitive-control readiness: same live Activity/controller/session/storage/target and original page/input deadlines, exact one visible enabled password/control, diagnostics only counts/state/known labels with no password/tree/screenshot. Shares old password input/action budget, no guessed cause/no bypass;original DocsUI15s unchanged. Prior source29 failure had zero actual picker/Save. Current native rerun pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt": "cc9348a48b0be9d6ff5c7aebc73751e23303bda19b4702fda6c192b135710d3e"
+      }
+    },
+    {
+      "id": "android-session-owned-connection-form-io-20261029",
+      "baseCommit": "084517e2",
+      "features": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+      "summary": "Complete form action is a lazy Session child with migration registry/IO context registered before start; UI caller cancellation leaves exact child owned through actual blocking authorization install and HTTP outer cleanup. Sealed start refuses; cancellation of migration wait does not reopen. Five native methods prepared (three boundary and two actual Composition/Activity bridge), no claim of actual pairing button/peer/NSD completion or full DEV.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "20aacbc4a7947f5c9c71dbebb1df52ec30d66b7a80ac602fc1f3871fa8d59bd8",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "ddacf2621c79a237ad14ac517b2e3b895f6215bc0f76c226f86bef28b3323012",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkFormAction.kt": "9a27edacef80c402af0bbc2442311ceb8f3f08501831650e8c6c6fb7c9747551",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormActionTest.kt": "b5a5463868700bead2bf9e07b160ca8774f5766fbc4c96d5eac9ee383fcf53da",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt": "75e422223bbd1a30ea727601cbe49d32cc8d3a23db00e12340df23bbe000f5a4"
+      }
+    },
+    {
+      "id": "android-imported-edit-full-target-and-normalized-name-20261029",
+      "baseCommit": "ca43ff1f",
+      "features": ["F02", "F06", "F07", "F08", "F09", "F43", "F46", "F55"],
+      "summary": "Imported edit page displays all six readonly fields from marker target without credential authority. Saved-name fixture checks actual trim-only normalization and encrypted readback; full text/layout/scroll and disabled empty action assertions retained. Five UI methods prepared, old source30 four passed/one failed retained, new native pending. Explicitly separate iOS remove/swipe and A6.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "ddacf2621c79a237ad14ac517b2e3b895f6215bc0f76c226f86bef28b3323012",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "5dfe213fd0b75758cc6a8ff66a16a2befa37921229d2f5c27f81c007bd5e9e81"
+      }
+    },
+    {
+      "id": "android-original-picker-null-owner-scoped-wait-20261029",
+      "baseCommit": "499298e3",
+      "features": ["F43", "F55", "F56"],
+      "summary": "Test-only null native owner may be sampled read-only within same original 15-second deadline; each sample validates original Activity/controller/session/storage/target/kind/issued ID. Known third owner stops; input/BACK require original live caller and DocsUI; no extra budget, replay, password hierarchy or callback synthesis. Old original4e46 failure retained; new SDK cases pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSystemPickerUiTest.kt": "84489bff0238b426dee4e6391bae66cbdb701850f5362a330e93be2c4201caee"
+      }
+    },
+    {
+      "id": "android-natural-store-fresh-bootstrap-and-preflight-evidence-20261029",
+      "baseCommit": "e188d8e1",
+      "features": ["F52", "F53"],
+      "summary": "Test-only explicit one-time empty-install product storage write and separate original receipt verification; sole key creator remains ordinary NativeSessionStorage, permit path only existing-key. Outer JUnit evidence records before-body failures; complete mobile-v1 families use unchanged128files/256entries/depth8/32MiB caps and opaque counts/digests. Unknown/bootstrap intent refuses replay; unchanged Main/Session/debug permit factory and manifest. Auxiliary15/compile only before parent native; no natural OS hook/real delivery claim.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalBootstrapTest.kt": "a187645aea036e55e3208476d0bb29f8d5fa80498c5ff18ade33c4da868b2818",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt": "f3e46b6ecf69244fdfbe03a3b423c2bd6cf6ea5f4427018c4d8b3005236880c4",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapFence.kt": "69478e372cd6ff878a041abe2af7242f576e1cc0eda1984a1d79ba7f7868c445",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalEvidenceBoundary.kt": "1e17ec4f11314f2df60aee9d4429a41a61df39ccee56ed740a9c1db17d8bba5f",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt": "93dc2d638d1cdad95f6ff9f7984c2bedc0144ba95603391839d5418276fc6822",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalPreflightEvidence.kt": "50de98c947767754bc4f5170306044484e5cda7c957a1ff55ea309b65a249f2e",
+        "scripts/mobile/check-chat-notification-natural-permit.mjs": "778a2b51c466c9db3989e96c219c6014bf23874579042c01bb1c05f0d722d476",
+        "scripts/mobile/fixtures/NaturalBootstrapVectors.kt": "df08b7f26658add7f6087f9eb6a22d85a9fd7b8dabb246fb7b976df64baa5597"
+      }
+    },
+    {
+      "id": "android-discovery-target-value-and-layout-measurement-20261029",
+      "baseCommit": "5ca911fa",
+      "features": ["F02", "F06", "F07", "F08", "F09", "F43", "F46", "F55"],
+      "summary": "Test compares six immutable target values rather than reference equality; records bounded actual TextLayout geometry before existing full text/overflow/glyph/clip assertions. Does not relax visibility or change product layout; source31 has marker equality/overflow failures, remaining cause requires actual measurement. No Host/model/system input.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "76fe5adc90373915523d95904d377b473e43c55e26d913974a170f3596a4a9ff"
+      }
+    },
+    {
+      "id": "host-coordination-pinned-certificate-and-reviewed-bundle-20261029",
+      "baseCommit": "6beafc94",
+      "features": ["F02", "F03", "F63"],
+      "summary": "Admin coordination client only: per-Host explicit one self-signed public PEM and exact DER pin, self-signature/validity and TLS chain verification retained, fresh connection, exact peer leaf identity for no-SAN catalog. Default HTTPS and named API/Host/Thread/immutable operation/unknown receipt-only semantics unchanged. Reviewed explicit native fixture source paths plus five canonical tone byte hashes in complete source bundle; changed/other audio and unknown source reject. Real local HTTPS/adjacent helpers/package60 passed and source bundle generated; actual remote identity/delivery pending. No mobile UI/Host command capability or TaskHub business change; Windows runtime not newly verified. Native source manifest covers the two bundle scripts only. Canonical coordination CLI under skills/ is outside allowed native source roots and is separately governed by actual skill tests/Git/source delivery record; no whitelist expansion.",
+      "files": {
+        "scripts/package-host-connect.mjs": "95996ec1713d00081137dc1bac577f4a2d03a7a79e964942bd83d1b29ef613f9",
+        "scripts/package-host-connect.test.mjs": "44c641509ba5645d46781c74c2b3bfa609715610a8e95b95d5b4b3d03f8c770d"
+      }
+    },
+    {
+      "id": "android-nsd-sdk-terminal-and-generation-owners-20261029",
+      "baseCommit": "3f2d8d91",
+      "features": ["F02", "F06", "F07", "F09", "F43", "F55"],
+      "summary": "Each discovery generation captures its SDK/network/resolver handles and registry closures; join requires actual SDK terminal plus coroutine exit. Atomic retiring fence and old-slot identity prevent late projection/new generation interference. API26 resolution cannot cancel and waits natural resolved/failed. Failed/unknown stop keeps pending; no timer/cancel substitutes SDK exit or unlocks migration. Controlled19 and actual SDK2 prepared, parent native pending; no real peer/full Discovery/Session/DEV closure.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt": "91b63e99c25ca211dbff22b2453e063022b4bcba7d2f7f79696dc554185d6853",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeNsdLifetime.kt": "41ad1bbe19b919324a9644fbefaf7a9f048f1617dab8bfb2ba224182ef174cbb",
+        "apps/android/src/main/kotlin/com/agenthub/android/AndroidNsdPlatform.kt": "887bf42d8523b4687830464d4d790e6f32b2958ea410db089d9d1bb7920e9f4c",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdControlledLifetimeTest.kt": "67b452534363a53eee03b5da8f447dfcedb285b28a4e3842fe454260e2a145b9",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNsdSdkTest.kt": "8eb2de7326791530170bd69b58551f0f964a7f8b656eb5fea277eca76fa412f0"
+      }
+    },
+    {
+      "id": "android-form-lifecycle-owning-compose-clock-20261029",
+      "baseCommit": "f12347b3",
+      "features": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+      "summary": "Test-only same owning Compose rule wait within original5s, observation of real native vsync/job/cause/lease/session; preserve real latch and actual install/HTTP-close/cancelled migration/second-operation assertions. No production change or forced lease/current, source31 original failures retained. Real native rerun pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFormLifecycleTest.kt": "0af1a4a5b5456f3d8090adb668f5b4b1938ae503ca376abd0693cb67d5bd594f"
+      }
+    },
+    {
+      "id": "android-readonly-target-value-finite-column-layout-20261029",
+      "baseCommit": "52dfed84",
+      "features": ["F02", "F07", "F08", "F09", "F43", "F46", "F55"],
+      "summary": "Readonly target Text uses full finite column width, aligning paragraph and rendered value geometry. Source32 measured8chars line-right161/265 inside Text162/266 but paragraph912/672 triggered logical overflow before full glyph/clip checks. Keep all original values, full-text, overflow, glyph/clip, scroll and readonly semantics; no new interaction/authority or copy. Current candidate unverified, iOS platform layout comparison remains source-level with A6 paused.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "8679b3baa8d494d56d36701dffca01c6089ade127c0887142cfd1d32eb87dfc1",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "76fe5adc90373915523d95904d377b473e43c55e26d913974a170f3596a4a9ff"
+      }
+    },
+    {
+      "id": "android-native-probe-strict-synchronous-transport-20261029",
+      "baseCommit": "00ad3162",
+      "features": ["F49", "F50", "F56", "F72"],
+      "summary": "Debug same-UID fixture accepts only synchronous flags0/native TF_ACCEPT_FDS0x10; preserve exact descriptor, fixed operations and zero application payload after platform header. Fixed scalar guards; real crossPID positive lock/claim plus five synchronous payload/descriptor/op negatives prepared. Oneway observation never implies remote ACK or execution success. No production route/Main/natural permit integration.",
+      "files": {
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalStoreProbeService.kt": "a6a413d05e7c8a17d2733866d65f957075aa73f846675ec85a95e34c6163d291",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt": "8b02d029d07f0f56986623f428a1a97281e8a436711d2b2b6f4d319d423492b1"
+      }
+    },
+    {
+      "id": "android-short-value-complete-text-wrap-precondition-20261029",
+      "baseCommit": "00ad3162",
+      "features": ["F02", "F07", "F08", "F43", "F46", "F55"],
+      "summary": "Complete text, exact line end/UTF16 boxes/glyphs/clip/readonly assertions unchanged. Require actual wrapping only for deliberately long fixture names and five long identifiers in fixed320x380 viewport; short easywork provider and general-width imported editor require complete visibility without forced wrapping. Geometry checker unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "af47c27db7c783b2b00b4095c06631e98faf5f65aaf3c4169e38c39267cb463b"
+      }
+    },
+    {
+      "id": "android-imported-editor-active-window-readiness-20261029",
+      "baseCommit": "1a08bf3a",
+      "features": ["F02", "F07", "F08", "F43", "F46", "F55"],
+      "summary": "Test-only read-only wait up to5s for native UiAutomation first active-window callback of exact acceptance App. Null/unrefreshed root permits no UI input; explicit other owner fails. Preserve all existing imported six-field/glyph/readonly/original records and permission checks; scalar sample counts only. No product behavior/copy change.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "78e051225877a0ea32e466d386186b3f74d1a28c6966d110f0080b98cb0d48d5"
       }
     },
     {

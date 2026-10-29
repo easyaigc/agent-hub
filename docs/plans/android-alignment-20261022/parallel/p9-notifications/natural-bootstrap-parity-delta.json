@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-stage30-existing-key-preconditions-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "No unknown/old state is cleared, borrowed or replayed",
+    "A normal local product write is separately authorized once on a verified empty acceptance install",
+    "Permit factories remain existing-key-only and all default families stay unchanged during store cases"
+  ],
+  "android": {
+    "implemented": "Explicit one-time bootstrap/native selectors, immutable write-intent receipt and outer preflight failure evidence",
+    "inventory": "All mobile-v1 families; original 128 files/256 entries/depth8/32MiB limits retained",
+    "auxiliary": "15 filesystem/fence/PID and actual JUnit checks pass; no product storage/AndroidKeyStore/native execution",
+    "assembly": "Independent combined app/runner:82 tasks passed; exact fingerprints in private recovery index",
+    "native": "Bootstrap and all5 store cases remain unverified by this workline",
+    "parentSource30": "Original missing-key and inventory-limit failures retained; remaining4 not started",
+    "productionFilesAndManifestChanged": [],
+    "naturalMainAndOsHook": "unchanged and unconnected"
+  },
+  "ios": {
+    "sourceChanges": [],
+    "acceptance": "No new result; A6 paused",
+    "impact": "Android native test preconditions/evidence only"
+  },
+  "ui": {
+    "tokensAndCopy": "unchanged",
+    "systemDifference": "Bootstrap/component evidence is not natural OS notification/process evidence"
+  },
+  "evidence": "natural-bootstrap-preconditions.md"
+}

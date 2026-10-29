@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-cold-accepted-a5-next-20261029-1",
+  "parentSourceBaseSha256": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+  "parentSourceProposedSha256": "91ad035f2a2c1913185f39c646daaea384ded11b9b56e7af14ed0e5f4f8808f1",
+  "productionIntegration": "shared Session patch delivered; parent integration pending",
+  "jvmCountercontrol": {
+    "baseCompiled": true,
+    "tests": 12,
+    "behavioralFailures": 8,
+    "proposedCompiled": true,
+    "proposedPassed": 12,
+    "kind": "Exact source slices in synthetic outer state/store, not full Session/native proof"
+  },
+  "nativeCompile": {
+    "status": "passed",
+    "inputs": 484,
+    "sourceSetSha256": "8218c837c56714ed3994e2099c26830fcc0df5a0b0752737db0ca78562015750",
+    "allFinalInputsVerified": true,
+    "sourceContext": "own shared shadows/resource overlay; parent not compiled or written",
+    "preparedMethods": 5,
+    "executedMethods": 0,
+    "newApks": 0
+  },
+  "initialAttempts": "Harness assembly errors and unstable initial native compile snapshot retained separately; not counted as current success",
+  "parentColdPass": "reference only, source090df0cc/Appc07a5405/runner95b40e4f; distinct from this stage and source24/worker30",
+  "deviceHostModelActionsByLeaf": 0,
+  "a5Complete": false,
+  "a6": "paused"
+}

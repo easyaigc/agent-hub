@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR31",
+  "sourceSha256": "4dbad38275ff2d33a7e5794ac619506b192fc04c53cac00caebaf3b7766f57e3",
+  "expandedSourceSha256": "2bf35b838033b47db5ed771086e9f94289f68d0aac4aa43d0672ad996724405f",
+  "appSha256": "24e2bce74a9cb273f98b3e94a58e52ad719529ac950880baf26be08c3d401111",
+  "runnerSha256": "6cef7d672f67dc2ac73aa204b259bc19999283c79d907f3abaafc793ebbb246c",
+  "native": {
+    "calls": 18,
+    "passed": 14,
+    "failed": 4,
+    "formSessionOwnerBoundariesPassed": 3,
+    "actualCompositionAndPauseFailedBeforeIoLatch": 2,
+    "p8UiPassed": 3,
+    "p8UiFailed": 2,
+    "actualCandidateGuardPassed": 5,
+    "realSystemSafPassed": 3
+  },
+  "saf": {
+    "originalCreateAndOpenCancellation": true,
+    "realExportOpenPreviewCancel": true,
+    "fileAboveEightMiBExplicitConfirm": true,
+    "exportedEncryptedBytes": [9451603, 9451603],
+    "sourceUnchanged": true,
+    "ownSystemDocumentsRemoved": 2,
+    "ownSyntheticStoresRemoved": 3,
+    "queriesOrWritesToHost": 0,
+    "oldFailedOriginalsRetainedWithoutReplay": true
+  },
+  "failures": [
+    "Two form Lifecycle methods timed out at original five-second IO-entry latch; clock/lease/job state diagnosis pending, no cause asserted",
+    "Imported marker scope compared by object equality; field-value assertion repair pending",
+    "Target TextLayout reports visual overflow; preserve strict full-glyph/clip assertions and collect measured geometry before deciding product fix"
+  ],
+  "defaultProofs": 5,
+  "defaultPreservedFields": [
+    "draftsPreserved",
+    "draftFilesPreserved",
+    "draftVersionsPreserved",
+    "attachmentImportGenerationsPreserved",
+    "photoSourcesPreserved",
+    "recentPhotoPreferencesPreserved",
+    "photoAuthorizationPreserved",
+    "documentRequestsPreserved",
+    "photoRequestsPreserved",
+    "cameraRequestsPreserved",
+    "cameraOutputsPreserved"
+  ],
+  "workspaceCheck": {
+    "head": "544b3913",
+    "exitCode": 0,
+    "sourceDrift": [],
+    "scope": "Exact previous source snapshot; new native Kotlin combination compiled in debug/test/release, parity rechecked separately"
+  },
+  "p9": "Existing-key component/native preconditions and explicit fresh-install bootstrap are a separate next source delivery; no natural Main hook or OS process-spawn proof",
+  "pending": [
+    "Actual form lifecycle success",
+    "Full imported edit target and long-field visibility",
+    "NSD actual SDK stop/resolve callback drain",
+    "P9 actual KeyStore/crossPID body and OS cold component",
+    "Physical Android/real Electron/model full DEV and all applicable visual/system matrix"
+  ],
+  "realModelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "ios": "A6 paused; source comparison and differences remain explicit"
+}

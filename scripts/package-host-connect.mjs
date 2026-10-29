@@ -39,6 +39,20 @@ const sourceRoots = [
 // Nonstandard source paths require explicit review, rather than permitting all
 // JARs, properties, Dockerfiles or Bash scripts. The wrapper checksum stays fixed.
 const fixedSourceFiles = new Set([
+  'apps/android/src/androidTest/java/com/agenthub/android/NativeSoundForeignWitnessProvider.java',
+  'scripts/mobile/fixtures/android/os/Looper.java',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/jvm/android/util/Base64.java',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase1/validation.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase2/validation.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/authorization-fence/phase3/validation.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/boundaries.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase1/validation.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase10-canonical/validation.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase2/resource-overlay.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase5/validation.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase9-text-visibility/validation.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/native-boundaries/numeric-probe.init.gradle',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/numeric-fix/validation.init.gradle',
   'gradle/wrapper/gradle-wrapper.jar',
   'gradle/wrapper/gradle-wrapper.properties',
   'scripts/ci/Dockerfile',
@@ -53,6 +67,28 @@ const fixedSourceFiles = new Set([
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedDocumentColdDriver.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedExternalInboxColdDriver.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
+]);
+const reviewedBinarySourceSha256 = new Map([
+  [
+    'apps/android/src/main/assets/chat-notification-sounds/v1/attention.wav',
+    '6ea2939f779d5a29b1d65f811f29811704cfa6cc58ac576a9a55e05a491fdb7f',
+  ],
+  [
+    'apps/android/src/main/assets/chat-notification-sounds/v1/chime.wav',
+    '153716aeb2da8febad6e5a4ce79c7d5f268ccc0753c706864edcd9941132c3ec',
+  ],
+  [
+    'apps/android/src/main/assets/chat-notification-sounds/v1/soft.wav',
+    '3579f427ab553b0fa3e71b1433a376b98acab91cae2d5a1247d9fa9ba4fab926',
+  ],
+  [
+    'apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.m4a',
+    '231cfa219204bfa34a3768c092c5e6b19c73eb48af3405e933da535eb694e850',
+  ],
+  [
+    'apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.mp3',
+    'db476aba2e89eff735bbf4434d915b8ce22ec501d83ea4c6c307cc66db4d207a',
+  ],
 ]);
 const runtimePackages = ['codex-adapter', 'protocol', 'service-runtime', 'notification-runtime'];
 const excluded = new Set([
@@ -127,9 +163,17 @@ async function sourceFiles(directory, prefix = '') {
       if (
         !extensions.has(extname(name)) &&
         name !== '.env.example' &&
-        !fixedSourceFiles.has(relative)
+        !fixedSourceFiles.has(relative) &&
+        !reviewedBinarySourceSha256.has(relative)
       )
         throw new Error('Review unknown source file before distribution: ' + relative);
+      if (reviewedBinarySourceSha256.has(relative)) {
+        const actual = createHash('sha256')
+          .update(await readFile(join(directory, name)))
+          .digest('hex');
+        if (actual !== reviewedBinarySourceSha256.get(relative))
+          throw new Error('Reviewed synthetic source fingerprint changed: ' + relative);
+      }
       files.push(relative);
     }
   }

@@ -24,7 +24,7 @@ class EasyWorkAgentClient(private val sessions: EasyWorkChannels): AgentReads,Ag
     }
     override fun agentTitle(client: MobileClient)="EasyWork"
     override fun permissionOptions(client: MobileClient)=listOf(AgentPermissionOption("confirm_every_operation","逐项确认","每项受权限管理的工具操作都请求确认",appOwnedCopy=true),AgentPermissionOption("confirm_high_risk","高风险确认","按 EasyWork 风险策略对高风险操作请求确认",appOwnedCopy=true),AgentPermissionOption("allow_all","允许已授权操作","免去任务工具确认，仍受设备授权和 Host 边界约束",true,appOwnedCopy=true))
-    private suspend fun channel(client: MobileClient)=sessions.session(client)
+    private suspend fun channel(client: MobileClient): EasyWorkRemoteSession {NativeMigrationEasyWorkGate.requireReady(client);return sessions.session(client)}
     private fun project(client: MobileClient,v: JSONObject)=MobileProject(v.getString("id"),client.id,v.getString("name"),listOfNotNull(v.optional("workspacePath")))
     override suspend fun createProject(client: MobileClient,name: String,directory: String,operationId: String): MobileProject {
         require(name.isNotBlank()&&name.length<=500&&directory.isNotBlank()&&directory.length<=4096)

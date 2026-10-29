@@ -1878,7 +1878,9 @@
     "更换待导入资料？": "Replace pending import?",
     "另选文件会更换本次待导入资料，原文件和本机资料不变。": "Choosing another file replaces the pending import. Original files and local data stay unchanged.",
     "另选文件": "Choose another file",
-    "迁移后需明确开启通知，原记录已保留。": "Enable notifications explicitly after migration. Original records are retained."
+    "迁移后需明确开启通知，原记录已保留。": "Enable notifications explicitly after migration. Original records are retained.",
+    "需要重新配对 · 查看缓存": "Pair again · View cache",
+    "迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。": "Imported chats and receipts are read-only. Scan a new connection QR code from the computer, or enter a new connection code to pair again."
   },
   "zh-Hans": {
     "\n请查询原回执；不会再次提交。": "\n请查询原回执；不会再次提交。",
@@ -3759,6 +3761,8 @@
     "更换待导入资料？": "更换待导入资料？",
     "另选文件会更换本次待导入资料，原文件和本机资料不变。": "另选文件会更换本次待导入资料，原文件和本机资料不变。",
     "另选文件": "另选文件",
-    "迁移后需明确开启通知，原记录已保留。": "迁移后需明确开启通知，原记录已保留。"
+    "迁移后需明确开启通知，原记录已保留。": "迁移后需明确开启通知，原记录已保留。",
+    "需要重新配对 · 查看缓存": "需要重新配对 · 查看缓存",
+    "迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。": "迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。"
   }
 }

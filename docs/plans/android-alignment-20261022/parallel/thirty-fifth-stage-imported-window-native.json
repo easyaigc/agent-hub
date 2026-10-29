@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR35",
+  "sourceSha256": "355510d707c4243393bcfeb2bea4a93dc727eafb315e10a9c23dccd6dbf49a5b",
+  "expandedSourceSha256": "a88b4333fa9f25ba945e0547612d6d13cd636d54996c0e88ef8ac078a9ff8f44",
+  "appSha256": "fc9c6b2fccfce9ddaab2a257ca33b0161879556d63a0315dfaa86b04e73f91dd",
+  "runnerSha256": "1ea6a5595928487807f84d045d6dd7e13de5cc3914aef8b69c6c5036abbc3b12",
+  "native": {
+    "calls": 5,
+    "passed": 5,
+    "failed": 0,
+    "lane": "Actual production ConnectionPage/NativeSheets/Session with inert saved/imported metadata and inactive discovery; fixed shortviewport case is ComponentActivity theme, not full App/system visual matrix"
+  },
+  "ui": [
+    "Rename/saved name before scan and late discovery",
+    "Preference/late rows/editor roundtrip",
+    "Remove explicit confirmation/late known rows stay absent",
+    "Imported six readonly targets/explicit pairing-only/no channel or original mutation",
+    "Long saved name/six targets full glyph/clip/long identifiers wrap and manual/discovery/preferences in fixed320x380 at1.6font"
+  ],
+  "activeWindow": {
+    "ownAppObserved": true,
+    "nullOwnerSamples": 1,
+    "unrefreshedSamples": 0,
+    "readOnlyObservation": true,
+    "timeoutMs": 5000,
+    "thirdOwnerAccepted": false
+  },
+  "workspaceCheck": {
+    "exitCode": 0,
+    "head": "1a08bf3aa7cfdb106d02cd1758423bac6b75f397",
+    "sourceDrift": [],
+    "logSha256": "e22d0fdd4cfd671a415abdfd597965a0db78ac2adfa277ebaf0b3f020eb9261a",
+    "completedAt": "2026-10-29T02:55:06.393844+00:00"
+  },
+  "iosSimulatorBuild": true,
+  "realModelInputs": 0,
+  "realHostBusinessInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "pending": [
+    "Full AgentHubApp theme/language/window/keyboard/accessibility matrix; iOS saved-name boundary-whitespace difference",
+    "NSD API37 owned registration/resolution and actual stop ack",
+    "Natural OS first-click lifecycle/default-family proposal repairs and real execution",
+    "File-only saved-recording ASR review repairs/integration/acoustic tests",
+    "Physical Android/real Electron/model full DEV; task/project business and iOS A6 remain paused"
+  ]
+}

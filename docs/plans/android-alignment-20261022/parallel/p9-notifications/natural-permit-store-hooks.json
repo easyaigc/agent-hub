@@ -1,0 +1,11 @@
+{
+  "operationId": "parent-p9-natural-store-implementation-20261029-1",
+  "compileParentCommit": "d1cc8aed09db0a5ebd51506d642c734f1eadfcf8",
+  "sharedManifest": "apps/android/src/debug/AndroidManifest.xml",
+  "baseSha256": "dc076b8a7f0bcf5f46aba2ea7df09f266d6b8b341209c5edca1bc3112b5c135b",
+  "proposedSha256": "9de1b64f95304c7254636d10d732c0a5bf5663384e84cb7502ad7c1f882e6bac",
+  "scope": "Preserve sound-witness query; add non-exported same-UID fixture Service only",
+  "productionSharedFilesModified": [],
+  "naturalHookInstalled": false,
+  "parentCheckoutModified": false
+}

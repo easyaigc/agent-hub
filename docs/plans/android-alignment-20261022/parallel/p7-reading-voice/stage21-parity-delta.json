@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "21-app-scoped-home-visibility",
+  "featureIds": ["F55", "F56"],
+  "productionCodeChanges": false,
+  "debugManifestChange": "exact MAIN/HOME query only; no permission/package-name/wildcard or release change",
+  "commonAssertions": [
+    "App UID resolver proof is separate from shell observation",
+    "Settings/FallbackHome and incorrect resolver refuse before Main",
+    "exact visible enabled/exported default component and actual owner must match",
+    "no alternate candidate or flag-zero fallback",
+    "bounded readiness and pre/post P9/no-Main/exact grant checks remain",
+    "preflight is not original request reservation, grant or product acceptance"
+  ],
+  "bothPlatforms": {
+    "android": "debug-only visibility declaration and native helper/pure resolver guards",
+    "ios": "unchanged; A6 paused"
+  },
+  "design": {
+    "productUiCopyTokens": "unchanged",
+    "systemUi": "no input; bounded component/owner metadata only"
+  },
+  "newPureResolverMethods": 6,
+  "nativeExecutedHere": false,
+  "parentObserved": "expectedSettings/actualNexusLauncher; exact Settings component and visibility cause not yet established",
+  "savedVoiceStage19": "independent frozen0d47ef5f; natively unrun; file-ASR unsupported",
+  "centralOwner": "parent coordinator",
+  "acceptance": "parallel/p7-reading-voice/stage21-home-resolution-visibility.md",
+  "scope": "No Main/Session/P9/product source/release/iOS change or device/ADB/Host/picker/grant/model action"
+}

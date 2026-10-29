@@ -66,6 +66,7 @@ class NativeOperationJournal(private val storage: NativeSessionStorage) {
         sourceKey: String? = null,sourceVersion: String? = null,parentOperationId: String? = null,sharingScope: String? = null): SavedOperation = withContext(Dispatchers.IO) {
         mutex.withLock {
           storage.operationTransaction transaction@{
+            NativeMigrationEasyWorkGate.requireReady(client)
             val scope=client.scope
             require(scope!=null&&!client.isDemo&&intent.getString("hostId")==client.id&&
                 (client.agentConnection?.let { sameScope(scope,it.target) }?: (scope.hostId==client.id))) { "提交记录缺少真实目标" }

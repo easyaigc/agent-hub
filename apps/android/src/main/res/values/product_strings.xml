@@ -1879,4 +1879,6 @@
     <string name="product_7ddac58171d2538dd8a03864" formatted="false">"Choosing another file replaces the pending import. Original files and local data stay unchanged."</string>
     <string name="product_9475eb93689f5833fedbef9e" formatted="false">"Choose another file"</string>
     <string name="product_8c56d9ef0d604131101c7b77" formatted="false">"Enable notifications explicitly after migration. Original records are retained."</string>
+    <string name="product_0f8b78e3332ac7e4750f51cc" formatted="false">"Pair again · View cache"</string>
+    <string name="product_20cbe53129b2b62d26690f9d" formatted="false">"Imported chats and receipts are read-only. Scan a new connection QR code from the computer, or enter a new connection code to pair again."</string>
 </resources>

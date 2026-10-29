@@ -11,6 +11,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +35,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag as semanticTestTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.sin
 
@@ -63,7 +66,10 @@ import kotlin.math.sin
     val stopHint=productText("轻触停止录音")
     BoxWithConstraints(Modifier.fillMaxWidth().testTag("voice-adaptive-layout")) {
         val compact=maxWidth.value/LocalDensity.current.fontScale<340f
-        Column(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp).floatingProduct(MobileDesign.composerRadius).padding(4.dp).testTag("voice-panel"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+        val scroll=rememberScrollState()
+        // In a bounded composer the recovery actions own scrolling. An outer sheet scrolls an unbounded child.
+        val scrolling=if(maxHeight!=Dp.Infinity)Modifier.verticalScroll(scroll) else Modifier
+        Column(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp).floatingProduct(MobileDesign.composerRadius).then(scrolling).padding(4.dp).testTag("voice-panel"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             val displayedText=if(voice.transcript.isEmpty())text else text+if(text.isEmpty() || text.last().isWhitespace())voice.transcript else "\n"+voice.transcript
             Text(if(displayedText.isEmpty())productText("随心输入") else displayedText,Modifier.fillMaxWidth().padding(horizontal=14.dp).padding(top=10.dp).testTag("dictation-transcript"),fontSize=17.sp,color=if(displayedText.isEmpty()) colors.onSurfaceVariant else colors.onSurface,maxLines=6)
             val activity: @Composable (Modifier)->Unit={ modifier ->
@@ -74,7 +80,7 @@ import kotlin.math.sin
                 }
             }
             val close: @Composable ()->Unit={
-                Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",productText(if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "结束等待"),"cancel-dictation",enabled=!voice.discarding,onClick=voice::discard) }
+                Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",productText(if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "丢弃录音"),"cancel-dictation",enabled=!voice.discarding,onClick=voice::discard) }
             }
             val stop: @Composable ()->Unit={
                 Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) {
@@ -91,9 +97,10 @@ import kotlin.math.sin
             }else Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(3.dp)) { close();activity(Modifier.weight(1f));stop() }
             if(voice.phase!=VoiceInputController.Phase.FINISHING) Text(status,Modifier.padding(horizontal=14.dp).testTag("voice-status"),fontSize=12.sp,color=colors.onSurfaceVariant)
             if(voice.provider==VoiceInputController.Provider.SYSTEM)Text(productText("手机系统语音服务可能需要联网。"),Modifier.padding(horizontal=14.dp),fontSize=12.sp,color=colors.onSurfaceVariant)
+            if(voice.canEndWaiting)TextButton(onClick=voice::endWaiting,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-end-waiting")) { Text(productText("结束等待"),fontSize=17.sp) }
             if(voice.canFillRecognizedText)TextButton(onClick={ voice.fillRecognizedText() },modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-fill-recognized-text")) { Text(productText("填入已识别文字"),fontSize=17.sp) }
-            if(voice.canRerecordWithSystem)TextButton(onClick={ voice.rerecordWith(VoiceInputController.Provider.SYSTEM) },modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-rerecord-system")) { Text(productText("改用手机重新录音"),fontSize=17.sp) }
-            if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text(productText("重新录音"),fontSize=17.sp,color=Color(0xFF007AFF)) }
+            if(voice.canRerecordWithSystem)TextButton(onClick=voice::recordAgainWithSystem,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-rerecord-system")) { Text(productText("改用手机重新录音"),fontSize=17.sp) }
+            if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,enabled=voice.canRecordAgain,colors=ButtonDefaults.textButtonColors(contentColor=Color(0xFF007AFF)),modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text(productText("重新录音"),fontSize=17.sp) }
         }
     }
 }

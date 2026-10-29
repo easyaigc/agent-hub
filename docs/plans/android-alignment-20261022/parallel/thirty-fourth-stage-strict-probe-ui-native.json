@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR34",
+  "sourceSha256": "96db76d240fc9449e71e212b48d453cc40d0335865e5f0f6728207e9654be59e",
+  "expandedSourceSha256": "ed08b946281c780b89b699e75278413f4595d2307a314683aecec8755d27a15d",
+  "appSha256": "fc9c6b2fccfce9ddaab2a257ca33b0161879556d63a0315dfaa86b04e73f91dd",
+  "runnerSha256": "b64e57068c6dea8c857b9f4307ff18adda10c71b99c8d2e7af80c98c7d746c90",
+  "native": {
+    "calls": 10,
+    "passed": 9,
+    "failed": 1,
+    "p9ExistingKeyStorePassed": 5,
+    "p8UiPassed": 4,
+    "p8UiFailed": 1
+  },
+  "crossPid": {
+    "existingKey": true,
+    "realCrossProcess": true,
+    "singleClaim": true,
+    "contenderRefused": true,
+    "strictRefusals": 5,
+    "actualTransportFlags": 16,
+    "defaultUnchanged": true,
+    "onewayRemoteAcknowledgementClaimed": false
+  },
+  "ui": {
+    "longSavedNameAndAllSixTargetValuesPassed": true,
+    "fullGlyphClipReadonlyChecksPreserved": true,
+    "importedCase": "All six fields complete/read-only and original records/permissions/draft/target checked; final rootInActiveWindow null at line240; bounded owner readiness still pending",
+    "fullSystemThemeMatrix": false
+  },
+  "additionalOriginalCandidateSdk37": {
+    "sourceSha256": "caba792d62737d6f7600f5e0aa6743a5c67587071bd620b7570a5ea08ccb1527",
+    "calls": 2,
+    "passed": 1,
+    "failed": 1,
+    "realDiscoveryStopPassed": true,
+    "ownedAdvertisementRegisterOriginal12sTimeout": true,
+    "resolutionNotIssued": true,
+    "advertisementUnregisterJoined": true,
+    "defaultFilesUnchanged": true,
+    "pregrant": "Auxiliary setup only; original permission grant and flags exactly restored; no permission UI acceptance"
+  },
+  "linuxCi": {
+    "original": "84fc89eed686d931ac0ed8901e62411744e734c2",
+    "adopted": "2ed6429b",
+    "run": 10676,
+    "linuxJob": 26107,
+    "iosJob": 26108,
+    "exactSourceAndSuccessVerifiedViaOrigin": true,
+    "macTargeted": {
+      "calls": 162,
+      "passed": 158,
+      "skipped": 4,
+      "failed": 0
+    },
+    "fullCombinedCheck": "First attempt failed only new f123 parity-delta JSON formatting; sourceDrift empty; repair/retry pending"
+  },
+  "pending": [
+    "Final imported UI native window readiness",
+    "API37 NSD owned advertisement/resolution stop acknowledgement",
+    "Natural OS spawn proposal review and actual execution distinct from older instrumented-reader roles",
+    "File-only ASR integration/model/acoustic native acceptance",
+    "Physical Android/full iOS-source visual matrix/real Electron/model DEV"
+  ],
+  "realModelInputs": 0,
+  "realHostBusinessInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false
+}

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "checkpoint": "PAR24-P8-unreferenced-candidate-cold",
+  "date": "2026-10-29",
+  "sourceSha256": "090df0ccbb7771434d08be3a1c458f7c2327a2899586947ece0912675094ea3e",
+  "appSha256": "c07a5405135a79965041590ef1804bb1c3edb520f81cae30b82383eddfeca273",
+  "runnerSha256": "95b40e4fc7238a312e849025e220309a7ed46ea47bb8e30aea6db357cf6ddad5",
+  "device": "Exact task-owned API37 emulator, complete observed SDK/AVD/boot runtime profile",
+  "writer": {
+    "status": "durable-checkpoint-then-intentionally-interrupted",
+    "JUnitPassed": false,
+    "pid": 4405,
+    "stoppedWithinMs": 314,
+    "pidGone": true,
+    "identityUnchanged": true
+  },
+  "reader": {
+    "nativeMethodsPassed": 1,
+    "pid": 4626,
+    "sameOriginalCandidate": true,
+    "realProcessReopen": true,
+    "candidateStillUnreferenced": true,
+    "grantClaimJournalMetadataUnchanged": true,
+    "sixCiphertextsUnchanged": true,
+    "defaultFilesUnchanged": true,
+    "newClaimProtocolReadOrSubmit": false
+  },
+  "cleanup": {
+    "sidecarStopped": true,
+    "ownTwoReversesRemoved": true,
+    "noDataDeleted": true,
+    "noReaderForceStop": true
+  },
+  "offlineControllerChecks": 70,
+  "originalFailedUuidRetained": true,
+  "physicalDefaultInventory": "Pending: complete phone default-family file inventory exceeds original bounded output cap; no cap increase/omission/reset",
+  "a5Complete": false,
+  "modelInputs": 0,
+  "realHostBusinessWrites": 0,
+  "limits": [
+    "Synthetic loopback issuer/runtime and genuine Android Keystore/Session, not real issuer/Host/model DEV",
+    "Current source090df0cc candidate20 remains distinct from worker/P7 candidate24",
+    "Phone/cross-channel/system-trust/complete UI and all A5 seven groups remain open"
+  ]
+}

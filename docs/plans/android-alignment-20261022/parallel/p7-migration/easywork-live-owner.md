@@ -1,0 +1,13 @@
+# EasyWork live-owner migration boundary
+
+The previous quiescence joined MobileSession children but did not close/join independent EasyWork receive, relay acknowledgement or discovery scopes. Cancelling an HTTP continuation also did not prove callback, response-close or queued TLS work had exited.
+
+The proposed narrow Session overlay seals a shared EasyWork owner registry before cancelling producers. Normal and already-retiring sessions/transports/scans stay registered until actual scope completion. It closes the session cache, waits for independent owners, and then waits for callback/cleanup work before queuing the final metadata snapshot. Cancellation or timeout retains the same retirement proof and keeps another migration unavailable until that proof and IO drain. Unsaved draft and immutable submitted input are retained; closing is not remote cancellation and does not replay unknown operations.
+
+Only the IO tracker and owner registry are copied into independent scopes; the parent Job/dispatcher are excluded. Remote route installation checks closure under the same lock as disconnection, preventing an in-flight constructor from installing a route after retirement. Custom transports must implement `awaitClosedForMigration`; absent or failed proof blocks migration.
+
+HTTP ownership lasts through the callback's outer finally and response close. Cancellation/disposal are queued off Main. The locked OkHttp5.5 adapter gives each client its own connection/socket/writer task runner; disposal waits for actual dispatcher and task-runner exit, including non-cancellable writer-close work. The internal OkHttp hooks are isolated in `NativeEasyWorkOkHttp55.kt`; library upgrades must rebuild and revalidate actual pinned TLS/WebSocket/relay closure.
+
+Exact apply order: previously delivered business-code.patch, separate binary-inventory-code.patch, then easywork-live-owner-code.patch. The latter has nine files and includes a narrow Session delta; never replace the shared Session/Main/P9/voice files from an old snapshot. No MainActivity, P9, voice, UI layout, strings, transport factory signature or credential schema is replaced.
+
+Current combined App/runner compile and seven intercepted JVM checks pass. Native IO5 + actual Session lifecycle1 and binary/format4 methods are prepared only. Actual TLS/WebSocket, discovery callback timing, API26 resource behavior, explicit pairing, SAF/real DEV and iOS cross-format acceptance remain open. The JVM selects OkHttp's JDK9 platform through documented host-only SDK/log facades and uses org.json; it does not exercise Android storage, Keystore, UI or network. Full P7 is not passed.

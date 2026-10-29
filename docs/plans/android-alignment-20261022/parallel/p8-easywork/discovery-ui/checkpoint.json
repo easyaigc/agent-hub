@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-discovery-reviewed-ui-next-20261029-1",
+  "nativeCompile": {
+    "compileExit": 0,
+    "sourceSetSha256": "af1d184cb2d79d48cf68b30d1a62db2673d2a3fc759b9526d3a1f6a6f8dc49e6",
+    "inputs": 485,
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newMethods": 4,
+    "executedMethods": 0,
+    "newApks": 0,
+    "sourceContext": "Own shared-source shadows and 14-key resource overlay; parent neither written nor compiled"
+  },
+  "nativeExecution": {
+    "status": "unexecuted",
+    "preparedMethods": [
+      "renameUsesSavedNameBeforeAnotherScanAndAfterLateDiscovery",
+      "preferenceSelectionSurvivesLateRowsAndEditorRoundTrip",
+      "removeRequiresConfirmationAndLateKnownRowsStayAbsent",
+      "longSavedRowsAndTargetFieldsRemainUsableInShortViewport"
+    ],
+    "executedMethods": 0,
+    "buildArgument": "p8DiscoveryUiBuild",
+    "requiredBuildKeys": ["sourceSha256", "appSha256", "runnerSha256"],
+    "lane": "Production UI/Session/secure storage with synthetic saved metadata and inactive discovery snapshots",
+    "scanStorageRaceOrNetworkAcceptance": false
+  },
+  "sharedSessionOrMainChanges": false,
+  "previousFiveStorageRaceMethods": "Separate parent integration/preparation; no execution claim here",
+  "acceptedCold": "source090df0cc/Appc07a5405/runner95b40e4f reference only; not this source-set or source24/worker30",
+  "open": [
+    "All four new native UI methods",
+    "Parent integration and native run of prior five storage-race methods",
+    "Already-online saved row selection dispatch versus iOS, owned with active selection/business graph",
+    "Phone full-default inventory at original cap",
+    "Real issuer and original Desktop DEV",
+    "System-trusted Relay and real physical/network/model matrix"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "deviceHostModelActionsByLeaf": 0,
+  "newApks": 0,
+  "rootCheck": {
+    "exitCode": 1,
+    "formatGithubSyncLintPassed": true,
+    "stoppedAt": "check:mobile-parity",
+    "reason": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "preExistingLeafCentralLedgerGap": true,
+    "parentOwnsCentralMerge": true,
+    "remainingRootChecksNotExecuted": true
+  }
+}

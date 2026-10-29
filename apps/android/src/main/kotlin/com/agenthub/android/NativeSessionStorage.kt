@@ -179,6 +179,60 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         sources.values.forEach(::requireSettledMigrationFile)
         sources.mapNotNull {(name,file)->if(migrationFileExists(file))name to readMigrationTextFile(file,name).second else null}.toMap()
     }
+    /** Authenticate one text at a time; retain only exact file/name/digest references. No recovery. */
+    internal fun migrationReadTextFrames(names: Set<String>): NativeMigrationTextMap = ioLock.withLock {
+        checkMigrationAccess();require(names.size in 1..1024&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
+        val folder=dataRoot();val frames=linkedMapOf<String,NativeMigrationBlob>()
+        for(name in names.sorted()) {
+            val source=atomic(folder,name).baseFile;requireSettledMigrationFile(source)
+            if(migrationFileExists(source))frames[name]=migrationTextFrame(source,name).second
+        }
+        NativeMigrationTextMap(frames)
+    }
+    private fun migrationTextFrame(source: File,expectedName: String?): Pair<String,NativeMigrationBlob> {
+        val decoded=readMigrationTextFile(source,expectedName);val name=decoded.first;val bytes=NativeMigrationTextFrames.bytes(decoded.second)
+        val blob=try {val probe=NativeMigrationProbe();probe.write(bytes)
+            NativeMigrationBlob(bytes.size,probe.sha256(),probe.prefix()) {output->
+                requireSettledMigrationFile(source)
+                val value=NativeMigrationTextFrames.bytes(readMigrationTextFile(source,name).second)
+                try {output.write(value)}finally {value.fill(0)}
+            }
+        }finally {bytes.fill(0)}
+        // The closure captures only an authenticated name, never the decoded Pair/String.
+        return name to blob
+    }
+    /** Discover authenticated modern names before resolving exact legacy aliases. */
+    private fun migrationModernNames(files: Map<String,File>): Set<String> = files.mapNotNull {(filename,source)->
+        val version=source.inputStream().use(NativeMigrationLocalRecordFormat::read)
+        val name=when(version) {
+            3->readMigrationTextFile(source,null).first
+            4->java.io.DataInputStream(source.inputStream().buffered()).use {binaryHeader(it,null,null).name}
+            1,2->null
+            else->error("Unknown local migration format")
+        }
+        name?.also {require(it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName&&filename==digest(it)+".bin")}
+    }.toSet()
+    private fun migrationAliases(files: Map<String,File>,resolveLegacyNames: ((String)->String?)->Set<String>,resolveModernAliases: (Set<String>,(String)->String?)->Set<String>): Map<String,String> {
+        val modern=migrationModernNames(files)
+        val read: (String)->String?={name->files[digest(name)+".bin"]?.let {readMigrationTextFile(it,name).second}}
+        val names=modern+resolveLegacyNames(read)+resolveModernAliases(modern,read)
+        require(names.size<=4096&&names.all {it.length in 1..8192&&!it.contains('\u0000')})
+        return names.associateBy {digest(it)+".bin"}.also {require(it.size==names.size)}
+    }
+    /** Destination authority/audit subset, including modern unreferenced records, without recovery. */
+    internal fun migrationSelectedTextFrames(include: (String)->Boolean,resolveAliases: (Set<String>,(String)->String?)->Set<String>): NativeMigrationTextMap = snapshotTransaction {ioLock.withLock {
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
+        val files=migrationFiles(dataRoot()).associateBy {it.name};require(files.size<=1024)
+        val aliases=migrationAliases(files,{setOf("metadata")},resolveAliases)
+        val selected=linkedMapOf<String,NativeMigrationBlob>()
+        for((filename,source)in files) {
+            val version=source.inputStream().use {it.read()}
+            val name=aliases[filename]?:error("Unidentified legacy destination original")
+            if(include(name)) {require(version==1||version==3);selected[name]=migrationTextFrame(source,name).second}
+        }
+        NativeMigrationTextMap(selected)
+    }}
     /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
      * Presence is audited without opening/recovering files or borrowing OS callback authority. */
     internal fun migrationPendingChildScopes(): Set<String> = ioLock.withLock {
@@ -200,7 +254,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
      * Reading for discovery never invokes AtomicFile recovery or changes a pending .bak/.new. */
     internal fun migrationArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>): Map<String,String> = try {
         snapshotTransaction {ioLock.withLock {
-            requireWritable();val files=migrationFiles(dataRoot()).associateBy{it.name}
+            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable();val files=migrationFiles(dataRoot()).associateBy{it.name}
             val aliases=resolveLegacyNames {name->
                 files[digest(name)+".bin"]?.let{file->
                     readMigrationTextFile(file,name).second
@@ -211,13 +265,11 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     }catch(error: LegacyGcmAuthenticationLimit){throw error}catch(_: Exception){throw IncompleteMigrationInventory()}
     /** Typed root snapshot; discovers authenticated format4 names and exact indexed legacy2 aliases.
      * Discovery never restores AtomicFile backups or silently skips an unsupported record. */
-    internal fun migrationTypedArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>,maximumBytes: Int=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES): NativeMigrationRecords = try {
+    internal fun migrationTypedArchiveSnapshot(resolveLegacyNames: ((String)->String?)->Set<String>,maximumBytes: Int=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES,resolveModernAliases: (Set<String>,(String)->String?)->Set<String> = {_,_->emptySet()}): NativeMigrationRecords = try {
         snapshotTransaction {ioLock.withLock {
-            requireWritable();require(maximumBytes in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable();require(maximumBytes in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
             val files=migrationFiles(dataRoot()).associateBy{it.name};require(files.size in 1..1024)
-            val aliases=resolveLegacyNames {name->files[digest(name)+".bin"]?.let {source->
-                readMigrationTextFile(source,name,maximumBytes).second
-            }}.associateBy{digest(it)+".bin"}
+            val aliases=migrationAliases(files,resolveLegacyNames,resolveModernAliases)
             val text=linkedMapOf<String,String>();val binary=linkedMapOf<String,String>();var total=0L
             for((filename,source)in files.toSortedMap()) {
                 require(source.length() in 29..(maximumBytes+65569L+28L*((maximumBytes+65535)/65536)))
@@ -257,7 +309,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
      * A legacy record still needs an exact caller-supplied name; binary/unknown records never disappear. */
     internal fun migrationNames(legacyNames: Set<String> = emptySet()): Set<String> = try {
         snapshotTransaction {ioLock.withLock {
-            requireWritable();require(legacyNames.size<=1024)
+            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable();require(legacyNames.size<=1024)
             val aliases=legacyNames.associateBy {digest(it)+".bin"};require(aliases.size==legacyNames.size)
             val files=migrationFiles(dataRoot());require(files.size in 1..1024)
             val result=files.map {file->
@@ -273,7 +325,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
      * Callers must name every active record. Unknown/missing/binary/unfinished files reject explicitly. */
     internal fun migrationSnapshot(names: Set<String>,maximumBytes: Int=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES): Map<String,String> = try {
         snapshotTransaction {ioLock.withLock {
-            requireWritable()
+            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
             require(names.size in 1..1024&&"metadata" in names&&maximumBytes in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
             require(names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
             val expected=names.associateBy {digest(it)+".bin"};require(expected.size==names.size)
@@ -289,7 +341,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     /** A retried activation reads its original commit receipt without republishing later edits. */
     internal fun publishedMigration(candidateId: String,sha256: String,records: Int): String? = ioLock.withLock {
         require(java.util.UUID.fromString(candidateId).toString()==candidateId&&sha256.matches(Regex("[a-f0-9]{64}"))&&records in 1..1024)
-        checkMigrationAccess()
+        checkMigrationAccess();requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
         val generation=activeGeneration() ?: return@withLock null
         val pointer=JSONObject(decodeAtomic(atomic(root,migrationPointerName),migrationPointerName)!!)
         if(pointer.getString("candidateId")!=candidateId)return@withLock null
@@ -342,8 +394,8 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         NativeMigrationStreamArchive.write(java.security.DigestOutputStream(nullOutputStreamCompat(),digest),archive,"local-generation-v3")
         val recordsSha256=digest.digest().joinToString(""){"%02x".format(it)}
         publishMigrationGeneration(candidateId,sha256,sourceRecordCount,recordsSha256,archive.size,checkpoint) { folder ->
-            archive.text.toSortedMap().entries.forEachIndexed { index,(name,text) ->
-                val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)
+            archive.text.keys.sorted().forEachIndexed { index,name ->
+                val text=archive.text.getValue(name);val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)
             }
             archive.binary.toSortedMap().entries.forEachIndexed { index,(name,blob) ->
                 val target=atomic(folder,name);encodeBinaryStream(target,name,blob.size,blob::verifiedCopy)
@@ -354,6 +406,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     }
 
     private fun publishMigrationGeneration(candidateId: String,sha256: String,recordCount: Int,recordsSha256: String,actualRecordCount: Int,checkpoint: (Int)->Unit,write: (File)->Unit): String {
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
         val active=activeGeneration()
         if(active!=null) {
             val prior=JSONObject(decodeAtomic(atomic(root,migrationPointerName),migrationPointerName)!!)
@@ -489,6 +542,17 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         checkMigrationAccess(); require(expectedSize in 1..21 * 1024 * 1024)
         java.io.DataInputStream(file(name).openRead().buffered()).use { decodeBinaryTo(it, name, expectedSize, output) }; Unit
     }
+    /** Candidate/audit originals never invoke AtomicFile recovery, including payload chunks. */
+    internal fun migrationCopyBinaryTo(name: String,expectedSize: Int,output: java.io.OutputStream)=ioLock.withLock {
+        checkMigrationAccess();require(expectedSize in 1..21*1024*1024)
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
+        val source=file(name).baseFile;requireSettledMigrationFile(source)
+        java.io.DataInputStream(source.inputStream().buffered()).use {decodeBinaryTo(it,name,expectedSize,output)};Unit
+    }
+    internal fun migrationReadBinary(name: String,expectedSize: Int,maximum: Int): ByteArray {
+        require(expectedSize in 1..maximum&&maximum<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+        val output=java.io.ByteArrayOutputStream(expectedSize);migrationCopyBinaryTo(name,expectedSize,output);return output.toByteArray()
+    }
     private fun encodeBinaryStream(atomic: AtomicFile, name: String, size: Int, produce: (java.io.OutputStream) -> Unit) {
         require(size in 1..21 * 1024 * 1024); val stream = atomic.startWrite(); val buffer = ByteArray(65536)
         try {
@@ -518,21 +582,20 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     }
     /** Discovery, verification and export share one generation lock. No whole binary or Base64 value. */
     internal fun <T> migrationStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>, consume: (NativeMigrationStreamRecords) -> T): T =
+        migrationStreamSnapshot(resolveLegacyNames,{_,_->emptySet()},consume)
+    internal fun <T> migrationStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>,resolveModernAliases: (Set<String>,(String)->String?)->Set<String>, consume: (NativeMigrationStreamRecords) -> T): T =
         snapshotTransaction { ioLock.withLock {
-            requireWritable(); val files = migrationFiles(dataRoot()).associateBy { it.name }; require(files.size in 1..1024)
-            val aliases = resolveLegacyNames { name -> files[digest(name) + ".bin"]?.let { source ->
-                readMigrationTextFile(source,name).second
-            } }.associateBy { digest(it) + ".bin" }
-            val text = linkedMapOf<String, String>(); val binaries = linkedMapOf<String, NativeMigrationBlob>(); var totalText = 0L
+            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable(); val files = migrationFiles(dataRoot()).associateBy { it.name }; require(files.size in 1..1024)
+            val aliases=migrationAliases(files,resolveLegacyNames,resolveModernAliases)
+            val text = linkedMapOf<String, NativeMigrationBlob>(); val binaries = linkedMapOf<String, NativeMigrationBlob>()
             for ((filename, source) in files.toSortedMap()) {
                 require(source.length()>=29)
                 java.io.DataInputStream(source.inputStream().buffered()).use { input ->
                     input.mark(4); val version = input.readUnsignedByte(); input.reset()
                     val name: String
                     if (version == 1 || version == 3) {
-                        val decoded = readMigrationTextFile(source,aliases[filename]); name = decoded.first
-                        totalText += strictBytes(decoded.second).size; require(totalText <= NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
-                        require(text.put(name, decoded.second) == null)
+                        val decoded=migrationTextFrame(source,aliases[filename]);name=decoded.first
+                        require(text.put(name,decoded.second)==null)
                     } else {
                         require(source.length()<=23L * 1024 * 1024)
                         val probe = NativeMigrationProbe(); val header = decodeBinaryTo(input, aliases[filename], null, probe); name = header.name
@@ -545,7 +608,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
                     require(name.isNotEmpty() && name.length <= 8192 && !name.contains('\u0000') && name != migrationPointerName && filename == digest(name) + ".bin")
                 }
             }
-            consume(NativeMigrationStreamRecords(text, binaries))
+            consume(NativeMigrationStreamRecords(NativeMigrationTextMap(text),binaries,4))
         } }
     private fun binaryAAD(name: String,size: Int,index: Int,nonce: ByteArray?)=
         (if(nonce==null)byteArrayOf()else binaryContext+nonce+byteArrayOf(0))+strictBytes(name)+byteArrayOf(0)+java.nio.ByteBuffer.allocate(8).putInt(size).putInt(index).array()

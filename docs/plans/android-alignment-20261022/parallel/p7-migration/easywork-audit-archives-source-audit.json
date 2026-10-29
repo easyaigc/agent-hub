@@ -1,0 +1,87 @@
+{
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "EasyWork-residue-and-orphan-audit-candidate",
+  "parentBase": "3f6c50fa57f3a6e4779cce5fe0160befbd1f96df",
+  "framedBase": "e13a390c821d7932a705698cc78d4ac107d381ae",
+  "sourceFingerprint": "2f688c7a887d907a971dc4df2569114b888c1192d5d1f1cafd1326cfc96a08d3",
+  "sourceFiles": 763,
+  "outputs": {
+    "app.apk": {
+      "sha256": "c825bbce954e39b097d1785a97eeaf3a7dee4ad5eae0894f184d4081571a0e99",
+      "bytes": 28456401
+    },
+    "runner.apk": {
+      "sha256": "048c0b48d3993f8950673036904adede9991dda37fd5189948dc1412c3ad7326",
+      "bytes": 9852394
+    }
+  },
+  "fenceOverlays": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveColdTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "713b7e9411c911aa34e3ca2b9c4b7858d6dfdc807c7e2e851cc7f3b591437701"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt": {
+      "baseSha256": null,
+      "proposedSha256": "cda5989e395becf430aa557ccc9fd282d6dc228abbe348f27ee579720dd71b21"
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt": {
+      "baseSha256": null,
+      "proposedSha256": "abd8852f100fda6cfae9189d095d28c1f2731722536890c60a9686afd02384e9"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": {
+      "baseSha256": "68b5da635a251cd43e93f592ab0fa63df78f48f3e17906dfc8fe2f36c392db23",
+      "proposedSha256": "dcd0fd0c4ffc995036ae5293b48cc1b040ee6583df27f6199649fd979ba69405"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": {
+      "baseSha256": "7b2fea5625eda16ebbbff391e629a7e5a29b3c05a83fe97a8233a9b4490b360f",
+      "proposedSha256": "ab7242a4478a4456b415024fb5c97e59ff1df4d92f9846b8d1e5316f176e1e39"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt": {
+      "baseSha256": null,
+      "proposedSha256": "8a8910e5f490f0007a42c80a9db5d68235e67b374932d1c5eed02751ef01ba07"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt": {
+      "baseSha256": null,
+      "proposedSha256": "f0ff5f66861caee3b1cdeadcd11c4e64836e1e04e1317d4aed2e0a3e0e8c2969"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": {
+      "baseSha256": "deda3be1083190285f9c9578ece0c732ca6a38bf1804c173bd327360de5254a9",
+      "proposedSha256": "5a91ce066a0a12edfbe94f4965a6f4227daafefb2518e7235de4caf2e0bb884a"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt": {
+      "baseSha256": "6ddcd3722c52df7f328b454461f2d3b198a83fab3e16351d5f54da14aafbcbb8",
+      "proposedSha256": "f8c95a48de2235e139cc79ee423ce075fc53dd5ea3b51984ab3e116e49404860"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": {
+      "baseSha256": "2c4ea483cf70ee50ac3fefc96843cb73e8bbf6cab8bcaee3ce4581c909d8fdc7",
+      "proposedSha256": "ce4f8a025e99fcf305c719478b8b538d3c31f17977347d133fb81f428d8580be"
+    }
+  },
+  "excludedAndUnchangedSharedFiles": {
+    "MainActivity.kt": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8",
+    "MobileSession.kt": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+    "NativeChatNotificationCoordinator.kt": "ee4eef9771fc56c182826c1ece367697746ece7e72edc0bc11a834fea77ebb4a",
+    "VoiceInputController.kt": "289784f1cf32486b462ece61566c87c669eb144b47052d32789a51f8bb73106f",
+    "VoiceInputView.kt": "e0ab4904b9d3a353519d01322c946e170c10535ef05345e933324b3a55b160ca",
+    "AgentHubApp.kt": "0247816330fc18b92e0ef5b9ff8831c143bd5357143b9dc3c0ece9cd79290d1a",
+    "NativeSheets.kt": "ad0f57c112b54837c959410c6c633aa2db2ece9539e35082002aae71da0c861f",
+    "EasyWorkAuthorizationCoordinator.kt": "478c572ab47a6b7a328bfdba0fdeb2bf03708b0f556c35e81f0b2309602bbd6e",
+    "EasyWorkConnectionLeaseBinding.kt": "6a42b37ee1e3b4ae6f995205acb1799ad5a9085cff6366ffb43594fcdcc1a4bb",
+    "EasyWorkDeviceAuthorization.kt": "1b8681f4fb686fe877eb914e74260fc825dc65fa764e9c3ac938c9ca49ad2256"
+  },
+  "sourceDeltaFiles": 19,
+  "validation": {
+    "appRunnerBuild": "passed",
+    "nativePreparedMethods": 8,
+    "nativeExecutedHere": false,
+    "actualP8ReflectionSignatures": "Inspected compiled method signatures only; native methods not executed",
+    "realDev": "not run by this owner",
+    "fullP7Passed": false
+  },
+  "activeEasyWorkBusinessGraphSupported": false,
+  "remaining": [
+    "Current native/API26/API37/OEM/cold/SAF and real DEV",
+    "Complete EasyWork client/cache/business projection and actual lifecycle/pairing acceptance",
+    "Cross-format interoperability and full P7"
+  ]
+}

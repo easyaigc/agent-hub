@@ -1180,6 +1180,16 @@
       "key": "迁移后需明确开启通知，原记录已保留。",
       "en": "Enable notifications explicitly after migration. Original records are retained.",
       "zhHans": "迁移后需明确开启通知，原记录已保留。"
+    },
+    {
+      "key": "需要重新配对 · 查看缓存",
+      "en": "Pair again · View cache",
+      "zhHans": "需要重新配对 · 查看缓存"
+    },
+    {
+      "key": "迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。",
+      "en": "Imported chats and receipts are read-only. Scan a new connection QR code from the computer, or enter a new connection code to pair again.",
+      "zhHans": "迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。"
     }
   ]
 }

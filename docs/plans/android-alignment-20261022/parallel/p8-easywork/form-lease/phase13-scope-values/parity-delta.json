@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "id": "android-p8-positive-scope-values-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-stage18-positive-value-assertion-20261029-1",
+  "commit": "473d3ddc1104ba9fcbf9dfc80856e4981b77fac5",
+  "features": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S18"],
+  "commonAssertion": "Compare all six exact TargetScope values after save/restore/original-target switch; preserve nullable account distinction and whole-scope non-null requirement.",
+  "scopeComparisonsChanged": 3,
+  "fields": ["agentId", "accountAuthority", "accountSubject", "hostId", "workspaceId", "runtimeId"],
+  "dualPlatformImpact": {
+    "android": "AndroidTest assertion only; no production TargetScope equality change, no wait/touch relaxation",
+    "ios": "Unchanged and paused; no new proof"
+  },
+  "auxiliary": {
+    "androidTestKotlin": "compiled",
+    "sourceResourceInputs": 483,
+    "sourceSetSha256": "77c66060df2fb8dbbfe842c7dba164026000a0101b4d26b74c056070d4e34836",
+    "nativeExecutions": 0,
+    "newApks": 0,
+    "deviceHostModelActions": 0
+  },
+  "nativeGate": "Parent rebuild combined runner and run positive success once with fresh lease/UUID; do not replay old failed case",
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkPositiveCommitTest.kt": "028ce7716fb6689f1870cabb2d2e26e1831b7beb9683e2cd02c15dd5b238fcf4"
+  },
+  "centralRegistration": "parent-owned; no production UI/tokens/copy/architecture change",
+  "a5Closure": false,
+  "a6": "paused"
+}

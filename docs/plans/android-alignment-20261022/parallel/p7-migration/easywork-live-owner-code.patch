@@ -1,0 +1,728 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt
+@@ -36,6 +36,18 @@
+                 override fun get(timeout: Long,unit: TimeUnit): Any?=task.get(timeout,unit)
+             }
+         }
++        /** One callback keeps ownership through its outermost finally, including response close. */
++        fun callback(context: CoroutineContext): ()->Unit {
++            val unit=context[Key]?.begin(false)
++            return {unit?.finish()}
++        }
++        /** Cleanup remains admissible after close and completes only on actual executor exit. */
++        fun cleanup(executor: ExecutorService,context: CoroutineContext,action: ()->Unit) {
++            val unit=context[Key]?.begin(true)
++            try {executor.execute {
++                try {action()}catch(failure: Throwable){context[Key]?.failedCleanup(failure)}finally {unit?.finish()}
++            }}catch(failure: Throwable){context[Key]?.failedCleanup(failure);unit?.finish();throw failure}
++        }
+         /** Invoked by cancellation handlers on Main: capture and enqueue only. */
+         fun cancelHttp(context: CoroutineContext,active: AtomicReference<HttpURLConnection?>,future: Future<*>) {
+             val connection=active.getAndSet(null)
+@@ -47,6 +59,8 @@
+     private val lock=Any()
+     private val pending=mutableSetOf<Work>()
+     private var closed=false
++    private var cleanupFailure: Throwable?=null
++    private fun failedCleanup(failure: Throwable){synchronized(lock){if(cleanupFailure==null)cleanupFailure=failure}}
+     private var idle=CompletableDeferred<Unit>().apply {complete(Unit)}
+     private inner class Work {
+         fun finish() {
+@@ -62,7 +76,9 @@
+     fun close(){synchronized(lock){closed=true}}
+     suspend fun awaitIdle() {
+         while(true) {
+-            val waiting=synchronized(lock){if(pending.isEmpty())null else idle}?:return
++            val waiting=synchronized(lock){
++                if(pending.isEmpty()){cleanupFailure?.let {throw IllegalStateException("Native IO cleanup did not complete",it)};null}else idle
++            }?:return
+             waiting.await()
+         }
+     }
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkOkHttp55.kt
+@@ -0,0 +1,30 @@
++@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
++package com.agenthub.android
++
++import okhttp3.ConnectionPool
++import okhttp3.OkHttpClient
++import okhttp3.internal.concurrent.TaskRunner
++import java.util.concurrent.TimeUnit
++
++/** The Gradle-locked OkHttp 5.5 adapter owns its socket/writer/connection task runner.
++ * Listener return and executor.shutdown() alone do not prove that TLS/writer work exited.
++ * Keep these version-specific internal APIs isolated here; a library upgrade must revalidate it.
++ */
++internal class NativeEasyWorkOkHttp55 {
++    private val backend=TaskRunner.RealBackend { task->Thread(task,"easywork-socket-work").apply {isDaemon=true} }
++    private val runner=TaskRunner(backend)
++    fun configure(builder: OkHttpClient.Builder): OkHttpClient.Builder = builder
++        .taskRunner(runner)
++        .connectionPool(ConnectionPool(5,5,TimeUnit.MINUTES,runner))
++    fun drain() {
++        runner.cancelAll()
++        // A shutdown queue can retain a non-cancellable writer close. Wait for real exit.
++        while(true) {
++            val queues=runner.activeQueues()
++            if(queues.isEmpty())break
++            queues.forEach {it.idleLatch().await()}
++        }
++        backend.shutdown()
++        while(!backend.executor.awaitTermination(1,TimeUnit.SECONDS)) { /* actual threads, not isDone */ }
++    }
++}
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeEasyWorkMigrationOwners.kt
+@@ -0,0 +1,44 @@
++package com.agenthub.android
++
++import kotlinx.coroutines.*
++import java.util.concurrent.atomic.AtomicBoolean
++import kotlin.coroutines.AbstractCoroutineContextElement
++import kotlin.coroutines.CoroutineContext
++
++/** Owns independent EasyWork scopes, including already-retiring routes. No parent Job is copied. */
++internal class NativeEasyWorkMigrationOwners: AbstractCoroutineContextElement(Key) {
++    companion object Key: CoroutineContext.Key<NativeEasyWorkMigrationOwners>
++    private val lock=Any()
++    private val owners=mutableSetOf<Owner>()
++    private val retirement=CoroutineScope(SupervisorJob()+Dispatchers.IO)
++    private var sealed=false
++    val stopping get()=synchronized(lock){sealed}
++    inner class Owner internal constructor(private val stop: ()->Unit,private val join: suspend ()->Unit) {
++        private val started=AtomicBoolean()
++        private val completed=CompletableDeferred<Unit>()
++        fun retire() {
++            if(!started.compareAndSet(false,true))return
++            try {stop()}catch(failure: Throwable){completed.completeExceptionally(failure);return}
++            retirement.launch {
++                try {
++                    join()
++                    synchronized(lock){owners.remove(this@Owner)}
++                    completed.complete(Unit)
++                }catch(failure: Throwable){completed.completeExceptionally(failure)}
++            }
++        }
++        suspend fun await(){retire();completed.await()}
++    }
++    fun register(stop: ()->Unit,join: suspend ()->Unit): Owner=synchronized(lock) {
++        check(!sealed){"EasyWork migration owner is stopping"}
++        Owner(stop,join).also {owners.add(it)}
++    }
++    fun seal(){synchronized(lock){sealed=true}}
++    suspend fun stopAndJoin() {
++        val snapshot=synchronized(lock){sealed=true;owners.toList()}
++        snapshot.forEach {it.retire()}
++        snapshot.forEach {it.await()}
++        check(synchronized(lock){owners.isEmpty()})
++    }
++    fun reopen(){synchronized(lock){check(owners.isEmpty());sealed=false}}
++}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt
+@@ -17,6 +17,8 @@
+ import java.util.concurrent.atomic.AtomicLong
+ import javax.net.ssl.SSLContext
+ import javax.net.ssl.X509TrustManager
++import kotlin.coroutines.CoroutineContext
++import kotlin.coroutines.EmptyCoroutineContext
+ import kotlin.coroutines.resume
+ import kotlin.coroutines.resumeWithException
+
+@@ -25,11 +27,28 @@
+     suspend fun receive(): ByteArray
+     suspend fun acknowledge(bytes: ByteArray) {}
+     fun close()
++    /** Implemented transports must prove independent work and socket cleanup have exited. */
++    suspend fun awaitClosedForMigration(): Unit=error("Transport has no migration close proof")
+ }
+ /** TLS exceptions belong to one paired private endpoint and one certificate. */
+ object EasyWorkHttp {
+     const val MAX_FRAME=32*1024*1024
+     private val cleanup=java.util.concurrent.Executors.newSingleThreadExecutor { task->Thread(task,"easywork-network-cleanup").apply { isDaemon=true } }
++    private class ClientWork(val socketWork: NativeEasyWorkOkHttp55?=null) {
++        var context: CoroutineContext=EmptyCoroutineContext
++        var disposing=false
++        val disposed=CompletableDeferred<Unit>()
++    }
++    private val clients=java.util.WeakHashMap<OkHttpClient,ClientWork>()
++    private fun bind(client: OkHttpClient,context: CoroutineContext): ClientWork=synchronized(clients) {
++        val state=clients.getOrPut(client){ClientWork()}
++        check(!state.disposing){"EasyWork HTTP client is retired"}
++        val previous=state.context[NativeMigrationIoWork]
++        val incoming=context[NativeMigrationIoWork]
++        require(previous==null||incoming==null||previous===incoming){"HTTP owner changed"}
++        if(incoming!=null)state.context=incoming
++        state
++    }
+     fun client(endpoint: String,pin: String? = null,capture: ((String)->Unit)? = null): OkHttpClient {
+         val builder=OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
+             .connectTimeout(8,TimeUnit.SECONDS).readTimeout(35,TimeUnit.SECONDS).callTimeout(40,TimeUnit.SECONDS)
+@@ -50,7 +69,11 @@
+             val context=SSLContext.getInstance("TLS");context.init(null,arrayOf(trust),SecureRandom())
+             builder.sslSocketFactory(context.socketFactory,trust).hostnameVerifier { supplied,_ -> supplied.lowercase().trim('[',']')==host }
+         }
+-        return builder.build()
++        return isolatedClient(builder)
++    }
++    internal fun isolatedClient(builder: OkHttpClient.Builder): OkHttpClient {
++        val socketWork=NativeEasyWorkOkHttp55()
++        return socketWork.configure(builder).build().also {client->synchronized(clients){clients[client]=ClientWork(socketWork)}}
+     }
+     suspend fun request(client: OkHttpClient,url: String,body: JSONObject?=null,token: String?=null,limit: Int=MAX_FRAME,timeoutSeconds: Long=40,form: Map<String,String>?=null,method: String?=null,rawBody: ByteArray?=null,headers: Map<String,String> = emptyMap()): JSONObject {
+         val builder=Request.Builder().url(url).header("Accept","application/json")
+@@ -64,13 +87,15 @@
+             require(method!="GET"||rawBody==null)
+             builder.method(method,rawBody?.toRequestBody("application/json; charset=utf-8".toMediaType()))
+         } else require(rawBody==null)
+-        val call=client.newCall(builder.build());call.timeout().timeout(timeoutSeconds,TimeUnit.SECONDS)
++        val owner=currentCoroutineContext();owner.ensureActive();bind(client,owner)
++        val finished=NativeMigrationIoWork.callback(owner)
++        val call=try {client.newCall(builder.build()).also {it.timeout().timeout(timeoutSeconds,TimeUnit.SECONDS)}}catch(failure: Throwable){finished();throw failure}
+         return suspendCancellableCoroutine { continuation ->
+-            continuation.invokeOnCancellation { call.cancel() }
+-            call.enqueue(object: Callback {
+-                override fun onFailure(call: Call,e: IOException) { if(continuation.isActive) continuation.resumeWithException(HostReadError("正在重新连接电脑",e,true)) }
++            continuation.invokeOnCancellation { NativeMigrationIoWork.cleanup(cleanup,owner){call.cancel()} }
++            try {call.enqueue(object: Callback {
++                override fun onFailure(call: Call,e: IOException) { try {if(continuation.isActive) continuation.resumeWithException(HostReadError("正在重新连接电脑",e,true))}finally {finished()} }
+                 override fun onResponse(call: Call,response: Response) {
+-                    response.use { try {
++                    try {response.use { try {
+                         if(!continuation.isActive) return
+                         if(!response.isSuccessful&&headers.containsKey("DPoP")) {
+                             val source=response.body.source();source.request(4096)
+@@ -85,23 +110,37 @@
+                             while(continuation.isActive) { val n=input.read(buffer);if(n<0)break;require(data.size()+n<=limit) { "电脑消息超过接收上限" };data.write(buffer,0,n) }
+                         }
+                         if(continuation.isActive) continuation.resume(if(data.size()==0) JSONObject() else JSONObject(data.toString("UTF-8")))
+-                    } catch(e: Exception) { if(continuation.isActive) continuation.resumeWithException(e) } }
++                    } catch(e: Exception) { if(continuation.isActive) continuation.resumeWithException(e) } }}finally {finished()}
+                 }
+-            })
+-        }
+-    }
+-    fun dispose(client: OkHttpClient) {
+-        client.dispatcher.cancelAll()
+-        // Closing a pooled TLS socket sends close_notify. Keep that network I/O
+-        // off Android's main thread, including after a successful pinned read.
+-        val release=Runnable { try { client.connectionPool.evictAll() } finally { client.dispatcher.executorService.shutdown() } }
+-        if(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())cleanup.execute(release) else release.run()
+-    }
++            })}catch(failure: Throwable){finished();if(continuation.isActive)continuation.resumeWithException(failure)}
++        }
++    }
++    fun dispose(client: OkHttpClient): Deferred<Unit> {
++        val state=synchronized(clients) {
++            clients.getOrPut(client){ClientWork()}.also {if(it.disposing)return it.disposed;it.disposing=true}
++        }
++        // Cancellation, pooled TLS close, dispatcher callbacks and socket/writer tasks all run
++        // off Main. The token and completion stay live until the actual executors drain.
++        NativeMigrationIoWork.cleanup(cleanup,state.context) {
++            try {
++                client.dispatcher.cancelAll()
++                client.connectionPool.evictAll()
++                client.dispatcher.executorService.shutdown()
++                while(!client.dispatcher.executorService.awaitTermination(1,TimeUnit.SECONDS)) { }
++                client.connectionPool.evictAll()
++                state.socketWork?.drain()
++                state.disposed.complete(Unit)
++            }catch(failure: Throwable){state.disposed.completeExceptionally(failure);throw failure}
++        }
++        return state.disposed
++    }
++    internal fun bindOwner(client: OkHttpClient,context: CoroutineContext){bind(client,context)}
++
+ }
+
+ typealias EasyWorkRequestHeaders = suspend (String,String,ByteArray?)->Map<String,String>
+
+-class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map<String,String> = emptyMap()): AgentFrameTransport {
++class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map<String,String> = emptyMap(),private val ownerContext: CoroutineContext=EmptyCoroutineContext): AgentFrameTransport {
+     private val endpoint=CodexEndpoints.local(candidate.endpoint)
+     private val client=EasyWorkHttp.client(endpoint,candidate.peerFingerprint ?: error("缺少配对证书"))
+     private val input=Channel<ByteArray>(64)
+@@ -110,6 +149,7 @@
+     @Volatile private var closed=false
+     private val socket: WebSocket
+     init {
++        EasyWorkHttp.bindOwner(client,ownerContext)
+         val url=URI(endpoint).let { URI("wss",null,it.host,it.port,"/channel","bindingId="+java.net.URLEncoder.encode(bindingId,"UTF-8"),null).toString() }
+         socket=client.newWebSocket(Request.Builder().url(url).apply { headers.forEach { (key,value)->header(key,value) } }.build(),object: WebSocketListener() {
+             override fun onOpen(webSocket: WebSocket,response: Response) { ready.complete(Unit) }
+@@ -131,18 +171,26 @@
+         check(!closed&&socket.send(String(bytes,Charsets.UTF_8))) { "电脑通道已关闭" }
+     }
+     override suspend fun receive(): ByteArray = input.receive().also { buffered.addAndGet(-it.size.toLong()) }
+-    override fun close() { closed=true;socket.cancel();input.cancel();EasyWorkHttp.dispose(client) }
+-}
+-
+-class RelayFrameTransport(candidate: AgentCandidate,private val bindingId: String?,private val token: suspend ()->String,private val authorize: EasyWorkRequestHeaders?=null): AgentFrameTransport {
++    override fun close() {
++        if(closed)return
++        closed=true;input.cancel()
++        NativeMigrationIoWork.cleanup(networkCancellation,ownerContext){socket.cancel()}
++        EasyWorkHttp.dispose(client)
++    }
++    override suspend fun awaitClosedForMigration(){check(closed);EasyWorkHttp.dispose(client).await()}
++    companion object {private val networkCancellation=java.util.concurrent.Executors.newCachedThreadPool {task->Thread(task,"easywork-websocket-cancel").apply {isDaemon=true}}}
++}
++
++class RelayFrameTransport(candidate: AgentCandidate,private val bindingId: String?,private val token: suspend ()->String,private val authorize: EasyWorkRequestHeaders?=null,private val ownerContext: CoroutineContext=EmptyCoroutineContext): AgentFrameTransport {
+     private val base=NativeHostReads.baseAddress(candidate.endpoint).toString().trimEnd('/')
+     private val client=EasyWorkHttp.client(base)
+     private val pending=ArrayDeque<JSONObject>()
+     private val acknowledgements=linkedMapOf<String,JSONObject>()
+-    private val acknowledgementScope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
++    private val acknowledgementScope=CoroutineScope(SupervisorJob()+Dispatchers.IO+ownerContext)
+     private var acknowledgementTask: Job?=null
+     @Volatile private var acknowledgementFailure: Throwable?=null
+     @Volatile private var closed=false
++    init {EasyWorkHttp.bindOwner(client,ownerContext)}
+     suspend fun api(path: String,body: JSONObject?=null): JSONObject {
+         require(path in setOf("/relay/envelopes","/relay/pending","/relay/acknowledgements","/pairing/claim","/bindings"))
+         currentCoroutineContext().ensureActive()
+@@ -221,12 +269,26 @@
+         synchronized(pending) { pending.clear() }
+         EasyWorkHttp.dispose(client)
+     }
++    override suspend fun awaitClosedForMigration(){check(closed);acknowledgementScope.coroutineContext[Job]!!.join();EasyWorkHttp.dispose(client).await()}
+ }
+
+ class AgentTransportRegistry {
+     private val factories=mutableMapOf<String,suspend (AgentCandidate,EasyWorkBinding,suspend ()->String,EasyWorkRequestHeaders?)->AgentFrameTransport>(
+-        "lan-wss" to { c,b,_,a->LANFrameTransport(c,b.id,a?.invoke("GET",CodexEndpoints.local(c.endpoint)+"/channel",null).orEmpty()) },
+-        "relay-http" to { c,b,t,a->RelayFrameTransport(c,b.id,t,a) })
++        "lan-wss" to { c,b,_,a->LANFrameTransport(c,b.id,a?.invoke("GET",CodexEndpoints.local(c.endpoint)+"/channel",null).orEmpty(),currentCoroutineContext().easyWorkOwnerContext()) },
++        "relay-http" to { c,b,t,a->RelayFrameTransport(c,b.id,t,a,currentCoroutineContext().easyWorkOwnerContext()) })
+     fun register(id: String,factory: suspend (AgentCandidate,EasyWorkBinding,suspend ()->String,EasyWorkRequestHeaders?)->AgentFrameTransport) { factories[id]=factory }
+-    suspend fun make(candidate: AgentCandidate,binding: EasyWorkBinding,token: suspend ()->String,authorize: EasyWorkRequestHeaders?=null)=factories[candidate.transportId]?.invoke(candidate,binding,token,authorize) ?: error("未注册此连接方式")
+-}
++    private class Owned(private val delegate: AgentFrameTransport,owners: NativeEasyWorkMigrationOwners): AgentFrameTransport by delegate {
++        private val owner=owners.register({delegate.close()},{delegate.awaitClosedForMigration()})
++        override fun close(){owner.retire()}
++        override suspend fun awaitClosedForMigration(){owner.await()}
++    }
++    suspend fun make(candidate: AgentCandidate,binding: EasyWorkBinding,token: suspend ()->String,authorize: EasyWorkRequestHeaders?=null) : AgentFrameTransport {
++        val transport=factories[candidate.transportId]?.invoke(candidate,binding,token,authorize) ?: error("未注册此连接方式")
++        val owners=currentCoroutineContext()[NativeEasyWorkMigrationOwners]?:return transport
++        return try {Owned(transport,owners)}catch(failure: Throwable){transport.close();throw failure}
++    }
++}
++
++/** Copy only narrow owners. Never inherit an unrelated scope Job or dispatcher. */
++internal fun CoroutineContext.easyWorkOwnerContext(): CoroutineContext =
++    (this[NativeMigrationIoWork]?:EmptyCoroutineContext)+(this[NativeEasyWorkMigrationOwners]?:EmptyCoroutineContext)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt
+@@ -7,13 +7,17 @@
+ import java.util.UUID
+ import java.util.concurrent.ConcurrentHashMap
+ import java.util.concurrent.atomic.AtomicLong
++import kotlin.coroutines.CoroutineContext
++import kotlin.coroutines.EmptyCoroutineContext
+
+ class EasyWorkRemoteSession(val connection: AgentConnection,private val credential: EasyWorkCredential,private val token: suspend ()->String,
+-    private val transports: AgentTransportRegistry = AgentTransportRegistry(),private val authorize: EasyWorkRequestHeaders?=null) {
++    private val transports: AgentTransportRegistry = AgentTransportRegistry(),private val authorize: EasyWorkRequestHeaders?=null,ownerContext: CoroutineContext=EmptyCoroutineContext) {
+     val target=credential.binding.target
+-    private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.IO)
++    private val migrationContext=ownerContext.easyWorkOwnerContext()
++    private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.IO+migrationContext)
+     private val connecting=Mutex()
+     private val sending=Mutex()
++    private val routeLock=Any()
+     @Volatile private var route: AgentFrameTransport?=null
+     @Volatile private var crypto: EasyWorkCrypto?=null
+     @Volatile private var closed=false
+@@ -33,12 +37,15 @@
+     private val received=mutableMapOf<String,Pair<Long,MutableSet<Long>>>()
+     private var pump: Job?=null
+     init { require(sameScope(target.scope(),connection.target)) { "连接运行时身份不匹配" };require(credential.grantRef==null||authorize!=null) { "设备授权不可降级为旧登录凭据" };require(credential.binding.json.optJSONObject("deviceAuthorization")==null||credential.grantRef!=null) { "设备授权凭据缺失，请重新配对" } }
+-    private fun disconnect() {
++    private fun disconnect() = synchronized(routeLock) {
+         val previous=route;route=null;crypto=null;confirmed=false;pump?.cancel();pump=null;previous?.close()
+         synchronized(threadSyncs) { threadSyncs.clear() }
+         eventChanges.signal()
+     }
+-    fun close() { closed=true;disconnect();tasks.cancel();pending.values.forEach { it.cancel() };pending.clear() }
++    private val retirement=ownerContext[NativeEasyWorkMigrationOwners]?.register({stop()},{tasks.coroutineContext[Job]!!.join()})
++    private fun stop() {synchronized(routeLock){closed=true;disconnect()};tasks.cancel();pending.values.forEach { it.cancel() };pending.clear() }
++    fun close() {retirement?.retire()?:stop()}
++    suspend fun closeAndJoinForMigration(){close();retirement?.await()?:tasks.coroutineContext[Job]!!.join()}
+     private suspend fun connect(excluding: String? = null) = connecting.withLock {
+         check(!closed)
+         if(route!=null&&confirmed&&(excluding==null||activeCandidate?.id!=excluding))return@withLock
+@@ -56,9 +63,11 @@
+                 require(binding.target==target) { "双通道运行时身份不匹配" }
+                 val channel=EasyWorkCrypto(credential,binding)
+                 val transport=transports.make(candidate,binding,token,authorize)
+-                route=transport;crypto=channel;sequence.set(1);confirmed=false;lastError=null;activeCandidate=candidate;epoch=UUID.randomUUID().toString()
+-                val attemptEpoch=epoch
+-                pump=tasks.launch { receive(transport,channel,attemptEpoch) }
++                val attemptEpoch=synchronized(routeLock) {
++                    if(closed){transport.close();throw CancellationException("EasyWork session is closed")}
++                    route=transport;crypto=channel;sequence.set(1);confirmed=false;lastError=null;activeCandidate=candidate;epoch=UUID.randomUUID().toString()
++                    epoch.also {value->pump=tasks.launch {receive(transport,channel,value)}}
++                }
+                 withTimeout(8_000) {
+                     publish(JSONObject().put("kind","key-confirmation").put("value",channel.confirmation))
+                     while(!confirmed&&lastError==null&&!closed)delay(25)
+@@ -111,7 +120,9 @@
+             }
+         } catch(cancel: CancellationException) { throw cancel }
+         catch(e: Exception) {
+-            if(!closed&&epoch==pumpEpoch) { lastError=e;confirmed=false;route=null;transport.close();eventChanges.signal() }
++            synchronized(routeLock) {
++                if(!closed&&epoch==pumpEpoch) {lastError=e;confirmed=false;route=null;transport.close();eventChanges.signal()}
++            }
+         }
+     }
+     suspend fun synchronizedThread(threadId: String): JSONObject = syncReads.withLock {
+@@ -143,7 +154,9 @@
+         next.second
+     }
+     /** Wire method whitelist is internal to this adapter; native UI uses named domain operations. */
+-    suspend fun request(method: String,params: JSONObject=JSONObject(),id: String=UUID.randomUUID().toString()): JSONObject {
++    suspend fun request(method: String,params: JSONObject=JSONObject(),id: String=UUID.randomUUID().toString()): JSONObject =
++        withContext(migrationContext){requestOwned(method,params,id)}
++    private suspend fun requestOwned(method: String,params: JSONObject,id: String): JSONObject {
+         require(method in READ_METHODS||method in WRITE_METHODS) { "未注册此电脑操作" }
+         val response=CompletableDeferred<JSONObject>()
+         require(pending.putIfAbsent(id,response)==null) { "同一操作正在等待电脑回执" }
+@@ -220,7 +233,7 @@
+
+ fun interface EasyWorkChannels { suspend fun session(client: MobileClient): EasyWorkRemoteSession }
+
+-class EasyWorkSessions(private val storage: NativeSessionStorage,private val login: EasyWorkLogin): EasyWorkChannels {
++class EasyWorkSessions(private val storage: NativeSessionStorage,private val login: EasyWorkLogin,private val ownerContext: CoroutineContext=EmptyCoroutineContext): EasyWorkChannels {
+     private val deviceAuthorization=EasyWorkDeviceAuthorization(storage)
+     private val lock=Mutex()
+     private val sessions=mutableMapOf<String,Pair<String,EasyWorkRemoteSession>>()
+@@ -231,7 +244,7 @@
+         val signature=easyCanonical(connection.json().put("candidates",org.json.JSONArray()).put("credentialRevision",easyHash(credential.json().toString().toByteArray())))
+         sessions[client.id]?.let { (old,value)->if(old==signature) { value.candidates=connection.candidates;return@withLock value } else value.close() }
+         val authorization: EasyWorkRequestHeaders?=credential.grantRef?.let { ref->{ method,url,body->deviceAuthorization.headers(ref,credential.binding,method,url,body) } }
+-        val value=EasyWorkRemoteSession(connection,credential,{ login.validToken(credential.accessToken,credential.binding.target) },authorize=authorization);sessions[client.id]=signature to value;value
++        val value=EasyWorkRemoteSession(connection,credential,{ login.validToken(credential.accessToken,credential.binding.target) },authorize=authorization,ownerContext=ownerContext);sessions[client.id]=signature to value;value
+     }
+     suspend fun remove(id: String)=lock.withLock { sessions.remove(id)?.second?.close() }
+     suspend fun closeAll()=lock.withLock { sessions.values.forEach { it.second.close() };sessions.clear() }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt
+@@ -23,7 +23,8 @@
+     private val nsd=context.getSystemService(NsdManager::class.java)
+     private val network=context.getSystemService(ConnectivityManager::class.java)
+     private val main=Handler(Looper.getMainLooper())
+-    private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
++    private var tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate+session.easyWorkMigrationContext)
++    private var retirement: NativeEasyWorkMigrationOwners.Owner?=null
+     private var active=false
+     private var generation=UUID.randomUUID()
+     private var listener: NsdManager.DiscoveryListener?=null
+@@ -38,7 +39,12 @@
+     val needsPermission get()=Build.VERSION.SDK_INT>=37&&context.checkSelfPermission(CodexHostDiscovery.LOCAL_PERMISSION)!=PackageManager.PERMISSION_GRANTED
+     private fun post(epoch: UUID,body: ()->Unit) { main.post { if(active&&generation==epoch)body() } }
+     fun start() {
+-        stop();active=true;val epoch=generation;rebuild();if(needsPermission)return
++        stop()
++        if(session.migrationPaused||session.easyWorkMigrationContext[NativeEasyWorkMigrationOwners]!!.stopping)return
++        tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate+session.easyWorkMigrationContext)
++        val ownerTasks=tasks
++        retirement=session.easyWorkMigrationContext[NativeEasyWorkMigrationOwners]!!.register({stopCurrent()},{ownerTasks.coroutineContext[Job]!!.join()})
++        active=true;val epoch=generation;rebuild();if(needsPermission)return
+         val discovery=object: NsdManager.DiscoveryListener {
+             override fun onDiscoveryStarted(type: String) {}
+             override fun onDiscoveryStopped(type: String) {}
+@@ -56,8 +62,9 @@
+         networkListener=callback;try { network.registerNetworkCallback(NetworkRequest.Builder().build(),callback) } catch(_: Exception) { networkListener=null }
+         tasks.launch { while(active&&generation==epoch) { scan();delay(10_000) } }
+     }
+-    fun stop() {
+-        active=false;generation=UUID.randomUUID();tasks.coroutineContext.cancelChildren();scanner=null;pending.clear();advertised.clear()
++    fun stop() {val previous=retirement;retirement=null;if(previous!=null)previous.retire()else stopCurrent()}
++    private fun stopCurrent() {
++        active=false;generation=UUID.randomUUID();tasks.cancel();scanner=null;pending.clear();advertised.clear()
+         listener?.let { try { nsd.stopServiceDiscovery(it) } catch(_: Exception) {} };listener=null
+         networkListener?.let { try { network.unregisterNetworkCallback(it) } catch(_: Exception) {} };networkListener=null
+         if(Build.VERSION.SDK_INT>=34)resolver?.let { try { nsd.stopServiceResolution(it) } catch(_: Exception) {} }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -185,9 +185,11 @@
+         set(value) {if(incomingEasyWorkLinkState!=value){easyWorkConnectionAuthority(this).invalidate();incomingEasyWorkLinkState=value}}
+     val easyWorkLogin=storage?.let(::EasyWorkLogin)
+     private val easyWorkDeviceAuthorization=storage?.let(::EasyWorkDeviceAuthorization)
+-    private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!) }
++    private val migrationIo=NativeMigrationIoWork()
++    private val migrationEasyWork=NativeEasyWorkMigrationOwners()
++    internal val easyWorkMigrationContext get()=migrationIo+migrationEasyWork
++    private val easyWorkSessions=storage?.let { EasyWorkSessions(it,easyWorkLogin!!,easyWorkMigrationContext) }
+     private val easyWorkAgent=easyWorkSessions?.let(::EasyWorkAgentClient)
+-    private val migrationIo=NativeMigrationIoWork()
+     private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate+migrationIo)
+     internal val desktopSuggestionReader=NativeDesktopSuggestionReader(tasks)
+     private val suggestionReadAhead=NativeSuggestionReadAhead(tasks)
+@@ -648,7 +650,7 @@
+         !connectionBusy && !projectBusy && !importing && !attachmentRecoveryBusy &&
+         externalInbox?.let {!it.loading&&!it.receiving&&!it.adding}!=false &&
+         recentPhotos?.let {it.ready&&!it.saving}!=false &&
+-        documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !NativeChatNotificationColdStart.bound(this)
++        documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !migrationEasyWork.stopping && !NativeChatNotificationColdStart.bound(this)
+     internal val migrationCanImport get()=migrationReady&&realClients.isEmpty()
+     internal fun invalidateMigrationLease(){migrationQuiescent=false;migrationEpoch++}
+     internal fun ownsMigrationLease(lease: NativeMigrationOwnerLease)=migrationPaused&&migrationOperation==lease.operationId&&storage===lease.storage
+@@ -662,17 +664,21 @@
+         check(migrationReady)
+         migrationPaused=true;migrationQuiescent=false;val epoch=++migrationEpoch
+         migrationOperation=operationId
++        migrationEasyWork.seal()
+         try {
+             val original=tasks.coroutineContext[Job]!!.children.toList()
+             val notifications=chatNotifications
+             notifications?.let {migrationNotificationOwners.add(it);it.dispose()};easyWorkConnectionAuthority(this).invalidate()
+             leaveForeground()
++            easyWorkDiscovery?.stop()
+             withTimeout(30_000) {
+                 notifications?.stopAndJoinForMigration();migrationNotificationOwners.remove(notifications);chatNotifications=null
+                 voice?.quiesceForMigration();questionVoice?.quiesceForMigration()
+                 val children=(original+tasks.coroutineContext[Job]!!.children.toList()).distinct()
+                 children.forEach {it.cancel()};children.forEach {it.join()}
+                 check(tasks.coroutineContext[Job]!!.children.none {it.isActive})
++                easyWorkSessions?.closeAll()
++                migrationEasyWork.stopAndJoin()
+                 migrationIo.awaitIdle()
+                 // Snapshot after the real producers stop. This includes the latest in-memory draft.
+                 val metadata=metadataSnapshot()
+@@ -683,8 +689,19 @@
+             migrationQuiescent=true
+             return NativeMigrationOwnerLease(store,operationId) {migrationQuiescent&&migrationEpoch==epoch}
+         }catch(failure: Throwable) {
+-            migrationQuiescent=false;migrationPaused=false;migrationOperation=null;chatNotifications=null;resumeMigrationNotificationCleanup()
++            migrationQuiescent=false;migrationPaused=false;migrationOperation=null;chatNotifications=null;resumeMigrationNotificationCleanup();resumeMigrationEasyWorkCleanup()
+             throw failure // Main resumes this same model, preserving any unsaved draft.
++        }
++    }
++    private var migrationEasyWorkCleanup: Job?=null
++    private fun resumeMigrationEasyWorkCleanup() {
++        if(migrationEasyWorkCleanup?.isActive==true)return
++        migrationEasyWorkCleanup=tasks.launch {
++            // A cancelled wait does not release retiring owners or make the next migration ready.
++            runCatching {
++                easyWorkSessions?.closeAll();migrationEasyWork.stopAndJoin();migrationIo.awaitIdle()
++                migrationEasyWork.reopen()
++            }
+         }
+     }
+     private fun resumeMigrationNotificationCleanup() {
+@@ -704,7 +721,11 @@
+         restoreJob?.join();check(!restoring&&!localRecoveryRequired)
+         phoneReading.awaitReconciliation()
+     }
+-    internal suspend fun abandonMigrationRestore(){migrationIo.close();tasks.coroutineContext[Job]!!.cancelAndJoin();migrationIo.awaitIdle()}
++    internal suspend fun abandonMigrationRestore(){
++        migrationEasyWork.seal();easyWorkDiscovery?.stop();easyWorkSessions?.closeAll()
++        migrationIo.close();tasks.coroutineContext[Job]!!.cancelAndJoin()
++        migrationEasyWork.stopAndJoin();migrationIo.awaitIdle()
++    }
+     internal fun retireForMigration(operationId: String) {
+         check(migrationPaused&&migrationOperation==operationId)
+         migrationQuiescent=false;migrationEpoch++;migrationIo.close();tasks.cancel();storage?.retireWriter()
+@@ -2297,7 +2318,7 @@
+         lease.checkpoint()
+         easyWorkSessions!!.remove(id)
+         val authorization: EasyWorkRequestHeaders?=grantRef?.let { grant->{ method,url,body->easyWorkDeviceAuthorization!!.headers(grant,binding,method,url,body) } }
+-        val incoming=EasyWorkRemoteSession(connection.copy(candidates=candidates,preference="automatic"),credential,{ easyWorkLogin!!.validToken(token,binding.target) },authorize=authorization)
++        val incoming=EasyWorkRemoteSession(connection.copy(candidates=candidates,preference="automatic"),credential,{ easyWorkLogin!!.validToken(token,binding.target) },authorize=authorization,ownerContext=easyWorkMigrationContext)
+         try {
+             val context=incoming.request("runtime/context");lease.checkpoint();require(EasyWorkTarget.decode(context.getJSONObject("target"))==binding.target)
+             if(grantRef!=null) {
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoTest.kt
+@@ -0,0 +1,124 @@
++package com.agenthub.android
++
++import kotlinx.coroutines.*
++import okhttp3.*
++import okio.*
++import org.json.JSONObject
++import org.junit.Assert.*
++import org.junit.Test
++import java.util.concurrent.CountDownLatch
++import java.util.concurrent.TimeUnit
++import java.util.concurrent.atomic.AtomicInteger
++
++/** Actual OkHttp callback/body and production transport registry. Interceptors never open a socket.
++ * These scenarios are synthetic auxiliary boundaries, not Host/model, TLS or device acceptance.
++ */
++class NativeMigrationEasyWorkIoTest {
++    private suspend fun CountDownLatch.entered(){withContext(Dispatchers.IO){check(await(5,TimeUnit.SECONDS))}}
++    private suspend fun unfinished(value: Deferred<*>) {assertNull(withTimeoutOrNull(100){value.await();true})}
++    @Test(timeout=15_000) fun cancelledCoroutineStillWaitsForActualResponseReadAndClose()=runBlocking {
++        val io=NativeMigrationIoWork();val body=NativeMigrationHeldResponse();val intercepted=AtomicInteger()
++        val client=EasyWorkHttp.isolatedClient(OkHttpClient.Builder().addInterceptor {chain->
++            intercepted.incrementAndGet();Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("synthetic").body(body).build()
++        })
++        val request=launch(Dispatchers.IO+io){EasyWorkHttp.request(client,"https://synthetic.invalid/read")}
++        try {
++            body.reading.entered();request.cancelAndJoin()
++            val disposed=EasyWorkHttp.dispose(client)
++            val idle=async(Dispatchers.Default){io.awaitIdle()}
++            unfinished(idle);unfinished(disposed)
++            body.releaseRead.countDown();body.closing.entered()
++            unfinished(idle);unfinished(disposed)
++            body.releaseClose.countDown()
++            withTimeout(5_000){idle.await();disposed.await()}
++            assertEquals(1,intercepted.get());assertEquals(1,body.closeCount.get())
++            assertEquals(0,client.dispatcher.runningCallsCount());assertTrue(client.dispatcher.executorService.isTerminated)
++        }finally {body.releaseRead.countDown();body.releaseClose.countDown();request.cancel();EasyWorkHttp.dispose(client)}
++    }
++    @Test(timeout=15_000) fun actualRelayAcknowledgementScopeRemainsOwnedUntilAuthorizationReturns()=runBlocking {
++        val io=NativeMigrationIoWork();val owners=NativeEasyWorkMigrationOwners();val context=io+owners
++        val entered=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>();val authorizations=AtomicInteger()
++        val binding=EasyWorkBinding(JSONObject().put("bindingId","migration-ack").toString())
++        val candidate=AgentCandidate("synthetic-relay","relay-http","https://relay.invalid")
++        val transport=withContext(context){AgentTransportRegistry().make(candidate,binding,{
++            authorizations.incrementAndGet();entered.complete(Unit)
++            withContext(NonCancellable){release.await()};"synthetic-unused-token"
++        })}
++        try {
++            transport.acknowledge(JSONObject().put("bindingId",binding.id).put("senderDeviceId","synthetic").put("senderSessionId","synthetic").put("sequence",1).toString().toByteArray())
++            withTimeout(5_000){entered.await()}
++            val closing=async(Dispatchers.Default){owners.stopAndJoin();io.awaitIdle()}
++            unfinished(closing);assertTrue(owners.stopping)
++            assertTrue(runCatching {owners.register({},{})}.isFailure)
++            release.complete(Unit);withTimeout(5_000){closing.await()}
++            assertEquals(1,authorizations.get());owners.reopen();assertFalse(owners.stopping)
++            // A cancelled ACK cannot reach EasyWorkHttp after the suspended token returns.
++            assertTrue(runCatching {transport.send("{}".toByteArray())}.isFailure)
++        }finally {release.complete(Unit);transport.close()}
++    }
++    @Test(timeout=15_000) fun cancelledJoinKeepsTheSameIndependentTransportUntilItsProofDrains()=runBlocking {
++        val owners=NativeEasyWorkMigrationOwners();val io=NativeMigrationIoWork();val stopped=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>();val closes=AtomicInteger()
++        val registry=AgentTransportRegistry().apply {register("held-independent") {_,_,_,_->object: AgentFrameTransport {
++            override suspend fun send(bytes: ByteArray){}
++            override suspend fun receive(): ByteArray=error("No source input")
++            override fun close(){closes.incrementAndGet();stopped.complete(Unit)}
++            override suspend fun awaitClosedForMigration(){release.await()}
++        }}}
++        val transport=withContext(io+owners){registry.make(AgentCandidate("held","held-independent","https://synthetic.invalid"),EasyWorkBinding("{}"),{"unused"})}
++        try {
++            val first=async(Dispatchers.Default){owners.stopAndJoin()};stopped.await();unfinished(first)
++            first.cancelAndJoin();assertTrue(owners.stopping)
++            val second=async(Dispatchers.Default){owners.stopAndJoin();io.awaitIdle()};unfinished(second)
++            assertEquals(1,closes.get());release.complete(Unit);second.await();owners.reopen();assertFalse(owners.stopping)
++            transport.close();assertEquals(1,closes.get())
++        }finally {release.complete(Unit);transport.close()}
++    }
++    @Test(timeout=15_000) fun actualRemotePrivateScopeDoesNotBorrowParentJobAndKeepsItsCancelledChildUntilExit()=runBlocking {
++        val io=NativeMigrationIoWork();val owners=NativeEasyWorkMigrationOwners();val parent=SupervisorJob()
++        val target=EasyWorkTarget("https://synthetic.invalid","synthetic-subject","synthetic-host","synthetic-workspace","synthetic-runtime")
++        val binding=EasyWorkBinding(JSONObject().put("target",target.json()).put("bindingId","synthetic-binding").toString())
++        val remote=EasyWorkRemoteSession(AgentConnection(target.scope(),emptyList(),"unused"),EasyWorkCredential(binding,"unused"),{"unused"},ownerContext=io+owners+parent)
++        val field=EasyWorkRemoteSession::class.java.getDeclaredField("tasks").apply {isAccessible=true}
++        val actual=field.get(remote) as CoroutineScope;val entered=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>();val started=CompletableDeferred<Unit>()
++        assertNotSame(parent,actual.coroutineContext[Job]);assertSame(io,actual.coroutineContext[NativeMigrationIoWork])
++        actual.launch {started.complete(Unit);try {awaitCancellation()}finally {withContext(NonCancellable){entered.complete(Unit);release.await()}}}
++        try {
++            started.await();parent.cancel();assertTrue(actual.coroutineContext[Job]!!.isActive)
++            val closing=async(Dispatchers.Default){owners.stopAndJoin();io.awaitIdle()};entered.await();unfinished(closing)
++            assertTrue(actual.coroutineContext[Job]!!.isCancelled);assertFalse(actual.coroutineContext[Job]!!.isCompleted)
++            release.complete(Unit);closing.await();assertTrue(actual.coroutineContext[Job]!!.isCompleted)
++            owners.reopen();assertFalse(owners.stopping)
++        }finally {release.complete(Unit);remote.close();parent.cancel()}
++    }
++    @Test(timeout=15_000) fun missingCustomTransportCloseProofFailsClosedAndCannotReopen()=runBlocking {
++        val owners=NativeEasyWorkMigrationOwners();val io=NativeMigrationIoWork()
++        val registry=AgentTransportRegistry().apply {register("unproved") {_,_,_,_->object: AgentFrameTransport {
++            override suspend fun send(bytes: ByteArray){}
++            override suspend fun receive(): ByteArray=error("No source input")
++            override fun close(){}
++        }}}
++        withContext(io+owners){registry.make(AgentCandidate("unproved","unproved","https://synthetic.invalid"),EasyWorkBinding("{}"),{"unused"})}
++        assertTrue(runCatching {owners.stopAndJoin()}.isFailure);assertTrue(owners.stopping)
++        assertTrue(runCatching {owners.reopen()}.isFailure)
++    }
++}
++
++internal class NativeMigrationHeldResponse: ResponseBody() {
++    val reading=CountDownLatch(1);val releaseRead=CountDownLatch(1)
++    val closing=CountDownLatch(1);val releaseClose=CountDownLatch(1)
++    val closeCount=AtomicInteger()
++    private val input=object: Source {
++        private var sent=false
++        override fun timeout()=Timeout.NONE
++        override fun read(sink: Buffer,byteCount: Long): Long {
++            reading.countDown();wait(releaseRead)
++            if(sent)return -1
++            sent=true;sink.writeUtf8("{}");return 2
++        }
++        override fun close(){closing.countDown();wait(releaseClose);closeCount.incrementAndGet()}
++    }.buffer()
++    override fun contentType(): MediaType?=null
++    override fun contentLength()=-1L
++    override fun source()=input
++    companion object {private fun wait(latch: CountDownLatch){while(true)try {latch.await();return}catch(_: InterruptedException){}}}
++}
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkIoLifecycleTest.kt
+@@ -0,0 +1,59 @@
++package com.agenthub.android
++
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import kotlinx.coroutines.*
++import okhttp3.*
++import org.junit.*
++import org.junit.Assert.*
++import java.util.UUID
++import java.util.concurrent.TimeUnit
++
++/** Actual Session quiescence and next-migration gate; intercepted OkHttp never opens a socket. */
++class NativeMigrationEasyWorkIoLifecycleTest {
++    @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    private lateinit var previous: MainActivity.AcceptanceSessionState
++    @Before fun setup() {
++        ui.waitUntil(30_000){!ui.activity.session.restoring}
++        ui.runOnIdle {owned=OwnedControlAcceptance(ui.activity,"migration-easywork-actual-io");owned.session.restore()}
++        ui.waitUntil(30_000){!owned.session.restoring&&owned.session.phoneReading.ready}
++        ui.runOnIdle {previous=ui.activity.adoptSessionForAcceptance(owned.session)}
++        ui.waitUntil(30_000){ui.activity.session.migrationReady}
++    }
++    @After fun finish(){if(::previous.isInitialized)ui.runOnIdle{ui.activity.restoreSessionForAcceptance(previous);owned.verifyDefault()}}
++    @Test fun cancelledActualSessionWaitKeepsDraftAndBlocksSecondMigrationUntilCallbackCloseExits()=runBlocking {
++        val original=ui.activity.session;val body=NativeMigrationHeldResponse()
++        val client=EasyWorkHttp.isolatedClient(OkHttpClient.Builder().addInterceptor {chain->
++            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("synthetic").body(body).build()
++        })
++        val field=MobileSession::class.java.getDeclaredField("tasks").apply {isAccessible=true}
++        val actualScope=field.get(original) as CoroutineScope
++        val reader=actualScope.launch {EasyWorkHttp.request(client,"https://synthetic.invalid/migration")}
++        var migration: Deferred<NativeMigrationOwnerLease>?=null
++        try {
++            withContext(Dispatchers.IO){check(body.reading.await(5,TimeUnit.SECONDS))}
++            ui.runOnIdle {original.text="unsaved draft with an actual callback still alive"}
++            migration=async(Dispatchers.Main.immediate){original.quiesceForMigration(UUID.randomUUID().toString())}
++            ui.waitUntil(5_000){original.migrationPaused&&!reader.isActive}
++            assertFalse(migration.isCompleted);assertNull(owned.storage.migrationPublicationReceipt())
++            migration.cancelAndJoin()
++            ui.runOnIdle {
++                assertSame(original,ui.activity.session);assertFalse(original.migrationPaused);assertFalse(original.migrationReady)
++                assertEquals("unsaved draft with an actual callback still alive",original.text)
++            }
++            val second=withContext(Dispatchers.Main.immediate){runCatching {original.quiesceForMigration(UUID.randomUUID().toString())}}
++            assertTrue(second.isFailure);assertNull(owned.storage.migrationPublicationReceipt())
++            body.releaseRead.countDown()
++            withContext(Dispatchers.IO){check(body.closing.await(5,TimeUnit.SECONDS))}
++            ui.runOnIdle {assertFalse(original.migrationReady)}
++            body.releaseClose.countDown()
++            ui.waitUntil(10_000){original.migrationReady}
++            ui.runOnIdle {assertSame(original,ui.activity.session);assertEquals("unsaved draft with an actual callback still alive",original.text)}
++            assertNull(owned.storage.migrationPublicationReceipt());assertEquals(1,body.closeCount.get())
++        }finally {
++            body.releaseRead.countDown();body.releaseClose.countDown()
++            migration?.cancel();reader.cancel();EasyWorkHttp.dispose(client)
++        }
++    }
++}

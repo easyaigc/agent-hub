@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR27 supplemental",
+  "sourceSha256": "7e8eea407399840a1ed4906df95b5cb8cc424e51d58328d3eefbbb3dab869c66",
+  "appSha256": "c7e015b73d206d8c7094c5a060b59da578b6a70cc3deed5ddc46d22446a25392",
+  "runnerSha256": "0499c5c40cd9c7839a32f029d3528dc3389e33b3f5d1116a11a3e5ce0e50052c",
+  "environment": "new isolated empty API26;old accumulated API26 untouched",
+  "nativePassed": 5,
+  "uniqueMethods": 5,
+  "defaultFullFamilyGuard": "original64 roots/1024files/262144bytes unchanged",
+  "oldAccumulatedApi26": "five original precondition failures retained;not upgraded to pass",
+  "physicalFullFamily": "pending separately",
+  "fullWorkspaceCheck": 0,
+  "realModelOrHostInputs": 0,
+  "syntheticCasesOnly": true
+}

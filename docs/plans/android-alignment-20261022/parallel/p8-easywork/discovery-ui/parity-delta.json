@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-discovery-reviewed-ui-next-20261029-1",
+  "features": ["F02", "F06", "F08", "F46"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S14", "S18"],
+  "commonAssertion": "Saved discovery name and menu selection follow current saved state; removal and late descriptive rows preserve target/ref/preferences/draft and never activate a removed target. Native behavior remains unexecuted.",
+  "dualPlatformImpact": {
+    "android": "Saved name projection fix, current option checkmarks/selected semantics, accurate busy-disabled controls; four real production UI cases prepared",
+    "ios": "Existing saved-name projection and native Picker selection are reference; code unchanged, no new acceptance"
+  },
+  "removalPresentation": {
+    "ios": "Native destructive swipe; reviewed source has no additional app confirmation",
+    "android": "Existing remove button and explicit confirmation preserved; cancel/confirm native case prepared"
+  },
+  "tokensOrCopyChanged": false,
+  "nativeCompile": {
+    "compileExit": 0,
+    "sourceSetSha256": "af1d184cb2d79d48cf68b30d1a62db2673d2a3fc759b9526d3a1f6a6f8dc49e6",
+    "inputs": 485,
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newMethods": 4,
+    "executedMethods": 0,
+    "newApks": 0,
+    "sourceContext": "Own shared-source shadows and 14-key resource overlay; parent neither written nor compiled"
+  },
+  "nativeExecution": {
+    "status": "unexecuted",
+    "preparedMethods": [
+      "renameUsesSavedNameBeforeAnotherScanAndAfterLateDiscovery",
+      "preferenceSelectionSurvivesLateRowsAndEditorRoundTrip",
+      "removeRequiresConfirmationAndLateKnownRowsStayAbsent",
+      "longSavedRowsAndTargetFieldsRemainUsableInShortViewport"
+    ],
+    "executedMethods": 0,
+    "buildArgument": "p8DiscoveryUiBuild",
+    "requiredBuildKeys": ["sourceSha256", "appSha256", "runnerSha256"],
+    "lane": "Production UI/Session/secure storage with synthetic saved metadata and inactive discovery snapshots",
+    "scanStorageRaceOrNetworkAcceptance": false
+  },
+  "sharedSessionOrMainChanges": false,
+  "parentCentralRegistration": "Merge this delta into shared product/design/acceptance ledgers; preserve other worklines and open gates",
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "511ca7687db8b9c8e5569cbb4d726cf9d3b020217256a62b81a4b6874ec730cd",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "80f2a8c6cebc0f08109c8b9adba7a7d811eae24a1f2862f2866b4e0f11b8b5ca",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "495ce02d922bea720df4c943968f71db2029181f5379293aba0b578fb470e0f3"
+  },
+  "previousFiveStorageRaceMethods": "Separate parent integration/preparation; no execution claim here",
+  "acceptedCold": "source090df0cc/Appc07a5405/runner95b40e4f reference only; not this source-set or source24/worker30",
+  "open": [
+    "All four new native UI methods",
+    "Parent integration and native run of prior five storage-race methods",
+    "Already-online saved row selection dispatch versus iOS, owned with active selection/business graph",
+    "Phone full-default inventory at original cap",
+    "Real issuer and original Desktop DEV",
+    "System-trusted Relay and real physical/network/model matrix"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "deviceHostModelActionsByLeaf": 0,
+  "newApks": 0,
+  "rootCheck": {
+    "exitCode": 1,
+    "formatGithubSyncLintPassed": true,
+    "stoppedAt": "check:mobile-parity",
+    "reason": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "preExistingLeafCentralLedgerGap": true,
+    "parentOwnsCentralMerge": true,
+    "remainingRootChecksNotExecuted": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "24-imported-voice-end-waiting",
+  "featureIds": ["F33", "F42", "F58", "F64"],
+  "implementation": "test-only correction of imported-query preservation exit; production and storage unchanged",
+  "commonAssertions": [
+    "explicit discard remains distinct from preserving end waiting",
+    "original ID, manifest, fingerprint, metadata, audio and draft remain unchanged",
+    "end waiting sends zero terminal or voice write calls and applies no transcript"
+  ],
+  "productDesignImpact": "No UI or copy change; assert current localized discard and end-waiting labels",
+  "platformImpact": {
+    "android": "one existing native UI method requires a fresh runner and rerun",
+    "ios": "read-only current semantic comparison; no source or acceptance change; A6 paused"
+  },
+  "parentEvidence": "Stage28 actual19/20;old imported UI final-discard failure retained;new source unrun",
+  "nativeExecutedHere": 0,
+  "acceptance": "parallel/p7-reading-voice/stage24-imported-voice-end-waiting.md",
+  "centralManifests": "parent reconciles product/design/acceptance mobile-parity records with the new runner fingerprint;do not replace historical results",
+  "scope": "One existing test plus owned documentation;no device/ADB/Host/model or production changes;A6/task/project management paused"
+}

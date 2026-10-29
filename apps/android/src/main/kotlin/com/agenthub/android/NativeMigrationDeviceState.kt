@@ -38,7 +38,8 @@ internal object NativeMigrationDeviceState {
         value.getJSONArray("rows").objects().forEach {row->
             require(row.keys().asSequence().all {it in setOf("target","threadId","latest","read","pendingReader","replyUnread","notices")})
             targetShape(row.getJSONObject("target"))
-            val target=HostReadCodec.target(row.getJSONObject("target"))!!;require(target.agentId=="codex")
+            val target=HostReadCodec.target(row.getJSONObject("target"))!!;require(target.agentId in setOf("codex","easywork"))
+            if(target.agentId=="easywork"){require(!target.accountAuthority.isNullOrBlank()&&!target.accountSubject.isNullOrBlank());if(clients!=null&&ThreadReadingIdentity.scopeKey(target) in scopes)require(clients.any {sameScope(it.scope,target)})}
             ThreadReadingIdentity.key(target,row.getString("threadId"))
             for(field in listOf("latest","read"))row.optJSONObject(field)?.let {exact(it,setOf("revision","messageId","contentVersion"))}
             row.getJSONObject("notices").let {notices->notices.keys().forEach {id->

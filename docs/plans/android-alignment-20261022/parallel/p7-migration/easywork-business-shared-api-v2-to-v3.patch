@@ -1,0 +1,18 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -758,6 +758,7 @@
+         if(!baseline&&previous!=null&&previous!=signature)recoverNetworkReads()
+     }
+     internal fun recoverNetworkReads() {
++        if(selectedClient.migrationEasyWork!=null)return
+         if(!foreground||!hasClient||selectedClient.isDemo||incomingEasyWorkLink!=null||networkRecoveryJob?.isActive==true)return
+         val client=selectedClient;val key=clientKey;val navigation=clientNavigationRevision;val revision=revisions[client.id] ?: 0
+         networkRecoveryJob=tasks.launch {
+@@ -2096,6 +2097,7 @@
+         return PreparedMessageResource(file.name,file.mediaType,local)
+     }
+     private fun startEvents(initialReadGraceMillis: Long=0) {
++        if(selectedClient.migrationEasyWork!=null)return
+         if(!foreground || incomingEasyWorkLink!=null || selectedClient.isDemo || selectedThread.isEmpty() || "events" !in workspace?.capabilities.orEmpty() || "commands:target-bound:v1" !in workspace?.capabilities.orEmpty()) return
+         val client=selectedClient; val thread=selectedThread; val key=targetKey; val selection=selectionRevision; val revision=revisions[client.id] ?: 0
+         val recoveryIdentity=Triple(key,selection,revision)

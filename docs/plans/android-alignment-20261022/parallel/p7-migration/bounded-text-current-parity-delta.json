@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-scope-adopted-frame-next-20261029-1",
+  "phase": "bounded-text-after-owner-scope-correction",
+  "implementationBase": "9666a546c6400fc16d1deda514317a87870d2bf9",
+  "parentBase": "3f6c50fa57f3a6e4779cce5fe0160befbd1f96df",
+  "features": ["F47", "F51", "F54", "F55", "F56", "F64"],
+  "pages": ["UI12", "UI21"],
+  "commonAssertions": [
+    "Text archive4 keeps exact raw UTF-8, immutable IDs/unknown receipts and source/candidate ciphertext with bounded descriptors/frames.",
+    "Audit originals load by requested kind, rather than retaining all raw text in a view.",
+    "Cold writer requires fresh unique namespaces/proof; reader requires original receipt and a distinct PID. Never replay old writers or business inputs.",
+    "ParentScope owner correction and current Main/Session/P9/voice source remain intact; shared files use exact base/proposed deltas.",
+    "Cold activation preserves inert originals, explicit enrollment and later local drafts without candidate replacement/replay."
+  ],
+  "dualEndImpact": {
+    "android": "Current framed source plus lazy read-only audit views and2 new cold methods; no new UI copy/token/command.",
+    "ios": "No source/catalog/format changes; interoperability or iOS native pass not inferred."
+  },
+  "designDelta": {
+    "pages": "Existing migration page/progress/confirmation unchanged.",
+    "copyAndTokens": "Existing NativeL10n/productText keys/tokens unchanged.",
+    "platformDifference": "Android payload/candidate4 remains Android-specific until separate cross-format acceptance."
+  },
+  "validation": {
+    "appRunnerBuild": "passed",
+    "nativePreparedMethods": 6,
+    "nativeExecutedHere": false,
+    "jvmAuxiliary": "Matching reuse: all5 actual source hashes equal prior62.4MB text/48MiB heap probe; JSON/ICU shims and native gap retained",
+    "realDev": "not run by this owner",
+    "fullP7Passed": false
+  },
+  "documentationDeltas": {
+    "docs/architecture.md": "Add lazy original audit views and distinct-PID text candidate recovery to the Android payload4 candidate boundary; parentScope ownership preserved.",
+    "docs/feasibility.md": "Current native6 compiled only; matching reused JVM text proof remains auxiliary, distinct-PID/API26/OEM/system picker/real DEV pending."
+  },
+  "centralRegistration": "Parent merges current feature/design/acceptance/source facts without replacing prior fingerprints or dropping incomplete items. A6 and business tasks/projects remain paused.",
+  "unchangedCoordinatorSha256": "ee4eef9771fc56c182826c1ece367697746ece7e72edc0bc11a834fea77ebb4a"
+}

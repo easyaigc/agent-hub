@@ -1,0 +1,24 @@
+{
+  "featureIds": ["F43", "F44", "F46", "F47", "F55"],
+  "commonAssertions": [
+    "Authenticate complete originals before publication.",
+    "Unknown or pending originals reject whole migration.",
+    "Imported audio remains receipt-only and never auto-prepares/uploads."
+  ],
+  "android": {
+    "implementation": "native binary framing discovery corrected",
+    "auxiliary": "App/runner compile and JVM framing only",
+    "native": "existing eight voice regressions plus four new methods pending"
+  },
+  "ios": {
+    "codeChanged": false,
+    "localBinaryFramingAffected": false,
+    "equivalentExactOriginalAssertion": "unchanged; cross-format/device acceptance pending"
+  },
+  "design": {
+    "layoutTokensCopyChanged": false,
+    "systemDifference": "Android local encrypted binary framing only"
+  },
+  "centralTablesChangedHere": false,
+  "fullP7Passed": false
+}

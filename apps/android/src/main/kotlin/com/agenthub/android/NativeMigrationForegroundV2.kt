@@ -22,6 +22,16 @@ internal object NativeMigrationForegroundV2 {
         private val results = setOf("pending", "waiting-host", "processing", "suppressed", "system-unavailable", "submitted-to-system", "unknown-no-replay",
             "unknown-interrupted-no-replay", "stale-target-or-generation", "expired-or-future", "duplicate-expired-or-read", "host-inactive", "host-expired")
         fun decodeEncoded(raw: String): JSONObject = decode(raw)
+        /** Validate the full original, retain only installation/reference summaries for the next record. */
+        fun decodeSummary(raw: String): JSONObject {
+            val value=decode(raw)
+            return JSONObject().put("deviceId",value.getString("deviceId")).put("identity",value.getString("identity"))
+                .put("targets",JSONArray(value.getJSONArray("targets").objects().map {row->
+                    JSONObject().put("target",row.getJSONObject("target")).put("operations",JSONArray(row.getJSONArray("operations").objects().map {op->
+                        JSONObject().put("authorization",op.getString("authorization"))
+                    }))
+                }))
+        }
         private fun optional(raw: JSONObject, key: String) = if (raw.get(key) == JSONObject.NULL) null else NativeChatNotificationWire.text(raw, key)
         private fun number(raw: JSONObject, key: String) = NativeChatNotificationWire.long(raw, key)
         private fun operation(raw: JSONObject): NativeMigrationRecoveryLocalOperation {
@@ -84,7 +94,7 @@ internal object NativeMigrationForegroundV2 {
         }
         private fun decode(raw: String): JSONObject {
             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_BYTES)
-            val state = JSONObject(raw); NativeChatNotificationWire.keys(state, setOf("version", "deviceId", "identity", "targets"))
+            val state = StrictMigrationJson.parse(raw.toByteArray(Charsets.UTF_8)); NativeChatNotificationWire.keys(state, setOf("version", "deviceId", "identity", "targets"))
             require(number(state, "version") == 2L); val device = NativeChatNotificationWire.device(NativeChatNotificationWire.text(state, "deviceId", 128)); val identity = NativeChatNotificationWire.text(state, "identity"); require(chatNoticeHash(identity))
             val rows = state.getJSONArray("targets"); require(rows.length() <= 64)
             val views = (0 until rows.length()).map { index ->

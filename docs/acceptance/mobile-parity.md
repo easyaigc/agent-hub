@@ -1324,6 +1324,68 @@ PAR20三处scope值断言和查询transport自身IO切换仅修测试，待新UU
 
 PAR20 090df0cc/App c07a5405/runner 95b40e4f：真机配对form/rollback/Session4，原回执query3在真机/API37各3，共10本次通过/7不同方法。所有原失败保留，新UUID；query仅原授权，0新revoke/feed/重放。生产App与17–20字节相同；真实issuer/Host/模型、跨PIDcandidate、系统SAF和完整矩阵继续单列。
 
+PAR21采用9666a546/e13a390c的13文件native-only精确patch，parent f73c036a各base与proposed逐一核对，Main/Session/coordinator/voice全部原样。NativeTextFrame4及两PID writer/reader2共6方法待新候选；不能把JVM62.4MB/48MiB或前候选通过升级为本次native。原业务/旧writer不重放，EasyWork WIP不进入本候选。
+
+PAR21 Android-only framed payload4在API26实际48MiB堆6项通过，9,436,416B原件与不同PID同candidate保持；核心136为135通过/1通知worker关闭竞态失败，保留并修复中。109份默认11字段保护通过。真机/API37、SAF、EasyWork完整迁移及真实DEV继续单列，iOS/A6未执行，零新增模型/Host业务输入。
+
+PAR22授权残留只读归档按cc340685精确接入，8原生（实际P8 writer、fence/孤立credential、目的原件/legacy、负例、不同PID同candidate）仅准备/编译，父原生和真实DEV未执行。与PAR21低堆文本通过分列，活动EasyWork业务和完整P7未关闭；零新增模型或Host业务输入。
+
+PAR22实际App系统目录grant预备2与产品迁移系统UI3仅准备，未运行；d410efeb原语音finish同步终态竞态修复及两回归仅编译，当前候选原生/真实声学/OS/DEV另验。原unknown操作不重放。
+
+PAR22：API26残留4/6通过、2 confirmed-localReceipt类型失败；原语音finish2与文本回归6通过，共12通过/2失败。API37目录grant即时Home前置拒绝1，0Main/请求/grant，实际系统Launcher核实后交readiness修正；不计真实产品SAF通过。12份默认11字段保护通过。原失败/不同候选/编译/DEV分别留档，完整P7继续开放。
+
+PAR23 confirmed-localReceipt reader按实际producer JSONObject修正，saved仍保原String；8hot+2cold仅准备，原PAR22失败保留。P8新手机清单额度和API37清单profile尚待各自严格验证，0新plan/case；不能扩大保护上限或把无原生结果当通过。
+
+PAR23原OS通知三角色仅准备，0执行；真实Platform.post/原OSrow/SystemUI首点/原PendingIntent重复与claimed回执分别断言，不混作Delivery.finish/真实后端/自然OS进程创建。必须先修worker关闭竞态，再由父独占租约运行；任何unknown原操作不重放。
+
+PAR24通知worker退出修复按准确单文件ee4eef97→aa07dc10接入；三种旧失败确定性复现、新3+原8辅助通过。Android原生两个新场景/受影响coordinator25和真实OS/DEV由父下一候选验收，尚未运行；不得以辅助/编译覆盖原PAR21原生失败。iOS/A6不改。
+
+PAR23准确13579b74/App2012e859/runnerf19109f4：API26 EasyWork残留hot8/原candidate跨PID2和Home纯规则6全部通过，10默认11字段证明。真实AX/grant/产品SAF、活动业务图、真机/API37与完整DEV仍开；原PAR22失败保留，P9worker新源码另验，0新模型/Host业务输入。
+
+PAR24通知准确6148da1a本次30原生通过、25默认11字段保护；初次3未传opt-in跳过不计通过，后新UUID各1通过。P8准确090df0cc在API37原writer checkpoint后314ms精确结束、不同PID reader1通过，6密文/原candidate及默认保持、0新业务动作；writer不计JUnit通过。70离线与原生分列，phone清单额度、A5七组、真实issuer/Host/供应商、OS首点和完整DEV继续待验。原失败/旧UUID/未知操作不重放。
+
+PAR26原录音fallback/结束等待4组件+2UI以及debug HOME resolver/query准备接入；12纯规则为owner辅助，当前实际Native/AX/grant/SAF未执行。旧Home不同owner失败保留，release和现有provider不改，不接触默认未知操作或iOS A6。
+
+PAR26确认诊断接入仅源码准备：17纯Home/确认规则、无Main resolver audit与真实一次App原grant/产品SAF分列；AX full text/geometry不替代父截图确认，单连接且不猜按钮。
+
+PAR26本次原生API26 43通过/10失败，API37 Home/TREE audit2与真实App原目录回调grant1通过，共46通过/10失败；16默认11字段保护通过。新voice组件5通过但UI2失败，迁移voice8失败，完整阶段保持开放；产品SAF3/真实声学/DEV未验，原件不重放。
+
 PR51独立回补worker退出修复：Main/Session/voice维持f73c036a，P7大文本/残留/新语音仍在stage7。Stage7 worker30是相关边界证明；本PR准确App/runner和迁移owner回归、CI另验，尚未用旧结果冒称通过。原异常/CI失败保持。
 
 PR51独立候选d68312b4/App3a33cfb7/runner728be44c：API26共43、新手机headless5，共48次/43不同方法全部通过，30默认11字段保护；Main/Session/voice保f73原字节，不含stage7帧/残留/新语音。未知原操作不重放，实际OS/provider/完整DEV与准确head CI另验；旧异常/Linux失败未删除，iOS/A6不改。
+
+PAR27候选写回精确Session补丁与原5原生准备接入；12辅助不是完整Session/网络/设备通过，下一独立候选执行。P8冷候选旧通过和手机完整清单待验分别保留。
+
+PAR27 API37实际本地Session/KeyStore迟到写回5通过；API26相同5仅清单cap前置失败、0fixture，保留待验。12辅助/5原生/真实网络/完整A5及不同指纹冷candidate分别记，0新模型/Host输入或原操作重放。
+
+PAR28二进制库存真实缺陷修复、voice UI短namespace与原SAF cancellation准备接入；新4+旧voice9+UI2/取消纯5待新冻结原生。旧失败不删除；API37原grant只归PAR26旧App，同UID更新后产品SAF另验，不重放grant操作。
+
+PAR28限定原生20通过/2失败：二进制typed/当前stream与原voice8、新UI2、取消纯5及实际系统CREATE+OPEN原取消均有通过；旧语音UI误点discard失败、SAF目录即时guard失败保留，confirm未启动。原caller实际gone不冒称保活；仅关闭已核对的原悬空DocsUI，0Save、原操作/密文不改不重放。
+
+PAR27新空API26同候选5通过，原API26累积清单失败与新手机待验分别保留，原完整caps不改；source27根pnpm check通过。
+
+PAR29仅测试driver准备，NativeVoiceUI1保原件用真实结束等待，SAF精确子控件就绪沿用同一原15秒期限和原caller，不把Afterreturn当存活证明；原失败保留，新source本次尚未执行。
+
+PAR29本次1通过/1敏感AX字段前置失败，0系统picker/Save/文件写入；结束等待原录音UI在准确新runner通过，原19项和系统取消仍归PAR28不冒称重跑。App字节完全相同关系已记录，完整P7/SAF/DEV未关闭。
+
+PAR30真实执行前登记：P7业务图hot6/cold2、IO5/actual Session lifecycle1，P8原4+marker UI1，P9现有key/fsync/跨PID/故障5待冻结候选。JVM/编译分列，无Main自然hook/OS首点证明；P9仅mobile-v1根保护，不能冒充P8完整families。历史source26–29通过/失败/未启动均保持，0原模型/Host业务输入重放。
+
+PAR30组合原生结果见[独立档案](../plans/android-alignment-20261022/parallel/thirtieth-stage-integrated-native.json)：P7业务/实际IO/冷恢复14和二进制/原语音回归13通过，P8同步5/UI4通过；长字段1、SAF短暂null owner1及P9两环境前置失败分别保留。迁入连接编辑页完整只读目标字段遗漏继续修复；未接natural Main、未证明完整系统/真实DEV或iOS等价。未知不重放、业务任务项目与A6暂停。
+
+PAR31源码窄整合已登记，form bridge3/真实Composition-dispose与Activity-pause2、迁入编辑/长字段UI5以及原SDK文件选择路径待原生。P7原14/13、P8旧source30的5/4和全部失败均按原指纹保留；完整pnpm check在544b3913且无文件漂移通过，不替代本次原生/真实DEV。
+
+PAR31结果见[独立原生档案](../plans/android-alignment-20261022/parallel/thirty-first-stage-scoped-ui-form-native.json)：真实SDK三条迁移交互通过；form核心3、候选保护5、UI3通过。Lifecycle2与marker/长字段UI2仍失败待修，不能关闭完整P7/P8/P9或物理真实DEV；原未知操作不重放，A6和业务任务项目暂停。
+
+PAR32准备P9 fresh bootstrap/只读原回执和现有key store5的原生；P8先收集目标文字真实约束/行高/overflow几何，不推测生产根因、不删除严格可见断言。所有旧失败保留，新结果另档；未知操作不重放。
+
+PAR32原生3失败已独立留档：P9目录上限前置和两项文字布局；已有key不等于库存门槛就绪，进度code2不计JUnit通过。严格TLS协调/相邻工具/打包60辅助检查通过，尚未凭此宣称指定远端运行时或CI修复已完成。
+
+PAR33真实验收准备：19项受控NSD与实际SDK2、form Lifecycle2、完整有限列宽UI5；P9新建空API26用于原bootstrap UUID/同APK组合下store5/只读verify。源码/编译/受控事件与实际SDK、物理手机/原Electron模型证明分别记，不抬库存上限或重放未知操作。
+
+[PAR33](../plans/android-alignment-20261022/parallel/thirty-third-stage-nsd-form-store-native.json)：54次原生调用51通过/3失败；表单生命周期2、NSD受控19/真实API26 SDK2、业务IO/冷恢复14、候选保护5均通过。UI短值换行前提2和P9跨PID Binder1继续修；P9既有key前4与原bootstrap只读核对通过，完整P7/P8/P9与真实DEV未关闭。
+
+PAR34仅修复原生检查前提和debug跨PID探针严格同步flag兼容；短字段完整可见、长字段真实换行、字形裁切及原文件库存检查继续保留，产品交互/文案不变。新候选原生待验；原Source33 API37 NSD发现/停止通过，自有广播注册超时单列，权限原状已恢复。
+
+[PAR34](../plans/android-alignment-20261022/parallel/thirty-fourth-stage-strict-probe-ui-native.json)：P9既有key五项原生通过，UI4通过/迁入最终窗口空1失败。长名/六值完整字形/裁切与严格跨PID拒绝有实际证据；完整iOS/物理/自然OS与API37解析停止仍待，iOS A6暂停。
+
+[PAR35](../plans/android-alignment-20261022/parallel/thirty-fifth-stage-imported-window-native.json)：原连接UI五项全部通过；null系统窗口只读等待1采样后收到准确App owner。完整值/字形/clip/readonly/原记录保护均保留；固定ComponentActivity并非完整App/系统视觉证明。工作区组合检查、iOS模拟器编译通过，完整双端/物理DEV和已登记新差异继续待验。

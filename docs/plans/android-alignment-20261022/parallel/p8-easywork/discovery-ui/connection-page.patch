@@ -1,0 +1,39 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
+@@ -15,6 +15,7 @@
+ import androidx.compose.ui.semantics.Role
+ import androidx.compose.ui.semantics.contentDescription
+ import androidx.compose.ui.semantics.semantics
++import androidx.compose.ui.semantics.selected
+ import androidx.compose.ui.semantics.liveRegion
+ import androidx.compose.ui.semantics.LiveRegionMode
+ import androidx.compose.ui.text.font.FontWeight
+@@ -104,12 +105,12 @@
+             EasyWorkFormField(name,{ name=it;editing?.let { client->session.renameEasyWork(client,it) } },productText("名称"),"easywork-name",!busy)
+             if(editing!=null)Box {
+                 val preference=session.clients.firstOrNull { it.id==editing.id }?.agentConnection?.preference?:"automatic"
+-                SettingsRow(productText("连接偏好"),productText(mapOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继")[preference]!!),"connection-preference") { if(!busy)preferenceMenu=true }
+-                DropdownMenu(preferenceMenu,{ preferenceMenu=false }) { listOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继").forEach { (id,title)->DropdownMenuItem(text={ Text(productText(title)) },onClick={ session.setEasyWorkPreference(editing,id);preferenceMenu=false },modifier=Modifier.testTag("connection-preference-$id")) } }
++                SettingsRow(productText("连接偏好"),productText(mapOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继")[preference]!!),"connection-preference",enabled=!busy) { if(!busy)preferenceMenu=true }
++                DropdownMenu(preferenceMenu,{ preferenceMenu=false }) { listOf("automatic" to "自动","lan-only" to "仅直连","relay-only" to "仅中继").forEach { (id,title)->DropdownMenuItem(text={ Text(productText(title)) },onClick={ if(!busy){session.setEasyWorkPreference(editing,id);preferenceMenu=false} },enabled=!busy,trailingIcon={ if(preference==id)ProductIcon("check",Modifier.size(18.dp)) },modifier=Modifier.testTag("connection-preference-$id").semantics { selected=preference==id }) } }
+             }
+             Box {
+-                SettingsRow(productText("连接方式"),productText(method),"easywork-connection-method") { if(!busy)methodMenu=true }
+-                DropdownMenu(methodMenu,{ methodMenu=false }) { listOf("自动发现","扫码连接","手动连接","通过中继连接").forEach { choice->DropdownMenuItem(text={ Text(productText(choice)) },onClick={ method=choice;methodMenu=false;error=null;pairingStatus=null;focus.clearFocus();keyboard?.hide() },modifier=Modifier.testTag("easywork-method-$choice")) } }
++                SettingsRow(productText("连接方式"),productText(method),"easywork-connection-method",enabled=!busy) { if(!busy)methodMenu=true }
++                DropdownMenu(methodMenu,{ methodMenu=false }) { listOf("自动发现","扫码连接","手动连接","通过中继连接").forEach { choice->DropdownMenuItem(text={ Text(productText(choice)) },onClick={ if(!busy){method=choice;methodMenu=false;error=null;pairingStatus=null;focus.clearFocus();keyboard?.hide()} },enabled=!busy,trailingIcon={ if(method==choice)ProductIcon("check",Modifier.size(18.dp)) },modifier=Modifier.testTag("easywork-method-$choice").semantics { selected=method==choice }) } }
+             }
+             if(busy&&pairingStatus!=null)EasyWorkConnectionStatus(pairingStatus!!)
+             error?.let { EasyWorkConnectionFailure(it) }
+@@ -126,8 +127,9 @@
+             when(method) {
+                 "自动发现"-> {
+                     if(discovery?.needsPermission==true)TextButton(onClick={ permission.launch(CodexHostDiscovery.LOCAL_PERMISSION) },modifier=Modifier.fillMaxWidth().testTag("easywork-allow-local-network")) { Text(productText("允许发现局域网与 VPN 电脑")) }
+-                    val known=session.clients.filter { it.agentConnection?.target?.agentId=="easywork" }
+-                    val rows=known.map { client->discovery?.hosts?.firstOrNull { it.id==client.id }?:DiscoveredEasyWorkHost(client.id,client.name,client.endpoint.orEmpty(),client.scope?.hostId,true) }+discovery?.hosts.orEmpty().filter { !it.known }
++                    val known=session.clients.filter { !it.isDemo&&it.agentConnection?.target?.agentId=="easywork" }
++                    // Discovery contributes routes; the current saved row owns its display name.
++                    val rows=known.map { client->discovery?.hosts?.firstOrNull { it.id==client.id }?.copy(name=client.name)?:DiscoveredEasyWorkHost(client.id,client.name,client.endpoint.orEmpty(),client.scope?.hostId,true) }+discovery?.hosts.orEmpty().filter { !it.known }
+                     if(rows.isEmpty())Text(productText("正在查找同一网络的电脑…"),Modifier.padding(16.dp),fontSize=15.sp,color=colors.onSurfaceVariant)
+                     rows.forEach { host->
+                         val client=known.firstOrNull { it.id==host.id }

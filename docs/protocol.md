@@ -158,3 +158,7 @@ P5-2移动建议读取使用`codex-mobile-http-v1.schema.json`中的`desktopSugg
 Android EasyWork canonical对象成员名与String值使用相同编码路径，统一移除可选slash转义，按现有非数字协议键与iOS/Node逐字节对齐；数值/通用RFC8785不新增承诺。解密仍认证原JWE protected段，未知原intent/raw SHA不重算，不接受重序列化替代或自动重放。新向量/Android原生门槛见phase10-canonical档案。
 
 本轮Android登记关闭修正仅恢复原operation ID及原授权下的查询，不增加命令或wire字段；未知撤销不宣称已取消，不分配替代operation或重放原操作。
+
+Android本地迁移payload/candidate4采用text descriptor和raw UTF8 frame；envelope2与root storage3不变。严格长度/SHA/前缀、顺序、closed schema、完整图和EOF；每text8MiB、合计raw192MiB、1024条上限不放宽，pending .new/.bak拒绝而不恢复。1/2/3继续读，同ID结果核对不重stage，替换须明确动作；不宣称iOS跨格式互操作。
+
+Android迁移payload4新增migration-easywork-archives-v1 catalog和migration-easywork-original-v1惰性别名。catalog闭合绑定原安装context、原名/role/字节数/SHA256，最多16安装/每安装1024原件、catalog512KiB，并受文本8MiB/总192MiB/输出1024额度。未知major、不完整引用、pending文件拒绝；envelope2/root3不变，不定义iOS互通。传入DPoP系统私钥不导出，授权原文只在加密归档内，不进入活动目标/credentialRef/重放。

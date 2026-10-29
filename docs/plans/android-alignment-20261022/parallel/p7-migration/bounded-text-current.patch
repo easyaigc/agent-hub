@@ -1,0 +1,885 @@
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameTest.kt
+@@ -0,0 +1,127 @@
++package com.agenthub.android
++
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import org.json.JSONObject
++import org.junit.*
++import org.junit.Assert.*
++import java.io.DataOutputStream
++import java.io.File
++import java.util.UUID
++
++/** Real Keystore/export/candidate/publication. Producer validation is an independent prerequisite. */
++class NativeMigrationTextFrameTest {
++    @get:Rule(order=0) val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1) val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    private val password="owned bounded UTF8 text migration"
++    @Before fun setup(){ui.waitUntil(30_000){!ui.activity.session.restoring};ui.runOnIdle{owned=OwnedControlAcceptance(ui.activity,"migration-text-frames")}}
++    @After fun finish(){if(::owned.isInitialized)ui.runOnIdle{owned.session.leaveForeground();owned.verifyDefault()}}
++    private fun file()=File(owned.folder,"text-${UUID.randomUUID()}.migration")
++    private fun source(): Pair<NativeSessionStorage,MobileClient> {
++        val source=owned.storage.child(ui.activity,"text-source-"+UUID.randomUUID().toString().take(8))
++        val value=MigrationActivationFixtures.payload();val rows=value.getJSONObject("records");rows.keys().forEach {source.write(it,rows.getString(it))}
++        return source to MigrationActivationFixtures.client(value)
++    }
++    private fun producer(name: String,raw: String) {
++        val type=Class.forName("com.agenthub.android.$name");val companion=type.getField("Companion").get(null)
++        companion.javaClass.getDeclaredMethod("validateEncoded",String::class.java).invoke(companion,raw)
++    }
++    private fun exactPad(raw: String,bytes: Int)=raw+" ".repeat(bytes-raw.toByteArray(Charsets.UTF_8).size)
++    private fun write(records: NativeMigrationStreamRecords,header: JSONObject=records.header(ui.activity.packageName),order: List<String> =records.frames().keys.toList()): File=file().also {target->
++        target.outputStream().use {output->NativeMigrationStreamCrypto.write(output,password) {clear->
++            val bytes=header.toString().toByteArray(Charsets.UTF_8);val data=DataOutputStream(clear);data.writeInt(bytes.size);data.write(bytes)
++            order.forEach {records.frames().getValue(it).copy(data)}
++        }}
++    }
++    private fun small(): NativeMigrationStreamRecords {
++        val rows=MigrationActivationFixtures.payload().getJSONObject("records")
++        return NativeMigrationStreamRecords(NativeMigrationTextMap.copy(rows.keys().asSequence().associateWith {rows.getString(it)}),emptyMap(),4)
++    }
++    @Test fun nearMaximumActualP9OriginalsAboveEightMiBStayExactAfterColdCandidateAndActivation() {
++        val (source,client)=source();val identity=NotificationArchiveFixtures.identity();val authority=NotificationArchiveFixtures.authority(client)
++        source.write(NativeMigrationForeground.IDENTITY,identity.raw);val target=NativeChatNoticeTarget.from(client.scope!!)
++        val digests=linkedMapOf<String,String>();var originalBytes=0L
++        fun save(name: String,raw: String,limit: Int,producerName: String) {
++            val value=exactPad(raw,limit-256);producer(producerName,value)
++            digests[name]=NotificationArchiveFixtures.hash(value);originalBytes+=value.toByteArray(Charsets.UTF_8).size;source.write(name,value)
++        }
++        save(NativeMigrationForeground.JOURNAL,NotificationArchiveFixtures.v1(identity,target,authority.fingerprint),4*1024*1024,"NativeChatNotificationForegroundStore")
++        save(NativeMigrationForeground.RECOVERY,NotificationArchiveFixtures.v2(identity,target,authority.fingerprint,"unknown"),4*1024*1024,"NativeChatNotificationRecoveryStore")
++        save(NativeMigrationForeground.AUTHORIZATIONS,authority.raw,1024*1024,"NativeChatNotificationAuthorizations")
++        assertTrue(originalBytes>8*1024*1024);val before=MigrationActivationFixtures.tree(source)
++        // The bounded legacy inline exporter still refuses the aggregate, rather than raising its cap.
++        assertTrue(runCatching {NativeMigrationExport(ui.activity,source).capture()}.isFailure)
++        val envelope=file();NativeMigrationExport(ui.activity,source).sealFile(envelope,password)
++        val store=NativeMigrationCandidateStore(ui.activity,owned.storage);val receipt=store.stageFile(UUID.randomUUID().toString(),envelope,password)
++        val local=owned.storage.child(ui.activity,"migration-candidates");val candidateBefore=MigrationActivationFixtures.tree(local)
++        val cold=NativeMigrationCandidateStore(ui.activity,owned.storage.reopen(ui.activity));assertEquals(receipt,cold.currentReceipt())
++        NativeMigrationStreamCandidate(ui.activity,owned.storage).read(receipt) {records->
++            assertEquals(4,records.version);assertTrue(records.text is NativeMigrationTextMap)
++            assertTrue(records.header(ui.activity.packageName).toString().toByteArray().size<128*1024)
++            assertTrue(records.textFrames().values.sumOf {it.size.toLong()}>8*1024*1024)
++        }
++        assertEquals(receipt,store.stageFile(receipt.id,envelope,password));assertEquals(candidateBefore,MigrationActivationFixtures.tree(local))
++        NativeMigrationActivation(ui.activity,owned.storage,NativeMigrationNotificationActivationLease(owned.storage,receipt){true}).activate(receipt)
++        val current=owned.storage.reopen(ui.activity);val audit=NativeMigrationNotificationArchives.readOnlyArchives(current).single()
++        for((name,kind)in listOf(NativeMigrationForeground.JOURNAL to NativeMigrationNotificationArchives.Original.FOREGROUND_V1,
++            NativeMigrationForeground.RECOVERY to NativeMigrationNotificationArchives.Original.RECOVERY_V2,
++            NativeMigrationForeground.AUTHORIZATIONS to NativeMigrationNotificationArchives.Original.AUTHORIZATIONS_V1))
++            assertEquals(digests.getValue(name),NotificationArchiveFixtures.hash(requireNotNull(audit.readOnly(kind))))
++        NativeMigrationForeground.ACTIVE_NAMES.forEach {assertNull(current.read(it))}
++        assertTrue(NativeMigrationNotificationArchives.requiresExplicitSetup(current));assertFalse(NativeChatNotificationStore(current).preferences().enabled)
++        assertEquals(before,MigrationActivationFixtures.tree(source));assertEquals(candidateBefore,MigrationActivationFixtures.tree(local))
++        File(owned.folder,"maximum-text-frames.json").writeText(JSONObject().put("originalBytes",originalBytes).put("heapLimit",Runtime.getRuntime().maxMemory())
++            .put("originalCiphertextPreserved",true).put("candidateAndScratchUnchanged",true).put("remoteWrites",0).toString())
++    }
++    @Test fun authenticatedInvalidUtf8DuplicateJsonReorderedAndFutureFramesPreserveOriginalSlot() {
++        val good=small();val store=NativeMigrationCandidateStore(ui.activity,owned.storage);val prior=store.stageFile(UUID.randomUUID().toString(),write(good),password)
++        val local=owned.storage.child(ui.activity,"migration-candidates");val before=MigrationActivationFixtures.tree(local)
++        fun raw(bytes: ByteArray): NativeMigrationStreamRecords {
++            val probe=NativeMigrationProbe();probe.write(bytes);val frames=good.textFrames().toMutableMap()
++            frames["metadata"]=NativeMigrationBlob(bytes.size,probe.sha256(),probe.prefix()){it.write(bytes)}
++            return good.copy(text=NativeMigrationTextMap(frames))
++        }
++        val bad=listOf(write(raw(byteArrayOf(0xc3.toByte(),0x28))),write(raw("{\"version\":1,\"version\":1}".toByteArray())),
++            write(good,order=good.frames().keys.reversed()),write(good,header=good.header(ui.activity.packageName).put("version",5)))
++        for(input in bad) {
++            assertTrue(runCatching {store.stageFile(UUID.randomUUID().toString(),input,password,prior)}.isFailure)
++            assertEquals(before,MigrationActivationFixtures.tree(local));assertEquals(prior,store.currentReceipt())
++        }
++        // Pending atomic state must remain untouched; no reader may recover it to make the test pass.
++        val pending=File(local.coordinationKey,NotificationArchiveFixtures.hash("candidate-v1")+".bin.new").apply {writeText("owned pending candidate")}
++        val pendingBefore=MigrationActivationFixtures.tree(local)
++        assertTrue(runCatching {store.currentReceipt()}.isFailure);assertTrue(runCatching {store.stageFile(prior.id,write(good),password)}.isFailure)
++        assertEquals(pendingBefore,MigrationActivationFixtures.tree(local));assertTrue(pending.delete())
++        val saved=JSONObject(requireNotNull(local.read("candidate-v1")));val first="migration-stream:${saved.getString("generation")}:0"
++        val chunk=File(local.coordinationKey,NotificationArchiveFixtures.hash(first)+".bin.bak").apply {writeText("owned pending frame")}
++        val chunkBefore=MigrationActivationFixtures.tree(local);assertTrue(runCatching {store.currentReceipt()}.isFailure)
++        assertEquals(chunkBefore,MigrationActivationFixtures.tree(local));assertTrue(chunk.delete())
++        assertEquals(prior,store.currentReceipt())
++    }
++    @Test fun v3AndLegacySlotsRemainReadableAndOnlyExplicitReplacementSelectsV4() {
++        val (source,_)=source();val store=NativeMigrationCandidateStore(ui.activity,owned.storage)
++        val legacy=file().apply {writeBytes(NativeMigrationExport(ui.activity,source).seal(password))}
++        val original=store.stageFile(UUID.randomUUID().toString(),legacy,password);assertEquals(original,store.currentReceipt());store.readArchive(original)
++        val v3=small().let {it.copy(text=it.text.toMap(),version=3)}
++        val old=store.stageFile(UUID.randomUUID().toString(),write(v3),password,original)
++        assertEquals(old,store.currentReceipt());NativeMigrationStreamCandidate(ui.activity,owned.storage).read(old){assertEquals(3,it.version)}
++        val newer=file().also {NativeMigrationExport(ui.activity,source).sealFile(it,password)}
++        val before=MigrationActivationFixtures.tree(owned.storage.child(ui.activity,"migration-candidates"))
++        assertTrue(runCatching {store.stageFile(UUID.randomUUID().toString(),newer,password)}.isFailure)
++        assertEquals(before,MigrationActivationFixtures.tree(owned.storage.child(ui.activity,"migration-candidates")))
++        val selected=store.stageFile(UUID.randomUUID().toString(),newer,password,old)
++        NativeMigrationStreamCandidate(ui.activity,owned.storage).read(selected){assertEquals(4,it.version)}
++        assertEquals(selected,store.currentReceipt())
++    }
++    @Test fun textQuotasRejectBeforeReadingAndSparseIndexesDoNotLoadUnrelatedValues() {
++        var reads=0
++        fun descriptor(size: Int)=NativeMigrationBlob(size,"0".repeat(64),ByteArray(minOf(44,size))){reads++;error("Quota checking must not load frames")}
++        assertTrue(runCatching {NativeMigrationStreamRecords(NativeMigrationTextMap(mapOf("metadata" to descriptor(8*1024*1024+1))),emptyMap(),4)}.isFailure)
++        assertTrue(runCatching {NativeMigrationStreamRecords(NativeMigrationTextMap((0 until 25).associate {"frame:$it" to descriptor(8*1024*1024)}),emptyMap(),4)}.isFailure)
++        assertEquals(0,reads)
++        val map=NativeMigrationTextMap(mapOf("first" to descriptor(5),"other" to descriptor(7)))
++        assertEquals(setOf("first","other"),map.keys);assertTrue("other" in map);val alias=NativeMigrationTextMap.copy(map);alias.alias(map,"other","renamed")
++        assertEquals(3,alias.size);assertEquals(0,reads)
++        assertTrue(runCatching {alias.getValue("renamed")}.isFailure);assertEquals(1,reads)
++    }
++}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
+@@ -23,13 +23,30 @@
+         }
+         val stream=NativeMigrationStreamCandidate(context,storage)
+         if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
+-            storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepare(receipt,records.text,localRecords,destination),records.binary),receipt.recordCount,guarded(records.text))
++            withPrepared(receipt,records.text,localRecords,destination) {prepared->
++                storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepared,records.binary,4),receipt.recordCount,guarded(records.text))
++            }
+         }
+         val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
+         storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords,destination),records.binary),receipt.recordCount,guarded(records.text))
+     }
+-    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>): Map<String,String> {
+-        val records=NativeMigrationNotificationArchives.mergeDestination(original,destination).toMutableMap();val metadata=JSONObject(records.getValue("metadata"))
++    /** Only transformed values use encrypted scratch cells; root generations receive independent text. */
++    private fun <T> withPrepared(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,consume: (Map<String,String>)->T): T {
++        val scratch=storage.child(context,"migration-candidates");val prefix="migration-text-transform:"+UUID.randomUUID();val created=mutableListOf<String>()
++        try {
++            val prepared=prepare(receipt,original,localRecords,destination) {_,raw->
++                val bytes=NativeMigrationTextFrames.bytes(raw);val size=bytes.size;val name="$prefix:${created.size}";created.add(name)
++                try {
++                    val probe=NativeMigrationProbe();probe.write(bytes)
++                    scratch.writeBinaryStream(name,bytes.size){it.write(bytes)}
++                    NativeMigrationBlob(size,probe.sha256(),probe.prefix()) {output->scratch.migrationCopyBinaryTo(name,size,output)}
++                }finally {bytes.fill(0)}
++            }
++            return consume(prepared)
++        }finally {created.forEach(scratch::remove)}
++    }
++    private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
++        val records=NativeMigrationTextMap.copy(NativeMigrationNotificationArchives.mergeDestination(original,destination),persist);val metadata=JSONObject(records.getValue("metadata"))
+         val clients=metadata.getJSONArray("clients").objects()
+         val readers=clients.associate {row->val id=row.getString("id");id to UUID.nameUUIDFromBytes(("android-migration-reader-v1\u0000"+receipt.id+"\u0000"+id).toByteArray(Charsets.UTF_8)).toString()}
+         clients.forEach {it.put("readerId",readers.getValue(it.getString("id")))}
+@@ -40,11 +57,11 @@
+             val vault=JSONObject(raw);vault.getJSONArray("connections").objects().forEach {row->val client=row.getJSONObject("client");client.put("readerId",readers.getValue(client.getString("id")))}
+             records["codex-private-connections-v1"]=vault.toString()
+         }
+-        for((name,raw)in original)when {
+-            name.startsWith("voice-recording:") -> records[name]=JSONObject(raw).put("migrationReadOnly",true).toString()
+-            name.startsWith("submission:") -> records[name]=JSONObject(raw).apply{remove("photoSources")}.toString()
++        for(name in original.keys)when {
++            name.startsWith("voice-recording:") -> records[name]=JSONObject(original.getValue(name)).put("migrationReadOnly",true).toString()
++            name.startsWith("submission:") -> records[name]=JSONObject(original.getValue(name)).apply{remove("photoSources")}.toString()
+             name.startsWith("operations:") -> {
+-                val body=JSONObject(raw)
++                val body=JSONObject(original.getValue(name))
+                 body.getJSONArray("operations").objects().forEach {row->
+                     row.put("migrationReadOnly",true)
+                     row.optJSONObject("replyRecovery")?.put("phase","uncertain")?.put("inspection",JSONObject.NULL)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
+@@ -30,9 +30,9 @@
+             val count=if(saved.get("version")==1) {
+                 val bytes=legacyPayload(saved)
+                 try {require(sha(bytes)==digest);validateArchive(bytes).size}finally{bytes.fill(0)}
+-            }else {require(saved.get("version") in setOf(2,3));saved.get("records") as Int}
++            }else {require(saved.get("version") in setOf(2,3,4));saved.get("records") as Int}
+             val receipt=Receipt(id,digest,count);require(count in 1..1024)
+-            if(saved.get("version")==3)stream.read(receipt){}else readArchive(receipt)
++            if(saved.get("version") in setOf(3,4))stream.read(receipt){}else readArchive(receipt)
+             receipt
+         }}
+     }
+@@ -71,7 +71,7 @@
+             // Acquire child handles before the candidate lock; activation locks parent then child.
+             val streamBackend = if (replacing != null) NativeMigrationStreamCandidate(context,parent) else null
+             storage.operationTransaction {
+-                val prior = storage.read(SLOT)?.let(::objectValue)
++                val prior = storage.migrationReadTextRecords(setOf(SLOT))[SLOT]?.let(::objectValue)
+                 if (prior?.getString("id") == candidateId) {
+                     require(prior.getString("sha256") == receipt.sha256)
+                     readArchive(receipt) // Exact original result; no ciphertext rewrite.
+@@ -79,7 +79,7 @@
+                     require(if (prior == null) replacing == null else replacing != null &&
+                         prior.getString("id") == replacing.id && prior.getString("sha256") == replacing.sha256)
+                     if (replacing != null) {
+-                        if (prior!!.get("version") == 3) streamBackend!!.read(replacing) {} else readArchive(replacing)
++                        if (prior!!.get("version") in setOf(3,4)) streamBackend!!.read(replacing) {} else readArchive(replacing)
+                     }
+                     val generation=UUID.randomUUID().toString();val chunks=JSONArray();val created=mutableListOf<String>()
+                     var published=false
+@@ -104,7 +104,7 @@
+                         // An acknowledgement may fail after publication. Keep chunks if the pointer is
+                         // ours or cannot be read; never destroy a possibly committed candidate.
+                         if(!published) {
+-                            val observed=runCatching {storage.read(SLOT)?.let(::objectValue)?.optString("generation")}
++                            val observed=runCatching {storage.migrationReadTextRecords(setOf(SLOT))[SLOT]?.let(::objectValue)?.optString("generation")}
+                             if(observed.isSuccess&&observed.getOrNull()!=generation)created.forEach(storage::remove)
+                         }
+                     }
+@@ -122,7 +122,7 @@
+ 
+     internal fun readArchive(receipt: Receipt): NativeMigrationRecords = storage.operationTransaction {
+         require(UUID.fromString(receipt.id).toString() == receipt.id && receipt.sha256.matches(Regex("[a-f0-9]{64}"))&&receipt.recordCount in 1..1024)
+-        val saved = objectValue(storage.read(SLOT) ?: error("Migration candidate unavailable"))
++        val saved = objectValue(storage.migrationReadTextRecords(setOf(SLOT))[SLOT] ?: error("Migration candidate unavailable"))
+         require(saved.getString("id") == receipt.id && saved.getString("sha256") == receipt.sha256)
+         val clear=when(saved.get("version")) {
+             1 -> {
+@@ -140,7 +140,7 @@
+                         val row=chunks.getJSONObject(index);exact(row,setOf("size","sha256"))
+                         val count=minOf(CANDIDATE_CHUNK_BYTES,size-offset);require(row.get("size")==count)
+                         val digest=row.getString("sha256");require(digest.matches(Regex("[a-f0-9]{64}")))
+-                        val chunk=storage.readBinary(chunkName(generation,index),count,CANDIDATE_CHUNK_BYTES)
++                        val chunk=storage.migrationReadBinary(chunkName(generation,index),count,CANDIDATE_CHUNK_BYTES)
+                         try {require(sha(chunk)==digest);System.arraycopy(chunk,0,bytes,offset,count)}finally {chunk.fill(0)}
+                         offset+=count
+                     }
+@@ -179,9 +179,13 @@
+     private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
+         val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)
+         require("metadata" in records)
+-        // Parse every record with duplicate/depth/UTF-8 checks, preserving its exact original text for later activation.
+-        val allValues = records.mapValues { StrictMigrationJson.value(it.value.toByteArray(Charsets.UTF_8)) }
+-        val parsed = allValues.filterValues { it is JSONObject }.mapValues { it.value as JSONObject }
++        // Frozen archive readers already checked their claimed records. Parse each other value once
++        // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.
++        val names=records.keys-foregroundNames
++        fun value(name: String)=StrictMigrationJson.value(records.getValue(name).toByteArray(Charsets.UTF_8))
++        val objects=names.filter {value(it) is JSONObject}.toSet()
++        val allValues=NativeMigrationValueMap(names,::value)
++        val parsed=NativeMigrationValueMap(objects){name->value(name) as JSONObject}
+         val metadata = parsed.getValue("metadata")
+         NativeMigrationMetadata.validate(metadata)
+         require(metadata.get("version") == 1)
+@@ -202,7 +206,10 @@
+         val voiceNames=if(streams==null)NativeMigrationVoice.validate(allValues,voiceBinaries,clients,records)else NativeMigrationVoice.validateStreams(allValues,voiceStreams!!,clients,records)
+         val attachmentBinaries=mutableSetOf<String>()
+         require(allValues.keys.all { it in parsed || it in historyNames || it in voiceNames })
+-        val operations = mutableListOf<SavedOperation>()
++        val operationIds=mutableSetOf<String>()
++        fun operations()=sequence {
++            for(name in objects.filter {it.startsWith("operations:")})yieldAll(journal.validateMigrationRecords(name.removePrefix("operations:"),parsed.getValue(name)))
++        }
+         val manifests = mutableMapOf<String, JSONObject>()
+         fun manifest(value: JSONObject) {
+             CodexCommandCodec.validate(value, "creationFile")
+@@ -239,7 +246,7 @@
+                     require(target in client.operationTargets(intent.optional("threadId")))
+                     row.replyRecovery?.let { require(it.matchesObservation(client, row)) }
+                 }
+-                operations.addAll(rows)
++                rows.forEach {require(operationIds.add(it.id))}
+             }
+             name.startsWith("submission:") -> {
+                 body.getJSONArray("files").objects().forEach(::manifest)
+@@ -249,13 +256,13 @@
+             else -> error("Unsupported migration record")
+         }
+         require((streams?.keys?:binaries.keys)==(voiceStreams?.keys?:voiceBinaries.keys)+attachmentBinaries+soundBinaries)
+-        NativeMigrationReferences.validate(parsed,clients,operations)
++        NativeMigrationReferences.validate(parsed,clients,operations())
+         // Only verified Codex credentials are supported here. Device keys, grants, push bindings
+         // and other provider re-pairing remain explicit boundaries, never silently discarded.
+-        require(operations.map { it.id }.distinct().size == operations.size)
++        require(parsed.keys.filter {it.startsWith("submission:")}.all {it.removePrefix("submission:") in operationIds})
+         for ((id, _) in manifests) require("draft-file:$id" in records)
+-        for ((name, body) in parsed) if (name.startsWith("submission:")) {
+-            val row = operations.single { it.id == name.removePrefix("submission:") }
++        for (row in operations()) {
++            val body=parsed["submission:${row.id}"]?:continue
+             require(row.sourceKey == body.getString("sourceKey") && row.sourceVersion == body.getString("sourceVersion"))
+             val intent = objectValue(row.intent)
+             require(intent.getString("hostId") == body.getString("hostId"))
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt
+@@ -155,7 +155,7 @@
+             key(public).fill(0);require(text(v,"fingerprint")==sha(public))}
+         require((context==null)==(identitySha256==null));identitySha256?.let {require(chatNoticeHash(it))}
+         val v1=records[JOURNAL]?.let(::journal)
+-        val v2=records[RECOVERY]?.let {raw->objectValue(raw,4*1024*1024);NativeMigrationForegroundV2.decodeEncoded(raw)}
++        val v2=records[RECOVERY]?.let(NativeMigrationForegroundV2::decodeSummary)
+         require(v1==null&&v2==null||context!=null) {"Original notification identity missing"}
+         if(v1!=null)require(context!!.getString("deviceId")==v1.device&&context.getString("fingerprint")==v1.fingerprint)
+         if(v2!=null)require(context!!.getString("deviceId")==v2.getString("deviceId")&&context.getString("fingerprint")==v2.getString("identity"))
+@@ -174,7 +174,7 @@
+     }
+     /** IO caller gets exact immutable journal bytes, not a recovered identity or command port. */
+     fun audit(storage: NativeSessionStorage): SourceAudit=storage.snapshotTransaction {storage.operationTransaction {
+-        inspect(storage.migrationReadTextRecords(ACTIVE_NAMES))
++        inspect(storage.migrationReadTextFrames(ACTIVE_NAMES))
+     }}
+     fun projectSource(records: Map<String,String>): Map<String,String> {
+         return NativeMigrationNotificationArchives.projectSource(records)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForegroundV2.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForegroundV2.kt
+@@ -22,6 +22,16 @@
+         private val results = setOf("pending", "waiting-host", "processing", "suppressed", "system-unavailable", "submitted-to-system", "unknown-no-replay",
+             "unknown-interrupted-no-replay", "stale-target-or-generation", "expired-or-future", "duplicate-expired-or-read", "host-inactive", "host-expired")
+         fun decodeEncoded(raw: String): JSONObject = decode(raw)
++        /** Validate the full original, retain only installation/reference summaries for the next record. */
++        fun decodeSummary(raw: String): JSONObject {
++            val value=decode(raw)
++            return JSONObject().put("deviceId",value.getString("deviceId")).put("identity",value.getString("identity"))
++                .put("targets",JSONArray(value.getJSONArray("targets").objects().map {row->
++                    JSONObject().put("target",row.getJSONObject("target")).put("operations",JSONArray(row.getJSONArray("operations").objects().map {op->
++                        JSONObject().put("authorization",op.getString("authorization"))
++                    }))
++                }))
++        }
+         private fun optional(raw: JSONObject, key: String) = if (raw.get(key) == JSONObject.NULL) null else NativeChatNotificationWire.text(raw, key)
+         private fun number(raw: JSONObject, key: String) = NativeChatNotificationWire.long(raw, key)
+         private fun operation(raw: JSONObject): NativeMigrationRecoveryLocalOperation {
+@@ -84,7 +94,7 @@
+         }
+         private fun decode(raw: String): JSONObject {
+             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_BYTES)
+-            val state = JSONObject(raw); NativeChatNotificationWire.keys(state, setOf("version", "deviceId", "identity", "targets"))
++            val state = StrictMigrationJson.parse(raw.toByteArray(Charsets.UTF_8)); NativeChatNotificationWire.keys(state, setOf("version", "deviceId", "identity", "targets"))
+             require(number(state, "version") == 2L); val device = NativeChatNotificationWire.device(NativeChatNotificationWire.text(state, "deviceId", 128)); val identity = NativeChatNotificationWire.text(state, "identity"); require(chatNoticeHash(identity))
+             val rows = state.getJSONArray("targets"); require(rows.length() <= 64)
+             val views = (0 until rows.length()).map { index ->
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt
+@@ -48,14 +48,15 @@
+         require(NativeMigrationForeground.ACTIVE_NAMES.none {it in records}) {"Installation authority cannot be imported as active records"}
+         val rows=entries(records);val claimed=mutableSetOf<String>();if(rows.isNotEmpty())claimed.add(RECORD)
+         for((id,entry)in rows) {
+-            val raw=mutableMapOf<String,String>()
++            val aliases=linkedMapOf<String,String>()
+             for((kind,record)in originals) {
+                 val digest=entry.get(kind)
+                 if(digest!=JSONObject.NULL) {
+                     require(digest is String&&chatNoticeHash(digest));val key=name(id,kind);require(claimed.add(key))
+-                    val text=records.getValue(key);require(hash(text)==digest);raw[record]=text
++                    require(hash(records.getValue(key))==digest);aliases[record]=key
+                 }
+             }
++            val raw=NativeMigrationValueMap(aliases.keys){record->records.getValue(aliases.getValue(record))}
+             val context=if(entry.get("installation")==JSONObject.NULL)null else entry.getJSONObject("installation")
+             val identity=if(entry.get("originalIdentitySha256")==JSONObject.NULL)null else entry.get("originalIdentitySha256") as String
+             val state=NativeMigrationForeground.validateArchived(context,identity,raw);require(state.nonempty)
+@@ -68,31 +69,31 @@
+     }
+     /** Exact raw journals/authority are renamed into the archive; no source private identity survives. */
+     fun projectSource(records: Map<String,String>): Map<String,String> {
+-        val portable=(records-NativeMigrationForeground.ACTIVE_NAMES).toMutableMap();validatePortable(portable)
++        val portable=NativeMigrationTextMap.copy(records).apply {forget(NativeMigrationForeground.ACTIVE_NAMES)};validatePortable(portable)
+         val state=NativeMigrationForeground.validateActive(records);if(!state.nonempty)return portable
+         val row=descriptor(state,records);val id=row.getString("archiveId");val previous=entries(portable).toMutableMap()
+         previous[id]?.let {require(NativeMigrationRecoveryCanonical.value(it)==NativeMigrationRecoveryCanonical.value(row))}
+         previous[id]=row;require(previous.size<=MAX_INSTALLATIONS)
+-        originals.forEach {(kind,record)->records[record]?.let {raw->val key=name(id,kind);portable[key]?.let {require(it==raw)};portable[key]=raw}}
++        originals.forEach {(kind,record)->if(record in records)portable.alias(records,record,name(id,kind))}
+         portable[RECORD]=catalog(previous.values);validatePortable(portable);return portable
+     }
+     /** Read selected local records safely, including archive descendants, without AtomicFile recovery. */
+     fun captureDestination(storage: NativeSessionStorage): Map<String,String> = storage.snapshotTransaction {storage.operationTransaction {
+-        val first=storage.migrationReadTextRecords(NativeMigrationForeground.ACTIVE_NAMES+RECORD).toMutableMap()
++        val first=storage.migrationReadTextFrames(NativeMigrationForeground.ACTIVE_NAMES+RECORD)
+         val names=entries(first).flatMap {(id,entry)->originals.keys.filter {entry.get(it)!=JSONObject.NULL}.map {name(id,it)}}
+-        names.chunked(16).forEach {first.putAll(storage.migrationReadTextRecords(it.toSet()))}
+-        validatePortable(first-NativeMigrationForeground.ACTIVE_NAMES);NativeMigrationForeground.validateActive(first);first
++        names.chunked(16).forEach {chunk->val next=storage.migrationReadTextFrames(chunk.toSet());chunk.filter {it in next}.forEach {first.alias(next,it,it)}}
++        validatePortable(NativeMigrationTextMap.copy(first).apply {forget(NativeMigrationForeground.ACTIVE_NAMES)});NativeMigrationForeground.validateActive(first);first
+     }}
+     /** Local original identities/journals remain active only under their original installation. */
+     fun mergeDestination(source: Map<String,String>,destination: Map<String,String>): Map<String,String> {
+-        validatePortable(source);validatePortable(destination-NativeMigrationForeground.ACTIVE_NAMES);NativeMigrationForeground.validateActive(destination)
+-        val result=source.toMutableMap();val all=entries(source).toMutableMap()
++        validatePortable(source);validatePortable(NativeMigrationTextMap.copy(destination).apply {forget(NativeMigrationForeground.ACTIVE_NAMES)});NativeMigrationForeground.validateActive(destination)
++        val result=NativeMigrationTextMap.copy(source);val all=entries(source).toMutableMap()
+         for((id,row)in entries(destination)) {
+             all[id]?.let {require(NativeMigrationRecoveryCanonical.value(it)==NativeMigrationRecoveryCanonical.value(row))};all[id]=row
+-            originals.keys.filter {row.get(it)!=JSONObject.NULL}.forEach {kind->val key=name(id,kind);val raw=destination.getValue(key);result[key]?.let {require(it==raw)};result[key]=raw}
++            originals.keys.filter {row.get(it)!=JSONObject.NULL}.forEach {kind->val key=name(id,kind);result.alias(destination,key,key)}
+         }
+         require(all.size<=MAX_INSTALLATIONS);if(all.isNotEmpty())result[RECORD]=catalog(all.values)
+-        validatePortable(result);result.putAll(destination.filterKeys {it in NativeMigrationForeground.ACTIVE_NAMES});return result
++        validatePortable(result);NativeMigrationForeground.ACTIVE_NAMES.filter {it in destination}.forEach {result.alias(destination,it,it)};return result
+     }
+     fun requiresBoundary(source: Map<String,String>,destination: Map<String,String>)=RECORD in source||RECORD in destination||NativeMigrationForeground.validateActive(destination).nonempty
+     /** Parent reads this after activation before creating/rebinding any notification coordinator. */
+@@ -104,7 +105,7 @@
+         val records=captureDestination(storage)
+         return entries(records).map {(id,row)->val context=row.optJSONObject("installation")
+             ArchivedOriginals(id,context?.getString("deviceId"),context?.getString("fingerprint"),row.getJSONArray("missingAuthorizations").strings(),
+-                originals.keys.mapNotNull {kind->records[name(id,kind)]?.let {kind to it}}.toMap())
++                NativeMigrationValueMap(originals.keys.filter {kind->name(id,kind) in records}.toSet()){kind->records.getValue(name(id,kind))})
+         }
+     }
+ }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt
+@@ -14,7 +14,7 @@
+         a is JSONArray&&b is JSONArray -> a.length()==b.length()&&(0 until a.length()).all{equal(a.get(it),b.get(it))}
+         else -> a==b
+     }
+-    fun validate(records: Map<String,JSONObject>,clients: List<MobileClient>,operations: List<SavedOperation>) {
++    fun validate(records: Map<String,JSONObject>,clients: List<MobileClient>,operations: Sequence<SavedOperation>) {
+         val metadata=records.getValue("metadata")
+         val references=mutableMapOf<String,JSONObject>()
+         fun reference(file: JSONObject) {
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamArchive.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamArchive.kt
+@@ -7,28 +7,31 @@
+ import java.io.OutputStream
+ import java.util.Base64
+ 
+-/** Framed payload: one bounded strict header followed by sorted exact original binary values. */
++/** v3 embeds bounded text; v4 frames exact UTF-8 text before binary under the same envelope. */
+ internal object NativeMigrationStreamArchive {
+     fun write(output: OutputStream, records: NativeMigrationStreamRecords, applicationId: String) {
+         val header = records.header(applicationId).toString().toByteArray(Charsets.UTF_8)
+         try {
+             require(header.size in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+             val out = DataOutputStream(output); out.writeInt(header.size); out.write(header)
+-            records.binary.toSortedMap().forEach { (_, blob) -> blob.verifiedCopy(out) }; out.flush()
++            records.frames().forEach { (_, blob) -> blob.verifiedCopy(out) }; out.flush()
+         } finally { header.fill(0) }
+     }
+     fun header(value: JSONObject, applicationId: String, reader: (String, Int) -> ((OutputStream) -> Unit)): NativeMigrationStreamRecords {
+         require(value.keys().asSequence().toSet() == setOf("format", "version", "applicationId", "records", "binaries"))
+-        require(value.get("format") == "agent-hub/android-migration-stream" && value.get("version") == 3 && value.get("applicationId") == applicationId)
+-        val rows = value.getJSONObject("records"); val text = rows.keys().asSequence().associateWith { rows.get(it) as String }
+-        val blobs = value.getJSONObject("binaries"); require(text.size + blobs.length() in 1..1024)
+-        require((text.keys + blobs.keys().asSequence()).all { it.isNotEmpty() && it.length <= 8192 && !it.contains('\u0000') })
+-        return NativeMigrationStreamRecords(text, blobs.keys().asSequence().associateWith { name ->
++        val version=value.get("version") as Int
++        require(value.get("format") == "agent-hub/android-migration-stream" && version in setOf(3,4) && value.get("applicationId") == applicationId)
++        val rows=value.getJSONObject("records");val binaries=value.getJSONObject("binaries")
++        require(rows.length()+binaries.length() in 1..1024)
++        require((rows.keys().asSequence()+binaries.keys().asSequence()).all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')})
++        fun descriptors(blobs: JSONObject)=blobs.keys().asSequence().associateWith { name ->
+             val blob = blobs.getJSONObject(name); require(blob.keys().asSequence().toSet() == setOf("size", "sha256", "prefix"))
+             val size = blob.get("size") as Int; val encoded = blob.getString("prefix"); require(encoded.length <= 60)
+             val prefix = Base64.getDecoder().decode(encoded); require(Base64.getEncoder().encodeToString(prefix) == encoded)
+             NativeMigrationBlob(size, blob.getString("sha256"), prefix, reader(name, size))
+-        })
++        }
++        val text=if(version==3)rows.keys().asSequence().associateWith {rows.get(it) as String}else NativeMigrationTextMap(descriptors(rows))
++        return NativeMigrationStreamRecords(text,descriptors(binaries),version)
+     }
+     fun readHeader(input: InputStream, applicationId: String): NativeMigrationStreamRecords {
+         val data = DataInputStream(input); val size = data.readInt(); require(size in 1..NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt
+@@ -7,25 +7,27 @@
+ import java.security.MessageDigest
+ import java.util.UUID
+ 
+-/** File-backed version3 of the same candidate slot and immutable receipt protocol. */
++/** File-backed v3/v4 payloads share one candidate slot and immutable receipt protocol. */
+ internal class NativeMigrationStreamCandidate(private val context: Context, parent: NativeSessionStorage) {
+     private val storage = parent.child(context, "migration-candidates")
+     private val legacy = NativeMigrationCandidateStore(context, parent)
+-    private fun saved() = storage.read("candidate-v1")?.let { StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8)) }
++    private fun saved() = storage.migrationReadTextRecords(setOf("candidate-v1"))["candidate-v1"]?.let { StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8)) }
+     private fun name(generation: String, index: Int) = "migration-stream:$generation:$index"
+     private fun matches(value: JSONObject, receipt: NativeMigrationCandidateStore.Receipt) =
+         value.getString("id") == receipt.id && value.getString("sha256") == receipt.sha256
+     fun isStream(receipt: NativeMigrationCandidateStore.Receipt) = storage.operationTransaction {
+-        val value = requireNotNull(saved()); require(matches(value, receipt)); value.get("version") == 3
++        val value = requireNotNull(saved()); require(matches(value, receipt)); value.get("version") in setOf(3,4)
+     }
+     fun <T> read(receipt: NativeMigrationCandidateStore.Receipt, consume: (NativeMigrationStreamRecords) -> T): T = storage.operationTransaction {
+-        val value = requireNotNull(saved()); require(matches(value, receipt) && value.get("version") == 3)
++        val value = requireNotNull(saved()); require(matches(value, receipt) && value.get("version") in setOf(3,4))
+         require(value.keys().asSequence().toSet() == setOf("version", "id", "sha256", "records", "generation", "header"))
+         require(UUID.fromString(receipt.id).toString() == receipt.id && receipt.sha256.matches(Regex("[a-f0-9]{64}")))
+         val generation = value.getString("generation"); require(UUID.fromString(generation).toString() == generation)
+-        val names = value.getJSONObject("header").getJSONObject("binaries").keys().asSequence().sorted().toList()
++        val header=value.getJSONObject("header");require(header.get("version")==value.get("version"))
++        val names=(if(value.get("version")==4)header.getJSONObject("records").keys().asSequence().sorted().toList()else emptyList())+
++            header.getJSONObject("binaries").keys().asSequence().sorted().toList()
+         val records = NativeMigrationStreamArchive.header(value.getJSONObject("header"), context.packageName) { logical, size ->
+-            { output -> storage.copyBinaryTo(name(generation, names.indexOf(logical)), size, output) }
++            { output -> storage.migrationCopyBinaryTo(name(generation, names.indexOf(logical)), size, output) }
+         }
+         require(records.size == receipt.recordCount && value.get("records") == receipt.recordCount)
+         legacy.validateStreamRecords(records)
+@@ -41,7 +43,7 @@
+             if (!sameId) {
+                 require(if (prior == null) replacing == null else replacing != null && matches(prior, replacing))
+                 if (replacing != null) {
+-                    if (prior!!.get("version") == 3) read(replacing) {} else legacy.readArchive(replacing)
++                    if (prior!!.get("version") in setOf(3,4)) read(replacing) {} else legacy.readArchive(replacing)
+                 }
+             }
+             val generation = UUID.randomUUID().toString(); val created = mutableListOf<String>(); var published = false
+@@ -49,34 +51,29 @@
+                 val digest = MessageDigest.getInstance("SHA-256")
+                 val records = envelope.inputStream().buffered().use { source -> NativeMigrationStreamCrypto.read(source, password) { clear ->
+                     val input = DigestInputStream(clear, digest); val header = NativeMigrationStreamArchive.readHeader(input, context.packageName)
+-                    // Header readers intentionally cannot supply bytes. Validate the graph now, then
+-                    // validate actual normalized sound bytes before the sole candidate publication.
+-                    legacy.validateStreamRecords(header, verifySoundBytes = false)
+-                    header.binary.toSortedMap().entries.forEachIndexed { index, (_, blob) ->
+-                        if (sameId) NativeMigrationStreamArchive.transfer(input, blob, nullOutputStreamCompat())
+-                        else {
+-                            val local = name(generation, index); created.add(local)
+-                            storage.writeBinaryStream(local, blob.size) { output -> NativeMigrationStreamArchive.transfer(input, blob, output) }
+-                            val check = NativeMigrationProbe(); storage.copyBinaryTo(local, blob.size, check)
+-                            require(check.size == blob.size.toLong() && check.sha256() == blob.sha256 && check.prefix().contentEquals(blob.prefix))
+-                        }
++                    // v4 values arrive as authenticated frames, never Strings in the header.
++                    if(header.version==3)legacy.validateStreamRecords(header,verifySoundBytes=false)
++                    header.frames().entries.forEachIndexed { index, (_, blob) ->
++                        val local = name(generation, index); created.add(local)
++                        storage.writeBinaryStream(local, blob.size) { output -> NativeMigrationStreamArchive.transfer(input, blob, output) }
++                        val check = NativeMigrationProbe(); storage.migrationCopyBinaryTo(local, blob.size, check)
++                        require(check.size == blob.size.toLong() && check.sha256() == blob.sha256 && check.prefix().contentEquals(blob.prefix))
+                         checkpoint(index + 1)
+                     }
+                     require(input.read() == -1); header
+                 } }
+-                if (!sameId) {
+-                    val names = records.binary.keys.sorted()
+-                    val local = records.binary.mapValues { (logical, blob) -> blob.copy(copy = { output ->
+-                        storage.copyBinaryTo(name(generation, names.indexOf(logical)), blob.size, output)
+-                    }) }
+-                    NativeMigrationSounds.validate(records.text, emptyMap(), local)
++                val names=records.frames().keys.toList()
++                val local=NativeMigrationStreamArchive.header(records.header(context.packageName),context.packageName) { logical,size ->
++                    {output->storage.migrationCopyBinaryTo(name(generation,names.indexOf(logical)),size,output)}
+                 }
++                // Strict UTF-8/closed graph and actual sound bytes validate before the sole slot write.
++                legacy.validateStreamRecords(local)
+                 val receipt = NativeMigrationCandidateStore.Receipt(id, digest.digest().joinToString("") { "%02x".format(it) }, records.size)
+                 if (sameId) {
+-                    require(prior!!.getString("sha256") == receipt.sha256 && prior.get("version") == 3)
++                    require(prior!!.getString("sha256") == receipt.sha256 && prior.get("version") in setOf(3,4))
+                     read(receipt) {}; receipt
+                 } else {
+-                    val value = JSONObject().put("version", 3).put("id", id).put("sha256", receipt.sha256).put("records", records.size)
++                    val value = JSONObject().put("version", records.version).put("id", id).put("sha256", receipt.sha256).put("records", records.size)
+                         .put("generation", generation).put("header", records.header(context.packageName))
+                     checkpoint(0); storage.write("candidate-v1", value.toString()); published = true; receipt
+                 }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamRecords.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamRecords.kt
+@@ -29,18 +29,30 @@
+     fun sha256() = digest.digest().joinToString("") { "%02x".format(it) }
+ }
+ 
+-internal data class NativeMigrationStreamRecords(val text: Map<String, String>, val binary: Map<String, NativeMigrationBlob>) {
++internal data class NativeMigrationStreamRecords(val text: Map<String, String>, val binary: Map<String, NativeMigrationBlob>, val version: Int=3) {
+     val size get() = text.size + binary.size
+     init {
+-        require(size in 1..1024 && text.keys.intersect(binary.keys).isEmpty())
+-        require(binary.values.all { it.size in 1..21 * 1024 * 1024 && it.sha256.matches(Regex("[a-f0-9]{64}")) && it.prefix.size == minOf(44, it.size) })
++        require(version in setOf(3,4)&&size in 1..1024 && text.keys.intersect(binary.keys).isEmpty())
++        require(binary.values.all { valid(it,21 * 1024 * 1024) })
+         require(binary.values.sumOf { it.size.toLong() } <= MAX_TOTAL_BYTES)
++        val frames=textFrames()
++        require(frames.values.all {valid(it,NativeMigrationTextFrames.MAX_RECORD_BYTES)})
++        val textBytes=frames.values.sumOf {it.size.toLong()}
++        require(textBytes+binary.values.sumOf {it.size.toLong()}<=MAX_TOTAL_BYTES)
++        if(version==3)require(textBytes<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
++    }
++    fun textFrames(): Map<String,NativeMigrationBlob> = if(text is NativeMigrationTextMap)text.frames() else text.mapValues {NativeMigrationTextFrames.retained(it.value)}
++    fun frames(): Map<String,NativeMigrationBlob> = linkedMapOf<String,NativeMigrationBlob>().apply {
++        if(version==4)putAll(textFrames().toSortedMap())
++        putAll(binary.toSortedMap())
+     }
+     fun header(applicationId: String) = JSONObject().put("format", "agent-hub/android-migration-stream")
+-        .put("version", 3).put("applicationId", applicationId).put("records", JSONObject(text))
+-        .put("binaries", JSONObject().also { body -> binary.toSortedMap().forEach { (name, blob) -> body.put(name, blob.json()) } })
++        .put("version", version).put("applicationId", applicationId)
++        .put("records",if(version==3)JSONObject(text)else descriptors(textFrames()))
++        .put("binaries",descriptors(binary))
+     companion object {
+-        // Raw binary budget is independent of the unchanged 8MiB legacy text/JSON budget.
+         const val MAX_TOTAL_BYTES = 192L * 1024 * 1024
++        private fun valid(blob: NativeMigrationBlob,maximum: Int)=blob.size in 1..maximum&&blob.sha256.matches(Regex("[a-f0-9]{64}"))&&blob.prefix.size==minOf(44,blob.size)
++        private fun descriptors(values: Map<String,NativeMigrationBlob>)=JSONObject().also {body->values.toSortedMap().forEach {(name,blob)->body.put(name,blob.json())}}
+     }
+ }
+--- /dev/null
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationTextMap.kt
+@@ -0,0 +1,101 @@
++package com.agenthub.android
++
++import java.io.OutputStream
++import java.util.AbstractMap.SimpleImmutableEntry
++
++/** A bounded record is authenticated independently. No path, URI, model or command enters this view. */
++internal object NativeMigrationTextFrames {
++    const val MAX_RECORD_BYTES=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES
++    fun read(blob: NativeMigrationBlob): String {
++        require(blob.size in 1..MAX_RECORD_BYTES)
++        val bytes=ByteArray(blob.size);var used=0
++        try {
++            blob.verifiedCopy(object: OutputStream() {
++                override fun write(value: Int){require(used<bytes.size);bytes[used++]=value.toByte()}
++                override fun write(input: ByteArray,offset: Int,count: Int) {
++                    require(offset>=0&&count>=0&&offset<=input.size-count&&count<=bytes.size-used)
++                    System.arraycopy(input,offset,bytes,used,count);used+=count
++                }
++            })
++            require(used==bytes.size)
++            return Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
++        }finally{bytes.fill(0)}
++    }
++    fun bytes(value: String)=Charsets.UTF_8.newEncoder().encode(java.nio.CharBuffer.wrap(value)).let {buffer->
++        require(buffer.remaining() in 1..MAX_RECORD_BYTES);ByteArray(buffer.remaining()).also {buffer.get(it)}
++    }
++    /** Legacy bounded maps and small generated catalogs may retain their existing immutable String. */
++    fun retained(value: String): NativeMigrationBlob {
++        val bytes=bytes(value)
++        try {
++            val probe=NativeMigrationProbe();probe.write(bytes)
++            return NativeMigrationBlob(bytes.size,probe.sha256(),probe.prefix()) {output->
++                val current=bytes(value);try{output.write(current)}finally{current.fill(0)}
++            }
++        }finally{bytes.fill(0)}
++    }
++}
++
++/** Sparse index. Iteration loads one exact record at a time; keys/contains/alias never decode values. */
++internal class NativeMigrationTextMap private constructor(private val cells: LinkedHashMap<String,NativeMigrationBlob>,
++    private val persist: ((String,String)->NativeMigrationBlob)?): AbstractMutableMap<String,String>() {
++    constructor(values: Map<String,NativeMigrationBlob>):this(LinkedHashMap(values),null)
++    override val size get()=cells.size
++    override fun containsKey(key: String)=cells.containsKey(key)
++    override fun get(key: String)=cells[key]?.let(NativeMigrationTextFrames::read)
++    override val keys: MutableSet<String> get()=cells.keys
++    override fun put(key: String,value: String): String? {
++        val prior=cells[key]
++        cells[key]=persist?.invoke(key,value)?:NativeMigrationTextFrames.retained(value)
++        return prior?.let(NativeMigrationTextFrames::read)
++    }
++    override fun remove(key: String)=cells.remove(key)?.let(NativeMigrationTextFrames::read)
++    override fun clear()=cells.clear()
++    fun frames(): Map<String,NativeMigrationBlob> = LinkedHashMap(cells)
++    fun forget(keys: Set<String>){keys.forEach(cells::remove)}
++    fun alias(source: Map<String,String>,original: String,key: String) {
++        val frame=if(source is NativeMigrationTextMap)source.cells.getValue(original)else NativeMigrationTextFrames.retained(source.getValue(original))
++        cells[key]?.let {prior->require(prior.size==frame.size&&prior.sha256==frame.sha256&&prior.prefix.contentEquals(frame.prefix))}
++        cells[key]=frame
++    }
++    override val entries: MutableSet<MutableMap.MutableEntry<String,String>> get()=object: AbstractMutableSet<MutableMap.MutableEntry<String,String>>() {
++        override val size get()=cells.size
++        override fun add(element: MutableMap.MutableEntry<String,String>): Boolean=error("Migration entries are assigned by exact name")
++        override fun iterator(): MutableIterator<MutableMap.MutableEntry<String,String>> {
++            val keys=cells.keys.iterator()
++            return object:MutableIterator<MutableMap.MutableEntry<String,String>> {
++                override fun hasNext()=keys.hasNext()
++                override fun remove()=keys.remove()
++                override fun next(): MutableMap.MutableEntry<String,String> {
++                    val name=keys.next()
++                    return object:MutableMap.MutableEntry<String,String> {
++                        override val key=name
++                        override val value get()=getValue(name)
++                        override fun setValue(newValue: String)=requireNotNull(put(name,newValue))
++                    }
++                }
++            }
++        }
++    }
++    companion object {
++        fun copy(source: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): NativeMigrationTextMap {
++            val cells=if(source is NativeMigrationTextMap)source.frames()else source.mapValues {NativeMigrationTextFrames.retained(it.value)}
++            return NativeMigrationTextMap(LinkedHashMap(cells),persist)
++        }
++    }
++}
++
++/** Parsed graph values are not an aggregate JSON object cache. Callers retain only their bounded summaries. */
++internal class NativeMigrationValueMap<T>(private val names: Set<String>,private val load: (String)->T): AbstractMap<String,T>() {
++    override val size get()=names.size
++    override val keys get()=names
++    override fun containsKey(key: String)=key in names
++    override fun get(key: String)=if(key in names)load(key)else null
++    override val entries: Set<Map.Entry<String,T>> get()=object:AbstractSet<Map.Entry<String,T>>() {
++        override val size get()=names.size
++        override fun iterator(): Iterator<Map.Entry<String,T>> =names.iterator().let {keys->object:Iterator<Map.Entry<String,T>> {
++            override fun hasNext()=keys.hasNext()
++            override fun next(): Map.Entry<String,T> {val key=keys.next();return SimpleImmutableEntry(key,load(key))}
++        }}
++    }
++}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
+@@ -178,6 +178,29 @@
+         val sources=names.associateWith {name->atomic(folder,name).baseFile}
+         sources.values.forEach(::requireSettledMigrationFile)
+         sources.mapNotNull {(name,file)->if(migrationFileExists(file))name to readMigrationTextFile(file,name).second else null}.toMap()
++    }
++    /** Authenticate one text at a time; retain only exact file/name/digest references. No recovery. */
++    internal fun migrationReadTextFrames(names: Set<String>): NativeMigrationTextMap = ioLock.withLock {
++        checkMigrationAccess();require(names.size in 1..1024&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
++        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
++        val folder=dataRoot();val frames=linkedMapOf<String,NativeMigrationBlob>()
++        for(name in names.sorted()) {
++            val source=atomic(folder,name).baseFile;requireSettledMigrationFile(source)
++            if(migrationFileExists(source))frames[name]=migrationTextFrame(source,name).second
++        }
++        NativeMigrationTextMap(frames)
++    }
++    private fun migrationTextFrame(source: File,expectedName: String?): Pair<String,NativeMigrationBlob> {
++        val decoded=readMigrationTextFile(source,expectedName);val name=decoded.first;val bytes=NativeMigrationTextFrames.bytes(decoded.second)
++        val blob=try {val probe=NativeMigrationProbe();probe.write(bytes)
++            NativeMigrationBlob(bytes.size,probe.sha256(),probe.prefix()) {output->
++                requireSettledMigrationFile(source)
++                val value=NativeMigrationTextFrames.bytes(readMigrationTextFile(source,name).second)
++                try {output.write(value)}finally {value.fill(0)}
++            }
++        }finally {bytes.fill(0)}
++        // The closure captures only an authenticated name, never the decoded Pair/String.
++        return name to blob
+     }
+     /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
+      * Presence is audited without opening/recovering files or borrowing OS callback authority. */
+@@ -342,8 +365,8 @@
+         NativeMigrationStreamArchive.write(java.security.DigestOutputStream(nullOutputStreamCompat(),digest),archive,"local-generation-v3")
+         val recordsSha256=digest.digest().joinToString(""){"%02x".format(it)}
+         publishMigrationGeneration(candidateId,sha256,sourceRecordCount,recordsSha256,archive.size,checkpoint) { folder ->
+-            archive.text.toSortedMap().entries.forEachIndexed { index,(name,text) ->
+-                val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)
++            archive.text.keys.sorted().forEachIndexed { index,name ->
++                val text=archive.text.getValue(name);val target=atomic(folder,name);encodeAtomic(target,name,text);check(decodeAtomic(target,name)==text);checkpoint(index+1)
+             }
+             archive.binary.toSortedMap().entries.forEachIndexed { index,(name,blob) ->
+                 val target=atomic(folder,name);encodeBinaryStream(target,name,blob.size,blob::verifiedCopy)
+@@ -489,6 +512,17 @@
+         checkMigrationAccess(); require(expectedSize in 1..21 * 1024 * 1024)
+         java.io.DataInputStream(file(name).openRead().buffered()).use { decodeBinaryTo(it, name, expectedSize, output) }; Unit
+     }
++    /** Candidate/audit originals never invoke AtomicFile recovery, including payload chunks. */
++    internal fun migrationCopyBinaryTo(name: String,expectedSize: Int,output: java.io.OutputStream)=ioLock.withLock {
++        checkMigrationAccess();require(expectedSize in 1..21*1024*1024)
++        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
++        val source=file(name).baseFile;requireSettledMigrationFile(source)
++        java.io.DataInputStream(source.inputStream().buffered()).use {decodeBinaryTo(it,name,expectedSize,output)};Unit
++    }
++    internal fun migrationReadBinary(name: String,expectedSize: Int,maximum: Int): ByteArray {
++        require(expectedSize in 1..maximum&&maximum<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
++        val output=java.io.ByteArrayOutputStream(expectedSize);migrationCopyBinaryTo(name,expectedSize,output);return output.toByteArray()
++    }
+     private fun encodeBinaryStream(atomic: AtomicFile, name: String, size: Int, produce: (java.io.OutputStream) -> Unit) {
+         require(size in 1..21 * 1024 * 1024); val stream = atomic.startWrite(); val buffer = ByteArray(65536)
+         try {
+@@ -523,16 +557,15 @@
+             val aliases = resolveLegacyNames { name -> files[digest(name) + ".bin"]?.let { source ->
+                 readMigrationTextFile(source,name).second
+             } }.associateBy { digest(it) + ".bin" }
+-            val text = linkedMapOf<String, String>(); val binaries = linkedMapOf<String, NativeMigrationBlob>(); var totalText = 0L
++            val text = linkedMapOf<String, NativeMigrationBlob>(); val binaries = linkedMapOf<String, NativeMigrationBlob>()
+             for ((filename, source) in files.toSortedMap()) {
+                 require(source.length()>=29)
+                 java.io.DataInputStream(source.inputStream().buffered()).use { input ->
+                     input.mark(4); val version = input.readUnsignedByte(); input.reset()
+                     val name: String
+                     if (version == 1 || version == 3) {
+-                        val decoded = readMigrationTextFile(source,aliases[filename]); name = decoded.first
+-                        totalText += strictBytes(decoded.second).size; require(totalText <= NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)
+-                        require(text.put(name, decoded.second) == null)
++                        val decoded=migrationTextFrame(source,aliases[filename]);name=decoded.first
++                        require(text.put(name,decoded.second)==null)
+                     } else {
+                         require(source.length()<=23L * 1024 * 1024)
+                         val probe = NativeMigrationProbe(); val header = decodeBinaryTo(input, aliases[filename], null, probe); name = header.name
+@@ -545,7 +578,7 @@
+                     require(name.isNotEmpty() && name.length <= 8192 && !name.contains('\u0000') && name != migrationPointerName && filename == digest(name) + ".bin")
+                 }
+             }
+-            consume(NativeMigrationStreamRecords(text, binaries))
++            consume(NativeMigrationStreamRecords(NativeMigrationTextMap(text),binaries,4))
+         } }
+     private fun binaryAAD(name: String,size: Int,index: Int,nonce: ByteArray?)=
+         (if(nonce==null)byteArrayOf()else binaryContext+nonce+byteArrayOf(0))+strictBytes(name)+byteArrayOf(0)+java.nio.ByteBuffer.allocate(8).putInt(size).putInt(index).array()
+--- /dev/null
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationTextFrameColdTest.kt
+@@ -0,0 +1,87 @@
++package com.agenthub.android
++
++import android.os.Process
++import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
++import androidx.test.platform.app.InstrumentationRegistry
++import org.json.JSONObject
++import org.junit.*
++import org.junit.Assert.*
++import java.io.File
++import java.util.UUID
++
++/** New opt-in pair. Never invoke a previous writer or reuse its run UUID. No Host/model port. */
++class NativeMigrationTextFrameColdTest {
++    @get:Rule(order=0)val foreground: org.junit.rules.TestRule=NativeTestForeground()
++    @get:Rule(order=1)val ui=createAndroidComposeRule<MainActivity>()
++    private lateinit var owned: OwnedControlAcceptance
++    @Before fun setup(){ui.waitUntil(30_000){!ui.activity.session.restoring};ui.runOnIdle{owned=OwnedControlAcceptance(ui.activity,"migration-text-frame-cold")}}
++    @After fun finish(){if(::owned.isInitialized)ui.runOnIdle{owned.session.leaveForeground();owned.verifyDefault()}}
++    private fun runId()=requireNotNull(InstrumentationRegistry.getArguments().getString("textFrameColdRun")){"Fresh parent-owned textFrameColdRun UUID required"}.also {require(UUID.fromString(it).toString()==it)}
++    private fun namespace(run: String,source: Boolean)=if(source)"P7-text-source-$run"else"P7-text-cold-$run"
++    private fun storage(run: String,source: Boolean)=namespace(run,source).let {NativeSessionStorage(ui.activity,it,it)}
++    private fun proof(run: String)=File(ui.activity.filesDir,"acceptance/text-frame-cold-$run.json").also {
++        require(it.canonicalFile==File(File(ui.activity.filesDir,"acceptance").canonicalFile,it.name))
++    }
++    private fun hashes(value: JSONObject)=value.keys().asSequence().associateWith {value.getString(it)}
++    private fun producer(name: String,raw: String) {
++        val type=Class.forName("com.agenthub.android.$name");val companion=type.getField("Companion").get(null)
++        companion.javaClass.getDeclaredMethod("validateEncoded",String::class.java).invoke(companion,raw)
++    }
++    @Test fun stageFreshMaximumTextCandidateForDifferentProcess() {
++        val run=runId()
++        for(source in listOf(false,true))require(!File(ui.activity.noBackupFilesDir,namespace(run,source)).exists()){ "Fresh run required; original writer must not be replayed" }
++        require(!proof(run).exists())
++        val source=storage(run,true);val destination=storage(run,false);val payload=MigrationActivationFixtures.payload();val rows=payload.getJSONObject("records")
++        rows.keys().forEach {source.write(it,rows.getString(it))}
++        val client=MigrationActivationFixtures.client(payload);val target=NativeChatNoticeTarget.from(client.scope!!);val identity=NotificationArchiveFixtures.identity();val authority=NotificationArchiveFixtures.authority(client)
++        source.write(NativeMigrationForeground.IDENTITY,identity.raw);val rawDigests=JSONObject();var total=0L
++        fun save(name: String,raw: String,limit: Int,decoder: String) {
++            val text=raw+" ".repeat(limit-256-raw.toByteArray(Charsets.UTF_8).size);producer(decoder,text)
++            rawDigests.put(name,NotificationArchiveFixtures.hash(text));total+=text.toByteArray(Charsets.UTF_8).size;source.write(name,text)
++        }
++        save(NativeMigrationForeground.JOURNAL,NotificationArchiveFixtures.v1(identity,target,authority.fingerprint),4*1024*1024,"NativeChatNotificationForegroundStore")
++        save(NativeMigrationForeground.RECOVERY,NotificationArchiveFixtures.v2(identity,target,authority.fingerprint,"unknown"),4*1024*1024,"NativeChatNotificationRecoveryStore")
++        save(NativeMigrationForeground.AUTHORIZATIONS,authority.raw,1024*1024,"NativeChatNotificationAuthorizations")
++        assertTrue(total>8*1024*1024);val before=MigrationActivationFixtures.tree(source);val encrypted=File(owned.folder,"text-cold.encrypted")
++        NativeMigrationExport(ui.activity,source).sealFile(encrypted,"owned maximum text cold password")
++        val receipt=NativeMigrationCandidateStore(ui.activity,destination).stageFile(UUID.randomUUID().toString(),encrypted,"owned maximum text cold password")
++        NativeMigrationStreamCandidate(ui.activity,destination).read(receipt){assertEquals(4,it.version);assertTrue(it.text is NativeMigrationTextMap)}
++        assertEquals(before,MigrationActivationFixtures.tree(source))
++        proof(run).writeText(JSONObject().put("version",1).put("kind","p7-text-frame-cold-v1").put("run",run).put("writerPid",Process.myPid())
++            .put("candidateId",receipt.id).put("candidateSha256",receipt.sha256).put("recordCount",receipt.recordCount).put("sourceBytes",total)
++            .put("rawDigests",rawDigests).put("sourceCiphertext",JSONObject(before)).put("rootCiphertext",JSONObject(MigrationActivationFixtures.tree(destination)))
++            .put("candidateCiphertext",JSONObject(MigrationActivationFixtures.tree(destination.child(ui.activity,"migration-candidates")))).toString())
++        assertTrue(encrypted.delete());owned.verifyDefault()
++    }
++    @Test fun readAndActivateSameMaximumTextCandidateUnderDifferentPidWithoutReplacingIt() {
++        val run=runId();val file=proof(run);require(file.isFile&&file.length() in 1..128*1024)
++        val fixture=StrictMigrationJson.parse(file.readBytes())
++        require(fixture.keys().asSequence().toSet()==setOf("version","kind","run","writerPid","candidateId","candidateSha256","recordCount","sourceBytes","rawDigests","sourceCiphertext","rootCiphertext","candidateCiphertext"))
++        require(fixture.get("version")==1&&fixture.get("kind")=="p7-text-frame-cold-v1"&&fixture.get("run")==run)
++        assertNotEquals("Independent process required",fixture.getInt("writerPid"),Process.myPid());assertTrue(fixture.getLong("sourceBytes")>8*1024*1024)
++        for(source in listOf(false,true))require(File(ui.activity.noBackupFilesDir,namespace(run,source)).isDirectory)
++        val destination=storage(run,false);val source=storage(run,true);val candidate=destination.child(ui.activity,"migration-candidates")
++        assertEquals(hashes(fixture.getJSONObject("sourceCiphertext")),MigrationActivationFixtures.tree(source))
++        assertEquals(hashes(fixture.getJSONObject("rootCiphertext")),MigrationActivationFixtures.tree(destination))
++        val candidateBefore=MigrationActivationFixtures.tree(candidate);assertEquals(hashes(fixture.getJSONObject("candidateCiphertext")),candidateBefore)
++        val receipt=NativeMigrationCandidateStore.Receipt(fixture.getString("candidateId"),fixture.getString("candidateSha256"),fixture.getInt("recordCount"))
++        assertEquals(receipt,NativeMigrationCandidateStore(ui.activity,destination).currentReceipt())
++        val generation=NativeMigrationActivation(ui.activity,destination,NativeMigrationNotificationActivationLease(destination,receipt){true}).activate(receipt)
++        val current=destination.reopen(ui.activity);val archived=NativeMigrationNotificationArchives.readOnlyArchives(current).single()
++        for((name,kind)in listOf(NativeMigrationForeground.JOURNAL to NativeMigrationNotificationArchives.Original.FOREGROUND_V1,
++            NativeMigrationForeground.RECOVERY to NativeMigrationNotificationArchives.Original.RECOVERY_V2,
++            NativeMigrationForeground.AUTHORIZATIONS to NativeMigrationNotificationArchives.Original.AUTHORIZATIONS_V1))
++            assertEquals(fixture.getJSONObject("rawDigests").getString(name),NotificationArchiveFixtures.hash(requireNotNull(archived.readOnly(kind))))
++        val unknown=JSONObject(requireNotNull(archived.readOnly(NativeMigrationNotificationArchives.Original.RECOVERY_V2))).getJSONArray("targets").getJSONObject(0).getJSONArray("operations").getJSONObject(0)
++        assertEquals("unknown",unknown.getString("state"));assertEquals(JSONObject.NULL,unknown.get("receipt"))
++        NativeMigrationForeground.ACTIVE_NAMES.forEach {assertNull(current.read(it))}
++        assertTrue(NativeMigrationNotificationArchives.requiresExplicitSetup(current));assertFalse(NativeChatNotificationStore(current).preferences().enabled)
++        current.write("later-local-text-draft","later independent draft 中文 %@ SourceID")
++        val after=MigrationActivationFixtures.tree(current);assertEquals(generation,NativeMigrationActivation(ui.activity,current).activate(receipt))
++        assertEquals("later independent draft 中文 %@ SourceID",current.read("later-local-text-draft"));assertEquals(after,MigrationActivationFixtures.tree(current))
++        assertEquals(candidateBefore,MigrationActivationFixtures.tree(candidate));assertEquals(hashes(fixture.getJSONObject("sourceCiphertext")),MigrationActivationFixtures.tree(source))
++        File(owned.folder,"text-frame-cold-reader.json").writeText(JSONObject().put("writerPid",fixture.getInt("writerPid")).put("readerPid",Process.myPid())
++            .put("sameCandidate",true).put("exactOriginalText",true).put("sourceAndCandidateCiphertextUnchanged",true).put("laterDraftPreserved",true)
++            .put("newIdentityOrRegistrationOrReplay",0).toString())
++    }
++}

@@ -1,0 +1,28 @@
+{
+  "featureIds": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+  "designIds": ["UI12", "UI21"],
+  "commonAssertions": [
+    "No migration lease or snapshot publication until all actual producers/IO exit.",
+    "Cancelled waits retain the same retiring resource; a second migration cannot bypass it.",
+    "A local close never means remote cancellation or input replay."
+  ],
+  "android": {
+    "implementation": "ordinary EasyWork remote/ACK/discovery owner registry + callback/disposal wait prepared",
+    "auxiliary": "App/runner compile; actual compiled IO/remote/ACK/closed-proof JVM5 + format2",
+    "native": "6 lifecycle +4 separate binary/format methods prepared, not run here",
+    "realDev": "pending"
+  },
+  "ios": {
+    "codeChanged": false,
+    "equivalentLifecycleAssertion": "must be independently verified; Android executor proof cannot establish URLSession/device behavior",
+    "nativeOrCrossFormatNewPass": false
+  },
+  "design": {
+    "layoutTokensCopyChanged": false,
+    "state": "existing migration busy/failed states; preserve editable draft after failed wait",
+    "systemDifference": "Android native executor/OkHttp lifetime, not a new product UI"
+  },
+  "centralTablesChangedHere": false,
+  "taskProjectManagement": "paused",
+  "fullP7Passed": false
+}

@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "id": "android-p8-cold-controller-20261029",
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-positive-adopt-cold-controller-next-20261029-1",
+  "features": ["F02", "F04", "F06", "F07", "F43", "F44", "F46"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S18"],
+  "summary": "Parent-only two-process cold controller with immutable static plan, fresh exclusive execution lease and strict original writer/reader proof lineage.",
+  "commonAssertion": "Same original target/config/keys/candidate/grant/claim/journal/metadata/default bytes across a verified writer interruption and new reader process; no extra claim/read/submit or unknown-result replay.",
+  "dualPlatformImpact": {
+    "android": "Acceptance tooling only; current native cold Kotlin source pinned and unchanged; execution adapter not yet device-verified",
+    "ios": "No source, UI, token or copy change; paused; existing proof not reused as Android proof"
+  },
+  "implementation": {
+    "preflight": "implemented; actual offline APK tools passed",
+    "controller": "implemented",
+    "hostSelfchecks": 62,
+    "nativeExecution": "not run",
+    "deviceCommands": 0,
+    "sidecarListenersStarted": 0,
+    "realCasesStarted": 0,
+    "newApks": 0,
+    "hostModelInputs": 0
+  },
+  "gatesPending": [
+    "parent current integrated candidate and fresh global device lease",
+    "device/API/AVD/install/process-inventory verification",
+    "owned writer stop within18s",
+    "same original state and new reader PID native acceptance",
+    "own-resource cleanup"
+  ],
+  "centralRegistration": "Parent-owned merge delta for product/design/acceptance records; no production UI behavior change",
+  "a5Closure": false,
+  "a6": "paused",
+  "files": {
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase12-cold-controller/cold_contract.py": "0aa203767740ec8f09048e745eef31f0738bfc00910321e9521ef3814a42a579",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase12-cold-controller/cold_controller.py": "63da9e4da133d55a4de4f8ade8f8fce20b1975c57f33aa1ef6a587d7eb274215",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase12-cold-controller/cold_device.py": "cbd7f3835f961f96871b7ec400138508ec3efbd38e0f9902a35b2ee3e0f907bb",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase12-cold-controller/test_cold_controller.py": "430e3732d3a8293cae6b3293d00449e1ec9855646c451bfbf62dc349d52971e1",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase12-cold-controller/fixture-source-lock.json": "651a8637aaf40747aaae3f05f75b42f4765bbb62bea93a1871e00bf9f196d228",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase12-cold-controller/oem-inventory-observed.json": "f024c0b2b8b8aee49558f29df1483954ae071111bc0e833727d56f373d02cb26",
+    "docs/plans/android-alignment-20261022/parallel/p8-easywork/form-lease/phase12-cold-controller/oem-defaults-observed.json": "bc985978618907f2a81b21e9aa1516e30c234da3f96576dd6114ac0dd1ba09bd"
+  },
+  "followups": [
+    {
+      "operationId": "parent-p8-cold-oem-inventory-20261029-1",
+      "baseCommit": "b7678f4d36314114643de2ab844e6f90a2ea062b",
+      "codeCommit": "1eb12efd5361f67c84ca1d0b106ed1170b57a232",
+      "summary": "Full bounded OEM runtime inventory with strict known structure; exact OEM hash separator compatibility and family-scoped read-only default hashes; bounded collection-stage diagnostics.",
+      "newAuxiliaryTests": 16,
+      "allAuxiliaryTests": 58,
+      "nativeGate": "Fresh parent plan/UUID/device lease; actual full-body format pending",
+      "oldReservedUuid": "failed-sealed; no reuse",
+      "defaultsFailureCause": "Not established from type-only original failure; separator mismatch remains a hypothesis",
+      "productionUiOrIosChanged": false,
+      "deviceCommands": 0,
+      "inventoryTimeoutSeconds": 5,
+      "existingWriterReaderTimeoutsUnchanged": true
+    },
+    {
+      "operationId": "parent-p8-default-family-bounded-discovery-20261029-1",
+      "codeCommit": "2b1c736ef7e1967fe7d17a4c4f81dd6d2ba69743",
+      "summary": "Fixed root-level mobile-v1 name discovery; unrelated names are not emitted or recursively searched. Reject duplicate/unsafe/excess families and root/nested symlink or special entries before file discovery/hashes.",
+      "hostSelfchecks": 62,
+      "newChecks": 4,
+      "familyLimit": 64,
+      "fileLimit": 1024,
+      "outputLimitBytes": 262144,
+      "timeoutSeconds": 5,
+      "nativeGate": "Parent verifies final read-only discovery first; only then creates fresh plan/UUID/execution lease",
+      "realDeviceDiscoveryByLeaf": false,
+      "oldCaseStillSealed": true
+    }
+  ]
+}

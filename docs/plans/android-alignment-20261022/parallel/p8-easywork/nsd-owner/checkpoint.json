@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-actual-nsd-stop-owner-next-20261029-1",
+  "controlledJvm": {
+    "compileExit": 0,
+    "junitExit": 0,
+    "tests": 19,
+    "scope": "Exact production lifetime and unchanged frozen common owner; controlled platform outcomes on host JVM",
+    "registrySha256": "c5c65795d463d54ad17a90fbbe533cbb2b8cee2d5615606d482d9d26a932b271",
+    "actualSdkTestsExecuted": 0,
+    "publicReproductionRunner": "passed, final19 methods; exact production/common-owner hashes checked"
+  },
+  "nativeCompile": {
+    "compileExit": 0,
+    "inputs": 699,
+    "sourceSha256": "2de4fd48c7c5e592a0cbe629f0735d6e5c6a786ebee7d4bb2dd77da1e1bc8a4f",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "controlledNativeMethods": 19,
+    "realSdkNativeMethods": 2
+  },
+  "nativeExecution": {
+    "status": "unexecuted for this source",
+    "controlledAndroidMethods": 19,
+    "realSdkMethods": 2,
+    "expectedSdk": [26, 37],
+    "buildArgument": "p8NsdBuild with sourceSha256/appSha256/runnerSha256/expectedSdk",
+    "naturalResolveAndModernStopAckSeparate": true,
+    "missingOwnedPeer": "failed/unverified, never fake success",
+    "executedByLeaf": 0,
+    "newApks": 0
+  },
+  "sharedSessionPageRegistryOrWireChanged": false,
+  "open": [
+    "ActualAPI26/37 SDK discover start/stop callbacks",
+    "Owned-peer resolve natural/stop terminals and registration cleanup",
+    "API34+ stop-ack branch if natural resolve wins",
+    "Integrated actual Discovery/Session migration with P7 current form ownership",
+    "iOS matching shutdown proof",
+    "Physical/full-default-scale, real issuer/Desktop DEV/system-trusted Relay and other P8 gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "deviceHostModelActionsByLeaf": 0,
+  "rootCheck": {
+    "exitCode": 1,
+    "context": "Restored own leaf checkout, frozen proposal compiled separately",
+    "formatGithubSyncLintPassed": true,
+    "stoppedAt": "check:mobile-parity",
+    "reason": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "preExistingLeafCentralLedgerGap": true,
+    "parentOwnsCentralMerge": true,
+    "remainingRootChecksNotExecuted": true
+  }
+}

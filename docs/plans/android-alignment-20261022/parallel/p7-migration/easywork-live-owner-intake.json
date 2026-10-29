@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "status": "required-next-source-stage; not implemented or verified by this projection",
+  "base": "cd3c9a127b126eaf988eb06cae6610ea616be441",
+  "sources": {
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "e9c38fe9e2d87f7df5e67f4534e1087f83a2440ec7c21e79554693a1977094d1",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkSession.kt": "3977703c145c283cd643e3cd20df709a2a81378fd625e8fff8728767c331ad58",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkTransport.kt": "43d25b9209c2e1bfd729d188115950fadde1423eaa652c7e9d8745f608912491",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDiscovery.kt": "79d5be5dc30e8b63cc3303aa6ac78135e36196ea07adebe138427e28b096c809",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt": "2e219f12d0c785b4b4c71d0326be462706778030d4a096896805bf1d23a73d99"
+  },
+  "observedGaps": [
+    {
+      "owner": "EasyWorkRemoteSession.tasks",
+      "fact": "Independent SupervisorJob/IO; current MobileSession quiesce does not close or join EasyWorkSessions."
+    },
+    {
+      "owner": "RelayFrameTransport.acknowledgementScope",
+      "fact": "Independent SupervisorJob/IO; close cancels without awaiting actual exit."
+    },
+    {
+      "owner": "EasyWorkDiscovery.tasks",
+      "fact": "Independent Main scope; stop cancels children without joining; migration does not currently stop this resource."
+    },
+    {
+      "owner": "EasyWorkHttp.request/dispose",
+      "fact": "Cancellation of continuation/call is not a proof that callbacks and asynchronous TLS disposal have exited. Current NativeMigrationIoWork does not track these callbacks."
+    }
+  ],
+  "requiredNarrowChanges": [
+    "Track actual OkHttp callback exit and disposal through the owner IO tracker, including off-Main cancellation/cleanup.",
+    "Propagate only owner IO context into independent remote/ack/discovery scopes; preserve independent Jobs and avoid the prior scope-shadow bug.",
+    "Stop/join actual remote and discovery owners before metadata snapshot; retain failed/cancelled retirement proof and block a second migration until it drains.",
+    "Preserve immutable pending operations; neither closing nor timeout means remote cancellation or replay."
+  ],
+  "requiredEvidence": [
+    "Held actual callback/cleanup: owner remains incomplete after coroutine cancellation until actual IO exits; no publication.",
+    "Independent receive and relay-ack scopes stop/join; no late credential/metadata writes.",
+    "Discovery epoch and actual pinned-read callback cannot publish a new route after retirement.",
+    "Cancel leaves editable local draft and original candidate; second migration waits for the same retiring owner.",
+    "Real model/Desktop/phone/SAF/re-pairing acceptance remains parent-owned."
+  ],
+  "currentProjectionDoesNotEstablishLiveOwnerQuiescence": true,
+  "fullP7Passed": false
+}

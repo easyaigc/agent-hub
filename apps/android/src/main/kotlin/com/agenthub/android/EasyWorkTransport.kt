@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -25,11 +27,28 @@ interface AgentFrameTransport {
     suspend fun receive(): ByteArray
     suspend fun acknowledge(bytes: ByteArray) {}
     fun close()
+    /** Implemented transports must prove independent work and socket cleanup have exited. */
+    suspend fun awaitClosedForMigration(): Unit=error("Transport has no migration close proof")
 }
 /** TLS exceptions belong to one paired private endpoint and one certificate. */
 object EasyWorkHttp {
     const val MAX_FRAME=32*1024*1024
     private val cleanup=java.util.concurrent.Executors.newSingleThreadExecutor { task->Thread(task,"easywork-network-cleanup").apply { isDaemon=true } }
+    private class ClientWork(val socketWork: NativeEasyWorkOkHttp55?=null) {
+        var context: CoroutineContext=EmptyCoroutineContext
+        var disposing=false
+        val disposed=CompletableDeferred<Unit>()
+    }
+    private val clients=java.util.WeakHashMap<OkHttpClient,ClientWork>()
+    private fun bind(client: OkHttpClient,context: CoroutineContext): ClientWork=synchronized(clients) {
+        val state=clients.getOrPut(client){ClientWork()}
+        check(!state.disposing){"EasyWork HTTP client is retired"}
+        val previous=state.context[NativeMigrationIoWork]
+        val incoming=context[NativeMigrationIoWork]
+        require(previous==null||incoming==null||previous===incoming){"HTTP owner changed"}
+        if(incoming!=null)state.context=incoming
+        state
+    }
     fun client(endpoint: String,pin: String? = null,capture: ((String)->Unit)? = null): OkHttpClient {
         val builder=OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
             .connectTimeout(8,TimeUnit.SECONDS).readTimeout(35,TimeUnit.SECONDS).callTimeout(40,TimeUnit.SECONDS)
@@ -50,7 +69,11 @@ object EasyWorkHttp {
             val context=SSLContext.getInstance("TLS");context.init(null,arrayOf(trust),SecureRandom())
             builder.sslSocketFactory(context.socketFactory,trust).hostnameVerifier { supplied,_ -> supplied.lowercase().trim('[',']')==host }
         }
-        return builder.build()
+        return isolatedClient(builder)
+    }
+    internal fun isolatedClient(builder: OkHttpClient.Builder): OkHttpClient {
+        val socketWork=NativeEasyWorkOkHttp55()
+        return socketWork.configure(builder).build().also {client->synchronized(clients){clients[client]=ClientWork(socketWork)}}
     }
     suspend fun request(client: OkHttpClient,url: String,body: JSONObject?=null,token: String?=null,limit: Int=MAX_FRAME,timeoutSeconds: Long=40,form: Map<String,String>?=null,method: String?=null,rawBody: ByteArray?=null,headers: Map<String,String> = emptyMap()): JSONObject {
         val builder=Request.Builder().url(url).header("Accept","application/json")
@@ -64,13 +87,15 @@ object EasyWorkHttp {
             require(method!="GET"||rawBody==null)
             builder.method(method,rawBody?.toRequestBody("application/json; charset=utf-8".toMediaType()))
         } else require(rawBody==null)
-        val call=client.newCall(builder.build());call.timeout().timeout(timeoutSeconds,TimeUnit.SECONDS)
+        val owner=currentCoroutineContext();owner.ensureActive();bind(client,owner)
+        val finished=NativeMigrationIoWork.callback(owner)
+        val call=try {client.newCall(builder.build()).also {it.timeout().timeout(timeoutSeconds,TimeUnit.SECONDS)}}catch(failure: Throwable){finished();throw failure}
         return suspendCancellableCoroutine { continuation ->
-            continuation.invokeOnCancellation { call.cancel() }
-            call.enqueue(object: Callback {
-                override fun onFailure(call: Call,e: IOException) { if(continuation.isActive) continuation.resumeWithException(HostReadError("正在重新连接电脑",e,true)) }
+            continuation.invokeOnCancellation { NativeMigrationIoWork.cleanup(cleanup,owner){call.cancel()} }
+            try {call.enqueue(object: Callback {
+                override fun onFailure(call: Call,e: IOException) { try {if(continuation.isActive) continuation.resumeWithException(HostReadError("正在重新连接电脑",e,true))}finally {finished()} }
                 override fun onResponse(call: Call,response: Response) {
-                    response.use { try {
+                    try {response.use { try {
                         if(!continuation.isActive) return
                         if(!response.isSuccessful&&headers.containsKey("DPoP")) {
                             val source=response.body.source();source.request(4096)
@@ -85,23 +110,37 @@ object EasyWorkHttp {
                             while(continuation.isActive) { val n=input.read(buffer);if(n<0)break;require(data.size()+n<=limit) { "电脑消息超过接收上限" };data.write(buffer,0,n) }
                         }
                         if(continuation.isActive) continuation.resume(if(data.size()==0) JSONObject() else JSONObject(data.toString("UTF-8")))
-                    } catch(e: Exception) { if(continuation.isActive) continuation.resumeWithException(e) } }
+                    } catch(e: Exception) { if(continuation.isActive) continuation.resumeWithException(e) } }}finally {finished()}
                 }
-            })
+            })}catch(failure: Throwable){finished();if(continuation.isActive)continuation.resumeWithException(failure)}
         }
     }
-    fun dispose(client: OkHttpClient) {
-        client.dispatcher.cancelAll()
-        // Closing a pooled TLS socket sends close_notify. Keep that network I/O
-        // off Android's main thread, including after a successful pinned read.
-        val release=Runnable { try { client.connectionPool.evictAll() } finally { client.dispatcher.executorService.shutdown() } }
-        if(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())cleanup.execute(release) else release.run()
+    fun dispose(client: OkHttpClient): Deferred<Unit> {
+        val state=synchronized(clients) {
+            clients.getOrPut(client){ClientWork()}.also {if(it.disposing)return it.disposed;it.disposing=true}
+        }
+        // Cancellation, pooled TLS close, dispatcher callbacks and socket/writer tasks all run
+        // off Main. The token and completion stay live until the actual executors drain.
+        NativeMigrationIoWork.cleanup(cleanup,state.context) {
+            try {
+                client.dispatcher.cancelAll()
+                client.connectionPool.evictAll()
+                client.dispatcher.executorService.shutdown()
+                while(!client.dispatcher.executorService.awaitTermination(1,TimeUnit.SECONDS)) { }
+                client.connectionPool.evictAll()
+                state.socketWork?.drain()
+                state.disposed.complete(Unit)
+            }catch(failure: Throwable){state.disposed.completeExceptionally(failure);throw failure}
+        }
+        return state.disposed
     }
+    internal fun bindOwner(client: OkHttpClient,context: CoroutineContext){bind(client,context)}
+
 }
 
 typealias EasyWorkRequestHeaders = suspend (String,String,ByteArray?)->Map<String,String>
 
-class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map<String,String> = emptyMap()): AgentFrameTransport {
+class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map<String,String> = emptyMap(),private val ownerContext: CoroutineContext=EmptyCoroutineContext): AgentFrameTransport {
     private val endpoint=CodexEndpoints.local(candidate.endpoint)
     private val client=EasyWorkHttp.client(endpoint,candidate.peerFingerprint ?: error("缺少配对证书"))
     private val input=Channel<ByteArray>(64)
@@ -110,6 +149,7 @@ class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map
     @Volatile private var closed=false
     private val socket: WebSocket
     init {
+        EasyWorkHttp.bindOwner(client,ownerContext)
         val url=URI(endpoint).let { URI("wss",null,it.host,it.port,"/channel","bindingId="+java.net.URLEncoder.encode(bindingId,"UTF-8"),null).toString() }
         socket=client.newWebSocket(Request.Builder().url(url).apply { headers.forEach { (key,value)->header(key,value) } }.build(),object: WebSocketListener() {
             override fun onOpen(webSocket: WebSocket,response: Response) { ready.complete(Unit) }
@@ -131,18 +171,26 @@ class LANFrameTransport(candidate: AgentCandidate,bindingId: String,headers: Map
         check(!closed&&socket.send(String(bytes,Charsets.UTF_8))) { "电脑通道已关闭" }
     }
     override suspend fun receive(): ByteArray = input.receive().also { buffered.addAndGet(-it.size.toLong()) }
-    override fun close() { closed=true;socket.cancel();input.cancel();EasyWorkHttp.dispose(client) }
+    override fun close() {
+        if(closed)return
+        closed=true;input.cancel()
+        NativeMigrationIoWork.cleanup(networkCancellation,ownerContext){socket.cancel()}
+        EasyWorkHttp.dispose(client)
+    }
+    override suspend fun awaitClosedForMigration(){check(closed);EasyWorkHttp.dispose(client).await()}
+    companion object {private val networkCancellation=java.util.concurrent.Executors.newCachedThreadPool {task->Thread(task,"easywork-websocket-cancel").apply {isDaemon=true}}}
 }
 
-class RelayFrameTransport(candidate: AgentCandidate,private val bindingId: String?,private val token: suspend ()->String,private val authorize: EasyWorkRequestHeaders?=null): AgentFrameTransport {
+class RelayFrameTransport(candidate: AgentCandidate,private val bindingId: String?,private val token: suspend ()->String,private val authorize: EasyWorkRequestHeaders?=null,private val ownerContext: CoroutineContext=EmptyCoroutineContext): AgentFrameTransport {
     private val base=NativeHostReads.baseAddress(candidate.endpoint).toString().trimEnd('/')
     private val client=EasyWorkHttp.client(base)
     private val pending=ArrayDeque<JSONObject>()
     private val acknowledgements=linkedMapOf<String,JSONObject>()
-    private val acknowledgementScope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
+    private val acknowledgementScope=CoroutineScope(SupervisorJob()+Dispatchers.IO+ownerContext)
     private var acknowledgementTask: Job?=null
     @Volatile private var acknowledgementFailure: Throwable?=null
     @Volatile private var closed=false
+    init {EasyWorkHttp.bindOwner(client,ownerContext)}
     suspend fun api(path: String,body: JSONObject?=null): JSONObject {
         require(path in setOf("/relay/envelopes","/relay/pending","/relay/acknowledgements","/pairing/claim","/bindings"))
         currentCoroutineContext().ensureActive()
@@ -221,12 +269,26 @@ class RelayFrameTransport(candidate: AgentCandidate,private val bindingId: Strin
         synchronized(pending) { pending.clear() }
         EasyWorkHttp.dispose(client)
     }
+    override suspend fun awaitClosedForMigration(){check(closed);acknowledgementScope.coroutineContext[Job]!!.join();EasyWorkHttp.dispose(client).await()}
 }
 
 class AgentTransportRegistry {
     private val factories=mutableMapOf<String,suspend (AgentCandidate,EasyWorkBinding,suspend ()->String,EasyWorkRequestHeaders?)->AgentFrameTransport>(
-        "lan-wss" to { c,b,_,a->LANFrameTransport(c,b.id,a?.invoke("GET",CodexEndpoints.local(c.endpoint)+"/channel",null).orEmpty()) },
-        "relay-http" to { c,b,t,a->RelayFrameTransport(c,b.id,t,a) })
+        "lan-wss" to { c,b,_,a->LANFrameTransport(c,b.id,a?.invoke("GET",CodexEndpoints.local(c.endpoint)+"/channel",null).orEmpty(),currentCoroutineContext().easyWorkOwnerContext()) },
+        "relay-http" to { c,b,t,a->RelayFrameTransport(c,b.id,t,a,currentCoroutineContext().easyWorkOwnerContext()) })
     fun register(id: String,factory: suspend (AgentCandidate,EasyWorkBinding,suspend ()->String,EasyWorkRequestHeaders?)->AgentFrameTransport) { factories[id]=factory }
-    suspend fun make(candidate: AgentCandidate,binding: EasyWorkBinding,token: suspend ()->String,authorize: EasyWorkRequestHeaders?=null)=factories[candidate.transportId]?.invoke(candidate,binding,token,authorize) ?: error("未注册此连接方式")
+    private class Owned(private val delegate: AgentFrameTransport,owners: NativeEasyWorkMigrationOwners): AgentFrameTransport by delegate {
+        private val owner=owners.register({delegate.close()},{delegate.awaitClosedForMigration()})
+        override fun close(){owner.retire()}
+        override suspend fun awaitClosedForMigration(){owner.await()}
+    }
+    suspend fun make(candidate: AgentCandidate,binding: EasyWorkBinding,token: suspend ()->String,authorize: EasyWorkRequestHeaders?=null) : AgentFrameTransport {
+        val transport=factories[candidate.transportId]?.invoke(candidate,binding,token,authorize) ?: error("未注册此连接方式")
+        val owners=currentCoroutineContext()[NativeEasyWorkMigrationOwners]?:return transport
+        return try {Owned(transport,owners)}catch(failure: Throwable){transport.close();throw failure}
+    }
 }
+
+/** Copy only narrow owners. Never inherit an unrelated scope Job or dispatcher. */
+internal fun CoroutineContext.easyWorkOwnerContext(): CoroutineContext =
+    (this[NativeMigrationIoWork]?:EmptyCoroutineContext)+(this[NativeEasyWorkMigrationOwners]?:EmptyCoroutineContext)

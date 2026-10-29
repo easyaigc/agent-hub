@@ -1,0 +1,26 @@
+{
+  "commandExit": 0,
+  "shortCommandOutput": "Unknown command: instrumentation\nBad activity command, or no activities match: instrumentation\nUse -h for help.\n",
+  "stderr": "",
+  "fullCommandExit": 0,
+  "fullBytes": 699491,
+  "recognizedHeaders": [
+    "ACTIVITY MANAGER SETTINGS (dumpsys activity settings) activity_manager_constants:",
+    "ACTIVITY MANAGER ALLOWED ASSOCIATION STATE (dumpsys activity allowed-associations)",
+    "ACTIVITY MANAGER PENDING INTENTS (dumpsys activity intents)",
+    "ACTIVITY MANAGER BROADCAST STATE (dumpsys activity broadcasts)",
+    "ACTIVITY MANAGER CONTENT PROVIDERS (dumpsys activity providers)",
+    "ACTIVITY MANAGER URI PERMISSIONS (dumpsys activity permissions)",
+    "ACTIVITY MANAGER SERVICES (dumpsys activity services)",
+    "ACTIVITY MANAGER RECENT TASKS (dumpsys activity recents)",
+    "ACTIVITY MANAGER LAST ANR (dumpsys activity lastanr)",
+    "ACTIVITY MANAGER STARTER (dumpsys activity starter)",
+    "ACTIVITY MANAGER CONTAINERS (dumpsys activity containers)",
+    "ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)",
+    "ACTIVITY MANAGER LMK KILLS (dumpsys activity lmk)",
+    "ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)",
+    "ACTIVITY MANAGER USERS (dumpsys activity users)",
+    "ACTIVITY MANAGER COMPONENT-ALIAS (dumpsys activity component-alias)",
+    "ACTIVITY MANAGER LOOPERS (dumpsys activity loopers)"
+  ]
+}

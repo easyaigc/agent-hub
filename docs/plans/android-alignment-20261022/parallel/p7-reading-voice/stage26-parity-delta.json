@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "26-sensitive-app-readiness",
+  "featureIds": ["F55", "F56"],
+  "implementation": "shared native test-only sensitive App AX readiness scoped to current case/session/controller/storage/original target",
+  "commonAssertions": [
+    "domain readiness does not prove native child readiness",
+    "one visible editable password and one enabled exact known action remain required",
+    "unknown owner or changed target stops input",
+    "no password/input value, AX dump or password screenshot is recorded"
+  ],
+  "budgets": {
+    "existingPageSharedMs": 30000,
+    "existingPasswordInputSharedMs": 30000,
+    "existingPasswordClearMs": 30000,
+    "unchangedDocsUiSharedMs": 15000,
+    "unchangedOptionalOpenMs": 5000
+  },
+  "productDesignImpact": "No product UI, copy or token change; source-declared password transformation is not a native pass",
+  "platformImpact": {
+    "android": "App-sensitive field/button readiness corrected;native count/state cause remains unverified",
+    "ios": "no source or acceptance change;A6 paused"
+  },
+  "parentEvidence": "Stage29 password precondition failed before any picker;old generic error has no candidate counts;Stage28 cancel pass retained;imported voice end-waiting parent pass separate",
+  "nativeExecutedHere": 0,
+  "acceptance": "parallel/p7-reading-voice/stage26-sensitive-app-readiness.md",
+  "centralManifests": "parent reconciles product/design/acceptance mobile-parity records with fresh candidate;historical failures preserved",
+  "scope": "one shared test and owned docs;isolated auxiliary compile only;no device/ADB/Host/model/iOS or production changes;A6/task/project management paused",
+  "auxiliarySdk": "android:compileDebugAndroidTestKotlin passed;36tasks33s;noAPK/native"
+}

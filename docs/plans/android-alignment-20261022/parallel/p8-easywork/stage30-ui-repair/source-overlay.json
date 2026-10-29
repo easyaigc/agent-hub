@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-stage30-long-ui-failure-20261029-1",
+  "frozenSource30": "801157e0dab59b1ae72f2d6c1a8a5749529522ad1de8cb0b536f66640fb0c472",
+  "frozenApp": "b0eb048ca470eef44468d57b506f92f7dd2bbb0fd777538b5e8a6b39904538ce",
+  "frozenRunner": "8a7c22d6dd577c163ef246581e57b97b48cd0a2ee5aa0b14947fd20558423c1b",
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": {
+      "baseSha256": "0b6ed97218e20f129f8ed35a38073945d93a9cf55497a3ee4528ea0409b9d4ac",
+      "proposedSha256": "55d90e3eeece095fd944f20f95565b6aa1cef1bf3d56fe1572175e40039fd86c",
+      "patch": "connection-page.patch",
+      "patchSha256": "746409384cc7a7adf54380c0f543eb18e48a52625ff18cc9029c1daabc46200f",
+      "parentWritten": false
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": {
+      "baseSha256": "4d2b4e91a401b4d246c179bb63ea010b2a427cddfe75a5735e4a626f255b4b3a",
+      "proposedSha256": "5dfe213fd0b75758cc6a8ff66a16a2befa37921229d2f5c27f81c007bd5e9e81",
+      "patch": "native-discovery-ui.patch",
+      "patchSha256": "8380eb07ddaee8668adc235b3a890d4cd036c083a7053138944fb31c9a9354ce",
+      "parentWritten": false,
+      "afterLeafFixtureCherryPick": {
+        "baseSha256": "f1d9d38e5ce8a301d12d6670162e1623fdaf5705808238de08590d93768f738c",
+        "proposedSha256": "5dfe213fd0b75758cc6a8ff66a16a2befa37921229d2f5c27f81c007bd5e9e81",
+        "patch": "native-marker-target.patch",
+        "patchSha256": "95b83114dfcee052dd66478a89e08f94fefaf8fd770fe4bfd9fdf543d3df37d8"
+      }
+    }
+  },
+  "sharedSessionMainAuthChanges": false,
+  "preparedMethodCountUnchanged": 5,
+  "childFixtureFileSha256": "3a13b68c2ce14879c5893b87f362a31e363c6bdecf63e4dbd9839b59b73654a2"
+}

@@ -1,0 +1,81 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchiveTest.kt
+@@ -55,11 +55,46 @@
+         for(mode in listOf("confirmed-missing","guard-only")) {
+             val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,mode);assertNull(source.read(seed.grantRef))
+             val raw=originals(seed);val before=MigrationActivationFixtures.tree(source)
++            if(mode=="confirmed-missing") {
++                val revoke=JSONObject(raw.getValue(seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)})).getJSONObject("revoke")
++                assertTrue(revoke.get("saved") is String);assertTrue(revoke.get("localReceipt") is JSONObject)
++            }
+             val destination=owned.storage.child(ui.activity,"ew-dest-"+UUID.randomUUID().toString().take(8));val receipt=stage(source,destination)
+             activate(destination,receipt);val current=destination.reopen(ui.activity);val archived=NativeMigrationEasyWorkArchives.readOnlyArchives(current).single()
+             raw.forEach {(name,value)->assertEquals(value,archived.readOnly(name));assertNull(current.read(name))};assertNull(current.read(seed.grantRef))
+             assertEquals(before,MigrationActivationFixtures.tree(source))
+         }
++    }
++    @Test fun actualConfirmedCleanupResumeKeepsReceiptObjectAndOriginalSavedStringExact() {
++        val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"confirmed-missing")
++        val name=seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)}
++        val before=requireNotNull(source.read(name));val revoke=JSONObject(before).getJSONObject("revoke")
++        assertTrue(revoke.get("saved") is String);assertTrue(revoke.get("localReceipt") is JSONObject)
++        val local=revoke.getJSONObject("localReceipt");assertEquals("original unknown extension",local.getString("futureOwner"))
++        assertEquals("original pending extension",local.getJSONObject("refreshOperation").getString("futurePending"))
++        assertEquals("original extension",local.getJSONObject("grant").getString("futureGrant"))
++        NativeMigrationEasyWorkFixtures.resumeConfirmedCleanup(seed)
++        val resumed=requireNotNull(source.read(name));val original=JSONObject(resumed).getJSONObject("revoke")
++        assertEquals(revoke.getString("saved"),original.getString("saved"));assertTrue(original.get("localReceipt") is JSONObject)
++        assertEquals(easyCanonical(local),easyCanonical(original.getJSONObject("localReceipt")))
++        assertEquals(revoke.getString("operationId"),original.getString("operationId"));assertEquals(revoke.getString("body"),original.getString("body"));assertEquals(revoke.getString("intentHash"),original.getString("intentHash"))
++        val receipt=stage(source);activate(owned.storage,receipt)
++        assertEquals(resumed,NativeMigrationEasyWorkArchives.readOnlyArchives(owned.storage.reopen(ui.activity)).single().readOnly(name))
++        assertEquals(resumed,source.read(name));assertNull(source.read(seed.grantRef))
++    }
++    @Test fun incorrectLocalReceiptTypesAndChangedOriginalIdentityRefuseWithoutReplacingCandidate() {
++        val source=source();val seed=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"confirmed-missing")
++        val name=seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)};val raw=requireNotNull(source.read(name))
++        val prior=stage(source);val candidate=owned.storage.child(ui.activity,"migration-candidates");val before=MigrationActivationFixtures.tree(candidate)
++        val original=JSONObject(raw).getJSONObject("revoke").getJSONObject("localReceipt")
++        val wrong= listOf<Any>(original.toString(),JSONObject.NULL,true,org.json.JSONArray(),JSONObject(original.toString()).put("origin","https://other.example.invalid"),
++            JSONObject(original.toString()).apply {getJSONObject("grant").getJSONObject("binding").put("bindingId","another-binding")})
++        for(value in wrong) {
++            source.write(name,JSONObject(raw).apply {getJSONObject("revoke").put("localReceipt",value)}.toString());val sourceBefore=MigrationActivationFixtures.tree(source)
++            assertTrue(runCatching {envelope(source)}.isFailure);assertEquals(sourceBefore,MigrationActivationFixtures.tree(source))
++            assertEquals(before,MigrationActivationFixtures.tree(candidate));assertEquals(prior,NativeMigrationCandidateStore(ui.activity,owned.storage).currentReceipt())
++        }
++        source.write(name,raw)
+     }
+     @Test fun destinationOriginalAuthorityAndUnknownRemainExactWhileSourceArchivesMergeAcrossReexport() {
+         val source=source();val imported=NativeMigrationEasyWorkFixtures.seed(ui.activity,source,"pending");val local=NativeMigrationEasyWorkFixtures.seed(ui.activity,owned.storage,"confirmed-missing")
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationEasyWorkFixtures.kt
+@@ -61,6 +61,16 @@
+         requireNotNull(NativeMigrationEasyWorkOriginals.validate(names.associateWith {requireNotNull(storage.read(it))}))
+         return Seed(storage,identity,ref,credentialName,if(mode=="guard-only")""else claim,coordinator,revoke,names)
+     }
++    /** Recreate only the documented post-confirmation/pre-delete cut, using exact writer output. */
++    fun resumeConfirmedCleanup(seed: Seed) {
++        val fenceName=seed.originalNames.single {it.startsWith(NativeMigrationEasyWorkOriginals.FENCE)}
++        val fence=JSONObject(requireNotNull(seed.storage.read(fenceName)))
++        val local=fence.getJSONObject("revoke").getJSONObject("localReceipt")
++        seed.storage.write(seed.grantRef,local.toString())
++        val verify: (JSONObject)->Unit={value->require(value.getJSONObject("grant").get("grantId")==local.getJSONObject("grant").get("grantId"))}
++        check(call(seed.coordinator,"revocation",seed.grantRef,verify)==null)
++        check(seed.storage.read(seed.grantRef)==null)
++    }
+     fun oidc(storage: NativeSessionStorage,identity: EasyWorkIdentity): Set<String> {
+         val issuer="https://acceptance.example";val subject="synthetic-original";val audience="easyai:remote-access";val client="synthetic-client"
+         val claims=JSONObject().put("iss",issuer).put("sub",subject).put("azp",client).put("aud",audience).put("exp",1L)
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkOriginals.kt
+@@ -104,7 +104,9 @@
+                 .put("grantId",g.getString("grantId")).put("body",body).put("tokenHash",hash(g.getString("accessToken")))))
+             require(revoke.get("intentHash")==expected)
+             records[ref]?.let {current->val parsed=json(current);saved(parsed,id,ref);sameGrant(parsed,original)}
+-            if(revoke.has("localReceipt")){val local=json(text(revoke,"localReceipt",NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES));saved(local,id,ref);sameGrant(local,original)}
++            // The producer keeps Revoke.saved as a string snapshot, but writes localReceipt
++            // directly from read(ref), as an object. Never coerce or rewrite either original.
++            if(revoke.has("localReceipt")){val local=revoke.get("localReceipt") as JSONObject;saved(local,id,ref);sameGrant(local,original)}
+         }
+     }
+     private fun originalGrant(ref: String,records: Map<String,String>): JSONObject?=records[ref]?.let(::json)?:records[fenceKey(ref)]?.let(::json)?.optJSONObject("revoke")?.getString("saved")?.let(::json)

@@ -1,0 +1,27 @@
+{
+  "featureIds": ["F07", "F09", "F43", "F44", "F46", "F47", "F55"],
+  "designIds": ["UI12", "UI21"],
+  "commonAssertions": [
+    "Full target/account isolates cache, drafts and immutable operations.",
+    "Imported authority remains encrypted audit only; new installation uses explicit pairing.",
+    "Unknown/ready imported operations never regain retry permission after pairing.",
+    "Cached history is not runtime/control evidence."
+  ],
+  "android": {
+    "implementation": "ordinary-client/cache/business projection prepared in exact combined source",
+    "auxiliary": "App/runner compile; actual compiled JVM projection/fragment and AJV/localization checks",
+    "native": "6 hot +2 cold prepared; not executed here",
+    "liveOwnerLifecycle": "required next source stage; independent scopes/callbacks not yet joined",
+    "realDev": "pending"
+  },
+  "ios": {
+    "codeChanged": false,
+    "migrationCredentialCopyGap": true,
+    "requiresEquivalentInactiveMarkerAndPairingState": true,
+    "nativeOrCrossFormatNewPass": false
+  },
+  "copyDelta": "easywork-business-native-copy-delta.json",
+  "centralTablesChangedHere": false,
+  "taskProjectManagement": "paused; not implemented",
+  "fullP7Passed": false
+}

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "phase": "P7-bounded-text-frame-candidate",
+  "features": ["F47", "F51", "F54", "F55", "F56", "F64"],
+  "pages": ["UI12", "UI21"],
+  "assertions": [
+    "N035/N036 original migration inputs, IDs, receipts, unknown outcomes and source ciphertext remain exact; no replay.",
+    "Exact original P9 v1/v2/authority above8MiB aggregate uses bounded text frames, frozen closed schemas and archive-only names.",
+    "Slot/current-receipt and payload chunk readers reject pending AtomicFile files without recovery.",
+    "Publication owns only encrypted per-attempt scratch and writes independent existing-format3 root text records; original candidate unchanged.",
+    "Old Android payload/candidate versions1/2/3 remain readable; selecting4 requires normal source creation or explicit candidate replacement.",
+    "Sparse graph views retain summaries and one record at a time; quotas reject without fetching payloads.",
+    "P8 pending/orphan credential references remain non-executable and are reserved for later archive inventory; P9 cold and actual owner lifecycle hooks unchanged."
+  ],
+  "dualEndImpact": {
+    "android": "Payload/candidate4 implemented as a separate source candidate; existing envelope2, Keystore root storage3 and product copy/UI unchanged.",
+    "ios": "No iOS source/catalog/schema changed; no Android/iOS format interoperability or iOS native pass inferred."
+  },
+  "designDelta": {
+    "pageStates": "Existing system migration entry/progress/confirmation states reused.",
+    "tokensAndCopy": "Unchanged; NativeL10n/productText remains in the independently frozen prior candidate.",
+    "systemDifference": "Android UTF-8 text frame archive4 requires its own API26/37/OEM and system picker acceptance."
+  },
+  "documentationDeltas": {
+    "docs/architecture.md": "Android P7 adds payload/candidate4 text descriptors/frames inside unchanged envelope2; lazy original refs, one-record parsing and encrypted transform scratch. Root storage3 and original owner publication unchanged; candidate, not cross-platform acceptance.",
+    "docs/feasibility.md": "62.4MB text framing passed in a48MiB JVM auxiliary probe with explicit JSON/ICU shims; App/runner and native4 methods compiled. Current native Keystore/actual system picker/DEV not run by this owner."
+  },
+  "validation": {
+    "combinedAppRunnerBuild": "passed",
+    "jvmAuxiliary": "passed,62,400,000-byte16-record payload under50,331,648-byte heap; native graph/Keystore not run",
+    "nativePreparedMethods": 4,
+    "nativeExecutedHere": false,
+    "fullP7Passed": false
+  },
+  "remaining": [
+    "Parent exact-source native/cold/low-heap/API26/API37/OEM and real DEV/system picker runs",
+    "EasyWork fence/orphan credential archive-only work",
+    "Cross-format interoperability and full P7"
+  ],
+  "centralRegistration": "Parent merges this delta against its current feature/design/acceptance and architecture/feasibility state, preserving all unaccepted items and original proof fingerprints. A6 and business tasks/projects paused."
+}

@@ -81,7 +81,11 @@ class VoiceInputController(private val context: Context,private val store: Voice
     private var discardRestartAllowed=false
     private var discardPresentationDetached=false
     val canFillRecognizedText get()=provider==Provider.SYSTEM && phase==Phase.FAILED && transcript.isNotBlank() && allowed?.invoke()==true
-    val canRerecordWithSystem get()=provider==Provider.DESKTOP && phase==Phase.FAILED && allowed?.invoke()==true
+    val canRecordAgain get()=phase==Phase.FAILED && !discarding && !discardFailed && !cancelling && allowed?.invoke()==true
+    val canEndWaiting get()=provider==Provider.DESKTOP && phase in listOf(Phase.FINISHING,Phase.FAILED) && !discarding && !cancelling
+    // A fresh phone capture cannot retire or abandon a provisional/in-flight original recording.
+    val canRerecordWithSystem get()=provider==Provider.DESKTOP && canRecordAgain && capture==null &&
+        (pending?.manifest!=null || pending==null && registration==null)
     internal var systemFactory: ()->NativeSystemVoice = { AndroidSystemVoice(context.applicationContext) }
     private var systemVoice: NativeSystemVoice?=null
     private var systemTimeout: Job?=null
@@ -238,8 +242,11 @@ class VoiceInputController(private val context: Context,private val store: Voice
         if(discarding || discardFailed)return
         if(provider==Provider.SYSTEM) {
             if(phase!=Phase.LISTENING)return
-            phase=Phase.FINISHING
-            try { systemVoice?.finish();systemDeadline(generation,15_000) } catch(e: Exception) { systemFailed(generation,e) }
+            val id=generation;phase=Phase.FINISHING
+            try {
+                systemVoice?.finish()
+                if(generation==id && phase==Phase.FINISHING)systemDeadline(id,15_000)
+            } catch(e: Exception) { systemFailed(id,e) }
             return
         }
         if(phase !in listOf(Phase.LISTENING,Phase.FAILED)) return
@@ -306,7 +313,8 @@ class VoiceInputController(private val context: Context,private val store: Voice
     }
     internal fun retireForMigration(){migrationIo.close();tasks.cancel()}
     /** Navigation/presentation cancellation preserves the original recovery semantics; UI discard is separate. */
-    fun cancel() {
+    fun cancel()=cancel(preserveOriginal=false)
+    private fun cancel(preserveOriginal: Boolean) {
         if(discarding) { discardRestartAllowed=false;discardPresentationDetached=true;return }
         if(!active || cancelling) return
         cancelling=true
@@ -314,13 +322,23 @@ class VoiceInputController(private val context: Context,private val store: Voice
         val recorder=capture;capture=null;val record=pending
         generation=UUID.randomUUID().toString();monitor?.cancel();work?.cancel();waiting?.cancel();waiting=null;permissionRequest=null;releaseFocus();phase=Phase.FINISHING
         work=tasks.launch {
-            try { runCatching { recorder?.stop() };if(record!=null && record.manifest==null) store.remove(record,unsealedOnly=true) }
+            try { runCatching { recorder?.stop() };if(!preserveOriginal && record!=null && record.manifest==null) store.remove(record,unsealedOnly=true) }
             catch(_: OutOfMemoryError) { cancelling=false;error="手机内存不足，原录音已保留，请稍后重试。";phase=Phase.FAILED;return@launch }
             catch(e: Exception) { cancelling=false;error=e.message;phase=Phase.FAILED;return@launch }
             clear()
         }
     }
     fun rerecord()=rerecordWith(provider)
+    /** End waiting only detaches this presentation. It never marks a submitted original discarded. */
+    fun endWaiting() { if(canEndWaiting)cancel(preserveOriginal=true) }
+    /** Explicit new microphone capture, not saved-file ASR. Leave the old sealed original offerable. */
+    fun recordAgainWithSystem() {
+        if(!canRerecordWithSystem)return
+        val original=draft ?: return;val guard=allowed ?: return;val change=apply ?: return
+        generation=UUID.randomUUID().toString();work?.cancel();monitor?.cancel()
+        clear()
+        start(original,guard,change,restore=false,provider=Provider.SYSTEM)
+    }
     fun rerecordWith(nextProvider: Provider) {
         if(phase!=Phase.FAILED) return
         val guard=allowed ?: return

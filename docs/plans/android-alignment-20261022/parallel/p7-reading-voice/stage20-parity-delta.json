@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "20-exact-home-ax-readiness",
+  "featureIds": ["F55", "F56"],
+  "productionChanges": false,
+  "commonAssertions": [
+    "first absent AX root is readiness uncertainty, never a grant failure/pass",
+    "only refreshed exact resolved Home can pass; a different owner fails immediately",
+    "same P9/no-Main/permission/UUID boundaries hold before and after the bounded wait",
+    "preflight diagnostics do not reserve/replay an operation or expose page content"
+  ],
+  "bothPlatforms": {
+    "android": "test-only Home preflight readiness and independent no-Main audit; six pure decision fixtures",
+    "ios": "unchanged; A6 paused"
+  },
+  "design": {
+    "productCopyAndTokens": "unchanged",
+    "systemUi": "read-only owner/window scalar observation; no system action"
+  },
+  "parentFailure": "source920d8476/Home guard 0.034seconds before original receipt/launch; later Home observation cannot prove original root-null cause",
+  "newNativeMethod": "auditExactHomeReadinessWithoutOpeningMainOrChangingPermissions",
+  "nativeExecutedHere": false,
+  "centralOwner": "parent coordinator",
+  "acceptance": "parallel/p7-reading-voice/stage20-tree-home-readiness.md",
+  "scope": "Only native helper/test/docs; Stage19 voice WIP excluded; no production, device, ADB, Host, Main, grant or model action"
+}

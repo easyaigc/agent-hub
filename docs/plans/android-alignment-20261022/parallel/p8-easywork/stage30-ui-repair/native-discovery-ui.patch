@@ -1,0 +1,42 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt
+@@ -208,6 +208,21 @@
+         ui.onNodeWithTag("easywork-pair-error").assertDoesNotExist()
+         ui.onNodeWithTag("easywork-connecting").assertDoesNotExist()
+         ui.onNodeWithTag("easywork-name").performScrollTo().assertTextEquals(client.name)
++        ui.onNodeWithTag("easywork-pair-lan").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
++        touch("cancel-client-form",false);touch("edit-client-${client.id}")
++        ui.onNodeWithTag("easywork-migration-pairing-required").performScrollTo().assertIsDisplayed()
++        val targetFields=listOf("agent" to ("Agent 客户端" to scope.agentId),"authority" to ("账号发行方" to scope.accountAuthority!!),"subject" to ("账号" to scope.accountSubject!!),"host" to ("电脑" to scope.hostId),"workspace" to ("工作区" to scope.workspaceId),"runtime" to ("运行时" to scope.runtimeId))
++        assertEquals(scope,marker.target)
++        for((key,field) in targetFields) {
++            ui.onNodeWithTag("easywork-target-label-$key").performScrollTo().assertTextEquals(field.first)
++            val value=ui.onNodeWithTag("easywork-target-$key")
++            fullText(value,field.second)
++            value.assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick)).assert(SemanticsMatcher.keyNotDefined(SemanticsActions.SetText))
++        }
++        ui.onNodeWithTag("easywork-qr-description").performScrollTo().assertIsDisplayed().assertIsEnabled()
++        ui.onNodeWithTag("easywork-pair-lan").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
++        ui.onNodeWithTag("easywork-pair-error").assertDoesNotExist();ui.onNodeWithTag("easywork-connecting").assertDoesNotExist()
++        File(folder,"imported-readonly-target-fields.json").writeText(JSONObject().put("fieldCount",targetFields.size).put("fields",JSONObject(targetFields.associate {it.first to easyHash(it.second.second.toByteArray())})).put("lane","actual imported edit UI; complete text/layout and readonly semantics; empty explicit-pair action disabled").toString())
+         ui.runOnIdle {
+             assertEquals(originalSelection,session.selectedClient.id);assertEquals(originalTarget,session.targetKey)
+             assertEquals(originalDraft,session.text);assertFalse(session.connectionBusy);noRuntimeSession()
+@@ -246,10 +261,15 @@
+         assertTrue("Entire original text must fit the actual visible clip: $failures",failures.isEmpty())
+     }
+     @Test fun longSavedRowsAndTargetFieldsRemainUsableInShortViewport() {
+-        val longName="Long saved computer 中文 %@ "+"name ".repeat(16)
+-        ui.runOnIdle {session.renameEasyWork(client,longName);ui.activity.setContent {val density=LocalDensity.current
++        val enteredName="Long saved computer 中文 %@ "+"name ".repeat(16)
++        val longName=enteredName.trim() // Saved names normalize boundary whitespace; internal content stays exact.
++        ui.runOnIdle {session.renameEasyWork(client,enteredName);assertEquals(longName,live().name);ui.activity.setContent {val density=LocalDensity.current
+             CompositionLocalProvider(LocalDensity provides Density(density.density,1.6f)) {ProductTextProvider(session.language) {MaterialTheme {Surface(Modifier.width(320.dp).height(380.dp)) {ConnectionPage(session,client) {error("No pairing submission belongs to this UI case")}}}}}
+         }}
++        runBlocking {store.awaitQueuedWrites()}
++        val saved=JSONObject(requireNotNull(store.read("metadata"))).getJSONArray("clients").objects().single()
++        assertEquals(longName,saved.getString("name"))
++        File(folder,"saved-name-normalization.json").writeText(JSONObject().put("enteredNameHash",easyHash(enteredName.toByteArray())).put("savedNameHash",easyHash(saved.getString("name").toByteArray())).put("normalization","boundary whitespace trim only").put("enteredUtf16Length",enteredName.length).put("savedUtf16Length",longName.length).toString())
+         fullText(rowName(longName),longName)
+         for((key,value) in listOf("agent" to client.scope!!.agentId,"authority" to client.scope!!.accountAuthority!!,"subject" to client.scope!!.accountSubject!!,"host" to client.scope!!.hostId,"workspace" to client.scope!!.workspaceId,"runtime" to client.scope!!.runtimeId))fullText(ui.onNodeWithTag("easywork-target-$key"),value)
+         preference("relay-only","automatic")

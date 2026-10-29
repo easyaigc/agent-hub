@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "stage": "18-system-voice-original-finish-generation",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "commonAssertions": [
+    "A synchronous final callback cannot create a deadline for an idle or replacement capture",
+    "A late finish exception cannot replace the original terminal receipt",
+    "Original partial text requires an explicit current-draft fill and applies once"
+  ],
+  "bothPlatforms": {
+    "android": "Only system-provider finish branch pins the original generation; two injected native regressions prepared",
+    "ios": "Unchanged; A6/XCTest remains paused"
+  },
+  "design": {
+    "surfaces": ["composer voice", "question voice"],
+    "tokensAndCopy": "unchanged",
+    "systemUi": "unchanged"
+  },
+  "nativeExecutedHere": false,
+  "newNativeMethods": 2,
+  "remaining": [
+    "parent preserves migration controller additions when applying narrow hunk",
+    "native injected callback regressions",
+    "actual acoustic/permission/process-death and real DEV",
+    "saved original-file phone transcription remains unsupported"
+  ],
+  "centralOwner": "parent coordinator",
+  "acceptance": "parallel/p7-reading-voice/stage18-system-voice-finish.md",
+  "scope": "No device/ADB/install/Host/model/microphone or parent/shared-production writes; A6/task/project and sealed unknown original untouched"
+}

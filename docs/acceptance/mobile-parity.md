@@ -2,6 +2,8 @@
 
 ## F74 Host 模型代理：证据范围
 
+图像生成／编辑、参数偏好、实际输出和最终图片 SSE 的辅助与隔离真实结果单列于[图像专项](host-images-proxy-20261029.md)。两端移动页面不受影响，原生与 Windows 不新增通过。
+
 默认关闭、独立鉴权、字节透传、Chat 转换、未知结果不重放及监听写入者互斥已有十三组辅助回归。本机 Host 显式启用、Demo 后台容器 TLS／Tailscale 与 ai/chat 真实模型调用本次通过，绑定产品包摘要，见[专项验收](host-responses-proxy-20261029.md)。移动页面未改，iOS／Android 原生和 Windows 本轮未验收，不提高移动端验证状态。
 
 2026-10-29 Android PAR4：语音Activity/生命周期/偏好迁移与不同PID冷读、授权核心18/栅栏12、通知恢复15/UI4等按三个冻结指纹登记77个具名原生辅助方法（含失败批次单列2项）及26份默认11字段保护；设置溢出、旧夹具超时和原授权竞争失败均保留。iOS A6、任务/项目业务暂停；完整DEV/背景送达/全迁移未关闭，见[本轮证据](../plans/android-alignment-20261022/parallel/fourth-stage-native.json)。

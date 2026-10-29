@@ -18,6 +18,7 @@ import {
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   withWindowsProcessCreation,
+  desktopImageModels,
 } from '../packages/codex-adapter/dist/index.js';
 
 const flags = new Map();
@@ -25,11 +26,13 @@ for (let index = 2; index < process.argv.length; index += 2) {
   const key = process.argv[index],
     value = process.argv[index + 1];
   if (
-    !['--state-dir', '--models', '--addresses', '--bind', '--port'].includes(key) ||
+    !['--state-dir', '--models', '--image-models', '--addresses', '--bind', '--port'].includes(
+      key,
+    ) ||
     !value ||
     flags.has(key)
   )
-    throw Error('Use --state-dir, --models, --addresses, --bind and --port');
+    throw Error('Use --state-dir, --models, --image-models, --addresses, --bind and --port');
   flags.set(key, value);
 }
 const directory = resolve(
@@ -37,17 +40,24 @@ const directory = resolve(
     join(process.env.HOST_AGENT_STATE_DIR ?? '.local/desktop-runtime', 'responses-proxy'),
 );
 const models = JSON.parse(flags.get('--models') ?? '[]');
+const imageModels = JSON.parse(flags.get('--image-models') ?? '[]');
 const addresses = JSON.parse(flags.get('--addresses') ?? '["127.0.0.1"]');
 const bind = flags.get('--bind') ?? '127.0.0.1';
 const port = Number(flags.get('--port') ?? 8797);
 if (
   !Array.isArray(models) ||
-  !models.length ||
   models.length > 64 ||
   models.some((id) => typeof id !== 'string' || !/^[A-Za-z0-9_.:-]{1,128}$/.test(id)) ||
   new Set(models).size !== models.length
 )
   throw Error('Provide an explicit, unique model allowlist');
+if (
+  !Array.isArray(imageModels) ||
+  imageModels.some((id) => !desktopImageModels.includes(id)) ||
+  new Set(imageModels).size !== imageModels.length ||
+  (!models.length && !imageModels.length)
+)
+  throw Error('Provide text models or the verified image model gpt-image-2');
 if (
   !Array.isArray(addresses) ||
   !addresses.length ||
@@ -149,6 +159,7 @@ const environment = {
   HOST_RESPONSES_PROXY_TLS_CERT: cert,
   HOST_RESPONSES_PROXY_TLS_KEY: key,
   HOST_RESPONSES_PROXY_MODELS: JSON.stringify(models),
+  HOST_RESPONSES_PROXY_IMAGE_MODELS: JSON.stringify(imageModels),
 };
 const configuration = {
   enabled: false,

@@ -8,6 +8,10 @@ import { join, resolve, isAbsolute } from 'node:path';
 import { once } from 'node:events';
 import {
   DesktopResponses,
+  DesktopImages,
+  desktopImageModels,
+  prepareDesktopImage,
+  validateDesktopImageResponse,
   ResponsesProxyError,
   ResponsesEventReader,
   ResponseChatStream,
@@ -18,7 +22,9 @@ import {
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   type DesktopResponsesTransport,
+  type DesktopImagesTransport,
 } from '@codex-manage/codex-adapter';
+import { parseImageRequest } from './image-proxy.js';
 
 type Row = Record<string, unknown>;
 const row = (value: unknown): Row =>
@@ -45,6 +51,7 @@ export interface HostResponsesProxyConfig {
   maxBytes: number;
   maxConcurrency: number;
   timeoutMs: number;
+  images?: { models: string[]; maxBytes: number; maxConcurrency: number; timeoutMs: number };
 }
 
 /** Disabled means no files, credentials, subprocesses, certificate reads or sockets. */
@@ -74,12 +81,28 @@ export function readHostResponsesProxyConfig(
   }
   if (
     !Array.isArray(models) ||
-    models.length < 1 ||
     models.length > 64 ||
     models.some((id) => typeof id !== 'string' || !/^[A-Za-z0-9_.:-]{1,128}$/.test(id)) ||
     new Set(models).size !== models.length
   )
     throw error(500, 'invalid_proxy_configuration', '显式启用前必须配置不重复的模型允许清单');
+  let imageModels: unknown;
+  try {
+    imageModels = JSON.parse(env.HOST_RESPONSES_PROXY_IMAGE_MODELS ?? '[]');
+  } catch {
+    throw error(500, 'invalid_proxy_configuration', '图像模型清单必须为 JSON 数组');
+  }
+  if (
+    !Array.isArray(imageModels) ||
+    imageModels.some((id) => !desktopImageModels.includes(id)) ||
+    new Set(imageModels).size !== imageModels.length ||
+    (!models.length && !imageModels.length)
+  )
+    throw error(
+      500,
+      'invalid_proxy_configuration',
+      '需要至少一类模型允许清单，图像模型只能使用已验证的名称',
+    );
   const cert = env.HOST_RESPONSES_PROXY_TLS_CERT,
     key = env.HOST_RESPONSES_PROXY_TLS_KEY;
   if (!!cert !== !!key || (cert && (!isAbsolute(cert) || !isAbsolute(key!))))
@@ -100,6 +123,21 @@ export function readHostResponsesProxyConfig(
     maxBytes: integer('HOST_RESPONSES_PROXY_MAX_BYTES', 8 * 1024 * 1024, 1024, 32 * 1024 * 1024),
     maxConcurrency: integer('HOST_RESPONSES_PROXY_CONCURRENCY', 4, 1, 16),
     timeoutMs: integer('HOST_RESPONSES_PROXY_TIMEOUT_MS', 180000, 1000, 900000),
+    ...(imageModels.length
+      ? {
+          images: {
+            models: imageModels as string[],
+            maxBytes: integer(
+              'HOST_RESPONSES_PROXY_IMAGE_MAX_BYTES',
+              32 * 1024 * 1024,
+              1024,
+              64 * 1024 * 1024,
+            ),
+            maxConcurrency: integer('HOST_RESPONSES_PROXY_IMAGE_CONCURRENCY', 1, 1, 4),
+            timeoutMs: integer('HOST_RESPONSES_PROXY_IMAGE_TIMEOUT_MS', 600000, 1000, 900000),
+          },
+        }
+      : {}),
   };
 }
 
@@ -119,6 +157,8 @@ interface Receipt {
   responseSha256?: string;
   errorCode?: string;
   finishedAt?: string;
+  imagePreferences?: string[];
+  imageOutput?: { size: unknown; output_format: unknown; quality?: unknown };
 }
 
 class ProxyReceipts {
@@ -158,6 +198,15 @@ class ProxyReceipts {
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
       throw error(500, 'invalid_proxy_receipt', '代理回执无法读取');
+    }
+  }
+  has(id: string) {
+    try {
+      assertPrivateFile(this.path(id));
+      return true;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT') return false;
+      throw error(500, 'invalid_proxy_receipt', '代理回执无法核对');
     }
   }
   async create(value: Receipt) {
@@ -220,6 +269,7 @@ async function readBody(req: IncomingMessage, limit: number) {
 export async function createHostResponsesProxy(
   config: HostResponsesProxyConfig,
   transport: DesktopResponsesTransport,
+  imageTransport?: DesktopImagesTransport,
 ) {
   await mkdir(config.directory, { recursive: true, mode: 0o700 });
   const info = await lstat(config.directory);
@@ -299,6 +349,7 @@ export async function createHostResponsesProxy(
   const jobs = new Set<Promise<void>>();
   let slots = 0,
     closed = false;
+  let imageSlots = 0;
   const handler = async (req: IncomingMessage, res: ServerResponse) => {
     await ready();
     const supplied = Buffer.from(req.headers.authorization ?? '');
@@ -317,11 +368,16 @@ export async function createHostResponsesProxy(
         enabled: true,
         activeRequests: slots,
         models: config.models,
+        imageModels: config.images?.models ?? [],
       });
     if (req.method === 'GET' && req.url === '/v1/models')
       return json(res, 200, {
         object: 'list',
-        data: config.models.map((id) => ({ id, object: 'model', owned_by: 'codex-desktop' })),
+        data: [...new Set([...config.models, ...(config.images?.models ?? [])])].map((id) => ({
+          id,
+          object: 'model',
+          owned_by: 'codex-desktop',
+        })),
       });
     if (req.method === 'GET' && req.url?.startsWith('/v1/requests/')) {
       const id = req.url.slice('/v1/requests/'.length);
@@ -334,16 +390,24 @@ export async function createHostResponsesProxy(
             error: { code: 'request_not_found', message: '未找到原操作；不代表可以重发未知输入' },
           });
     }
-    if (req.method !== 'POST' || !['/v1/responses', '/v1/chat/completions'].includes(req.url ?? ''))
+    const imageOperation =
+      req.url === '/v1/images/generations'
+        ? 'generations'
+        : req.url === '/v1/images/edits'
+          ? 'edits'
+          : undefined;
+    if (
+      req.method !== 'POST' ||
+      (!['/v1/responses', '/v1/chat/completions'].includes(req.url ?? '') &&
+        !(imageOperation && config.images && imageTransport))
+    )
       return json(res, 404, {
         error: {
           code: 'unsupported_proxy_route',
-          message: '仅开放 Responses、Chat Completions 和具名只读查询',
+          message: '仅开放已配置的 Responses、Chat、Images 和具名只读查询',
         },
       });
-    if (slots >= config.maxConcurrency)
-      return json(res, 429, { error: { code: 'proxy_busy', message: '代理并发已满' } });
-    if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] ?? ''))
+    if (!imageOperation && !/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] ?? ''))
       return json(res, 415, { error: { code: 'json_required', message: '需要 application/json' } });
     const id = req.headers['idempotency-key'] ?? req.headers['x-client-request-id'] ?? randomUUID();
     if (
@@ -356,29 +420,54 @@ export async function createHostResponsesProxy(
       return json(res, 400, {
         error: { code: 'invalid_request_id', message: '操作 ID 无效或不一致' },
       });
+    if (receipts.has(id)) {
+      req.resume();
+      return json(res, 409, {
+        error: {
+          code: 'request_already_accepted',
+          message: '原操作已存在，请查询原回执；代理未重放',
+        },
+      });
+    }
+    if (
+      slots >= config.maxConcurrency ||
+      (imageOperation && imageSlots >= config.images!.maxConcurrency)
+    )
+      return json(res, 429, { error: { code: 'proxy_busy', message: '代理并发已满' } });
     slots++;
+    if (imageOperation) imageSlots++;
     const controller = new AbortController();
     controllers.add(controller);
-    const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+    const timeout = setTimeout(
+      () => controller.abort(),
+      imageOperation ? config.images!.timeoutMs : config.timeoutMs,
+    );
     const onClose = () => {
       if (!res.writableFinished) controller.abort();
     };
     res.once('close', onClose);
     res.setHeader('x-request-id', id);
     let receipt: Receipt | undefined;
+    let imageHeartbeat: ReturnType<typeof setInterval> | undefined;
+    const imageResponseHash = createHash('sha256');
     try {
-      const body = await readBody(req, config.maxBytes);
+      const body = await readBody(req, imageOperation ? config.images!.maxBytes : config.maxBytes);
       let source: unknown;
-      try {
-        source = JSON.parse(body.toString('utf8'));
-      } catch {
-        throw error(400, 'invalid_json', '请求 JSON 无效');
-      }
+      if (imageOperation)
+        source = await parseImageRequest(body, req.headers['content-type'] ?? '', imageOperation);
+      else
+        try {
+          source = JSON.parse(body.toString('utf8'));
+        } catch {
+          throw error(400, 'invalid_json', '请求 JSON 无效');
+        }
       const chat = req.url === '/v1/chat/completions';
-      const prepared = prepareDesktopResponse(
-        chat ? chatCompletionToResponse(source) : source,
-        config.models,
-      );
+      const imagePrepared = imageOperation
+        ? prepareDesktopImage(source, imageOperation, config.images!.models)
+        : undefined;
+      const prepared =
+        imagePrepared ??
+        prepareDesktopResponse(chat ? chatCompletionToResponse(source) : source, config.models);
       const intent: Receipt = {
         id,
         endpoint: req.url!,
@@ -390,16 +479,46 @@ export async function createHostResponsesProxy(
         upstreamSubmissions: 0,
         upstreamBytes: 0,
         responseBytes: 0,
+        ...(imagePrepared ? { imagePreferences: imagePrepared.preferenceFields } : {}),
       };
       await receipts.create(intent);
       receipt = intent;
       if (controller.signal.aborted)
         throw error(503, 'request_detached', '当前等待已结束，原操作未重放');
-      const upstream = await transport.send(prepared.body, controller.signal, async () => {
+      const beforeSubmit = async () => {
         receipt!.phase = 'submitting';
         receipt!.upstreamSubmissions = 1;
         await receipts.save(receipt!);
-      });
+        if (imagePrepared?.stream) {
+          res.writeHead(200, {
+            'content-type': 'text/event-stream; charset=utf-8',
+            'cache-control': 'no-store',
+            'x-accel-buffering': 'no',
+            'x-agent-hub-image-parameters': 'prompt-preferences',
+            'x-agent-hub-image-stream': 'final-only',
+          });
+          res.flushHeaders();
+          // Comments are transport keepalives, not generated image progress.
+          imageHeartbeat = setInterval(() => {
+            if (!res.destroyed) {
+              const bytes = Buffer.from(': keepalive\n\n');
+              imageResponseHash.update(bytes);
+              receipt!.responseBytes += bytes.length;
+              res.write(bytes);
+            }
+          }, 15000);
+        }
+      };
+      const upstream = imageOperation
+        ? await imageTransport![imageOperation === 'generations' ? 'generate' : 'edit'](
+            prepared.body,
+            controller.signal,
+            beforeSubmit,
+          )
+        : await transport.send(prepared.body, controller.signal, beforeSubmit);
+      // Persistence may yield before the async iterator attaches. Retain the
+      // stream's errored state without allowing an early error to crash Node.
+      upstream.on('error', () => {});
       receipt.upstreamStatus = upstream.statusCode ?? 502;
       if (upstream.statusCode !== 200) {
         upstream.destroy();
@@ -417,6 +536,74 @@ export async function createHostResponsesProxy(
       }
       receipt.phase = 'streaming';
       await receipts.save(receipt);
+      if (imagePrepared && imageOperation) {
+        const chunks: Buffer[] = [],
+          hash = createHash('sha256');
+        try {
+          for await (const part of upstream) {
+            const bytes = part as Buffer;
+            receipt.upstreamBytes += bytes.length;
+            if (receipt.upstreamBytes > 64 * 1024 * 1024)
+              throw error(502, 'response_too_large', '上游图像响应过大');
+            hash.update(bytes);
+            chunks.push(bytes);
+          }
+          const raw = Buffer.concat(chunks);
+          let value: unknown;
+          try {
+            value = JSON.parse(raw.toString('utf8'));
+          } catch {
+            throw error(502, 'invalid_image_response', '上游未返回完整图像 JSON');
+          }
+          const response = validateDesktopImageResponse(value);
+          receipt.imageOutput = {
+            size: response.size,
+            output_format: response.output_format,
+            quality: response.quality,
+          };
+          const final = imagePrepared.stream
+            ? {
+                type:
+                  imageOperation === 'generations'
+                    ? 'image_generation.completed'
+                    : 'image_edit.completed',
+                created_at: response.created,
+                ...row((response.data as unknown[])[0]),
+                size: response.size,
+                output_format: response.output_format,
+                quality: response.quality,
+                background: response.background,
+                usage: response.usage,
+              }
+            : response;
+          const payload = Buffer.from(
+            imagePrepared.stream
+              ? `event: ${final.type}\ndata: ${JSON.stringify(final)}\n\n`
+              : JSON.stringify(final),
+          );
+          if (imageHeartbeat) {
+            clearInterval(imageHeartbeat);
+            imageHeartbeat = undefined;
+          }
+          receipt.upstreamSha256 = hash.digest('hex');
+          receipt.responseSha256 = imageResponseHash.copy().update(payload).digest('hex');
+          receipt.responseBytes += payload.length;
+          receipt.phase = 'completed';
+          await receipts.save(receipt);
+          if (!res.headersSent)
+            res.writeHead(200, {
+              'content-type': 'application/json; charset=utf-8',
+              'cache-control': 'no-store',
+              'x-content-type-options': 'nosniff',
+              'x-agent-hub-image-parameters': 'prompt-preferences',
+              'x-agent-hub-image-preference-fields': imagePrepared.preferenceFields.join(','),
+            });
+          res.end(payload);
+        } finally {
+          upstream.destroy();
+        }
+        return;
+      }
       const upstreamHash = createHash('sha256'),
         responseHash = createHash('sha256');
       let completed: Row | undefined,
@@ -506,6 +693,8 @@ export async function createHostResponsesProxy(
         if (!['failed', 'completed', 'outcome-unknown'].includes(receipt.phase))
           receipt.phase = receipt.upstreamSubmissions ? 'outcome-unknown' : 'failed';
         receipt.errorCode = failure.code;
+        // A client can query immediately after the error response.
+        await receipts.save(receipt);
       }
       req.resume();
       if (!res.headersSent && !res.destroyed)
@@ -513,12 +702,28 @@ export async function createHostResponsesProxy(
           error: { code: failure.code, message: failure.message },
           request_id: id,
         });
-      else if (!res.destroyed) res.destroy();
+      else if (!res.destroyed && imageOperation) {
+        if (imageHeartbeat) {
+          clearInterval(imageHeartbeat);
+          imageHeartbeat = undefined;
+        }
+        const bytes = Buffer.from(
+          `event: error\ndata: ${JSON.stringify({ type: 'error', code: failure.code, message: failure.message })}\n\n`,
+        );
+        imageResponseHash.update(bytes);
+        if (receipt) {
+          receipt.responseBytes += bytes.length;
+          receipt.responseSha256 = imageResponseHash.digest('hex');
+        }
+        res.end(bytes);
+      } else if (!res.destroyed) res.destroy();
     } finally {
       clearTimeout(timeout);
+      if (imageHeartbeat) clearInterval(imageHeartbeat);
       res.off('close', onClose);
       controllers.delete(controller);
       slots--;
+      if (imageOperation) imageSlots--;
       if (receipt) {
         receipt.finishedAt = new Date().toISOString();
         await receipts.save(receipt);
@@ -557,6 +762,7 @@ export async function createHostResponsesProxy(
       closed = true;
       for (const controller of controllers) controller.abort();
       transport.close();
+      imageTransport?.close();
       const stopped = new Promise<void>((done) => server.close(() => done()));
       server.closeAllConnections();
       await Promise.allSettled([...jobs, stopped]);
@@ -577,7 +783,13 @@ export async function startHostResponsesProxy(env: NodeJS.ProcessEnv = process.e
     env.CODEX_HOME ?? join(homedir(), '.codex'),
     env.CODEX_EXECUTABLE ?? 'codex',
   );
-  const proxy = await createHostResponsesProxy(config, transport);
+  const imageTransport = config.images
+    ? new DesktopImages(
+        env.CODEX_HOME ?? join(homedir(), '.codex'),
+        env.CODEX_EXECUTABLE ?? 'codex',
+      )
+    : undefined;
+  const proxy = await createHostResponsesProxy(config, transport, imageTransport);
   try {
     await new Promise<void>((done, reject) => {
       proxy.server.once('error', reject);
@@ -603,6 +815,7 @@ export async function startHostResponsesProxy(env: NodeJS.ProcessEnv = process.e
       port: config.port,
       tls: !!config.tls,
       models: config.models,
+      imageModels: config.images?.models ?? [],
     }),
   );
   return proxy;

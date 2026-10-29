@@ -4,13 +4,17 @@
 
 独立端口仅在人类明确要求后启用，全部操作要求独立 Bearer Key，拒绝浏览器 Origin。不复用手机 Host Key，不开放上游 URL、方法、认证头或任意本机方法透传。
 
-| 方法 | 路径                 | 语义                                           |
-| ---- | -------------------- | ---------------------------------------------- |
-| GET  | /healthz             | 监听状态，不证明上游模型可用                   |
-| GET  | /v1/models           | OpenAI 格式的配置允许清单，不保证授权          |
-| POST | /v1/responses        | 固定 Codex 推理；原始 SSE 或完成 Response 对象 |
-| POST | /v1/chat/completions | Chat 协议转换，不执行本机工具                  |
-| GET  | /v1/requests/:id     | 原操作阶段、摘要、字节数和提交次数，不重放正文 |
+| 方法 | 路径                   | 语义                                           |
+| ---- | ---------------------- | ---------------------------------------------- |
+| GET  | /healthz               | 监听状态，不证明上游模型可用                   |
+| GET  | /v1/models             | OpenAI 格式的配置允许清单，不保证授权          |
+| POST | /v1/responses          | 固定 Codex 推理；原始 SSE 或完成 Response 对象 |
+| POST | /v1/chat/completions   | Chat 协议转换，不执行本机工具                  |
+| POST | /v1/images/generations | 单独启用的图像生成，OpenAI JSON／最终图片 SSE  |
+| POST | /v1/images/edits       | JSON 引用或 SDK multipart 编辑，OpenAI 返回    |
+| GET  | /v1/requests/:id       | 原操作阶段、摘要、字节数和提交次数，不重放正文 |
+
+图像路由需要显式图像允许清单，当前仅 `gpt-image-2`、`n=1`、Base64 和最终图片流。尺寸、质量、背景、编码与保真等转为提示词偏好，响应只报告实际结果；详见[图像协议说明](host-images-proxy.md)。
 
 `Idempotency-Key` 或 `X-Client-Request-Id` 为 8–128 字符的字母、数字、下划线、连字符；两者同时存在必须相等。省略时生成新 ID，通过 `X-Request-Id` 返回；调用方须禁止网络自动重试。已接受 ID 重复返回 409，成功、失败和未知均不再次提交。
 

@@ -2,6 +2,8 @@
 
 ## F74：Host 模型代理的界面影响
 
+图像扩展继续仅面向外部后台 API，不新增两端页面或模型选择器。OpenAI Images 参数在 Adapter 中变成输出偏好，实际尺寸／编码通过标准响应字段返回；未验证的图像模型和 2K 不作为产品 UI 能力展示。
+
 仅增加外部后台使用的 Host API，不新增 iOS／Android 页面、入口、设计 token 或文案，UI02／UI12 连接和设置行为保持。安装、发现、连接及升级不得自动开启代理。开关属于电脑管理员显式配置，密钥不进入移动客户端；两端不显示未经实现的代理／模型授权状态。Demo ai/chat 为独立网页，不计手机原生通过。
 
 2026-10-29 F56/F64：Android系统听写明确标为“System dictation”，服务可能使用网络；共享iOS词条保持。语音默认值区分读取/保存/失败，失败由polite live region呈现；窄宽度按available dp/fontScale<340将活动区与48dp停止/关闭分行。当前问题页与retained Activity有界通过，设置文字溢出待修；显式丢弃等待原ID/指纹的本地终态，真实存储adapter尚待接入。详见[PAR4证据](../plans/android-alignment-20261022/parallel/fourth-stage-native.json)。

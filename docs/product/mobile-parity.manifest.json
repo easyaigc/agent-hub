@@ -3071,7 +3071,11 @@
       "scripts/configure-responses-proxy.mjs",
       "scripts/desktop-service.mjs",
       "scripts/windows-desktop-service.mjs",
-      "scripts/responses-proxy.test.mjs"
+      "scripts/responses-proxy.test.mjs",
+      "apps/host-agent/src/image-proxy.ts",
+      "packages/codex-adapter/src/desktop-images.ts",
+      "scripts/images-proxy.test.mjs",
+      "scripts/images-proxy-live.mjs"
     ]
   },
   "groups": [
@@ -6953,12 +6957,12 @@
     {
       "id": "F74",
       "group": "连接与 Agent",
-      "assertion": "Host 模型代理默认关闭，只有用户明确要求后才独立开启；固定上游、独立 Key／TLS 与模型允许清单隔离原桌面和手机控制，Responses SSE 保留字节，Chat 兼容转换明确，未知结果和重复 ID 不重放，不在 Host 执行工具；两端移动 UI 不新增入口或自动开启行为",
+      "assertion": "Host 模型代理默认关闭，图像生成／编辑使用单独允许清单与资源预算；固定上游、独立 Key／TLS 隔离桌面和手机，Responses 保留原字节、Chat 显式转换、Images 沿用 OpenAI JSON／multipart 与最终图片 SSE；尺寸、质量和编码等适配为提示词偏好并返回实际文件元数据，未支持的模型和参数明确拒绝，未知及重复操作不重放；两端移动 UI 不新增入口或自动开启",
       "sourceAliases": ["Inference"],
       "androidStages": ["A0"],
       "scenarios": ["S01", "S11", "S18"],
       "ui": ["UI02", "UI12"],
-      "revision": 1,
+      "revision": 2,
       "implementation": {
         "ios": "platform-not-applicable",
         "android": "platform-not-applicable"
@@ -6969,16 +6973,18 @@
       },
       "sharedImplementation": {
         "status": "implemented",
-        "scope": "Host 专用外部推理 API；移动页面和连接无新增实现范围",
+        "scope": "Host 专用外部推理 API，含单独启用的 Images 格式和参数偏好适配；移动页面和连接无新增实现范围",
         "sources": [
           "apps/host-agent/src/responses-proxy.ts",
           "apps/host-agent/src/runtime-entry.ts",
           "apps/host-agent/src/index.ts",
           "packages/codex-adapter/src/desktop-responses.ts",
-          "packages/codex-adapter/src/index.ts"
+          "packages/codex-adapter/src/index.ts",
+          "apps/host-agent/src/image-proxy.ts",
+          "packages/codex-adapter/src/desktop-images.ts"
         ]
       },
-      "sourceNotes": "Host 专用代理已实现；十三组辅助回归通过。本机显式启用、Demo Tailscale 原始 Responses 字节一致、后台容器 TLS 校验与 ai/chat 真实模型调用本次通过，见专项验收记录；手机原生与 Windows 未新增通过，A6 暂停保持。"
+      "sourceNotes": "Host 外部 Images 扩展已实现，当前仅 gpt-image-2、n=1、Base64、最终图片流。十二组图像边界与十三组 Responses 回归通过；当前本机隔离 Host 的真实生成、multipart 编辑与最终图片 SSE 本次通过，旧 unknown 及全局检查阻塞保留，见 docs/acceptance/host-images-proxy-20261029.md。iOS／Android UI 不适用，Windows 不新增通过。"
     }
   ],
   "changes": [
@@ -16368,6 +16374,24 @@
         "scripts/desktop-service.mjs": "94d01b3de6b383748f9251cfdc85331ca229b2803bc6f6db36a140488f859159",
         "scripts/windows-desktop-service.mjs": "25e667d5dc65333522db0c622ac045f2690eb91b56645f6be38218462145fefd",
         "scripts/responses-proxy.test.mjs": "88163b0f7a6cf9a3c214af49329bc655da42b99384705e31028af740c75b94a8"
+      }
+    },
+    {
+      "id": "host-images-proxy-20261029",
+      "baseCommit": "0b6a60b6b8116ccc52c7271e28dff0fed49df23b",
+      "features": ["F74"],
+      "summary": "OpenAI 格式的图像生成与 JSON／SDK multipart 编辑，参数偏好适配、实际图片元数据、最终图片 SSE、独立超时／并发和同操作不重放已实现；辅助与真实验收单列，当前不承诺原生 2K、完整公共 API 等价或移动／Windows 通过。",
+      "files": {
+        "apps/host-agent/src/responses-proxy.ts": "6c5105e51e18658026c5d835083d37a381318dc905f71306d8d9d30d9939186e",
+        "apps/host-agent/src/image-proxy.ts": "403d244c9cff761c93aaa27cc81ef0df2f41f6e793bcf9d39220eb6c8cf2b364",
+        "packages/codex-adapter/src/desktop-responses.ts": "a410771c460392cb3746ffe76f0d39a196081420b604f75b055cbb17e14435c2",
+        "packages/codex-adapter/src/desktop-images.ts": "1361660bd4baee9c3c529d036d938809129d709d83b77ed0d7fe6f1fc6d53b83",
+        "packages/codex-adapter/src/index.ts": "4aa12c0968e461f643d5c8bd59b54dcbc3781af0f20da6ea43813a17bfc2ccbc",
+        "scripts/configure-responses-proxy.mjs": "a246a8386ba4c3ef14f4fbd30cde299720f788fc2c4056691a4a45534b9542cd",
+        "scripts/desktop-service.mjs": "d30985d7d71e7afe3650b7e2b678825f2c7200b7ba446ed6976fd9b76c7b3056",
+        "scripts/windows-desktop-service.mjs": "f2eb788a3420ba2f0ea07e39a022298df3f3e9433232a65ec07c54027a20a6a0",
+        "scripts/images-proxy.test.mjs": "483c47221db1500017f08abe5529249cff45fcbb64f3d4a59a12717c34675c81",
+        "scripts/images-proxy-live.mjs": "02a0dffbbf0d7d0c5fd3c979ca6132be6c9bd03c97bb67c71090d191ff20b3a9"
       }
     }
   ]

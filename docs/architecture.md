@@ -2,6 +2,8 @@
 
 ## F74：显式开启的 Host 模型代理
 
+2026-10-29 图像扩展：显式图像模型清单增加 OpenAI 格式的生成与 JSON／multipart 编辑，Codex Adapter 负责固定图像上游和参数偏好转换；Host 负责独立图像预算、实际文件头校验、最终图片 SSE 及元数据回执。当前仅 gpt-image-2，尺寸／编码偏好不冒充硬参数，未知不重放。移动 UI 不新增入口，逐项范围见[图像接口](host-images-proxy.md)与[专项验收](acceptance/host-images-proxy-20261029.md)。
+
 独立监听仅由 `HOST_RESPONSES_PROXY_ENABLED=1` 开启，默认不初始化。官方只读授权、固定 Codex 上游和版本差异在 `packages/codex-adapter/src/desktop-responses.ts`；Host 负责独立 Key、TLS、模型允许清单、资源上限和持久回执。Relay 不持有授权或转发此请求，原桌面对话、手机连接和执行 owner 保持原边界。
 
 `/v1/responses` 流式路径保留上游原始 SSE 字节，非流式返回 `response.completed` 的原 Response 对象。`/v1/chat/completions` 显式转换消息、function 调用标识、文本／推理增量及用量，不宣称其为原始 SSE。Chat 兼容入口支持单选择、文本／用户图片和 function 工具定义；不在 Host 执行工具。温度、采样及输出长度等 Codex 不支持的 Chat 控制参数不向上游发送，不宣称参数已生效。

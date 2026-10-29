@@ -50,6 +50,15 @@ export interface CodexAdapter {
 }
 export { DesktopTranscription } from './desktop-transcription.js';
 export {
+  DesktopImages,
+  desktopImageModels,
+  inspectImage,
+  prepareDesktopImage,
+  validateDesktopImageResponse,
+  type DesktopImagesTransport,
+  type DesktopImageOperation,
+} from './desktop-images.js';
+export {
   DesktopResponses,
   ResponsesProxyError,
   ResponsesEventReader,

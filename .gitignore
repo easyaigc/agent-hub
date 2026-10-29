@@ -60,3 +60,6 @@ apps/ios/FilePreviewKit/.swiftpm/
 # Retained sanitized Host repair evidence.
 !/docs/acceptance/computer-use-approvals-20261026.md
 !/docs/acceptance/thread-model-settings-20261026.md
+
+# Sanitized Host Images API acceptance summary.
+!/docs/acceptance/host-images-proxy-20261029.md

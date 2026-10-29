@@ -473,6 +473,14 @@ export class DesktopResponses implements DesktopResponsesTransport {
     return { token, accountId: account.chatgpt_account_id };
   }
   async send(body: Buffer, signal: AbortSignal, beforeSubmit?: () => Promise<void>) {
+    return this.sendNamed('responses', body, signal, beforeSubmit);
+  }
+  protected async sendNamed(
+    operation: 'responses' | 'images/generations' | 'images/edits',
+    body: Buffer,
+    signal: AbortSignal,
+    beforeSubmit?: () => Promise<void>,
+  ) {
     if (this.closed || signal.aborted)
       throw new ResponsesProxyError(503, 'proxy_closed', '代理已关闭，请查询原操作');
     const auth = await this.authorization();
@@ -500,12 +508,12 @@ export class DesktopResponses implements DesktopResponsesTransport {
             'User-Agent': 'AgentHub Host Responses Proxy',
             'Content-Type': 'application/json',
             'Content-Length': body.length,
-            Accept: 'text/event-stream',
+            Accept: operation === 'responses' ? 'text/event-stream' : 'application/json',
             'Accept-Encoding': 'identity',
           },
         };
         const req = this.httpRequest(
-          'https://chatgpt.com/backend-api/codex/responses',
+          'https://chatgpt.com/backend-api/codex/' + operation,
           options,
           (res) => {
             res.once('close', cleanup);

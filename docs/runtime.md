@@ -2,6 +2,8 @@
 
 ## 可选模型代理（F74，默认关闭）
 
+图像生成／编辑使用单独的 `HOST_RESPONSES_PROXY_IMAGE_MODELS` 允许清单；默认为空，升级不自动开启。配置准备器可传 `--image-models '["gpt-image-2"]'`，也可同时保留文本 `--models`。图像默认 600 秒超时、并发 1、32 MiB 请求预算；变量、OpenAI SDK 格式、偏好适配和返回限制见[图像代理指南](host-images-proxy.md)。
+
 代理不创建或恢复桌面对话，不执行工具。安装、升级、手机接入均不得自动开启；仅在人类明确要求后设置 `HOST_RESPONSES_PROXY_ENABLED=1`。未设置或为 `0` 时不读代理凭据、不运行认证辅助进程、不创建代理文件、不增加监听。
 
 先构建，再准备配置；下面命令只生成私有配置、独立 API Key 和专用 TLS 身份，生成的开关仍为 `0`：
@@ -14,18 +16,18 @@ pnpm configure:responses-proxy -- --state-dir '<private-proxy-directory>' \
 
 读取生成的 `configuration.json` 的 `environment`；只有用户要求启用后，才将开关改成 `1`，连同其余变量传给现有 `scripts/desktop-service.mjs restart` 或 Windows 服务管理器。服务脚本保存显式变量，后续升级保持选择；传 `0` 并重启关闭代理，保留原密钥和回执。不要把 Codex Token 当代理 Key，不在命令行或报告打印密钥。
 
-| 变量                                    | 默认／约束                                |
-| --------------------------------------- | ----------------------------------------- |
-| HOST_RESPONSES_PROXY_ENABLED            | 未设置／0 关闭；仅 1 开启                 |
-| HOST_RESPONSES_PROXY_BIND               | 127.0.0.1；显式选择 LAN/VPN IP 或 0.0.0.0 |
-| HOST_RESPONSES_PROXY_PORT               | 8797，独立于原 Host 端口                  |
-| HOST_RESPONSES_PROXY_MODELS             | 必填 JSON 模型允许清单；目录不等于授权    |
-| HOST_RESPONSES_PROXY_STATE_DIR          | Host 状态目录中的 responses-proxy         |
-| HOST_RESPONSES_PROXY_TOKEN_FILE         | 代理状态目录中的 access-token，独立 Key   |
-| HOST_RESPONSES_PROXY_TLS_CERT / TLS_KEY | 非回环监听必须同时配置；私钥私有保存      |
-| HOST_RESPONSES_PROXY_MAX_BYTES          | 8 MiB，最多配置 32 MiB                    |
-| HOST_RESPONSES_PROXY_CONCURRENCY        | 4，范围 1–16                              |
-| HOST_RESPONSES_PROXY_TIMEOUT_MS         | 180000，范围 1000–900000                  |
+| 变量                                    | 默认／约束                                 |
+| --------------------------------------- | ------------------------------------------ |
+| HOST_RESPONSES_PROXY_ENABLED            | 未设置／0 关闭；仅 1 开启                  |
+| HOST_RESPONSES_PROXY_BIND               | 127.0.0.1；显式选择 LAN/VPN IP 或 0.0.0.0  |
+| HOST_RESPONSES_PROXY_PORT               | 8797，独立于原 Host 端口                   |
+| HOST_RESPONSES_PROXY_MODELS             | 文本 JSON 模型清单；与图像清单至少一类非空 |
+| HOST_RESPONSES_PROXY_STATE_DIR          | Host 状态目录中的 responses-proxy          |
+| HOST_RESPONSES_PROXY_TOKEN_FILE         | 代理状态目录中的 access-token，独立 Key    |
+| HOST_RESPONSES_PROXY_TLS_CERT / TLS_KEY | 非回环监听必须同时配置；私钥私有保存       |
+| HOST_RESPONSES_PROXY_MAX_BYTES          | 8 MiB，最多配置 32 MiB                     |
+| HOST_RESPONSES_PROXY_CONCURRENCY        | 4，范围 1–16                               |
+| HOST_RESPONSES_PROXY_TIMEOUT_MS         | 180000，范围 1000–900000                   |
 
 调用端使用 `https://<host-IP>:8797/v1` 和独立 Key，并信任专用证书，保持完整证书和主机名校验。证书过期或地址变化由管理员显式维护，不自动旋转身份。Node 后台可只读挂载证书并用 `NODE_EXTRA_CA_CERTS` 增加单个信任来源，不能关闭 TLS 校验。浏览器经自己的后台调用，不直接持有代理 Key。
 

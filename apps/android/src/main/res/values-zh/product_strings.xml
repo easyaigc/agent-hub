@@ -1643,6 +1643,9 @@
     <string name="product_712a84cf019a0935a06f6d4a" formatted="false">"轻触停止录音"</string>
     <string name="product_2765e37db493fd0d5442acdd" formatted="false">"丢弃录音"</string>
     <string name="product_82958cb303fae9c500eae4ca" formatted="false">"无法丢弃录音，请重试。"</string>
+    <string name="product_2e5d2fb7f6f7fb957a87b6ca" formatted="false">"输入消息，长按语音输入"</string>
+    <string name="product_dcdddf96014730fca16b253b" formatted="false">"长按语音输入"</string>
+    <string name="product_850ceeaec29fb2d16e1c5c3a" formatted="false">"录音未完成"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"原有连接、草稿和聊天已保留。请重试读取，恢复前不会保存空数据。"</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"开始一段新对话"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"从侧栏选择项目或继续对话。"</string>

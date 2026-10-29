@@ -187,6 +187,12 @@ final class VoiceInputController: ObservableObject {
     return args.contains("-ui-testing") && args.contains("-voice-input-fixture")
   }
   var isActive: Bool { phase != .idle }
+  var canRetryTranscription: Bool {
+    phase == .failed && (recording != nil || fileURL != nil || localRecognition != nil || simulatesTranscriptionFailure)
+  }
+  var failureTitle: String {
+    canRetryTranscription ? L10n.tr("转写失败") : L10n.tr("录音未完成")
+  }
   var canUseLocalTranscription: Bool {
     phase == .failed && !usesLocalRecognition && (recording != nil || simulatesTranscriptionFailure)
   }
@@ -426,7 +432,7 @@ final class VoiceInputController: ObservableObject {
     return true
   }
   func suspend() {
-    guard phase != .idle else { return }
+    guard phase != .idle, phase != .failed else { return }
     guard phase != .requesting else { cancel(); return }
     generation = UUID()
     setupTask?.cancel(); finishTask?.cancel(); finishTask = nil
@@ -468,7 +474,15 @@ final class VoiceInputController: ObservableObject {
   }
   private func failSetup(id: UUID, message: String) {
     guard generation == id else { return }
-    reset(discard: true); error = message
+    // Keep the target and callbacks so a preparation/capture failure remains
+    // visible and can be re-recorded instead of returning to an empty composer.
+    stopCapture()
+    localObservation = nil
+    localRecognition?.cancel(); localRecognition = nil
+    if let fileURL { try? FileManager.default.removeItem(at: fileURL) }
+    fileURL = nil; recording = nil
+    levels = Array(repeating: 0, count: 9)
+    phase = .failed; error = message
   }
   private func stopCapture() {
     meterTask?.cancel(); meterTask = nil
@@ -589,52 +603,64 @@ struct VoiceInputControls: View {
           id: identifier("cancel-dictation", question: "question-cancel-dictation-")) {
           voice.discard()
         }.background(Color.primary.opacity(0.06), in: Circle())
-        Group {
-          if voice.phase == .finishing {
-            VoiceTranscriptionActivity(status: voice.status)
-              .accessibilityElement(children: .ignore)
-          } else if voice.phase == .listening {
-            Button {
-              Task { _ = await voice.finish() }
-            } label: {
-              HStack(spacing: 10) {
-                VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity).accessibilityHidden(true)
-                Text(L10n.tr("轻触停止录音")).font(.caption).foregroundStyle(Palette.secondary)
-                  .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true).layoutPriority(1)
-                VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity)
-                  .scaleEffect(x: -1, y: 1).accessibilityHidden(true)
-              }.frame(minHeight: 44).contentShape(Rectangle())
-            }.buttonStyle(.plain)
-          } else {
-            VoiceWaveform(levels: voice.levels)
-              .accessibilityElement(children: .ignore)
-          }
-        }.frame(maxWidth: .infinity, minHeight: 44)
-          .accessibilityLabel(voice.phase == .listening ? L10n.tr("轻触停止录音") : voice.status)
-          .accessibilityHint(voice.phase == .listening ? voice.status : "")
-          .accessibilityIdentifier(identifier("dictation-waveform", question: "question-dictation-"))
-          .accessibilityValue(voice.diagnosticInfo)
+        if voice.phase == .failed {
+          Label(voice.failureTitle, systemImage: "exclamationmark.circle")
+            .font(.subheadline.weight(.medium)).foregroundStyle(.orange)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .accessibilityIdentifier(identifier("voice-failure-title", question: "question-voice-failure-"))
+        } else {
+          Group {
+            if voice.phase == .finishing {
+              VoiceTranscriptionActivity(status: voice.status)
+                .accessibilityElement(children: .ignore)
+            } else if voice.phase == .listening {
+              Button {
+                Task { _ = await voice.finish() }
+              } label: {
+                HStack(spacing: 10) {
+                  VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity).accessibilityHidden(true)
+                  Text(L10n.tr("轻触停止录音")).font(.caption).foregroundStyle(Palette.secondary)
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                  VoiceWaveform(levels: voice.levels).frame(maxWidth: .infinity)
+                    .scaleEffect(x: -1, y: 1).accessibilityHidden(true)
+                }.frame(minHeight: 44).contentShape(Rectangle())
+              }.buttonStyle(.plain)
+            } else {
+              VoiceWaveform(levels: voice.levels)
+                .accessibilityElement(children: .ignore)
+            }
+          }.frame(maxWidth: .infinity, minHeight: 44)
+            .accessibilityLabel(voice.phase == .listening ? L10n.tr("轻触停止录音") : voice.status)
+            .accessibilityHint(voice.phase == .listening ? voice.status : "")
+            .accessibilityIdentifier(identifier("dictation-waveform", question: "question-dictation-"))
+            .accessibilityValue(voice.diagnosticInfo)
+        }
         Button {
-          Task { _ = await voice.finish() }
+          if voice.phase == .failed && !voice.canRetryTranscription { voice.recordAgain(text: text) }
+          else { Task { _ = await voice.finish() } }
         } label: {
           Group {
             if voice.phase == .finishing {
               ProgressView().tint(.primary)
+            } else if voice.phase == .failed {
+              Label(voice.canRetryTranscription ? L10n.tr("重试转写") : L10n.tr("重新录音"), systemImage: "arrow.clockwise")
+                .font(.subheadline).padding(.horizontal, 12)
             } else {
-              Image(systemName: voice.phase == .failed ? "arrow.clockwise" : "stop.fill")
-                .font(.system(size: 17))
+              Image(systemName: "stop.fill").font(.system(size: 17))
             }
           }.frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain)
-          .accessibilityLabel(voice.phase == .finishing ? voice.status : voice.phase == .failed ? L10n.tr("重试转写") : L10n.tr("结束录音并转写"))
+          .accessibilityLabel(voice.phase == .finishing ? voice.status : voice.phase == .failed
+            ? (voice.canRetryTranscription ? L10n.tr("重试转写") : L10n.tr("重新录音")) : L10n.tr("结束录音并转写"))
           .accessibilityIdentifier(identifier("stop-dictation", question: "question-voice-"))
-          .background(Color.primary.opacity(0.06), in: Circle())
+          .background(Color.primary.opacity(0.06), in: Capsule())
           .disabled(voice.phase != .listening && voice.phase != .failed)
       }
       if voice.phase != .finishing {
         Text(voice.status).font(.caption).foregroundStyle(Palette.secondary).padding(.horizontal, 14)
+          .accessibilityIdentifier(identifier("voice-status", question: "question-voice-status-"))
       }
-      if voice.phase == .failed {
+      if voice.phase == .failed && voice.canRetryTranscription {
         HStack(spacing: 16) {
           if voice.canUseLocalTranscription {
             Button(L10n.tr("使用本地转写")) { Task { _ = await voice.transcribeLocally() } }
@@ -645,17 +671,6 @@ struct VoiceInputControls: View {
         }.frame(minHeight: 44).padding(.horizontal, 14)
       }
     }
-  }
-}
-
-struct VoiceTranscriptionFailureActions: View {
-  @ObservedObject var voice: VoiceInputController
-
-  var body: some View {
-    Button(L10n.tr("重试转写")) { Task { _ = await voice.finish() } }
-      .accessibilityIdentifier("voice-retry-transcription")
-    Button(L10n.tr("使用本地转写")) { Task { _ = await voice.transcribeLocally() } }
-      .accessibilityIdentifier("voice-local-transcription")
   }
 }
 

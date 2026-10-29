@@ -1434,18 +1434,10 @@ struct RootView: View {
       .sheet(item: $store.sheet, onDismiss: {
         if let jump = store.chatSearchJump, jump.targetKey == store.targetKey, jump.token != readySearchJump { readySearchJump = jump.token }
       }) { route in sheets(route).presentationDragIndicator(.visible) }
-    .alert(
-      voice.canUseLocalTranscription && store.error == voice.error ? L10n.tr("转写失败") : store.errorTitle,
-      isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })
-    ) {
-      if voice.canUseLocalTranscription && store.error == voice.error {
-        VoiceTranscriptionFailureActions(voice: voice)
-      } else {
-        Button(L10n.tr("好"), role: .cancel) { store.error = nil }
-      }
+    .alert(store.errorTitle, isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
+      Button(L10n.tr("好"), role: .cancel) { store.error = nil }
     } message: {
-      Text(voice.canUseLocalTranscription && store.error == voice.error
-        ? L10n.tr("录音已保留，可重试转写，或使用手机本地转写。") : store.error ?? "")
+      Text(store.error ?? "")
     }
     .task {
       await store.recoverLocalAttachmentImports()
@@ -1501,7 +1493,6 @@ struct RootView: View {
     .onChange(of: store.drawerOpen) { _, open in if open { voice.cancel() } }
     .onChange(of: sidebarClientKey) { _, _ in sidebarRefreshRequest = nil }
     .onChange(of: store.sheet) { _, sheet in if sheet != nil { voice.cancel() } }
-    .onChange(of: voice.error) { _, error in if let error { store.error = error } }
     .onChange(of: voice.isActive && scenePhase == .active, initial: true) { _, keepAwake in
       // Keep the live transcript visible throughout setup, capture and finalization.
       UIApplication.shared.isIdleTimerDisabled = keepAwake
@@ -3700,17 +3691,6 @@ private struct QuestionAnswerField: View {
         if recordingQuestionId == question.id { recordingQuestionId = nil }
         UIApplication.shared.isIdleTimerDisabled = composerVoice.isActive && scenePhase == .active
       }
-      .alert(voice.canUseLocalTranscription ? L10n.tr("转写失败") : L10n.tr("无法完成听写"), isPresented: Binding(get: { voice.error != nil },
-        set: { if !$0 { voice.error = nil } })) {
-        if voice.canUseLocalTranscription {
-          VoiceTranscriptionFailureActions(voice: voice)
-        } else {
-          Button(L10n.tr("好")) { voice.error = nil }
-        }
-      } message: {
-        Text(voice.canUseLocalTranscription
-          ? L10n.tr("录音已保留，可重试转写，或使用手机本地转写。") : voice.error ?? "")
-      }
   }
 }
 
@@ -4191,12 +4171,18 @@ private struct ComposerView: View {
             .padding(.horizontal, 6).padding(.vertical, 8)
             .frame(maxWidth: .infinity, minHeight: presentation.showsGhost ? 62 : 44)
             .accessibilityIdentifier("composer-input").accessibilityLabel(L10n.tr("发送给当前客户端的消息"))
+            .accessibilityHint(L10n.tr("长按语音输入"))
+            .accessibilityAction(named: L10n.tr("语音输入")) { startVoiceInput() }
             .onKeyPress(.tab, phases: .down) { press in
               guard press.modifiers.isEmpty, composerFocused, presentation.showsGhost,
                 let action = presentation.action else { return .ignored }
               applySuggestion(action, mode: .fill); return .handled
             }
-        }.padding(.horizontal, presentation.showsGhost ? 8 : 0)
+        }.contentShape(Rectangle())
+          .highPriorityGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+            startVoiceInput()
+          })
+          .padding(.horizontal, presentation.showsGhost ? 8 : 0)
         if !presentation.showsGhost { voiceInputButton; composerActionButton }
       }
       if presentation.showsGhost {
@@ -4221,7 +4207,7 @@ private struct ComposerView: View {
   }
 
   @ViewBuilder private func composerTextField(showsGhost: Bool) -> some View {
-    let prompt = showsGhost ? "" : L10n.tr("询问 \(store.clientTypeName)")
+    let prompt = showsGhost ? "" : L10n.tr("输入消息，长按语音输入")
     let text = Binding(get: { store.draft.text }, set: { store.setText($0) })
     if #available(iOS 18.0, *) {
       SuggestionSelectableTextField(prompt: prompt, text: text, focused: $composerFocused, insertionRequest: insertionRequest)
@@ -4252,15 +4238,17 @@ private struct ComposerView: View {
   }
 
   private var voiceInputButton: some View {
-      IconButton(symbol: "mic", label: L10n.tr("语音输入"), id: "voice-input") {
-        composerFocused = false
-        guard let provider = store.voiceProvider(draftId: store.targetKey) else { return }
-        voice.start(target: store.targetKey, text: store.draft.text, provider: provider) { target, text in
-          guard store.targetKey == target, store.draft.text == voice.originalText else { return false }
-          store.setText(text, target: target)
-          return true
-        }
-      }
+    IconButton(symbol: "mic", label: L10n.tr("语音输入"), id: "voice-input", action: startVoiceInput)
+  }
+
+  private func startVoiceInput() {
+    guard !voice.isActive, let provider = store.voiceProvider(draftId: store.targetKey) else { return }
+    composerFocused = false
+    voice.start(target: store.targetKey, text: store.draft.text, provider: provider) { target, text in
+      guard store.targetKey == target, store.draft.text == voice.originalText else { return false }
+      store.setText(text, target: target)
+      return true
+    }
   }
 
   private func composerSettings(_ density: ToolbarDensity) -> some View {

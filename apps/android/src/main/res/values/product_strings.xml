@@ -1643,6 +1643,9 @@
     <string name="product_712a84cf019a0935a06f6d4a" formatted="false">"Tap to stop recording"</string>
     <string name="product_2765e37db493fd0d5442acdd" formatted="false">"Discard recording"</string>
     <string name="product_82958cb303fae9c500eae4ca" formatted="false">"Unable to discard the recording. Please try again."</string>
+    <string name="product_2e5d2fb7f6f7fb957a87b6ca" formatted="false">"Message or hold to speak"</string>
+    <string name="product_dcdddf96014730fca16b253b" formatted="false">"Touch and hold to start voice input"</string>
+    <string name="product_850ceeaec29fb2d16e1c5c3a" formatted="false">"Recording incomplete"</string>
     <string name="product_c976e6d4de966413acdfd317" formatted="false">"Your connections, drafts, and conversations are preserved. Retry reading. Empty data will not be saved before recovery."</string>
     <string name="product_bab6ab18451fc036b332b4c9" formatted="false">"Start a new conversation"</string>
     <string name="product_bede0bb6493366b4247cc58d" formatted="false">"Choose a project or continue a conversation from the sidebar."</string>

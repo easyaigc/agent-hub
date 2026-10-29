@@ -5790,7 +5790,7 @@ final class CodexManageUITests: XCTestCase {
     if app.buttons["composer-dismiss-keyboard"].exists { app.buttons["composer-dismiss-keyboard"].tap() }
     XCTAssertFalse(app.descendants(matching: .any)["outbox-pending"].firstMatch.exists)
     let content = composer.value as? String ?? ""
-    if content.isEmpty || content == "询问 Codex" {
+    if content.isEmpty || content == "输入消息，长按语音输入" {
       XCTAssertFalse(app.segmentedControls["reply-mode"].exists)
     }
     shot("physical-reply-wait-cleared")
@@ -6514,6 +6514,54 @@ final class CodexManageUITests: XCTestCase {
     let ax = XCTAttachment(string: app.debugDescription); ax.name = "existing-real-voice-AX"; ax.lifetime = .keepAlways; add(ax)
   }
 
+  @MainActor func testComposerLongPressStartsVoiceInput() {
+    launchVoiceFixture()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    XCTAssertTrue((composer.placeholderValue ?? "").contains("长按语音输入"))
+    shot("voice-long-press-empty-placeholder", fullScreen: true)
+    composer.press(forDuration: 0.7)
+    let stop = app.buttons["stop-dictation"]
+    XCTAssertTrue(stop.waitForExistence(timeout: 5), "Long pressing the input must start recording")
+    guard stop.exists else { return }
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: stop)], timeout: 5), .completed)
+    shot("voice-long-press-recording", fullScreen: true)
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+    composer.tap(); typeComposerText("long-press-retained-draft")
+    composer.press(forDuration: 0.7)
+    XCTAssertTrue(stop.waitForExistence(timeout: 5))
+    guard stop.exists else { return }
+    XCTAssertEqual(app.staticTexts["dictation-transcript"].label, "long-press-retained-draft")
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertEqual(composer.value as? String, "long-press-retained-draft")
+  }
+
+  @MainActor func testDictationFailureKeepsVisibleRecovery() {
+    app.terminate()
+    app.launchArguments = ["-ui-testing", "-voice-input-fixture", "-voice-transcription-failed"]
+    app.launchChineseTest()
+    app.buttons["voice-input"].tap()
+    let stop = app.buttons["stop-dictation"]
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: stop)], timeout: 5), .completed)
+    stop.tap()
+    shot("voice-empty-draft-after-desktop-failure", fullScreen: true)
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 5), "Failure must remain visible in the input")
+    XCTAssertEqual(stop.label, "重试转写", "Retry must have a visible text label")
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    XCTAssertTrue(app.staticTexts["voice-status"].label.contains("录音已保留"))
+    stop.tap()
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", "重试转写"), object: stop)], timeout: 5), .completed)
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].exists)
+    shot("voice-empty-draft-retry-still-failed", fullScreen: true)
+    let failureMessage = app.staticTexts["voice-status"].label
+    XCUIDevice.shared.press(.home)
+    app.activate()
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.staticTexts["voice-status"].label, failureMessage)
+    app.buttons["cancel-dictation"].tap()
+    XCTAssertTrue(composer.waitForExistence(timeout: 5))
+  }
+
   @MainActor func testDictationFailureOffersRetryAndLocalTranscription() {
     app.terminate()
     app.launchArguments = ["-ui-testing", "-voice-input-fixture", "-voice-transcription-failed"]
@@ -6526,20 +6574,16 @@ final class CodexManageUITests: XCTestCase {
     let stop = app.buttons["stop-dictation"]
     XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: stop)], timeout: 5), .completed)
     stop.tap()
-    let failure = app.alerts["转写失败"]
-    XCTAssertTrue(failure.waitForExistence(timeout: 5))
-    XCTAssertEqual(Set(failure.buttons.allElementsBoundByIndex.map(\.label)), Set(["重试转写", "使用本地转写"]))
-    XCTAssertTrue(failure.buttons["使用本地转写"].exists)
-    shot("voice-failure-two-recovery-options")
-    failure.buttons["重试转写"].firstMatch.tap()
-    if failure.waitForExistence(timeout: 5) {
-      XCTAssertEqual(app.staticTexts["dictation-transcript"].label, "retained-fallback-draft")
-      failure.buttons["使用本地转写"].firstMatch.tap()
-    } else {
-      XCTAssertEqual(app.buttons["stop-dictation"].label, "重试转写")
-      XCTAssertEqual(app.staticTexts["dictation-transcript"].label, "retained-fallback-draft")
-      app.buttons["voice-local-transcription-inline"].tap()
-    }
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    XCTAssertEqual(stop.label, "重试转写")
+    XCTAssertTrue(app.buttons["voice-local-transcription-inline"].exists)
+    shot("voice-failure-inline-recovery-options", fullScreen: true)
+    stop.tap()
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@ AND isEnabled == true", "重试转写"), object: stop)], timeout: 5), .completed)
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].exists)
+    XCTAssertEqual(app.staticTexts["dictation-transcript"].label, "retained-fallback-draft")
+    app.buttons["voice-local-transcription-inline"].tap()
     XCTAssertTrue(composer.waitForExistence(timeout: 5))
     XCTAssertEqual(composer.value as? String, "retained-fallback-draft\n语音输入测试")
     XCTAssertFalse(app.buttons["stop-dictation"].exists)
@@ -6591,10 +6635,9 @@ final class CodexManageUITests: XCTestCase {
     // Leaving the app without pressing × must still retain recovery.
     relaunch()
     app.buttons["voice-input"].tap()
-    let restored = app.alerts.firstMatch
-    XCTAssertTrue(restored.waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 5))
     XCTAssertTrue(app.buttons["voice-record-again"].exists)
-    restored.buttons["重试转写"].firstMatch.tap()
+    app.buttons["stop-dictation"].tap()
     discardWaiting()
     relaunch()
     startNewRecording()
@@ -6689,8 +6732,15 @@ final class CodexManageUITests: XCTestCase {
     composer.tap()
     typeComposerText("retained-draft")
     app.buttons["voice-input"].tap()
-    XCTAssertTrue(app.alerts["无法完成操作"].waitForExistence(timeout: 3))
-    app.alerts.buttons["好"].tap()
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 3))
+    XCTAssertEqual(app.staticTexts["voice-failure-title"].label, "录音未完成")
+    XCTAssertTrue(app.staticTexts["voice-status"].label.contains("麦克风权限"))
+    XCTAssertEqual(app.buttons["stop-dictation"].label, "重新录音")
+    XCTAssertEqual(app.staticTexts["dictation-transcript"].label, "retained-draft")
+    shot("voice-preparation-failed-retains-draft", fullScreen: true)
+    app.buttons["stop-dictation"].tap()
+    XCTAssertTrue(app.staticTexts["voice-failure-title"].waitForExistence(timeout: 3))
+    app.buttons["cancel-dictation"].tap()
     XCTAssertEqual(composer.value as? String, "retained-draft")
     XCTAssertTrue(app.buttons["voice-input"].isEnabled)
     launchVoiceFixture()
@@ -7033,7 +7083,7 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertEqual(counters["desktopOpens"] as? Int, 1, "The next Send must query the saved connection ID")
     XCTAssertEqual(counters["desktopOpenQueries"] as? Int, 2)
     XCTAssertEqual(counters["replies"] as? Int, 1)
-    XCTAssertTrue(composer.value as? String == "" || composer.value as? String == "询问 Codex")
+    XCTAssertTrue(composer.value as? String == "" || composer.value as? String == "输入消息，长按语音输入")
     XCTAssertTrue(history.exists)
     shot("history-readable-and-send-connects-once")
   }
@@ -7052,7 +7102,7 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertEqual(counters["desktopOpens"] as? Int, 1)
     XCTAssertEqual(counters["desktopOpenQueries"] as? Int, 2)
     XCTAssertEqual(counters["replies"] as? Int, 1)
-    XCTAssertTrue(composer.value as? String == "" || composer.value as? String == "询问 Codex")
+    XCTAssertTrue(composer.value as? String == "" || composer.value as? String == "输入消息，长按语音输入")
     shot("late-desktop-owner-single-send")
   }
 
@@ -7083,7 +7133,7 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertTrue((app.buttons["client-switch"].value as? String ?? "").contains("发送时自动连接"))
     if let reply = env["HISTORY_ACCEPTANCE_REPLY"] {
       let original = composer.value as? String ?? ""
-      XCTAssertTrue(original.isEmpty || original == "询问 Codex" || original == "输入消息…", "Preserve any existing user draft")
+      XCTAssertTrue(original.isEmpty || original == "输入消息，长按语音输入" || original == "输入消息…", "Preserve any existing user draft")
       focusLiveComposer()
       typeComposerText("仅原样回复 \(reply)，不要使用工具。")
       sendLiveComposer()
@@ -7112,7 +7162,7 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertTrue(row.waitForExistence(timeout: 30)); row.tap()
     XCTAssertFalse(app.buttons["connect-desktop-thread"].exists)
     let original = composer.value as? String ?? ""
-    XCTAssertTrue(original.isEmpty || original == "询问 Codex" || original == "输入消息…", "Preserve any existing user draft")
+    XCTAssertTrue(original.isEmpty || original == "输入消息，长按语音输入" || original == "输入消息…", "Preserve any existing user draft")
     focusLiveComposer()
     typeComposerText("真实手机历史优化回复回归：仅原样回复 \(reply)，不要使用工具。")
     sendLiveComposer()
@@ -9776,7 +9826,7 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertFalse(app.buttons["dismiss-receipt-" + fixture.nonce].exists)
     let marker = "RECEIPT_LOCAL_DRAFT_" + fixture.nonce
     let originalDraft = composer.value as? String ?? ""
-    let draft = (originalDraft == "询问 Codex" ? "" : originalDraft) + marker
+    let draft = (originalDraft == "输入消息，长按语音输入" ? "" : originalDraft) + marker
     composer.tap(); typeComposerText(marker)
     XCUIDevice.shared.press(.home)
     app.activate()
@@ -11029,12 +11079,12 @@ final class CodexManageUITests: XCTestCase {
 
   private func normalizedSuggestionDraftText() -> String {
     let value = composer.value as? String ?? ""
-    return value == "询问 Codex" ? "" : value
+    return value == "输入消息，长按语音输入" ? "" : value
   }
 
   private func expectSuggestionDraft(_ text: String) {
     let predicate = text.isEmpty
-      ? NSPredicate(format: "value == '' OR value == nil OR value == '询问 Codex'")
+      ? NSPredicate(format: "value == '' OR value == nil OR value == '输入消息，长按语音输入'")
       : NSPredicate(format: "value == %@", text)
     let expected = XCTNSPredicateExpectation(predicate: predicate, object: composer)
     let result = XCTWaiter.wait(for: [expected], timeout: 15)
@@ -13260,27 +13310,17 @@ final class CodexManageUITests: XCTestCase {
     XCTAssertEqual(answer.value as? String, "保留问题草稿")
     startRecording()
     mic.tap()
-    let failure = app.alerts["转写失败"]
-    XCTAssertTrue(failure.waitForExistence(timeout: 5))
-    XCTAssertEqual(Set(failure.buttons.allElementsBoundByIndex.map(\.label)), Set(["重试转写", "使用本地转写"]))
+    XCTAssertTrue(app.staticTexts["question-voice-failure-long"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.alerts.firstMatch.exists)
+    XCTAssertEqual(mic.label, "重试转写")
     XCTAssertEqual(app.state, .runningForeground)
-    shot("question-voice-failure-two-recovery-options", fullScreen: true)
-    if app.state == .runningBackground || app.state == .runningBackgroundSuspended { app.activate() }
-    XCTAssertEqual(app.state, .runningForeground)
-    failure.buttons["重试转写"].firstMatch.tap()
-    if app.state == .runningBackground || app.state == .runningBackgroundSuspended { app.activate() }
-    XCTAssertEqual(app.state, .runningForeground)
-    if failure.waitForExistence(timeout: 5) {
-      XCTAssertEqual(answer.value as? String, "保留问题草稿")
-      failure.buttons["使用本地转写"].firstMatch.tap()
-    } else {
-      let local = app.buttons["question-local-transcription-long"]
-      XCTAssertTrue(local.waitForExistence(timeout: 5))
-      XCTAssertEqual(mic.label, "重试转写")
-      XCTAssertEqual(answer.value as? String, "保留问题草稿")
-      shot("question-voice-inline-recovery")
-      local.tap()
-    }
+    shot("question-voice-inline-recovery-options", fullScreen: true)
+    mic.tap()
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "label == %@ AND isEnabled == true", "重试转写"), object: mic)], timeout: 5), .completed)
+    XCTAssertTrue(app.staticTexts["question-voice-failure-long"].exists)
+    XCTAssertEqual(answer.value as? String, "保留问题草稿")
+    app.buttons["question-local-transcription-long"].tap()
     XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(
       predicate: NSPredicate(format: "value == %@", "保留问题草稿\n语音输入测试"), object: answer)], timeout: 5), .completed)
     XCTAssertEqual(mic.label, "语音输入回复")
@@ -13398,7 +13438,7 @@ final class CodexManageUITests: XCTestCase {
     let (statusData, _) = try await URLSession.shared.data(from: URL(string: fixture.endpoint + "/status")!)
     let status = try XCTUnwrap(JSONSerialization.jsonObject(with: statusData) as? [String: Any])
     XCTAssertEqual(status["answers"] as? Int, 3, "Answers and skip must each submit once")
-    XCTAssertTrue((composer.value as? String ?? "").isEmpty || composer.value as? String == "询问 Codex")
+    XCTAssertTrue((composer.value as? String ?? "").isEmpty || composer.value as? String == "输入消息，长按语音输入")
   }
   @MainActor private func openDesktopSidebarSearch() -> XCUIElement {
     dismissLiveQuestionPresentation()

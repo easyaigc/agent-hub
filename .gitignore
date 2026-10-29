@@ -63,3 +63,5 @@ apps/ios/FilePreviewKit/.swiftpm/
 
 # Sanitized Host Images API acceptance summary.
 !/docs/acceptance/host-images-proxy-20261029.md
+
+!/docs/acceptance/voice-interaction-20261029.md

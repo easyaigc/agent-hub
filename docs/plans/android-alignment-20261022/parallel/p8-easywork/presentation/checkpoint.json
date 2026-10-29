@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-native-ui-ios-matrix-next-20261029-1",
+  "nativeCompile": {
+    "compileExit": 0,
+    "inputs": 709,
+    "sourceSha256": "fe6a2f599d5464f0a3a548735629fedd5c51b1a014de5afe80fefab498064e0a",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 3
+  },
+  "nativeExecution": {
+    "status": "unexecuted",
+    "preparedMethods": 3,
+    "executedMethods": 0,
+    "newApks": 0,
+    "host": "ComponentActivity hosting actual AgentHubApp; not MainActivity lifecycle",
+    "cases": [
+      {
+        "method": "chineseLightPortraitUsesProductNavigationAndSavedPreference",
+        "language": "zh-Hans",
+        "appTheme": "light",
+        "display": "actual portrait verified",
+        "font": "actual OS font captured and checked against parent expected value",
+        "focus": "saved state/readonly geometry/native AX/selection/controlled global-close guard"
+      },
+      {
+        "method": "englishDarkControlledShortDialogKeepsImportedReadonlyTargets",
+        "language": "en",
+        "appTheme": "dark",
+        "display": "actual portrait; dialog controlled320x420dp measured in WindowManager",
+        "font": "synthetic Compose2x; OS font separately recorded",
+        "focus": "imported readonly six values, full glyph/clip, empty action disabled/native AX"
+      },
+      {
+        "method": "englishDarkActualLandscapeKeepsRealImeAndEmptySubmitVisible",
+        "language": "en",
+        "appTheme": "dark",
+        "display": "actual landscape config+activity geometry+rotation recorded; no rotation action",
+        "font": "actual OS font captured, suggested1.3",
+        "focus": "real IME positive inset/focus/complete URI/whole disabled submit/observed hide"
+      }
+    ],
+    "buildArgument": "p8PresentationBuild exact source/app/runner, expectedSdk int26/37, deviceFingerprint, leaseId UUID, expectedOsFontScale; physical UI explicit allowPhysicalUi required",
+    "pairingPermissionNetworkModelActions": "Not invoked by this fixture; forbidden tap tags rejected and activation/identity/permissions/original bytes checked; not a network pass",
+    "busyErrorScope": "Only controlled global close flag; actual action busy/pending/error unexecuted",
+    "accessibilityScope": "Compose and native Android nodes; not spoken screen-reader or traversal acceptance"
+  },
+  "source32Reference": {
+    "sourceSha256": "58e302e55ba3aca59d6d6d4f41432a5ee88fa3f954190d1425fe69f4ab79d9c2",
+    "appSha256": "24e2bce74a9cb273f98b3e94a58e52ad719529ac950880baf26be08c3d401111",
+    "runnerSha256": "43a1ea4b0cdc08620e87b3c4da42a2db93ad69daf92cfc82067d81b02cce709a",
+    "use": "audit only, parent old3pass/2fail records untouched"
+  },
+  "source33CompileBase": {
+    "sourceSha256": "caba792d62737d6f7600f5e0aa6743a5c67587071bd620b7570a5ea08ccb1527",
+    "appSha256": "aa022797997d265324ac96569a4bb99a896c9644b6347651f590fc6f37c1f572",
+    "runnerSha256": "e163b8e74c117cfaf2353a13f2b8176857ab653fac3a542d519896c02678f33a",
+    "inputs": 707,
+    "use": "verified frozen bytes plus two test-only files; no old APK/new-source mixing"
+  },
+  "sharedMainSessionPageCentralOrManifestChanged": false,
+  "open": [
+    "All three new native methods on an integrated new source/App/runner",
+    "API37 actual landscape if environment unavailable",
+    "Physical UI when parent device lease is available; do not take the other installed acceptance settings page",
+    "MainActivity lifecycle/system bars/rotation restoration",
+    "Actual action busy/error/pending; no pairing under this lane",
+    "iOS matching target/marker UI and normalization decision",
+    "TalkBack/VoiceOver speech/traversal and full font/theme/orientation matrix",
+    "Other P8 real issuer/Desktop/TLS/default-scale/model gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "deviceHostModelActionsByLeaf": 0,
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "sync-rule tests5", "lint"],
+    "stoppedAt": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "laterChecks": "not run",
+    "centralOwner": "parent"
+  }
+}

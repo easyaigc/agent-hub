@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "productionBehaviorChange": false,
+  "baseVoiceCommit": "6e3a1313524508d9f2dbdc0f3e1d1463f20a903e",
+  "assertions": [
+    "Actual Session durable destination and exact owner/revision/readback precede applied terminal",
+    "An actual queued old metadata snapshot revokes publication",
+    "Failed/unknown writes and later draft/owner changes keep results staged",
+    "Fresh Session restoration never automatically recognizes or fills an off-index result",
+    "A cancelled full Session wait does not let the next full migration obtain a lease before the same worker exits",
+    "Typed/framed migration preserves off-index question original/audio/catalog under a closed destination key",
+    "Every original is checked against a pre-action complete canonical JSON, exact persistent row and full WAV baseline; historical account/attempt/receipt fields are retained"
+  ],
+  "android": {
+    "implemented": "owned native acceptance fixtures proposed",
+    "auxiliary": "Kotlin compilation only, final receipt outside source",
+    "native": "not run",
+    "differentPid": "not run; opt-in writer/reader pair",
+    "realEngineOrAcoustic": "not run; voice line and parent own execution"
+  },
+  "ios": {
+    "changed": false,
+    "newAcceptance": false,
+    "impact": "No behavior change. Preserve later parent discard implementation and documented legacy offline difference."
+  },
+  "design": {
+    "productUIChanged": false,
+    "nativeVisualProof": false
+  },
+  "registration": "saved-voice-session-native-cases.json",
+  "acceptance": "saved-voice-session-native.md",
+  "centralManifests": "Parent applies case/assertion increment to current product/design/acceptance manifests; no completed feature claim",
+  "closedFeatures": [],
+  "paused": ["A6", "task/project business management"]
+}

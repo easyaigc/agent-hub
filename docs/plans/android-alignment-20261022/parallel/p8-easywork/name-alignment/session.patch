@@ -1,0 +1,11 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt
+@@ -2377,7 +2377,7 @@
+     }
+     fun renameEasyWork(client: MobileClient,name: String) {
+         if(name.isBlank()||name.length>256)return
+-        realClients.firstOrNull { it.id==client.id&&(it.agentConnection!=null||it.migrationEasyWork!=null) }?.let { replaceClient(it.copy(name=name.trim()));persistMetadata() }
++        realClients.firstOrNull { it.id==client.id&&(it.agentConnection!=null||it.migrationEasyWork!=null) }?.let { replaceClient(it.copy(name=name));persistMetadata() }
+     }
+     internal suspend fun updateEasyWorkCandidates(client: MobileClient,binding: EasyWorkBinding,candidates: List<AgentCandidate>): Boolean {
+         val current=realClients.firstOrNull { it.id==client.id }?:return false;val connection=current.agentConnection?:return false

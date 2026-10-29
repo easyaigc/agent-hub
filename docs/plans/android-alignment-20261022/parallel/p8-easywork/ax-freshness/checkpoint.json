@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-source38-native-ax-diagnostic-20261029-1",
+  "source38": {
+    "sourceSha256": "65044bcc0dce8c9f8ab0004a58648b6119ff2e39e1abf53bd20c6366ea06d119",
+    "appSha256": "dfd7c072980617b33bc05226e20bde257675189a55cbe0b9caac423dde0f65c5",
+    "runnerSha256": "68f23114ca7032af17b6626bdf7521410fa3494fde929cb9add8b6016c6ebc44",
+    "inputs": 709,
+    "allBytesAndAggregateVerified": true
+  },
+  "observedExactTupleCases": {
+    "count": 4,
+    "passed": 1,
+    "failed": 3,
+    "historicalAndDuplicateEntriesExcluded": 16,
+    "nativeFlagsBeforeFailingGuardAvailable": false,
+    "scope": "Read-only exact source/App/runner private case JSON; not new leaf execution or a replacement parent call ledger; short-case failure point not inferred from failureClass alone"
+  },
+  "testOverlay": {
+    "version": 1,
+    "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+    "baseSource": "Source38",
+    "baseSha256": "4ce89061d9059f9eb7a07ac16c61872a570a20a519a69468b1a8eb90ffd8d1f4",
+    "proposedSha256": "6d5eae29e50331567ef6c45541f213d2e54d4810c40371e15aad65d01b116b90",
+    "completeFrozenBaseAdopted": true,
+    "changeMap": [
+      "saveProbe splits atomic persistence from append so one bounded AX query record can update before assertions",
+      "activeAppRoot shares one5s deadline; initial window/Compose state and root readiness counters are persisted even on timeout",
+      "Read-only field diagnostics: exact dialog window, root/target refresh, native flags/actions/geometry, public extra-data semantics ID/test-tag, bounded parent/child context, current merged/unmerged Compose field state; advertised extra-data refresh failures cannot satisfy readiness",
+      "At most first plus recent8 observations;2 detailed label matches,8 child contexts,2048 visited nodes and2MiB existing total evidence cap",
+      "Two consistent refreshed observations spanning100ms; stable wrong flags do not delay failure; no wait-until-enabled/editable/visible condition",
+      "Original unique-label/native enabled/editable/visible/positive-bounds assertions remain named; whole Compose and native visible-frame guards added",
+      "Three call sites supply explicit existing field tag; all other four-test code is unchanged",
+      "Initialize public UiAutomation before dialog ID capture; re-read actual owned dialog ID on each refreshed sample within the same5s budget, avoiding a permanently cached initial unregistered -1"
+    ],
+    "protectedSectionsSha256": {
+      "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+      "nativeTextAx": "f5d4e71f2a265e673d89400b5c60a4a1099609005f11470cce7c04647ab567b9",
+      "allFourTestBodiesExceptExplicitFieldTags": "c677d5fb2565e552b992853b288a2837921778b98b6950d5d5f31e98e1b8c1f5"
+    },
+    "originalAxBudgetMs": 5000,
+    "newAdditionalBudgets": 0,
+    "stableMinimumObservations": 2,
+    "stableMinimumMs": 100,
+    "recentObservationLimit": 8,
+    "detailedMatchLimit": 2,
+    "childContextLimit": 8,
+    "treeNodeLimit": 2048,
+    "textOrActionLabelsPersisted": false,
+    "nativeEditableSetOrSubstituted": false,
+    "newDeviceActionsByLeaf": 0,
+    "productSourceChanged": false
+  },
+  "compile": {
+    "variant": "ax-diagnostic",
+    "compileExit": 0,
+    "inputs": 709,
+    "sourceSha256": "a5f18f273ebe96d9778f87f9e5e9e0fda435b53d42917ec0058aa2256191da99",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 4
+  },
+  "lockedRuntime": {
+    "bom": "2026.09.00",
+    "uiAndroid": "1.12.1",
+    "foundationAndroid": "1.12.1",
+    "resolvedInSameFrozenOverlay": true,
+    "installedAarBytecodeAndVersionedOfficialSourcesReviewed": true,
+    "facts": "compose-delegate-audit.json"
+  },
+  "nativeExecution": {
+    "executedMethodsByLeaf": 0,
+    "newApks": 0,
+    "preparedMethods": 4,
+    "status": "unexecuted for this source",
+    "fieldProbe": "Exact own dialog window, current root refresh, exact label count, native flags/actions/bounds before/after target/extra-data refresh, bounded parent/child context and actual merged/unmerged Compose observations",
+    "budgetMs": 5000,
+    "newAdditionalBudgets": 0,
+    "recentObservations": 8,
+    "detailedMatches": 2,
+    "childContextPerMatch": 8,
+    "treeNodes": 2048,
+    "originalTotalEvidenceCapBytes": 2097152,
+    "stability": "At least2 consistent refreshed observations across100ms; enabled/editable/visible are NOT readiness predicates",
+    "nativeAssertions": "Original unique label + enabled + editable + visible + positive bounds remain; whole Compose/native visible frame assertions retained or added",
+    "privacy": "No text, action labels, exception messages or foreign subtree saved; no property setter, action execution or parent-node substitution",
+    "limitations": "Refresh success is a query observation, not atomic whole-tree freshness proof; child context is marked unrefreshed; native false flags remain failures",
+    "dialogWindowFreshness": "Initialize public UiAutomation before first dialog ID read, then re-read own decor window ID on each refreshed sample within the same5s deadline; initial unregistered -1 cannot become a permanent cached owner"
+  },
+  "productPatch": "None justified before native flags/identity/geometry. Conditional generated label node is a version-locked source path, not an observed Source38 root cause.",
+  "source38GuardsPreserved": [
+    "Actual OS font2 requirement and real TextLayout font guards",
+    "Parent responsive sheet/header/Cancel behavior via unchanged product sources",
+    "IME8s/actualIMEtop/Page clip/full disabled width/height/all frame edges/keyboard Cancel reachable/real Done hide",
+    "All text overflow/full UTF16/glyph/clip checks",
+    "All four test bodies except explicit existing field-tag arguments",
+    "nativeTextAx original checks"
+  ],
+  "sharedMainSessionPageSheetOldUiCentralOrManifestChanged": false,
+  "centralRegistrationOwner": "parent",
+  "deviceAdbHostModelMicrophoneProtectedEasyWorkActionsByLeaf": 0,
+  "open": [
+    "Parent new integrated source/App/runner and actual named AX diagnostics on API26/37",
+    "Actual enabled/editable/visible failure property and source cause; product patch only after evidence",
+    "Source38 true OS font2 and oldUI regression final parent ledger",
+    "Full native/physical/font/AX matrix, iOS gaps and MainActivity lifecycle",
+    "Original full P8 issuer/Desktop/TLS/default-scale/model DEV gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "sync-rule tests5", "lint"],
+    "stoppedAt": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "laterChecks": "not run",
+    "centralOwner": "parent"
+  },
+  "stageCleanup": {
+    "gradleCleanExit": 0,
+    "ownBuildAndGradleRemoved": true,
+    "temporaryClassJarsAbsent": true,
+    "supersededSuccessfulAuxFilesRemoved": 12,
+    "initialSourceExportsRemovedAfterVerifiedRecovery": true,
+    "staticLogsAndLicensedSourceCompressedReadBackVerified": true,
+    "newApks": 0
+  }
+}

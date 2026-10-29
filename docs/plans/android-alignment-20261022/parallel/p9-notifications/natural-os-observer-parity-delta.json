@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-natural-os-observer-next-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "First SystemUI click requires original immutable token/row, absent complete target UID process set and independent UID observation",
+    "Async existing-key-only claim precedes first storage/Session; unknown or partial state never falls back, rearms or replays",
+    "Original full target/thread/draft/receipt/install and boot/PID/nonce join the durable completion",
+    "Late ingress cannot overwrite the natural owner's original or newer draft; no business command is submitted"
+  ],
+  "android": {
+    "implemented": "Source proposal: one SDK producer, self-instrumented different-UID SystemUI observer, async startup/once fence and separate first-open/new-draft evidence",
+    "adopted": false,
+    "commonFilesChanged": [],
+    "patches": "Main/ColdStart proposed hashes updated atomically with facades; Storage/two manifests byte-identical to55cef40e; parent/P7 review remains",
+    "auxiliary": "14 JVM policy/filesystem checks; six lifecycle counterexamples include active natural reconstruction/legacy compatibility and cancelled pre-Session restart; no native proof",
+    "compile": "Private source32 combination: App/runner/examiner debug and release Kotlin compile;122 tasks",
+    "native": "Not run by this workline; parent reports source34 API26 store5 all passed, native33 failed attempt retained; natural combination review/lease pending",
+    "api": "Strengthened observer/producer API34+; App proposal API31; strong API31\u201333 and API26 natural paths remain open",
+    "sdkDuplicateAfterNewDraft": "Not run or claimed; observer never sends PendingIntent",
+    "vendorHostModelPhysicalOem": "Not run",
+    "postConsumerExitReconciliationAndCleanup": "Not implemented; original material retained",
+    "evidenceContinuation": "Observer owns only freshly created attempt folder; cleanup releases independently; producer exports fixed synthetic binding hashes",
+    "retainedPolicy": "Natural active reconstruction fails closed before retained/default Session and keeps ingress ownership; legacy active retained path remains",
+    "producerDefaultInventory": "Original unchanged scanner/caps before seed and in finally; pass requires complete content hashes and identical non-null digest",
+    "visibilityWitness": "Fixed full-UID ps needs self PID/UID and cross-UID system_server; global AM active section needs current self component/owner/process; original writer visible before one ordered custody acknowledgement",
+    "visibilityAuxiliary": "43 exact-parser JVM synthetic vectors pass; no Android/native/diagnostic execution",
+    "timing": "Original windows/byte budget retained; no new native diagnostic deadline or post-exit wait",
+    "commandCompletion": "Per-command nonce-bound unique final status0 marker and empty stderr under original combined cap; typed Completed required before PS/AM",
+    "completionAuxiliary": "66 JVM/synthetic checks including four fixed-fake-command host POSIX pipe checks; no Android/native proof"
+  },
+  "ios": {
+    "sourceChanges": [],
+    "acceptance": "No new result; A6 remains paused",
+    "impact": "Android acceptance startup and independent SystemUI evidence only"
+  },
+  "ui": {
+    "tokensAndCopy": "Shared product presentation unchanged",
+    "systemDifference": "SystemUI notification row and API31+ immutable-token inspection are Android-specific; no uniform physical/OEM claim"
+  },
+  "parentLedgersToReconcileAfterReview": [
+    "docs/product/mobile-parity.md",
+    "docs/design/mobile-parity.md",
+    "docs/acceptance/mobile-parity.md"
+  ],
+  "evidence": "natural-os-observer.md",
+  "continuationOperationId": "parent-p9-command-completion-witness-20261029-1",
+  "executionChecklist": "natural-os-execution-checklist.md",
+  "producerInventoryOperationId": "parent-p9-producer-default-family-proof-20261029-1",
+  "retainedGuardReview": "natural-retained-guard.md",
+  "visibilityReview": "natural-process-visibility.md",
+  "completionReview": "natural-command-completion.md"
+}

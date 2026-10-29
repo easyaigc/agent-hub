@@ -1422,3 +1422,25 @@ PAR34仅修复原生检查前提和debug跨PID探针严格同步flag兼容；短
 [PAR34](../plans/android-alignment-20261022/parallel/thirty-fourth-stage-strict-probe-ui-native.json)：P9既有key五项原生通过，UI4通过/迁入最终窗口空1失败。长名/六值完整字形/裁切与严格跨PID拒绝有实际证据；完整iOS/物理/自然OS与API37解析停止仍待，iOS A6暂停。
 
 [PAR35](../plans/android-alignment-20261022/parallel/thirty-fifth-stage-imported-window-native.json)：原连接UI五项全部通过；null系统窗口只读等待1采样后收到准确App owner。完整值/字形/clip/readonly/原记录保护均保留；固定ComponentActivity并非完整App/系统视觉证明。工作区组合检查、iOS模拟器编译通过，完整双端/物理DEV和已登记新差异继续待验。
+
+产品App主题/语言与ComponentActivity容器、真实系统方向/字体/IME和受控短窗口/合成字体分别观测；横屏禁用提交核完整尺寸与可见四边，仍不点。 无配对/Host/模型输入，iOS A6与任务项目业务继续暂停。
+
+[PAR36](../plans/android-alignment-20261022/parallel/thirty-sixth-stage-product-name-ui-native.json)：完整原字符串命名与迟到写回10通过；实际App三呈现/真实横屏IME一例失败待修，全部严格文字/字形/可见按钮断言保留。原Source35 SDK37在测试WiFi后真实停止两例通过，旧注册超时仍存；PR54已合main。未宣称完整iOS/物理/外部peer/DEV。
+
+产品App窗口诊断区分Dialog ADJUST_NOTHING、实际IME/systemBars、Page raw/clip/scroll值和按钮/字段位置；默认M3 grabber和header约束导致的短视口为待测候选。PAR37不变更产品视觉，真实几何后再采用窄修复。
+
+[PAR37](../plans/android-alignment-20261022/parallel/thirty-seventh-stage-window-geometry-native.json)：诊断4次1通过3失败，原断言保留；横屏IME视口25px/按钮113px，标签文字/段落宽度不一致。外层合成字体2未进入Dialog，真实大字体仍待验；方向/系统字体已复原。完整双端/物理DEV未关闭。
+
+Android连接表单实际IME可见时，使用余下全高并将原标题/关闭区纳入同一表单滚动；其余状态保持固定头部，同一表单草稿/动作owner不重建。按PAR37真实25px/113px测量修复。目标标签有限整列宽度，与已有值字段一致。iOS源码未改；Android系统Dialog/Insets专属适配，完整双端视觉矩阵仍待验。
+
+[PAR38](../plans/android-alignment-20261022/parallel/thirty-eighth-stage-responsive-connection-native.json)：标签及横屏IME按钮窄修复已通过对应严格断言，整体4产品例仍有两AX/一真实字体2短窗裁切失败。原UI5补齐准确驱动identity后通过，旧before-body5失败保留，不能隐藏。完整矩阵仍开放。
+
+[PAR39](../plans/android-alignment-20261022/parallel/thirty-ninth-stage-short-window-native.json)：真实字体2/320×420dp全部十二文字断言通过，原UI5回归通过；最终原生AX仍失败单列，未削弱或跳过。连接短窗和键盘态的标题/关闭可随原表单滚动，正常窗口固定头部，其他平台源码未改。完整双端/物理DEV仍开放。
+
+原录音恢复面板新增仅文件离线识别：显式选择中英、检查资源、显式下载、识别填入准确原草稿，忙时不能丢弃且退出等worker结束。新增24词条已双语生成；系统重新录音可用性与离线文件能力分开说明。iOS原SFSpeech路径保持，严格离线及新版面板差异未关闭；双端完整视觉/读屏矩阵待验。
+
+原生读屏诊断精确区分自有Dialog、原label匹配节点与Compose字段的实际ID/可编辑语义；刷新只用于原预算就绪，不把稳定错误flags等待成true、不伪造editable。自然通知平台验收采用原SystemUI行/原SDK Intent，完整产品双端视觉和低API/物理差异仍开放。
+
+[PAR42](../plans/android-alignment-20261022/parallel/forty-second-stage-three-line-native.json)：纳入原生43项39通过4失败。API37真Vosk两语完整16项通过，实际4KiB页；API26基础17通过，安装路径/本机引擎另记。P9前4存储及原bootstrap只读通过，第5跨PID拒绝断言失败，原SDK通知/首点未创建；AX稳定说明节点与真实EditText分开，待准确字段选择器。独立完整三APK来源/同签名已核；不宣称完整16KiB/隐私/物理/双端DEV。
+
+[PAR43](../plans/android-alignment-20261022/parallel/forty-third-stage-session-field-native.json)：21项原生终态20通过1失败。完整Session7+控制不同PID冷恢复2在API26/API37分别通过，识别器synthetic且未覆盖post-write/pre-applied kill；连接原生字段与完整48dp控件、真实横屏及OSfont2短窗通过，中文“自动”菜单native owner仍待诊断。相同字号/内边距/可见性/可编辑/选中/完整文本及原5秒守卫保留。P9只读升级与断言前异常诊断实现已编译，尚无本候选设备结果，不把旧bootstrap复写成新证据。iOS源码影响无，完整双端DEV仍待。

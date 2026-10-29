@@ -1881,4 +1881,28 @@
     <string name="product_8c56d9ef0d604131101c7b77" formatted="false">"Enable notifications explicitly after migration. Original records are retained."</string>
     <string name="product_0f8b78e3332ac7e4750f51cc" formatted="false">"Pair again · View cache"</string>
     <string name="product_20cbe53129b2b62d26690f9d" formatted="false">"Imported chats and receipts are read-only. Scan a new connection QR code from the computer, or enter a new connection code to pair again."</string>
+    <string name="product_9834263eae781bcef321859f" formatted="false">"Availability of a new recording depends on the system speech service. Check offline recognition in the saved recording recovery panel."</string>
+    <string name="product_0afda1b7b0029632789a677c" formatted="false">"Stopping saved recording recognition…"</string>
+    <string name="product_32742fb47be51c3edbdafd7b" formatted="false">"Processing saved recording recognition…"</string>
+    <string name="product_fb8bcd0a0f6965ee4cf73589" formatted="false">"Choose a Chinese or English model."</string>
+    <string name="product_7446cae9b49f7cbb83175e71" formatted="false">"Saved recording recognition is currently unavailable on this device."</string>
+    <string name="product_23eb398e5d9acaa77b2b162e" formatted="false">"Check resources for saved recording recognition"</string>
+    <string name="product_b5d1a3e3ec85ffee115e4ee5" formatted="false">"This device does not currently support saved recording recognition."</string>
+    <string name="product_542d54582ce8e26f36c2f8dc" formatted="false">"Download the offline model for the selected language."</string>
+    <string name="product_ec029b0feff22d2869b7c9cd" formatted="false">"Offline model verification failed. Download it again."</string>
+    <string name="product_71f4a9d357955730c624ce0a" formatted="false">"Offline model verified. The saved recording can be recognized."</string>
+    <string name="product_ef73618c4ba9cc087de28d69" formatted="false">"The recording target or draft has changed"</string>
+    <string name="product_e58b86cbf811ad85e4028048" formatted="false">"No saved recording matches the current draft."</string>
+    <string name="product_a5787cb358d54a954a72008e" formatted="false">"Computer transcription requires sharing permission. The original draft and recording are preserved."</string>
+    <string name="product_ce396241fc1c04ef522be38d" formatted="false">"The original draft or target changed. The local recognition result and recording are preserved."</string>
+    <string name="product_4c2ccb6cb2f75776e584f729" formatted="false">"Not enough memory. The original recording and draft are preserved. Try again later."</string>
+    <string name="product_1b5a78f52efab047303561b0" formatted="false">"Saved recording recognition did not complete. The recording and existing results are preserved."</string>
+    <string name="product_c2215d58a8f789dcd50583a4" formatted="false">"Saved recording recognition stopped. The recording and existing results are preserved."</string>
+    <string name="product_768bfd0fa8ceb850d0331afb" formatted="false">"Recognize the saved recording on this device"</string>
+    <string name="product_55de3eae60c2e96be6e233a0" formatted="false">"Only the language model download needs a network connection. The recording stays on this device."</string>
+    <string name="product_a55562525e1d487c2e3214fc" formatted="false">"Chinese (Mandarin)"</string>
+    <string name="product_95072679248b6ca678759bd3" formatted="false">"English (United States)"</string>
+    <string name="product_5b3c336f4fe88dfc5fa2cfe1" formatted="false">"Check offline model"</string>
+    <string name="product_6c59ac8a3834a9b80c7b58db" formatted="false">"Download offline model (about 45 MB)"</string>
+    <string name="product_9c288e95402385532dbd8e5d" formatted="false">"Recognize and fill the original draft"</string>
 </resources>

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "path": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+  "baseSource": "Source36",
+  "baseSha256": "8679b3baa8d494d56d36701dffca01c6089ade127c0887142cfd1d32eb87dfc1",
+  "proposedSha256": "7686848aecd587c6e7f2b6f0096d18cd229f475a6f7aa8a1229e06449817c6fe",
+  "status": "Conditional source proposal; base label geometry not yet captured at original failed overflow guard; new native diagnostic run required before attributing root cause",
+  "change": "Give only the target-label Text its existing finite column width, matching value Text; no IME/Sheet changes",
+  "sharedFileDirectlyChanged": false,
+  "originalOverflowGlyphClipAssertionsRetained": true
+}

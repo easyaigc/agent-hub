@@ -1190,6 +1190,126 @@
       "key": "迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。",
       "en": "Imported chats and receipts are read-only. Scan a new connection QR code from the computer, or enter a new connection code to pair again.",
       "zhHans": "迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。"
+    },
+    {
+      "key": "重新录音的可用性取决于系统语音服务。可在原录音恢复面板检查离线识别。",
+      "en": "Availability of a new recording depends on the system speech service. Check offline recognition in the saved recording recovery panel.",
+      "zhHans": "重新录音的可用性取决于系统语音服务。可在原录音恢复面板检查离线识别。"
+    },
+    {
+      "key": "正在结束原录音识别…",
+      "en": "Stopping saved recording recognition…",
+      "zhHans": "正在结束原录音识别…"
+    },
+    {
+      "key": "正在处理原录音识别…",
+      "en": "Processing saved recording recognition…",
+      "zhHans": "正在处理原录音识别…"
+    },
+    {
+      "key": "请选择中文或英语模型。",
+      "en": "Choose a Chinese or English model.",
+      "zhHans": "请选择中文或英语模型。"
+    },
+    {
+      "key": "本机原录音识别暂不可用。",
+      "en": "Saved recording recognition is currently unavailable on this device.",
+      "zhHans": "本机原录音识别暂不可用。"
+    },
+    {
+      "key": "检查本机原录音识别资源",
+      "en": "Check resources for saved recording recognition",
+      "zhHans": "检查本机原录音识别资源"
+    },
+    {
+      "key": "此设备暂不支持原录音识别。",
+      "en": "This device does not currently support saved recording recognition.",
+      "zhHans": "此设备暂不支持原录音识别。"
+    },
+    {
+      "key": "需要下载所选语言的离线模型。",
+      "en": "Download the offline model for the selected language.",
+      "zhHans": "需要下载所选语言的离线模型。"
+    },
+    {
+      "key": "离线模型校验失败，请重新下载。",
+      "en": "Offline model verification failed. Download it again.",
+      "zhHans": "离线模型校验失败，请重新下载。"
+    },
+    {
+      "key": "离线模型已校验，可识别原录音。",
+      "en": "Offline model verified. The saved recording can be recognized.",
+      "zhHans": "离线模型已校验，可识别原录音。"
+    },
+    {
+      "key": "录音目标或草稿已变化",
+      "en": "The recording target or draft has changed",
+      "zhHans": "录音目标或草稿已变化"
+    },
+    {
+      "key": "没有与当前草稿匹配的已保存原录音。",
+      "en": "No saved recording matches the current draft.",
+      "zhHans": "没有与当前草稿匹配的已保存原录音。"
+    },
+    {
+      "key": "电脑转写需要共享许可，原草稿和录音已保留。",
+      "en": "Computer transcription requires sharing permission. The original draft and recording are preserved.",
+      "zhHans": "电脑转写需要共享许可，原草稿和录音已保留。"
+    },
+    {
+      "key": "原草稿或目标已变化，本机识别结果和原录音已保留。",
+      "en": "The original draft or target changed. The local recognition result and recording are preserved.",
+      "zhHans": "原草稿或目标已变化，本机识别结果和原录音已保留。"
+    },
+    {
+      "key": "手机内存不足，原录音和草稿已保留，请稍后重试。",
+      "en": "Not enough memory. The original recording and draft are preserved. Try again later.",
+      "zhHans": "手机内存不足，原录音和草稿已保留，请稍后重试。"
+    },
+    {
+      "key": "本机原录音识别未完成，录音和已有结果已保留。",
+      "en": "Saved recording recognition did not complete. The recording and existing results are preserved.",
+      "zhHans": "本机原录音识别未完成，录音和已有结果已保留。"
+    },
+    {
+      "key": "本机原录音识别已停止，原录音和已有结果已保留。",
+      "en": "Saved recording recognition stopped. The recording and existing results are preserved.",
+      "zhHans": "本机原录音识别已停止，原录音和已有结果已保留。"
+    },
+    {
+      "key": "在手机识别原录音",
+      "en": "Recognize the saved recording on this device",
+      "zhHans": "在手机识别原录音"
+    },
+    {
+      "key": "仅下载语言模型需要联网，录音留在本机。",
+      "en": "Only the language model download needs a network connection. The recording stays on this device.",
+      "zhHans": "仅下载语言模型需要联网，录音留在本机。"
+    },
+    {
+      "key": "中文（普通话）",
+      "en": "Chinese (Mandarin)",
+      "zhHans": "中文（普通话）"
+    },
+    {
+      "key": "英语（美国）",
+      "en": "English (United States)",
+      "zhHans": "英语（美国）"
+    },
+    {
+      "key": "检查离线模型",
+      "en": "Check offline model",
+      "zhHans": "检查离线模型"
+    },
+    {
+      "key": "下载离线模型（约45MB）",
+      "en": "Download offline model (about 45 MB)",
+      "zhHans": "下载离线模型（约45MB）"
+    },
+    {
+      "key": "识别并填入原草稿",
+      "en": "Recognize and fill the original draft",
+      "zhHans": "识别并填入原草稿"
     }
   ]
 }

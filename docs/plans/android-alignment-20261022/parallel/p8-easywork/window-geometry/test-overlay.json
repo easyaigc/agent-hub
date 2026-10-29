@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+  "baseSource": "Source36",
+  "baseSha256": "077016927a5ea1a1b77b3b376b21ac63a080bd99996135fae122385af1b2952d",
+  "proposedSha256": "0942356da3e1764f770da31520e8994d42bd5dac5fccce4b50b7e7b42f879466",
+  "completeFrozenBaseAdopted": true,
+  "parentWholeSubmitGuardBlockUnchanged": true,
+  "wholeSubmitGuardBlockSha256": "ee425a8a769026ec3d455c3a8138872ded66d890488b6919d4260cbe70d63a7a",
+  "footerCallSitesExplicitNoScroll": 2,
+  "imeVisibleAndStabilitySharedBudgetMs": 8000,
+  "sameStateSamplesMinimum": 3,
+  "stableWindowMinimumMs": 100,
+  "imeHideOriginalBudgetMs": 8000,
+  "preGuardScalarEvidenceMaxBytes": 2097152,
+  "sensitiveTextPersisted": false,
+  "newDeviceActionsByLeaf": 0
+}

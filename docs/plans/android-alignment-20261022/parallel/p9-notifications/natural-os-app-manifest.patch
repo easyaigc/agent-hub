@@ -1,0 +1,12 @@
+diff --git a/apps/android/src/debug/AndroidManifest.xml b/apps/android/src/debug/AndroidManifest.xml
+--- a/apps/android/src/debug/AndroidManifest.xml
++++ b/apps/android/src/debug/AndroidManifest.xml
+@@ -1,6 +1,8 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <manifest xmlns:android="http://schemas.android.com/apk/res/android">
++    <uses-permission android:name="com.easyai.agenthub.android.acceptance.permission.P9_NATURAL_OBSERVER" />
+     <queries>
++        <package android:name="com.easyai.agenthub.android.acceptance.coldexaminer" />
+         <provider android:authorities="${applicationId}.test.sound-witness" />
+         <intent>
+             <action android:name="android.intent.action.MAIN" />

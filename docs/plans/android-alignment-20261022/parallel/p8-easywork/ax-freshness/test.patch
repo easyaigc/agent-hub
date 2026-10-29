@@ -1,0 +1,152 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -143,8 +143,9 @@
+         }finally {image.recycle()}
+     }
+     private fun rectJson(r: androidx.compose.ui.geometry.Rect)=JSONObject().put("left",r.left).put("top",r.top).put("right",r.right).put("bottom",r.bottom)
+-    private fun saveProbe(value: JSONObject){
+-        probes.put(value);val bytes=probes.toString().toByteArray(Charsets.UTF_8);check(bytes.size<=2*1024*1024) {"Presentation scalar evidence exceeded2MiB"}
++    private fun saveProbe(value: JSONObject){probes.put(value);flushProbes()}
++    private fun flushProbes(){
++        val bytes=probes.toString().toByteArray(Charsets.UTF_8);check(bytes.size<=2*1024*1024) {"Presentation scalar evidence exceeded2MiB"}
+         val file=android.util.AtomicFile(File(folder,"measurements.json"));val output=file.startWrite()
+         try {output.write(bytes);file.finishWrite(output)}catch(failure: Throwable){file.failWrite(output);throw failure}
+     }
+@@ -222,20 +223,101 @@
+         probes.put(JSONObject().put("kind","actual-rendered-TextLayout-color").put("label","runtime").put("appDarkCallback",darkObserved).put("actualColor",layouts.single().layoutInput.style.color.toString()))
+         nativeTextAx(fixture.scope.runtimeId,readonly=true)
+     }
+-    private fun activeAppRoot(): android.view.accessibility.AccessibilityNodeInfo {
++    private fun activeAppRoot(deadline: Long=android.os.SystemClock.uptimeMillis()+5000): android.view.accessibility.AccessibilityNodeInfo {
+         var ready: android.view.accessibility.AccessibilityNodeInfo?=null;var nullSamples=0;var otherPackages=0
+-        ui.waitUntil(5000){val root=i.uiAutomation.rootInActiveWindow
++        val remaining=deadline-android.os.SystemClock.uptimeMillis();assertTrue("Original AX5s budget remains",remaining>0)
++        try {ui.waitUntil(remaining){val root=i.uiAutomation.rootInActiveWindow
+             if(root==null){nullSamples++;false}else if(root.packageName?.toString()!=i.targetContext.packageName){otherPackages++;@Suppress("DEPRECATION") root.recycle();false}else{ready=root;true}
+-        }
+-        probes.put(JSONObject().put("kind","readonly-own-app-AX-readiness").put("nullSamples",nullSamples).put("otherPackageSamples",otherPackages).put("maxWaitMs",5000))
++        }}finally {saveProbe(JSONObject().put("kind","readonly-own-app-AX-readiness").put("nullSamples",nullSamples).put("otherPackageSamples",otherPackages).put("maxWaitMs",5000).put("remainingBudgetMs",deadline-android.os.SystemClock.uptimeMillis()).put("rootReady",ready!=null))}
+         return checkNotNull(ready)
+     }
+-    private fun nativeFieldAx(label: String){
+-        val root=activeAppRoot();val matches=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();var count=0
+-        fun visit(n: android.view.accessibility.AccessibilityNodeInfo){check(++count<=2048);if(n.contentDescription?.toString()==label)matches.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n));for(k in 0 until n.childCount){val c=n.getChild(k)?:continue;try{visit(c)}finally{@Suppress("DEPRECATION") c.recycle()}}}
+-        try {assertEquals(i.targetContext.packageName,root.packageName?.toString());visit(root);assertEquals(1,matches.size);val field=matches.single();assertTrue(field.isEnabled);assertTrue(field.isEditable);assertTrue(field.isVisibleToUser)
+-            val b=android.graphics.Rect();field.getBoundsInScreen(b);assertTrue(b.width()>0&&b.height()>0);probes.put(JSONObject().put("kind","actual-Android-AX-field").put("label",label).put("class",field.className).put("boundsInScreen",b.toShortString()).put("editable",field.isEditable))
+-        }finally {matches.forEach {@Suppress("DEPRECATION") it.recycle()};@Suppress("DEPRECATION") root.recycle()}
++    private fun axNodeFlags(n: android.view.accessibility.AccessibilityNodeInfo): JSONObject {
++        val screen=android.graphics.Rect();val parent=android.graphics.Rect();n.getBoundsInScreen(screen);n.getBoundsInParent(parent)
++        fun box(b: android.graphics.Rect)=JSONObject().put("left",b.left).put("top",b.top).put("right",b.right).put("bottom",b.bottom)
++        val actions=n.actionList.map {it.id}.sorted()
++        return JSONObject().put("nodeIdentityHash",n.hashCode()).put("windowId",n.windowId).put("targetPackage",n.packageName?.toString()==i.targetContext.packageName)
++            .put("class",n.className?.toString()?:JSONObject.NULL).put("enabled",n.isEnabled).put("editable",n.isEditable).put("visibleToUser",n.isVisibleToUser)
++            .put("focusable",n.isFocusable).put("focused",n.isFocused).put("accessibilityFocused",n.isAccessibilityFocused).put("clickable",n.isClickable)
++            .put("selected",n.isSelected).put("checked",n.isChecked).put("scrollable",n.isScrollable).put("importantForAccessibility",n.isImportantForAccessibility)
++            .put("boundsInScreen",box(screen)).put("boundsInParent",box(parent)).put("childCount",n.childCount)
++            .put("actionCount",actions.size).put("actionIds",JSONArray(actions.take(64))).put("actionsTruncated",actions.size>64)
++    }
++    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
++    private fun composeFieldAx(tag: String): JSONObject {
++        val result=nodeGeometry(tag)
++        for(unmerged in listOf(false,true))try {
++            val n=ui.onNodeWithTag(tag,useUnmergedTree=unmerged).fetchSemanticsNode();val config=n.config
++            result.put(if(unmerged)"unmerged" else "merged",JSONObject().put("semanticsId",n.id).put("isEditable",config.getOrNull(SemanticsProperties.IsEditable)?:JSONObject.NULL)
++                .put("disabled",config.contains(SemanticsProperties.Disabled)).put("hasSetTextAction",config.contains(SemanticsActions.SetText))
++                .put("hasEditableText",config.contains(SemanticsProperties.EditableText)).put("hasInputText",config.contains(SemanticsProperties.InputText)))
++        }catch(failure: AssertionError){result.put(if(unmerged)"unmergedFailure" else "mergedFailure",failure.javaClass.name)}
++        return result
++    }
++    private fun dialogAxWindowId(w: Window): Int {
++        var result=-1;i.runOnMainSync {val own=w.decorView.createAccessibilityNodeInfo();if(own!=null){result=own.windowId;@Suppress("DEPRECATION") own.recycle()}};return result
++    }
++    private fun nativeFieldAx(label: String,tag: String){
++        val started=android.os.SystemClock.uptimeMillis();val deadline=started+5000;val automation=i.uiAutomation;val w=window();var expectedWindow=dialogAxWindowId(w)
++        val evidence=JSONObject().put("kind","actual-Android-AX-field-before-guards").put("tag",tag).put("labelHash",easyHash(label.toByteArray()))
++            .put("totalBudgetMs",5000).put("initialDialogWindowId",expectedWindow).put("expectedDialogWindowId",expectedWindow).put("phase","root-readiness").put("bodyOrActionLabelsStored",false)
++            .put("initialWindow",windowGeometry(w)).put("initialComposeField",composeFieldAx(tag))
++        saveProbe(evidence)
++        var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalField: android.view.accessibility.AccessibilityNodeInfo?=null;var matchCount=0
++        val recent=mutableListOf<JSONObject>();var firstSample: JSONObject?=null;var previous="";var sameSince=0L;var samples=0;var sameCount=0
++        try {
++            firstRoot=activeAppRoot(deadline);val remaining=deadline-android.os.SystemClock.uptimeMillis();assertTrue("AX query shares original5s budget",remaining>0)
++            ui.waitUntil(remaining){
++                val root=firstRoot?:automation.rootInActiveWindow;firstRoot=null;val matches=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();var totalMatches=0;var visited=0
++                var candidate: android.view.accessibility.AccessibilityNodeInfo?=null
++                val sample=JSONObject().put("rootPresent",root!=null);var fresh=false
++                try {
++                    if(root!=null&&root.packageName?.toString()==i.targetContext.packageName){
++                        sample.put("rootBeforeRefresh",axNodeFlags(root));val rootRefresh=root.refresh();sample.put("rootRefresh",rootRefresh).put("rootAfterRefresh",axNodeFlags(root))
++                        expectedWindow=dialogAxWindowId(w);sample.put("currentDialogWindowId",expectedWindow);evidence.put("expectedDialogWindowId",expectedWindow)
++                        val exactRoot=rootRefresh&&root.packageName?.toString()==i.targetContext.packageName&&expectedWindow>=0&&root.windowId==expectedWindow
++                        sample.put("exactDialogRoot",exactRoot)
++                        if(exactRoot){
++                            fun visit(n: android.view.accessibility.AccessibilityNodeInfo){check(++visited<=2048);if(n.contentDescription?.toString()==label){totalMatches++;if(matches.size<2)matches.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n))};for(k in 0 until n.childCount){val c=n.getChild(k)?:continue;try{visit(c)}finally{@Suppress("DEPRECATION") c.recycle()}}}
++                            visit(root);val details=JSONArray();var allFresh=true
++                            for(n in matches){
++                                val item=JSONObject().put("beforeRefresh",axNodeFlags(n));val refreshed=n.refresh();item.put("refresh",refreshed).put("afterRefresh",axNodeFlags(n))
++                                val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag";val available=n.availableExtraData;var extrasFresh=true
++                                item.put("idExtraAdvertised",available.contains(idKey)).put("tagExtraAdvertised",available.contains(tagKey))
++                                if(refreshed&&available.contains(idKey)){val ok=n.refreshWithExtraData(idKey,android.os.Bundle());extrasFresh=extrasFresh&&ok;item.put("idExtraRefresh",ok);if(ok&&n.extras.containsKey(idKey))item.put("nativeSemanticsId",n.extras.getInt(idKey))}
++                                if(refreshed&&available.contains(tagKey)){val ok=n.refreshWithExtraData(tagKey,android.os.Bundle());extrasFresh=extrasFresh&&ok;item.put("tagExtraRefresh",ok);if(ok)item.put("nativeTestTagMatches",n.extras.getCharSequence(tagKey)?.toString()==tag)}
++                                val labelStillMatches=n.contentDescription?.toString()==label;item.put("afterExtraQueries",axNodeFlags(n)).put("labelStillMatches",labelStillMatches)
++                                val parent=n.parent
++                                if(parent!=null)try{if(parent.packageName?.toString()==i.targetContext.packageName){val ok=parent.refresh();item.put("parentRefresh",ok).put("parent",axNodeFlags(parent))}}finally{@Suppress("DEPRECATION") parent.recycle()}
++                                val children=JSONArray();for(k in 0 until minOf(n.childCount,8)){val c=n.getChild(k)?:continue;try{if(c.packageName?.toString()==i.targetContext.packageName)children.put(axNodeFlags(c))}finally{@Suppress("DEPRECATION") c.recycle()}}
++                                item.put("children",children).put("childrenTruncated",n.childCount>8).put("childrenRefreshed",false);details.put(item)
++                                allFresh=allFresh&&refreshed&&extrasFresh&&labelStillMatches&&n.packageName?.toString()==i.targetContext.packageName&&n.windowId==expectedWindow
++                            }
++                            sample.put("matchCount",totalMatches).put("detailedMatchLimit",2).put("matches",details).put("visitedNodes",visited);fresh=allFresh
++                            if(totalMatches==1&&matches.size==1)candidate=android.view.accessibility.AccessibilityNodeInfo.obtain(matches.single())
++                        }
++                    }else sample.put("targetPackage",false)
++                    sample.put("composeField",composeFieldAx(tag)).put("window",windowGeometry(w));val now=android.os.SystemClock.uptimeMillis();val signature=sample.toString();samples++
++                    if(signature!=previous){previous=signature;sameSince=now;sameCount=1}else sameCount++
++                    if(firstSample==null)firstSample=JSONObject(sample.toString());recent.add(JSONObject(sample.toString()).put("sampleUptimeMs",now));if(recent.size>8)recent.removeAt(0)
++                    val stable=fresh&&sameCount>=2&&now-sameSince>=100&&now<=deadline
++                    evidence.put("phase",if(stable)"before-original-assertions" else "readonly-freshness-sampling").put("samples",samples).put("sameSamples",sameCount)
++                        .put("firstSample",firstSample).put("recentSamples",JSONArray(recent)).put("recentLimit",8).put("stableForMs",now-sameSince).put("remainingBudgetMs",deadline-now)
++                        .put("readinessDoesNotRequireFlagsTrue",true).put("windowRootAndTargetRefreshed",fresh)
++                    flushProbes()
++                    if(stable){matchCount=totalMatches;finalField=candidate;candidate=null}
++                    stable
++                }finally {candidate?.let {@Suppress("DEPRECATION") it.recycle()};matches.forEach {@Suppress("DEPRECATION") it.recycle()};root?.let {@Suppress("DEPRECATION") it.recycle()}}
++            }
++            assertEquals("Unique exact native field label",1,matchCount);val field=checkNotNull(finalField)
++            assertTrue("Native field isEnabled: $tag",field.isEnabled);assertTrue("Native field isEditable: $tag",field.isEditable);assertTrue("Native field isVisibleToUser: $tag",field.isVisibleToUser)
++            val b=android.graphics.Rect();field.getBoundsInScreen(b);assertTrue("Native field has positive bounds: $tag",b.width()>0&&b.height()>0)
++            val uiField=ui.onNodeWithTag(tag).assertIsDisplayed();val raw=uiField.getUnclippedBoundsInRoot();val bounds=uiField.fetchSemanticsNode().boundsInWindow;val density=ui.density.density
++            assertTrue("Whole field visible in Compose clip: $tag",bounds.width>=(raw.right.value-raw.left.value)*density-1.5f&&bounds.height>=(raw.bottom.value-raw.top.value)*density-1.5f)
++            val visible=android.graphics.Rect();w.decorView.getWindowVisibleDisplayFrame(visible)
++            assertTrue("Whole native field inside visible display frame: $tag",b.left>=visible.left-1&&b.top>=visible.top-1&&b.right<=visible.right+1&&b.bottom<=visible.bottom+1)
++            evidence.put("phase","all-original-native-field-flags-and-full-visibility-passed");flushProbes()
++        }catch(failure: Throwable){evidence.put("phase","failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-started);flushProbes();throw failure}
++        finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalField?.let {@Suppress("DEPRECATION") it.recycle()}}
+     }
+     private fun nativeTextAx(value: String,readonly: Boolean=false,selected: Boolean=false){
+         val root=activeAppRoot();val found=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();var count=0
+@@ -249,7 +331,7 @@
+         launch("zh-Hans",false,false);targets();val raw="  Renamed 中文 😀 %@  "
+         val name=ui.onNodeWithTag("easywork-name").performScrollTo();name.assertContentDescriptionEquals(text.tr("名称"));name.performTextReplacement(raw)
+         name.assert(SemanticsMatcher("full editable UTF16 retained"){p8ExactInput(raw,it.config.getOrNull(SemanticsProperties.EditableText)?.text,it.config.getOrNull(SemanticsProperties.InputText)?.text)})
+-        name.performImeAction();nativeFieldAx(text.tr("名称"));ui.runOnIdle {assertEquals(raw,fixture.live().name)}
++        name.performImeAction();nativeFieldAx(text.tr("名称"),"easywork-name");ui.runOnIdle {assertEquals(raw,fixture.live().name)}
+         touch("connection-preference");ui.onNodeWithTag("connection-preference-automatic").assertIsSelected();nativeTextAx(text.tr("自动"),selected=true);touch("connection-preference-relay-only")
+         touch("connection-preference");ui.onNodeWithTag("connection-preference-relay-only").assertIsSelected();touch("connection-preference-relay-only")
+         ui.runOnIdle {fixture.session.connectionBusy=true};ui.onNodeWithTag("cancel-client-form").assertIsNotEnabled();ui.runOnIdle {fixture.session.connectionBusy=false}
+@@ -282,7 +364,7 @@
+         ui.runOnIdle {w.setLayout((320*density).toInt(),(420*density).toInt())};ui.waitUntil(5000){kotlin.math.abs(w.decorView.width-320*density)<2&&kotlin.math.abs(w.decorView.height-420*density)<2};controlledBounds=true
+         ui.onNodeWithTag("easywork-migration-pairing-required").performScrollTo().assertTextEquals(text.tr(NativeMigrationEasyWorkGate.MESSAGE));targets()
+         method("扫码连接");ui.onNodeWithTag("easywork-pair-lan").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
+-        ui.onNodeWithTag("easywork-qr-description").performScrollTo().assertContentDescriptionEquals(text.tr("或粘贴连接二维码内容"));nativeFieldAx(text.tr("或粘贴连接二维码内容"))
++        ui.onNodeWithTag("easywork-qr-description").performScrollTo().assertContentDescriptionEquals(text.tr("或粘贴连接二维码内容"));nativeFieldAx(text.tr("或粘贴连接二维码内容"),"easywork-qr-description")
+         capture("en-dark-controlled-short");ui.runOnIdle {assertNull(fixture.live().agentConnection);assertEquals(EasyWorkPresentationFixture.fields(fixture.scope),EasyWorkPresentationFixture.fields(fixture.live().migrationEasyWork!!.target))}
+     }
+     @Test fun englishDarkActualLandscapeKeepsRealImeAndEmptySubmitVisible(){
+@@ -319,6 +401,6 @@
+         recordGeometry("keyboard-header-cancel-reachable",w)
+         probes.put(windowObservation(w).put("kind","actual-IME").put("imeBottomPx",imeBottom).put("emptyCodeSubmitDisabled",true).put("doneDelivery","Compose IME action callback + observed real IME hide; not physical keyboard-button hit"))
+         capture("en-dark-landscape-ime");field.performImeAction();ui.waitUntil(8000){ViewCompat.getRootWindowInsets(w.decorView)?.isVisible(WindowInsetsCompat.Type.ime())!=true};field.assertIsNotFocused()
+-        field.performScrollTo();nativeFieldAx(text.tr("中继服务地址"));capture("en-dark-landscape-done")
++        field.performScrollTo();nativeFieldAx(text.tr("中继服务地址"),"easywork-relay-url");capture("en-dark-landscape-done")
+     }
+ }

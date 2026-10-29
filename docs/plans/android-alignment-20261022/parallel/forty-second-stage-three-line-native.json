@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR42",
+  "sourceSha256": "0abb800077b072b945281bc2f35bea9368259d787113c5d94c60fac40b242bf6",
+  "expandedSourceSha256": "8b954746606440005beb024f91f77b4fbef82b7c7b8d9ddac8096c6a975e66e1",
+  "fullThreeApkSourceFingerprint": "0f20fda4f3d63499f9b1f32b59375cbc51ad2a128b2f1cf13fc90c61b330b6d1",
+  "ordinaryCanonicalExcludesExaminer": true,
+  "additionalExaminerSourcesInFullMap": 8,
+  "appSha256": "bdce71293f6039d0c2bf94b9527952cb862acffb2b5df1d5ed3f907746e533a5",
+  "runnerSha256": "7dcd209389477f0af7dc8431f4b067a2d422e1ddedc9861b9ca83e0b587a7443",
+  "examinerSha256": "730061caa1130585b2661364f9a7b8fc2f2e3875fcebc549b46620006c6d912a",
+  "threeApkSameSignerVerified": true,
+  "nativeIncluded": {
+    "calls": 43,
+    "passed": 39,
+    "failed": 4,
+    "basicApi26Passed": 17,
+    "realFileEngineApi37Passed": 16,
+    "p9Api37Passed": 6,
+    "p9Api37Failed": 1,
+    "productAxDiagnosticFailed": 3
+  },
+  "realFileEngineApi37": {
+    "locales": ["en-US", "zh-CN"],
+    "probeInstallDecodeNativeCancelCorruptionReleaseAllPassed": true,
+    "originalCanonicalRowAndWavPreserved": true,
+    "actualPageSize": 4096,
+    "runtime16KiBVerified": false,
+    "decodeUnderIndependentlyVerifiedUidIpv4AndIpv6Block": true,
+    "privacyClaim": "Bounded permission/AppOps and UID packet observations; not an absolute no-exfiltration or fullDEV claim",
+    "modelCachesReleased": true
+  },
+  "p9": {
+    "ordinaryBootstrapWrites": 1,
+    "originalReadOnlyVerifiedAfterFailure": true,
+    "store4Passed": true,
+    "crossPidGuardFailure": "Expected PAYLOAD refusal assertion failed before original exception message was persisted. Actual transport flag/guard must be captured; do not guess or relax arbitrary bits.",
+    "defaultFamilyUnchanged": true,
+    "originalSdkNoticeNotCreated": true,
+    "naturalObserverNotStarted": true,
+    "naturalFirstClickNotConsumed": true
+  },
+  "ax": {
+    "descriptionFakeNodeEditable": false,
+    "actualNativeEditTextEditable": true,
+    "composeFieldEditable": true,
+    "exactDialogAndRefreshedStableIds": true,
+    "diagnosis": "Unique description id is2_000_000_000+actual field id. Exact native field semantic-ID and label association selector required, keeping original native properties and whole geometry guards; no fakeEditable or generic parent fallback."
+  },
+  "auxiliary": {
+    "combinedThreeApkBuildTasks": 122,
+    "visibilityJVMVectorsPassed": 66,
+    "source41FullWorkspaceCheckPassed": true,
+    "source41CheckSourceDrift": [],
+    "source41Head": "60aaa0ed37316f69b78f5c49da03e31cf4265de6"
+  },
+  "api26FileRecognition": "Separate ongoing tuples are excluded from43 count. English production installer exhausted original180s; known worker/ref/original exit verified and model MISSING. Root cause not unique; do not relabel network unavailable or SDK incompatibility. Verified test-model precondition may separately cover local JNI without claiming installer pass.",
+  "remoteHostBusinessInputs": 0,
+  "remoteModelBusinessInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "pending": [
+    "API26 phone-side installer path and separately stated local engine evidence",
+    "P8 exact native field selector/full touch target and full interface matrix",
+    "P9 API37 cross-process diagnostic then natural first click; lower API strong observer",
+    "Saved-file panel complete bilingual/font/window/AX interactions",
+    "Full Session cold/repeated migration9, physical phone, fullDEV and actual16KiB"
+  ],
+  "paused": ["Task/project management", "iOS A6"]
+}

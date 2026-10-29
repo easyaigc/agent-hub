@@ -1,0 +1,92 @@
+{
+  "operationId": "parent-p9-source42-api37-binder-guard-diagnosis-20261029-1",
+  "baseCommit": "6389bd53f8abdcc7672513c27a792ac23ff90ec1",
+  "patch": {
+    "path": "api37-binder-diagnostics-store-test.patch",
+    "target": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt",
+    "baseSha256": "8b02d029d07f0f56986623f428a1a97281e8a436711d2b2b6f4d319d423492b1",
+    "proposedSha256": "84da1cb3bb46ddfb09af3464446f33e4b6b7e1c2e84d9ddc845c838312c2b6cf",
+    "sha256": "11b77a3723ff66f1a9e63cedf5733476163df18b20f39decedd8644c6ef42c51"
+  },
+  "unchangedServiceSha256": "a6a413d05e7c8a17d2733866d65f957075aa73f846675ec85a95e34c6163d291",
+  "servicePolicyChanged": false,
+  "actualFlags": "unknown; Source42 failure masked original guard message",
+  "assertionsRetained": true,
+  "oldBootstrapModified": false,
+  "devicesTouched": [],
+  "nativeRun": false,
+  "lockedApi37SourceSha256": {
+    "BinderProxy.java": "a13b8a507c9c2b751b06944c42fea4f950b4d9eec5488761909507ee2f1d15f9",
+    "IBinder.java": "20862f061bed4913746727ea6f0f5b2d11c86645d5f4df0a2e3a22a14c9ed7f5",
+    "Binder.java": "502dcd0067b3603e321086917e8e2274a8fc7beae1e9a75b335c2a035707ea6e",
+    "Parcel.java": "7e2505541149b81276e601f738b3d833f85ddbbdd595f7c2281c1baf98c77393"
+  },
+  "sdkFinding": "Conditional AppOps bit0x2 in BinderProxy; unchanged flags passed to onTransact; actual Source42 server flags still unknown, no whitelist patch",
+  "sources": {
+    "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalBootstrapUpgradeReadOnlyTest.kt": "e5a9212c5ae3198e48dca408e9c6359a009acb163e1a57db3e7bb57552951fc3",
+    "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalProbeDiagnostics.kt": "8f4b2d991efc7365afada4d0f86b09e474e60ba7364679935b545557b2387dd2",
+    "scripts/mobile/fixtures/native/binder-diagnostics/prepare-upgrade-plan.py": "46ce2f5e9147c4f4cd17d6a27966c03302c4e0fe7d9a51d03c92a8e4f15496e5",
+    "scripts/mobile/fixtures/native/binder-diagnostics/upgrade-plan-vectors.py": "2676bb935d28ddffc72bbb0dfac5df87a92f9650814ab6d7e9886710332d28e8"
+  },
+  "upgradeSelector": "com.agenthub.android.NativeNaturalBootstrapUpgradeReadOnlyTest#reconcileOriginalBootstrapAfterUpgradeReadOnly",
+  "storeSelector": "com.agenthub.android.NativeChatNotificationNaturalStoreTest#otherPidLockAndSingleClaimKeepOriginal",
+  "upgradeExtras": ["p9BootstrapUpgradePlanBase64", "p9BootstrapUpgradePlanSha256"],
+  "currentNativeCaseBudgetSeconds": 120,
+  "newNativeTimingWindows": false,
+  "parentSource42MapSha256": "0f20fda4f3d63499f9b1f32b59375cbc51ad2a128b2f1cf13fc90c61b330b6d1",
+  "bootstrapOriginalSourceSha256": "a187645aea036e55e3208476d0bb29f8d5fa80498c5ff18ade33c4da868b2818",
+  "actualCommonFilesModified": [],
+  "originalApi34NaturalFiveChanged": false,
+  "parentTwoApkCanonicalSourceSha256": "0abb800077b072b945281bc2f35bea9368259d787113c5d94c60fac40b242bf6",
+  "compiledPrivateProposal": {
+    "sourceFingerprint": "1dee0b341ed7cbfc9fc34a23d0792c1f1ded5be56e6b2355da2e417bcd17697d",
+    "sourceFiles": 750,
+    "source42NativeInputs": 737,
+    "source42ThreeNativeChanges": {
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapUpgradeReadOnlyTest.kt": "e5a9212c5ae3198e48dca408e9c6359a009acb163e1a57db3e7bb57552951fc3",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalProbeDiagnostics.kt": "8f4b2d991efc7365afada4d0f86b09e474e60ba7364679935b545557b2387dd2",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt": "84da1cb3bb46ddfb09af3464446f33e4b6b7e1c2e84d9ddc845c838312c2b6cf"
+    },
+    "buildScaffoldingInputs": 11,
+    "apks": {
+      "android-debug.apk": {
+        "sha256": "a087adb7b17c1e5848989db035483731bc2439d40c89bcdb87b7ab4efd8644ae",
+        "bytes": 66396691,
+        "v2Verified": true,
+        "zipVerified": true
+      },
+      "android-debug-androidTest.apk": {
+        "sha256": "a1265a899e1ea21c01e36f1374db59c63b9814d8638964a63de090d853077677",
+        "bytes": 11118310,
+        "v2Verified": true,
+        "zipVerified": true
+      },
+      "android-inbox-examiner-debug.apk": {
+        "sha256": "125b286eb3befea539e86a2c9e814331e82d8f949a1165712f9a96fc7f4d24db",
+        "bytes": 997958,
+        "v2Verified": true,
+        "zipVerified": true
+      }
+    },
+    "sameSigner": true,
+    "parentSource42ApkIdentityReused": false,
+    "independentCompileOnly": true,
+    "serviceUnchanged": true,
+    "oldBootstrapSelectorUnchanged": true,
+    "assembly": "122 tasks; App/runner/examiner debug and release Kotlin",
+    "nativeRun": false,
+    "devicesTouched": []
+  },
+  "auxiliary": {
+    "planContinuityVectors": 14,
+    "scope": "Synthetic offline local files; no actual original/device/native proof"
+  },
+  "recovery": {
+    "full750ReadbackVerified": true,
+    "baseline": "Verified6c source restoration chain",
+    "sourceFingerprint": "1dee0b341ed7cbfc9fc34a23d0792c1f1ded5be56e6b2355da2e417bcd17697d"
+  },
+  "pnpmCheck": "format/sync5/lint passed; stops at existing synthetic-tone.m4a feature coverage; later checks not run",
+  "atomicProposalSha256": "7c54863e5ae0091f3f3157cb0601f87ca27c299a96f5e35ee8c4f775a289244f",
+  "atomicProposalDefinition": "Compact sorted-key JSON {operationId,patch,sources,unchangedServiceSha256,bootstrapOriginalSourceSha256,parentSource42MapSha256}"
+}

@@ -1,0 +1,95 @@
+{
+  "source": "Source42",
+  "cases": [
+    {
+      "method": "chineseLightPortraitUsesProductNavigationAndSavedPreference",
+      "tag": "easywork-name",
+      "composeId": 124,
+      "labelId": 2000000124,
+      "labelEditable": false,
+      "nativeParentClass": "android.widget.EditText",
+      "nativeParentEditable": true,
+      "innerBoundsWindow": {
+        "left": 84,
+        "top": 423,
+        "right": 996,
+        "bottom": 485
+      },
+      "nativeParentBoundsScreen": {
+        "left": 84,
+        "top": 391,
+        "right": 996,
+        "bottom": 517
+      },
+      "visibleFrameScreen": {
+        "left": 0,
+        "top": 63,
+        "right": 1080,
+        "bottom": 1794
+      },
+      "fontScale": 1,
+      "role": "Exact Source42 measured ancestor is diagnostic context, not the new selector"
+    },
+    {
+      "method": "englishDarkActualLandscapeKeepsRealImeAndEmptySubmitVisible",
+      "tag": "easywork-relay-url",
+      "composeId": 208,
+      "labelId": 2000000208,
+      "labelEditable": false,
+      "nativeParentClass": "android.widget.EditText",
+      "nativeParentEditable": true,
+      "innerBoundsWindow": {
+        "left": 598,
+        "top": 953,
+        "right": 1968,
+        "bottom": 1017
+      },
+      "nativeParentBoundsScreen": {
+        "left": 598,
+        "top": 922,
+        "right": 1968,
+        "bottom": 1048
+      },
+      "visibleFrameScreen": {
+        "left": 142,
+        "top": 137,
+        "right": 2424,
+        "bottom": 1017
+      },
+      "fontScale": 1.3,
+      "role": "Exact Source42 measured ancestor is diagnostic context, not the new selector"
+    },
+    {
+      "method": "englishDarkControlledShortDialogKeepsImportedReadonlyTargets",
+      "tag": "easywork-qr-description",
+      "composeId": 159,
+      "labelId": 2000000159,
+      "labelEditable": false,
+      "nativeParentClass": "android.widget.EditText",
+      "nativeParentEditable": true,
+      "innerBoundsWindow": {
+        "left": 84,
+        "top": 603,
+        "right": 756,
+        "bottom": 927
+      },
+      "nativeParentBoundsScreen": {
+        "left": 204,
+        "top": 1012,
+        "right": 876,
+        "bottom": 1336
+      },
+      "visibleFrameScreen": {
+        "left": 0,
+        "top": 0,
+        "right": 1080,
+        "bottom": 1920
+      },
+      "fontScale": 2,
+      "role": "Exact Source42 measured ancestor is diagnostic context, not the new selector"
+    }
+  ],
+  "conclusion": "Old exact-description selector chose actual generated label nodes. New independent public-ID selection must validate actual field identity before flags. Relay touch control is31px below visible frame while inner text ends at frame; boundary assertion must remain.",
+  "productProposal": "Move only existing field padding to decorationBox so merge/scroll semantics measure whole control, pending native verification",
+  "newNativeByLeaf": 0
+}

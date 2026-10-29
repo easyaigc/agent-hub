@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR38",
+  "sourceSha256": "65044bcc0dce8c9f8ab0004a58648b6119ff2e39e1abf53bd20c6366ea06d119",
+  "expandedSourceSha256": "9ae6f7e3d10940cb837064a3b45906982208f36387e72b0c0c1c5602fdb121b9",
+  "appSha256": "dfd7c072980617b33bc05226e20bde257675189a55cbe0b9caac423dde0f65c5",
+  "runnerSha256": "68f23114ca7032af17b6626bdf7521410fa3494fde929cb9add8b6016c6ebc44",
+  "native": {
+    "terminalMethods": 14,
+    "passed": 6,
+    "failed": 8,
+    "actualProductBodies": 9,
+    "driverMissingIdentityBeforeBodyFailures": 5,
+    "zeroCallDriverErrors": 2
+  },
+  "passed": [
+    "Original UI regression5 under exact candidate/build identity",
+    "Normal/imported raw name and full footer close",
+    "Chinese all6 target labels and6 values retain exact text/full glyph/overflow guards",
+    "API37 actual landscape1.3 whole disabled submit above actual IME and within page, whole Cancel reachable during keyboard, Done callback observed actual IME hide"
+  ],
+  "failed": [
+    "Chinese native field AX enabled/editable/visible combined assertion; diagnostic needed",
+    "API37 after Done native field AX combined assertion; diagnostic needed",
+    "Actual OS font2/320x420dp target authority height702px exceeds page585px, final line clipped; original glyph failure retained",
+    "Five original UI cases rejected before setup because parent driver omitted required p8DiscoveryUiBuild; corrected new attempt5 passed, original failures retained"
+  ],
+  "driverCorrections": [
+    "Do not count helper nativeMethods=0 as zero execution for non-OwnedControl tests; terminal JUnit parsed independently",
+    "Duplicate NATIVE_LOG_ONLY kwargs and preexisting helper name failed before new native calls; exact unique driver retries preserve prior intents",
+    "Font2 helper normalized unset font to1.0; parent restored exact raw unset after own callers ended and read back null; original mismatch receipt retained"
+  ],
+  "realHostBusinessInputs": 0,
+  "realModelInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "next": [
+    "Extend responsive header to actual short window constraints, preserve original full text/glyph guards",
+    "Capture exact original AX flags/readiness within original budget",
+    "Adopt reviewed saved-file ASR/durable destination; natural OS notification completion witness repair pending"
+  ]
+}

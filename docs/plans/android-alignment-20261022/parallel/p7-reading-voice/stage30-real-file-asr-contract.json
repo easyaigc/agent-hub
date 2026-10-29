@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-reading-voice-20261028",
+  "parentOperation": "parent-p7-real-file-asr-native-preparation-20261029-1",
+  "productionChanges": false,
+  "testClass": "com.agenthub.android.NativeRealSavedVoiceSpeechTest",
+  "targetPackage": "com.easyai.agenthub.android.acceptance",
+  "runnerPackage": "com.easyai.agenthub.android.acceptance.test",
+  "customArguments": {
+    "additionalProperties": false,
+    "required": ["fileAsrLease", "fileAsrLocale", "fileAsrAudioSha256"],
+    "properties": {
+      "fileAsrLease": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "fileAsrLocale": {
+        "enum": ["en-US", "zh-CN"]
+      },
+      "fileAsrAudioSha256": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    }
+  },
+  "privatePaths": {
+    "lease": "files/acceptance/P7-real-file-asr/<lease>/lease.json",
+    "input": "files/acceptance/P7-real-file-asr/<lease>/input.wav",
+    "results": "files/acceptance/P7-real-file-asr/<lease>/cases/<closed-case>/result.json",
+    "runtime": "files/acceptance/P7-real-file-asr/<lease>/runtime"
+  },
+  "leaseSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "version",
+      "lease",
+      "package",
+      "sdk",
+      "abi",
+      "locale",
+      "audioSha256",
+      "inputKind",
+      "phraseId",
+      "appSha256",
+      "runnerSha256",
+      "createdAtMs",
+      "expiresAtMs",
+      "allowedCases"
+    ],
+    "properties": {
+      "version": {
+        "const": 1
+      },
+      "lease": {
+        "type": "string",
+        "format": "uuid",
+        "description": "canonical lowercase UUID; must equal fileAsrLease"
+      },
+      "package": {
+        "const": "com.easyai.agenthub.android.acceptance"
+      },
+      "sdk": {
+        "enum": [26, 37]
+      },
+      "abi": {
+        "const": "arm64-v8a"
+      },
+      "locale": {
+        "enum": ["en-US", "zh-CN"]
+      },
+      "audioSha256": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "inputKind": {
+        "const": "declared-tts"
+      },
+      "phraseId": {
+        "enum": ["en-open-project-v1", "zh-open-project-v1"]
+      },
+      "appSha256": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "runnerSha256": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "createdAtMs": {
+        "type": "integer"
+      },
+      "expiresAtMs": {
+        "type": "integer",
+        "description": "after actual device time; lifetime 1..7200000ms"
+      },
+      "allowedCases": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 8,
+        "uniqueItems": true,
+        "items": {
+          "enum": [
+            "probe-empty",
+            "cancel-download",
+            "install",
+            "decode",
+            "cancel-model",
+            "cancel-feed",
+            "corrupt",
+            "release-cache"
+          ]
+        }
+      }
+    }
+  },
+  "phrases": {
+    "en-US": {
+      "id": "en-open-project-v1",
+      "text": "open the project and show the latest message"
+    },
+    "zh-CN": {
+      "id": "zh-open-project-v1",
+      "text": "打开项目，显示最新消息。"
+    }
+  },
+  "selectors": [
+    {
+      "case": "probe-empty",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#probeMissingModelDoesNotDownloadOrRecognize",
+      "locale": "both; one locale per lease"
+    },
+    {
+      "case": "cancel-download",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#cancelPartialExplicitDownloadWaitsForActualExitAndNeverPublishes",
+      "locale": "both; one locale per lease"
+    },
+    {
+      "case": "install",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#explicitOfficialDownloadInstallsPinnedModel",
+      "locale": "both; one locale per lease"
+    },
+    {
+      "case": "decode",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#recognizeDeclaredEnglishWithDefaultVosk",
+      "locale": "en-US"
+    },
+    {
+      "case": "decode",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#recognizeDeclaredMandarinWithDefaultVosk",
+      "locale": "zh-CN"
+    },
+    {
+      "case": "cancel-model",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#cancelDuringActualModelConstructorJoinsDefaultBackend",
+      "locale": "both; one locale per lease"
+    },
+    {
+      "case": "cancel-feed",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#cancelDuringActualRecognizerFeedJoinsDefaultBackend",
+      "locale": "both; one locale per lease"
+    },
+    {
+      "case": "corrupt",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#corruptedPinnedModelIsRejectedAndRestoredWithoutChangingOriginal",
+      "locale": "both; one locale per lease"
+    },
+    {
+      "case": "release-cache",
+      "selector": "com.agenthub.android.NativeRealSavedVoiceSpeechTest#releaseOnlyOwnedVerifiedModelCachePreservingInputsAndOriginals",
+      "locale": "both; one locale per lease"
+    }
+  ],
+  "wave": {
+    "format": "canonical44-byte PCM16 mono little-endian 16kHz",
+    "minBytes": 3244,
+    "maxBytes": 960044,
+    "source": "parent-declared TTS; synthesis provenance retained externally"
+  },
+  "evidenceFields": [
+    "lease/case/action/app+runnerSHA/API/ABI/page size/build fingerprint/UID/PID",
+    "originalBefore/originalAfter: ID,fingerprint,manifestSHA,rowSHA,audioSHA,attempt flags",
+    "engine: defaultfactory,class,assetSHA,modelID,archiveSHA,packaged native library hashes",
+    "actualTranscript/actualTranscriptSha256/declaredTtsPhrase/recognizerOutputReturned",
+    "phase-specific UID RX/TX observations and recording configuration observations",
+    "RECORD_AUDIO before/after",
+    "actualWorkerApiExit/modelReferencesAfterJoin/resourceReferencesVerified",
+    "outcome/engineAssertionsPassed/overallAcceptance"
+  ],
+  "passPolicy": {
+    "noSkip": true,
+    "overallSuccess": "always pending independent parent microphone/network/fullDEV evidence",
+    "zeroTrafficIsNoNetworkProof": false,
+    "permissionUnchangedIsNoMicrophoneProof": false,
+    "unobservedNativeCancellationWindow": "fail/inconclusive; never pass",
+    "unknownPriorWorker": "block next case; inspect original receipt, do not replay"
+  },
+  "verificationHere": {
+    "sdk": "app/test Kotlin compiled in isolated frozen Stage29-based source; not current parent/native acceptance",
+    "nativeSelectorsExecuted": 0,
+    "modelOrAcousticExecuted": 0,
+    "deviceOrHostActions": 0,
+    "hostContractVectorsPassed": 6,
+    "nativeSelectorsCompiled": 9
+  },
+  "featuresClosed": [],
+  "singleSelectorPerInvocationRequired": true,
+  "originalPreservation": {
+    "baseline": "lease-private immutable original.json: whole key-sorted PendingVoiceRecording.json plus exact persisted row string",
+    "comparison": "exact canonical JSON string, exact persisted row string, full decrypted WAV byte-array equality with declared input",
+    "metadata": "No target/account/certificate/manifest/receipt/attempt fields excluded; no DTO reference equality",
+    "unknown": "fail without synthesizing a replacement original or overwriting its baseline"
+  }
+}

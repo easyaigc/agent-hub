@@ -419,3 +419,29 @@ PAR35源码仅补最终UiAutomation连接首回调就绪：同一Compose规则�
 PAR35连接UI五项全部通过，含迁入6值完整字形/readonly、长名/5长身份真换行、短agent完整可见、偏好/迟到/移除/编辑/方法切换；最终窗口首次null只读采样1次后收到准确App窗口，未接受第三owner。源与APK/runner指纹见[PAR35](../parallel/thirty-fifth-stage-imported-window-native.json)。当前工作区pnpm check exit0且sourceDrift为空，iOS模拟器pnpm build:ios成功；旧Source34失败仅新增档案格式，已修并完整重跑，未跳过门槛。完整App/真实双端/物理DEV、iOS边界空白名差异、API37 NSD解析和两个新proposal仍开放。
 
 主线同步3d38636a：已合入的F74默认关闭Host代理和Android Source35登记作结构化并集；保存全部原登记/aliases，新增Host-only F74平台不适用，不新增手机入口/操作。Source35 canonical原生输入逐文件核对无变化，双端真实结果仍按原指纹分别保留。组合pnpm check在同步前准确Source35已通过且无漂移；同步后新增Host模块的构建/专项/typecheck及准确PR head完整CI继续核对。
+
+PAR36源码准备：采用P8 f9d56cce/c3fe1607的产品App呈现与iOS原字符串命名提案，Session20aac→a6d0全文精确差异仅name.trim→name，空白/256/最新行guard不变。父增强横屏禁用按钮unclipped完整尺寸/可见frame四边，仍不点击；既有长名UI保持完整原串，实际迟到候选用例增加首尾空格live+metadata核对。准备API26产品中文亮色/英文暗色受控短窗/边界名称与API37真实横屏font1.3/IME；原值/权限/默认family上限不改。iOS六身份、迁入编辑、256及busy-toolbar差异继续登记。
+
+原Source35追加SDK37：WiFi原已保存但未连接，只有MOBILE默认网；本机在自有AVD连接已观察到的AndroidWifi后出现WIFI网络，实际发现停止和resolution-stopped两例通过，原namespace默认不变/广播注销joined。此前两次注册原12s失败保留，A/B支持LAN前置关联而不把单次前后观察当完整根因证明；所有临时局域网运行权限原状已还原，当前测试LAN连接供后续验收使用。API34+停止回执本次确实观测到，完整Discovery/Session/外部peer/真实DEV仍待。
+
+PAR36原生14次：10通过/4失败。名称完整原串与实际迟到候选保护各5通过，含live及metadata首尾空格；真实App呈现3失败（标签logical overflow2/非滚动footer被强制scroll1），真实API37 landscape/OS1.3及IME已进入，但relay submit滚动后不显示，保持失败并先测量。两次旧预检均0原生调用，实际Activity config/窗口断言未降低，最终实际旋转/字体设置均还原；API26 wm命令不支持但InputReader实际方向读回0。原Source35在测试LAN关联后的SDK37两例均通过，确有resolution-stopped回执，权限原样复原。PR54准确CI10682两job成功并合main0b6a60b6，stage7本地/远端分支已清。源码/失败/原件见[PAR36](../parallel/thirty-sixth-stage-product-name-ui-native.json)，完整P7/P8/P9及真实DEV未关闭。
+
+PAR37仅诊断驱动：Source36完整test基底077016→P8 aa1b提案094235精确apply后，父补缺失诊断节点AssertionError分类、原生VerticalScrollAxisRange、sheet原矩形/softInputMode及原断言失败时自有Dialog PixelCopy；所有值/字形/overflow/disabled按钮完整尺寸与可见四边guard保留。footer明确不scroll；IMEvisible+窗口稳定采样共用原8秒，不加预算；label-width条件patch未应用，页面未改。实际Material3 1.4.0外层已有imePadding、API37 Dialog为ADJUST_NOTHING，Foundation1.12.1对祖先已消费Insets取差，不能单凭两处imePadding判双重扣减；固定drag/header/剩余约束和焦点竞争仍候选，先补真实几何。4例新候选待验。
+
+PAR37：实际产品代码/安装App与PAR36相同，仅诊断runner变化。4次原生1通过/3失败：原串名称/完整关闭通过；两标签逻辑溢出保留失败，字形检查零失败；真实横屏IME下滚动区25px小于按钮113px，滚动后仅25px可见。短视口外层字体2实际Dialog文字仍1，撤回大字体覆盖声明，后续改实际系统2。原完整断言未降级，方向/字体设置读回已复原。测量与下一修复见[PAR37](../parallel/thirty-seventh-stage-window-geometry-native.json)。
+
+PAR38窄UI修复实际原生14终态：6通过/8失败，其中5为父驱动漏p8DiscoveryUiBuild的before-body拒绝，新唯一identity补齐重试5全通过。真实产品4例1通过3失败；两标签宽度/中文字形及真实横屏IME完整按钮/Cancel/Done均已越过原断言，随后两原生AX失败；实际系统字体2进入Dialog，702px字段大于585px视口末行裁切，继续修短窗头部。两次驱动错误在新instrumentation前结束；helper的非Owned nativeMethods=0不作零执行证据，以JUnit终态计数。字体unset被helper归一1.0后父精确删除读回null，原失败回执保留。见[PAR38](../parallel/thirty-eighth-stage-responsive-connection-native.json)。
+
+PAR39：实际短窗口约束启用同一可滚动头部后，真实OS字体2的六标签+六完整值均通过原字形/overflow/可见clip断言；随后原生AX同一断言失败。准确候选原UI5回归全通过，合计6次5通过1失败，方向/字体原始设置精确还原。保留PAR38所有失败/纠正回执；原生AX另线诊断，不能称整体P8通过。见[PAR39](../parallel/thirty-ninth-stage-short-window-native.json)。下一步语音RV29已独立审查17+6 patch，保持raw name和P8代次窄合并，真实引擎另验。
+
+PAR40接入候选：已独立复核的6e3a1313共17 owned+6公共patch逐个核对base/apply/readback，Session保留父raw name与P8代次，Storage与待接P9附加方法可交换合并。采用原录音文件型Vosk，准确目的地持久化/读回收据后才applied，失败/未知保持staged，detach升级等真实退出，closed question/off-index目录迁移；父补24中英文原生文案及系统语音可用性准确提示。构建、目录本地化4辅助通过，原生边界24项执行中。实际声学、真实下载/JNI退出、进程死亡、全UI/物理仍待验，iOS旧实现不是同一离线保证。
+
+PAR40实际API26原生24项16通过8失败：PCM/closed-key12、off-index composer/question staged/applied typed+framed迁移2、实际Session问题owner持久化及重建1、无匹配原件恢复1通过；其余8在旧DTO原件equals断言失败。独立读原日志，八组预期/实际仅KMP TargetScope对象地址不同，其余DTO显示相同；保留失败，下一候选用完整canonical元数据+准确原row字节+音频字节作更强原件核对。未将注入engine当声学/JNI通过。见[PAR40](../parallel/fortieth-stage-saved-file-asr-native.json)。
+
+PAR41仅原件fixture：改为controller.start前保存准确row、完整canonical元数据（含原target/account历史和全部attempt字段）及全WAV字节三重核对，实际API26控制器9全部通过。App与PAR40字节相同，唯一源码差异为该test，未改的15项可精确匹配复用；原8失败完整保留。24项唯一边界已有限定通过，未将注入engine当真实JNI/声学/进程死亡证明。见[PAR41](../parallel/forty-first-stage-whole-original-voice-native.json)。
+
+PAR42统一接入三线验收：P7固定5ca六文件经独立复核，仅AtomicFile报告权限修为实际FD的fchmod（API21+）；P9固定6c8五patch/七源/单定义scanner relocation准确接入，Storage加法306e保留P7方法，API34+完整命令完成/正向可见性见证；P8固定fd0 Source38 test overlay保留所有原断言及原5秒预算。父三APK构建122tasks通过，上一准确head60aaa完整pnpm check通过且sourceDrift=[]。P9完整source map需额外包括独立examiner模块，普通双APK canonical不涵盖该模块，不能冒充三APK完整来源。新native执行中，未关闭JNI/自然首点/AX。
+
+PAR42检查点纳入43项原生终态：39通过4失败（API26基础17；API37真实Vosk两语各8全通过；P9初始化+store前4+原bootstrap只读6通过/跨PID1失败；AX三例均误选说明fake节点）。真实JNI取消/损坏恢复/原件三重/双栈UID阻断识别与模型cache释放已验，实际页大小4KiB，16KiB仍待。P9跨PID失败未记录底层guard，先补诊断，不猜flags；原默认字节保持、旧bootstrap0重写、SDK通知/首点尚未创建。AX实际EditText可编辑，按准确semanticID与label关系修选择器，保留完整断言。API26识别另跑不入43计数，英语180s安装预算失败有明确exit/ref/original/MISSING，根因尚非唯一。完整三APK来源另加8个examiner输入并核同签名，不能把普通双APK canonical当全来源。详见[PAR42](../parallel/forty-second-stage-three-line-native.json)。
+
+PAR43：独立复核并精确接入a891完整Session三fixture、4505字段选择/相同padding归入真实decorationBox、c22升级只读与断言前guard诊断。三APK122tasks构建、升级计划14主机向量通过；原生21项20通过1失败。Session7普通+2不同PID控制冷恢复在API26/API37分别9/9，完整原JSON/持久化row/整WAV保持，synthetic仅识别器，不是声学证明；本冷窗是pre-write，post-write/pre-applied待验。连接真实横屏及OSfont2短窗通过，中文姓名保存通过后“自动”菜单native组合守卫失败，按真实menu owner继续诊断，未删断言。P9服务0/16白名单、原bootstrap旧意图/回执与原默认字节不改，Source43升级/诊断和自然首点待执行。详见[PAR43](../parallel/forty-third-stage-session-field-native.json)。

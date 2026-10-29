@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-native-ui-ios-matrix-next-20261029-1",
+  "iosSource": {
+    "apps/ios/Sources/EasyWorkPairing.swift": {
+      "sha256": "1c443b52ac637b22fccec2df78fb6bb40290655953cf2c0471abe3ca8d5ae616",
+      "matchesObservedParent": true,
+      "modifiedByLeaf": false
+    },
+    "apps/ios/Sources/Sheets.swift": {
+      "sha256": "cbf1a9785c5e8075ef7b17d8689e179789ba5de4cb85d6c3cd5e35ecc4ed39c9",
+      "matchesObservedParent": true,
+      "modifiedByLeaf": false
+    },
+    "apps/ios/Sources/RootView.swift": {
+      "sha256": "ff2a47a7470c8b4f0eecc9b5fc7afe8a4ebad8d19bf5703757bba3a855ad4ef4",
+      "matchesObservedParent": true,
+      "modifiedByLeaf": false
+    },
+    "apps/ios/Sources/CodexManageApp.swift": {
+      "sha256": "810b979168f4770be9244cb13b83c990158717e2352f04b3f4539964fe660163",
+      "matchesObservedParent": true,
+      "modifiedByLeaf": false
+    },
+    "apps/ios/Sources/EncryptedMigration.swift": {
+      "sha256": "e11791f76b82982daff58795635bd6f88ab6853541d2c5185f0f7dd773d3d45b",
+      "matchesObservedParent": true,
+      "modifiedByLeaf": false
+    },
+    "apps/ios/Sources/Localization.swift": {
+      "sha256": "d0d9f9db45ecf03442f6df1268ec1bfc1dc9e2f9049db042bc654a4c90a4cc5c",
+      "matchesObservedParent": true,
+      "modifiedByLeaf": false
+    }
+  },
+  "androidAuditReference": {
+    "source32": "58e302e55ba3aca59d6d6d4f41432a5ee88fa3f954190d1425fe69f4ab79d9c2",
+    "source33": "caba792d62737d6f7600f5e0aa6743a5c67587071bd620b7570a5ea08ccb1527",
+    "actualCompileContext": "Source33, not Source32",
+    "files": {
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": {
+        "source32": "e0d258d74e74c27b256c5a30e4592c0054bf9d14015616960167dc655ea33d36",
+        "source33": "e0d258d74e74c27b256c5a30e4592c0054bf9d14015616960167dc655ea33d36",
+        "same": true
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": {
+        "source32": "04e86bf72049eb952eb78d53b079f54037810fd1e22cd34c4e5b8a8aa3d90f93",
+        "source33": "04e86bf72049eb952eb78d53b079f54037810fd1e22cd34c4e5b8a8aa3d90f93",
+        "same": true
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": {
+        "source32": "ddacf2621c79a237ad14ac517b2e3b895f6215bc0f76c226f86bef28b3323012",
+        "source33": "8679b3baa8d494d56d36701dffca01c6089ade127c0887142cfd1d32eb87dfc1",
+        "same": false
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeLocalization.kt": {
+        "source32": "02d8c9eb61f87541963ba1ed819a02d9ee27f65bb96e68e0c1ed9064d1c5f58d",
+        "source33": "02d8c9eb61f87541963ba1ed819a02d9ee27f65bb96e68e0c1ed9064d1c5f58d",
+        "same": true
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileDesign.kt": {
+        "source32": "77f04e662d589679d7760bb1f282da1a6f0979dd14cab1cf31591f8d58da7c58",
+        "source33": "77f04e662d589679d7760bb1f282da1a6f0979dd14cab1cf31591f8d58da7c58",
+        "same": true
+      },
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": {
+        "source32": "20aacbc4a7947f5c9c71dbebb1df52ec30d66b7a80ac602fc1f3871fa8d59bd8",
+        "source33": "20aacbc4a7947f5c9c71dbebb1df52ec30d66b7a80ac602fc1f3871fa8d59bd8",
+        "same": true
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "normal_edit_route",
+      "sourceStatus": "same-source-intent",
+      "finding": "iOS Sheets.swift AddClientView routes actual EasyWork form via registered AgentConfigurationViews; Android AgentHubApp edit callback opens actual NativeSheetHost/ConnectionPage",
+      "nativeScope": "Actual product navigation, not MainActivity lifecycle",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "six_readonly_target_fields",
+      "sourceStatus": "different-source",
+      "finding": "Reviewed iOS EasyWorkConnectionForm has no six-target section; Android normal and marker edit show agent/authority/subject/host/workspace/runtime",
+      "nativeScope": "Android values, original glyph/clip and readonly Compose+native AX assertions prepared; iOS no equivalent pass",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "imported_marker_edit",
+      "sourceStatus": "absent-in-reviewed-ios-form",
+      "finding": "No migrationEasyWork/MigratedEasyWork/requiresPairing branch in reviewed iOS EasyWork form/AddClient route; generic EncryptedMigration payload is not evidence of that UI",
+      "nativeScope": "Android private synthetic marker fixture; not actual export/import",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "rename_normalization",
+      "sourceStatus": "different-source",
+      "finding": "iOS renameAgentClient guards trimmed-nonempty but saves raw name. Android renameEasyWork rejects blank/over256 then saves trim. Both immediate on edit",
+      "nativeScope": "Android raw field UTF16 versus trimmed persisted name checked; no new iOS normalization claim",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "preference_selection",
+      "sourceStatus": "same-source-intent",
+      "finding": "iOS native Picker reads live saved preference. Android dropdown selected semantics/checkmark reads current saved state",
+      "nativeScope": "Actual Android Compose selection and native AX selected node prepared; system popup visual differences remain",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "connection_method",
+      "sourceStatus": "same-source-options",
+      "finding": "Discovery/QR/manual/Relay in both. Android marker opens QR. iOS reviewed form defaults discovery with no marker branch",
+      "nativeScope": "Method switching without submitting; empty QR/Relay disabled checks",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "busy_form",
+      "sourceStatus": "partial-source-alignment",
+      "finding": "iOS Group.disabled(busy)/interactiveDismissDisabled; Android local busy disables fields/menu and global connectionBusy guards sheet close/provider",
+      "nativeScope": "Only injected Android global close guard exercised by prepared case; actual action busy remains unverified",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "busy_toolbar",
+      "sourceStatus": "different-source-guard",
+      "finding": "iOS AddClient toolbar button has no explicit access to child private busy; Android close TextButton enabled guard uses session.connectionBusy",
+      "nativeScope": "Source guard difference; actual iOS busy toolbar behavior unverified",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "errors",
+      "sourceStatus": "different-source-rendering",
+      "finding": "iOS Text(error.localizedDescription).foregroundStyle(red); Android typed EasyWorkConnectionFailure uses theme.error and polite liveRegion",
+      "nativeScope": "Source audit only; no pairing action/error injected as a substitute",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "pending",
+      "sourceStatus": "different-native-presentation",
+      "finding": "iOS ProgressView; Android existing pending Text polite liveRegion. Both show waiting state from pairing work",
+      "nativeScope": "Actual pending action not started under this lane",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "keyboard",
+      "sourceStatus": "platform-difference",
+      "finding": "iOS TextField auto-cap/autocorrection modifiers and outer keyboard Done toolbar; Android BasicTextField URI/ASCII types, autocorrect off, explicit ImeAction.Done and focus/IME hide",
+      "nativeScope": "Actual Android IME visibility/inset/focus/whole disabled button plus semantic Done callback; no physical keyboard-button proof",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "code_caps",
+      "sourceStatus": "different-source-options",
+      "finding": "iOS connection code textInputAutocapitalization(characters); Android ASCII KeyboardOptions has no explicit capitalization option",
+      "nativeScope": "No code entered or pairing submitted in new test",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "theme_locale",
+      "sourceStatus": "same-source-policy-platform-colors",
+      "finding": "iOS preferredColorScheme/locale and dynamic UIKit Palette; Android actual AgentHubApp color scheme + ProductTextProvider + generated MobileDesign",
+      "nativeScope": "Actual rendered Android label color/font/locale/PixelCopy; platform palettes not assumed pixel-equal",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "font_direction",
+      "sourceStatus": "unverified-runtime-matrix",
+      "finding": "iOS native Dynamic Type/Form; Android sp scaling, actual Activity/window constraints and independent dialog",
+      "nativeScope": "Synthetic2x dialog lane distinct from OS font; actual landscape geometry verified, not a rotation-transition test",
+      "newNativeResult": "unexecuted"
+    },
+    {
+      "id": "accessibility",
+      "sourceStatus": "partial-source-alignment",
+      "finding": "iOS TextField identifiers and native Picker; Android explicit field contentDescription and selected/liveRegion semantics",
+      "nativeScope": "Native node labels/editability/readonly/selected + actual bounds prepared; no TalkBack/VoiceOver speech/traversal claim",
+      "newNativeResult": "unexecuted"
+    }
+  ],
+  "noFieldPresenceAsVisualPass": true,
+  "observedDesignTokenSource": {
+    "path": "design/mobile/tokens.json",
+    "sha256": "cf5dbb088f0674771f96bb2d8f3de5459794685527a585e561cffc08c3e54752",
+    "matchesObservedParent": true,
+    "includedInFrozen707CompileInputList": false,
+    "modifiedByLeaf": false
+  }
+}

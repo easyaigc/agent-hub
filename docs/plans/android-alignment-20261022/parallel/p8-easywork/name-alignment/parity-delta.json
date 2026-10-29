@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-source35-native-feedback-next-20261029-1",
+  "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S14", "S18"],
+  "commonAssertion": "Existing EasyWork rename preserves complete accepted input like iOS, rejects all-blank input, preserves the live client and survives late candidate IO. Native presentation requires measured product window/theme/locale and unchanged original private state.",
+  "dualPlatformImpact": {
+    "ios": "Source confirms existing raw-string rename; unchanged and unexecuted",
+    "android": "Exact one-line shared Session proposal only; four exclusive actual-AgentHubApp test methods prepared; no shared production file edited"
+  },
+  "sessionOverlay": {
+    "version": 1,
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+    "baseSource": "Source35",
+    "baseSha256": "20aacbc4a7947f5c9c71dbebb1df52ec30d66b7a80ac602fc1f3871fa8d59bd8",
+    "proposedSha256": "a6d0bb7d0af7a8026c3c9436847d871ec65e75ce6043172b654bb43d16771133",
+    "originalMethodSha256": "8b02e97ab6fc45e10dc80d4972599f72fe4831fa1bc6e5a107a101c39d1bbcc3",
+    "proposedMethodSha256": "e62c9079424fbede2a025be507be64662a1cb394c5e2f4d811d4e4a9ecaa943a",
+    "sharedFileDirectlyChanged": false,
+    "otherMethodsChanged": false,
+    "guards": "Existing isBlank and length256 guard retained; client lookup uses latest live row; only stored name.trim becomes name"
+  },
+  "frozenCompileBase": {
+    "sourceSha256": "355510d707c4243393bcfeb2bea4a93dc727eafb315e10a9c23dccd6dbf49a5b",
+    "inputs": 707,
+    "allBytesAndAggregateVerified": true
+  },
+  "nativeCompile": {
+    "compileExit": 0,
+    "inputs": 709,
+    "sourceSha256": "88163ecbe6ba0e69d9971db60217ce664ac4f62186eabfc30ceacc9e54ed1f2c",
+    "allFinalInputsVerified": true,
+    "mismatches": [],
+    "newApks": 0,
+    "executedMethods": 0,
+    "presentationMethods": 4
+  },
+  "nativeExecution": {
+    "status": "unexecuted",
+    "preparedMethods": 4,
+    "executedMethods": 0,
+    "newApks": 0,
+    "host": "Actual AgentHubApp in ComponentActivity; not MainActivity lifecycle",
+    "boundaryCase": "Normal and imported marker: complete original boundary whitespace, live and actual metadata name, empty/ASCII/Unicode whitespace-only rejected, product close/reopen retains last saved raw name",
+    "readonlyAxReadiness": "At most5s, package must be exact target, original null/other sample counts recorded; no input or permission action",
+    "wrapRequirement": "All original overflow/glyph/clip guards retained; labels and fixed short agent do not require wrap; controlled short window requires wrapping of five long identities",
+    "busyError": "Only controlled global-close flag; actual action busy/pending/error still unexecuted"
+  },
+  "sourceJvm": {
+    "proposed": {
+      "compileExit": 0,
+      "junitExit": 0,
+      "tests": 17,
+      "failed": 0
+    },
+    "baseCounterexample": {
+      "compileExit": 0,
+      "junitExit": 1,
+      "tests": 17,
+      "failed": 4
+    },
+    "scope": "Exact production rename/replace/update, actual model/schema/marker in synthetic outer state, metadata-name witness and held credential IO; not MobileSession/native storage/discovery/network acceptance"
+  },
+  "parentSource35Feedback": {
+    "evidenceKind": "Parent-reported actualAPI26 old UI5passed and store5passed; not independently rerun by leaf",
+    "sourceSha256": "355510d707c4243393bcfeb2bea4a93dc727eafb315e10a9c23dccd6dbf49a5b",
+    "appSha256": "fc9c6b2fccfce9ddaab2a257ca33b0161879556d63a0315dfaa86b04e73f91dd",
+    "runnerSha256": "1ea6a5595928487807f84d045d6dd7e13de5cc3914aef8b69c6c5036abbc3b12",
+    "api37Nsd": "Actual discovery stop passed; owned advertisement callback timed out at original12s before resolve; advertisement cleanup joined; permissions restored per parent; no result replaced or budget added"
+  },
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/EasyWorkPresentationFixture.kt": "f5b1d3f915275c475e08960c1003af574cb110a87d8412d539389607a7b9bce7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt": "1f08d944eadae686c9ce1c3bc08c9bb742a950a39d7528a6b4b5ed362e86a88c"
+  },
+  "sharedMainSessionPageOldUiCentralOrManifestChanged": false,
+  "centralRegistrationOwner": "parent",
+  "open": [
+    "Parent exact Session merge and new internally consistent source/App/runner",
+    "All four new methods actualAPI26/37; API37 actual landscape when available",
+    "Physical UI, MainActivity lifecycle, actual action busy/error/pending and full accessibility/font/orientation matrix",
+    "Existing issuer/Desktop/TLS/default-scale/model gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "deviceAdbHostPairingPermissionModelBusinessActionsByLeaf": 0,
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "sync-rule tests5", "lint"],
+    "stoppedAt": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "laterChecks": "not run",
+    "owner": "parent central ledger"
+  },
+  "stageCleanup": {
+    "ownBuildAndGradleRemoved": true,
+    "jvmGeneratedSourcesAndClassesRemoved": true,
+    "staticLogsCompressedAndReadBack": true,
+    "newApks": 0
+  }
+}

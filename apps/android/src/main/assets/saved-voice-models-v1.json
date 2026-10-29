@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "locale": "en-US",
+      "id": "vosk-model-small-en-us-0.15",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
+      "bytes": 41205931,
+      "sha256": "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498",
+      "expandedBytes": 70898967,
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": "am/final.mdl",
+          "bytes": 15962575,
+          "sha256": "75370a0137f9daf8f469dedd7daa4513ae7a621f03240c6e512e2b50b656a7b6"
+        },
+        {
+          "path": "graph/disambig_tid.int",
+          "bytes": 102,
+          "sha256": "9ad87cc166d0998f08f758f47a6223a120dfffcbee805c4849c3aa5e6bb3c0fc"
+        },
+        {
+          "path": "graph/HCLr.fst",
+          "bytes": 22416994,
+          "sha256": "5caafba3081e1646545ac6bff0dd7a318e53dcbdc86f237909ce1d2ac1293d34"
+        },
+        {
+          "path": "graph/Gr.fst",
+          "bytes": 24013795,
+          "sha256": "023c8b7e30704a9e37765c635c252e608a02f361235bf94abdcf2a5225d85b20"
+        },
+        {
+          "path": "graph/phones/word_boundary.int",
+          "bytes": 1761,
+          "sha256": "da199d9c991e0e84681ddbb34627b915b26302d50a8fdaa23c51e2bc3a50b5c3"
+        },
+        {
+          "path": "conf/model.conf",
+          "bytes": 290,
+          "sha256": "8f14cb1eeb07c762c371db648c6be688d347236155ca0f64fb13b6567a8ce81f"
+        },
+        {
+          "path": "conf/mfcc.conf",
+          "bytes": 131,
+          "sha256": "1e2228006d01d805ad1c267fee9f79709ca87ac51bd82b0e3f5c69ba543f0fc4"
+        },
+        {
+          "path": "ivector/splice.conf",
+          "bytes": 35,
+          "sha256": "9f0c5f7c82d18eaf25d8bce470efa9f7741f88411fe428774bc0a9bb69a24756"
+        },
+        {
+          "path": "ivector/final.dubm",
+          "bytes": 168048,
+          "sha256": "8c5d7dd69d2122313baaf19f61f35dd3fa18b70c62ac0687e311e1c46e6daca7"
+        },
+        {
+          "path": "ivector/global_cmvn.stats",
+          "bytes": 1080,
+          "sha256": "33be09afcc80059847a275c3d043b51f1ab954c7c2438ddbbf4745e8ba144ff9"
+        },
+        {
+          "path": "ivector/final.ie",
+          "bytes": 8288887,
+          "sha256": "3f37faf90c375b9e4740b569398b5829ed9cc07d19be6d441f72c3b71d7efcc6"
+        },
+        {
+          "path": "ivector/online_cmvn.conf",
+          "bytes": 95,
+          "sha256": "a2f3571754b64297cb7efb2e7ca3df61995c5a45fcbb97188f90613552bb2dfe"
+        },
+        {
+          "path": "ivector/final.mat",
+          "bytes": 44975,
+          "sha256": "ddd83586dc5f928cda8738b922c85ffe38fc789cb5f9151a712ca12f37265382"
+        },
+        {
+          "path": "README",
+          "bytes": 199,
+          "sha256": "c0cf286e4f7783306c5f6469b37db69228fb16803b03cae661edb2d7bba64ebb"
+        }
+      ]
+    },
+    {
+      "locale": "zh-CN",
+      "id": "vosk-model-small-cn-0.22",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip",
+      "bytes": 43898754,
+      "sha256": "3af8b0e7e0f835ae9d414ce5df580237a3cfb08d586c9fbbb0f7ff29ad5b14ba",
+      "expandedBytes": 68292271,
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "path": "am/final.mdl",
+          "bytes": 15901896,
+          "sha256": "91eda2c04c4f599361cb92b0e5298ccdf6b3c7a1fa52bfcefcd2c4e07aa1c131"
+        },
+        {
+          "path": "graph/Gr.fst",
+          "bytes": 26082259,
+          "sha256": "46d41a9b1723abccdcb354d731a5b58d87c060100d88ada1a3e31220f52b0434"
+        },
+        {
+          "path": "graph/disambig_tid.int",
+          "bytes": 234,
+          "sha256": "c9200318c2a265549ebfbea7e0176fa62e131e953abd140c9b0b39fe61e24015"
+        },
+        {
+          "path": "graph/phones/word_boundary.int",
+          "bytes": 7161,
+          "sha256": "11ca784b99f03188b451fb54714c2de3dd694e662a5f88e82df435c2789b9aec"
+        },
+        {
+          "path": "graph/HCLr.fst",
+          "bytes": 16158762,
+          "sha256": "798af0d9ba6f2d727747f58e1e7b2305f8618bc8ea7f6c51beecd8a2c965b965"
+        },
+        {
+          "path": "ivector/online_cmvn.conf",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "ivector/final.ie",
+          "bytes": 9927287,
+          "sha256": "c39d46fbff04efb7baa9660ae7a728b0e2f35a4a1250b56ed3a599e26956df86"
+        },
+        {
+          "path": "ivector/final.mat",
+          "bytes": 44975,
+          "sha256": "42706d88818070ea0d0182b4d11367ba52a13b9a2be45630f60858a422109ada"
+        },
+        {
+          "path": "ivector/final.dubm",
+          "bytes": 168048,
+          "sha256": "e33276cbd548c0a03ae5812c98115940614997dff23a6d59968af6eaf7630ff8"
+        },
+        {
+          "path": "ivector/splice.conf",
+          "bytes": 35,
+          "sha256": "9f0c5f7c82d18eaf25d8bce470efa9f7741f88411fe428774bc0a9bb69a24756"
+        },
+        {
+          "path": "ivector/global_cmvn.stats",
+          "bytes": 1090,
+          "sha256": "b267dc89c1556fdd5bc358f0a480929da1743eeccfa06a67daf8db629ca336bb"
+        },
+        {
+          "path": "conf/mfcc.conf",
+          "bytes": 153,
+          "sha256": "6c326fea5741c2d78be12f76eb1b36ea2ace040da9e355e4cfe6bb80e5f7d5ab"
+        },
+        {
+          "path": "conf/model.conf",
+          "bytes": 289,
+          "sha256": "468a8125c07530f96adcc219a0a5f993e8e0721ccf18acbd3169b77fc685fb9b"
+        },
+        {
+          "path": "README",
+          "bytes": 82,
+          "sha256": "7362be411c609f2a1c9d2dfe22c2d72555c15eb90bfe47c41772f49ef94840ce"
+        }
+      ]
+    }
+  ]
+}

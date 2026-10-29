@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "parentOperation": "parent-p7-rv29-full-session-native-fixtures-20261029-1",
+  "baseVoiceCommit": "6e3a1313524508d9f2dbdc0f3e1d1463f20a903e",
+  "baseIntegrationSourceSha256": "a486f8e3758e8a959f4b2071256bdfbf1a42c3ef5e3660b6466fbd7302f9d758",
+  "requiredParentMobileSessionNarrowSha256": "f4b2a1352321b7700268418a634ba04b0f9e269b6f131994ebfa781f34f6840d",
+  "productionChanges": 0,
+  "sharedProductionPatchesAdded": 0,
+  "requiresSixRV29CommonPatches": true,
+  "sourceFiles": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionColdTest.kt",
+      "baseSha256": null,
+      "proposedSha256": "c8910d00714de0ba8562e29807bc3d8a91e50dec7548473ff01b4f04229d7be7"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionFixture.kt",
+      "baseSha256": null,
+      "proposedSha256": "76b6fa97dcbdfbad7d985120e4d53c0874109c0cb347e8689634ecef679debc7"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionTest.kt",
+      "baseSha256": null,
+      "proposedSha256": "c151e770f7ce50cae568c99753cd751742accc7c0f945a5ed9f4e3c26acb92ee"
+    }
+  ],
+  "targetPackage": "com.easyai.agenthub.android.acceptance",
+  "runner": "com.easyai.agenthub.android.acceptance.test/androidx.test.runner.AndroidJUnitRunner",
+  "allMethods": 9,
+  "ordinaryMethods": 7,
+  "coldPairMethods": 2,
+  "cases": [
+    {
+      "id": "p7-saved-session-1",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionTest#actualComposerAndQuestionPublishOnlyAfterExactSerialWriterReadback",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": null
+    },
+    {
+      "id": "p7-saved-session-2",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionTest#actualSessionIdenticalOldMetadataEnqueueRevokesVoicePublication",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": null
+    },
+    {
+      "id": "p7-saved-session-3",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionTest#actualSessionFailedAndUnknownDestinationWritesKeepTheResultStaged",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": null
+    },
+    {
+      "id": "p7-saved-session-4",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionTest#actualSessionLaterDraftEditsRejectLateDestinationAcceptance",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": null
+    },
+    {
+      "id": "p7-saved-session-5",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionTest#actualQuestionOwnerDisposeWaitsForWriterThenAllowsExplicitRecovery",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": null
+    },
+    {
+      "id": "p7-saved-session-6",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionTest#actualSessionReopenReadsQuestionOwnerAndNeverAutoRecognizesOffIndexResults",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": null
+    },
+    {
+      "id": "p7-saved-session-7",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionTest#cancelledFullSessionMigrationWaitsAgainForSavedWorkerAndKeepsOffIndexQuestionGraph",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": null
+    },
+    {
+      "id": "p7-saved-session-8",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionColdTest#stageFreshActualSessionResultsForDifferentPidWithoutReplayingAnyOriginal",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": "writer"
+    },
+    {
+      "id": "p7-saved-session-9",
+      "selector": "com.agenthub.android.NativeSavedVoiceSessionColdTest#reopenSameActualSessionResultsUnderDifferentPidAndFillOnlyAfterExplicitAction",
+      "expectedMethods": 1,
+      "nativeStatus": "not-run",
+      "realSession": true,
+      "realEncryptedWriter": true,
+      "recognizer": "injected synthetic file engine",
+      "modelOrAcousticClaim": false,
+      "freshOwnedNamespace": true,
+      "coldPair": "reader"
+    }
+  ],
+  "coldPairProtocol": {
+    "argument": "savedVoiceSessionColdRun",
+    "value": "fresh canonical UUID from parent",
+    "writerMustRunOnce": true,
+    "readerRequiresDifferentPid": true,
+    "sameAppDataAndKeysPreserved": true,
+    "readerClaimPreventsBlindReplay": true,
+    "proofPath": "files/acceptance/saved-voice-session-cold-<UUID>.json",
+    "unknownOutcome": "Inspect same proof/reader-started/reader-complete and actual catalog. Do not rerun either method blindly."
+  },
+  "evidencePath": "files/acceptance/P4-owner-callbacks/<ownerCallbacksRun>/saved-voice-session-<UUID>/",
+  "remaining": [
+    "Parent exact-source build/runner and device lease",
+    "Run all9 methods and retain actual native outcomes separately",
+    "Actual JNI/model download/English+Mandarin acoustics remain voice/parent responsibility",
+    "This cold pair stages a pre-write failure. Actual kill at post-write/pre-applied boundaries remains separate."
+  ],
+  "prohibited": [
+    "Host or original business operation replay",
+    "microphone or OS speech fallback",
+    "real model download",
+    "default app data reset/uninstall",
+    "iOS/A6/business task-project actions"
+  ],
+  "originalPreservation": {
+    "capture": "Before the original action; cold reader before actual Session restore; same-process reopen retains its initial baseline",
+    "assertions": [
+      "complete canonical original.json() equality",
+      "exact persistent row string equality including all receipt/attempt/storage fields",
+      "entire WAV byte array equality"
+    ],
+    "all9Methods": true,
+    "historicalAccountMetadataIgnored": false,
+    "scopeMatchesIsNotTheOracle": true,
+    "fixedReferenceEqualitySites": [
+      "NativeSavedVoiceSessionFixture.preserved",
+      "NativeSavedVoiceSessionTest.actualQuestionOwnerDisposeWaitsForWriterThenAllowsExplicitRecovery"
+    ],
+    "addedWholeOriginalCoverage": [2, 4, 5]
+  }
+}

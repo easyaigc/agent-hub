@@ -22,6 +22,9 @@ import androidx.compose.ui.platform.testTag
             VoiceInputStrip(voice,voice.capturedText ?: value)
         }
     }else Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End,verticalAlignment=Alignment.CenterVertically) {
+        IconAction("refresh",productText("恢复原录音"),"question-voice-restore-${question.id}",session.canBeginQuestionVoice(approval,question,destination)) {
+            focus.clearFocus();keyboard?.hide();session.beginQuestionVoice(approval,question,destination,{text},{update(it)},recoverSavedFile=true)
+        }
         IconAction("mic",productText("语音输入回复"),"question-voice-${question.id}",session.canBeginQuestionVoice(approval,question,destination)) {
             focus.clearFocus();keyboard?.hide();session.beginQuestionVoice(approval,question,destination,{text},{update(it)})
         }

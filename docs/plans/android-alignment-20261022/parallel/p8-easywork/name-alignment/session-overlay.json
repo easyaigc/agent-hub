@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+  "baseSource": "Source35",
+  "baseSha256": "20aacbc4a7947f5c9c71dbebb1df52ec30d66b7a80ac602fc1f3871fa8d59bd8",
+  "proposedSha256": "a6d0bb7d0af7a8026c3c9436847d871ec65e75ce6043172b654bb43d16771133",
+  "originalMethodSha256": "8b02e97ab6fc45e10dc80d4972599f72fe4831fa1bc6e5a107a101c39d1bbcc3",
+  "proposedMethodSha256": "e62c9079424fbede2a025be507be64662a1cb394c5e2f4d811d4e4a9ecaa943a",
+  "sharedFileDirectlyChanged": false,
+  "otherMethodsChanged": false,
+  "guards": "Existing isBlank and length256 guard retained; client lookup uses latest live row; only stored name.trim becomes name"
+}

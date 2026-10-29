@@ -64,6 +64,9 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.6.0")
     implementation("androidx.camera:camera-view:1.6.0")
     implementation("com.google.zxing:core:3.5.4")
+    // File-only offline ASR. Explicit Android AARs avoid desktop JNA and old 4KB 64-bit natives.
+    implementation("com.alphacephei:vosk-android:0.3.75@aar") { isTransitive = false }
+    implementation("net.java.dev.jna:jna:5.18.1@aar") { isTransitive = false }
     // Platform transports and API26-compatible X25519; domain rules remain in KMP.
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
     implementation("org.bouncycastle:bcprov-jdk15to18:1.86")

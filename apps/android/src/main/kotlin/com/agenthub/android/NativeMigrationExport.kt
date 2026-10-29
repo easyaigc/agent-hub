@@ -52,6 +52,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
         read(NativeMigrationNotificationArchives.RECORD)?.let {NativeMigrationNotificationArchives.legacyNames(it).forEach(::add)}
         add(NativeVoicePreferenceRecord.RECORD)
         add(NativeVoiceDiscardCatalog.RECORD)
+        add(NativeVoiceLocalResults.RECORD)
         read(NativeMigrationSounds.RECORD)?.let {raw->NativeChatNotificationSoundLibrary.binaryInventory(raw).keys.forEach(::add)}
         val metadata=value("metadata")?:error("Missing metadata");NativeMigrationMetadata.validate(metadata,allowSourceEasyWork=true)
         val keys=mutableSetOf<String>()
@@ -88,6 +89,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
         read(NativeVoiceDiscardCatalog.RECORD)?.let {raw->NativeVoiceDiscardCatalog.decode(raw).values.forEach {marker->
             voiceIds.add(marker.id);add(marker.auditName);if(marker.evidence.kind=="raw")add(marker.rawName)
         }}
+        read(NativeVoiceLocalResults.RECORD)?.let {raw->NativeVoiceLocalResults.decode(raw).forEach {voiceIds.add(it.recordingId)}}
         voiceIds.forEach {id->val name="voice-recording:$id";add(name);value(name)?.let {row->
             if(row.optString("audioStorage")=="binary-chunks-v1")add("voice-audio:$id")
         }}

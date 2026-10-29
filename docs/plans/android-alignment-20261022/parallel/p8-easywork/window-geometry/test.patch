@@ -1,0 +1,114 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -111,7 +111,9 @@
+     }
+     private fun touch(tag: String,scroll: Boolean=true){
+         require(tag in listOf("client-selector","cancel-client-form","connection-preference","easywork-connection-method","easywork-name","easywork-relay-url","easywork-relay-code")||tag.startsWith("edit-client-")||tag.startsWith("connection-preference-")||tag.startsWith("easywork-method-")) {"Forbidden action in presentation-only test: $tag"}
+-        val n=ui.onNodeWithTag(tag);if(scroll)n.performScrollTo();n.assertIsDisplayed().assertIsEnabled().assertHasClickAction()
++        require(tag!="cancel-client-form"||!scroll) {"Footer has no scroll ancestor"}
++        val n=ui.onNodeWithTag(tag);if(scroll)n.performScrollTo();if(tag=="cancel-client-form")recordGeometry("footer-before-hit",window())
++        n.assertIsDisplayed().assertIsEnabled().assertHasClickAction()
+         val raw=n.getUnclippedBoundsInRoot();val b=n.fetchSemanticsNode().boundsInRoot
+         assertTrue("Whole visible hit target $tag",b.width>=(raw.right.value-raw.left.value)*ui.density.density-1.5f&&b.height>=(raw.bottom.value-raw.top.value)*ui.density.density-1.5f)
+         n.performTouchInput {click(center)};touches+=tag;ui.waitForIdle()
+@@ -140,16 +142,68 @@
+             probes.put(windowObservation(w).put("kind","actual-owned-dialog-PixelCopy").put("file","$label.png").put("cropInWindow",crop.toShortString()))
+         }finally {image.recycle()}
+     }
++    private fun rectJson(r: androidx.compose.ui.geometry.Rect)=JSONObject().put("left",r.left).put("top",r.top).put("right",r.right).put("bottom",r.bottom)
++    private fun saveProbe(value: JSONObject){
++        probes.put(value);val bytes=probes.toString().toByteArray(Charsets.UTF_8);check(bytes.size<=2*1024*1024) {"Presentation scalar evidence exceeded2MiB"}
++        val file=android.util.AtomicFile(File(folder,"measurements.json"));val output=file.startWrite()
++        try {output.write(bytes);file.finishWrite(output)}catch(failure: Throwable){file.failWrite(output);throw failure}
++    }
++    private fun nodeGeometry(tag: String): JSONObject=try {
++        val node=ui.onNodeWithTag(tag);val n=node.fetchSemanticsNode();val raw=node.getUnclippedBoundsInRoot();val density=ui.density.density
++        JSONObject().put("tag",tag).put("present",true).put("boundsInRootPx",rectJson(n.boundsInRoot)).put("boundsInWindowPx",rectJson(n.boundsInWindow))
++            .put("unclippedRootPx",JSONObject().put("left",raw.left.value*density).put("top",raw.top.value*density).put("right",raw.right.value*density).put("bottom",raw.bottom.value*density))
++            .put("focused",n.config.getOrNull(SemanticsProperties.Focused)?:JSONObject.NULL).put("disabled",n.config.contains(SemanticsProperties.Disabled))
++    }catch(failure: Exception){JSONObject().put("tag",tag).put("present",false).put("queryFailureClass",failure.javaClass.name)}
++    private fun windowGeometry(w: Window): JSONObject {
++        val result=windowObservation(w)
++        i.runOnMainSync {
++            val view=w.decorView;val visible=android.graphics.Rect();view.getWindowVisibleDisplayFrame(visible);val origin=IntArray(2);view.getLocationOnScreen(origin)
++            val insets=ViewCompat.getRootWindowInsets(view);val ime=insets?.getInsets(WindowInsetsCompat.Type.ime());val bars=insets?.getInsets(WindowInsetsCompat.Type.systemBars())
++            result.put("decorWidthPx",view.width).put("decorHeightPx",view.height).put("decorScreenX",origin[0]).put("decorScreenY",origin[1])
++                .put("visibleFrameScreen",JSONObject().put("left",visible.left).put("top",visible.top).put("right",visible.right).put("bottom",visible.bottom))
++                .put("insetsAvailable",insets!=null).put("imeVisible",insets?.isVisible(WindowInsetsCompat.Type.ime())==true)
++                .put("imeInsets",JSONObject().put("left",ime?.left?:0).put("top",ime?.top?:0).put("right",ime?.right?:0).put("bottom",ime?.bottom?:0))
++                .put("systemBarInsets",JSONObject().put("left",bars?.left?:0).put("top",bars?.top?:0).put("right",bars?.right?:0).put("bottom",bars?.bottom?:0))
++                .put("hasWindowFocus",view.hasWindowFocus()).put("currentFocusClass",w.currentFocus?.javaClass?.name?:JSONObject.NULL).put("currentFocusViewId",w.currentFocus?.id?:-1)
++        };return result
++    }
++    private fun recordGeometry(stage: String,w: Window){
++        saveProbe(windowGeometry(w).put("kind","actual-window-ime-node-geometry").put("stage",stage).put("sampleUptimeMs",android.os.SystemClock.uptimeMillis())
++            .put("focusedField",nodeGeometry("easywork-relay-url")).put("button",nodeGeometry("easywork-pair-relay"))
++            .put("connectionPage",nodeGeometry("connection-page")).put("footer",nodeGeometry("cancel-client-form")))
++    }
++    private fun settledIme(w: Window,deadline: Long,stage: String){
++        val start=android.os.SystemClock.uptimeMillis();val remaining=deadline-start
++        if(remaining<=0){recordGeometry("$stage-budget-exhausted",w);throw AssertionError("Original IME8s budget exhausted")}
++        var previous="";var sameSince=0L;var sameCount=0;var samples=0
++        try {ui.waitUntil(remaining){
++            val now=android.os.SystemClock.uptimeMillis();val state=windowGeometry(w);val signature=state.toString();samples++
++            if(signature!=previous){previous=signature;sameSince=now;sameCount=1;saveProbe(JSONObject(state.toString()).put("kind","actual-ime-window-change").put("stage",stage).put("sampleUptimeMs",now).put("remainingBudgetMs",deadline-now))}else sameCount++
++            val frame=state.getJSONObject("visibleFrameScreen")
++            state.getBoolean("imeVisible")&&state.getJSONObject("imeInsets").getInt("bottom")>0&&state.getInt("decorWidthPx")>0&&state.getInt("decorHeightPx")>0&&frame.getInt("right")>frame.getInt("left")&&frame.getInt("bottom")>frame.getInt("top")&&sameCount>=3&&now-sameSince>=100&&now<=deadline
++        }}catch(failure: Throwable){recordGeometry("$stage-not-settled",w);throw failure}
++        saveProbe(JSONObject().put("kind","actual-ime-window-settled").put("stage",stage).put("samples",samples).put("sameSamples",sameCount).put("stableForMs",android.os.SystemClock.uptimeMillis()-sameSince).put("remainingBudgetMs",deadline-android.os.SystemClock.uptimeMillis()).put("totalBudgetMs",8000))
++    }
+     private fun fullText(tag: String,value: String,requireWrap: Boolean=false){
+         val n=ui.onNodeWithTag(tag).performScrollTo().assertIsDisplayed().assertTextEquals(value);val layouts=mutableListOf<TextLayoutResult>()
+         n.performSemanticsAction(SemanticsActions.GetTextLayoutResult){assertTrue(it(layouts))};assertEquals(1,layouts.size);val l=layouts.single()
+-        assertFalse("Original overflow guard retained for $tag",l.hasVisualOverflow);assertEquals(value,l.layoutInput.text.text);assertEquals(expectedFont,l.layoutInput.density.fontScale,.01f)
+         val b=n.fetchSemanticsNode().boundsInRoot;val raw=n.getUnclippedBoundsInRoot();val frame=ui.onNodeWithTag("connection-page").fetchSemanticsNode().boundsInRoot
+         val x=raw.left.value*ui.density.density;val y=raw.top.value*ui.density.density
+         fun rect(r: androidx.compose.ui.geometry.Rect)=P8TextRect(r.left,r.top,r.right,r.bottom)
+         val clip=P8TextRect(maxOf(b.left,frame.left)-x,maxOf(b.top,frame.top)-y,minOf(b.right,frame.right)-x,minOf(b.bottom,frame.bottom)-y)
+-        val observed=P8TextObservation(value,l.size.width,l.size.height,clip,(0 until l.lineCount).map {line->P8TextLine(l.getLineStart(line),l.getLineEnd(line,visibleEnd=false),P8TextRect(l.getLineLeft(line),l.getLineTop(line),l.getLineRight(line),l.getLineBottom(line)),l.isLineEllipsized(line))},value.indices.map {offset->P8TextCharacter(offset,l.getLineForOffset(offset),rect(l.getBoundingBox(offset)))})
+-        val failures=p8TextVisibilityFailures(value,observed,requireWrap);probes.put(windowObservation(window()).put("kind","original-text-layout").put("tag",tag).put("textHash",easyHash(value.toByteArray())).put("utf16Length",value.length).put("layoutWidthPx",l.size.width).put("paragraphWidthPx",l.multiParagraph.width).put("failures",JSONArray(failures)))
++        val actual=l.layoutInput.text.text
++        val observed=P8TextObservation(actual,l.size.width,l.size.height,clip,(0 until l.lineCount).map {line->P8TextLine(l.getLineStart(line),l.getLineEnd(line,visibleEnd=false),P8TextRect(l.getLineLeft(line),l.getLineTop(line),l.getLineRight(line),l.getLineBottom(line)),l.isLineEllipsized(line))},actual.indices.map {offset->P8TextCharacter(offset,l.getLineForOffset(offset),rect(l.getBoundingBox(offset)))})
++        val constraints=l.layoutInput.constraints;val lines=JSONArray();for(line in 0 until l.lineCount)lines.put(JSONObject().put("index",line).put("start",l.getLineStart(line)).put("end",l.getLineEnd(line,false)).put("visibleEnd",l.getLineEnd(line,true)).put("left",l.getLineLeft(line)).put("right",l.getLineRight(line)).put("top",l.getLineTop(line)).put("bottom",l.getLineBottom(line)).put("baseline",l.getLineBaseline(line)).put("ellipsized",l.isLineEllipsized(line)))
++        val chars=JSONArray();for(offset in actual.indices)chars.put(JSONObject().put("utf16Offset",offset).put("line",l.getLineForOffset(offset)).put("box",rectJson(l.getBoundingBox(offset))))
++        val failures=p8TextVisibilityFailures(value,observed,requireWrap)
++        saveProbe(windowGeometry(window()).put("kind","original-text-layout-before-guards").put("tag",tag).put("textHash",easyHash(value.toByteArray())).put("utf16Length",value.length).put("actualUtf16Length",actual.length).put("actualTextHash",easyHash(actual.toByteArray()))
++            .put("layoutWidthPx",l.size.width).put("layoutHeightPx",l.size.height).put("paragraphWidthPx",l.multiParagraph.width).put("paragraphHeightPx",l.multiParagraph.height)
++            .put("constraints",JSONObject().put("minWidth",constraints.minWidth).put("maxWidth",constraints.maxWidth).put("minHeight",constraints.minHeight).put("maxHeight",constraints.maxHeight))
++            .put("hasVisualOverflow",l.hasVisualOverflow).put("didOverflowWidth",l.didOverflowWidth).put("didOverflowHeight",l.didOverflowHeight).put("requireWrap",requireWrap)
++            .put("fontScale",l.layoutInput.density.fontScale).put("density",l.layoutInput.density.density).put("fontSize",l.layoutInput.style.fontSize.value)
++            .put("node",nodeGeometry(tag)).put("connectionPage",nodeGeometry("connection-page")).put("actualVisibleClipInTextPx",JSONObject().put("left",clip.left).put("top",clip.top).put("right",clip.right).put("bottom",clip.bottom))
++            .put("lines",lines).put("utf16Boxes",chars).put("failures",JSONArray(failures)))
++        assertFalse("Original overflow guard retained for $tag",l.hasVisualOverflow);assertEquals(value,l.layoutInput.text.text);assertEquals(expectedFont,l.layoutInput.density.fontScale,.01f)
+         assertTrue("Full original glyph/line/actual visible clip: $tag $failures",failures.isEmpty())
+     }
+     private fun targets(){
+@@ -212,9 +266,9 @@
+                 input(blank);ui.runOnIdle {assertEquals(raw,fixture.live().name)};assertEquals(raw,savedName())
+             }
+             // Reopen through product navigation: a rejected blank draft cannot replace saved input.
+-            ui.onNodeWithTag("easywork-name").performImeAction();touch("cancel-client-form");touch("edit-client-${fixture.client.id}")
++            ui.onNodeWithTag("easywork-name").performImeAction();touch("cancel-client-form",false);touch("edit-client-${fixture.client.id}")
+             ui.onNodeWithTag("easywork-name").performScrollTo().assert(SemanticsMatcher("reopened raw saved name"){p8ExactInput(raw,it.config.getOrNull(SemanticsProperties.EditableText)?.text,it.config.getOrNull(SemanticsProperties.InputText)?.text)})
+-            assertEquals(raw,savedName());capture(if(imported)"boundary-imported-raw-name" else "boundary-normal-raw-name");touch("cancel-client-form")
++            assertEquals(raw,savedName());capture(if(imported)"boundary-imported-raw-name" else "boundary-normal-raw-name");touch("cancel-client-form",false)
+         }
+     }
+     @Test fun englishDarkControlledShortDialogKeepsImportedReadonlyTargets(){
+@@ -229,10 +283,13 @@
+     @Test fun englishDarkActualLandscapeKeepsRealImeAndEmptySubmitVisible(){
+         launch("en",true,true);method("通过中继连接")
+         val value="https://relay.presentation.invalid/"+"public-long-path/".repeat(10)
+-        touch("easywork-relay-url");val w=window();ui.waitUntil(8000){ViewCompat.getRootWindowInsets(w.decorView)?.isVisible(WindowInsetsCompat.Type.ime())==true}
+-        val field=ui.onNodeWithTag("easywork-relay-url");field.performTextReplacement(value);field.assertIsFocused().assertContentDescriptionEquals(text.tr("中继服务地址"))
++        touch("easywork-relay-url");val w=window();val imeDeadline=android.os.SystemClock.uptimeMillis()+8000
++        val field=ui.onNodeWithTag("easywork-relay-url");field.performTextReplacement(value);recordGeometry("before-ime-stability",w);settledIme(w,imeDeadline,"before-submit-scroll");field.assertIsFocused().assertContentDescriptionEquals(text.tr("中继服务地址"))
+         field.assert(SemanticsMatcher("complete long URI in native edit channels"){p8ExactInput(value,it.config.getOrNull(SemanticsProperties.EditableText)?.text,it.config.getOrNull(SemanticsProperties.InputText)?.text)})
+-        val button=ui.onNodeWithTag("easywork-pair-relay").performScrollTo().assertIsDisplayed().assertIsNotEnabled();val visible=android.graphics.Rect();w.decorView.getWindowVisibleDisplayFrame(visible);val origin=IntArray(2);w.decorView.getLocationOnScreen(origin)
++        val button=ui.onNodeWithTag("easywork-pair-relay");recordGeometry("before-submit-scroll",w)
++        try {button.performScrollTo()}catch(failure: Throwable){recordGeometry("submit-scroll-failed",w);throw failure}
++        settledIme(w,imeDeadline,"after-submit-scroll");recordGeometry("before-disabled-submit-assertions",w)
++        button.assertIsDisplayed().assertIsNotEnabled();val visible=android.graphics.Rect();w.decorView.getWindowVisibleDisplayFrame(visible);val origin=IntArray(2);w.decorView.getLocationOnScreen(origin)
+         val bounds=button.fetchSemanticsNode().boundsInWindow;val raw=button.getUnclippedBoundsInRoot();val density=ui.density.density
+         assertTrue("Whole disabled submit width",bounds.width>=(raw.right.value-raw.left.value)*density-1.5f)
+         assertTrue("Whole disabled submit height",bounds.height>=(raw.bottom.value-raw.top.value)*density-1.5f)

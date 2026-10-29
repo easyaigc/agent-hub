@@ -16,6 +16,7 @@ class MainActivity : ComponentActivity() {
     private data class Retained(val session: MobileSession,val migration: NativeMigrationController,val ingress: java.util.ArrayDeque<Ingress>)
     private var deferredIngress=java.util.ArrayDeque<Ingress>()
     internal lateinit var migration: NativeMigrationController;private set
+    private var startupReady=false
     private var started=false
     private val migrationLifecycle=object:NativeMigrationLifecycle {
         override val ready get()=session.migrationReady
@@ -83,6 +84,10 @@ class MainActivity : ComponentActivity() {
         private set
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if(NativeNaturalLaunch.deferIfRequired(this,savedInstanceState!=null) { finishCreation(savedInstanceState); if(started)startRuntime() })return
+        finishCreation(savedInstanceState)
+    }
+    private fun finishCreation(savedInstanceState: Bundle?) {
         NativeReadAcceptanceTiming.configure(applicationContext,intent)
         @Suppress("DEPRECATION")
         val retainedState=lastCustomNonConfigurationInstance
@@ -106,6 +111,7 @@ class MainActivity : ComponentActivity() {
         if (retained == null) session.restore()
         enableEdgeToEdge()
         renderSession();migration.attach(migrationLifecycle)
+        startupReady=true;NativeNaturalLaunch.created(this)
     }
     private fun renderSession() {
         setContent {
@@ -144,15 +150,17 @@ class MainActivity : ComponentActivity() {
         readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
         renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext);readNetworkMonitor.start()
     }
-    override fun onNewIntent(intent: android.content.Intent) { easyWorkConnectionAuthority(session).invalidate(); session.coverPanelNotices();
+    override fun onNewIntent(intent: android.content.Intent) {
+        if(NativeNaturalLaunch.blocksIngress(this,startupReady)){super.onNewIntent(intent);NativeNaturalLaunch.rejectedIngress(this);return}
+        easyWorkConnectionAuthority(session).invalidate(); session.coverPanelNotices();
         super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent);NativeChatNotificationColdStart.afterNewIntent(applicationContext,intent,session)
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("agentHubExternalOperationId",externalOperationId);super.onSaveInstanceState(outState)
     }
-    override fun onStart() {super.onStart();started=true;startRuntime()}
-    override fun onStop() {started=false; readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop(); session.leaveForeground(); super.onStop() }
+    override fun onStart() {super.onStart();started=true;if(startupReady)startRuntime()}
+    override fun onStop() {started=false;if(!startupReady){super.onStop();return}; readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop(); session.leaveForeground(); super.onStop() }
     @Deprecated("Native retained state until the repository-backed ViewModel is introduced")
-    override fun onRetainCustomNonConfigurationInstance(): Any = Retained(session,migration,deferredIngress)
-    override fun onDestroy(){migration.detach(migrationLifecycle);super.onDestroy()}
+    override fun onRetainCustomNonConfigurationInstance(): Any? = if(NativeNaturalLaunch.canRetain(this,startupReady))Retained(session,migration,deferredIngress)else null
+    override fun onDestroy(){NativeNaturalLaunch.destroyed(this);if(startupReady)migration.detach(migrationLifecycle);super.onDestroy()}
 }

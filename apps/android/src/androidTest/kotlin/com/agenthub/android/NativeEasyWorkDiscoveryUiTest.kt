@@ -285,14 +285,14 @@ class NativeEasyWorkDiscoveryUiTest {
     }
     @Test fun longSavedRowsAndTargetFieldsRemainUsableInShortViewport() {
         val enteredName="Long saved computer 中文 %@ "+"name ".repeat(16)
-        val longName=enteredName.trim() // Saved names normalize boundary whitespace; internal content stays exact.
+        val longName=enteredName // iOS saves the original nonblank name, including boundary whitespace.
         ui.runOnIdle {session.renameEasyWork(client,enteredName);assertEquals(longName,live().name);ui.activity.setContent {val density=LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density,1.6f)) {ProductTextProvider(session.language) {MaterialTheme {Surface(Modifier.width(320.dp).height(380.dp)) {ConnectionPage(session,client) {error("No pairing submission belongs to this UI case")}}}}}
         }}
         runBlocking {store.awaitQueuedWrites()}
         val saved=JSONObject(requireNotNull(store.read("metadata"))).getJSONArray("clients").objects().single()
         assertEquals(longName,saved.getString("name"))
-        File(folder,"saved-name-normalization.json").writeText(JSONObject().put("enteredNameHash",easyHash(enteredName.toByteArray())).put("savedNameHash",easyHash(saved.getString("name").toByteArray())).put("normalization","boundary whitespace trim only").put("enteredUtf16Length",enteredName.length).put("savedUtf16Length",longName.length).toString())
+        File(folder,"saved-name-normalization.json").writeText(JSONObject().put("enteredNameHash",easyHash(enteredName.toByteArray())).put("savedNameHash",easyHash(saved.getString("name").toByteArray())).put("normalization","none; complete nonblank original like iOS").put("enteredUtf16Length",enteredName.length).put("savedUtf16Length",longName.length).toString())
         fullText(rowName(longName),longName,requireWrap=true)
         // These five fixture identifiers are deliberately long in this fixed short viewport.
         // The fixed provider "easywork" must remain fully visible without requiring a wrap.

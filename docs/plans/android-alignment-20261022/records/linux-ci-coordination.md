@@ -13,3 +13,7 @@ Linux 原失败来自同一流水线的两个 rewrite-after 断言；后一次 C
 实际投递已核对：严格TLS/鉴权/Host身份和desktop-runtime通过；27个保存项目的真实roots无对应Agent Hub仓库，按规则新建无项目专用聊天，未复用历史控制入口。新建confirmed、首次回执submitted、准确原owner ready/canControl且running，保持目标默认模型并核实xhigh。该1次开发协调模型输入单列，不计入Android221/P4 205产品验收计数；CI根因修复与Linux交付仍待，不将送达当完成。
 
 目标专用任务已完成并交付独立修复84fc89ee；原回执completed、原owner idle/xhigh。对方报告真实Linux同尺寸改写可保持全部时间元数据，最小测试夹具预置旧mtime后256×2对照全部拒绝；run10676/Linux26107及iOS26108成功。主统筹尚待取回准确提交审查与本地回归，未把对方通过当成本树已修或Android验收输入。
+
+Linux最小夹具修复2ed6429b已随PR54实际合main0b6a60b6，准确head afa830ba的pull_request CI10682/Linux26118+iOS26119成功；原84文件与main全部字节相同已读回。已向原专用任务提交仅修复分支收尾，先保存原84恢复包；目标实际清理结果待回执，不扩展部署或服务动作。
+
+指定电脑修复任务收尾已完成：原84恢复包在独立空仓恢复并严格fsck通过，负责人报告修复分支本地/远端均不存在；父再次从origin确认远端准确分支缺席。诊断分支/原Linux日志和交付包保留，无服务或部署操作。原提交已在main中以2ed采用，恢复包SHA登记于本机私有回执。

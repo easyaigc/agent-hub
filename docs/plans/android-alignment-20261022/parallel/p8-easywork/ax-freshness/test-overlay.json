@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+  "baseSource": "Source38",
+  "baseSha256": "4ce89061d9059f9eb7a07ac16c61872a570a20a519a69468b1a8eb90ffd8d1f4",
+  "proposedSha256": "6d5eae29e50331567ef6c45541f213d2e54d4810c40371e15aad65d01b116b90",
+  "completeFrozenBaseAdopted": true,
+  "changeMap": [
+    "saveProbe splits atomic persistence from append so one bounded AX query record can update before assertions",
+    "activeAppRoot shares one5s deadline; initial window/Compose state and root readiness counters are persisted even on timeout",
+    "Read-only field diagnostics: exact dialog window, root/target refresh, native flags/actions/geometry, public extra-data semantics ID/test-tag, bounded parent/child context, current merged/unmerged Compose field state; advertised extra-data refresh failures cannot satisfy readiness",
+    "At most first plus recent8 observations;2 detailed label matches,8 child contexts,2048 visited nodes and2MiB existing total evidence cap",
+    "Two consistent refreshed observations spanning100ms; stable wrong flags do not delay failure; no wait-until-enabled/editable/visible condition",
+    "Original unique-label/native enabled/editable/visible/positive-bounds assertions remain named; whole Compose and native visible-frame guards added",
+    "Three call sites supply explicit existing field tag; all other four-test code is unchanged",
+    "Initialize public UiAutomation before dialog ID capture; re-read actual owned dialog ID on each refreshed sample within the same5s budget, avoiding a permanently cached initial unregistered -1"
+  ],
+  "protectedSectionsSha256": {
+    "fullText": "94bd2e783421e92b942293c3f860b345f76d6fc68bb89e9262611e2f5627aab6",
+    "nativeTextAx": "f5d4e71f2a265e673d89400b5c60a4a1099609005f11470cce7c04647ab567b9",
+    "allFourTestBodiesExceptExplicitFieldTags": "c677d5fb2565e552b992853b288a2837921778b98b6950d5d5f31e98e1b8c1f5"
+  },
+  "originalAxBudgetMs": 5000,
+  "newAdditionalBudgets": 0,
+  "stableMinimumObservations": 2,
+  "stableMinimumMs": 100,
+  "recentObservationLimit": 8,
+  "detailedMatchLimit": 2,
+  "childContextLimit": 8,
+  "treeNodeLimit": 2048,
+  "textOrActionLabelsPersisted": false,
+  "nativeEditableSetOrSubstituted": false,
+  "newDeviceActionsByLeaf": 0,
+  "productSourceChanged": false
+}

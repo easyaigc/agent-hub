@@ -313,9 +313,13 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
     val enabled=session.canAnswer(approval,destination) && session.questionVoice?.active!=true
     val selected=(externalDraft ?: local).selected
     val custom=(externalDraft ?: local).custom
+    fun questionText(question: MobileQuestion)=custom[question.id] ?: session.questionVoiceDraft(approval,question,destination).orEmpty()
+    fun changeQuestionText(question: MobileQuestion,value: String) {
+        session.setQuestionVoiceDraft(approval,question,destination,value);custom[question.id]=value
+    }
     val async=approval.interactionMode=="async"
     val answers=approval.questions.associate { question ->
-        val extra=custom[question.id].orEmpty().trim()
+        val extra=questionText(question).trim()
         question.id to if(async && extra.isNotEmpty()) listOf(extra) else selected[question.id].orEmpty()+if(extra.isEmpty()) emptyList() else listOf(extra)
     }
     ExecutionCard(if(async) "" else productText(if(approval.kind=="question") "需要回复" else "需要审批"),"approval-${approval.id}",compact=compact) {
@@ -332,7 +336,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                 val choiceState=productText(if(chosen)"已选择" else "未选择")
                 val select={
                     selected[question.id]=if(question.multiple) { if(chosen) selected[question.id].orEmpty()-option.label else selected[question.id].orEmpty()+option.label } else listOf(option.label)
-                    if(async) custom[question.id]=""
+                    if(async) changeQuestionText(question,"")
                 }
                 val choice=if(question.multiple) Modifier.toggleable(chosen,enabled=editable,role=Role.Checkbox) { select() }
                     else Modifier.selectable(chosen,enabled=editable,role=Role.RadioButton,onClick=select)
@@ -357,13 +361,13 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                     // through both scrollers. A second request races page disposal on API26.
                     if(focused && !async) { withFrameNanos { }; requester.bringIntoView() }
                 }
-                val value=custom[question.id].orEmpty()
+                val value=questionText(question)
                 val hint=productText(if(question.secret) "输入回复" else "输入回复或补充说明")
                 val density=LocalDensity.current
                 // The whole field remains reachable while its text scrolls inside the line budget.
                 val lines=if(question.secret)1 else answerViewportHeight?.let { ((it.value-52f)/(20f*density.fontScale)).toInt().coerceIn(1,4) } ?: 4
                 val shape=RoundedCornerShape(10.dp)
-                BasicTextField(value,{ custom[question.id]=it },enabled=editable && !(session.questionVoiceKey==session.questionVoiceIdentity(approval,question,destination) && session.questionVoice?.active==true),
+                BasicTextField(value,{ changeQuestionText(question,it) },enabled=editable && !(session.questionVoiceKey==session.questionVoiceIdentity(approval,question,destination) && session.questionVoice?.active==true),
                     textStyle=TextStyle(fontSize=15.sp,lineHeight=20.sp,color=MaterialTheme.colorScheme.onSurface.copy(alpha=if(editable)1f else .38f)),
                     visualTransformation=if(question.secret) PasswordVisualTransformation() else VisualTransformation.None,
                     singleLine=question.secret,maxLines=lines,
@@ -376,7 +380,7 @@ private val MobileApproval.identity get()=ApprovalIdentity(this)
                             inner()
                         }
                     })
-                NativeQuestionVoice(session,approval,question,destination,value) { custom[question.id]=it }
+                NativeQuestionVoice(session,approval,question,destination,value) { changeQuestionText(question,it) }
             }
         }
         if(approval.kind=="question") Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {

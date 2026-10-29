@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR36",
+  "sourceSha256": "dbb326afa24531ab3aafc00ab8b31194a70acc5c45c09b5717af1f90e0e54253",
+  "expandedSourceSha256": "f50933d5b346ce89791b840d7584981b570609e211f3304958543341691a3c45",
+  "appSha256": "65c5c05e30349b8b895b174717376a2074168904fc90234e4f8666c0c9d2103d",
+  "runnerSha256": "f6f4b4d27427828751b45766624c22e9562aea659783915621a0f2962b5e4b6e",
+  "native": {
+    "calls": 14,
+    "passed": 10,
+    "failed": 4,
+    "originalUiRawNameRegressionPassed": 5,
+    "actualDelayedCandidateRawNamePassed": 5,
+    "productAppPortraitFailed": 3,
+    "actualLandscapeImeFailed": 1
+  },
+  "productFix": "Exact one-line raw nonblank EasyWork rename like iOS; existing isBlank/256/latest row guards retained",
+  "failures": [
+    "Chinese light and English dark controlled short actual App UI report target LABEL hasVisualOverflow before glyph assertions; values already use finite column width; collect label paragraph/clip geometry before final diagnosis",
+    "Boundary rename case calls performScrollTo on footer Close that has no scroll parent; keep full visible target check and use actual footer without forced scroll",
+    "Actual API37 landscape config/real IME entered at OS font1.3; relay submit not displayed after scroll. Native dialog/IME/viewport geometry and settled-frame observation needed before assigning product root cause"
+  ],
+  "preflight": {
+    "api26UnsupportedWindowRotationReadNoNative": true,
+    "api37LauncherRotationBeforeActivityNoNative": true,
+    "actualActivityLandscapeAndWindowGuardsPreserved": true,
+    "rotationFontSettingsRestored": true,
+    "api26ActualInputReaderOrientationVerified": true,
+    "api26WmUserRotationUnsupported": true
+  },
+  "additionalOriginalSource35Sdk37": {
+    "sourceSha256": "355510d707c4243393bcfeb2bea4a93dc727eafb315e10a9c23dccd6dbf49a5b",
+    "calls": 2,
+    "passed": 2,
+    "actualDiscoveryStopped": true,
+    "actualResolutionStopped": true,
+    "advertisementUnregistered": true,
+    "defaultFilesUnchanged": true,
+    "setup": "Saved virtual AndroidWifi was not connected; default was MOBILE. Connect observed existing AndroidWifi produced WIFI network and both callbacks passed. Before/after association supports LAN precondition but does not alone prove exhaustive root cause.",
+    "oldTwoRegisterTimeoutsRetained": true,
+    "temporaryPermissionExactlyRestored": true,
+    "realPermissionUi": false
+  },
+  "mainDelivery": {
+    "pr": 54,
+    "head": "afa830ba1d42769806960d9bb2429200ea3ce14b",
+    "run": 10682,
+    "linuxJob": 26118,
+    "iosJob": 26119,
+    "ci": "success",
+    "merge": "0b6a60b6b8116ccc52c7271e28dff0fed49df23b",
+    "mergedBranchLocalAndRemoteDeleted": true
+  },
+  "realModelInputs": 0,
+  "realHostBusinessInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "pending": [
+    "Actual product App label/close/IME/whole-submit UI closure and full matrix",
+    "ASR destination durability/detach/question-migration review repairs",
+    "Natural OS retained-ingress/default-family proposal repairs and real execution",
+    "Full external peer/Discovery/Session/issuer/real model DEV and physical Android; task/project business and A6 paused"
+  ]
+}

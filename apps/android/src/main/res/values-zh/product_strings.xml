@@ -1881,4 +1881,28 @@
     <string name="product_8c56d9ef0d604131101c7b77" formatted="false">"迁移后需明确开启通知，原记录已保留。"</string>
     <string name="product_0f8b78e3332ac7e4750f51cc" formatted="false">"需要重新配对 · 查看缓存"</string>
     <string name="product_20cbe53129b2b62d26690f9d" formatted="false">"迁入的聊天和回执仅供查看。请扫描电脑的新连接二维码，或输入新连接码重新配对。"</string>
+    <string name="product_9834263eae781bcef321859f" formatted="false">"重新录音的可用性取决于系统语音服务。可在原录音恢复面板检查离线识别。"</string>
+    <string name="product_0afda1b7b0029632789a677c" formatted="false">"正在结束原录音识别…"</string>
+    <string name="product_32742fb47be51c3edbdafd7b" formatted="false">"正在处理原录音识别…"</string>
+    <string name="product_fb8bcd0a0f6965ee4cf73589" formatted="false">"请选择中文或英语模型。"</string>
+    <string name="product_7446cae9b49f7cbb83175e71" formatted="false">"本机原录音识别暂不可用。"</string>
+    <string name="product_23eb398e5d9acaa77b2b162e" formatted="false">"检查本机原录音识别资源"</string>
+    <string name="product_b5d1a3e3ec85ffee115e4ee5" formatted="false">"此设备暂不支持原录音识别。"</string>
+    <string name="product_542d54582ce8e26f36c2f8dc" formatted="false">"需要下载所选语言的离线模型。"</string>
+    <string name="product_ec029b0feff22d2869b7c9cd" formatted="false">"离线模型校验失败，请重新下载。"</string>
+    <string name="product_71f4a9d357955730c624ce0a" formatted="false">"离线模型已校验，可识别原录音。"</string>
+    <string name="product_ef73618c4ba9cc087de28d69" formatted="false">"录音目标或草稿已变化"</string>
+    <string name="product_e58b86cbf811ad85e4028048" formatted="false">"没有与当前草稿匹配的已保存原录音。"</string>
+    <string name="product_a5787cb358d54a954a72008e" formatted="false">"电脑转写需要共享许可，原草稿和录音已保留。"</string>
+    <string name="product_ce396241fc1c04ef522be38d" formatted="false">"原草稿或目标已变化，本机识别结果和原录音已保留。"</string>
+    <string name="product_4c2ccb6cb2f75776e584f729" formatted="false">"手机内存不足，原录音和草稿已保留，请稍后重试。"</string>
+    <string name="product_1b5a78f52efab047303561b0" formatted="false">"本机原录音识别未完成，录音和已有结果已保留。"</string>
+    <string name="product_c2215d58a8f789dcd50583a4" formatted="false">"本机原录音识别已停止，原录音和已有结果已保留。"</string>
+    <string name="product_768bfd0fa8ceb850d0331afb" formatted="false">"在手机识别原录音"</string>
+    <string name="product_55de3eae60c2e96be6e233a0" formatted="false">"仅下载语言模型需要联网，录音留在本机。"</string>
+    <string name="product_a55562525e1d487c2e3214fc" formatted="false">"中文（普通话）"</string>
+    <string name="product_95072679248b6ca678759bd3" formatted="false">"英语（美国）"</string>
+    <string name="product_5b3c336f4fe88dfc5fa2cfe1" formatted="false">"检查离线模型"</string>
+    <string name="product_6c59ac8a3834a9b80c7b58db" formatted="false">"下载离线模型（约45MB）"</string>
+    <string name="product_9c288e95402385532dbd8e5d" formatted="false">"识别并填入原草稿"</string>
 </resources>

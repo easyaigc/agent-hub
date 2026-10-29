@@ -3026,7 +3026,7 @@
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt",
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapFence.kt",
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalEvidenceBoundary.kt",
-      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt",
       "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalPreflightEvidence.kt",
       "scripts/mobile/check-chat-notification-natural-permit.mjs",
       "scripts/mobile/fixtures/NaturalBootstrapVectors.kt"
@@ -3076,6 +3076,105 @@
       "packages/codex-adapter/src/desktop-images.ts",
       "scripts/images-proxy.test.mjs",
       "scripts/images-proxy-live.mjs"
+    ],
+    "AndroidRawEasyWorkNameProductPresentation": [
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/EasyWorkPresentationFixture.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCandidateRefreshTest.kt"
+    ],
+    "AndroidProductWindowPreGuardGeometry": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt"
+    ],
+    "AndroidConnectionImeFiniteLabelWidth": [
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt"
+    ],
+    "AndroidConnectionShortWindowScroll": [
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt"
+    ],
+    "AndroidSavedFileSpeechDurableMigration": [
+      "apps/android/build.gradle.kts",
+      "apps/android/src/main/assets/saved-voice-models-v1.json",
+      "apps/android/src/main/assets/SAVED_VOICE_NOTICES.txt",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeQuestionVoice.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettingsPage.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceSpeech.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceLocalResult.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePcmTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceMigrationTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceDraftDestination.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceDestinationFixture.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceDestinationKeysTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceQuestionOwnerUiTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationVoice.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt",
+      "apps/android/localization/native-copy.json",
+      "apps/android/src/main/res/values/product_strings.xml",
+      "apps/android/src/main/res/values-zh/product_strings.xml",
+      "apps/android/src/androidTest/assets/localization-catalog.json"
+    ],
+    "AndroidSavedVoiceWholeOriginalFixture": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt"
+    ],
+    "AndroidRealSavedFileSpeechHarness": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealFileAsrContract.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealFileAsrContractTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealFileAsrObservations.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealSavedVoiceSpeechTest.kt"
+    ],
+    "AndroidNaturalOsNoticeCommandWitness": [
+      "apps/android-inbox-examiner/src/main/AndroidManifest.xml",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java",
+      "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalOsProducerTest.kt",
+      "apps/android/src/debug/AndroidManifest.xml",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalEntryFence.kt",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalLaunch.kt",
+      "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "apps/android/src/release/kotlin/com/agenthub/android/NativeNaturalLaunch.kt",
+      "scripts/mobile/check-natural-process-visibility.mjs",
+      "scripts/mobile/fixtures/NaturalVisibilityVectors.java",
+      "scripts/mobile/fixtures/native/natural-os/NativeNaturalOsProducerTest.kt",
+      "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalEntryFence.kt",
+      "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalLaunch.kt",
+      "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalOsContract.kt",
+      "scripts/mobile/fixtures/native/natural-os/release/NativeNaturalLaunch.kt"
+    ],
+    "AndroidActualFieldAxReadiness": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt"
+    ],
+    "AndroidActualSavedVoiceSession": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionColdTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionFixture.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionTest.kt"
+    ],
+    "AndroidExactNativeConnectionField": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt"
+    ],
+    "AndroidNotificationUpgradeGuardDiagnostics": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapUpgradeReadOnlyTest.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalProbeDiagnostics.kt",
+      "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalBootstrapUpgradeReadOnlyTest.kt",
+      "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalProbeDiagnostics.kt",
+      "scripts/mobile/fixtures/native/binder-diagnostics/prepare-upgrade-plan.py",
+      "scripts/mobile/fixtures/native/binder-diagnostics/upgrade-plan-vectors.py"
     ]
   },
   "groups": [
@@ -3160,11 +3259,17 @@
         "AndroidNsdSdkTerminalGenerationOwners",
         "AndroidReadonlyTargetFiniteColumnLayout",
         "AndroidCompleteTextWrapPreconditions",
-        "AndroidImportedEditorActiveWindowReadiness"
+        "AndroidImportedEditorActiveWindowReadiness",
+        "AndroidRawEasyWorkNameProductPresentation",
+        "AndroidProductWindowPreGuardGeometry",
+        "AndroidConnectionImeFiniteLabelWidth",
+        "AndroidConnectionShortWindowScroll",
+        "AndroidActualFieldAxReadiness",
+        "AndroidExactNativeConnectionField"
       ],
       "scenarios": ["S01"],
       "ui": ["UI01", "UI03"],
-      "revision": 42,
+      "revision": 48,
       "implementation": {
         "ios": "code-present",
         "android": "implemented"
@@ -3342,11 +3447,17 @@
         "AndroidDiscoveryCurrentAndImportedUi",
         "AndroidImportedEditTargetAndSavedName",
         "AndroidDiscoveryTargetValueLayoutMeasurement",
-        "AndroidNsdSdkTerminalGenerationOwners"
+        "AndroidNsdSdkTerminalGenerationOwners",
+        "AndroidRawEasyWorkNameProductPresentation",
+        "AndroidProductWindowPreGuardGeometry",
+        "AndroidConnectionImeFiniteLabelWidth",
+        "AndroidConnectionShortWindowScroll",
+        "AndroidActualFieldAxReadiness",
+        "AndroidExactNativeConnectionField"
       ],
       "scenarios": ["S14"],
       "ui": ["UI03"],
-      "revision": 16,
+      "revision": 22,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -3425,11 +3536,17 @@
         "AndroidDiscoveryTargetValueLayoutMeasurement",
         "AndroidReadonlyTargetFiniteColumnLayout",
         "AndroidCompleteTextWrapPreconditions",
-        "AndroidImportedEditorActiveWindowReadiness"
+        "AndroidImportedEditorActiveWindowReadiness",
+        "AndroidRawEasyWorkNameProductPresentation",
+        "AndroidProductWindowPreGuardGeometry",
+        "AndroidConnectionImeFiniteLabelWidth",
+        "AndroidConnectionShortWindowScroll",
+        "AndroidActualFieldAxReadiness",
+        "AndroidExactNativeConnectionField"
       ],
       "scenarios": ["S11", "S14"],
       "ui": ["UI03"],
-      "revision": 18,
+      "revision": 24,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -4686,11 +4803,15 @@
         "AndroidSystemVoiceOriginalFinishGeneration",
         "AndroidSavedVoiceOriginalFallback",
         "AndroidOriginalSafCancellationObservation",
-        "AndroidImportedVoiceAndPickerOriginalReadiness"
+        "AndroidImportedVoiceAndPickerOriginalReadiness",
+        "AndroidSavedFileSpeechDurableMigration",
+        "AndroidSavedVoiceWholeOriginalFixture",
+        "AndroidRealSavedFileSpeechHarness",
+        "AndroidActualSavedVoiceSession"
       ],
       "scenarios": ["S17"],
       "ui": ["UI07"],
-      "revision": 14,
+      "revision": 18,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5159,11 +5280,15 @@
         "AndroidSystemVoiceOriginalFinishGeneration",
         "AndroidSavedVoiceOriginalFallback",
         "AndroidOriginalSafCancellationObservation",
-        "AndroidImportedVoiceAndPickerOriginalReadiness"
+        "AndroidImportedVoiceAndPickerOriginalReadiness",
+        "AndroidSavedFileSpeechDurableMigration",
+        "AndroidSavedVoiceWholeOriginalFixture",
+        "AndroidRealSavedFileSpeechHarness",
+        "AndroidActualSavedVoiceSession"
       ],
       "scenarios": ["S09"],
       "ui": ["UI09"],
-      "revision": 42,
+      "revision": 46,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5203,11 +5328,17 @@
         "AndroidSystemVoiceOriginalFinishGeneration",
         "AndroidSavedVoiceOriginalFallback",
         "AndroidOriginalSafCancellationObservation",
-        "AndroidImportedVoiceAndPickerOriginalReadiness"
+        "AndroidImportedVoiceAndPickerOriginalReadiness",
+        "AndroidSavedFileSpeechDurableMigration",
+        "AndroidSavedVoiceWholeOriginalFixture",
+        "AndroidRealSavedFileSpeechHarness",
+        "AndroidNaturalOsNoticeCommandWitness",
+        "AndroidActualSavedVoiceSession",
+        "AndroidNotificationUpgradeGuardDiagnostics"
       ],
       "scenarios": ["S09", "S15"],
       "ui": ["UI09", "UI11"],
-      "revision": 29,
+      "revision": 35,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -5641,11 +5772,17 @@
         "AndroidFormLifecycleOwningComposeClock",
         "AndroidReadonlyTargetFiniteColumnLayout",
         "AndroidCompleteTextWrapPreconditions",
-        "AndroidImportedEditorActiveWindowReadiness"
+        "AndroidImportedEditorActiveWindowReadiness",
+        "AndroidRawEasyWorkNameProductPresentation",
+        "AndroidProductWindowPreGuardGeometry",
+        "AndroidConnectionImeFiniteLabelWidth",
+        "AndroidConnectionShortWindowScroll",
+        "AndroidActualFieldAxReadiness",
+        "AndroidExactNativeConnectionField"
       ],
       "scenarios": ["S05", "S11"],
       "ui": ["UI04", "UI10"],
-      "revision": 124,
+      "revision": 130,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6016,11 +6153,13 @@
         "AndroidNotificationOriginalSystemUiColdPrepared",
         "AndroidNotificationWorkerCloseOwner",
         "AndroidNaturalExistingKeyPermitStore",
-        "AndroidNaturalStoreBootstrapPreflight"
+        "AndroidNaturalStoreBootstrapPreflight",
+        "AndroidNaturalOsNoticeCommandWitness",
+        "AndroidNotificationUpgradeGuardDiagnostics"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 38,
+      "revision": 40,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6065,11 +6204,13 @@
         "AndroidNotificationOriginalSystemUiColdPrepared",
         "AndroidNotificationWorkerCloseOwner",
         "AndroidNaturalExistingKeyPermitStore",
-        "AndroidNaturalStoreBootstrapPreflight"
+        "AndroidNaturalStoreBootstrapPreflight",
+        "AndroidNaturalOsNoticeCommandWitness",
+        "AndroidNotificationUpgradeGuardDiagnostics"
       ],
       "scenarios": ["S15", "S16"],
       "ui": ["UI11"],
-      "revision": 34,
+      "revision": 36,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6187,11 +6328,17 @@
         "AndroidFormLifecycleOwningComposeClock",
         "AndroidReadonlyTargetFiniteColumnLayout",
         "AndroidCompleteTextWrapPreconditions",
-        "AndroidImportedEditorActiveWindowReadiness"
+        "AndroidImportedEditorActiveWindowReadiness",
+        "AndroidRawEasyWorkNameProductPresentation",
+        "AndroidProductWindowPreGuardGeometry",
+        "AndroidConnectionImeFiniteLabelWidth",
+        "AndroidConnectionShortWindowScroll",
+        "AndroidActualFieldAxReadiness",
+        "AndroidExactNativeConnectionField"
       ],
       "scenarios": ["S18"],
       "ui": ["UI12"],
-      "revision": 67,
+      "revision": 73,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6335,11 +6482,18 @@
         "AndroidImportedVoiceAndPickerOriginalReadiness",
         "AndroidSensitiveMigrationAppReadiness",
         "AndroidOriginalPickerNullOwnerScopedWait",
-        "AndroidNativeProbeStrictSynchronousTransport"
+        "AndroidNativeProbeStrictSynchronousTransport",
+        "AndroidRawEasyWorkNameProductPresentation",
+        "AndroidProductWindowPreGuardGeometry",
+        "AndroidConnectionImeFiniteLabelWidth",
+        "AndroidConnectionShortWindowScroll",
+        "AndroidSavedFileSpeechDurableMigration",
+        "AndroidActualFieldAxReadiness",
+        "AndroidExactNativeConnectionField"
       ],
       "scenarios": ["S11", "S17", "S18"],
       "ui": ["UI12"],
-      "revision": 142,
+      "revision": 149,
       "implementation": {
         "ios": "code-present",
         "android": "in-progress"
@@ -6599,12 +6753,18 @@
         "AndroidSystemVoiceOriginalFinishGeneration",
         "AndroidSavedVoiceOriginalFallback",
         "AndroidOriginalSafCancellationObservation",
-        "AndroidImportedVoiceAndPickerOriginalReadiness"
+        "AndroidImportedVoiceAndPickerOriginalReadiness",
+        "AndroidSavedFileSpeechDurableMigration",
+        "AndroidSavedVoiceWholeOriginalFixture",
+        "AndroidRealSavedFileSpeechHarness",
+        "AndroidNaturalOsNoticeCommandWitness",
+        "AndroidActualSavedVoiceSession",
+        "AndroidNotificationUpgradeGuardDiagnostics"
       ],
       "androidStages": ["A6"],
       "scenarios": ["S04", "S11", "S17", "S18"],
       "ui": ["UI06", "UI21"],
-      "revision": 70,
+      "revision": 76,
       "implementation": {
         "ios": "implemented",
         "android": "in-progress"
@@ -16374,6 +16534,178 @@
         "scripts/desktop-service.mjs": "94d01b3de6b383748f9251cfdc85331ca229b2803bc6f6db36a140488f859159",
         "scripts/windows-desktop-service.mjs": "25e667d5dc65333522db0c622ac045f2690eb91b56645f6be38218462145fefd",
         "scripts/responses-proxy.test.mjs": "88163b0f7a6cf9a3c214af49329bc655da42b99384705e31028af740c75b94a8"
+      }
+    },
+    {
+      "id": "android-ios-raw-easywork-name-and-product-presentation-20261029",
+      "baseCommit": "afa830ba",
+      "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+      "summary": "Existing EasyWork rename saves full original accepted string like actual iOS source; retain isBlank/256 and latest live-row guards. One exact shared-line patch; other methods unchanged. Actual AgentHubApp theme/navigation/localization in ComponentActivity with readonly six-target native AX, Dialog PixelCopy, OS font/orientation/IME and controlled320x420/Compose2 distinguished. Strengthen disabled landscape submit full unclipped dimensions/all visible-frame edges; no submit/scan/pair/permission/Host/model. Extend actual delayed credential read case to retain boundary whitespace in live/persisted name. Native pending; iOS extra six-field/marker/256/busy guard differences remain open.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "a6d0bb7d0af7a8026c3c9436847d871ec65e75ce6043172b654bb43d16771133",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt": "077016927a5ea1a1b77b3b376b21ac63a080bd99996135fae122385af1b2952d",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/EasyWorkPresentationFixture.kt": "f5b1d3f915275c475e08960c1003af574cb110a87d8412d539389607a7b9bce7",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkDiscoveryUiTest.kt": "80417b5baa8b162f42add0519af29a3f5a2f45192df13fb79c8e89af85aaf3b5",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkCandidateRefreshTest.kt": "eac33b36bb5a7fcfedfcaa779085abb21df152dae1aade967a94bd2a74b5b7be"
+      }
+    },
+    {
+      "id": "android-product-window-pre-guard-geometry-20261029",
+      "baseCommit": "3a26db86",
+      "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+      "summary": "Test-only Source36 exact overlay from aa1b117a. Footer explicitly bypasses nonexistent scroll parent while retaining complete hit guards. Persist original label TextLayout/UTF16 glyph/paragraph/constraints/clip before unchanged overflow assertions, and actual IME/dialog/field/button/page/scroll-axis/soft-input-mode geometry within original shared8s. Expected missing diagnostic nodes do not mask product assertions; own failure PixelCopy retained. Original whole-submit guards unchanged. Conditional label-width source proposal remains unapplied pending measurements. No product/copy/platform capability changes; native4 rerun pending.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt": "4162fa89a7705cb2efa21da23e5e25985aad480a7b66f4bbde8febde446cc7ca"
+      }
+    },
+    {
+      "id": "android-connection-ime-finite-label-width-20261029",
+      "baseCommit": "5a6288e3",
+      "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+      "summary": "PAR37 actual geometry shows25px scroll viewport vs113px submit. Only connection page with actual IME uses full remaining height and moves same title/Cancel header into existing form scroll, preserving stable ConnectionPage/draft/action owner. Normal header and other pages unchanged. Target labels use finite full column width consistent with values. Short viewport now demands actual OS font2 rather than ineffective outer Density. All existing overflow/glyph/whole-button guards retained; adds actual IME-top and form-clip intersection plus complete keyboard Cancel reachability. Native acceptance pending; physical/complete iOS matrix open.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "4dbc1a3aba4480e563de541a2069b35d9b9f9731ced6b4be8d98a3f28649fda4",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "f721c28c3a43deb4c3815d4e04f0bbe58f8b4e3875540e762e976eee1adff224",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt": "4ce89061d9059f9eb7a07ac16c61872a570a20a519a69468b1a8eb90ffd8d1f4"
+      }
+    },
+    {
+      "id": "android-connection-short-window-scroll-20261029",
+      "baseCommit": "5a6288e3",
+      "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+      "summary": "Source38 actual OSfont2 short420dp Dialog field702px vs585px viewport. Use actual BoxWithConstraints maxHeight under480dp as additional connection-only compact header condition. Same header inside same scroll and full available height; stable Page/draft owner, all original full glyph/overflow/AX guards preserved. Native short now passes all12 target fullText guards at actual font2, then fails original native AX guard; UI regression pending. Other platforms no source change; full matrix remains open.",
+      "files": {
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSheets.kt": "81e2d8877b7809f81a184fe5b004fbb09ff3199b941a081de8eeb2c18e4770f6"
+      }
+    },
+    {
+      "id": "android-saved-file-speech-durable-migration-20261029",
+      "baseCommit": "93ce9c18",
+      "features": ["F33", "F42", "F56", "F58", "F64"],
+      "summary": "Adopt reviewed6e3a1313 exact17 owned+6 common additive patches; retain parent raw EasyWork name and candidate generation. File-only Vosk0.3.75/JNA5.18.1 strict fixed en/zh model inventory and explicit download, no implicit microphone/upload/desktop replay. Durable exact destination readback receipt precedes applied catalog terminal; failure/unknown staged, later detach intent accumulated until true worker exit. Closed question/off-index links survive typed/framed migration. Parent adds24 bilingual native keys and accurate system-service availability copy. iOS existing source/discard retained; legacy SFSpeech on-device only when supported is an open parity difference. Native boundary cases running; real JNI/acoustic/process-death/full UI/physical DEV pending.",
+      "files": {
+        "apps/android/build.gradle.kts": "b062096955ff20e5c6f0bb525ba88a74fdcadf2cfc062febaea6de9086591eb7",
+        "apps/android/src/main/assets/saved-voice-models-v1.json": "70003a068c5ebc69e7babc77e5c3009a36ec4bd0e68714d0e37d96e6c9e92f42",
+        "apps/android/src/main/assets/SAVED_VOICE_NOTICES.txt": "4a63e1b5e8f181083fc1626fac8c95cc090bcf31c17910f41e89e25c6206e1a3",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "5952e8ecc250d41f6e7ab1cee5f5977c8bed580c9f1143e9aa5ed95ec8eae348",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "48c7ca01e3b5a42f55618ddc03ba2de76a9f97198321e360e42b4c849b3ad3d8",
+        "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt": "8ca6b9175e0eb477eb777b57d72a6250eff42b729d10e5207c136e4865b574b1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeQuestionVoice.kt": "80d87dd81e964676896f0f539c9d6586f462dee44c9e91a6a6749ae9640d5bb1",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceSettingsPage.kt": "1e114541a700cf85ba18b6ec311fdd6cab6ffbc6d380a61045e289ff6ebb9cfe",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceSpeech.kt": "7b5172ba192ac95634448c9ee56fdcce96074afb999080f29087b3d1c664c0a0",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceLocalResult.kt": "60dddfb6a5e006b6784bbbdfdd7757dab4b77b78843e86196e1e2e156924f6e7",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePcmTest.kt": "cc47879c940f250b6da4907ee55f8c7679e95395f49f9f46282aad7d4fa87ce8",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt": "e95bc288cfe99c2c557abc27c529f4ae0d00a11cba472f921e9a4498899127b3",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceMigrationTest.kt": "a84acc5a17f8617cc2e7e4106cd443a086c4a879f1a63aade2fd21e64ef68c4b",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceDraftDestination.kt": "d0db1d70267fceba7dbc0f0fdec95f73b8b98c33eb29b6201c04eed986a113b2",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceDestinationFixture.kt": "55ca55392a43a212e42cebcf5696159cf32f0743779498e16297dbcf0a380360",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceDestinationKeysTest.kt": "d3b5ffc8b18e5453bd097d072ae21cd116cbbd84b706677a9819b39d0bf47798",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceQuestionOwnerUiTest.kt": "7b9636d5bd39be5290b473ea1f864db03306bcc5459dc6f80759c0bf99143dca",
+        "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "f4b2a1352321b7700268418a634ba04b0f9e269b6f131994ebfa781f34f6840d",
+        "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "444f68b18873b39e6a0215e8888248a39f27c32fc5590b480074de9a814b56da",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "159a2ec97d6a9b653dde996af31d09059c282dcfae3869973f224fbfd0633b99",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationVoice.kt": "a010b254f7b93fae3ec7479ae95ebdb0cbae759695d3f71549dd7c19bf3ead68",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "b167342255ac9fcc1d7e4723b77c9c2a8c9af5cbfbc32a8a238fb7fca2087d08",
+        "apps/android/src/main/kotlin/com/agenthub/android/ExecutionPanels.kt": "4d84a873bfc0fb86f72c1af1c813447833540dec611a11078ef886262f6931fa",
+        "apps/android/localization/native-copy.json": "675551143ff648effffecbeb1064a561f14d3e9e6c169acbc8e8b0f154127ce7",
+        "apps/android/src/main/res/values/product_strings.xml": "4672a5a78fdfd690059333f47b0b96db97cf7e30a48f78d29ca667e2bcc18fdb",
+        "apps/android/src/main/res/values-zh/product_strings.xml": "d4446231e96917b29f5d9d4cb2be48745b073de2da3ce4d6f8f69331a5cd7e28",
+        "apps/android/src/androidTest/assets/localization-catalog.json": "7b6d94dba898c0fe1f0d761c696a1e4ec5ab6e23590d07c019298c2f3d3fd91e"
+      }
+    },
+    {
+      "id": "android-saved-voice-whole-original-fixture-20261029",
+      "baseCommit": "3ecb5ba1",
+      "features": ["F33", "F42", "F58", "F64"],
+      "summary": "Test-only: replace generated KMP TargetScope reference equals with complete canonical immutable metadata plus exact persisted original row captured before controller.start and full WAV byte compare. Actual API26 controller9 passed; product APK byte-identical to Source40 and reused15 test sources unchanged. Original8 failures retained. Real JNI/acoustic/process-death/native fullDEV pending; iOS untouched.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt": "cab1e8d9425e8c229fa2289486469246137b15915fa79997d53f52b109bb91c6"
+      }
+    },
+    {
+      "id": "android-real-saved-file-speech-harness-20261029",
+      "baseCommit": "60aaa0ed",
+      "features": ["F33", "F42", "F58", "F64"],
+      "summary": "Reviewed5ca07438 tests only: strict parent lease/API26or37/arm64/private canonical TTS WAV, real unchanged default Vosk factory, pinned models, per-case immutable intent and exact complete original metadata/row/audio. Correct AtomicFile report mode on actual open FD via API21+ fchmod before native use. Nine real engine selectors plus six contract methods compiled; no real engine results yet. Native privacy observations remain separate; iOS unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealFileAsrContract.kt": "1ee0a3c822f4f8b3930a51179f3fffc287a394b72eccbceb8eccc9d94ce68d4a",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealFileAsrContractTest.kt": "5627c1a05030431a847911a1c824830212d149c2081482c8f77893b9619925b3",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealFileAsrObservations.kt": "bdb30f461485f6cf9ba4938ee73b616e2b47f9e3ee5eb272d31763d7a83ba605",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeRealSavedVoiceSpeechTest.kt": "06e54d26a0661f6950a8de8704dc48fa9f5a649551a9bad00b545dd124331b59"
+      }
+    },
+    {
+      "id": "android-natural-os-notice-command-witness-20261029",
+      "baseCommit": "60aaa0ed",
+      "features": ["F52", "F53", "F58", "F64"],
+      "summary": "Adopt reviewed6c8c7cd4 five exact public patches plus7sources and byte-identical scanner relocation. Preserve RV29 voice metadata method through additive Storage306e0bb9. Release facade no-op, natural accepted gate fails closed before Session; independent self-target observer receives one original SDK PendingIntent with live writer custody then observes complete target UID absence and original SystemUI first click. PS/AM positive self/system/writer/instrumentation plus fresh per-command nonce/unique final status0/empty stderr under original cap and budgets; exact full-row EOF requires completion. Strong observer API34+, lower APIs pending. Native natural first click not executed.",
+      "files": {
+        "apps/android-inbox-examiner/src/main/AndroidManifest.xml": "0b75d2ab6f4be960695eaa8ee9eea01d5d0f9bfbaeb19abe73f9a842d713e737",
+        "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java": "b95e562680e0831284b5909cdefaadf73a95bd3ac1057a4f3e64d59b8b6720c1",
+        "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java": "4096d2d2e384b3d803faf75af80b025678143969e068c8e9ff6e171670df3d06",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt": "15d69885e09d4512fcd1ec1a394a06e9dfb1689642e0478ae01e27a3e049e66d",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalOsProducerTest.kt": "2a5282353738a683a99864606cd94c6af69f868d1ea6b4f1d86b4e5710ca8155",
+        "apps/android/src/debug/AndroidManifest.xml": "368e2a798ee7efea934ad273c25387c60c4b56d4d31f4c9dca33cd20ce6c4568",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalEntryFence.kt": "923b194e253184de52eeec2f2973146066f2e1e1546e54eb260f32eb374bc49a",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt": "93dc2d638d1cdad95f6ff9f7984c2bedc0144ba95603391839d5418276fc6822",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalLaunch.kt": "267370f8e28899c204a69d878c5076cbe3304c5961d98c16c8aa8f895467be3c",
+        "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalOsContract.kt": "ad3c6847dfc819e8117fc1f337ecdcdf962a39a5bd90ed9ca349e5e27f8cbcc0",
+        "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "8b0d6ff425f8d0b421f21d3ba4e5c5a38bdc527ff84399ea31671d1b43cc9101",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt": "2034c04868507c7c22b593798c1f635ecc1bd38bfaa8bda5f05d9bb2ca58c61f",
+        "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "306e0bb9d918ef923462c22a685be7c89edc0ff1f89b0c518f3dc092f32e1fd4",
+        "apps/android/src/release/kotlin/com/agenthub/android/NativeNaturalLaunch.kt": "068fe6cfe84e9f922db5e6894109a14f2075a1db0c627663f347329bf932f176",
+        "scripts/mobile/check-natural-process-visibility.mjs": "aad6386210057103d1746cb88b8c44065d5f6618e44b9c25fabd71887bccef48",
+        "scripts/mobile/fixtures/NaturalVisibilityVectors.java": "476e771b8d20730f979a8f7e9dd3e7aff4524b0f45f2f018cdbe25544261898c",
+        "scripts/mobile/fixtures/native/natural-os/NativeNaturalOsProducerTest.kt": "2a5282353738a683a99864606cd94c6af69f868d1ea6b4f1d86b4e5710ca8155",
+        "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalEntryFence.kt": "923b194e253184de52eeec2f2973146066f2e1e1546e54eb260f32eb374bc49a",
+        "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalLaunch.kt": "267370f8e28899c204a69d878c5076cbe3304c5961d98c16c8aa8f895467be3c",
+        "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalOsContract.kt": "ad3c6847dfc819e8117fc1f337ecdcdf962a39a5bd90ed9ca349e5e27f8cbcc0",
+        "scripts/mobile/fixtures/native/natural-os/release/NativeNaturalLaunch.kt": "068fe6cfe84e9f922db5e6894109a14f2075a1db0c627663f347329bf932f176"
+      }
+    },
+    {
+      "id": "android-actual-field-ax-readiness-20261029",
+      "baseCommit": "60aaa0ed",
+      "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+      "summary": "Apply reviewedfd0fb7ca exact Source38 overlay. Retain fullText/nativeTextAx and all4test guards except explicit field tags. Read-only refreshed own Dialog/node IDs, native enabled/editable/visible/actions/clip and Compose semantics within original shared5s; stable wrong flags still fail, no parent replacement/fakeEditable. Root/dynamic window-ID readiness separate from actual field requirements. Native diagnostics pending; no product change.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt": "6d5eae29e50331567ef6c45541f213d2e54d4810c40371e15aad65d01b116b90"
+      }
+    },
+    {
+      "id": "android-actual-saved-voice-session-20261029",
+      "baseCommit": "e0d89741",
+      "features": ["F33", "F42", "F58", "F64"],
+      "summary": "Actual Session/encrypted serial writer/owner fixtures, synthetic file recognizer only. Complete canonical original JSON, exact persistent row and entire WAV assertions before action. Seven ordinary plus fresh one-use controlled different-PID cold pair passed independently on API26 and API37 Source43 (18 terminal methods); pre-write cold only, post-write/pre-applied kill remains pending. No remote/microphone actions, no acoustic claim; iOS unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionColdTest.kt": "c8910d00714de0ba8562e29807bc3d8a91e50dec7548473ff01b4f04229d7be7",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionFixture.kt": "76b6fa97dcbdfbad7d985120e4d53c0874109c0cb347e8689634ecef679debc7",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceSessionTest.kt": "c151e770f7ce50cae568c99753cd751742accc7c0f945a5ed9f4e3c26acb92ee"
+      }
+    },
+    {
+      "id": "android-exact-native-connection-field-20261029",
+      "baseCommit": "e0d89741",
+      "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+      "summary": "Same48dp real BasicTextField control now includes existing16/12dp padding in decorationBox. Exact independent public semantic ID and strict label relation select actual native field; enabled/editable/visible/actions/full geometry and original5s retained. API37 actual landscape and API26 OS font2 short viewport passed; Chinese original name save passed then selected menu item native guard failed, pending precise owner diagnosis. Full iOS/interface matrix remains open.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt": "37337d458f734d2dede47548f96a75b549749857d7cc4bca038186c9f5c12f42",
+        "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt": "d841c6683fe3cce529c458b01caa76b81169bf5e8972583131e224b4df1a536a"
+      }
+    },
+    {
+      "id": "android-p9-upgrade-guard-diagnostics-20261029",
+      "baseCommit": "e0d89741",
+      "features": ["F52", "F53", "F58", "F64"],
+      "summary": "Persist original cross-PID guard exception and Parcel/inventory before strict assertions, retaining0/0x10 service flags. Separate offline pinned upgrade plan and read-only reconciliation preserve original bootstrap intent/receipt/default family, same UID/signer, zero normal writes. Parent independently checks serial/AVD/kernel boot.14 host plan vectors and122tasks three APK compile passed; Source43 native upgrade/diagnostic pending. Original SDK notice/firstclick not created; iOS unchanged.",
+      "files": {
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt": "84da1cb3bb46ddfb09af3464446f33e4b6b7e1c2e84d9ddc845c838312c2b6cf",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalBootstrapUpgradeReadOnlyTest.kt": "e5a9212c5ae3198e48dca408e9c6359a009acb163e1a57db3e7bb57552951fc3",
+        "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalProbeDiagnostics.kt": "8f4b2d991efc7365afada4d0f86b09e474e60ba7364679935b545557b2387dd2",
+        "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalBootstrapUpgradeReadOnlyTest.kt": "e5a9212c5ae3198e48dca408e9c6359a009acb163e1a57db3e7bb57552951fc3",
+        "scripts/mobile/fixtures/native/binder-diagnostics/NativeNaturalProbeDiagnostics.kt": "8f4b2d991efc7365afada4d0f86b09e474e60ba7364679935b545557b2387dd2",
+        "scripts/mobile/fixtures/native/binder-diagnostics/prepare-upgrade-plan.py": "46ce2f5e9147c4f4cd17d6a27966c03302c4e0fe7d9a51d03c92a8e4f15496e5",
+        "scripts/mobile/fixtures/native/binder-diagnostics/upgrade-plan-vectors.py": "2676bb935d28ddffc72bbb0dfac5df87a92f9650814ab6d7e9886710332d28e8"
       }
     },
     {

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR39",
+  "sourceSha256": "2d6f20d094ef8fad62c5cac031b58866b5bcf1bd3a676fbd11963702874c5da1",
+  "expandedSourceSha256": "cd894f86cf7128509aeb120c05f473e51cffbd68c6eb6560c551f9e582b09f0f",
+  "appSha256": "8a75576511e0f8c84b12c15bcb5cdba17a584a81347e0ef71c6699c646493ae0",
+  "runnerSha256": "68f23114ca7032af17b6626bdf7521410fa3494fde929cb9add8b6016c6ebc44",
+  "native": {
+    "calls": 6,
+    "passed": 5,
+    "failed": 1
+  },
+  "passed": [
+    "Exact Source39 original product UI5 regression",
+    "Actual system font2 short320x420dp Dialog: all6 labels and6 full values pass exact text/overflow/UTF16 glyph/full actual clip guards"
+  ],
+  "remainingFailure": "Same native Android AX field enabled/editable/visible combined assertion after all12 text checks. P8 diagnostic task active; do not claim full scenario pass.",
+  "productChange": "Only connection add/edit page under actual maxHeight480dp or actual IME uses full remaining height and same header in same existing form scroll; same form/draft/action owner callsite. Full finite labels from PAR38 retained.",
+  "environmentRestored": true,
+  "realModelInputs": 0,
+  "realHostBusinessInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "paused": ["Task/project management", "iOS A6"]
+}

@@ -1,0 +1,11 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
+@@ -120,7 +120,7 @@
+             GroupTitle(productText("连接目标"))
+             GroupCard {
+                 val fields=listOf("agent" to (productText("Agent 客户端") to target.agentId),"authority" to (productText("账号发行方") to target.accountAuthority.orEmpty()),"subject" to (productText("账号") to target.accountSubject.orEmpty()),"host" to (productText("电脑") to target.hostId),"workspace" to (productText("工作区") to target.workspaceId),"runtime" to (productText("运行时") to target.runtimeId))
+-                fields.forEach { (id,row)->Column(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp)) { Text(row.first,Modifier.testTag("easywork-target-label-$id"),fontSize=12.sp,color=colors.onSurfaceVariant);Text(row.second,Modifier.fillMaxWidth().testTag("easywork-target-$id"),fontSize=14.sp) } }
++                fields.forEach { (id,row)->Column(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp)) { Text(row.first,Modifier.fillMaxWidth().testTag("easywork-target-label-$id"),fontSize=12.sp,color=colors.onSurfaceVariant);Text(row.second,Modifier.fillMaxWidth().testTag("easywork-target-$id"),fontSize=14.sp) } }
+             }
+         }
+         GroupTitle(productText(method))

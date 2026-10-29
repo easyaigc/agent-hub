@@ -1,0 +1,64 @@
+{
+  "operationId": "parent-p9-natural-os-observer-next-20261029-1",
+  "source32": "58e302e55ba3aca59d6d6d4f41432a5ee88fa3f954190d1425fe69f4ab79d9c2",
+  "patches": {
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": {
+      "baseSha256": "27c5ad585cff9d0ac592b64691f9c235d31ae5038ddd8a4e974ad4e3616993e8",
+      "proposedSha256": "8b0d6ff425f8d0b421f21d3ba4e5c5a38bdc527ff84399ea31671d1b43cc9101",
+      "patch": "natural-os-main.patch"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": {
+      "baseSha256": "a99cf211334dabc6b3fed809332ba57c89fa5d446753556d017ec2a511e584bb",
+      "proposedSha256": "c2dae7d1936a5495cf8802e79265a0cc957b6560981a008578f37b0a32fa8013",
+      "patch": "natural-os-existing-key.patch"
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt": {
+      "baseSha256": "25a1a3f830dad3eae47175894b56666452328f45bffee3feb76934bc68d91049",
+      "proposedSha256": "2034c04868507c7c22b593798c1f635ecc1bd38bfaa8bda5f05d9bb2ca58c61f",
+      "patch": "natural-os-cold.patch"
+    },
+    "apps/android/src/debug/AndroidManifest.xml": {
+      "baseSha256": "b66de4fb53e4f24d0a1d1d8fdb3baa7fd453c0447d6d1feb33416d635ae67d4b",
+      "proposedSha256": "368e2a798ee7efea934ad273c25387c60c4b56d4d31f4c9dca33cd20ce6c4568",
+      "patch": "natural-os-app-manifest.patch"
+    },
+    "apps/android-inbox-examiner/src/main/AndroidManifest.xml": {
+      "baseSha256": "527c78546b8e88b5c8e41545d59b4b67a260224c26dd8f79b756ad724f96b96d",
+      "proposedSha256": "0b75d2ab6f4be960695eaa8ee9eea01d5d0f9bfbaeb19abe73f9a842d713e737",
+      "patch": "natural-os-examiner-manifest.patch"
+    }
+  },
+  "actualParentFilesModified": [],
+  "ownCommonSourceFilesModified": [],
+  "nativeStore5Gate": "parent reports source34 API26 all5 passed; combination review/P7 existing-key review and native lease still pending",
+  "compiledPrivateProposalOnly": true,
+  "unchangedRelocation": {
+    "from": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt",
+    "to": "apps/android/src/debug/kotlin/com/agenthub/android/NativeNaturalFamilyInventory.kt",
+    "sha256": "93dc2d638d1cdad95f6ff9f7984c2bedc0144ba95603391839d5418276fc6822"
+  },
+  "continuationOperationId": "parent-p9-command-completion-witness-20261029-1",
+  "retainedPolicy": "Natural active recreation fails closed before Session selection; legacy active remains pass-through; atomic5 plus facades required",
+  "proposalSources": {
+    "scripts/mobile/fixtures/native/natural-os/NativeNaturalOsProducerTest.kt": "2a5282353738a683a99864606cd94c6af69f868d1ea6b4f1d86b4e5710ca8155",
+    "scripts/mobile/fixtures/native/natural-os/release/NativeNaturalLaunch.kt": "068fe6cfe84e9f922db5e6894109a14f2075a1db0c627663f347329bf932f176",
+    "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalOsContract.kt": "ad3c6847dfc819e8117fc1f337ecdcdf962a39a5bd90ed9ca349e5e27f8cbcc0",
+    "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalEntryFence.kt": "923b194e253184de52eeec2f2973146066f2e1e1546e54eb260f32eb374bc49a",
+    "scripts/mobile/fixtures/native/natural-os/debug/NativeNaturalLaunch.kt": "267370f8e28899c204a69d878c5076cbe3304c5961d98c16c8aa8f895467be3c",
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java": "4096d2d2e384b3d803faf75af80b025678143969e068c8e9ff6e171670df3d06",
+    "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java": "b95e562680e0831284b5909cdefaadf73a95bd3ac1057a4f3e64d59b8b6720c1"
+  },
+  "patchSha256": {
+    "natural-os-main.patch": "805c716fd3073ad943ee4bd0b8c8f1660ed125e35f52d022bc5e1c2e0c309dac",
+    "natural-os-existing-key.patch": "4bd505aa8440e0f5a92db65cf7c16d6ce703ac518a4ac2b3a1fd91a95d7daab0",
+    "natural-os-cold.patch": "91f7708a29578d22bf2d63dab9a0f5c63b86267ed433c502c442498982f8b45c",
+    "natural-os-app-manifest.patch": "a36fc2ee1ae0eb87958598f09460e5322351cd58747eac665002a4b24277b0e5",
+    "natural-os-examiner-manifest.patch": "ae4bd7982dd2cfc605b3248b538e6f13a70ba14b4d526227fc894be1bec732bc"
+  },
+  "atomicCombinationVersion": 1,
+  "atomicCombinationSha256": "9852bd84d3e4fb50fb8431fcd6fe493f30289278e5d9e5f3d627011a8618f3d0",
+  "defaultFamilyProofOperationId": "parent-p9-producer-default-family-proof-20261029-1",
+  "visibilityWitness": "Exact self PID/UID and cross-UID system_server each ps, complete current self instrumentation in fixed global AM active section; live original writer seen at one ordered custody handoff; original timing windows unchanged",
+  "completionWitness": "Fixed PS/AM enum script; fresh per-command canonical UUID, unique last status0 marker and empty stderr under combined original cap; typed Completed required before either parser",
+  "strongObserverMinApi": 34
+}

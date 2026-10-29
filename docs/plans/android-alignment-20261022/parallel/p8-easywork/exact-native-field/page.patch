@@ -1,0 +1,15 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt
+@@ -186,10 +186,10 @@
+ @Composable internal fun EasyWorkFormField(value: String,change: (String)->Unit,label: String,tag: String,enabled: Boolean,type: KeyboardType=KeyboardType.Text) {
+     val colors=MaterialTheme.colorScheme
+     val focus=LocalFocusManager.current;val keyboard=LocalSoftwareKeyboardController.current
+-    BasicTextField(value,change,Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).semantics {contentDescription=label}.padding(horizontal=16.dp,vertical=12.dp),
++    BasicTextField(value,change,Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).semantics {contentDescription=label},
+         enabled=enabled,singleLine=true,textStyle=TextStyle(fontSize=17.sp,color=colors.onSurface),
+         keyboardOptions=KeyboardOptions(keyboardType=type,autoCorrectEnabled=false,imeAction=ImeAction.Done),
+         keyboardActions=KeyboardActions(onDone={focus.clearFocus();keyboard?.hide()}),visualTransformation=VisualTransformation.None,
+-        decorationBox={inner->Box {if(value.isEmpty())Text(label,fontSize=17.sp,color=colors.onSurfaceVariant);inner()}})
++        decorationBox={inner->Box(Modifier.padding(horizontal=16.dp,vertical=12.dp)) {if(value.isEmpty())Text(label,fontSize=17.sp,color=colors.onSurfaceVariant);inner()}})
+     HorizontalDivider(Modifier.padding(start=16.dp),color=colors.onSurface.copy(alpha=.1f))
+ }

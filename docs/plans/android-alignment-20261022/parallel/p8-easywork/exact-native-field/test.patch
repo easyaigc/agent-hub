@@ -1,0 +1,152 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -257,67 +257,106 @@
+         var result=-1;i.runOnMainSync {val own=w.decorView.createAccessibilityNodeInfo();if(own!=null){result=own.windowId;@Suppress("DEPRECATION") own.recycle()}};return result
+     }
+     private fun nativeFieldAx(label: String,tag: String){
+-        val started=android.os.SystemClock.uptimeMillis();val deadline=started+5000;val automation=i.uiAutomation;val w=window();var expectedWindow=dialogAxWindowId(w)
+-        val evidence=JSONObject().put("kind","actual-Android-AX-field-before-guards").put("tag",tag).put("labelHash",easyHash(label.toByteArray()))
+-            .put("totalBudgetMs",5000).put("initialDialogWindowId",expectedWindow).put("expectedDialogWindowId",expectedWindow).put("phase","root-readiness").put("bodyOrActionLabelsStored",false)
+-            .put("initialWindow",windowGeometry(w)).put("initialComposeField",composeFieldAx(tag))
++        val started=android.os.SystemClock.uptimeMillis();val deadline=started+5000;val automation=i.uiAutomation;val w=window()
++        val evidence=JSONObject().put("kind","exact-native-field-before-guards").put("tag",tag).put("labelHash",easyHash(label.toByteArray()))
++            .put("totalBudgetMs",5000).put("phase","root-readiness").put("initialWindow",windowGeometry(w)).put("initialComposeField",composeFieldAx(tag))
+         saveProbe(evidence)
+-        var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalField: android.view.accessibility.AccessibilityNodeInfo?=null;var matchCount=0
++        var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalField: android.view.accessibility.AccessibilityNodeInfo?=null;var finalLabel: android.view.accessibility.AccessibilityNodeInfo?=null
++        var fieldCount=0;var labelCount=0;var associated=false;var expectedId=-1;var finalFieldId: Int?=null;var finalLabelId: Int?=null
+         val recent=mutableListOf<JSONObject>();var firstSample: JSONObject?=null;var previous="";var sameSince=0L;var samples=0;var sameCount=0
++        val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag"
++        fun budget(){assertTrue("Native identity query shares original AX5s budget",android.os.SystemClock.uptimeMillis()<=deadline)}
++        fun owned(n: android.view.accessibility.AccessibilityNodeInfo,windowId: Int)=n.packageName?.toString()==i.targetContext.packageName&&n.windowId==windowId
+         try {
+-            firstRoot=activeAppRoot(deadline);val remaining=deadline-android.os.SystemClock.uptimeMillis();assertTrue("AX query shares original5s budget",remaining>0)
++            firstRoot=activeAppRoot(deadline);val remaining=deadline-android.os.SystemClock.uptimeMillis();assertTrue("Original AX5s budget remains",remaining>0)
+             ui.waitUntil(remaining){
+-                val root=firstRoot?:automation.rootInActiveWindow;firstRoot=null;val matches=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();var totalMatches=0;var visited=0
+-                var candidate: android.view.accessibility.AccessibilityNodeInfo?=null
+-                val sample=JSONObject().put("rootPresent",root!=null);var fresh=false
++                val compose=composeFieldAx(tag);val anchor=compose.getJSONObject("unmerged").getInt("semanticsId");val mergedAnchor=compose.getJSONObject("merged").getInt("semanticsId")
++                val windowId=dialogAxWindowId(w);val root=firstRoot?:automation.rootInActiveWindow;firstRoot=null
++                val fields=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();val labels=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>()
++                var allFresh=true;var visited=0;var idQueries=0;var nativeFields=0;var exactLabels=0;var relation=false
++                val sample=JSONObject().put("expectedComposeId",anchor).put("mergedComposeId",mergedAnchor).put("dialogWindowId",windowId).put("rootPresent",root!=null)
++                fun readId(n: android.view.accessibility.AccessibilityNodeInfo): Int? {
++                    budget();if(!owned(n,windowId)){allFresh=false;return null}
++                    if(!n.availableExtraData.contains(idKey)){if(!n.refresh()||!owned(n,windowId))allFresh=false;return null}
++                    idQueries++;val ok=n.refreshWithExtraData(idKey,android.os.Bundle())
++                    if(!ok||!owned(n,windowId)||!n.extras.containsKey(idKey)){allFresh=false;return null};return n.extras.getInt(idKey)
++                }
++                var candidate: android.view.accessibility.AccessibilityNodeInfo?=null;var candidateLabel: android.view.accessibility.AccessibilityNodeInfo?=null;var fid: Int?=null;var lid: Int?=null
+                 try {
+-                    if(root!=null&&root.packageName?.toString()==i.targetContext.packageName){
+-                        sample.put("rootBeforeRefresh",axNodeFlags(root));val rootRefresh=root.refresh();sample.put("rootRefresh",rootRefresh).put("rootAfterRefresh",axNodeFlags(root))
+-                        expectedWindow=dialogAxWindowId(w);sample.put("currentDialogWindowId",expectedWindow);evidence.put("expectedDialogWindowId",expectedWindow)
+-                        val exactRoot=rootRefresh&&root.packageName?.toString()==i.targetContext.packageName&&expectedWindow>=0&&root.windowId==expectedWindow
+-                        sample.put("exactDialogRoot",exactRoot)
+-                        if(exactRoot){
+-                            fun visit(n: android.view.accessibility.AccessibilityNodeInfo){check(++visited<=2048);if(n.contentDescription?.toString()==label){totalMatches++;if(matches.size<2)matches.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n))};for(k in 0 until n.childCount){val c=n.getChild(k)?:continue;try{visit(c)}finally{@Suppress("DEPRECATION") c.recycle()}}}
+-                            visit(root);val details=JSONArray();var allFresh=true
+-                            for(n in matches){
+-                                val item=JSONObject().put("beforeRefresh",axNodeFlags(n));val refreshed=n.refresh();item.put("refresh",refreshed).put("afterRefresh",axNodeFlags(n))
+-                                val idKey="androidx.compose.ui.semantics.id";val tagKey="androidx.compose.ui.semantics.testTag";val available=n.availableExtraData;var extrasFresh=true
+-                                item.put("idExtraAdvertised",available.contains(idKey)).put("tagExtraAdvertised",available.contains(tagKey))
+-                                if(refreshed&&available.contains(idKey)){val ok=n.refreshWithExtraData(idKey,android.os.Bundle());extrasFresh=extrasFresh&&ok;item.put("idExtraRefresh",ok);if(ok&&n.extras.containsKey(idKey))item.put("nativeSemanticsId",n.extras.getInt(idKey))}
+-                                if(refreshed&&available.contains(tagKey)){val ok=n.refreshWithExtraData(tagKey,android.os.Bundle());extrasFresh=extrasFresh&&ok;item.put("tagExtraRefresh",ok);if(ok)item.put("nativeTestTagMatches",n.extras.getCharSequence(tagKey)?.toString()==tag)}
+-                                val labelStillMatches=n.contentDescription?.toString()==label;item.put("afterExtraQueries",axNodeFlags(n)).put("labelStillMatches",labelStillMatches)
+-                                val parent=n.parent
+-                                if(parent!=null)try{if(parent.packageName?.toString()==i.targetContext.packageName){val ok=parent.refresh();item.put("parentRefresh",ok).put("parent",axNodeFlags(parent))}}finally{@Suppress("DEPRECATION") parent.recycle()}
+-                                val children=JSONArray();for(k in 0 until minOf(n.childCount,8)){val c=n.getChild(k)?:continue;try{if(c.packageName?.toString()==i.targetContext.packageName)children.put(axNodeFlags(c))}finally{@Suppress("DEPRECATION") c.recycle()}}
+-                                item.put("children",children).put("childrenTruncated",n.childCount>8).put("childrenRefreshed",false);details.put(item)
+-                                allFresh=allFresh&&refreshed&&extrasFresh&&labelStillMatches&&n.packageName?.toString()==i.targetContext.packageName&&n.windowId==expectedWindow
++                    val exactRoot=root!=null&&root.packageName?.toString()==i.targetContext.packageName&&root.refresh()&&windowId>=0&&owned(root,windowId)
++                    sample.put("exactDialogRoot",exactRoot)
++                    if(exactRoot){
++                        fun visit(n: android.view.accessibility.AccessibilityNodeInfo){
++                            budget();check(++visited<=2048);val nativeId=readId(n)
++                            if(nativeId==anchor){nativeFields++;if(fields.size<2)fields.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n))}
++                            if(n.contentDescription?.toString()==label){exactLabels++;if(labels.size<2)labels.add(android.view.accessibility.AccessibilityNodeInfo.obtain(n))}
++                            for(k in 0 until n.childCount){budget();val c=n.getChild(k)?:continue;try {if(owned(c,windowId))visit(c)else allFresh=false}finally{@Suppress("DEPRECATION") c.recycle()}}
++                        }
++                        visit(root!!);sample.put("root",axNodeFlags(root))
++                        val fieldDetails=JSONArray();for(n in fields){val before=axNodeFlags(n);val id=readId(n);fieldDetails.put(JSONObject().put("id",id?:JSONObject.NULL).put("beforeRefresh",before).put("afterRefresh",axNodeFlags(n)))}
++                        val labelDetails=JSONArray();for(n in labels){val id=readId(n);labelDetails.put(JSONObject().put("id",id?:JSONObject.NULL).put("flags",axNodeFlags(n)))}
++                        sample.put("fieldCount",nativeFields).put("uniqueLabelCount",exactLabels).put("fieldDetails",fieldDetails).put("labelDetails",labelDetails)
++                        if(nativeFields==1&&exactLabels==1){
++                            val field=fields.single();val description=labels.single();fid=readId(field);lid=readId(description)
++                            val available=field.availableExtraData;var tagMatches=false
++                            if(available.contains(tagKey)){budget();val ok=field.refreshWithExtraData(tagKey,android.os.Bundle());allFresh=allFresh&&ok;tagMatches=ok&&field.extras.getCharSequence(tagKey)?.toString()==tag}
++                            sample.put("fieldTagAdvertised",available.contains(tagKey)).put("fieldTagMatches",tagMatches)
++                            if(field==description){relation=fid==anchor&&lid==anchor;sample.put("labelRelation","self")}
++                            else {
++                                val parent=description.parent;var parentId: Int?=null;var sameParent=false
++                                if(parent!=null)try {parentId=readId(parent);sameParent=parent==field;sample.put("descriptionParent",axNodeFlags(parent))}finally{@Suppress("DEPRECATION") parent.recycle()}
++                                var directChildMatches=0;for(k in 0 until field.childCount){budget();val child=field.getChild(k)?:continue;try{if(child==description)directChildMatches++}finally{@Suppress("DEPRECATION") child.recycle()}}
++                                relation=fid==anchor&&lid?.toLong()==anchor.toLong()+2_000_000_000L&&parentId==anchor&&sameParent&&directChildMatches==1
++                                sample.put("labelRelation","generated-description-child").put("descriptionParentId",parentId?:JSONObject.NULL).put("descriptionParentIsExactField",sameParent).put("fieldDirectDescriptionChildCount",directChildMatches)
+                             }
+-                            sample.put("matchCount",totalMatches).put("detailedMatchLimit",2).put("matches",details).put("visitedNodes",visited);fresh=allFresh
+-                            if(totalMatches==1&&matches.size==1)candidate=android.view.accessibility.AccessibilityNodeInfo.obtain(matches.single())
++                            sample.put("strictAssociation",relation).put("selectedField",axNodeFlags(field)).put("selectedLabel",axNodeFlags(description))
++                            allFresh=allFresh&&fid==anchor&&owned(field,windowId)&&owned(description,windowId)&&description.contentDescription?.toString()==label&&tagMatches
++                            candidate=android.view.accessibility.AccessibilityNodeInfo.obtain(field);candidateLabel=android.view.accessibility.AccessibilityNodeInfo.obtain(description)
+                         }
+-                    }else sample.put("targetPackage",false)
+-                    sample.put("composeField",composeFieldAx(tag)).put("window",windowGeometry(w));val now=android.os.SystemClock.uptimeMillis();val signature=sample.toString();samples++
++                    }
++                    val after=composeFieldAx(tag);allFresh=allFresh&&after.getJSONObject("unmerged").getInt("semanticsId")==anchor&&mergedAnchor==anchor
++                    sample.put("visitedNodes",visited).put("idQueries",idQueries).put("composeFieldBefore",compose).put("composeFieldAfter",after).put("window",windowGeometry(w)).put("connectionPage",nodeGeometry("connection-page"))
++                    val now=android.os.SystemClock.uptimeMillis();val signature=sample.toString();samples++
+                     if(signature!=previous){previous=signature;sameSince=now;sameCount=1}else sameCount++
+                     if(firstSample==null)firstSample=JSONObject(sample.toString());recent.add(JSONObject(sample.toString()).put("sampleUptimeMs",now));if(recent.size>8)recent.removeAt(0)
+-                    val stable=fresh&&sameCount>=2&&now-sameSince>=100&&now<=deadline
+-                    evidence.put("phase",if(stable)"before-original-assertions" else "readonly-freshness-sampling").put("samples",samples).put("sameSamples",sameCount)
+-                        .put("firstSample",firstSample).put("recentSamples",JSONArray(recent)).put("recentLimit",8).put("stableForMs",now-sameSince).put("remainingBudgetMs",deadline-now)
+-                        .put("readinessDoesNotRequireFlagsTrue",true).put("windowRootAndTargetRefreshed",fresh)
++                    val stable=exactRoot&&allFresh&&sameCount>=2&&now-sameSince>=100&&now<=deadline
++                    evidence.put("phase",if(stable)"before-original-assertions" else "exact-identity-sampling").put("samples",samples).put("firstSample",firstSample)
++                        .put("recentSamples",JSONArray(recent)).put("recentLimit",8).put("stableForMs",now-sameSince).put("remainingBudgetMs",deadline-now).put("readinessDoesNotRequireFlagsTrue",true)
+                     flushProbes()
+-                    if(stable){matchCount=totalMatches;finalField=candidate;candidate=null}
++                    if(stable){fieldCount=nativeFields;labelCount=exactLabels;associated=relation;expectedId=anchor;finalFieldId=fid;finalLabelId=lid;finalField=candidate;candidate=null;finalLabel=candidateLabel;candidateLabel=null}
+                     stable
+-                }finally {candidate?.let {@Suppress("DEPRECATION") it.recycle()};matches.forEach {@Suppress("DEPRECATION") it.recycle()};root?.let {@Suppress("DEPRECATION") it.recycle()}}
++                }catch(failure: Throwable){evidence.put("interruptedSample",sample.put("visitedNodes",visited).put("idQueries",idQueries));flushProbes();throw failure}
++                finally {candidate?.let {@Suppress("DEPRECATION") it.recycle()};candidateLabel?.let {@Suppress("DEPRECATION") it.recycle()};fields.forEach {@Suppress("DEPRECATION") it.recycle()};labels.forEach {@Suppress("DEPRECATION") it.recycle()};root?.let {@Suppress("DEPRECATION") it.recycle()}}
+             }
+-            assertEquals("Unique exact native field label",1,matchCount);val field=checkNotNull(finalField)
++            assertEquals("Unique exact native field semantic ID",1,fieldCount);assertEquals("Original unique exact native label",1,labelCount)
++            assertEquals(expectedId,finalFieldId);assertTrue("Unique label is strictly linked to independently selected field",associated)
++            val field=checkNotNull(finalField);val description=checkNotNull(finalLabel)
+             assertTrue("Native field isEnabled: $tag",field.isEnabled);assertTrue("Native field isEditable: $tag",field.isEditable);assertTrue("Native field isVisibleToUser: $tag",field.isVisibleToUser)
++            assertEquals("Real native editor class","android.widget.EditText",field.className?.toString());assertTrue("Native SetText action present",field.actionList.any {it.id==android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT})
++            assertTrue("Native SetSelection action present",field.actionList.any {it.id==android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_SELECTION})
++            assertTrue("Unique description enabled/visible",description.isEnabled&&description.isVisibleToUser)
+             val b=android.graphics.Rect();field.getBoundsInScreen(b);assertTrue("Native field has positive bounds: $tag",b.width()>0&&b.height()>0)
++            val labelBounds=android.graphics.Rect();description.getBoundsInScreen(labelBounds);assertTrue("Unique native label has positive bounds",labelBounds.width()>0&&labelBounds.height()>0)
+             val uiField=ui.onNodeWithTag(tag).assertIsDisplayed();val raw=uiField.getUnclippedBoundsInRoot();val bounds=uiField.fetchSemanticsNode().boundsInWindow;val density=ui.density.density
++            val visible=android.graphics.Rect();w.decorView.getWindowVisibleDisplayFrame(visible);val origin=IntArray(2);w.decorView.getLocationOnScreen(origin)
++            val page=ui.onNodeWithTag("connection-page").fetchSemanticsNode().boundsInWindow;val ime=ViewCompat.getRootWindowInsets(w.decorView)
++            val imeTop=if(ime?.isVisible(WindowInsetsCompat.Type.ime())==true)origin[1]+w.decorView.height-ime.getInsets(WindowInsetsCompat.Type.ime()).bottom else origin[1]+w.decorView.height
++            val clip=android.graphics.Rect(maxOf(visible.left,origin[0],kotlin.math.ceil(page.left+origin[0]).toInt()),maxOf(visible.top,origin[1],kotlin.math.ceil(page.top+origin[1]).toInt()),minOf(visible.right,origin[0]+w.decorView.width,kotlin.math.floor(page.right+origin[0]).toInt()),minOf(visible.bottom,imeTop,kotlin.math.floor(page.bottom+origin[1]).toInt()))
++            val whole=b.left>=clip.left-1&&b.top>=clip.top-1&&b.right<=clip.right+1&&b.bottom<=clip.bottom+1
++            evidence.put("nativeFieldBoundsScreen",JSONObject().put("left",b.left).put("top",b.top).put("right",b.right).put("bottom",b.bottom))
++                .put("actualNativeClipScreen",JSONObject().put("left",clip.left).put("top",clip.top).put("right",clip.right).put("bottom",clip.bottom))
++                .put("nativeLabelBoundsScreen",JSONObject().put("left",labelBounds.left).put("top",labelBounds.top).put("right",labelBounds.right).put("bottom",labelBounds.bottom))
++                .put("nativeFieldWhole",whole).put("selectedNativeId",finalFieldId).put("descriptionNativeId",finalLabelId)
++                .put("requiredScrollDeltaPx",if(b.bottom>clip.bottom)b.bottom-clip.bottom else if(b.top<clip.top)b.top-clip.top else 0).put("connectionPage",nodeGeometry("connection-page"))
++            flushProbes()
+             assertTrue("Whole field visible in Compose clip: $tag",bounds.width>=(raw.right.value-raw.left.value)*density-1.5f&&bounds.height>=(raw.bottom.value-raw.top.value)*density-1.5f)
+-            val visible=android.graphics.Rect();w.decorView.getWindowVisibleDisplayFrame(visible)
+             assertTrue("Whole native field inside visible display frame: $tag",b.left>=visible.left-1&&b.top>=visible.top-1&&b.right<=visible.right+1&&b.bottom<=visible.bottom+1)
+-            evidence.put("phase","all-original-native-field-flags-and-full-visibility-passed");flushProbes()
++            assertTrue("Whole native control inside actual dialog/Page/IME clip: $tag",whole)
++            assertTrue("Whole unique native label inside the same actual clip",labelBounds.left>=clip.left-1&&labelBounds.top>=clip.top-1&&labelBounds.right<=clip.right+1&&labelBounds.bottom<=clip.bottom+1)
++            assertTrue("Label bounds belong to exact native field",labelBounds.left>=b.left-1&&labelBounds.top>=b.top-1&&labelBounds.right<=b.right+1&&labelBounds.bottom<=b.bottom+1)
++            evidence.put("phase","exact-native-field-label-action-and-full-boundary-passed");flushProbes()
+         }catch(failure: Throwable){evidence.put("phase","failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-started);flushProbes();throw failure}
+-        finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalField?.let {@Suppress("DEPRECATION") it.recycle()}}
++        finally {firstRoot?.let {@Suppress("DEPRECATION") it.recycle()};finalField?.let {@Suppress("DEPRECATION") it.recycle()};finalLabel?.let {@Suppress("DEPRECATION") it.recycle()}}
+     }
+     private fun nativeTextAx(value: String,readonly: Boolean=false,selected: Boolean=false){
+         val root=activeAppRoot();val found=mutableListOf<android.view.accessibility.AccessibilityNodeInfo>();var count=0

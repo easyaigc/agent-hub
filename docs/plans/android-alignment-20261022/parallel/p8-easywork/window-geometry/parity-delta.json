@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "taskId": "android-parallel-p8-easywork-20261028",
+  "operationId": "parent-p8-source36-native-required-ui-fixes-20261029-1",
+  "features": ["F02", "F06", "F08", "F46", "F55", "F56"],
+  "ui": ["UI03"],
+  "scenarios": ["S01", "S14", "S18"],
+  "commonAssertion": "Full product connection fields, readonly identities and disabled submit stay fully visible under measured actual layout/IME constraints. Diagnostic scalar evidence is persisted before original overflow, full-glyph, full-size, frame-edge and disabled assertions; unknown geometry does not become a pass.",
+  "dualPlatformImpact": {
+    "android": "Exclusive test fixes based on complete frozen Source36 test with all parent whole-submit guard lines preserved; conditional Page target-label width patch only",
+    "ios": "No source or native changes; prior six-field/marker/256/busy differences remain open"
+  },
+  "source36": {
+    "sourceSha256": "dbb326afa24531ab3aafc00ab8b31194a70acc5c45c09b5717af1f90e0e54253",
+    "appSha256": "65c5c05e30349b8b895b174717376a2074168904fc90234e4f8666c0c9d2103d",
+    "runnerSha256": "f6f4b4d27427828751b45766624c22e9562aea659783915621a0f2962b5e4b6e",
+    "inputs": 709,
+    "allBytesAndAggregateVerified": true
+  },
+  "originalSource36Results": {
+    "reference": "stage36-product-presentation-name-native/parsed-native-method-results.json",
+    "referenceSha256": "1be9142c6cb6d9ee4677a0906eff617e0b85d3650a04b183753abb41e22edc98",
+    "nativeCalls": 14,
+    "passed": 10,
+    "failed": 4,
+    "oldUiRawNamePassed": 5,
+    "delayedCandidatePassed": 5,
+    "newPresentationFailed": 4,
+    "originalFailureArchivesReadOnly": true,
+    "noFailurePointTextLayoutOrImeGeometry": true,
+    "oldResultsNotReplaced": true
+  },
+  "testOverlay": {
+    "version": 1,
+    "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt",
+    "baseSource": "Source36",
+    "baseSha256": "077016927a5ea1a1b77b3b376b21ac63a080bd99996135fae122385af1b2952d",
+    "proposedSha256": "0942356da3e1764f770da31520e8994d42bd5dac5fccce4b50b7e7b42f879466",
+    "completeFrozenBaseAdopted": true,
+    "parentWholeSubmitGuardBlockUnchanged": true,
+    "wholeSubmitGuardBlockSha256": "ee425a8a769026ec3d455c3a8138872ded66d890488b6919d4260cbe70d63a7a",
+    "footerCallSitesExplicitNoScroll": 2,
+    "imeVisibleAndStabilitySharedBudgetMs": 8000,
+    "sameStateSamplesMinimum": 3,
+    "stableWindowMinimumMs": 100,
+    "imeHideOriginalBudgetMs": 8000,
+    "preGuardScalarEvidenceMaxBytes": 2097152,
+    "sensitiveTextPersisted": false,
+    "newDeviceActionsByLeaf": 0
+  },
+  "pageOverlay": {
+    "version": 1,
+    "path": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+    "baseSource": "Source36",
+    "baseSha256": "8679b3baa8d494d56d36701dffca01c6089ade127c0887142cfd1d32eb87dfc1",
+    "proposedSha256": "7686848aecd587c6e7f2b6f0096d18cd229f475a6f7aa8a1229e06449817c6fe",
+    "status": "Conditional source proposal; base label geometry not yet captured at original failed overflow guard; new native diagnostic run required before attributing root cause",
+    "change": "Give only the target-label Text its existing finite column width, matching value Text; no IME/Sheet changes",
+    "sharedFileDirectlyChanged": false,
+    "originalOverflowGlyphClipAssertionsRetained": true
+  },
+  "compiles": {
+    "diagnostic": {
+      "variant": "diagnostic",
+      "compileExit": 0,
+      "inputs": 709,
+      "sourceSha256": "4959f01526a0d3b85e680ec35af648b9344488ebb286fdeed0e2826cf2b2a0df",
+      "allFinalInputsVerified": true,
+      "mismatches": [],
+      "newApks": 0,
+      "executedMethods": 0,
+      "presentationMethods": 4
+    },
+    "label-proposal": {
+      "variant": "label-proposal",
+      "compileExit": 0,
+      "inputs": 709,
+      "sourceSha256": "2c14b74b69ca293b530f688f2a944ba7fd66018b517538fc6c932bccdd0fca14",
+      "allFinalInputsVerified": true,
+      "mismatches": [],
+      "newApks": 0,
+      "executedMethods": 0,
+      "presentationMethods": 4
+    }
+  },
+  "nativeExecution": {
+    "executedMethods": 0,
+    "newApks": 0,
+    "preparedMethods": 4,
+    "diagnosticOnly": "Run current Source36 product with new test first to capture label/IME failure geometry; original guards remain",
+    "labelProposal": "Optional exact label fillMaxWidth proposal remains unverified until original/new measurements and all original assertions are compared on named candidate fingerprints",
+    "imeProductFix": "No Sheet/IME product patch supported yet; if settled geometry proves covered/unreachable submit, retain product failure and propose a narrow connection-form change without widening scope",
+    "deadline": "One original8s show/stable/pre-scroll/post-scroll budget; original separate8s Done-hide budget retained",
+    "evidence": "Actual own dialog/window/IME/frame/focused-field/button/page/clip scalar data, exact source/App/runner; no sensitive text; AtomicFile measurements.json before assertions <=2MiB",
+    "originalGuards": "Overflow/full UTF16/glyph/clip/whole width/height/every visible-frame edge/disabled kept; no submit click"
+  },
+  "sharedMainSessionPageOldUiCentralOrManifestChanged": false,
+  "centralRegistrationOwner": "parent",
+  "deviceAdbHostPermissionPairingModelBusinessActionsByLeaf": 0,
+  "additionalSource35Sdk37": "Parent original2 SDK passes after owned AVD Wi-Fi association, observed discoveryStopped/resolutionStopped, advertisement cleanup joined and permissions restored; previous timeouts retained; no new leaf SDK run",
+  "open": [
+    "Named native runs for new diagnostics and conditional label proposal, keeping original Source36 failures",
+    "Actual landscape reachable disabled submit and IME diagnosis/product fix if actual geometry establishes it",
+    "Full API26/37 language/theme/font/orientation/AX matrix and physical UI",
+    "iOS six-target/marker/256/busy gaps",
+    "MainActivity lifecycle and full P8 issuer/Desktop/TLS/default-scale/model gates"
+  ],
+  "a5Complete": false,
+  "a6": "paused",
+  "rootCheck": {
+    "exit": 1,
+    "passed": ["format", "sync-rule tests5", "lint"],
+    "stoppedAt": "Feature change record missing or stale for apps/android/localization/native-copy.json",
+    "laterChecks": "not run",
+    "centralOwner": "parent"
+  },
+  "stageCleanup": {
+    "gradleCleanExit": 0,
+    "ownBuildAndGradleRemoved": true,
+    "logsCompressedAndReadBackVerified": true,
+    "newApks": 0
+  }
+}

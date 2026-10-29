@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-source42-api37-binder-guard-diagnosis-20261029-1",
+  "featureIds": ["F52", "F53"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "sharedAssertions": [
+    "Unknown or failed originals remain immutable and are never replayed",
+    "Diagnostic evidence is saved before assertions and cannot imply a passing scenario",
+    "Upgrade reconciliation separates original installation/receipt identity from current executable identity and preserves default bytes"
+  ],
+  "android": {
+    "implemented": "Owned test-only diagnostic patch and separate bootstrap upgrade read-only proposal",
+    "adopted": false,
+    "actualCommonFilesModified": [],
+    "servicePolicyChanged": false,
+    "actualFlags": "Unknown; AppOps source finding is only a hypothesis pending exact native guard message",
+    "parentReported": "Source42 bootstrap/store1-4 passed; store5 first extra-int failed expected message; original natural first click not started",
+    "nativeThisWorkline": "Not run",
+    "auxiliary": "14 synthetic offline plan-continuity vectors and independent compile only",
+    "boot": "Old receipt has no boot metadata; current native count plus separately pinned parent original/pre/post bootId required",
+    "uiChanged": false
+  },
+  "ios": {
+    "sourceChanges": [],
+    "impact": "Android acceptance harness only",
+    "acceptance": "No new result; A6 paused"
+  },
+  "ui": {
+    "tokensAndCopy": "No product presentation change",
+    "systemDifference": "Android Binder transport and upgrade test evidence; no reduction of shared original/no-replay assertions"
+  },
+  "parentLedgersToReconcileAfterReview": [
+    "docs/product/mobile-parity.md",
+    "docs/design/mobile-parity.md",
+    "docs/acceptance/mobile-parity.md"
+  ],
+  "evidence": "api37-binder-diagnostics.md",
+  "index": "api37-binder-diagnostics-hooks.json"
+}

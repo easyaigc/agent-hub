@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR40",
+  "sourceSha256": "337614f3cd63e1593af5cd54241bb18b5ccf45123d01f0147737ca3e58f0004b",
+  "expandedSourceSha256": "9c007b3a053ee21db779525c46ee3fe1719e74f6399ba68be9e7ac3c47a91554",
+  "appSha256": "cda2bdd73a06ec09c636fab4cb8a3ffc7ed47e82b31cffc782566ba79890e722",
+  "runnerSha256": "07b20bde31175e85a9b38206504a3c7aec2f3c9bbf76e086240264ca04887989",
+  "reviewedCommit": "6e3a1313524508d9f2dbdc0f3e1d1463f20a903e",
+  "adoption": {
+    "owned": 17,
+    "common": 6,
+    "allSourceReadbackVerified": true,
+    "parentRawNameAndCandidateGenerationPreserved": true,
+    "parentBilingualKeys": 24,
+    "iosChanged": false
+  },
+  "native": {
+    "api": 26,
+    "calls": 24,
+    "passed": 16,
+    "failed": 8,
+    "pcmAndClosedKeysPassed": 12,
+    "typedFramedOffIndexMigrationPassed": 2,
+    "actualSessionQuestionOwnerPassed": 1,
+    "absentOriginalRecoveryPassed": 1
+  },
+  "failureDiagnosis": "All8 original-preservation assertEquals compare generated KMP TargetScope object reference addresses. Assertion expected/actual strings become identical after replacing only TargetScope object addresses. Preserve original failures; replace broken DTO equality with full canonical original metadata, exact persisted row bytes and full WAV bytes before claiming preservation.",
+  "auxiliary": {
+    "debugRunnerReleaseBuild": true,
+    "localizationCatalogTests": 4
+  },
+  "realHostBusinessInputs": 0,
+  "realModelInputs": 0,
+  "realAcoustic": false,
+  "realJni": false,
+  "processDeathVerified": false,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "pending": [
+    "Correct complete-preservation fixture and rerun9",
+    "Actual Vosk install/decode/real worker exit with synthetic en/zh files",
+    "Full Session cold recovery and repeated migration",
+    "New voice panel bilingual/large-font/short-viewport/AX/physical DEV",
+    "P8 AX diagnostics and P9 natural OS first-click completion witness"
+  ],
+  "iosParity": "Legacy SFSpeech requires on-device only when supported; no identical offline guarantee claimed",
+  "paused": ["Task/project management", "iOS A6"]
+}

@@ -428,6 +428,7 @@ import com.agenthub.core.*
     val tag=when(decision.action) { "stop"->"stop-turn"; "resume"->"resume-task"; "busy"->"composer-busy"; else->"send-message" }
     Column {
     NativeDocumentRecoveryNotice(session,interactive)
+    if(interactive && session.canUseVoice && session.voice?.active==false)TextButton(onClick={session.beginVoice(recoverSavedFile=true)},modifier=Modifier.heightIn(min=48.dp).testTag("voice-restore-saved")) {Text(productText("恢复原录音"))}
     if(interactive&&attachmentPanel==null&&attachmentAction==null&&preview==null&&actions==null&&attachmentFlowIdle()&&session.canCompose) {
         session.recentPhotos?.let { library -> NativeRecentPhotoHintView(session,library) { open -> recentPreview=open;onAttachmentPreview(open) } }
     }

@@ -23,13 +23,16 @@ internal object NativeMigrationVoice {
         val index=values["voice-index-v1"]?.let {it as JSONArray}
         val markers=rawRecords[NativeVoiceDiscardCatalog.RECORD]?.let(NativeVoiceDiscardCatalog::decode).orEmpty()
         if(NativeVoiceDiscardCatalog.RECORD in values)claimed.add(NativeVoiceDiscardCatalog.RECORD)
+        val localResults=rawRecords[NativeVoiceLocalResults.RECORD]?.let(NativeVoiceLocalResults::decode).orEmpty()
+        if(NativeVoiceLocalResults.RECORD in values)claimed.add(NativeVoiceLocalResults.RECORD)
         val active=if(index==null)emptyList()else {
             require(index.length()<=32);claimed.add("voice-index-v1")
             (0 until index.length()).map {index.get(it) as String}.also {ids->require(ids.distinct().size==ids.size)}
         }
-        for(id in (active+markers.keys).distinct()) {
+        for(id in (active+markers.keys+localResults.map {it.recordingId}).distinct()) {
                 uuid(id);val name="voice-recording:$id";require(claimed.add(name));val row=values[name] as JSONObject
                 val current=NativeVoiceRecordingRecord.decode(row)
+                localResults.filter {it.recordingId==id}.forEach {it.validate(current)}
                 val marker=markers[id]
                 if(marker!=null) {
                     val original=rawRecords[marker.auditName]?:error("Discard original audit missing")
@@ -44,7 +47,7 @@ internal object NativeMigrationVoice {
                 bounded(row,"certificate",8192,true);bounded(row,"threadId",256,true);bounded(row,"draftKey",8192);bounded(row,"draftId",2048);bounded(row,"originalText",100_000)
                 val scope=AISharingScope.decode(row.getJSONObject("scope"));require(scope.model=="codex-dictation")
                 val client=clients.single {it.id==scope.target.hostId&&RuntimeIdentity.matches(it.scope,scope.target)}
-                require(row.optional("certificate")==client.codexDirect?.fingerprint&&row.getString("draftKey") in client.operationTargets(row.optional("threadId")))
+                require(row.optional("certificate")==client.codexDirect?.fingerprint&&NativeVoiceDestinationKeys.matches(client.operationTargets(row.optional("threadId")).toSet(),row.getString("draftKey")))
                 if(current.manifest==null) {
                     require(marker!=null&&!current.prepareAttempted&&!current.audioAttempted&&!row.has("phase")&&!row.has("audio")&&!row.has("audioStorage"))
                     if(marker.evidence.kind=="raw") {
@@ -74,7 +77,7 @@ internal object NativeMigrationVoice {
                 require(pcm in 2..9_600_000&&pcm%2==0&&blob.prefix.contentEquals(WavePCM.header(pcm)))
                 require(manifest.durationMs==(pcm*1000L/32000).toInt().coerceAtLeast(1))
         }
-        require(values.keys.filter {it=="voice-index-v1"||it.startsWith("voice-recording:")||it==NativeVoiceDiscardCatalog.RECORD||it.startsWith(NativeVoiceDiscardCatalog.AUDIT_PREFIX)}.all {it in claimed})
+        require(values.keys.filter {it=="voice-index-v1"||it.startsWith("voice-recording:")||it==NativeVoiceDiscardCatalog.RECORD||it==NativeVoiceLocalResults.RECORD||it.startsWith(NativeVoiceDiscardCatalog.AUDIT_PREFIX)}.all {it in claimed})
         require(binary.keys==expectedBinary)
         return claimed
     }

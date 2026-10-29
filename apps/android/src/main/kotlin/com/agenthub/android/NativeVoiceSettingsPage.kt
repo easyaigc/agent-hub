@@ -67,7 +67,7 @@ internal fun voiceProviderTitle(value: VoiceInputController.Provider)=if(value==
             TextButton(onClick={ settings.refreshCapabilities() },enabled=!settings.checking,modifier=Modifier.heightIn(min=48.dp).testTag("voice-capability-refresh")) { Text(productText("刷新能力")) }
         }
         Text(productText("可在系统设置中检查语音服务和语言支持。能力检查不会打开麦克风或下载模型。"),Modifier.fillMaxWidth().padding(horizontal=32.dp,vertical=8.dp),fontSize=12.sp,lineHeight=16.sp,color=colors.onSurfaceVariant)
-        if(capability?.canTranscribeSavedRecording!=true)Text(productText("手机端原录音转写暂不可用。电脑转写失败后，可保留原录音并重新录音。"),
+        if(capability?.canTranscribeSavedRecording!=true)Text(productText("重新录音的可用性取决于系统语音服务。可在原录音恢复面板检查离线识别。"),
             Modifier.fillMaxWidth().padding(horizontal=32.dp,vertical=8.dp).testTag("voice-saved-recording-capability"),fontSize=12.sp,lineHeight=16.sp,color=colors.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
     }

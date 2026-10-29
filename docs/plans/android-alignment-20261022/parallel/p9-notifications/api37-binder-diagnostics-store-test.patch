@@ -1,0 +1,45 @@
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationNaturalStoreTest.kt
+@@ -122,15 +122,29 @@
+             override fun onServiceConnected(name: ComponentName, service: IBinder) { remote.set(service); connected.countDown() }
+             override fun onServiceDisconnected(name: ComponentName) { remote.set(null) }
+         }
++        var lastRequest = JSONObject()
+         fun call(code: Int, descriptor: String = NativeNaturalStoreProbeService.DESCRIPTOR, extra: (Parcel)->Unit = {}): Triple<Int, String, String> {
+             val data = Parcel.obtain(); val reply = Parcel.obtain()
+-            try { data.writeInterfaceToken(descriptor); extra(data); check(checkNotNull(remote.get()).transact(code, data, reply, 0)); reply.readException()
++            lastRequest = JSONObject().put("code", code).put("callerFlags", 0).put("descriptorSha256", NativeChatNotificationNaturalFiles.sha(descriptor.toByteArray()))
++            try { data.writeInterfaceToken(descriptor); extra(data)
++                lastRequest.put("requestBeforeTransact", NativeNaturalProbeDiagnostics.parcel(data))
++                val returned = checkNotNull(remote.get()).transact(code, data, reply, 0)
++                lastRequest.put("transactReturned", returned).put("replyBeforeReadException", NativeNaturalProbeDiagnostics.parcel(reply))
++                check(returned); reply.readException()
+                 return Triple(reply.readInt(), checkNotNull(reply.readString()), checkNotNull(reply.readString()))
+-            } finally { data.recycle(); reply.recycle() }
++            } finally {
++                lastRequest.put("requestBeforeRecycle", NativeNaturalProbeDiagnostics.parcel(data)).put("replyBeforeRecycle", NativeNaturalProbeDiagnostics.parcel(reply))
++                data.recycle(); reply.recycle()
++            }
+         }
+-        val refusals = org.json.JSONArray()
++        val refusals = org.json.JSONArray(); val diagnostics = org.json.JSONArray()
++        evidence.details = JSONObject().put("refusalDiagnosticsBeforeAssertions", diagnostics).put("originalFixtureInventory", JSONObject(before))
+         fun refused(kind: String, guard: String, code: Int = NativeNaturalStoreProbeService.HOLD, descriptor: String = NativeNaturalStoreProbeService.DESCRIPTOR, extra: (Parcel)->Unit = {}) {
+             val error = runCatching {call(code, descriptor, extra)}.exceptionOrNull()
++            // Persist the actual exception and original inventories BEFORE either existing assertion.
++            val observation = NativeNaturalProbeDiagnostics.observation(kind, guard, code, error, lastRequest, before, runCatching { inventory(root) })
++            diagnostics.put(observation)
++            NativeNaturalProbeDiagnostics.save(context, checkNotNull(evidence.lease), checkNotNull(evidence.run), observation)
+             check(error != null && (if(guard == "INTERFACE")error is SecurityException else error is IllegalArgumentException))
+             check(error.message?.contains("P9_NATURAL_PROBE_$guard code=$code flags=") == true)
+             check(inventory(root) == before)
+@@ -161,7 +175,7 @@
+             check(before.all { (k, v) -> inventory(root)[k] == v }); val after = inventory(root)
+             check(runCatching { store.claim(NativeNaturalStoreFixture.observation(p, UUID.randomUUID().toString())) }.isFailure); check(inventory(root) == after)
+             result = JSONObject().put("otherPid", claimed.first).put("otherNonce", claimed.second).put("contenderRefused", true).put("singleCommittedClaim", true)
+-                .put("strictSynchronousRefusals", refusals).put("onewayTransactReturned", oneWayReturned)
++                .put("refusalDiagnosticsBeforeAssertions", diagnostics).put("strictSynchronousRefusals", refusals).put("onewayTransactReturned", oneWayReturned)
+                 .put("onewayRemoteRefusalAcknowledged", false).put("onewayExecutionSuccessClaimed", false)
+                 .put("onewayObservation", "No reply by contract; read-only inventory unchanged at observation and original files retained after the normal synchronous lock/claim chain")
+         } finally { try { if (held) call(NativeNaturalStoreProbeService.RELEASE) } finally { if (bound) context.unbindService(connection) } }

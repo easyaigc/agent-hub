@@ -72,7 +72,8 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
     suspend fun begin(scope: AISharingScope,certificate: String?,draftKey: String,draftId: String,threadId: String?,text: String): PendingVoiceRecording = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             val catalog=NativeVoiceDiscardCatalog.read(storage)
-            val ids=index().filterNot {terminal(decode(read(it)),catalog)}
+            val recovery=NativeVoiceLocalResults.read(storage).filterNot {it.applied}.map {it.recordingId}
+            val ids=(index()+recovery).distinct().filterNot {val original=decode(read(it));terminal(original,catalog)||NativeVoiceLocalResults.resolved(storage,original)}
             check(ids.size<32) { "待处理录音过多，请先处理原录音。" }
             val pending=PendingVoiceRecording(UUID.randomUUID().toString(),scope,certificate,draftKey,draftId,threadId,text,System.currentTimeMillis())
             // Register first: an interrupted save cannot create an unindexed audio file.
@@ -105,7 +106,7 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
     suspend fun restore(scope: AISharingScope,certificate: String?,draftKey: String,text: String): PendingVoiceRecording? = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             val catalog=NativeVoiceDiscardCatalog.read(storage)
-            index().map {id->decode(read(id))}.filterNot {terminal(it,catalog)}
+            (index()+NativeVoiceLocalResults.read(storage).filterNot {it.applied}.map {it.recordingId}).distinct().map {id->decode(read(id))}.filterNot {terminal(it,catalog)||NativeVoiceLocalResults.resolved(storage,it)}
                 .filter { it.scope.matches(scope) && it.certificate==certificate && it.draftKey==draftKey && it.originalText==text }
                 .maxByOrNull { it.createdAt }
         }
@@ -136,7 +137,7 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
         storage.operationTransaction {
             val body=storage.migrationReadTextRecords(setOf(key(pending.id)))[key(pending.id)]?.let {StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))} ?: return@operationTransaction
             val current=decode(body)
-            if(terminal(current,NativeVoiceDiscardCatalog.read(storage)))return@operationTransaction
+            if(terminal(current,NativeVoiceDiscardCatalog.read(storage))||NativeVoiceLocalResults.read(storage).any {it.recordingId==current.id})return@operationTransaction
             // Cancel may race the durable seal. End waiting while retaining an already sealed/attempted original.
             if(unsealedOnly && (current.manifest!=null || current.prepareAttempted || current.audioAttempted)) return@operationTransaction
             storage.write("voice-index-v1",JSONArray(index().filterNot { it==pending.id }).toString())

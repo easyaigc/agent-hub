@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR37",
+  "sourceSha256": "6d4926858abbdba1750cb60f67f8bab1f65411f97b028568629240e1290877dd",
+  "expandedSourceSha256": "af559cfa8df05ff3dbb66f1906ddc9da591d431bc5b44bad32c3d811638dfaea",
+  "appSha256": "65c5c05e30349b8b895b174717376a2074168904fc90234e4f8666c0c9d2103d",
+  "runnerSha256": "b12e909ad811427beb9cc0dadaf074323d3d2de7450213a0866d70d32c1c83ca",
+  "productCodeUnchangedFrom": "PAR36",
+  "native": {
+    "calls": 4,
+    "passed": 1,
+    "failed": 3
+  },
+  "passed": [
+    "Normal/imported raw-name rename, save and complete footer close without nonexistent scroll parent"
+  ],
+  "measurements": {
+    "chineseLabel": {
+      "textWidthPx": 191,
+      "paragraphWidthPx": 912,
+      "glyphFailures": 0,
+      "fontScale": 1
+    },
+    "englishControlledLabel": {
+      "textWidthPx": 193,
+      "paragraphWidthPx": 672,
+      "glyphFailures": 0,
+      "actualDialogTextFontScale": 1,
+      "outerOverrideFontScale": 2,
+      "largeFontClaimValid": false
+    },
+    "actualLandscape": {
+      "api": 37,
+      "fontScale": 1.3,
+      "windowWidth": 2424,
+      "windowHeight": 1080,
+      "softInputMode": 48,
+      "imeBottomPx": 662,
+      "imeTopWindowPx": 418,
+      "sheetHeightPx": 154,
+      "fixedHeaderHeightPx": 126,
+      "dividerPx": 3,
+      "scrollViewportHeightPx": 25,
+      "submitRawHeightPx": 113,
+      "submitClippedHeightPx": 25,
+      "afterScrollValue": 2658,
+      "scrollMax": 3154
+    }
+  },
+  "nextFixes": [
+    "Finite full column width for labels; retain visual overflow and full glyph guards",
+    "Responsive connection header in existing scroll plus full available height during actual IME; preserve same form owner and input state",
+    "Use actual OS font2 and measure actual Dialog Text instead of claiming outer Density crosses Dialog",
+    "Validate whole submit against actual IME and scroll clip, not visibleFrame alone"
+  ],
+  "environmentRestored": true,
+  "realHostBusinessInputs": 0,
+  "realModelInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "pending": [
+    "Full dual-platform feature/interaction/visual matrix, physical Android and external peer DEV",
+    "Reviewed ASR/durability integration and real file JNI/acoustic acceptance",
+    "Reviewed natural notification visibility witness and actual OS first click"
+  ],
+  "paused": ["Task/project management", "iOS A6"]
+}

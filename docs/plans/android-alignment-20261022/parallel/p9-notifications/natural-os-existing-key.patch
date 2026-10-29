@@ -1,0 +1,41 @@
+diff --git a/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt b/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
+@@ -18,7 +18,7 @@
+ import javax.crypto.spec.GCMParameterSpec
+ 
+ /** Local secrets and cached reads are bound to this installation's Android Keystore key. */
+-class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1") {
++class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1", private val existingKeyOnly: Boolean = false) {
+     init { require(keyAlias.matches(Regex("[a-zA-Z0-9_-]{1,128}"))) }
+     private val root = File(context.noBackupFilesDir, namespace).apply { mkdirs() }
+     private val canonicalRoot=root.canonicalPath
+@@ -37,7 +37,9 @@
+     private val key: SecretKey by lazy {
+         synchronized(KEY_LOCK) {
+             val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+-            (store.getKey(keyAlias, null) as? SecretKey) ?: KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
++            val found=store.getKey(keyAlias, null) as? SecretKey
++            check(!existingKeyOnly || found!=null) { "Existing installation key required; no fallback generation" }
++            found ?: KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
+                 init(KeyGenParameterSpec.Builder(keyAlias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())
+             }.generateKey()
+@@ -444,7 +446,7 @@
+             }
+         }
+     }
+-    internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias)
++    internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly)
+     /** Main calls only after joining producers and the serial writer, then replacing the Session. */
+     internal fun retireWriter() {retiredWriter=true;writes.shutdown()}
+     // Audio stays binary and bounded in memory. Each chunk authenticates its name,
+@@ -670,7 +672,7 @@
+         val observed=ioLock.withLock {runCatching {requireCurrentGeneration();activeGeneration()}}
+         val generation=observed.getOrNull()
+         val scopedAlias=if(generation==null)childAlias else "agent-hub-child-"+digest(childAlias+"\u0000"+generation).take(48)
+-        return NativeSessionStorage(context,namespace+(generation?.let {"-"+it} ?: "")+"-"+suffix,scopedAlias).also {it.migrationUnavailable=observed.exceptionOrNull()}
++        return NativeSessionStorage(context,namespace+(generation?.let {"-"+it} ?: "")+"-"+suffix,scopedAlias,existingKeyOnly).also {it.migrationUnavailable=observed.exceptionOrNull()}
+     }
+     /** Caller first gates producers; the actual serial writer also reports unresolved save failures. */
+     internal suspend fun awaitQueuedWrites() = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { waiting ->

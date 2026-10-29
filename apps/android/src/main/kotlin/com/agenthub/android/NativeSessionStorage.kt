@@ -18,7 +18,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /** Local secrets and cached reads are bound to this installation's Android Keystore key. */
-class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1") {
+class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1", private val existingKeyOnly: Boolean = false) {
     init { require(keyAlias.matches(Regex("[a-zA-Z0-9_-]{1,128}"))) }
     private val root = File(context.noBackupFilesDir, namespace).apply { mkdirs() }
     private val canonicalRoot=root.canonicalPath
@@ -37,7 +37,9 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     private val key: SecretKey by lazy {
         synchronized(KEY_LOCK) {
             val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-            (store.getKey(keyAlias, null) as? SecretKey) ?: KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
+            val found=store.getKey(keyAlias, null) as? SecretKey
+            check(!existingKeyOnly || found!=null) { "Existing installation key required; no fallback generation" }
+            found ?: KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
                 init(KeyGenParameterSpec.Builder(keyAlias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())
             }.generateKey()
@@ -444,7 +446,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
             }
         }
     }
-    internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias)
+    internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly)
     /** Main calls only after joining producers and the serial writer, then replacing the Session. */
     internal fun retireWriter() {retiredWriter=true;writes.shutdown()}
     // Audio stays binary and bounded in memory. Each chunk authenticates its name,
@@ -631,6 +633,25 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         writes.execute { try { ioLock.withLock {
             check(generation==recovery.generation) { "旧的保存已被本地恢复替代" };write(name,text)
         };queuedWriteFailures.remove(name) } catch (error: Exception) { queuedWriteFailures[name]=error;failed(error) } catch(_: OutOfMemoryError) { val error=IllegalStateException("本地存储内存不足，原文件已保留");queuedWriteFailures[name]=error;failed(error) } } }
+    /** Exact voice destination acceptance, ordered with metadata producers. Cancellation joins the
+     * actual executor write/readback; it cannot report an idle owner while this work still runs.
+     */
+    internal suspend fun writeVoiceDestinationMetadata(snapshot: String,checkpoint: (Int)->Unit={}): String {
+        val generation=recovery.generation;val done=kotlinx.coroutines.CompletableDeferred<String>()
+        writes.execute {
+            try {
+                val digest=ioLock.withLock {
+                    check(generation==recovery.generation);requireWritable();checkpoint(0)
+                    write("metadata",snapshot);checkpoint(1)
+                    val raw=migrationReadTextRecords(setOf("metadata"))["metadata"] ?: error("Voice destination missing")
+                    require(raw==snapshot);checkpoint(2);voiceSHA(raw.toByteArray(Charsets.UTF_8))
+                }
+                queuedWriteFailures.remove("metadata");done.complete(digest)
+            }catch(failure: Exception){queuedWriteFailures["metadata"]=failure;done.completeExceptionally(failure)}
+             catch(_: OutOfMemoryError){val failure=IllegalStateException("Voice destination persistence failed");queuedWriteFailures["metadata"]=failure;done.completeExceptionally(failure)}
+        }
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable){done.await()}
+    }
     // History reads may arrive faster than disk encryption. Keep the newest
     // immutable snapshot per target and serialize on the storage worker.
     // Submission intent persistence continues to use the synchronous write.
@@ -670,7 +691,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         val observed=ioLock.withLock {runCatching {requireCurrentGeneration();activeGeneration()}}
         val generation=observed.getOrNull()
         val scopedAlias=if(generation==null)childAlias else "agent-hub-child-"+digest(childAlias+"\u0000"+generation).take(48)
-        return NativeSessionStorage(context,namespace+(generation?.let {"-"+it} ?: "")+"-"+suffix,scopedAlias).also {it.migrationUnavailable=observed.exceptionOrNull()}
+        return NativeSessionStorage(context,namespace+(generation?.let {"-"+it} ?: "")+"-"+suffix,scopedAlias,existingKeyOnly).also {it.migrationUnavailable=observed.exceptionOrNull()}
     }
     /** Caller first gates producers; the actual serial writer also reports unresolved save failures. */
     internal suspend fun awaitQueuedWrites() = kotlinx.coroutines.suspendCancellableCoroutine<Unit> { waiting ->

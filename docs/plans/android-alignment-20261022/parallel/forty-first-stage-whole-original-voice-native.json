@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR41",
+  "sourceSha256": "a7b2a239d642ad900f8e7a18494e7fa5099afb94bc9670bcbab4baa8c08d8857",
+  "expandedSourceSha256": "41fe7acbc792bbdc2aceaf140bb4a628787365456fefb8cda33bac4522fd279e",
+  "appSha256": "cda2bdd73a06ec09c636fab4cb8a3ffc7ed47e82b31cffc782566ba79890e722",
+  "runnerSha256": "18a3da7702a5ff0e48f224bc9c0a12044276a6c130fcc0526c4c150e58e62881",
+  "native": {
+    "api": 26,
+    "calls": 9,
+    "passed": 9,
+    "failed": 0
+  },
+  "fixtureChange": "Snapshot exact persisted row before controller.start; preserve complete canonical original.json including raw target/account history and all attempt fields, exact original row string and full WAV bytes. Replaces invalid KMP object-reference equals.",
+  "productionApkByteIdenticalTo": "PAR40",
+  "onlyNativeSourceDelta": [
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt"
+  ],
+  "matchingReuse": {
+    "sourceCheckpoint": "PAR40",
+    "passed": 15,
+    "cases": [
+      "PCM+closed destination keys12",
+      "typed/framed off-index composer/question staged/applied migration2",
+      "actual Session question owner durability/recreation1"
+    ],
+    "sameProductionApk": true,
+    "allReusedTestSourcesUnchanged": true
+  },
+  "priorEightFailuresRetained": true,
+  "realModelInputs": 0,
+  "realHostBusinessInputs": 0,
+  "realJni": false,
+  "realAcoustic": false,
+  "processDeathVerified": false,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "pending": [
+    "Actual Vosk install/decode/cancel with synthetic audio",
+    "Full Session cold restore/repeated migration",
+    "Bilingual voice full UI/AX/physical matrix",
+    "P8 AX/native notification natural OS first click"
+  ],
+  "paused": ["Task/project management", "iOS A6"]
+}

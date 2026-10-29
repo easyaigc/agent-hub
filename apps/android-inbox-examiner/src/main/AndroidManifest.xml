@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <permission android:name="com.easyai.agenthub.android.acceptance.permission.P9_NATURAL_OBSERVER" android:protectionLevel="signature" />
+    <uses-permission android:name="com.easyai.agenthub.android.acceptance.permission.P9_NATURAL_OBSERVER" />
+    <queries>
+        <package android:name="com.easyai.agenthub.android.acceptance" />
+        <package android:name="com.easyai.agenthub.android.acceptance.test" />
+    </queries>
+    <instrumentation android:name="com.agenthub.android.OwnedNaturalNoticeObserver"
+        android:targetPackage="com.easyai.agenthub.android.acceptance.coldexaminer" />
     <instrumentation android:name="com.agenthub.android.OwnedExternalInboxColdDriver"
         android:targetPackage="com.easyai.agenthub.android.acceptance.test" />
     <instrumentation android:name="com.agenthub.android.OwnedDocumentColdDriver"

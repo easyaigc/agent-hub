@@ -68,12 +68,17 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         private set
     internal var questionVoice by mutableStateOf<VoiceInputController?>(null);private set
     internal var questionVoiceKey by mutableStateOf<String?>(null);private set
+    private var metadataEnqueueRevision=0L
     private var configuredVoiceDiscardPort: NativeVoiceDiscardPort?=null
     internal val voiceSettings by lazy { NativeVoiceSettings(tasks) }
     fun configureVoice(context: android.content.Context) {
         voiceSettings.inspector={ inspectNativeSystemVoice(context.applicationContext) }
         if(voice==null && storage!=null) voice=VoiceInputController(context.applicationContext,VoiceRecordingStore(context.applicationContext,storage)) { providers }
         if(questionVoice==null && storage!=null) questionVoice=VoiceInputController(context.applicationContext,VoiceRecordingStore(context.applicationContext,storage)) { providers }
+        if(storage!=null) {
+            voice?.let {if(it.localResultPort==null)it.localResultPort=NativeEncryptedVoiceLocalResultPort(storage)}
+            questionVoice?.let {if(it.localResultPort==null)it.localResultPort=NativeEncryptedVoiceLocalResultPort(storage)}
+        }
         configuredVoiceDiscardPort?.let { port ->
             voice?.let { if(it.discardPort==null)it.discardPort=port };questionVoice?.let { if(it.discardPort==null)it.discardPort=port }
         }
@@ -102,48 +107,91 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         return bindVoicePreferencesIfMissing { NativeEncryptedVoicePreferenceStore(currentStorage) }
     }
     val canUseVoice get()=canCompose && foreground && !selectedClient.isDemo && transferStatus==null && !importing && questionVoice?.active!=true
-    fun beginVoice() {
+    fun beginVoice(recoverSavedFile: Boolean=false) {
         val controller=voice ?: return
         if(!canUseVoice || controller.active) return
-        val provider=voiceSettings.defaultProvider
-        val consent=if(provider==VoiceInputController.Provider.DESKTOP)requireSharing("codex-dictation") ?: return
+        val provider=if(recoverSavedFile)VoiceInputController.Provider.DESKTOP else voiceSettings.defaultProvider
+        val consent=if(recoverSavedFile)AISharingScope(selectedClient.scope ?: return,"codex-dictation")else if(provider==VoiceInputController.Provider.DESKTOP)requireSharing("codex-dictation") ?: return
             else AISharingScope(selectedClient.scope ?: return,"codex-dictation")
         val original=VoiceDraft(selectedClient,consent,targetKey,version(targetKey),"voice-v1:"+voiceSHA((consent.key+"\u0000"+targetKey).toByteArray(Charsets.UTF_8)),selectedThread.takeIf { it.isNotEmpty() },text)
         val revision=revisions[selectedClient.id] ?: 0
-        fun current()=foreground && targetKey==original.key && version(original.key)==original.version &&
+        fun localCurrent()=localReady && foreground && targetKey==original.key && version(original.key)==original.version &&
             (revisions[original.client.id] ?: 0)==revision && selectedClient.id==original.client.id &&
             sameScope(selectedClient.scope,original.client.scope) && selectedClient.codexDirect?.fingerprint==original.certificate &&
-            selectedClient.endpoint==original.client.endpoint && selectedClient.readerId==original.client.readerId && selectedClient.agentConnection==original.client.agentConnection &&
-            (provider==VoiceInputController.Provider.SYSTEM || aiSharing.permits(consent))
+            selectedClient.endpoint==original.client.endpoint && selectedClient.readerId==original.client.readerId && selectedClient.agentConnection==original.client.agentConnection
+        fun current()=localCurrent() && (provider==VoiceInputController.Provider.SYSTEM || aiSharing.permits(consent))
         controller.start(original,allowed=::current,apply={ draft,transcript->
             if(current()) {
                 val separator=if(draft.text.isEmpty() || draft.text.last().isWhitespace()) "" else "\n"
                 text=draft.text+separator+transcript;true
             } else false
-        },provider=provider)
+        },provider=provider,localAllowed=::localCurrent,localApply={draft,transcript ->
+            if(!localCurrent())false else {val separator=if(draft.text.isEmpty()||draft.text.last().isWhitespace())""else "\n";text=draft.text+separator+transcript;true}
+        },restoreOnly=recoverSavedFile,localDestination=voiceDraftDestination(::localCurrent))
     }
     internal fun questionVoiceIdentity(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination)=
-        destination.key+":question:"+voiceSHA(JSONArray(listOf(approval.threadId,approval.turnId,approval.id,question.id)).toString().toByteArray(Charsets.UTF_8))
+        NativeVoiceDestinationKeys.question(destination.key,approval.threadId,approval.turnId,approval.id,question.id)
     internal fun canBeginQuestionVoice(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination)=
         localReady && foreground && !selectedClient.isDemo && approval.kind=="question" && question.custom && !question.secret && question in approval.questions &&
             canEditApproval(approval,destination) && voice?.active!=true && questionVoice?.active==false
     internal fun beginQuestionVoice(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination,
-        value: ()->String,change: (String)->Unit) {
+        value: ()->String,change: (String)->Unit,recoverSavedFile: Boolean=false) {
         val controller=questionVoice ?: return
         if(!canBeginQuestionVoice(approval,question,destination))return
-        val provider=voiceSettings.defaultProvider
-        val consent=if(provider==VoiceInputController.Provider.DESKTOP)requireSharing("codex-dictation") ?: return
+        val provider=if(recoverSavedFile)VoiceInputController.Provider.DESKTOP else voiceSettings.defaultProvider
+        val consent=if(recoverSavedFile)AISharingScope(selectedClient.scope ?: return,"codex-dictation")else if(provider==VoiceInputController.Provider.DESKTOP)requireSharing("codex-dictation") ?: return
             else AISharingScope(selectedClient.scope ?: return,"codex-dictation")
         val client=selectedClient;val revision=revisions[client.id] ?: 0;val key=questionVoiceIdentity(approval,question,destination);val text=value()
-        val original=VoiceDraft(client,consent,key,voiceSHA(text.toByteArray(Charsets.UTF_8)),"voice-v1:"+voiceSHA((consent.key+"\u0000"+key).toByteArray(Charsets.UTF_8)),approval.threadId,text)
-        fun current()=localReady && foreground && questionVoiceKey==key && canEditApproval(approval,destination) &&
+        setQuestionVoiceDraft(approval,question,destination,text)
+        val ownerKey=NativeVoiceDestinationKeys.owner(key);val draftRevision=version(ownerKey)
+        val original=VoiceDraft(client,consent,key,draftRevision,"voice-v1:"+voiceSHA((consent.key+"\u0000"+key).toByteArray(Charsets.UTF_8)),approval.threadId,text)
+        fun localCurrent()=localReady && foreground && questionVoiceKey==key && question.custom && !question.secret && question in approval.questions && canEditApproval(approval,destination) &&
             (revisions[client.id] ?: 0)==revision && selectedClient.id==client.id && sameScope(selectedClient.scope,client.scope) &&
             selectedClient.endpoint==client.endpoint && selectedClient.readerId==client.readerId && selectedClient.codexDirect?.fingerprint==original.certificate &&
-            selectedClient.agentConnection==client.agentConnection && value()==text && (provider==VoiceInputController.Provider.SYSTEM || aiSharing.permits(consent))
+            selectedClient.agentConnection==client.agentConnection && value()==text && version(ownerKey)==draftRevision
+        fun current()=localCurrent() && (provider==VoiceInputController.Provider.SYSTEM || aiSharing.permits(consent))
         questionVoiceKey=key
         controller.start(original,::current,{ _,transcript ->
             if(!current())false else { val separator=if(text.isEmpty() || text.last().isWhitespace())"" else "\n";change(text+separator+transcript);true }
-        },provider=provider)
+        },provider=provider,localAllowed=::localCurrent,localApply={_,transcript ->
+            if(!localCurrent())false else {val separator=if(text.isEmpty()||text.last().isWhitespace())""else "\n";change(text+separator+transcript);true}
+        },restoreOnly=recoverSavedFile,localDestination=voiceDraftDestination(::localCurrent) {change(it)})
+    }
+    internal fun questionVoiceDraft(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination): String? {
+        if(question.secret||!question.custom||!isCurrent(destination))return null
+        return drafts[NativeVoiceDestinationKeys.owner(questionVoiceIdentity(approval,question,destination))]
+    }
+    internal fun setQuestionVoiceDraft(approval: MobileApproval,question: MobileQuestion,destination: DraftDestination,value: String) {
+        if(question.secret||!question.custom||!canEditApproval(approval,destination)||!localReady||migrationPaused)return
+        val key=NativeVoiceDestinationKeys.owner(questionVoiceIdentity(approval,question,destination))
+        if(drafts[key]==value)return
+        drafts[key]=value;draftVersions[key]=UUID.randomUUID().toString();persistMetadata()
+    }
+    private fun voiceDraftDestination(guard: ()->Boolean,questionChange: ((String)->Unit)?=null): NativeVoiceDraftDestinationPort? {
+        val store=storage ?: return null
+        return NativeEncryptedVoiceDraftDestinationPort(store,object: NativeVoiceDraftOwner {
+            private var expected: NativeVoiceDraftWrite?=null
+            private var preparedRevision=-1L
+            override fun prepare(request: NativeVoiceDraftRequest): NativeVoiceDraftWrite {
+                check(guard());preparedRevision=metadataEnqueueRevision
+                return NativeVoiceDraftWrite.prepare(request,metadataSnapshot()).also {expected=it}
+            }
+            override fun publish(write: NativeVoiceDraftWrite): Boolean {
+                if(expected!==write||preparedRevision!=metadataEnqueueRevision||!guard()||metadataSnapshot()!=write.before)return false
+                val request=write.request;val key=request.ownerKey
+                if(draftVersions[key]!=request.draft.version||drafts[key].orEmpty()!=request.draft.text)return false
+                // This exact snapshot was already durably written/read back on the serial writer.
+                // Publish without enqueueing an older in-memory metadata snapshot over that write.
+                if(questionChange==null) {
+                    easyWorkConnectionAuthority(this@MobileSession).invalidate()
+                    if(suggestionUndo?.applied?.targetKey==key)suggestionUndo=null
+                    textRevisions[key]=(textRevisions[key] ?: 0)+1
+                }
+                drafts[key]=request.text;draftVersions[key]=write.receipt.acceptedVersion
+                questionChange?.invoke(request.text)
+                return true
+            }
+        })
     }
     internal fun endQuestionVoice(key: String) {
         if(questionVoiceKey==key) { questionVoice?.cancel();questionVoiceKey=null }
@@ -2377,7 +2425,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     fun renameEasyWork(client: MobileClient,name: String) {
         if(name.isBlank()||name.length>256)return
-        realClients.firstOrNull { it.id==client.id&&(it.agentConnection!=null||it.migrationEasyWork!=null) }?.let { replaceClient(it.copy(name=name.trim()));persistMetadata() }
+        realClients.firstOrNull { it.id==client.id&&(it.agentConnection!=null||it.migrationEasyWork!=null) }?.let { replaceClient(it.copy(name=name));persistMetadata() }
     }
     internal suspend fun updateEasyWorkCandidates(client: MobileClient,binding: EasyWorkBinding,candidates: List<AgentCandidate>): Boolean {
         val current=realClients.firstOrNull { it.id==client.id }?:return false;val connection=current.agentConnection?:return false
@@ -2546,6 +2594,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun storageFailure() { tasks.launch { error = "本地保存失败，请保留当前内容并检查手机存储" } }
     private fun persistMetadata() {
         if (storage == null || !localReady) return
+        metadataEnqueueRevision++
         storage.enqueue("metadata",metadataSnapshot()) {storageFailure()}
     }
     private fun metadataSnapshot(): String {

@@ -108,8 +108,11 @@ class NativeEasyWorkCandidateRefreshTest {
     }
     @Test(timeout=25_000) fun validRouteRepairPreservesConcurrentNameOnlineAndRouteChanges() {
         val concurrent=AgentCandidate("concurrent","lan-wss","https://192.168.42.3:7443","a".repeat(64))
-        assertTrue(heldRead {session.renameEasyWork(client,"Human renamed");val index=clients().indexOfFirst {it.id==client.id};clients()[index]=live().copy(online=true,agentConnection=live().agentConnection!!.copy(candidates=listOf(concurrent)+live().agentConnection!!.candidates));persist()})
-        main {assertEquals("Human renamed",live().name);assertTrue(live().online);assertEquals(listOf(next,concurrent,old,relay),live().agentConnection!!.candidates)}
+        val originalName="  Human renamed  "
+        assertTrue(heldRead {session.renameEasyWork(client,originalName);val index=clients().indexOfFirst {it.id==client.id};clients()[index]=live().copy(online=true,agentConnection=live().agentConnection!!.copy(candidates=listOf(concurrent)+live().agentConnection!!.candidates));persist()})
+        main {assertEquals(originalName,live().name);assertTrue(live().online);assertEquals(listOf(next,concurrent,old,relay),live().agentConnection!!.candidates)}
+        runBlocking {store.awaitQueuedWrites()}
+        assertEquals(originalName,JSONObject(requireNotNull(store.read("metadata"))).getJSONArray("clients").objects().single().getString("name"))
     }
     @Test(timeout=25_000) fun unchangedConnectionRepairsOnlyRoutesAndPersistsItsOriginalPointer()=runBlocking {
         assertTrue(main {session.updateEasyWorkCandidates(client,binding,listOf(next))});store.awaitQueuedWrites()

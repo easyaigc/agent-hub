@@ -38,12 +38,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
-@Composable internal fun ConnectionPage(session: MobileSession,editing: MobileClient?,draftOverride: EasyWorkConnectionDraft?=null,saved: ()->Unit) {
+@Composable internal fun ConnectionPage(session: MobileSession,editing: MobileClient?,draftOverride: EasyWorkConnectionDraft?=null,header: (@Composable ()->Unit)?=null,saved: ()->Unit) {
     var provider by remember { mutableStateOf(editing?.scope?.agentId?:if(session.incomingEasyWorkLink!=null)"easywork" else "codex") }
     val rememberedDraft=remember(editing?.id) { EasyWorkConnectionDraft(editing?.name?:"EasyWork",editing?.agentConnection?.candidates?.firstOrNull { it.transportId=="relay-http" }?.endpoint?:"https://51easyai.com").apply {if(editing?.migrationEasyWork!=null)method="扫码连接"} }
     val easyWorkDraft=draftOverride?:rememberedDraft
     LaunchedEffect(session.incomingEasyWorkLink,session.connectionBusy) { if(session.incomingEasyWorkLink!=null&&!session.connectionBusy)provider="easywork" }
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).testTag("connection-page")) {
+        header?.invoke()
         if(editing==null) {
             val colors=MaterialTheme.colorScheme
             val providerLabel=productText("Agent 客户端")
@@ -120,7 +121,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
             GroupTitle(productText("连接目标"))
             GroupCard {
                 val fields=listOf("agent" to (productText("Agent 客户端") to target.agentId),"authority" to (productText("账号发行方") to target.accountAuthority.orEmpty()),"subject" to (productText("账号") to target.accountSubject.orEmpty()),"host" to (productText("电脑") to target.hostId),"workspace" to (productText("工作区") to target.workspaceId),"runtime" to (productText("运行时") to target.runtimeId))
-                fields.forEach { (id,row)->Column(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp)) { Text(row.first,Modifier.testTag("easywork-target-label-$id"),fontSize=12.sp,color=colors.onSurfaceVariant);Text(row.second,Modifier.fillMaxWidth().testTag("easywork-target-$id"),fontSize=14.sp) } }
+                fields.forEach { (id,row)->Column(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp)) { Text(row.first,Modifier.fillMaxWidth().testTag("easywork-target-label-$id"),fontSize=12.sp,color=colors.onSurfaceVariant);Text(row.second,Modifier.fillMaxWidth().testTag("easywork-target-$id"),fontSize=14.sp) } }
             }
         }
         GroupTitle(productText(method))
@@ -185,10 +186,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 @Composable internal fun EasyWorkFormField(value: String,change: (String)->Unit,label: String,tag: String,enabled: Boolean,type: KeyboardType=KeyboardType.Text) {
     val colors=MaterialTheme.colorScheme
     val focus=LocalFocusManager.current;val keyboard=LocalSoftwareKeyboardController.current
-    BasicTextField(value,change,Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).semantics {contentDescription=label}.padding(horizontal=16.dp,vertical=12.dp),
+    BasicTextField(value,change,Modifier.fillMaxWidth().heightIn(min=48.dp).testTag(tag).semantics {contentDescription=label},
         enabled=enabled,singleLine=true,textStyle=TextStyle(fontSize=17.sp,color=colors.onSurface),
         keyboardOptions=KeyboardOptions(keyboardType=type,autoCorrectEnabled=false,imeAction=ImeAction.Done),
         keyboardActions=KeyboardActions(onDone={focus.clearFocus();keyboard?.hide()}),visualTransformation=VisualTransformation.None,
-        decorationBox={inner->Box {if(value.isEmpty())Text(label,fontSize=17.sp,color=colors.onSurfaceVariant);inner()}})
+        decorationBox={inner->Box(Modifier.padding(horizontal=16.dp,vertical=12.dp)) {if(value.isEmpty())Text(label,fontSize=17.sp,color=colors.onSurfaceVariant);inner()}})
     HorizontalDivider(Modifier.padding(start=16.dp),color=colors.onSurface.copy(alpha=.1f))
 }

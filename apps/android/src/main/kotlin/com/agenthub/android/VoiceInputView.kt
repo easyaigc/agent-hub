@@ -80,7 +80,7 @@ import kotlin.math.sin
                 }
             }
             val close: @Composable ()->Unit={
-                Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",productText(if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "丢弃录音"),"cancel-dictation",enabled=!voice.discarding,onClick=voice::discard) }
+                Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) { IconAction("close",productText(if(voice.phase in listOf(VoiceInputController.Phase.LISTENING,VoiceInputController.Phase.REQUESTING)) "取消录音" else "丢弃录音"),"cancel-dictation",enabled=!voice.discarding && !voice.savedFileBusy,onClick=voice::discard) }
             }
             val stop: @Composable ()->Unit={
                 Box(Modifier.background(colors.onSurface.copy(alpha=0.06f),CircleShape)) {
@@ -99,6 +99,22 @@ import kotlin.math.sin
             if(voice.provider==VoiceInputController.Provider.SYSTEM)Text(productText("手机系统语音服务可能需要联网。"),Modifier.padding(horizontal=14.dp),fontSize=12.sp,color=colors.onSurfaceVariant)
             if(voice.canEndWaiting)TextButton(onClick=voice::endWaiting,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-end-waiting")) { Text(productText("结束等待"),fontSize=17.sp) }
             if(voice.canFillRecognizedText)TextButton(onClick={ voice.fillRecognizedText() },modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-fill-recognized-text")) { Text(productText("填入已识别文字"),fontSize=17.sp) }
+            if(voice.canInspectSavedFile || voice.savedFileBusy) {
+                Column(Modifier.fillMaxWidth().padding(horizontal=14.dp).testTag("saved-file-asr"),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    Text(productText("在手机识别原录音"),fontSize=17.sp)
+                    Text(productText("仅下载语言模型需要联网，录音留在本机。"),fontSize=12.sp)
+                    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        for(locale in listOf("zh-CN","en-US"))FilterChip(selected=voice.savedFileLocale==locale,
+                            onClick={voice.chooseSavedFileLocale(locale)},enabled=voice.canInspectSavedFile,
+                            label={Text(productText(if(locale=="zh-CN")"中文（普通话）"else"英语（美国）"))},modifier=Modifier.testTag("saved-file-locale-$locale"))
+                    }
+                    Text(productText(voice.savedFileStatusKey),fontSize=12.sp,modifier=Modifier.testTag("saved-file-status"))
+                    TextButton(onClick=voice::inspectSavedFile,enabled=voice.canInspectSavedFile && voice.savedFileLocale.isNotEmpty(),modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-probe")) {Text(productText("检查离线模型"))}
+                    if(voice.savedFileProbe?.availability in setOf(SavedVoiceAvailability.MISSING,SavedVoiceAvailability.CORRUPT))
+                        TextButton(onClick=voice::downloadSavedFileModel,enabled=voice.canInspectSavedFile,modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-download")) {Text(productText("下载离线模型（约45MB）"))}
+                    TextButton(onClick=voice::transcribeSavedFile,enabled=voice.canTranscribeSavedFile,modifier=Modifier.heightIn(min=48.dp).testTag("saved-file-transcribe")) {Text(productText("识别并填入原草稿"))}
+                }
+            }
             if(voice.canRerecordWithSystem)TextButton(onClick=voice::recordAgainWithSystem,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-rerecord-system")) { Text(productText("改用手机重新录音"),fontSize=17.sp) }
             if(voice.phase==VoiceInputController.Phase.FAILED) TextButton(onClick=voice::rerecord,enabled=voice.canRecordAgain,colors=ButtonDefaults.textButtonColors(contentColor=Color(0xFF007AFF)),modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again")) { Text(productText("重新录音"),fontSize=17.sp) }
         }

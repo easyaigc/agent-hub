@@ -1,5 +1,7 @@
 # 技术可行性与 PoC 验收
 
+Android 原录音文件识别已接入固定模型的 Vosk/JNA 实现，准确目的地持久化、原件保持与 typed/framed 迁移已有限定原生证据；真实下载、JNI/声学、进程死亡和完整 UI/真机仍需独立验收。iOS 既有 SFSpeech 仅在服务支持时要求 on-device，不将其视为相同离线保证；任务/项目管理与 A6 保持暂停。详见[总表](plans/android-alignment-20261022/progress.md)。
+
 ## 2026-10-29 F74 Host 模型代理
 
 图像产品代理增加固定生成／编辑操作、OpenAI 请求格式和参数偏好适配，默认独立启用；原始图片头核对有效尺寸与编码，最终图片 SSE 不伪造局部预览。当前仅声明 gpt-image-2，n=1；辅助与真实结果见[图像验收](acceptance/host-images-proxy-20261029.md)。历史直连研究未实现原生 2K，不能宣称参数等价或所有平台通过。

@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": "PAR43",
+  "sourceSha256": "e12e0b8146d9ac1efee4ae0fb93a0b5208647d858fe92c283d30ec77ebb22f33",
+  "expandedSourceSha256": "ea74375c92bde5efcd5fc32b09772882a931d6bee7b21060f8a6c6ba5e0ee2f0",
+  "appSha256": "479321f4aca2b46e7378ccd8d79438132b9d4a646413e270f39386c7fae6afb2",
+  "runnerSha256": "e62b9a03912aaafa4faefb0139484acacad7c2dbceb24b46512c3c2dccb3e1dd",
+  "threeApkBuildTasks": 122,
+  "hostUpgradePlanVectors": 14,
+  "nativeIncluded": {
+    "terminalMethods": 21,
+    "passed": 20,
+    "failed": 1,
+    "sessionPassed": 18,
+    "connectionPassed": 2,
+    "connectionFailed": 1
+  },
+  "session": {
+    "realSession": true,
+    "realEncryptedWriter": true,
+    "syntheticFileEngine": true,
+    "realAcousticClaim": false,
+    "completeCanonicalOriginalExactRowAndWholeWav": true,
+    "controlledColdPreWrite": true,
+    "writerPid": 22571,
+    "readerPid": 22618,
+    "postWritePreAppliedKillPending": true,
+    "devices": [
+      {
+        "api": 37,
+        "writerPid": 22571,
+        "readerPid": 22618,
+        "passed": 9
+      },
+      {
+        "api": 26,
+        "writerPid": 17190,
+        "readerPid": 17238,
+        "passed": 9
+      }
+    ]
+  },
+  "connection": [
+    {
+      "role": "portrait",
+      "status": "failed",
+      "appSha256": "479321f4aca2b46e7378ccd8d79438132b9d4a646413e270f39386c7fae6afb2",
+      "runnerSha256": "e62b9a03912aaafa4faefb0139484acacad7c2dbceb24b46512c3c2dccb3e1dd"
+    },
+    {
+      "role": "short",
+      "status": "passed",
+      "appSha256": "479321f4aca2b46e7378ccd8d79438132b9d4a646413e270f39386c7fae6afb2",
+      "runnerSha256": "e62b9a03912aaafa4faefb0139484acacad7c2dbceb24b46512c3c2dccb3e1dd"
+    },
+    {
+      "role": "landscape",
+      "status": "passed",
+      "appSha256": "479321f4aca2b46e7378ccd8d79438132b9d4a646413e270f39386c7fae6afb2",
+      "runnerSha256": "e62b9a03912aaafa4faefb0139484acacad7c2dbceb24b46512c3c2dccb3e1dd"
+    }
+  ],
+  "remainingConnectionFailure": "Chinese original name field AX/whole target and save passed; later automatic preference native selected/enabled/clickable assertion failed. Exact native menu owner diagnosis pending; guards retained.",
+  "p9": {
+    "serviceFlagsUnchanged": true,
+    "source43NativePending": true,
+    "originalBootstrapIntentsAndReceiptsImmutable": true,
+    "originalSdkNoticeNeverCreated": true,
+    "naturalFirstClickPending": true
+  },
+  "remoteHostBusinessInputs": 0,
+  "remoteModelBusinessInputs": 0,
+  "fullP7Closed": false,
+  "fullP8Closed": false,
+  "fullP9Closed": false,
+  "paused": ["Task/project management", "iOS A6"]
+}

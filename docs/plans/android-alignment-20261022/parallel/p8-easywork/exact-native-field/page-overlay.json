@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "path": "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkConnectionPage.kt",
+  "baseSource": "Source42",
+  "baseSha256": "f721c28c3a43deb4c3815d4e04f0bbe58f8b4e3875540e762e976eee1adff224",
+  "proposedSha256": "d841c6683fe3cce529c458b01caa76b81169bf5e8972583131e224b4df1a536a",
+  "change": "Move the same16/12dp field padding from caller modifier into existing decoration Box so appended CoreTextField semantics/scroll bounds cover full48dp control; no semantic flag injection or visual-token change",
+  "evidence": "Source42 relay native control922..1048, inner953..1017, visible bottom1017; min48dp density2.625 is126px; inner64px leaves31px expansion each side",
+  "status": "Narrow product proposal, native pending",
+  "sharedProductDirectlyEdited": false
+}

@@ -61,12 +61,16 @@ import androidx.compose.foundation.text.KeyboardOptions
         val keyboard=LocalSoftwareKeyboardController.current
         DisposableEffect(page) { onDispose { focus.clearFocus(force=true); keyboard?.hide() } }
         LaunchedEffect(page) { focus.clearFocus(force=true); keyboard?.hide() }
-        Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).testTag("sheet-$page")) {
+        // In a short IME viewport, fixed chrome must not consume the form's scroll area.
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val compactConnectionKeyboard=page=="add"&&(maxHeight<480.dp||WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current)>0)
+        Column(Modifier.fillMaxWidth().fillMaxHeight(if(compactConnectionKeyboard)1f else .9f).testTag("sheet-$page")) {
             val title=t.tr(when(page) { "migration"->"安全迁移"; "chat-notifications"->"通知"; "voice"->"语音输入"; "ai-sharing", "ai-sharing-settings"->"AI 数据共享"; "settings"->"设置"; "language"->"语言"; "clients"->"客户端"; "add"->if(editing==null) "添加客户端" else "编辑客户端"; "add-project"->"添加项目"; "projects"->"选择项目"; "generation"->"模型、推理与权限"; "reply-records"->"发送记录"; "chat-search"->"在聊天中查找"; "archived-chats"->"已归档对话"; "workspace-archive"->"批量归档对话"; "external-attachments"->"来自其他应用的附件"; else->"外观" })
             val back=page in listOf("appearance","language","ai-sharing-settings","voice","chat-notifications","migration")
             val action=t.tr(if(page=="external-attachments") "稍后添加" else if(page=="ai-sharing" || page=="add" && editing==null) "取消" else "完成")
             val titleStyle=LocalTextStyle.current.copy(fontSize=17.sp,lineHeight=24.sp,fontWeight=FontWeight.SemiBold)
             val measure=androidx.compose.ui.text.rememberTextMeasurer();val density=androidx.compose.ui.platform.LocalDensity.current
+            val header: @Composable ()->Unit = {
             BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal=12.dp)) {
                 val available=with(density) { maxWidth.toPx() }
                 val titleWidth=measure.measure(title,titleStyle).size.width
@@ -88,12 +92,14 @@ import androidx.compose.foundation.text.KeyboardOptions
                 }
             }
             HorizontalDivider(color=colors.onSurface.copy(alpha=.06f))
+            }
+            if(!compactConnectionKeyboard)header()
             when(page) {
                 "ai-sharing" -> AISharingPage(session)
                 "ai-sharing-settings" -> AISharingPage(session,settings=true)
                 "settings" -> SettingsPage(session,navigate,uri::openUri)
                 "clients" -> ClientsPage(session,navigate,edit,close)
-                "add" -> key(editing?.id) { ConnectionPage(session,editing) { navigate("clients") } }
+                "add" -> key(editing?.id) { ConnectionPage(session,editing,header=if(compactConnectionKeyboard)header else null) { navigate("clients") } }
                 "projects" -> ProjectsPage(session,close)
                 "add-project" -> AddProjectPage(session,close)
                 "appearance" -> AppearancePage(session)
@@ -108,6 +114,7 @@ import androidx.compose.foundation.text.KeyboardOptions
                 "workspace-archive" -> WorkspaceArchivePage(session)
                 "external-attachments" -> session.externalInbox?.let { ExternalAttachmentInboxPage(session,it) }
             }
+        }
         }
     }
 }

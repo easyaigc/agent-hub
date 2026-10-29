@@ -50,6 +50,16 @@ export interface CodexAdapter {
 }
 export { DesktopTranscription } from './desktop-transcription.js';
 export {
+  DesktopResponses,
+  ResponsesProxyError,
+  ResponsesEventReader,
+  ResponseChatStream,
+  prepareDesktopResponse,
+  chatCompletionToResponse,
+  responseToChatCompletion,
+  type DesktopResponsesTransport,
+} from './desktop-responses.js';
+export {
   DesktopSuggestionObserver,
   SuggestionObservationError,
 } from './desktop-suggestion-observer.js';

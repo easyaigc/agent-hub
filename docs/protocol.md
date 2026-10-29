@@ -1,5 +1,23 @@
 # 应用协议与领域契约
 
+## F74：可选模型代理 HTTP 边界
+
+独立端口仅在人类明确要求后启用，全部操作要求独立 Bearer Key，拒绝浏览器 Origin。不复用手机 Host Key，不开放上游 URL、方法、认证头或任意本机方法透传。
+
+| 方法 | 路径                 | 语义                                           |
+| ---- | -------------------- | ---------------------------------------------- |
+| GET  | /healthz             | 监听状态，不证明上游模型可用                   |
+| GET  | /v1/models           | OpenAI 格式的配置允许清单，不保证授权          |
+| POST | /v1/responses        | 固定 Codex 推理；原始 SSE 或完成 Response 对象 |
+| POST | /v1/chat/completions | Chat 协议转换，不执行本机工具                  |
+| GET  | /v1/requests/:id     | 原操作阶段、摘要、字节数和提交次数，不重放正文 |
+
+`Idempotency-Key` 或 `X-Client-Request-Id` 为 8–128 字符的字母、数字、下划线、连字符；两者同时存在必须相等。省略时生成新 ID，通过 `X-Request-Id` 返回；调用方须禁止网络自动重试。已接受 ID 重复返回 409，成功、失败和未知均不再次提交。
+
+模型在显式允许清单内。Responses 接受文字或完整输入数组，上游固定 `store=false`、HTTP SSE；拒绝 previous_response_id、持久 conversation 和 background。system 项转换为 developer，缺少 instructions 时补空字符串，不注入系统任务。Chat 从 system／developer 提取 instructions，转换助手 function_call 和 tool 结果。
+
+请求超限 413、并发满 429、未授权 401、未知路径 404。上游 HTTP 拒绝保留适用状态码，错误正文替换成固定代理错误，不复制认证信息、Cookie 或传输头。流中错误、断连、重启及缺少完成事件均不重试。回执阶段为 prepared、submitting、streaming、completed、failed、outcome-unknown；未知不等于取消远端。
+
 2026-10-29 Android 通知恢复 v2 源码已接到可选前台 monitor：完整原意图先落盘、未知只查原 ID，独立关闭与显式缺口接受保持各自收据，待 Host 确认事件不推进游标。JVM 辅助与原生编译分列；共享 UI／迁移入口和真实 DEV 尚待集成负责人验收。iOS v1 与供应商承诺不变，见[Android 候选与交接](plans/android-alignment-20261022/parallel/p9-notifications/recovery-v2-android.md)。
 
 ## 可选通知恢复 v2 源码候选（2026-10-28）

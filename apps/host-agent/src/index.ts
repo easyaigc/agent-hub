@@ -1,9 +1,11 @@
 import { startHealthService } from '@codex-manage/service-runtime';
 import { startHistoryServer } from './history-server.js';
 import { startRuntimeServer } from './runtime-server.js';
+import { startOptionalHostResponsesProxy } from './responses-proxy.js';
 
 if (process.env.CODEX_RUNTIME_MODE) {
   await startRuntimeServer();
+  await startOptionalHostResponsesProxy();
 } else if (process.env.CODEX_HISTORY_READ === '1') {
   await startHistoryServer();
 } else

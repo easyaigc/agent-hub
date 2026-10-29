@@ -1,5 +1,9 @@
 # 双端 UI 一致性规格
 
+## F74：Host 模型代理的界面影响
+
+仅增加外部后台使用的 Host API，不新增 iOS／Android 页面、入口、设计 token 或文案，UI02／UI12 连接和设置行为保持。安装、发现、连接及升级不得自动开启代理。开关属于电脑管理员显式配置，密钥不进入移动客户端；两端不显示未经实现的代理／模型授权状态。Demo ai/chat 为独立网页，不计手机原生通过。
+
 2026-10-29 F56/F64：Android系统听写明确标为“System dictation”，服务可能使用网络；共享iOS词条保持。语音默认值区分读取/保存/失败，失败由polite live region呈现；窄宽度按available dp/fontScale<340将活动区与48dp停止/关闭分行。当前问题页与retained Activity有界通过，设置文字溢出待修；显式丢弃等待原ID/指纹的本地终态，真实存储adapter尚待接入。详见[PAR4证据](../plans/android-alignment-20261022/parallel/fourth-stage-native.json)。
 
 2026-10-26 F03/F69 验收续修：隔离metadata假子进程的关闭指令与完成确认改走独立固定Node IPC，先等初始化写入drain，再关自己stdin及Windows libuv副本，避免把关闭确认写入同一条关闭中的管道；生产协议与运行组件不变。Windows新两源独立Native prepare/commit按原预算成功6.111/4.181秒，均真实null，原owner和正式HTTP仍另验；新增仅测试入口覆盖真实历史、A/B无伪灰字/无采用按钮、草稿不变及冷连接，不能以空结果冒充采用正例。两端产品UI无改动，Android无新增通过，A6暂停。

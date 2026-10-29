@@ -2869,6 +2869,17 @@
       "scripts/mobile/fixtures/WorkerCloseVectors.kt",
       "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseFixture.kt",
       "scripts/mobile/fixtures/native/NativeChatNotificationWorkerCloseTest.kt"
+    ],
+    "Inference": [
+      "apps/host-agent/src/responses-proxy.ts",
+      "apps/host-agent/src/runtime-entry.ts",
+      "apps/host-agent/src/index.ts",
+      "packages/codex-adapter/src/desktop-responses.ts",
+      "packages/codex-adapter/src/index.ts",
+      "scripts/configure-responses-proxy.mjs",
+      "scripts/desktop-service.mjs",
+      "scripts/windows-desktop-service.mjs",
+      "scripts/responses-proxy.test.mjs"
     ]
   },
   "groups": [
@@ -6568,6 +6579,36 @@
         ]
       },
       "sourceNotes": "iOS 原生核心阅读闭环本次通过，完整 UI／失败与隔离组合仍待验；Android 已编译但原生待验。解析／KMP／构建与真实结果见 docs/acceptance/file-preview-20261026.md；图片为显式打开引用，相对资源导航、图表和编辑未实现，A6 保持暂停。正式产品未部署，不关闭完整 F72。 Android对照I4源合并中：保留既有受控资源卡片与读取边界，新增阅读器源码尚未接入当前卡片入口；入口、完整本地化和原生UI矩阵将按I4后续补齐，不以主线编译或iOS真机替代。 I4源集成中：对账N053至N065共13节点，保留既有资源/附件/回调与本地化边界；新增当前模型/强度与下次发送分离，适配Android空字符串草稿。Android Markdown新阅读入口及图片多选预览仍待后续，iOS旧真机结果不升级。 I4：逐条纳入N053–N065共13上游节点与F72源码，保留既有资源/附件边界。Android当前模型/强度与下次发送分离，修复空字符串草稿判定和英文说明回退；19项最终包执行、168项仅文案无关实现匹配复用、187份十字段保护通过，含三环境同一原回复/实际owner参数只读核对。阅读入口与图片多选预览仍待Android后续。 I4-2：Android阅读器改由原消息授权下载快照进入，按目标和文件版本隔离阅读点；源码原文、表格横滑、目录/搜索、原入口重试、迟到回调与共享只读URI正在原生验收。UTF-8 BOM首标题解析已修复，保留原文件及CRLF；完整真实资源、格式和系统矩阵未关闭。 I4-2：受控Markdown阅读入口、BOM/CRLF原文、目录搜索/表格、版本阅读点、原入口重试、只读URI/原文件名已实现；当前限定原生执行（含复验）136项及127份十字段保护通过，失败与未验保留。真实模型文件阅读、完整格式/视觉/系统及F72仍未整项关闭。 I4-2b：修复阅读窗口随原消息懒加载回收而消失；旧包基线失败保留。三环境原模型文件真实读取3项、同App且原fixture源匹配的96项辅助与99份默认十字段保护通过；真实一次输入不重放，累计221/P4 205。完整F72/P6/P7与系统/AX/跨目标矩阵仍未关闭。 I4-2c：源码模式切换保留位置、后台消息/版本变化后的同资源刷新、独立窗口代次与忙碌/关闭迟到隔离通过限定验收；当前三环境126项原生辅助、3项同一原模型只读和129份十字段保护通过，新增模型0，累计221/P4 205。完整F72/系统/视觉仍开，继续F71和P7。"
+    },
+    {
+      "id": "F74",
+      "group": "连接与 Agent",
+      "assertion": "Host 模型代理默认关闭，只有用户明确要求后才独立开启；固定上游、独立 Key／TLS 与模型允许清单隔离原桌面和手机控制，Responses SSE 保留字节，Chat 兼容转换明确，未知结果和重复 ID 不重放，不在 Host 执行工具；两端移动 UI 不新增入口或自动开启行为",
+      "sourceAliases": ["Inference"],
+      "androidStages": ["A0"],
+      "scenarios": ["S01", "S11", "S18"],
+      "ui": ["UI02", "UI12"],
+      "revision": 1,
+      "implementation": {
+        "ios": "platform-not-applicable",
+        "android": "platform-not-applicable"
+      },
+      "verification": {
+        "ios": "not-verified",
+        "android": "not-verified"
+      },
+      "sharedImplementation": {
+        "status": "implemented",
+        "scope": "Host 专用外部推理 API；移动页面和连接无新增实现范围",
+        "sources": [
+          "apps/host-agent/src/responses-proxy.ts",
+          "apps/host-agent/src/runtime-entry.ts",
+          "apps/host-agent/src/index.ts",
+          "packages/codex-adapter/src/desktop-responses.ts",
+          "packages/codex-adapter/src/index.ts"
+        ]
+      },
+      "sourceNotes": "Host 专用代理已实现；十三组辅助回归通过。本机显式启用、Demo Tailscale 原始 Responses 字节一致、后台容器 TLS 校验与 ai/chat 真实模型调用本次通过，见专项验收记录；手机原生与 Windows 未新增通过，A6 暂停保持。"
     }
   ],
   "changes": [
@@ -15470,6 +15511,23 @@
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationCopyTest.kt": "917d3be41f9ff0e2f4a028fe36dc3c708511c96885c0a8ba92ef9571af527e27",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationStoragePublicationTest.kt": "1d26f681159a678d8f9954adc1f6169b67df9fc92b45b2166eb571ff2f736579",
         "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationEnrollmentOriginalsTest.kt": "af14fccf6428d592844ea921a0a1a2aeb7f8a12f30e9b6cd8b1a1a2c6978462d"
+      }
+    },
+    {
+      "id": "host-responses-proxy-default-off-20261029",
+      "baseCommit": "d1cc8aed09db0a5ebd51506d642c734f1eadfcf8",
+      "features": ["F74"],
+      "summary": "新增仅用户显式开启的固定上游代理；独立 Key／TLS、原始 Responses SSE、Chat 转换与持久不重放回执已实现，本机 Host 和 Demo ai/chat 真实调用通过，移动原生及 Windows 不新增通过。",
+      "files": {
+        "apps/host-agent/src/responses-proxy.ts": "f7b70e8e440053ab47484ac7f4b8cabddd9d0cac045b2e79f81b067c8d3c68b0",
+        "apps/host-agent/src/runtime-entry.ts": "697b59095687b1a4932d7852106a0eed615d7aaff83f3b20ea9df1567e93c230",
+        "apps/host-agent/src/index.ts": "2f457b0235b91cbc0da6acb85e01678e8a71975208f5d1f87041026a8a860a32",
+        "packages/codex-adapter/src/desktop-responses.ts": "afa6cc617450fe5d274cfe6b5ad5cad146b47ff3b11eb6fca4dc9ba75a5b0659",
+        "packages/codex-adapter/src/index.ts": "c1ccf2f38d53c1bb5edb52a9fb1e6630be15a090bb47f0037960287477bc6deb",
+        "scripts/configure-responses-proxy.mjs": "2823ff71c1c4880850f28b060be772e6ac5c9920539e4e58d129f92aa5a4f7de",
+        "scripts/desktop-service.mjs": "94d01b3de6b383748f9251cfdc85331ca229b2803bc6f6db36a140488f859159",
+        "scripts/windows-desktop-service.mjs": "25e667d5dc65333522db0c622ac045f2690eb91b56645f6be38218462145fefd",
+        "scripts/responses-proxy.test.mjs": "88163b0f7a6cf9a3c214af49329bc655da42b99384705e31028af740c75b94a8"
       }
     }
   ]

@@ -1,5 +1,36 @@
 # 完整运行时连接与开发验收
 
+## 可选模型代理（F74，默认关闭）
+
+代理不创建或恢复桌面对话，不执行工具。安装、升级、手机接入均不得自动开启；仅在人类明确要求后设置 `HOST_RESPONSES_PROXY_ENABLED=1`。未设置或为 `0` 时不读代理凭据、不运行认证辅助进程、不创建代理文件、不增加监听。
+
+先构建，再准备配置；下面命令只生成私有配置、独立 API Key 和专用 TLS 身份，生成的开关仍为 `0`：
+
+```bash
+pnpm configure:responses-proxy -- --state-dir '<private-proxy-directory>' \
+  --models '["<available-model-id>"]' --bind 0.0.0.0 \
+  --addresses '["<host-LAN-IP>","<host-VPN-IP>"]' --port 8797
+```
+
+读取生成的 `configuration.json` 的 `environment`；只有用户要求启用后，才将开关改成 `1`，连同其余变量传给现有 `scripts/desktop-service.mjs restart` 或 Windows 服务管理器。服务脚本保存显式变量，后续升级保持选择；传 `0` 并重启关闭代理，保留原密钥和回执。不要把 Codex Token 当代理 Key，不在命令行或报告打印密钥。
+
+| 变量                                    | 默认／约束                                |
+| --------------------------------------- | ----------------------------------------- |
+| HOST_RESPONSES_PROXY_ENABLED            | 未设置／0 关闭；仅 1 开启                 |
+| HOST_RESPONSES_PROXY_BIND               | 127.0.0.1；显式选择 LAN/VPN IP 或 0.0.0.0 |
+| HOST_RESPONSES_PROXY_PORT               | 8797，独立于原 Host 端口                  |
+| HOST_RESPONSES_PROXY_MODELS             | 必填 JSON 模型允许清单；目录不等于授权    |
+| HOST_RESPONSES_PROXY_STATE_DIR          | Host 状态目录中的 responses-proxy         |
+| HOST_RESPONSES_PROXY_TOKEN_FILE         | 代理状态目录中的 access-token，独立 Key   |
+| HOST_RESPONSES_PROXY_TLS_CERT / TLS_KEY | 非回环监听必须同时配置；私钥私有保存      |
+| HOST_RESPONSES_PROXY_MAX_BYTES          | 8 MiB，最多配置 32 MiB                    |
+| HOST_RESPONSES_PROXY_CONCURRENCY        | 4，范围 1–16                              |
+| HOST_RESPONSES_PROXY_TIMEOUT_MS         | 180000，范围 1000–900000                  |
+
+调用端使用 `https://<host-IP>:8797/v1` 和独立 Key，并信任专用证书，保持完整证书和主机名校验。证书过期或地址变化由管理员显式维护，不自动旋转身份。Node 后台可只读挂载证书并用 `NODE_EXTRA_CA_CERTS` 增加单个信任来源，不能关闭 TLS 校验。浏览器经自己的后台调用，不直接持有代理 Key。
+
+建议每次提供稳定 `Idempotency-Key`，未知后查询 `/v1/requests/<id>`，不另起 ID 重试。省略时 Host 生成 ID 并通过 `X-Request-Id` 返回，但无法阻止调用方另发新请求，调用方须关闭 SDK 自动重试。Chat 流在完整验证上游结束后才发出 finish_reason／[DONE]，客户端按结束标记断开不会中断上游完成回执。Host 不自动重试、换账户或换计费方式。显式启用后若代理配置或监听失败，只记录代理 unavailable，不停止现有桌面 Host。4096 条元数据回执达到上限后拒绝新操作；管理员先保存和审查历史，不自动清除旧 ID 腾空间。iOS／Android 页面及默认连接行为不变，不自动获得代理入口。
+
 2026-10-28 Windows 安装预检：按用户要求移除桌面与 CLI 的 Publisher／签名文案／Store 包身份门禁；同一管道句柄、当前用户与登录会话、准确路径／摘要及真实 IPC 方法检查继续执行。私有状态 bootstrap 与常驻 worker 共用文件句柄实现，只读所有者与 DACL、只写受保护 DACL，保留 SACL，不提权或接管他人文件。源码与辅助检查不代表目标 Windows／手机功能通过，见[专项记录](acceptance/windows-install-20261028.md)。
 
 > **组合源码状态（尚未正式部署）**：开发现场已合入 `5b100a1` 与 `2026-10-18T16:28:41.607Z` 的不可变队列修复采样，并补充 EasyWork 发送／查询轮次一致性与拒绝空／重复执行证据的回归。当前正在执行组合检查，最终源冻结、Windows／实体手机验收和统一发布分别记证；旧版本及其他电脑的结果不代替组合版本通过。

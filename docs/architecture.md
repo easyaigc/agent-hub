@@ -1,5 +1,15 @@
 # 架构设计
 
+## F74：显式开启的 Host 模型代理
+
+独立监听仅由 `HOST_RESPONSES_PROXY_ENABLED=1` 开启，默认不初始化。官方只读授权、固定 Codex 上游和版本差异在 `packages/codex-adapter/src/desktop-responses.ts`；Host 负责独立 Key、TLS、模型允许清单、资源上限和持久回执。Relay 不持有授权或转发此请求，原桌面对话、手机连接和执行 owner 保持原边界。
+
+`/v1/responses` 流式路径保留上游原始 SSE 字节，非流式返回 `response.completed` 的原 Response 对象。`/v1/chat/completions` 显式转换消息、function 调用标识、文本／推理增量及用量，不宣称其为原始 SSE。Chat 兼容入口支持单选择、文本／用户图片和 function 工具定义；不在 Host 执行工具。温度、采样及输出长度等 Codex 不支持的 Chat 控制参数不向上游发送，不宣称参数已生效。
+
+每次请求重新读取当前授权，不登录、不刷新、不写认证存储；仅接标准 ChatGPT 路由，专用路由及企业 requirements 拒绝。这是 Codex 内部推理后端，区别于另需 OAuth scopes 的官方公共 Responses。普通 Codex 连接仍以机器目标识别，不新增账号连接门禁。
+
+操作先保存路由、模型、请求摘要，再保存提交意图，最后只发一次上游请求。回执不保存输入／响应正文、Token 或账号。重复原 ID 一律拒绝；未完成记录重启后为 outcome-unknown，不自动重放。先取得准确 socket 和私有状态写入权，再恢复回执，第二实例不得改写活动操作。未取得 `response.completed` 不记成功。两端手机 UI 无新增入口，平台验收分别记录。
+
 2026-10-29 Android 设备授权增加按存储root/ref协调的持久撤销栅栏：完整原意图先保存，未知/确认撤销均拒绝迟到refresh或pair保存及旧proof返回；重建从原具名操作恢复，不重放业务输入。原grant未知字段、原pending和指纹在加密审计中保留。语音默认选择使用同一Session自身的加密存储，安装/权限/能力不随用户偏好迁移。精确原生/辅助及未验界限见[PAR4档案](plans/android-alignment-20261022/parallel/fourth-stage-native.json)。
 
 2026-10-29 Android 通知恢复 v2 源码已接到可选前台 monitor：完整原意图先落盘、未知只查原 ID，独立关闭与显式缺口接受保持各自收据，待 Host 确认事件不推进游标。JVM 辅助与原生编译分列；共享 UI／迁移入口和真实 DEV 尚待集成负责人验收。iOS v1 与供应商承诺不变，见[Android 候选与交接](plans/android-alignment-20261022/parallel/p9-notifications/recovery-v2-android.md)。

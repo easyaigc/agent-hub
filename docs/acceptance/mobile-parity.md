@@ -1535,3 +1535,7 @@ Source64r2/API33：独立首次 App/Test 安装后，三项 reading fence、八�
 Source65首项实际失败及原件保持已独立核74调用；Source66组合SDK通过，API33首项16图断言与6warm实际限定通过，Root核540调用/18tar及严格原件保护；3冷链/完整系统/UI/DEV仍待验。 详见[检查点](../plans/android-alignment-20261022/records/source66-migration-client-restore.md)。
 
 2026-10-30 F02／F03 Host Codex 更新恢复：共享安装快照与独立目录 reader 恢复已实现候选，端侧和 KMP 不变；本轮辅助检查、macOS 只读、Windows 原机与手机分别记录于 [专项记录](codex-update-resilience-20261030.md)。未验项保持未验，A6 暂停。
+
+### 原录音只读读回增量
+
+原API26 Source62单次所选Native读回、91调用、原109/15项资料及完整3244字节WAV已由主统筹独立核对。离线audit修正的7测试/29负例与同捕获CLI按准确源码/输入匹配复用；原失败保留。无清理ACK、父独立解密或全F64/P7/UI通过，详见[专项记录](../plans/android-alignment-20261022/records/original-voice-readback-20261030.md)。

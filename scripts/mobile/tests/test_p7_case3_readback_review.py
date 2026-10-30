@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -10,6 +11,49 @@ SPEC.loader.exec_module(review)
 
 
 class Case3OfflineReviewTest(unittest.TestCase):
+    @staticmethod
+    def persisted_original():
+        return dict(version=1, id="synthetic-recording", scope={"version": 1, "hostId": "synthetic-host"},
+                    certificate=None, draftKey="draft-key", draftId="draft-id", threadId="thread-id",
+                    originalText="complete synthetic original", createdAt=1,
+                    manifest={"sizeBytes": 3244, "sha256": "a" * 64}, prepareAttempted=True,
+                    audioAttempted=False, audioStorage="binary-chunks-v1", phase="outcome-unknown",
+                    expiresAt="2030-01-01T00:00:00Z")
+
+    def test_audit_accepts_complete_persisted_row_and_rejects_projected_dto(self):
+        row = self.persisted_original()
+        raw = json.dumps(row, separators=(",", ":"))
+        review.verify_original_audit(raw, raw, review.sha(raw.encode()))
+        dto = json.dumps({k: v for k, v in row.items() if k not in {"phase", "audioStorage", "expiresAt"}})
+        with self.assertRaisesRegex(ValueError, "complete original audit"):
+            review.verify_original_audit(dto, raw, review.sha(dto.encode()))
+
+    def test_audit_rejects_missing_extra_changed_or_retyped_persisted_fields(self):
+        row = self.persisted_original()
+        raw = json.dumps(row, separators=(",", ":"))
+        variants = [("missing " + key, {k: v for k, v in row.items() if k != key}) for key in row]
+        variants += [("extra", dict(row, unexpected="not ignored"))]
+        for key, value in (("phase", "completed"), ("phase", 1), ("expiresAt", "2031-01-01T00:00:00Z"),
+                           ("expiresAt", None), ("audioStorage", "inline"), ("audioStorage", True),
+                           ("createdAt", 1.0), ("prepareAttempted", 1), ("audioAttempted", 0),
+                           ("manifest", {"sizeBytes": 3244.0, "sha256": "a" * 64})):
+            variants.append(("changed/retyped " + key, dict(row, **{key: value})))
+        for name, changed in variants:
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, "complete original audit"):
+                audit = json.dumps(changed, separators=(",", ":"))
+                # Even a recomputed attacker-controlled marker cannot replace the frozen row.
+                review.verify_original_audit(audit, raw, review.sha(audit.encode()))
+
+    def test_audit_requires_original_bytes_and_marker_hash_not_just_equal_json(self):
+        row = self.persisted_original()
+        raw = json.dumps(row, separators=(",", ":"))
+        reformatted = json.dumps(row, sort_keys=True, indent=2)
+        self.assertTrue(review.same_json(review.strict_json(raw.encode()), review.strict_json(reformatted.encode())))
+        with self.assertRaisesRegex(ValueError, "complete original audit"):
+            review.verify_original_audit(reformatted, raw, review.sha(reformatted.encode()))
+        with self.assertRaisesRegex(ValueError, "complete original audit"):
+            review.verify_original_audit(raw, raw, "0" * 64)
+
     def test_duplicate_nested_json_and_non_json_numbers_are_rejected(self):
         for value in (b'{"x":1,"x":2}', b'{"x":{"a":1,"a":2}}', b'{"x":NaN}', b'\xff'):
             with self.subTest(value=value), self.assertRaises((ValueError, UnicodeError)):

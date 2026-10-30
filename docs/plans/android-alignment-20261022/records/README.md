@@ -4,6 +4,7 @@
 
 - [Source67 默认密钥存在性观察](source67-default-alias-observation.md)：独立 Test 入口、842/855 输入与三 APK；设备及产品结果待验。
 - [PR70 整批超时计时观察](ci-batch-timeout-observation.md)：保留原失败断言，增加真实 Worker 计时证据；Linux 根因待核对。
+- [原录音只读读回](original-voice-readback-20261030.md)：原包单次 Native、91 调用与完整原件/WAV核对，修正离线 audit 比较；UI和清理另验。
 
 ## 按主题查阅
 

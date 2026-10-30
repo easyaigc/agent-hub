@@ -54,6 +54,14 @@ def strict_json(data):
     return json.loads(data.decode("utf-8", "strict"), object_pairs_hook=pairs, parse_constant=invalid_constant)
 
 
+def verify_original_audit(audit, persisted_row, original_sha):
+    """Audit stores the complete persisted row, including storage and recovery fields."""
+    need(type(audit) is str and type(persisted_row) is str, "complete original audit")
+    data = audit.encode("utf-8")
+    need(audit == persisted_row and sha(data) == original_sha
+         and same_json(strict_json(data), strict_json(persisted_row.encode("utf-8"))), "complete original audit")
+
+
 def private_bytes(path, maximum):
     """No symlinks/hardlinks; full FD bytes and unchanged FD/path stat, including mode/UID."""
     path = Path(path)
@@ -141,8 +149,7 @@ def review(archive, index, intent_bytes, wav, receipt_bytes, app_sha, runner_sha
          and bool(HASH.fullmatch(marker["fingerprint"])), "fixed original marker")
     audit_name = "voice-discard-original-v1:" + RECORDING + ":" + marker["auditId"]
     need(sha(audit_name.encode()) == "747d72f24a82e98411d210dc16d9e713b79ca92b2c02b3c3c21eba4d20ca15b4", "only approved audit logical name")
-    need(sha(receipt["audit"].encode()) == marker["originalSha256"]
-         and same_json(strict_json(receipt["audit"].encode()), current), "complete original audit")
+    verify_original_audit(receipt["audit"], proof["persistedRow"], marker["originalSha256"])
     manifest = current["manifest"]
     need(manifest["operationId"] == RECORDING and manifest["sha256"] == WAV_SHA
          and manifest["sizeBytes"] == 3244 and len(wav) == 3244 and sha(wav) == WAV_SHA, "full captured WAV manifest")

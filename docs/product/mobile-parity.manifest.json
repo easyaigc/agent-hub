@@ -17884,6 +17884,16 @@
         "scripts/fixtures/windows-trace-batch.mjs": "3cd1018b63c9b1e1228ec1b46f79248a9e900fe3e9aa9559e3cb2de22b47dec2",
         "scripts/windows-trace-worker.test.mjs": "84fbfeb5a91d9f820074b94a812eb941b35c6febbb0ebb6652407fa59b87c629"
       }
+    },
+    {
+      "id": "android-original-voice-readback-audit-review-20261030",
+      "baseCommit": "d8fa8f274a032f40c3d035d1bd9c6c03e5f8f9e8",
+      "features": ["F64"],
+      "summary": "仅修正原录音离线验收器将完整持久化audit与DTO误比较：严格核冻结persistedRow原字符串/全部字段类型/marker hash。原API26 Source62只读Native1方法、91调用及109冷/15语音原件和全3244字节WAV由Root独立核；7测试/29负例与相同捕获CLI按源码/输入准确匹配复用。无Native重跑、Host/麦克风、ACK或清理；产品/iOS UI不变，完整F64/P7和生命周期仍开。",
+      "files": {
+        "scripts/mobile/p7-case3-readback-review.py": "442f3ee8cf10cbf3e7df73324ac89651d1b192deae75bfbc788c75deb439fcd8",
+        "scripts/mobile/tests/test_p7_case3_readback_review.py": "1f4e38a19da8346b7d01970c2c3a2bb6fd588849c0c870830749fe574ee584cd"
+      }
     }
   ]
 }

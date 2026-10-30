@@ -144,6 +144,7 @@ function validateManifest(file) {
       !/[. ]$/.test(file.name) &&
       !/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(file.name) &&
       typeof file.mediaType === 'string' &&
+      Buffer.byteLength(file.mediaType) <= 128 &&
       /^[\w.+-]+\/[\w.+-]+$/.test(file.mediaType) &&
       Number.isSafeInteger(file.sizeBytes) &&
       file.sizeBytes > 0 &&
@@ -371,7 +372,9 @@ export async function main(args = process.argv.slice(2), options = {}) {
     };
     await writePrivate(receiptPath, JSON.stringify(result, null, 2) + '\n');
     if (receipt?.phase === 'completed') await rm(contentPath, { force: true });
-    (options.output ?? console.log)(JSON.stringify(result));
+    const text = JSON.stringify(result);
+    requireValue(Buffer.byteLength(text) + 1 <= 16 * 1024, 'CONTEXT_OUTPUT_TOO_LARGE');
+    (options.output ?? console.log)(text);
     return receipt?.phase === 'completed' ? 0 : 2;
   };
   const checkedReceipt = (response) => {
@@ -383,10 +386,27 @@ export async function main(args = process.argv.slice(2), options = {}) {
         ['prepared', 'completed'].includes(receipt.phase) &&
         typeof receipt.destinationPath === 'string' &&
         receipt.destinationPath.length > 0 &&
-        typeof receipt.createdAt === 'string',
+        Buffer.byteLength(receipt.destinationPath) <= 4096 &&
+        typeof receipt.createdAt === 'string' &&
+        Buffer.byteLength(receipt.createdAt) <= 64,
       'TRANSFER_RECEIPT_MISMATCH',
     );
-    return receipt;
+    // A receipt is metadata, never an arbitrary response/body passthrough.
+    return Object.fromEntries(
+      [
+        'hostId',
+        'id',
+        'name',
+        'mediaType',
+        'sizeBytes',
+        'sha256',
+        'phase',
+        'destinationPath',
+        'createdAt',
+      ]
+        .filter((key) => receipt[key] !== undefined)
+        .map((key) => [key, receipt[key]]),
+    );
   };
   const query = '/v1/file-transfers?' + new URLSearchParams({ hostId: host.hostId, id });
   try {

@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { readFile, writeFile, rename, mkdir, lstat, chmod } from 'node:fs/promises';
+import { open, readFile, writeFile, rename, mkdir, lstat, chmod } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -73,6 +73,76 @@ const pinnedTlsOptions = async (pin) => {
     },
   };
 };
+export const CONTEXT_LIMITS = Object.freeze({
+  messageBytes: 8 * 1024,
+  outputBytes: 16 * 1024,
+  responseBytes: 8 * 1024 * 1024,
+});
+// Catch continuous and whitespace-wrapped Base64/Base64url/hex file bodies.
+// Short hashes, UUIDs and ordinary prose are valid coordination metadata.
+const hasEncodedPayload = (text) =>
+  /data:[^\s,]*;base64,/i.test(text) ||
+  [...text.matchAll(/[A-Za-z0-9+/_-]{32,}={0,2}(?:\s+[A-Za-z0-9+/_-]{32,}={0,2})*/g)].some(
+    ([block]) => block.replace(/\s/g, '').length >= 256,
+  );
+const validateTaskText = (text) => {
+  requireValue(typeof text === 'string' && text.trim(), 'INVALID_TASK_TEXT');
+  requireValue(
+    Buffer.byteLength(text) <= CONTEXT_LIMITS.messageBytes,
+    'TASK_TEXT_TOO_LARGE_USE_FILE_TRANSFER',
+  );
+  requireValue(!hasEncodedPayload(text), 'ENCODED_PAYLOAD_USE_FILE_TRANSFER');
+  requireValue(
+    ![...text].some((char) => {
+      const code = char.charCodeAt(0);
+      return (code < 32 && ![9, 10, 13].includes(code)) || code === 127;
+    }),
+    'BINARY_TASK_TEXT',
+  );
+};
+async function readTaskText(path, maximum) {
+  const file = await open(path, 'r');
+  try {
+    requireValue((await file.stat()).isFile(), 'REGULAR_TASK_FILE_REQUIRED');
+    // A bounded read also covers a file growing after stat; never load a large artifact.
+    const bytes = Buffer.alloc(maximum + 1);
+    let size = 0;
+    while (size < bytes.length) {
+      const part = await file.read(bytes, size, bytes.length - size, null);
+      if (!part.bytesRead) break;
+      size += part.bytesRead;
+    }
+    requireValue(size <= maximum, 'TASK_TEXT_TOO_LARGE_USE_FILE_TRANSFER');
+    try {
+      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+        bytes.subarray(0, size),
+      );
+    } catch {
+      fail('INVALID_TASK_TEXT_UTF8');
+    }
+  } finally {
+    await file.close();
+  }
+}
+// Never echo arbitrary error objects, model metadata or encoded content from a Host.
+const contextValue = (value, secrets, depth = 0) => {
+  if (typeof value === 'string') {
+    if (secrets.some((secret) => value.includes(secret))) return '[credential omitted]';
+    if (hasEncodedPayload(value)) return '[encoded content omitted]';
+    return Buffer.byteLength(value) > 512 ? '[oversized field omitted]' : value;
+  }
+  if (value === null || typeof value === 'boolean' || typeof value === 'number') return value;
+  if (depth >= 4) return '[nested details omitted]';
+  if (Array.isArray(value))
+    return value.slice(0, 50).map((item) => contextValue(item, secrets, depth + 1));
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, 32)
+        .map(([key, item]) => [key, contextValue(item, secrets, depth + 1)]),
+    );
+  return undefined;
+};
 const privatePath = async (path, directory = false) => {
   const stat = await lstat(path);
   requireValue(
@@ -107,12 +177,31 @@ const summary = (value) =>
       'detached',
     ]
       .filter((key) => value?.[key] !== undefined)
-      .map((key) => [key, value[key]]),
+      .map((key) => [
+        key,
+        key === 'error'
+          ? typeof value[key] === 'string' && /^[A-Z][A-Z0-9_]{0,95}$/.test(value[key])
+            ? value[key]
+            : 'REMOTE_ERROR_DETAILS_OMITTED'
+          : ['string', 'boolean', 'number'].includes(typeof value[key]) || value[key] === null
+            ? value[key]
+            : '[details omitted]',
+      ]),
   );
 
 export async function main(args = process.argv.slice(2), options = {}) {
   const root = options.directory ?? join(homedir(), '.config', 'agent-hub');
-  const output = options.output ?? console.log;
+  const writeOutput = options.output ?? console.log;
+  let secrets = [];
+  const serialize = (value) => JSON.stringify(contextValue(value, secrets));
+  const output = (text) => {
+    const bounded = serialize(JSON.parse(text));
+    requireValue(
+      Buffer.byteLength(bounded) + 1 <= CONTEXT_LIMITS.outputBytes,
+      'CONTEXT_OUTPUT_TOO_LARGE',
+    );
+    writeOutput(bounded);
+  };
   const { values, positionals } = parseArgs({
     args,
     allowPositionals: true,
@@ -125,13 +214,15 @@ export async function main(args = process.argv.slice(2), options = {}) {
       'project-id': { type: 'string' },
       'no-suitable-reason': { type: 'string' },
       effort: { type: 'string', default: 'xhigh' },
+      limit: { type: 'string', default: '20' },
+      offset: { type: 'string', default: '0' },
       help: { type: 'boolean' },
     },
   });
   const command = positionals[0];
   if (values.help) {
-    output(
-      'probe|workspace|history|send|receipt|open|open-status|create|create-status|create-submit --host-id ID [--thread-id ID] [--operation-id ID] [--text-file PATH] [--effort xhigh]',
+    writeOutput(
+      'probe|workspace|history|send|receipt|open|open-status|create|create-status|create-submit --host-id ID [--thread-id ID] [--operation-id ID] [--text-file PATH] [--effort xhigh] [--limit 1..50] [--offset N]; text <=8192 UTF-8 bytes; files: transfer-host.mjs',
     );
     return;
   }
@@ -160,6 +251,19 @@ export async function main(args = process.argv.slice(2), options = {}) {
     registry.schemaVersion === 1 && Array.isArray(registry.hosts),
     'INCOMPATIBLE_REGISTRY',
   );
+  secrets = registry.hosts
+    .map((item) => item.clientKey)
+    .filter((key) => typeof key === 'string' && key.length > 0);
+  const limit = Number(values.limit),
+    offset = Number(values.offset);
+  requireValue(
+    Number.isSafeInteger(limit) &&
+      limit >= 1 &&
+      limit <= 50 &&
+      Number.isSafeInteger(offset) &&
+      offset >= 0,
+    'INVALID_CATALOG_PAGE',
+  );
   const matches = registry.hosts.filter((host) => host.hostId === values['host-id']);
   requireValue(matches.length === 1, 'HOST_ID_NOT_UNIQUE_OR_UNKNOWN');
   const host = matches[0];
@@ -184,14 +288,18 @@ export async function main(args = process.argv.slice(2), options = {}) {
       new Promise((resolve, reject) => {
         const bytes = body === undefined ? undefined : Buffer.from(JSON.stringify(body));
         let stream;
-        const networkFailure = () => {
+        let settled = false;
+        const transportFailure = (code) => {
+          if (settled) return;
+          settled = true;
           clearTimeout(timer);
-          const error = new Error('NETWORK_OUTCOME_UNKNOWN');
-          error.code = 'NETWORK_OUTCOME_UNKNOWN';
+          const error = new Error(code);
+          error.code = code;
           reject(error);
           stream?.destroy();
           request.destroy();
         };
+        const networkFailure = () => transportFailure('NETWORK_OUTCOME_UNKNOWN');
         const request = https.request(
           new URL(path, endpoint),
           {
@@ -209,11 +317,26 @@ export async function main(args = process.argv.slice(2), options = {}) {
             let text = '';
             const gzip = response.headers['content-encoding']?.trim().toLowerCase() === 'gzip';
             stream = gzip ? createGunzip() : response;
+            let wireBytes = 0,
+              decodedBytes = 0;
+            response.on('data', (part) => {
+              wireBytes += Buffer.byteLength(part);
+              if (wireBytes > CONTEXT_LIMITS.responseBytes)
+                transportFailure('HOST_RESPONSE_TOO_LARGE');
+            });
             stream.setEncoding('utf8');
             stream.on('data', (part) => {
+              if (settled) return;
+              decodedBytes += Buffer.byteLength(part);
+              if (decodedBytes > CONTEXT_LIMITS.responseBytes) {
+                transportFailure('HOST_RESPONSE_TOO_LARGE');
+                return;
+              }
               text += part;
             });
             stream.on('end', () => {
+              if (settled) return;
+              settled = true;
               clearTimeout(timer);
               let value = null;
               try {
@@ -294,12 +417,6 @@ export async function main(args = process.argv.slice(2), options = {}) {
       ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(values.effort),
       'INVALID_EFFORT',
     );
-    text = await readFile(values['text-file'], 'utf8');
-    requireValue(text.trim().length > 0 && text.length <= 100000, 'INVALID_TASK_TEXT');
-    requireValue(
-      !registry.hosts.some((item) => item.clientKey && text.includes(item.clientKey)),
-      'CREDENTIAL_IN_TASK_TEXT',
-    );
   }
   let ledgerPath, saved;
   if (['send', 'open', 'create', 'create-submit'].includes(command)) {
@@ -313,6 +430,12 @@ export async function main(args = process.argv.slice(2), options = {}) {
       saved = JSON.parse(await readFile(ledgerPath, 'utf8'));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
+    }
+    if (command === 'send' || command === 'create') {
+      // Old immutable intents remain queryable under the previous 100k-character limit.
+      text = await readTaskText(values['text-file'], saved ? 400000 : CONTEXT_LIMITS.messageBytes);
+      if (!saved) validateTaskText(text);
+      requireValue(!secrets.some((secret) => text.includes(secret)), 'CREDENTIAL_IN_TASK_TEXT');
     }
     if (command === 'create-submit')
       requireValue(
@@ -394,6 +517,14 @@ export async function main(args = process.argv.slice(2), options = {}) {
       return;
     }
   }
+  // Resuming a never-submitted prepared creation crosses the write boundary now.
+  if (command === 'create-submit') {
+    validateTaskText(saved.payload.text);
+    requireValue(
+      !secrets.some((secret) => saved.payload.text.includes(secret)),
+      'CREDENTIAL_IN_TASK_TEXT',
+    );
+  }
   const health = await request('/healthz');
   requireValue(
     health.http === 200 && health.value?.service === 'host-agent' && health.value.status === 'ok',
@@ -423,25 +554,47 @@ export async function main(args = process.argv.slice(2), options = {}) {
     return;
   }
   if (command === 'workspace') {
-    output(
-      JSON.stringify({
-        operation: command,
-        hostId: host.hostId,
-        connectionMode: workspace.value.connectionMode,
-        projects: workspace.value.projects.map((project) => ({
-          id: project.id,
-          name: project.name,
-        })),
-        threads: workspace.value.threads.map((thread) => ({
-          id: thread.id,
-          title: thread.title,
-          projectId: thread.projectId,
-          projectIds: thread.projectIds,
-          state: thread.state,
-          archived: thread.archived ?? thread.isArchived ?? null,
-        })),
-      }),
-    );
+    const projects = workspace.value.projects;
+    const threads = values['project-id']
+      ? workspace.value.threads.filter(
+          (thread) =>
+            thread.projectId === values['project-id'] ||
+            thread.projectIds?.includes(values['project-id']),
+        )
+      : workspace.value.threads;
+    const page = {
+      operation: command,
+      hostId: host.hostId,
+      connectionMode: workspace.value.connectionMode,
+      offset,
+      totalProjects: projects.length,
+      totalThreads: threads.length,
+      projects: projects.slice(offset, offset + limit).map((project) => ({
+        id: project.id,
+        name: project.name,
+      })),
+      threads: threads.slice(offset, offset + limit).map((thread) => ({
+        id: thread.id,
+        title: thread.title,
+        projectId: thread.projectId,
+        projectIds: thread.projectIds,
+        state: thread.state,
+        archived: thread.archived ?? thread.isArchived ?? null,
+      })),
+    };
+    const updateOffsets = () => {
+      page.nextProjectOffset =
+        offset + page.projects.length < projects.length ? offset + page.projects.length : null;
+      page.nextThreadOffset =
+        offset + page.threads.length < threads.length ? offset + page.threads.length : null;
+    };
+    updateOffsets();
+    // JSON escaping and multibyte names count toward the complete output budget.
+    while (Buffer.byteLength(serialize(page)) + 1 > CONTEXT_LIMITS.outputBytes) {
+      (page.threads.length >= page.projects.length ? page.threads : page.projects).pop();
+      updateOffsets();
+    }
+    output(JSON.stringify(page));
     return;
   }
   if (command === 'create' || command === 'create-submit') {
@@ -578,7 +731,13 @@ export async function main(args = process.argv.slice(2), options = {}) {
         canControl: runtime?.canControl,
         state: runtime?.state,
         turnId: runtime?.turnId,
-        generationSettings: runtime?.generationSettings,
+        generationSettings: runtime?.generationSettings
+          ? Object.fromEntries(
+              ['model', 'effort', 'permissionMode', 'serviceTier', 'speed']
+                .filter((key) => runtime.generationSettings[key] !== undefined)
+                .map((key) => [key, runtime.generationSettings[key]]),
+            )
+          : undefined,
       }),
     );
     return;

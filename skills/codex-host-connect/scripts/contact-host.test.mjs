@@ -8,7 +8,7 @@ import { EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';
 import { gzipSync } from 'node:zlib';
 import { createHash, generateKeyPairSync, randomBytes, sign, X509Certificate } from 'node:crypto';
-import { main } from './contact-host.mjs';
+import { main, CONTEXT_LIMITS } from './contact-host.mjs';
 
 const hostId = '00000000-0000-4000-8000-000000000001';
 const threadId = '00000000-0000-4000-8000-000000000002';
@@ -44,6 +44,7 @@ async function fixture(t, defaultTransport = false) {
     projects: [],
     threads: [{ id: threadId, hostId, title: '协调', projectId: null }],
   };
+  const runtime = { canControl: true, state: 'idle' };
   let failNextReply = false;
   const transport = async (path, body, authenticated = true) => {
     calls.push({ path, body });
@@ -53,7 +54,7 @@ async function fixture(t, defaultTransport = false) {
     if (path.startsWith('/v1/history?'))
       return {
         http: 200,
-        value: { hostId, threadId, ready: true, runtime: { canControl: true, state: 'idle' } },
+        value: { hostId, threadId, ready: true, runtime },
       };
     if (path === '/v1/replies') {
       receipts.set(body.clientMessageId, { ...body, state: 'submitted' });
@@ -93,6 +94,9 @@ async function fixture(t, defaultTransport = false) {
     calls,
     outputs,
     catalog,
+    runtime,
+    receipts,
+    creations,
     transport,
     run,
     loseNextReply: () => {
@@ -155,7 +159,9 @@ async function defaultHttpsFixture(t, configure = () => ({})) {
           const encoding = spec.encoding ?? 'gzip';
           const wire = spec.wire ?? (encoding === 'gzip' ? gzipSync(plain) : plain);
           const parts = [];
-          for (let i = 0; i < wire.length; i += 7) parts.push(wire.subarray(i, i + 7));
+          const chunkSize = spec.chunkSize ?? 7;
+          for (let i = 0; i < wire.length; i += chunkSize)
+            parts.push(wire.subarray(i, i + chunkSize));
           const response = spec.hold ? new Readable({ read() {} }) : Readable.from(parts);
           record.response = response;
           response.headers = {
@@ -597,4 +603,197 @@ test('lost response keeps old intent queryable while allowing a new scoped commu
   assert.equal(f.calls.filter((c) => c.path === '/v1/replies').length, 2);
   assert.equal(f.calls.filter((c) => c.body?.clientMessageId === 'unknown-message-001').length, 1);
   assert.equal(f.outputs.at(-1).status, 'submitted');
+});
+
+test('send and create reject file payloads before network or immutable intent creation', async (t) => {
+  const encoded = Buffer.from('private synthetic patch content\n'.repeat(40)).toString('base64');
+  const cases = [
+    ['oversize', '测 '.repeat(2048) + 'x', 'TASK_TEXT_TOO_LARGE_USE_FILE_TRANSFER'],
+    ['base64', '补丁如下：' + encoded, 'ENCODED_PAYLOAD_USE_FILE_TRANSFER'],
+    ['wrapped', encoded.match(/.{1,64}/g).join('\n'), 'ENCODED_PAYLOAD_USE_FILE_TRANSFER'],
+    ['base64url', '-_ab12'.repeat(60), 'ENCODED_PAYLOAD_USE_FILE_TRANSFER'],
+    ['hex', '0123456789abcdef'.repeat(20), 'ENCODED_PAYLOAD_USE_FILE_TRANSFER'],
+    ['data-uri', '图片 data:image/png;base64,YWJj', 'ENCODED_PAYLOAD_USE_FILE_TRANSFER'],
+    ['binary', Buffer.from([65, 0, 66]), 'BINARY_TASK_TEXT'],
+    ['invalid-utf8', Buffer.from([0xc3, 0x28]), 'INVALID_TASK_TEXT_UTF8'],
+  ];
+  for (const command of ['send', 'create']) {
+    for (const [label, content, code] of cases) {
+      const f = await fixture(t);
+      await writeFile(f.taskFile, content);
+      await assert.rejects(
+        f.run(command, 'guard-' + command + '-' + label, ['--text-file', f.taskFile]),
+        { code },
+      );
+      assert.equal(f.calls.length, 0, command + ': ' + label);
+      assert.deepEqual(await readdir(join(f.directory, 'operations')), []);
+      assert.deepEqual(f.outputs, []);
+    }
+  }
+});
+
+test('complete UTF-8 budget includes the header; short fingerprints and file references survive unchanged', async (t) => {
+  const f = await fixture(t);
+  const text = '测 '.repeat(CONTEXT_LIMITS.messageBytes / 4);
+  await writeFile(f.taskFile, text);
+  await f.run('send', 'byte-boundary-001', ['--text-file', f.taskFile]);
+  assert.equal(f.calls.find((call) => call.path === '/v1/replies').body.text, text);
+  const reference =
+    '**来自：测试电脑 → 项目 → 会话**\n任务：读取已传文件；传输 ID：file-fixture；路径：<目标接收路径>；大小：61062；SHA256：' +
+    '0123456789abcdef'.repeat(4);
+  await writeFile(f.taskFile, reference);
+  await f.run('create', 'reference-create-001', [
+    '--text-file',
+    f.taskFile,
+    '--no-suitable-reason',
+    '独立任务',
+  ]);
+  assert.equal(f.calls.find((call) => call.path === '/v1/desktop/creations').body.text, reference);
+  assert(!JSON.stringify(f.outputs).includes(reference));
+});
+
+test('legacy oversized encoded intents stay queryable without replay; prepared first submission is guarded', async (t) => {
+  const f = await fixture(t);
+  const text = 'bW9jay1wYXRjaA=='.repeat(600);
+  const textSha256 = createHash('sha256').update(text).digest('hex');
+  // Establish the private ledger directory through a read-only-to-runtime rejection.
+  await writeFile(f.taskFile, '');
+  await assert.rejects(f.run('send', 'empty-intent-001', ['--text-file', f.taskFile]));
+  await writeFile(f.taskFile, text);
+  for (const kind of ['send', 'create']) {
+    const id = 'legacy-' + kind + '-001';
+    const payload = { hostId, text, effort: 'xhigh', projectId: null };
+    const record = {
+      kind,
+      hostId,
+      threadId,
+      operationId: id,
+      payload,
+      textSha256,
+      status: 'unknown',
+    };
+    await writeFile(join(f.directory, 'operations', id + '.json'), JSON.stringify(record), {
+      mode: 0o600,
+    });
+    if (kind === 'send')
+      f.receipts.set(id, { hostId, threadId, clientMessageId: id, state: 'submitted', text });
+    else f.creations.set(id, { hostId, clientOperationId: id, phase: 'prepared' });
+    await f.run(kind, id, ['--text-file', f.taskFile]);
+    assert.equal(f.outputs.at(-1).queriedExistingOperation, true);
+    assert.equal(f.outputs.at(-1).replayed, false);
+    const saved = JSON.parse(await readFile(join(f.directory, 'operations', id + '.json'), 'utf8'));
+    assert.equal(saved.payload.text, text);
+    assert.equal(saved.textSha256, textSha256);
+  }
+  await assert.rejects(f.run('create-submit', 'legacy-create-001'), {
+    code: 'TASK_TEXT_TOO_LARGE_USE_FILE_TRANSFER',
+  });
+  assert.equal(f.calls.filter((call) => call.body).length, 0);
+  assert(!JSON.stringify(f.outputs).includes(text));
+});
+
+test('workspace pages obey the full JSON output budget and preserve exact IDs across pages', async (t) => {
+  const f = await fixture(t);
+  f.catalog.threads = Array.from({ length: 125 }, (_, i) => ({
+    id: 'thread-fixture-' + i,
+    title: '测'.repeat(160),
+    projectId: i % 2 ? 'project-one' : 'project-two',
+    state: 'idle',
+  }));
+  const ids = [];
+  let offset = 0;
+  do {
+    await f.run('workspace', undefined, ['--limit', '50', '--offset', String(offset)]);
+    const page = f.outputs.at(-1);
+    assert(Buffer.byteLength(JSON.stringify(page)) + 1 <= CONTEXT_LIMITS.outputBytes);
+    assert.equal(page.totalThreads, 125);
+    assert(page.threads.length > 0);
+    ids.push(...page.threads.map((thread) => thread.id));
+    assert(page.nextThreadOffset === null || page.nextThreadOffset > offset);
+    offset = page.nextThreadOffset;
+  } while (offset !== null);
+  assert.deepEqual(
+    ids,
+    f.catalog.threads.map((thread) => thread.id),
+  );
+  await f.run('workspace', undefined, ['--project-id', 'project-one']);
+  assert.equal(f.outputs.at(-1).totalThreads, 62);
+  assert(f.outputs.at(-1).threads.every((thread) => thread.projectId === 'project-one'));
+  await assert.rejects(f.run('workspace', undefined, ['--limit', '51']), {
+    code: 'INVALID_CATALOG_PAGE',
+  });
+});
+
+test('remote receipts and catalog fields cannot echo encoded blobs, credentials or nested payloads', async (t) => {
+  const f = await fixture(t);
+  const blob = Buffer.from('synthetic output bytes '.repeat(20)).toString('base64');
+  f.catalog.threads[0].title = blob;
+  f.catalog.threads.push({ id: 'credential-fixture', title: 'prefix ' + 'A'.repeat(48) });
+  await f.run('workspace');
+  f.receipts.set('unsafe-receipt-001', {
+    hostId,
+    threadId,
+    clientMessageId: 'unsafe-receipt-001',
+    error: { text: blob },
+    text: blob,
+  });
+  await f.run('receipt', 'unsafe-receipt-001');
+  const output = JSON.stringify(f.outputs);
+  assert(!output.includes(blob));
+  assert(!output.includes('A'.repeat(48)));
+  assert.equal(f.outputs.at(-1).result.error, 'REMOTE_ERROR_DETAILS_OMITTED');
+  f.runtime.generationSettings = {
+    model: 'fixture-model',
+    effort: 'xhigh',
+    speed: 'fast',
+    permissionMode: 'read-only',
+    providerResponse: { text: 'private remote content', bytes: blob },
+  };
+  await f.run('history');
+  assert.deepEqual(f.outputs.at(-1).generationSettings, {
+    model: 'fixture-model',
+    effort: 'xhigh',
+    speed: 'fast',
+    permissionMode: 'read-only',
+  });
+  assert(!JSON.stringify(f.outputs).includes('private remote content'));
+});
+
+test('default HTTPS bounds identity and decompressed gzip responses before any submission', async (t) => {
+  for (const encoding of ['identity', 'gzip']) {
+    const f = await defaultHttpsFixture(t, ({ path }) =>
+      path === '/v1/workspace'
+        ? {
+            encoding,
+            chunkSize: 65536,
+            text: JSON.stringify({ padding: ' '.repeat(CONTEXT_LIMITS.responseBytes) }),
+          }
+        : {},
+    );
+    await assert.rejects(f.run('send', 'response-bound-' + encoding, ['--text-file', f.taskFile]), {
+      code: 'HOST_RESPONSE_TOO_LARGE',
+    });
+    await noSubmission(f);
+    assert.equal(f.requests.at(-1).destroyed, true);
+  }
+});
+
+test('oversized response after POST preserves unknown outcome and only queries on reentry', async (t) => {
+  const f = await defaultHttpsFixture(t, ({ path }) =>
+    path === '/v1/replies'
+      ? {
+          text: JSON.stringify({ padding: ' '.repeat(CONTEXT_LIMITS.responseBytes) }),
+          chunkSize: 65536,
+        }
+      : {},
+  );
+  const id = 'large-post-response-001';
+  await f.run('send', id, ['--text-file', f.taskFile]);
+  assert.equal(f.outputs.at(-1).status, 'uncertain-query-required');
+  const saved = JSON.parse(await readFile(join(f.directory, 'operations', id + '.json'), 'utf8'));
+  assert.equal(saved.payload.text, await readFile(f.taskFile, 'utf8'));
+  await f.run('send', id, ['--text-file', f.taskFile]);
+  assert.equal(f.outputs.at(-1).queriedExistingOperation, true);
+  assert.equal(f.outputs.at(-1).replayed, false);
+  assert.equal(f.calls.filter((call) => call.path === '/v1/replies').length, 1);
 });

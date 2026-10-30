@@ -65,6 +65,8 @@ macOS 默认使用随包持久环境工具及 `status`，将其实际目录配�
 
 ## 跨 Agent 协作（按需）
 
+协调消息只传简短任务和文件引用，完整正文（含来源头）最多 8 KiB UTF-8，建议 2 KiB 内；工具输出最多 16 KiB。Base64、data URI、大文件、完整补丁和长日志不得塞入消息或工具输出，文件走独立传输并只引用传输 ID、实际路径、大小、SHA-256 与读取范围。超限先精简或交付文件，不自动截断、分片或重放旧操作；目录按需分页。具体预算与拒绝条件见[正文与上下文预算](references/coordination-guide.md#正文与上下文预算)。
+
 本接入同时提供基于 Host 协议的协作入口：同类场景可让一台电脑的 Codex 分派给另一台 Codex；异类场景由来源侧协议调用端和目标 Host 适配器连接，例如 Claude Code ↔ Codex 或 Codex ↔ EasyWork。客户端使用各自的模型与登录，任务固定目标机器、项目与会话，通过具名操作提交、排队、查询进度和回执。
 
 用户明确要求协作、询问协作方式或需要扩展其他客户端时，读取 [跨 Agent 协作说明](references/agent-collaboration.md)，按其中的实现状态和 [协调流程](references/coordination-guide.md) 选择调用端。已有 `contact-host.mjs` 面向 Codex `desktop-runtime`；不能把它当成所有客户端的通用执行器，也不能将 Claude Code 等尚未内置的目标适配宣称为已完成。只修改文档或安装接入不触发协作，不发送验收消息。

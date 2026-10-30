@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "baseCommit": "78c4097a6761eca2b4a2296ae25a7c43e59394b2",
+  "featureIds": ["F71", "F56"],
+  "implemented": [
+    "strict original v1/v2 journal codec retaining exact raw string and audit-only fields",
+    "11 phases, canonical UUID/integer/version/field/unique/source/grant constraints; historical document10; photo5 and camera1 source limits",
+    "cross-graph journal/payload ownership, exact maxima/binding/slot counts, explained consumed receipt after journal expiry",
+    "same NativeMigrationInboxGraph for all payload/thumbnail/partial state validation",
+    "explicit closed boundary for camera output claims/raw names"
+  ],
+  "sourcePins": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSelectionJournal.kt": "31b32e84b87a9dd5d4c76fc301549d7f10da4257fcb0e943d38020719360538a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSelectionGraph.kt": "444cebbac89bb83298a1ce1e6d02d65706fe321e7b87e6491b5f10f86256b91c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSelectionContractTest.kt": "b8307eac33cbc7656a0e1db9b53f93f3a69547da881d780d89ac6b52facbc1a9"
+  },
+  "sourceSchema": "selection-journal-source-v1-v2.schema.json",
+  "sourceFingerprint": {
+    "baseCommit": "78c4097a6761eca2b4a2296ae25a7c43e59394b2",
+    "revision": "selection-semantic-r2",
+    "inputs": 745,
+    "sourceSha256": "c96943a77846234b17e1037439dca5ef135a385d541cdaaa34eb6b21ea9c4d4e",
+    "fingerprintAlgorithm": "SHA256(sorted relative path + NUL + lowercase SHA256 + LF)"
+  },
+  "checks": {
+    "sdk": "passed",
+    "jvm": "fresh actual classes: Selection4 + Inbox3 =7 passed, narrow StrictMigrationJson Gson binding only",
+    "nativeExecuted": false,
+    "earlierFailure": "test fixture row maxima did not match existing payload maxima; corrected actual fixture inputs and added mismatch rejection; production check retained"
+  },
+  "notImplemented": [
+    "actual selection producer/registry callback lease and retirement",
+    "named existing-only tree reader and raw directory inventory",
+    "portable selection catalog/export/candidate/inert activation or copy API",
+    "native/real OS/DEV gates"
+  ],
+  "runtimeExportEnabled": false,
+  "publicCapabilityAdded": false,
+  "rootChildRefusalsPreserved": true,
+  "fullP7Complete": false,
+  "centralParityOwner": "Root"
+}

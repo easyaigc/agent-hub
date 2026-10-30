@@ -1404,6 +1404,10 @@ Android配对表单的完整后台动作由Session子任务与迁移owner共同�
 
 Android NSD每代独立持有发现/解析/网络句柄，迁移registry同时等待真实SDK终态与本代协程退出；代次/取消屏障不替代SDK回执。API26解析等待自然回调；失败、无回调或超时保持pending而不发布迁移lease。父已源码审查，实际SDK两场景及完整Discovery/Session仍待。
 
+Android 迁移的 Source64 候选已将发现协程、Codex 连接表单与 HTTP 执行/断连纳入同一 Session IO 归属；交接同时等待原 NSD/resolve/network 句柄的实际停止终态。取消请求不等于退出，未知结果保留原归属且不重放；当前仅源码接入，组合 SDK/Native/真实 DEV 见 [Source64 记录](plans/android-alignment-20261022/records/source64-discovery-reading-ownership.md)。
+
+Source64r2 的同一 Session IO/fence 已在 API33 完成 11 个受控方法；实际 NSD/HTTP 与完整生命周期保持待验，不能从 fake connection/worker 断言推导实际系统退出。[限定原生档案](plans/android-alignment-20261022/records/source64-api33-owner-native.md)。
+
 ### Codex 更新与独立目录读取器恢复（2026-10-30）
 
 `DesktopWorkspaceView` 的完整目录 reader 与 `DesktopRuntime.reader` 是两个只读进程；前者不能再永久捕获启动环境中的 CLI 路径。两者现通过同一 runtime 的 `DesktopInstallation` 取得可信安装快照，Windows 沿用当前管道 owner／用户／会话、安装来源与协议 archive 校验，再选择 CLI。成功发现仅在 CLI／owner／archive 的真实路径与文件身份未变时缓存 30 秒；同路径替换、缺失路径或连接故障可提前失效，同一秒内合并，失败按 1–15 秒退避。发现不扫描 PATH 或全机，不写私有配置，不重启桌面。

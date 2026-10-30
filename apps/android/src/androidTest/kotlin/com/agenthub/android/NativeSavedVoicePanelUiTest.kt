@@ -3,6 +3,9 @@ package com.agenthub.android
 import android.Manifest
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.PixelCopy
 import android.view.accessibility.AccessibilityNodeInfo
@@ -34,6 +37,7 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 /** Actual strip, shared production palette/localization, empty native window and native AX.
  * Resource/worker gates are synthetic. No MainActivity, Session startup, JNI, speech or Host. */
@@ -65,7 +69,10 @@ class NativeSavedVoicePanelUiTest {
             profile=requireNotNull(args.getString("panelUiProfile"));require(profile in setOf("short","landscape"))
             require(android.os.Build.VERSION.SDK_INT in setOf(26,37))
             require(kotlin.math.abs(Settings.System.getFloat(instrumentation.targetContext.contentResolver,Settings.System.FONT_SCALE,-1f)-2f)<.01f) {"Actual OS font scale 2 is required; no composed override"}
-            require(kotlin.math.abs(instrumentation.targetContext.resources.configuration.fontScale-2f)<.01f)
+            report.put("startupPreflight",JSONObject().put("elapsedRealtimeMs",SystemClock.elapsedRealtime())
+                .put("osFontScale",Settings.System.getFloat(instrumentation.targetContext.contentResolver,Settings.System.FONT_SCALE,-1f))
+                .put("targetFontScale",instrumentation.targetContext.resources.configuration.fontScale)
+                .put("targetOrientation",instrumentation.targetContext.resources.configuration.orientation))
         }
     }
     @get:Rule(order=3) val ui=createAndroidComposeRule<NativeSavedVoicePanelActivity>()
@@ -76,6 +83,7 @@ class NativeSavedVoicePanelUiTest {
     private var failureViewport: JSONObject?=null
     private val fixtures=mutableListOf<NativeSavedVoicePanelFixture>()
     private var permissionBefore=0
+    private var permissionCaptured=false
     private var axFlagsBefore=0
     private var axFlagsCaptured=false
     private var language by mutableStateOf("zh-Hans")
@@ -86,22 +94,30 @@ class NativeSavedVoicePanelUiTest {
     private val report=JSONObject()
     private fun main(block: suspend ()->Unit)=runBlocking {withContext(Dispatchers.Main){block()}}
     @Before fun setup() {
-        require(kotlin.math.abs(ui.activity.resources.configuration.fontScale-2f)<.01f)
-        val landscape=ui.activity.resources.configuration.orientation==Configuration.ORIENTATION_LANDSCAPE
-        require(landscape==(profile=="landscape")) {"Parent must provide the declared actual OS orientation"}
         require(name.methodName in methods)
         val root=NativeRealFileAsrContract.privateDirectory(NativeRealFileAsrContract.privateDirectory(instrumentation.targetContext.filesDir,"acceptance"),"P7-saved-panel")
         val owned=NativeRealFileAsrContract.privateDirectory(root,lease)
         folder=File(owned,name.methodName);require(!folder.exists()) {"UI case already claimed; preserve its original proof instead of replaying"}
         folder=NativeRealFileAsrContract.privateDirectory(owned,name.methodName)
+        report.put("version",1).put("lease",lease).put("case",name.methodName).put("profile",profile)
+            .put("package",instrumentation.targetContext.packageName).put("outcome","RUNNING")
+            .put("runnerPackage",instrumentation.context.packageName).put("sdk",android.os.Build.VERSION.SDK_INT)
+            .put("buildFingerprint",android.os.Build.FINGERPRINT)
         diagnostics=NativeSavedVoicePanelDiagnostics(folder)
-        failureFrames=NativeSavedVoicePanelFailureFrame(ui.activity,folder)
+        val activity=ui.activity
+        awaitActualConfiguration(activity)
+        require(ui.activity===activity) {"Startup must keep the original Compose Activity instance"}
+        require(kotlin.math.abs(instrumentation.targetContext.resources.configuration.fontScale-2f)<.01f)
+        require(kotlin.math.abs(ui.activity.resources.configuration.fontScale-2f)<.01f)
+        val landscape=ui.activity.resources.configuration.orientation==Configuration.ORIENTATION_LANDSCAPE
+        require(landscape==(profile=="landscape")) {"Parent must provide the declared actual OS orientation"}
+        failureFrames=NativeSavedVoicePanelFailureFrame(activity,folder)
         assertFalse("Fixed input has no original sharing/Host rerecord authority",NativeSavedVoicePanelInputs.originalHostRerecordAuthorized)
         assertFalse("Fixed input must not enable live microphone invocation",NativeSavedVoicePanelInputs.microphoneInvocationsAuthorized)
         assertTrue("Saved-file recognition remains separately authorized",NativeSavedVoicePanelInputs.localSavedFileRecognitionAuthorized)
         assertFalse("Rerecord must be disabled under this independent input",NativeSavedVoicePanelInputs.expectedRerecordEnabled)
         report.put("fixtureInputs",NativeSavedVoicePanelInputs.json()).put("authorizedLiveRerecordAcceptance","pending separate authorized scenario")
-        permissionBefore=instrumentation.targetContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+        permissionBefore=instrumentation.targetContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO);permissionCaptured=true
         val service=instrumentation.uiAutomation.serviceInfo;axFlagsBefore=service.flags;axFlagsCaptured=true
         service.flags=service.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
             android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
@@ -119,13 +135,63 @@ class NativeSavedVoicePanelUiTest {
             .put("pixelMethod","PixelCopy.owned-activity-window").put("fullSystemComposite",false).put("outcome","RUNNING")
         NativeRealFileAsrContract.immutable(File(folder,"intent.json"),JSONObject(report.toString()))
     }
+    /** Readiness only: never rotates, relaunches, overrides resources or starts Compose content. */
+    private fun awaitActualConfiguration(activity: NativeSavedVoicePanelActivity) {
+        val expected=if(profile=="landscape")Configuration.ORIENTATION_LANDSCAPE else Configuration.ORIENTATION_PORTRAIT
+        val handler=Handler(Looper.getMainLooper())
+        val readinessStarted=SystemClock.elapsedRealtime()
+        val result=awaitNativeSavedVoiceStartup(SystemClock::elapsedRealtime,{remaining->
+            val value=AtomicReference<JSONObject?>();val done=CountDownLatch(1)
+            val expires=SystemClock.elapsedRealtime()+remaining
+            val read=Runnable {
+                try {
+                    if(SystemClock.elapsedRealtime()<expires) {
+                        val config=Configuration(activity.resources.configuration)
+                        val target=Configuration(instrumentation.targetContext.resources.configuration)
+                        val decor=activity.window.decorView;val rect=android.graphics.Rect();decor.getWindowVisibleDisplayFrame(rect)
+                        val os=Settings.System.getFloat(activity.contentResolver,Settings.System.FONT_SCALE,-1f)
+                        val reasons=nativeSavedVoiceStartupMismatches(
+                            activity.javaClass==NativeSavedVoicePanelActivity::class.java&&activity.packageName==NativeRealFileAsrContract.PACKAGE,
+                            activity.isDestroyed||activity.isFinishing,os,target.fontScale,config.fontScale,config.orientation,expected)
+                        val row=JSONObject().put("activityClass",activity.javaClass.name).put("activityIdentity",System.identityHashCode(activity))
+                            .put("package",activity.packageName).put("component",activity.componentName.flattenToString())
+                            .put("taskId",activity.taskId).put("pid",android.os.Process.myPid()).put("destroyed",activity.isDestroyed).put("finishing",activity.isFinishing)
+                            .put("osFontScale",os).put("targetFontScale",target.fontScale).put("activityFontScale",config.fontScale)
+                            .put("targetOrientation",target.orientation).put("activityOrientation",config.orientation).put("expectedOrientation",expected)
+                            .put("screenWidthDp",config.screenWidthDp).put("screenHeightDp",config.screenHeightDp).put("densityDpi",config.densityDpi)
+                            .put("decorSizePx",JSONArray(listOf(decor.width,decor.height))).put("visibleFramePx",JSONArray(listOf(rect.left,rect.top,rect.right,rect.bottom)))
+                            .put("displayRotation",decor.display?.rotation ?: JSONObject.NULL).put("requestedOrientationObserved",activity.requestedOrientation)
+                            .put("attached",decor.isAttachedToWindow).put("windowFocused",decor.hasWindowFocus()).put("mismatchReasons",JSONArray(reasons)).put("matches",reasons.isEmpty())
+                        if(SystemClock.elapsedRealtime()<expires)value.set(row)
+                    }
+                }catch(t: Throwable) {if(SystemClock.elapsedRealtime()<expires)value.set(JSONObject().put("matches",false).put("readFailure",failureJson(t)))}
+                finally {done.countDown()}
+            }
+            check(handler.post(read)) {"Startup main queue rejected read"}
+            try {if(done.await(maxOf(0,expires-SystemClock.elapsedRealtime()),TimeUnit.MILLISECONDS))value.get()else null}
+            finally {handler.removeCallbacks(read)}
+        },{it.optBoolean("matches",false)},{Thread.sleep(it)})
+        val samples=JSONArray(result.samples.map {sample->JSONObject().put("startedMs",sample.startedMs).put("finishedMs",sample.finishedMs)
+            .put("withinDeadline",sample.withinDeadline).put("actual",sample.value)})
+        val proof=JSONObject().put("version",1).put("ready",result.ready).put("reason",result.reason).put("elapsedMs",result.elapsedMs)
+            .put("startedAtElapsedRealtimeMs",readinessStarted)
+            .put("readinessBudgetMs",5000).put("pollMs",50).put("maxSamples",101).put("outerTestBudgetMs",180000)
+            .put("sameOriginalActivityOnly",true).put("activityIdentity",System.identityHashCode(activity)).put("samples",samples)
+            .put("lateReadAccepted",false).put("configurationChangedByTest",false)
+            .put("platformReadCancellation","queued callbacks removed; an already executing platform read cannot be forcibly cancelled; late data discarded")
+        report.put("startupConfiguration",proof)
+        NativeRealFileAsrContract.immutable(File(folder,"startup-configuration.json"),proof)
+        require(result.ready) {"Original Activity configuration not ready within 5000ms: ${result.reason}; preserve startup-configuration.json"}
+    }
     @After fun cleanup() {
         if(!::folder.isInitialized)return
         val preserved=JSONArray()
         try {
             main {fixtures.forEach {f->try {preserved.put(f.cleanup())}catch(t: Throwable){cleanupErrors.add(t)}}}
-            try {assertEquals(permissionBefore,instrumentation.targetContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO))}catch(t: Throwable){cleanupErrors.add(t)}
-            report.put("originalProofs",preserved).put("permissionUnchanged",permissionBefore==instrumentation.targetContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO))
+            if(permissionCaptured)try {assertEquals(permissionBefore,instrumentation.targetContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO))}catch(t: Throwable){cleanupErrors.add(t)}
+            report.put("originalProofs",preserved)
+                .put("permissionUnchanged",if(permissionCaptured)permissionBefore==instrumentation.targetContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO)else JSONObject.NULL)
+                .put("permissionObservation",if(permissionCaptured)"captured-and-checked"else"not-captured-or-modified")
                 .put("outcome",if(checked&&cleanupErrors.isEmpty())"COMPONENT_ASSERTIONS_PASSED_REAL_ENGINE_AND_FULL_DEV_SEPARATE"else"FAILED_OR_UNKNOWN")
                 .put("cleanupFailures",JSONArray(cleanupErrors.map(::failureJson)))
         }finally {

@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "stage": "Source64r2/API33 controlled owner native",
+  "checkpointStage": 31,
+  "classification": "controlled-native-methods-only",
+  "branch": "codex/android-parallel-stage31-20261030",
+  "sourceCommit": "144cce4adb7d009ba27c1bcbf70f3aade866e444",
+  "candidateSha256": "894423ab7bd1ba7be82e14cc980a687e048387b71e14184f5c60d4dc95c9e156",
+  "identitySha256": "5c4402cf5b45d3523f3089e51d8eb6dfa578785e1ceb1d12e8d7764aa2d11b3d",
+  "apks": {
+    "app": "3329b85d68aa69662b404000e05db4003e5174eff5412c0e1186473d86b0aa7c",
+    "examiner": "f6c813b5a10329ec1b97e7cbf009c71502837f794adf831b2a79cb4ec15c256a",
+    "test": "9288a36cc554182904ffbefa30a2743262c4fb583ae320a0461391233ac3afaf"
+  },
+  "environment": {
+    "sdk": 33,
+    "abi": "arm64-v8a",
+    "independentAvd": true,
+    "firstProductInstall": true,
+    "physicalDevice": false
+  },
+  "firstInstall": {
+    "appExplicitSuccess": true,
+    "testExplicitSuccess": true,
+    "examinerInstalled": false,
+    "deviceCalls": 58,
+    "rootRawReviewSha256": "e127cad4e70c26ce7310e35c403e1cff89fe66eb153d5ca5f2a545e17de8b2b6",
+    "baselineSha256": "69d4673a2eb845ba25e622245d4d0a129ca5713d7e4f3feed641da88a3da9632"
+  },
+  "methods": [
+    {
+      "index": 1,
+      "selector": "com.agenthub.android.NativeReadingWriteFenceTest#queuedOldOwnerCannotMutateAfterResetWhileNewOwnerCan",
+      "rootReviewSha256": "1c1bd79287946fa9afa9dd6131da3d546d35e88101d82924b9cbe8cc3a0ad3f3",
+      "rawBytes": 1593544,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 2,
+      "selector": "com.agenthub.android.NativeReadingWriteFenceTest#repeatedResetsCannotReviveAnyEarlierOwner",
+      "rootReviewSha256": "7c75fc3e75f323ea6f656115ccf7bd58f3a0030ce804310864b04ed0a344ae35",
+      "rawBytes": 1595386,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 3,
+      "selector": "com.agenthub.android.NativeReadingWriteFenceTest#independentPhoneOwnerDoesNotShareResetOrLeaseState",
+      "rootReviewSha256": "be9c2a00584e663c95f0530e267f6727fefbe3f8fac10d0d17792da2f26fdf96",
+      "rawBytes": 1594129,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 4,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#queuedCancellationNeverRunsAndRetiresOnlyAfterCancellationTask",
+      "rootReviewSha256": "c272171e312de96aeffd64651b7c6fe080440d9df74dbf5739265f828dfe49a0",
+      "rawBytes": 1594092,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 5,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#cancelledFutureAndExitedRequestDoNotReleaseBlockedDisconnect",
+      "rootReviewSha256": "959252492b26c9c4bbd4d2f3fb490c4c877161705ee84e255d6cae041cb87d83",
+      "rawBytes": 1596546,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 6,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#requestFinallyKeepsOwnershipUntilActualCloseReturns",
+      "rootReviewSha256": "82d8647db705418cdce27635b93e961458bad1b0fdabde5bedd72f7f6bf3f887",
+      "rawBytes": 1597357,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 7,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#failedDisconnectCannotBeReportedAsIdleSuccess",
+      "rootReviewSha256": "cd46367109aad1d19154ebcf7c0c4dca78759dec1a0f9ddf1a7de9bc4c2a9c34",
+      "rawBytes": 1597317,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 8,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#cancellationCloseFailureAlsoBlocksSuccessfulIdle",
+      "rootReviewSha256": "8c4e6ba9db1796ac7e063e5cdedfaf19f123850fdfe64ef9129c4575268036ec",
+      "rawBytes": 1597478,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 9,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#rejectedExecutorHasNoAcceptedWorkToWaitFor",
+      "rootReviewSha256": "07d60e8248018fe5183f189dac0a04849b3df34b7fd972b47e0348b5717ab328",
+      "rawBytes": 1597591,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 10,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#formCancellationKeepsSessionAndIoOwnershipAcrossRequestGaps",
+      "rootReviewSha256": "c6a38e30dcf84b7b665af73861c6148cf1e2ef73cd2b18797e05c44479e3566f",
+      "rawBytes": 1595809,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    },
+    {
+      "index": 11,
+      "selector": "com.agenthub.android.NativeCodexIoOwnerTest#changedAdmissionRefusesBeforeWorkAndDoesNotLeakOwner",
+      "rootReviewSha256": "be58d37810b220d82ebfa322d9357999086d93bfbfcb59711e08da80335218cf",
+      "rawBytes": 1594110,
+      "callCount": 65,
+      "actualSelectedMethodPassed": true,
+      "strictOriginalBProtectionEqual": true,
+      "ownLockReleased": true
+    }
+  ],
+  "nativeCalls": 11,
+  "allCalls": 715,
+  "rawBytes": 17553359,
+  "retries": 0,
+  "allActualCallsDoubleEofExitAndDurableStreamLinksVerified": true,
+  "allOriginalBAndBeforeAfterProtectionEqual": true,
+  "microphonePermissionChanged": false,
+  "noBackupContainerExceptionApplied": false,
+  "strictGlobalAmAbsenceClaimed": false,
+  "testToolIssuesPreserved": [
+    "r1 contradictory JUnit failure summary rejected by corrected r2 offline parser",
+    "C03 outer executor object-comparison bug; method and protection passed; C04-C11 separately admitted without replay"
+  ],
+  "actualExecutorModelAuditSha256": "01410f8274bb79bf1e51236908f7b34067b1cceb3eb59c6dac32453cac1b7355",
+  "executorModel": "gpt-6.1-terra",
+  "executorReasoning": "medium",
+  "highestSpeedVerified": false,
+  "pending": [
+    "actual NSD and HTTP and original desktop lifecycle",
+    "real encrypted Store/Ledger fixture native",
+    "selection owner Source62 failures and raw camera window",
+    "all24 migration groups and system/UI matrix",
+    "API26 low-heap and physical DEV",
+    "original voice and notification consumer lifecycle"
+  ],
+  "newBusinessInputs": 0,
+  "unknownReplay": 0,
+  "paused": ["tasks-and-projects", "iOS-A6"],
+  "fullP7OrUiOrRealDevAccepted": false
+}

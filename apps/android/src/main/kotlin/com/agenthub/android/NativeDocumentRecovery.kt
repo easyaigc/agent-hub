@@ -22,14 +22,154 @@ import kotlinx.coroutines.sync.withPermit
 /** Reconciles only selected local files. There is no OS-request replay, upload or command interface. */
 internal typealias NativeDocumentRecovery=NativeSelectionRecovery
 
-internal class NativeSelectionRecovery(context: Context,private val session: MobileSession,storage: NativeSessionStorage,private val picker: NativeSelectionOwner,private val kind: NativeSelectionKind=NativeSelectionKind.DOCUMENT,
+internal class NativeSelectionRecovery(context: Context,@Volatile private var session: MobileSession,private val storage: NativeSessionStorage,private val picker: NativeSelectionOwner,private val kind: NativeSelectionKind=NativeSelectionKind.DOCUMENT,
     private val permissionRequested: (String)->Unit={},private val outputPrepared: (String,NativeCameraOutput)->Unit={ _,_ -> },private val cameraAccess: NativeCameraAccess=AndroidCameraAccess(context)) {
     private val context=context.applicationContext
     private val resolver=this.context.contentResolver
     private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
+    private val migrationRoot=session.migrationStorage
     private val journal=NativeDocumentJournal(storage)
-    private val payloads=NativeAttachmentInboxStore(storage.child(context,"payloads"))
-    private val cameraOutputs=if(kind==NativeSelectionKind.CAMERA)NativeCameraOutputs(context,storage.child(context,"outputs"))else null
+    private val payloadStorage=storage.child(context,"payloads")
+    private val outputStorage=if(kind==NativeSelectionKind.CAMERA)storage.child(context,"outputs")else null
+    private val payloads=NativeAttachmentInboxStore(payloadStorage)
+    private val cameraOutputs=outputStorage?.let {NativeCameraOutputs(context,it)}
+    private val ownedJobs=java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
+    @Volatile private var migrationOperation: String?=null
+    @Volatile private var retired=false
+    private var resumingOperation: String?=null
+    private var resumedOperation: String?=null
+    @Volatile internal var migrationReturnPending=false;private set
+    private data class DeferredReturn(val id: String,val sources: List<String>?,val permission: Boolean?,val request: NativeDocumentRecord?,
+        var event: NativeSelectionReturnAudit.Event?=null,var durable: Boolean=false,var accepted: Boolean=false)
+    @Volatile internal var migrationReturnFailure: String?=null;private set
+    private var uncapturedReturn=false
+    @Volatile internal var migrationUncapturedRequestId: String?=null;private set
+    private var uncapturedSources: List<Uri>?=null
+    private var uncapturedPermission: Boolean?=null
+    private var returnAuditFailed=false
+    private val returnAuditJobs=java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
+    private val deferredReturns=linkedMapOf<Pair<String,Boolean>,DeferredReturn>()
+    private var deferredDetach=false
+    private val entryOpen get()=migrationOperation==null&&resumingOperation==null&&!retired
+    private fun launchOwned(work: suspend CoroutineScope.()->Unit): Job {
+        check(migrationOperation==null&&!retired)
+        val job=tasks.launch(start=CoroutineStart.LAZY,block=work);ownedJobs.add(job)
+        job.invokeOnCompletion {ownedJobs.remove(job)};job.start();return job
+    }
+    internal val migrationKind get()=when(kind) {
+        NativeSelectionKind.DOCUMENT->NativeMigrationSelectionJournal.Kind.DOCUMENT
+        NativeSelectionKind.PHOTO->NativeMigrationSelectionJournal.Kind.PHOTO
+        NativeSelectionKind.CAMERA->NativeMigrationSelectionJournal.Kind.CAMERA
+    }
+    internal val migrationIdle get()=!retired&&resumingOperation==null&&!loading&&!failed&&!busy&&!migrationReturnPending&&returnAuditJobs.none {!it.isCompleted}&&ownedJobs.none {!it.isCompleted}
+    internal fun sealMigrationInputs(operation: String) {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());check(entryOpen)
+        if(!migrationIdle||picker.pending!=null||rows.any {it.awaitingResult||kind==NativeSelectionKind.CAMERA&&it.phase=="detached"})throw NativeInboxOwnership.Busy()
+        migrationOperation=operation
+    }
+    internal fun requireMigrationSealed(operation: String) {
+        check(!retired&&migrationOperation==operation&&ownedJobs.none {!it.isCompleted})
+    }
+    internal fun migrationStores(root: NativeSessionStorage): List<NativeSessionStorage> {
+        check(session.migrationStorage===root)
+        check(when(kind) {
+            NativeSelectionKind.DOCUMENT->session.documentPicker?.recovery===this
+            NativeSelectionKind.PHOTO->session.photoPicker?.recovery===this
+            NativeSelectionKind.CAMERA->session.cameraCapture?.recovery===this
+        }) {"Selection lease requires the actual Session owner"}
+        return listOf(storage,payloadStorage)+listOfNotNull(outputStorage)
+    }
+    internal fun requireNoCameraWriterForMigration(){cameraOutputs?.requireNoOriginalForMigration()}
+    internal suspend fun freezeForMigration(root: NativeSessionStorage,operation: String): NativeInboxOwnership.SelectionLease {
+        requireMigrationSealed(operation);var acquired: NativeInboxOwnership.SelectionLease?=null
+        try {
+            withContext(NonCancellable+Dispatchers.IO){acquired=NativeInboxOwnership.SelectionLease.acquire(root,operation,this@NativeSelectionRecovery)}
+            currentCoroutineContext().ensureActive();return requireNotNull(acquired)
+        }catch(error: Throwable){withContext(NonCancellable+Dispatchers.IO){acquired?.close()};throw error}
+    }
+    private fun returnAuditFailure(reason: String) {migrationReturnFailure=reason;returnAuditFailed=true;failed=true}
+    private fun retainUncapturedReturn(id: String,sources: List<Uri>?,permission: Boolean?,reason: String) {
+        // If immutable snapshot allocation/iteration failed, retain the original callback object
+        // and target identity for inspection. Never label it captured, persist a replacement or execute it.
+        if(!uncapturedReturn){migrationUncapturedRequestId=id;uncapturedSources=sources;uncapturedPermission=permission}
+        uncapturedReturn=true;returnAuditFailure(reason)
+    }
+    private suspend fun persistReturn(value: DeferredReturn) {
+        if(value.durable)return
+        if(value.event==null) {
+            try {value.event=withContext(NonCancellable+Dispatchers.IO){NativeSelectionReturnAudit.capture(storage.coordinationKey,migrationKind,value.id,value.request,value.sources,value.permission)}}
+            catch(error: NativeSelectionReturnAudit.CaptureLimit){returnAuditFailure(error.boundary);throw error}
+            catch(error: Exception){returnAuditFailure("capture-failed");throw error}
+            catch(error: OutOfMemoryError){returnAuditFailure("capture-memory");throw IllegalStateException("Original selection return remains unarchived",error)}
+        }
+        val accepted=try{withContext(NonCancellable+Dispatchers.IO){migrationRoot.persistSelectionReturn(context,requireNotNull(value.event))}}
+            catch(error: Exception){returnAuditFailure("write-failed");throw error}
+            catch(error: OutOfMemoryError){returnAuditFailure("write-memory");throw IllegalStateException("Original selection return remains unarchived",error)}
+        value.accepted=accepted;value.durable=true
+    }
+    private fun receiveOriginal(value: DeferredReturn) {
+        if(!value.accepted)return
+        if(value.permission!=null)receivePermissionOriginal(value.id,requireNotNull(value.permission))
+        else receiveSourcesOriginal(value.id,requireNotNull(value.sources).map(Uri::parse))
+    }
+    /** A callback during the actual migration seal is captured before child writes/provider/grants. */
+    private fun admitReturn(id: String,sources: List<Uri>?=null,permission: Boolean?=null) {
+        if(retired)return
+        if(migrationOperation==null) {
+            if(permission!=null)receivePermissionOriginal(id,permission)else receiveSourcesOriginal(id,requireNotNull(sources))
+            return
+        }
+        // Invalidate before copying, validating or allocating the audit representation.
+        migrationReturnPending=true;session.invalidateMigrationLease()
+        if(uncapturedReturn)return
+        try {
+            val key=id to (permission!=null)
+            if(key in deferredReturns)return
+            val value=DeferredReturn(id,sources?.map(Uri::toString),permission,rows.firstOrNull {it.id==id})
+            deferredReturns[key]=value
+            val job=tasks.launch(start=CoroutineStart.LAZY) {
+                try {persistReturn(value)}catch(cancel: CancellationException){throw cancel}catch(_: Exception){/* Exact original remains pending; failure already classified. */}
+            }
+            returnAuditJobs.add(job);job.invokeOnCompletion {returnAuditJobs.remove(job)};job.start()
+        }catch(_: Exception){retainUncapturedReturn(id,sources,permission,"intent-capture-failed")}
+         catch(_: OutOfMemoryError){retainUncapturedReturn(id,sources,permission,"intent-capture-memory")}
+    }
+    internal suspend fun awaitMigrationReturnAudits(operation: String) {
+        requireMigrationSealed(operation)
+        check(!uncapturedReturn) {"Original selection callback intent remains unarchived"}
+        // Main may receive another actual registry callback while an IO admission is awaited.
+        do {
+            returnAuditJobs.toList().forEach {it.join()}
+            // Reconcile only the same immutable local audit write. Never retry the OS/provider operation.
+            for(value in deferredReturns.values.toList())persistReturn(value)
+        }while(returnAuditJobs.any {!it.isCompleted}||deferredReturns.values.any {!it.durable})
+        check(!uncapturedReturn) {"Original selection callback intent remains unarchived"}
+        if(returnAuditFailed){returnAuditFailed=false;failed=false};migrationReturnFailure=null
+    }
+    internal suspend fun resumeMigrationInputs(operation: String) {
+        if(migrationOperation==null&&resumedOperation==operation)return
+        if(resumingOperation==null){awaitMigrationReturnAudits(operation);resumingOperation=operation;migrationOperation=null}
+        check(resumingOperation==operation&&!retired)
+        for((key,value)in deferredReturns.toList()) {
+            check(value.durable);receiveOriginal(value);deferredReturns.remove(key)
+        }
+        migrationReturnPending=deferredReturns.isNotEmpty()
+        if(deferredDetach){deferredDetach=false;clearRegistry()}else register()
+        resumedOperation=operation;resumingOperation=null
+    }
+    internal fun rebindAfterMigration(replacement: MobileSession,operation: String) {
+        requireMigrationSealed(operation);session=replacement
+    }
+    internal fun requireRetirableForMigration(operation: String) {
+        requireMigrationSealed(operation);check(!uncapturedReturn&&returnAuditJobs.none {!it.isCompleted}&&deferredReturns.values.all {it.durable}) {"Original selection return is awaiting durable audit"}
+    }
+    internal fun retireForMigration(operation: String) {
+        requireRetirableForMigration(operation);retired=true;clearRegistry();tasks.cancel();deferredReturns.clear();migrationReturnPending=false
+        storage.retireWriter();payloadStorage.retireWriter();outputStorage?.retireWriter()
+    }
+    private fun clearRegistry() {
+        launchers.values.forEach {it.unregister()};launchers.clear();permissionLaunchers.values.forEach {it.unregister()};permissionLaunchers.clear();registry=null;registryOwner=null
+    }
     private val workers=Semaphore(1)
     private val warm=mutableMapOf<String,NativePhotoRequest>()
     private val jobs=mutableStateMapOf<String,AttachmentImportDestination?>()
@@ -52,10 +192,11 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
     var permissionRevision by mutableIntStateOf(0)
         private set
     private var restoredWaitId by mutableStateOf<String?>(null)
+    internal var beforeRefreshForAcceptance: (suspend ()->Unit)?=null
     val restoredWait get()=restoredWaitId!=null&&restoredWaitId==picker.pending?.id
     val failures get()=rows.filter { it.phase=="failed"||kind==NativeSelectionKind.CAMERA&&it.phase in listOf("detached","held") }
     val busy get()=launching!=null||jobs.isNotEmpty()
-    val canBegin get()=!loading&&!failed&&!busy
+    val canBegin get()=entryOpen&&!loading&&!failed&&!busy
     fun isProcessing(id: String)=id in jobs
     fun preparing(key: String,generation: String?)=jobs.values.any { it?.key==key&&it.generation==generation }||
         rows.any { it.phase in listOf("selected","ready","hold-selected")&&it.destination.key==key&&it.destination.generation==generation }
@@ -63,9 +204,9 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
     fun blocksRemoval(key: String,generation: String?)=loading||failed||preparing(key,generation)
     init { retryRestore() }
     fun retryRestore() {
-        if(loadJob?.isActive==true||jobs.isNotEmpty()||launching!=null)return
+        if(!entryOpen||loadJob?.isActive==true||jobs.isNotEmpty()||launching!=null)return
         loading=true;failed=false
-        loadJob=tasks.launch {
+        loadJob=launchOwned {
             try {
                 replace(journal.restore())
                 rows.singleOrNull { it.awaitingResult }?.let { picker.restoreWait(it);restoredWaitId=it.id }
@@ -82,14 +223,23 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
         require(kind==NativeSelectionKind.CAMERA||value.none { it.phase in listOf("permission","detached","hold-selected","held") })
         rows.clear();rows.addAll(value);revision++
     }
-    private suspend fun refresh() { replace(journal.records());register() }
+    private suspend fun refresh() {
+        beforeRefreshForAcceptance?.let {barrier->
+            check(BuildConfig.DEBUG&&context.packageName=="com.easyai.agenthub.android.acceptance")
+            barrier()
+        }
+        replace(journal.records());register()
+    }
     fun attach(value: ActivityResultRegistry,owner: Any) {
+        if(retired)return
+        deferredDetach=false
         if(registry!==value) { launchers.values.forEach { it.unregister() };launchers.clear();permissionLaunchers.values.forEach { it.unregister() };permissionLaunchers.clear();registry=value }
         registryOwner=owner;register()
     }
     fun detach(value: ActivityResultRegistry,owner: Any) {
         if(registry!==value||registryOwner!==owner)return
-        launchers.values.forEach { it.unregister() };launchers.clear();permissionLaunchers.values.forEach { it.unregister() };permissionLaunchers.clear();registry=null;registryOwner=null
+        if(migrationOperation!=null){deferredDetach=true;return}
+        clearRegistry()
     }
     private fun register() {
         val target=registry ?: return
@@ -102,7 +252,7 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
         for(id in permissionLaunchers.keys.filter { it !in ids })permissionLaunchers.remove(id)?.unregister()
     }
     suspend fun launch(original: NativePhotoRequest,text: NativeL10n) {
-        if(picker.pending!==original||original.launched||launching!=null)return
+        if(!entryOpen||picker.pending!==original||original.launched||launching!=null)return
         launching=original.id;warm[original.id]=original
         var externalCall=false
         try {
@@ -147,14 +297,15 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
             }
         }finally { if(launching==original.id)launching=null }
     }
-    internal fun receivePermission(id: String,granted: Boolean) {
+    internal fun receivePermission(id: String,granted: Boolean) {admitReturn(id,permission=granted)}
+    private fun receivePermissionOriginal(id: String,granted: Boolean) {
         if(cameraOutputs==null||id in jobs)return
         jobs[id]=warm[id]?.destination ?: rows.firstOrNull { it.id==id }?.destination
-        tasks.launch {
+        launchOwned {
             val text=NativeL10n(context,session.language)
             try {
                 val record=journal.records().single { it.id==id }
-                if(record.phase!="permission")return@launch
+                if(record.phase!="permission")return@launchOwned
                 if(!granted) {
                     journal.update(id) { it.copy(phase="failed") };cameraOutputs.cleanup(id)
                     (warm[id] ?: picker.pending?.takeIf { it.id==id })?.let { session.photoSelectionFailure(it,text.tr(NativeCameraCapture.PERMISSION)) }
@@ -170,19 +321,20 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
             finally { jobs.remove(id);runCatching { refresh() } }
         }
     }
-    fun receive(id: String,uris: List<Uri>) {
+    fun receive(id: String,uris: List<Uri>) {admitReturn(id,sources=uris)}
+    private fun receiveSourcesOriginal(id: String,uris: List<Uri>) {
         if(id in detaching) { queuedReturns.putIfAbsent(id,uris.map { Uri.parse(it.toString()) });return }
         if(id in jobs)return
         jobs[id]=warm[id]?.destination ?: rows.firstOrNull { it.id==id }?.destination
-        tasks.launch {
+        launchOwned {
             val text=NativeL10n(context,session.language)
             try {
                 val record=journal.records().single { it.id==id }
-                if(record.terminal) { cameraOutputs?.cleanup(id);return@launch }
+                if(record.terminal) { cameraOutputs?.cleanup(id);return@launchOwned }
                 // The first returned source is immutable. A duplicate is not a retry.
-                if(record.sources.isNotEmpty())return@launch
+                if(record.sources.isNotEmpty())return@launchOwned
                 if(uris.isEmpty()) {
-                    journal.update(id) { it.copy(phase="consumed") };finish(record);return@launch
+                    journal.update(id) { it.copy(phase="consumed") };finish(record);return@launchOwned
                 }
                 val sources=uris.map { Uri.parse(it.toString()) }.distinct()
                 if(sources.size>minOf(kind.maximum,record.destination.maximum))throw NativeFileIntakeFailure(if(record.destination.maximum==5&&kind==NativeSelectionKind.DOCUMENT)"最多添加 5 个附件，请先移除部分附件。" else kind.tooMany)
@@ -203,12 +355,12 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
         }
     }
     fun recoverReady(text: NativeL10n) {
-        if(loading||failed||!session.attachmentStorageReady)return
+        if(!entryOpen||loading||failed||!session.attachmentStorageReady)return
         for(record in rows.toList())if(record.phase in listOf("selected","ready","hold-selected")&&record.id !in jobs)run(record,text)
     }
     private fun run(record: NativeDocumentRecord,text: NativeL10n) {
         jobs[record.id]=record.destination
-        tasks.launch {
+        launchOwned {
             try { process(record,text) }
             catch(cancel: CancellationException) { throw cancel }
             catch(error: Exception) { fail(record.id,error,text) }
@@ -251,9 +403,9 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
         picker.finish(id);if(restoredWaitId==id)restoredWaitId=null
     }
     fun retry(record: NativeDocumentRecord,text: NativeL10n) {
-        if(record.id in jobs||record.sources.isEmpty()||rows.none { it==record })return
+        if(!entryOpen||record.id in jobs||record.sources.isEmpty()||rows.none { it==record })return
         jobs[record.id]=record.destination
-        tasks.launch {
+        launchOwned {
             try { process(journal.update(record.id) { check(it==record);it.copy(phase="selected") },text) }
             catch(cancel: CancellationException) { throw cancel }
             catch(error: Exception) { fail(record.id,error,text) }
@@ -262,9 +414,9 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
         }
     }
     fun retire(id: String) {
-        if(id in jobs)return
+        if(!entryOpen||id in jobs)return
         jobs[id]=rows.firstOrNull { it.id==id }?.destination ?: warm[id]?.destination
-        tasks.launch {
+        launchOwned {
             try {
                 val record=journal.records().singleOrNull { it.id==id }
                 if(record!=null) {
@@ -277,10 +429,11 @@ internal class NativeSelectionRecovery(context: Context,private val session: Mob
         }
     }
     fun endWait(id: String) {
+        if(!entryOpen)return
         if(cameraOutputs==null) { retire(id);return }
         if(id in jobs||picker.pending?.id!=id)return
         jobs[id]=rows.firstOrNull { it.id==id }?.destination ?: warm[id]?.destination;detaching+=id;holdOnReturn+=id
-        tasks.launch {
+        launchOwned {
             try {
                 val record=journal.records().single { it.id==id };check(record.awaitingResult)
                 journal.update(id) { check(it.awaitingResult);it.copy(phase="detached") }

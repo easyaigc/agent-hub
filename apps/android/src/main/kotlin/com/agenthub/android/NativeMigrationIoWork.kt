@@ -50,10 +50,20 @@ internal class NativeMigrationIoWork: AbstractCoroutineContextElement(Key) {
         }
         /** Invoked by cancellation handlers on Main: capture and enqueue only. */
         fun cancelHttp(context: CoroutineContext,active: AtomicReference<HttpURLConnection?>,future: Future<*>) {
-            val connection=active.getAndSet(null)
             val unit=context[Key]?.begin(true)
-            try {cancellations.execute {try{future.cancel(true);connection?.disconnect()}finally{unit?.finish()}}}
-            catch(failure: Throwable){unit?.finish();throw failure}
+            val connection=active.getAndSet(null)
+            try {cancellations.execute {
+                try {try{future.cancel(true)}finally{connection?.disconnect()}}
+                catch(failure: Throwable){context[Key]?.failedCleanup(failure)}
+                finally{unit?.finish()}
+            }}catch(failure: Throwable){context[Key]?.failedCleanup(failure);unit?.finish();throw failure}
+        }
+        /** Runs only in the request executor's finally, before its submit token exits. */
+        fun finishHttp(context: CoroutineContext,active: AtomicReference<HttpURLConnection?>) {
+            val captured=active.getAndSet(null)
+            // Cancellation and finally compete for this exact handle; only the winner closes it.
+            // The cancellation token, when it wins, outlives this executor's submit token.
+            try{captured?.disconnect()}catch(failure: Throwable){context[Key]?.failedCleanup(failure)?:throw failure}
         }
     }
     private val lock=Any()

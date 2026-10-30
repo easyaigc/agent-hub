@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operation": "parent-p7-f529-child-strict-closure-20261029-1",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "newAdapter": "strict existing read-only constructor/reopen, required and optional text, common authenticated text/binary decoders",
+  "productionPatch": "existing-default-storage.patch",
+  "storageBaseSha256": "306e0bb9d918ef923462c22a685be7c89edc0ff1f89b0c518f3dc092f32e1fd4",
+  "storageProposedSha256": "91107ee6c136675dc6db538690141b5b1876156357723c9d91c016d6aeca1c3c",
+  "rootStorageWholeFileReplacement": false,
+  "newKeyOrDefaultOrBootstrapOrSealPath": false,
+  "secondProductionSendPath": false,
+  "oldThreeFixtureFilesChanged": false,
+  "existingBoundariesReimplemented": false,
+  "postwriteProtectionRoles": [
+    "held writer",
+    "read-only source inspector",
+    "actual Session continuation"
+  ],
+  "nativeStatus": "Source52 native body passed; final parent live-PID association pending, postwrite roles not executed",
+  "metadataClaim": "existing nonempty bootstrap authentication; metadata can remain null",
+  "currentKernelBoot": "Root independently checks pre/post current kernel ID; native checks current BOOT_COUNT and current installed identity",
+  "sourceProtection": [
+    "complete authenticated bootstrap semantics and immutable receipts",
+    "exact persisted original row and canonical JSON",
+    "all authenticated WAV bytes equal pinned original input",
+    "complete no-follow default and original ciphertext sets",
+    "same Root plan hash across three PIDs",
+    "protected metadata/evidence/constructor/reopen never enter ordinary AtomicFile or key generation"
+  ],
+  "writeAccounting": {
+    "sourceAuthenticator": "read-only sources, separate one-use evidence writes",
+    "negativeCase": "private empty structural fixture only",
+    "postwriteWriter": "new synthetic namespace and actual destination writes",
+    "continuation": "actual Session and deliberate later draft writes"
+  },
+  "auxiliary": {
+    "planBoundaryVectors": 30,
+    "JVMParserBinding": "Gson compatibility binding, not Android execution",
+    "SDK": "strict-child revision: separate receipt; 895 inputs SHA256 7951bca1e236ae2ab511dd5625463bdec56e382c2fec28a632ce17686d091d37",
+    "metadataWitnessJvmMethods": 3,
+    "metadataWitnessJVM": "matching prior receipt: 3 tests, unchanged witness/test source hashes; no new run or child-construction claim"
+  },
+  "deviceHostModelMicOrSignalCallsHere": 0,
+  "rootCurrentBaselineInvented": false,
+  "design": {
+    "productUIChanged": false
+  },
+  "ios": {
+    "changed": false,
+    "A6": "paused"
+  },
+  "centralManifests": "Root adopts narrow source/patch and records actual native results; no feature closed here",
+  "fullP7Closed": false,
+  "paused": ["task/project business work", "iOS A6"],
+  "contract": "existing-default-auth-adapter.md",
+  "rejectedPreviousProposal": {
+    "throughCommit": "6ae07663cfff0e0c6734553ca6c522ea278a134a",
+    "storageSha256": "a09c87f916ef1547ed79b8ffbfac9e0cc47630377e191bb23346e227bc37d3dc",
+    "status": "source adoption blocked, never adopted or native executed",
+    "reason": "ordinary constructor AtomicFile generation recovery and ordinary protected default/evidence reads"
+  },
+  "strictProtectedCallChain": {
+    "constructor": "skips writableGeneration IO; pure namespace/pointer checks and existing key only",
+    "reopen": "retains all three strict flags",
+    "optionalMetadata": "ENOENT plus repeated pure absence checks only; null never selects legacy",
+    "evidence": "separate callback witness; legacy delegate only if plan absent",
+    "syntheticSourceInspector": "read/readBinary/migrationReadTextRecords strict early routes",
+    "latePendingNegative": "source written; native pending",
+    "productionBaseIndependentOfP9": true,
+    "child": "entry rejects existingReadOnly before cache/alias/runCatching/ordinary construction; ordinary child body otherwise unchanged; Root retains P9 guard independently"
+  },
+  "strictChildFollowup": {
+    "previousCommit": "f529a4d27ba480c4b737a61ce9a5b0dee18d49d2",
+    "previousStorageSha256": "dfe0920c9c1a2b2c328bdbcc61c765f3323995497573d4d4efd442a2270dcd79",
+    "semanticLinesAdded": 1,
+    "otherRunCatchingEscapeFound": false,
+    "nativeExecuted": 0
+  },
+  "currentPlanVersion": 2,
+  "currentFamilyContract": "closed actual current eleven-root allowlist/one original cipher; immutable historical bootstrap independently checked",
+  "originalProposalDeviceCallsFieldIsHistorical": true,
+  "currentOriginalCanonical": "Exact NativeRealSavedVoiceSpeechTest.canonicalJson profile, no change to EasyWork wire or production fingerprint",
+  "currentEvidence": "../fifty-second-stage-current-original-authentication.json"
+}

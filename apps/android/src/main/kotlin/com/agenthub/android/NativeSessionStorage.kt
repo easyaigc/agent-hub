@@ -18,9 +18,18 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /** Local secrets and cached reads are bound to this installation's Android Keystore key. */
-class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1", private val existingKeyOnly: Boolean = false) {
+class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1", private val existingKeyOnly: Boolean = false, private val existingNamespaceOnly: Boolean = false, private val existingReadOnly: Boolean = false) {
     init { require(keyAlias.matches(Regex("[a-zA-Z0-9_-]{1,128}"))) }
-    private val root = File(context.noBackupFilesDir, namespace).apply { mkdirs() }
+    private val root = File(context.noBackupFilesDir, namespace).apply {
+        if(existingNamespaceOnly||existingReadOnly)require(java.nio.file.Files.isDirectory(toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)&&!java.nio.file.Files.isSymbolicLink(toPath())) {"Existing namespace unavailable; no directory is created"}
+        else mkdirs()
+    }
+    private var inspection: NativeLocalInspectionFilesV2?=null
+    internal val localInspectionOnly get()=inspection!=null
+    internal val inspectionMutationAttempts=java.util.concurrent.atomic.AtomicInteger()
+    internal fun rejectInspectionMutation(){if(localInspectionOnly){inspectionMutationAttempts.incrementAndGet();error("Read-only original inspection rejects mutation")}}
+    internal fun assertLocalInspectionUnchanged(){check(localInspectionOnly);inspection!!.assertUnchanged()}
+    private fun admitRestore(){if(localInspectionOnly){existingNamespaceFence();inspection!!.assertUnchanged()}else requireCurrentGeneration()}
     private val canonicalRoot=root.canonicalPath
     // AtomicFile's older reader may restore its backup while another instance
     // is writing. Coordinate all instances for this directory in this process.
@@ -51,9 +60,9 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         val publicationLock=Any()
         @Volatile var publicationEpoch=0L
     }
-    internal fun beginRestore(): Long = ioLock.withLock { requireCurrentGeneration();synchronized(recovery.publicationLock){recovery.blocked=true;++recovery.generation} }
+    internal fun beginRestore(): Long = ioLock.withLock { admitRestore();synchronized(recovery.publicationLock){recovery.blocked=true;++recovery.generation} }
     internal fun finishRestore(generation: Long,publish: ()->Unit) = ioLock.withLock {
-        requireCurrentGeneration()
+        admitRestore()
         synchronized(recovery.publicationLock) {
             check(recovery.generation==generation) { "本地读取已被新的恢复替代" }
             publish();recovery.blocked=false
@@ -78,6 +87,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     }
     private var migrationUnavailable: Throwable?=null
     private fun checkMigrationAccess() {
+        check(!existingReadOnly) { "Ordinary storage access is forbidden for an existing read-only view" }
         migrationUnavailable?.let {throw IllegalStateException("迁入数据尚未恢复，原记录已保留",it)}
         writableGeneration.exceptionOrNull()?.let {throw IllegalStateException("本机迁移结果待核对，原文件已保留",it)}
     }
@@ -86,12 +96,16 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         check(writableGeneration.getOrThrow()==activeGeneration()) { "旧安装的保存不能覆盖迁入数据" }
     }
     private fun requireWritable() {
+        rejectInspectionMutation()
         check(!retiredWriter) { "旧迁移会话已停止保存，请使用恢复后的会话" }
         requireCurrentGeneration()
         check(!recovery.blocked) { "本地数据恢复前不能保存，原文件已保留" }
         check(recovery.queuedGeneration.get()?.let { it==recovery.generation }!=false) { "旧的保存已被本地恢复替代" }
     }
-    companion object { private val RECOVERY=ConcurrentHashMap<String,RecoveryFence>(); private val KEY_LOCK = Any(); private val SNAPSHOT_IO_LOCK=Any(); private val IO_LOCKS=ConcurrentHashMap<String,ReentrantLock>() }
+    companion object {
+        internal fun inspectNaturalOriginal(context: Context,lease: String,router: Boolean=false): NativeSessionStorage =
+            ExistingReader.inspectNaturalOriginal(context,lease,router)
+        private val RECOVERY=ConcurrentHashMap<String,RecoveryFence>(); private val KEY_LOCK = Any(); private val SNAPSHOT_IO_LOCK=Any(); private val IO_LOCKS=ConcurrentHashMap<String,ReentrantLock>() }
     private val migrationPointerName="migration-active-generation-v1"
     // This non-UTF-8 prefix cannot equal the AAD of any legacy logical name.
     private val recordContext=byteArrayOf(0xff.toByte(),3)+"agent-hub/android-local-record/v3".toByteArray(Charsets.UTF_8)
@@ -128,7 +142,11 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         try {stream.write(encrypted);atomic.finishWrite(stream)}catch(error: Throwable){atomic.failWrite(stream);throw error}
     }
     private fun activeGeneration(): String? {
+        check(!existingReadOnly) { "Read-only views never resolve generations through AtomicFile" }
         val raw=decodeAtomic(atomic(root,migrationPointerName),migrationPointerName) ?: return null
+        return generationFromRaw(raw)
+    }
+    private fun generationFromRaw(raw: String): String {
         require(raw.length<=1024)
         val value=JSONObject(raw);val version=value.get("version");require(version==1||version==2)
         require(value.keys().asSequence().toSet()==setOf("version","generation","candidateId","sha256","records","recordsSha256")+if(version==2)setOf("sourceRecords")else emptySet())
@@ -139,10 +157,21 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         val folder=File(root,"migration-generation-$generation");require(folder.isDirectory&&folder.canonicalFile==File(root.canonicalFile,folder.name)) { "迁入数据不可用，未回退到旧数据" }
         return generation
     }
-    private val writableGeneration=ioLock.withLock {runCatching {requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);activeGeneration()}}
+    // The read-only constructor must not enter any ordinary pointer/AtomicFile path, even
+    // when another process creates a backup after a previous inventory was captured.
+    private val writableGeneration: Result<String?> = if(existingReadOnly) Result.success(null)
+        else ioLock.withLock {runCatching {requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);activeGeneration()}}
+    init {
+        if(existingReadOnly) {
+            check(existingKeyOnly&&existingNamespaceOnly)
+            existingNamespaceFence()
+            val keys=KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
+            require(keys.getKey(keyAlias,null) is SecretKey) {"Existing key unavailable; no fallback generation"}
+        }
+    }
     private fun dataRoot(): File=activeGeneration()?.let {File(root,"migration-generation-$it")} ?: root
     private fun file(name: String): AtomicFile {require(name!=migrationPointerName);return atomic(dataRoot(),name)}
-    fun read(name: String): String? = ioLock.withLock {checkMigrationAccess();decodeAtomic(file(name),name)}
+    fun read(name: String): String? = ioLock.withLock {if(existingReadOnly) existingText(name,1_048_576,true) else {checkMigrationAccess();decodeAtomic(file(name),name)}}
     fun write(name: String,text: String)=ioLock.withLock {requireWritable();encodeAtomic(file(name),name,text)}
 
     internal open class IncompleteMigrationInventory(message: String="本机迁移记录不完整或包含未支持资料，原数据未更改。"): Exception(message)
@@ -174,7 +203,9 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     }
     /** Narrow migration audit: reject pending files before any AtomicFile read/recovery. */
     internal fun migrationReadTextRecords(names: Set<String>): Map<String,String> = ioLock.withLock {
-        checkMigrationAccess();require(names.size in 1..16&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
+        require(names.size in 1..16&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
+        if(existingReadOnly)return@withLock names.mapNotNull {name->existingText(name,1_048_576,true)?.let {name to it}}.toMap()
+        checkMigrationAccess()
         requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
         requireWritable();val folder=dataRoot()
         val sources=names.associateWith {name->atomic(folder,name).baseFile}
@@ -238,14 +269,24 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     /** Known system sub-stores live beside the root, not inside its hashed-record inventory.
      * Presence is audited without opening/recovering files or borrowing OS callback authority. */
     internal fun migrationPendingChildScopes(): Set<String> = ioLock.withLock {
-        requireWritable()
+        checkMigrationAccess();requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable()
         val generation=activeGeneration();val prefix=namespace+(generation?.let {"-$it"}?:"")+"-"
         val systemScopes=setOf("external-inbox","recent-photos","photo-permission","document-results","photo-results","camera-results")
+        val writerScopes=setOf("external-inbox","document-results","photo-results","camera-results","document-results-payloads","photo-results-payloads","camera-results-payloads","camera-results-outputs","recent-photos","photo-permission")
+        val writerControls=writerScopes.map {prefix+it+".inbox-writer-v1.lock"}.toSet()
         val siblings=root.parentFile!!.listFiles()?:error("Migration child inventory unavailable")
         siblings.mapNotNull { folder ->
+            if(folder.name in writerControls){NativeInboxOwnership.requireControlFile(folder);return@mapNotNull null}
+            if(!folder.name.startsWith(prefix))return@mapNotNull null
             val suffix=folder.name.removePrefix(prefix)
+            // Exact operational staging is not an active user original. No broad prefix exclusion:
+            // a future child, nested staging node or sidecar must not silently leave the inventory.
+            if(suffix=="migration-candidates") {
+                require(folder.isDirectory&&folder.canonicalFile==File(root.parentFile!!.canonicalFile,folder.name))
+                return@mapNotNull null
+            }
             val scope=systemScopes.singleOrNull { suffix==it || suffix.startsWith("$it-") }
-            if(!folder.name.startsWith(prefix)||scope==null)null else {
+            if(scope==null)"unregistered-child" else {
                 require(folder.canonicalFile==File(root.parentFile!!.canonicalFile,folder.name)&&folder.isDirectory)
                 val children=folder.listFiles()?:error("Migration child inventory unavailable")
                 if(children.isEmpty())null else scope
@@ -446,7 +487,357 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
             }
         }
     }
-    internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly)
+    /** Read-only view of a pre-existing, unmigrated namespace. No AtomicFile recovery or key creation. */
+    internal class ExistingReader private constructor(private val source: NativeSessionStorage,private val inboxOnly: Boolean=false,
+        private val selectionView: Pair<NativeMigrationSelectionJournal.Kind,NativeMigrationSelectionNode>?=null,private val localPhotoView: NativeMigrationPhotoLocalKind?=null): java.io.Closeable {
+        private var closed=false
+        fun text(name: String,maximumBytes: Int): String=source.ioLock.withLock {
+            check(!closed);requireNotNull(source.existingText(name,maximumBytes,false))
+        }
+        fun optionalText(name: String,maximumBytes: Int): String?=source.ioLock.withLock {
+            check(!closed);source.existingText(name,maximumBytes,true)
+        }
+        fun binary(name: String,expectedSize: Int): ByteArray=source.ioLock.withLock {
+            check(!closed);source.existingBinary(name,expectedSize,12*1024*1024)
+        }
+        internal fun <T> inboxSnapshot(consume: (NativeMigrationStreamRecords,()->Unit)->T): T {check(inboxOnly&&!closed);return source.existingInboxSnapshot(consume)}
+        internal fun <T> selectionSnapshot(legacyOutputIds: Set<String> = emptySet(),consume: (NativeMigrationStreamRecords,()->Unit)->T): T {
+            check(!closed);val (kind,node)=requireNotNull(selectionView)
+            require(node==NativeMigrationSelectionNode.OUTPUTS||legacyOutputIds.isEmpty())
+            legacyOutputIds.forEach {require(java.util.UUID.fromString(it).toString()==it)}
+            return source.existingSelectionSnapshot(kind,node,legacyOutputIds,consume)
+        }
+        internal fun <T> localPhotoSnapshot(consume: (NativeMigrationStreamRecords,()->Unit)->T): T {
+            check(!closed);val kind=requireNotNull(localPhotoView)
+            return source.existingOriginalSnapshot({_->NativeMigrationPhotoLocals.names(kind)},{text,binary->NativeMigrationPhotoLocals.validateOriginal(kind,text,binary)},consume)
+        }
+        fun reopen(context: Context): ExistingReader=source.ioLock.withLock {
+            check(!closed);ExistingReader(source.reopen(context),inboxOnly,selectionView,localPhotoView)
+        }
+        override fun close()=source.ioLock.withLock {if(!closed){closed=true;source.retireWriter()}}
+        companion object {
+            /** Fixed debug roots only. Hand ownership over after the unchanged Source51 admission. */
+            internal fun inspectNaturalOriginal(context: Context,lease: String,router: Boolean): NativeSessionStorage {
+                require(BuildConfig.DEBUG&&context.packageName=="com.easyai.agenthub.android.acceptance")
+                require(java.util.UUID.fromString(lease).toString()==lease)
+                val namespace=if(router)NativeChatNotificationColdRouterFiles.NAMESPACE else "P9-native-system-$lease"
+                val view=open(context,namespace,"agent-hub-mobile-v1")
+                try {return view.source.ioLock.withLock {
+                    check(!view.closed);val source=view.source
+                    source.inspection=NativeLocalInspectionFilesV2(source.existingNamespaceFence(),android.os.Process.myUid())
+                    view.closed=true;source
+                }}catch(failure: Throwable){view.close();throw failure}
+            }
+            fun open(context: Context,namespace: String,keyAlias: String): ExistingReader=openView(context,namespace,keyAlias,false)
+            internal fun openInbox(context: Context,namespace: String,keyAlias: String): ExistingReader {
+                require(namespace.endsWith("-external-inbox"));return openView(context,namespace,keyAlias,true)
+            }
+            internal fun openSelection(context: Context,namespace: String,keyAlias: String,kind: NativeMigrationSelectionJournal.Kind,node: NativeMigrationSelectionNode): ExistingReader {
+                require(node!=NativeMigrationSelectionNode.OUTPUTS||kind==NativeMigrationSelectionJournal.Kind.CAMERA)
+                require(namespace.endsWith("-"+kind.namespace+node.suffix))
+                return openView(context,namespace,keyAlias,false,kind to node)
+            }
+            internal fun openPhotoLocal(context: Context,namespace: String,keyAlias: String,kind: NativeMigrationPhotoLocalKind): ExistingReader {
+                require(namespace.endsWith("-"+kind.namespace));return openView(context,namespace,keyAlias,false,localPhoto=kind)
+            }
+            private fun openView(context: Context,namespace: String,keyAlias: String,inbox: Boolean,selection: Pair<NativeMigrationSelectionJournal.Kind,NativeMigrationSelectionNode>?=null,localPhoto: NativeMigrationPhotoLocalKind?=null): ExistingReader {
+                require(namespace.matches(Regex("[a-zA-Z0-9_-]{1,128}"))&&keyAlias.matches(Regex("[a-zA-Z0-9_-]{1,128}")))
+                val base=context.noBackupFilesDir;require(!java.nio.file.Files.isSymbolicLink(base.toPath())&&java.nio.file.Files.isDirectory(base.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+                val root=File(base,namespace);val path=root.toPath()
+                require(!java.nio.file.Files.isSymbolicLink(path)&&java.nio.file.Files.isDirectory(path,java.nio.file.LinkOption.NOFOLLOW_LINKS)&&root.canonicalFile.parentFile==base.canonicalFile)
+                val stat=android.system.Os.lstat(root.path);require(stat.st_uid==android.os.Process.myUid()&&stat.st_mode and 0x3f==0)
+                val pointer=MessageDigest.getInstance("SHA-256").digest("migration-active-generation-v1".toByteArray()).joinToString(""){"%02x".format(it)}+".bin"
+                for(suffix in listOf("",".bak",".new"))require(java.nio.file.Files.notExists(File(root,pointer+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {"Read-only namespace has unsupported migration state"}
+                val keys=KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
+                require(keys.getKey(keyAlias,null) is SecretKey) {"Existing key unavailable; no fallback generation"}
+                return ExistingReader(NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly=true,existingNamespaceOnly=true,existingReadOnly=true),inbox,selection,localPhoto)
+            }
+        }
+    }
+    private fun existingNamespaceFence(): File {
+        check(existingReadOnly&&existingKeyOnly&&existingNamespaceOnly&&!retiredWriter)
+        val folder=File(canonicalRoot);require(root.canonicalPath==canonicalRoot&&!java.nio.file.Files.isSymbolicLink(root.toPath()))
+        val stat=android.system.Os.lstat(folder.path);require(android.system.OsConstants.S_ISDIR(stat.st_mode)&&stat.st_uid==android.os.Process.myUid()&&stat.st_mode and 0x3f==0)
+        val pointer=File(folder,digest(migrationPointerName)+".bin")
+        for(suffix in listOf("",".bak",".new"))require(java.nio.file.Files.notExists(File(pointer.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+        return folder
+    }
+    private fun existingText(name: String,maximumBytes: Int,optional: Boolean): String? {
+        require(maximumBytes in 1..1_048_576)
+        val raw=existingCipher(name,maximumBytes+65_569,optional) ?: return null
+        try {require(raw[0]==3.toByte());return decodeRecord(raw,name).second.also {require(it.toByteArray(Charsets.UTF_8).size<=maximumBytes)}}finally{raw.fill(0)}
+    }
+    private fun existingBinary(name: String,expectedSize: Int,maximumBytes: Int): ByteArray {
+        require(maximumBytes in 1..12*1024*1024&&expectedSize in 1..maximumBytes)
+        val raw=requireNotNull(existingCipher(name,expectedSize+131_072+(expectedSize/65_536+1)*28,false))
+        try {require(raw.size>=4&&java.nio.ByteBuffer.wrap(raw).int==4)
+            return java.io.DataInputStream(java.io.ByteArrayInputStream(raw)).use {decodeBinary(it,name,expectedSize,maximumBytes).second}
+        }finally{raw.fill(0)}
+    }
+    private fun existingCipher(name: String,maximumBytes: Int,optional: Boolean): ByteArray? {
+        require(name.isNotEmpty()&&name.length<=8192&&!name.contains('\u0000')&&name!=migrationPointerName)
+        val folder=existingNamespaceFence()
+        val file=File(folder,digest(name)+".bin")
+        for(suffix in listOf(".bak",".new"))require(java.nio.file.Files.notExists(File(file.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+        val fd=try {android.system.Os.open(file.path,android.system.OsConstants.O_RDONLY or android.system.OsConstants.O_NOFOLLOW,0)}
+            catch(error: android.system.ErrnoException) {
+                if(!optional||error.errno!=android.system.OsConstants.ENOENT)throw error
+                existingNamespaceFence()
+                for(suffix in listOf("",".bak",".new"))require(java.nio.file.Files.notExists(File(file.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+                inspection?.requireAbsent(file.name)
+                return null
+            }
+        var bytes: ByteArray?=null
+        try {
+            val before=android.system.Os.fstat(fd)
+            require(android.system.OsConstants.S_ISREG(before.st_mode)&&before.st_uid==android.os.Process.myUid()&&before.st_nlink==1L&&before.st_mode and 0x3f==0&&before.st_size in 29..maximumBytes.toLong())
+            val raw=ByteArray(before.st_size.toInt());bytes=raw;var offset=0
+            while(offset<raw.size){val count=android.system.Os.read(fd,raw,offset,raw.size-offset);require(count>0);offset+=count}
+            require(android.system.Os.read(fd,ByteArray(1),0,1)==0)
+            val after=android.system.Os.fstat(fd);val path=android.system.Os.lstat(file.path)
+            require(after.st_dev==before.st_dev&&after.st_ino==before.st_ino&&after.st_size==before.st_size&&after.st_mtime==before.st_mtime)
+            require(android.system.OsConstants.S_ISREG(path.st_mode)&&path.st_dev==before.st_dev&&path.st_ino==before.st_ino&&path.st_size==before.st_size&&path.st_nlink==1L&&path.st_uid==before.st_uid&&path.st_mode==before.st_mode)
+            existingNamespaceFence()
+            for(suffix in listOf(".bak",".new"))require(java.nio.file.Files.notExists(File(file.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
+            inspection?.requireOriginal(file.name,raw)
+            return raw
+        }catch(error: Throwable){bytes?.fill(0);throw error}finally{android.system.Os.close(fd)}
+    }
+    /** Named source child only. Parent generation is decoded without AtomicFile recovery. */
+    private fun migrationChildSpec(suffix: String): Triple<String,String,String> {
+        require(suffix in setOf("external-inbox","document-results","photo-results","camera-results","recent-photos","photo-permission"))
+        check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
+        check(!retiredWriter);checkMigrationAccess()
+        val pointer=atomic(root,migrationPointerName).baseFile;requireSettledMigrationFile(pointer)
+        val generation=if(java.nio.file.Files.notExists(pointer.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))null else {
+            val raw=NativeMigrationReadOnlyFile(root,pointer,70_000).read {input->
+                val bytes=input.readBytes();try{decodeRecord(bytes,migrationPointerName).second}finally{bytes.fill(0)}
+            }.value
+            generationFromRaw(raw)
+        }
+        check(writableGeneration.getOrThrow()==generation)
+        val alias="agent-hub-child-"+MessageDigest.getInstance("SHA-256").digest((keyAlias+"\u0000"+suffix).toByteArray()).take(24).joinToString(""){"%02x".format(it)}
+        val scoped=if(generation==null)alias else "agent-hub-child-"+digest(alias+"\u0000"+generation).take(48)
+        val name=namespace+(generation?.let {"-$it"}?:"")+"-$suffix"
+        require(name.matches(Regex("[a-zA-Z0-9_-]{1,128}")))
+        return Triple(name,scoped,File(requireNotNull(root.parentFile).canonicalFile,name).path)
+    }
+    private fun migrationInboxSpec()=migrationChildSpec("external-inbox")
+    /** Fixed producer handles only. This neither opens a child nor grants a reader capability. */
+    internal fun migrationSelectionKeys(kind: NativeMigrationSelectionJournal.Kind): List<String> = ioLock.withLock {
+        val spec=migrationChildSpec(kind.namespace)
+        listOf(spec.third,spec.third+"-payloads")+if(kind==NativeMigrationSelectionJournal.Kind.CAMERA)listOf(spec.third+"-outputs")else emptyList()
+    }
+    internal fun migrationPhotoLocalKey(kind: NativeMigrationPhotoLocalKind): String=ioLock.withLock {migrationChildSpec(kind.namespace).third}
+    internal fun migrationInboxKey(): String=ioLock.withLock {migrationInboxSpec().third}
+    internal fun requireInboxWriterOwner(){check(!retiredWriter);checkMigrationAccess()}
+    internal fun <T> migrationInboxSnapshot(context: Context,publication: NativeMigrationOriginals.Publication?=null,consume: (NativeMigrationInboxChild)->T): T=snapshotTransaction {ioLock.withLock {
+        require(context.noBackupFilesDir.canonicalFile==root.parentFile.canonicalFile)
+        val spec=migrationInboxSpec();val folder=File(spec.third)
+        fun requireSupportedSiblings() {
+            val siblings=requireNotNull(root.parentFile.listFiles())
+            require(siblings.none {it.name.startsWith(spec.first+"-")||it.name==spec.first+".bak"||it.name==spec.first+".new"}) {"Unsupported inbox child or sidecar retained"}
+        }
+        fun parentUnchanged(){if(publication?.matches(this)!=true)require(migrationInboxSpec()==spec);requireSupportedSiblings()}
+        parentUnchanged()
+        if(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            val unchanged={parentUnchanged();require(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS));Unit}
+            return@withLock consume(NativeMigrationInboxChild(spec.third,false,null,unchanged)).also {unchanged()}
+        }
+        val directory=NativeMigrationReadOnlyDirectory(folder)
+        if(directory.files.isEmpty()) {
+            val unchanged={parentUnchanged();directory.unchanged();Unit}
+            return@withLock consume(NativeMigrationInboxChild(spec.third,true,null,unchanged)).also {unchanged()}
+        }
+        ExistingReader.openInbox(context,spec.first,spec.second).use {reader->reader.inboxSnapshot {records,childUnchanged->
+            val unchanged={parentUnchanged();directory.unchanged();childUnchanged();Unit}
+            consume(NativeMigrationInboxChild(spec.third,true,records,unchanged)).also {unchanged()}
+        }}
+    }}
+    /** Fixed local bookkeeping node. Same FD/cipher engine, no source-key creation or permission action. */
+    internal fun <T> migrationPhotoLocalSnapshot(context: Context,kind: NativeMigrationPhotoLocalKind,publication: NativeMigrationOriginals.Publication?=null,
+        consume: (NativeMigrationPhotoLocalSource)->T): T=snapshotTransaction {ioLock.withLock {
+        require(context.noBackupFilesDir.canonicalFile==root.parentFile.canonicalFile&&!java.nio.file.Files.isSymbolicLink(context.noBackupFilesDir.toPath()))
+        val spec=migrationChildSpec(kind.namespace);val folder=File(spec.third)
+        fun parentUnchanged() {
+            if(publication?.matches(this)!=true)require(migrationChildSpec(kind.namespace)==spec)
+            for(sibling in requireNotNull(root.parentFile.listFiles())) {
+                if(sibling.name==spec.first+".inbox-writer-v1.lock"){NativeInboxOwnership.requireControlFile(sibling);continue}
+                require(!(sibling.name.startsWith(spec.first+"-")||sibling.name.startsWith(spec.first+"."))) {"Unsupported local photo node retained"}
+            }
+        }
+        parentUnchanged()
+        if(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            val unchanged={parentUnchanged();require(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS));Unit}
+            return@withLock consume(NativeMigrationPhotoLocalSource(kind,spec.third,false,null,unchanged)).also {unchanged()}
+        }
+        val directory=NativeMigrationReadOnlyDirectory(folder)
+        if(directory.files.isEmpty()) {
+            val unchanged={parentUnchanged();directory.unchanged();Unit}
+            return@withLock consume(NativeMigrationPhotoLocalSource(kind,spec.third,true,null,unchanged)).also {unchanged()}
+        }
+        ExistingReader.openPhotoLocal(context,spec.first,spec.second,kind).use {reader->reader.localPhotoSnapshot {records,childChanged->
+            val unchanged={parentUnchanged();directory.unchanged();childChanged();Unit}
+            consume(NativeMigrationPhotoLocalSource(kind,spec.third,true,records,unchanged)).also {unchanged()}
+        }}
+    }}
+    /** Fixed existing-only tree. Authentication/inventory component; caller still needs the actual producer lease to publish. */
+    internal fun <T> migrationSelectionSnapshot(context: Context,kind: NativeMigrationSelectionJournal.Kind,publication: NativeMigrationOriginals.Publication?=null,consume: (NativeMigrationSelectionSource)->T): T = snapshotTransaction {ioLock.withLock {
+        require(!java.nio.file.Files.isSymbolicLink(context.noBackupFilesDir.toPath()))
+        val base=android.system.Os.lstat(context.noBackupFilesDir.path)
+        require(android.system.OsConstants.S_ISDIR(base.st_mode)&&base.st_uid==android.os.Process.myUid())
+        require(context.noBackupFilesDir.canonicalFile==root.parentFile.canonicalFile)
+        val top=migrationChildSpec(kind.namespace)
+        fun nested(suffix: String): Triple<String,String,String> {
+            val name=top.first+"-"+suffix;require(name.matches(Regex("[a-zA-Z0-9_-]{1,128}")))
+            val alias="agent-hub-child-"+MessageDigest.getInstance("SHA-256").digest((top.second+"\u0000"+suffix).toByteArray()).take(24).joinToString(""){"%02x".format(it)}
+            return Triple(name,alias,File(requireNotNull(root.parentFile).canonicalFile,name).path)
+        }
+        val specs=linkedMapOf(NativeMigrationSelectionNode.JOURNAL to top,NativeMigrationSelectionNode.PAYLOADS to nested("payloads"))
+        if(kind==NativeMigrationSelectionJournal.Kind.CAMERA)specs[NativeMigrationSelectionNode.OUTPUTS]=nested("outputs")
+        val names=specs.values.map {it.first}.toSet();val controls=names.map {it+".inbox-writer-v1.lock"}.toSet()
+        val raw=specs[NativeMigrationSelectionNode.OUTPUTS]?.let {NativeMigrationSelectionRawInventory(context,it.third).also {view->view.requirePortableEmpty()}}
+        fun parentUnchanged() {
+            if(publication?.matches(this)!=true)require(migrationChildSpec(kind.namespace)==top)
+            for(sibling in requireNotNull(root.parentFile.listFiles())) {
+                if(sibling.name in controls){NativeInboxOwnership.requireControlFile(sibling);continue}
+                if(sibling.name==top.first||sibling.name.startsWith(top.first+"-")||sibling.name.startsWith(top.first+"."))require(sibling.name in names) {"Unsupported selection child or sidecar retained"}
+            }
+            raw?.requirePortableEmpty()
+        }
+        parentUnchanged()
+        fun <R> node(node: NativeMigrationSelectionNode,ids: Set<String> = emptySet(),use: (NativeMigrationSelectionSourceNode,()->Unit)->R): R {
+            val spec=specs.getValue(node);val folder=File(spec.third)
+            if(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                val changed={parentUnchanged();require(java.nio.file.Files.notExists(folder.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS));Unit}
+                return use(NativeMigrationSelectionSourceNode(false,null),changed).also {changed()}
+            }
+            val directory=NativeMigrationReadOnlyDirectory(folder)
+            if(directory.files.isEmpty()) {
+                val changed={parentUnchanged();directory.unchanged();Unit}
+                return use(NativeMigrationSelectionSourceNode(true,null),changed).also {changed()}
+            }
+            return ExistingReader.openSelection(context,spec.first,spec.second,kind,node).use {reader->
+                reader.selectionSnapshot(ids){records,childChanged->
+                    val changed={parentUnchanged();directory.unchanged();childChanged();Unit}
+                    use(NativeMigrationSelectionSourceNode(true,records),changed).also {changed()}
+                }
+            }
+        }
+        node(NativeMigrationSelectionNode.JOURNAL){journal,journalChanged->
+            val ids=journal.records?.text?.get(NativeMigrationSelectionJournal.RECORD)?.let {NativeMigrationSelectionJournal.decode(it,kind).requests.map {row->row.id}.toSet()}.orEmpty()
+            node(NativeMigrationSelectionNode.PAYLOADS){payloads,payloadsChanged->
+                fun withOutputs(outputs: NativeMigrationSelectionSourceNode?,outputsChanged: ()->Unit): T {
+                    require(journal.present||!payloads.present&&outputs?.present!=true) {"Orphan selection namespace retained"}
+                    NativeMigrationSelectionGraph.validate(kind,journal.records,payloads.records)
+                    val changed={parentUnchanged();journalChanged();payloadsChanged();outputsChanged();Unit}
+                    return consume(NativeMigrationSelectionSource(kind,journal,payloads,outputs,raw?.status(),changed)).also {changed()}
+                }
+                if(kind==NativeMigrationSelectionJournal.Kind.CAMERA)node(NativeMigrationSelectionNode.OUTPUTS,ids){outputs,changed->withOutputs(outputs,changed)}
+                else withOutputs(null,{})
+            }
+        }
+    }}
+    /** Strict view discovery/copy is separate from ordinary migrationStreamSnapshot and child(). */
+    private fun <T> existingInboxSnapshot(consume: (NativeMigrationStreamRecords,()->Unit)->T): T = existingOriginalSnapshot(NativeMigrationInboxGraph::legacyNames,NativeMigrationInboxGraph::validate,consume)
+    private fun <T> existingSelectionSnapshot(kind: NativeMigrationSelectionJournal.Kind,node: NativeMigrationSelectionNode,legacyOutputIds: Set<String>,consume: (NativeMigrationStreamRecords,()->Unit)->T): T {
+        val aliases: (((String)->String?)->Set<String>)=when(node) {
+            NativeMigrationSelectionNode.JOURNAL->{_->setOf(NativeMigrationSelectionJournal.RECORD)}
+            NativeMigrationSelectionNode.PAYLOADS->NativeMigrationInboxGraph::legacyNames
+            NativeMigrationSelectionNode.OUTPUTS->{_->legacyOutputIds.map {"output-v1-$it"}.toSet()}
+        }
+        return existingOriginalSnapshot(aliases,{text,binary->when(node) {
+            NativeMigrationSelectionNode.JOURNAL->{require(binary.isEmpty()&&text.keys==setOf(NativeMigrationSelectionJournal.RECORD));NativeMigrationSelectionJournal.decode(text.getValue(NativeMigrationSelectionJournal.RECORD),kind);Unit}
+            NativeMigrationSelectionNode.PAYLOADS->NativeMigrationInboxGraph.validate(text,binary)
+            NativeMigrationSelectionNode.OUTPUTS->NativeMigrationSelectionOutputClaims.validate(text,binary)
+        }},consume)
+    }
+    /** One strict FD/ciphertext/alias engine for inbox and the fixed selection nodes. */
+    private fun <T> existingOriginalSnapshot(resolveLegacy: ((String)->String?)->Set<String>,validate: (Map<String,String>,Map<String,NativeMigrationBlob>)->Unit,
+        consume: (NativeMigrationStreamRecords,()->Unit)->T): T=ioLock.withLock {
+        val directory=NativeMigrationReadOnlyDirectory(existingNamespaceFence());val files=directory.files;require(files.isNotEmpty())
+        fun version(source: NativeMigrationReadOnlyFile)=source.read(false,NativeMigrationLocalRecordFormat::read).value
+        fun text(source: NativeMigrationReadOnlyFile,expected: String?): NativeMigrationReadOnlyFile.Read<Pair<String,String>> {
+            existingNamespaceFence()
+            return source.read {input->
+                require(source.identity.size<=NativeMigrationTextFrames.MAX_RECORD_BYTES+65_569L)
+                val bytes=input.readBytes()
+                try {
+                    NativeMigrationLegacyGcm.limit(bytes[0].toInt(),bytes.size.toLong(),NativeMigrationTextFrames.MAX_RECORD_BYTES,Runtime.getRuntime().maxMemory())?.let {throw LegacyGcmAuthenticationLimit(it)}
+                    decodeRecord(bytes,expected)
+                }finally{bytes.fill(0)}
+            }.also {existingNamespaceFence()}
+        }
+        val versions=files.mapValues {version(it.value)}
+        val modern=files.mapNotNull {(filename,source)->when(versions.getValue(filename)) {
+            3->text(source,null).value.first
+            4->source.read(false){binaryHeader(java.io.DataInputStream(it),null,null).name}.value
+            1,2->null
+            else->error("Unknown inbox ciphertext retained")
+        }}.toSet()
+        fun read(name: String)=files[digest(name)+".bin"]?.let {text(it,name).value.second}
+        val aliases=(modern+resolveLegacy(::read)).associateBy {digest(it)+".bin"}
+        require(aliases.size<=1024)
+        val texts=linkedMapOf<String,NativeMigrationBlob>();val binaries=linkedMapOf<String,NativeMigrationBlob>()
+        for((filename,source)in files.toSortedMap()) {
+            val name=aliases.getValue(filename);require(filename==digest(name)+".bin")
+            if(versions.getValue(filename) in setOf(1,3)) {
+                val decoded=text(source,name);val bytes=NativeMigrationTextFrames.bytes(decoded.value.second)
+                val probe=try {NativeMigrationProbe().also {it.write(bytes)}}finally{bytes.fill(0)}
+                val sha=decoded.ciphertextSha256
+                val blob=NativeMigrationBlob(probe.size.toInt(),probe.sha256(),probe.prefix()) {output->
+                    val current=text(source,name);require(current.ciphertextSha256==sha)
+                    val value=NativeMigrationTextFrames.bytes(current.value.second);try{output.write(value)}finally{value.fill(0)}
+                }
+                require(texts.put(name,blob)==null)
+            }else {
+                existingNamespaceFence();val probe=NativeMigrationProbe()
+                val initial=source.read {decodeBinaryTo(java.io.DataInputStream(it),name,null,probe)}
+                val size=initial.value.size;val sha=initial.ciphertextSha256
+                val blob=NativeMigrationBlob(size,probe.sha256(),probe.prefix()) {output->
+                    existingNamespaceFence();val observed=source.read {decodeBinaryTo(java.io.DataInputStream(it),name,size,output)}
+                    require(observed.ciphertextSha256==sha);existingNamespaceFence()
+                }
+                require(binaries.put(name,blob)==null)
+            }
+        }
+        val records=NativeMigrationStreamRecords(NativeMigrationTextMap(texts),binaries,4)
+        validate(records.text,records.binary)
+        val unchanged={existingNamespaceFence();directory.unchanged();Unit}
+        consume(records,unchanged).also {unchanged()}
+    }
+    /** Only immutable native-return audit may follow the current root generation after publication.
+     * This does not reopen ordinary writes, a child, a URI, an OS grant or a remote operation.
+     * Global snapshot then root IO ordering matches export/activation. One AtomicFile is the receipt.
+     */
+    internal fun persistSelectionReturn(context: Context,event: NativeSelectionReturnAudit.Event): Boolean = snapshotTransaction {ioLock.withLock {
+        check(!existingReadOnly)
+        require(root.canonicalPath==canonicalRoot&&!java.nio.file.Files.isSymbolicLink(root.toPath()))
+        val stat=android.system.Os.lstat(root.path)
+        require(android.system.OsConstants.S_ISDIR(stat.st_mode)&&stat.st_uid==android.os.Process.myUid()&&stat.st_mode and 0x3f==0)
+        requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile)
+        // Existing key only, even if the original Session was retired or is restoring its model.
+        val current=NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly=true,existingNamespaceOnly=true)
+        try {
+            current.writableGeneration.getOrThrow();val folder=current.dataRoot()
+            val currentStat=android.system.Os.lstat(folder.path)
+            require(!java.nio.file.Files.isSymbolicLink(folder.toPath())&&android.system.OsConstants.S_ISDIR(currentStat.st_mode)&&currentStat.st_uid==android.os.Process.myUid()&&currentStat.st_mode and 0x3f==0)
+            require(folder.canonicalFile==File(root.canonicalFile,folder.name)||folder.canonicalFile==root.canonicalFile)
+            val record=NativeSelectionReturnAudit.RECORD;val target=current.atomic(folder,record)
+            current.requireSettledMigrationFile(target.baseFile)
+            fun readAudit(): String {
+                val ref=NativeMigrationReadOnlyFile(folder,target.baseFile,NativeMigrationTextFrames.MAX_RECORD_BYTES+65_569)
+                return ref.read {input->val bytes=input.readBytes();try{require(bytes[0]==3.toByte());current.decodeRecord(bytes,record).second}finally{bytes.fill(0)}}.value
+            }
+            val before=if(current.migrationFileExists(target.baseFile))readAudit()else null
+            val admission=NativeSelectionReturnAudit.admit(before,event)
+            if(before!=admission.raw)current.encodeAtomic(target,record,admission.raw)
+            current.requireSettledMigrationFile(target.baseFile)
+            require(readAudit()==admission.raw)
+            admission.acceptsOriginalReturn
+        }finally {current.retireWriter()}
+    }}
+    internal fun reopen(context: Context): NativeSessionStorage {rejectInspectionMutation();return NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly,existingNamespaceOnly,existingReadOnly)}
     /** Main calls only after joining producers and the serial writer, then replacing the Session. */
     internal fun retireWriter() {retiredWriter=true;writes.shutdown()}
     // Audio stays binary and bounded in memory. Each chunk authenticates its name,
@@ -523,6 +914,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
         }catch(failure: Throwable){result.fill(0);throw failure}
     }
     internal fun readBinary(name: String,expectedSize: Int,maximumBytes: Int=12*1024*1024): ByteArray=ioLock.withLock {
+        if(existingReadOnly)return@withLock existingBinary(name,expectedSize,maximumBytes)
         checkMigrationAccess();binaryName(name);require(maximumBytes in 1..21*1024*1024&&expectedSize in 1..maximumBytes)
         java.io.DataInputStream(file(name).openRead()).use {decodeBinary(it,name,expectedSize,maximumBytes).second}
     }
@@ -586,8 +978,12 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     internal fun <T> migrationStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>, consume: (NativeMigrationStreamRecords) -> T): T =
         migrationStreamSnapshot(resolveLegacyNames,{_,_->emptySet()},consume)
     internal fun <T> migrationStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>,resolveModernAliases: (Set<String>,(String)->String?)->Set<String>, consume: (NativeMigrationStreamRecords) -> T): T =
+        migrationOptionalStreamSnapshot(resolveLegacyNames,resolveModernAliases){consume(requireNotNull(it))}
+    /** Same authenticated inventory engine; the destination may have no root records yet. */
+    internal fun <T> migrationOptionalStreamSnapshot(resolveLegacyNames: ((String) -> String?) -> Set<String>,resolveModernAliases: (Set<String>,(String)->String?)->Set<String>, consume: (NativeMigrationStreamRecords?) -> T): T =
         snapshotTransaction { ioLock.withLock {
-            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable(); val files = migrationFiles(dataRoot()).associateBy { it.name }; require(files.size in 1..1024)
+            requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);requireWritable(); val files = migrationFiles(dataRoot()).associateBy { it.name }; require(files.size<=1024)
+            if(files.isEmpty())return@withLock consume(null)
             val aliases=migrationAliases(files,resolveLegacyNames,resolveModernAliases)
             val text = linkedMapOf<String, NativeMigrationBlob>(); val binaries = linkedMapOf<String, NativeMigrationBlob>()
             for ((filename, source) in files.toSortedMap()) {
@@ -629,6 +1025,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     }
     // Immutable snapshots are queued in order. Callers receive storage failures on Main, never silently discard drafts.
     fun enqueue(name: String, text: String, failed: (Exception) -> Unit) {
+        rejectInspectionMutation()
         val generation=recovery.generation
         writes.execute { try { ioLock.withLock {
             check(generation==recovery.generation) { "旧的保存已被本地恢复替代" };write(name,text)
@@ -656,6 +1053,7 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     // immutable snapshot per target and serialize on the storage worker.
     // Submission intent persistence continues to use the synchronous write.
     fun enqueueSnapshot(name: String, save: ()->Unit, failed: (Exception)->Unit) {
+        rejectInspectionMutation()
         val generation=recovery.generation
         val guardedSave: ()->Unit = {
             val previous=recovery.queuedGeneration.get()
@@ -676,12 +1074,16 @@ class NativeSessionStorage(context: Context, private val namespace: String = "mo
     // A retry fence must be consumed atomically across journal instances too.
     internal fun <T> operationTransaction(block: ()->T): T = ioLock.withLock(block)
     internal val coordinationKey get()=canonicalRoot
+    /** Memory-only ownership admission; strict views and retired writers cannot create raw coordination files. */
+    internal fun requireRawWriterOwner(){check(!retiredWriter);checkMigrationAccess()}
     /** IO prepares only named native runtime children. A later publication invalidates the cache. */
     internal fun prepareChild(context: Context,suffix: String): NativeSessionStorage = ioLock.withLock {
         requireCurrentGeneration();check(!retiredWriter)
         child(context,suffix).also {preparedChildren[suffix]=PreparedChild(recovery.publicationEpoch,it)}
     }
     internal fun child(context: Context,suffix: String): NativeSessionStorage {
+        rejectInspectionMutation()
+        check(!existingReadOnly) { "Read-only views cannot create child storage" }
         require(suffix.matches(Regex("[a-z0-9-]{1,32}")))
         preparedChildren[suffix]?.let {prepared->return synchronized(recovery.publicationLock) {
             check(!retiredWriter&&migrationUnavailable==null&&writableGeneration.isSuccess&&prepared.epoch==recovery.publicationEpoch) { "已准备的本地存储已被新的迁移替代" }

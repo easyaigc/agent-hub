@@ -15,8 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger
 class NativeSavedVoicePostWriteColdTest {
     @get:Rule val timeout: org.junit.rules.TestRule=org.junit.rules.Timeout.seconds(240)
     private val context get()=InstrumentationRegistry.getInstrumentation().targetContext
-    private fun scenario(block: suspend (NativeSavedVoicePostWriteProtocol,NativeSavedVoiceSessionEvidence)->Unit)=runBlocking {
-        val protocol=NativeSavedVoicePostWriteProtocol(context);val evidence=NativeSavedVoiceSessionEvidence(context)
+    private fun scenario(block: suspend (NativeSavedVoicePostWriteProtocol,NativeSavedVoicePostWriteEvidence)->Unit)=runBlocking {
+        val protocol=NativeSavedVoicePostWriteProtocol(context);val evidence=protocol.evidence()
         try {withContext(Dispatchers.Main){block(protocol,evidence)}}finally{protocol.protectDefault(evidence)}
     }
     private data class Owner(val fixture: NativeSavedVoiceSessionFixture,val baseline: NativeSavedVoicePostWriteBaseline,

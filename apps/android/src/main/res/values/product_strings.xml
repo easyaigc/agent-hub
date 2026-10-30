@@ -1924,4 +1924,13 @@
     <string name="product_5b3c336f4fe88dfc5fa2cfe1" formatted="false">"Check offline model"</string>
     <string name="product_6c59ac8a3834a9b80c7b58db" formatted="false">"Download offline model (about 45 MB)"</string>
     <string name="product_9c288e95402385532dbd8e5d" formatted="false">"Recognize and fill the original draft"</string>
+    <string name="product_a6e673f166b78e9a0c57b7b9" formatted="false">"Checking the offline model…"</string>
+    <string name="product_9637d6e5cf3b585608fb6a70" formatted="false">"Downloading and verifying the offline model…"</string>
+    <string name="product_76818c3ff7b4f71d2ab76129" formatted="false">"Recognizing the saved recording…"</string>
+    <string name="product_7781f46d312d1625499e551e" formatted="false">"Offline model check timed out. Check again."</string>
+    <string name="product_1c39654f9ad6c4b67f9e6946" formatted="false">"Offline model check did not complete. Check again."</string>
+    <string name="product_0d3e04735df7ddb91facb34b" formatted="false">"Offline model installation timed out. Check model status before retrying."</string>
+    <string name="product_59e7a7700078c56ae9ba5448" formatted="false">"Offline model installation did not complete. Check model status before retrying."</string>
+    <string name="product_4916ce4f6e7dd69fad93d9f1" formatted="false">"Saved recording recognition timed out. The original recording and existing results are preserved."</string>
+    <string name="product_59f1484a823c35b82282f686" formatted="false">"This draft\'s restored recording is incomplete. Transcription cannot be retried; nothing will be submitted automatically."</string>
 </resources>

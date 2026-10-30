@@ -554,3 +554,41 @@ Source50 P8 本次实际2个唯一JUnit均通过，两个scenario对应同样两
 sourceRect原点独立绑定继续待验：本次8个request.sourceRect报告left/top为0且尺寸与实际Popup/PNG一致，但没有第二个独立native origin参照。当前全量native状态/像素原件及Root手审不能升级为origin独立验证或all-sourceRect篡改拒绝，更不能升级完整A5。API26、其余矩阵、TalkBack/字段IME/忙碌/import/process-death及真实issuer/TLS/Host/desktop、物理设备、完整当前iOS视觉对齐仍单列。Source50 UI7的6短窗通过/1横屏setup已知失败、Source49旧横屏body待验仍分开保留，P8不改判它们，也不使用新main F73/别平台代替当前750/759冻结输入。
 
 本审计0native/安装/settings/helper/测试/SDK/build/源码改动，未复制完整原件/源码或生成PNG副本。3份最小读回索引直接无损压缩并读回，原归档/配置/操作回执完整保留，无临时运行资源。Root已报告8个视觉副本回收100363B，原tar仍在；任务和项目管理、A6保持暂缓，未知操作不重放。
+
+### Source51：严格既有原件认证接入（原生待验）
+
+精确采用d64a0008的12个owned测试/契约文件及NativeSessionStorage独立补丁306e0bb9→91107ee6。此前6ae/a09旧提案因普通构造/默认/evidence读取问题拒绝，从未采用；f529修复三链后又发现child吞拒绝，d64在入口直接拒绝。严格构造不读普通AtomicFile代次，已有key/no-follow文件读取与optional absence拒绝普通fallback；reopen保持严格参数，child不建立子存储。普通写入默认参数与远端发送路径保持。P9 inspection及F64交互补丁尚未采用。
+
+Source51同步已合main5909740b的F73代码，763/772输入与三APK重新构建/ZIP/v2/原证书核对通过，115tasks（27执行/88up-to-date）。App96e937be、runner852aaa26、examiner4cfccbb5；仅构建不代表设备安装或实际认证。旧Source50原生包不含F73，不把旧结果转作新候选通过。
+
+API26现有bootstrap与两条Source45原ASR材料须先采当前boot/UID/APK/完整mic权限与AppOps、default全族及原namespace库存，再对差异App/test分别原证书-r升级，不装闲置observer、不卸载清数据。新的显式plan与独立认证先于写后writer/两reader，旧lease、key/default/bootstrap和原WAV均不重造。当前实际原生仍pending，不能把编译、只读源审或历史baseline当成本次通过。
+
+#### Source51r2：实际Context根权限与只读采集兼容
+
+单独固定只读metadata探针实际exit0，确认API26原App data目录700、files/no_backup771，UID/GID10076。初始51未安装且0 native，不能用chmod原目录来适配。Root仅修NativeSavedVoiceExistingProtection测试：准确framework两个Context根可700/771、父Appdata须私有且canonical关系与UID/GID一致；原directory/child/file私有子树守卫保持。r2仅该test源码变更，763/772输入与三APK重新构建/原证书核对通过，App96e937与初始相同、runner b9d110，examiner4cf仅构建。
+
+r2首次A只读采集在外部stat /proc/self/fd/4时已知exit1，子命令未持有该FD，未形成baseline；r3改从每实际shell/subshell builtin读取自身PID后访问该owner FD，36辅助边界通过，另关闭所有10ID的受保护UUID校验。r3 A2随后在Android26 readlink -f当前目录返回exit1/双空，仍无baseline。两次均known失败/释放、0安装/native/权限变更，无原件损坏归因；旧gate/原回执不重放。r4仅改用子shell cd-P/pwd-P保持原canonical关系等式和主CWD，36辅助通过，实际freshA3单列。B/C须独立Root门，编译和辅助向量均不作数据认证。
+
+并行未封口迁移e0fb暂不采用：真实owner quiesce仍可能seal改头/删raw，且exporter未强制真实writer停写租约。库存24组/44指纹可作源码索引，Native6待验；已回原分工修owner与writer链，Root当前候选未含该生产补丁。
+
+#### Source51r3：具名旧容器与当前/历史范围待验
+
+固定25路径metadata-only诊断证实：所有UID/GID10076，Appdata与acceptance、两个case及runtime/original700；framework771；唯一P7-real-file-asr旧容器777；JSON/WAV600/nlink1。未改权限或数据。Root仅在准确data/acceptance私有包围层中允许该具名旧容器700/777，原case/file规则不变；NativeProtection5c，763/772、App96e937/runner3e491/exam4cf原证书构建通过，仍0安装/native。
+
+r5新增四处readlink-f由独立源审在设备执行前拦住，r6保留所有原门只换cd-P/pwd-P；51 host辅助通过。fresh A4完整只读采集后，在历史bootstrap全family范围断言拒绝，原success=false/observation=null/known release保持。当前full family包含11根，历史fence仅初始根；精确差异、原cipher和两原件由独立原件审计另核，不改原bootstrap/新建key/删空目录造过。NativePlan v2将分离历史bootstrap证据与当前完整family，当前认证/写后恢复仍待验；本次为实现检查点，不新增完整功能通过。
+
+## Source52：当前目录与历史ASR原证明（2026-10-30）
+
+[阶段证据](../parallel/fifty-second-stage-current-original-authentication.json)保存当前763/772源码和包摘要。Plan v2把当前11目录/1份163B密文与历史单根bootstrap分开；十个空目录不删除、不bootstrap。完整只读A和原地B通过，App/test各自UID保持，默认密文、两份原件、完整WAV及三份旧fence、权限/AppOps保持。
+
+第一次Native因认证fixture误用EasyWork wire canonical失败；准确Source45 ASR harness有独立JSONObject.quote编码。只修test encoder并增加两个memory边界方法，生产EasyWork/voice fingerprint未变，旧原文/摘要不改。重建后新ID的唯一JUnit主体通过：现有key、原row/canonical/fingerprint/manifest、两份91532/103724B完整WAV及当前/历史family均核验。父采集器在正常终态后才读PID，该进程已退出，最终认证仍false/pending；保留原失败及该部分通过，不伪造PID、不重放。
+
+两版构建和两轮112 host向量只是辅助；新Plan/结构negative方法、完整保护下写后writer/不同PID reader、物理/iOS及完整P7仍待验。待验不阻塞真实owner/writer迁移、F64交互、语音安装反馈、P8菜单与P9独立工作。三份源码和本档案先在安卓stage14提交，不提未验收合并PR。
+
+## Source53：真实owner/writer与语音交互组合（2026-10-30，待原生）
+
+Source52检查点242db701已提交/推送安卓stage14，尚不提PR，父PID关联与后续写后认证待验。Root在stage15差异合并P7 a795的生产停写/未封口惰性档案，保留Source51严格reader与F73原集成；组合F64当前草稿长按/读屏/麦克风共用入口、圆形图标重试，语音模型可取消HTTP、真实worker join及分状态反馈。原180秒预算、maxLines15、旧操作/原录音及默认家族守卫不改。8条双语文案已进入native-copy和正式生成资源。
+
+组合审查发现原owner fixture先启动真实Main再替换Session，且controller/export/restore拿global Context、fixture存储拿私有Context，可能先创建默认Session并随后打开错误安装。Root采用窄InitialSession工厂+非exported debug子Activity，启动前绑定准确私有Context/Session，继承真实Main所有迁移链路。三个测试方法主体未改，teardown先退出本fixture控制器，避免普通onStop封口原raw。独立源审、SDK与当前Native分别记录，不能把源码修复当验收通过。详细文件指纹和56选择器范围见[Source53](../parallel/fifty-third-stage-provisional-voice-controls.json)。
+
+Source53构建、双SDK基础方法、owner准备失败、后续unknown和runtimeContext候选的独立过程记录见[专属档案](source53-provisional-voice-controls.md)；总表不展开这些过程。

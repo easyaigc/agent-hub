@@ -124,4 +124,38 @@ Android 达到完整交付前，可有分阶段版本，但必须列出待开发
 
 2026-10-21 F69 候选：Windows 批内并行仍执行每项完整来源校验，进程使用 fresh-open 创建映像查询；iOS 只扩展独立 bundle 的正常 UI 验收准备，不改产品界面或草稿规则。当前真实 Windows 普通模式与 iPhone15 Xcode 结果待验，macOS 与 Android 的既有状态保持。参见 [当前验收范围](../acceptance/mobile-parity.md#windows-trace-当前失败与修复候选2026-10-21)。
 
+2026-10-30 Source52：F33/F42/F46/F55/F56/F58/F64的既有原件保护采用闭合Plan v2，并以ASR原harness编码核对原canonical。完整基线和原地更新保持原件；唯一修正后Native主体通过，最终父PID关联仍待验。未改产品UI、生产wire/fingerprint或iOS，不升格完整功能、迁移或真实DEV。见[阶段证据](../plans/android-alignment-20261022/parallel/fifty-second-stage-current-original-authentication.json)。
+
+2026-10-30 Source53：P7原件迁移先冻结真实owner和writer，未封口录音按原字节惰性保存；F64长按/读屏/麦克风共用当前草稿入口，圆形失败重试及模型安装取消/反馈已接入候选。真实Activity私有安装在启动前绑定；当前r5构建、双SDK六基础方法及干净API26三项真实Main owner有界通过；完整父侧原件、UI与真实DEV仍待验，原失败/未知及API37材料保护拒绝分别保留，不新增完整功能通过。见[阶段范围](../plans/android-alignment-20261022/parallel/fifty-third-stage-provisional-voice-controls.json)。
+
+Source54：只修Android流式验收夹具的canonical安装目录选择；保留首次导出已知失败，产品和iOS不变。新API26六项Native断言通过、五项父侧原件闭合，含三PID原候选激活与冷读；链接元数据/完整P7/真实DEV仍待验。 见[Source54档案](../plans/android-alignment-20261022/records/source54-stream-fixture-context.md)。
+
+Source55/56：收件箱真实producer/writer、严格子存储和惰性原件接入；选择日志/载荷语义核已实现，实际owner/reader/export未完。未封口恢复提示及finish、丢弃未知时的模型入口修正接入。Root组合SDK/一致性通过，Native/完整功能仍待验。 见[Source55/56档案](../plans/android-alignment-20261022/records/source55-inbox-voice-recovery.md)。
+
+Source55合同首组：新包API26的Inbox3/Selection4七项Native语义与完整默认保护通过，Root核329份原始调用；余16项storage/owner/voice及AX/像素/Provider/真实DEV待验，不新增完整P7或iOS通过。见[Source55/56档案](../plans/android-alignment-20261022/records/source55-inbox-voice-recovery.md)。
+
+Source60：仅修Android owner验收夹具的Intent生命周期收尾，原五方法及产品/iOS不变。新SDK五项实际Main owner、原候选及语音密文安装保护限定通过，旧Source55失败留档；完整UI/SAF/AX/像素、API37/真机与真实DEV继续待验。见[补验档案](../plans/android-alignment-20261022/records/source60-inbox-owner-fixture.md)。
+
+Source62组合候选：P7选择原件、最近照片偏好/权限尝试作为惰性审计迁移，实际owner/writer与未知scope拒绝接线；P9仅用已有密钥只读恢复原通知，P8补独立原点及低API反射签名保护，语音原声工具分读回与显式ACK清理。Root组合SDK/一致性通过；Native/OS/UI及真实DEV待验，产品iOS不变，不新增完整P7通过。见[组合档案](../plans/android-alignment-20261022/records/source62-system-originals-composition.md)。
+
+Source62首组：新包API26的选择惰性原件/返回审计8、照片偏好/权限审计4、固定ACK解析5项Native内存契约通过；Root核799份原调用，升级原件保护72份另列。文件/实际owner、真实跨PID、原WAV读回与清理、完整UI/OS/物理/真实DEV仍开，不将解析器ACK向量当真实操作授权。见[首组档案](../plans/android-alignment-20261022/records/source62-p7-memory-native.md)。
+
+Source62文件组：选择回执/既有key保护与未知scope发布栅栏4项Native完整通过；另1项主体过、后置SDK查询exit255，单列待验且未重跑。其余20文件/owner方法及原声、系统/完整UI/物理/真实DEV仍开，iOS产品未改。见[文件档案](../plans/android-alignment-20261022/records/source62-p7-filesystem-native.md)。
+
+Source62准入组：五项实际Main/registry的超限、捕获失败及同一次审计写入恢复限定通过；原指针以后续独立只读补证，0重跑。原请求pending不冒充归档，Provider/OS/完整UI/物理/iOS真实DEV仍待验；余14文件/owner方法继续。见[准入档案](../plans/android-alignment-20261022/records/source62-p7-admission-native.md)。
+
+Source62 reader组：六项既有FD/Keystore Native限定通过，缺项/未知/链接及原件只读保护保持；父层比较源/目标密文复制、run内03孤件与历史tag1，不声称独立解密或系统权限。余8 owner、原声/系统/完整UI/物理/iOS真实DEV待验。见[reader档案](../plans/android-alignment-20261022/records/source62-p7-readers-native.md)。
+
+Source62 owner组：五项Main/IO/自有FileProvider与照片审计限定通过；重复registry/照片query两项已知失败，原回执保持并补诊断，不降低断言。相机原件窗口未验，当前余3方法及系统/完整UI/物理/iOS真实DEV仍开。见[owner档案](../plans/android-alignment-20261022/records/source62-p7-selection-owner-native.md)。
+
+Source63：Android 阅读 reset 撤销排队旧写入，新增实际 Store/原件保护夹具；owner 失败诊断和 P8 高 API 原型隔离已接入源码。当前 SDK/Native/完整交互待验，旧结果原样保留，iOS 产品无改动。见[对应档案](../plans/android-alignment-20261022/records/source63-reading-owner-and-admission.md)。
+
+Source63 检查更新：组合 SDK 与三 APK 验证通过，P8 新 DEX 外层上述高 API 原型为 0；Native/反射/完整交互未执行。旧 Ledger 两项测试的未知 worker 收尾缺口已单列，禁止据其夹具清理行为关闭真实 IO 退出。见[阶段结果](../plans/android-alignment-20261022/records/source63-reading-owner-and-admission.md)。
+
+Source64：Android Discovery/连接动作共用 Session IO 归属，迁移等实际 HTTP/断连和 NSD/resolve/network 终态；阅读 worker 未退出不退役/清理，清理意图及已知结果分列。源码已接入，SDK/Native/完整交互待验，iOS 无改动，见[阶段档案](../plans/android-alignment-20261022/records/source64-discovery-reading-ownership.md)。
+
+Source64r2 检查更新：公开目录 FD 同步 helper 修正测试夹具编译后，830/843 输入组合 SDK 与三 APK 验证通过；主统筹独立读回全源与原始工具结果。本候选 Native/系统/完整交互仍待验，旧失败不覆盖。见[阶段结果](../plans/android-alignment-20261022/records/source64-discovery-reading-ownership.md)。
+
+Source64r2/API33：阅读旧写入隔离 3 方法、受控 IO 归属 8 方法本次通过，原 B 前后保护严格相等。仅为控制方法证据，实际 NSD/HTTP、Store/Ledger、完整 P7、系统/UI 与物理 DEV 仍待验；iOS 无源码变化。见[独立档案](../plans/android-alignment-20261022/records/source64-api33-owner-native.md)。
+
 2026-10-30 F03／F02：Host 工作区独立 metadata reader 改为共享当前可信安装发现，修复 Codex 更新后仍固定旧 CLI 路径的目录读取缺口。共同断言：同一 Host/workspace/runtime、原设备凭据、缓存／草稿及未知操作 ID 不变；仅完整只读目录限次重试，不重放回复、新建、审批、停止或管理操作。iOS／Android 共用 Host，端侧 UI 与 KMP 不变；两端均保留原连接并按既有读取恢复，未新增原生通过。实现、辅助回归、Windows 原机与手机结果分列于 [恢复记录](../acceptance/codex-update-resilience-20261030.md)，A6 保持暂停。

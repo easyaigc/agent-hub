@@ -1,0 +1,122 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt
+@@ -21 +21 @@
+-class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1", private val existingKeyOnly: Boolean = false) {
++class NativeSessionStorage(context: Context, private val namespace: String = "mobile-v1", private val keyAlias: String = "agent-hub-mobile-v1", private val existingKeyOnly: Boolean = false, private val existingNamespaceOnly: Boolean = false, private val existingReadOnly: Boolean = false) {
+@@ -23 +23,4 @@
+-    private val root = File(context.noBackupFilesDir, namespace).apply { mkdirs() }
++    private val root = File(context.noBackupFilesDir, namespace).apply {
++        if(existingNamespaceOnly||existingReadOnly)require(java.nio.file.Files.isDirectory(toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)&&!java.nio.file.Files.isSymbolicLink(toPath())) {"Existing namespace unavailable; no directory is created"}
++        else mkdirs()
++    }
+@@ -80,0 +84 @@
++        check(!existingReadOnly) { "Ordinary storage access is forbidden for an existing read-only view" }
+@@ -130,0 +135 @@
++        check(!existingReadOnly) { "Read-only views never resolve generations through AtomicFile" }
+@@ -142 +147,12 @@
+-    private val writableGeneration=ioLock.withLock {runCatching {requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);activeGeneration()}}
++    // The read-only constructor must not enter any ordinary pointer/AtomicFile path, even
++    // when another process creates a backup after a previous inventory was captured.
++    private val writableGeneration: Result<String?> = if(existingReadOnly) Result.success(null)
++        else ioLock.withLock {runCatching {requireSettledMigrationFile(atomic(root,migrationPointerName).baseFile);activeGeneration()}}
++    init {
++        if(existingReadOnly) {
++            check(existingKeyOnly&&existingNamespaceOnly)
++            existingNamespaceFence()
++            val keys=KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
++            require(keys.getKey(keyAlias,null) is SecretKey) {"Existing key unavailable; no fallback generation"}
++        }
++    }
+@@ -145 +161 @@
+-    fun read(name: String): String? = ioLock.withLock {checkMigrationAccess();decodeAtomic(file(name),name)}
++    fun read(name: String): String? = ioLock.withLock {if(existingReadOnly) existingText(name,1_048_576,true) else {checkMigrationAccess();decodeAtomic(file(name),name)}}
+@@ -177 +193,3 @@
+-        checkMigrationAccess();require(names.size in 1..16&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
++        require(names.size in 1..16&&names.all {it.isNotEmpty()&&it.length<=8192&&!it.contains('\u0000')&&it!=migrationPointerName})
++        if(existingReadOnly)return@withLock names.mapNotNull {name->existingText(name,1_048_576,true)?.let {name to it}}.toMap()
++        checkMigrationAccess()
+@@ -449 +467,79 @@
+-    internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly)
++    /** Read-only view of a pre-existing, unmigrated namespace. No AtomicFile recovery or key creation. */
++    internal class ExistingReader private constructor(private val source: NativeSessionStorage): java.io.Closeable {
++        private var closed=false
++        fun text(name: String,maximumBytes: Int): String=source.ioLock.withLock {
++            check(!closed);requireNotNull(source.existingText(name,maximumBytes,false))
++        }
++        fun optionalText(name: String,maximumBytes: Int): String?=source.ioLock.withLock {
++            check(!closed);source.existingText(name,maximumBytes,true)
++        }
++        fun binary(name: String,expectedSize: Int): ByteArray=source.ioLock.withLock {
++            check(!closed);source.existingBinary(name,expectedSize,12*1024*1024)
++        }
++        fun reopen(context: Context): ExistingReader=source.ioLock.withLock {
++            check(!closed);ExistingReader(source.reopen(context))
++        }
++        override fun close()=source.ioLock.withLock {if(!closed){closed=true;source.retireWriter()}}
++        companion object {
++            fun open(context: Context,namespace: String,keyAlias: String): ExistingReader {
++                require(namespace.matches(Regex("[a-zA-Z0-9_-]{1,128}"))&&keyAlias.matches(Regex("[a-zA-Z0-9_-]{1,128}")))
++                val base=context.noBackupFilesDir;require(!java.nio.file.Files.isSymbolicLink(base.toPath())&&java.nio.file.Files.isDirectory(base.toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
++                val root=File(base,namespace);val path=root.toPath()
++                require(!java.nio.file.Files.isSymbolicLink(path)&&java.nio.file.Files.isDirectory(path,java.nio.file.LinkOption.NOFOLLOW_LINKS)&&root.canonicalFile.parentFile==base.canonicalFile)
++                val stat=android.system.Os.lstat(root.path);require(stat.st_uid==android.os.Process.myUid()&&stat.st_mode and 0x3f==0)
++                val pointer=MessageDigest.getInstance("SHA-256").digest("migration-active-generation-v1".toByteArray()).joinToString(""){"%02x".format(it)}+".bin"
++                for(suffix in listOf("",".bak",".new"))require(java.nio.file.Files.notExists(File(root,pointer+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS)) {"Read-only namespace has unsupported migration state"}
++                val keys=KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
++                require(keys.getKey(keyAlias,null) is SecretKey) {"Existing key unavailable; no fallback generation"}
++                return ExistingReader(NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly=true,existingNamespaceOnly=true,existingReadOnly=true))
++            }
++        }
++    }
++    private fun existingNamespaceFence(): File {
++        check(existingReadOnly&&existingKeyOnly&&existingNamespaceOnly&&!retiredWriter)
++        val folder=File(canonicalRoot);require(root.canonicalPath==canonicalRoot&&!java.nio.file.Files.isSymbolicLink(root.toPath()))
++        val stat=android.system.Os.lstat(folder.path);require(android.system.OsConstants.S_ISDIR(stat.st_mode)&&stat.st_uid==android.os.Process.myUid()&&stat.st_mode and 0x3f==0)
++        val pointer=File(folder,digest(migrationPointerName)+".bin")
++        for(suffix in listOf("",".bak",".new"))require(java.nio.file.Files.notExists(File(pointer.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
++        return folder
++    }
++    private fun existingText(name: String,maximumBytes: Int,optional: Boolean): String? {
++        require(maximumBytes in 1..1_048_576)
++        val raw=existingCipher(name,maximumBytes+65_569,optional) ?: return null
++        try {require(raw[0]==3.toByte());return decodeRecord(raw,name).second.also {require(it.toByteArray(Charsets.UTF_8).size<=maximumBytes)}}finally{raw.fill(0)}
++    }
++    private fun existingBinary(name: String,expectedSize: Int,maximumBytes: Int): ByteArray {
++        require(maximumBytes in 1..12*1024*1024&&expectedSize in 1..maximumBytes)
++        val raw=requireNotNull(existingCipher(name,expectedSize+131_072+(expectedSize/65_536+1)*28,false))
++        try {require(raw.size>=4&&java.nio.ByteBuffer.wrap(raw).int==4)
++            return java.io.DataInputStream(java.io.ByteArrayInputStream(raw)).use {decodeBinary(it,name,expectedSize,maximumBytes).second}
++        }finally{raw.fill(0)}
++    }
++    private fun existingCipher(name: String,maximumBytes: Int,optional: Boolean): ByteArray? {
++        require(name.isNotEmpty()&&name.length<=8192&&!name.contains('\u0000')&&name!=migrationPointerName)
++        val folder=existingNamespaceFence()
++        val file=File(folder,digest(name)+".bin")
++        for(suffix in listOf(".bak",".new"))require(java.nio.file.Files.notExists(File(file.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
++        val fd=try {android.system.Os.open(file.path,android.system.OsConstants.O_RDONLY or android.system.OsConstants.O_NOFOLLOW,0)}
++            catch(error: android.system.ErrnoException) {
++                if(!optional||error.errno!=android.system.OsConstants.ENOENT)throw error
++                existingNamespaceFence()
++                for(suffix in listOf("",".bak",".new"))require(java.nio.file.Files.notExists(File(file.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
++                return null
++            }
++        var bytes: ByteArray?=null
++        try {
++            val before=android.system.Os.fstat(fd)
++            require(android.system.OsConstants.S_ISREG(before.st_mode)&&before.st_uid==android.os.Process.myUid()&&before.st_nlink==1L&&before.st_mode and 0x3f==0&&before.st_size in 29..maximumBytes.toLong())
++            val raw=ByteArray(before.st_size.toInt());bytes=raw;var offset=0
++            while(offset<raw.size){val count=android.system.Os.read(fd,raw,offset,raw.size-offset);require(count>0);offset+=count}
++            require(android.system.Os.read(fd,ByteArray(1),0,1)==0)
++            val after=android.system.Os.fstat(fd);val path=android.system.Os.lstat(file.path)
++            require(after.st_dev==before.st_dev&&after.st_ino==before.st_ino&&after.st_size==before.st_size&&after.st_mtime==before.st_mtime)
++            require(android.system.OsConstants.S_ISREG(path.st_mode)&&path.st_dev==before.st_dev&&path.st_ino==before.st_ino&&path.st_size==before.st_size&&path.st_nlink==1L&&path.st_uid==before.st_uid&&path.st_mode==before.st_mode)
++            existingNamespaceFence()
++            for(suffix in listOf(".bak",".new"))require(java.nio.file.Files.notExists(File(file.path+suffix).toPath(),java.nio.file.LinkOption.NOFOLLOW_LINKS))
++            return raw
++        }catch(error: Throwable){bytes?.fill(0);throw error}finally{android.system.Os.close(fd)}
++    }
++    internal fun reopen(context: Context)=NativeSessionStorage(context,namespace,keyAlias,existingKeyOnly,existingNamespaceOnly,existingReadOnly)
+@@ -525,0 +622 @@
++        if(existingReadOnly)return@withLock existingBinary(name,expectedSize,maximumBytes)
+@@ -684,0 +782 @@
++        check(!existingReadOnly) { "Read-only views cannot create child storage" }

@@ -12,6 +12,20 @@ internal object NativeMigrationVoice {
         val item=value.get(key)
         require(nullable&&item==JSONObject.NULL||item is String&&item.length<=maximum)
     }
+    internal fun original(row: JSONObject,clients: List<MobileClient>): PendingVoiceRecording {
+        val current=NativeVoiceRecordingRecord.decode(row)
+        val required=setOf("version","id","scope","certificate","draftKey","draftId","threadId","originalText","createdAt","manifest","prepareAttempted","audioAttempted")
+        val optional=setOf("audioStorage","audio","phase","expiresAt","migrationReadOnly")
+        val keys=row.keys().asSequence().toSet();require(keys.containsAll(required)&&keys.all {it in required||it in optional})
+        require(row.get("version")==1&&row.get("id")==current.id)
+        for(key in listOf("prepareAttempted","audioAttempted","migrationReadOnly"))if(row.has(key))require(row.get(key) is Boolean)
+        require(row.get("createdAt") is Int||row.get("createdAt") is Long);require(row.getLong("createdAt")>=0)
+        bounded(row,"certificate",8192,true);bounded(row,"threadId",256,true);bounded(row,"draftKey",8192);bounded(row,"draftId",2048);bounded(row,"originalText",100_000)
+        val scope=AISharingScope.decode(row.getJSONObject("scope"));require(scope.model=="codex-dictation")
+        val client=clients.single {it.id==scope.target.hostId&&RuntimeIdentity.matches(it.scope,scope.target)}
+        require(row.optional("certificate")==client.codexDirect?.fingerprint&&NativeVoiceDestinationKeys.matches(client.operationTargets(row.optional("threadId")).toSet(),row.getString("draftKey")))
+        return current
+    }
     fun validate(values: Map<String,Any>,binary: Map<String,String>,clients: List<MobileClient>,rawRecords: Map<String,String>): Set<String> =
         validateStreams(values, binary.mapValues { (_, encoded) ->
             val bytes = NativeMigrationRecords.bytes(encoded)
@@ -31,23 +45,13 @@ internal object NativeMigrationVoice {
         }
         for(id in (active+markers.keys+localResults.map {it.recordingId}).distinct()) {
                 uuid(id);val name="voice-recording:$id";require(claimed.add(name));val row=values[name] as JSONObject
-                val current=NativeVoiceRecordingRecord.decode(row)
+                val current=original(row,clients);require(current.id==id)
                 localResults.filter {it.recordingId==id}.forEach {it.validate(current)}
                 val marker=markers[id]
                 if(marker!=null) {
                     val original=rawRecords[marker.auditName]?:error("Discard original audit missing")
                     NativeVoiceDiscardCatalog.original(marker,original,current);require(claimed.add(marker.auditName))
                 }
-                val required=setOf("version","id","scope","certificate","draftKey","draftId","threadId","originalText","createdAt","manifest","prepareAttempted","audioAttempted")
-                val optional=setOf("audioStorage","audio","phase","expiresAt","migrationReadOnly")
-                val keys=row.keys().asSequence().toSet();require(keys.containsAll(required)&&keys.all {it in required||it in optional})
-                require(row.get("version")==1&&row.get("id")==id)
-                for(key in listOf("prepareAttempted","audioAttempted","migrationReadOnly"))if(row.has(key))require(row.get(key) is Boolean)
-                require(row.get("createdAt") is Int||row.get("createdAt") is Long);require(row.getLong("createdAt")>=0)
-                bounded(row,"certificate",8192,true);bounded(row,"threadId",256,true);bounded(row,"draftKey",8192);bounded(row,"draftId",2048);bounded(row,"originalText",100_000)
-                val scope=AISharingScope.decode(row.getJSONObject("scope"));require(scope.model=="codex-dictation")
-                val client=clients.single {it.id==scope.target.hostId&&RuntimeIdentity.matches(it.scope,scope.target)}
-                require(row.optional("certificate")==client.codexDirect?.fingerprint&&NativeVoiceDestinationKeys.matches(client.operationTargets(row.optional("threadId")).toSet(),row.getString("draftKey")))
                 if(current.manifest==null) {
                     require(marker!=null&&!current.prepareAttempted&&!current.audioAttempted&&!row.has("phase")&&!row.has("audio")&&!row.has("audioStorage"))
                     if(marker.evidence.kind=="raw") {
@@ -58,7 +62,7 @@ internal object NativeMigrationVoice {
                 }
                 val manifest=current.manifest
                 require(com.agenthub.core.VoiceTranscriptionRules.validateManifest(manifest.json().toString()))
-                require(manifest.operationId==id&&manifest.hostId==client.id&&manifest.threadId==row.optional("threadId")&&manifest.draftId==row.getString("draftId"))
+                require(manifest.operationId==id&&manifest.hostId==current.scope.target.hostId&&manifest.threadId==row.optional("threadId")&&manifest.draftId==row.getString("draftId"))
                 require(row.has("phase")==row.has("expiresAt"))
                 if(row.has("phase")) {
                     require(row.get("phase") in listOf("awaiting-audio","transcribing","completed","failed","outcome-unknown"))

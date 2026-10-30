@@ -1923,7 +1923,16 @@
     "英语（美国）": "English (United States)",
     "检查离线模型": "Check offline model",
     "下载离线模型（约45MB）": "Download offline model (about 45 MB)",
-    "识别并填入原草稿": "Recognize and fill the original draft"
+    "识别并填入原草稿": "Recognize and fill the original draft",
+    "正在检查离线模型…": "Checking the offline model…",
+    "正在下载并校验离线模型…": "Downloading and verifying the offline model…",
+    "正在识别原录音…": "Recognizing the saved recording…",
+    "离线模型检查超时，请重新检查。": "Offline model check timed out. Check again.",
+    "离线模型检查未完成，请重新检查。": "Offline model check did not complete. Check again.",
+    "离线模型安装超时，请检查模型状态后重试。": "Offline model installation timed out. Check model status before retrying.",
+    "离线模型安装未完成，请检查模型状态后重试。": "Offline model installation did not complete. Check model status before retrying.",
+    "本机原录音识别超时，原录音和已有结果已保留。": "Saved recording recognition timed out. The original recording and existing results are preserved.",
+    "已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。": "This draft's restored recording is incomplete. Transcription cannot be retried; nothing will be submitted automatically."
   },
   "zh-Hans": {
     "\n请查询原回执；不会再次提交。": "\n请查询原回执；不会再次提交。",
@@ -3849,6 +3858,15 @@
     "英语（美国）": "英语（美国）",
     "检查离线模型": "检查离线模型",
     "下载离线模型（约45MB）": "下载离线模型（约45MB）",
-    "识别并填入原草稿": "识别并填入原草稿"
+    "识别并填入原草稿": "识别并填入原草稿",
+    "正在检查离线模型…": "正在检查离线模型…",
+    "正在下载并校验离线模型…": "正在下载并校验离线模型…",
+    "正在识别原录音…": "正在识别原录音…",
+    "离线模型检查超时，请重新检查。": "离线模型检查超时，请重新检查。",
+    "离线模型检查未完成，请重新检查。": "离线模型检查未完成，请重新检查。",
+    "离线模型安装超时，请检查模型状态后重试。": "离线模型安装超时，请检查模型状态后重试。",
+    "离线模型安装未完成，请检查模型状态后重试。": "离线模型安装未完成，请检查模型状态后重试。",
+    "本机原录音识别超时，原录音和已有结果已保留。": "本机原录音识别超时，原录音和已有结果已保留。",
+    "已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。": "已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。"
   }
 }

@@ -30,3 +30,5 @@ PAR2已由[PR46](https://git.51easyai.com/BCAI/agent-hub-app/pulls/46)合入主�
 编译、fixture、当前设备通过、匹配复用、失败和未验收分列；P7满额录音的旧OOM及真机组合超时不得覆盖。任务/项目业务F65–F67、UI14–UI19及相关UM业务继续暂缓；iOS A6暂停。所有未知原操作继续封存、只读核对，不自动重放。
 
 PAR1已由PR45合入main0ebbc9ba并清理旧父集成分支。[PAR2待验接入](second-stage-intake.json)保存旧候选与原失败；后续修复与原生结果另见[验收复核](second-stage-review.md)，不覆盖原记录。
+
+[Source52检查点](fifty-second-stage-current-original-authentication.json)：当前/历史完整目录及ASR原证明编码分开；A/B保持原件，Native主体通过但终态后的PID采集缺口使最终门待验。P7生产迁移、语音、P8/P9继续并行，不能据此关闭阶段或合并未验收范围。

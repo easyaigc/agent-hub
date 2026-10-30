@@ -145,13 +145,13 @@ internal object PairedCodexTLS {
 data class DiscoveredCodexHost(val id: String, val name: String, val endpoint: String, val known: Boolean, val reachable: Boolean, val networkKind: String? = null, val target: TargetScope? = null, val fingerprint: String? = null)
 
 /** Foreground NSD and saved VPN routes; TXT data is only a discovery hint. */
-class CodexHostDiscovery(context: Context, private val session: MobileSession, storage: NativeSessionStorage? = null) {
+class CodexHostDiscovery internal constructor(context: Context, private val session: MobileSession, storage: NativeSessionStorage?,
+    private val nativePlatform: NativeNsdPlatform<NsdServiceInfo>,private val nativeQueue: NativeNsdQueue,dispatcher: CoroutineDispatcher) {
+    constructor(context: Context,session: MobileSession,storage: NativeSessionStorage?=null):
+        this(context,session,storage,AndroidNsdPlatform(context),AndroidNsdQueue(),Dispatchers.Main.immediate)
     companion object { const val LOCAL_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK" }
     private val context = context.applicationContext
-    private val nsd = context.getSystemService(NsdManager::class.java)
-    private val network = context.getSystemService(ConnectivityManager::class.java)
-    private val main = Handler(Looper.getMainLooper())
-    private val tasks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val tasks = CoroutineScope(SupervisorJob() + dispatcher + requireNotNull(session.codexMigrationContext[NativeMigrationIoWork]))
     private val budget = Semaphore(4)
     private var revision = UUID.randomUUID()
     private var active = false
@@ -159,14 +159,11 @@ class CodexHostDiscovery(context: Context, private val session: MobileSession, s
     private val publicDiscovery = CodexPublicDiscovery(storage,budget=budget)
     private val savedDiscovery=CodexSavedRouteDiscovery(budget=budget)
     private var publicHosts = emptyList<DiscoveredCodexHost>()
-    private var listener: NsdManager.DiscoveryListener? = null
-    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    // Retain the exact old handle through real stop terminals, including cancelled waits.
+    private var native: NativeNsdLifetime<NsdServiceInfo>? = null
     private var scanning: Job? = null
     private var rescanRequested=false
     private val advertised = mutableMapOf<String, DiscoveredCodexHost>()
-    private val pending = java.util.ArrayDeque<NsdServiceInfo>()
-    private var resolving: NsdManager.ResolveListener? = null
-    private var resolutionTimeout: Runnable? = null
     var hosts by mutableStateOf<List<DiscoveredCodexHost>>(emptyList())
         private set
     var needsPermission by mutableStateOf(false)
@@ -175,104 +172,85 @@ class CodexHostDiscovery(context: Context, private val session: MobileSession, s
         private set
     /** A discovery provider supplies a private address hint; this never authorizes or saves a client. */
     internal fun offerHint(endpoint: String, hostId: String, name: String) {
-        if (!active || !permitted()) return
+        if (!current(revision) || !permitted()) return
         require(hostId.isNotBlank() && hostId.length <= 256 && name.isNotBlank() && name.length <= 256)
         val address=CodexEndpoints.local(endpoint);val key="$hostId@$address"
         if(advertised.containsKey(key)||advertised.size<32) advertised[key]=DiscoveredCodexHost(hostId,name,address,false,false)
         rebuild();scan()
     }
     fun permitted() = Build.VERSION.SDK_INT < 37 || context.checkSelfPermission(LOCAL_PERMISSION) == PackageManager.PERMISSION_GRANTED
+    private fun checkMain(){check(Looper.myLooper()==Looper.getMainLooper())}
+    private fun current(generation: UUID)=active&&revision==generation&&session.codexDiscoveryAllowed&&!migrationStopPending
     fun start() {
-        stop(); active = true; revision = UUID.randomUUID()
-        needsPermission = !permitted()
-        if (needsPermission) { detail = "允许本地网络访问后可发现局域网与 VPN 电脑"; rebuild(); return }
-        detail = null
-        val generation = revision
-        val discovery = object : NsdManager.DiscoveryListener {
-            override fun onDiscoveryStarted(type: String) {}
-            override fun onDiscoveryStopped(type: String) {}
-            override fun onStartDiscoveryFailed(type: String, code: Int) { post(generation) { detail = "暂时无法发现局域网电脑，可使用连接二维码或已保存地址" } }
-            override fun onStopDiscoveryFailed(type: String, code: Int) {}
-            override fun onServiceFound(info: NsdServiceInfo) { post(generation) { if (pending.size < 32) { pending.add(info); resolveNext(generation) } } }
-            override fun onServiceLost(info: NsdServiceInfo) { post(generation) { advertised.remove(info.serviceName); rebuild() } }
+        checkMain();stop()
+        if(!session.codexDiscoveryAllowed)return
+        active=true;revision=UUID.randomUUID()
+        needsPermission=!permitted()
+        if(needsPermission){detail="允许本地网络访问后可发现局域网与 VPN 电脑";rebuild();return}
+        detail=null
+        val generation=revision
+        tasks.launch {
+            // Starting another SDK registration before this terminal would lose the old listener.
+            native?.awaitStopped()
+            ensureActive();if(!current(generation))return@launch
+            val lifetime=NativeNsdLifetime(nativePlatform,nativeQueue,"_codex-host._tcp.",
+                {service->if(current(generation))resolved(service)},
+                {service->if(current(generation)){advertised.remove(service.serviceName);rebuild()}},
+                {if(current(generation))networkChanged()},
+                {event,_->if(current(generation))when(event) {
+                    "discovery-start-failed"->detail="暂时无法发现局域网电脑，可使用连接二维码或已保存地址"
+                    "discovery-start-threw"->detail="局域网发现暂不可用"
+                    else->Unit
+                }})
+            native=lifetime;lifetime.start()
+            while(current(generation)){scan();delay(10_000)}
         }
-        listener = discovery
-        try { nsd.discoverServices("_codex-host._tcp.", NsdManager.PROTOCOL_DNS_SD, discovery) }
-        catch (_: Exception) { detail = "局域网发现暂不可用" }
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(n: Network) { post(generation) { networkChanged() } }
-            override fun onLost(n: Network) { post(generation) { networkChanged() } }
-            override fun onLinkPropertiesChanged(n: Network, properties: android.net.LinkProperties) { post(generation) { networkChanged() } }
-        }
-        networkCallback = callback
-        try { network.registerNetworkCallback(NetworkRequest.Builder().build(), callback) } catch (_: Exception) { networkCallback = null }
-        tasks.launch { while (active && revision == generation) { scan(); delay(10_000) } }
     }
     private fun networkChanged() {
         networkRevision=UUID.randomUUID();scanning?.cancel();scanning=null
         publicHosts=publicDiscovery.currentHints();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild();scan()
     }
     fun stop() {
-        active = false; revision = UUID.randomUUID(); tasks.coroutineContext.cancelChildren(); scanning = null;rescanRequested=false
+        checkMain()
+        active=false;revision=UUID.randomUUID();tasks.coroutineContext.cancelChildren();scanning=null;rescanRequested=false
+        native?.stop() // Request only; the exact listener remains owned until awaitStopped.
         publicDiscovery.clearVerifiedHints()
-        listener?.let { try { nsd.stopServiceDiscovery(it) } catch (_: Exception) {} }; listener = null
-        networkCallback?.let { try { network.unregisterNetworkCallback(it) } catch (_: Exception) {} }; networkCallback = null
-        pending.clear(); advertised.clear();publicHosts=emptyList();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild()
-        resolutionTimeout?.let(main::removeCallbacks); resolutionTimeout = null
-        // Old Android releases cannot cancel resolution. Keep its slot occupied
-        // until its callback arrives, including across foreground generations.
-        if(Build.VERSION.SDK_INT>=34) resolving?.let { try { nsd.stopServiceResolution(it) } catch (_: Exception) {} }
+        advertised.clear();publicHosts=emptyList();session.easyWorkDiscovery?.offerVPN(emptyList());rebuild()
     }
-    private fun post(generation: UUID, body: () -> Unit) { main.post { if (active && revision == generation) body() } }
-    @Suppress("DEPRECATION") private fun resolveNext(generation: UUID) {
-        if (resolving!=null || pending.isEmpty() || revision != generation) return
-        val info = pending.removeFirst()
-        var expired = false
-        val resolve = object : NsdManager.ResolveListener {
-            private fun complete(body: () -> Unit = {}) { main.post {
-                if(resolving!==this) return@post
-                resolutionTimeout?.let(main::removeCallbacks); resolutionTimeout=null; resolving=null
-                if(active && revision==generation && !expired) body()
-                if(active) resolveNext(revision)
-            } }
-            override fun onResolveFailed(service: NsdServiceInfo, code: Int) = complete()
-            override fun onResolutionStopped(service: NsdServiceInfo) = complete()
-            override fun onStopResolutionFailed(service: NsdServiceInfo, code: Int) { /* Await the original terminal callback. */ }
-            override fun onServiceResolved(service: NsdServiceInfo) = complete {
-                try {
-                    val idBytes = service.attributes["hostId"]
-                    val id = idBytes?.let { Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(it)).toString() }.orEmpty()
-                    val host = service.host?.hostAddress ?: throw HostReadError("Missing discovered host")
-                    require(id.isNotBlank() && id.length <= 256 && service.port in 1..65535)
-                    val endpoint = CodexEndpoints.local("https://" + if (':' in host) "[$host]:${service.port}" else "$host:${service.port}")
-                    if(advertised.containsKey(service.serviceName)||advertised.size<32) advertised[service.serviceName] = DiscoveredCodexHost(id, service.serviceName.take(256), endpoint, false, false)
-                    rebuild(); scan()
-                } catch (_: Exception) {}
-            }
-        }
-        resolving=resolve
-        val timeout = Runnable {
-            if(resolving===resolve) {
-                expired=true
-                if(Build.VERSION.SDK_INT>=34) try { nsd.stopServiceResolution(resolve) } catch (_: Exception) {}
-            }
-        }
-        resolutionTimeout=timeout; main.postDelayed(timeout,6_000)
-        try { nsd.resolveService(info, resolve) } catch (_: Exception) { main.removeCallbacks(timeout); resolutionTimeout=null; resolving=null; resolveNext(generation) }
+    internal val migrationStopped get()=!active&&tasks.coroutineContext[Job]!!.children.none()&&native?.isStopped!=false
+    internal val migrationStopPending get()=native?.let {it.isRetiring&&!it.isStopped}==true
+    internal suspend fun stopAndJoinForMigration() {
+        checkMain();stop()
+        val original=native
+        val children=tasks.coroutineContext[Job]!!.children.toList()
+        children.forEach {it.join()}
+        original?.awaitStopped() // Job.join alone is not an NSD/resolve/network terminal.
+        check(!active&&native===original&&migrationStopped)
+        // Root awaits the shared session NativeMigrationIoWork after this returns.
+    }
+    private fun resolved(service: NsdServiceInfo) {
+        try {
+            val id=service.attributes["hostId"]?.let {Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(it)).toString()}.orEmpty()
+            val host=service.host?.hostAddress?:throw HostReadError("Missing discovered host")
+            require(id.isNotBlank()&&id.length<=256&&service.port in 1..65535)
+            val endpoint=CodexEndpoints.local("https://"+if(':' in host)"[$host]:${service.port}" else "$host:${service.port}")
+            if(advertised.containsKey(service.serviceName)||advertised.size<32)advertised[service.serviceName]=DiscoveredCodexHost(id,service.serviceName.take(256),endpoint,false,false)
+            rebuild();scan()
+        }catch(_: Exception){}
     }
     private fun rebuild() {
         val known = session.clients.filter { !it.isDemo && it.scope?.agentId == "codex" }
         hosts = known.map { client -> savedDiscoveryRow(client,publicHosts,hosts) } + (publicHosts + advertised.values).distinctBy { it.id }.sortedBy { it.name }.filter { row -> known.none { it.id == row.id } }
     }
     fun scan() {
-        if (!active || !permitted()) return
+        if (!current(revision) || !permitted()) return
         publicHosts=publicDiscovery.currentHints();rebuild()
         if(scanning?.isActive==true) { rescanRequested=true;return }
         val generation = revision; val path=networkRevision
         val clients = session.clients.filter { !it.isDemo && it.scope?.agentId == "codex" }.sortedByDescending { it.id==session.selectedClient.id }
         scanning = tasks.launch {
           try {
-            val current={ active && revision==generation && networkRevision==path }
+            val current={ current(generation) && networkRevision==path }
             kotlinx.coroutines.coroutineScope {
               launch {
                 savedDiscovery.scan(clients,(publicHosts+advertised.values).toList(),session::storedCredential,current,accept@ { route->
@@ -307,7 +285,7 @@ class CodexHostDiscovery(context: Context, private val session: MobileSession, s
               }
             }
           } finally {
-            if(active&&revision==generation&&networkRevision==path) {
+            if(current(generation)&&networkRevision==path) {
                 scanning=null
                 if(rescanRequested) { rescanRequested=false;scan() }
             }

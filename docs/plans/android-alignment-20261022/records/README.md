@@ -153,3 +153,35 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [并行统筹交付](parallel-delivery.md)：四线隔离/共同接口、N067/N068合并及当前组合原生恢复态证明；未验项继续单列。
 
 - [Source50 原UI7](../parallel/fiftieth-stage-owned-ax-native.json)与[四态菜单像素](../parallel/fiftieth-stage-p8-menu-pixels-native.json)：限定原生结果、保留失败与独立图审；过程见[并行交付档案](parallel-delivery.md)。
+
+- [Source53：迁移 owner 与语音组合验收](source53-provisional-voice-controls.md)：源码/构建、双SDK限定通过、已知失败与未知分列；当前 owner、UI 和完整 P7 待验。
+
+- [Source54：流式夹具安装目录](source54-stream-fixture-context.md)：真实已知失败、canonical Context 修正和新候选验收分别登记。
+
+- [Source55/56：收件箱与语音恢复](source55-inbox-voice-recovery.md)：实际owner/严格子存储、惰性原件与恢复门槛；组合SDK与Native分别登记。
+
+- [Source55：真实收件箱存储首组](source55-inbox-storage.md)：四项限定通过、硬链接夹具EACCES失败与275份原始调用核对；跨PID/owner/UI继续。
+
+- [Source55：原候选冷恢复与实际owner](source55-inbox-owner-cold.md)：三PID原候选闭环、实际Main三项通过、Intent生命周期夹具失败和严格kernel见证分列。
+
+- [Source55：语音恢复与丢弃回执](source55-voice-recovery.md)：三项Native限定通过、159份原调用；中英/主题/启禁及原WAV证据/准确fixture留存分别登记。
+
+- [Source60：owner Intent 生命周期与五项补验](source60-inbox-owner-fixture.md)：夹具窄修、新包保护两棵原件及5项实际owner限定通过；历史失败与完整界面待验分开。
+
+- [Source62：系统原件与通知恢复组合](source62-system-originals-composition.md)：P7实际选择/照片actor、P9只读inspection、P8独立原点和固定WAV工具；当前组合SDK通过，Native待验。
+
+- [Source62：首组17项Native契约](source62-p7-memory-native.md)：内存原件图/照片审计/ACK解析全部通过，799份实际调用；文件/owner/原声与完整UI分开待验。
+
+- [Source62：回执存储与当前根清单](source62-p7-filesystem-native.md)：4项完整通过，1项原生主体过、后置保护/文件采集待验；301份调用，原操作不重跑。
+
+- [Source62：owner选择回调准入](source62-p7-admission-native.md)：五项实际Main/registry限定通过；原指针以0重跑的独立只读补证，缓存边界分别验证。
+
+- [Source62：选择/照片固定reader](source62-p7-readers-native.md)：六项限定通过；402份调用，全run与源/目标密文复制比较，原链接/相机瞬态及完整系统结果分别留界。
+
+- [Source62：选择/照片实际owner](source62-p7-selection-owner-native.md)：五通过/两已知失败，779份实际调用；相机原件窗口和完整IO退出分别留待验证。
+
+- [Source63：阅读归属与验收入口修正](source63-reading-owner-and-admission.md)：旧写入隔离、实际 Store 夹具、owner 原因诊断与 P8 低 API 类型隔离已接入，SDK/三APK及新DEX审计通过，Native/完整交互待执行；旧Ledger失败收尾缺口单列。
+
+- [Source64：发现、连接与阅读归属](source64-discovery-reading-ownership.md)：同一 Session IO/NSD 真实退出、九处共享接线和阅读夹具收尾修正；Source64r2 SDK/三 APK 通过，Native 待验。
+
+- [Source64r2：API33 阅读与 IO 归属](source64-api33-owner-native.md)：11 方法限定通过，715 份实际调用及原 B 严格保护；外层工具错误、完整网络/UI/DEV 待验分别保留。

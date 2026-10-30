@@ -234,6 +234,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     val easyWorkLogin=storage?.let(::EasyWorkLogin)
     private val easyWorkDeviceAuthorization=storage?.let(::EasyWorkDeviceAuthorization)
     private val migrationIo=NativeMigrationIoWork()
+    internal val codexMigrationContext get()=migrationIo
+    internal val codexDiscoveryAllowed get()=!migrationPaused&&!migrationRawPreparing&&migrationRawOwner==null&&tasks.coroutineContext[Job]!!.isActive
     private val migrationEasyWork=NativeEasyWorkMigrationOwners()
     internal val easyWorkMigrationContext get()=migrationIo+migrationEasyWork
     /** Compose can leave before an authorization's blocking IO exits. Session and registry keep
@@ -347,7 +349,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private var foreground by mutableStateOf(true)
     val usageForeground: Boolean get()=foreground
     val importing: Boolean get()=attachmentPreparation.preparing(targetKey,attachmentImportGenerations[targetKey])||documentPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||photoPicker?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true||cameraCapture?.recovery?.preparing(targetKey,attachmentImportGenerations[targetKey])==true
-    internal val attachmentRecoveryBusy: Boolean get()=documentPicker?.recovery?.let { it.loading||it.busy }==true||photoPicker?.recovery?.let { it.loading||it.busy }==true||cameraCapture?.recovery?.let { it.loading||it.busy }==true
+    internal val attachmentRecoveryBusy: Boolean get()=listOfNotNull(documentPicker?.recovery,photoPicker?.recovery,cameraCapture?.recovery).any {!it.migrationIdle}
     internal val phoneReading=NativePhoneReadingStore(storage,tasks) {syncPhoneReadAcknowledgements();chatNotifications?.reconcile()}.apply {beforeNoticeRead={chatNotifications?.invalidateBeforeChange()}}
     internal var chatNotifications by mutableStateOf<NativeChatNotificationCoordinator?>(null)
         private set
@@ -706,22 +708,92 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     internal val migrationStorage get()=requireNotNull(storage)
     internal val migrationReady get()=storage!=null && localReady && !migrationPaused &&
         !connectionBusy && !projectBusy && !importing && !attachmentRecoveryBusy &&
-        externalInbox?.let {!it.loading&&!it.receiving&&!it.adding}!=false &&
-        recentPhotos?.let {it.ready&&!it.saving}!=false &&
-        documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !migrationEasyWork.stopping && !NativeChatNotificationColdStart.bound(this)
+        externalInbox?.migrationIdle!=false &&
+        recentPhotos?.migrationIdle!=false && photoAuthorization?.migrationIdle!=false &&
+        documentPicker?.pending==null && photoPicker?.pending==null && cameraCapture?.pending==null && migrationNotificationOwners.isEmpty() && !migrationEasyWork.stopping && !NativeChatNotificationColdStart.bound(this) && discovery?.migrationStopPending!=true
     internal val migrationCanImport get()=migrationReady&&realClients.isEmpty()
     internal fun invalidateMigrationLease(){migrationQuiescent=false;migrationEpoch++}
     internal fun ownsMigrationLease(lease: NativeMigrationOwnerLease)=migrationPaused&&migrationOperation==lease.operationId&&storage===lease.storage
-    internal suspend fun quiesceForMigration(operationId: String): NativeMigrationOwnerLease {
+    private var migrationLocalPhotoOwners: NativeMigrationPhotoOwners?=null
+    private var migrationLocalPhotoWriters: List<NativeInboxOwnership.LocalPhotoLease> = emptyList()
+    private var migrationRawPreparing=false
+    private var migrationRawOwner: NativeVoiceRawGate.Frozen?=null
+    private var migrationInboxOwner: NativeInboxOwnership.Lease?=null
+    private var migrationInboxOperation: String?=null
+    private var migrationSelectionOwners: NativeMigrationSelectionOwners?=null
+    private var migrationSelectionWriters: List<NativeInboxOwnership.SelectionLease> = emptyList()
+    private var pendingSelectionResume: Pair<NativeMigrationSelectionOwners,String>?=null
+    private var migrationAdmissionEpoch: Long?=null
+    internal val migrationIngressPaused get()=migrationPaused||migrationRawPreparing||migrationRawOwner!=null
+    internal suspend fun freezeVoiceForMigration(operationId: String): NativeVoiceRawGate.Frozen {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());check(migrationReady)
+        check(!migrationRawPreparing&&migrationRawOwner==null)
+        voice?.requireMigrationRawIdle();questionVoice?.requireMigrationRawIdle()
+        migrationRawPreparing=true
+        val admissionEpoch=migrationEpoch
+        var acquired: NativeVoiceRawGate.Frozen?=null
+        var inbox: NativeInboxOwnership.Lease?=null;var inboxSealed=false
+        val originalInbox=externalInbox
+        val selections=NativeMigrationSelectionOwners(documentPicker,photoPicker,cameraCapture)
+        var selectionsSealed=false;val selectionHeld=mutableListOf<NativeInboxOwnership.SelectionLease>()
+        val localPhotos=NativeMigrationPhotoOwners(this,recentPhotos,photoAuthorization)
+        var localPhotosSealed=false;val localPhotoHeld=mutableListOf<NativeInboxOwnership.LocalPhotoLease>()
+        try {
+            originalInbox?.sealMigrationInputs(operationId);inboxSealed=originalInbox!=null
+            selections.seal(operationId);selectionsSealed=true
+            localPhotos.seal(operationId);localPhotosSealed=true
+            // Assign before returning across dispatchers so prompt cancellation cannot lose a lock.
+            withContext(NonCancellable+Dispatchers.IO){acquired=NativeVoiceRawOwnership.freeze(requireNotNull(storage),operationId)}
+            inbox=originalInbox?.freezeForMigration(requireNotNull(storage),operationId)
+            for(owner in selections.recoveries)selectionHeld+=owner.freezeForMigration(requireNotNull(storage),operationId)
+            for(kind in localPhotos.kinds)withContext(NonCancellable+Dispatchers.IO){localPhotoHeld+=NativeInboxOwnership.LocalPhotoLease.acquire(requireNotNull(storage),operationId,localPhotos,kind)}
+            currentCoroutineContext().ensureActive();check(migrationReady&&migrationEpoch==admissionEpoch)
+            voice?.requireMigrationRawIdle();questionVoice?.requireMigrationRawIdle()
+            migrationInboxOwner=inbox;migrationInboxOperation=operationId;migrationAdmissionEpoch=admissionEpoch
+            migrationSelectionOwners=selections;migrationSelectionWriters=selectionHeld.toList()
+            migrationLocalPhotoOwners=localPhotos;migrationLocalPhotoWriters=localPhotoHeld.toList()
+            return requireNotNull(acquired).also {migrationRawOwner=it}
+        }catch(failure: Throwable){
+            withContext(NonCancellable+Dispatchers.IO){
+                try {NativeInboxOwnership.closeLocalPhotos(localPhotoHeld)}finally{try {NativeInboxOwnership.closeSelections(selectionHeld)}finally{try{inbox?.close()}finally{acquired?.close()}}}
+            }
+            withContext(NonCancellable+Dispatchers.Main.immediate) {
+                if(localPhotosSealed)try{localPhotos.resume(operationId)}catch(cleanup: Throwable){failure.addSuppressed(cleanup)}
+                if(selectionsSealed)try{selections.resume(operationId)}catch(cleanup: Throwable){failure.addSuppressed(cleanup)}
+                if(inboxSealed)try{originalInbox!!.resumeMigrationInputs(operationId)}catch(cleanup: Throwable){failure.addSuppressed(cleanup)}
+            }
+            throw failure
+        }
+        finally {migrationRawPreparing=false}
+    }
+    internal suspend fun releaseVoiceForMigration(raw: NativeVoiceRawGate.Frozen) {
+        val held=if(migrationRawOwner===raw)migrationInboxOwner else null
+        withContext(NonCancellable+Dispatchers.IO){
+            try{if(migrationRawOwner===raw)NativeInboxOwnership.closeLocalPhotos(migrationLocalPhotoWriters)}finally{try{if(migrationRawOwner===raw)NativeInboxOwnership.closeSelections(migrationSelectionWriters)}finally{try{held?.close()}finally{raw.close()}}}
+        }
+        if(migrationRawOwner===raw){
+            withContext(NonCancellable+Dispatchers.Main.immediate){migrationInboxOperation?.let {operation->migrationLocalPhotoOwners?.resume(operation);migrationSelectionOwners?.resume(operation);held?.owner?.resumeMigrationInputs(operation)}}
+            migrationLocalPhotoOwners=null;migrationLocalPhotoWriters=emptyList()
+            migrationSelectionOwners=null;migrationSelectionWriters=emptyList()
+            migrationRawOwner=null;migrationInboxOwner=null;migrationInboxOperation=null;migrationAdmissionEpoch=null
+        }
+    }
+    internal suspend fun quiesceForMigration(operationId: String,preparedRaw: NativeVoiceRawGate.Frozen?=null): NativeMigrationOwnerLease {
         check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());check(migrationReady)
         val store=requireNotNull(storage)
+        val raw=preparedRaw?:freezeVoiceForMigration(operationId)
+        try {withContext(Dispatchers.IO){NativeVoiceRawOwnership.requireFrozen(store,operationId,raw)}}catch(error: Throwable){if(preparedRaw==null)releaseVoiceForMigration(raw);throw error}
+        var handedOff=false
+        try {
         // Resolve an in-flight preference write before pausing its model. Never force a retry.
         bindStoredVoicePreferencesIfReady()
         withTimeout(30_000){voiceSettings.resumePreferences()?.join()}
         check(voiceSettings.persisted) {"Voice preference save is unfinished"}
-        check(migrationReady)
+        check(migrationReady&&migrationRawOwner===raw&&migrationEpoch==migrationAdmissionEpoch)
+        voice?.requireMigrationRawIdle();questionVoice?.requireMigrationRawIdle()
         migrationPaused=true;migrationQuiescent=false;val epoch=++migrationEpoch
         migrationOperation=operationId
+        discovery?.stop()
         migrationEasyWork.seal()
         try {
             val original=tasks.coroutineContext[Job]!!.children.toList()
@@ -737,6 +809,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 check(tasks.coroutineContext[Job]!!.children.none {it.isActive})
                 easyWorkSessions?.closeAll()
                 migrationEasyWork.stopAndJoin()
+                discovery?.stopAndJoinForMigration()
                 migrationIo.awaitIdle()
                 // Snapshot after the real producers stop. This includes the latest in-memory draft.
                 val metadata=metadataSnapshot()
@@ -745,12 +818,38 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             }
             check(migrationPaused&&migrationOperation==operationId&&migrationEpoch==epoch)
             migrationQuiescent=true
-            return NativeMigrationOwnerLease(store,operationId) {migrationQuiescent&&migrationEpoch==epoch}
+            handedOff=true
+            return NativeMigrationOwnerLease(store,operationId,raw,migrationInboxOwner,migrationSelectionWriters,migrationLocalPhotoWriters) {migrationQuiescent&&migrationEpoch==epoch}
         }catch(failure: Throwable) {
             migrationQuiescent=false;migrationPaused=false;migrationOperation=null;chatNotifications=null;resumeMigrationNotificationCleanup();resumeMigrationEasyWorkCleanup()
             throw failure // Main resumes this same model, preserving any unsaved draft.
         }
+        }finally {if(!handedOff)releaseVoiceForMigration(raw)}
     }
+    internal fun takeInboxForMigration(lease: NativeMigrationOwnerLease,key: String): NativeExternalAttachments? {
+        check(ownsMigrationLease(lease));val held=lease.inboxWriters?:return null
+        val original=externalInbox?:return null;check(held.owner===original)
+        if(held.childKey!=key)return null
+        original.requireMigrationSealed(lease.operationId);externalInbox=null;return original
+    }
+    internal fun adoptInboxForMigration(original: NativeExternalAttachments?,operation: String) {
+        if(original!=null){check(externalInbox==null);original.rebindAfterMigration(operation){foreground};externalInbox=original}
+    }
+    internal suspend fun awaitSelectionReturnsForMigration(operation: String){migrationSelectionOwners?.awaitReturns(operation)}
+    internal fun takeSelectionsForMigration(lease: NativeMigrationOwnerLease,keys: Map<NativeMigrationSelectionJournal.Kind,List<String>>): NativeMigrationSelectionOwners? {
+        check(ownsMigrationLease(lease));val owners=migrationSelectionOwners?:return null
+        check(lease.selectionWriters.map {it.owner}==owners.recoveries)
+        if(lease.selectionWriters.any {keys[it.kind]!=it.keys}){owners.requireRetirable(lease.operationId);return null}
+        documentPicker=null;photoPicker=null;cameraCapture=null;migrationSelectionOwners=null
+        return owners
+    }
+    internal fun adoptSelectionsForMigration(owners: NativeMigrationSelectionOwners?,operation: String) {
+        if(owners==null)return
+        check(documentPicker==null&&photoPicker==null&&cameraCapture==null)
+        documentPicker=owners.document;photoPicker=owners.photo;cameraCapture=owners.camera;owners.rebind(this,operation)
+        pendingSelectionResume=owners to operation
+    }
+    internal suspend fun resumeSelectionsAfterMigration(){pendingSelectionResume?.let {(owners,operation)->owners.resume(operation);pendingSelectionResume=null}}
     private var migrationEasyWorkCleanup: Job?=null
     private fun resumeMigrationEasyWorkCleanup() {
         if(migrationEasyWorkCleanup?.isActive==true)return
@@ -781,12 +880,19 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     internal suspend fun abandonMigrationRestore(){
         migrationEasyWork.seal();easyWorkDiscovery?.stop();easyWorkSessions?.closeAll()
+        discovery?.stop()
         migrationIo.close();tasks.coroutineContext[Job]!!.cancelAndJoin()
+        discovery?.stopAndJoinForMigration()
         migrationEasyWork.stopAndJoin();migrationIo.awaitIdle()
     }
     internal fun retireForMigration(operationId: String) {
         check(migrationPaused&&migrationOperation==operationId)
-        migrationQuiescent=false;migrationEpoch++;migrationIo.close();tasks.cancel();storage?.retireWriter()
+        migrationSelectionOwners?.requireRetirable(operationId)
+        migrationLocalPhotoOwners?.let {owners->owners.kinds.forEach {owners.requireSealed(it,operationId)}}
+        migrationLocalPhotoOwners?.retire(operationId);migrationLocalPhotoOwners=null;recentPhotos=null;photoAuthorization=null
+        migrationQuiescent=false;migrationEpoch++;migrationSelectionOwners?.retire(operationId);migrationSelectionOwners=null
+        check(discovery?.migrationStopped!=false)
+        externalInbox?.retireForMigration();migrationIo.close();tasks.cancel();storage?.retireWriter()
     }
     private val localReady get()=!restoring&&!localRecoveryRequired&&!migrationPaused
     private var restoreJob: Job?=null
@@ -855,7 +961,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
             refresh();if(usefulConversationProgress.lastUsefulAt(progressKey)==null)loadHistory();startEvents();loadOperations()
         }
     }
-    fun leaveForeground() { easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;voice?.suspendRecording();questionVoice?.suspendRecording();easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
+    fun leaveForeground() { easyWorkConnectionAuthority(this).invalidate(); invalidatePanelNoticeContext();chatNotifications?.navigationWillChange(); voiceSettings.pausePreferences();voiceSettings.leave();stopPhoneReadingDirectory();phoneReading.lifecycle.foreground(false);attemptedPhoneReading=null;cachedPhoneReading=null;phoneReadingFingerprint.clear();phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear();phoneReadingAcknowledgementOwners.clear(); recentPhotos?.setActive(false);desktopSuggestionReader.clear();suggestionReadAhead.cancel();suggestionSurfaceInteractive=false;pendingCreationWait=null;if(!migrationPaused&&!migrationRawPreparing&&migrationRawOwner==null){voice?.suspendRecording();questionVoice?.suspendRecording()};easyWorkLogin?.background();foreground=false;chatNotifications?.reconcile();networkRecoveryJob?.cancel();networkRecoveryJob=null;eventReadOwner=null; foregroundJob?.cancel(); foregroundJob=null; eventJob?.cancel(); eventJob=null; historyRecoveryJob?.cancel(); historyRecoveryJob=null; observingOperations.values.forEach { it.cancel() }; observingOperations.clear(); freshWorkspaces.clear(); freshHistories.clear() }
     var visibleMessageLimit by mutableStateOf(ReadingPolicy.initialMessageLimit().toInt())
         private set
     var revealedEarlier by mutableStateOf(false)
@@ -2060,8 +2166,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         private set
     internal fun configureCameraCapture(context: android.content.Context,access: NativeCameraAccess=AndroidCameraAccess(context)) { if(cameraCapture==null)cameraCapture=NativeCameraCapture(context,this,storage?.child(context,"camera-results"),access) }
     internal fun configurePhotoPicker(context: android.content.Context) { if(photoPicker==null)photoPicker=NativePhotoPicker(context,this,storage?.child(context,"photo-results")) }
-    internal fun configureExternalInbox(context: android.content.Context) {
-        if(externalInbox==null&&storage!=null)externalInbox=NativeExternalAttachments(context.applicationContext,storage.child(context,"external-inbox")) { foreground }
+    internal fun configureExternalInbox(context: android.content.Context,migrationRestore: Boolean=false) {
+        if(externalInbox==null&&storage!=null)externalInbox=NativeExternalAttachments(context.applicationContext,storage.child(context,"external-inbox"),{foreground},migrationRestore)
     }
     internal fun inboxFiles(destination: AttachmentImportDestination): List<CreationFile> {
         require(currentAttachmentImport(destination)) { NativeFileIntakeFailure.CHANGED }
@@ -2473,32 +2579,55 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     }
     internal fun storedCredential(id: String): String = storage?.token(id).orEmpty()
     suspend fun connectKnownCodex(host: DiscoveredCodexHost) {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+        check(localReady&&codexDiscoveryAllowed)
+        val store=storage;val migrationVersion=migrationEpoch
         var client = realClients.firstOrNull { it.id == host.id && it.scope?.agentId == "codex" } ?: error("原连接已移除")
         val selection = selectionRevision; val sourceKey = targetKey; val sourceVersion = version(sourceKey)
+        fun checkpoint() {
+            check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());tasks.coroutineContext.ensureActive()
+            check(localReady&&codexDiscoveryAllowed&&storage===store&&migrationEpoch==migrationVersion)
+            require(selectionRevision==selection&&targetKey==sourceKey&&version(sourceKey)==sourceVersion) { "所选目标或连接已改变" }
+        }
+        return NativeCodexFormAction.run(tasks,migrationIo,::checkpoint) {
         if (host.reachable && client.codexDirect != null) {
             val direct = client.codexDirect!!
             val descriptor = CodexDiscoveryAPI.discoverForConnection(host.endpoint, CodexPublicSource(direct.target, direct.fingerprint, direct.routes.map { it.endpoint }))
+            checkpoint()
             require(updateCodexRoute(client, host.endpoint, descriptor)) { "连接已变化，原连接已保留" }
             client = realClients.first { it.id == host.id }
         }
         val revision = revisions[host.id] ?: 0
         val snapshot = reads.workspace(client)
+        checkpoint()
         require(selectionRevision == selection && targetKey == sourceKey && version(sourceKey) == sourceVersion && (revisions[host.id] ?: 0) == revision && realClients.any { it == client }) { "所选目标或连接已改变" }
         val connected = replaceClient(client.copy(online = true))
         workspaces[connected.cacheKey(null)] = snapshot
         selectVerifiedClient(connected)
+        }
     }
     suspend fun connectCodexDiscovered(host: DiscoveredCodexHost, hostKey: String = ""): MobileClient {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+        check(localReady&&codexDiscoveryAllowed)
         val store = storage ?: error("本地安全存储不可用")
         val prior = realClients.firstOrNull { it.id == host.id }
         val revision = revisions[host.id] ?: 0
         val selection = selectionRevision; val sourceKey = targetKey; val sourceVersion = version(sourceKey)
+        val migrationVersion=migrationEpoch
+        fun checkpoint() {
+            check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+            tasks.coroutineContext.ensureActive()
+            check(localReady&&codexDiscoveryAllowed&&storage===store&&migrationEpoch==migrationVersion)
+            require((revisions[host.id] ?: 0)==revision&&selectionRevision==selection&&targetKey==sourceKey&&version(sourceKey)==sourceVersion) { "连接或所选目标已改变，原申请未重放" }
+        }
+        return NativeCodexFormAction.run(tasks,migrationIo,::checkpoint) {
         val identity = EasyWorkIdentity.load(store)
-        val authorized = CodexDiscoveryAPI.authorize(host, identity, store, hostKey) { descriptor ->
+        val authorized = CodexDiscoveryAPI.authorize(host, identity, store, hostKey, checkpoint=::checkpoint) { descriptor ->
             require(prior == null || sameScope(prior.scope, descriptor.target)) { "电脑运行时身份已变化，原连接已保留" }
             require(prior?.codexDirect == null || prior.codexDirect.fingerprint == descriptor.fingerprint) { "已配对电脑证书发生变化，原连接已保留" }
             require((revisions[host.id] ?: 0) == revision && selectionRevision == selection && targetKey == sourceKey && version(sourceKey) == sourceVersion) { "连接或所选目标已改变，未申请凭据" }
         }
+        checkpoint()
         val target = authorized.descriptor.target
         require(prior == null || sameScope(prior.scope, target)) { "电脑运行时身份已变化，原连接已保留" }
         require(prior?.codexDirect == null || prior.codexDirect.fingerprint == authorized.descriptor.fingerprint) { "已配对电脑证书发生变化，原连接已保留" }
@@ -2515,38 +2644,55 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         val remembered = replaceClient(client)
         workspaces[remembered.cacheKey(null)] = authorized.workspace
         selectVerifiedClient(remembered); discovery?.scan()
-        return remembered
+        remembered
+        }
     }
     suspend fun connectCodexQR(text: String, name: String): MobileClient {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
+        check(localReady&&codexDiscoveryAllowed)
+        val store=storage;val migrationVersion=migrationEpoch
+        val selection=selectionRevision;val sourceKey=targetKey;val sourceVersion=version(sourceKey)
         val offer = CodexDescriptor.parsePairing(text)
         require(name.length <= 256) { "客户端名称过长" }
         val prior = realClients.firstOrNull { it.id == offer.target.hostId }
         require(prior == null || sameScope(prior.scope, offer.target)) { "电脑运行时身份发生变化，原连接已保留" }
         val revision = revisions[offer.target.hostId] ?: 0
+        fun checkpoint() {
+            check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());tasks.coroutineContext.ensureActive()
+            check(localReady&&codexDiscoveryAllowed&&storage===store&&migrationEpoch==migrationVersion)
+            require(selectionRevision==selection&&targetKey==sourceKey&&version(sourceKey)==sourceVersion&&(revisions[offer.target.hostId] ?: 0)==revision) { "所选目标或连接已改变" }
+        }
+        return NativeCodexFormAction.run(tasks,migrationIo,::checkpoint) {
         var last: Exception = HostReadError("无法连接电脑，请检查局域网或 VPN")
         for(route in offer.routes) {
             try {
+                checkpoint()
                 val direct = PairedCodexConnection(offer.target, offer.fingerprint, offer.routes)
                 var client = MobileClient(offer.target.hostId, name.trim().ifEmpty { offer.name }, offer.target, route.endpoint, false, "desktop-runtime", false, prior?.readerId ?: UUID.randomUUID().toString(), true, direct)
                 val descriptor = NativeHostReads { "" }.connectionDescriptor(client)
+                checkpoint()
                 val merged = (listOf(route) + descriptor.routes + offer.routes).distinctBy { it.endpoint }.take(32)
                 client = client.copy(codexDirect = direct.copy(routes = merged))
                 val snapshot = NativeHostReads { offer.token!! }.workspace(client)
+                checkpoint()
                 val supplied = NativeHostReads { offer.token!! }.connectionRoutes(client, offer.target)
+                checkpoint()
                 client = client.copy(codexDirect = direct.copy(routes = (merged + prior?.codexDirect?.routes.orEmpty()).distinctBy { it.endpoint }.take(32), systemEndpoints =
                     com.agenthub.core.CodexRouteRules.mergeSystemEndpoints(prior?.codexDirect?.systemEndpoints.orEmpty(), supplied, prior?.endpoint?.takeIf { address -> prior.codexDirect?.routes?.none { it.endpoint == address } != false })))
                 require(snapshot.mode == "desktop-runtime" && sameScope(snapshot.scope, offer.target)) { "电脑运行时身份不匹配" }
                 require((revisions[client.id] ?: 0) == revision) { "连接已改变，请重试" }
                 invalidatePanelNoticeCredential(client.id);chatNotifications?.connectionsWillChange()
                 withContext(Dispatchers.IO) { storage?.setToken(client.id, offer.token!!) }
+                checkpoint()
                 client = client.copy(online = true)
                 revisions[client.id] = revision + 1; client = replaceClient(client)
                 workspaces[client.cacheKey(null)] = snapshot
-                selectVerifiedClient(client); discovery?.scan(); return client
+                selectVerifiedClient(client); discovery?.scan(); return@run client
             } catch(cancel: CancellationException) { throw cancel }
-            catch(failure: Exception) { last = failure }
+            catch(failure: Exception) { checkpoint();last = failure }
         }
         throw last
+        }
     }
     internal fun updateCodexRoute(original: MobileClient, endpoint: String, descriptor: CodexDescriptor): Boolean {
         val current = realClients.firstOrNull { it.id == original.id } ?: return false
@@ -2596,6 +2742,7 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
     private fun storageFailure() { tasks.launch { error = "本地保存失败，请保留当前内容并检查手机存储" } }
     private fun persistMetadata() {
         if (storage == null || !localReady) return
+        storage.rejectInspectionMutation()
         metadataEnqueueRevision++
         storage.enqueue("metadata",metadataSnapshot()) {storageFailure()}
     }
@@ -2642,6 +2789,8 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
         voiceSettings.pausePreferences();voice?.suspendRecording();questionVoice?.suspendRecording();stopPhoneReadingDirectory();phoneReadingEpoch++;phoneReading.reset();phoneReadingProof=null;phoneReadingFingerprint.clear();attemptedPhoneReading=null;cachedPhoneReading=null;phoneWorkspaceHead=null
         phoneReadingAcknowledgements.values.forEach { it.cancel() };phoneReadingAcknowledgements.clear()
         restoring=true;localRecoveryAllowsAttachmentStaging=false
+        check(!storage.localInspectionOnly || preparedGeneration==null)
+        if(storage.localInspectionOnly)foreground=false
         val generation=preparedGeneration ?: storage.beginRestore()
         restoreJob=tasks.launch {
             var authenticatedParentRead=false
@@ -2738,10 +2887,12 @@ class MobileSession(private val storage: NativeSessionStorage? = null, reader: H
                 localRecoveryAllowsAttachmentStaging=authenticatedParentRead&&(failure is org.json.JSONException||failure is IllegalArgumentException)
                 localRecoveryRequired=true;error="本地连接与缓存无法读取，原文件已保留"
             }
-            finally { restoring=false;chatNotifications?.languageChanged(language);synchronizeReadingPresentation();reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile();if(localReady && foreground)voiceSettings.resumePreferences() }
-            if (preparedGeneration==null && localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
+            finally { restoring=false;if(!storage.localInspectionOnly){chatNotifications?.languageChanged(language);synchronizeReadingPresentation();reconcilePhoneReading();chatNotifications?.updateComputers(realClients.toList());chatNotifications?.reconcile();if(localReady && foreground)voiceSettings.resumePreferences()} }
+            if (!storage.localInspectionOnly && preparedGeneration==null && localReady && hasClient && !selectedClient.isDemo) { loadCachedHistory();refresh();loadHistory();loadOperations() }
         }
     }
+    internal val localInspectionQuiescent get()=storage?.localInspectionOnly==true&&!foreground&&!restoring&&chatNotifications==null
+    internal suspend fun closeLocalInspection() {check(storage?.localInspectionOnly==true);tasks.coroutineContext[Job]?.cancelAndJoin();storage.retireWriter()}
     internal fun resetAcceptance(reader: HostReads? = null,commandProvider: CodexCommands? = null) {
         invalidatePanelNoticeContext();panelBlockedCredentialRevisions.clear()
         chatNotifications?.dispose();chatNotifications=null

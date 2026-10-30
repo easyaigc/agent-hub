@@ -40,7 +40,7 @@ internal object CodexDiscoveryAPI {
         require(connectionBudget==null || body==null && path in listOf("host","discovery/peers","v1/discovery/peers"))
         val base = if (discover || fingerprint != null) URI(CodexEndpoints.local(endpoint)) else NativeHostReads.baseAddress(endpoint)
         val active = AtomicReference<HttpURLConnection?>()
-        val job = executor.submit {
+        val job = NativeMigrationIoWork.submit(executor,c.context) {
             var connection: HttpURLConnection? = null
             try {
                 if (!c.isActive) return@submit
@@ -85,9 +85,9 @@ internal object CodexDiscoveryAPI {
                 val wire = connection.inputStream.use { NativeWireReader.read(it, maximum) { c.isActive } }
                 if (c.isActive) c.resume(Response(wire, observed.get()))
             } catch (failure: Exception) { if (c.isActive) c.resumeWithException(failure) }
-            finally { active.getAndSet(null)?.disconnect(); connection?.disconnect() }
+            finally { NativeMigrationIoWork.finishHttp(c.context,active) }
         }
-        c.invokeOnCancellation { active.getAndSet(null)?.disconnect(); job.cancel(true) }
+        c.invokeOnCancellation { NativeMigrationIoWork.cancelHttp(c.context,active,job) }
     }
     suspend fun discover(endpoint: String, expected: CodexPublicSource? = null): CodexDescriptor =
         readDescriptor(endpoint,expected,CodexConnectionReadBudget.BACKGROUND_DISCOVERY)
@@ -119,7 +119,8 @@ internal object CodexDiscoveryAPI {
             it.getString("name") to addresses
         }
     }
-    suspend fun authorize(host: DiscoveredCodexHost, identity: EasyWorkIdentity, storage: NativeSessionStorage, hostKey: String = "", accept: (CodexDescriptor)->Unit = {}): CodexPrivateAuthorization {
+    suspend fun authorize(host: DiscoveredCodexHost, identity: EasyWorkIdentity, storage: NativeSessionStorage, hostKey: String = "", checkpoint: ()->Unit = {}, accept: (CodexDescriptor)->Unit = {}): CodexPrivateAuthorization {
+        checkpoint()
         val hostKey = hostKey.trim()
         val endpoint = CodexEndpoints.local(host.endpoint)
         val descriptor = discoverForConnection(endpoint)
@@ -130,6 +131,7 @@ internal object CodexDiscoveryAPI {
             require(hostKey.length in 32..512 && hostKey.none(Char::isWhitespace)) { "请输入这台电脑的 Host Key" }
         }
         accept(descriptor)
+        checkpoint()
         val target = descriptor.target
         val claim = JSONObject().put("version", 1).put("target", encodeTarget(target)).put("publicKey", identity.publicKey)
         require(CodexDiscoveryContract.validateNamed(claim.toString(), "privateClaim") == null)
@@ -137,17 +139,23 @@ internal object CodexDiscoveryAPI {
         val intent=JSONObject().put("claim",claim).put("endpoint",endpoint).put("fingerprint",descriptor.fingerprint).toString()
         val intentId=MessageDigest.getInstance("SHA-256").digest(intent.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it.toInt() and 255) }
         storage.operationTransaction {
+            checkpoint()
             val saved=storage.read("codex-private-claim:$intentId")
             if(saved==null) storage.write("codex-private-claim:$intentId",intent)
             else require(saved==intent) { "原连接申请记录不一致，未重新提交" }
+            checkpoint()
         }
+        checkpoint()
         val response = request(endpoint, "connection/claim", descriptor.fingerprint, body = claim, token = if(descriptor.connectionMode == "host-key") hostKey else "", maximum = 8192)
+        checkpoint()
         val token = try { CodexPrivateCrypto.open(response.wire, target, identity) }
         catch (failure: Exception) { throw HostReadError("电脑凭据校验失败，原连接已保留",failure) }
         val client = MobileClient(host.id, host.name, target, endpoint, false, "desktop-runtime", false, null, true, PairedCodexConnection(target, descriptor.fingerprint, (listOf(CodexRoute(endpoint)) + descriptor.routes).distinctBy { it.endpoint }.take(32)))
         val workspace = NativeHostReads { token }.workspace(client)
+        checkpoint()
         require(workspace.mode == "desktop-runtime" && sameScope(workspace.scope, target)) { "电脑运行时身份不匹配，未保存连接" }
         val routes = NativeHostReads { token }.connectionRoutes(client, target)
+        checkpoint()
         return CodexPrivateAuthorization(descriptor.copy(systemEndpoints = routes), token, workspace)
     }
 }

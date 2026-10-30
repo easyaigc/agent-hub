@@ -52,6 +52,7 @@ internal object NativeVoiceRecordingRecord {
 class VoiceRecordingStore(context: Context,private val storage: NativeSessionStorage) {
     private val directory=File(context.noBackupFilesDir,"voice-recordings-v1").apply { check(mkdirs() || isDirectory);android.system.Os.chmod(path,0x1c0) }
     private fun key(id: String)="voice-recording:$id"
+    private fun rawWriter(id: String): NativeVoiceRawGate.Writer {storage.requireRawWriterOwner();return NativeVoiceRawOwnership.writer(file(id))}
     private fun index()=storage.migrationReadTextRecords(setOf("voice-index-v1"))["voice-index-v1"]?.let { raw->
         (StrictMigrationJson.value(raw.toByteArray(Charsets.UTF_8)) as JSONArray).let {a->(0 until a.length()).map {a.get(it) as String}}
             .also {ids->require(ids.size<=32&&ids.distinct().size==ids.size);ids.forEach(::validId)}
@@ -70,18 +71,22 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
         (index()+catalog.keys).distinct().filter { id->val current=decode(read(id));current.manifest==null&&!terminal(current,catalog) }
     }
     suspend fun begin(scope: AISharingScope,certificate: String?,draftKey: String,draftId: String,threadId: String?,text: String): PendingVoiceRecording = withContext(Dispatchers.IO) {
+        val newId=UUID.randomUUID().toString()
+        rawWriter(newId).use {
         storage.operationTransaction {
             val catalog=NativeVoiceDiscardCatalog.read(storage)
             val recovery=NativeVoiceLocalResults.read(storage).filterNot {it.applied}.map {it.recordingId}
             val ids=(index()+recovery).distinct().filterNot {val original=decode(read(it));terminal(original,catalog)||NativeVoiceLocalResults.resolved(storage,original)}
             check(ids.size<32) { "待处理录音过多，请先处理原录音。" }
-            val pending=PendingVoiceRecording(UUID.randomUUID().toString(),scope,certificate,draftKey,draftId,threadId,text,System.currentTimeMillis())
+            val pending=PendingVoiceRecording(newId,scope,certificate,draftKey,draftId,threadId,text,System.currentTimeMillis())
             // Register first: an interrupted save cannot create an unindexed audio file.
             storage.write("voice-index-v1",JSONArray(ids+pending.id).toString())
             storage.write(key(pending.id),pending.json().toString());pending
         }
+        }
     }
     suspend fun seal(pending: PendingVoiceRecording): PendingVoiceRecording = withContext(Dispatchers.IO) {
+        rawWriter(pending.id).use {
         storage.operationTransaction {
             val body=read(pending.id);val current=decode(body)
             check(!terminal(current,NativeVoiceDiscardCatalog.read(storage))) { "录音已明确丢弃，原证据已保留。" }
@@ -101,6 +106,7 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
             val next=sealed.json().put("audioStorage","binary-chunks-v1")
             storage.write(key(current.id),next.toString())
             check(audio.delete() || !audio.exists()) { "录音已加密保存，临时文件尚未清理" };sealed
+        }
         }
     }
     suspend fun restore(scope: AISharingScope,certificate: String?,draftKey: String,text: String): PendingVoiceRecording? = withContext(Dispatchers.IO) {
@@ -124,6 +130,7 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
         storage.operationTransaction { decode(read(pending.id)).also { require(it.manifest==pending.manifest && it.scope.matches(pending.scope) && it.certificate==pending.certificate && it.draftKey==pending.draftKey && it.originalText==pending.originalText) } }
     }
     suspend fun mark(pending: PendingVoiceRecording,prepareAttempted: Boolean=false,audioAttempted: Boolean=false,receipt: VoiceReceipt?=null) = withContext(Dispatchers.IO) {
+        rawWriter(pending.id).use {
         storage.operationTransaction {
             val body=read(pending.id);val current=decode(body);require(current.manifest==pending.manifest)
             // A late original receipt may update current status, never the independent terminal/audit.
@@ -132,8 +139,10 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
             if(receipt!=null) { require(receipt.manifest==current.manifest);body.put("phase",receipt.phase).put("expiresAt",receipt.expiresAt) }
             storage.write(key(pending.id),body.toString())
         }
+        }
     }
     suspend fun remove(pending: PendingVoiceRecording,unsealedOnly: Boolean=false)=withContext(Dispatchers.IO) {
+        rawWriter(pending.id).use {
         storage.operationTransaction {
             val body=storage.migrationReadTextRecords(setOf(key(pending.id)))[key(pending.id)]?.let {StrictMigrationJson.parse(it.toByteArray(Charsets.UTF_8))} ?: return@operationTransaction
             val current=decode(body)
@@ -146,9 +155,12 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
             // The source installation/namespace may still own an interrupted provisional WAV.
             if(!current.migrationReadOnly) {val audio=file(pending.id);check(audio.delete() || !audio.exists())}
         }
+        }
     }
     /** The catalog is the only commit. Staged original/raw evidence is immutable per attempt. */
     internal suspend fun discardLocal(request: NativeVoiceDiscardRequest,checkpoint: (Int)->Unit): NativeVoiceDiscardReceipt=withContext(Dispatchers.IO) {
+        rawWriter(request.recordingId).use {
+
         val caller=currentCoroutineContext()
         storage.operationTransaction {
             caller.ensureActive();validId(request.recordingId)
@@ -203,6 +215,7 @@ class VoiceRecordingStore(context: Context,private val storage: NativeSessionSto
                     if(observed.isSuccess&&observed.getOrNull()?.auditId!=auditId)created.forEach {storage.remove(it)}
                 }
             }
+        }
         }
     }
 }

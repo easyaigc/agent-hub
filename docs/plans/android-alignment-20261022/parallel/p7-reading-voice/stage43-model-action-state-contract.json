@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "stage": "43-model-action-state",
+  "parentOperation": "parent-voice-api26-installer-source-next-20261030-1",
+  "rootBaseCommit": "3f9b7fae6d48a7acf7bbd05590738f3d0e0ce55d",
+  "featureIds": ["F64"],
+  "commonAssertions": [
+    "F64-C06-explicit-attempt-only",
+    "F64-C07-real-close-before-idle",
+    "F64-C09-model-wait-and-recoverable-failure-visible"
+  ],
+  "files": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "oldSha256": "5952e8ecc250d41f6e7ab1cee5f5977c8bed580c9f1143e9aa5ed95ec8eae348",
+      "newSha256": "fa44e189a5b7b528bf8179dab10a3951cd9ce3c429ba8db7c075d053721c961e"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceAction.kt",
+      "oldSha256": null,
+      "newSha256": "ca34726c46853114859dcbe6ef195802b683919d0eb3ae634c83e9d0a4a5900e"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceActionTest.kt",
+      "oldSha256": null,
+      "newSha256": "48214e30f99b7c0111053e268bc124f017e3994145ec62ef1597ebcd9c47cdc0"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt",
+      "oldSha256": "cab1e8d9425e8c229fa2289486469246137b15915fa79997d53f52b109bb91c6",
+      "newSha256": "6a89fefd920bf2c9ee909476176cfc1a77cd7f98d2194a628cc9b6802521fc5b"
+    },
+    {
+      "path": "apps/android/src/main/res/values/product_strings.xml",
+      "oldSha256": "7add6f00d860016547d96159d974c7c53e6014b8b6d631ab525c536a70951586",
+      "newSha256": "13d6f0763dae4c478bbfe1b9fa03b4f35c55f4c2878da5790fcdae68963538dc"
+    },
+    {
+      "path": "apps/android/src/main/res/values-zh/product_strings.xml",
+      "oldSha256": "57d635071480a54e01be2fe4dd77b1f96b811e5bda7fd9abd9b997aaed5c66b8",
+      "newSha256": "7a4ff32390a12d61a575f15b59d3a51805f8ba95c70a162a661175bf40fe77cd"
+    }
+  ],
+  "scope": "existing saved-original panel action state; no standalone settings manager added",
+  "busyActions": ["PROBE", "INSTALL", "TRANSCRIBE"],
+  "closingCopyAndCloseJoin": "unchanged",
+  "newKeysPerLanguage": 8,
+  "innerTimeout": "failed only while original caller active; explicit caller cancellation propagates",
+  "failedInstallOrProbe": "invalidate old availability, require explicit fresh check before new install; no automatic retry",
+  "productionTimeoutMs": 180000,
+  "source42Installer": "unchanged matched-source reuse",
+  "authorityAndReceiptAndOriginalCode": "existing action body and close/join logic preserved; existing native canonical JSON/row/WAV guards retained",
+  "childFixtureGuard": "aligned child old fixture to Root already-strengthened canonical/row preservation helper; no Root change",
+  "iosImpact": "System-managed asset preparation remains iOS-specific; no iOS source or verified status changed",
+  "rootPatchRequired": "child carries earlier F64 fences; use narrow Root patch, never overwrite controller/resources with child whole file",
+  "auxiliaryStatus": "passed auxiliary SDK/host only",
+  "hostBoundaryMethods": 4,
+  "newNativeControllerMethods": 3,
+  "nativeExecutedHere": 0,
+  "realModelNetworkRequests": 0,
+  "aggregateTablesOwner": "parent; additive assertion/design-copy/acceptance association delivered",
+  "checks": {
+    "passed": true,
+    "inputs": 761,
+    "sourceSha256": "bd12caea7a638b2811a2287dc51fddc196b7450a017dc2277a0dd2f4f980469d",
+    "changedSinceStage42": [
+      "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt",
+      "apps/android/src/main/res/values/product_strings.xml",
+      "apps/android/src/main/res/values-zh/product_strings.xml"
+    ],
+    "newInputs": [
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceAction.kt",
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceActionTest.kt"
+    ],
+    "authorityReceiptStageApplyAndCloseJoinByteIdentical": true,
+    "oldResourceValuesByteIdentical": true,
+    "addedKeysPerLanguage": 8,
+    "hostBoundaryMethodsPassed": 4,
+    "newNativeControllerMethodsCompiled": 3,
+    "newNativeControllerMethodsExecuted": 0,
+    "stage42DownloadVectors": "matched-source reuse; not repeated",
+    "patchActualApplyReadback": true,
+    "realModelNetworkRequests": 0,
+    "modelsCopiedOrDownloaded": 0,
+    "apksBuilt": 0
+  }
+}

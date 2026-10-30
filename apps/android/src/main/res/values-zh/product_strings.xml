@@ -1924,4 +1924,13 @@
     <string name="product_5b3c336f4fe88dfc5fa2cfe1" formatted="false">"检查离线模型"</string>
     <string name="product_6c59ac8a3834a9b80c7b58db" formatted="false">"下载离线模型（约45MB）"</string>
     <string name="product_9c288e95402385532dbd8e5d" formatted="false">"识别并填入原草稿"</string>
+    <string name="product_a6e673f166b78e9a0c57b7b9" formatted="false">"正在检查离线模型…"</string>
+    <string name="product_9637d6e5cf3b585608fb6a70" formatted="false">"正在下载并校验离线模型…"</string>
+    <string name="product_76818c3ff7b4f71d2ab76129" formatted="false">"正在识别原录音…"</string>
+    <string name="product_7781f46d312d1625499e551e" formatted="false">"离线模型检查超时，请重新检查。"</string>
+    <string name="product_1c39654f9ad6c4b67f9e6946" formatted="false">"离线模型检查未完成，请重新检查。"</string>
+    <string name="product_0d3e04735df7ddb91facb34b" formatted="false">"离线模型安装超时，请检查模型状态后重试。"</string>
+    <string name="product_59e7a7700078c56ae9ba5448" formatted="false">"离线模型安装未完成，请检查模型状态后重试。"</string>
+    <string name="product_4916ce4f6e7dd69fad93d9f1" formatted="false">"本机原录音识别超时，原录音和已有结果已保留。"</string>
+    <string name="product_59f1484a823c35b82282f686" formatted="false">"已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。"</string>
 </resources>

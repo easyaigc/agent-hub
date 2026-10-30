@@ -1,0 +1,101 @@
+{
+  "stage": "P7 existing original read-only authentication / Source51",
+  "status": "implementation checkpoint; current original authentication pending",
+  "canonicalInputCount": 763,
+  "expandedInputCount": 772,
+  "sourceSha256": "317a24d4235a4fc27eae38033d1baf54e68d75f461e424a24374f53ca1997a61",
+  "expandedSourceSha256": "f3d585bfb80b07a7f7a0fc5ba511f76e7c76a1fbb5c758f758d540017d4a26e3",
+  "appSha256": "96e937be7f0e7a273727b4255a82a6d8bbceb6b73f8e36855980f503703269b0",
+  "testSha256": "3e4912101c2b0eeaf4c2c286b907b4643434b6f6bcad5606efd067f1a1de9eaa",
+  "unusedExaminerArtifactSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+  "productionStorageSha256": "91107ee6c136675dc6db538690141b5b1876156357723c9d91c016d6aeca1c3c",
+  "intakeCommit": "d64a000818f868882a732b1c4f9667a33976f98a",
+  "auxiliary": {
+    "buildActualExit": 0,
+    "tasks": 115,
+    "executedTasks": 5,
+    "upToDateTasks": 110,
+    "all763And772ReadBack": true,
+    "allThreeZipV2AndOriginalCertificate": true,
+    "identitySha256": "c7dcfce37605161b36932f5786f853fe20dbb7c487ec7aac3663d2aa8b6755ad"
+  },
+  "actualNative": {
+    "executed": 0,
+    "acceptance": "pending fresh current device baseline and explicit actual plan"
+  },
+  "productionRemoteReplayPathAdded": false,
+  "F64InteractionAndP9InspectionAdopted": false,
+  "mainF73CodeIncluded": true,
+  "mainF73NativeProofInherited": false,
+  "unknownOperationQueryOrReplay": false,
+  "taskAndProjectManagement": "paused",
+  "iOSA6": "paused",
+  "remaining": [
+    "Current API26 boot/UID/two APK hashes/full permission/AppOps/no-follow default and two original namespaces must be sampled",
+    "Difference-only App/test -r upgrade retains identity, old key and all originals; unused observer not installed",
+    "Authenticate actual nonempty bootstrap and two full original WAVs without creating a key/default or renewing an old lease",
+    "Fresh protected postwrite writer and two distinct readers after authentication gate",
+    "Complete installation migration and system schema/physical/full iOS remain open"
+  ],
+  "initialCandidate": {
+    "sourceSha256": "3b463c102899f3a040f24930a60166942371951da356c75f144a196eebd4cac9",
+    "expandedSourceSha256": "e8717e8155b8dc98cc723db3f0101b645bba5007ebca93faec20bbb9ee179a01",
+    "appSha256": "96e937be7f0e7a273727b4255a82a6d8bbceb6b73f8e36855980f503703269b0",
+    "testSha256": "852aaa26ccd3861b800d9178c8531061cba189d146dbb8a06178de12af69bc7e",
+    "unusedExaminerArtifactSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+    "auxiliary": {
+      "buildActualExit": 0,
+      "tasks": 115,
+      "all763And772ReadBack": true,
+      "allThreeZipV2AndOriginalCertificate": true,
+      "identitySha256": "2f92057f05d814ec30df214f53e709ba336557577de03a35eed6501bbb2b6df4"
+    },
+    "installed": false,
+    "nativeMethods": 0,
+    "supersededReason": "Actual trusted Context roots are0771; initial native test expected private0700 roots and was corrected before installation"
+  },
+  "contextRootCompatibility": {
+    "currentMetadataObservationOnly": true,
+    "actualAppDataMode": "0700",
+    "actualFilesAndNoBackupMode": "0771",
+    "ownerAndGroup": 10076,
+    "rootNativeProtectionSha256": "5c026faefb89fdab2b8892212be6b07b6ebb4afc812a9050b1fe8a92e69a042c",
+    "onlyExactFrameworkRootsMayBe771": true,
+    "privateChildrenAndFileGuardsUnchanged": true,
+    "chmodOrOriginalChanges": 0
+  },
+  "currentBaselineAttempts": {
+    "r2": "known readonly capture failure: stat child did not inherit fd4; no baseline",
+    "r3": "known readonly capture failure: Android26 readlink -f on current directory; no baseline",
+    "r4": "known private-parent mode rejection; metadata-only diagnosis showed one enclosed legacy777 container",
+    "unknown": 0,
+    "appOrTestInstalls": 0,
+    "nativeMethods": 0,
+    "r5": "source review caught repeated readlink before execution; no actual gate",
+    "r6": "complete readonly capture rejected by immutable bootstrap scope vs current eleven directory family; source v2 pending",
+    "formalCurrentBaselineAccepted": false
+  },
+  "previousR2Candidate": {
+    "sourceSha256": "763352d2b7215131202d52e16cd58cb9b5986b97b8e93fd832105cc44ad3f3c8",
+    "expandedSourceSha256": "9507f7c11b40f249eb1d9a643fed2bc28e80a27f897379c776426aece1991a1d",
+    "appSha256": "96e937be7f0e7a273727b4255a82a6d8bbceb6b73f8e36855980f503703269b0",
+    "testSha256": "b9d110f96291b23d215cb778709aa27eedc5aef66b30aab6d64367bed067fbbc",
+    "auxiliary": {
+      "buildActualExit": 0,
+      "tasks": 115,
+      "executedTasks": 5,
+      "upToDateTasks": 110,
+      "all763And772ReadBack": true,
+      "allThreeZipV2AndOriginalCertificate": true,
+      "identitySha256": "0ee3ef9c23a010872fd268bb8d2fc404fcd64195b6b4897d954153bd38d30cb9"
+    }
+  },
+  "legacyContainer": {
+    "mode": "0777",
+    "claimedPrivate": false,
+    "privateAppDataAndAcceptanceAndCases": "0700",
+    "exactNamedEnclosureGuard": true,
+    "files": "0600, nlink1",
+    "permissionsChanged": false
+  }
+}

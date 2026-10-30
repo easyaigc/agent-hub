@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "stage": "Source53",
+  "baseCommit": "242db70112432b7463375070afdc5478e1403aa2",
+  "status": "r5 SDK/source/APK passed; current six structural methods on both SDKs plus three real Main owner methods on fresh API26 passed; UI/full migration/independent owned archive pending",
+  "featureIds": ["F33", "F42", "F46", "F55", "F56", "F58", "F64"],
+  "scope": {
+    "provisionalVoice": "Freeze actual owner and raw writers before stopping producers; export and activate exact incomplete original bytes into an inert catalog, without seal/repair/retry/upload; strict existing reader and F73 Root integration preserved.",
+    "voiceInput": "One current-draft fenced entry for collapsed-caret 500ms hold, named accessibility action and microphone; existing range native selection/drag retained. Persistent orange failure title and icon-only circular retry share composer/question presentation; separate re-record action and maxLines15 retained.",
+    "modelActions": "Cancelable OkHttp download with actual worker join; explicit probe/install/recognition/closing states; distinguish local timeout from parent cancellation and refresh actual installation probe on failure. Original 180000ms budget retained.",
+    "startupReadiness": "Read actual Activity font/orientation within the existing 5000ms budget before the seven UI bodies; no relaxed UI assertion.",
+    "ownerFixture": "Private Session and installation prepared before real Main lifecycle; project runtimeContext hook supplies only integration storage Context, while framework Application context stays unchanged. Read-only prelaunch rejects prior P9/Activity/permit/counters; original three method bodies retained. Provisional restore checks same id, manifest-null, no inspect/retry, full original row/bytes and zero Host/microphone. Bounded Base64 uncaught diagnostics delegate original handler; no crash cause confirmed."
+  },
+  "files": {
+    "apps/android/localization/native-copy.json": "d95872d511a003ed20b2339770e3662da8cffecf87baf3ff948d154cd6c1c23f",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "c8fe1a291a8b7e194338b7830d56a62e3a1af10ccaaaf5c5dc9cd7c72b940ca6",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeComposerVoiceArbitrationUiTest.kt": "071239e4ea1fe104cd828e7a8d0fe1d09be39a53b9729bcb2e02a58d53e94f41",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalContractTest.kt": "9c0a877b41fdd4893715841aa92a198315e455308c6789ee7e7aa0db96e84146",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalOwnerTest.kt": "db6f37e034f998656ddbbb9a08b0830221a690a6df0fb688e59ad26c527eb9ce",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalVoiceTest.kt": "c63e73c5d8363447905262b4936c465d2d92ae5fe9643ff64f901817ae3aa01b",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceActionTest.kt": "48214e30f99b7c0111053e268bc124f017e3994145ec62ef1597ebcd9c47cdc0",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceControllerTest.kt": "dea2271196b268d9126f48d62a3e115ca79b3a4b624be4f4dd894189df8a6a57",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceDownloadTest.kt": "c37a54595bad49cd6361213225242945cce1d31b9e7253ad82f8a66e8627dfb7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoicePanelUiTest.kt": "e70cc2f69c2acd7bba5cc2b18632d297863ce96e071178a0c8fa2b94ab844d11",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceStartupBudget.kt": "ed50b4860138cf914ec0275f1f8338b90a3182511cce6580ef986e6c92f4768d",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceStartupBudgetTest.kt": "851aa8670697e02707d9690ae3a90c3245b0285c5e5a52e0a6d9fc99185a6da1",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceFailureStyleUiTest.kt": "d8abac7778b6a7c576ede288f491c8ba9f60faa75cbff02cca404925e818b20e",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceInteractionUiTest.kt": "955bb1df145059863c8392eee9c1a1e1703c83ce83a849ba0e15df422ac42c14",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceRawGateTest.kt": "6092332a410fd8ddf0e411ae1559d8be3709b175a925b3c616ef6be6a55c76e6",
+    "apps/android/src/debug/AndroidManifest.xml": "1306ce67d5d24b209aa8326e08620be60c02b1f3b717a7dc89f53b7d77a733be",
+    "apps/android/src/debug/kotlin/com/agenthub/android/NativeMigrationProvisionalOwnerActivity.kt": "ab3b398a0e1418c8c0407f3584f471dab9dd20c795e4430f4b0d63772077831b",
+    "apps/android/src/main/kotlin/com/agenthub/android/AgentHubApp.kt": "440b620c23e4670001e6a8ab8559c07d30f0495f51358cc93c6e83ff64a558c3",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "ffebb47860dc55e8f1cdf40b910db5f4bbfea12a94c5fe7f9fa909ce373da8c5",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "a98709f7272415073cc41e94520e5fc9d759755fc361f27f299072e5b1d877cb",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt": "5b8fd750375b50661ceb3c0a89667ec37786e6b053c9c311dcd1eb39f29d1f15",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeComposerVoiceInput.kt": "661416d3887881ce93dda308417099a430b62c6fa6666de76cf4192dc5c16cde",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "73480656ace117a1535eae7ebc21de8d61da86e89683fc0c2935d896fa73d215",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationController.kt": "919aa1f6a5ca16af641554accec0881847ff43bddc0d3ec89fdb62c9abc63458",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "980b67e11401c631dce141e9b0997def9895b9bc26343f5739c874696140bf75",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt": "3c7bd9c35766ebe3dda8db3cedc02cf16bb72e6abbc6cbbbc7e2994b9cd8d3c2",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalFiles.kt": "0ff500cdfef13430b83fa95fc9c2181d1c31b3ea0f3947424b07ba5291207117",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalVoice.kt": "dada96245db60bebd0e6174b0ece1c8a5ebade64a6433e46f75f39cba8e68961",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationVoice.kt": "c44d243c398912a1cc968bd1eb1a375bf9f859a189dfd57a2d43903f67deefe6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceAction.kt": "ca34726c46853114859dcbe6ef195802b683919d0eb3ae634c83e9d0a4a5900e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceDownload.kt": "bc5654783c5a1aff44fe5eec874ecb13f74080badc55a7ac7086844d7e1abd21",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceSpeech.kt": "16fffd7877d57caa460da23068f8c47d787b455f05f0bbb390fd67daeac8e867",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "794acfc18e20761bb965a473a59ae9df715c382898b003b908cf297db82d414c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt": "0c1d6eff93ce5bbbbb1bd93c7c1b56d66db52ae799553b9f11555afb925837ba",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt": "e3bfe8cb5d1e714e51886fb9f5b86011e5b6561210b0d047e8e309da46fa320e",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceFailureStyle.kt": "2e493c442bac6f58427ff38fa3e777a8dc13ea3fd3b3c28fd74d794c630e786d",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "913c2214c9caf3f07f9bbd10793837997f53b36b8bf1f516837847ff3bb78d23",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputView.kt": "0bd6cd16493cb3b6790532f433194b486340cc6bca23852bdbc1bbfb7d732a21",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "90a26039eb09a17c7ddc91b895a128205a8a41b980bc9e6eccd098dd39316d36",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "7a4ff32390a12d61a575f15b59d3a51805f8ba95c70a162a661175bf40fe77cd",
+    "apps/android/src/main/res/values/product_strings.xml": "13d6f0763dae4c478bbfe1b9fa03b4f35c55f4c2878da5790fcdae68963538dc"
+  },
+  "ios": {
+    "changed": false,
+    "comparison": "Current iOS behavior remains the source for input hold, failure retry, original preservation and migration safety. No current iOS native or full visual acceptance is claimed."
+  },
+  "android": {
+    "implementation": "in-progress",
+    "build": "r5 passed: exact783/792,115tasks(10executed/105up-to-date)",
+    "native": "current r5:9 unique methods/15 invocations (six structural on API26/API37,three real Main owner on clean API26); all known method0/overall-1/protection/release. No full P7/UI/real DEV claim.",
+    "uniqueNativeSelectorsPrepared": 56,
+    "fullP7Complete": false,
+    "fullP8Complete": false,
+    "fullP9Complete": false
+  },
+  "pending": [
+    "Provisional streaming/cold chain; API37 Main owner with preserved existing P9 material remains pending independent clean context",
+    "Parent complete owned raw/cache evidence, including deliberate symlink exception",
+    "F64 gestures/style and UI7 font/landscape current native/AX/pixels",
+    "Model actions/controller native and API26 actual install/recognition",
+    "Provisional recovery message must agree with unavailable retry action",
+    "Source52 live PID admission and postwrite cold readers",
+    "Remaining 24 system-scope inventory, physical and real DEV"
+  ],
+  "boundaries": {
+    "taskProjectBusiness": "paused",
+    "iOSA6": "paused",
+    "unknownReplay": false,
+    "Source52OldProofRewritten": false,
+    "physicalAndroidTouched": false,
+    "Source52ThreeTestsUnchanged": true,
+    "boundedCurrentNativePassClaimed": true,
+    "completeNativeProductPassClaimed": false
+  },
+  "candidate": {
+    "sourceSha256": "68fab017812d2ae31486b07fda4e51c032a2df1324f3095dc77026cd9da12fba",
+    "expandedSourceSha256": "4a694ffcd0427b0229d3839b3a95d0d78c1a510ecc86fb2d42c389883db30aeb",
+    "appSha256": "b4ca06edd75b1b8e66c72841ac3882e65ef2f58e690b133d201771da321019d5",
+    "testSha256": "2771bf5941b345ce1fa33c75961acb77084916c1e23a60f9ad542b633bc1c718",
+    "examinerSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225"
+  },
+  "candidateSha256": "55382381101672b914e3b0c48923f81ac8cf3180c315ce0dcdbcccad66fe0c73",
+  "identitySha256": "b2f108b0225f0267040c82ef5bdc8d5f3ae58c7d6666ed81f9b9ae33490d3033",
+  "auxiliary": {
+    "r3WorkspaceCheck": "passed:674.4s,159524B,9d28e023cec57d61867435e5ff2fb79bd5d06e17c1e6929948127a0e43d2d77a",
+    "r4AndR5Sdk": "passed; separate fingerprints retained",
+    "currentNativeOrFullDevClaim": false
+  },
+  "nativeHistory": [
+    {
+      "candidate": "r3",
+      "canonical": "e04b2a69b3048287ffe35ba873f22dee0c128f8884e3f1ff0c82055bbe80411d",
+      "methods": 6,
+      "invocations": 12,
+      "result": "bounded native pass",
+      "scope": "raw gate and provisional format; no UI/full P7",
+      "defaultFamilies": "API26 one empty root;API37 eleven empty roots; zero default files; each UID, full mic, boot and APK preserved"
+    },
+    {
+      "candidate": "r3",
+      "method": "Owner export",
+      "result": "known setup failure",
+      "runnerMethodCode": -2,
+      "overall": -1,
+      "nativeCallerExit": 0,
+      "wrapperExit": 2,
+      "protectionComplete": true,
+      "bodyEntered": false,
+      "cause": "sealed-file fixture helper required inspectable manifest for an intentionally unsealed original; old failure unchanged"
+    },
+    {
+      "candidate": "r4-final",
+      "method": "Owner export",
+      "result": "unknown",
+      "methodTerminal": null,
+      "overall": 0,
+      "diagnostic": "Process crashed",
+      "afterProtectionSampled": false,
+      "workerAndFlock": "retained",
+      "queryReplayRestore": "forbidden"
+    },
+    {
+      "candidate": "r5",
+      "method": "Owner export on existing API37 context",
+      "result": "known prelaunch rejection",
+      "cause": "existing cold-router material retained; no deletion or bypass",
+      "bodyEntered": false,
+      "afterProtection": "passed",
+      "fullOwnerPass": false
+    },
+    {
+      "candidate": "r5",
+      "scope": "fresh API26 Main owner3+structural6, existing API37 non-Main structural6",
+      "uniqueMethods": 9,
+      "invocations": 15,
+      "result": "bounded Native pass",
+      "parentRawCallsIndependentlyHashed": 795,
+      "freshBootstrapRawCallsIndependentlyHashed": 47,
+      "MainLaunches": 3,
+      "defaultData": "fresh API26 no default roots/files; API37 eleven empty default roots/no files",
+      "fullMicBootApkIndividualUidAndDefaultPreserved": true,
+      "independentOwnedBytesCollected": false,
+      "fullP7OrUIOrPhysicalPassed": false,
+      "oldUnknownReclassified": false
+    }
+  ],
+  "processRecord": "../records/source53-provisional-voice-controls.md"
+}

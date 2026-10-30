@@ -116,8 +116,9 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
         val rows = value.rows.filterValues { ThreadReadingIdentity.scopeKey(it.target) in value.scopes && it.unread }
         return NativeUnreadSnapshot(value.revision, rows.keys.toSet(), rows.values.groupingBy { ThreadReadingIdentity.scopeKey(it.target) }.eachCount())
     }
-    private fun transaction(action: (Ledger) -> Unit): NativeUnreadSnapshot = storage.operationTransaction {
-        val value = load(); val before = encodeComparison(value); action(value)
+    private fun transaction(owner: NativeReadingWriteFence.Lease?=null,action: (Ledger) -> Unit): NativeUnreadSnapshot = storage.operationTransaction {
+        val value = load(); val before = encodeComparison(value)
+        if(owner==null)action(value)else owner.ifCurrent { action(value) }
         if (encodeComparison(value) != before) { value.revision = Math.addExact(value.revision, 1); save(value) }
         projection(value)
     }
@@ -136,7 +137,10 @@ class NativeReadingLedger(private val storage: NativeSessionStorage) {
         NativeReadingPresentationPolicy.mayPresent(event,row.latest,row.read,row.replyUnread,row.notices[event.id])
     }
     /** Caller supplies all saved real targets, including offline computers. Removing a connection only changes counting. */
-    fun reconcile(scopes: List<TargetScope>, values: List<NativeReadingSnapshot>): NativeUnreadSnapshot = transaction { ledger ->
+    fun reconcile(scopes: List<TargetScope>, values: List<NativeReadingSnapshot>): NativeUnreadSnapshot = reconcile(scopes,values,null)
+    /** A queued pre-restore Session may finish IO, but cannot mutate the restored ledger. */
+    internal fun reconcileOwned(scopes: List<TargetScope>,values: List<NativeReadingSnapshot>,owner: NativeReadingWriteFence.Lease): NativeUnreadSnapshot = reconcile(scopes,values,owner)
+    private fun reconcile(scopes: List<TargetScope>,values: List<NativeReadingSnapshot>,owner: NativeReadingWriteFence.Lease?): NativeUnreadSnapshot = transaction(owner) { ledger ->
         ledger.scopes = scopes.map(ThreadReadingIdentity::scopeKey).toSet()
         values.forEach { value ->
             if (ThreadReadingIdentity.scopeKey(value.target) !in ledger.scopes) return@forEach

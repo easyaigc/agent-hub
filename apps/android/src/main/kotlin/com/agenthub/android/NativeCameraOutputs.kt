@@ -7,13 +7,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
-import java.security.MessageDigest
 import java.util.UUID
 
 /** Only this encrypted claim can retire an output. Unclaimed files are never swept. */
 internal class NativeCameraOutputs(context: Context,private val storage: NativeSessionStorage) {
     private val context=context.applicationContext
-    private val scope=MessageDigest.getInstance("SHA-256").digest(storage.coordinationKey.toByteArray()).take(16).joinToString("") { "%02x".format(it) }
+    private val scope=NativeMigrationSelectionRawInventory.scope(storage.coordinationKey)
     private val directory=File(this.context.filesDir,"camera-output-v1/$scope")
     private fun name(id: String): String { require(UUID.fromString(id).toString()==id);return "output-v1-$id" }
     fun output(id: String): NativeCameraOutput {
@@ -28,7 +27,7 @@ internal class NativeCameraOutputs(context: Context,private val storage: NativeS
         val value=JSONObject(raw);require(value.keys().asSequence().toSet()==setOf("version","id")&&value.getInt("version")==1&&value.getString("id")==id)
         return true
     }
-    suspend fun prepare(id: String): NativeCameraOutput = withContext(Dispatchers.IO) {
+    private suspend fun prepareOriginal(id: String): NativeCameraOutput = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             require(!claimed(id)) { "Camera output was already prepared" }
             val output=output(id);check(directory.isDirectory||directory.mkdirs())
@@ -37,21 +36,37 @@ internal class NativeCameraOutputs(context: Context,private val storage: NativeS
             catch(error: Exception) { if(output.file.canonicalFile==File(directory.canonicalFile,output.file.name))output.file.delete();throw error }
         }
     }
-    suspend fun beforeRead(id: String) = withContext(Dispatchers.IO) {
+    private suspend fun beforeReadOriginal(id: String) = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             check(claimed(id)) { NativeFileIntakeFailure.UNAVAILABLE }
-            val output=output(id);revoke(id)
+            val output=output(id);revokeOriginal(id)
             check(output.file.isFile) { NativeFileIntakeFailure.UNAVAILABLE }
         }
     }
-    fun revoke(id: String) { context.revokeUriPermission(output(id).uri,Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
-    suspend fun cleanup(id: String) = withContext(Dispatchers.IO) {
+    private fun revokeOriginal(id: String) { context.revokeUriPermission(output(id).uri,Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+    private suspend fun cleanupOriginal(id: String) = withContext(Dispatchers.IO) {
         storage.operationTransaction {
-            revoke(id)
+            revokeOriginal(id)
             if(!claimed(id))return@operationTransaction
             val output=output(id)
             if(output.file.exists())check(output.file.isFile&&output.file.delete()) { "Owned camera output removal was not confirmed" }
             storage.remove(name(id));check(storage.read(name(id))==null)
         }
     }
+    suspend fun prepare(id: String): NativeCameraOutput = NativeInboxOwnership.writing(storage){prepareOriginal(id)}
+    suspend fun beforeRead(id: String) = NativeInboxOwnership.writing(storage){beforeReadOriginal(id)}
+    suspend fun cleanup(id: String) = NativeInboxOwnership.writing(storage){cleanupOriginal(id)}
+    suspend fun revoke(id: String) = NativeInboxOwnership.writing(storage){withContext(Dispatchers.IO){revokeOriginal(id)}}
+    /** A callback or cooperative lock cannot prove an external camera descriptor has closed. */
+    internal fun requireNoOriginalForMigration() {
+        check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())
+        require(directory.canonicalFile==File(context.filesDir.canonicalFile,"camera-output-v1/$scope"))
+        val path=directory.toPath()
+        if(java.nio.file.Files.notExists(path,java.nio.file.LinkOption.NOFOLLOW_LINKS))return
+        require(!java.nio.file.Files.isSymbolicLink(path))
+        val stat=android.system.Os.lstat(directory.path)
+        require(android.system.OsConstants.S_ISDIR(stat.st_mode)&&stat.st_uid==android.os.Process.myUid()&&stat.st_mode and 0x3f==0)
+        if(requireNotNull(directory.listFiles()).isNotEmpty())throw NativeInboxOwnership.Busy()
+    }
+
 }

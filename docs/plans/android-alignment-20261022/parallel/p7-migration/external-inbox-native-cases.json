@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operation": "parent-p7-external-inbox-implementation-20261030-1",
+  "sourceOnly": true,
+  "groups": [
+    {
+      "class": "com.agenthub.android.NativeMigrationInboxContractTest",
+      "kind": "JVM auxiliary",
+      "status": "JVM3 passed revision4; Android native not executed",
+      "selectors": [
+        "exactAllPhaseOriginalsAndHistoricalTenSlotsStayInertAndContentAddressed",
+        "interruptedAndConsumedResidueIsPreservedButOrphanUnknownAndMissingReadyBytesReject",
+        "emptyArchiveUnknownCatalogAndMissingExtraOrChangedFramesHaveExplicitOutcomes"
+      ]
+    },
+    {
+      "class": "com.agenthub.android.NativeMigrationInboxStorageTest",
+      "kind": "native storage/process",
+      "status": "not executed",
+      "selectors": [
+        "exactStreamCandidateActivationAndReexportKeepAllFourPhasesInertAndLaterDraft",
+        "fullTwentyMiBBinaryUsesStreamCopiesAndRetainsSourceCiphertext",
+        "unknownCatalogCorruptEnvelopeAndInterruptedPublicationKeepOriginalCandidate",
+        "absentEmptyMissingKeySidecarsLinksAndUnknownChildAreNeverCreatedRecoveredOrOmitted",
+        "siblingSidecarOrChildCreatedAfterStreamWriteRejectsPublicationAndRetainsOriginals",
+        "writeOriginalInboxCandidateForAnotherPid",
+        "activateOriginalInboxCandidateInSecondPidWithoutRestaging",
+        "thirdPidReadsAndCopiesOriginalInboxWithoutCleanupAndRepeatsExactReceipt"
+      ]
+    },
+    {
+      "class": "com.agenthub.android.NativeMigrationInboxOwnerTest",
+      "kind": "native Activity owner",
+      "status": "not executed",
+      "selectors": [
+        "actualControllerPreservesPartialCleanupAndTransfersOriginalInboxWithoutNewStartupCleanup",
+        "actualStartupCleanupAndRefreshKeepWritingAfterControllerRejectsBusyKernelOwner",
+        "actualRetryAndConsumeWaitForProviderAndMetadataIoBeforeMigrationAdmission",
+        "intentDuringOwnershipAcquisitionRefusesBeforePauseAndDrainsOnceOnOriginalOwner",
+        "lateActivityIntentInvalidatesFrozenExportThenReachesTransferredSourceInboxOnce"
+      ]
+    }
+  ],
+  "nativeTotal": 13,
+  "nativeExecuted": false,
+  "executionOwner": "Root",
+  "privateRunArgument": "migrationInboxRun=<fresh canonical UUID>",
+  "ownerIsolation": {
+    "activity": "com.agenthub.android.NativeMigrationInboxOwnerActivity",
+    "debugOnly": true,
+    "exported": false,
+    "beforeLaunch": "prepare exact private context/session; refuse live Main/P9 owner/router; no default Main prewarm or NativeTestForeground",
+    "processPolicy": "one owner selector per fresh acceptance process; do not reset existing state to satisfy admission",
+    "release": "after inner Activity rule closes; teardown retires only this fixture",
+    "context": "debug protected runtimeContext only; framework applicationContext remains Application; explicit native assertions pending"
+  },
+  "coldRoles": {
+    "selectors": [
+      "writeOriginalInboxCandidateForAnotherPid",
+      "activateOriginalInboxCandidateInSecondPidWithoutRestaging",
+      "thirdPidReadsAndCopiesOriginalInboxWithoutCleanupAndRepeatsExactReceipt"
+    ],
+    "requirement": "three distinct real PIDs; same run, immutable candidate ID/SHA/record count; no restage; preserve later draft and source ciphertext"
+  },
+  "notEvidenceFor": [
+    "system SAF/Provider routing",
+    "real Host/model DEV",
+    "iOS interoperability",
+    "full P7 scope",
+    "microphone activity"
+  ],
+  "failureMatrix": [
+    {
+      "boundary": "acquisition",
+      "cases": "actual receive/retry/add/housekeeping or foreign kernel owner live",
+      "result": "not admitted or UNSUPPORTED; original owner/writer continues; no ordinary voice seal"
+    },
+    {
+      "boundary": "late ingress",
+      "cases": "new Intent during acquisition or after quiescence",
+      "result": "epoch/lease invalid; no export publication; queued original reaches retained/transferred source once"
+    },
+    {
+      "boundary": "source",
+      "cases": "absent/empty/missing key/backup/new sidecar/symlink/hardlink/nested/unknown/generation sibling",
+      "result": "absence retained or exact empty original; unsupported states reject without creation/recovery/omission"
+    },
+    {
+      "boundary": "graph",
+      "cases": "4 phases, v1 maximum10/v2 5 or10; interrupted manifest/payload/cleanup; inline and thumbnail",
+      "result": "full exact originals retained; missing ready bytes, orphan/mismatched/unknown input rejects"
+    },
+    {
+      "boundary": "candidate",
+      "cases": "catalog unknown/version/field/alias/hash; corrupt envelope; interrupt publication",
+      "result": "validation fails before generation publication; original candidate/source/destination preserved"
+    },
+    {
+      "boundary": "destination",
+      "cases": "same receipt repeat; later draft; cold enumeration/copy; re-export",
+      "result": "exact inert originals, no active child rows/grants/callback/retry/upload/cleanup; no lost later edit"
+    },
+    {
+      "boundary": "final export publication",
+      "cases": "inject same namespace .bak/.new or a child directory after stream write, before all production publication fences",
+      "result": "must fail before AtomicFile.finishWrite; retain prior output bytes, original active root/source child/candidate receipt and injected object; Native not executed here"
+    }
+  ]
+}

@@ -33,7 +33,7 @@ final class NaturalProcessVisibility {
     }
     static final class Completed {
         final Diagnostic kind;final String nonce,body;
-        private Completed(Diagnostic kind,String nonce,String body){this.kind=kind;this.nonce=nonce;this.body=body;}
+        Completed(Diagnostic kind,String nonce,String body){this.kind=kind;this.nonce=nonce;this.body=body;}
     }
     static String nonce(String value){require(value!=null && UUID.fromString(value).toString().equals(value),"canonical diagnostic nonce");return value;}
     static byte[] script(Diagnostic kind,String value){
@@ -81,7 +81,9 @@ final class NaturalProcessVisibility {
     static final class Am {final boolean targetPresent,writerPresent;final String sectionBoundary;Am(boolean targetPresent,boolean writerPresent,String sectionBoundary){this.targetPresent=targetPresent;this.writerPresent=writerPresent;this.sectionBoundary=sectionBoundary;}}
     private static String uidLabel(int uid){int app=uid%100000;require(uid>=10000 && app>=10000 && app<20000,"unsupported instrumentation UID shape");return "u"+(uid/100000)+"a"+(app-10000);}
     private static Matcher one(String body,String regex,String code){Matcher m=Pattern.compile(regex,Pattern.MULTILINE).matcher(body);require(m.find(),code);Matcher duplicate=Pattern.compile(regex,Pattern.MULTILINE).matcher(body);duplicate.find();require(!duplicate.find(),code+" duplicate");return m;}
-    static Am am(Completed capture,int selfUid,int selfPid,int targetUid,int writerPid){
+    static Am am(Completed capture,int selfUid,int selfPid,int targetUid,int writerPid){return am(capture,selfUid,selfPid,targetUid,writerPid,OBSERVER);}
+    static Am am(Completed capture,int selfUid,int selfPid,int targetUid,int writerPid,String observer){
+        require(Arrays.asList(OBSERVER,"com.agenthub.android.OwnedPublicProcessNaturalObserver","com.agenthub.android.OwnedPublicProcessDiagnosticObserver").contains(observer),"fixed self observer component");
         require(capture!=null && capture.kind==Diagnostic.AM,"verified AM completion required");String raw=capture.body;
         require(raw.getBytes(StandardCharsets.UTF_8).length<=AM_BUDGET && raw.endsWith("\n") && raw.indexOf('\r')<0 && raw.indexOf('\0')<0,"AM bound/termination");
         require(!raw.contains("DUMP TIMEOUT") && !raw.contains("Permission Denial") && !raw.contains("Failure dumping") && !raw.contains("Error dumping"),"AM diagnostic incomplete/restricted");
@@ -114,7 +116,7 @@ final class NaturalProcessVisibility {
             require(count==number(summary.group(5),false),"AM process count/malformed row");
             Matcher arguments=one(block,"^      mArguments=.*$","AM arguments tail");String trimmed=block.replaceFirst("\\s+$","");int last=trimmed.lastIndexOf('\n');require(last>=0 && trimmed.substring(last+1).equals(arguments.group()),"AM incomplete record tail");
             require(!block.contains("DUMP TIMEOUT") && !block.contains("Permission Denial") && !block.contains("..."),"AM restricted/truncated");
-            if(pkg.equals(SELF) && name.equals(OBSERVER)){
+            if(pkg.equals(SELF) && name.equals(observer)){
                 require(!self && clazz.group(3).equals("false") && owner==selfUid && info.group(1).equals(SELF) && ownProcess && count==1 && targets.group(1).equals(SELF),"current self instrumentation owner/process");self=true;
             }
             if(owner==targetUid || info.group(1).equals(APP)){

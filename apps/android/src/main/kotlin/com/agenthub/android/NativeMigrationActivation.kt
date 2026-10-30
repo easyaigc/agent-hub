@@ -6,32 +6,37 @@ import java.util.UUID
 
 /** Internal activation boundary. UI must retire the old session and restore a newly opened handle. */
 internal class NativeMigrationActivation(private val context: Context,private val storage: NativeSessionStorage,
-    private val notificationLease: NativeMigrationNotificationActivationLease?=null) {
+    private val notificationLease: NativeMigrationNotificationActivationLease?=null,private val owner: NativeMigrationOwnerLease?=null) {
     internal class ExistingInstallation: Exception("请在尚未添加真实电脑的新安装中导入迁移文件，现有连接未更改。")
-    fun activate(receipt: NativeMigrationCandidateStore.Receipt,checkpoint: (Int)->Unit={}): String=storage.operationTransaction {
+    fun activate(receipt: NativeMigrationCandidateStore.Receipt,checkpoint: (Int)->Unit={}): String=storage.snapshotTransaction {storage.operationTransaction {
         storage.publishedMigration(receipt.id,receipt.sha256,receipt.recordCount)?.let{return@operationTransaction it}
         // The authoritative Vault also covers pairing committed before an ordinary metadata snapshot.
         val metadata=storage.metadata()
         if(metadata?.getJSONArray("clients")?.length()?.let{it>0}==true||CodexConnectionVault(storage).clients().isNotEmpty())throw ExistingInstallation()
+        val publication=NativeMigrationOriginals.Publication(storage,receipt)
+        NativeMigrationOriginals.withDestination(context,storage,owner,publication) {originals,originalsUnchanged->
         val destination=NativeMigrationForeground.preserveDestination(storage)
-        val localRecords=NativeVoicePreferenceRecord.preserveDestination(storage)
+        val localRecords=NativeVoicePreferenceRecord.preserveDestination(storage)+storage.migrationReadTextRecords(setOf(NativeSelectionReturnAudit.RECORD))
         val easyWorkDestination=NativeMigrationEasyWorkArchives.captureDestination(storage)
         val easyWorkBusinessDestination=NativeMigrationEasyWorkBusiness.captureDestination(storage)
         fun guarded(original: Map<String,String>): (Int)->Unit {
             val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()||NativeMigrationEasyWorkBusiness.RECORD in original||easyWorkBusinessDestination.isNotEmpty()
-            fun checkBoundary(){if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
+            fun checkBoundary(){originalsUnchanged();if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
             checkBoundary()
             return {point->if(point==0)checkBoundary();checkpoint(point);if(point==0)checkBoundary()}
         }
-        val stream=NativeMigrationStreamCandidate(context,storage)
-        if(stream.isStream(receipt))return@operationTransaction stream.read(receipt) { records ->
-            withPrepared(receipt,records.text,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination) {prepared->
-                storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepared,records.binary,4),receipt.recordCount,guarded(records.text))
+        fun publish(records: NativeMigrationStreamRecords): String {
+            val merged=NativeMigrationOriginals.merge(records,originals)
+            NativeMigrationCandidateStore(context,storage).validateStreamRecords(merged)
+            return withPrepared(receipt,merged.text,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination) {prepared->
+                storage.publishPreparedStreamMigration(receipt.id,receipt.sha256,NativeMigrationStreamRecords(prepared,merged.binary,4),receipt.recordCount,guarded(records.text)).also(publication::confirm)
             }
         }
-        val records=NativeMigrationCandidateStore(context,storage).readArchive(receipt)
-        storage.publishPreparedMigrationRecords(receipt.id,receipt.sha256,NativeMigrationRecords(prepare(receipt,records.text,localRecords,destination,easyWorkDestination,easyWorkBusinessDestination),records.binary),receipt.recordCount,guarded(records.text))
-    }
+        val stream=NativeMigrationStreamCandidate(context,storage)
+        if(stream.isStream(receipt))stream.read(receipt,::publish)
+        else publish(NativeMigrationCandidateStore(context,storage).readArchive(receipt).stream())
+        }
+    }}
     /** Only transformed values use encrypted scratch cells; root generations receive independent text. */
     private fun <T> withPrepared(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,easyWorkBusinessDestination: Map<String,String>,consume: (Map<String,String>)->T): T {
         val scratch=storage.child(context,"migration-candidates");val prefix="migration-text-transform:"+UUID.randomUUID();val created=mutableListOf<String>()
@@ -48,7 +53,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
         }finally {created.forEach(scratch::remove)}
     }
     private fun prepare(receipt: NativeMigrationCandidateStore.Receipt,original: Map<String,String>,localRecords: Map<String,String>,destination: Map<String,String>,easyWorkDestination: Map<String,String>,easyWorkBusinessDestination: Map<String,String>,persist: ((String,String)->NativeMigrationBlob)?=null): Map<String,String> {
-        val records=NativeMigrationTextMap.copy(NativeMigrationEasyWorkBusiness.mergeDestination(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),easyWorkBusinessDestination),persist);val metadata=JSONObject(records.getValue("metadata"))
+        val records=NativeMigrationTextMap.copy(NativeSelectionReturnAudit.merge(NativeMigrationEasyWorkBusiness.mergeDestination(NativeMigrationEasyWorkArchives.mergeDestination(NativeMigrationNotificationArchives.mergeDestination(original,destination),easyWorkDestination),easyWorkBusinessDestination),localRecords),persist);val metadata=JSONObject(records.getValue("metadata"))
         val clients=metadata.getJSONArray("clients").objects()
         val readers=clients.associate {row->val id=row.getString("id");id to UUID.nameUUIDFromBytes(("android-migration-reader-v1\u0000"+receipt.id+"\u0000"+id).toByteArray(Charsets.UTF_8)).toString()}
         clients.forEach {it.put("readerId",readers.getValue(it.getString("id")))}
@@ -75,7 +80,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
         // OS/device callbacks are not accepted; generation-scoped children start empty.
         // Immutable intent/result strings stay exact.
         NativeMigrationDeviceState.prepare(receipt,original,records)
-        records.putAll(localRecords)
+        records.putAll(localRecords.filterKeys {it!=NativeSelectionReturnAudit.RECORD})
         return records
     }
 }

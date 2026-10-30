@@ -35,6 +35,13 @@ internal object NativeChatNotificationColdStart {
     }
     private fun eligible(context: Context) = BuildConfig.DEBUG && context.packageName == "com.easyai.agenthub.android.acceptance"
     private fun guard(context: Context) = require(eligible(context)) { "Exact independent debug acceptance package required" }
+    /** Read-only admission before any ordinary owner fixture creates its private installation. */
+    internal fun requireUnusedAcceptanceOwner(context: Context) {
+        guard(context)
+        check(active==null&&permit==null&&!naturalExistingKeyOnly&&activityEntries.get()==0&&defaultSelections.get()==0) {
+            "Existing notification owner retained; a fresh ordinary acceptance process is required"
+        }
+    }
     fun requireHooks(context: Context) {
         guard(context)
         for ((type, name) in listOf(MainActivity::class.java to "P9_NOTIFICATION_COLD_HOOK", MobileSession::class.java to "P9_NOTIFICATION_COLD_PORT_HOOK")) {

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "planned; no new selector implementation or execution",
+  "scopeIds": ["selection-journals", "selection-payloads", "camera-outputs"],
+  "groups": {
+    "sourceGraph": [
+      "all11 phases and v1 maximum10/v2 maximum5-or10",
+      "exact signed errorGeneration/destination/URI/grant audit; no grant calls",
+      "journal/payload write-order interruption states",
+      "terminal journal expiry with retained consumed payload receipt",
+      "inline/full20MiB/thumb bytes and unsupported orphan/mismatch"
+    ],
+    "camera": [
+      "raw absent/empty/nonempty; claim present/absent",
+      "create-before-claim and raw-delete-before-claim-removal interruption",
+      "unclaimed raw, unknown scope sibling, links, hardlinks, sidecars",
+      "real external writer continues when migration refuses; no coroutine cancellation or grant revoke as closure"
+    ],
+    "owner": [
+      "actual journal refresh still active after jobs removal",
+      "late registry/permission/camera result during and after acquisition",
+      "retry/retire/endWait/recoverReady admitted work; exact old owner restore/retire"
+    ],
+    "destination": [
+      "unknown schema/extra/missing alias/corrupt byte rejects before publication",
+      "interrupted atomic publication retains original source/candidate/destination",
+      "same receipt across3 real PIDs; no restage; later draft preserved",
+      "inert enumerate/copy/re-export; no old callback/grant/provider/read/retry/upload/cleanup"
+    ]
+  },
+  "nativeExecuted": false,
+  "runtimeChanged": false,
+  "executionOwner": "Root",
+  "fullP7Complete": false
+}

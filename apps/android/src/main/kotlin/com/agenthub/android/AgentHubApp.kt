@@ -341,6 +341,14 @@ import com.agenthub.core.*
     if(!DesktopSuggestionRules.sameDraft(textOwner.draft,currentTextDraft))textOwner=NativeComposerTextOwner(currentTextDraft,inputNavigation,
         focused&&androidx.core.view.ViewCompat.getRootWindowInsets(nativeView)?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime())==true)
     val editor=textOwner;val field=editor.value
+    // Hold, named accessibility action and microphone button use one fenced entry point.
+    fun startVoiceInput(): Boolean {
+        if(!interactive || !session.canUseVoice || session.voice?.active!=false || textOwner!==editor ||
+            inputNavigation!=session.suggestionNavigation || !DesktopSuggestionRules.sameDraft(editor.draft,session.suggestionDraft) ||
+            !session.isCurrent(inputDestination))return false
+        focus.clearFocus();keyboard?.hide();session.beginVoice();return true
+    }
+    val voiceHint=productText("长按语音输入");val voiceAction=productText("语音输入")
     DisposableEffect(suggestionOwner) {
         onDispose { session.releaseSuggestionSurface(suggestionOwner) }
     }
@@ -450,7 +458,7 @@ import com.agenthub.core.*
             }
         }
       val controls: @Composable ()->Unit = {
-        IconAction("mic",productText("语音输入"),"voice-input",interactive && session.canUseVoice && session.voice?.active==false) { session.beginVoice() }
+        IconAction("mic",productText("语音输入"),"voice-input",interactive && session.canUseVoice && session.voice?.active==false) { startVoiceInput() }
         Surface(shape=CircleShape,color=if(decision.enabled) colors.onSurface else colors.onSurface.copy(alpha=.12f),modifier=Modifier.size(48.dp).testTag(tag).semantics { contentDescription=actionLabel; role=Role.Button; if(!decision.enabled) disabled() }.combinedClickable(enabled=interactive&&(decision.enabled || session.canStop || session.canRunAgain),onClick={ if(decision.enabled && (session.voice?.active!=true || decision.action=="stop")) session.performAction(actionContext) },onLongClick={ if(session.composerActionCurrent(actionContext) && (session.canStop || session.canRunAgain)) actions=actionContext })) {
             Box(contentAlignment=Alignment.Center) { ProductIcon(if(decision.action=="busy") "more" else decision.action,color=if(decision.enabled) colors.background else colors.onSurface.copy(alpha=.3f)) }
         }
@@ -460,12 +468,15 @@ import com.agenthub.core.*
         Box(Modifier.weight(1f)) {
         if(ghost) Text(suggestion!!.text,color=colors.onSurfaceVariant,fontSize=16.sp,lineHeight=22.sp,maxLines=2,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(horizontal=14.dp,vertical=10.dp).testTag("suggestion-text"))
         key(editor) {
+        NativeComposerVoiceInput(editor,inputNavigation,interactive && session.canUseVoice && session.voice?.active==false,
+            {editor.value.selection},voiceHint,voiceAction,::startVoiceInput) { voiceInput ->
         BasicTextField(field,{ next ->
             if(textOwner===editor)editor.input(next,session.suggestionDraft,session.suggestionNavigation) { changed ->
                 if(session.text!=changed)session.text=changed
                 session.suggestionDraft
             }
         },Modifier.fillMaxWidth().heightIn(min=if(ghost)62.dp else 40.dp,max=160.dp).padding(horizontal=if(ghost)14.dp else 0.dp,vertical=10.dp)
+            .then(voiceInput)
             .focusRequester(inputFocus).onFocusChanged { if(textOwner===editor&&inputNavigation==session.suggestionNavigation) { focused=it.isFocused;onFocus(it.isFocused) } }
             .onPreviewKeyEvent { event ->
                 if(textOwner===editor&&inputNavigation==session.suggestionNavigation&&event.type==KeyEventType.KeyDown&&event.key==Key.Tab&&!event.isShiftPressed&&!event.isCtrlPressed&&!event.isAltPressed&&!event.isMetaPressed&&focused&&ghost) {
@@ -474,10 +485,11 @@ import com.agenthub.core.*
             }.testTag("message-input"),enabled=interactive,maxLines=6,minLines=if(ghost)2 else 1,
             textStyle=TextStyle(color=colors.onSurface,fontSize=16.sp,lineHeight=22.sp),decorationBox={ inner ->
                 Box {
-                    if(!ghost&&session.text.isEmpty())Text(productText("询问 %@",session.agentTitle),color=colors.onSurfaceVariant.copy(alpha=.6f),fontSize=16.sp)
+                    if(!ghost&&session.text.isEmpty())Text(productText("输入消息，长按语音输入"),color=colors.onSurfaceVariant.copy(alpha=.6f),fontSize=16.sp)
                     inner()
                 }
             })
+        }
         }
         }
         if(!ghost)controls()

@@ -10,6 +10,16 @@ import org.json.JSONObject
 /** One durable first request per native permission group. It never reads media or submits input. */
 internal class NativePhotoAuthorization(private val storage: NativeSessionStorage,permissions: Array<String>) {
     private val permissions=permissions.sorted()
+    @Volatile private var migrationOperation: String?=null
+    @Volatile private var retired=false
+    private var resumedOperation: String?=null
+    private val entryOpen get()=migrationOperation==null&&!retired
+    internal val migrationStorage get()=storage
+    internal val migrationIdle get()=!retired&&!busy
+    internal fun sealMigrationInputs(operation: String){check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());check(entryOpen);if(!migrationIdle)throw NativeInboxOwnership.Busy();migrationOperation=operation}
+    internal fun requireMigrationSealed(operation: String){check(!retired&&migrationOperation==operation&&!busy)}
+    internal fun resumeMigrationInputs(operation: String){if(migrationOperation==null&&resumedOperation==operation)return;requireMigrationSealed(operation);migrationOperation=null;resumedOperation=operation}
+    internal fun retireForMigration(operation: String){requireMigrationSealed(operation);retired=true;storage.retireWriter()}
     var busy by mutableStateOf(false)
         private set
     var failed by mutableStateOf(false)
@@ -24,12 +34,12 @@ internal class NativePhotoAuthorization(private val storage: NativeSessionStorag
         else -> "external"
     }
     suspend fun claim(id: String,automatic: Boolean): Boolean {
-        if(busy||permissions.isEmpty())return false
+        if(!entryOpen||busy||permissions.isEmpty())return false
         busy=true;owner=id;failed=false
         var claimed=false
         try {
             claimed=withContext(Dispatchers.IO+NonCancellable) {
-                storage.operationTransaction {
+                NativeInboxOwnership.writing(storage){storage.operationTransaction {
                     val attempted=storage.read(record)?.let { raw ->
                         val value=JSONObject(raw)
                         require(value.keys().asSequence().toSet()==setOf("version","permissions","attempted")&&value.getInt("version")==1)
@@ -42,7 +52,7 @@ internal class NativePhotoAuthorization(private val storage: NativeSessionStorag
                         storage.write(record,JSONObject().put("version",1).put("permissions",JSONArray(permissions)).put("attempted",true).toString())
                         true
                     }
-                }
+                }}
             }
             currentCoroutineContext().ensureActive()
             return claimed
@@ -50,13 +60,13 @@ internal class NativePhotoAuthorization(private val storage: NativeSessionStorag
           catch(failure: Exception) { claimed=false;failed=true;return false }
         finally { if(!claimed&&owner==id) { owner=null;busy=false } }
     }
-    fun requestLaunch(id: String) { if(owner==id&&busy)launchId=id }
+    fun requestLaunch(id: String) { if(entryOpen&&owner==id&&busy)launchId=id }
     fun takeLaunch(id: String): Array<String>? {
-        if(launchId!=id||owner!=id||launched)return null
+        if(!entryOpen||launchId!=id||owner!=id||launched)return null
         launched=true;return permissions.toTypedArray()
     }
-    fun complete() { owner=null;busy=false;launchId=null;launched=false }
-    fun launchFailed() { complete();failed=true }
+    fun complete() { if(!entryOpen)return;owner=null;busy=false;launchId=null;launched=false }
+    fun launchFailed() { if(!entryOpen)return;complete();failed=true }
 }
 
 /** Registered outside the sheet so closing it cannot discard the permission completion. */

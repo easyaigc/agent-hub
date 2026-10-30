@@ -58,7 +58,7 @@ internal class NativeAttachmentInboxStore(private val storage: NativeSessionStor
         storage.write(index,JSONObject().put("version",2).put("revision",next.revision).put("records",JSONArray(rows)).toString())
         return next
     }
-    suspend fun snapshot(): InboxSnapshot = withContext(Dispatchers.IO) { storage.operationTransaction { decode() } }
+    private suspend fun snapshotOriginal(): InboxSnapshot = withContext(Dispatchers.IO) { storage.operationTransaction { decode() } }
     private suspend fun update(id: String,change: (InboxBatch)->InboxBatch): InboxBatch = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             val before=decode();val old=before.records.single { it.id==id };val next=change(old)
@@ -70,7 +70,7 @@ internal class NativeAttachmentInboxStore(private val storage: NativeSessionStor
         validId(id);val release=FixedFilePreparationLeases.acquire(storage.coordinationKey+":inbox-batch",id)
         return try { block() }finally { release() }
     }
-    suspend fun stage(id: String,sources: List<Uri>,resolver: ContentResolver,maximum: Int=5,read: suspend (Uri)->LocalAttachmentInput={ NativeFileIntake.read(resolver,it) }): InboxBatch = batchLease(id) {
+    private suspend fun stageOriginal(id: String,sources: List<Uri>,resolver: ContentResolver,maximum: Int=5,read: suspend (Uri)->LocalAttachmentInput={ NativeFileIntake.read(resolver,it) }): InboxBatch = batchLease(id) {
         require(AttachmentPreparationRules.canReserve(0,0,sources.size))
         val sourceHash=sha(JSONArray(sources.map { it.toString() }).toString().toByteArray())
         val batch=withContext(Dispatchers.IO) { storage.operationTransaction {
@@ -102,7 +102,7 @@ internal class NativeAttachmentInboxStore(private val storage: NativeSessionStor
             throw failure
         }
     }
-    suspend fun bind(expected: InboxBatch,destination: InboxBinding): InboxBatch = batchLease(expected.id) {
+    private suspend fun bindOriginal(expected: InboxBatch,destination: InboxBinding): InboxBatch = batchLease(expected.id) {
         update(expected.id) { current ->
             if(current.phase=="consumed")current else {
                 require(current.phase=="pending"&&current.maximum==expected.maximum&&current.slots==expected.slots) { NativeFileIntakeFailure.CHANGED }
@@ -111,12 +111,12 @@ internal class NativeAttachmentInboxStore(private val storage: NativeSessionStor
             }
         }
     }
-    suspend fun payload(batch: InboxBatch,file: CreationFile): LocalAttachmentInput {
+    private suspend fun payloadOriginal(batch: InboxBatch,file: CreationFile): LocalAttachmentInput {
         val current=snapshot().records.single { it.id==batch.id }
         require(current.phase=="pending"&&current.maximum==batch.maximum&&current.slots==batch.slots&&current.binding==batch.binding&&current.readyFiles.any { it==file }) { NativeFileIntakeFailure.CHANGED }
         return LocalAttachmentInput(file.name,file.mediaType,files.bytes(file),file.id)
     }
-    suspend fun consume(batch: InboxBatch,binding: InboxBinding) = batchLease(batch.id) {
+    private suspend fun consumeOriginal(batch: InboxBatch,binding: InboxBinding) = batchLease(batch.id) {
         val consumed=update(batch.id) { current ->
             if(current.phase=="consumed")current else {
                 require(current.phase=="pending"&&current.maximum==batch.maximum&&current.slots==batch.slots&&current.binding==binding) { NativeFileIntakeFailure.CHANGED }
@@ -125,10 +125,10 @@ internal class NativeAttachmentInboxStore(private val storage: NativeSessionStor
         }
         cleanup(consumed)
     }
-    suspend fun discard(id: String) = batchLease(id) {
+    private suspend fun discardOriginal(id: String) = batchLease(id) {
         cleanup(update(id) { it.copy(phase="consumed") })
     }
-    suspend fun cleanupConsumed() {
+    private suspend fun cleanupConsumedOriginal() {
         val ids=snapshot().records.filter { it.phase=="consumed"&&it.slots.isNotEmpty() }.map { it.id }
         for(id in ids)batchLease(id) { snapshot().records.firstOrNull { it.id==id&&it.phase=="consumed" }?.let { cleanup(it) } }
     }
@@ -143,6 +143,14 @@ internal class NativeAttachmentInboxStore(private val storage: NativeSessionStor
         } catch(cancel: CancellationException) { throw cancel }
           catch(_: Exception) { /* Preserve the consumed receipt and cleanup manifest; never resurrect input. */ }
     }
+    suspend fun snapshot(): InboxSnapshot=NativeInboxOwnership.writing(storage){snapshotOriginal()}
+    suspend fun stage(id: String,sources: List<Uri>,resolver: ContentResolver,maximum: Int=5,read: suspend (Uri)->LocalAttachmentInput={NativeFileIntake.read(resolver,it)}): InboxBatch=
+        NativeInboxOwnership.writing(storage){stageOriginal(id,sources,resolver,maximum,read)}
+    suspend fun bind(expected: InboxBatch,destination: InboxBinding): InboxBatch=NativeInboxOwnership.writing(storage){bindOriginal(expected,destination)}
+    suspend fun payload(batch: InboxBatch,file: CreationFile): LocalAttachmentInput=NativeInboxOwnership.writing(storage){payloadOriginal(batch,file)}
+    suspend fun consume(batch: InboxBatch,binding: InboxBinding)=NativeInboxOwnership.writing(storage){consumeOriginal(batch,binding)}
+    suspend fun discard(id: String)=NativeInboxOwnership.writing(storage){discardOriginal(id)}
+    suspend fun cleanupConsumed()=NativeInboxOwnership.writing(storage){cleanupConsumedOriginal()}
     companion object {
         private fun sha(bytes: ByteArray)=MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
     }

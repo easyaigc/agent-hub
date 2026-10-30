@@ -10,7 +10,7 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class MainActivity : ComponentActivity() {
+open class MainActivity : ComponentActivity() {
     companion object { const val P9_NOTIFICATION_COLD_HOOK = NativeChatNotificationColdStart.HOOK_VERSION }
     private data class Ingress(val intent: android.content.Intent,val id: String)
     private data class Retained(val session: MobileSession,val migration: NativeMigrationController,val ingress: java.util.ArrayDeque<Ingress>)
@@ -24,12 +24,18 @@ class MainActivity : ComponentActivity() {
         override fun currentStorage()=session.migrationStorage
         override suspend fun quiesce(operationId: String): NativeMigrationOwnerLease {
             val original=session
-            readNetworkMonitor.stop();original.discovery?.stop();original.easyWorkDiscovery?.stop()
-            try{return original.quiesceForMigration(operationId)}
-            catch(failure: Throwable){original.configureChatNotifications(applicationContext);if(started)startRuntime();drainMigrationIngress();throw failure}
+            var raw: NativeVoiceRawGate.Frozen?=null
+            try {
+                raw=original.freezeVoiceForMigration(operationId) // Refuse before stopping or pausing anything.
+                readNetworkMonitor.stop();original.discovery?.stop();original.easyWorkDiscovery?.stop()
+                return original.quiesceForMigration(operationId,raw)
+            }catch(failure: Throwable){
+                if(raw!=null){original.releaseVoiceForMigration(raw);original.configureChatNotifications(runtimeContext());if(started)startRuntime()}
+                drainMigrationIngress();throw failure
+            }
         }
         override suspend fun restore(lease: NativeMigrationOwnerLease,requiresExplicitEnrollment: Boolean) {
-            if(session.migrationStorage===lease.restoredStorage)return
+            if(session.migrationStorage===lease.restoredStorage){session.resumeSelectionsAfterMigration();return}
             check(session.migrationStorage===lease.storage)
             // IO flag was checked before this boundary. The production coordinator also starts
             // closed and verifies the durable preference on IO before any enrollment or recovery.
@@ -37,42 +43,49 @@ class MainActivity : ComponentActivity() {
             check(lease.requiresExplicitEnrollment==requiresExplicitEnrollment)
             check(session.ownsMigrationLease(lease))
             val original=session
-            val freshStorage=withContext(Dispatchers.IO){prepareNativeMigrationStorage(applicationContext,lease.storage)}
+            val prepared=withContext(Dispatchers.IO){
+                val value=prepareNativeMigrationStorage(runtimeContext(),lease.storage,lease.inboxWriters?.childKey)
+                Triple(value,value.migrationInboxKey(),NativeMigrationSelectionJournal.Kind.entries.associateWith(value::migrationSelectionKeys))
+            }
+            val (freshStorage,inboxKey,selectionKeys)=prepared
             val fresh=MobileSession(freshStorage)
             fresh.migrationController=migration
-            try {fresh.restoreForMigration();check(!isDestroyed&&!isChangingConfigurations)}catch(failure: Throwable){fresh.abandonMigrationRestore();throw failure}
+            try {fresh.restoreForMigration();original.awaitSelectionReturnsForMigration(lease.operationId);check(!isDestroyed&&!isChangingConfigurations)}catch(failure: Throwable){fresh.abandonMigrationRestore();throw failure}
+            val selections=original.takeSelectionsForMigration(lease,selectionKeys)
+            fresh.adoptInboxForMigration(original.takeInboxForMigration(lease,inboxKey),lease.operationId)
+            fresh.adoptSelectionsForMigration(selections,lease.operationId)
             original.retireForMigration(lease.operationId)
             original.voice?.retireForMigration();original.questionVoice?.retireForMigration()
             session=fresh;lease.restoredStorage=fresh.migrationStorage
-            configureRuntime(fresh,fresh.migrationStorage);renderSession()
+            configureRuntime(fresh,fresh.migrationStorage,migrationRestore=true);fresh.resumeSelectionsAfterMigration();renderSession()
             if(started)startRuntime();drainMigrationIngress()
         }
     }
-    private fun configureRuntime(value: MobileSession,storage: NativeSessionStorage) {
+    private fun configureRuntime(value: MobileSession,storage: NativeSessionStorage,migrationRestore: Boolean=false) {
         value.migrationController=migration
-        readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,value::observeNetworkReadPath)
-        value.configureVoice(applicationContext)
+        readNetworkMonitor=NativeReadNetworkMonitor(runtimeContext(),value::observeNetworkReadPath)
+        value.configureVoice(runtimeContext())
         if(!NativeChatNotificationColdStart.bound(value)){
-            value.discovery=CodexHostDiscovery(applicationContext,value,storage)
-            value.easyWorkDiscovery=EasyWorkDiscovery(applicationContext,value,storage)
+            value.discovery=CodexHostDiscovery(runtimeContext(),value,storage)
+            value.easyWorkDiscovery=EasyWorkDiscovery(runtimeContext(),value,storage)
         }
-        value.configureExternalInbox(applicationContext);value.configurePhotoPicker(applicationContext);value.configureCameraCapture(applicationContext);value.configureDocumentPicker(applicationContext);value.configureRecentPhotos(applicationContext,NativeChatNotificationColdStart.recentPhotoSource(applicationContext,value) ?: NativeRecentPhotos(applicationContext))
-        value.configureChatNotifications(applicationContext)
+        value.configureExternalInbox(runtimeContext(),migrationRestore);value.configurePhotoPicker(runtimeContext());value.configureCameraCapture(runtimeContext());value.configureDocumentPicker(runtimeContext());value.configureRecentPhotos(runtimeContext(),NativeChatNotificationColdStart.recentPhotoSource(runtimeContext(),value) ?: NativeRecentPhotos(runtimeContext()))
+        value.configureChatNotifications(runtimeContext())
     }
     private fun drainMigrationIngress() {
-        if(session.migrationPaused)return
+        if(session.migrationIngressPaused)return
         while(deferredIngress.isNotEmpty()){val original=deferredIngress.removeFirst();val next=externalOperationId
             externalOperationId=original.id;try {receive(original.intent)}finally{externalOperationId=next}}
     }
     private fun startRuntime() {
-        if(session.migrationPaused)return
-        session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext)
+        if(session.migrationIngressPaused)return
+        session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(runtimeContext())
         readNetworkMonitor.start();session.discovery?.start();session.easyWorkDiscovery?.start()
     }
     private var systemBarsDark: Boolean? = null
     private var externalOperationId=java.util.UUID.randomUUID().toString()
     private fun receive(intent: android.content.Intent) {
-        if(session.migrationPaused){session.invalidateMigrationLease();if(deferredIngress.none {it.id==externalOperationId})deferredIngress.addLast(Ingress(android.content.Intent(intent),externalOperationId));return}
+        if(session.migrationIngressPaused){session.invalidateMigrationLease();if(deferredIngress.none {it.id==externalOperationId})deferredIngress.addLast(Ingress(android.content.Intent(intent),externalOperationId));return}
         if(intent.action==NativeChatNotificationPlatform.ACTION) {session.chatNotifications?.receiveIntent(intent);return}
         if(session.externalInbox?.receive(intent,externalOperationId)!=true)intent.data?.let(session::receiveLink)
     }
@@ -87,28 +100,37 @@ class MainActivity : ComponentActivity() {
         if(NativeNaturalLaunch.deferIfRequired(this,savedInstanceState!=null) { finishCreation(savedInstanceState); if(started)startRuntime() })return
         finishCreation(savedInstanceState)
     }
+    /** Application framework context stays intact; integrations may use a scoped installation. */
+    protected open fun runtimeContext(): android.content.Context=applicationContext
+    protected class InitialSession(val session: MobileSession,val needsRestore: Boolean=true)
+    /** Debug fixtures can supply an isolated installation before the real lifecycle starts. */
+    protected open fun createInitialSession(context: android.content.Context): InitialSession {
+        NativeChatNotificationColdStart.noteDefaultStorage(context)
+        return InitialSession(MobileSession(NativeSessionStorage(context)))
+    }
     private fun finishCreation(savedInstanceState: Bundle?) {
-        NativeReadAcceptanceTiming.configure(applicationContext,intent)
+        NativeReadAcceptanceTiming.configure(runtimeContext(),intent)
         @Suppress("DEPRECATION")
         val retainedState=lastCustomNonConfigurationInstance
         val retained=(retainedState as? Retained)?.session ?: retainedState as? MobileSession
-        val cold=NativeChatNotificationColdStart.selectForActivity(applicationContext,intent,retained,savedInstanceState!=null)
-        migration=(retainedState as? Retained)?.migration ?: NativeMigrationController(applicationContext)
-        session=retained ?: cold?.session ?: run {NativeChatNotificationColdStart.noteDefaultStorage(applicationContext);MobileSession(NativeSessionStorage(applicationContext))}
+        val cold=NativeChatNotificationColdStart.selectForActivity(runtimeContext(),intent,retained,savedInstanceState!=null)
+        migration=(retainedState as? Retained)?.migration ?: NativeMigrationController(runtimeContext())
+        val initial=if(retained==null&&cold?.session==null)createInitialSession(runtimeContext())else null
+        session=retained ?: cold?.session ?: checkNotNull(initial).session
         session.migrationController=migration
         deferredIngress=(retainedState as? Retained)?.ingress ?: deferredIngress
         val storage=session.migrationStorage
-        readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
-        if(!session.migrationPaused)session.configureChatNotifications(applicationContext)
-        session.configureVoice(applicationContext)
+        readNetworkMonitor=NativeReadNetworkMonitor(runtimeContext(),session::observeNetworkReadPath)
+        if(!session.migrationPaused)session.configureChatNotifications(runtimeContext())
+        session.configureVoice(runtimeContext())
         if(!NativeChatNotificationColdStart.bound(session)) {
-            session.discovery = CodexHostDiscovery(applicationContext, session, storage)
-            session.easyWorkDiscovery=EasyWorkDiscovery(applicationContext,session,storage)
+            session.discovery = CodexHostDiscovery(runtimeContext(), session, storage)
+            session.easyWorkDiscovery=EasyWorkDiscovery(runtimeContext(),session,storage)
         }
         externalOperationId=savedInstanceState?.getString("agentHubExternalOperationId")?.takeIf { value -> runCatching { java.util.UUID.fromString(value).toString()==value }.getOrDefault(false) } ?: externalOperationId
-        session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext,NativeChatNotificationColdStart.recentPhotoSource(applicationContext,session) ?: NativeRecentPhotos(applicationContext))
+        session.configureExternalInbox(runtimeContext());session.configurePhotoPicker(runtimeContext());session.configureCameraCapture(runtimeContext());session.configureDocumentPicker(runtimeContext());session.configureRecentPhotos(runtimeContext(),NativeChatNotificationColdStart.recentPhotoSource(runtimeContext(),session) ?: NativeRecentPhotos(runtimeContext()))
         if(retained==null)intent?.let(::receive)
-        if (retained == null) session.restore()
+        if (retained == null&&initial?.needsRestore!=false) session.restore()
         enableEdgeToEdge()
         renderSession();migration.attach(migrationLifecycle)
         startupReady=true;NativeNaturalLaunch.created(this)
@@ -116,7 +138,7 @@ class MainActivity : ComponentActivity() {
     private fun renderSession() {
         setContent {
             NativeMigrationSystemHost(migration)
-            LaunchedEffect(session,session.restoring) { session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext) }
+            LaunchedEffect(session,session.restoring) { session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(runtimeContext()) }
             AgentHubApp(session) { dark ->
                 if (systemBarsDark != dark) {
                     systemBarsDark = dark
@@ -146,14 +168,14 @@ class MainActivity : ComponentActivity() {
     private fun activateAcceptanceSession(replacement: MobileSession) {
         check(!replacement.restoring)
         readNetworkMonitor.stop();session.discovery?.stop();session.easyWorkDiscovery?.stop();session.leaveForeground()
-        session=replacement;session.migrationController=migration;session.configureVoice(applicationContext);session.configureExternalInbox(applicationContext);session.configurePhotoPicker(applicationContext);session.configureCameraCapture(applicationContext);session.configureDocumentPicker(applicationContext);session.configureRecentPhotos(applicationContext,NativeChatNotificationColdStart.recentPhotoSource(applicationContext,session) ?: NativeRecentPhotos(applicationContext));session.configureChatNotifications(applicationContext)
-        readNetworkMonitor=NativeReadNetworkMonitor(applicationContext,session::observeNetworkReadPath)
-        renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(applicationContext);readNetworkMonitor.start()
+        session=replacement;session.migrationController=migration;session.configureVoice(runtimeContext());session.configureExternalInbox(runtimeContext());session.configurePhotoPicker(runtimeContext());session.configureCameraCapture(runtimeContext());session.configureDocumentPicker(runtimeContext());session.configureRecentPhotos(runtimeContext(),NativeChatNotificationColdStart.recentPhotoSource(runtimeContext(),session) ?: NativeRecentPhotos(runtimeContext()));session.configureChatNotifications(runtimeContext())
+        readNetworkMonitor=NativeReadNetworkMonitor(runtimeContext(),session::observeNetworkReadPath)
+        renderSession();session.enterForeground();session.bindStoredVoicePreferencesIfReady();session.bindStoredVoiceDiscardIfReady(runtimeContext());readNetworkMonitor.start()
     }
     override fun onNewIntent(intent: android.content.Intent) {
         if(NativeNaturalLaunch.blocksIngress(this,startupReady)){super.onNewIntent(intent);NativeNaturalLaunch.rejectedIngress(this);return}
         easyWorkConnectionAuthority(session).invalidate(); session.coverPanelNotices();
-        super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent);NativeChatNotificationColdStart.afterNewIntent(applicationContext,intent,session)
+        super.onNewIntent(intent);setIntent(intent);externalOperationId=java.util.UUID.randomUUID().toString();receive(intent);NativeChatNotificationColdStart.afterNewIntent(runtimeContext(),intent,session)
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("agentHubExternalOperationId",externalOperationId);super.onSaveInstanceState(outState)

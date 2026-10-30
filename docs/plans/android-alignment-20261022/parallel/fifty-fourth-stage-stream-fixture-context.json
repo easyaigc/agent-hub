@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "id": "source54-stream-fixture-context",
+  "baseCommit": "9e482d73e1fefa30ccc683b600bc6cf17dfd0d77",
+  "scope": "Android acceptance fixture context canonical identity only; product/iOS behavior unchanged",
+  "featureIds": ["F42", "F46", "F58"],
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationProvisionalVoiceTest.kt": "a75eac3ff4684761d310a1cf68e6f56aa97ba02e72e25331fbcaa24827f08b55"
+  },
+  "oldSourceSha256": "c63e73c5d8363447905262b4936c465d2d92ae5fe9643ff64f901817ae3aa01b",
+  "knownFailure": {
+    "lease": "b73d9ea0-35a5-4213-b32b-e8cffa4462a2",
+    "run": "e4c70f10-269f-4fd5-b3ce-f2f8ac1920a9",
+    "methodCode": -2,
+    "overallCode": -1,
+    "adbExit": 0,
+    "unknown": false,
+    "protectionComplete": true,
+    "deviceReleased": true,
+    "ownedEvidenceComplete": false,
+    "summarySha256": "d157023f6511c218ae7386e0aa8ba523ef7df8e7f776569c5eafb97b323cc2f6",
+    "nativeStdoutSha256": "bb9a399aabc384ba3a56a0685234aca3635c39799990fa74ac6a2e9243ba1671",
+    "protectedSnapshotSha256": "95006f5d4ab3cba5b63b294c680a9f39a50d2a6ed063c80a4698eccec238437d",
+    "rootReviewed": true
+  },
+  "newSdk": {
+    "status": "passed",
+    "canonicalSourceSha256": "7913a813469ccdcd383200e8308ec276484a81943beec3a4dd7e1d9ca7c9f42b",
+    "canonicalInputCount": 783,
+    "expandedSourceSha256": "ced83090e6ab768cb797461bc5721dcafeb49a8c0fbeac42c1c6b4170008abbb",
+    "expandedInputCount": 792,
+    "candidateSha256": "1cc13a2443de95c0d5f9fc9820269d22822882cdde3b30231a481053045491ff",
+    "identitySha256": "f663dd9233e32dfffcbba57564c2bf22c30d985ea2e53a50349463afc87b204f",
+    "appSha256": "b4ca06edd75b1b8e66c72841ac3882e65ef2f58e690b133d201771da321019d5",
+    "testSha256": "8b4c9a37d3e80ab5fca39278068d6569d586d2bfec936e3538928fd9cbf17dc5",
+    "examinerSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+    "checks": [
+      "format",
+      "mobile-parity",
+      "git diff --check",
+      "Android SDK build",
+      "783/792 source readback",
+      "three APK cert/manifest/ZIP/v2 attestation"
+    ],
+    "rootIndependentlyRead783And792": true
+  },
+  "newNative": {
+    "version": 1,
+    "candidateSha256": "1cc13a2443de95c0d5f9fc9820269d22822882cdde3b30231a481053045491ff",
+    "nativeSelectors": 6,
+    "nativePassed": 6,
+    "completeOwnedScenarios": 5,
+    "metadataPendingSelectors": 1,
+    "cases": [
+      {
+        "selector": "com.agenthub.android.NativeMigrationProvisionalVoiceTest#fullStreamCandidateAndAtomicActivationPreserveExactInertOriginalAndLaterDraft",
+        "lease": "c33d3768-8d12-45a3-8f63-780f03f924c2",
+        "run": "fe1d7441-043c-4bfd-93f1-8519cdd5c914",
+        "summarySha256": "461c4f721dc2deeba95a16f31682d808ec7f82b6572451144194bcf63d51adbf",
+        "nativeStdoutSha256": "a793dd3ddf6a8ba572de58028c0895cdb5cbb283ba4dbed56ac1ed010ad5c9ba",
+        "nativePassed": true,
+        "fullProtection": true,
+        "ownedEvidenceComplete": true,
+        "phaseComplete": true,
+        "unknown": false,
+        "deviceReleased": true
+      },
+      {
+        "selector": "com.agenthub.android.NativeMigrationProvisionalVoiceTest#corruptUnknownSchemaAndInterruptedActivationKeepCandidateAndOriginals",
+        "lease": "1b30e02e-bb7a-4495-9700-e5832423bdf6",
+        "run": "4df505d6-f6ad-487d-99e6-c1257bdbd444",
+        "summarySha256": "7a52a129c750168421311a90d81f44336fd25c24bdec4c3bf36aa4ffd560502e",
+        "nativeStdoutSha256": "58e203d99afa40171e5bf3c506cc6ea2732c2d6ae00663241b158e2bbcc67393",
+        "nativePassed": true,
+        "fullProtection": true,
+        "ownedEvidenceComplete": true,
+        "phaseComplete": true,
+        "unknown": false,
+        "deviceReleased": true
+      },
+      {
+        "selector": "com.agenthub.android.NativeMigrationProvisionalVoiceTest#emptyAbsentLinkedUnindexedAndChangedRawInventoryHaveExplicitOutcomes",
+        "lease": "9b49be2a-d5e0-4e81-8b37-d0b8f7ad613a",
+        "run": "90e1575a-b095-4587-9f5c-3b7e39a0342b",
+        "summarySha256": "ede8e68c76c4f12f51d99686ccc5a9fff0a968dc900487d569a67d31fa068514",
+        "nativeStdoutSha256": "b988c5aa6597d773129d4b5577abf29cd98806afe4157d3e9135c1addeaa72a7",
+        "nativePassed": true,
+        "fullProtection": true,
+        "ownedEvidenceComplete": false,
+        "phaseComplete": false,
+        "unknown": false,
+        "deviceReleased": true
+      },
+      {
+        "selector": "com.agenthub.android.NativeMigrationProvisionalVoiceTest#writeOriginalCandidateForAnotherPid",
+        "lease": "8bddbd97-0afd-42da-afab-7b6d01d86ba6",
+        "run": "66be1a22-e389-49d7-9e17-6f5a3348782a",
+        "summarySha256": "1a99a17e8f0df1da8d848764f4f1c5da89c6271de6c7bb5f35deb417a02095fc",
+        "nativeStdoutSha256": "87a4965fea09516f5439d9eee56924723d44a841bb5a080aee1ab860f6b681ca",
+        "nativePassed": true,
+        "fullProtection": true,
+        "ownedEvidenceComplete": true,
+        "phaseComplete": true,
+        "unknown": false,
+        "deviceReleased": true
+      },
+      {
+        "selector": "com.agenthub.android.NativeMigrationProvisionalVoiceTest#activateOriginalCandidateInAnotherPidWithoutRestaging",
+        "lease": "8a8000c4-75fa-4b49-b291-c7260af1b6e8",
+        "run": "66be1a22-e389-49d7-9e17-6f5a3348782a",
+        "summarySha256": "7044e6dfd985f7c2b4c9bbf636f55f4fe16ef2756a49ea3842b5f8a44d216827",
+        "nativeStdoutSha256": "1476dab5269e9f680e97a7cafc4c33c27ff7946775f5460b8325796cb9ae13c4",
+        "nativePassed": true,
+        "fullProtection": true,
+        "ownedEvidenceComplete": true,
+        "phaseComplete": true,
+        "unknown": false,
+        "deviceReleased": true
+      },
+      {
+        "selector": "com.agenthub.android.NativeMigrationProvisionalVoiceTest#readExactOriginalAndIdempotentReceiptInThirdPidWithoutOldRecorder",
+        "lease": "56ba598f-1cbd-4c39-bc0f-641aa16b7927",
+        "run": "66be1a22-e389-49d7-9e17-6f5a3348782a",
+        "summarySha256": "8ed200e19fe1cd51c1668a329d3e9e50ef28c976b148986c67d3cf7b5e8ba956",
+        "nativeStdoutSha256": "f7794ec07426ae217425fdbb4e1641cf7796c0b614145b94fd0fac3b4315a966",
+        "nativePassed": true,
+        "fullProtection": true,
+        "ownedEvidenceComplete": true,
+        "phaseComplete": true,
+        "unknown": false,
+        "deviceReleased": true
+      }
+    ],
+    "coldNativePids": [8717, 9466, 10015],
+    "kernelTurnoverRootReviews": [
+      "fbea822ec412ffe0c849a7b26dfd226ab379ff33737f946c86de5c55b7f7fc2d",
+      "799efebfba295703994d9ce063873ed371f67225d9d3342e64c59b3a6b520e6f"
+    ],
+    "coldFinalRootReview": "1ee2fcf0e42d3702677e9dff0940a74eb8964f52406031732eaf9cbc778aba4c",
+    "fullRawBytesCompared": 131073,
+    "defaultFamilyFiles": 0,
+    "noNonemptyDefaultClaim": true,
+    "api26Heap": "512MiB;48MiB capacity not verified",
+    "realHostModelInputsAdded": 0,
+    "P7Complete": false
+  },
+  "fullP7Complete": false,
+  "originalUnknownNoQueryOrReplay": true,
+  "taskProjectManagement": "paused"
+}

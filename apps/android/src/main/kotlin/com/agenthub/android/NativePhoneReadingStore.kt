@@ -21,6 +21,7 @@ internal class NativePhoneReadingStore(storage: NativeSessionStorage?,private va
     var failure by mutableStateOf<String?>(null);private set
     var busy by mutableStateOf(false);private set
     private var generation=0L
+    private val reconciliationOwner=NativeReadingWriteFence()
     private data class Input(val scopes: List<TargetScope>,val values: List<NativeReadingSnapshot>,val legacy: List<NativeLegacyReading>)
     private var pending: Input?=null
     private var worker: Job?=null
@@ -131,7 +132,7 @@ internal class NativePhoneReadingStore(storage: NativeSessionStorage?,private va
         }
         pending=Input(scopes.toList(),rows.values.toList(),oldHosts.values.toList())
         if(worker?.isActive==true)return
-        val epoch=generation;busy=true
+        val epoch=generation;val ownership=reconciliationOwner.capture();busy=true
         worker=tasks.launch {
             try {
                 while(pending!=null && epoch==generation) {
@@ -149,7 +150,7 @@ internal class NativePhoneReadingStore(storage: NativeSessionStorage?,private va
                                 NativeReadingSnapshot(source.target,source.threadId,position,source.sourceUnread)
                             }
                             val snapshots=input.values+oldHosts
-                            val value=ledger.reconcile(input.scopes,snapshots)
+                            val value=ledger.reconcileOwned(input.scopes,snapshots,ownership)
                             val heads=snapshots.groupBy {
                                 ThreadReadingIdentity.key(it.target,it.threadId)
                             }.mapNotNull { (key,rows) -> NativePhoneReadingRules.latest(rows.map { it.latest ?: it.state?.latest })?.let { key to it } }.toMap()
@@ -186,6 +187,7 @@ internal class NativePhoneReadingStore(storage: NativeSessionStorage?,private va
         }
     }
     fun reset() {
+        reconciliationOwner.invalidate();worker?.cancel()
         clearNoticePresentation()
         generation++;lifecycle.leave();pending=null;worker=null;busy=false;focusedKey=null;heads.clear();legacyPositions.clear()
         snapshot=NativeUnreadSnapshot(0,emptySet(),emptyMap());ready=false;failure=null

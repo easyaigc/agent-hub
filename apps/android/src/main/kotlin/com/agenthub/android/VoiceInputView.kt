@@ -33,6 +33,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.semantics.testTag as semanticTestTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -78,6 +80,7 @@ import kotlin.math.sin
                 when(voice.phase) {
                     VoiceInputController.Phase.FINISHING->VoiceTranscriptionActivity(status,modifier)
                     VoiceInputController.Phase.LISTENING->VoiceListeningActivity(voice.levels,status,stopHint,voice::finish,modifier)
+                    VoiceInputController.Phase.FAILED->VoiceFailureTitle(productText(voice.failureTitleKey),modifier)
                     else->VoiceWaveform(voice.levels,modifier.testTag("dictation-waveform").semantics { contentDescription=status })
                 }
             }
@@ -90,7 +93,12 @@ import kotlin.math.sin
                         IconButton(onClick=voice::finish,enabled=false,modifier=Modifier.size(48.dp).testTag("stop-dictation").semantics { contentDescription=status }) {
                             CircularProgressIndicator(Modifier.size(18.dp),color=colors.onSurfaceVariant,strokeWidth=2.dp)
                         }
-                    } else IconAction(if(voice.phase==VoiceInputController.Phase.FAILED) "refresh" else "stop",productText(if(voice.discardFailed) "重试丢弃" else if(voice.phase==VoiceInputController.Phase.FAILED) "重试转写" else "结束录音并转写"),"stop-dictation",voice.phase==VoiceInputController.Phase.LISTENING || voice.canRetry || voice.discardFailed) { if(voice.discardFailed)voice.discard() else voice.finish() }
+                    } else if(voice.phase==VoiceInputController.Phase.FAILED) {
+                        val retry=voice.hasRetryableRecording
+                        VoiceFailurePrimaryAction(label=productText(if(voice.discardFailed)"重试丢弃"else if(retry)"重试转写"else"重新录音"),
+                            enabled=if(voice.discardFailed)true else if(retry)voice.canRetry else voice.canRecordAgain,
+                            onClick={if(voice.discardFailed)voice.discard()else if(retry)voice.finish()else voice.rerecord()})
+                    } else IconAction("stop",productText("结束录音并转写"),"stop-dictation",voice.phase==VoiceInputController.Phase.LISTENING,onClick=voice::finish)
                 }
             }
             if(compact) {
@@ -118,9 +126,38 @@ import kotlin.math.sin
                 }
             }
             if(voice.canRerecordWithSystem)VoiceRecoveryTextButton(label=productText("改用手机重新录音"),onClick=voice::recordAgainWithSystem,modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-rerecord-system"),fontSize=17.sp)
-            if(voice.phase==VoiceInputController.Phase.FAILED) VoiceRecoveryTextButton(label=productText("重新录音"),onClick=voice::rerecord,enabled=voice.canRecordAgain,colors=ButtonDefaults.textButtonColors(contentColor=Color(0xFF007AFF)),modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again"),fontSize=17.sp)
+            if(voice.phase==VoiceInputController.Phase.FAILED && (voice.hasRetryableRecording || voice.canFillRecognizedText)) VoiceRecoveryTextButton(label=productText("重新录音"),onClick=voice::rerecord,enabled=voice.canRecordAgain,colors=ButtonDefaults.textButtonColors(contentColor=Color(0xFF007AFF)),modifier=Modifier.padding(horizontal=14.dp).heightIn(min=48.dp).testTag("voice-record-again"),fontSize=17.sp)
         }
     }
+}
+
+/** Composer and question replies share the same persistent failure presentation. */
+@Composable internal fun VoiceFailureTitle(title: String,modifier: Modifier=Modifier) {
+    Row(modifier.heightIn(min=48.dp).testTag("voice-failure-title").semantics(mergeDescendants=true){},verticalAlignment=Alignment.CenterVertically,
+        horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        val color=voiceFailureTint()
+        val iconSize=with(LocalDensity.current){VoiceFailureStyle.fontSize.toDp()}
+        Canvas(Modifier.size(iconSize).testTag("voice-failure-icon")) {
+            val u=size.width/24f
+            drawCircle(color,10f*u,Offset(12f*u,12f*u),style=androidx.compose.ui.graphics.drawscope.Stroke(1.7f*u))
+            drawLine(color,Offset(12f*u,6f*u),Offset(12f*u,13f*u),1.7f*u)
+            drawCircle(color,1f*u,Offset(12f*u,17f*u))
+        }
+        Text(title,Modifier.weight(1f).testTag("voice-failure-label"),fontSize=VoiceFailureStyle.fontSize,
+            lineHeight=VoiceFailureStyle.lineHeight,fontWeight=VoiceFailureStyle.titleWeight,color=color)
+    }
+}
+
+/** PR60: icon-only failure action. The parent supplies the same circular background as close.
+ * Native Text is the single accessible name in Compose1.12; there is no rendered text label. */
+@Composable internal fun VoiceFailurePrimaryAction(label: String,enabled: Boolean,onClick: ()->Unit) {
+    IconButton(onClick=onClick,enabled=enabled,modifier=Modifier.size(VoiceFailureStyle.actionHitSize)
+        .testTag("stop-dictation").semantics {text=AnnotatedString(label)}) {VoiceFailureRetryIcon()}
+}
+
+/** Decorative fixed17dp clockwise glyph, matching iOS PR60 fixed17pt system image mapping. */
+@Composable internal fun VoiceFailureRetryIcon() {
+    ProductIcon("refresh",Modifier.size(VoiceFailureStyle.actionIconSize).testTag("voice-retry-icon"),LocalContentColor.current)
 }
 
 /** N067/N068: central stop action, mirrored side meters, one accessible button. */

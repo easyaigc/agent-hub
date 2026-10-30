@@ -177,7 +177,10 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
     }
 
     private fun validateRecordGraph(records: Map<String,String>, binaries: Map<String,String>, streams: Map<String,NativeMigrationBlob>?, verifySoundBytes: Boolean = true) {
-        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)
+        val inbox=NativeMigrationInbox.validate(records,streams?.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}))
+        val selectionBinaries=streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {name->NativeMigrationSelectionJournal.Kind.values().any {name.startsWith(NativeMigrationSelections.binaryPrefix(it))}})
+        val selections=NativeMigrationSelections.validate(records,selectionBinaries)
+        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)+inbox.textNames+selections.first+NativeMigrationPhotoLocals.validate(records,selectionBinaries)+NativeSelectionReturnAudit.validate(records)
         require("metadata" in records)
         // Frozen archive readers already checked their claimed records. Parse each other value once
         // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.
@@ -200,6 +203,8 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         val ancillaryNames = NativeMigrationAncillary.validate(parsed)
         val deviceNames = NativeMigrationDeviceState.validate(records,clients)
         val voicePreferenceNames = NativeVoicePreferenceRecord.validate(records)
+        val provisionalBinary=streams?.filterKeys {it.startsWith(NativeMigrationProvisionalVoice.PREFIX)}?:NativeMigrationProvisionalVoice.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationProvisionalVoice.PREFIX)})
+        val provisionalNames=NativeMigrationProvisionalVoice.validate(records,provisionalBinary,clients)
         val soundBinaries = NativeMigrationSounds.validate(records,binaries,streams,verifySoundBytes)
         val voiceBinaries=binaries.filterKeys {it.startsWith("voice-audio:")||it.startsWith(NativeVoiceDiscardCatalog.RAW_PREFIX)}
         val voiceStreams=streams?.filterKeys {it.startsWith("voice-audio:")||it.startsWith(NativeVoiceDiscardCatalog.RAW_PREFIX)}
@@ -226,6 +231,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             name in deviceNames -> Unit
             name in voicePreferenceNames -> Unit
             name == NativeMigrationSounds.RECORD -> Unit
+            name == NativeMigrationProvisionalVoice.RECORD -> Unit
             name in voiceNames -> Unit
             name in foregroundNames -> Unit
             name == "codex-private-connections-v1" -> CodexConnectionVault.validateRows(body)
@@ -256,7 +262,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
             }
             else -> error("Unsupported migration record")
         }
-        require((streams?.keys?:binaries.keys)==(voiceStreams?.keys?:voiceBinaries.keys)+attachmentBinaries+soundBinaries)
+        require((streams?.keys?:binaries.keys)==(voiceStreams?.keys?:voiceBinaries.keys)+attachmentBinaries+soundBinaries+provisionalNames+inbox.binaryNames+selections.second)
         NativeMigrationReferences.validate(parsed,clients,operations())
         // EasyWork credentials stay only in exact original-installation archives; projected
         // clients cannot use a credential reference or inherit execution authority.

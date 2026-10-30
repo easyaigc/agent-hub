@@ -50,15 +50,15 @@ internal class NativeDocumentJournal(private val storage: NativeSessionStorage) 
             .put("phase",record.phase).put("sources",JSONArray(record.sources)).put("releaseReadGrants",JSONArray(record.releaseReadGrants)) }
         storage.write(name,JSONObject().put("version",2).put("revision",before.revision+1).put("records",JSONArray(rows)).toString())
     }
-    suspend fun restore(): List<NativeDocumentRecord> {
+    private suspend fun restoreOriginal(): List<NativeDocumentRecord> {
         val generation=storage.beginRestore()
         return withContext(Dispatchers.IO) {
             val value=storage.operationTransaction { decode() }
             storage.finishRestore(generation) { };value.records
         }
     }
-    suspend fun records(): List<NativeDocumentRecord> = withContext(Dispatchers.IO) { storage.operationTransaction { decode().records } }
-    suspend fun prepare(original: NativePhotoRequest,phase: String="prepared"): NativeDocumentRecord = withContext(Dispatchers.IO) {
+    private suspend fun recordsOriginal(): List<NativeDocumentRecord> = withContext(Dispatchers.IO) { storage.operationTransaction { decode().records } }
+    private suspend fun prepareOriginal(original: NativePhotoRequest,phase: String="prepared"): NativeDocumentRecord = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             require(phase in listOf("permission","prepared"))
             val before=decode();require(before.records.none { it.awaitingResult })
@@ -71,7 +71,7 @@ internal class NativeDocumentJournal(private val storage: NativeSessionStorage) 
             NativeDocumentRecord(original.id,original.destination,original.errorGeneration,phase).also { write(before,retained+it) }
         }
     }
-    suspend fun update(id: String,change: (NativeDocumentRecord)->NativeDocumentRecord): NativeDocumentRecord = withContext(Dispatchers.IO) {
+    private suspend fun updateOriginal(id: String,change: (NativeDocumentRecord)->NativeDocumentRecord): NativeDocumentRecord = withContext(Dispatchers.IO) {
         storage.operationTransaction {
             val before=decode();val old=before.records.single { it.id==id };val next=change(old)
             require(next.id==old.id&&next.destination==old.destination&&next.errorGeneration==old.errorGeneration&&next.phase in PHASES)
@@ -82,5 +82,9 @@ internal class NativeDocumentJournal(private val storage: NativeSessionStorage) 
             if(next!=old)write(before,before.records.map { if(it.id==id)next else it });next
         }
     }
+    suspend fun restore(): List<NativeDocumentRecord> = NativeInboxOwnership.writing(storage){restoreOriginal()}
+    suspend fun records(): List<NativeDocumentRecord> = NativeInboxOwnership.writing(storage){recordsOriginal()}
+    suspend fun prepare(original: NativePhotoRequest,phase: String="prepared"): NativeDocumentRecord = NativeInboxOwnership.writing(storage){prepareOriginal(original,phase)}
+    suspend fun update(id: String,change: (NativeDocumentRecord)->NativeDocumentRecord): NativeDocumentRecord = NativeInboxOwnership.writing(storage){updateOriginal(id,change)}
     companion object { private val PHASES=setOf("permission","prepared","launched","selected","ready","detached","hold-selected","held","consumed","retired","failed") }
 }

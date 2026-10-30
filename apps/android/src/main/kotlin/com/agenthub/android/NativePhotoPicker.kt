@@ -17,11 +17,14 @@ internal class NativeAttachmentRequest(val destination: AttachmentImportDestinat
 internal typealias NativePhotoRequest=NativeAttachmentRequest
 
 /** One outstanding OS request survives Activity recreation with its retained Session. */
-internal class NativePhotoPicker(context: Context,private val session: MobileSession,storage: NativeSessionStorage?=null): NativeSelectionOwner {
+internal class NativePhotoPicker(context: Context,private var session: MobileSession,storage: NativeSessionStorage?=null): NativeSelectionOwner {
     private val resolver=context.applicationContext.contentResolver
     override var pending by mutableStateOf<NativePhotoRequest?>(null)
         private set
     internal val recovery=storage?.let { NativeSelectionRecovery(context,session,it,this,NativeSelectionKind.PHOTO) }
+    internal fun rebindAfterMigration(replacement: MobileSession,operation: String) {
+        session=replacement;recovery?.rebindAfterMigration(replacement,operation)
+    }
     fun begin(presentation: DraftDestination,waitForMenu: Boolean=false): Boolean {
         if(!session.isCurrent(presentation)||!session.canCompose||session.importing||session.localRecoveryRequired)return false
         return begin(NativePhotoRequest(session.attachmentImportDestination(),session.attachmentErrorGeneration,waitForMenu))

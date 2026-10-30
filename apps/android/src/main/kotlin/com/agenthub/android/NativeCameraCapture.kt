@@ -38,7 +38,7 @@ internal class NativeCameraContract: ActivityResultContracts.TakePicture() {
 }
 
 /** A camera result only prepares the original encrypted draft; it never uploads or sends. */
-internal class NativeCameraCapture(context: Context,private val session: MobileSession,storage: NativeSessionStorage?=null,access: NativeCameraAccess=AndroidCameraAccess(context)) {
+internal class NativeCameraCapture(context: Context,private var session: MobileSession,storage: NativeSessionStorage?=null,access: NativeCameraAccess=AndroidCameraAccess(context)) {
     private val context=context.applicationContext
     private val directory=File(this.context.cacheDir,"camera-capture")
     var pending by mutableStateOf<NativeCameraRequest?>(null)
@@ -67,6 +67,9 @@ internal class NativeCameraCapture(context: Context,private val session: MobileS
     internal val recovery: NativeSelectionRecovery?=storage?.let { NativeSelectionRecovery(context,session,it,selectionOwner,NativeSelectionKind.CAMERA,
         permissionRequested={ id -> pending?.takeIf { it.id==id }?.permissionRequested=true },
         outputPrepared={ id,output -> pending?.takeIf { it.id==id }?.let { it.output=output;it.launched=true } },cameraAccess=access) }
+    internal fun rebindAfterMigration(replacement: MobileSession,operation: String) {
+        session=replacement;recovery?.rebindAfterMigration(replacement,operation)
+    }
     fun begin(presentation: DraftDestination,waitForMenu: Boolean=false): Boolean {
         if(!session.isCurrent(presentation)||!session.canCompose||session.importing||session.localRecoveryRequired)return false
         return begin(NativePhotoRequest(session.attachmentImportDestination(),session.attachmentErrorGeneration,waitForMenu))

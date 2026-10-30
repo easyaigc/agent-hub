@@ -7,11 +7,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 
 /** Activity recreation retains the original file request alongside the Session. */
-internal class NativeDocumentPicker(context: Context,private val session: MobileSession,storage: NativeSessionStorage?=null): NativeSelectionOwner {
+internal class NativeDocumentPicker(context: Context,private var session: MobileSession,storage: NativeSessionStorage?=null): NativeSelectionOwner {
     private val resolver=context.applicationContext.contentResolver
     override var pending by mutableStateOf<NativePhotoRequest?>(null)
         private set
     internal val recovery=storage?.let { NativeDocumentRecovery(context,session,it,this) }
+    internal fun rebindAfterMigration(replacement: MobileSession,operation: String) {
+        session=replacement;recovery?.rebindAfterMigration(replacement,operation)
+    }
     fun begin(original: NativePhotoRequest): Boolean {
         if(recovery?.canBegin==false||pending!=null||session.attachmentRecoveryBusy||session.photoPicker?.pending!=null||session.cameraCapture?.pending!=null||!session.acceptsAttachmentAction(original))return false
         pending=original;return true

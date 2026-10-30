@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "id": "source55-inbox-original-cold-and-actual-owner-native",
+  "baseCommit": "d840f5989c88c7372c71a1e81e0034d35b48d1d4",
+  "sourceImplementation": "2179e7eb8f8e5d84638e286eb2bac98fc9198d1b",
+  "sourceCandidateSha256": "4d92be34b8dd8c54d0ebd171f5f76b23fec0feecedb417295bddc07410cf7462",
+  "appSourceInputsUnchanged": 805,
+  "NativeMethods": 7,
+  "passed": 6,
+  "knownFailures": 1,
+  "unknown": 0,
+  "rootAuditedNativePhaseRawCalls": 419,
+  "rootAuditedProcessObservationRawCalls": 124,
+  "rootAuditedAllCalls": 543,
+  "cold": {
+    "methods": [
+      {
+        "case": 1,
+        "selector": "com.agenthub.android.NativeMigrationInboxStorageTest#writeOriginalInboxCandidateForAnotherPid",
+        "lease": "5e5a8f67-c646-4414-b4b0-e15746ccf246",
+        "run": "21fe3bdc-4626-4e40-a6d2-1d6a1580ebaf",
+        "summarySha256": "110b419d73fadae4cc0ca7176f823916955bb73296b45a3d8f787d9df9d09b70",
+        "nativeStdoutSha256": "86d84988fa4a7633896421b87da4a6461190afe71933b098ec2044eb7e0c3098",
+        "allRawCallsFullyRead": 55,
+        "ownedArchiveSha256": "7925381c69ddb77e9391c8d743e7f60042ac097f8a5e595bac212d138d9ec3bf",
+        "ownedIndexSha256": "b701f10ae71bf7651337e4c4c00536b4678d61b4462a5041e4e2d5ac3ff36f66",
+        "ownedMetadataSha256": "c970e39da6649f9ccf6e8c2ffaf97096cf97865b3a141d22643c89e1e08809c3",
+        "ownedMembers": 72,
+        "completeRegularPayloadBytes": 2436804,
+        "actualNativePid": 15983,
+        "RootReviewSha256": "df05276991acc626fb4b9e53c7cfe7b1cad29e0de77bbcb97fcd72f8ae002f09"
+      },
+      {
+        "case": 2,
+        "selector": "com.agenthub.android.NativeMigrationInboxStorageTest#activateOriginalInboxCandidateInSecondPidWithoutRestaging",
+        "lease": "ecc340a5-6cd3-4caa-bc25-4d6215c7b16b",
+        "run": "21fe3bdc-4626-4e40-a6d2-1d6a1580ebaf",
+        "summarySha256": "e4607ad37942e2b133e40de7ab6220bf1d84ebfbb6598328860f94ae4eef1003",
+        "nativeStdoutSha256": "af88b355230bae18370ecb78506ed26e4ba32abb629f5190915af81d6dceba6a",
+        "allRawCallsFullyRead": 60,
+        "ownedArchiveSha256": "407082dd83d896e6e7005a964613c13bf41be77a3d55f1f62b01a40aa189403c",
+        "ownedIndexSha256": "4dd8f591fb68e8cee4c065d57a9467b4dfd13e331ff7c21e05bf18152b9a57ba",
+        "ownedMetadataSha256": "4397a739a62d25a9af998cd0c1cb376dbbe47f1edfb5516f7fdc4d9f0efa79c0",
+        "ownedMembers": 105,
+        "completeRegularPayloadBytes": 3251031,
+        "actualNativePid": 19406,
+        "RootReviewSha256": "8d97ad32a6bd7e9d1ddefdd4ce2b6f55476b4d1e4de4536c1591d1ce1a15c3aa"
+      },
+      {
+        "case": 3,
+        "selector": "com.agenthub.android.NativeMigrationInboxStorageTest#thirdPidReadsAndCopiesOriginalInboxWithoutCleanupAndRepeatsExactReceipt",
+        "lease": "38172c76-a35b-4c48-a6ea-79463d8afac2",
+        "run": "21fe3bdc-4626-4e40-a6d2-1d6a1580ebaf",
+        "summarySha256": "c7b12f37ba7f9fd07aff92b86940995a4f7f264b6d68b36385568a8b6ad068ae",
+        "nativeStdoutSha256": "10bcfe0b7fb36358d281a9d862a6a339ff623d33c07ccb2b6a9950e1b7dbe631",
+        "allRawCallsFullyRead": 60,
+        "ownedArchiveSha256": "537fe418557caee22f3f63d42234fdb9d680909ef0b9cf3b65c4925d2a2bd6bb",
+        "ownedIndexSha256": "f2582ba362c6c38ee8fea1a723370c72ddddf961c1ac77f602049a4f1c8e1b66",
+        "ownedMetadataSha256": "6411fb8634ae22a835b8795529ec0825b10902f6b643da334e2a7b23b09db578",
+        "ownedMembers": 109,
+        "completeRegularPayloadBytes": 4062576,
+        "actualNativePid": 20752,
+        "RootReviewSha256": "9a1f06802e1eac724f92fecd803815fb297c7a6541ea1bb0b4320c04df04cdaa"
+      }
+    ],
+    "sameOriginalRun": "21fe3bdc-4626-4e40-a6d2-1d6a1580ebaf",
+    "actualPids": [15983, 19406, 20752],
+    "originalSourceAllRegularCellsAndCandidateAndEnvelopeUnchanged": true,
+    "activationCipherAndLaterDraftUnchangedInThirdPid": true,
+    "noRestageOrOriginalOperationReplay": true,
+    "kernelGates": [
+      {
+        "schema": "source55-inbox-root-kernel-pid-exit-review-v1",
+        "summarySha256": "eff1669032c93005e91c8a50c87a8c3083b2c9e4a32be25708c375dd2114d5a2",
+        "rawPsSha256": "f13417c0bc7016010dcb3e2ba099849e2872853ff384dcc3d5b9e1d040476553",
+        "actualRawCallsFullyAudited": 49,
+        "globalPsRows": 120,
+        "exactNativePidAbsent": 15983,
+        "targetAppMainAndSubprocessAbsent": true,
+        "positiveInitSystemServerSelfAndSeparateTestPackage": true,
+        "procVisibility": {
+          "hidepid": 2,
+          "readprocGid": 3009,
+          "actualShellMember": true
+        },
+        "fullBeforeAfterProtection": true,
+        "deviceReleased": true,
+        "unknown": false,
+        "noLifecycleMutationOrNative": true,
+        "RootReviewSha256": "5bef48f1c9178d00a37f9383f2fe20cc31179a3fcd211ccbf2e759d121a275a0"
+      },
+      {
+        "schema": "source55-inbox-root-kernel-pid-exit-review-v1",
+        "summarySha256": "f17126ecc9588f7fee8c13c5afe32aab08de14963ff9b45f254fc7d02fe9033f",
+        "rawPsSha256": "8a143794a77f38696553448f72539dd0956bc64456e706bf8a2e28417644720d",
+        "actualRawCallsFullyAudited": 49,
+        "globalPsRows": 121,
+        "exactNativePidAbsent": 19406,
+        "targetAppMainAndSubprocessAbsent": true,
+        "positiveInitSystemServerSelfAndSeparateTestPackage": true,
+        "procVisibility": {
+          "hidepid": 2,
+          "readprocGid": 3009,
+          "actualShellMember": true
+        },
+        "fullBeforeAfterProtection": true,
+        "deviceReleased": true,
+        "unknown": false,
+        "noLifecycleMutationOrNative": true,
+        "RootReviewSha256": "1a95ec334025357e2ed91caec1d69dbb74898be89170a317788076c012632c9f"
+      }
+    ],
+    "initialKnownProbeFailure": {
+      "RootReviewSha256": "2a0c89ba97e9cc5b758e5340a6fb8429a0db18e19c7d94bc3519fcae172c1438",
+      "rawCalls": 26,
+      "fullBeforeAfterProtection": false,
+      "reason": "Separate test-package process absent; noafter snapshot, noexit admission",
+      "laterConditionChange": "Actual independent ownerUI standardEmptyActivity testpkg16807/u0a77 positive seen in original complete AM receipts; newreadonlyphase used same full guards and49calls, no witness launch or originalwriter replay"
+    }
+  },
+  "owners": {
+    "methods": [
+      {
+        "case": 1,
+        "selector": "com.agenthub.android.NativeMigrationInboxOwnerTest#actualControllerPreservesPartialCleanupAndTransfersOriginalInboxWithoutNewStartupCleanup",
+        "lease": "e925eaf0-3480-4252-8e41-26b8d974090c",
+        "run": "1d420b28-d95d-40df-84d9-cd77861dcada",
+        "summarySha256": "0a9059fa6fed15d715f7b20bdb880ab33fe59a43024aac0d682187dc19cef278",
+        "nativeStdoutSha256": "78b6c5e39bd9fb1f785e80908afd9d69fe16d92c5288f6c96e1bf13939dc831a",
+        "allRawCallsFullyRead": 61,
+        "ownedArchiveSha256": "db8cdf2f74125da0f95ca40346c0bab3f03aaaa6d01f7ed8a52e2b5700bfcbe1",
+        "ownedIndexSha256": "ad16f011b39019454e3de71c257d76eedec91cbc3ba90c5fefb2bf24e0cf099b",
+        "ownedMetadataSha256": "cdcec68b20ba0aeaa43abde40ab2b840627723ac6addf3dbdcc58ba96e3c6b88",
+        "ownedMembers": 76,
+        "completeRegularPayloadBytes": 1613318,
+        "RootReviewSha256": "ec51ad539be4dd89ab3055ca253ead35719408408eee644c5c4f1f55d6d1a4fa"
+      },
+      {
+        "case": 2,
+        "selector": "com.agenthub.android.NativeMigrationInboxOwnerTest#actualStartupCleanupAndRefreshKeepWritingAfterControllerRejectsBusyKernelOwner",
+        "lease": "abc3794d-58f0-4a8e-82fc-663e28016604",
+        "run": "ef67e206-5cbb-42a5-9d61-d4f44b6d9bc6",
+        "summarySha256": "43ca6d8e53db6674ee899be6d15f75365a376a1ef39ef3e5cc82f877d92fae98",
+        "nativeStdoutSha256": "e9804c5c9cb6daf0c13aa888e83ebb4241e609b4a9a9a5a5a46a6ee646bbdc42",
+        "allRawCallsFullyRead": 61,
+        "ownedArchiveSha256": "080c20021af3a20cdf625e523f71084d8b100cfa2e0ece3deae4ac50cd4f06d3",
+        "ownedIndexSha256": "3c16455d7bbbcb801e9b78307a83a1a4e898d4f328f3403bb19c7041acc98c31",
+        "ownedMetadataSha256": "4ade39a7996e5d3c0448e6b0f6e8d5cc33fd5eb9cddbbf2c05f23d536ea8649c",
+        "ownedMembers": 20,
+        "completeRegularPayloadBytes": 3263,
+        "RootReviewSha256": "032756de5137bec99cac06bf1869b9679110f64e9e31a32c890a79ceae85f023"
+      },
+      {
+        "case": 3,
+        "selector": "com.agenthub.android.NativeMigrationInboxOwnerTest#actualRetryAndConsumeWaitForProviderAndMetadataIoBeforeMigrationAdmission",
+        "lease": "acfe3896-78c4-4f23-b0b4-c88db754e202",
+        "run": "9e2a3343-4c86-4260-abc0-ab2ab8c8f340",
+        "summarySha256": "99be51261c38f99dcfde925e39a15ec1725fa4e378a507aa8bd574388da1b7cb",
+        "nativeStdoutSha256": "4da8b067f1ef45f1354232454c86ab3ab41acdd3e38b715497a6c362fd7c0927",
+        "allRawCallsFullyRead": 61,
+        "ownedArchiveSha256": "bbbdc1e4f2b4258ad21ee7495efc04123c24621c26115881ec1f0bc96955e806",
+        "ownedIndexSha256": "e191170ef9af23aabf3bc33988f17ce8b0f4c64440dbe4d19bf7f897cb570f13",
+        "ownedMetadataSha256": "3f6016ea6e6e9bdccb3c584aa4793563db6dacce001082910c47e6820bfbb9e4",
+        "ownedMembers": 23,
+        "completeRegularPayloadBytes": 4554,
+        "RootReviewSha256": "e881b1f4384c8fb89d9bf62a2e6c5609d631ff8afe2df6c2fffdd66cfda83a57"
+      },
+      {
+        "case": 4,
+        "selector": "com.agenthub.android.NativeMigrationInboxOwnerTest#intentDuringOwnershipAcquisitionRefusesBeforePauseAndDrainsOnceOnOriginalOwner",
+        "lease": "105fb52b-ef82-469b-a728-86d0f762831a",
+        "run": "40121d90-ab8a-49f4-9f2d-668c447e196a",
+        "summarySha256": "c15e2a1f5feb24c1725b98ee31f7de187a1792dc8eb091ec1247e16c73d4eda5",
+        "nativeStdoutSha256": "d4f36ef214f9b571f3fee795138adafd258ded957f849d01cb151b5e450f1a7d",
+        "allRawCallsFullyRead": 61,
+        "ownedArchiveSha256": "913ba549a833eb89a51788a549fd6f416e85d2d194c9f48969f4002b325f5300",
+        "ownedIndexSha256": "1baf15ba70968f72640563705d52b5b8954fc1176b0805159f277e78239b4339",
+        "ownedMetadataSha256": "e6a1547e37ecdb4cba66e76f0159a76a78d04400897b9848ea3e6cd45f9bb874",
+        "ownedMembers": 23,
+        "completeRegularPayloadBytes": 4361,
+        "nativePassed": false,
+        "failure": "ActivityScenario.close reported lifecycle monitor stuck RESUMED; whole method not accepted",
+        "RootReviewSha256": "73362aa36fc677923f5234765a88c627fa2648e2d05f89092d3fbe7ca979f790"
+      }
+    ],
+    "passed": [1, 2, 3],
+    "knownFailure": 4,
+    "notRun": 5,
+    "MainControllerSessionAndInboxActualNative": true,
+    "fullPrivateRunStatNlinkAndTarCaptured": true,
+    "fixedCachePreflightAndTerminalComplete": true,
+    "transientProviderOriginalBytesParentCaptured": false,
+    "transientEnvelopeBytesParentCaptured": false,
+    "fullUiSafPixelPassed": false,
+    "case4Diagnosis": {
+      "actualTestLibrary": "androidx.test:core:1.7.0",
+      "RootDiagnosisSha256": "e84f57be3af119485dbd269de1c7a13911fc495566abcbb8b86961dc5ed3099a",
+      "confirmedSourceCause": "Scenario lifecycleobserver ignores changed Intent; Main onNewIntent sets ACTION_SEND after ACTION_MAIN launch; monitor stayedRESUMED while actualAM showedLauncher",
+      "narrowFixtureFixPlanned": "Restore cloned launchIntent only in testAfter finally beforeScenario.close, after originalcallbackassertions; no productoperation orOS request replay",
+      "fixAppliedOrNativeRevalidated": false
+    }
+  },
+  "currentSource55Totals": {
+    "selectors": 23,
+    "passed": 17,
+    "knownFailures": 2,
+    "notRun": 4,
+    "notRunGroups": {
+      "owner5": 1,
+      "voiceUI": 3
+    }
+  },
+  "protection": "All7 Nativephase fullbeforeafter28a;firstfailedPSprobe lacksafter andremainsfailed; later two strictkernel gates49each passed",
+  "heapScope": "currentAPI26 512MiB only; no48MiB/physical/iOS/realDEV orfullP7 pass",
+  "remoteModelInputsAdded": 0,
+  "taskProjectBusiness": "paused",
+  "P7Complete": false
+}

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "candidate": "Source63",
+  "classification": "source-sdk-and-static-dex-only",
+  "branch": "codex/android-parallel-stage29-20261030",
+  "baseCommit": "bdddfe6b0e6632b4a4cfb9cbcf6c419a261104f4",
+  "canonicalCount": 825,
+  "canonicalSha256": "59f8d1c022615c5f44a834183d6e8fe65a478a384bdde219caf500bd71862e8d",
+  "expandedCount": 838,
+  "expandedSha256": "96fe68fed8ce0f513b0a7238ff8d6ba182e957999c5aefd4c5f587ca8aa3e558",
+  "candidateSha256": "e68f87aee2c2e34e669d2907acb94e8c0a2c816bf1e9e3011a30127968cd8da8",
+  "identitySha256": "c2b71073827e86161050cdcbb6055ad13634b2107af270fc350a39e473e86d77",
+  "rootIndependentAuditSha256": "a9acccf0900da0514418be5565a99b20d11677dd86135910be44f12da89c66a2",
+  "peerSourceReviewSha256": "5f92b5ecb5ab651de8e53a445bfc64c37ade271c55fe169af0da816879da373a",
+  "apks": {
+    "app": "111f47b374296af970610a53f0f3bf7ef6ac70d297e1d5d8aa758f2708e3ee0f",
+    "test": "ed93888337e970a9a986d83faa76ff6792accc26720b234e914d863d52701bd7",
+    "examiner": "f6c813b5a10329ec1b97e7cbf009c71502837f794adf831b2a79cb4ec15c256a"
+  },
+  "checks": {
+    "parity": true,
+    "buildSeconds": 77.63119721412659,
+    "buildExit": 0,
+    "bothStreamsEof": true,
+    "fullApkZipSignaturesManifest": true,
+    "rootFullSourceReadback": true,
+    "p8DexOuterDeclaredMethods": 133,
+    "p8DexOuterHighApiPrototypes": 0,
+    "p8ClassFamilyCount": 60,
+    "p8ClassFamilyMethodCount": 293
+  },
+  "native": {
+    "executed": false,
+    "passes": 0,
+    "fullP7Accepted": false,
+    "api26Reflection": false,
+    "uiOrRealDev": false
+  },
+  "doNotSchedule": [
+    "NativeReadingEpochLedgerTest#queuedRemovedRuntimeCannotOverwriteRestoredScopes",
+    "NativeReadingEpochLedgerTest#queuedOldHeadCannotReviveRestoredReadOrQuestion"
+  ],
+  "knownGap": "Assertion worker shutdown request and storage retirement do not prove actual exit on failure; Source64 correction required",
+  "oldResultsPreserved": {
+    "source62ScopedPasses": 38,
+    "ownerKnownFailures": 2,
+    "cameraNotRun": 1
+  },
+  "paused": ["task-and-project-business", "iOS-A6"],
+  "newHostOrModelBusinessInputs": 0,
+  "unknownOperationsReplayed": 0,
+  "processRecordsInRepository": false
+}

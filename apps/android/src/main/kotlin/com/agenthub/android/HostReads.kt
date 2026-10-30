@@ -195,7 +195,7 @@ class NativeHostReads(private val token: (String) -> String) : HostReads {
                 if (continuation.isActive) continuation.resumeWithException(if (error is HostReadError || error is IllegalArgumentException) error else HostReadError("无法连接电脑，请检查网络或稍后重试", error, transient))
             } catch (failure: OutOfMemoryError) {
                 if(continuation.isActive) continuation.resumeWithException(HostReadError("手机内存不足，未能读取完整历史；原缓存和草稿已保留"))
-            } finally { active.getAndSet(null)?.disconnect(); connection?.disconnect() }
+            } finally { NativeMigrationIoWork.finishHttp(continuation.context,active) }
         }
         continuation.invokeOnCancellation { NativeMigrationIoWork.cancelHttp(continuation.context,active,future) }
     }

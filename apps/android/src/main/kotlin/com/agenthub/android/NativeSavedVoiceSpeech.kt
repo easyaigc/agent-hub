@@ -10,13 +10,14 @@ import org.vosk.LibVosk
 import org.vosk.Model
 import org.vosk.Recognizer
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import java.util.zip.ZipFile
 
 internal data class SavedVoiceModelFile(val path: String,val bytes: Long,val sha256: String)
@@ -105,17 +106,19 @@ internal class VoskSavedVoiceSpeech(context: Context): NativeSavedVoiceSpeech {
             val archive=File(stage,"model.zip");val expanded=File(stage,"expanded");check(expanded.mkdir());android.system.Os.chmod(expanded.path,0x1c0)
             try {
                 withTimeout(180_000) {
-                    val connection=URL(model.url).openConnection() as HttpURLConnection
-                    connection.instanceFollowRedirects=false;connection.connectTimeout=15_000;connection.readTimeout=15_000
-                    try {
-                        check(connection.responseCode==200)
-                        require(connection.contentLengthLong in setOf(-1L,model.bytes))
-                        connection.inputStream.use { input -> archive.outputStream().use { output ->
-                            android.system.Os.chmod(archive.path,0x180);val chunk=ByteArray(65536);var count=0L
-                            while(true) {checkpoint();currentCoroutineContext().ensureActive();val n=input.read(chunk);if(n<0)break;count+=n;require(count<=model.bytes);output.write(chunk,0,n)}
-                            require(count==model.bytes);output.fd.sync()
-                        }}
-                    } finally {connection.disconnect()}
+                    val call=downloads.newCall(Request.Builder().url(model.url).build())
+                    ownSavedVoiceDownload(call::cancel) {
+                        call.execute().use { response ->
+                            check(response.code==200)
+                            val body=checkNotNull(response.body)
+                            require(body.contentLength() in setOf(-1L,model.bytes))
+                            body.byteStream().use { input -> archive.outputStream().use { output ->
+                                android.system.Os.chmod(archive.path,0x180)
+                                copySavedVoiceArchive(input,output,model.bytes,model.sha256,checkpoint)
+                                output.fd.sync()
+                            }}
+                        }
+                    }
                     require(hashFile(archive,checkpoint)==model.sha256)
                     ZipFile(archive).use { zip ->
                         val expected=model.files.associateBy {"${model.id}/${it.path}"};val seen=mutableSetOf<String>();val entries=zip.entries()
@@ -179,5 +182,11 @@ internal class VoskSavedVoiceSpeech(context: Context): NativeSavedVoiceSpeech {
         if(file.isDirectory)file.listFiles()?.forEach(::deleteOwned)
         check(file.delete()||!file.exists())
     }
-    companion object {private val lock=Mutex()}
+    companion object {
+        private val lock=Mutex()
+        // Dedicated model client: no Host credentials, redirects, connection retry or partial resume.
+        private val downloads=OkHttpClient.Builder().followRedirects(false).followSslRedirects(false)
+            .retryOnConnectionFailure(false).connectTimeout(15,TimeUnit.SECONDS).readTimeout(15,TimeUnit.SECONDS)
+            .build()
+    }
 }

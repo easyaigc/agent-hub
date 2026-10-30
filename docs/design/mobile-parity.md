@@ -1487,4 +1487,30 @@ PAR47-N仅登记API37原SystemUI首击与应用原/新草稿的局部原生证�
 
 2026-10-29 Source50：仅测试诊断与四态原Popup像素采集，生产代码与Source49相同。API26短屏六方法通过，API37横屏在方向setup失败且body未验；P8中浅/英深两方法通过、8张四态菜单PNG逐张查看标签与唯一勾选正确。sourceRect原点独立绑定、API26菜单捕获、完整横屏/读屏/物理/真实DEV/iOS均未关闭；F64新长按与失败条、F73不在本候选。精确证据见[UI7](../plans/android-alignment-20261022/parallel/fiftieth-stage-owned-ax-native.json)及[P8](../plans/android-alignment-20261022/parallel/fiftieth-stage-p8-menu-pixels-native.json)。
 
+2026-10-29 Source51：增加Android内部严格既有原件读取与测试认证入口，未新增产品页面、状态文案或iOS UI变化。完整迁移/冷恢复界面仍按原双端门槛验收，不能把内部构建当作界面通过。
+
+2026-10-30 Source52仅改Android测试门控及历史原证明编码，无产品页面、设计token或文案变化。Native主体通过与最终PID证据待验分列；原有横屏、F64长按/失败重试、完整视觉及iOS矩阵继续开放，见[限定证据](../plans/android-alignment-20261022/parallel/fifty-second-stage-current-original-authentication.json)。
+
+### Source53 语音交互候选（2026-10-30）
+
+F64/UI输入区域按当前iOS对齐：折叠光标长按500ms、具名读屏动作和麦克风共用当前草稿检查，已有多字符选区保留原生选择/拖动；失败标题采用随字体缩放的橙色15sp/20sp、图标和48dp点击区，主失败动作只显示17dp圆形重试图标，读屏仍保留完整动作名。录音未完成与转写失败分开，重新录音操作独立；长内容原maxLines15保持。模型检查/安装/识别/关闭状态有各自文案，取消等待以真实worker退出为界。UI7在原5秒预算内核实真实Activity的字体与方向。以上为候选实现，短视口、主题/对比度、长按/选区、读屏及API37横屏本次原生/像素待验；iOS实现未改，不把映射参数当双端视觉通过。详见[Source53范围](../plans/android-alignment-20261022/parallel/fifty-third-stage-provisional-voice-controls.json)。
+
+Source54：验收夹具安装目录选择修正不改UI、交互、token或文案；不新增像素/读屏/iOS通过，原待验保持。 见[Source54档案](../plans/android-alignment-20261022/records/source54-stream-fixture-context.md)。
+
+Source55/56：未完成录音提示明确不能重试转写，不显示可用本地模型操作；完整录音保留原提示和交互，未确认丢弃时隐藏模型检查/下载/识别入口。收件箱原件归档没有新增浏览器或可执行导入UI。双语生成已完成；短视口/读屏/像素及当前iOS Native待验。 见[Source55/56档案](../plans/android-alignment-20261022/records/source55-inbox-voice-recovery.md)。
+
+### Source62 系统原件迁移状态（候选，2026-10-30）
+
+沿用现有迁移页面和忙碌/失败恢复状态，不新增页面或token。选择记录、最近照片偏好和权限尝试迁入后只作原件审计，不获得本机URI/授权/观察器或回调执行权；实际当前安装owner交接与迁入档案分开。捕获未完成时保留原件并阻止发布，完整错误提示、长字段/短视口与双语主题仍须Native验收。P9固定只读inspection与语音读回工具不进入产品用户流程；P8原点与反射签名调整仅测试夹具，iOS界面无变化。
+
+### Source63 阅读归属与验收入口（候选，2026-10-30）
+
+F49/F50 继续要求仅实际可见最新内容确认本机已读，旧 Session 不覆盖恢复后的阅读状态；F55/F71 的 owner 交接沿用原忙碌/失败/恢复界面。P8 测试 helper 的 API guard 不改变产品页面、token、文案或 iOS。源码接入未代替 Native、长字段短视口、双语主题和读屏验收，详见[阶段档案](../plans/android-alignment-20261022/records/source63-reading-owner-and-admission.md)。
+
+### Source64 发现和迁移的归属边界（候选，2026-10-30）
+
+F06/F08/F10 的原发现错误文案、表单等待与取消交互保持，Session 持有实际请求/停止边界，表单取消不宣称远端操作撤销。F49/F50/F55 的恢复与迁移页面继续使用现有 token 和提示；未取得真实 IO/SDK 停止终态不能呈现成功。只读预检、夹具 worker 与清理日志留在验收工具，不进入产品用户流程；iOS 产品不变，完整界面仍待分别验收。见[Source64](../plans/android-alignment-20261022/records/source64-discovery-reading-ownership.md)。
+
+Source64r2/API33 的 11 项受控 owner 验证未操作产品 UI，不能关闭菜单、短视口、主题/语言、系统栏或 AX 矩阵。页面/token/文案及 iOS 本轮不变；[原生档案](../plans/android-alignment-20261022/records/source64-api33-owner-native.md)限定到三项阅读代次和八项 IO 生命周期。
+
 2026-10-30 F03：本轮仅修复 Host 的 Codex 更新恢复，不新增页面、设计 token 或端侧文案；iOS／Android 保持既有连接／目录读取失败与重试状态。Host 返回 503 和准确目录状态，原目标／缓存／草稿不变，不能将后台恢复显示为新电脑或重新登录。两端原生本轮未新增验收，A6 暂停。

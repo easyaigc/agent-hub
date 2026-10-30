@@ -14,6 +14,10 @@
     </queries>
     <application>
         <activity android:name="com.agenthub.android.NativeSavedVoicePanelActivity" android:exported="false" />
+        <activity android:name="com.agenthub.android.NativeMigrationProvisionalOwnerActivity" android:exported="false"
+            android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" />
+        <activity android:name="com.agenthub.android.NativeMigrationInboxOwnerActivity" android:exported="false"
+            android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" />
         <!-- Fixed same-UID component fixture only. No receiver, provider or production startup hook. -->
         <service android:name="com.agenthub.android.NativeNaturalStoreProbeService"
             android:exported="false" android:process=":p9NaturalStore" />

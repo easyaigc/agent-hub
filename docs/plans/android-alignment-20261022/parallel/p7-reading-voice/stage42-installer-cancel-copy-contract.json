@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "stage": "42-installer-cancel-copy",
+  "featureIds": ["F64"],
+  "commonAssertions": [
+    "F64-C06-explicit-attempt-only",
+    "F64-C07-real-close-before-idle",
+    "F64-C08-complete-authenticated-model-before-publish"
+  ],
+  "parentOperation": "parent-voice-api26-installer-source-next-20261030-1",
+  "rootBaseCommit": "3f9b7fae6d48a7acf7bbd05590738f3d0e0ce55d",
+  "files": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceSpeech.kt",
+      "oldSha256": "7b5172ba192ac95634448c9ee56fdcce96074afb999080f29087b3d1c664c0a0",
+      "newSha256": "16fffd7877d57caa460da23068f8c47d787b455f05f0bbb390fd67daeac8e867"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceDownload.kt",
+      "oldSha256": null,
+      "newSha256": "bc5654783c5a1aff44fe5eec874ecb13f74080badc55a7ac7086844d7e1abd21"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceDownloadTest.kt",
+      "oldSha256": null,
+      "newSha256": "c37a54595bad49cd6361213225242945cce1d31b9e7253ad82f8a66e8627dfb7"
+    }
+  ],
+  "productionBudgetMs": 180000,
+  "readConnectTimeoutMs": 15000,
+  "transport": "dedicated existing OkHttp dependency; redirects/retries disabled; owned blocking execution and cancellation hook",
+  "archive": "fresh full stream; size and digest before returning copy; original disk hash/extraction/per-file hashes/atomic publication/stage cleanup unchanged",
+  "readWriteCheckpointDiagnostics": "Source45 cannot separate; real timing attribution pending fresh Root diagnostic; no asserted throughput gain",
+  "iosImpact": "System-managed AssetInventory path unchanged; common cancellation/resource readiness assertions apply with platform-specific integrity authority",
+  "settingsAudit": "No app-owned independent Vosk predownload/progress/retry/delete manager exists in NativeVoiceSettings; capability inspection describes Android system speech. Saved-original panel is the explicit Vosk probe/download/transcribe route. iOS downloads system assets inside recognition preparation, no app-owned ZIP manager. Neither settings path currently exposes a standalone Vosk download or delete workflow.",
+  "auxiliaryStatus": "passed auxiliary SDK/host only",
+  "nativeExecutedHere": 0,
+  "realModelNetworkRequests": 0,
+  "officialZipBytesCopied": 0,
+  "aggregateParityTablesOwner": "parent; this additive assertion/impact map supplied for adoption",
+  "checks": {
+    "passed": true,
+    "inputs": 759,
+    "sourceSha256": "35fc4edec12650bd2784f24a81dd0848f83bc47f45107d315eb662d07873c70e",
+    "changedBaseInputs": [
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceSpeech.kt"
+    ],
+    "newInputs": [
+      "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeSavedVoiceDownloadTest.kt",
+      "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceDownload.kt"
+    ],
+    "pinnedModelSpecsAndVerifyProbeUnchanged": true,
+    "diskFullHashExtractionPublicationCleanupAndInferenceByteIdentical": true,
+    "production180000MsUnchanged": true,
+    "boundaryHostMethodsPassed": 9,
+    "patchActualApplyReadback": true,
+    "nativeExecuted": 0,
+    "realModelNetworkRequests": 0,
+    "modelsCopiedOrDownloaded": 0,
+    "apksBuilt": 0
+  }
+}

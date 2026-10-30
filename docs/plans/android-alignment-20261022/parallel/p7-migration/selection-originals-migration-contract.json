@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "scopeIds": ["selection-journals", "selection-payloads", "camera-outputs"],
+  "selectedAfter": "74435b904a5d8561efe19e21e7d88ceaca0a9a9a",
+  "status": "strict source codec/cross-graph semantic component implemented; actual owner/reader/catalog/native pending",
+  "sourcePathInventoryOnly": true,
+  "liveInventory": false,
+  "sourcePins": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentJournal.kt": "d42dffff545d5d164ca58bbb96c9699dba214b9c7377a008f440ed9a884a1255",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt": "851b0162b9332d9669b43c21a2595c9cbba46ff447d2a4a75c12a16afdc7a285",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSelectionKind.kt": "c4cf4165e4dc14e069af7a03c3feb283eda986f42bbe3ceb572bfd6fbf3be4f0",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraCapture.kt": "ba19bc9b4dac82517781054dc9476bf9a97ce16d2727dfdd72cbb4526111ded2",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraOutputs.kt": "f656dcfbaa06c959f0f168a304452877c7807819de9ff21623c7ce469e3e19d6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentPicker.kt": "584ac23c0a944d4242346aef23babc46ecc648c4e162d8d2e35320ee99af1fea",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoPicker.kt": "17f13fd1686a5f9e2f2c8124b6ec820f9d55c45991a874aeaba4967991d0d9d4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentInboxStore.kt": "5126fc8ef1003d356092fbf3d8c5ae476abb4779638c3f2b9dc0fb8d730dcf3a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeInboxOwnership.kt": "40238767a3eb7c4b5967c3c6571f886a9bff05b84b91340fb109c29cbb554b02",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationInbox.kt": "5bcb2aa424bf0e413900abdc7f9caf99e0461bfb45341596d67b9cbfbb4fecdc",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationInboxGraph.kt": "2588279475922af3d9d2e146060f0c22016c83094512c50424022506dd1abe3a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReadOnlyFile.kt": "1d779af272f609e006a136010304ababb973eedd5813c82a0e7754e162017fe1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "02d6048e465da9151ce4c1bfdf41f9ff36faf9be74a3c0c83326cf9f115e1390",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "348e5023a478eee6cf8bfb31922dbee51eb7f62c894deafb407197a5c55e449a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeFileIntake.kt": "c4018c4e6163380b13d34a356831fac6d49ee7832b48406ec73159d4b5a3217d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoIntake.kt": "1467ab96106f1fef2582e44a1e45d0c9a8b657c3421c69c785642a454f1bc9b0",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "29f907683a920a0c711cfcd8012e0ee458dc99a1f6fdede9d920d72d8d989b65",
+    "apps/android/src/main/kotlin/com/agenthub/android/DraftAttachmentThumbnails.kt": "c3a6c1ebf19ae674b7935e016aac06aecc106aacab4d915f3f55e7b95e95f475",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "b71cf126eb99d634314acda6f81c7023903775684cae38913888b6497b659e09",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "591bae5f27c1765b8a338019de4065c2239df5f5a4fafe0f5adc141034cf6dcc",
+    "apps/ios/Sources/AttachmentFileIntake.swift": "996f01da69e2cacf76514e87bdb171268eee260b79f4224c0d57c45a90008221",
+    "apps/ios/Sources/EncryptedMigration.swift": "e11791f76b82982daff58795635bd6f88ab6853541d2c5185f0f7dd773d3d45b",
+    "apps/ios/Sources/SessionStore.swift": "9f89b0ae1b280e8c69e4096062e0ef237508f51286139bafc1520eac021c0871"
+  },
+  "featureIds": ["F71", "F56"],
+  "preservedConstraints": ["F33", "F42", "F58", "F64", "F73"],
+  "journal": {
+    "name": "document-requests-v1",
+    "versions": [1, 2],
+    "maxRecords": 32,
+    "phases": [
+      "permission",
+      "prepared",
+      "launched",
+      "selected",
+      "ready",
+      "detached",
+      "hold-selected",
+      "held",
+      "consumed",
+      "retired",
+      "failed"
+    ],
+    "fields": [
+      "id",
+      "key",
+      "generation",
+      "selection",
+      "requestId",
+      "errorGeneration",
+      "phase",
+      "sources",
+      "releaseReadGrants"
+    ],
+    "v2Adds": "maximum",
+    "historicalMaximum": {
+      "v1": 10,
+      "v2": [5, 10]
+    },
+    "sourceRules": "one awaiting permission/prepared/launched; selected/ready/hold-selected/held requires sources; permission/prepared/launched/detached requires no sources; releaseReadGrants unique subset of exact sources; errorGeneration preserves signed64 original"
+  },
+  "paths": {
+    "journals": ["document-results", "photo-results", "camera-results"],
+    "nestedPayloads": "each journal child / payloads: exact external-inbox-index-v1 and draft graph",
+    "cameraClaims": "camera-results / outputs: output-v1-<UUID> exact {version:1,id}",
+    "cameraRaw": "files/camera-output-v1/<scope>/photo-<UUID>.jpg",
+    "scopeDerivation": "first16 SHA256 bytes of the source outputs storage.coordinationKey, lowercase hex; never recompute/import as destination write authority"
+  },
+  "gaps": [
+    "SelectionRecovery owns independent coroutine tasks and ActivityResultRegistry launchers; Session busy flags do not own/retire them",
+    "Several worker finally blocks remove jobs[id] before suspending journal refresh; busy false is not IO completion",
+    "Journal records() uses ordinary storage read/Atomic recovery, not a migration read-only inventory",
+    "Payload inbox writer gate from inbox increment is independent per nested child; it does not freeze journal or camera-output writers",
+    "Register includes non-consumed rows and can restore OS-result callbacks; inert imports must never enter this path",
+    "recoverReady and processOne can persist/release read grants, stage provider bytes, bind/import original destination and cleanup camera raw",
+    "Camera endWait stores detached and clears pending while external camera can still hold its writable output URI; no raw writer closure is proved",
+    "Camera claim contains only version/id, no completion/length/digest; a stable hash sample or cooperative file lock cannot exclude an external camera writer",
+    "Current child-scope rejection does not prove exhaustive independent raw-directory coverage, especially orphan/unclaimed outputs",
+    "Terminal payload receipts may outlive32-row journal expiry; strict cross-graph validation needs historical consumed residue cases, not blind one-to-one row equality"
+  ],
+  "plannedContracts": [
+    "Finalize an explicit inert versioned catalog before enabling any selection scope; original journal string/nested index/full bytes/claim/raw provenance are separate owned entries",
+    "Named existing-only tree reader for three fixed kinds and fixed payloads/outputs nodes; absent remains absent; no generic child or path/alias input from candidate; preserve Source51 refusal/default bounds",
+    "Actual typed owner lease seals new selection, registry callbacks, permission returns, retry/retire/endWait/recoverReady and owns all admitted journal/payload/output work through final publication",
+    "Busy actual OS request or unproved camera writer is refused without cancellation, grant revocation, relaunch or deletion to manufacture quiescence",
+    "Inventory encrypted children plus exact derived raw scope and reject unknown/orphan/link/sidecar/unsettled or inaccessible state; preserve explicit incomplete originals, never normalize into ready",
+    "Historical maximum10 remains archive evidence even if current intake5; validate signed errorGeneration and original URI strings as audit only",
+    "Enumerate/copy imported originals without NativeSelectionRecovery/registry/URI/provider calls; no old binding, grant, permission or output write authority",
+    "Same receipt/new PID/later edits/re-export preserve all original phases; late old callbacks cannot bind fresh destination or replay OS action"
+  ],
+  "runtimeChanged": false,
+  "checksRunForThisPlan": false,
+  "nativeExecuted": false,
+  "centralParityOwnedBy": "Root",
+  "fullP7Complete": false,
+  "implementedComponent": "selection-originals-semantic-core.json",
+  "implementationPins": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSelectionJournal.kt": "31b32e84b87a9dd5d4c76fc301549d7f10da4257fcb0e943d38020719360538a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSelectionGraph.kt": "444cebbac89bb83298a1ce1e6d02d65706fe321e7b87e6491b5f10f86256b91c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSelectionContractTest.kt": "b8307eac33cbc7656a0e1db9b53f93f3a69547da881d780d89ac6b52facbc1a9"
+  },
+  "runtimeExportEnabled": false
+}

@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "id": "source55-inert-inbox-and-source56-voice-recovery",
+  "baseCommit": "07d87c9de73442846635c114a193ed2ab9fdb100",
+  "childCommits": [
+    "74435b90",
+    "78c4097a6761eca2b4a2296ae25a7c43e59394b2",
+    "6166df48",
+    "eb70d17c9be6a0eadc09a42d8e45a7221e132627",
+    "7519362c85acb8bd2f62a2d52d63632edc4972fa",
+    "70bf3b71e5dc3c2975630877d8aa830952623061"
+  ],
+  "narrowPatches": {
+    "inboxSelectionContext": "53c08ce93cd8dd6795dbbe80876eeb1c49a6f2aa39dfe3fc7f8affd7421924d6",
+    "voiceRecoveryDiscard": "28b15d326c318041d538478e1fe9520a82410773ecc7ebaa74fee043b7925b3d"
+  },
+  "files": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationInboxContractTest.kt": "6852e7f802086003f4fd89b0c966f3989cb6de00bf712a6a0db8d7de1fca7868",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationInboxOwnerTest.kt": "f4d46302df3a6aca03418ad80c257287da77d844aa2f16f54143a3ae59a1a494",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationInboxStorageTest.kt": "d4a110e6dbc1b9bf859abec7d0d313c57adbc6030820fd0a59a08f714f3313c0",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateActivityRule.kt": "28e4651c091a512b39e8387f92b1f67d9c1361cd377a09ae00d5ec293afef4aa",
+    "apps/android/src/debug/AndroidManifest.xml": "52d1002b07e7db60a35cd6727ff5e7cec43bbb5156f8fa486e54309fbd40f0a3",
+    "apps/android/src/debug/kotlin/com/agenthub/android/NativeMigrationInboxOwnerActivity.kt": "49a0f3482cda6a1a07653260f379d60266cf22752c62b0ae1996cdc0fe7f2666",
+    "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt": "da6a13ada3f92925773df1a7b088f5cfa8b074d3327035fc330039d5925f3ac0",
+    "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt": "469c7f08e24b9f46ed35c3a2f60b669c0b9101e7d59bee11f2d198cabd816b3c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentInboxStore.kt": "5126fc8ef1003d356092fbf3d8c5ae476abb4779638c3f2b9dc0fb8d730dcf3a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeExternalAttachments.kt": "39203f3713be8d0b054b04764df7eb96ef530c2e553083cb72e45d20f3c04d67",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeInboxOwnership.kt": "40238767a3eb7c4b5967c3c6571f886a9bff05b84b91340fb109c29cbb554b02",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "858b05a36fd62ac742d4f6745c70a7f112853d2e9391e915b3726b623ca7a122",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationController.kt": "f0fe56a1beddc4375189f205d1f647548653bcf8efd6ac0dff352755943ff29a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "3ebc3751f4c5fe7d3f5773f81fc3640fbf9edbaf7f65fd046d4b8f5633c77a55",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationInbox.kt": "5bcb2aa424bf0e413900abdc7f9caf99e0461bfb45341596d67b9cbfbb4fecdc",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationInboxGraph.kt": "2588279475922af3d9d2e146060f0c22016c83094512c50424022506dd1abe3a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt": "e29a4dde4bba2f5b214733001879515fa5219937caada95455df677b3577bda4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReadOnlyFile.kt": "1d779af272f609e006a136010304ababb973eedd5813c82a0e7754e162017fe1",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "c4fbda6e31dc16d0dd5b4fda66ee599ae5dddf565ac78823aeeddc475eef089e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSelectionJournal.kt": "31b32e84b87a9dd5d4c76fc301549d7f10da4257fcb0e943d38020719360538a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSelectionGraph.kt": "444cebbac89bb83298a1ce1e6d02d65706fe321e7b87e6491b5f10f86256b91c",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationSelectionContractTest.kt": "b8307eac33cbc7656a0e1db9b53f93f3a69547da881d780d89ac6b52facbc1a9",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt": "76da2f84f30b1a403689b4734baa7a84a8c90e2348d936e5746ccdff230a61f7",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeVoiceInteractionUiTest.kt": "db35756dc33739ceb899457f3ff39eebf8c8678c31482c431a92a7fcb8404c45",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeProvisionalVoiceRecoveryUiTest.kt": "b1a76c7b181fdf3b15a55d9014e9722e34b414164723c2d6bc0dc144a53e4eb1",
+    "apps/android/localization/native-copy.json": "1d8c6b793b3b9e59ac0b2b3728c99269cfd4ecdc0121a6ca9be3a67b4b8bbdbb",
+    "apps/android/src/androidTest/assets/localization-catalog.json": "cf84e3b18d2d2afbe6ca008f5d1728f1e3971929f2214aad5fe125805afabe1c",
+    "apps/android/src/main/res/values-zh/product_strings.xml": "fdd5ec33aa3340931371d15d650f2637ba5c599757ea82e8f580ba7445945f63",
+    "apps/android/src/main/res/values/product_strings.xml": "8baa7d173ef554155dd83e2b6f73cdc544ef2dc04545f46c78f8902c9fbd5ffc"
+  },
+  "implemented": [
+    "actual inbox producer ownership and writer freeze, same-install lifecycle handoff",
+    "strict existing-only nested inbox reader, full graph and final sibling checks",
+    "inert exact inbox text/binary originals through stream/candidate/atomic activation; imported active inbox empty",
+    "selection journal/payload graph audit component only",
+    "provisional restore copy and finish guard, unresolved-discard model actions gate"
+  ],
+  "notImplemented": [
+    "selection actual owner/reader/catalog/export/copy",
+    "complete P7 migration24groups",
+    "all UI/AX/pixel and real DEV closure"
+  ],
+  "rootPreserved": [
+    "F73",
+    "Source51 strict reader",
+    "Source53 runtimeContext rather than framework Application override",
+    "raw voice gate, cancel/join and180000ms",
+    "Source54 canonical fixture correction"
+  ],
+  "rootComposition": {
+    "sdk": {
+      "status": "passed",
+      "candidateSha256": "4d92be34b8dd8c54d0ebd171f5f76b23fec0feecedb417295bddc07410cf7462",
+      "identitySha256": "713f3c4b3782d8db38024e6ef8cbd06645ec2f7ea33ab808ad8fa8dd9523e2a2",
+      "appSha256": "d5d2aa468819ae07a96e1637099cc8ac9c1b3e11165387ad9f1d643bf7dc6f85",
+      "testSha256": "6b326450832f14bd21aec618f20114708a4de90cf6b395a8dab8d229dd73bb79",
+      "examinerSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+      "rootAll796And805InputsIndependentlyRead": true,
+      "rootSdkReviewSha256": "bc9ceee63be6cd4ef8a2c636e62d033bd4d4a6926e128d16d71657ec77dc2537"
+    },
+    "native": {
+      "status": "partial;20 scoped selectors passed,2 known fixture failures,1 notrun",
+      "contractSeven": {
+        "schema": "source55-contract-seven-root-review-v1",
+        "candidateSha256": "4d92be34b8dd8c54d0ebd171f5f76b23fec0feecedb417295bddc07410cf7462",
+        "rawCallsAudited": 329,
+        "nativeSelectorsPassed": 7,
+        "cases": [
+          {
+            "case": 1,
+            "selector": "com.agenthub.android.NativeMigrationInboxContractTest#exactAllPhaseOriginalsAndHistoricalTenSlotsStayInertAndContentAddressed",
+            "lease": "2e262498-10eb-408b-b0d7-3c01c2c66733",
+            "summarySha256": "2b138139479be8e01382e8d733241238e8e5c663bc93f1303108190e51d96ffb",
+            "nativeStdoutSha256": "1697558acb0c3473650cbbf9c0f7c02b34f9e3ba884b09d143373bc950e871d7",
+            "actualRawCallsFullyAudited": 47,
+            "nativePassed": true,
+            "protectionComplete": true,
+            "unknown": false,
+            "deviceReleased": true
+          },
+          {
+            "case": 2,
+            "selector": "com.agenthub.android.NativeMigrationInboxContractTest#interruptedAndConsumedResidueIsPreservedButOrphanUnknownAndMissingReadyBytesReject",
+            "lease": "6e768de8-b307-4395-84fe-a565abc2d9c6",
+            "summarySha256": "3b75e432f0f289fc0a29319d42fb94acad52ae59060ee8fb776ee987969f916f",
+            "nativeStdoutSha256": "4c8b300e186f8e33f1ad3b2b52621c0756afdb7d77f6d8f353b6a185d6a76c5d",
+            "actualRawCallsFullyAudited": 47,
+            "nativePassed": true,
+            "protectionComplete": true,
+            "unknown": false,
+            "deviceReleased": true
+          },
+          {
+            "case": 3,
+            "selector": "com.agenthub.android.NativeMigrationInboxContractTest#emptyArchiveUnknownCatalogAndMissingExtraOrChangedFramesHaveExplicitOutcomes",
+            "lease": "154111f0-b2a8-428a-a847-2a43d9d2c8c9",
+            "summarySha256": "c1c63d6f163843bfc97be6be268c4465b5b8379915000143837e1be84852dc5d",
+            "nativeStdoutSha256": "e0520f8173c70889ce7b56c34ea02cfcef5979de6de28b90dcdda67750f0daeb",
+            "actualRawCallsFullyAudited": 47,
+            "nativePassed": true,
+            "protectionComplete": true,
+            "unknown": false,
+            "deviceReleased": true
+          },
+          {
+            "case": 4,
+            "selector": "com.agenthub.android.NativeMigrationSelectionContractTest#allElevenPhasesRetainExactOriginalSignedFieldsAndHistoricalMaximum",
+            "lease": "f88c075a-f1fc-4e45-aa61-0755e6739cd9",
+            "summarySha256": "63d4574f5f0f262e63f7fa028347891cd6df792787db0bd9cc8605c6622308cd",
+            "nativeStdoutSha256": "ce73dc98d3f96957727a03ab5040e3d3f6afcef3d1ac99d271e9749d9a627e4a",
+            "actualRawCallsFullyAudited": 47,
+            "nativePassed": true,
+            "protectionComplete": true,
+            "unknown": false,
+            "deviceReleased": true
+          },
+          {
+            "case": 5,
+            "selector": "com.agenthub.android.NativeMigrationSelectionContractTest#unknownFieldsVersionsCoercedNumbersDuplicateIdsAndGrantChangesReject",
+            "lease": "a431a1f6-5223-4a4e-9452-e95a6b541f6d",
+            "summarySha256": "856c33c5271a12bbe11589a9b5cb3f984f559c9f9acc2baed012a68ad94ea7cb",
+            "nativeStdoutSha256": "54223cca4a7c24cc87502838949d67a314351c926f4f75581d66d133b663bcba",
+            "actualRawCallsFullyAudited": 47,
+            "nativePassed": true,
+            "protectionComplete": true,
+            "unknown": false,
+            "deviceReleased": true
+          },
+          {
+            "case": 6,
+            "selector": "com.agenthub.android.NativeMigrationSelectionContractTest#sharedPayloadGraphRetainsPartialCleanupAndExplainedExpiredConsumedReceipts",
+            "lease": "bb36fdf5-0443-4977-aa64-8c62f13bae32",
+            "summarySha256": "50c8b6fe2c49a402316dbc3940180b6716083bf0fd2eb4f8d385d2dc2e80b4ee",
+            "nativeStdoutSha256": "fe71d963621331fa1b1dd7efe5149251c58e65afdee26080bf2e558dacd64b5f",
+            "actualRawCallsFullyAudited": 47,
+            "nativePassed": true,
+            "protectionComplete": true,
+            "unknown": false,
+            "deviceReleased": true
+          },
+          {
+            "case": 7,
+            "selector": "com.agenthub.android.NativeMigrationSelectionContractTest#nonterminalOrphanBindingMismatchMissingReadyBytesAndCameraRawStayClosed",
+            "lease": "15112fa6-d70c-4024-81f4-ca3a2294eff9",
+            "summarySha256": "f6195c015a77e3a72dd6edac1d441b0203420b4c762c0198c7d5af49224ea56c",
+            "nativeStdoutSha256": "dee9b03fd10c4c9b4b2dea6dea4b68f3a0fbda2f1330ffa833d2b2cc83bff920",
+            "actualRawCallsFullyAudited": 47,
+            "nativePassed": true,
+            "protectionComplete": true,
+            "unknown": false,
+            "deviceReleased": true
+          }
+        ],
+        "baselineSnapshotSha256": "28a18df84d5cd69157875397ccc39e3ffdd4cfae2a07a4eca7ff23abfb4ab27f",
+        "scope": "actual native pure-memory codec/graph only; no owned/filesystem/owner/UI/OS/provider/physical/realDEV pass",
+        "remainingNativeSelectors": 16,
+        "P7Complete": false
+      },
+      "rootReviewSha256": "db7c5f9488556ba6ddda0e1fef347b3c6cba1cd6f11cf80caefdfb98ef4728f9",
+      "storageFive": {
+        "reference": "fifty-fifth-stage-inbox-storage-native.json",
+        "passed": 4,
+        "knownFailures": 1,
+        "rootRawCallsAudited": 275,
+        "remainingNotRun": 11
+      },
+      "inboxColdAndOwner": {
+        "reference": "fifty-fifth-stage-inbox-owner-cold-native.json",
+        "coldPassed": 3,
+        "actualOwnerPassed": 3,
+        "knownOwnerFixtureFailure": 1,
+        "ownerNotRun": 1,
+        "rootAllRawCallsAudited": 543
+      },
+      "voiceRecoveryThree": {
+        "reference": "fifty-fifth-stage-voice-recovery-native.json",
+        "passed": 3,
+        "rootRawCallsAudited": 159,
+        "parentOriginalWavCaptured": false
+      }
+    },
+    "iosNative": "not run; existing pause retained",
+    "sourceInputs": {
+      "source": {
+        "count": 796,
+        "sha256": "393ba002a8e4dec0e3f938ed903a7b625534084b605bf3e23efdd2e2cefde8c6"
+      },
+      "expanded": {
+        "count": 805,
+        "sha256": "bceb6ddf9158e1bd03449d449500573d0a324ac303732014e0084650f4fea5dc"
+      }
+    },
+    "auxiliary": "passed central271 bilingual/1933keys and relevant source/check/SDK checks; current limited Native outcomes recorded separately"
+  },
+  "futureNativeInventory": {
+    "selectors": {
+      "NativeMigrationInboxContractTest": [
+        "exactAllPhaseOriginalsAndHistoricalTenSlotsStayInertAndContentAddressed",
+        "interruptedAndConsumedResidueIsPreservedButOrphanUnknownAndMissingReadyBytesReject",
+        "emptyArchiveUnknownCatalogAndMissingExtraOrChangedFramesHaveExplicitOutcomes"
+      ],
+      "NativeMigrationInboxStorageTest": [
+        "exactStreamCandidateActivationAndReexportKeepAllFourPhasesInertAndLaterDraft",
+        "fullTwentyMiBBinaryUsesStreamCopiesAndRetainsSourceCiphertext",
+        "unknownCatalogCorruptEnvelopeAndInterruptedPublicationKeepOriginalCandidate",
+        "absentEmptyMissingKeySidecarsLinksAndUnknownChildAreNeverCreatedRecoveredOrOmitted",
+        "siblingSidecarOrChildCreatedAfterStreamWriteRejectsPublicationAndRetainsOriginals",
+        "writeOriginalInboxCandidateForAnotherPid",
+        "activateOriginalInboxCandidateInSecondPidWithoutRestaging",
+        "thirdPidReadsAndCopiesOriginalInboxWithoutCleanupAndRepeatsExactReceipt"
+      ],
+      "NativeMigrationInboxOwnerTest": [
+        "actualControllerPreservesPartialCleanupAndTransfersOriginalInboxWithoutNewStartupCleanup",
+        "actualStartupCleanupAndRefreshKeepWritingAfterControllerRejectsBusyKernelOwner",
+        "actualRetryAndConsumeWaitForProviderAndMetadataIoBeforeMigrationAdmission",
+        "intentDuringOwnershipAcquisitionRefusesBeforePauseAndDrainsOnceOnOriginalOwner",
+        "lateActivityIntentInvalidatesFrozenExportThenReachesTransferredSourceInboxOnce"
+      ],
+      "NativeMigrationSelectionContractTest": [
+        "allElevenPhasesRetainExactOriginalSignedFieldsAndHistoricalMaximum",
+        "unknownFieldsVersionsCoercedNumbersDuplicateIdsAndGrantChangesReject",
+        "sharedPayloadGraphRetainsPartialCleanupAndExplainedExpiredConsumedReceipts",
+        "nonterminalOrphanBindingMismatchMissingReadyBytesAndCameraRawStayClosed"
+      ],
+      "NativeProvisionalVoiceRecoveryUiTest": [
+        "restoredProvisionalCannotFinishOrSealEvenWithCompletePcmBytesAndSharing",
+        "bilingualRecoveryCopyAndRerecordActionAgreeWithTheUnsealedOriginal"
+      ],
+      "NativeVoiceInteractionUiTestNew": [
+        "unresolvedDiscardKeepsModelActionsGatedUntilExplicitReceiptRecovery"
+      ]
+    },
+    "count": 23,
+    "status": "23 total:20 scoped passes,2 known fixture failures,1 owner5 notrun;fullP7/UI/DEV pending"
+  },
+  "iosImpact": "Android local archive/test and recovery only; no iOS implementation change; source comparison does not verify current iOS UI/native",
+  "taskProjectManagement": "paused",
+  "unknownOperationsReplayed": false,
+  "source54NativeCandidateUnchanged": "1cc13a2443de95c0d5f9fc9820269d22822882cdde3b30231a481053045491ff"
+}

@@ -15,5 +15,7 @@
         android:targetPackage="com.easyai.agenthub.android.acceptance.photos.test" />
     <instrumentation android:name="com.agenthub.android.OwnedCameraColdDriver"
         android:targetPackage="com.easyai.agenthub.android.acceptance.cameras.test" />
+    <instrumentation android:name="com.agenthub.android.OwnedPublicProcessNaturalObserver" android:targetPackage="com.easyai.agenthub.android.acceptance.coldexaminer" />
+    <instrumentation android:name="com.agenthub.android.OwnedPublicProcessDiagnosticObserver" android:targetPackage="com.easyai.agenthub.android.acceptance.coldexaminer" />
     <application android:label="Agent Hub Cold Inbox Examiner" android:allowBackup="false" />
 </manifest>

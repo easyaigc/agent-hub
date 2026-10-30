@@ -8,6 +8,8 @@ import android.system.OsConstants
 import android.util.AtomicFile
 import android.util.Base64
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -26,12 +28,23 @@ internal class NativeSavedVoicePostWriteProtocol(val context: Context) {
         .also {require(UUID.fromString(it).toString()==it)}
     val boundary=(InstrumentationRegistry.getArguments().getString("savedVoicePostWriteBoundary") ?: "1").toInt().also {require(it in 1..3)}
     val folder=File(context.filesDir,"acceptance/saved-voice-postwrite-"+run)
-    private val defaultMetadata=NativeSessionStorage(context,existingKeyOnly=true).read("metadata")
+    private val existingProtection=NativeSavedVoiceExistingProtection.fromArguments(context).also {
+        it?.let { guard->require(guard.plan.postwriteRun==run);guard.verify() }
+    }
+    private fun readDefaultMetadata(): String? = if(existingProtection!=null)
+        NativeSessionStorage.ExistingReader.open(context,"mobile-v1","agent-hub-mobile-v1").use {it.optionalText("metadata",1_048_576)}
+        else NativeSessionStorage(context,existingKeyOnly=true).read("metadata")
+    private val defaultMetadata=readDefaultMetadata()
+    fun evidence(): NativeSavedVoicePostWriteEvidence = if(existingProtection!=null)
+        NativeSavedVoicePostWriteEvidence.protected(context,::readDefaultMetadata)
+        else NativeSavedVoicePostWriteEvidence.legacy(context)
     val defaultMetadataHash: Any get()=defaultMetadata?.let {voiceSHA(it.toByteArray(Charsets.UTF_8))} ?: JSONObject.NULL
     fun namespace(question: Boolean)="P7-saved-postwrite-"+(if(question)"q-"else"c-")+run
     fun storage(question: Boolean,readOnlyKey: Boolean=false): NativeSessionStorage {
         val name=namespace(question);require(File(context.noBackupFilesDir,name).isDirectory)
-        return NativeSessionStorage(context,name,name,existingKeyOnly=readOnlyKey)
+        return if(readOnlyKey&&existingProtection!=null)
+            NativeSessionStorage(context,name,name,existingKeyOnly=true,existingNamespaceOnly=true,existingReadOnly=true)
+            else NativeSessionStorage(context,name,name,existingKeyOnly=readOnlyKey)
     }
     fun fresh() {
         require(!folder.exists()) {"Prior writer intent exists; reconcile it instead of replaying"}
@@ -66,7 +79,9 @@ internal class NativeSavedVoicePostWriteProtocol(val context: Context) {
     fun hash(name: String)=voiceSHA(file(name).readBytes())
     fun header(kind: String)=JSONObject().put("version",1).put("kind",kind).put("run",run).put("boundary",boundary)
         .put("pid",Process.myPid()).put("package",context.packageName).put("modelTasks",0).put("microphone",0).put("HostOperations",0)
-    fun verifyHeader(v: JSONObject,kind: String) {require(v.get("version")==1&&v.get("kind")==kind&&v.get("run")==run&&v.get("boundary")==boundary&&v.get("package")==context.packageName)}
+        .put("existingProtectionPlanSha256",existingProtection?.plan?.sha256 ?: JSONObject.NULL)
+    fun verifyHeader(v: JSONObject,kind: String) {require(v.get("version")==1&&v.get("kind")==kind&&v.get("run")==run&&v.get("boundary")==boundary&&v.get("package")==context.packageName)
+        require(v.get("existingProtectionPlanSha256")== (existingProtection?.plan?.sha256 ?: JSONObject.NULL))}
     fun claim(name: String,readySha256: String) = publish(name,header(name).put("readySha256",readySha256))
     fun requireKilledWriter(): JSONObject {
         require(!file("writer-ended").exists()) {"Writer exited its gate; this is not the requested process-termination window"}
@@ -86,11 +101,12 @@ internal class NativeSavedVoicePostWriteProtocol(val context: Context) {
         val result=(0 until rows.length()).map {NativeSavedVoicePostWriteBaseline.decode(rows.getJSONObject(it),this)}
         require(result.map {it.question}.toSet()==setOf(false,true));return result
     }
-    fun protectDefault(evidence: NativeSavedVoiceSessionEvidence) {
-        assertEquals(defaultMetadata,NativeSessionStorage(context,existingKeyOnly=true).read("metadata"))
+    suspend fun protectDefault(evidence: NativeSavedVoicePostWriteEvidence)=withContext(Dispatchers.IO) {
+        assertEquals(defaultMetadata,readDefaultMetadata())
+        existingProtection?.let { guard->evidence.write("existing-default-and-originals",guard.verify()) }
         evidence.verify();val f=File(evidence.folder,"default-storage-proof.json")
         evidence.write("postwrite-full-default-metadata",JSONObject().put("completeDefaultMetadataUnchanged",true).put("metadataSha256",defaultMetadataHash))
-        for(proof in listOf(f,File(evidence.folder,"postwrite-full-default-metadata.json")))FileOutputStream(proof,true).use {it.fd.sync()}
+        for(proof in listOf(f,File(evidence.folder,"postwrite-full-default-metadata.json"))+listOfNotNull(existingProtection?.let {File(evidence.folder,"existing-default-and-originals.json")}))FileOutputStream(proof,true).use {it.fd.sync()}
         syncDirectory(evidence.folder)
     }
     private fun syncDirectory(dir: File) {

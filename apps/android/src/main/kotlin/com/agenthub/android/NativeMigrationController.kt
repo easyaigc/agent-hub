@@ -63,7 +63,7 @@ internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,va
     private fun error(failure: Throwable)=when(failure) {
         is CancellationException->NativeMigrationResult.CANCELLED
         is NativeMigrationActivation.ExistingInstallation->NativeMigrationResult.NEW_INSTALLATION
-        is NativeMigrationExport.IncompleteScope,is NativeSessionStorage.IncompleteMigrationInventory->NativeMigrationResult.UNSUPPORTED
+        is NativeMigrationExport.IncompleteScope,is NativeSessionStorage.IncompleteMigrationInventory,is NativeVoiceRawGate.Busy,is NativeInboxOwnership.Busy->NativeMigrationResult.UNSUPPORTED
         is NativeMigrationCandidateStore.InvalidCandidate->NativeMigrationResult.INVALID
         else->NativeMigrationResult.SAVE_FAILED
     }
@@ -96,7 +96,7 @@ internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,va
             val file=withContext(Dispatchers.IO){documents.file(id,"export")}
             try {
                 val held=owner.quiesce(id);lease=held;held.requireCurrent()
-                withContext(Dispatchers.IO){NativeMigrationExport(context,held.storage).sealFile(file,passphrase)}
+                withContext(Dispatchers.IO){NativeMigrationExport(context,held.storage).sealFile(file,passphrase,held)}
                 currentCoroutineContext().ensureActive();held.requireCurrent();exportFile=file
                 afterRestore={phase=NativeMigrationPhase.CHOOSE_EXPORT;picker=NativeMigrationPicker(id,NativeMigrationPickerKind.EXPORT)}
             }catch(failure: Exception){withContext(NonCancellable+Dispatchers.IO){runCatching {documents.remove(file)}};phase=NativeMigrationPhase.FAILED;result=error(failure)}
@@ -157,7 +157,7 @@ internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,va
             try {
                 val held=owner.quiesce(id);lease=held;held.requireCurrent();check(held.storage===expected)
                 val caller=currentCoroutineContext()
-                withContext(Dispatchers.IO){NativeMigrationActivation(context,held.storage,held.notification(receipt)).activate(receipt){caller.ensureActive();check(!cancelRequested);held.requireCurrent()}}
+                withContext(Dispatchers.IO){NativeMigrationActivation(context,held.storage,held.notification(receipt),held).activate(receipt){caller.ensureActive();check(!cancelRequested);held.requireCurrent()}}
                 candidate=null;preview=null;result=NativeMigrationResult.IMPORTED;afterRestore={phase=NativeMigrationPhase.DONE}
             }catch(failure: Exception) {
                 val held=lease;val observed=if(held!=null)withContext(NonCancellable+Dispatchers.IO){runCatching {held.storage.migrationPublicationReceipt()}}else Result.success(null)
@@ -179,10 +179,12 @@ internal data class NativeMigrationPreview(val computers: Int,val drafts: Int,va
         }
     }
     private suspend fun finishOwner(lease: NativeMigrationOwnerLease) {
+        // Stream/activation work has ended; old Session remains paused until owner replacement.
         if(result!=NativeMigrationResult.RESTORE_FAILED)ownerOutcome=result
         pendingOwner=lease;phase=NativeMigrationPhase.RESTORING
-        val owner=host?:return
         try {
+            withContext(NonCancellable+Dispatchers.IO){lease.releaseRawWriters()}
+            val owner=host?:return
             val required=lease.requiresExplicitEnrollment ?: withContext(NonCancellable+Dispatchers.IO){NativeMigrationNotificationArchives.requiresExplicitSetup(lease.storage.reopen(context))}.also {lease.requiresExplicitEnrollment=it}
             withContext(NonCancellable+Dispatchers.Main.immediate){owner.restore(lease,required)}
             if(host!==owner)return

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operation": "parent-p7-provisional-owner-writer-closure-20261029-1",
+  "scope": "provisional-voice",
+  "featureIds": ["F33", "F56", "F64"],
+  "baseCommit": "e0fb3a8bfdc112aa8914b5b5f07699018efaa7fe",
+  "sourceStatus": "owner/writer and IO dispatch closure implemented; Root adoption/native pending",
+  "schema": "migration-provisional-voice-v1",
+  "sharedFilePins": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "oldSha256": "8b0d6ff425f8d0b421f21d3ba4e5c5a38bdc527ff84399ea31671d1b43cc9101",
+      "newSha256": "884120a00240e0124ecc107f7f79ce3c1a4b4c86191bcfe0745ca42a35527927",
+      "ownNewSha256": "884120a00240e0124ecc107f7f79ce3c1a4b4c86191bcfe0745ca42a35527927",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "oldSha256": "101c186b808aecb9d1e67d3d7db6f64d79cd2292b2f4e2071d0c97f674452fab",
+      "newSha256": "a98709f7272415073cc41e94520e5fc9d759755fc361f27f299072e5b1d877cb",
+      "ownNewSha256": "74296411834cd9e8c54aa4e46d256c457919a9b2b823d379a2e119da76449f17",
+      "preservesRootDelta": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationController.kt",
+      "oldSha256": "a1fee9a31a07f25a176c2787fa0c4d7122d5795cbf0a30c4546d2e1638e5f668",
+      "newSha256": "919aa1f6a5ca16af641554accec0881847ff43bddc0d3ec89fdb62c9abc63458",
+      "ownNewSha256": "919aa1f6a5ca16af641554accec0881847ff43bddc0d3ec89fdb62c9abc63458",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt",
+      "oldSha256": "690fe48cfbbbe154db33a3e2ed7807ee9d03422da8835053cf1485cddb294dc9",
+      "newSha256": "3c7bd9c35766ebe3dda8db3cedc02cf16bb72e6abbc6cbbbc7e2994b9cd8d3c2",
+      "ownNewSha256": "3c7bd9c35766ebe3dda8db3cedc02cf16bb72e6abbc6cbbbc7e2994b9cd8d3c2",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "oldSha256": "91107ee6c136675dc6db538690141b5b1876156357723c9d91c016d6aeca1c3c",
+      "newSha256": "794acfc18e20761bb965a473a59ae9df715c382898b003b908cf297db82d414c",
+      "ownNewSha256": "b8512ce24e9337782824bf1c7c87ad73996977ba017f7a4eb16150256f465792",
+      "preservesRootDelta": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceInputController.kt",
+      "oldSha256": "5952e8ecc250d41f6e7ab1cee5f5977c8bed580c9f1143e9aa5ed95ec8eae348",
+      "newSha256": "f1da0dfdd9892e2f2af08e5d51ea476b978e5e0f101a683a46860074b685028b",
+      "ownNewSha256": "f1da0dfdd9892e2f2af08e5d51ea476b978e5e0f101a683a46860074b685028b",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt",
+      "oldSha256": "48c7ca01e3b5a42f55618ddc03ba2de76a9f97198321e360e42b4c849b3ad3d8",
+      "newSha256": "90a26039eb09a17c7ddc91b895a128205a8a41b980bc9e6eccd098dd39316d36",
+      "ownNewSha256": "90a26039eb09a17c7ddc91b895a128205a8a41b980bc9e6eccd098dd39316d36",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt",
+      "oldSha256": "159a2ec97d6a9b653dde996af31d09059c282dcfae3869973f224fbfd0633b99",
+      "newSha256": "980b67e11401c631dce141e9b0997def9895b9bc26343f5739c874696140bf75",
+      "ownNewSha256": "980b67e11401c631dce141e9b0997def9895b9bc26343f5739c874696140bf75",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
+      "oldSha256": "ca23e60dbef87ab0a96a772c3d8e07ccdb334c0e3ee5c097ddfb8016de11eae4",
+      "newSha256": "73480656ace117a1535eae7ebc21de8d61da86e89683fc0c2935d896fa73d215",
+      "ownNewSha256": "73480656ace117a1535eae7ebc21de8d61da86e89683fc0c2935d896fa73d215",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationVoice.kt",
+      "oldSha256": "a010b254f7b93fae3ec7479ae95ebdb0cbae759695d3f71549dd7c19bf3ead68",
+      "newSha256": "c44d243c398912a1cc968bd1eb1a375bf9f859a189dfd57a2d43903f67deefe6",
+      "ownNewSha256": "c44d243c398912a1cc968bd1eb1a375bf9f859a189dfd57a2d43903f67deefe6",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalVoice.kt",
+      "oldSha256": null,
+      "newSha256": "dada96245db60bebd0e6174b0ece1c8a5ebade64a6433e46f75f39cba8e68961",
+      "ownNewSha256": "dada96245db60bebd0e6174b0ece1c8a5ebade64a6433e46f75f39cba8e68961",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationProvisionalFiles.kt",
+      "oldSha256": null,
+      "newSha256": "0ff500cdfef13430b83fa95fc9c2181d1c31b3ea0f3947424b07ba5291207117",
+      "ownNewSha256": "0ff500cdfef13430b83fa95fc9c2181d1c31b3ea0f3947424b07ba5291207117",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawGate.kt",
+      "oldSha256": null,
+      "newSha256": "0c1d6eff93ce5bbbbb1bd93c7c1b56d66db52ae799553b9f11555afb925837ba",
+      "ownNewSha256": "0c1d6eff93ce5bbbbb1bd93c7c1b56d66db52ae799553b9f11555afb925837ba",
+      "preservesRootDelta": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceRawOwnership.kt",
+      "oldSha256": null,
+      "newSha256": "e3bfe8cb5d1e714e51886fb9f5b86011e5b6561210b0d047e8e309da46fa320e",
+      "ownNewSha256": "e3bfe8cb5d1e714e51886fb9f5b86011e5b6561210b0d047e8e309da46fa320e",
+      "preservesRootDelta": false
+    }
+  ],
+  "storageAndMobileSessionChanged": true,
+  "rootLocalResultsInventoryPreserved": true,
+  "activePermissionOrCallbackOrOriginalOperationRestored": false,
+  "auxiliary": {
+    "sdk": "passed:732 inputs final IO closure",
+    "sourceSha256": "171c2ef5f8c1f334a57e349a14020ab4d484ae721ef06501d020f8fa46fb70db",
+    "jvm": "3 actual gate tests matched reuse;7 final classes match r2",
+    "native": "0 executed here;6 provisional +3 actual owner methods pending",
+    "RootCombinationCompile": "not executed"
+  },
+  "sourceFailuresPreserved": true,
+  "nonemptyChildren": "still refused; see24-group inventory",
+  "productUIChanged": false,
+  "ios": {
+    "changed": false,
+    "pendingVoiceExport": "not in current payload",
+    "A6": "paused"
+  },
+  "fullP7Complete": false,
+  "centralManifests": "Root-owned adoption and native evidence only",
+  "contract": "provisional-voice-migration.md",
+  "previousDelivery": {
+    "commit": "e0fb3a8bfdc112aa8914b5b5f07699018efaa7fe",
+    "RootAdopted": false,
+    "blockers": ["ordinary owner pause seals originals", "no producer freeze"]
+  },
+  "rawProducerOwnership": {
+    "authority": "singleton token plus shared/exclusive cooperative FileLock",
+    "controlFile": "voice-recordings-writer-v1.lock",
+    "portable": false,
+    "activeOrFinishingCapture": "refuse before owner pause or stop",
+    "ordinaryPauseChanged": false,
+    "strictOwnerAdmission": "memory-only before control-file open",
+    "publicationLifetime": "exclusive ownership through AtomicFile finish/failure"
+  },
+  "rootSourceAdoption": "pending review",
+  "dispatchClosure": {
+    "baseCommit": "4d43ba03b76fdca3f73ed6ba6c4e2ea52c048e77",
+    "diskAcquisitionValidationRelease": "IO; Main explicitly rejected",
+    "admissionAndModel": "Main",
+    "cancelledAcquire": "object assigned before dispatcher return; exact NonCancellable IO close",
+    "captureStartFailure": "joins worker cleanup before returning",
+    "ordinaryBackgroundDuringMigrationAdmission": "guarded before migrationPaused",
+    "pendingOwnerSavedBeforeRelease": true,
+    "sourceSha256": "171c2ef5f8c1f334a57e349a14020ab4d484ae721ef06501d020f8fa46fb70db",
+    "SDK": "passed:732 source171c2ef5;39.999s",
+    "native": "not executed"
+  }
+}

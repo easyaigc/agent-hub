@@ -111,5 +111,16 @@
     "client selector and sidebar entry independence, current-target changes and stale response isolation",
     "credits/compute/currency/multiple windows exact decimal and unknown/zero/unlimited/partial/offline states",
     "all language/theme/font/short viewport/AX and Codex/EasyWork real source per device"
-  ]
+  ],
+  "currentSourceAuditOnly": {
+    "source": "eb98ad53",
+    "currentAndroidOrIOSNativeAcceptance": false,
+    "remainingChecks": [
+      "eight usage target/state/format/entry/budget/detail/language-AX rows remain native pending",
+      "Android usage hardcoded Chinese strings and detail manual refresh/amount-unlimited presentation require source alignment",
+      "UsageRules opaque bucket/metric composite key needs collision-safe mapping",
+      "both clients per-key pending reads need shared two-read ceiling verification"
+    ],
+    "otherTaskEvidenceNotPromoted": true
+  }
 }

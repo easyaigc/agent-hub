@@ -1,0 +1,114 @@
+{
+  "stage": "P7 current original protection / Source52",
+  "status": "implementation checkpoint; A/B accepted; Native body pass; final parent PID proof pending",
+  "canonicalInputCount": 763,
+  "expandedInputCount": 772,
+  "sourceSha256": "683e736125ef38f7e55f76d2591cf579b3b11729136e01bc4878c56369a7f9f1",
+  "expandedSourceSha256": "050f89cfd89cca9e910d031bf34b3184c8c7f24976ab9f45c3f908bc05521e01",
+  "appSha256": "96e937be7f0e7a273727b4255a82a6d8bbceb6b73f8e36855980f503703269b0",
+  "testSha256": "778bb69961cc129b07d98209bf24bba89280d332e2f76cd43be3d22d39aeddfa",
+  "unusedExaminerArtifactSha256": "4cfccbb519ab91b9a300efa7cb446873d471e9acd6525d7b1e86265c09724225",
+  "productionStorageSha256": "91107ee6c136675dc6db538690141b5b1876156357723c9d91c016d6aeca1c3c",
+  "nativePlan": {
+    "version": 2,
+    "closedTopLevelKeys": 12,
+    "currentFamilyKeys": 5,
+    "currentDefaultFamily": {
+      "directories": 11,
+      "files": 1,
+      "bytes": 163,
+      "additionalDirectoriesEmpty": 10,
+      "familyDigest": "0d289b854ae9de058b90534229379438234304ac5ac650888286fe6d55bf710e"
+    },
+    "historicalBootstrapFamily": {
+      "directories": 1,
+      "files": 1,
+      "bytes": 163,
+      "familyDigest": "c8c4c051b60fa624fc3848eda70e8b20deff3afd2384ef20dd84e86c2fd1d529"
+    },
+    "unknownRootsOrNestedOrExtraFilesAccepted": false
+  },
+  "testOnlyAsrCanonicalFix": {
+    "historicalSource": "NativeRealSavedVoiceSpeechTest.canonicalJson",
+    "keysAndStrings": "JSONObject.quote; slash escapes retained",
+    "mistakenUse": "EasyWork wire canonical is a separate encoding profile",
+    "productionEasyWorkAndVoiceFingerprintChanged": false,
+    "oldCanonicalAndRowHashesChanged": false
+  },
+  "auxiliary": {
+    "buildActualExit": 0,
+    "tasks": 115,
+    "executedTasks": 5,
+    "upToDateTasks": 110,
+    "all763And772ReadBack": true,
+    "allThreeZipV2AndOriginalCertificate": true,
+    "identitySha256": "a6ef69c3e3f701f0825b90511ba1990bc2883464ab31aa8f679079dbea2bf10d",
+    "hostVectorRuns": 2,
+    "hostVectorsPerRun": 112,
+    "hostChecksOnly": true,
+    "newNativePlanAndCanonicalVectorMethods": "compiled, not executed"
+  },
+  "parentStages": [
+    {
+      "revision": "initial-v2",
+      "A": "complete readonly baseline passed",
+      "B": "two original-signature in-place -r updates passed",
+      "native": "known JUnit failure at wrong canonical profile; originals unchanged"
+    },
+    {
+      "revision": "ASR-proof-canonical",
+      "A": "fresh complete readonly baseline passed",
+      "B": "exact installed App skipped; one runner -r update passed",
+      "native": "unique JUnit method passed, final parent PID evidence pending"
+    }
+  ],
+  "actualNative": {
+    "executed": 2,
+    "knownJUnitPass": 1,
+    "knownJUnitFailure": 1,
+    "unknown": 0,
+    "fullAuthenticationAccepted": false,
+    "finalGateSuccess": false,
+    "pendingReason": "Parent tried to inspect the native PID after its normal instrumentation exit; process no longer existed. No fallback PID or pass is fabricated.",
+    "currentResultSha256": "efb0403c47db1d620b1d9bb2bbd8f217fb79f72dddee0a85bbbb561a282dca3c",
+    "protectedAfterObservationSha256": "304547ea380b19ec4835ffe03d4ca84a22451d405efb4164546d057a29f7021c",
+    "nativeOwnedProofArchiveSha256": "ff06908d1c24c6b9c2afd19228950fa3bd815bc511fe22e36efe11bffb6839a8",
+    "currentBody": {
+      "existingKeyAuthenticated": true,
+      "originals": 2,
+      "fullWavBytes": [91532, 103724],
+      "currentAndHistoricalFamilyBound": true,
+      "canonicalRowFingerprintAndManifestAssertionsRetained": true,
+      "wholeDefaultCipherOriginalsAndReceiptsUnchanged": true,
+      "sourceWritesZero": "reviewed native path declaration plus complete parent protection equality, not syscall tracing"
+    }
+  },
+  "protected": {
+    "originalAppUid": 10076,
+    "originalRunnerPackageUid": 10077,
+    "microphonePermissionAndAppOps": "ungranted / No operations, unchanged",
+    "examinerInstalledOrDeleted": false,
+    "newKeyDefaultBootstrapOrOriginalOperation": false,
+    "postwriteRolesArmed": false,
+    "unknownOperationQueryOrReplay": false
+  },
+  "execution": {
+    "verifiedModel": "gpt-6.1-terra",
+    "verifiedReasoning": "medium",
+    "actualTurnContextVerified": true,
+    "serviceTierVerified": false
+  },
+  "ios": {
+    "sourceChanged": false,
+    "nativeProofInherited": false,
+    "A6": "paused"
+  },
+  "taskAndProjectManagement": "paused",
+  "remaining": [
+    "Capture live PID/four UIDs/starttime during the same native run; retain current known result without replay",
+    "Run closed-plan and strict missing/pending/key structural negative native selectors",
+    "Only after complete protection admission: fresh controlled postwrite writer and distinct cold readers",
+    "Integrate and accept real owner/writer provisional migration; then nonempty system child inventories",
+    "Full UI, actual API26 model installation/cancel and physical/iOS DEV remain separate"
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agent-hub:migration:external-inbox:1",
+  "title": "Inert external inbox catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "archives"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "archives": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "entries"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entries": {
+            "type": "array",
+            "maxItems": 512,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "kind", "size", "sha256"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8192,
+                  "pattern": "^[^\\u0000]+$"
+                },
+                "kind": {
+                  "enum": ["text", "binary"]
+                },
+                "size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20971520
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "text"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "size": {
+                        "maximum": 8388608
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Executable validation additionally enforces <=1MiB UTF8 catalog; <=1022 entries total; sorted unique archive IDs and entry names; content ID algorithm; exact canonical frame aliases/content descriptors; complete original inbox graph; existing 1024-frame/192MiB stream quota. No destination authority is encoded."
+}

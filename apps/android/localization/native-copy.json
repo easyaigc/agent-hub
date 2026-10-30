@@ -1310,6 +1310,51 @@
       "key": "识别并填入原草稿",
       "en": "Recognize and fill the original draft",
       "zhHans": "识别并填入原草稿"
+    },
+    {
+      "key": "正在检查离线模型…",
+      "en": "Checking the offline model…",
+      "zhHans": "正在检查离线模型…"
+    },
+    {
+      "key": "正在下载并校验离线模型…",
+      "en": "Downloading and verifying the offline model…",
+      "zhHans": "正在下载并校验离线模型…"
+    },
+    {
+      "key": "正在识别原录音…",
+      "en": "Recognizing the saved recording…",
+      "zhHans": "正在识别原录音…"
+    },
+    {
+      "key": "离线模型检查超时，请重新检查。",
+      "en": "Offline model check timed out. Check again.",
+      "zhHans": "离线模型检查超时，请重新检查。"
+    },
+    {
+      "key": "离线模型检查未完成，请重新检查。",
+      "en": "Offline model check did not complete. Check again.",
+      "zhHans": "离线模型检查未完成，请重新检查。"
+    },
+    {
+      "key": "离线模型安装超时，请检查模型状态后重试。",
+      "en": "Offline model installation timed out. Check model status before retrying.",
+      "zhHans": "离线模型安装超时，请检查模型状态后重试。"
+    },
+    {
+      "key": "离线模型安装未完成，请检查模型状态后重试。",
+      "en": "Offline model installation did not complete. Check model status before retrying.",
+      "zhHans": "离线模型安装未完成，请检查模型状态后重试。"
+    },
+    {
+      "key": "本机原录音识别超时，原录音和已有结果已保留。",
+      "en": "Saved recording recognition timed out. The original recording and existing results are preserved.",
+      "zhHans": "本机原录音识别超时，原录音和已有结果已保留。"
+    },
+    {
+      "key": "已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。",
+      "en": "This draft's restored recording is incomplete. Transcription cannot be retried; nothing will be submitted automatically.",
+      "zhHans": "已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。"
     }
   ]
 }

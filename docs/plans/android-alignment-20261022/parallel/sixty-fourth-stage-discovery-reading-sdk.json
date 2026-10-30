@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "stage": "Source64r2",
+  "classification": "source-sdk-only",
+  "branch": "codex/android-parallel-stage30-20261030",
+  "baseCommit": "4a5bb90f5a4fcd1c06e8a9512b429eff972d5bff",
+  "sourceCommits": [
+    "e00e18b2184f2e348cc1006120cdf2ac1f28439c",
+    "8648c5981fa4bc0205cf640b1c286474f6ee70a8"
+  ],
+  "rootSharedHooks": 9,
+  "rootAdaptations": [
+    "Preserve first gate teardown failure via suppressed",
+    "Preserve both original discovery error copies",
+    "Public nofollow/nonblock directory FD validation/fsync shared helper"
+  ],
+  "privateClaimAuditProductionEnabled": false,
+  "canonicalCount": 830,
+  "canonicalSha256": "41777c46429fc5713b3d69c3f403065a698c69033dff0b1261cdadebf801db86",
+  "expandedCount": 843,
+  "expandedSha256": "9297b7fc3ae7863145fa4aa7e5b7397508edf404992b080b6d8e97a4d6d355e3",
+  "candidateSha256": "894423ab7bd1ba7be82e14cc980a687e048387b71e14184f5c60d4dc95c9e156",
+  "identitySha256": "5c4402cf5b45d3523f3089e51d8eb6dfa578785e1ceb1d12e8d7764aa2d11b3d",
+  "rootIndependentSdkAuditSha256": "2173279a40e337b2387964f7cade145cbeba9146c4a72c1eaa6495f039cb339e",
+  "peerSourceReviewSha256": "834e963966d1124468dbb60ecbc48de124bf10f5c45ad4eddd43cbebfda3af6d",
+  "actualBuild": {
+    "exitCode": 0,
+    "seconds": 17.8778,
+    "stdoutBytes": 146485,
+    "stderrBytes": 0,
+    "bothEof": true,
+    "capOrReaderError": false
+  },
+  "apks": {
+    "app": "3329b85d68aa69662b404000e05db4003e5174eff5412c0e1186473d86b0aa7c",
+    "test": "9288a36cc554182904ffbefa30a2743262c4fb583ae320a0461391233ac3afaf",
+    "examiner": "f6c813b5a10329ec1b97e7cbf009c71502837f794adf831b2a79cb4ec15c256a"
+  },
+  "failedBuildPreserved": {
+    "candidate": "Source64 initial",
+    "exitCode": 1,
+    "seconds": 16.13,
+    "cause": "Public SDK O_DIRECTORY unavailable in2 test fixtures",
+    "noFreezeOrNative": true
+  },
+  "firstAttestationAttempt": {
+    "exitCode": 1,
+    "beforeOutputCreation": true,
+    "reason": "Missing authorization environment",
+    "followupWithExplicitAuthorization": true
+  },
+  "native": {
+    "performed": false,
+    "fullP7OrRealDevAccepted": false
+  },
+  "readOnlyApi33": {
+    "calls": 5,
+    "strictProductPackagesAbsent": 3,
+    "packageRows": 205,
+    "onlyObservedNoInstrumentationRecords": true,
+    "strictAbsenceOrNativeProved": false,
+    "autoPhaseBAllowed": false
+  },
+  "voiceOriginalRead": {
+    "revision1KnownPending": true,
+    "deviceCalls": 1,
+    "nativeCalls": 0,
+    "decoderFixOnly": true,
+    "revision2OfflineTests": 12,
+    "revision2WrapperExecuted": false,
+    "actualAmDumpAllFormatGap": true
+  },
+  "newBusinessInputs": 0,
+  "unknownReplay": 0,
+  "paused": ["tasks-and-projects", "iOS-A6"]
+}

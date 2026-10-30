@@ -16,13 +16,15 @@ import kotlin.math.sqrt
 internal class NativeAudioCapture(private val file: File,private val scope: CoroutineScope,private val meter: (Float)->Unit) {
     private val running=AtomicBoolean(false)
     private var worker: Deferred<Unit>?=null
-    val ended get()=worker?.isCompleted==true
+    val ended get()=worker?.isCompleted!=false
     suspend fun start() {
         running.set(true)
         val ready=CompletableDeferred<Unit>()
         worker=scope.async(Dispatchers.IO) {
             var recorder: AudioRecord?=null
+            var owned: NativeVoiceRawGate.Writer?=null
             try {
+                val rawWriter=NativeVoiceRawOwnership.writer(file).also {owned=it} // IO, before microphone or rw open.
                 val minimum=AudioRecord.getMinBufferSize(16000,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT)
                 require(minimum>0) { "此设备不支持录音格式" }
                 var opened: AudioRecord?=null
@@ -37,6 +39,7 @@ internal class NativeAudioCapture(private val file: File,private val scope: Coro
                 recorder=input
                 if(!running.get()) { ready.completeExceptionally(CancellationException("录音已取消"));return@async }
                 input.startRecording();check(input.recordingState==AudioRecord.RECORDSTATE_RECORDING) { "麦克风未能开始录音，原草稿已保留。" };ready.complete(Unit)
+                rawWriter.requireCurrent()
                 RandomAccessFile(file,"rw").use { out->
                     android.system.Os.chmod(file.path,0x180);out.setLength(0);out.write(WavePCM.header(0))
                     val buffer=ShortArray(1600);val bytes=ByteArray(buffer.size*2);var count=0
@@ -46,18 +49,19 @@ internal class NativeAudioCapture(private val file: File,private val scope: Coro
                         check(n>0) { "录音已被系统中断，原文件已保留。" }
                         var power=0.0
                         for(i in 0 until n) { val value=buffer[i].toInt();bytes[i*2]=value.toByte();bytes[i*2+1]=(value shr 8).toByte();power+=value.toDouble()*value }
-                        out.write(bytes,0,n*2);count+=n*2
+                        rawWriter.requireCurrent();out.write(bytes,0,n*2);count+=n*2
                         // A process death leaves recoverable PCM; the final header is sealed before networking.
                         if(count%32000<n*2) out.fd.sync()
                         val level=(sqrt(power/n)/5000).toFloat().coerceIn(0f,1f)
                         withContext(Dispatchers.Main.immediate) { meter(level) }
                     }
-                    out.seek(0);out.write(WavePCM.header(count));out.fd.sync()
+                    rawWriter.requireCurrent();out.seek(0);out.write(WavePCM.header(count));out.fd.sync()
                 }
             } catch(e: Throwable) { ready.completeExceptionally(e);throw e }
-            finally { running.set(false);recorder?.let { try { if(it.recordingState==AudioRecord.RECORDSTATE_RECORDING) it.stop() } finally { it.release() } } }
+            finally { try {running.set(false);recorder?.let { try { if(it.recordingState==AudioRecord.RECORDSTATE_RECORDING) it.stop() } finally { it.release() } }} finally {owned?.close()} }
         }
-        try { ready.await() } catch(e: Throwable) { running.set(false);throw e }
+        worker!!.invokeOnCompletion {error->if(error!=null)ready.completeExceptionally(error)}
+        try { ready.await() } catch(e: Throwable) { running.set(false);withContext(NonCancellable){worker?.join()};throw e }
     }
     suspend fun stop() { running.set(false);worker?.await() }
 }
@@ -74,7 +78,11 @@ class VoiceInputController(private val context: Context,private val store: Voice
     var provider by mutableStateOf(Provider.DESKTOP);private set
     var transcript by mutableStateOf("");private set
     internal val capturedText get()=draft?.text
-    val canRetry get()=provider==Provider.DESKTOP && phase==Phase.FAILED && pending!=null && !discardFailed && !savedFileBusy && !savedFileClosing
+    val canRetry get()=provider==Provider.DESKTOP && phase==Phase.FAILED && hasRetryableRecording && !discardFailed && !savedFileBusy && !savedFileClosing
+    // A provisional/empty file is not a retryable transcription. A sealed restored original is.
+    private var capturedAudioAvailable by mutableStateOf(false)
+    internal val hasRetryableRecording get()=provider==Provider.DESKTOP && (pending?.manifest!=null || capturedAudioAvailable)
+    internal val failureTitleKey get()=if(hasRetryableRecording || canFillRecognizedText)"转写失败"else"录音未完成"
     var discarding by mutableStateOf(false);private set
     var discardFailed by mutableStateOf(false);private set
     internal var discardPort: NativeVoiceDiscardPort?=null
@@ -91,14 +99,17 @@ class VoiceInputController(private val context: Context,private val store: Voice
     internal var savedFileLocale by mutableStateOf(when(java.util.Locale.getDefault().language){"zh"->"zh-CN";"en"->"en-US";else->""});private set
     internal var savedFileProbe by mutableStateOf<SavedVoiceProbe?>(null);private set
     internal var savedFileBusy by mutableStateOf(false);private set
+    private var savedFileAction by mutableStateOf(SavedVoiceAction.PROBE)
+    private var savedFileFailureKey by mutableStateOf<String?>(null)
     private var savedFileClosing by mutableStateOf(false)
     private var savedFileDetachRequested=false
     private var localDestination: NativeVoiceDraftDestinationPort?=null
-    internal val canInspectSavedFile get()=provider==Provider.DESKTOP && pending?.manifest!=null && capture==null && phase==Phase.FAILED && !discarding && !cancelling && !savedFileBusy && !savedFileClosing && localAllowed?.invoke()==true
+    internal val canInspectSavedFile get()=provider==Provider.DESKTOP && pending?.manifest!=null && capture==null && phase==Phase.FAILED && !discarding && !discardFailed && !cancelling && !savedFileBusy && !savedFileClosing && localAllowed?.invoke()==true
     internal val canTranscribeSavedFile get()=canInspectSavedFile && localResultPort!=null && localDestination!=null && savedFileProbe?.availability==SavedVoiceAvailability.INSTALLED
     internal val savedFileStatusKey get()=when {
         savedFileClosing->"正在结束原录音识别…"
-        savedFileBusy->"正在处理原录音识别…"
+        savedFileBusy->savedFileAction.busyKey
+        savedFileFailureKey!=null->savedFileFailureKey!!
         savedFileLocale.isEmpty()->"请选择中文或英语模型。"
         localResultPort==null || localDestination==null->"本机原录音识别暂不可用。"
         else->when(savedFileProbe?.availability) {
@@ -158,16 +169,16 @@ class VoiceInputController(private val context: Context,private val store: Voice
     private var focus: AudioFocusRequest?=null
     internal fun start(original: VoiceDraft,allowed: ()->Boolean,apply: (VoiceDraft,String)->Boolean,restore: Boolean=true,provider: Provider=Provider.DESKTOP,localAllowed: ()->Boolean=allowed,localApply: (VoiceDraft,String)->Boolean=apply,restoreOnly: Boolean=false,localDestination: NativeVoiceDraftDestinationPort?=null) {
         if(active || savedFileBusy || savedFileClosing) return
-        this.provider=provider;transcript="";discardFailed=false;discarding=false;registration=null
+        this.provider=provider;transcript="";capturedAudioAvailable=false;discardFailed=false;discarding=false;registration=null
         generation=UUID.randomUUID().toString();val id=generation
-        draft=original;this.allowed=allowed;this.apply=apply;this.localAllowed=localAllowed;this.localApply=localApply;this.localDestination=localDestination;savedFileDetachRequested=false;savedFileProbe=null;pending=null;error=null;errorCopyKey=null;levels=List(9) { 0f };phase=Phase.REQUESTING
+        draft=original;this.allowed=allowed;this.apply=apply;this.localAllowed=localAllowed;this.localApply=localApply;this.localDestination=localDestination;savedFileDetachRequested=false;savedFileProbe=null;savedFileFailureKey=null;pending=null;error=null;errorCopyKey=null;levels=List(9) { 0f };phase=Phase.REQUESTING
         work=tasks.launch {
             try {
                 localCheck(localAllowed(),"录音目标或草稿已变化")
                 if(provider==Provider.SYSTEM) { startSystem(id);return@launch }
                 if(restore) {
                     val saved=store.restore(original.scope,original.certificate,original.key,original.text)
-                    if(saved!=null) { pending=saved;checkLocalFileCurrent(id);phase=Phase.FAILED;error="已恢复此草稿的原录音。点击重试查询同一转写；不会自动重新提交。";errorCopyKey=error;return@launch }
+                    if(saved!=null) { pending=saved;checkLocalFileCurrent(id);phase=Phase.FAILED;error=if(saved.manifest==null)"已恢复此草稿未完成的录音记录，不能重试转写；不会自动提交。"else"已恢复此草稿的原录音。点击重试查询同一转写；不会自动重新提交。";errorCopyKey=error;return@launch }
                 }
                 if(restoreOnly)throw NativeVoiceFailure("没有与当前草稿匹配的已保存原录音。")
                 checkLocalFileCurrent(id)
@@ -281,6 +292,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
             } catch(e: Exception) { systemFailed(id,e) }
             return
         }
+        if(phase==Phase.FAILED && !hasRetryableRecording)return // A restored unsealed original is never repaired/submitted by Retry.
         if(phase !in listOf(Phase.LISTENING,Phase.FAILED)) return
         val original=draft ?: return;val id=generation;phase=Phase.FINISHING;error=null;errorCopyKey=null;monitor?.cancel()
         work=tasks.launch {
@@ -289,6 +301,9 @@ class VoiceInputController(private val context: Context,private val store: Voice
                 val stopped=runCatching { recorder?.stop() };releaseFocus();checkCurrent(id)
                 if(stopped.isFailure && pending?.let { store.file(it.id).length()<=44 }!=false) throw stopped.exceptionOrNull()!!
                 val record=pending ?: throw NativeVoiceFailure("尚无可重试的录音，请重新录音。")
+                val audioAvailable=record.manifest!=null || withContext(Dispatchers.IO){store.file(record.id).length()>44}
+                checkCurrent(id);capturedAudioAvailable=audioAvailable
+                localCheck(capturedAudioAvailable,"尚无可重试的录音，请重新录音。")
                 val sealed=if(record.manifest==null) store.seal(record) else record
                 pending=sealed;checkCurrent(id)
                 val text=VoiceTranscriptionFlow(commands(),store).transcribe(original.client,sealed) { generation==id && allowed?.invoke()==true }
@@ -306,7 +321,7 @@ class VoiceInputController(private val context: Context,private val store: Voice
     }
     internal fun chooseSavedFileLocale(locale: String) {
         if(!canInspectSavedFile || locale !in setOf("en-US","zh-CN"))return
-        savedFileLocale=locale;savedFileProbe=null
+        savedFileLocale=locale;savedFileProbe=null;savedFileFailureKey=null
     }
     internal fun inspectSavedFile()=savedFileOperation(download=false,recognize=false)
     internal fun downloadSavedFileModel() {
@@ -321,37 +336,47 @@ class VoiceInputController(private val context: Context,private val store: Voice
         val original=pending ?: return;val input=draft ?: return;val owner=localResultPort
         if(recognize && owner==null)return
         val id=generation;val locale=savedFileLocale;val action=UUID.randomUUID().toString()
+        savedFileAction=when {download->SavedVoiceAction.INSTALL;recognize->SavedVoiceAction.TRANSCRIBE;else->SavedVoiceAction.PROBE}
+        savedFileFailureKey=null
+        if(download)savedFileProbe=null // Publication may finish just as a budget expires; explicitly inspect before retry.
         savedFileBusy=true;phase=Phase.FINISHING;error=null;errorCopyKey=null
         val worker=tasks.launch {
             suspend fun checkpoint()=withContext(Dispatchers.Main.immediate) {currentCoroutineContext().ensureActive();checkLocalFileCurrent(id)}
             try {
-                checkpoint();val engine=savedFileFactory()
-                if(download)engine.install(locale,::checkpoint)
-                if(!recognize) {
-                    val result=engine.probe(locale);checkpoint();savedFileProbe=result
-                }else {
-                    // Reuse a staged result only after this new explicit action and exact original check.
-                    var result=owner!!.pending(original,locale);checkpoint()
-                    if(result==null) {
-                        val wav=store.bytes(original)
-                        val recognized=try {checkpoint();engine.transcribe(locale,wav,::checkpoint)}finally{wav.fill(0)}
-                        checkpoint()
-                        result=NativeVoiceLocalResult(action,original.id,NativeVoiceDiscardRequest(original).fingerprint,original.manifest!!.sha256,locale,recognized.modelId,recognized.modelSha256,recognized.text,System.currentTimeMillis())
-                        owner.stage(original,result);checkpoint()
+                val attempt=attemptSavedVoiceAction {
+                    checkpoint();val engine=savedFileFactory()
+                    if(download)engine.install(locale,::checkpoint)
+                    if(!recognize) {
+                        val result=engine.probe(locale);checkpoint();savedFileProbe=result
+                    }else {
+                        // Reuse a staged result only after this new explicit action and exact original check.
+                        var result=owner!!.pending(original,locale);checkpoint()
+                        if(result==null) {
+                            val wav=store.bytes(original)
+                            val recognized=try {checkpoint();engine.transcribe(locale,wav,::checkpoint)}finally{wav.fill(0)}
+                            checkpoint()
+                            result=NativeVoiceLocalResult(action,original.id,NativeVoiceDiscardRequest(original).fingerprint,original.manifest!!.sha256,locale,recognized.modelId,recognized.modelSha256,recognized.text,System.currentTimeMillis())
+                            owner.stage(original,result);checkpoint()
+                        }
+                        result.validate(original);checkpoint()
+                        val request=NativeVoiceDraftRequest(input,original,result)
+                        val destination=localDestination ?: error("Voice destination persistence unavailable")
+                        val receipt=destination.accept(request,::checkpoint);receipt.validate(request)
+                        // Destination publication changed its revision. Only generation remains ours to check;
+                        // the destination owner already verified the exact original authority before publication.
+                        currentCoroutineContext().ensureActive();localCheck(generation==id,"原草稿或目标已变化，本机识别结果和原录音已保留。")
+                        withContext(NonCancellable) {owner.applied(original,result,receipt)}
+                        if(generation==id)clear()
                     }
-                    result.validate(original);checkpoint()
-                    val request=NativeVoiceDraftRequest(input,original,result)
-                    val destination=localDestination ?: error("Voice destination persistence unavailable")
-                    val receipt=destination.accept(request,::checkpoint);receipt.validate(request)
-                    // Destination publication changed its revision. Only generation remains ours to check;
-                    // the destination owner already verified the exact original authority before publication.
-                    currentCoroutineContext().ensureActive();localCheck(generation==id,"原草稿或目标已变化，本机识别结果和原录音已保留。")
-                    withContext(NonCancellable) {owner.applied(original,result,receipt)}
-                    if(generation==id)clear()
+                }
+                if(attempt is SavedVoiceAttempt.Failed && generation==id) {
+                    if(!recognize)savedFileProbe=null
+                    val key=(attempt.error as? NativeVoiceFailure)?.copyKey ?: savedFileAction.failureKey(attempt.timedOut)
+                    savedFileFailureKey=key;error=key;errorCopyKey=key
                 }
             } catch(e: CancellationException){throw e}
-            catch(_: OutOfMemoryError){if(generation==id){error="手机内存不足，原录音和草稿已保留，请稍后重试。";errorCopyKey=error}}
-            catch(e: Exception){if(generation==id){error="本机原录音识别未完成，录音和已有结果已保留。";errorCopyKey=(e as? NativeVoiceFailure)?.copyKey ?: error}}
+            catch(_: OutOfMemoryError){if(generation==id){if(!recognize)savedFileProbe=null;error="手机内存不足，原录音和草稿已保留，请稍后重试。";errorCopyKey=error}}
+            catch(e: Exception){if(generation==id){if(!recognize)savedFileProbe=null;val key=(e as? NativeVoiceFailure)?.copyKey ?: savedFileAction.failureKey(false);savedFileFailureKey=key;error=key;errorCopyKey=key}}
             catch(_: LinkageError){if(generation==id){savedFileProbe=SavedVoiceProbe(SavedVoiceAvailability.UNSUPPORTED);error="此设备暂不支持原录音识别。";errorCopyKey=error}}
             finally {
                 withContext(NonCancellable+Dispatchers.Main.immediate) {
@@ -387,7 +412,9 @@ class VoiceInputController(private val context: Context,private val store: Voice
     private fun suspendRecording(failure: NativeVoiceFailure) {
         if(savedFileBusy || savedFileClosing) { closeSavedFile(detach=false);return }
         if(discarding) { discardRestartAllowed=false;return }
-        if(!active || cancelling) return
+        // A terminal failure owns its original target/callback/error through background return.
+        // A failed capture that still owns native resources must finish stopping them.
+        if(!active || cancelling || phase==Phase.FAILED && capture==null && systemVoice==null) return
         if(provider==Provider.SYSTEM) {
             generation=UUID.randomUUID().toString();work?.cancel();monitor?.cancel();waiting?.cancel();waiting=null;permissionRequest=null
             stopSystem();releaseFocus();phase=Phase.FAILED;error="已离开语音输入，原草稿已保留。";errorCopyKey=error;return
@@ -395,26 +422,25 @@ class VoiceInputController(private val context: Context,private val store: Voice
         val recorder=capture;capture=null;generation=UUID.randomUUID().toString();val id=generation
         monitor?.cancel();work?.cancel();waiting?.cancel();waiting=null;permissionRequest=null;releaseFocus();phase=Phase.FINISHING
         work=tasks.launch {
-            try { runCatching { recorder?.stop() };pending?.let { if(it.manifest==null && store.file(it.id).length()>44) pending=store.seal(it) } }
+            try { runCatching { recorder?.stop() };pending?.let { if(it.manifest!=null || store.file(it.id).length()>44) {if(generation==id)capturedAudioAvailable=true;if(it.manifest==null)pending=store.seal(it)} } }
             catch(_: OutOfMemoryError) { if(generation==id) error="手机内存不足，原录音和草稿已保留，请稍后重试。" }
             catch(e: Exception) { if(generation==id) error=e.message }
             finally { if(generation==id) { phase=Phase.FAILED;if(error==null) { error=failure.copyKey;errorCopyKey=failure.copyKey } } }
         }
     }
-    /** Join the actual local stop/discard before retiring storage. No remove, upload or replacement. */
-    internal suspend fun quiesceForMigration() {
+    /** Migration never stops/finalizes a live recorder or seals a stationary failed original. */
+    internal fun requireMigrationRawIdle() {
         check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())
-        val original=tasks.coroutineContext[Job]!!.children.toList()
-        if(savedFileBusy || savedFileClosing)closeSavedFile(detach=false)
-        if(discarding)discardRestartAllowed=false
-        else if(phase!=Phase.FINISHING)suspendRecording()
-        val terminal=work
-        // The stop/discard work owns the recorder worker. Join it before cancelling that worker.
-        terminal?.join()
-        check(capture==null||capture?.ended==true) {"Voice capture has not stopped"}
-        val children=(original+tasks.coroutineContext[Job]!!.children.toList()).distinct()
+        if(phase !in setOf(Phase.IDLE,Phase.FAILED)||capture?.let {!it.ended}==true||work?.isActive==true||
+            discarding||cancelling||savedFileBusy||savedFileClosing||registration?.let {!it.isCompleted}==true)
+            throw NativeVoiceRawGate.Busy()
+    }
+    internal suspend fun quiesceForMigration() {
+        requireMigrationRawIdle()
+        // Already stationary: cancel/join housekeeping only. Never call suspendRecording/stop/seal.
+        val children=tasks.coroutineContext[Job]!!.children.toList()
         children.forEach {it.cancel()};children.forEach {it.join()}
-        check(tasks.coroutineContext[Job]!!.children.none {it.isActive})
+        check(capture==null||capture?.ended==true)
         migrationIo.awaitIdle()
     }
     internal fun retireForMigration(){migrationIo.close();tasks.cancel()}
@@ -500,5 +526,5 @@ class VoiceInputController(private val context: Context,private val store: Voice
             }
         }
     }
-    private fun clear() { savedFileDetachRequested=false;generation=UUID.randomUUID().toString();stopSystem();transcript="";waiting?.cancel();cancelling=false;discarding=false;discardFailed=false;discardRestartAllowed=false;discardPresentationDetached=false;registration=null;releaseFocus();draft=null;pending=null;capture=null;permissionRequest=null;waiting=null;phase=Phase.IDLE;error=null;errorCopyKey=null;levels=List(9) { 0f } }
+    private fun clear() { savedFileDetachRequested=false;generation=UUID.randomUUID().toString();stopSystem();transcript="";capturedAudioAvailable=false;waiting?.cancel();cancelling=false;discarding=false;discardFailed=false;discardRestartAllowed=false;discardPresentationDetached=false;registration=null;releaseFocus();draft=null;pending=null;capture=null;permissionRequest=null;waiting=null;phase=Phase.IDLE;error=null;errorCopyKey=null;levels=List(9) { 0f } }
 }

@@ -10,6 +10,15 @@ internal data class NativeMigrationRecords(val text: Map<String,String>,val bina
     fun json(applicationId: String)=JSONObject().put("format","agent-hub/android-migration")
         .put("version",if(binary.isEmpty())1 else 2).put("applicationId",applicationId).put("records",JSONObject(text))
         .also {if(binary.isNotEmpty())it.put("binaries",JSONObject(binary))}
+    /** Legacy input is already bounded/canonical. Reuse the stream publisher for all generations. */
+    fun stream(): NativeMigrationStreamRecords = NativeMigrationStreamRecords(text,binary.mapValues {(_,encoded)->
+        val value=bytes(encoded)
+        try {val probe=NativeMigrationProbe();probe.write(value)
+            NativeMigrationBlob(value.size,probe.sha256(),probe.prefix()) {output->
+                val original=bytes(encoded);try{output.write(original)}finally{original.fill(0)}
+            }
+        }finally {value.fill(0)}
+    },4)
     companion object {
         fun bytes(encoded: String): ByteArray {
             require(encoded.length<=NativeMigrationCandidateStore.MAX_PAYLOAD_BYTES)

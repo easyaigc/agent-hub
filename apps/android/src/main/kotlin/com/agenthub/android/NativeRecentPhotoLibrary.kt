@@ -14,6 +14,38 @@ internal class NativeRecentPhotoHint(val photo: NativeRecentPhoto)
 internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,private val storage: NativeSessionStorage,
     private val nowSeconds: ()->Double={ System.currentTimeMillis()/1000.0 }) {
     private val tasks=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
+    @Volatile private var migrationOperation: String?=null
+    @Volatile private var retired=false
+    private var resumedOperation: String?=null
+    private var deferredActive: Boolean?=null
+    private val ownedJobs=java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
+    private val readJobs=java.util.concurrent.ConcurrentHashMap.newKeySet<Job>()
+    private val entryOpen get()=migrationOperation==null&&!retired
+    internal val migrationStorage get()=storage
+    internal val migrationIdle get()=!retired&&ready&&!saving&&!preferencesFailed&&ownedJobs.none {!it.isCompleted&&it !in readJobs}
+    private fun launchOwned(read: Boolean=false,work: suspend CoroutineScope.()->Unit): Job {
+        check(entryOpen)
+        val job=tasks.launch(start=CoroutineStart.LAZY,block=work);ownedJobs.add(job);if(read)readJobs.add(job)
+        job.invokeOnCompletion {ownedJobs.remove(job);readJobs.remove(job)};job.start();return job
+    }
+    internal fun sealMigrationInputs(operation: String) {
+        check(android.os.Looper.myLooper()==android.os.Looper.getMainLooper());check(entryOpen)
+        if(!migrationIdle)throw NativeInboxOwnership.Busy()
+        migrationOperation=operation
+        try{stopReading()}catch(error: Throwable){migrationOperation=null;throw error}
+    }
+    internal suspend fun awaitMigrationSealed(operation: String) {
+        check(migrationOperation==operation&&!retired)
+        do{ownedJobs.toList().forEach {it.join()}}while(ownedJobs.any {!it.isCompleted})
+        requireMigrationSealed(operation)
+    }
+    internal fun requireMigrationSealed(operation: String){check(!retired&&migrationOperation==operation&&ownedJobs.none {!it.isCompleted})}
+    internal suspend fun resumeMigrationInputs(operation: String) {
+        if(migrationOperation==null&&resumedOperation==operation)return
+        awaitMigrationSealed(operation);migrationOperation=null;resumedOperation=operation
+        deferredActive?.let {active=it};deferredActive=null;startReading()
+    }
+    internal fun retireForMigration(operation: String){requireMigrationSealed(operation);retired=true;tasks.cancel();storage.retireWriter()}
     private var active=false
     private var epoch=0L
     private var observer: (()->Unit)?=null
@@ -45,13 +77,13 @@ internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,priv
         private set
     init { retryPreferences() }
     fun retryPreferences() {
-        if(restoreJob?.isActive==true||saving)return
+        if(!entryOpen||restoreJob?.isActive==true||saving)return
         stopReading();ready=false;preferencesFailed=false;baseline=null;suggestion=null
-        val restore=storage.beginRestore()
-        restoreJob=tasks.launch {
-            try {
+        restoreJob=launchOwned {
+            try {NativeInboxOwnership.writing(storage) {
                 val restored=withContext(Dispatchers.IO) {
-                    storage.read(PREFERENCES)?.let { raw ->
+                    val restore=storage.beginRestore()
+                    val ignored=storage.read(PREFERENCES)?.let { raw ->
                         val value=JSONObject(raw)
                         require(value.keys().asSequence().toSet()==setOf("version","ignored")&&value.getInt("version")==1)
                         val rows=value.getJSONArray("ignored");require(rows.length()<=256)
@@ -59,14 +91,17 @@ internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,priv
                             require(id.matches(Regex("content://media/external/images/media/[0-9]{1,20}")))
                         } }.also { require(it.distinct().size==it.size) }
                     } ?: emptyList()
+                    ignored to storage.prepareRestorePublication(restore)
                 }
-                storage.finishRestore(restore) { ignored=restored;ready=true }
+                storage.finishPreparedRestore(restored.second) { ignored=restored.first;ready=true }
                 startReading()
-            }catch(cancel: CancellationException) { throw cancel }
+            }}catch(cancel: CancellationException) { throw cancel }
              catch(failure: Exception) { preferencesFailed=true;ready=false }
         }
     }
     fun setActive(value: Boolean) {
+        if(retired)return
+        if(migrationOperation!=null){deferredActive=value;return}
         val current=source.access()
         if(active==value&&access==current)return
         active=value
@@ -80,7 +115,7 @@ internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,priv
         observer?.invoke();observer=null;loading=false
     }
     private fun startReading() {
-        if(!active||!ready||preferencesFailed)return
+        if(!entryOpen||!active||!ready||preferencesFailed)return
         val current=source.access()
         if(current!=access) { baseline=null;suggestion=null;access=current }
         if(access==NativePhotoAccess.NONE) { recent=emptyList();return }
@@ -88,7 +123,7 @@ internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,priv
         refresh()
     }
     fun refresh() {
-        if(!active||!ready||preferencesFailed)return
+        if(!entryOpen||!active||!ready||preferencesFailed)return
         val current=source.access()
         if(current!=access) {
             stopReading();access=current;baseline=null;suggestion=null;recent=emptyList()
@@ -96,11 +131,11 @@ internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,priv
         }
         if(access==NativePhotoAccess.NONE)return
         refreshJob?.cancel();val flight=++epoch;loading=true;readFailed=false
-        refreshJob=tasks.launch {
+        refreshJob=launchOwned(read=true) {
             try {
                 delay(250)
                 val snapshot=source.snapshot(64)
-                ensureActive();if(!active||flight!=epoch||source.access()!=access)return@launch
+                ensureActive();if(!active||flight!=epoch||source.access()!=access)return@launchOwned
                 val previous=baseline;baseline=snapshot.map { it.id }.toSet()
                 recent=snapshot.take(30);revision++
                 val existing=suggestion
@@ -119,7 +154,7 @@ internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,priv
         photo.id in ignored,photo.addedAtSeconds,nowSeconds())
     private fun expire(hint: NativeRecentPhotoHint) {
         expiryJob?.cancel()
-        expiryJob=tasks.launch {
+        expiryJob=launchOwned(read=true) {
             while(active&&suggestion===hint) {
                 delay(1_000)
                 if(suggestion===hint&&!qualifies(hint.photo,true))suggestion=null
@@ -128,29 +163,31 @@ internal class NativeRecentPhotoLibrary(val source: NativeRecentPhotoSource,priv
     }
     fun claimSurface(owner: String) { surface=owner }
     fun releaseSurface(owner: String) { if(surface==owner)surface=null }
-    fun current(hint: NativeRecentPhotoHint,owner: String)=active&&ready&&!preferencesFailed&&surface==owner&&suggestion===hint&&qualifies(hint.photo,true)
+    fun current(hint: NativeRecentPhotoHint,owner: String)=entryOpen&&active&&ready&&!preferencesFailed&&surface==owner&&suggestion===hint&&qualifies(hint.photo,true)
     fun dismiss(hint: NativeRecentPhotoHint,owner: String): Boolean {
         if(!current(hint,owner))return false
         markImported(hint.photo);return true
     }
     /** Called after that original draft's encrypted file and metadata have been confirmed. */
     fun markImported(photo: NativeRecentPhoto) {
-        if(!ready||preferencesFailed)return
+        if(!entryOpen||!ready||preferencesFailed)return
         if(suggestion?.photo?.id==photo.id) { suggestion=null;expiryJob?.cancel();expiryJob=null }
         if(photo.id !in ignored)ignored=(ignored+photo.id).takeLast(256)
         val write=++writeRevision;saving=true
-        tasks.launch { writes.withLock {
-            try {
-                if(!ready||preferencesFailed)return@withLock
+        launchOwned {
+            try {NativeInboxOwnership.writing(storage){writes.withLock {
+                if(!entryOpen||!ready||preferencesFailed)return@withLock
                 val value=JSONObject().put("version",1).put("ignored",JSONArray(ignored)).toString()
                 withContext(Dispatchers.IO) { storage.write(PREFERENCES,value) }
-            }catch(cancel: CancellationException) { throw cancel }
-             catch(failure: Exception) { stopReading();preferencesFailed=true;ready=false;suggestion=null;recent=emptyList() }
+            }}}
+            catch(cancel: CancellationException) { throw cancel }
+            catch(failure: Exception) { stopReading();preferencesFailed=true;ready=false;suggestion=null;recent=emptyList() }
             finally { if(write==writeRevision)saving=false }
-        } }
+        }
     }
     fun observeOriginalImport(job: Deferred<Unit>,session: MobileSession,destination: AttachmentImportDestination,beforeIds: Set<String>,photo: NativeRecentPhoto) {
-        tasks.launch {
+        if(!entryOpen)return
+        launchOwned {
             try {
                 job.await()
                 val added=session.inboxFiles(destination).filter { it.id !in beforeIds }

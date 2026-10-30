@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operation": "parent-p7-full-system-scope-next-20261029-1",
+  "baseCommit": "d878efcfd369507e06f3cfb571a5ca999e8c2737",
+  "branch": "codex/android-p7-system-migration-20261029",
+  "sourcePathInventoryOnly": true,
+  "actualDeviceInventoryPending": true,
+  "rows": [
+    {
+      "id": "root-session",
+      "location": "root",
+      "logicalInventory": "metadata; token:<client>; codex-private-connections-v1",
+      "producers": "NativeMigrationMetadata.kt, CodexConnectionVault.kt",
+      "baselineStatus": "supported closed graph",
+      "iosActualPath": "SavedSession + CredentialVault tokens",
+      "exitGate": "Full clients/target/cache/draft identity; new reader IDs; no new command authority"
+    },
+    {
+      "id": "root-operations",
+      "location": "root",
+      "logicalInventory": "operations:<target>; submission:<id>; history:<target>; history pages",
+      "producers": "NativeMigrationReferences.kt, NativeMigrationHistory.kt",
+      "baselineStatus": "supported closed graph",
+      "iosActualPath": "SavedSession outbox/detached replies/creation/history",
+      "exitGate": "Exact immutable intent/result/attachment graph; imported read-only; no unknown replay"
+    },
+    {
+      "id": "root-claims",
+      "location": "root",
+      "logicalInventory": "codex-private-claim:<intentId>; arbitrary orphan modern/legacy record",
+      "producers": "CodexPrivateConnection.kt",
+      "baselineStatus": "unsupported: candidate rejects unknown/orphan",
+      "iosActualPath": "No blanket arbitrary-key export in iOS payload",
+      "exitGate": "Define closed pending-claim audit semantics before supporting; never execute pairing"
+    },
+    {
+      "id": "root-attachments",
+      "location": "root",
+      "logicalInventory": "draft-file:<id>; draft-payload-v1:<id>; draft-thumbnail-v1:<id>; photoSources",
+      "producers": "NativeCodexFlow.kt, DraftAttachmentThumbnails.kt, NativeMigrationAttachments.kt",
+      "baselineStatus": "supported bounded text/binary graph",
+      "iosActualPath": "Referenced Attachments files in migrationPayload",
+      "exitGate": "All manifest/payload/thumb references exact; imported photoSources removed; no URI grant"
+    },
+    {
+      "id": "root-sealed-voice",
+      "location": "root",
+      "logicalInventory": "voice-index-v1; voice-recording:<id>; voice-audio:<id> or inline audio",
+      "producers": "NativeMigrationVoice.kt, VoiceRecordingStore.kt",
+      "baselineStatus": "supported sealed original",
+      "iosActualPath": "PendingVoiceStore voice-transcriptions outside migrationPayload",
+      "exitGate": "Full manifest/WAV/id/attempt guards; migrated observe-only, no prepare/upload"
+    },
+    {
+      "id": "root-voice-terminals",
+      "location": "root",
+      "logicalInventory": "voice-discard-catalog-v1; discard original/raw; voice-local-results-v1",
+      "producers": "NativeVoiceDiscardStorage.kt, NativeVoiceLocalResult.kt",
+      "baselineStatus": "supported closed terminal/result graph",
+      "iosActualPath": "PendingVoiceStore local terminal fields; not enumerated by iOS export",
+      "exitGate": "Original audit+full bytes; no invented terminal or reapply"
+    },
+    {
+      "id": "root-voice-preference",
+      "location": "root",
+      "logicalInventory": "native-voice-preference-v1",
+      "producers": "NativeVoicePreferenceStorage.kt",
+      "baselineStatus": "supported with destination preference policy",
+      "iosActualPath": "VoiceTranscriptionPreference UserDefaults outside iOS payload",
+      "exitGate": "Keep destination-local preference; no installed-model authority"
+    },
+    {
+      "id": "root-reading-notifications",
+      "location": "root",
+      "logicalInventory": "mobile-reading-ledger-v1; native-chat-notifications-v1; migration-device-audit-v1; migration-notification-tombstones-v1",
+      "producers": "NativeMigrationDeviceState.kt",
+      "baselineStatus": "supported with inert source audit and reset",
+      "iosActualPath": "SavedSession reading + TaskNotificationShared",
+      "exitGate": "New reader identity, no old ticket/reader registration; notifications disabled"
+    },
+    {
+      "id": "root-notification-owner",
+      "location": "root",
+      "logicalInventory": "native-chat-notification-identity-v1; authorizations-v1; foreground-v1; recovery-v2; migration-notification-archives-v1 and original aliases",
+      "producers": "NativeMigrationForeground.kt, NativeMigrationNotificationArchives.kt",
+      "baselineStatus": "supported bounded archive; requires actual owner lease",
+      "iosActualPath": "TaskNotificationShared identity/bindings/seen/notices/revocations",
+      "exitGate": "Retain source originals, fresh destination enrollment; no old callback/router lease authority"
+    },
+    {
+      "id": "root-sounds",
+      "location": "root",
+      "logicalInventory": "native-chat-notification-sounds-v1; native-chat-notification-sound-v1:<id>",
+      "producers": "NativeMigrationSounds.kt",
+      "baselineStatus": "supported catalog + authenticated bytes",
+      "iosActualPath": "notificationSounds + soundFiles in iOS payload",
+      "exitGate": "Exact format/size/digest; no notification registration"
+    },
+    {
+      "id": "root-consent",
+      "location": "root",
+      "logicalInventory": "ai-sharing-v1",
+      "producers": "NativeMigrationAncillary.kt",
+      "baselineStatus": "supported archive; active grants cleared",
+      "iosActualPath": "SavedSession aiSharingGrants cleared on restore",
+      "exitGate": "Audit is not consent on new install"
+    },
+    {
+      "id": "root-easywork",
+      "location": "root",
+      "logicalInventory": "EasyWork originals, migration-easywork-archives-v1, migration-easywork-business-v1",
+      "producers": "NativeMigrationEasyWorkArchives.kt, NativeMigrationEasyWorkBusiness.kt",
+      "baselineStatus": "supported previously scoped reply/creation/open only",
+      "iosActualPath": "SavedSession/credentials; platform authority distinct",
+      "exitGate": "Retain exact target/account semantics; task/project management outside current work"
+    },
+    {
+      "id": "external-inbox",
+      "location": "child",
+      "logicalInventory": "external-inbox: external-inbox-index-v1; draft-file/payload/thumb graph",
+      "producers": "NativeAttachmentInboxStore.kt",
+      "baselineStatus": "nonempty explicitly rejected",
+      "iosActualPath": "ExternalAttachmentIntake and prepared attachment files are not exhaustively in migrationPayload",
+      "exitGate": "Preserve receiving/failed/pending/consumed and old binding audit; no auto bind/retry/upload; full orphan inventory",
+      "currentStatus": "Implemented;bounded storage4/cold3/actualMainowner3 pass,2 fixturefailures remain;notfullscope closure",
+      "contract": "external-inbox-migration-contract.md"
+    },
+    {
+      "id": "selection-journals",
+      "location": "child",
+      "logicalInventory": "document-results/photo-results/camera-results: document-requests-v1",
+      "producers": "NativeDocumentJournal.kt, NativeDocumentRecovery.kt",
+      "baselineStatus": "all three nonempty explicitly rejected",
+      "iosActualPath": "File/photo/camera picker callbacks are process/device owned",
+      "exitGate": "Archive full revision/phase/source/grant/binding identities; new install must not register old callbacks or revive URI grants"
+    },
+    {
+      "id": "selection-payloads",
+      "location": "nested child",
+      "logicalInventory": "document-results-payloads; photo-results-payloads; camera-results-payloads: inbox + file payload graph",
+      "producers": "NativeDocumentRecovery.kt",
+      "baselineStatus": "nonempty nested children explicitly rejected by parent scope",
+      "iosActualPath": "Prepared attachments may be outside referenced draft payload",
+      "exitGate": "Join exact journal and all payloads; no old destination automatic import"
+    },
+    {
+      "id": "camera-outputs",
+      "location": "nested child + raw",
+      "logicalInventory": "camera-results-outputs: output-v1-<id>; files/camera-output-v1/<scope>/photo-<id>.jpg",
+      "producers": "NativeCameraOutputs.kt",
+      "baselineStatus": "nonempty child rejected; independent raw file coverage not implemented",
+      "iosActualPath": "Temporary camera output lifecycle separate from iOS backup",
+      "exitGate": "Exact encrypted ownership + raw JPEG inventory; no restored FileProvider URI/write grant"
+    },
+    {
+      "id": "recent-photos",
+      "location": "child",
+      "logicalInventory": "recent-photos/preferences v1 ignored content MediaStore IDs",
+      "producers": "NativeRecentPhotoLibrary.kt",
+      "baselineStatus": "nonempty explicitly rejected",
+      "iosActualPath": "RecentAttachmentPhotos UserDefaults outside iOS payload",
+      "exitGate": "Retain old ignored-id audit; do not apply device-local MediaStore IDs to another library or start observer"
+    },
+    {
+      "id": "photo-permission",
+      "location": "child",
+      "logicalInventory": "photo-permission/attempt-selected, attempt-images, attempt-external",
+      "producers": "NativePhotoAuthorization.kt",
+      "baselineStatus": "nonempty explicitly rejected",
+      "iosActualPath": "Photo authorization is OS-owned; attempt state outside iOS payload",
+      "exitGate": "Attempt history is not grant; explicit new installation permission path and fresh callback"
+    },
+    {
+      "id": "provisional-voice",
+      "location": "raw + root",
+      "logicalInventory": "no-backup/voice-recordings-v1/<id>.wav + indexed manifest-null original",
+      "producers": "VoiceRecordingStore.kt",
+      "baselineStatus": "stream export explicitly rejected; legacy capture also fails voice validation",
+      "iosActualPath": "VoiceInput temporary voice-recordings + PendingVoiceStore; outside iOS payload",
+      "exitGate": "Root exact source composition and native9 scenarios; no seal/header repair/recorder/query/transcribe/replay",
+      "currentStatus": "a795ee67 source owner/writer closure reviewed; Root combination/native pending"
+    },
+    {
+      "id": "local-models",
+      "location": "raw",
+      "logicalInventory": "no-backup/saved-voice-models-v1",
+      "producers": "NativeSavedVoiceSpeech.kt",
+      "baselineStatus": "not inventoried by migration",
+      "iosActualPath": "On-device model files not in iOS migration payload",
+      "exitGate": "Redistributable model install policy separate; do not claim device install availability from archived path"
+    },
+    {
+      "id": "runtime-candidates",
+      "location": "child",
+      "logicalInventory": "migration-candidates/candidate-v1 and immutable encrypted text/binary chunks",
+      "producers": "NativeMigrationCandidate.kt, NativeMigrationStreamCandidate.kt",
+      "baselineStatus": "local recovery workflow, not portable source state",
+      "iosActualPath": "Migration exporter temporary FileDocument",
+      "exitGate": "Exact old receipt reconciliation; do not treat stale candidate as active archive or replay it"
+    },
+    {
+      "id": "cache-and-scratch",
+      "location": "raw",
+      "logicalInventory": "cache/resources; migration-ui-v1; camera-capture; sound temp; downloaded message resources",
+      "producers": "NativeMigrationDocuments.kt, NativeResourcePreview.kt, NativeCameraCapture.kt",
+      "baselineStatus": "not durable portable original graph",
+      "iosActualPath": "Temporary/file preview caches outside payload",
+      "exitGate": "Only proven-rebuildable scratch excluded; unknown durable original must fail scope inventory"
+    },
+    {
+      "id": "task-project-business",
+      "location": "independent root/db",
+      "logicalInventory": "TaskHub SQLite/encrypted upload roots, device DPoP/identity",
+      "producers": "TaskHubSQLitePersistence.kt, TaskHubUploadCoordinator.kt, EasyWorkDPoP.kt",
+      "baselineStatus": "outside authorized task/project scope; no work here",
+      "iosActualPath": "TaskHubStore/SQLite separate",
+      "exitGate": "Explicit future scope and grant rules; no business execution or adoption"
+    },
+    {
+      "id": "independent-notification-router",
+      "location": "independent root",
+      "logicalInventory": "P9-notification-cold-router-v1 and P9 diagnostic scopes",
+      "producers": "NativeChatNotificationColdRouterFiles.kt",
+      "baselineStatus": "runtime/acceptance ownership separate; Root P9 work",
+      "iosActualPath": "Notification service/runtime ownership separate",
+      "exitGate": "No helper expansion or old router activation; Root owns default-auth/native chain"
+    }
+  ],
+  "sourcePins": {
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexConnectionVault.kt": "b14ac3e948d06927b95c4152a1617261ed0f51954e76c82000dc2f6c0417e4aa",
+    "apps/android/src/main/kotlin/com/agenthub/android/CodexPrivateConnection.kt": "4daad5fc8fe76da4e00957c219ca13f82dea39dd491cb05590b7a47ab852fa08",
+    "apps/android/src/main/kotlin/com/agenthub/android/DraftAttachmentThumbnails.kt": "c3a6c1ebf19ae674b7935e016aac06aecc106aacab4d915f3f55e7b95e95f475",
+    "apps/android/src/main/kotlin/com/agenthub/android/EasyWorkDPoP.kt": "255db62be9e99719c7f2c2a3bdcac8b9ac29b5f5a90edf44de6862e5ff6e03ba",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeAttachmentInboxStore.kt": "34a33188bc2ad53a0b5aea40954f53bc2e74e90d1aa052c585e041ed3162a85f",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraCapture.kt": "ba19bc9b4dac82517781054dc9476bf9a97ce16d2727dfdd72cbb4526111ded2",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCameraOutputs.kt": "f656dcfbaa06c959f0f168a304452877c7807819de9ff21623c7ce469e3e19d6",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdRouterFiles.kt": "68b358557f20c004a9897373fe873271ab3958a8514c5119e75bcd6a4fc26275",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeCodexFlow.kt": "29f907683a920a0c711cfcd8012e0ee458dc99a1f6fdede9d920d72d8d989b65",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentJournal.kt": "d42dffff545d5d164ca58bbb96c9699dba214b9c7377a008f440ed9a884a1255",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeDocumentRecovery.kt": "851b0162b9332d9669b43c21a2595c9cbba46ff447d2a4a75c12a16afdc7a285",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationAncillary.kt": "6fc8925259dc8945805fbcb52e15b956554b9654b828b4dbe1f90aa4b83028ab",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationAttachments.kt": "c1e8cfffdfa5f6b9da8676752001fd300bc8853fcf9a471b29e4b00120015dc7",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": "ca23e60dbef87ab0a96a772c3d8e07ccdb334c0e3ee5c097ddfb8016de11eae4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDeviceState.kt": "758e1604a95cc28986ac44e8df8408cdd77394d397d9a947504173268835ca6c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationDocuments.kt": "5fae731f1dc053ed791864b8c964b37c7a6d68790077c02d26271f21b88f851c",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkArchives.kt": "33ef1e97a31c34641e3d025662e4264d8896e546479baa043caeb2e472fab32e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationEasyWorkBusiness.kt": "3e24ed51b17fa94a3d2631a0bd37dd976044f852260a52ccd44ffca8cd95001a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": "159a2ec97d6a9b653dde996af31d09059c282dcfae3869973f224fbfd0633b99",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationForeground.kt": "f66245fd638c45e11c45588efb415042dbdbb88cf5e277f2d780cab78547d701",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationHistory.kt": "ae4e3f86033630e7f0e8e0445705acf0b4cfa5d7b0401ddda0fee9e3f5a82396",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationMetadata.kt": "6c5e5ad17a022c6830daa296fcc49ab9e1f9149f2ce51ae2717922c41da2fcbd",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt": "dbe1a3278a337368089c6d9ba8a50f2d8090c98c6589cc42afa31ae1a4253c7f",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationRecords.kt": "7684a9d10ca73f39ea854695a89ef05c6da2d5ad43fda6ba6c685b8c7ec7a869",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt": "667d947166b9b20bc3f522521290895cbc3597f4d3d89fd0c641bee2a2ed3523",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationSounds.kt": "3d48debf69c5af1aa3c9102c193b9ea55217bdbee846bba201a5f5d32e1d2fe4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt": "d551830a6b095ff8bf55c345dfd46c7e0cc146f19dccdac74849b464486b9b96",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationVoice.kt": "a010b254f7b93fae3ec7479ae95ebdb0cbae759695d3f71549dd7c19bf3ead68",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativePhotoAuthorization.kt": "aa8c8a3dd8631fd453a661e0e11d45df25501ad51230587ffaae1fafb1a23c4a",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeRecentPhotoLibrary.kt": "e6ce99ecc6af1e6259726345357050ca009401fe8f08e448098f5735fb070670",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeResourcePreview.kt": "ea70951abcfe2f2df4125ad0af6b715ec29d01a157b90f0b0c95957fdc442133",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSavedVoiceSpeech.kt": "7b5172ba192ac95634448c9ee56fdcce96074afb999080f29087b3d1c664c0a0",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt": "306e0bb9d918ef923462c22a685be7c89edc0ff1f89b0c518f3dc092f32e1fd4",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceDiscardStorage.kt": "a3bfd1429d88bd84af204eaa922aacc1fc6d79b16edc6620bcf561ecc22eebbb",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoiceLocalResult.kt": "60dddfb6a5e006b6784bbbdfdd7757dab4b77b78843e86196e1e2e156924f6e7",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeVoicePreferenceStorage.kt": "396ff73f387e665e82c7a3344fa1bc3ea7caa4924fe537f189b7b70985a28ecb",
+    "apps/android/src/main/kotlin/com/agenthub/android/TaskHubSQLitePersistence.kt": "4eb6275710684cbedd3241ca8b20e231b56f1461c0cf5d8784cb647abf2d86a9",
+    "apps/android/src/main/kotlin/com/agenthub/android/TaskHubUploadCoordinator.kt": "8e664e59d0b6da4ffa41ed69c9f4f4747e5e2c4959f05d8df62aaf3ffe29aed4",
+    "apps/android/src/main/kotlin/com/agenthub/android/VoiceRecordingStore.kt": "48c7ca01e3b5a42f55618ddc03ba2de76a9f97198321e360e42b4c849b3ad3d8",
+    "apps/ios/Sources/EncryptedMigration.swift": "e11791f76b82982daff58795635bd6f88ab6853541d2c5185f0f7dd773d3d45b",
+    "apps/ios/Sources/ExternalAttachmentIntake.swift": "6047e1a35bce8de5fb2d7bc17769bd6bcc27ce3e1a5f39ffe6a3218bc7ff8fa6",
+    "apps/ios/Sources/RecentAttachmentPhotos.swift": "d2d1947a20a3ca5459bf430e568951d0a780a136f2f1b8599ce03757039c678b",
+    "apps/ios/Sources/SessionStore.swift": "9f89b0ae1b280e8c69e4096062e0ef237508f51286139bafc1520eac021c0871",
+    "apps/ios/Sources/VoiceInput.swift": "169877a0037df787298f6962915a3ddb35832b4a5f092e4db1b1a460b7b44902"
+  },
+  "knownExportGap": "Source55 adopted inert inbox; actual selection producer/reader/export new child a2 pending Root adoption and callback boundary fix; other24row gaps remain",
+  "selectedNext": "ownerIntentfixture fix andowner4/5 revalidation;selection originals/recentphoto/permission fullmigration thenunread/lifecycle",
+  "selectedReason": "Voice3 limited native component assertions passed; known fixture gaps andfulloriginal/UI proof remain independent pending.",
+  "sharedFiles": "precise narrow diff+old/new SHA only; preserve NativeVoiceLocalResults calls and Root strict Storage/P9/F73 work",
+  "featureIds": ["F33", "F42", "F56", "F58", "F64"],
+  "productUIChanged": false,
+  "iosChanged": false,
+  "nativeStatus": "Root Source55 API26:20 scoped passes/2 fixturefailures/1owner5 notrun;full24groups open",
+  "fullP7Complete": false,
+  "rootSource55Overlay": {
+    "baseCommit": "07d87c9de73442846635c114a193ed2ab9fdb100",
+    "reference": "../fifty-fifth-stage-inbox-voice-recovery.json",
+    "scopeCountRetained": 24,
+    "statuses": {
+      "external-inbox": "SDK passed;actual storage4/cold3/Mainowner3+sharedcontract7 scoped passes;hardlink fixture and ownerIntent lifecycle fixture failed;owner5 next/fullproviderUIphysical pending",
+      "selection-journals": "strict audit semantic codec integrated; actual producer/reader/export incomplete and nonempty exporter still closed",
+      "selection-payloads": "shared graph audit integrated; actual owned reader/catalog/activation pending",
+      "provisional-voice": "Source55 nativeprovisional2 anddiscardUI1 passed limited6+8state assertions; parentoriginalWAV/decryption/AX/pixel/realDEV pending;Source54six/fiveowned retained"
+    },
+    "allOtherRows": "retain original row assertions and pending scopes; no omitted feature or full P7 claim",
+    "taskProjectBusiness": "paused"
+  },
+  "rootSource60Overlay": {
+    "source": "sixtieth-stage-inbox-owner-fixture-native.json",
+    "scope": "fixture-only Intent lifecycle fix;actual owner5 limited Native pass on newSDK60;allproductioninputs unchanged",
+    "passed": 5,
+    "hardlinkFixturePending": true,
+    "fullP7Complete": false,
+    "next": "selection originals/recent photos/permission attempt archives + voice original readback;unread/lifecycle follow"
+  },
+  "rootSource62Overlay": {
+    "source": "sixty-second-stage-system-originals-composition.json",
+    "status": "SDK+38 scoped Native methods passed;2knownfailure/1camera notrun;fullP7/OS/UI pending",
+    "supportedCandidateScopes": [
+      "selection journal/payload/output inertarchives",
+      "recent-photo preferences andpermission attempts inertarchives",
+      "currentroot scope guard",
+      "notification original inspection"
+    ],
+    "fullP7Complete": false,
+    "historicalAndGlobalInventoryStillPending": true,
+    "memoryNative": 17,
+    "remainingFileOrOwnerMethods": 3,
+    "filesystemNativeComplete": 5,
+    "filesystemNativeBodyPassAfterCapturePending": 0,
+    "filesystemEvidence": "sixty-second-stage-p7-filesystem-native.json",
+    "ownerAdmissionNativeComplete": 5,
+    "admissionEvidence": "sixty-second-stage-p7-admission-native.json",
+    "readerNativeComplete": 6,
+    "readersEvidence": "sixty-second-stage-p7-readers-native.json",
+    "selectionPhotoOwnerNativeComplete": 5,
+    "knownOwnerFailures": 2,
+    "selectionPhotoOwnerEvidence": "sixty-second-stage-p7-selection-owner-native.json"
+  }
+}

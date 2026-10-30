@@ -421,6 +421,18 @@ public static partial class CodexManagePrivateStateSecurity
         }
     }
 
+    private static bool MatchesProtectedDacl(RawSecurityDescriptor current, byte[] expected)
+    {
+        ControlFlags required = ControlFlags.DiscretionaryAclPresent | ControlFlags.DiscretionaryAclProtected;
+        if ((current.ControlFlags & required) != required || current.DiscretionaryAcl == null ||
+            current.DiscretionaryAcl.BinaryLength != expected.Length) return false;
+        byte[] actual = new byte[expected.Length];
+        current.DiscretionaryAcl.GetBinaryForm(actual, 0);
+        for (int index = 0; index < expected.Length; index++)
+            if (actual[index] != expected[index]) return false;
+        return true;
+    }
+
     public static void Execute(string action, string requestedPath)
     {
         if (action == "release-file") { ReleasePrivateFile(requestedPath); return; }
@@ -471,14 +483,21 @@ public static partial class CodexManagePrivateStateSecurity
                 RawAcl dacl = new RawSecurityDescriptor(acl.GetSecurityDescriptorBinaryForm(), 0).DiscretionaryAcl;
                 byte[] bytes = new byte[dacl.BinaryLength];
                 dacl.GetBinaryForm(bytes, 0);
-                GCHandle pinned = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-                try
+                // Reapplying an inheritable DACL can propagate to unprotected
+                // legacy children even when the parent already has these ACEs.
+                // Owner/type were checked on this handle; skip only an exact,
+                // already-protected DACL and retain the same final validation.
+                if (!MatchesProtectedDacl(current, bytes))
                 {
-                    uint error = SetSecurityInfo(file, 1, DaclInformation | ProtectedDaclInformation,
-                        IntPtr.Zero, IntPtr.Zero, pinned.AddrOfPinnedObject(), IntPtr.Zero);
-                    if (error != 0) throw new Win32Exception((int)error);
+                    GCHandle pinned = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+                    try
+                    {
+                        uint error = SetSecurityInfo(file, 1, DaclInformation | ProtectedDaclInformation,
+                            IntPtr.Zero, IntPtr.Zero, pinned.AddrOfPinnedObject(), IntPtr.Zero);
+                        if (error != 0) throw new Win32Exception((int)error);
+                    }
+                    finally { pinned.Free(); }
                 }
-                finally { pinned.Free(); }
                 current = ReadSecurity(file);
                 CheckOwner(current, sid);
                 if ((current.ControlFlags & ControlFlags.DiscretionaryAclProtected) == 0)

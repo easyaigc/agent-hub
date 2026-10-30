@@ -18229,6 +18229,16 @@
       "files": {
         "scripts/windows-private-state-acceptance.mjs": "f886e021c348feb1d7f7aca4ea0424ec483dba67b0876be1b31c3fc3578ee244"
       }
+    },
+    {
+      "id": "windows-private-dacl-idempotence-20261031",
+      "baseCommit": "1915eea22147b66811f040b6c1a983717ed4a162",
+      "features": ["F03", "F31", "F32"],
+      "summary": "Native protect skips SetSecurityInfo only for exact canonical protected DACL on the already validated current-User retained handle; all original type/owner/reparse/readback/access and repair boundaries remain. Preserve original legacy ctime assertion, add repeated directory/file protection metadata regression. Frozen PR79 JS runtime5 retained; shared private-state.cs changes Native inputs/cache keys, requiring fresh Windows Native and full legacy checks. No mobile UI, producer, R11 or formal deployment change.",
+      "files": {
+        "packages/codex-adapter/windows/private-state.cs": "a6e50297eb0017dca750a1bd87b6b4af84a1c87ec0ebb4b8685b7546021aca01",
+        "scripts/windows-private-state-acceptance.mjs": "6f0ddbec790fc688595e484238beb997b919a8bc511ee90fc6fcec4617d169dc"
+      }
     }
   ]
 }

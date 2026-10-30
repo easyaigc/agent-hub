@@ -64,6 +64,7 @@ try {
     );
   const legacySecurity = inspectLegacy();
   const legacyStat = lstatSync(retained, { bigint: true });
+  const legacyDirectoryStat = lstatSync(legacy, { bigint: true });
   const statePath = join(history, 'runtime-state.json');
   const originalState = {
     hostId: 'fixture-only',
@@ -140,8 +141,44 @@ try {
   const legacyAttachmentResult = await verifyLegacySessionAttachments(history, security);
   assert.equal(readFileSync(retained, 'utf8'), 'preserve-legacy-history');
   assert.equal(lstatSync(retained, { bigint: true }).ctimeNs, legacyStat.ctimeNs);
+  assert.equal(lstatSync(legacy, { bigint: true }).ctimeNs, legacyDirectoryStat.ctimeNs);
   assert.deepEqual(inspectLegacy(), legacySecurity);
   rmSync(history, { recursive: true });
+  // This separate tree never starts a Session or background I/O. Re-protection
+  // alone must not rewrite the canonical parent or propagate to old v1 data.
+  const idempotent = join(directory, 'idempotent-protection');
+  makePrivateDirectorySync(idempotent);
+  const inherited = join(idempotent, 'runtime-history-v1');
+  mkdirSync(inherited);
+  const inheritedFile = join(inherited, 'cached-history.json');
+  writeFileSync(inheritedFile, 'preserve-repeated-protection', { flag: 'wx' });
+  const privateFile = join(idempotent, 'runtime.json');
+  writePrivateFileSync(privateFile, JSON.stringify(originalState), { flag: 'wx' });
+  const protectionPaths = [idempotent, inherited, inheritedFile, privateFile];
+  const stamps = () =>
+    protectionPaths.map((path) => {
+      const value = lstatSync(path, { bigint: true });
+      return [value.dev, value.ino, value.size, value.mtimeNs, value.ctimeNs, value.birthtimeNs];
+    });
+  const securityBefore = protectionPaths.map(security);
+  assert.equal(securityBefore[0].ownerIsUser, true);
+  assert.equal(securityBefore[0].protected, true);
+  for (const value of securityBefore.slice(1, 3)) {
+    assert.equal(value.ownerMatchesDefaultOwner, true);
+    assert.equal(value.protected, false);
+    assert.equal(value.inheritedAllowOnly, true);
+    assert.equal(value.trustedAllowOnly, true);
+  }
+  const stampsBefore = stamps();
+  protectWindowsStateDirectory(idempotent);
+  makePrivateDirectorySync(idempotent);
+  protectWindowsStateFile(privateFile);
+  protectWindowsStateFile(privateFile);
+  assert.deepEqual(stamps(), stampsBefore);
+  assert.deepEqual(protectionPaths.map(security), securityBefore);
+  assert.equal(readFileSync(inheritedFile, 'utf8'), 'preserve-repeated-protection');
+  assert.deepEqual(JSON.parse(readFileSync(privateFile, 'utf8')), originalState);
+  rmSync(idempotent, { recursive: true });
   // Deliberately broaden only our disposable fixture, then require rejection.
   withWindowsProcessCreation(5000, (timeout) =>
     execFileSync(
@@ -183,6 +220,8 @@ try {
     broadAclRejected: true,
     protectedAgain: true,
     legacyHistoryBytesAndOwnerUnchanged: true,
+    canonicalPrivateProtectionIsIdempotent: true,
+    legacyHistoryDirectoryAndFileCtimeUnchanged: true,
     legacyHistoryOwnerDiffersFromUser: !legacySecurity.ownerIsUser,
     newHistoryNamespace: 'runtime-history-v2',
     firstSessionRootInitiallyAbsent: true,

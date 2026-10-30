@@ -2,7 +2,13 @@ import { diagnosticEvent } from './diagnostic-events.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { MessagePort, parentPort, workerData } from 'node:worker_threads';
 import { windowsPrivateStateNativeExecutable } from './desktop-platform.js';
-import { privateStatePath, privateStateProtocol as p } from './desktop-private-state-native.js';
+import {
+  privateStatePath,
+  privateStateProtocol as p,
+  privateStateNativeDiagnostics,
+  privateStateNativeStage,
+  privateStateNativeFailure,
+} from './desktop-private-state-native.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 
 if (workerData?.kind !== 'windows-private-state' || workerData.entryURL !== import.meta.url)
@@ -12,6 +18,13 @@ if (!(shared instanceof SharedArrayBuffer) || shared.byteLength !== p.words * 4 
   throw new Error('Invalid private state shared response');
 const control = new Int32Array(shared, 0, p.words);
 const bytes = new Uint8Array(shared, p.words * 4);
+const diagnostics: unknown = workerData.diagnostics;
+if (
+  !(diagnostics instanceof SharedArrayBuffer) ||
+  diagnostics.byteLength !== privateStateNativeDiagnostics.words * 4
+)
+  throw new Error('Invalid private state diagnostics');
+const native = new Int32Array(diagnostics);
 const ownerPort: MessagePort | null =
   workerData.ownerPort instanceof MessagePort ? workerData.ownerPort : parentPort;
 let child: ChildProcessWithoutNullStreams | undefined;
@@ -101,6 +114,7 @@ ownerPort?.on('message', (request: Record<string, unknown>) => {
     !Number.isFinite(request.deadline) ||
     request.deadline <= performance.now()
   ) {
+    privateStateNativeFailure(native, 'request-rejected');
     record('request-rejected');
     close();
     return;
@@ -112,6 +126,7 @@ ownerPort?.on('message', (request: Record<string, unknown>) => {
     Buffer.from(request.cwd).toString('base64'),
   ].join('\t');
   if (Buffer.byteLength(frame) + 1 > p.frameBytes) {
+    privateStateNativeFailure(native, 'request-rejected');
     close();
     return;
   }
@@ -124,6 +139,7 @@ ownerPort?.on('message', (request: Record<string, unknown>) => {
   });
   timer = setTimeout(
     () => {
+      privateStateNativeFailure(native, 'execution-deadline');
       record('execution-deadline');
       close();
     },
@@ -135,55 +151,71 @@ const starting = () => Atomics.load(control, p.state) === p.starting;
 try {
   // Compile/protect/check on this Worker too, never on the caller's event loop.
   record('prepare');
-  const executable = starting() ? windowsPrivateStateNativeExecutable(starting) : undefined;
+  privateStateNativeStage(native, 'prepare');
+  const executable = starting()
+    ? windowsPrivateStateNativeExecutable(starting, (stage) =>
+        privateStateNativeStage(native, stage),
+      )
+    : undefined;
   if (!executable || !starting()) gone();
   else {
     // -1 means spawn may have happened; an abrupt Worker exit is not proof of child exit.
     Atomics.store(control, p.pid, -1);
     let startupMs = p.startupMs as number;
     record('spawn-gate');
+    privateStateNativeStage(native, 'spawn-gate');
     child = withWindowsProcessCreation(
       p.startupMs,
       (remaining) => {
         if (!starting()) throw new Error('Private state owner closed');
         startupMs = remaining;
+        privateStateNativeStage(native, 'spawn');
         return spawn(executable, ['serve'], { stdio: 'pipe', windowsHide: true });
       },
       starting,
     );
     Atomics.store(control, p.pid, child.pid ?? 0);
     record('spawned');
+    if (child.pid) privateStateNativeStage(native, 'handshake');
     timer = setTimeout(() => {
+      privateStateNativeFailure(native, 'startup-deadline');
       record('startup-deadline');
       close();
     }, startupMs);
     child.stdin.on('error', () => {
+      if (!closing) privateStateNativeFailure(native, 'stdin-error');
       record('stdin-error');
       close();
     });
     child.stdout.on('error', () => {
+      if (!closing) privateStateNativeFailure(native, 'stdout-error');
       record('stdout-error');
       close();
     });
     child.stdout.once('end', () => {
+      if (!closing) privateStateNativeFailure(native, 'stdout-eof');
       record('stdout-eof');
       close();
     });
     child.stderr.on('error', () => {
+      if (!closing) privateStateNativeFailure(native, 'stderr-error');
       record('stderr-error');
       close();
     });
     // Native stderr contains only fixed failure types; never accumulate arbitrary output.
     child.stderr.on('data', () => {
+      if (!closing) privateStateNativeFailure(native, 'stderr-present');
       record('stderr-present');
       close();
     });
-    child.once('error', () => {
+    child.once('error', (error) => {
+      if (!closing) privateStateNativeFailure(native, 'spawn-error', error);
       record('spawn-error');
       close();
       if (!child?.pid) gone();
     });
     child.once('exit', (exitCode) => {
+      if (!closing) privateStateNativeFailure(native, 'native-exit', { status: exitCode });
       record('native-exit', { exitCode });
       close();
       gone();
@@ -194,6 +226,7 @@ try {
         return;
       }
       if (buffered.length + chunk.length > p.responseBytes) {
+        privateStateNativeFailure(native, 'oversized-frame');
         record('oversized-frame');
         close();
         return;
@@ -203,12 +236,14 @@ try {
       if (newline < 0) return;
       // One complete response only. No unsolicited, trailing or combined frames.
       if (newline !== buffered.length - 1) {
+        privateStateNativeFailure(native, 'trailing-frame');
         record('trailing-frame');
         close();
         return;
       }
       const line = buffered.subarray(0, newline).toString('ascii');
       if (buffered.some((byte) => byte > 127)) {
+        privateStateNativeFailure(native, 'non-ascii-frame');
         record('non-ascii-frame');
         close();
         return;
@@ -219,11 +254,13 @@ try {
           line !== 'PRIVATE_STATE_READY\t1' ||
           Atomics.compareExchange(control, p.state, p.starting, p.ready) !== p.starting
         ) {
+          privateStateNativeFailure(native, 'invalid-ready');
           close();
           return;
         }
         clearTimeout(timer);
         ready = true;
+        privateStateNativeStage(native, 'operation');
         record('ready');
         Atomics.notify(control, p.state);
         return;
@@ -241,6 +278,7 @@ try {
         Atomics.load(control, p.state) !== p.ready ||
         Atomics.load(control, p.result) !== p.waiting
       ) {
+        privateStateNativeFailure(native, 'uncorrelated-response');
         record('uncorrelated-response');
         close();
         return;
@@ -260,7 +298,8 @@ try {
       Atomics.notify(control, p.result);
     });
   }
-} catch {
+} catch (error) {
+  privateStateNativeFailure(native, 'prepare-failed', error);
   record('prepare-or-spawn-failed');
   close();
 }

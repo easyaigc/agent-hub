@@ -1086,6 +1086,142 @@ for (const mode of ['close', 'terminate'])
     await f.retired(fresh.status.pid);
   });
 
+for (const status of [0, 1])
+  test(`startup failure retains status ${status} across the real synchronous wait`, async (t) => {
+    const f = await fixture(t);
+    await writeFile(
+      join(f.directory, 'desktop-platform.js'),
+      `
+export const windowsPrivateStateNativeExecutable=(_active,stage)=>{
+ stage('bootstrap-native');
+ throw Object.assign(new Error('secret-path-and-stderr'), {
+  code:'UNSAFE_WINDOWS_PRIVATE_STATE',cause:{status:${status}},helperStage:'execute',
+  nativeType:'UnauthorizedAccessException',nativeWin32:5,nativeRejection:'WRONG_FILE_OWNER',
+  stderr:'secret-path-and-stderr'
+ });
+};`,
+    );
+    const backend = f.open();
+    assert.throws(
+      () => backend.call('check', 'synthetic-target'),
+      (error) => {
+        assert.equal(error.code, 'WINDOWS_PRIVATE_STATE_UNAVAILABLE');
+        assert.equal(error.stage, 'startup');
+        assert.equal(error.nativeStage, 'bootstrap-native');
+        assert.equal(error.nativeFailure, 'prepare-failed');
+        assert.equal(error.nativeCode, 'UNSAFE_WINDOWS_PRIVATE_STATE');
+        assert.equal(error.nativeStatus, status);
+        assert.equal(error.helperStage, 'execute');
+        assert.equal(error.nativeType, 'UnauthorizedAccessException');
+        assert.equal(error.nativeWin32, 5);
+        assert.equal(error.nativeRejection, 'WRONG_FILE_OWNER');
+        assert(!JSON.stringify(error).includes('secret-path-and-stderr'));
+        return true;
+      },
+    );
+    backend.close();
+    assert.equal(f.events().filter((v) => v.event === 'spawn' || v.event === 'request').length, 0);
+  });
+
+for (const mode of ['prepare', 'load'])
+  test(`owning Worker receives bounded ${mode} failure diagnostics through Main`, async (t) => {
+    const f = await fixture(t);
+    await writeFile(
+      join(f.directory, 'desktop-platform.js'),
+      mode === 'load'
+        ? "import './absent-native-import.js';"
+        : `
+export const windowsPrivateStateNativeExecutable=(_active,stage)=>{
+ stage('compile');throw Object.assign(new Error('private compiler output'),{code:'ENOENT',status:2});
+};`,
+    );
+    const ownerPath = join(f.directory, 'diagnostic-owner.mjs');
+    await writeFile(
+      ownerPath,
+      `
+import {parentPort,workerData} from 'node:worker_threads';
+const {createWindowsPrivateStateBackend}=await import(workerData.moduleURL);
+const backend=createWindowsPrivateStateBackend();
+let failure;
+try{backend.call('check','synthetic-target');}
+catch(error){failure={code:error.code,stage:error.stage,nativeStage:error.nativeStage,nativeFailure:error.nativeFailure,nativeCode:error.nativeCode,nativeStatus:error.nativeStatus};}
+finally{backend.close();}
+parentPort.postMessage(failure);parentPort.close();`,
+    );
+    const owner = new Worker(pathToFileURL(ownerPath), {
+      execArgv: [],
+      env: environment,
+      workerData: {
+        moduleURL: f.moduleURL.href,
+        windowsProcessGate: f.gate.getWindowsProcessGate(),
+      },
+    });
+    f.actors.push(owner);
+    f.gate.registerWindowsProcessWorker(owner);
+    const exited = new Promise((resolve, reject) => {
+      owner.once('exit', resolve);
+      owner.once('error', reject);
+    });
+    const result = await new Promise((resolve, reject) => {
+      owner.once('message', resolve);
+      owner.once('error', reject);
+    });
+    assert.deepEqual(result, {
+      code: 'WINDOWS_PRIVATE_STATE_UNAVAILABLE',
+      stage: 'startup',
+      nativeStage: mode === 'load' ? undefined : 'compile',
+      nativeFailure: mode === 'load' ? 'isolate-error' : 'prepare-failed',
+      nativeCode: mode === 'load' ? 'ERR_MODULE_NOT_FOUND' : 'ENOENT',
+      nativeStatus: mode === 'load' ? undefined : 2,
+    });
+    assert.equal(await exited, 0);
+    assert.equal(f.events().filter((v) => v.event === 'spawn' || v.event === 'request').length, 0);
+  });
+
+test('native spawn and handshake failures retain their first cause without a retry', async (t) => {
+  for (const mode of ['missing', 'bad-ready']) {
+    const f = await fixture(
+      t,
+      mode === 'missing' ? 'ok' : mode,
+      mode === 'missing'
+        ? join(repository, '.local', 'no-such-private-state-executable')
+        : undefined,
+    );
+    const backend = f.open();
+    const expected = mode === 'missing' ? 'spawn-error' : 'invalid-ready';
+    assert.throws(
+      () => backend.call('check', 'synthetic-target'),
+      (error) => {
+        assert.equal(error.nativeFailure, expected);
+        if (mode === 'missing') assert.equal(error.nativeCode, 'ENOENT');
+        assert.equal(error.nativeStage, mode === 'missing' ? 'spawn' : 'handshake');
+        return unavailable(error);
+      },
+    );
+    backend.close();
+    assert.throws(
+      () => backend.call('check', 'no-replay'),
+      (error) => error.nativeFailure === expected,
+    );
+    assert.equal(f.events().filter((v) => v.event === 'request').length, 0);
+  }
+});
+
+test('fixed preflight rejects custom entries and advertises only its real command', async () => {
+  const entry = join(repository, 'scripts/windows-private-state-preflight.mjs');
+  const help = await run(process.execPath, [entry, '--help']);
+  assert.match(help.stdout, /--file/);
+  const failure = await run(process.execPath, [entry, '--entry', 'secret-input-path']).then(
+    () => assert.fail('Custom module entries must be rejected'),
+    (error) => error,
+  );
+  const report = JSON.parse(failure.stdout);
+  assert.equal(report.passed, false);
+  assert.equal(report.failure.code, 'INVALID_PREFLIGHT_INPUT');
+  assert.equal(report.callerBootstrapUnchanged, true);
+  assert(!failure.stdout.includes('secret-input-path'));
+});
+
 test(
   'native Windows CLI and serve run the same C# source with equivalent decisions and relative cwd',
   { skip: process.platform !== 'win32' },

@@ -17813,6 +17813,22 @@
       "files": {
         "scripts/windows-host-recovery-smoke.mjs": "bc6c22ec07dbe6d9912ec1565852f61d008eeba695da6fd21047f25c8d880073"
       }
+    },
+    {
+      "id": "windows-native-private-preflight-20261030",
+      "baseCommit": "622c30f419330c56111b68bdc6de366b9bce274d",
+      "features": ["F03", "F64"],
+      "summary": "补齐Windows私有状态启动失败的固定共享诊断及同源只读入口；两端权限、运行目标、publisher与Native预算不变，Windows实际启动阻塞及更新恢复尚待来源核对。 完整包仅补四个已合并固定Android诊断Java源码的准确登记，不扩展通配或执行Android。",
+      "files": {
+        "packages/codex-adapter/src/desktop-platform.ts": "1a2f3672853e34a28206459a678a6e05ea4e623e33f5946017c8bb04426ff492",
+        "packages/codex-adapter/src/desktop-private-state-native.ts": "ba85e3b26213d5cd317d41999922b81cab6560d000542797d666f84522e93b90",
+        "packages/codex-adapter/src/desktop-private-state-native-worker.ts": "720af8804f694c6943851ca1fc0ae3e52b0dc8cc52310fb3e5459e8f10b1d8db",
+        "packages/codex-adapter/windows/private-state.ps1": "ae972ffed04995a16251f9c98ac4068d6d4c3d47deddf8469f2e211b36dd0654",
+        "scripts/windows-private-state-native.test.mjs": "3b9915ae7693dc136404d2791624197e597ca261c9d7ad81c77182d93953c132",
+        "scripts/windows-private-state-preflight.mjs": "b1eeab44ddd666a63a1eb77ce481ea07b26f9a5b444a643802d27614558d2d24",
+        "scripts/package-host-connect.mjs": "0aabc1e071e3a01803c0730e9ac3e99aee18972b59654234df8ad34fc70e6ff8",
+        "scripts/package-host-connect.test.mjs": "7f164bc4c1d3ceb65f18349896e26ec7c00269147fd38c606b274f9678c1f101"
+      }
     }
   ]
 }

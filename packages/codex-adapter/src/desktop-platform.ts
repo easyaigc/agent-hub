@@ -22,7 +22,10 @@ import { lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { Duplex } from 'node:stream';
 import { isMainThread, threadId } from 'node:worker_threads';
-import { createWindowsPrivateStateBackend } from './desktop-private-state-native.js';
+import {
+  createWindowsPrivateStateBackend,
+  type PrivateStateNativeStage,
+} from './desktop-private-state-native.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import type { TraceSnapshotItem, TraceSnapshotValue } from './desktop-trace-native.js';
 
@@ -79,7 +82,15 @@ function windowsPowerShellSync(args: string[], active?: () => boolean): string {
       stderr.match(
         /^(WINDOWS_POWERSHELL_MODULE_UNAVAILABLE|WINDOWS_DESKTOP_NOT_RUNNING|WINDOWS_DESKTOP_PIPE_REJECTED|WRONG_DESKTOP_USER|WRONG_DESKTOP_SESSION|WINDOWS_CLI_REJECTED|UNSAFE_WINDOWS_PRIVATE_STATE)\s*$/m,
       )?.[1] ?? 'WINDOWS_HELPER_FAILED';
-    throw Object.assign(new Error('Windows helper failed', { cause }), { code });
+    throw Object.assign(new Error('Windows helper failed', { cause }), {
+      code,
+      helperStage: stderr.match(/^WINDOWS_PRIVATE_STATE_BOOTSTRAP:(add-type|execute)\s*$/m)?.[1],
+      nativeType: stderr.match(/^WINDOWS_PRIVATE_STATE_NATIVE_TYPE:([A-Za-z]{1,64})\s*$/m)?.[1],
+      nativeWin32:
+        Number(stderr.match(/^WINDOWS_PRIVATE_STATE_WIN32:([1-9][0-9]{0,9})\s*$/m)?.[1]) ||
+        undefined,
+      nativeRejection: stderr.match(/^WINDOWS_PRIVATE_STATE_REJECTED:([A-Z_]{1,64})\s*$/m)?.[1],
+    });
   }
 }
 
@@ -103,18 +114,22 @@ const nativeExecutables = new Map<string, string>();
 function windowsPrivateStateExecutable(
   name: 'private-state' | 'trace-state' | 'host-launcher' = 'private-state',
   active?: () => boolean,
+  observeStage?: (stage: PrivateStateNativeStage) => void,
 ): string {
+  observeStage?.('environment');
   if (active && !active()) throw new Error('Native owner closed before bootstrap');
   if (!process.env.LOCALAPPDATA) throw new Error('Windows local user data directory missing');
   const cacheKey = name + '\n' + process.env.LOCALAPPDATA;
   const cached = nativeExecutables.get(cacheKey);
   if (cached) return cached;
+  observeStage?.('source');
   const source = windowsHelper(name + '.cs');
   const sources = name === 'trace-state' ? [source, windowsHelper('trace-process.cs')] : [source];
   const hash = createHash('sha256');
   for (const path of sources) hash.update(readFileSync(path));
   const digest = hash.digest('hex');
   const directory = join(process.env.LOCALAPPDATA, 'CodexManage/native-helpers', digest);
+  observeStage?.('directory');
   mkdirSync(directory, { recursive: true });
   // Bootstrap is performed once per helper isolate. Per-snapshot writes then
   // use the same fixed native ACL implementation without starting PowerShell.
@@ -134,13 +149,16 @@ function windowsPrivateStateExecutable(
     );
   const executable = join(directory, name + '.exe');
   if (!existsSync(executable)) {
+    observeStage?.('protect-directory');
     bootstrap('protect', directory);
+    observeStage?.('compiler');
     const system = process.env.SystemRoot ?? 'C:\\Windows';
     const compiler = ['Framework64', 'Framework']
       .map((name) => join(system, 'Microsoft.NET', name, 'v4.0.30319/csc.exe'))
       .find((path) => existsSync(path));
     if (!compiler) throw new Error('Installed Windows .NET Framework compiler missing');
     const temporary = executable + '.' + process.pid + '.' + threadId + '.tmp.exe';
+    observeStage?.('compile');
     withWindowsProcessCreation(
       30_000,
       (timeout) => {
@@ -164,7 +182,9 @@ function windowsPrivateStateExecutable(
       },
       active,
     );
+    observeStage?.('protect-binary');
     bootstrap('protect-file', temporary);
+    observeStage?.('publish-binary');
     try {
       renameSync(temporary, executable);
     } catch (error) {
@@ -176,12 +196,14 @@ function windowsPrivateStateExecutable(
   }
   // Resolve the actual executable for callers outside an MSIX virtual view.
   // The logical and physical files both retain the original private ACL check.
+  observeStage?.('resolve-binary');
   const physical = realpathSync.native(executable);
   if (basename(physical).toLowerCase() !== name + '.exe' || basename(dirname(physical)) !== digest)
     throw new Error('Unsafe Windows native helper path');
   // Every isolate still protects/checks the directory, logical binary and
   // physical binary freshly. Batch the fixed operations to avoid paying three
   // PowerShell process startups for a previously compiled native helper.
+  observeStage?.('bootstrap-native');
   windowsPowerShellSync(
     [
       '-NoProfile',
@@ -199,6 +221,7 @@ function windowsPrivateStateExecutable(
     ],
     active,
   );
+  observeStage?.('recheck-binary');
   if (realpathSync.native(executable) !== physical)
     throw new Error('Windows native helper namespace changed during bootstrap');
   nativeExecutables.set(cacheKey, physical);
@@ -208,10 +231,13 @@ export function windowsHostLauncherExecutable(): string {
   return windowsPrivateStateExecutable('host-launcher');
 }
 /** Only the private-state transport Worker bootstraps this fixed local binary. */
-export function windowsPrivateStateNativeExecutable(active?: () => boolean): string {
+export function windowsPrivateStateNativeExecutable(
+  active?: () => boolean,
+  observeStage?: (stage: PrivateStateNativeStage) => void,
+): string {
   if (isMainThread || process.platform !== 'win32')
     throw new Error('Private state worker required');
-  return windowsPrivateStateExecutable('private-state', active);
+  return windowsPrivateStateExecutable('private-state', active, observeStage);
 }
 let privateStateBackend: ReturnType<typeof createWindowsPrivateStateBackend> | undefined;
 let privateStateAsyncBackend: ReturnType<typeof createWindowsPrivateStateBackend> | undefined;

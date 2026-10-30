@@ -69,6 +69,10 @@ const fixedSourceFiles = new Set([
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPhotoColdDriver.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeFixedProcessCapture.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativePublicProcessCapture.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessDiagnosticObserver.java',
+  'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java',
   'scripts/mobile/fixtures/NaturalDiagnosticCapacityVectors.java',
   'scripts/mobile/fixtures/NaturalVisibilityVectors.java',
 ]);

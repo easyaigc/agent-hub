@@ -18,6 +18,162 @@ import {
 } from './windows-process.js';
 
 export type WindowsPrivateStateAction = 'protect' | 'protect-file' | 'check';
+// Separate from the permission response: diagnostic data never authorizes a call.
+export const privateStateNativeDiagnostics = Object.freeze({
+  words: 8,
+  stages: [
+    'environment',
+    'source',
+    'directory',
+    'protect-directory',
+    'compiler',
+    'compile',
+    'protect-binary',
+    'publish-binary',
+    'resolve-binary',
+    'bootstrap-native',
+    'recheck-binary',
+    'prepare',
+    'spawn-gate',
+    'spawn',
+    'handshake',
+    'operation',
+  ] as const,
+  failures: [
+    'prepare-failed',
+    'spawn-error',
+    'native-exit',
+    'stderr-present',
+    'stdin-error',
+    'stdout-error',
+    'stdout-eof',
+    'stderr-error',
+    'startup-deadline',
+    'execution-deadline',
+    'invalid-ready',
+    'oversized-frame',
+    'trailing-frame',
+    'non-ascii-frame',
+    'uncorrelated-response',
+    'request-rejected',
+    'isolate-error',
+    'isolate-exit',
+  ] as const,
+  codes: [
+    'ENOENT',
+    'EACCES',
+    'EPERM',
+    'ETIMEDOUT',
+    'UNSAFE_WINDOWS_PRIVATE_STATE',
+    'WINDOWS_POWERSHELL_MODULE_UNAVAILABLE',
+    'WINDOWS_HELPER_FAILED',
+    'WINDOWS_PROCESS_GATE_UNAVAILABLE',
+    'ERR_MODULE_NOT_FOUND',
+    'ERR_WORKER_INVALID_EXEC_ARGV',
+    'ERR_INPUT_TYPE_NOT_ALLOWED',
+    'ERR_ACCESS_DENIED',
+  ] as const,
+  helperStages: ['add-type', 'execute'] as const,
+  nativeTypes: [
+    'Win32Exception',
+    'UnauthorizedAccessException',
+    'IOException',
+    'ArgumentException',
+    'TypeInitializationException',
+    'InvalidOperationException',
+    'PSInvalidOperationException',
+    'PSInvalidCastException',
+    'PathTooLongException',
+    'FileNotFoundException',
+    'DirectoryNotFoundException',
+    'DllNotFoundException',
+    'EntryPointNotFoundException',
+    'BadImageFormatException',
+    'SecurityException',
+    'NotSupportedException',
+    'Exception',
+  ] as const,
+  rejections: [
+    'WRONG_FILE_OWNER',
+    'NULL_PRIVATE_DACL',
+    'UNKNOWN_PRIVATE_ACE',
+    'SHARED_PRIVATE_FILE',
+    'UNPROTECTED_PRIVATE_DACL',
+  ] as const,
+});
+export type PrivateStateNativeStage = (typeof privateStateNativeDiagnostics.stages)[number];
+type PrivateStateNativeFailure = (typeof privateStateNativeDiagnostics.failures)[number];
+export function privateStateNativeStage(shared: Int32Array, stage: PrivateStateNativeStage): void {
+  Atomics.store(shared, 0, privateStateNativeDiagnostics.stages.indexOf(stage) + 1);
+}
+export function privateStateNativeFailure(
+  shared: Int32Array,
+  failure: PrivateStateNativeFailure,
+  error?: unknown,
+): void {
+  if (
+    Atomics.compareExchange(
+      shared,
+      1,
+      0,
+      privateStateNativeDiagnostics.failures.indexOf(failure) + 1,
+    )
+  )
+    return;
+  try {
+    const value = error as
+      | {
+          code?: unknown;
+          status?: unknown;
+          cause?: { status?: unknown };
+          helperStage?: unknown;
+          nativeType?: unknown;
+          nativeWin32?: unknown;
+          nativeRejection?: unknown;
+        }
+      | undefined;
+    Atomics.store(
+      shared,
+      2,
+      privateStateNativeDiagnostics.codes.findIndex((code) => code === value?.code) + 1,
+    );
+    const status = value?.status ?? value?.cause?.status;
+    if (
+      typeof status === 'number' &&
+      Number.isInteger(status) &&
+      status >= -0x80000000 &&
+      status <= 0x7fffffff
+    ) {
+      Atomics.store(shared, 3, status);
+      // Low byte is the first failure ID; this bit distinguishes exit 0 from unset.
+      Atomics.or(shared, 1, 0x100);
+    }
+    Atomics.store(
+      shared,
+      4,
+      privateStateNativeDiagnostics.helperStages.findIndex((v) => v === value?.helperStage) + 1,
+    );
+    Atomics.store(
+      shared,
+      5,
+      privateStateNativeDiagnostics.nativeTypes.findIndex((v) => v === value?.nativeType) + 1,
+    );
+    if (
+      typeof value?.nativeWin32 === 'number' &&
+      Number.isInteger(value.nativeWin32) &&
+      value.nativeWin32 > 0 &&
+      value.nativeWin32 <= 0x7fffffff
+    )
+      Atomics.store(shared, 6, value.nativeWin32);
+    Atomics.store(
+      shared,
+      7,
+      privateStateNativeDiagnostics.rejections.findIndex((v) => v === value?.nativeRejection) + 1,
+    );
+  } catch {
+    // A diagnostic-only property must never interrupt channel retirement.
+  }
+}
 /** Internal transport contract; no paths or permission decisions are cached. */
 export const privateStateProtocol = Object.freeze({
   words: 6,
@@ -189,6 +345,7 @@ type PrivateStateStart = {
   module: string;
   shared: SharedArrayBuffer;
   ownerPort: MessagePort;
+  diagnostics?: SharedArrayBuffer;
   trace?: {
     identity: Pick<WindowsDesktopIdentity, 'pid' | 'startedAtUnixMs' | 'executable'>;
     root: string;
@@ -254,9 +411,18 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       return;
     const control = new Int32Array(request.shared, 0, p.words);
     const trace = kind === 'windows-trace-start' ? request.trace : undefined;
-    const fields = ['kind', 'module', 'shared', 'ownerPort', ...(trace ? ['trace'] : [])];
+    const fields = [
+      'kind',
+      'module',
+      'shared',
+      'ownerPort',
+      ...(trace ? ['trace'] : ['diagnostics']),
+    ];
     if (
       request.kind !== kind ||
+      (!trace &&
+        (!(request.diagnostics instanceof SharedArrayBuffer) ||
+          request.diagnostics.byteLength !== privateStateNativeDiagnostics.words * 4)) ||
       Object.keys(request).some((key) => !fields.includes(key)) ||
       (kind === 'windows-trace-start' &&
         (!trace ||
@@ -300,6 +466,7 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
           entryURL: entry.href,
           windowsProcessGate: getWindowsProcessGate(),
           shared: trace?.response ?? request.shared,
+          ...(!trace ? { diagnostics: request.diagnostics } : {}),
           ownerPort: request.ownerPort,
           ...(trace
             ? { identity: trace.identity, root: trace.root, lifecycle: request.shared }
@@ -324,10 +491,18 @@ function registerFixedNativeTransport(kind: PrivateStateStart['kind']): void {
       // Fail startup before the registry's exit CAS releases/notifies a gate
       // that this owner held, so a waiting transport cannot wake still active.
       owner.prependOnceListener('exit', ownerExited);
-      worker.on('error', () => failPrivateState(control));
-      worker.once('exit', () => {
+      worker.on('error', (error) => {
+        if (!trace)
+          privateStateNativeFailure(new Int32Array(request.diagnostics!), 'isolate-error', error);
+        failPrivateState(control);
+      });
+      worker.once('exit', (exitCode) => {
         owner.removeListener('exit', ownerExited);
         const reaped = Atomics.load(control, p.state) === p.gone;
+        if (!trace && !reaped)
+          privateStateNativeFailure(new Int32Array(request.diagnostics!), 'isolate-exit', {
+            status: exitCode,
+          });
         failPrivateState(control);
         if (!Atomics.load(control, p.pid)) {
           Atomics.store(control, p.state, p.gone);
@@ -436,6 +611,8 @@ export function createWindowsPrivateStateBackend(
   const shared = new SharedArrayBuffer(p.words * 4 + p.responseBytes);
   const control = new Int32Array(shared, 0, p.words);
   const bytes = new Uint8Array(shared, p.words * 4);
+  const diagnostics = new SharedArrayBuffer(privateStateNativeDiagnostics.words * 4);
+  const native = new Int32Array(diagnostics);
   let worker: Worker | MessagePort;
   if (isMainThread) {
     worker = new Worker(entry, {
@@ -444,6 +621,7 @@ export function createWindowsPrivateStateBackend(
         kind: 'windows-private-state',
         entryURL: entry.href,
         shared,
+        diagnostics,
         windowsProcessGate: getWindowsProcessGate(),
       },
     });
@@ -458,6 +636,7 @@ export function createWindowsPrivateStateBackend(
       kind: 'windows-private-state-start',
       module: import.meta.url,
       shared,
+      diagnostics,
       ownerPort: channel.port2,
     };
     void postMessageToThread(0, request, [channel.port2], timeouts.startupMs).catch(() => {
@@ -492,13 +671,22 @@ export function createWindowsPrivateStateBackend(
       code: 'WINDOWS_PRIVATE_STATE_UNAVAILABLE',
       stage: phase,
       waitMs,
+      nativeStage: privateStateNativeDiagnostics.stages[Atomics.load(native, 0) - 1],
+      nativeFailure: privateStateNativeDiagnostics.failures[(Atomics.load(native, 1) & 0xff) - 1],
+      nativeCode: privateStateNativeDiagnostics.codes[Atomics.load(native, 2) - 1],
+      nativeStatus: Atomics.load(native, 1) & 0x100 ? Atomics.load(native, 3) : undefined,
+      helperStage: privateStateNativeDiagnostics.helperStages[Atomics.load(native, 4) - 1],
+      nativeType: privateStateNativeDiagnostics.nativeTypes[Atomics.load(native, 5) - 1],
+      nativeWin32: Atomics.load(native, 6) || undefined,
+      nativeRejection: privateStateNativeDiagnostics.rejections[Atomics.load(native, 7) - 1],
     });
   }
   function fail(): void {
     failPrivateState(control);
     worker.postMessage({ kind: 'close' });
   }
-  worker.on('error', () => {
+  worker.on('error', (error) => {
+    privateStateNativeFailure(native, 'isolate-error', error);
     record('isolate-error');
     fail();
   });
@@ -512,6 +700,8 @@ export function createWindowsPrivateStateBackend(
   };
   if (worker instanceof Worker)
     worker.once('exit', (exitCode) => {
+      if (!closed && Atomics.load(control, p.state) !== p.gone)
+        privateStateNativeFailure(native, 'isolate-exit', { status: exitCode });
       record('isolate-exit', { exitCode });
       exited();
     });

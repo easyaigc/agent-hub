@@ -45,3 +45,23 @@
 本次仅修复辅助夹具：在真实 spawn 前恢复三项原环境，并由真实子进程写出环境摘要供父进程核对；不输出环境原值。发现子进程退出或 spawn 失败时报告实际退出码／信号及有限探测状态，超时也附带诊断计数。保留原 HTTP 超时、等待预算、四种状态转换、只启动一次、健康探测不得杀活进程与停止后不再探测的断言。未改变 Host 产品、publisher-not-checked 契约或恢复时限。
 
 macOS 辅助检查包括正常夹具、缺少提前环境恢复的反事实、子进程提前退出的反事实及受影响检查；准确结果绑定新制品交付清单。核心源码与编译闭包指纹完全匹配时，复用前述恢复与真实只读证据。Windows 须从新独立 tag 取包重跑 `node scripts/windows-host-recovery-smoke.mjs`，再继续原隔离只读场景；macOS 通过不代替 Windows 原机通过。旧包、tag 与原失败回执保留，不能覆盖为成功。
+
+## Windows 私有状态启动失败的独立诊断
+
+来源真实只读验收在 reader 创建前收到 `WINDOWS_PRIVATE_STATE_UNAVAILABLE / startup`。同一配置文件的旧 backend 检查成功，新 backend 失败；新旧管道 owner 检查均成功。这是尚未定位到底层原因的原生启动阻塞，不能算作更新恢复通过，也不能用延长预算或改权限消除。
+
+主线程直接导入后调用 `assertPrivateFile` 是受支持路径：它创建固定 transport Worker；owning Worker 则经实际 Main 注册的固定 supervisor 创建 transport。此处不存在脚本名称或 argv 白名单。标准 ZIP 的实际 node_modules 中，backend、worker、platform、process gate、diagnostics JS 与 private-state.ps1／cs 七项均存在；这不代替来源实际展开目录的逐项核对。旧 backend 的 edd257e1 指纹匹配 b000ead4 对应源码，新 adf71113 匹配 b28a9b6e 对应源码；这个匹配仅用于单个模块溯源，不能据此推断旧安装整包 SHA 或故障因果。
+
+本轮补齐诊断缺口：独立 32 字节共享区域只携带固定阶段、首个失败类别、白名单错误码、退出状态及限定的 bootstrap／原生 ACL 错误类型。同步 caller 阻塞时也可读取，不依赖延迟到达的诊断事件。它与权限响应分离，不能授权访问、重试操作或改变退出屏障；原 30 秒启动、5 秒操作与 1 秒关闭预算不变，Native C# 权限实现及 publisher 契约不变。PowerShell 仅增加固定错误标签，不输出路径、SID、错误正文或原生日志。
+
+新的 `scripts/windows-private-state-preflight.mjs` 是隔离只读入口。在新统一包 `codex-host-connect/assets/codex-manage` 目录，以原 Node 执行：
+
+```powershell
+& '<原 Node 绝对路径>' .\scripts\windows-private-state-preflight.mjs --file '<原私有 windows-desktop.json 绝对路径>'
+```
+
+入口固定核对原 Host 实际 ESM 闭包，再从同一 Adapter 实例核对七项资源指纹并执行配置文件 ACL 检查；不启动 Host、reader、模型或业务操作，不改调用者 argv／execArgv／NODE_OPTIONS，不保护或重写目标文件。后端自身的本机 helper 缓存初始化沿用既有产品路径。输出仅为有限 JSON，附目标文件元数据与调用者启动参数是否保持、关闭结果。它验证私有状态前置条件，不能替代 Host／owner／reader／真实更新验收。若失败，保留 failure 的 nativeStage、nativeFailure、nativeCode、nativeStatus、helperStage、nativeType、nativeWin32、nativeRejection，以及 resources 与闭包指纹；不发送配置或长日志。
+
+macOS 的实际同步等待、owning Worker 经 Main 转发、缺失原生程序、错误握手与固定入口输入边界辅助检查绑定本轮输入；Windows 原生路径仍待来源独立执行。原环境修复脚本指纹与未改动的核心证据按匹配范围复用，不能把整个 Adapter 或 Windows 原机证明沿用为当前通过。
+
+本轮交付基线对齐已合并 PR #67 的 main `622c30f419330c56111b68bdc6de366b9bce274d`；其 Host／Adapter／锁文件未改，保留其既有 Android 与文档内容。完整打包器补充四个该主线已跟踪的固定诊断源码准确路径：NativeFixedProcessCapture.java、NativePublicProcessCapture.java、OwnedPublicProcessDiagnosticObserver.java、OwnedPublicProcessNaturalObserver.java，均位于既有 android-inbox-examiner 源码目录。它们不是本轮新增的 Android 功能，本任务不修改或执行其行为。正向字节保留检查覆盖这四项，并沿用拒绝未知 Java 的负向断言；不开放扩展名或目录通配。

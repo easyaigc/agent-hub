@@ -22,6 +22,7 @@ import {
   type RuntimeTarget,
 } from '@codex-manage/protocol';
 import { DesktopNativeSampleCapture } from './desktop-native-sample-capture.js';
+import { isOriginalNativeSampleFrame } from './desktop-native-sample-envelope.js';
 import {
   inspectNativeSuggestionProducer,
   nativeSuggestionImplementationFingerprint,
@@ -83,6 +84,8 @@ type Code =
   | 'native_bridge_store_unavailable'
   | 'native_bridge_observation_failed'
   | 'native_bridge_close_failed'
+  | 'native_bridge_sample_frame_invalid'
+  | 'native_bridge_sample_frame_limit'
   | 'native_bridge_capture_notice';
 const statusCodes: ReadonlySet<string> = new Set<Code>([
   'native_bridge_config_invalid',
@@ -106,6 +109,8 @@ const statusCodes: ReadonlySet<string> = new Set<Code>([
   'native_bridge_store_unavailable',
   'native_bridge_observation_failed',
   'native_bridge_close_failed',
+  'native_bridge_sample_frame_invalid',
+  'native_bridge_sample_frame_limit',
   'native_bridge_capture_notice',
 ]);
 
@@ -665,7 +670,14 @@ class Bridge implements DesktopNativeSampleBridge {
       targetKey: this.store.targetKey,
       producer: this.producer,
       now: this.now,
-      onError: () => this.report('native_bridge_capture_notice'),
+      onError: (code) =>
+        this.report(
+          code === 'native_sample_frame_limit'
+            ? 'native_bridge_sample_frame_limit'
+            : code === 'native_sample_frame_invalid'
+              ? 'native_bridge_sample_frame_invalid'
+              : 'native_bridge_capture_notice',
+        ),
     });
     if (!this.capture.available) fail('native_bridge_capture_unavailable');
     this.checkOwner();
@@ -685,21 +697,9 @@ class Bridge implements DesktopNativeSampleBridge {
   }
   private observe(method: 'observeOutbound' | 'observeInbound', line: string): void {
     if (!this.ready || this.closed) return;
-    // Most original frames are unrelated streamed tokens. Inspect their JSON
-    // envelope without touching private state on every token.
-    let relevant: boolean;
-    try {
-      if (Buffer.byteLength(line) <= 128 * 1024) {
-        const frame = JSON.parse(line);
-        relevant =
-          method === 'observeOutbound'
-            ? frame.method === 'thread/sample' || frame.method === 'thread/sample/cancel'
-            : typeof frame.id === 'string' && frame.id.startsWith('thread/sample:');
-      } else relevant = line.includes('thread/sample');
-    } catch {
-      relevant = line.includes('thread/sample');
-    }
-    if (!relevant) return;
+    // A large unrelated history can quote native method names or request IDs.
+    // Only its bounded top-level envelope may select the capture boundary.
+    if (!isOriginalNativeSampleFrame(line, method)) return;
     try {
       this.fence(this.time());
       if (method === 'observeOutbound' && !this.capture!.hasPendingRequests) {

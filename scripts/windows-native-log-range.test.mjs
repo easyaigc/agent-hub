@@ -27,10 +27,13 @@ internal static class LogRangeFixture {
  static readonly SecurityIdentifier Sid=WindowsIdentity.GetCurrent().User,Everyone=new SecurityIdentifier("S-1-1-0");
  static readonly JavaScriptSerializer Json=new JavaScriptSerializer {MaxJsonLength=4*1024*1024,RecursionLimit=16};
  static readonly List<string> Cases=new List<string>(),Skipped=new List<string>();
+ static string Phase="setup";
+ static readonly List<Dictionary<string,object>> OwnerAttempts=new List<Dictionary<string,object>>();
  static readonly MethodInfo Command=typeof(TraceState).GetMethod("LogSnapshotCommand",BindingFlags.Static|BindingFlags.NonPublic);
  static readonly MethodInfo PrivateSnapshot=typeof(TraceState).GetMethod("Snapshot",BindingFlags.Static|BindingFlags.NonPublic);
  [DllImport("userenv.dll",CharSet=CharSet.Unicode,ExactSpelling=true)]static extern int DeriveAppContainerSidFromAppContainerName(string name,out IntPtr sid);
  [DllImport("advapi32.dll")]static extern IntPtr FreeSid(IntPtr sid);
+ [DllImport("advapi32.dll",CharSet=CharSet.Unicode,ExactSpelling=true)]static extern uint SetNamedSecurityInfoW(string path,uint type,uint requested,byte[] owner,IntPtr group,IntPtr dacl,IntPtr sacl);
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]static extern bool CreateHardLink(string path,string existing,IntPtr reserved);
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]static extern bool CreateSymbolicLink(string path,string target,uint flags);
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]static extern uint GetShortPathName(string path,StringBuilder output,uint count);
@@ -48,6 +51,24 @@ internal static class LogRangeFixture {
   if(directory){var acl=Directory.GetAccessControl(path);acl.SetOwner(owner);Directory.SetAccessControl(path,acl);}
   else{var acl=File.GetAccessControl(path);acl.SetOwner(owner);File.SetAccessControl(path,acl);}
  }
+ static string FixtureOwner(string path,bool directory){return (directory?(FileSystemSecurity)Directory.GetAccessControl(path):File.GetAccessControl(path)).GetOwner(typeof(SecurityIdentifier)).Value;}
+ // Only the two exclusively owned fixture objects use this diagnostic setter.
+ // Framework maps ERROR_INVALID_OWNER to InvalidOperationException, so catch
+ // types cannot classify the native reason. Do not enable token privileges.
+ static bool TryFixtureOwner(string path,bool directory,SecurityIdentifier owner,string kind,ref bool changed){
+  var attributes=File.GetAttributes(path);Need((attributes&FileAttributes.ReparsePoint)==0&&((attributes&FileAttributes.Directory)!=0)==directory,"owned fixture kind before owner attempt");
+  string before=FixtureOwner(path,directory);Need(before==Sid.Value,"owned fixture starts with current user owner");
+  var bytes=new byte[owner.BinaryLength];owner.GetBinaryForm(bytes,0);
+  changed=true; // A failed post-call inspection must still restore our owned fixture.
+  uint code=SetNamedSecurityInfoW(path,1,1,bytes,IntPtr.Zero,IntPtr.Zero,IntPtr.Zero);
+  string after=FixtureOwner(path,directory);changed=after!=before;
+  OwnerAttempts.Add(new Dictionary<string,object>{{"object",kind},{"requestedOwner",owner.Value},{"nativeCode",code},{"beforeOwner",before},{"afterOwner",after}});
+  if(code==0){Need(after==owner.Value,"successful fixture owner independently verified");return true;}
+  Need(after==before,"failed fixture owner attempt leaves owner unchanged");
+  if(code==5||code==1307||code==1314){Skipped.Add("trusted-owner-native-"+code+"-"+kind+"-"+owner.Value);return false;}
+  throw new System.ComponentModel.Win32Exception((int)code);
+ }
+ static void RestoreFixtureOwner(string path,bool directory){Owner(path,directory,Sid);Need(FixtureOwner(path,directory)==Sid.Value,"fixture owner restoration independently verified");}
  static void Private(string path,bool directory){
   // Owned fixture descendants must inherit the user's control before adding
   // the vendor-style Everyone read grant. Otherwise elevated default owners
@@ -87,6 +108,22 @@ internal static class LogRangeFixture {
   (string)before["identity"]==(string)after["identity"]&&Size(after)>=Size(before)&&Bytes(before).Length==64&&Equal(Bytes(before),Bytes(after));}
  static void GrantFile(string path,SecurityIdentifier sid,FileSystemRights rights){var acl=File.GetAccessControl(path);acl.AddAccessRule(new FileSystemAccessRule(sid,rights,AccessControlType.Allow));File.SetAccessControl(path,acl);}
  static void GrantDirectory(string path,SecurityIdentifier sid,FileSystemRights rights,InheritanceFlags inherit){var acl=Directory.GetAccessControl(path);acl.AddAccessRule(new FileSystemAccessRule(sid,rights,inherit,PropagationFlags.None,AccessControlType.Allow));Directory.SetAccessControl(path,acl);}
+ // Framework Persist writes only dirty sections. Reusing an unmodified object
+ // returned by GetAccessControl does not restore another object's DACL edits.
+ // Import Access into a fresh object; never modify the fixture's owner/group.
+ static string Rules(FileSystemSecurity acl){
+  var rows=new List<string>();foreach(FileSystemAccessRule rule in acl.GetAccessRules(true,true,typeof(SecurityIdentifier)))
+   rows.Add(rule.IdentityReference.Value+":"+(int)rule.FileSystemRights+":"+rule.AccessControlType+":"+(int)rule.InheritanceFlags+":"+(int)rule.PropagationFlags+":"+rule.IsInherited);
+  rows.Sort(StringComparer.Ordinal);return acl.AreAccessRulesProtected+"|"+String.Join("|",rows);
+ }
+ static void RestoreFileAccess(string path,FileSecurity original){
+  var restore=new FileSecurity();restore.SetSecurityDescriptorBinaryForm(original.GetSecurityDescriptorBinaryForm(),AccessControlSections.Access);
+  File.SetAccessControl(path,restore);Need(Rules(original)==Rules(File.GetAccessControl(path)),"owned fixture file DACL restored");
+ }
+ static void RestoreDirectoryAccess(string path,DirectorySecurity original){
+  var restore=new DirectorySecurity();restore.SetSecurityDescriptorBinaryForm(original.GetSecurityDescriptorBinaryForm(),AccessControlSections.Access);
+  Directory.SetAccessControl(path,restore);Need(Rules(original)==Rules(Directory.GetAccessControl(path)),"owned fixture directory DACL restored");
+ }
  static void Junction(string path,string target){
   Directory.CreateDirectory(path);Owner(path,true,Sid);byte[] substitute=Encoding.Unicode.GetBytes(@"\??\"+target),print=Encoding.Unicode.GetBytes(target);
   byte[] buffer=new byte[16+substitute.Length+2+print.Length+2];
@@ -183,33 +220,42 @@ internal static class LogRangeFixture {
    var readOnly=new FileSecurity();readOnly.SetOwner(Sid);readOnly.SetAccessRuleProtection(true,false);
    foreach(var principal in new[]{Sid,Everyone})readOnly.AddAccessRule(new FileSystemAccessRule(principal,FileSystemRights.Read|FileSystemRights.Synchronize,AccessControlType.Allow));
    File.SetAccessControl(path,readOnly);Need(Equal(Bytes(Read(root,path,0,64)),Pattern(0,64)),"read needs no write grant");
-  }finally{File.SetAccessControl(path,original);}Cases.Add("read-with-no-write-grant");
+  }finally{RestoreFileAccess(path,original);}Cases.Add("read-with-no-write-grant");
   foreach(FileSystemRights rights in new[]{FileSystemRights.WriteData,FileSystemRights.AppendData,FileSystemRights.WriteExtendedAttributes,FileSystemRights.WriteAttributes,
    FileSystemRights.Delete,FileSystemRights.ChangePermissions,FileSystemRights.TakeOwnership,FileSystemRights.FullControl}){
    try{GrantFile(path,Everyone,rights);Reject(()=>Read(root,path,0,64),"public writable leaf");Error("log-snapshot",root,path,"0","0","0");}
-   finally{File.SetAccessControl(path,original);}}
+   finally{RestoreFileAccess(path,original);}}
   var rootAcl=Directory.GetAccessControl(root);try{GrantDirectory(root,Everyone,FileSystemRights.DeleteSubdirectoriesAndFiles,InheritanceFlags.None);Reject(()=>Read(root,path,0,64),"public writable root");}
-  finally{Directory.SetAccessControl(root,rootAcl);}Cases.Add("foreign-write-and-delete-acls-rejected");
+  finally{RestoreDirectoryAccess(root,rootAcl);}Cases.Add("foreign-write-and-delete-acls-rejected");
   // Synthetic principals only. No sampled machine SID or broad S-1-15 privilege.
   foreach(var capability in new[]{new SecurityIdentifier("S-1-15-3-1"),new SecurityIdentifier("S-1-15-3-1024-11-22-33-44-55-66-77-88")}){
    try{GrantFile(path,capability,FileSystemRights.FullControl);Reject(()=>Read(root,path,0,64),"unverified capability writer");}
-   finally{File.SetAccessControl(path,original);}}
+   finally{RestoreFileAccess(path,original);}}
   Reject(()=>new TraceState.LogDesktopIdentity(0),"missing actual native desktop identity");Reject(()=>new TraceState.LogDesktopIdentity(-1),"invalid desktop PID");Cases.Add("unverified-app-principals-fail-closed");
-  using(var range=new TraceState.LogRangeFile(root,path,false))try{GrantFile(path,Everyone,FileSystemRights.ReadAttributes);Reject(()=>range.Snapshot(0,64),"even readonly DACL change while retained");}
-  finally{File.SetAccessControl(path,original);}Cases.Add("acl-stability-before-after");
+  Phase="acl-stability-before-after";
+  using(var range=new TraceState.LogRangeFile(root,path,false))try{
+   byte[] before=File.GetAccessControl(path).GetSecurityDescriptorBinaryForm();
+   // Everyone already inherits ReadAndExecute, including ReadAttributes. Use
+   // a distinct read-only principal so this is a real descriptor mutation.
+   GrantFile(path,new SecurityIdentifier("S-1-5-11"),FileSystemRights.ReadAttributes);
+   Need(!Equal(before,File.GetAccessControl(path).GetSecurityDescriptorBinaryForm()),"actual readonly DACL delta");
+   Reject(()=>range.Snapshot(0,64),"even readonly DACL change while retained");}
+  finally{RestoreFileAccess(path,original);}Cases.Add("acl-stability-before-after");
+  Phase="system-and-administrators-write-grants";
   foreach(var trusted in new[]{new SecurityIdentifier("S-1-5-18"),new SecurityIdentifier("S-1-5-32-544")})try{GrantFile(path,trusted,FileSystemRights.FullControl);Read(root,path,0,64);}
-  finally{File.SetAccessControl(path,original);}Cases.Add("system-and-administrators-write-grants");
+  finally{RestoreFileAccess(path,original);}Cases.Add("system-and-administrators-write-grants");
   // Changing an owned fixture's owner requires privileges some test accounts do
   // not have. Never silently count unavailable owner fixtures as passing.
+  Phase="trusted-owner";
   foreach(var owner in new[]{new SecurityIdentifier("S-1-5-32-544"),new SecurityIdentifier("S-1-5-18")}){
    bool rootChanged=false,fileChanged=false;try{
-    try{Owner(root,true,owner);rootChanged=true;Owner(path,false,owner);fileChanged=true;}
-    catch(PrivilegeNotHeldException){Skipped.Add("trusted-owner-privilege-"+owner.Value);continue;}
-    catch(UnauthorizedAccessException){Skipped.Add("trusted-owner-access-"+owner.Value);continue;}
-    Read(root,path,0,64);Cases.Add("trusted-owner-"+owner.Value);
-   }finally{if(fileChanged)Owner(path,false,Sid);if(rootChanged)Owner(root,true,Sid);}}
+    Phase="trusted-owner-root-"+owner.Value;if(!TryFixtureOwner(root,true,owner,"root",ref rootChanged))continue;
+    Phase="trusted-owner-file-"+owner.Value;if(!TryFixtureOwner(path,false,owner,"file",ref fileChanged))continue;
+    Phase="trusted-owner-read-"+owner.Value;Read(root,path,0,64);Cases.Add("trusted-owner-"+owner.Value);
+   }finally{try{if(fileChanged)RestoreFixtureOwner(path,false);}finally{if(rootChanged)RestoreFixtureOwner(root,true);}}}
   // Strict user-owned/protected private checks continue to succeed only inside
   // their original contract, and still reject any extra read principal.
+  Phase="original-private-protections";
   string privateRoot=Path.Combine(Path.GetDirectoryName(root),"private-traces");Directory.CreateDirectory(privateRoot);Private(privateRoot,true);
   string privateFile=Path.Combine(privateRoot,"fixture.json");Fill(privateFile,128);Private(privateFile,false);
   Need(Convert.FromBase64String((string)Object((string)PrivateSnapshot.Invoke(null,new object[]{privateRoot,privateFile,64}))["bytes"]).Length==64,"original private Snapshot success");
@@ -256,8 +302,8 @@ internal static class LogRangeFixture {
    string path=Path.Combine(root,"electron-native-range-file.log");Fill(path,4*1024*1024+173);
    PackagePrincipalMapping();Ranges(root,path);Appends(root,path);Mutations(root);Acls(root,path);Links(root,path);Arguments(root,path);
    report["passed"]=true;report["root"]=root;report["path"]=path;
-  }catch(Exception error){report["passed"]=false;report["errorType"]=error.GetBaseException().GetType().FullName;report["reason"]=error.GetBaseException().Message;}
-  report["kind"]="OWNED_NTFS_LOG_RANGE_NOT_ELECTRON_ACCEPTANCE";report["cases"]=Cases;report["skipped"]=Skipped;Console.WriteLine(Json.Serialize(report));return (bool)report["passed"]?0:1;
+  }catch(Exception error){report["passed"]=false;report["phase"]=Phase;report["errorType"]=error.GetBaseException().GetType().FullName;report["reason"]=error.GetBaseException().Message;}
+  report["kind"]="OWNED_NTFS_LOG_RANGE_NOT_ELECTRON_ACCEPTANCE";report["cases"]=Cases;report["skipped"]=Skipped;report["ownerAttempts"]=OwnerAttempts;Console.WriteLine(Json.Serialize(report));return (bool)report["passed"]?0:1;
  }
 }
 `;
@@ -369,6 +415,8 @@ test(
       ])
         assert(report.cases.includes(name), name);
       for (const reason of report.skipped) t.diagnostic(`Not verified: ${reason}`);
+      for (const attempt of report.ownerAttempts)
+        t.diagnostic(`Owned fixture owner attempt: ${JSON.stringify(attempt)}`);
       // Positive CLI coverage additionally needs the caller's separately verified
       // original desktop identity. An owned unpackaged fixture cannot stand in for
       // that PFN/token/signature/pipe provenance. No real desktop is discovered or

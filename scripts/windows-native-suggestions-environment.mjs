@@ -158,7 +158,7 @@ try {
   try {
    $stream=[IO.File]::Open($temp,'CreateNew','Write','None');Protect $temp $false $true
    $stream.Write($bytes,0,$bytes.Length);$stream.Flush($true);$stream.Dispose();$stream=$null
-   if(Test-Path -LiteralPath $Path){[IO.File]::Replace($temp,$Path,$null)}else{[IO.File]::Move($temp,$Path)}
+   if(Test-Path -LiteralPath $Path){[IO.File]::Replace($temp,$Path,[System.Management.Automation.Language.NullString]::Value)}else{[IO.File]::Move($temp,$Path)}
    Private $Path $false
   } finally {
    if($stream){$stream.Dispose()}

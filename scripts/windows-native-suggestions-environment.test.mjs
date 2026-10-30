@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   unlinkSync,
@@ -648,7 +649,7 @@ Set-Acl -LiteralPath $env:AH_TEST_CONFIG -AclObject $acl
 test(
   'Windows fixed filesystem operations protect newly created objects and refuse existing foreign state',
   { skip: process.platform !== 'win32', timeout: 120000 },
-  () => {
+  (t) => {
     const root = mkdtempSync(join(tmpdir(), 'agent-hub-owner-regression-'));
     const ps = join(
       process.env.SystemRoot,
@@ -713,6 +714,35 @@ $r=@($a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]) | Wh
       assert.deepEqual(call('read', state), { manifest: { fixture: 1 }, config: { fixture: 2 } });
       privateObject(join(state, 'environment.json'));
       privateObject(join(state, 'config.json'));
+      // The real installer updates its preparing manifest after publishing the
+      // launcher. A first-write-only fixture never exercised File.Replace.
+      const manifestAcl = runScript(inspect, join(state, 'environment.json'));
+      assert.deepEqual(
+        call('publish', state, { name: 'environment.json', value: { fixture: 3, previous: null } }),
+        { ok: true },
+      );
+      assert.deepEqual(call('publish', state, { name: 'config.json', value: { fixture: 4 } }), {
+        ok: true,
+      });
+      assert.deepEqual(call('read', state), {
+        manifest: { fixture: 3, previous: null },
+        config: { fixture: 4 },
+      });
+      assert.equal(runScript(inspect, join(state, 'environment.json')), manifestAcl);
+      assert.deepEqual(
+        call('publish', state, { name: 'environment.json', value: { fixture: 5, previous: null } }),
+        { ok: true },
+      );
+      assert.deepEqual(call('read', state), {
+        manifest: { fixture: 5, previous: null },
+        config: { fixture: 4 },
+      });
+      privateObject(join(state, 'environment.json'));
+      privateObject(join(state, 'config.json'));
+      assert.deepEqual(readdirSync(state).sort(), ['config.json', 'environment.json']);
+      t.diagnostic(
+        'native-manifest-replacement: two updates; config replacement; exact content/null/ACL; no temporary or backup residue',
+      );
       const sourceSha256 = createHash('sha256')
         .update(readFileSync(nativeSuggestionsSource))
         .digest('hex');

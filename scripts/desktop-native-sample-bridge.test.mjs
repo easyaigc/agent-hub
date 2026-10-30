@@ -995,3 +995,117 @@ test('directory enumeration and logger failures stay bounded and nonthrowing', (
     undefined,
   );
 });
+
+test('large unrelated history envelopes do not revoke a pending native suggestion', (t) => {
+  const f = fixture(t);
+  const bridge = f.start();
+  const log = f.log('large-history-routing');
+  privateFile(log, '');
+  const req = request();
+  bridge.observeOutbound(JSON.stringify(req));
+  assert.equal(f.row(req).state, 'pending');
+  // Real history can include this very code and old sample requests. Only
+  // top-level RPC routing fields identify a response to our pending request.
+  const history = JSON.stringify({
+    result: {
+      messages: [
+        {
+          text: 'history '.repeat(30000) + 'thread/sample',
+          nested: { id: req.id, method: 'thread/sample/cancel' },
+        },
+      ],
+    },
+    id: 'unrelated-history-reader',
+  });
+  assert(Buffer.byteLength(history) > 128 * 1024);
+  bridge.observeInbound(history);
+  assert.equal(f.row(req).state, 'pending', 'unrelated large history must not invalidate a source');
+  f.advance();
+  bridge.observeInbound(
+    JSON.stringify({
+      id: req.id,
+      result: { text: JSON.stringify({ suggestion: 'Original native result after history' }) },
+    }),
+  );
+  f.advance();
+  append(log, f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+  assert.equal(f.row(req).result.text, 'Original native result after history');
+});
+
+test('large quoted sample content cannot select a source before or after its real result', async (t) => {
+  for (const direction of ['observeInbound', 'observeOutbound']) {
+    for (const phase of ['request', 'candidate']) {
+      await t.test(direction + '/' + phase, (st) => {
+        const f = fixture(st),
+          bridge = f.start(),
+          req = request();
+        const log = f.log('large-envelope-' + phase);
+        privateFile(log, '');
+        bridge.observeOutbound(JSON.stringify(req));
+        const result = JSON.stringify({
+          id: req.id,
+          result: { text: JSON.stringify({ suggestion: 'Keep the actual source result' }) },
+        });
+        if (phase === 'candidate') {
+          f.advance();
+          bridge.observeInbound(result);
+        }
+        const body = {
+          text: ('thread/sample ' + req.id + ' ').repeat(4000),
+          nested: { method: 'thread/sample/cancel', id: req.id },
+        };
+        const noise =
+          direction === 'observeInbound'
+            ? JSON.stringify({ result: body, id: 'history-reader' }).replace(
+                '"id":"history-reader"',
+                '"\\u0069d":"history-reader"',
+              )
+            : JSON.stringify({ params: body, method: 'thread/read' }).replace(
+                '"method":',
+                '"meth\\u006fd":',
+              );
+        assert(Buffer.byteLength(noise) > 128 * 1024);
+        bridge[direction](noise);
+        assert.equal(f.row(req).state, 'pending');
+        if (phase === 'request') {
+          f.advance();
+          bridge.observeInbound(result);
+        }
+        f.advance();
+        append(log, f.decision(req) + '\n');
+        f.tick();
+        assert.equal(f.row(req).state, 'completed');
+        assert.equal(f.row(req).result.text, 'Keep the actual source result');
+        assert.equal(f.codes.includes('native_bridge_sample_frame_limit'), false);
+      });
+    }
+  }
+});
+
+test('oversized native results and ambiguous escaped routing aliases still fail closed', async (t) => {
+  for (const mode of ['native-result', 'duplicate-routing']) {
+    await t.test(mode, (st) => {
+      const f = fixture(st),
+        bridge = f.start(),
+        req = request();
+      bridge.observeOutbound(JSON.stringify(req));
+      const text = 'Private fixture text must never enter a diagnostic '.repeat(4000);
+      const line =
+        mode === 'native-result'
+          ? JSON.stringify({ id: req.id, result: { text } })
+          : '{"id":"history-reader","result":' +
+            JSON.stringify({ text }) +
+            ',"\\u0069d":' +
+            JSON.stringify(req.id) +
+            '}';
+      assert(Buffer.byteLength(line) > 128 * 1024);
+      bridge.observeInbound(line);
+      assert.equal(f.row(req).state, 'unverified');
+      assert.equal(f.row(req).result, null);
+      assert.deepEqual(f.codes, ['native_bridge_sample_frame_limit']);
+      assert(!JSON.stringify(f.codes).includes('Private fixture'));
+    });
+  }
+});

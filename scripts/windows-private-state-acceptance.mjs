@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { randomUUID, createHash } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { rmSync, mkdirSync, readFileSync, lstatSync, existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
@@ -16,6 +16,7 @@ import { preparedAdapterDigest } from '../packages/codex-adapter/dist/desktop-pr
 import { withWindowsProcessCreation } from '../packages/codex-adapter/dist/windows-process.js';
 import { RuntimePersistence } from '../packages/codex-adapter/dist/runtime-persistence.js';
 import { RuntimeSession } from '../packages/codex-adapter/dist/runtime-session.js';
+import { verifyLegacySessionAttachments } from './fixtures/runtime-private-attachment-layout.mjs';
 
 assert.equal(process.platform, 'win32', 'Real Windows required');
 const directory = resolve('.local/windows-private-state-acceptance', randomUUID());
@@ -91,7 +92,10 @@ try {
               path.replaceAll("'", "''") +
               "';" +
               '$i=[Security.Principal.WindowsIdentity]::GetCurrent();' +
-              '@{sddl=$a.Sddl;ownerIsUser=$a.GetOwner([Security.Principal.SecurityIdentifier]).Equals($i.User);protected=$a.AreAccessRulesProtected}|ConvertTo-Json -Compress',
+              '$o=$a.GetOwner([Security.Principal.SecurityIdentifier]);' +
+              "$r=@($a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])|Where-Object {$_.AccessControlType -eq 'Allow'});" +
+              "$trusted=@($i.User.Value,'S-1-5-18','S-1-5-32-544');" +
+              "@{sddl=$a.Sddl;ownerIsUser=$o.Equals($i.User);ownerIsAdministrators=($o.Value -eq 'S-1-5-32-544');ownerMatchesDefaultOwner=$o.Equals($i.Owner);defaultOwnerIsAdministrators=($i.Owner.Value -eq 'S-1-5-32-544');protected=$a.AreAccessRulesProtected;inheritedAllowOnly=($r.Count -gt 0 -and @($r|Where-Object {!$_.IsInherited}).Count -eq 0);trustedAllowOnly=(@($r|Where-Object {$trusted -notcontains $_.IdentityReference.Value}).Count -eq 0)}|ConvertTo-Json -Compress",
           ],
           { encoding: 'utf8', stdio: 'pipe', timeout, windowsHide: true },
         ),
@@ -120,95 +124,10 @@ try {
   assertCreatedPrivate(join(first, 'runtime.json'));
   rmSync(first, { recursive: true });
 
-  // Existing attachment namespace and absolute registrations remain untouched.
-  // Only readiness is bypassed for synthetic local upload I/O; no IPC, reader,
-  // model task, real configuration or original desktop is opened by this case.
-  const legacyAttachments = join(history, 'attachments');
-  mkdirSync(legacyAttachments);
-  const legacyAttachment = join(legacyAttachments, 'old.txt');
-  writeFileSync(legacyAttachment, 'preserve-old-upload', { flag: 'wx' });
-  const attachmentSecurity = security(legacyAttachments);
-  const attachmentFileSecurity = security(legacyAttachment);
-  const attachmentStat = lstatSync(legacyAttachment, { bigint: true });
-  const attachment = {
-    id: 'old-attachment',
-    hostId: 'fixture-only',
-    threadId: 'fixture-thread',
-    path: legacyAttachment,
-    name: 'old.txt',
-    mediaType: 'text/plain',
-    sizeBytes: 19,
-    sha256: createHash('sha256').update('preserve-old-upload').digest('hex'),
-  };
-  writePrivateFileSync(
-    statePath,
-    JSON.stringify({
-      hostId: 'fixture-only',
-      projects: [],
-      threads: [],
-      attachments: [attachment],
-      receipts: [],
-      creations: {},
-    }),
-  );
-  const session = new RuntimeSession(options(history));
-  try {
-    assert.equal(session.hostId, 'fixture-only');
-    assert.deepEqual(session.state.attachments[0], attachment);
-    const thread = {
-      id: 'fixture-thread',
-      hostId: session.hostId,
-      projectId: null,
-      state: 'completed',
-      messages: [],
-    };
-    session.state.threads.push(thread);
-    session.requireReady = () => {};
-    const bytes = Buffer.from('synthetic-new-upload');
-    const uploaded = session.upload(
-      thread.id,
-      'new.txt',
-      'text/plain',
-      bytes,
-      createHash('sha256').update(bytes).digest('hex'),
-    );
-    const stored = session.state.attachments.find((entry) => entry.id === uploaded.id);
-    assert.equal(resolve(stored.path, '..'), join(history, 'attachments-v2'));
-    assert.equal(readFileSync(stored.path).equals(bytes), true);
-    assertPrivateFile(stored.path);
-    assertCreatedPrivate(stored.path);
-    const message = {
-      id: 'fixture-image',
-      text: '',
-      kind: 'imageGeneration',
-      role: 'assistant',
-      attachments: [],
-    };
-    const image = Buffer.from('synthetic-inline-image');
-    await session.projectMessageAttachments(thread, message, [], {
-      result: image.toString('base64'),
-    });
-    const storedImage = session.state.attachments.find(
-      (entry) => entry.id === message.attachments[0]?.id,
-    );
-    assert(storedImage);
-    assert.equal(resolve(storedImage.path, '..'), join(history, 'attachments-v2'));
-    assert.equal(readFileSync(storedImage.path).equals(image), true);
-    assertPrivateFile(storedImage.path);
-    assertCreatedPrivate(storedImage.path);
-    assert.equal(readFileSync(legacyAttachment, 'utf8'), 'preserve-old-upload');
-    assert.equal(lstatSync(legacyAttachment, { bigint: true }).ctimeNs, attachmentStat.ctimeNs);
-    assert.deepEqual(security(legacyAttachments), attachmentSecurity);
-    assert.deepEqual(security(legacyAttachment), attachmentFileSecurity);
-    assert.deepEqual(inspectLegacy(), legacySecurity);
-  } finally {
-    session.close();
-  }
-  const restored = JSON.parse(readFileSync(statePath, 'utf8'));
-  assert.deepEqual(
-    restored.attachments.find((entry) => entry.id === attachment.id),
-    attachment,
-  );
+  const legacyAttachmentResult = await verifyLegacySessionAttachments(history, security);
+  assert.equal(readFileSync(retained, 'utf8'), 'preserve-legacy-history');
+  assert.equal(lstatSync(retained, { bigint: true }).ctimeNs, legacyStat.ctimeNs);
+  assert.deepEqual(inspectLegacy(), legacySecurity);
   rmSync(history, { recursive: true });
   // Deliberately broaden only our disposable fixture, then require rejection.
   withWindowsProcessCreation(5000, (timeout) =>
@@ -255,8 +174,7 @@ try {
     newHistoryNamespace: 'runtime-history-v2',
     firstSessionRootInitiallyAbsent: true,
     firstSessionUserOwnerAndProtected: true,
-    legacyAttachmentBytesOwnerAndReferencesUnchanged: true,
-    newUploadAndInlineImageUserOwnerAndProtected: true,
+    ...legacyAttachmentResult,
     newAttachmentNamespace: 'attachments-v2',
     sessionLocalIoOnly: true,
     globalStateReceiptsAndDraftRetained: true,

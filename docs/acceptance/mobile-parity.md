@@ -1547,3 +1547,5 @@ Source65首项实际失败及原件保持已独立核74调用；Source66组合SD
 原API26 Source62单次所选Native读回、91调用、原109/15项资料及完整3244字节WAV已由主统筹独立核对。离线audit修正的7测试/29负例与同捕获CLI按准确源码/输入匹配复用；原失败保留。无清理ACK、父独立解密或全F64/P7/UI通过，详见[专项记录](../plans/android-alignment-20261022/records/original-voice-readback-20261030.md)。
 
 2026-10-30 F03/F17/F31/F32/F69 Native／分页／冻结 R5 集成候选：已在规范库重建冻结 R5 `735be79e`，与其官方 ZIP 比较五组件 244 路径、实际 ESM 闭包 584 路径、Windows 资源 26 路径、脚本 388 路径均逐字节一致；bundle createdAt 生成时间不同。旧 R5 tag 的公开树不等于记录的规范提交树，不能据 tag 声称同树，本候选从完整规范 main 统一交付。集成 R5 的七文件差异并保留 main 私有创建租约／旧数据边界；不导入其他任务活动 WIP。Windows 上一包真实 Native 前检在 compile / Win32 87 停止，后续私有创建、reader、部署未执行；连接已恢复不等于升级验收完成。当前新增 Windows 原生用例覆盖未预建 Session 根、旧 history/附件 owner/字节/引用保留、同步上传及 inline 图像私有创建；准确执行结果按新冻结包单独追加。macOS fixture、C# 语义编译与真实 Windows／两端手机验收分列，未执行项不计通过。
+
+2026-10-30 F03/F31/F32/F69 冻结 R9/R10 统一：保留主线私有创建、更新恢复及已安装冻结能力；双端页面/文案未改。macOS 定向辅助：8 项发现、1 项真实产品旧附件 resolve/download、86 项采样相关通过，5 项 Windows 原生明确跳过。来源上一同资源普通 Main Native 预检退出0/8471ms仅复用匹配组件，不能替代新整包闭包、真实 Admin-owner 旧叶、reader恢复、切换或安装更新。规范输入及最小入口见 [专项记录](codex-update-r10-legacy-20261030.md)；本轮未操作原手机/producer。

@@ -7,7 +7,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, chmod, lstat, rm, rmdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Bonjour } from 'bonjour-service';
+import { DirectBonjourPublisher, type DirectBonjourState } from './direct-bonjour.js';
 import QRCode from 'qrcode';
 import type { VPNDiscoveryPeer, VPNDiscoverySnapshot } from '@codex-manage/protocol';
 import {
@@ -24,6 +24,7 @@ import {
   protectWindowsStateDirectory,
   assertPrivateFile,
   RuntimeError,
+  appendRuntimeDiagnostic,
 } from '@codex-manage/codex-adapter';
 
 type Target = {
@@ -280,13 +281,71 @@ export async function startDirectDiscovery(options: {
   let closed = false,
     refreshing = false;
   let timer: ReturnType<typeof setInterval> | undefined;
-  let bonjour: Bonjour | undefined;
+  let bonjour: DirectBonjourPublisher | undefined;
+  let pendingBonjourState: DirectBonjourState | undefined;
+  let savingBonjourState = false;
+  const saveBonjourState = (state: DirectBonjourState) => {
+    pendingBonjourState = state;
+    if (savingBonjourState) return;
+    savingBonjourState = true;
+    void (async () => {
+      try {
+        while (pendingBonjourState) {
+          const value = pendingBonjourState;
+          pendingBonjourState = undefined;
+          const temporary = join(directory, `bonjour-state.${randomUUID()}.tmp`);
+          let identity: { dev: bigint; ino: bigint } | undefined;
+          try {
+            const file = await openPrivateFile(temporary, 'wx', 0o600);
+            try {
+              const stat = await file.stat({ bigint: true });
+              identity = { dev: stat.dev, ino: stat.ino };
+              await file.writeFile(JSON.stringify(value));
+            } finally {
+              await file.close();
+            }
+            const current = await lstat(temporary, { bigint: true });
+            if (current.dev !== identity.dev || current.ino !== identity.ino)
+              throw new Error('Discovery state output identity changed');
+            protectWindowsStateFile(temporary);
+            renamePrivateFileSync(temporary, join(directory, 'bonjour-state.json'));
+          } finally {
+            if (identity) {
+              const current = await lstat(temporary, { bigint: true }).catch(
+                (error: NodeJS.ErrnoException) => {
+                  if (error.code === 'ENOENT') return undefined;
+                  throw error;
+                },
+              );
+              if (current && current.dev === identity.dev && current.ino === identity.ino)
+                await rm(temporary, { force: true });
+            }
+          }
+        }
+      } catch {
+        try {
+          appendRuntimeDiagnostic(
+            options.directory,
+            { scope: 'direct-bonjour', stage: 'state-persist', hostId: options.target().hostId },
+            Object.assign(new Error('Discovery state write failed'), {
+              code: 'MDNS_STATE_WRITE_FAILED',
+            }),
+          );
+        } catch {
+          /* Public discovery diagnostics never own HTTPS availability. */
+        }
+      } finally {
+        savingBonjourState = false;
+        if (pendingBonjourState) saveBonjourState(pendingBonjourState);
+      }
+    })();
+  };
   const close = () => {
     if (closed) return;
     closed = true;
     clearInterval(timer);
     try {
-      bonjour?.unpublishAll(() => bonjour?.destroy());
+      void bonjour?.close();
     } finally {
       server.close();
       server.closeAllConnections();
@@ -388,26 +447,27 @@ export async function startDirectDiscovery(options: {
     }, 15000);
     timer.unref();
     if (process.env.HOST_AGENT_DISCOVERY_BONJOUR !== '0') {
-      bonjour = new Bonjour(undefined, () => {
-        /* DNS failure must not disable pinned direct reads. */
-      });
-      bonjour.publish({
-        name:
-          options.name.slice(0, 35) + '-' + options.target().hostId.slice(-8) + '-' + actual.port,
-        host: 'codex-' + options.target().hostId + '.local',
-        type: 'codex-host',
-        port: actual.port,
-        txt: { hostId: options.target().hostId, version: '1', port: String(actual.port) },
-      });
+      bonjour = new DirectBonjourPublisher(
+        { name: options.name, hostId: options.target().hostId, port: actual.port },
+        saveBonjourState,
+      );
+      bonjour.start();
     }
-    return { server: server as Server, descriptor, pagePath, close, refresh };
+    return {
+      server: server as Server,
+      descriptor,
+      pagePath,
+      close,
+      refresh,
+      bonjourState: () => bonjour?.snapshot(),
+    };
   } catch (error) {
     // A failed QR/advertisement step may already own the HTTPS port. Retire it
     // before the recovery controller is allowed to start another generation.
     closed = true;
     clearInterval(timer);
     try {
-      bonjour?.destroy();
+      await bonjour?.close();
     } finally {
       await new Promise<void>((done) => {
         server.close(() => done());

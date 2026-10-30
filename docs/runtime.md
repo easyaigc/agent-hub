@@ -339,3 +339,9 @@ Host 可显式配置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG 指向本机私有�
 ### 统一升级保持既有配置
 
 上述被动 producer 的独立签名／Store／父链边界保持，通用桌面连接继续沿用当前用户／会话、真实管道 owner、路径／SHA 与协议契约。同步本轮程序和指引时保留已有开关、私有路径与原桌面；不因文档变更重新安装 producer、扩大保留策略或强制重开 Codex。Windows Native、旧 history 布局和真实 reader 恢复仍按同源新包独立验证。
+
+### 冻结 R9/R10 的统一升级
+
+Bonjour 发布由独立 generation worker 处理：旧 worker 退出确认后才重试，发现失败不会退役原固定证书 HTTPS。状态由现有私有创建／原子发布边界保存，不能用普通 Node 创建后仅改 DACL 替代 User-owner 创建。Native sample bridge 对大型帧仅有界扫描顶层路由字段，忽略无关历史内嵌的 thread/sample；歧义和重复顶层字段按准确分类拒绝，保留原候选、取消、退出和未知操作边界。
+
+Windows 旧附件兼容按真实登记引用、目标和稳定文件快照验证；旧 Admin-owner 叶文件不因此获得全局私有状态权限。新附件保持 `attachments-v2`，原字节、owner、ACL、引用不变。统一包保留已部署 R10 与 Native config 环境字段，不回写较旧快照。冻结来源、普通 Main 验收入口及逐平台限制见[本轮记录](acceptance/codex-update-r10-legacy-20261030.md)。

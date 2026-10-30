@@ -10,6 +10,164 @@ import { mock, test } from 'node:test';
 import { safeWorkerFailure } from './host-worker-supervisor.mjs';
 import { validateWindowsHostEnvironment } from './windows-host-environment.mjs';
 
+test('rejection CLI succeeds with shared-allow refusal without inventing a protection-bit check', async () => {
+  // Synthetic OS/Native boundaries only. The real check contract accepts a
+  // current-owner DACL containing only trusted subjects, including inheritance.
+  // This executes the actual CLI; it is not Windows ACL or compilation proof.
+  const root = mkdtempSync(join(tmpdir(), 'rejection-contract-'));
+  const adapter = join(root, 'adapter');
+  const resources = [
+    'dist/desktop-platform.js',
+    'dist/desktop-private-state-native.js',
+    'dist/desktop-private-state-native-worker.js',
+    'dist/windows-process.js',
+    'dist/diagnostic-events.js',
+    'windows/private-state.ps1',
+    'windows/private-state.cs',
+    'windows/private-state-compilation.cs',
+  ];
+  mkdirSync(join(adapter, 'dist'), { recursive: true });
+  mkdirSync(join(adapter, 'windows'));
+  for (const name of resources) writeFileSync(join(adapter, name), 'export {};');
+  const platformURL = pathToFileURL(join(adapter, 'dist/desktop-platform.js')).href;
+  const nativeURL = pathToFileURL(join(adapter, 'dist/desktop-private-state-native.js')).href;
+  const gateURL = pathToFileURL(join(adapter, 'dist/windows-process.js')).href;
+  const bundle = join(root, 'bundle.json');
+  const argv = process.argv,
+    cwd = process.cwd(),
+    exitCode = process.exitCode;
+  const systemRoot = process.env.SystemRoot;
+  const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+  const replies = [],
+    commands = [],
+    mocks = [];
+  let shared = false,
+    closed = false;
+  try {
+    mocks.push(
+      mock.module('./verify-host-runtime.mjs', {
+        namedExports: {
+          async verifyHostRuntime(value) {
+            assert.equal(value.bundle, bundle);
+            return {
+              ok: true,
+              packages: [
+                {
+                  name: '@codex-manage/codex-adapter',
+                  component: 'packages/codex-adapter',
+                  root: adapter,
+                  fingerprint: 'synthetic',
+                },
+              ],
+            };
+          },
+        },
+      }),
+    );
+    mocks.push(
+      mock.module(platformURL, {
+        namedExports: {
+          makePrivateDirectorySync(path) {
+            mkdirSync(path, { mode: 0o700 });
+          },
+          writePrivateFileSync(path, value, options) {
+            writeFileSync(path, value, options);
+          },
+          assertPrivateFile() {
+            if (shared)
+              throw Object.assign(new Error('synthetic shared allow'), {
+                code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
+                nativeType: 'UnauthorizedAccessException',
+                nativeRejection: 'SHARED_PRIVATE_FILE',
+                nativeStep: 'dacl-allow-subject-check',
+              });
+            // No independent protection-bit refusal in the existing check policy.
+          },
+          protectWindowsStateFile() {
+            shared = false;
+          },
+          closeWindowsPrivateStateBackend() {
+            closed = true;
+          },
+          windowsPowerShellEnvironment() {
+            return {};
+          },
+        },
+      }),
+    );
+    mocks.push(
+      mock.module(nativeURL, {
+        namedExports: {
+          privateStateNativeDiagnostics: {
+            rejections: ['SHARED_PRIVATE_FILE', 'UNPROTECTED_PRIVATE_DACL'],
+            nativeTypes: ['UnauthorizedAccessException'],
+            steps: ['dacl-allow-subject-check', 'dacl-protection-check'],
+            stages: [],
+            failures: [],
+            codes: [],
+          },
+        },
+      }),
+    );
+    mocks.push(
+      mock.module(gateURL, {
+        namedExports: {
+          withWindowsProcessCreation(budget, create) {
+            assert.equal(budget, 5000);
+            return create(budget);
+          },
+        },
+      }),
+    );
+    const exec = mock.method(childProcess, 'execFileSync', (file, args, options) => {
+      assert.equal(options.timeout, 5000);
+      if (file.endsWith('icacls.exe')) {
+        assert.deepEqual(args.slice(1), ['/grant', '*S-1-1-0:(R)']);
+        shared = true;
+      } else {
+        // Model the old fixture's unprotection as trusted inherited subjects.
+        // It remains accepted by check, so the removed assert.throws fails.
+        assert(file.endsWith('powershell.exe'));
+        assert(args.join(' ').includes('SetAccessRuleProtection($false,$true)'));
+      }
+      commands.push(file);
+      return '';
+    });
+    mocks.push({ restore: () => exec.mock.restore() });
+    const log = mock.method(console, 'log', (value) => replies.push(JSON.parse(value)));
+    mocks.push({ restore: () => log.mock.restore() });
+    syncBuiltinESMExports();
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    process.env.SystemRoot = 'C:/synthetic-windows';
+    process.chdir(root);
+    process.argv = [process.execPath, 'synthetic-entry', '--bundle', bundle];
+    await import('./windows-private-state-rejection-preflight.mjs?contract-regression');
+    assert.equal(replies.length, 1);
+    const report = replies[0];
+    assert.equal(report.passed, true);
+    assert.equal(report.sharedAclRejected, true);
+    assert.equal(report.restoredPrivateFileAccepted, true);
+    assert.equal(report.unprotectedAclRejected, undefined);
+    assert.equal(report.backendClosed, true);
+    assert.equal(report.fixtureRemoved, true);
+    assert.equal(report.callerBootstrapUnchanged, true);
+    assert.equal(report.checks.length, 1);
+    assert.equal(report.checks[0].nativeRejection, 'SHARED_PRIVATE_FILE');
+    assert.equal(commands.length, 1);
+    assert(closed);
+  } finally {
+    process.argv = argv;
+    process.chdir(cwd);
+    process.exitCode = exitCode;
+    if (systemRoot === undefined) delete process.env.SystemRoot;
+    else process.env.SystemRoot = systemRoot;
+    Object.defineProperty(process, 'platform', descriptor);
+    for (const m of mocks.reverse()) m.restore();
+    syncBuiltinESMExports();
+    rmSync(root, { recursive: true });
+  }
+});
+
 test(
   'real normal Main CLI keeps original file mode and rejects unsupported platform safely',
   { skip: process.platform === 'win32' },

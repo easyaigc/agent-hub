@@ -104,7 +104,7 @@ Worker 对私有 envelope 走具名只读分支，继承启动环境，随后将
 & '<original-node.exe>' '<candidate>/scripts/windows-private-state-rejection-preflight.mjs' --bundle '<candidate>/bundle.json'
 ```
 
-第二项只在自己的 cwd 下创建随机命名目录和合成文件，使用实际 Host ESM Adapter，分别将该文件加 Everyone 读取／解除 DACL protection，要求精确拒绝并在恢复保护后接受；随后关闭 backend 并回收自有 fixture。不接收正式文件路径、不改 owner、不读取正式 token。它不是完整 legacy／reader／更新通过。源端保留已通过完整 legacy 和 reader 的场景证明；本轮仅错误序列化与解析变化不要求重复这些未变算法场景，但新 Native 编译/cache、准确拒绝、清理以及新 Adapter closure 必须重新核对。
+第二项只在自己的 cwd 下创建随机命名目录和合成文件，使用实际 Host ESM Adapter，向该文件添加 Everyone 读取，要求精确的 SHARED_PRIVATE_FILE 拒绝并在恢复保护后接受；随后关闭 backend 并回收自有 fixture。check 不独立要求保护位，不以解除 DACL protection 后拒绝作为此入口的成功条件。不接收正式文件路径、不改 owner、不读取正式 token。它不是完整 legacy／reader／更新通过。源端保留已通过完整 legacy 和 reader 的场景证明；本轮仅错误序列化与解析变化不要求重复这些未变算法场景，但新 Native 编译/cache、准确拒绝、清理以及新 Adapter closure 必须重新核对。
 
 ### Root 控制的正式诊断窗口与回滚
 
@@ -117,3 +117,15 @@ Worker 对私有 envelope 走具名只读分支，继承启动环境，随后将
 5. 失败时仅恢复上述 managed 旧字节，删除本次原来不存在且当前 SHA 仍匹配的新程序文件，原 `.local` 等数据全部保留；用原支持 start 恢复 R10，独立验证三路鉴权 health/workspace 与同 Host、原连接和桌面连续性。不可把新旧过程间缺少快照的元数据变化归因给任一版本。
 
 本轮解决的是已证实的诊断信息丢失；正式故障根因、升级成功及分页正式验证仍由来源后续证据决定。临时 scheduled probe 和新包的独立运行输入分别留存，不覆盖旧资产、回执或成功证明。
+
+## 验收器契约修正（PR83 发布后）
+
+来源对固定 PR83 blob 的静态审阅指出原拒绝夹具假阴性：assertPrivateFile 调用 Native check，而 Execute 只在 protect/protect-file 分支内验证 DiscretionaryAclProtected。当前 User owner 且仅可信主体的继承 DACL 不会因保护位解除而必然被 check 拒绝。故旧夹具的 UNPROTECTED_PRIVATE_DACL 断言不对应产品读取契约；这是源码可确定的夹具问题，不是 Windows 已实测失败或正式历史 Native 故障原因。
+
+本次移除该额外权限变更与错误断言，保留 Everyone 读取的 SHARED_PRIVATE_FILE、原异常类型／step／拒绝分类、恢复后接受、同对象身份、关闭与清理断言。报告只声明 shared-allow 分支，不再输出 unprotectedAclRejected。其余五枚举映射保留原边界测试，产品安全类、所有运行 JS、Native14／预检8、prepared 摘要和三项 cache key 全部不变，不收紧读取规则。
+
+最近回归运行实际 CLI 并模拟原 check 契约：合成 Native 仅拒绝共享允许主体，可信继承保持可读。旧脚本在该场景应失败，修正脚本通过；这是合成 OS/Native 边界证据，不能替代 Windows 真实执行。来源仅需在已核对的原 PR83 隔离包应用有旧 SHA 守卫的验收器／本文件补充，再执行同一正常 Main 入口；无需重建运行模块或重跑未变 reader/legacy。新脚本的 Windows 结果仍待来源给出。
+
+PR83 已发布资产、原回执与原摘要保留不改。本修正另用规范仓库提交、Gitea PR/main、官方 GitHub 同步及不可变补充 tag 分发；补充只适用于精确 PR83 完整包，不能覆盖正式 R10 或混入活动 R11。原 PR82＋保留 PR81 launcher 的来源对照保持独立，不追加执行或改其输入。
+
+首次 PR84 CI 另暴露已有 reader 夹具快照竞态：connect 写出 initialized 不代表子进程已消费它，日志可能在“Host 游标拒绝不写 RPC”快照之间增加正常握手行。夹具现在用自己的 PID 记录确认已消费 initialized，再冻结日志；原完整无 RPC 断言保留。只增加夹具内有界等待，不改产品握手、恢复、时限或旧进程退出屏障。原失败 CI 回执保留，受影响夹具重新验证。

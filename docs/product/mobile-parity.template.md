@@ -169,3 +169,7 @@ Source64r2/API33：阅读旧写入隔离 3 方法、受控 IO 归属 8 方法本
 原录音只读补证不改变两端产品UI：准确原包单次Native及完整原件/WAV核对限定通过，完整F64/P7/系统仍开放。离线验收器按完整持久化row核对，详见[检查点](../plans/android-alignment-20261022/records/original-voice-readback-20261030.md)。
 
 2026-10-31 F03/F31/F32：Windows 常驻 Native 权限拒绝补齐固定原因，权限接受/拒绝与未知操作不重放规则保持；iOS/Android 共用 Host，端侧 UI、协议、草稿和原连接无改动，不新增原生通过。PR82 来源 scheduled/交互预检通过不能代替正式 Host；新 Native/cache 需限域复验，详见[正式诊断门禁](../acceptance/windows-formal-startup-preflight-20261031.md#pr82-实测之后的最小证据修复)。A6 保持暂停。
+
+2026-10-31 F03/F31/F32：拒绝验收器按既有 check 契约只验证共享允许主体拒绝及恢复接受，移除错误的保护位拒绝假设；产品 owner/DACL、运行字节和 iOS/Android UI/协议无变化。旧脚本静态问题与合成回归不冒充 Windows 实测，见[契约修正](../acceptance/windows-formal-startup-preflight-20261031.md#验收器契约修正pr83-发布后)。
+
+2026-10-31 F02/F03：目录恢复夹具等待自身子进程消费 initialized 后再冻结无 RPC 快照，保留原 Host 游标拒绝断言；产品握手、恢复、预算、原生双端 UI/协议均不变。CI 失败与修正辅助证据分列，不新增 Windows／手机通过。

@@ -18,13 +18,14 @@ const originalSpawn = childProcess.spawn;
 const originalTimeout = globalThis.setTimeout;
 const children = new Set();
 const calls = join(dir, 'calls');
+const handshake = join(dir, 'initialized-pid');
 const old = join(dir, 'old.mjs');
 const replacement = join(dir, 'new.mjs');
 const source = `#!/usr/bin/env node
 import {createInterface} from 'node:readline';
-import {appendFileSync,existsSync} from 'node:fs';
+import {appendFileSync,existsSync,writeFileSync} from 'node:fs';
 process.on('SIGTERM',()=>process.exit(0));
-createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);appendFileSync(${JSON.stringify(calls)},r.method+'\\n');if(r.id!==undefined){if(r.method==='project/list' && existsSync(${JSON.stringify(join(dir, 'drop'))}))process.exit(4);if(r.method==='model/list' && existsSync(${JSON.stringify(join(dir, 'invalid'))}))process.stdout.write('not-json\\n');else process.stdout.write(JSON.stringify({id:r.id,result:r.method==='project/list'||r.method==='thread/list'?{data:[],nextCursor:null}:{}})+'\\n')}});
+createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);appendFileSync(${JSON.stringify(calls)},r.method+'\\n');if(r.method==='initialized')writeFileSync(${JSON.stringify(handshake)},String(process.pid));if(r.id!==undefined){if(r.method==='project/list' && existsSync(${JSON.stringify(join(dir, 'drop'))}))process.exit(4);if(r.method==='model/list' && existsSync(${JSON.stringify(join(dir, 'invalid'))}))process.stdout.write('not-json\\n');else process.stdout.write(JSON.stringify({id:r.id,result:r.method==='project/list'||r.method==='thread/list'?{data:[],nextCursor:null}:{}})+'\\n')}});
 `;
 let reader;
 try {
@@ -43,6 +44,18 @@ try {
   reader = new CodexHistoryReader('test-host', 'test', old);
   await reader.configureExecutable(old, 'generation-1');
   await reader.connect();
+  // connect has written initialized, but the child may not have consumed it.
+  // Freeze the no-RPC baseline only after this exact fixture received it.
+  const handshakeDeadline = performance.now() + 1000;
+  while (
+    (await readFile(handshake, 'utf8').catch((error) => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    })) !== String(reader.process.pid)
+  ) {
+    assert(performance.now() < handshakeDeadline, 'Fixture did not consume initialized');
+    await new Promise((resolve) => originalTimeout(resolve, 5));
+  }
   // Reserved Host cursors must never reach a native metadata method, even
   // before the target is registered in the reader's catalog.
   const beforeCursor = await readFile(calls, 'utf8');

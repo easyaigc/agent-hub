@@ -9,7 +9,11 @@ import { verifyHostRuntime } from './verify-host-runtime.mjs';
 
 // Only our fresh synthetic file is changed. No Host/config/token is accepted as
 // input, no owner is changed and no unsafe result is retried as a success.
-const report = { kind: 'windows-private-state-rejection-preflight', passed: false };
+const report = {
+  kind: 'windows-private-state-rejection-preflight',
+  scope: 'Synthetic shared-allow refusal and restored-file acceptance only',
+  passed: false,
+};
 const caller = () => JSON.stringify([process.argv, process.execArgv, process.env.NODE_OPTIONS]);
 const beforeCaller = caller();
 let platform, diagnostics, root, identity;
@@ -102,29 +106,9 @@ try {
   platform.protectWindowsStateFile(file);
   platform.assertPrivateFile(file);
   same();
-  gate.withWindowsProcessCreation(5000, (timeout) =>
-    execFileSync(
-      join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe'),
-      [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        "$ErrorActionPreference='Stop'; $p='" +
-          file.replaceAll("'", "''") +
-          "'; $a=Get-Acl -LiteralPath $p; $a.SetAccessRuleProtection($false,$true); Set-Acl -LiteralPath $p -AclObject $a",
-      ],
-      { timeout, stdio: 'pipe', env: platform.windowsPowerShellEnvironment() },
-    ),
-  );
-  reject('UNPROTECTED_PRIVATE_DACL', 'dacl-protection-check');
-  same();
-  platform.protectWindowsStateFile(file);
-  platform.assertPrivateFile(file);
-  same();
-  report.sharedAclRejected =
-    report.unprotectedAclRejected =
-    report.restoredPrivateFileAccepted =
-      true;
+  // check validates owner and allowed DACL subjects. Protection is verified
+  // after protect/protect-file writes, not an independent check requirement.
+  report.sharedAclRejected = report.restoredPrivateFileAccepted = true;
   report.passed = true;
 } catch (error) {
   report.failure = {};

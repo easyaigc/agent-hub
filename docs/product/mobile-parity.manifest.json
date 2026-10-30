@@ -18284,6 +18284,25 @@
         "scripts/windows-private-state-rejection-preflight.mjs": "38e28810112d41ac293566f15bfd0a43ede36285f1538a8a32ae0cf3156238ee",
         "scripts/windows-startup-preflight.test.mjs": "8787019bc4d88ea48cca6ddb5cb8e814232376e039a234b551571d08ee27870e"
       }
+    },
+    {
+      "id": "windows-rejection-preflight-contract-20261031",
+      "baseCommit": "b2198a1dab4ddb3a5e2f1c2069b6412fc9666f5a",
+      "features": ["F03", "F31", "F32"],
+      "summary": "Fix the rejection fixture false negative: existing check validates owner and trusted DACL subjects but does not independently require the protection bit. Keep the synthetic Everyone-read refusal, exact reason/type/step, restored acceptance, identity and cleanup. No product security class, runtime JS, Native/cache/prepared digest or mobile UI/protocol changes. Synthetic negative control is not Windows proof; preserve PR83 assets and deliver a new immutable guarded supplement.",
+      "files": {
+        "scripts/windows-private-state-rejection-preflight.mjs": "d1d6ddbe19a8f84a71b761f72ffabb7bb0ecd7315359a9088cb22488ecd6161f",
+        "scripts/windows-startup-preflight.test.mjs": "dcd42779ed7e7e0f018fd64d94abe49c8eae73e6792e2197a5342b2dafa186d3"
+      }
+    },
+    {
+      "id": "reader-fixture-handshake-snapshot-20261031",
+      "baseCommit": "bd303214c6f5a1c82404dbf661d1ea5be2b6593a",
+      "features": ["F02", "F03"],
+      "summary": "After real CI exposed a fixture-only race, wait for the owned subprocess to consume initialized before freezing the no-RPC log baseline. Preserve the full Host-cursor no-RPC assertion, product handshake, exit barriers and budgets. Only a bounded fixture-owned PID receipt wait is added; no product or mobile behavior changes. Retain the original CI failure receipt.",
+      "files": {
+        "scripts/desktop-update-recovery.test.mjs": "4370169119ed6c14d66d9423a01f485fc786bef090fedf811ba7f081ce4f6ef9"
+      }
     }
   ]
 }

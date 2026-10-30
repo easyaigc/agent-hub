@@ -17340,6 +17340,15 @@
         "scripts/package-host-connect.mjs": "3184ec3bdb004b631b3fc3ac71f03619158fb5c54a105e5325508bd6fd646202",
         "scripts/package-host-connect.test.mjs": "e2b2bdc56e00a6354bd3b31d37d7cce79634e2491e1dc6723dc866fbe7774e82"
       }
+    },
+    {
+      "id": "windows-recovery-fixture-env-20261030",
+      "baseCommit": "83831250cc06a4097dfdcfbc5ddb470980bb3633",
+      "features": ["F03"],
+      "summary": "仅修复Windows恢复辅助夹具真实子进程继承合成环境：提前恢复、摘要核对与退出诊断；Host及双端产品/身份契约不变，Windows原机重跑待验。",
+      "files": {
+        "scripts/windows-host-recovery-smoke.mjs": "bc6c22ec07dbe6d9912ec1565852f61d008eeba695da6fd21047f25c8d880073"
+      }
     }
   ]
 }

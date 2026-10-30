@@ -37,3 +37,11 @@
 ## 冻结打包阻塞与准确源码登记
 
 首次干净冻结构建通过六组件编译，但打包拒绝规范主线已跟踪的 NaturalProcessVisibility.java。完整路径审查另发现 OwnedNaturalNoticeObserver.java 与两个 Natural 诊断 JVM 向量同样未登记。它们分别是固定诊断解析器、独立验收观察器及合成向量，已存在于公开源码；本轮不修改或执行其 Android 行为。打包器仅增加这四个准确路径，ZIP 回归核对逐项字节保留，并继续拒绝三个对应目录中的未知 Java 文件、未知录音、改动的固定媒体和孤儿编译 JS。没有开放 Java 扩展名或目录通配。正式包须从补丁后的提交重新冻结，不复用失败候选的 dist。
+
+## Windows 辅助夹具环境修复
+
+来源 Windows 在首个 HTTP 等待条件超时，尚未执行后续 runtime-degraded 断言。夹具先为模拟安装发现设置 SystemRoot、LOCALAPPDATA、PSModulePath，却只恢复 platform 与 execFileSync；随后真实 Node HTTP 子进程继承了合成环境。三项环境直到 finally 才恢复，边界过晚。来源独立最小对照中，原环境子进程成功监听，合成 SystemRoot 的子进程退出 134 且未监听。这支持环境污染机制，但不是对原失败运行子进程退出原因的直接捕获。
+
+本次仅修复辅助夹具：在真实 spawn 前恢复三项原环境，并由真实子进程写出环境摘要供父进程核对；不输出环境原值。发现子进程退出或 spawn 失败时报告实际退出码／信号及有限探测状态，超时也附带诊断计数。保留原 HTTP 超时、等待预算、四种状态转换、只启动一次、健康探测不得杀活进程与停止后不再探测的断言。未改变 Host 产品、publisher-not-checked 契约或恢复时限。
+
+macOS 辅助检查包括正常夹具、缺少提前环境恢复的反事实、子进程提前退出的反事实及受影响检查；准确结果绑定新制品交付清单。核心源码与编译闭包指纹完全匹配时，复用前述恢复与真实只读证据。Windows 须从新独立 tag 取包重跑 `node scripts/windows-host-recovery-smoke.mjs`，再继续原隔离只读场景；macOS 通过不代替 Windows 原机通过。旧包、tag 与原失败回执保留，不能覆盖为成功。

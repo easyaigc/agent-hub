@@ -1,6 +1,7 @@
 import './windows-hidden-spawn-guard.mjs';
 import assert from 'node:assert/strict';
 import childProcess from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { syncBuiltinESMExports } from 'node:module';
 import {
   mkdtempSync,
@@ -31,6 +32,12 @@ const originalEnv = {
   SystemRoot: process.env.SystemRoot,
   LOCALAPPDATA: process.env.LOCALAPPDATA,
   PSModulePath: process.env.PSModulePath,
+};
+const originalEnvHash = createHash('sha256').update(JSON.stringify(originalEnv)).digest('hex');
+const restoreEnvironment = () => {
+  for (const [key, value] of Object.entries(originalEnv))
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
 };
 let supervisor;
 let closePrivateState;
@@ -307,16 +314,20 @@ try {
   Object.defineProperty(process, 'platform', originalPlatform);
   childProcess.execFileSync = originalExec;
   syncBuiltinESMExports();
+  restoreEnvironment();
 
   // A real Node HTTP child hangs, then degrades, then recovers. Probe transitions
   // never kill a live worker, and stop prevents further probes or launches.
   const child = join(directory, 'http-child.mjs');
   const marker = join(directory, 'port');
+  const environmentProof = join(directory, 'child-environment-sha256');
   const control = join(directory, 'health-control');
   writeFileSync(control, 'http-unhealthy');
   writeFileSync(
     child,
-    `import {createServer} from 'node:http'; import {writeFileSync,readFileSync} from 'node:fs';
+    `import {createServer} from 'node:http'; import {writeFileSync,readFileSync} from 'node:fs'; import {createHash} from 'node:crypto';
+const environment={SystemRoot:process.env.SystemRoot,LOCALAPPDATA:process.env.LOCALAPPDATA,PSModulePath:process.env.PSModulePath};
+writeFileSync(${JSON.stringify(environmentProof)},createHash('sha256').update(JSON.stringify(environment)).digest('hex'));
 const server=createServer((_req,res)=>{ const state=readFileSync(${JSON.stringify(control)},'utf8'); if(state!=='http-unhealthy')res.end(JSON.stringify({state})); }); server.listen(0,'127.0.0.1',()=>writeFileSync(${JSON.stringify(marker)},String(server.address().port)));
 process.on('message',()=>{server.closeAllConnections();server.close(()=>process.exit(0));}); process.once('disconnect',()=>process.exit(1));`,
   );
@@ -345,18 +356,40 @@ process.on('message',()=>{server.closeAllConnections();server.close(()=>process.
       }
     },
   });
+  const childFailure = (reason, entry) =>
+    new Error(
+      `${reason}: ${JSON.stringify({
+        exitCode: entry?.exitCode ?? null,
+        signal: entry?.signal ?? null,
+        spawnCode: entry?.code ?? null,
+        markerPresent: existsSync(marker),
+        probeCount,
+        actualHttpTimeouts,
+        starts: reports.filter((v) => v.event === 'started').length,
+        states: [...new Set(reports.map((v) => v.state).filter(Boolean))],
+      })}`,
+    );
   const until = async (condition) => {
     for (let i = 0; i < 200; i++) {
+      const exited = reports.find((v) => v.event === 'exited');
+      if (exited) throw childFailure('Recovery fixture child exited', exited);
+      const spawnFailure = reports.find((v) => v.event === 'spawn-failure');
+      if (spawnFailure) throw childFailure('Recovery fixture child spawn failed', spawnFailure);
       if (condition()) return;
       await delay(10);
     }
-    throw new Error('Recovery fixture timed out');
+    throw childFailure('Recovery fixture timed out');
   };
   await until(
     () =>
       existsSync(marker) &&
       actualHttpTimeouts > 0 &&
       reports.some((v) => v.state === 'http-unhealthy'),
+  );
+  assert.equal(
+    readFileSync(environmentProof, 'utf8'),
+    originalEnvHash,
+    'Real HTTP child must inherit the original system environment',
   );
   probeState = 'persistence-degraded';
   writeFileSync(control, probeState);
@@ -389,6 +422,7 @@ process.on('message',()=>{server.closeAllConnections();server.close(()=>process.
       hashedCliDiscovery: true,
       startupRefreshPreservesConfiguration: true,
       liveWorkerNeverKilledForHealth: true,
+      originalChildEnvironment: true,
       actualHttpTimeouts,
     }),
   );
@@ -399,8 +433,6 @@ process.on('message',()=>{server.closeAllConnections();server.close(()=>process.
   Object.defineProperty(process, 'platform', originalPlatform);
   childProcess.execFileSync = originalExec;
   syncBuiltinESMExports();
-  for (const [key, value] of Object.entries(originalEnv))
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
+  restoreEnvironment();
   rmSync(directory, { recursive: true, force: true });
 }

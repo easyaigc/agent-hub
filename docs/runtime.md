@@ -321,3 +321,15 @@ Windows 双通道配置沿 service → 私有配置 → worker 的严格环境�
 原桌面模式的完整工作区目录 reader 与主 runtime 共享当前可信 CLI，不永久固定启动环境中的旧 Store 路径。运行期间 CLI 消失、桌面 owner 正常变化或只读传输失效时，Host 合并重新发现、等待旧 reader 完全退出，并最多重读一次幂等目录。连续失败按 1–15 秒退避；无需把每次 Codex 更新变成重装 Host 的流程。macOS 保留显式 CLI 或原固定 bundle 路径，Windows 保留原可信 owner／CLI 与协议校验。
 
 `/healthz` 的 HTTP 200 表示服务存活；同时核对 `status`、`runtime` 和 `workspaceCatalog`，`not-read` 不能当目录通过。不可用时目录返回准确 503 原因码和健康 degraded；无可信替代、坏协议或旧进程退出未确认要保留现场，不能通过关闭信任检查继续。回复、新建、审批、停止及管理操作的未知结果仍查询原回执，自动目录恢复不会重放输入。真实更新／重开和手机验收详见 [专项记录](acceptance/codex-update-resilience-20261030.md)。
+
+## 建议 Trace 的保留策略（2026-10-30）
+
+在原正式 Host 服务环境显式设置 CODEX_DESKTOP_TRACE_RETENTION=1，保留原 CODEX_DESKTOP_SUGGESTION_OBSERVER 和 CODEX_DESKTOP_SUGGESTION_TRACE_ROOT；只按原环境重启本产品 Host。设置0或移除开关停止后续回收，保留已保存建议。隔离验收进程不得指向正式 Trace 并开启回收。每会话一条最新建议或失效记录存于 Trace 根下 .agent-hub-suggestions；Host 私有状态 trace-retention-<机器目标摘要>.json 记录当前进程计数与有界保留原因。新服务必须连同读取兼容与精简存储一起部署，不能先删原始 Trace 再升级 reader。取消、失败、空结果原始载荷保留24小时；未知身份和仍在使用资料不会仅凭年龄删除。
+
+## 原生建议采集配置（2026-10-30，候选）
+
+Host 可显式配置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG 指向本机私有配置；配置路径与身份不能跨电脑复制。macOS 使用 scripts/desktop-native-suggestions-environment.mjs install，参数为 --program <program> --executable <original-cli> --trace-root <private-root> --target-file <private-target.json>，复用已有共享环境 URL；Windows 使用 scripts/windows-native-suggestions-environment.mjs install --config <private-input.json>，仅管理有不可变清单证明的当前用户 CODEX_CLI_PATH。配置不退出、不重启原桌面。待用户保存工作并正常重开后，核对当前 producer、原生父链、实际实现指纹及 Host 能力。Windows 日志使用有界原生 offset/count 读取，允许追加、保持对象身份，不能把文件大小超过 1 MiB 当作失败。
+
+### 统一升级保持既有配置
+
+上述被动 producer 的独立签名／Store／父链边界保持，通用桌面连接继续沿用当前用户／会话、真实管道 owner、路径／SHA 与协议契约。同步本轮程序和指引时保留已有开关、私有路径与原桌面；不因文档变更重新安装 producer、扩大保留策略或强制重开 Codex。Windows Native、旧 history 布局和真实 reader 恢复仍按同源新包独立验证。

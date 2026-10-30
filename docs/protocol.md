@@ -181,3 +181,17 @@ Android迁移payload4新增migration-easywork-archives-v1 catalog和migration-ea
 原桌面 Host 的鉴权 `/healthz` 增加 `workspaceCatalog`：`state` 为 `not-read`、`ready` 或 `unavailable`，`retryAfterMs` 为非负的本地退避剩余毫秒。尚未读取不等于成功；reader 已断开时不报告目录 ready。目录不可用或主 runtime 未就绪时 `status=degraded`，HTTP 200 仅表示 Host 存活，原有 runtime 诊断仍独立返回。
 
 `GET /v1/workspace` 的元数据失败返回 503 与具体 `CODEX_READER_*`／`WINDOWS_*` 原因码，无法归类时为 `DESKTOP_CATALOG_UNAVAILABLE`。响应不包含安装路径、原始错误 payload 或凭据。客户端沿用连接与草稿，稍后重试读取；此约定不授权回复、新建、审批、停止或聊天管理写操作重试，也不改变未知操作的原 ID／指纹。
+
+## 冻结 R2 的 Host 只读契约
+
+2026-10-30 F75：Git>=2.31 时 Host 声明 `project-git.status.v1` 和 `project-git.files.v1`。鉴权 `GET /v1/project-git` 必须携带 projectId 与四字段机器 target；refresh=1 显式刷新（1秒内合并）。`GET /v1/project-git/files` 另绑定 snapshotId、worktreeId 和分页 cursor，失效返回409。两路只读，不接受任意路径，最大响应128KiB；文件页最多100项和100KiB。Schema 为 `packages/protocol/schemas/project-git-v1.schema.json`。upstream、publish、baseline 独立，未知含原因，不补零；远端状态仅依据本地引用。Codex账号不参与机器隔离。
+
+Codex 子任务沿用既有消息 text／kind／status／detail，展示 kind=subAgent；来源仅为准确父会话 collabAgentToolCall.receiverThreadIds。调用完成不等于子任务完成；独立原 owner 可用时观察其快照，否则只读 thread/read 明确标为最近保存输出，状态仍来自父会话报告。不开放新的执行方法，不重放模型输入。本轮保留当前 main 移动端及 EasyWork 实现，F75 原生页面不在本次 Host 集成范围。
+
+## 建议存储与原始证据（2026-10-30）
+
+HTTP 建议领域契约保持 schemaVersion=1，原生 Trace schema 1/2 的差异封装在 Adapter。每会话最新建议的精简存储保留原机器目标、来源 Thread/Turn、预测执行、请求时间、请求/响应证据摘要及状态；不暴露原始模型上下文。原生 sample 取消、失败、空结果或无法消歧均不回退旧建议。读取已保存正文仍须完成准确原 owner、来源轮次、目标、文件快照和新请求证据核对，缓存本身不能刷新六秒租期。
+
+## Codex 被动结果与原生建议接口（2026-10-30，候选）
+
+复用现有只读建议领域响应 source=native-trace、validity=native-version；不扩展远端方法透传。native-trace 的来源证据扩展为原桌面现有执行流的配对观察记录，保留既有 native-version 能力与领域响应；不将内部结果伪装为上游原始 Trace 文件。正文必须来自原生请求配对结果并经原桌面安全判定放行；同一目标/线程/完成轮、摘要、producer 与读取提交边界均须连续有效。无结果、抑制、取消或新请求均返回空建议；保存的上一条不冒充当前建议。手机刷新不生成请求或自动发送。

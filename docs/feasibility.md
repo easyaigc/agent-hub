@@ -555,3 +555,9 @@ Android P7活动EasyWork业务图与实际owner退出已形成待原生候选：
 已定位的调用链是 `/v1/workspace → DesktopWorkspaceView → 独立 CodexHistoryReader → 启动环境 CODEX_EXECUTABLE`。既有 worker 子启动刷新和主 DesktopRuntime 重连发现并未更新该独立 reader；其首次 spawn 失败也不会触发主 reader 的断连通知，因而主 IPC 可持续 ready 而目录每次 502。手工重启刷新环境只能临时消除这条差异。
 
 本次候选让全部目录 reader 共享 runtime 的可信安装发现、并发预算与有界退避；目录只读限次重试和准确 503／degraded 已实现。不同 owner 切换、旧进程退出未确认、无可信 CLI、协议不匹配均保持拒绝，不以版本白名单或重放未知写入恢复。Windows 原生信任与在途更新实测由来源 Windows 独立执行；macOS 辅助测试不升级其通过状态。网络域名／tailnet／Serve 故障属于另一层，本次不修改。
+
+### 冻结 R2 Host 能力的规范集成（2026-10-30）
+
+已在 PR74 将冻结 R2 的 Node Host／Adapter／Protocol 及 Native 观察、精简存储、锚定退役和必要脚本集成到主线，保留原 main 业务、私有对象创建租约及 Windows 旧缓存边界。Host 只读 Git/v1 与子任务观察代码保留；iOS／Android 页面及 R4/R5 活动 WIP 不导入。
+
+同一运行指纹的本机真实桌面 IPC／CLI 目录读取及辅助 reader 退出后后台恢复已通过，主 reader、IPC 和原桌面连续；仅证明 macOS 只读集成。Windows Native、旧布局、真实旧路径发现与 reader 恢复以及实际安装更新分别待来源独立验收，不能由 Mac、语义编译或 fixture 替代。

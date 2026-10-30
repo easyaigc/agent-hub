@@ -103,9 +103,14 @@ test('current-version inspection retries ctime drift and retains ctime cache inv
   assert.equal(retries.length, 1);
   assert.equal(retries[0].operation, 'inspect');
   assert.deepEqual(await files.inspect(path, [root]), metadata);
-  await chmod(path, 0o600);
-  await writeFile(path, 'modified');
-  await utimes(path, 1_700_000_000, 1_700_000_000);
+  const beforeRewrite = await stat(path, { bigint: true });
+  await mutateWithCtimeChange(path, async () => {
+    await chmod(path, 0o600);
+    await writeFile(path, 'modified');
+    await utimes(path, 1_700_000_000, 1_700_000_000);
+  });
+  const afterRewrite = await stat(path, { bigint: true });
+  assert.notEqual(afterRewrite.ctimeNs, beforeRewrite.ctimeNs);
   assert.equal((await files.inspect(path, [root])).sha256, sha('modified'));
   await assert.rejects(files.read(path, [root], metadata.sha256), { code: 'FILE_CHANGED' });
 });

@@ -224,3 +224,15 @@ Windows 原生 PowerShell：
 ## 不同项目的建议为空时
 
 desktop-runtime 的 HOST_AGENT_ROOT 只保留历史默认 cwd 语义，不参与建议授权或就绪检查。建议只读私有 Trace，以当前原桌面实例、准确原 owner、最新完成轮及四个来源／执行 ID 验证；原项目目录不存在、移动或被替换，不会单独使建议失效。私有 Trace 的目录、文件、权限、完整性与最新结果校验及六秒租期继续生效。手机不传任意目录，也不触发模型生成。源码、辅助检查和逐机真实桌面／手机结果分别记录。
+
+## 建议存储与 Trace 自动回收（2026-10-30）
+
+新包同时升级 reader、精简存储和回收 worker。用户选择每会话仅保留最新一条建议时，在原正式 Host 环境显式设置 CODEX_DESKTOP_TRACE_RETENTION=1，并确认该环境在原服务配置持久保存；保留机器身份、证书、设备密钥、原端口/Node/Trace根与其他已开启功能，只重启本产品Host。不要让隔离验收进程在同一正式Trace根开启回收。成功建议/普通执行的封闭且无占用Trace尽快回收，取消/失败/空结果保留24小时；未知格式、来源/文件身份矛盾、仍在写入或无法确认占用时保留并报告。每会话一条最新建议或失效状态，按原请求顺序防止旧建议复活。部署后核对私有trace-retention状态计数、精简记录可读与实际释放字节，手机仍需单列准确来源展示/采用验收。未决删除意图及隔离目录需要核对，不盲目重放。当前未提供活动Trace轮转或硬容量删除策略。
+
+## 原生结果采集升级（2026-10-30，候选）
+
+若原始 Trace 只有内部取消而桌面稍后存在建议，部署统一包中的被动原 CLI 结果观察器。macOS 通过 desktop-native-suggestions-environment.mjs 复用共享通道；Windows 通过 windows-native-suggestions-environment.mjs 安装私有已校验 C# shim。Host 显式设置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG，保留原身份、Trace 路径、原 Node 和服务端口。该路径观察原请求/返回并等待原安全判定，不触发建议生成。先准备未来启动配置，再由用户正常重开原桌面；不自动强退或重启。原进程仍使用旧观察器时必须报告未生效。
+
+### 冻结 R2 与更新恢复包的升级边界
+
+已有 producer、保留策略及私有路径继续保留，文档同步不自动开启回收、重装 observer 或要求原桌面重开；仅未来启动配置实际改变时才等待用户正常重开。Windows producer 自身的签名／Store／父子进程核对与通用桌面连接的既有 Publisher 契约分开。退役仅在 macOS／Windows 实现；Linux 保留原始 Trace，不新增 Linux Host 支持。本轮统一源码及辅助检查不代替目标 Windows、手机建议展示或实际安装更新验收。

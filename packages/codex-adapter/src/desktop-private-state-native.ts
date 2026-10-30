@@ -17,7 +17,8 @@ import {
   registerWindowsProcessWorker,
 } from './windows-process.js';
 
-export type WindowsPrivateStateAction = 'protect' | 'protect-file' | 'check';
+export type WindowsPrivateStateAction =
+  'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file';
 // Separate from the permission response: diagnostic data never authorizes a call.
 export const privateStateNativeDiagnostics = Object.freeze({
   words: 8,
@@ -72,11 +73,13 @@ export const privateStateNativeDiagnostics = Object.freeze({
     'ERR_WORKER_INVALID_EXEC_ARGV',
     'ERR_INPUT_TYPE_NOT_ALLOWED',
     'ERR_ACCESS_DENIED',
+    'WINDOWS_NATIVE_OUTPUT_CHANGED',
   ] as const,
   helperStages: ['add-type', 'execute'] as const,
   nativeTypes: [
     'Win32Exception',
     'UnauthorizedAccessException',
+    'PrivateStateAlreadyExistsException',
     'IOException',
     'ArgumentException',
     'TypeInitializationException',
@@ -142,11 +145,11 @@ export function privateStateNativeFailure(
       typeof status === 'number' &&
       Number.isInteger(status) &&
       status >= -0x80000000 &&
-      status <= 0x7fffffff
+      status <= 0xffffffff
     ) {
       Atomics.store(shared, 3, status);
       // Low byte is the first failure ID; this bit distinguishes exit 0 from unset.
-      Atomics.or(shared, 1, 0x100);
+      Atomics.or(shared, 1, 0x100 | (status > 0x7fffffff ? 0x200 : 0));
     }
     Atomics.store(
       shared,
@@ -674,7 +677,12 @@ export function createWindowsPrivateStateBackend(
       nativeStage: privateStateNativeDiagnostics.stages[Atomics.load(native, 0) - 1],
       nativeFailure: privateStateNativeDiagnostics.failures[(Atomics.load(native, 1) & 0xff) - 1],
       nativeCode: privateStateNativeDiagnostics.codes[Atomics.load(native, 2) - 1],
-      nativeStatus: Atomics.load(native, 1) & 0x100 ? Atomics.load(native, 3) : undefined,
+      nativeStatus:
+        Atomics.load(native, 1) & 0x100
+          ? Atomics.load(native, 1) & 0x200
+            ? Atomics.load(native, 3) >>> 0
+            : Atomics.load(native, 3)
+          : undefined,
       helperStage: privateStateNativeDiagnostics.helperStages[Atomics.load(native, 4) - 1],
       nativeType: privateStateNativeDiagnostics.nativeTypes[Atomics.load(native, 5) - 1],
       nativeWin32: Atomics.load(native, 6) || undefined,
@@ -741,7 +749,7 @@ export function createWindowsPrivateStateBackend(
     if (
       closed ||
       busy ||
-      !['protect', 'protect-file', 'check'].includes(action) ||
+      !['protect', 'protect-file', 'check', 'create-directory', 'create-file'].includes(action) ||
       !privateStatePath(path) ||
       !privateStatePath(process.cwd())
     )

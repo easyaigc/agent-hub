@@ -3,7 +3,6 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  mkdirSync,
   existsSync,
   readFileSync,
   readdirSync,
@@ -11,7 +10,6 @@ import {
   writeFileSync,
   fsyncSync,
   closeSync,
-  renameSync,
 } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -20,6 +18,9 @@ import {
   type ChatActionRequest,
 } from '@codex-manage/protocol';
 import {
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  renamePrivateFileSync,
   assertPrivateFile,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
@@ -224,7 +225,7 @@ export class DesktopChatActions {
     private guard: (request: ChatActionRequest) => Promise<void>,
     private sharedWebsocketUrl?: string,
   ) {
-    mkdirSync(directory, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(directory);
     protectWindowsStateDirectory(directory);
   }
   deletedThreadIds(): Set<string> {
@@ -251,7 +252,7 @@ export class DesktopChatActions {
   private save(record: Record) {
     const file = this.file(record.clientOperationId),
       temporary = file + '.' + randomUUID() + '.tmp';
-    const fd = openSync(temporary, 'wx', 0o600);
+    const fd = openPrivateFileSync(temporary, 'wx', 0o600);
     try {
       writeFileSync(fd, JSON.stringify(record));
       fsyncSync(fd);
@@ -259,7 +260,7 @@ export class DesktopChatActions {
       closeSync(fd);
     }
     protectWindowsStateFile(temporary);
-    renameSync(temporary, file);
+    renamePrivateFileSync(temporary, file);
     if (process.platform !== 'win32') {
       const dir = openSync(this.directory, 'r');
       try {

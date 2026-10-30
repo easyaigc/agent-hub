@@ -1,14 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -20,6 +12,9 @@ import {
   type RuntimeTarget,
 } from '@codex-manage/protocol';
 import {
+  makePrivateDirectorySync,
+  writePrivateFileSync,
+  renamePrivateFileSync,
   assertPrivateFile,
   inspectWindowsTraceInstance,
   type WindowsTraceInstance,
@@ -95,7 +90,7 @@ export class DesktopSuggestionObserver {
         .update(machineRuntimeTargetKey(options.target()))
         .digest('hex');
       this.stateFile = join(directory, 'observations-' + scope + '.json');
-      mkdirSync(directory, { recursive: true, mode: 0o700 });
+      makePrivateDirectorySync(directory);
       protectWindowsStateDirectory(directory);
       const info = statSync(directory);
       if (
@@ -825,9 +820,9 @@ export class DesktopSuggestionObserver {
     while (Buffer.byteLength(data()) > maximumStateBytes && this.observations.size)
       this.observations.delete(this.observations.keys().next().value!);
     const tmp = this.stateFile + '.tmp';
-    writeFileSync(tmp, data(), { mode: 0o600 });
+    writePrivateFileSync(tmp, data(), { mode: 0o600 });
     protectWindowsStateFile(tmp);
-    renameSync(tmp, this.stateFile);
+    renamePrivateFileSync(tmp, this.stateFile);
   }
 
   private failStorage(): void {

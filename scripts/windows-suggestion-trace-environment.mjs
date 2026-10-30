@@ -6,11 +6,8 @@ import {
   fstatSync,
   fsyncSync,
   lstatSync,
-  mkdirSync,
-  openSync,
   realpathSync,
   readdirSync,
-  renameSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -18,6 +15,9 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   inspectWindowsTraceInstance,
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  renamePrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   windowsPowerShellEnvironment,
@@ -56,7 +56,7 @@ function privateDirectory(path, create = false) {
   for (let at = path; at !== dirname(at); at = dirname(at))
     if (existsSync(at) && lstatSync(at).isSymbolicLink()) throw Error('Reparse path rejected');
   if (create) {
-    mkdirSync(path, { recursive: true });
+    makePrivateDirectorySync(path);
     protectWindowsStateDirectory(path);
   }
   windowsTraceSnapshot(path, path);
@@ -106,7 +106,7 @@ export function windowsTraceEnvironment({
     let fd, identity;
     let created = false;
     try {
-      fd = openSync(temporary, 'wx', 0o600);
+      fd = openPrivateFileSync(temporary, 'wx', 0o600);
       created = true;
       identity = fstatSync(fd, { bigint: true });
       protectWindowsStateFile(temporary);
@@ -115,7 +115,7 @@ export function windowsTraceEnvironment({
       const opened = fd;
       fd = undefined;
       closeSync(opened);
-      renameSync(temporary, manifest);
+      renamePrivateFileSync(temporary, manifest);
     } catch (cause) {
       try {
         if (fd !== undefined) closeSync(fd);

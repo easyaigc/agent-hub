@@ -1,5 +1,7 @@
 # 双端一致性验收场景与记录规范
 
+2026-10-30 F02／F03／F69：Windows 私有 helper 初始化已定位为高权限 token 默认 Owner 与 User 不同。创建时显式指定 User 与受保护 DACL，既有 owner 严格拒绝，编译和私有原子写同源处理，退出状态保留 DWORD／0／未知。双端共用 Host，原生页面不变，Windows Native、reader 与真实更新待来源独立验收，macOS 辅助不代验，A6 保持暂停。见[专项记录](codex-update-resilience-20261030.md)。
+
 2026-10-29 F64／UI06／UI21：iOS 失败重试改为与 × 一致的圆形纯图标，保留读屏名称和原操作重试，见[专项记录](voice-interaction-20261029.md)；Android 无行为变化，既有真实验收范围保持。
 
 2026-10-29 F03／F17／F48／F69 Host 诊断候选的 Mac 辅助、原 Electron 只读结果和 Windows／手机未验收项分别记录于[专项验收](../research/host-reconnect-diagnostics-20261029.md)。未新增模型输入，未扩大 Android 或既有 iOS 通过范围；A6 保持暂停。

@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { createInterface } from 'node:readline';
 
 // Synthetic stdio only. All paths, actions and effects belong to the test fixture.
@@ -35,12 +44,25 @@ lines.on('line', (line) => {
   assert.equal(parts.length, 4);
   const [id, action, encoded, cwdEncoded] = parts;
   assert.equal(id, String(++count));
-  assert(['protect', 'protect-file', 'check'].includes(action));
+  assert(['protect', 'protect-file', 'check', 'create-directory', 'create-file'].includes(action));
   const path = Buffer.from(encoded, 'base64').toString('utf8');
   const cwd = Buffer.from(cwdEncoded, 'base64').toString('utf8');
   assert.equal(Buffer.from(path).toString('base64'), encoded);
   assert.equal(Buffer.from(cwd).toString('base64'), cwdEncoded);
   record({ event: 'request', id: count, action, path, cwd });
+  if (action.startsWith('create-') && !(config.mode === 'reject-second' && count === 2)) {
+    const contained = relative(dirname(config.log), resolve(cwd, path));
+    assert(contained !== '..' && !contained.startsWith('..' + sep) && !isAbsolute(contained));
+    if (config.mode === 'create-race' && action === 'create-file') {
+      writeFileSync(path, 'concurrent-owner', { flag: 'wx' });
+      process.stdout.write(
+        `${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:PrivateStateAlreadyExistsException\n`,
+      );
+      return;
+    }
+    if (action === 'create-directory') mkdirSync(path, { recursive: true, mode: 0o700 });
+    else closeSync(openSync(path, 'wx', 0o600));
+  }
   const ok = `${id}\tPRIVATE_STATE_OK\n`;
   if (config.mode === 'wrong-id') process.stdout.write(`${count + 1}\tPRIVATE_STATE_OK\n`);
   else if (config.mode === 'stale-id' && count > 1)

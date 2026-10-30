@@ -1,10 +1,12 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   assertPrivateFile,
   windowsPowerShellEnvironment,
+  makePrivateDirectorySync,
+  writePrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   windowsHostLauncherConfiguration,
@@ -51,7 +53,7 @@ if (['preflight', 'start', 'restart'].includes(action)) {
     );
     process.exit(0);
   }
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  makePrivateDirectorySync(directory);
   protectWindowsStateDirectory(directory);
   let desktop;
   if (existsSync(desktopConfig)) {
@@ -142,8 +144,8 @@ if (['preflight', 'start', 'restart'].includes(action)) {
     environment.CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG = resolve(
       process.env.CODEX_DESKTOP_PREPARED_BRIDGE_CONFIG,
     );
-  writeFileSync(desktopConfig, JSON.stringify(desktop, null, 2) + '\n', { mode: 0o600 });
-  writeFileSync(
+  writePrivateFileSync(desktopConfig, JSON.stringify(desktop, null, 2) + '\n', { mode: 0o600 });
+  writePrivateFileSync(
     jobConfig,
     JSON.stringify({ ...previousConfiguration, environment }, null, 2) + '\n',
     { mode: 0o600 },

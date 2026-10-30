@@ -1,20 +1,14 @@
 import type { MetadataExecutable } from './desktop-thread-preparer.js';
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  closeSync,
-  existsSync,
-  fsyncSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from 'node:fs';
+import { closeSync, existsSync, fsyncSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { ThreadForkOperation, ThreadForkRequest } from '@codex-manage/protocol';
 import { BeforeDesktopSubmit, CreationError } from './desktop-creation.js';
 import { DesktopThreadPreparer, MetadataRejection } from './desktop-thread-preparer.js';
 import {
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  renamePrivateFileSync,
   assertPrivateFile,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
@@ -77,7 +71,7 @@ export class DesktopForkBroker {
     private readonly verify: (record: ThreadForkOperation, cwd: string) => Promise<boolean>,
     private readonly worktreeDirectory = join(directory, 'worktrees'),
   ) {
-    mkdirSync(directory, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(directory);
     protectWindowsStateDirectory(directory);
     this.preparer = new DesktopThreadPreparer(executable, home);
   }
@@ -88,7 +82,7 @@ export class DesktopForkBroker {
   private save(record: ForkRecord): void {
     const file = this.path(record.clientOperationId);
     const temporary = file + '.' + randomUUID() + '.tmp';
-    const fd = openSync(temporary, 'wx', 0o600);
+    const fd = openPrivateFileSync(temporary, 'wx', 0o600);
     try {
       writeFileSync(fd, JSON.stringify(record));
       fsyncSync(fd);
@@ -96,7 +90,7 @@ export class DesktopForkBroker {
       closeSync(fd);
     }
     protectWindowsStateFile(temporary);
-    renameSync(temporary, file);
+    renamePrivateFileSync(temporary, file);
     if (process.platform !== 'win32') {
       const fd = openSync(this.directory, 'r');
       try {
@@ -179,7 +173,7 @@ export class DesktopForkBroker {
     try {
       if (record.environment === 'worktree') {
         const root = join(this.worktreeDirectory, digest(record.clientOperationId).slice(0, 24));
-        mkdirSync(root, { recursive: true, mode: 0o700 });
+        makePrivateDirectorySync(root);
         protectWindowsStateDirectory(root);
         record.checkpoint = 'worktree-preparing';
         this.save(record);

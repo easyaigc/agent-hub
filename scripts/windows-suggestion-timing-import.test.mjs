@@ -579,7 +579,10 @@ Object.setPrototypeOf(${Type}.prototype, new Proxy({}, {
     );
   await put(
     join(dist, 'desktop-platform.js'),
-    `export function protectWindowsStateDirectory(path) { globalThis.protection.push(['directory',path]); }
+    `import {mkdirSync,openSync} from 'node:fs';
+export function makePrivateDirectorySync(path) { mkdirSync(path,{recursive:true,mode:0o700}); }
+export const openPrivateFileSync=openSync;
+export function protectWindowsStateDirectory(path) { globalThis.protection.push(['directory',path]); }
 export function protectWindowsStateFile(path) { globalThis.protection.push(['file',path]); }\n`,
   );
 

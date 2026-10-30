@@ -1,10 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   existsSync,
-  mkdirSync,
   readFileSync,
   renameSync,
-  writeFileSync,
   unlinkSync,
   openSync,
   closeSync,
@@ -12,8 +10,13 @@ import {
   lstatSync,
 } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { open as openFile, unlink as unlinkFile } from 'node:fs/promises';
+import { unlink as unlinkFile } from 'node:fs/promises';
 import {
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  openPrivateFile,
+  writePrivateFileSync,
+  renamePrivateFileSync,
   assertPrivateFile,
   assertPrivateFileAsync,
   protectWindowsStateFile,
@@ -139,7 +142,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       throw new Error('Invalid persistence cooldown');
     this.historyDirectory = join(directory, 'runtime-history-v1');
     this.writerFile = join(directory, 'reply-writer-v2.json');
-    mkdirSync(this.historyDirectory, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(this.historyDirectory);
   }
 
   private historyFile(id: string): string {
@@ -175,9 +178,9 @@ export class RuntimePersistence<State extends RuntimeState> {
       if (file === this.file) this.durableHead = undefined;
       stage = 'write';
       // Exclusive creation prevents cleanup from ever unlinking somebody else's file.
-      writeFileSync(temporary, '', { mode: 0o600, flag: 'wx' });
+      writePrivateFileSync(temporary, '', { mode: 0o600, flag: 'wx' });
       owned = true;
-      writeFileSync(temporary, json);
+      writePrivateFileSync(temporary, json);
       stage = 'protect';
       (this.options.protect ?? protectWindowsStateFile)(temporary);
       if (durable) {
@@ -192,7 +195,7 @@ export class RuntimePersistence<State extends RuntimeState> {
         }
       }
       stage = 'publish';
-      (this.options.rename ?? renameSync)(temporary, file);
+      (this.options.rename ?? renamePrivateFileSync)(temporary, file);
       published = true;
       if (file === this.file) this.ledgerHead = digest(json);
       if (durable && (this.options.platform ?? process.platform) !== 'win32') {
@@ -330,7 +333,7 @@ export class RuntimePersistence<State extends RuntimeState> {
     // Serialize stale-lock replacement too; checking a dead PID then unlinking without
     // this guard lets two successors delete each other's freshly acquired lease.
     const recoveryFile = this.writerFile + '.acquiring';
-    const guard = openSync(recoveryFile, 'wx', 0o600);
+    const guard = openPrivateFileSync(recoveryFile, 'wx', 0o600);
     try {
       if ((existsSync(this.file) ? digest(readFileSync(this.file)) : undefined) !== this.ledgerHead)
         throw new Error('Reply ledger changed before writer acquisition');
@@ -354,7 +357,7 @@ export class RuntimePersistence<State extends RuntimeState> {
             ? prior.ledgerId
             : randomUUID(),
       };
-      writeFileSync(this.writerFile, JSON.stringify(writer), { flag: 'wx', mode: 0o600 });
+      writePrivateFileSync(this.writerFile, JSON.stringify(writer), { flag: 'wx', mode: 0o600 });
       protectWindowsStateFile(this.writerFile);
       this.writer = writer;
       this.checkpoint = checkpoint;
@@ -517,7 +520,7 @@ export class RuntimePersistence<State extends RuntimeState> {
     let owned = false;
     let published = false;
     let stage = 'serialize';
-    let handle: Awaited<ReturnType<typeof openFile>> | undefined;
+    let handle: Awaited<ReturnType<typeof openPrivateFile>> | undefined;
     try {
       const json = JSON.stringify(value);
       if (file === this.file) {
@@ -536,7 +539,7 @@ export class RuntimePersistence<State extends RuntimeState> {
         this.durableHead = undefined;
       }
       stage = 'write';
-      handle = await openFile(temporary, 'wx', 0o600);
+      handle = await openPrivateFile(temporary, 'wx', 0o600);
       owned = true;
       await handle.writeFile(json);
       stage = 'protect';
@@ -555,7 +558,7 @@ export class RuntimePersistence<State extends RuntimeState> {
       // version makes this temporary file obsolete before it can replace data.
       if (file === this.file) this.assertReplyWriter();
       stage = 'publish';
-      (this.options.rename ?? renameSync)(temporary, file);
+      (this.options.rename ?? renamePrivateFileSync)(temporary, file);
       published = true;
       if (file === this.file) {
         this.ledgerHead = digest(json);

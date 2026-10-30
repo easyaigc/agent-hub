@@ -18,6 +18,11 @@ export {
   assertPrivateFile,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  openPrivateFile,
+  writePrivateFileSync,
+  renamePrivateFileSync,
 } from './desktop-platform.js';
 export { runDesktopStdioBridge } from './desktop-stdio-bridge.js';
 

@@ -2,7 +2,7 @@ import { parseUsageTarget, usageTargetKey, usageTarget } from '@codex-manage/pro
 import { createServer as httpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createServer as httpsServer } from 'node:https';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import {
@@ -15,6 +15,8 @@ import {
   DesktopChatActions,
   DesktopTranscription,
   CreationError,
+  makePrivateDirectorySync,
+  writePrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   assertPrivateFile,
@@ -96,11 +98,14 @@ export async function startRuntimeServer() {
       'Set CODEX_RUNTIME_MODE explicitly to managed-runtime, shared-runtime or desktop-runtime',
     );
   const directory = resolve(process.env.HOST_AGENT_STATE_DIR ?? '.local/host-agent');
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  makePrivateDirectorySync(directory);
   protectWindowsStateDirectory(directory);
   const tokenFile = join(directory, 'access-token');
   if (!existsSync(tokenFile)) {
-    writeFileSync(tokenFile, randomBytes(32).toString('base64url'), { mode: 0o600 });
+    writePrivateFileSync(tokenFile, randomBytes(32).toString('base64url'), {
+      mode: 0o600,
+      flag: 'wx',
+    });
     protectWindowsStateFile(tokenFile);
   }
   assertPrivateFile(tokenFile);

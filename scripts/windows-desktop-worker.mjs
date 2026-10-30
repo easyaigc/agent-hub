@@ -1,16 +1,11 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  statSync,
-  writeFileSync,
-  appendFileSync,
-} from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   assertPrivateFile,
+  makePrivateDirectorySync,
+  writePrivateFileSync,
+  renamePrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
 } from '../packages/codex-adapter/dist/desktop-platform.js';
@@ -107,13 +102,13 @@ if (process.argv[3] === '--host-child') {
   await import('../apps/host-agent/dist/runtime-entry.js');
 } else {
   const directory = join(dirname(configurationPath), 'worker-diagnostics');
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  makePrivateDirectorySync(directory);
   protectWindowsStateDirectory(directory);
   const file = join(directory, 'worker.jsonl');
   const previous = join(directory, 'worker.previous.jsonl');
   const prepare = () => {
     if (!existsSync(file)) {
-      writeFileSync(file, '', { mode: 0o600, flag: 'wx' });
+      writePrivateFileSync(file, '', { mode: 0o600, flag: 'wx' });
       protectWindowsStateFile(file);
     }
     assertPrivateFile(file);
@@ -123,12 +118,13 @@ if (process.argv[3] === '--host-child') {
     prepare();
     if (statSync(file).size >= 1024 * 1024) {
       if (existsSync(previous)) assertPrivateFile(previous);
-      renameSync(file, previous);
+      renamePrivateFileSync(file, previous);
       prepare();
     }
-    appendFileSync(
+    writePrivateFileSync(
       file,
       JSON.stringify({ at: new Date().toISOString(), supervisorPid: process.pid, ...entry }) + '\n',
+      { flag: 'a', mode: 0o600 },
     );
   };
   const supervisor = superviseWorker({

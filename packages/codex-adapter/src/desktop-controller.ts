@@ -1,12 +1,5 @@
 import { createHash } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { DesktopCommandNotSubmitted, DesktopRuntime, desktopTurns } from './desktop-ipc.js';
 import { object, list, string, type WireObject } from './runtime.js';
@@ -16,7 +9,13 @@ import {
   type DesktopCreationPlan,
 } from './desktop-creation.js';
 import { creationGates } from './desktop-creation-driver.js';
-import { assertPrivateFile, protectWindowsStateFile } from './desktop-platform.js';
+import {
+  assertPrivateFile,
+  makePrivateDirectorySync,
+  writePrivateFileSync,
+  renamePrivateFileSync,
+  protectWindowsStateFile,
+} from './desktop-platform.js';
 
 interface ControllerConfig {
   hostId: string;
@@ -110,7 +109,7 @@ export class DesktopControllerBridge implements DesktopCreationDriver {
     private readonly directory: string,
     private readonly firstInput: (plan: DesktopCreationPlan, id: string) => Promise<void>,
   ) {
-    mkdirSync(directory, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(directory);
   }
   async refresh(): Promise<void> {
     if (this.refreshing) return this.refreshing;
@@ -216,9 +215,9 @@ export class DesktopControllerBridge implements DesktopCreationDriver {
   }
   private save(command: Command): void {
     const path = this.file(command.id);
-    writeFileSync(path + '.tmp', JSON.stringify(command), { mode: 0o600 });
+    writePrivateFileSync(path + '.tmp', JSON.stringify(command), { mode: 0o600 });
     protectWindowsStateFile(path + '.tmp');
-    renameSync(path + '.tmp', path);
+    renamePrivateFileSync(path + '.tmp', path);
   }
   private load(id: string): Command | undefined {
     const path = this.file(id);
@@ -412,8 +411,8 @@ export class DesktopControllerBridge implements DesktopCreationDriver {
   }
   private async finishCreation(plan: DesktopCreationPlan, command: Command): Promise<string> {
     const id = await this.serialize(command);
-    mkdirSync(dirname(plan.receiptPath), { recursive: true, mode: 0o700 });
-    writeFileSync(
+    makePrivateDirectorySync(dirname(plan.receiptPath));
+    writePrivateFileSync(
       plan.receiptPath,
       JSON.stringify({
         hostId: plan.hostId,

@@ -3,16 +3,17 @@ import {
   closeSync,
   existsSync,
   fsyncSync,
-  mkdirSync,
   openSync,
   readFileSync,
-  renameSync,
   writeFileSync,
   lstatSync,
   unlinkSync,
 } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import {
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  renamePrivateFileSync,
   assertPrivateFile,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
@@ -183,7 +184,7 @@ export class DesktopCreationBroker {
     readonly driver: DesktopCreationDriver,
     private readonly verify: (record: CreationRecord, threadId: string) => Promise<boolean>,
   ) {
-    mkdirSync(directory, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(directory);
     protectWindowsStateDirectory(directory);
     {
       const lock = join(directory, 'writer.lock');
@@ -200,7 +201,7 @@ export class DesktopCreationBroker {
         if (alive) throw new Error('Creation journal already has an active writer');
         unlinkSync(lock);
       }
-      const fd = openSync(lock, 'wx', 0o600);
+      const fd = openPrivateFileSync(lock, 'wx', 0o600);
       try {
         writeFileSync(fd, String(process.pid));
         fsyncSync(fd);
@@ -224,7 +225,7 @@ export class DesktopCreationBroker {
   }
   private save(): void {
     const temporary = this.file + '.' + randomUUID() + '.tmp';
-    const fd = openSync(temporary, 'wx', 0o600);
+    const fd = openPrivateFileSync(temporary, 'wx', 0o600);
     try {
       writeFileSync(fd, JSON.stringify(this.records));
       fsyncSync(fd);
@@ -232,7 +233,7 @@ export class DesktopCreationBroker {
       closeSync(fd);
     }
     protectWindowsStateFile(temporary);
-    renameSync(temporary, this.file);
+    renamePrivateFileSync(temporary, this.file);
     // Node cannot flush a directory handle on Windows. Keep the file fsync and
     // atomic rename there, while retaining directory durability on macOS.
     if (process.platform !== 'win32') {
@@ -472,8 +473,8 @@ export class DesktopCreationBroker {
     if (bytes.length !== file.sizeBytes || hash(bytes) !== file.sha256)
       throw new CreationError(400, '附件完整性校验失败');
     const dir = join(this.directory, id, attachmentId);
-    mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const fd = openSync(this.filePath(record, file), 'w', 0o600);
+    makePrivateDirectorySync(dir);
+    const fd = openPrivateFileSync(this.filePath(record, file), 'w', 0o600);
     try {
       writeFileSync(fd, bytes);
       fsyncSync(fd);
@@ -627,7 +628,7 @@ export class DesktopCreationBroker {
     record.error = null;
     // Persist before any desktop side effect. Any unclassified failure is uncertain.
     this.save();
-    mkdirSync(join(this.directory, record.clientOperationId), { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(join(this.directory, record.clientOperationId));
     try {
       const threadId = await this.driver.create({
         ...this.copy(record),

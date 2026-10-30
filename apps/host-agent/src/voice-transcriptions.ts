@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, open, readFile, readdir, rename, rm, lstat, realpath } from 'node:fs/promises';
+import { open, readFile, readdir, rm, lstat, realpath } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import {
   VOICE_MAX_BYTES,
@@ -11,6 +11,9 @@ import {
 import {
   RuntimeError,
   assertPrivateFile,
+  makePrivateDirectorySync,
+  openPrivateFile,
+  renamePrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
 } from '@codex-manage/codex-adapter';
@@ -47,7 +50,7 @@ export class VoiceTranscriptions {
     return join(this.directory, id + suffix);
   }
   private async initialize() {
-    await mkdir(this.directory, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(this.directory);
     if (
       !(await lstat(this.directory)).isDirectory() ||
       (await realpath(this.directory)) !== resolve(this.directory)
@@ -58,7 +61,7 @@ export class VoiceTranscriptions {
   private async save(receipt: StoredReceipt) {
     const destination = this.path(receipt.operationId),
       temporary = destination + '.' + randomUUID();
-    const file = await open(temporary, 'wx', 0o600);
+    const file = await openPrivateFile(temporary, 'wx', 0o600);
     try {
       await file.writeFile(JSON.stringify(receipt));
       await file.sync();
@@ -67,7 +70,7 @@ export class VoiceTranscriptions {
     }
     protectWindowsStateFile(temporary);
     try {
-      await rename(temporary, destination);
+      renamePrivateFileSync(temporary, destination);
       if (process.platform !== 'win32') {
         const directory = await open(this.directory, 'r');
         try {
@@ -238,7 +241,7 @@ export class VoiceTranscriptions {
       if (this.active.size >= 4)
         throw new RuntimeError(429, '电脑正在转写其他录音，请稍后查询并上传原操作');
       try {
-        const file = await open(this.path(id, '.wav'), 'wx', 0o600);
+        const file = await openPrivateFile(this.path(id, '.wav'), 'wx', 0o600);
         try {
           await file.writeFile(audio);
           await file.sync();

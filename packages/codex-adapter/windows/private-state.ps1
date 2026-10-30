@@ -1,4 +1,4 @@
-param([ValidateSet('protect', 'protect-file', 'check', 'bootstrap-native')][string]$Action, [Parameter(Mandatory)][string]$Path, [string]$BinaryPath, [string]$PhysicalPath)
+param([ValidateSet('protect', 'protect-file', 'check', 'create-directory', 'create-file', 'publish-native', 'bootstrap-native')][string]$Action, [Parameter(Mandatory)][string]$Path, [string]$BinaryPath, [string]$PhysicalPath)
 $ErrorActionPreference = 'Stop'
 try {
     foreach ($name in @('Microsoft.PowerShell.Security', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.Management')) {
@@ -16,7 +16,24 @@ try {
         # Share the current-owner private DACL implementation; never request a SACL.
         [CodexManagePrivateStateSecurity]::Execute($Operation, $TargetPath)
     }
-    if ($Action -eq 'bootstrap-native') {
+    if ($Action -eq 'publish-native') {
+        if (-not $BinaryPath -or $PhysicalPath) { throw 'BINARY_PATH_REQUIRED' }
+        $source = [IO.Path]::GetFullPath($Path)
+        $target = [IO.Path]::GetFullPath($BinaryPath)
+        $name = [IO.Path]::GetFileName($target)
+        if ($name -notin @('private-state.exe', 'trace-state.exe', 'host-launcher.exe') -or
+            -not [string]::Equals([IO.Path]::GetDirectoryName($source), [IO.Path]::GetDirectoryName($target), [StringComparison]::OrdinalIgnoreCase) -or
+            [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($target)) -notmatch '^[a-f0-9]{64}$' -or
+            [IO.Path]::GetFileName($source) -notmatch ('^' + [regex]::Escape($name) + '\.[0-9]+\.[0-9]+\.[a-f0-9-]{36}\.tmp\.exe$')) { throw 'INVALID_NATIVE_PUBLICATION' }
+        Invoke-PrivateState 'check' $source
+        # File.Move on Framework does not replace an existing destination.
+        try { [IO.File]::Move($source, $target) }
+        catch [IO.IOException] {
+            if (-not [IO.File]::Exists($target)) { throw }
+            Invoke-PrivateState 'check' $target
+        }
+        Invoke-PrivateState 'check' $target
+    } elseif ($Action -eq 'bootstrap-native') {
         if ([string]::IsNullOrWhiteSpace($BinaryPath) -or [string]::IsNullOrWhiteSpace($PhysicalPath)) { throw 'BINARY_PATH_REQUIRED' }
         # Identical checks in one PowerShell process, not cached permission authority.
         Invoke-PrivateState 'protect' $Path
@@ -33,7 +50,7 @@ try {
     # Only fixed labels/numbers leave this process; never exception messages or paths.
     $detail = $_.Exception
     for ($index = 0; $index -lt 4 -and $null -ne $detail.InnerException; $index++) { $detail = $detail.InnerException }
-    $knownTypes = @('Win32Exception', 'UnauthorizedAccessException', 'IOException', 'ArgumentException', 'TypeInitializationException', 'InvalidOperationException', 'PSInvalidOperationException', 'PSInvalidCastException', 'PathTooLongException', 'FileNotFoundException', 'DirectoryNotFoundException', 'DllNotFoundException', 'EntryPointNotFoundException', 'BadImageFormatException', 'SecurityException', 'NotSupportedException', 'Exception')
+    $knownTypes = @('Win32Exception', 'UnauthorizedAccessException', 'PrivateStateAlreadyExistsException', 'IOException', 'ArgumentException', 'TypeInitializationException', 'InvalidOperationException', 'PSInvalidOperationException', 'PSInvalidCastException', 'PathTooLongException', 'FileNotFoundException', 'DirectoryNotFoundException', 'DllNotFoundException', 'EntryPointNotFoundException', 'BadImageFormatException', 'SecurityException', 'NotSupportedException', 'Exception')
     if ($detail.GetType().Name -in $knownTypes) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_NATIVE_TYPE:' + $detail.GetType().Name) }
     if ($detail -is [System.ComponentModel.Win32Exception]) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_WIN32:' + $detail.NativeErrorCode) }
     if ($detail.Message -in @('WRONG_FILE_OWNER', 'NULL_PRIVATE_DACL', 'UNKNOWN_PRIVATE_ACE', 'SHARED_PRIVATE_FILE', 'UNPROTECTED_PRIVATE_DACL')) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_REJECTED:' + $detail.Message) }

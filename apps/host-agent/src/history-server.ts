@@ -1,8 +1,12 @@
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { CodexHistoryReader } from '@codex-manage/codex-adapter';
+import {
+  CodexHistoryReader,
+  makePrivateDirectorySync,
+  openPrivateFile,
+} from '@codex-manage/codex-adapter';
 
 export async function startHistoryServer(): Promise<void> {
   const address = process.env.HOST_AGENT_BIND_ADDRESS ?? '127.0.0.1';
@@ -10,7 +14,7 @@ export async function startHistoryServer(): Promise<void> {
   const rawPort = process.env.HOST_AGENT_PORT ?? '8788';
   if (!/^\d+$/.test(rawPort) || Number(rawPort) > 65535) throw new Error('Invalid HOST_AGENT_PORT');
   const stateDirectory = resolve(process.env.HOST_AGENT_STATE_DIR ?? '.local/host-agent');
-  await mkdir(stateDirectory, { recursive: true, mode: 0o700 });
+  makePrivateDirectorySync(stateDirectory);
   const identityPath = resolve(stateDirectory, 'identity.json');
   let hostId: string;
   try {
@@ -27,7 +31,12 @@ export async function startHistoryServer(): Promise<void> {
   } catch (error) {
     if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') throw error;
     hostId = randomUUID();
-    await writeFile(identityPath, JSON.stringify({ id: hostId }), { mode: 0o600, flag: 'wx' });
+    const file = await openPrivateFile(identityPath, 'wx', 0o600);
+    try {
+      await file.writeFile(JSON.stringify({ id: hostId }));
+    } finally {
+      await file.close();
+    }
   }
   const reader = new CodexHistoryReader(
     hostId,

@@ -28,6 +28,8 @@ let second;
 let packaged = true;
 let deny;
 let rejectBootstrap = false;
+let compilerFailure;
+let compilerOutput;
 const onPermissionCall = ({ action, path }) => {
   assert.equal(action, 'check', 'Alias recognition must not repair permissions');
   aliasChecks.push(path);
@@ -54,7 +56,13 @@ try {
     if (file.endsWith('csc.exe')) {
       assert(args.includes('/target:winexe'), 'Only the launcher is compiled in this fixture');
       assert(args.at(-1).endsWith('host-launcher.cs'));
-      fs.writeFileSync(args.find((a) => a.startsWith('/out:')).slice(5), 'synthetic helper');
+      compilerOutput = args.find((a) => a.startsWith('/out:')).slice(5);
+      assert(fs.existsSync(compilerOutput), 'Compiler output must be reserved first');
+      if (compilerFailure === 'replace')
+        fs.renameSync(compilerOutput, compilerOutput + '.original');
+      fs.writeFileSync(compilerOutput, 'synthetic helper');
+      if (compilerFailure === 'throw')
+        throw Object.assign(Error('synthetic compiler failure'), { status: 1 });
       return '';
     }
     assert(file.endsWith('powershell.exe'), 'Unexpected native executable in synthetic fixture');
@@ -62,6 +70,13 @@ try {
     const action = args[args.indexOf('-Action') + 1];
     const path = args[args.indexOf('-Path') + 1];
     bootstrapProcesses++;
+    if (action === 'create-directory') fs.mkdirSync(path, { recursive: true, mode: 0o700 });
+    if (action === 'create-file') fs.closeSync(fs.openSync(path, 'wx', 0o600));
+    if (action === 'publish-native') {
+      const target = args[args.indexOf('-BinaryPath') + 1];
+      assert(!fs.existsSync(target), 'Synthetic publication must not replace an existing helper');
+      fs.renameSync(path, target);
+    }
     if (action === 'check') bootstrapChecks.push(path);
     if (action === 'bootstrap-native') {
       if (rejectBootstrap)
@@ -171,6 +186,30 @@ try {
     /unsafe fixture ACL/,
     'Unsafe alias must fail closed',
   );
+  for (const failure of ['throw', 'replace']) {
+    compilerFailure = failure;
+    process.env.LOCALAPPDATA = join(directory, 'compiler-' + failure);
+    const candidate = await import(
+      new URL(
+        '../packages/codex-adapter/dist/desktop-platform.js?compiler=' + failure,
+        import.meta.url,
+      )
+    );
+    assert.throws(
+      () => candidate.windowsHostLauncherExecutable(),
+      (error) =>
+        failure === 'throw' ? error.status === 1 : error.code === 'WINDOWS_NATIVE_OUTPUT_CHANGED',
+    );
+    assert.equal(
+      fs.existsSync(compilerOutput),
+      failure === 'replace',
+      'Only the original reservation may be cleaned after compiler failure',
+    );
+    if (failure === 'replace')
+      assert.equal(fs.readFileSync(compilerOutput, 'utf8'), 'synthetic helper');
+  }
+  compilerFailure = undefined;
+  process.env.LOCALAPPDATA = local;
   console.log(
     JSON.stringify({
       result: 'passed',

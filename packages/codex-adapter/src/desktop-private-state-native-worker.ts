@@ -107,7 +107,9 @@ ownerPort?.on('message', (request: Record<string, unknown>) => {
     !Number.isSafeInteger(request.id) ||
     request.id !== Atomics.load(control, p.request) ||
     (request.id as number) <= 0 ||
-    !['protect', 'protect-file', 'check'].includes(request.action as string) ||
+    !['protect', 'protect-file', 'check', 'create-directory', 'create-file'].includes(
+      request.action as string,
+    ) ||
     !privateStatePath(request.path) ||
     !privateStatePath(request.cwd) ||
     typeof request.deadline !== 'number' ||

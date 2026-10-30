@@ -7,7 +7,7 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   codexPrivateConnectionContext,
@@ -18,6 +18,8 @@ import {
 } from '@codex-manage/protocol';
 import {
   assertPrivateFile,
+  writePrivateFileSync,
+  renamePrivateFileSync,
   protectWindowsStateFile,
   RuntimeError,
 } from '@codex-manage/codex-adapter';
@@ -129,9 +131,11 @@ export class PrivateConnections {
         ? this.bindings.map((value) => (value === existing ? binding : value))
         : [...this.bindings, binding];
       const temporary = this.path + '.tmp';
-      writeFileSync(temporary, JSON.stringify({ version: 1, bindings: next }), { mode: 0o600 });
+      writePrivateFileSync(temporary, JSON.stringify({ version: 1, bindings: next }), {
+        mode: 0o600,
+      });
       protectWindowsStateFile(temporary);
-      renameSync(temporary, this.path);
+      renamePrivateFileSync(temporary, this.path);
       this.bindings = next;
     }
     return {

@@ -1,10 +1,11 @@
 import { withWindowsProcessCreation } from '@codex-manage/codex-adapter';
 import { createServer, type Server } from 'node:https';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
-import { X509Certificate, timingSafeEqual } from 'node:crypto';
+import { X509Certificate, timingSafeEqual, randomUUID } from 'node:crypto';
+import { closeSync, existsSync, fstatSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readFile, mkdir, chmod, rename, rm, writeFile } from 'node:fs/promises';
+import { readFile, chmod, lstat, rm, rmdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Bonjour } from 'bonjour-service';
 import QRCode from 'qrcode';
@@ -15,6 +16,10 @@ import {
   type DirectEndpoint,
 } from './direct-endpoints.js';
 import {
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  openPrivateFile,
+  renamePrivateFileSync,
   protectWindowsStateFile,
   protectWindowsStateDirectory,
   assertPrivateFile,
@@ -54,7 +59,7 @@ export async function startDirectDiscovery(options: {
   bind?: string;
 }) {
   const directory = join(options.directory, 'direct-discovery');
-  await mkdir(directory, { recursive: true, mode: 0o700 });
+  makePrivateDirectorySync(directory);
   protectWindowsStateDirectory(directory);
   const certPath = process.env.HOST_AGENT_DISCOVERY_TLS_CERT ?? join(directory, 'cert.pem');
   const keyPath = process.env.HOST_AGENT_DISCOVERY_TLS_KEY ?? join(directory, 'key.pem');
@@ -93,10 +98,25 @@ export async function startDirectDiscovery(options: {
               'openssl.exe',
             )
           : '/usr/bin/openssl');
-      const scratch = await import('node:fs/promises').then((fs) =>
-        fs.mkdtemp(join(directory, 'certificate-')),
-      );
+      const scratch = join(directory, 'certificate-' + randomUUID());
+      if (existsSync(scratch))
+        throw Object.assign(new Error('Certificate scratch directory already exists'), {
+          code: 'EEXIST',
+        });
+      makePrivateDirectorySync(scratch);
+      const created: { path: string; dev: bigint; ino: bigint }[] = [];
       try {
+        // OpenSSL must overwrite our User-owned files, never create Admin-owned outputs.
+        for (const name of ['key.pem', 'cert.pem']) {
+          const path = join(scratch, name);
+          const file = openPrivateFileSync(path, 'wx', 0o600);
+          try {
+            const identity = fstatSync(file, { bigint: true });
+            created.push({ path, dev: identity.dev, ino: identity.ino });
+          } finally {
+            closeSync(file);
+          }
+        }
         await withWindowsProcessCreation(15000, (timeout) =>
           execute(
             openssl,
@@ -118,14 +138,35 @@ export async function startDirectDiscovery(options: {
             { timeout, maxBuffer: 65536, windowsHide: true },
           ),
         );
-        for (const file of ['key.pem', 'cert.pem']) {
-          await chmod(join(scratch, file), 0o600);
-          protectWindowsStateFile(join(scratch, file));
+        for (const reserved of created) {
+          const current = await lstat(reserved.path, { bigint: true });
+          if (
+            !current.isFile() ||
+            current.isSymbolicLink() ||
+            current.dev !== reserved.dev ||
+            current.ino !== reserved.ino
+          )
+            throw new Error('Certificate output identity changed', { cause: error });
+          await chmod(reserved.path, 0o600);
+          protectWindowsStateFile(reserved.path);
         }
-        await rename(join(scratch, 'key.pem'), keyPath);
-        await rename(join(scratch, 'cert.pem'), certPath);
+        renamePrivateFileSync(join(scratch, 'key.pem'), keyPath);
+        renamePrivateFileSync(join(scratch, 'cert.pem'), certPath);
       } finally {
-        await rm(scratch, { recursive: true, force: true });
+        for (const reserved of created) {
+          // A missing, replaced or uninspectable path is not ours to remove.
+          const current = await lstat(reserved.path, { bigint: true }).catch(() => undefined);
+          if (
+            current?.isFile() &&
+            !current.isSymbolicLink() &&
+            current.dev === reserved.dev &&
+            current.ino === reserved.ino
+          )
+            await rm(reserved.path, { force: true });
+        }
+        await rmdir(scratch).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== 'ENOTEMPTY' && error.code !== 'EEXIST') throw error;
+        });
       }
     }
   }
@@ -323,15 +364,18 @@ export async function startDirectDiscovery(options: {
         if (closed) return;
         // Local private file only: credentials never enter DNS, /host, console or logs.
         const temp = join(directory, 'connect.html.tmp');
-        await writeFile(
-          temp,
-          '<!doctype html><meta charset="utf-8"><title>连接 Codex</title><h1>扫描连接 Codex</h1><p>首次扫码，之后自动发现局域网和 VPN 地址。二维码包含本机客户端密钥，请仅向自己的手机展示。</p>' +
-            svg +
-            '<p>地址变化时重新打开此文件查看最新二维码。</p>',
-          { mode: 0o600 },
-        );
+        const file = await openPrivateFile(temp, 'w', 0o600);
+        try {
+          await file.writeFile(
+            '<!doctype html><meta charset="utf-8"><title>连接 Codex</title><h1>扫描连接 Codex</h1><p>首次扫码，之后自动发现局域网和 VPN 地址。二维码包含本机客户端密钥，请仅向自己的手机展示。</p>' +
+              svg +
+              '<p>地址变化时重新打开此文件查看最新二维码。</p>',
+          );
+        } finally {
+          await file.close();
+        }
         protectWindowsStateFile(temp);
-        await rename(temp, pagePath);
+        renamePrivateFileSync(temp, pagePath);
       } finally {
         refreshing = false;
       }

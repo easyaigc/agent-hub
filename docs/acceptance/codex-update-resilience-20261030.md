@@ -65,3 +65,15 @@ macOS 辅助检查包括正常夹具、缺少提前环境恢复的反事实、�
 macOS 的实际同步等待、owning Worker 经 Main 转发、缺失原生程序、错误握手与固定入口输入边界辅助检查绑定本轮输入；Windows 原生路径仍待来源独立执行。原环境修复脚本指纹与未改动的核心证据按匹配范围复用，不能把整个 Adapter 或 Windows 原机证明沿用为当前通过。
 
 本轮交付基线对齐已合并 PR #67 的 main `622c30f419330c56111b68bdc6de366b9bce274d`；其 Host／Adapter／锁文件未改，保留其既有 Android 与文档内容。完整打包器补充四个该主线已跟踪的固定诊断源码准确路径：NativeFixedProcessCapture.java、NativePublicProcessCapture.java、OwnedPublicProcessDiagnosticObserver.java、OwnedPublicProcessNaturalObserver.java，均位于既有 android-inbox-examiner 源码目录。它们不是本轮新增的 Android 功能，本任务不修改或执行其行为。正向字节保留检查覆盖这四项，并沿用拒绝未知 Java 的负向断言；不开放扩展名或目录通配。
+
+## Windows 默认 owner 与创建边界修复
+
+来源机使用同源 `host-connect-native-preflight-20261030` 包，在正常 Main 中仅执行一次固定只读入口，失败定位到 `protect-directory / prepare-failed / WRONG_FILE_OWNER`。当前 token 的 User 与默认 Owner 不同：Node 新建 cache 目录默认归 Administrators，而既有严格检查要求 User。正式配置仍为 User owner；失败发生在 helper 编译前，不是 reader、协议或正式配置的 DACL 故障。
+
+本轮在新建对象的安全描述符中显式指定 User owner 和受保护的限定 DACL。目录由 CreateDirectoryW 创建，文件以 CREATE_NEW 创建；既有对象继续严格核对 User，不接管任意 Administrators 对象，不使用所有权权限提升。私有状态、原子临时文件、后台异步写入及 Host 工具使用统一创建 API；打开文件后核对实际文件身份，再截断。编译输出先独占预留，编译后核对原文件身份和严格权限，发布不能覆盖已有 helper；缓存目录摘要同时绑定创建策略。旧失败目录保留，不迁移其 owner。
+
+退出诊断保留合法 uint32 DWORD、原有有符号状态、0 与未知的区别。来源真实 Node 子进程给出的三个数值仅验证退出码表示，不能宣称实际 Ctrl-C 或 DLL 故障。权限控制共享区、退出确认屏障、30 秒启动／5 秒操作／1 秒关闭预算和未知操作不重放保持。
+
+受影响回归结果与统一制品摘要登记在交付清单。macOS 的传输、合成权限和 HTTP 夹具均为辅助，Windows Native 分支跳过不计通过。来源机已确认上一环境修复夹具一次通过；本轮改动只在输入完全匹配时复用证据。正式 Windows Host 尚未替换，真实 Native 初始化、原桌面不变的独立 reader 恢复和实际更新窗口仍由来源机分别验收。iOS／Android 共用 Host，原生页面和协议不变，Android 未新增通过；A6 保持暂停。
+
+本轮准备提交时主线已合入 PR #70（`c99684ba916aaf9e766904cb15165de28a46551b`）。它仅增加 Android 迁移/验收源码、共享文档及 Trace 夹具观测，Host/Adapter/Protocol 和锁文件未变。按功能 ID、变更 ID 保留双方 manifest 与文档；完整分发仅精确登记已合并的三项 Java 源码，增加逐项字节保留断言，未知 Java 继续拒绝。没有实现或验收新的 Android 功能。先前未发布候选包保留为中间证据，正式包必须绑定集成后的实际提交树重新冻结。

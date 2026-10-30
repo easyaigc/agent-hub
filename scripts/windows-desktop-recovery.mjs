@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { readFileSync, unlinkSync } from 'node:fs';
 import {
   assertPrivateFile,
   inspectWindowsInstallation,
+  writePrivateFileSync,
+  renamePrivateFileSync,
   protectWindowsStateFile,
 } from '../packages/codex-adapter/dist/desktop-platform.js';
 
@@ -23,10 +25,13 @@ function publishPrivate(file, value) {
   const temporary = file + '.' + randomUUID() + '.tmp';
   let owned = false;
   try {
-    writeFileSync(temporary, JSON.stringify(value, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
+    writePrivateFileSync(temporary, JSON.stringify(value, null, 2) + '\n', {
+      mode: 0o600,
+      flag: 'wx',
+    });
     owned = true;
     protectWindowsStateFile(temporary);
-    renameSync(temporary, file);
+    renamePrivateFileSync(temporary, file);
     owned = false;
   } finally {
     if (owned) unlinkSync(temporary);

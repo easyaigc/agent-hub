@@ -1086,7 +1086,18 @@ for (const mode of ['close', 'terminate'])
     await f.retired(fresh.status.pid);
   });
 
-for (const status of [0, 1])
+for (const status of [
+  undefined,
+  0,
+  1,
+  -2147483648,
+  -1073741510,
+  2147483647,
+  2147483648,
+  3221225786,
+  3221225781,
+  4294967295,
+])
   test(`startup failure retains status ${status} across the real synchronous wait`, async (t) => {
     const f = await fixture(t);
     await writeFile(
@@ -1206,6 +1217,61 @@ test('native spawn and handshake failures retain their first cause without a ret
     assert.equal(f.events().filter((v) => v.event === 'request').length, 0);
   }
 });
+
+test('private creation APIs reserve before sync/async writes and preserve exclusive outputs', async (t) => {
+  const f = await fixture(t),
+    platform = await f.platform();
+  const original = Object.getOwnPropertyDescriptor(process, 'platform');
+  Object.defineProperty(process, 'platform', { value: 'win32' });
+  const root = join(f.directory, 'created/nested'),
+    file = join(root, 'state.json'),
+    temporary = file + '.tmp';
+  try {
+    platform.makePrivateDirectorySync(root);
+    platform.writePrivateFileSync(file, 'original', { flag: 'wx', flush: true });
+    assert.throws(() => platform.writePrivateFileSync(file, 'overwrite', { flag: 'wx' }), {
+      code: 'EEXIST',
+    });
+    assert.equal(readFileSync(file, 'utf8'), 'original');
+    const handle = await platform.openPrivateFile(temporary, 'wx');
+    await handle.writeFile('replacement');
+    await handle.close();
+    await assert.rejects(platform.openPrivateFile(temporary, 'wx'), { code: 'EEXIST' });
+    platform.renamePrivateFileSync(temporary, file);
+    assert.equal(readFileSync(file, 'utf8'), 'replacement');
+    platform.writePrivateFileSync(file, '-append', { flag: 'a' });
+    assert.equal(readFileSync(file, 'utf8'), 'replacement-append');
+  } finally {
+    Object.defineProperty(process, 'platform', original);
+    platform.closeWindowsPrivateStateBackend();
+  }
+  assert.equal(
+    f.events().filter((v) => v.event === 'request' && v.action === 'create-file').length,
+    2,
+  );
+});
+
+for (const async of [false, true])
+  test(`private creation ${async ? 'async' : 'sync'} race keeps EEXIST and the competing file`, async (t) => {
+    const f = await fixture(t, 'create-race'),
+      platform = await f.platform();
+    const original = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const file = join(f.directory, 'raced.json');
+    try {
+      if (async) await assert.rejects(platform.openPrivateFile(file, 'wx'), { code: 'EEXIST' });
+      else assert.throws(() => platform.openPrivateFileSync(file, 'wx'), { code: 'EEXIST' });
+      assert.equal(readFileSync(file, 'utf8'), 'concurrent-owner');
+    } finally {
+      Object.defineProperty(process, 'platform', original);
+      platform.closeWindowsPrivateStateBackend();
+    }
+    assert.equal(
+      f.events().filter((v) => v.event === 'request').length,
+      1,
+      'No creation retry/adoption',
+    );
+  });
 
 test('fixed preflight rejects custom entries and advertises only its real command', async () => {
   const entry = join(repository, 'scripts/windows-private-state-preflight.mjs');
@@ -1334,19 +1400,69 @@ test(
           (error) => rejected(error) && error.nativeError === expected.stderr.trim(),
         );
     };
-    compare('protect', native.directory);
-    const file = join(native.directory, '同源码 file.json');
+    const privateRoot = join(native.directory, 'explicit-user-owned');
+    assert.equal(cli('create-directory', privateRoot).outcome, 'accepted');
+    backend.call('create-directory', privateRoot);
+    compare('protect', privateRoot);
+    const file = join(privateRoot, '同源码 file.json');
+    assert.equal(cli('create-file', file).outcome, 'accepted');
     await writeFile(file, '{}');
     compare('protect-file', file);
+    const peerFile = join(privateRoot, 'serve-created.json');
+    backend.call('create-file', peerFile);
+    compare('check', peerFile);
+    assert.equal(cli('create-file', file).outcome, 'rejected', 'CREATE_NEW must not adopt a file');
+    assert.equal(readFileSync(file, 'utf8'), '{}');
+    // Under an elevated token Node can default to the Administrators owner.
+    // Existing objects must still be refused rather than adopted by creation.
+    const defaultFile = join(privateRoot, 'default-owner.json');
+    await writeFile(defaultFile, 'retained');
+    const inspected = JSON.parse(
+      f.gate.withWindowsProcessCreation(5000, (timeout) =>
+        execFileSync(
+          join(system, 'System32/WindowsPowerShell/v1.0/powershell.exe'),
+          [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            `$i=[Security.Principal.WindowsIdentity]::GetCurrent(); ` +
+              `$a=Get-Acl -LiteralPath '${file.replaceAll("'", "''")}'; ` +
+              `@{ownerIsUser=($a.GetOwner([Security.Principal.SecurityIdentifier]).Equals($i.User));protected=$a.AreAccessRulesProtected;defaultOwnerIsUser=$i.Owner.Equals($i.User)}|ConvertTo-Json -Compress`,
+          ],
+          { encoding: 'utf8', stdio: 'pipe', timeout },
+        ),
+      ),
+    );
+    assert.equal(inspected.ownerIsUser, true);
+    assert.equal(inspected.protected, true);
+    if (!inspected.defaultOwnerIsUser) {
+      compare('protect-file', defaultFile, false);
+      compare('check', defaultFile, false);
+      assert.equal(cli('create-file', defaultFile).outcome, 'rejected');
+      assert.equal(readFileSync(defaultFile, 'utf8'), 'retained');
+      const defaultDir = join(privateRoot, 'default-owner-directory');
+      await mkdir(defaultDir);
+      compare('create-directory', defaultDir, false);
+    }
+    t.diagnostic(
+      JSON.stringify({
+        explicitUserOwner: true,
+        protectedDacl: true,
+        defaultOwnerDiffers: !inspected.defaultOwnerIsUser,
+        existingDefaultOwnerRetained: true,
+      }),
+    );
     compare('check', relative(process.cwd(), file));
     compare('protect', file, false);
     compare('check', join(native.directory, 'missing-file'), false);
-    const target = join(native.directory, 'junction-target'),
-      reparse = join(native.directory, 'junction');
-    await mkdir(target);
+    const target = join(privateRoot, 'junction-target'),
+      reparse = join(privateRoot, 'junction');
+    assert.equal(cli('create-directory', target).outcome, 'accepted');
     compare('protect', target);
     await symlink(target, reparse, 'junction');
     compare('check', reparse, false);
+    compare('create-directory', reparse, false);
+    assert.equal(cli('create-file', join(reparse, 'forbidden.json')).outcome, 'rejected');
     compare('check', file);
     assert.equal(native.events().filter((v) => v.event === 'spawn').length, 1);
     for (const stdio of ['pipe', 'file']) {

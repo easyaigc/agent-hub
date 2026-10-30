@@ -1,7 +1,7 @@
 import { createServer as httpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createServer as httpsServer } from 'node:https';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { readFile, mkdir, open, rename, readdir, lstat, realpath, rm } from 'node:fs/promises';
+import { readFile, open, readdir, lstat, realpath, rm } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import { homedir } from 'node:os';
 import { join, resolve, isAbsolute } from 'node:path';
@@ -19,6 +19,9 @@ import {
   chatCompletionToResponse,
   responseToChatCompletion,
   assertPrivateFile,
+  makePrivateDirectorySync,
+  openPrivateFile,
+  renamePrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   type DesktopResponsesTransport,
@@ -167,7 +170,7 @@ class ProxyReceipts {
     this.directory = join(directory, 'operations');
   }
   async initialize() {
-    await mkdir(this.directory, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(this.directory);
     const info = await lstat(this.directory);
     if (
       !info.isDirectory() ||
@@ -214,7 +217,7 @@ class ProxyReceipts {
       throw error(503, 'proxy_receipt_limit', '代理回执已达到保留上限，请由管理员处理');
     let file;
     try {
-      file = await open(this.path(value.id), 'wx', 0o600);
+      file = await openPrivateFile(this.path(value.id), 'wx', 0o600);
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'EEXIST')
         throw error(409, 'request_already_accepted', '该操作已接受，请查询原回执；未重复提交');
@@ -231,7 +234,7 @@ class ProxyReceipts {
   }
   async save(value: Receipt) {
     const temporary = this.path(value.id) + '.' + randomUUID();
-    const file = await open(temporary, 'wx', 0o600);
+    const file = await openPrivateFile(temporary, 'wx', 0o600);
     try {
       await file.writeFile(JSON.stringify(value));
       await file.sync();
@@ -239,7 +242,7 @@ class ProxyReceipts {
       await file.close();
     }
     protectWindowsStateFile(temporary);
-    await rename(temporary, this.path(value.id));
+    renamePrivateFileSync(temporary, this.path(value.id));
     await this.sync();
   }
   private async sync() {
@@ -271,7 +274,7 @@ export async function createHostResponsesProxy(
   transport: DesktopResponsesTransport,
   imageTransport?: DesktopImagesTransport,
 ) {
-  await mkdir(config.directory, { recursive: true, mode: 0o700 });
+  makePrivateDirectorySync(config.directory);
   const info = await lstat(config.directory);
   if (
     !info.isDirectory() ||
@@ -281,7 +284,7 @@ export async function createHostResponsesProxy(
     throw error(500, 'unsafe_proxy_state', '代理私有目录不安全');
   protectWindowsStateDirectory(config.directory);
   try {
-    const token = await open(config.tokenFile, 'wx', 0o600);
+    const token = await openPrivateFile(config.tokenFile, 'wx', 0o600);
     try {
       await token.writeFile(randomBytes(32).toString('base64url'));
       await token.sync();
@@ -334,7 +337,7 @@ export async function createHostResponsesProxy(
           throw error(503, 'proxy_owner_changed', '代理写入者已变化');
         await rm(ownerPath);
       }
-      const file = await open(ownerPath, 'wx', 0o600);
+      const file = await openPrivateFile(ownerPath, 'wx', 0o600);
       try {
         await file.writeFile(JSON.stringify(owner));
         await file.sync();

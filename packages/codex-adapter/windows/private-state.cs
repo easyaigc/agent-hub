@@ -74,7 +74,8 @@ internal static class PrivateState
             int id;
             if (parts.Length != 4 || !Int32.TryParse(parts[0], out id) || id <= 0 ||
                 previous == Int32.MaxValue || id != previous + 1 || parts[0] != id.ToString() ||
-                (parts[1] != "protect" && parts[1] != "protect-file" && parts[1] != "check"))
+                (parts[1] != "protect" && parts[1] != "protect-file" && parts[1] != "check" &&
+                 parts[1] != "create-directory" && parts[1] != "create-file"))
                 throw new ArgumentException();
             lock (Gate)
             {
@@ -136,6 +137,118 @@ public static class CodexManagePrivateStateSecurity
     private const uint ReadControl = 0x00020000, WriteDac = 0x00040000;
     private const uint OwnerInformation = 1, DaclInformation = 4;
     private const uint ProtectedDaclInformation = 0x80000000;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SecurityAttributes
+    {
+        public int Length;
+        public IntPtr Descriptor;
+        [MarshalAs(UnmanagedType.Bool)] public bool Inherit;
+    }
+    [DllImport("kernel32.dll", EntryPoint = "CreateDirectoryW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CreateOwnedDirectory(string path, ref SecurityAttributes security);
+    [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern SafeFileHandle CreateOwnedFile(string path, uint access, uint share,
+        ref SecurityAttributes security, uint creation, uint flags, IntPtr template);
+
+    private static string FullPath(string path)
+    {
+        path = Path.GetFullPath(path);
+        if (!path.StartsWith(@"\\?\", StringComparison.Ordinal))
+            path = path.StartsWith(@"\\", StringComparison.Ordinal)
+                ? @"\\?\UNC\" + path.Substring(2) : @"\\?\" + path;
+        return path;
+    }
+    private static byte[] NewDescriptor(bool directory)
+    {
+        SecurityIdentifier user;
+        using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) user = identity.User;
+        if (user == null) throw new UnauthorizedAccessException();
+        FileSystemSecurity security = directory
+            ? (FileSystemSecurity)new DirectorySecurity() : new FileSecurity();
+        // This owner is supplied only to CREATE_NEW/CreateDirectory, never applied
+        // to an existing object or inferred from the token's default Owner group.
+        security.SetOwner(user);
+        security.SetAccessRuleProtection(true, false);
+        foreach (string value in new[] { user.Value, "S-1-5-18", "S-1-5-32-544" })
+        {
+            var sid = new SecurityIdentifier(value);
+            security.AddAccessRule(directory
+                ? new FileSystemAccessRule(sid, FileSystemRights.FullControl,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None, AccessControlType.Allow)
+                : new FileSystemAccessRule(sid, FileSystemRights.FullControl, AccessControlType.Allow));
+        }
+        return security.GetSecurityDescriptorBinaryForm();
+    }
+    private static void EnsureDirectory(string path, bool target)
+    {
+        // Ancestors are namespace only, not accepted as private state or changed.
+        // Missing ancestors receive the same owner/DACL at their creation.
+        try
+        {
+            FileAttributes attributes = File.GetAttributes(path);
+            if ((attributes & FileAttributes.ReparsePoint) != 0 ||
+                (attributes & FileAttributes.Directory) == 0) throw new IOException();
+            if (target) Execute("protect", path); // Existing target stays strictly User-owned.
+            return;
+        }
+        catch (FileNotFoundException) { }
+        catch (DirectoryNotFoundException) { }
+        string parent = Path.GetDirectoryName(path);
+        if (String.IsNullOrEmpty(parent) || parent == path) throw new IOException();
+        EnsureDirectory(parent, false);
+        GCHandle pinned = GCHandle.Alloc(NewDescriptor(true), GCHandleType.Pinned);
+        try
+        {
+            var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
+                Descriptor = pinned.AddrOfPinnedObject(), Inherit = false };
+            if (!CreateOwnedDirectory(path, ref security))
+            {
+                int error = Marshal.GetLastWin32Error();
+                if (error != 183) throw new Win32Exception(error);
+                // A concurrent creator is not permission authority. Recheck it.
+                Execute(target ? "protect" : "check", path);
+            }
+            else Execute("protect", path);
+        }
+        finally { pinned.Free(); }
+    }
+    private sealed class PrivateStateAlreadyExistsException : IOException { }
+
+    private static void CreatePrivateFile(string path)
+    {
+        // Content is created only inside an already checked private directory.
+        // Never make a namespace supplied by a caller permission authority.
+        Execute("check", Path.GetDirectoryName(path));
+        GCHandle pinned = GCHandle.Alloc(NewDescriptor(false), GCHandleType.Pinned);
+        try
+        {
+            var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
+                Descriptor = pinned.AddrOfPinnedObject(), Inherit = false };
+            // CREATE_NEW: an existing file (including an Administrator-owned one)
+            // is never adopted, truncated, or given a different owner.
+            using (SafeFileHandle file = CreateOwnedFile(path, 0x40000000u | ReadControl | 0x80u,
+                7, ref security, 1, 0x00200000u, IntPtr.Zero))
+            {
+                if (file.IsInvalid) {
+                    int error = Marshal.GetLastWin32Error();
+                    if (error == 80 || error == 183) throw new PrivateStateAlreadyExistsException();
+                    throw new Win32Exception(error);
+                }
+                RawSecurityDescriptor created = ReadSecurity(file);
+                SecurityIdentifier user;
+                using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) user = identity.User;
+                CheckOwner(created, user);
+                CheckAccess(created, new[] { user.Value, "S-1-5-18", "S-1-5-32-544" });
+                if ((created.ControlFlags & ControlFlags.DiscretionaryAclProtected) == 0)
+                    throw new UnauthorizedAccessException("UNPROTECTED_PRIVATE_DACL");
+            }
+            Execute("check", path);
+        }
+        finally { pinned.Free(); }
+    }
 
     static CodexManagePrivateStateSecurity()
     {
@@ -208,6 +321,8 @@ public static class CodexManagePrivateStateSecurity
 
     public static void Execute(string action, string requestedPath)
     {
+        if (action == "create-directory") { EnsureDirectory(FullPath(requestedPath), true); return; }
+        if (action == "create-file") { CreatePrivateFile(FullPath(requestedPath)); return; }
         if (action != "protect" && action != "protect-file" && action != "check")
             throw new ArgumentException();
         string path = Path.GetFullPath(requestedPath);

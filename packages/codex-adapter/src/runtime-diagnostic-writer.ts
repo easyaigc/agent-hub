@@ -1,7 +1,10 @@
 import { parentPort, workerData } from 'node:worker_threads';
-import { appendFileSync, existsSync, lstatSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { existsSync, lstatSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  makePrivateDirectorySync,
+  writePrivateFileSync,
+  renamePrivateFileSync,
   assertPrivateFile,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
@@ -27,7 +30,7 @@ parentPort.on('message', (batch: unknown) => {
   let ok = false;
   try {
     if (!Array.isArray(batch) || batch.length > 64) throw new Error('Invalid diagnostic batch');
-    mkdirSync(root, { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(root);
     protectWindowsStateDirectory(root);
     // No permission cache; recheck on each batch and fail closed.
     const info = lstatSync(root);
@@ -55,17 +58,17 @@ parentPort.on('message', (batch: unknown) => {
       }
       if (existsSync(file + '.1')) {
         checked(file + '.1');
-        renameSync(file + '.1', file + '.2');
+        renamePrivateFileSync(file + '.1', file + '.2');
       }
-      renameSync(file, file + '.1');
+      renamePrivateFileSync(file, file + '.1');
     }
     // Create/protect before writing any diagnostic bytes.
     if (!existsSync(file)) {
-      appendFileSync(file, '', { mode: 0o600 });
+      writePrivateFileSync(file, '', { mode: 0o600, flag: 'a' });
       protectWindowsStateFile(file);
     }
     checked(file);
-    appendFileSync(file, lines, { mode: 0o600 });
+    writePrivateFileSync(file, lines, { mode: 0o600, flag: 'a' });
     ok = true;
   } catch {
     /* No recursive logger or raw writer errors. */

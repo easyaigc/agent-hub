@@ -206,7 +206,7 @@ childProcess.execFileSync = (file, args, options) => {
   if (file.endsWith('private-state.exe')) return 'PRIVATE_STATE_OK';
   if (args.some(arg => arg.endsWith('private-state.ps1'))) {
     const action=args[args.indexOf('-Action')+1],path=args[args.indexOf('-Path')+1];
-    assert(['protect','protect-file','check','bootstrap-native'].includes(action));
+    assert(['protect','protect-file','check','create-directory','create-file','publish-native','bootstrap-native'].includes(action));
     if(action==='bootstrap-native')for(const flag of ['-BinaryPath','-PhysicalPath']){
       const binary=args[args.indexOf(flag)+1],inside=relative(${JSON.stringify(directory)},binary);
       assert(binary&&inside!=='..'&&!inside.startsWith('..'+sep),'Binary bootstrap escaped fixture root');
@@ -214,6 +214,14 @@ childProcess.execFileSync = (file, args, options) => {
     }
     const contained=relative(${JSON.stringify(directory)},path);
     assert(contained!=='..'&&!contained.startsWith('..'+sep),'Bootstrap escaped fixture root');
+    if(action==='create-directory')fs.mkdirSync(path,{recursive:true,mode:0o700});
+    if(action==='create-file')fs.closeSync(fs.openSync(path,'wx',0o600));
+    if(action==='publish-native'){
+      const target=args[args.indexOf('-BinaryPath')+1],inside=relative(${JSON.stringify(directory)},target);
+      assert(target&&inside!=='..'&&!inside.startsWith('..'+sep),'Publication escaped fixture root');
+      assert(!fs.existsSync(target),'Publication cannot replace another helper');
+      fs.renameSync(path,target);
+    }
     return 'PRIVATE_STATE_OK';
   }
   if (args.includes('inspect')) return ${JSON.stringify(JSON.stringify(identity))};

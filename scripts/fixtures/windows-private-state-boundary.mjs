@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { lstatSync, realpathSync } from 'node:fs';
+import { closeSync, existsSync, lstatSync, mkdirSync, openSync, realpathSync } from 'node:fs';
 import { registerHooks } from 'node:module';
-import { isAbsolute, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
 const fixtures = new Map();
 
@@ -52,14 +52,29 @@ export function createFixtureBackend(token, ...args) {
     },
     call(action, path) {
       assert(!closed, 'Permission fixture is closed');
-      assert(['protect', 'protect-file', 'check'].includes(action));
+      assert(
+        ['protect', 'protect-file', 'check', 'create-directory', 'create-file'].includes(action),
+      );
       assert.equal(typeof path, 'string');
+      // Canonicalize the existing ancestor before the containment check: macOS
+      // /var may alias /private/var even for this fixture's own temporary root.
+      const absolute = resolve(path);
+      let ancestor = absolute;
+      while (!existsSync(ancestor)) ancestor = dirname(ancestor);
+      const canonical = resolve(realpathSync(ancestor), relative(ancestor, absolute));
+      const requested = relative(fixture.root, canonical);
+      assert(
+        requested !== '..' && !requested.startsWith('..' + sep) && !isAbsolute(requested),
+        'Permission fixture cannot access or create outside its disposable root',
+      );
+      if (action === 'create-directory') mkdirSync(path, { recursive: true, mode: 0o700 });
+      if (action === 'create-file') closeSync(openSync(path, 'wx', 0o600));
       const info = lstatSync(path);
       assert(!info.isSymbolicLink(), 'Permission fixture cannot follow a link');
       assert(
         action === 'check'
           ? info.isDirectory() || info.isFile()
-          : action === 'protect'
+          : ['protect', 'create-directory'].includes(action)
             ? info.isDirectory()
             : info.isFile(),
       );
@@ -72,6 +87,9 @@ export function createFixtureBackend(token, ...args) {
       // Observe or reject only a real, root-contained file/directory call.
       // The observer cannot mutate the fixture's recorded call.
       fixture.onCall?.(Object.freeze({ action, path }));
+    },
+    async callAsync(action, path) {
+      this.call(action, path);
     },
     close() {
       closed = true;

@@ -1885,7 +1885,7 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
   await writeFile(
     stub,
     `
-    export {assertPrivateFile,assertPrivateFileAsync,protectWindowsStateDirectory,protectWindowsStateFile,protectWindowsStateFileAsync,windowsTraceInstanceReady} from ${JSON.stringify(platformURL)};
+    export {makePrivateDirectorySync,writePrivateFileSync,renamePrivateFileSync,assertPrivateFile,assertPrivateFileAsync,protectWindowsStateDirectory,protectWindowsStateFile,protectWindowsStateFileAsync,windowsTraceInstanceReady} from ${JSON.stringify(platformURL)};
     export const evidence={instance:undefined,probeFailed:false};
     export const inspectWindowsTraceInstance=()=>{if(evidence.probeFailed)throw Error('synthetic unavailable P');return evidence.instance;};
   `,

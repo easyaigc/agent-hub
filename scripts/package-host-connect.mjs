@@ -73,6 +73,9 @@ const fixedSourceFiles = new Set([
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativePublicProcessCapture.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessDiagnosticObserver.java',
   'apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java',
+  'apps/android/src/androidTest/java/com/agenthub/android/P8WindowPixelCopyDestination.java',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/capture-exit-barrier/P8CaptureExitBarrierChecks.java',
+  'docs/plans/android-alignment-20261022/parallel/p8-easywork/common-capture-lifetime/P8WindowPixelCopyDestinationChecks.java',
   'scripts/mobile/fixtures/NaturalDiagnosticCapacityVectors.java',
   'scripts/mobile/fixtures/NaturalVisibilityVectors.java',
 ]);

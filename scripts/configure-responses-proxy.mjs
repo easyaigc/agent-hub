@@ -1,20 +1,15 @@
-import { randomBytes, X509Certificate } from 'node:crypto';
-import {
-  mkdir,
-  readFile,
-  writeFile,
-  lstat,
-  realpath,
-  mkdtemp,
-  chmod,
-  rename,
-  rm,
-} from 'node:fs/promises';
+import { randomBytes, randomUUID, X509Certificate } from 'node:crypto';
+import { closeSync, existsSync, fstatSync } from 'node:fs';
+import { readFile, lstat, realpath, chmod, rm, rmdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
 import { isIP } from 'node:net';
 import {
   assertPrivateFile,
+  makePrivateDirectorySync,
+  openPrivateFileSync,
+  openPrivateFile,
+  renamePrivateFileSync,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
   withWindowsProcessCreation,
@@ -69,7 +64,7 @@ if (
   port > 65535
 )
   throw Error('Invalid listener or certificate IP addresses');
-await mkdir(directory, { recursive: true, mode: 0o700 });
+makePrivateDirectorySync(directory);
 const info = await lstat(directory);
 if (
   !info.isDirectory() ||
@@ -92,8 +87,25 @@ const present = await Promise.all([exists(cert), exists(key)]);
 if (present.some(Boolean) && !present.every(Boolean))
   throw Error('Restore the original incomplete TLS identity; refusing automatic rotation');
 if (!present[0]) {
-  const scratch = await mkdtemp(join(directory, 'certificate-'));
+  const scratch = join(directory, 'certificate-' + randomUUID());
+  if (existsSync(scratch))
+    throw Object.assign(new Error('Certificate scratch directory already exists'), {
+      code: 'EEXIST',
+    });
+  makePrivateDirectorySync(scratch);
+  const created = [];
   try {
+    // Keep explicit User ownership when OpenSSL overwrites its private outputs.
+    for (const name of ['key.pem', 'cert.pem']) {
+      const path = join(scratch, name);
+      const file = openPrivateFileSync(path, 'wx', 0o600);
+      try {
+        const identity = fstatSync(file, { bigint: true });
+        created.push({ path, dev: identity.dev, ino: identity.ino });
+      } finally {
+        closeSync(file);
+      }
+    }
     const executable =
       process.env.HOST_AGENT_OPENSSL ??
       (process.platform === 'win32'
@@ -123,14 +135,35 @@ if (!present[0]) {
         { timeout, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] },
       ),
     );
-    for (const name of ['key.pem', 'cert.pem']) {
-      await chmod(join(scratch, name), 0o600);
-      protectWindowsStateFile(join(scratch, name));
+    for (const reserved of created) {
+      const current = await lstat(reserved.path, { bigint: true });
+      if (
+        !current.isFile() ||
+        current.isSymbolicLink() ||
+        current.dev !== reserved.dev ||
+        current.ino !== reserved.ino
+      )
+        throw new Error('Certificate output identity changed');
+      await chmod(reserved.path, 0o600);
+      protectWindowsStateFile(reserved.path);
     }
-    await rename(join(scratch, 'key.pem'), key);
-    await rename(join(scratch, 'cert.pem'), cert);
+    renamePrivateFileSync(join(scratch, 'key.pem'), key);
+    renamePrivateFileSync(join(scratch, 'cert.pem'), cert);
   } finally {
-    await rm(scratch, { recursive: true, force: true });
+    for (const reserved of created) {
+      // A missing, replaced or uninspectable path is not ours to remove.
+      const current = await lstat(reserved.path, { bigint: true }).catch(() => undefined);
+      if (
+        current?.isFile() &&
+        !current.isSymbolicLink() &&
+        current.dev === reserved.dev &&
+        current.ino === reserved.ino
+      )
+        await rm(reserved.path, { force: true });
+    }
+    await rmdir(scratch).catch((error) => {
+      if (error.code !== 'ENOTEMPTY' && error.code !== 'EEXIST') throw error;
+    });
   }
 }
 assertPrivateFile(key);
@@ -144,7 +177,12 @@ if (
   );
 const tokenFile = join(directory, 'access-token');
 try {
-  await writeFile(tokenFile, randomBytes(32).toString('base64url'), { flag: 'wx', mode: 0o600 });
+  const token = await openPrivateFile(tokenFile, 'wx', 0o600);
+  try {
+    await token.writeFile(randomBytes(32).toString('base64url'));
+  } finally {
+    await token.close();
+  }
   protectWindowsStateFile(tokenFile);
 } catch (error) {
   if (error.code !== 'EEXIST') throw error;
@@ -168,11 +206,12 @@ const configuration = {
   certificateExpiresAt: certificate.validTo,
   tokenFile,
 };
-await writeFile(
-  join(directory, 'configuration.json'),
-  JSON.stringify(configuration, null, 2) + '\n',
-  { mode: 0o600 },
-);
+const output = await openPrivateFile(join(directory, 'configuration.json'), 'w', 0o600);
+try {
+  await output.writeFile(JSON.stringify(configuration, null, 2) + '\n');
+} finally {
+  await output.close();
+}
 protectWindowsStateFile(join(directory, 'configuration.json'));
 // Preparing configuration never starts a listener or enables inference.
 console.log(JSON.stringify(configuration, null, 2));

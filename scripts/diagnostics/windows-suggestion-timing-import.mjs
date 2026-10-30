@@ -145,7 +145,12 @@ const [
   { DesktopSuggestionObserver },
   { DesktopSuggestionWorkerClient },
   { DesktopPredictionTraceReader },
-  { protectWindowsStateDirectory, protectWindowsStateFile },
+  {
+    makePrivateDirectorySync,
+    openPrivateFileSync,
+    protectWindowsStateDirectory,
+    protectWindowsStateFile,
+  },
 ] = await Promise.all(
   [
     'runtime-session',
@@ -1261,16 +1266,23 @@ export function writeTimingEvidence() {
   // process/isolate/Worker integers and local counters identify timing contexts;
   // Business IDs appear only as fixed hashes; arguments, paths and bodies stay out.
   const root = fileURLToPath(new URL('../../.local/windows-suggestion-timing/', import.meta.url));
-  fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+  makePrivateDirectorySync(root);
   if (!fs.lstatSync(root).isDirectory() || fs.lstatSync(root).isSymbolicLink())
     throw new Error('Unsafe timing evidence directory');
   fs.chmodSync(root, 0o700);
   protectWindowsStateDirectory(root);
   const directory = join(root, randomUUID());
-  fs.mkdirSync(directory, { mode: 0o700 });
+  if (fs.existsSync(directory))
+    throw Object.assign(new Error('Timing evidence directory already exists'), { code: 'EEXIST' });
+  makePrivateDirectorySync(directory);
   protectWindowsStateDirectory(directory);
   output = join(directory, 'timing.json');
-  originalWriteFileSync(output, JSON.stringify(summary), { flag: 'wx', mode: 0o600 });
+  const file = openPrivateFileSync(output, 'wx', 0o600);
+  try {
+    originalWriteFileSync(file, JSON.stringify(summary));
+  } finally {
+    fs.closeSync(file);
+  }
   protectWindowsStateFile(output);
   return output;
 }

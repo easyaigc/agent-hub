@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { creationGates } from '../packages/codex-adapter/dist/desktop-creation-driver.js';
 import { preparedAdapterDigest } from '../packages/codex-adapter/dist/desktop-prepared-bridge.js';
 import {
+  makePrivateDirectorySync,
+  openPrivateFile,
   protectWindowsStateDirectory,
   protectWindowsStateFile,
 } from '../packages/codex-adapter/dist/desktop-platform.js';
@@ -82,10 +84,15 @@ const proof = {
   })),
 };
 const directory = resolve('.local/desktop-prepared-proofs');
-await mkdir(directory, { recursive: true, mode: 0o700 });
+makePrivateDirectorySync(directory);
 protectWindowsStateDirectory(directory);
 const file = join(directory, first.hostId + '-' + Date.now() + '.json');
-await writeFile(file, JSON.stringify(proof, null, 2), { mode: 0o600 });
+const output = await openPrivateFile(file, 'w', 0o600);
+try {
+  await output.writeFile(JSON.stringify(proof, null, 2));
+} finally {
+  await output.close();
+}
 protectWindowsStateFile(file);
 console.log(
   JSON.stringify({

@@ -56,6 +56,15 @@ internal static class PrivateState
         return path;
     }
 
+    private static string FailureResponse(Exception error)
+    {
+        string value = "UNSAFE_WINDOWS_PRIVATE_STATE:" + error.GetType().Name;
+        string step = error.Data["CodexManage.NativeStep"] as string;
+        if (step == "normalize-path" || step == "directory-attributes" || step == "directory-parent" ||
+            step == "directory-descriptor" || step == "create-directory" || step == "directory-protect") value += ":" + step;
+        return value;
+    }
+
     private static int Serve()
     {
         Console.InputEncoding = Utf8;
@@ -97,7 +106,7 @@ internal static class PrivateState
                 }
                 catch (Exception error)
                 {
-                    response = "UNSAFE_WINDOWS_PRIVATE_STATE:" + error.GetType().Name;
+                    response = FailureResponse(error);
                 }
                 lock (Gate)
                 {
@@ -117,6 +126,7 @@ internal static class PrivateState
     {
         try
         {
+            System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(CodexManagePrivateStateSecurity).TypeHandle);
             if (args.Length == 1 && args[0] == "serve") return Serve();
             if (args.Length != 2) throw new ArgumentException();
             if (args[0] == "create-file") Console.Out.WriteLine(CodexManagePrivateStateSecurity.CreatePrivateFileReceipt(args[1]));
@@ -125,7 +135,7 @@ internal static class PrivateState
         }
         catch (Exception error)
         {
-            Console.Error.WriteLine("UNSAFE_WINDOWS_PRIVATE_STATE:" + error.GetType().Name);
+            Console.Error.WriteLine(FailureResponse(error));
             return 1;
         }
     }
@@ -153,13 +163,56 @@ public static partial class CodexManagePrivateStateSecurity
     private static extern SafeFileHandle CreateOwnedFile(string path, uint access, uint share,
         ref SecurityAttributes security, uint creation, uint flags, IntPtr template);
 
+    [DllImport("kernel32.dll", EntryPoint = "GetFullPathNameW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    private static extern uint NativeFullPath(string path, uint length, StringBuilder buffer, IntPtr filePart);
+    [DllImport("kernel32.dll", EntryPoint = "GetFileAttributesW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    private static extern uint NativeAttributes(string path);
+
+    // PowerShell may have already cached Framework legacy path switches before
+    // Add-Type. Do not send extended paths through BCL path normalization/IO.
     private static string FullPath(string path)
     {
-        path = Path.GetFullPath(path);
-        if (!path.StartsWith(@"\\?\", StringComparison.Ordinal))
-            path = path.StartsWith(@"\\", StringComparison.Ordinal)
+        try
+        {
+            if (String.IsNullOrWhiteSpace(path) || path.IndexOf('\0') >= 0) throw new ArgumentException();
+            if (path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) path = @"\\" + path.Substring(8);
+            else if (path.StartsWith(@"\\?\", StringComparison.Ordinal))
+            {
+                if (path.Length < 7 || !Char.IsLetter(path[4]) || path[5] != ':' ||
+                    (path[6] != '\\' && path[6] != '/')) throw new ArgumentException();
+                path = path.Substring(4);
+            }
+            var buffer = new StringBuilder(32768);
+            uint size = NativeFullPath(path, (uint)buffer.Capacity, buffer, IntPtr.Zero);
+            if (size == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (size >= buffer.Capacity) throw new PathTooLongException();
+            path = buffer.ToString();
+            return path.StartsWith(@"\\", StringComparison.Ordinal)
                 ? @"\\?\UNC\" + path.Substring(2) : @"\\?\" + path;
-        return path;
+        }
+        catch (Exception error) { MarkStep(error, "normalize-path"); throw; }
+    }
+    private static string ParentDirectory(string path)
+    {
+        int root;
+        if (path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+        {
+            int server = path.IndexOf('\\', 8);
+            if (server <= 8) throw new IOException();
+            int share = path.IndexOf('\\', server + 1);
+            root = share < 0 ? path.Length : share + 1;
+        }
+        else if (path.Length >= 7 && path[5] == ':' && path[6] == '\\') root = 7;
+        else throw new IOException();
+        int end = path.Length;
+        while (end > root && path[end - 1] == '\\') end--;
+        if (end <= root) return null;
+        int separator = path.LastIndexOf('\\', end - 1);
+        return path.Substring(0, Math.Max(root, separator));
+    }
+    private static void MarkStep(Exception error, string step)
+    {
+        if (!error.Data.Contains("CodexManage.NativeStep")) error.Data["CodexManage.NativeStep"] = step;
     }
     private static byte[] NewDescriptor(bool directory)
     {
@@ -185,36 +238,44 @@ public static partial class CodexManagePrivateStateSecurity
     }
     private static void EnsureDirectory(string path, bool target)
     {
-        // Ancestors are namespace only, not accepted as private state or changed.
-        // Missing ancestors receive the same owner/DACL at their creation.
+        string step = "directory-attributes";
         try
         {
-            FileAttributes attributes = File.GetAttributes(path);
-            if ((attributes & FileAttributes.ReparsePoint) != 0 ||
-                (attributes & FileAttributes.Directory) == 0) throw new IOException();
-            if (target) Execute("protect", path); // Existing target stays strictly User-owned.
-            return;
-        }
-        catch (FileNotFoundException) { }
-        catch (DirectoryNotFoundException) { }
-        string parent = Path.GetDirectoryName(path);
-        if (String.IsNullOrEmpty(parent) || parent == path) throw new IOException();
-        EnsureDirectory(parent, false);
-        GCHandle pinned = GCHandle.Alloc(NewDescriptor(true), GCHandleType.Pinned);
-        try
-        {
-            var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
-                Descriptor = pinned.AddrOfPinnedObject(), Inherit = false };
-            if (!CreateOwnedDirectory(path, ref security))
+            // Ancestors remain namespace only; never change an existing owner.
+            uint attributes = NativeAttributes(path);
+            if (attributes != UInt32.MaxValue)
             {
-                int error = Marshal.GetLastWin32Error();
-                if (error != 183) throw new Win32Exception(error);
-                // A concurrent creator is not permission authority. Recheck it.
-                Execute(target ? "protect" : "check", path);
+                if ((attributes & (uint)FileAttributes.ReparsePoint) != 0 ||
+                    (attributes & (uint)FileAttributes.Directory) == 0) throw new IOException();
+                step = "directory-protect";
+                if (target) Execute("protect", path);
+                return;
             }
-            else Execute("protect", path);
+            int missing = Marshal.GetLastWin32Error();
+            if (missing != 2 && missing != 3) throw new Win32Exception(missing);
+            step = "directory-parent";
+            string parent = ParentDirectory(path);
+            if (String.IsNullOrEmpty(parent) || parent == path) throw new IOException();
+            EnsureDirectory(parent, false);
+            step = "directory-descriptor";
+            GCHandle pinned = GCHandle.Alloc(NewDescriptor(true), GCHandleType.Pinned);
+            try
+            {
+                var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
+                    Descriptor = pinned.AddrOfPinnedObject(), Inherit = false };
+                step = "create-directory";
+                if (!CreateOwnedDirectory(path, ref security))
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    if (error != 183) throw new Win32Exception(error);
+                    step = "directory-protect";
+                    Execute(target ? "protect" : "check", path);
+                }
+                else { step = "directory-protect"; Execute("protect", path); }
+            }
+            finally { pinned.Free(); }
         }
-        finally { pinned.Free(); }
+        catch (Exception error) { MarkStep(error, step); throw; }
     }
     private sealed class PrivateStateAlreadyExistsException : IOException { }
 
@@ -232,7 +293,7 @@ public static partial class CodexManagePrivateStateSecurity
     private static SafeFileHandle CreatePrivateFileHandle(string path, bool rename = false)
     {
         path = FullPath(path);
-        Execute("check", Path.GetDirectoryName(path));
+        Execute("check", ParentDirectory(path));
         GCHandle pinned = GCHandle.Alloc(NewDescriptor(false), GCHandleType.Pinned);
         SafeFileHandle file = null;
         try
@@ -367,7 +428,7 @@ public static partial class CodexManagePrivateStateSecurity
         if (action == "create-file") { CreatePrivateFile(FullPath(requestedPath)); return; }
         if (action != "protect" && action != "protect-file" && action != "check")
             throw new ArgumentException();
-        string path = Path.GetFullPath(requestedPath);
+        string path = FullPath(requestedPath);
         if (!path.StartsWith(@"\\?\", StringComparison.Ordinal))
             path = path.StartsWith(@"\\", StringComparison.Ordinal)
                 ? @"\\?\UNC\" + path.Substring(2) : @"\\?\" + path;

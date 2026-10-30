@@ -4,6 +4,7 @@ import { MessagePort, parentPort, workerData } from 'node:worker_threads';
 import { windowsPrivateStateNativeExecutable } from './desktop-platform.js';
 import {
   privateStatePath,
+  parseWindowsPrivateStateRejection,
   privateStateProtocol as p,
   privateStateNativeDiagnostics,
   privateStateNativeStage,
@@ -273,13 +274,15 @@ try {
         return;
       }
       const match =
-        /^([1-9][0-9]*)\t(PRIVATE_STATE_OK|PRIVATE_STATE_CREATED:[a-f0-9]{32}:[a-f0-9]{8}:[a-f0-9]{16}|UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127})$/.exec(
+        /^([1-9][0-9]*)\t(PRIVATE_STATE_OK|PRIVATE_STATE_CREATED:[a-f0-9]{32}:[a-f0-9]{8}:[a-f0-9]{16}|UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}(?::[a-z-]{1,40})?)$/.exec(
           line,
         );
       if (
         !pending ||
         !match ||
         match[0] !== line ||
+        (match[2]?.startsWith('UNSAFE_WINDOWS_PRIVATE_STATE:') &&
+          !parseWindowsPrivateStateRejection(match[2])) ||
         Number(match[1]) !== pending ||
         pending !== Atomics.load(control, p.request) ||
         Atomics.load(control, p.state) !== p.ready ||

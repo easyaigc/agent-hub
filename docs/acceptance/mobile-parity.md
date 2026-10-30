@@ -1549,3 +1549,5 @@ Source65首项实际失败及原件保持已独立核74调用；Source66组合SD
 2026-10-30 F03/F17/F31/F32/F69 Native／分页／冻结 R5 集成候选：已在规范库重建冻结 R5 `735be79e`，与其官方 ZIP 比较五组件 244 路径、实际 ESM 闭包 584 路径、Windows 资源 26 路径、脚本 388 路径均逐字节一致；bundle createdAt 生成时间不同。旧 R5 tag 的公开树不等于记录的规范提交树，不能据 tag 声称同树，本候选从完整规范 main 统一交付。集成 R5 的七文件差异并保留 main 私有创建租约／旧数据边界；不导入其他任务活动 WIP。Windows 上一包真实 Native 前检在 compile / Win32 87 停止，后续私有创建、reader、部署未执行；连接已恢复不等于升级验收完成。当前新增 Windows 原生用例覆盖未预建 Session 根、旧 history/附件 owner/字节/引用保留、同步上传及 inline 图像私有创建；准确执行结果按新冻结包单独追加。macOS fixture、C# 语义编译与真实 Windows／两端手机验收分列，未执行项不计通过。
 
 2026-10-30 F03/F31/F32/F69 冻结 R9/R10 统一：保留主线私有创建、更新恢复及已安装冻结能力；双端页面/文案未改。macOS 定向辅助：8 项发现、1 项真实产品旧附件 resolve/download、86 项采样相关通过，5 项 Windows 原生明确跳过。来源上一同资源普通 Main Native 预检退出0/8471ms仅复用匹配组件，不能替代新整包闭包、真实 Admin-owner 旧叶、reader恢复、切换或安装更新。规范输入及最小入口见 [专项记录](codex-update-r10-legacy-20261030.md)；本轮未操作原手机/producer。
+
+2026-10-31 F03/F31/F32/F69：来源旧Native只读ACL/闭包预检通过保留原范围，随后首次目录准备ArgumentException发生在reader创建之前；不记reader失败或更新通过。Unicode Win32路径/属性修复及固定步骤新增输入须重新Windows预检与首次/旧布局/reader验收，macOS/fixture不替代。见[专项记录](windows-native-first-directory-20261031.md)。

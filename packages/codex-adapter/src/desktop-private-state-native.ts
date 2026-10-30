@@ -34,12 +34,39 @@ export function parseWindowsPrivateFileIdentity(
   return match ? { volume: match[1]!, fileId: match[2]! } : undefined;
 }
 
+export const privateStateDirectorySteps = Object.freeze([
+  'normalize-path',
+  'directory-attributes',
+  'directory-parent',
+  'directory-descriptor',
+  'create-directory',
+  'directory-protect',
+] as const);
+export function parseWindowsPrivateStateRejection(
+  value: string,
+): { nativeError: string; nativeType: string; nativeStep?: string } | undefined {
+  const match =
+    /^UNSAFE_WINDOWS_PRIVATE_STATE:([A-Za-z][A-Za-z0-9]{0,127})(?::([a-z-]{1,40}))?$/.exec(value);
+  if (
+    !match ||
+    match[0] !== value ||
+    (match[2] !== undefined && !privateStateDirectorySteps.some((step) => step === match[2]))
+  )
+    return;
+  return {
+    nativeError: 'UNSAFE_WINDOWS_PRIVATE_STATE:' + match[1],
+    nativeType: match[1]!,
+    ...(match[2] === undefined ? {} : { nativeStep: match[2] }),
+  };
+}
+
 export type WindowsPrivateStateAction =
   'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file' | 'release-file';
 // Separate from the permission response: diagnostic data never authorizes a call.
 export const privateStateNativeDiagnostics = Object.freeze({
   words: 11,
   steps: [
+    ...privateStateDirectorySteps,
     'prepare',
     'pin-source-directory',
     'hash-source',
@@ -906,13 +933,11 @@ export function createWindowsPrivateStateBackend(
           if (identity) return identity;
         } else if (response === 'PRIVATE_STATE_OK') return;
       }
-      if (
-        Atomics.load(control, p.result) === p.rejected &&
-        /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}$/.exec(response)?.[0] === response
-      )
+      const refusal = parseWindowsPrivateStateRejection(response);
+      if (Atomics.load(control, p.result) === p.rejected && refusal)
         throw Object.assign(new Error('Windows private state rejected'), {
           code: 'UNSAFE_WINDOWS_PRIVATE_STATE',
-          nativeError: response,
+          ...refusal,
         });
       throw unavailable();
     } catch (error) {

@@ -494,6 +494,38 @@ test('fresh native rejection is correlated, does not poison the child or reuse a
   );
 });
 
+for (const step of [
+  'normalize-path',
+  'directory-attributes',
+  'directory-parent',
+  'directory-descriptor',
+  'create-directory',
+  'directory-protect',
+])
+  test(`native directory rejection keeps bounded stage ${step} without losing its original error`, async (t) => {
+    const f = await fixture(t, 'directory-step-' + step),
+      backend = f.open();
+    assert.throws(
+      () => backend.call('check', 'synthetic-target'),
+      (error) =>
+        rejected(error) &&
+        error.nativeError === 'UNSAFE_WINDOWS_PRIVATE_STATE:ArgumentException' &&
+        error.nativeType === 'ArgumentException' &&
+        error.nativeStep === step,
+    );
+    const pid = backend.status.pid;
+    assert.throws(() => backend.call('check', 'synthetic-target'), rejected);
+    assert.equal(backend.status.pid, pid);
+  });
+test('unrecognized native directory stage retires rather than exposing payload or accepting a result', async (t) => {
+  const f = await fixture(t, 'directory-step-secret-path'),
+    backend = f.open();
+  assert.throws(
+    () => backend.call('check', 'synthetic-target'),
+    (error) => unavailable(error) && !JSON.stringify(error).includes('secret-path'),
+  );
+});
+
 for (const mode of [
   'bad-ready',
   'crlf-ready',
@@ -1530,8 +1562,9 @@ test(
         (code === null || code === 1) &&
         stdout?.trim() === '' &&
         typeof nativeError === 'string' &&
-        /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}$/.exec(nativeError ?? '')?.[0] ===
-          nativeError;
+        /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}(?::(?:normalize-path|directory-attributes|directory-parent|directory-descriptor|create-directory|directory-protect))?$/.exec(
+          nativeError ?? '',
+        )?.[0] === nativeError;
       const outcome = cause
         ? unknown
           ? 'unknown'
@@ -1575,9 +1608,45 @@ test(
       } else
         assert.throws(
           () => candidate.call(action, path),
-          (error) => rejected(error) && error.nativeError === expected.stderr.trim(),
+          (error) =>
+            rejected(error) &&
+            error.nativeError === expected.stderr.trim().split(':').slice(0, 2).join(':') &&
+            error.nativeStep === expected.stderr.trim().split(':')[2],
         );
     };
+    // First serve operation must create the whole absent suffix, before any CLI
+    // success can accidentally warm a directory or bypass creation.
+    const firstMissing = join(native.directory, 'serve-first-missing-root', 'private-input');
+    assert.equal(existsSync(firstMissing), false);
+    backend.call('create-directory', firstMissing);
+    compare('protect', firstMissing);
+    // A separate PS5 process deliberately warms BCL legacy path caches before
+    // loading the real product type. No argv, permissions or budget workaround.
+    const warmedRoot = join(native.directory, 'warmed-bcl-root', 'private-input');
+    const literal = (value) => "'" + value.replaceAll("'", "''") + "'";
+    f.gate.withWindowsProcessCreation(5000, (timeout) =>
+      execFileSync(
+        join(system, 'System32/WindowsPowerShell/v1.0/powershell.exe'),
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          "$ErrorActionPreference='Stop';$null=[Environment]::CurrentDirectory;" +
+            "$null=[IO.Path]::GetFullPath('.');Add-Type -Path " +
+            literal(join(repository, 'packages/codex-adapter/windows/private-state.cs')) +
+            ';' +
+            "[CodexManagePrivateStateSecurity]::Execute('create-directory'," +
+            literal(warmedRoot) +
+            ');' +
+            "[CodexManagePrivateStateSecurity]::Execute('check'," +
+            literal(warmedRoot) +
+            ');',
+        ],
+        { encoding: 'utf8', stdio: 'pipe', timeout, windowsHide: true },
+      ),
+    );
+    assert.equal(existsSync(warmedRoot), true);
+    compare('protect', warmedRoot);
     const privateRoot = join(native.directory, 'explicit-user-owned');
     assert.equal(cli('create-directory', privateRoot).outcome, 'accepted');
     backend.call('create-directory', privateRoot);

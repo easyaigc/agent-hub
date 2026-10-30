@@ -104,7 +104,11 @@ lines.on('line', (line) => {
     }
   }
   const ok = `${id}\t${createdIdentity ? 'PRIVATE_STATE_CREATED:' + createdIdentity : 'PRIVATE_STATE_OK'}\n`;
-  if (config.mode === 'wrong-id') process.stdout.write(`${count + 1}\tPRIVATE_STATE_OK\n`);
+  if (config.mode?.startsWith('directory-step-'))
+    process.stdout.write(
+      `${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:ArgumentException:${config.mode.slice('directory-step-'.length)}\n`,
+    );
+  else if (config.mode === 'wrong-id') process.stdout.write(`${count + 1}\tPRIVATE_STATE_OK\n`);
   else if (config.mode === 'stale-id' && count > 1)
     process.stdout.write(`${count - 1}\tPRIVATE_STATE_OK\n`);
   else if (config.mode === 'duplicate') process.stdout.write(ok + ok);

@@ -26,6 +26,7 @@ packages/mobile-core/build/
 !/docs/acceptance/codex-update-resilience-20261030.md
 !/docs/acceptance/codex-update-r2-integration-20261030.md
 !/docs/acceptance/codex-update-r10-legacy-20261030.md
+!/docs/acceptance/windows-native-first-directory-20261031.md
 /docs/design/assets/
 /apps/ios/AppStore/README.md
 /apps/ios/AppStore/review-notes.txt

@@ -345,3 +345,7 @@ Host 可显式配置 CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG 指向本机私有�
 Bonjour 发布由独立 generation worker 处理：旧 worker 退出确认后才重试，发现失败不会退役原固定证书 HTTPS。状态由现有私有创建／原子发布边界保存，不能用普通 Node 创建后仅改 DACL 替代 User-owner 创建。Native sample bridge 对大型帧仅有界扫描顶层路由字段，忽略无关历史内嵌的 thread/sample；歧义和重复顶层字段按准确分类拒绝，保留原候选、取消、退出和未知操作边界。
 
 Windows 旧附件兼容按真实登记引用、目标和稳定文件快照验证；旧 Admin-owner 叶文件不因此获得全局私有状态权限。新附件保持 `attachments-v2`，原字节、owner、ACL、引用不变。统一包保留已部署 R10 与 Native config 环境字段，不回写较旧快照。冻结来源、普通 Main 验收入口及逐平台限制见[本轮记录](acceptance/codex-update-r10-legacy-20261030.md)。
+
+### Windows 首次私有创建的路径处理
+
+私有目录创建使用有界 Unicode Win32 路径与属性 API，避免 Framework 宿主在初始化之前缓存旧 BCL 路径开关。仅缺失路径可递归创建，拒绝访问、reparse、非目录及既有非 User-owner 对象继续拒绝；创建时设置 owner/DACL，预算、租约及退出屏障不变。拒绝保留固定 nativeStep，不含路径或原消息。新 Native 输入须重新做 Windows 普通 Main 预检和全缺失 Session 根／旧布局验收，见[专项入口与证据范围](acceptance/windows-native-first-directory-20261031.md)。

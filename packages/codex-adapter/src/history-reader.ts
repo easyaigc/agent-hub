@@ -11,6 +11,48 @@ import { historyIdentity } from './desktop-history-identity.js';
 
 export const codexClientType: ClientType = { id: 'codex', name: 'Codex' };
 
+/** Internal metadata-only selector, evaluated after the previous reader has fully closed. */
+export type HistoryExecutableResolver = (currentExecutable: string) => string | Promise<string>;
+
+const readerFailures = {
+  resolve: [
+    'CODEX_READER_EXECUTABLE_RESOLUTION_FAILED',
+    'Codex metadata executable resolution failed',
+  ],
+  spawn: ['CODEX_READER_SPAWN_FAILED', 'Codex executable unavailable'],
+  shutdown: ['CODEX_READER_EXIT_UNCONFIRMED', 'Previous metadata reader exit unconfirmed'],
+  closed: ['CODEX_READER_CLOSED', 'Reader closed'],
+} as const;
+const readerOsCodes = new Set([
+  'ENOENT',
+  'EACCES',
+  'EPERM',
+  'ENOEXEC',
+  'EINVAL',
+  'E2BIG',
+  'EMFILE',
+  'ENFILE',
+  'ENOMEM',
+  'EAGAIN',
+  'EPIPE',
+  'ECONNRESET',
+  'ETIMEDOUT',
+]);
+function readerFailure(stage: keyof typeof readerFailures, error?: unknown): Error {
+  const rawCode =
+    error && typeof error === 'object' ? (error as { code?: unknown }).code : undefined;
+  const osCode = typeof rawCode === 'string' && readerOsCodes.has(rawCode) ? rawCode : 'UNKNOWN';
+  const [code, message] = readerFailures[stage];
+  // Only bounded classifications cross the reader boundary, never raw errors or causes.
+  return Object.assign(new Error(message), {
+    name: `CodexMetadataReader_${stage}_${osCode}`,
+    code,
+    role: 'metadata-reader',
+    stage,
+    osCode,
+  });
+}
+
 type RecordValue = Record<string, unknown>;
 const object = (value: unknown): RecordValue => {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -73,6 +115,9 @@ export class CodexHistoryReader {
   private nextId = 0;
   private initialized = false;
   private startupTimeout = 15000;
+  private connecting: Promise<void> | undefined;
+  private lifecycle: Promise<void> = Promise.resolve();
+  private closeGeneration = 0;
   private pending = new Map<
     number,
     { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
@@ -80,8 +125,6 @@ export class CodexHistoryReader {
   private knownThreads = new Set<string>();
   private knownProjects = new Map<string, ReadProject>();
   private sidebar: DesktopSidebar | undefined;
-  private connecting: Promise<void> | undefined;
-  private connectionEpoch = 0;
   private executableGeneration: string | undefined;
   onDisconnect: () => void = () => {};
 
@@ -90,38 +133,36 @@ export class CodexHistoryReader {
     private readonly name: string,
     private executable = 'codex',
     private readonly desktopStatePath?: string,
+    private readonly executableResolver?: HistoryExecutableResolver,
   ) {}
   get ready(): boolean {
     return this.initialized && this.process?.exitCode === null && !this.process.killed;
   }
 
   /** Never replace a metadata subprocess until its exit and stdio close are confirmed. */
-  async configureExecutable(executable: string, generation?: string): Promise<void> {
-    if (executable === this.executable && generation === this.executableGeneration) return;
-    await this.closeAndWait();
-    this.executable = executable;
-    this.executableGeneration = generation;
+  configureExecutable(executable: string, generation?: string): Promise<void> {
+    // Serialize explicit configuration with in-flight resolution and startup too.
+    this.connecting = undefined;
+    const work = this.lifecycle.then(async () => {
+      if (executable === this.executable && generation === this.executableGeneration) return;
+      await this.closeAndWait();
+      this.executable = executable;
+      this.executableGeneration = generation;
+    });
+    this.lifecycle = work.catch(() => {});
+    return work;
   }
 
   private async closeAndWait(): Promise<void> {
     const child = this.process;
     if (!child) return;
-    this.fail(new Error('Reader retiring'));
-    child.kill('SIGTERM');
+    this.stop();
     let timer: NodeJS.Timeout | undefined;
     try {
       await Promise.race([
         this.processClosed,
         new Promise<never>((_, reject) => {
-          timer = setTimeout(
-            () =>
-              reject(
-                Object.assign(new Error('Previous metadata reader exit unconfirmed'), {
-                  code: 'CODEX_READER_EXIT_UNCONFIRMED',
-                }),
-              ),
-            10_000,
-          );
+          timer = setTimeout(() => reject(readerFailure('shutdown')), 10_000);
         }),
       ]);
       if (this.process === child) this.process = undefined;
@@ -132,33 +173,56 @@ export class CodexHistoryReader {
 
   connect(): Promise<void> {
     if (this.connecting) return this.connecting;
-    const epoch = this.connectionEpoch;
-    const work = this.connectOnce(epoch)
-      .catch((error) => {
-        if (epoch === this.connectionEpoch) this.close();
-        throw error;
-      })
+    const generation = this.closeGeneration;
+    const work = this.lifecycle
+      .then(() => this.start(generation))
       .finally(() => {
         if (this.connecting === work) this.connecting = undefined;
       });
     this.connecting = work;
+    this.lifecycle = work.catch(() => {});
     return work;
   }
-  private async connectOnce(epoch: number): Promise<void> {
+
+  private async start(generation: number): Promise<void> {
+    const assertOpen = () => {
+      if (generation !== this.closeGeneration) throw readerFailure('closed');
+    };
+    assertOpen();
     if (this.ready) return;
     await this.closeAndWait();
-    if (epoch !== this.connectionEpoch) throw new Error('Reader startup cancelled');
-    const child = withWindowsProcessCreation(15000, (remaining) => {
-      this.startupTimeout = remaining;
-      return spawn(this.executable, ['app-server', '--stdio'], {
-        windowsHide: true,
-        stdio: 'pipe',
-        env: {
-          ...process.env,
-          ...(this.desktopStatePath ? { CODEX_HOME: dirname(this.desktopStatePath) } : {}),
-        },
+    assertOpen();
+    let executable = this.executable;
+    if (this.executableResolver) {
+      try {
+        executable = await this.executableResolver(executable);
+        if (typeof executable !== 'string' || !executable) throw readerFailure('resolve');
+      } catch (error) {
+        throw readerFailure('resolve', error);
+      }
+    }
+    assertOpen();
+    const creation: { child?: ChildProcessWithoutNullStreams } = {};
+    let spawnFailure: Error | undefined;
+    try {
+      withWindowsProcessCreation(15000, (remaining) => {
+        this.startupTimeout = remaining;
+        creation.child = spawn(executable, ['app-server', '--stdio'], {
+          windowsHide: true,
+          stdio: 'pipe',
+          env: {
+            ...process.env,
+            ...(this.desktopStatePath ? { CODEX_HOME: dirname(this.desktopStatePath) } : {}),
+          },
+        });
       });
-    });
+    } catch (error) {
+      spawnFailure = readerFailure('spawn', error);
+    }
+    const child = creation.child;
+    if (!child) throw spawnFailure ?? readerFailure('spawn');
+    // No await between publishing the selected executable and its child/exit barrier.
+    this.executable = executable;
     this.process = child;
     diagnosticEvent({ scope: 'history-reader', stage: 'spawned', pid: child.pid });
     this.processClosed = new Promise((resolve) => child.once('close', resolve));
@@ -204,28 +268,34 @@ export class CodexHistoryReader {
         );
       }
     });
-    child.once('error', () => {
-      if (this.process === child) this.fail(new Error('Codex executable unavailable'));
+    child.once('error', (error) => {
+      if (this.process === child) this.fail(readerFailure('spawn', error));
     });
     child.once('exit', (exitCode) => {
       diagnosticEvent({ scope: 'history-reader', stage: 'exit', pid: child.pid, exitCode });
       if (this.process === child) this.fail(new Error('Codex reader disconnected'));
     });
-    await this.rpc('initialize', {
-      clientInfo: { name: 'codex_manage_history', title: 'Codex Manage History', version: '0.1.0' },
-      capabilities: { experimentalApi: true },
-    });
-    if (
-      epoch !== this.connectionEpoch ||
-      this.process !== child ||
-      child.killed ||
-      child.exitCode !== null
-    ) {
-      child.kill();
-      throw new Error('Reader startup cancelled');
+    try {
+      // Even a gate failure after spawn must retain and retire its actual child.
+      if (spawnFailure) throw spawnFailure;
+      await this.rpc('initialize', {
+        clientInfo: {
+          name: 'codex_manage_history',
+          title: 'Codex Manage History',
+          version: '0.1.0',
+        },
+        capabilities: { experimentalApi: true },
+      });
+      assertOpen();
+      if (this.process !== child || child.killed || child.exitCode !== null)
+        throw readerFailure('closed');
+      child.stdin.write(JSON.stringify({ method: 'initialized' }) + '\n');
+      this.initialized = true;
+    } catch (error) {
+      // A rejected initialize can leave a live child behind. Retry only after close.
+      await this.closeAndWait();
+      throw error;
     }
-    child.stdin.write(JSON.stringify({ method: 'initialized' }) + '\n');
-    this.initialized = true;
   }
 
   private fail(error: Error): void {
@@ -637,8 +707,12 @@ export class CodexHistoryReader {
   }
 
   close(): void {
-    this.connectionEpoch++;
-    this.fail(new Error('Reader closed'));
+    this.closeGeneration++;
+    this.stop();
+  }
+
+  private stop(): void {
+    this.fail(readerFailure('closed'));
     this.process?.kill('SIGTERM');
   }
 }

@@ -607,6 +607,9 @@
             }
           ]
         },
+        "submissionState": {
+          "oneOf": [{ "enum": ["not-submitted"] }, { "const": null }]
+        },
         "supersededByTurnId": {
           "oneOf": [
             {

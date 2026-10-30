@@ -1902,6 +1902,15 @@ test('periodic Windows resampling preserves healthy prepared epochs and fences c
       './desktop-suggestion-worker-client.js',
       new URL('./desktop-suggestion-worker-client.js', hostAdapterURL).href,
     ],
+    ['./windows-process.js', new URL('./windows-process.js', hostAdapterURL).href],
+    [
+      './desktop-native-suggestion-channel.js',
+      new URL('./desktop-native-suggestion-channel.js', hostAdapterURL).href,
+    ],
+    [
+      './desktop-private-state-native.js',
+      new URL('./desktop-private-state-native.js', hostAdapterURL).href,
+    ],
   ]) {
     assert(compiled.includes(from));
     compiled = compiled.replaceAll(from, to);

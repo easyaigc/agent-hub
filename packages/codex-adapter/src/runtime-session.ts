@@ -298,6 +298,8 @@ interface Receipt {
   state: string;
   turnId: string | null;
   error: string | null;
+  /** Set only by a failure before the original-client write boundary. */
+  submissionState?: 'not-submitted';
   supersededByTurnId?: string;
   /** Positive original-owner evidence, retained when later snapshots omit old items. */
   acceptedTurnId?: string;
@@ -3986,6 +3988,7 @@ export class RuntimeSession {
         throw new RuntimeError(409, '原首条输入前置状态已变化');
       receipt.state = 'received';
       receipt.error = null;
+      delete receipt.submissionState;
     } else this.state.receipts.push(receipt);
     try {
       this.save();
@@ -3994,6 +3997,7 @@ export class RuntimeSession {
       // recovery can query it, but cannot silently submit the failed command.
       receipt.state = 'failed';
       receipt.error = 'Host 状态保存失败，消息未提交';
+      receipt.submissionState = 'not-submitted';
       this.saveBackground();
       throw error;
     }
@@ -4003,6 +4007,7 @@ export class RuntimeSession {
       else {
         receipt.state = 'failed';
         receipt.error = '客户端队列不可用，消息未提交；不会由 Host 代为排队或执行';
+        receipt.submissionState = 'not-submitted';
         this.save();
       }
     } else await this.replyAwait(this.execute(receipt, creation), target);
@@ -4171,12 +4176,14 @@ export class RuntimeSession {
     await this.refreshNativeQueue(thread.id);
     if (this.nativeQueueUnsupported) {
       receipt.state = 'failed';
+      receipt.submissionState = 'not-submitted';
       receipt.error = '客户端不支持原生队列，消息未提交；不会由 Host 代为执行';
       this.save();
       return;
     }
     if (!this.nativeQueue.available) {
       receipt.state = 'failed';
+      receipt.submissionState = 'not-submitted';
       receipt.error = '原生队列暂不可用，消息尚未投递';
       this.save();
       return;
@@ -4193,6 +4200,7 @@ export class RuntimeSession {
     ) {
       receipt.state = 'failed';
       receipt.error = '原生队列沿用当前桌面设置，请保持当前设置后排队';
+      receipt.submissionState = 'not-submitted';
       this.save();
       return;
     }
@@ -4230,6 +4238,7 @@ export class RuntimeSession {
             throw new RuntimeError(409, '排队附件实际字节已变化');
         }
         receipt.state = 'submitting';
+        delete receipt.submissionState;
         this.save();
         wrote = true;
       });
@@ -4248,6 +4257,7 @@ export class RuntimeSession {
     } catch (error) {
       if (this.closed) throw error;
       receipt.state = wrote ? 'uncertain' : 'failed';
+      if (!wrote) receipt.submissionState = 'not-submitted';
       receipt.nativeQueue.phase = 'uncertain';
       receipt.error = wrote
         ? '原生排队结果待核对，原消息不会重复投递'
@@ -4483,6 +4493,10 @@ export class RuntimeSession {
             ...(value.state === 'queued' ? { queueDisposition: 'legacy-review' } : {}),
           }),
       target: value.target ?? null,
+      submissionState:
+        value.state === 'failed' && !value.turnId && !value.acceptedTurnId
+          ? (value.submissionState ?? null)
+          : null,
       ...(value.state === 'uncertain' && this.historicalReceiptContexts.has(value.clientMessageId)
         ? {
             noticeContext: 'historical',
@@ -4546,6 +4560,7 @@ export class RuntimeSession {
     this.assertReplyOpen(target);
     const thread = this.thread(reply.threadId);
     this.locks.add(thread.id);
+    delete receipt.submissionState;
     let wireAttempted = false;
     const check = (stage: CreationInputStage) => {
       this.assertReplyOpen(target);
@@ -4713,6 +4728,7 @@ export class RuntimeSession {
       if (this.closed) throw error; // The close snapshot is fenced; no late callback may save or execute.
       if (creation) creation.failure = error;
       receipt.state = wireAttempted && !(error instanceof CodexRejection) ? 'uncertain' : 'failed';
+      if (!wireAttempted) receipt.submissionState = 'not-submitted';
       receipt.error = creation
         ? '首条输入阶段尚未确认，原操作已保留'
         : error instanceof Error
@@ -5667,6 +5683,7 @@ export class RuntimeSession {
     state: Record<string, unknown>,
     valid: () => boolean = () => true,
   ): Promise<void> {
+    if (this.runtime instanceof DesktopRuntime) this.runtime.followSubagents(thread.id, state);
     const turns = desktopTurns(state);
     const previous = thread.messages;
     thread.messages = [];
@@ -5684,7 +5701,10 @@ export class RuntimeSession {
         if (turn.turnId === thread.desktopInitializationTurnId) continue;
         if (['todo-list', 'planImplementation', 'steered'].includes(string(object(item).type)))
           continue;
-        const wire = object(item);
+        const wire =
+          this.runtime instanceof DesktopRuntime
+            ? this.runtime.projectSubagent(object(item), state)
+            : object(item);
         if (wire.type === 'steeringUserMessage') {
           if (!string(wire.serverUserMessageId)) continue;
           await this.upsert(

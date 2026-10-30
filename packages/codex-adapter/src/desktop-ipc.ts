@@ -8,6 +8,7 @@ import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { CodexHistoryReader } from './history-reader.js';
 import { DesktopInstallation } from './desktop-installation.js';
+import { subagentIds, subagentItem } from './subagents.js';
 import { DesktopFrameDecoder, desktopFrameLimits } from './desktop-framing.js';
 import { DesktopLiveWindow, type DesktopLiveObservation } from './desktop-live-window.js';
 import { configuredPermissionSettings, permissionSettings } from './generation-settings.js';
@@ -21,6 +22,7 @@ import {
   object,
   list,
   string,
+  renderItem,
   type WireObject,
   type RuntimeOptions,
 } from './runtime.js';
@@ -1021,6 +1023,16 @@ export class DesktopIpc {
 }
 
 export class DesktopRuntime {
+  private subagentParents = new Map<string, Set<string>>();
+  private parentChildren = new Map<string, Set<string>>();
+  private subagentReads = new Set<string>();
+  private subagentRetryAt = new Map<string, number>();
+  private subagentHistory = new Map<string, WireObject>();
+  private subagentHistoryTimer?: NodeJS.Timeout;
+  private subagentHistoryReading = false;
+  private subagentHistoryOffset = 0;
+  private subagentsClosed = false;
+  private subagentReportedStates = new WeakMap<WireObject, WireObject>();
   readonly ipc: DesktopIpc;
   readonly reader: CodexHistoryReader;
   version = '';
@@ -1048,9 +1060,15 @@ export class DesktopRuntime {
     );
     this.installation = new DesktopInstallation(options, hostId);
     this.reader = new CodexHistoryReader(hostId, name, options.executable);
-    this.ipc.onSnapshot = (threadId, state) =>
+    this.ipc.onSnapshot = (threadId, state) => {
+      // Child snapshots never become top-level chats or grant execution control.
       this.onEvent('desktop/snapshot', { threadId, state });
-    this.ipc.onUnavailable = (threadId) => this.onEvent('desktop/unavailable', { threadId });
+      this.publishSubagentParents(threadId);
+    };
+    this.ipc.onUnavailable = (threadId) => {
+      this.onEvent('desktop/unavailable', { threadId });
+      this.publishSubagentParents(threadId);
+    };
     this.ipc.onDiscovered = (threadId) => this.onEvent('desktop/discovered', { threadId });
     this.ipc.onObservation = (threadId, observation) =>
       this.onEvent('desktop/observation', { threadId, observation });
@@ -1060,6 +1078,146 @@ export class DesktopRuntime {
   }
   get ready(): boolean {
     return this.installation.available && this.ipc.ready && this.reader.ready;
+  }
+  private publishSubagentParents(childId: string): void {
+    for (const threadId of this.subagentParents.get(childId) ?? []) {
+      const state = this.ipc.state(threadId);
+      if (state) this.onEvent('desktop/snapshot', { threadId, state });
+    }
+  }
+  followSubagents(parentId: string, state: WireObject): void {
+    const ids = new Set(
+      desktopTurns(state)
+        .flatMap((turn) => list(turn.items).flatMap((item) => subagentIds(object(item))))
+        .filter((id) => id !== parentId)
+        .slice(-32),
+    );
+    for (const old of this.parentChildren.get(parentId) ?? []) {
+      if (ids.has(old)) continue;
+      this.subagentParents.get(old)?.delete(parentId);
+      if (!this.subagentParents.get(old)?.size) this.subagentParents.delete(old);
+    }
+    this.parentChildren.set(parentId, ids);
+    while (this.parentChildren.size > 32) {
+      const oldest = this.parentChildren.keys().next().value!;
+      for (const id of this.parentChildren.get(oldest)!) {
+        this.subagentParents.get(id)?.delete(oldest);
+        if (!this.subagentParents.get(id)?.size) {
+          this.subagentParents.delete(id);
+          this.subagentHistory.delete(id);
+          this.subagentRetryAt.delete(id);
+        }
+      }
+      this.parentChildren.delete(oldest);
+    }
+    if (ids.size && !this.subagentHistoryTimer && !this.subagentsClosed) {
+      this.subagentHistoryTimer = setInterval(() => void this.refreshSubagentHistory(), 1500);
+      this.subagentHistoryTimer.unref();
+    }
+    for (const id of ids) {
+      const parents = this.subagentParents.get(id) ?? new Set<string>();
+      parents.add(parentId);
+      this.subagentParents.set(id, parents);
+      if (
+        this.ipc.hasOwner(id) ||
+        this.subagentReads.has(id) ||
+        (this.subagentRetryAt.get(id) ?? 0) > Date.now()
+      )
+        continue;
+      this.subagentReads.add(id);
+      this.subagentRetryAt.set(id, Date.now() + 15_000);
+      void this.ipc
+        .follow(id, 1500)
+        .catch(() => undefined)
+        .finally(() => {
+          this.subagentReads.delete(id);
+          this.publishSubagentParents(id);
+        });
+    }
+  }
+  projectSubagent(item: WireObject, parentState?: WireObject): WireObject {
+    const states = { ...object(item.agentsStates) };
+    if (item.type === 'collabAgentToolCall' && parentState) {
+      let latest = this.subagentReportedStates.get(parentState);
+      if (!latest) {
+        latest = {};
+        for (const turn of desktopTurns(parentState))
+          for (const value of list(turn.items)) {
+            const tool = object(value);
+            if (tool.type === 'collabAgentToolCall')
+              Object.assign(latest, object(tool.agentsStates));
+          }
+        this.subagentReportedStates.set(parentState, latest);
+      }
+      for (const id of subagentIds(item)) if (latest[id]) states[id] = latest[id];
+    }
+    return subagentItem(
+      item.type === 'collabAgentToolCall' ? { ...item, agentsStates: states } : item,
+      (id) => {
+        const state = this.ipc.state(id);
+        return state ? { ...state, turns: desktopTurns(state) } : this.subagentHistory.get(id);
+      },
+    );
+  }
+  private async refreshSubagentHistory(): Promise<void> {
+    if (this.subagentsClosed || this.subagentHistoryReading || !this.ready) return;
+    const ids = [...this.subagentParents.keys()].filter(
+      (id) =>
+        !this.ipc.hasOwner(id) &&
+        (!this.subagentHistory.has(id) ||
+          [...this.subagentParents.get(id)!].some((parent) => {
+            const state = this.ipc.state(parent);
+            return state && desktopTurns(state).some((turn) => turn.status === 'inProgress');
+          })),
+    );
+    if (!ids.length) return;
+    this.subagentHistoryReading = true;
+    const start = this.subagentHistoryOffset % ids.length;
+    const batch = [...ids.slice(start), ...ids.slice(0, start)].slice(0, 4);
+    this.subagentHistoryOffset += batch.length;
+    try {
+      await Promise.allSettled(
+        batch.map(async (id) => {
+          // Metadata is evidence of saved output only, never of a live child owner.
+          const result = await this.reader.read('thread/read', {
+            threadId: id,
+            includeTurns: true,
+          });
+          const child = object(result.thread);
+          if (this.subagentsClosed || child.id !== id || !this.subagentParents.has(id)) return;
+          const output = list(child.turns)
+            .slice(-3)
+            .flatMap((turn) => list(object(turn).items))
+            .map(object)
+            .filter((item) =>
+              [
+                'agentMessage',
+                'commandExecution',
+                'fileChange',
+                'mcpToolCall',
+                'dynamicToolCall',
+              ].includes(string(item.type)),
+            )
+            .slice(-24)
+            .map((item) => renderItem(item, 16_000))
+            .map((message) => [message.text, message.detail].filter(Boolean).join('\n'))
+            .join('\n\n')
+            .slice(-16_384);
+          const value = {
+            id,
+            turns: [{ items: [{ type: 'agentMessage', text: output }] }],
+            agentHubSource: 'history',
+          };
+          if (JSON.stringify(this.subagentHistory.get(id)) === JSON.stringify(value)) return;
+          this.subagentHistory.set(id, value);
+          while (this.subagentHistory.size > 128)
+            this.subagentHistory.delete(this.subagentHistory.keys().next().value!);
+          this.publishSubagentParents(id);
+        }),
+      );
+    } finally {
+      this.subagentHistoryReading = false;
+    }
   }
   /** Read this computer's desktop choice fresh; never copy another Host's settings. */
   async defaultPermissions(cwd: string): Promise<WireObject> {
@@ -1386,6 +1544,11 @@ export class DesktopRuntime {
   }
   close(): void {
     this.closed = true;
+    this.subagentsClosed = true;
+    if (this.subagentHistoryTimer) clearInterval(this.subagentHistoryTimer);
+    this.subagentParents.clear();
+    this.parentChildren.clear();
+    this.subagentHistory.clear();
     this.ipc.close();
     this.reader.close();
   }

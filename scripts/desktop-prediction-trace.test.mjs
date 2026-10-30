@@ -1037,3 +1037,90 @@ test('latest native source uses request order, ignores old completion order and 
       'Equal request times cannot be ordered by directory or file timestamps',
     );
   }));
+
+function asSampleV2(fixture) {
+  const { fixture: trace, configured, request } = fixture;
+  trace.manifest.schema_version = 2;
+  writeJson(join(trace.directory, 'manifest.json'), trace.manifest);
+  for (const event of trace.events) event.schema_version = 2;
+  trace.saveEvents();
+  configured.value.thread_source = 'thread_sample';
+  writeJson(configured.path, configured.value);
+  request.metadata.thread_source = 'thread_sample';
+  request.request.client_metadata['x-codex-turn-metadata'] = JSON.stringify(request.metadata);
+  writeJson(request.requestPath, request.request);
+  return fixture;
+}
+
+test('v2 thread/sample recovers only the exact composer prediction source', () =>
+  setup((root) => {
+    const a = asSampleV2(recoverableFixture(root));
+    const reader = new DesktopPredictionTraceReader(root);
+    const result = reader.readSourcePredictions(
+      a.fixture.sourceThreadId,
+      a.fixture.sourceTurnId,
+      1,
+      true,
+    );
+    assert.equal(result.length, 1);
+    assert.equal(result[0].text, 'Synthetic follow-up suggestion.');
+    assert.equal(
+      reader.readSourcePredictions(a.fixture.sourceThreadId, randomUUID(), 1, true).length,
+      0,
+    );
+    a.request.metadata.turn_trigger = 'unrelated_sample';
+    a.request.request.client_metadata['x-codex-turn-metadata'] = JSON.stringify(a.request.metadata);
+    writeJson(a.request.requestPath, a.request.request);
+    assert.equal(
+      reader.readSourcePredictions(a.fixture.sourceThreadId, a.fixture.sourceTurnId, 1, true),
+      null,
+    );
+  }));
+
+test('non-prediction thread/sample output is never a suggestion or an unrelated read failure', () =>
+  setup((root) => {
+    const a = asSampleV2(recoverableFixture(root));
+    a.request.metadata.turn_trigger = 'unrelated_sample';
+    delete a.request.metadata.prediction_source_thread_id;
+    delete a.request.metadata.prediction_source_turn_id;
+    a.request.request.client_metadata['x-codex-turn-metadata'] = JSON.stringify(a.request.metadata);
+    writeJson(a.request.requestPath, a.request.request);
+    assert.deepEqual(
+      new DesktopPredictionTraceReader(root).readSourcePredictions(
+        a.fixture.sourceThreadId,
+        a.fixture.sourceTurnId,
+        1,
+        true,
+      ),
+      [],
+    );
+  }));
+
+test('unknown trace schema is rejected and a newer cancelled v2 prediction cannot revive old output', () =>
+  setup((root) => {
+    const old = recoverableFixture(root);
+    const newer = asSampleV2(
+      recoverableFixture(
+        root,
+        execution({
+          sourceThreadId: old.fixture.sourceThreadId,
+          sourceTurnId: old.fixture.sourceTurnId,
+        }),
+      ),
+    );
+    newer.request.event.wall_time_unix_ms = 2;
+    newer.fixture.events.find((e) => e.payload.type === 'codex_turn_ended').payload.status =
+      'cancelled';
+    newer.fixture.saveEvents();
+    const read = () =>
+      new DesktopPredictionTraceReader(root).readSourcePredictions(
+        old.fixture.sourceThreadId,
+        old.fixture.sourceTurnId,
+        1,
+        true,
+      );
+    assert.equal(read(), null);
+    newer.fixture.manifest.schema_version = 3;
+    writeJson(join(newer.fixture.directory, 'manifest.json'), newer.fixture.manifest);
+    assert.equal(read(), null);
+  }));

@@ -670,6 +670,8 @@ def main():
     parser.add_argument('--application-path', type=Path, default=Path('/Applications/ChatGPT.app'))
     parser.add_argument('--codex-home', type=Path, default=Path.home() / '.codex')
     parser.add_argument('--self-check', action='store_true', help='Check real local APIs without starting observation')
+    parser.add_argument('--inspect-producer', type=int,
+                        help='Read only the exact native parent/started identity of an original desktop CLI wrapper')
     parser.add_argument('--duration-seconds', type=int, default=900)
     parser.add_argument('--shared-desktop-state', type=Path,
                         help='Installed private shared launcher state; no arbitrary process attachment')
@@ -694,6 +696,17 @@ def main():
     EXECUTOR = str(app / 'Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex')
     DESKTOP = str(app / 'Contents/MacOS/ChatGPT')
     native = Native()
+    if args.inspect_producer is not None:
+        wrapper = native.identity(args.inspect_producer)
+        desktop = native.identity(wrapper.ppid) if wrapper is not None else None
+        if (wrapper is None or desktop is None or wrapper.uid != os.getuid()
+                or desktop.uid != os.getuid() or native.path(desktop.pid) != DESKTOP
+                or wrapper.started_seconds < desktop.started_seconds):
+            raise RuntimeError('Original desktop producer identity unavailable')
+        print(json.dumps({'pid': wrapper.pid, 'desktopPid': desktop.pid,
+                          'wrapperStartedAt': wrapper.started_seconds * 1000 + wrapper.started_microseconds // 1000,
+                          'desktopStartedAt': desktop.started_seconds * 1000 + desktop.started_microseconds // 1000}))
+        return
     config_hash = verify_config()
     parents, rows, identities = discover(native)
     if args.self_check:

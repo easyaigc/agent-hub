@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 
 const repository = fileURLToPath(new URL('../', import.meta.url));
 const processPath = join(repository, 'packages/codex-adapter/windows/trace-process.cs');
-const sourceSHA256 = 'd1966565695c9cacaab8d2139478e7ec85ab1856456f16f2dd93936abdcd2366';
+// Reviewed private producer parent proof and signed current CLI extension.
+// This pins fixture input; native Windows execution is recorded separately.
+const sourceSHA256 = 'fc5f1dd671713a963f57096441e2982a6cf77dcee6c8d15b408ecc27560320d6';
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 function isolatedSource(bytes, pipe) {

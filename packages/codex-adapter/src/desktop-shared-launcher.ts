@@ -5,6 +5,7 @@ import { mkdirSync, lstatSync, readFileSync, writeFileSync, unlinkSync } from 'n
 import { isAbsolute, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createServer } from 'node:net';
+import { createDesktopNativeSampleBridge } from './desktop-native-sample-bridge.js';
 
 /** Local executable override, invoked by Electron. No remote endpoint can invoke this launcher. */
 export async function runDesktopSharedLauncher(executable: string, args: string[]) {
@@ -63,6 +64,7 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
   const connection: { socket?: WebSocket } = {};
   let ending = false;
   let ownsService = false;
+  let suggestions: ReturnType<typeof createDesktopNativeSampleBridge>;
   const alive = (pid: number) => {
     if (!Number.isSafeInteger(pid) || pid <= 1) return true;
     try {
@@ -135,6 +137,7 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
   const finish = () => {
     if (ending) return;
     ending = true;
+    suggestions?.close();
     connection.socket?.close();
     if (child) {
       child.kill('SIGTERM');
@@ -146,6 +149,9 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
     } else process.exit(0);
   };
   if (ownsService) {
+    // Observe only this original desktop connection. Never issue a sample,
+    // change initialize opt-outs, or alter any forwarded request/result.
+    suggestions = createDesktopNativeSampleBridge();
     // Inherit the real Electron child environment. Never reconstruct or copy
     // native tool credentials from another process or configuration file.
     child = spawn(executable, [...args, '--listen', url.origin], {
@@ -156,6 +162,7 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
       process.exit(1);
     });
     child.on('exit', (code) => {
+      suggestions?.close();
       release();
       process.exit(code ?? 1);
     });
@@ -184,7 +191,10 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
   const maximum = 32 * 1024 * 1024;
   connection.socket.addEventListener('open', () => {
     open = true;
-    for (const line of queued) connection.socket!.send(line);
+    for (const line of queued) {
+      connection.socket!.send(line);
+      suggestions?.observeOutbound(line);
+    }
     queued.length = 0;
     queuedBytes = 0;
   });
@@ -197,6 +207,7 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
       finish();
       return;
     }
+    suggestions?.observeInbound(event.data);
     process.stdout.write(event.data + '\n');
   });
   connection.socket.addEventListener('close', finish);
@@ -214,8 +225,10 @@ export async function runDesktopSharedLauncher(executable: string, args: string[
         finish();
         return;
       }
-      if (open) connection.socket!.send(line);
-      else {
+      if (open) {
+        connection.socket!.send(line);
+        suggestions?.observeOutbound(line);
+      } else {
         queued.push(line);
         queuedBytes += length;
       }

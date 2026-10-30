@@ -24,6 +24,7 @@ packages/mobile-core/build/
 /docs/acceptance/*
 !/docs/acceptance/remote-access-checklist.md
 !/docs/acceptance/codex-update-resilience-20261030.md
+!/docs/acceptance/codex-update-r2-integration-20261030.md
 /docs/design/assets/
 /apps/ios/AppStore/README.md
 /apps/ios/AppStore/review-notes.txt

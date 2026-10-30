@@ -1,5 +1,7 @@
 # 架构设计
 
+冻结 R2 的 Host 运行能力与 PR73 主线正在按实际三方差异集成：共享 CLI 发现与 reader 代次保留，R2 生命周期串行化、Native 建议、Trace/GC 和只读 Git 同源合入；不复制活动 WIP 或移动端页面。部署门禁按实际合并、制品与 Windows 独立结果解除，见[集成记录](acceptance/codex-update-r2-integration-20261030.md)。
+
 Windows 私有文件的创建事实由 Native 的 CREATE_NEW 句柄产生，并以通道租约交接到 Node 已打开的 FD；收到原租约释放确认前不得截断。Native 冷编译同样保留创建对象与自有编译 job 的退出边界，发布和清理均绑定句柄。既有对象的 User owner/DACL 要求不放宽。旧 Windows v1 阅读缓存不做 owner 迁移，保留后使用可重建的 v2 命名空间；主状态与操作账本位置不变，macOS 仍用 v1。实现、隔离回归、Windows 实测与 R2 集成部署门禁见 [更新恢复记录](acceptance/codex-update-resilience-20261030.md)。
 
 2026-10-29 Host 诊断写入使用独立 worker 和固定事件 Schema，HTTP isolate 仅维护有界队列；Windows 辅助诊断走独立线程通道。只读连接合并并发，关闭后迟到代次不复活；命令未知状态不重放。实现与限制见[诊断与恢复](host-reconnect-diagnostics.md)，平台结果见[专项验收](research/host-reconnect-diagnostics-20261029.md)。

@@ -128,6 +128,8 @@ if (['preflight', 'start', 'restart'].includes(action)) {
     'HOST_RESPONSES_PROXY_IMAGE_TIMEOUT_MS',
     'CODEX_DESKTOP_SUGGESTION_OBSERVER',
     'CODEX_DESKTOP_SUGGESTION_TRACE_ROOT',
+    'CODEX_DESKTOP_TRACE_RETENTION',
+    'CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG',
   ]) {
     if (process.env[key] !== undefined) environment[key] = process.env[key];
   }

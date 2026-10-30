@@ -1179,7 +1179,9 @@ try {
   inject(1);
   await api('/v1/replies', preWire, 503);
   persistence.save = durableSave;
-  assert.equal((await api('/v1/replies', preWire)).state, 'failed');
+  const unsubmittedReceipt = await api('/v1/replies', preWire);
+  assert.equal(unsubmittedReceipt.state, 'failed');
+  assert.equal(unsubmittedReceipt.submissionState, 'not-submitted');
   assert.deepEqual(await readFile(join(directory, 'turn-wire')), previousWire);
   assert.equal(
     service.session.state.receipts.filter(
@@ -1212,6 +1214,7 @@ try {
   const acceptedWire = await readFile(join(directory, 'turn-wire'));
   const uncertain = await api('/v1/replies', postWire);
   assert.equal(uncertain.state, 'uncertain');
+  assert.equal(uncertain.submissionState, null, 'A post-write failure never authorizes resend');
   assert.deepEqual(await readFile(join(directory, 'turn-wire')), acceptedWire);
   await until(thread.id, (snapshot) => snapshot.runtime.state === 'running');
   await api('/v1/stop', { hostId, threadId: thread.id, turnId: uncertain.turnId });
@@ -1516,7 +1519,8 @@ async function replySafetyBoundaries(template, thread) {
       assert.equal(failed.fixtureWires.length, 0);
       assert.equal(failed.state.receipts.length, 1);
       failed.persistence.save = originalSave;
-      await failed.submit(input, target);
+      const failedReceipt = await failed.submit(input, target);
+      assert.equal(failedReceipt.submissionState, 'not-submitted');
       assert.equal(
         failed.fixtureWires.length,
         0,

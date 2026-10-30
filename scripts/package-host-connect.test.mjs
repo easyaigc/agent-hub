@@ -203,6 +203,11 @@ test(
       }
       await mkdir(join(repository, 'packages/codex-adapter/windows'));
       await write('scripts/desktop-completion-notify-observer.py', '# synthetic fixture\n');
+      await write(
+        'packages/codex-adapter/resources/desktop-completion-notify-observer.py',
+        '# synthetic fixture\n',
+      );
+      await write('scripts/desktop-trace-retire.py', '# synthetic anchored retirement helper\n');
       const ciSources = {
         'scripts/ci/Dockerfile': 'FROM scratch\n',
         'scripts/ci/legacy-bootstrap.bash': '# synthetic bootstrap\n',
@@ -305,7 +310,10 @@ test(
           ),
           body,
         );
-      for (const location of ['packages/codex-adapter', 'node_modules/@codex-manage/codex-adapter'])
+      for (const location of [
+        'packages/codex-adapter',
+        'node_modules/@codex-manage/codex-adapter',
+      ]) {
         assert.equal(
           execFileSync(
             '/usr/bin/unzip',
@@ -318,6 +326,34 @@ test(
           ),
           emitted,
         );
+        assert.equal(
+          execFileSync(
+            '/usr/bin/unzip',
+            [
+              '-p',
+              valid.archive,
+              'codex-host-connect/assets/codex-manage/' +
+                location +
+                '/resources/desktop-trace-retire.py',
+            ],
+            { encoding: 'utf8' },
+          ),
+          '# synthetic anchored retirement helper\n',
+        );
+      }
+      const observerCopy = 'packages/codex-adapter/resources/desktop-completion-notify-observer.py';
+      await write(observerCopy, '# stale resource copy\n');
+      const staleResourceOutput = join(tmp, 'stale-resource.zip');
+      await assert.rejects(
+        packageHostConnect({ repository, taskHubBundle, output: staleResourceOutput }),
+        /Runtime helper source copy differs: desktop-completion-notify-observer\.py/,
+      );
+      await assert.rejects(readFile(staleResourceOutput), { code: 'ENOENT' });
+      assert.equal(
+        await readFile(join(repository, observerCopy), 'utf8'),
+        '# stale resource copy\n',
+      );
+      await write(observerCopy, '# synthetic fixture\n');
       const changedSound = soundSources[0];
       await write(changedSound, Buffer.from('changed unreviewed bytes'));
       const changedSoundOutput = join(tmp, 'changed-sound.zip');

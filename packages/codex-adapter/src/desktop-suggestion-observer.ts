@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Worker } from 'node:worker_threads';
 import {
   machineRuntimeTargetKey,
   parseNotificationTarget,
@@ -23,6 +24,12 @@ import {
   protectWindowsStateFile,
 } from './desktop-platform.js';
 import { DesktopPredictionTraceReader } from './desktop-prediction-trace.js';
+import { DesktopNativeSuggestionChannel } from './desktop-native-suggestion-channel.js';
+import { getWindowsProcessGate, registerWindowsProcessWorker } from './windows-process.js';
+import {
+  registerWindowsTraceTransport,
+  retireWindowsNativeOwner,
+} from './desktop-private-state-native.js';
 import {
   DesktopSuggestionWorkerClient,
   type PreparedSuggestionRead,
@@ -57,11 +64,15 @@ export class DesktopSuggestionObserver {
   private phase: DesktopSuggestionObservations['collector'];
   private readonly stateFile: string;
   private readonly predictionReader?: DesktopPredictionTraceReader;
+  private readonly nativeChannel?: DesktopNativeSuggestionChannel;
   private traceIdentity?: string;
   private desktopStartedAtUnixMs: number | undefined;
   private windowsInstanceIdentity: string | undefined;
   private workerClient?: DesktopSuggestionWorkerClient;
   private collectorEpoch = 0;
+  private retentionWorker: Worker | undefined;
+  private retentionRetry: NodeJS.Timeout | undefined;
+  private retentionFailures = 0;
   constructor(
     private readonly options: {
       directory: string;
@@ -73,6 +84,10 @@ export class DesktopSuggestionObserver {
       sharedDesktopState?: string;
       /** Internal worker construction only; not a Host configuration field. */
       nativeWorker?: boolean;
+      /** Explicit formal-Host opt-in; isolated readers never inherit cleanup. */
+      traceRetention?: boolean;
+      /** Explicit private original-connection producer configuration. */
+      nativeSuggestionsConfig?: string;
     },
   ) {
     this.phase = options.enabled ? 'starting' : 'disabled';
@@ -85,7 +100,15 @@ export class DesktopSuggestionObserver {
     }
     try {
       if (options.traceRoot)
-        this.predictionReader = new DesktopPredictionTraceReader(options.traceRoot);
+        this.predictionReader = new DesktopPredictionTraceReader(options.traceRoot, () =>
+          machineRuntimeTargetKey(options.target()),
+        );
+      if (options.traceRoot && options.nativeSuggestionsConfig)
+        this.nativeChannel = new DesktopNativeSuggestionChannel({
+          traceRoot: options.traceRoot,
+          configPath: options.nativeSuggestionsConfig,
+          target: options.target,
+        });
       const scope = createHash('sha256')
         .update(machineRuntimeTargetKey(options.target()))
         .digest('hex');
@@ -105,10 +128,11 @@ export class DesktopSuggestionObserver {
   }
 
   get capabilities(): string[] {
+    const sourceCapability = 'desktop:suggestions:native-version:v1';
     if (this.workerClient)
-      return this.workerClient.available
-        ? ['desktop:suggestions:read:v1', 'desktop:suggestions:native-version:v1']
-        : [];
+      return this.workerClient.available ? ['desktop:suggestions:read:v1', sourceCapability] : [];
+    if (this.nativeChannel)
+      return this.boundReadAvailable() ? ['desktop:suggestions:read:v1', sourceCapability] : [];
     return this.phase === 'listening'
       ? [
           ...(process.platform === 'win32' ? [] : ['desktop:suggestion-observations']),
@@ -123,11 +147,16 @@ export class DesktopSuggestionObserver {
     return new DesktopSuggestionWorkerClient({
       directory: this.options.directory,
       traceRoot: this.options.traceRoot,
+      ...(this.options.nativeSuggestionsConfig
+        ? { nativeSuggestionsConfig: this.options.nativeSuggestionsConfig }
+        : {}),
       target: structuredClone(this.options.target()),
     });
   }
 
   private boundReadAvailable(instance?: WindowsTraceInstance): boolean {
+    if (this.nativeChannel)
+      return !this.closed && this.options.enabled && this.nativeChannel.available;
     if (process.platform === 'win32' && !this.windowsInstanceStable(instance)) return false;
     if (
       this.phase !== 'listening' ||
@@ -178,6 +207,11 @@ export class DesktopSuggestionObserver {
         throw new SuggestionObservationError(503, '原桌面建议读取暂不可用');
       return;
     }
+    if (this.nativeChannel) {
+      if (!this.boundReadAvailable())
+        throw new SuggestionObservationError(503, '原桌面建议结果通道暂不可用');
+      return;
+    }
     if (this.phase !== 'listening')
       throw new SuggestionObservationError(503, '原桌面建议读取暂不可用');
     if (this.traceIdentity) {
@@ -206,6 +240,8 @@ export class DesktopSuggestionObserver {
     const key = machineRuntimeTargetKey(target);
     const current = structuredClone(this.options.target());
     this.assertBoundReadAvailable(target);
+    if (this.nativeChannel)
+      return this.nativeChannel.read(target, threadId, sourceTurnId, onFinalAvailability);
     this.prune();
     let suggestion: DesktopNextTurnSuggestionResponse['suggestion'] = null;
     let matches = 0;
@@ -428,6 +464,28 @@ export class DesktopSuggestionObserver {
     )
       throw new SuggestionObservationError(400, '建议准备来源无效');
     this.assertBoundReadAvailable(target);
+    if (this.nativeChannel) {
+      const receipt = this.nativeChannel.prepare(
+        target,
+        threadId,
+        sourceTurnId,
+        onPreparedAvailability,
+      );
+      return {
+        dispose: () => receipt.dispose(),
+        commit: (onFinalAvailability) => {
+          try {
+            this.assertBoundReadAvailable(target);
+            const value = receipt.commit();
+            onFinalAvailability(true);
+            return value;
+          } catch (error) {
+            onFinalAvailability(false);
+            throw error;
+          }
+        },
+      };
+    }
     this.prune();
     const current = structuredClone(this.options.target());
     const key = machineRuntimeTargetKey(current);
@@ -563,8 +621,71 @@ export class DesktopSuggestionObserver {
   }
 
   start(): void {
+    if (
+      !this.closed &&
+      !this.options.nativeWorker &&
+      this.options.enabled &&
+      this.options.traceRetention &&
+      this.options.traceRoot &&
+      !this.retentionWorker &&
+      !this.retentionRetry
+    ) {
+      if (process.platform === 'win32') registerWindowsTraceTransport();
+      const worker = new Worker(new URL('./desktop-trace-retention-worker.js', import.meta.url), {
+        workerData: {
+          traceRoot: this.options.traceRoot,
+          target: structuredClone(this.options.target()),
+          directory: this.options.directory,
+          ...(process.platform === 'win32' ? { windowsProcessGate: getWindowsProcessGate() } : {}),
+        },
+      });
+      this.retentionWorker = worker;
+      if (process.platform === 'win32') registerWindowsProcessWorker(worker);
+      worker.on('message', (value: unknown) => {
+        if (
+          this.retentionWorker === worker &&
+          value &&
+          typeof value === 'object' &&
+          'kind' in value &&
+          value.kind === 'retention' &&
+          (!('state' in value) || value.state !== 'unavailable')
+        )
+          this.retentionFailures = 0;
+      });
+      worker.once('exit', () => {
+        void (async () => {
+          const complete = process.platform !== 'win32' || (await retireWindowsNativeOwner(worker));
+          if (!complete || this.retentionWorker !== worker) return;
+          this.retentionWorker = undefined;
+          if (this.closed) return;
+          this.retentionRetry = setTimeout(
+            () => {
+              this.retentionRetry = undefined;
+              this.start();
+            },
+            Math.min(30000, 1000 * 2 ** Math.min(this.retentionFailures++, 5)),
+          );
+          this.retentionRetry.unref();
+        })().catch(() => {
+          /* Unknown native ownership blocks replacement and preserves all intents. */
+        });
+      });
+      worker.on('error', () => {
+        /* Stored suggestions and raw traces remain on failure. */
+      });
+    }
     if (this.workerClient) {
       this.workerClient.start();
+      return;
+    }
+    if (this.nativeChannel) {
+      if (this.closed || !this.options.enabled || this.retry) return;
+      this.phase = this.boundReadAvailable() ? 'listening' : 'unavailable';
+      this.retry = setTimeout(() => {
+        this.retry = undefined;
+        this.start();
+      }, 5000);
+      this.retry.unref();
       return;
     }
     if (this.closed || !this.storageReady || this.phase === 'disabled' || this.worker || this.retry)
@@ -902,6 +1023,9 @@ export class DesktopSuggestionObserver {
   }
 
   close(): void {
+    clearTimeout(this.retentionRetry);
+    this.retentionRetry = undefined;
+    this.retentionWorker?.postMessage({ kind: 'close' });
     this.workerClient?.close();
     this.closed = true;
     this.phase = 'unavailable';

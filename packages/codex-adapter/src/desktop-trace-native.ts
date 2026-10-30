@@ -9,6 +9,18 @@ import {
 } from './desktop-platform.js';
 
 export type TraceSnapshotItem = { path: string; maximum: number };
+export type TraceProducerRequest = { kind: 'producer'; ProducerPid: number; Config: string };
+export type TraceProducerIdentity = {
+  pid: number;
+  desktopPid: number;
+  desktopStartedAt: number;
+  wrapperStartedAt: number;
+};
+export const traceProducerLimits = Object.freeze({
+  requestBytes: 48 * 1024,
+  responseBytes: 256,
+  lineCharacters: 100_000,
+});
 export type TraceSnapshotValue = { identity: string; chain: string[]; bytes: Buffer };
 export type TraceSnapshotBatch = {
   schemaVersion: 1;
@@ -49,6 +61,65 @@ function batchPath(path: unknown): path is string {
       .split('\\')
       .some((part) => /[. ]$/.test(part))
   );
+}
+/** Fixed internal action. No method names, command lines or extra fields cross this boundary. */
+export function encodeTraceProducerRequest(value: unknown): string {
+  if (
+    !record(value) ||
+    !fields(value, ['kind', 'ProducerPid', 'Config']) ||
+    value.kind !== 'producer' ||
+    !Number.isSafeInteger(value.ProducerPid) ||
+    Number(value.ProducerPid) < 1 ||
+    Number(value.ProducerPid) > 2147483647 ||
+    !batchPath(value.Config) ||
+    value.Config.endsWith('\\') ||
+    value.Config.slice(3)
+      .split('\\')
+      .some(
+        (part) =>
+          !part ||
+          /[<>"|?*]/.test(part) ||
+          /~[0-9]+(?:\.|$)/.test(part) ||
+          /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part),
+      ) ||
+    win32.basename(value.Config) !== 'config.json'
+  )
+    throw new Error('Invalid native producer request');
+  const bytes = Buffer.from(JSON.stringify(value));
+  const command = 'I\t' + bytes.toString('base64');
+  if (
+    bytes.length > traceProducerLimits.requestBytes ||
+    command.length > traceProducerLimits.lineCharacters
+  )
+    throw new Error('Oversized native producer request');
+  return command;
+}
+export function decodeTraceProducerIdentity(
+  value: unknown,
+  request: TraceProducerRequest,
+  desktop: WindowsDesktopIdentity,
+): TraceProducerIdentity {
+  if (
+    !record(value) ||
+    !fields(value, ['pid', 'desktopPid', 'desktopStartedAt', 'wrapperStartedAt']) ||
+    value.pid !== request.ProducerPid ||
+    value.desktopPid !== desktop.pid ||
+    value.pid === value.desktopPid ||
+    value.desktopStartedAt !== desktop.startedAtUnixMs ||
+    !Number.isSafeInteger(value.pid) ||
+    Number(value.pid) < 1 ||
+    Number(value.pid) > 2147483647 ||
+    !Number.isSafeInteger(value.desktopPid) ||
+    Number(value.desktopPid) < 1 ||
+    Number(value.desktopPid) > 2147483647 ||
+    !Number.isSafeInteger(value.desktopStartedAt) ||
+    Number(value.desktopStartedAt) < 1 ||
+    !Number.isSafeInteger(value.wrapperStartedAt) ||
+    Number(value.wrapperStartedAt) < Number(value.desktopStartedAt) ||
+    Number(value.wrapperStartedAt) > Date.now()
+  )
+    throw new Error('Invalid native producer identity');
+  return value as TraceProducerIdentity;
 }
 /** Request-local planning only; every dispatched frame is validated again. */
 export function createTraceSnapshotBatchPlanner(): { add(item: TraceSnapshotItem): boolean } {
@@ -329,12 +400,14 @@ export async function createWindowsTraceBackend(
     throw new Error('Trace native startup closed');
   }
   function call(
-    kind: 'snapshot' | 'probe' | 'tokens' | 'snapshot-many',
+    kind: 'snapshot' | 'probe' | 'tokens' | 'snapshot-many' | 'producer',
     path?: string,
     maximum?: number,
     batch?: TraceSnapshotBatch,
+    producer?: TraceProducerRequest,
   ) {
     const diagnostic = diagnostics?.();
+    if (signal?.aborted) close();
     if (!alive || performance.now() >= deadline) {
       diagnostic?.end(!alive ? 'transport_lost' : 'phase_deadline', {
         deadlineKind: !alive ? 'unknown' : 'native_budget',
@@ -342,13 +415,19 @@ export async function createWindowsTraceBackend(
       throw new Error('Trace read budget exhausted');
     }
     const sample = diagnostic?.nativeCall(
-      kind === 'probe' ? 'P' : kind === 'snapshot' ? 'S' : kind === 'tokens' ? 'T' : 'B',
+      kind === 'probe' || kind === 'producer'
+        ? 'P'
+        : kind === 'snapshot'
+          ? 'S'
+          : kind === 'tokens'
+            ? 'T'
+            : 'B',
       batch?.items.length ?? 0,
     );
     let completed = false;
     try {
       Atomics.store(control, 0, 0);
-      worker.postMessage(batch ?? { kind, path, maximum });
+      worker.postMessage(producer ?? batch ?? { kind, path, maximum });
       const status = Atomics.wait(control, 0, 0, Math.min(1000, deadline - performance.now()));
       sample?.waited();
       if (status === 'timed-out' || Atomics.load(control, 0) !== 1) {
@@ -359,11 +438,22 @@ export async function createWindowsTraceBackend(
         throw new Error('Trace native operation unavailable');
       }
       sample?.decoding();
-      const text = Buffer.from(bytes.subarray(0, Atomics.load(control, 1))).toString('utf8');
-      const value = kind === 'snapshot-many' ? parseTraceSnapshotBatchJSON(text) : JSON.parse(text);
+      const length = Atomics.load(control, 1);
+      if (
+        length < 1 ||
+        length > bytes.length ||
+        (producer && length > traceProducerLimits.responseBytes)
+      ) {
+        close();
+        throw new Error('Invalid native response length');
+      }
+      const text = Buffer.from(bytes.subarray(0, length)).toString('utf8');
+      const value =
+        kind === 'snapshot-many' || producer ? parseTraceSnapshotBatchJSON(text) : JSON.parse(text);
       if (record(value) && value.error) throw new Error('Trace native operation rejected');
-      const result =
-        kind === 'snapshot-many'
+      const result = producer
+        ? decodeTraceProducerIdentity(value, producer, identity)
+        : kind === 'snapshot-many'
           ? decodeTraceSnapshotBatch(value, batch!)
           : kind === 'snapshot'
             ? decodeSnapshotValue(value)
@@ -371,6 +461,9 @@ export async function createWindowsTraceBackend(
       sample?.decoded();
       completed = true;
       return result;
+    } catch (error) {
+      if (producer) close();
+      throw error;
     } finally {
       sample?.end(completed);
     }
@@ -389,6 +482,15 @@ export async function createWindowsTraceBackend(
       return call('snapshot', path, maximum) as TraceSnapshotValue;
     },
     inspect: () => call('probe') as WindowsTraceInstance,
+    inspectProducer(pid: number, configPath: string): TraceProducerIdentity {
+      const request: TraceProducerRequest = {
+        kind: 'producer',
+        ProducerPid: pid,
+        Config: configPath,
+      };
+      encodeTraceProducerRequest(request);
+      return call('producer', undefined, undefined, undefined, request) as TraceProducerIdentity;
+    },
   };
   installWindowsTraceBackend(backend);
   return {

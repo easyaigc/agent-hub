@@ -38,6 +38,13 @@ import { FileTransfers } from './file-transfers.js';
 import { VoiceTranscriptions } from './voice-transcriptions.js';
 import { DesktopDomSuggestions } from './desktop-dom-suggestions.js';
 import { sendReadJSON } from './read-json.js';
+import { ProjectGitService } from './project-git.js';
+import {
+  PROJECT_GIT_CAPABILITY,
+  PROJECT_GIT_FILES_CAPABILITY,
+  PROJECT_GIT_MAX_BYTES,
+  parseProjectGitId,
+} from '@codex-manage/protocol';
 import {
   parseNotificationRegistration,
   parseNotificationPreferences,
@@ -174,6 +181,10 @@ export async function startRuntimeServer() {
     directory,
     target: () => session.readingTarget(),
     enabled: mode === 'desktop-runtime' && process.env.CODEX_DESKTOP_SUGGESTION_OBSERVER === '1',
+    traceRetention: process.env.CODEX_DESKTOP_TRACE_RETENTION === '1',
+    ...(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG
+      ? { nativeSuggestionsConfig: resolve(process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG) }
+      : {}),
     ...(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT
       ? { traceRoot: resolve(process.env.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT) }
       : {}),
@@ -329,6 +340,36 @@ export async function startRuntimeServer() {
   let direct: Awaited<ReturnType<typeof startDirectDiscovery>> | undefined;
   const vpnDirectory = new VPNPeerDirectory();
   const privateConnections = new PrivateConnections(directory);
+  const projectGitAvailable = await ProjectGitService.supported();
+  let gitBaselines: Record<string, string> = {};
+  if (process.env.HOST_AGENT_GIT_BASELINES_FILE) {
+    const path = resolve(process.env.HOST_AGENT_GIT_BASELINES_FILE);
+    assertPrivateFile(path);
+    const bytes = readFileSync(path);
+    if (bytes.length > 65536) throw new Error('Git baseline configuration too large');
+    const parsed: unknown = JSON.parse(bytes.toString('utf8'));
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed) ||
+      Object.keys(parsed).length > 128 ||
+      Object.entries(parsed).some(
+        ([id, ref]) =>
+          !/^[a-f0-9]{32}$/.test(id) ||
+          typeof ref !== 'string' ||
+          !/^refs\/(heads|remotes)\/[\w./-]+$/.test(ref),
+      )
+    )
+      throw new Error('Invalid Git baseline configuration');
+    gitBaselines = parsed as Record<string, string>;
+  }
+  const projectGit = new ProjectGitService({
+    secret: token,
+    baselines: gitBaselines,
+    ...(mode === 'desktop-runtime'
+      ? {}
+      : { allowedRoots: [resolve(process.env.HOST_AGENT_ROOT ?? process.cwd()), directory] }),
+  });
   const httpsEndpoints = parseCodexSystemEndpoints(process.env.HOST_AGENT_HTTPS_ENDPOINTS);
   // Every response that replaces the client's capabilities must include current
   // Host-owned readiness, including collector and trace-directory changes.
@@ -342,6 +383,7 @@ export async function startRuntimeServer() {
       'notifications',
       'files:upload',
       'commands:target-bound:v1',
+      ...(projectGitAvailable ? [PROJECT_GIT_CAPABILITY, PROJECT_GIT_FILES_CAPABILITY] : []),
     ]),
   ];
   let fencedSuggestionPending = false;
@@ -378,6 +420,78 @@ export async function startRuntimeServer() {
         throw new RuntimeError(400, '无效请求地址', 'INVALID_REQUEST_TARGET');
       }
       const url = requestURL;
+      if (url.pathname === '/v1/project-git' || url.pathname === '/v1/project-git/files') {
+        if (request.method !== 'GET') {
+          response.setHeader('Allow', 'GET');
+          throw new RuntimeError(405, 'Git 状态仅支持只读查询');
+        }
+        if (!projectGitAvailable) throw new RuntimeError(501, '此电脑尚未提供 Git 状态查询');
+        const filePage = url.pathname.endsWith('/files');
+        const keys = [
+          'target',
+          'projectId',
+          'hostId',
+          ...(filePage ? ['worktreeId', 'snapshotId', 'cursor'] : ['refresh']),
+        ];
+        if (
+          [...url.searchParams.keys()].some(
+            (key) => !keys.includes(key) || url.searchParams.getAll(key).length !== 1,
+          ) ||
+          url.searchParams.getAll('target').length !== 1 ||
+          (url.searchParams.has('hostId') && url.searchParams.get('hostId') !== session.hostId)
+        )
+          throw new RuntimeError(400, 'Git 查询必须指定完整机器与项目目标');
+        let target, projectId;
+        try {
+          const raw = url.searchParams.get('target')!;
+          if (raw.length > 8192) throw new Error('target');
+          target = parseUsageTarget(JSON.parse(raw));
+          projectId = parseProjectGitId(url.searchParams.get('projectId'));
+        } catch {
+          throw new RuntimeError(400, '无效 Git 查询目标');
+        }
+        const currentKey = usageTargetKey(usageTarget(session.readingTarget()));
+        if (usageTargetKey(target) !== currentKey)
+          throw new RuntimeError(409, '运行目标已变化，请刷新连接');
+        const catalog = workspaceView ? await workspaceView.workspace() : await session.workspace();
+        const project = catalog.projects.find(
+          (project) => project.id === projectId && project.hostId === session.hostId,
+        );
+        if (!project) throw new RuntimeError(404, '当前电脑没有此项目');
+        let value;
+        if (filePage) {
+          let tree, snapshot;
+          try {
+            tree = parseProjectGitId(url.searchParams.get('worktreeId'));
+            snapshot = parseProjectGitId(url.searchParams.get('snapshotId'));
+          } catch {
+            throw new RuntimeError(400, '无效工作区快照');
+          }
+          value = projectGit.files(
+            projectId,
+            project.roots,
+            target,
+            tree,
+            snapshot,
+            url.searchParams.get('cursor'),
+          );
+        } else {
+          if (url.searchParams.has('refresh') && url.searchParams.get('refresh') !== '1')
+            throw new RuntimeError(400, '无效刷新参数');
+          value = await projectGit.read(
+            projectId,
+            project.roots,
+            target,
+            url.searchParams.get('refresh') === '1',
+          );
+        }
+        if (currentKey !== usageTargetKey(usageTarget(session.readingTarget())))
+          throw new RuntimeError(409, '运行目标已变化，请刷新连接');
+        if (Buffer.byteLength(JSON.stringify(value)) > PROJECT_GIT_MAX_BYTES)
+          throw new RuntimeError(413, '仓库摘要过大，请缩小项目范围');
+        json(response, 200, value);
+        return;
+      }
       if (request.method === 'GET' && url.pathname === '/v1/usage') {
         response.setHeader('Cache-Control', 'no-store');
         if (
@@ -1393,6 +1507,7 @@ export async function startRuntimeServer() {
     });
   } catch (error) {
     clearInterval(notificationTimer);
+    projectGit.close();
     unsubscribeNotifications();
     suggestionObserver.close();
     notifications.close();
@@ -1471,6 +1586,7 @@ export async function startRuntimeServer() {
     let failure: unknown;
     clearInterval(voiceExpiryTimer);
     for (const dispose of [
+      () => projectGit.close(),
       unsubscribeNotifications,
       () => notifications.close(),
       () => directRecovery?.close(),

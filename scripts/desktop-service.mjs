@@ -105,6 +105,8 @@ if (action === 'stop') {
     'HOST_RESPONSES_PROXY_IMAGE_TIMEOUT_MS',
     'CODEX_DESKTOP_SUGGESTION_OBSERVER',
     'CODEX_DESKTOP_SUGGESTION_TRACE_ROOT',
+    'CODEX_DESKTOP_TRACE_RETENTION',
+    'CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG',
     'CODEX_SHARED_SERVER_URL',
   ]) {
     if (process.env[key] !== undefined) environment[key] = process.env[key];

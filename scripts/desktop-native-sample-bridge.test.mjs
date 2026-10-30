@@ -1,0 +1,997 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
+import {
+  appendFileSync,
+  chmodSync,
+  existsSync,
+  linkSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  symlinkSync,
+  truncateSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { test } from 'node:test';
+import { machineRuntimeTargetKey } from '../packages/protocol/dist/index.js';
+import {
+  createDesktopNativeSampleBridge,
+  desktopNativeSampleBridgeTesting as testing,
+} from '../packages/codex-adapter/dist/desktop-native-sample-bridge.js';
+import { DesktopNativeSampleCapture } from '../packages/codex-adapter/dist/desktop-native-sample-capture.js';
+import { DesktopSuggestionStore } from '../packages/codex-adapter/dist/desktop-suggestion-store.js';
+import {
+  protectWindowsStateDirectory,
+  protectWindowsStateFile,
+} from '../packages/codex-adapter/dist/desktop-platform.js';
+
+// Synthetic local fixtures only. These do not attest the original launcher's
+// byte forwarding, native parent/start validation, or real Electron/iPhone use.
+const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const windows = process.platform === 'win32';
+const implementationSha256 = 'a'.repeat(64);
+function directory(path) {
+  mkdirSync(path, { recursive: true, mode: 0o700 });
+  if (!windows) chmodSync(path, 0o700);
+  protectWindowsStateDirectory(path);
+  return path;
+}
+function privateFile(path, text) {
+  writeFileSync(path, text, { mode: 0o600 });
+  if (!windows) chmodSync(path, 0o600);
+  protectWindowsStateFile(path);
+  return path;
+}
+function fixture(t) {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'native-bridge-fixture-')));
+  directory(root);
+  const traceRoot = directory(join(root, 'trace'));
+  const logDirectory = directory(join(root, 'logs'));
+  const app = directory(join(root, 'Original.app'));
+  const configPath = join(root, 'native.json');
+  let at = Date.parse('2026-10-30T12:00:00.000Z');
+  const identity = {
+    pid: process.pid,
+    desktopPid: 812345,
+    desktopStartedAt: at - 60000,
+    wrapperStartedAt: at - 10000,
+  };
+  const target = {
+    agentId: 'codex',
+    hostId: 'fixture-host',
+    workspaceId: 'fixture-workspace',
+    runtimeId: 'desktop-runtime',
+    account: { authority: 'fixture', subject: 'historical-account' },
+  };
+  const config = {
+    version: 1,
+    target,
+    targetKey: machineRuntimeTargetKey(target),
+    traceRoot,
+    applicationPath: app,
+    executable: privateFile(join(app, 'original-cli'), 'fixture CLI'),
+    node: privateFile(join(root, 'original-node'), 'fixture Node'),
+    entry: privateFile(join(root, 'bridge-entry.mjs'), '// synthetic fixture'),
+    logDirectory,
+  };
+  privateFile(configPath, JSON.stringify(config));
+  const store = new DesktopSuggestionStore(traceRoot, machineRuntimeTargetKey(target));
+  const codes = [],
+    instances = [];
+  const nativeIdentity = (pid) => {
+    if (pid === process.pid) return { ...identity };
+    throw new Error('Synthetic unknown identity, not proof of exit');
+  };
+  const f = {
+    root,
+    traceRoot,
+    logDirectory,
+    configPath,
+    config,
+    identity,
+    target,
+    store,
+    codes,
+    ownerPath: join(store.directory, 'producer-owner.json'),
+    now: () => at,
+    advance: (delta = 1) => (at += delta),
+    saveConfig: (value = config) => privateFile(configPath, JSON.stringify(value)),
+    start(hooks = {}) {
+      const bridge = testing.create(configPath, {
+        identity: nativeIdentity,
+        clock: () => at,
+        loggerPaths: { root: logDirectory },
+        status: (code) => codes.push(code),
+        manual: true,
+        ...hooks,
+        implementationSha256: hooks.implementationSha256 ?? implementationSha256,
+      });
+      if (bridge) instances.push(bridge);
+      f.bridge = bridge;
+      return bridge;
+    },
+    tick(delta = 250, bridge = f.bridge) {
+      at += delta;
+      assert.ok(bridge, 'fixture bridge must have started');
+      assert.doesNotThrow(() => testing.tick(bridge));
+    },
+    log(name = '01', pid = identity.desktopPid, when = at) {
+      const date = new Date(when).toISOString().slice(0, 10).split('-');
+      let path = logDirectory;
+      for (const segment of date) path = directory(join(path, segment));
+      return join(path, `codex-desktop-fixture-${pid}-${name}.log`);
+    },
+    row(req) {
+      return store.readRuntime(req.params.threadId);
+    },
+    owner(
+      producer = {
+        epoch: randomUUID(),
+        pid: 712345,
+        desktopPid: identity.desktopPid,
+        desktopStartedAt: identity.desktopStartedAt,
+      },
+      wrapperStartedAt = identity.wrapperStartedAt - 1000,
+    ) {
+      store.prepare();
+      return {
+        version: 1,
+        kind: 'native-sample-owner',
+        targetKey: store.targetKey,
+        producer,
+        wrapperStartedAt,
+        rootIdentity: store.rootIdentity(),
+      };
+    },
+    decision(req, fields = {}) {
+      return (
+        `${new Date(fields.at ?? at).toISOString()} info [cumberbatch] cumberbatch_safety_decision ` +
+        `sourceThreadId=${fields.sourceThreadId ?? req.params.threadId} ` +
+        `sourceTurnId=${fields.sourceTurnId ?? req.params.expectedTurnId} suppressed=${fields.suppressed ?? false}`
+      );
+    },
+    send(req, body = 'Synthetic suggestion', bridge = f.bridge) {
+      bridge.observeOutbound(JSON.stringify(req));
+      at++;
+      bridge.observeInbound(
+        JSON.stringify({ id: req.id, result: { text: JSON.stringify({ suggestion: body }) } }),
+      );
+      at++;
+    },
+  };
+  t.after(() => {
+    for (const bridge of instances) bridge.close();
+    // This exact fresh fixture directory contains synthetic files only.
+    rmSync(root, { recursive: true });
+  });
+  return f;
+}
+function request(fields = {}) {
+  return {
+    id: `thread/sample:${randomUUID()}`,
+    method: 'thread/sample',
+    params: {
+      threadId: randomUUID(),
+      expectedTurnId: randomUUID(),
+      prompt: 'Synthetic composer prompt',
+      turnTrigger: 'composer_predictions',
+      ...fields,
+    },
+  };
+}
+function append(path, text) {
+  if (!existsSync(path)) privateFile(path, text);
+  else appendFileSync(path, text);
+}
+
+test('no configured private file means no bridge and no status output', () => {
+  const codes = [];
+  assert.equal(testing.create(undefined, { status: (code) => codes.push(code) }), undefined);
+  assert.deepEqual(codes, []);
+  assert.equal(typeof createDesktopNativeSampleBridge, 'function');
+});
+
+test('ready producer publishes the exact state and exposes only a passive tap', (t) => {
+  const f = fixture(t),
+    bridge = f.start();
+  assert.ok(bridge);
+  for (const method of ['observeOutbound', 'observeInbound', 'close'])
+    assert.equal(typeof bridge[method], 'function');
+  assert.equal(bridge.send, undefined);
+  const state = f.store.readProducer();
+  assert.deepEqual(
+    Object.keys(state).sort(),
+    [
+      'version',
+      'kind',
+      'targetKey',
+      'producer',
+      'wrapperStartedAt',
+      'rootIdentity',
+      'implementationSha256',
+      'checkedAt',
+      'phase',
+    ].sort(),
+  );
+  assert.deepEqual(state, {
+    version: 1,
+    kind: 'native-sample-producer',
+    targetKey: machineRuntimeTargetKey(f.target),
+    producer: {
+      epoch: state.producer.epoch,
+      pid: process.pid,
+      desktopPid: f.identity.desktopPid,
+      desktopStartedAt: f.identity.desktopStartedAt,
+    },
+    wrapperStartedAt: f.identity.wrapperStartedAt,
+    rootIdentity: f.store.rootIdentity(),
+    implementationSha256,
+    checkedAt: f.now(),
+    phase: 'listening',
+  });
+  assert.ok(/^[a-f0-9-]{36}$/.test(state.producer.epoch));
+  if (!windows) assert.equal(lstatSync(f.ownerPath).mode & 0o777, 0o600);
+  bridge.close();
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.equal(existsSync(f.ownerPath), false);
+  assert.doesNotThrow(() => bridge.close());
+});
+
+test('only an exact real-format decision releases one body through the store', (t) => {
+  const f = fixture(t),
+    path = f.log();
+  privateFile(path, 'old non-safety record\n');
+  const bridge = f.start(),
+    req = request();
+  const outbound = JSON.stringify(req) + '\r\n',
+    original = Buffer.from(outbound);
+  bridge.observeOutbound(outbound);
+  f.advance();
+  const inbound = JSON.stringify({
+    id: req.id,
+    result: { text: JSON.stringify({ suggestion: '  body\n' }) },
+  });
+  bridge.observeInbound(inbound);
+  f.advance();
+  assert.deepEqual(Buffer.from(outbound), original);
+  assert.equal(f.row(req).state, 'pending');
+  const line = f.decision(req);
+  append(path, line + '\n');
+  f.tick();
+  const row = f.row(req);
+  assert.equal(row.state, 'completed');
+  assert.equal(row.result.text, 'body');
+  assert.equal(row.result.safety.evidenceSha256, hash(line));
+  assert.equal(row.latestExtracted, undefined);
+  const files = readdirSync(f.store.directory).sort();
+  assert.deepEqual(
+    files,
+    [req.params.threadId + '.json', 'producer-owner.json', 'producer.json'].sort(),
+  );
+  // Original launcher byte-for-byte forwarding is deliberately a separate integration assertion.
+});
+
+test('existing valid safety records are placed at EOF, never replayed', (t) => {
+  const f = fixture(t),
+    req = request(),
+    path = f.log();
+  privateFile(path, f.decision(req) + '\n');
+  f.start();
+  f.send(req);
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(path, f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('an existing partial last line is discarded through its first newline', (t) => {
+  const f = fixture(t),
+    req = request(),
+    path = f.log();
+  const old = f.decision(req);
+  privateFile(path, old.slice(0, -5));
+  f.start();
+  f.send(req);
+  append(path, old.slice(-5) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(path, f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('new rotation starts at zero; pre-producer timestamps never approve', (t) => {
+  const f = fixture(t),
+    path = f.log(),
+    req = request();
+  privateFile(path, 'old log\n');
+  f.start();
+  f.send(req);
+  renameSync(path, join(dirname(path), 'unselected-old-log.bak'));
+  privateFile(path, f.decision(req, { at: f.identity.wrapperStartedAt - 1 }) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(path, f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('a new current-PID rotation filename is read from offset zero', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req);
+  privateFile(f.log('02'), f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('only the exact current PID token in an allowed day directory is selected', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req);
+  privateFile(f.log('wrong', Number(`${f.identity.desktopPid}1`)), f.decision(req) + '\n');
+  privateFile(
+    f.log('old-day', f.identity.desktopPid, f.now() - 3 * 86400000),
+    f.decision(req) + '\n',
+  );
+  privateFile(
+    join(f.logDirectory, `codex-desktop-fixture-${f.identity.desktopPid}-flat.log`),
+    f.decision(req) + '\n',
+  );
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  privateFile(
+    f.log('yesterday', f.identity.desktopPid, f.now() - 86400000),
+    f.decision(req) + '\n',
+  );
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('suppressed and cross-source decisions cannot release a candidate', (t) => {
+  const f = fixture(t);
+  f.start();
+  const a = request(),
+    b = request();
+  f.send(a);
+  f.send(b);
+  const path = f.log();
+  privateFile(
+    path,
+    f.decision(a, { sourceTurnId: b.params.expectedTurnId }) +
+      '\n' +
+      f.decision(b, { sourceThreadId: a.params.threadId }) +
+      '\n',
+  );
+  f.tick();
+  assert.equal(f.row(a).state, 'pending');
+  assert.equal(f.row(b).state, 'pending');
+  append(path, f.decision(a, { suppressed: true }) + '\n');
+  f.tick();
+  assert.equal(f.row(a).state, 'suppressed');
+  assert.equal(f.row(a).result, null);
+  append(path, f.decision(a) + '\n');
+  f.tick();
+  assert.equal(f.row(a).state, 'suppressed');
+  assert.equal(f.row(b).state, 'pending');
+});
+
+test('a decision preceding the observed response cannot approve it', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.bridge.observeOutbound(JSON.stringify(req));
+  f.advance();
+  const decision = f.decision(req);
+  f.advance();
+  f.bridge.observeInbound(
+    JSON.stringify({ id: req.id, result: { text: '{"suggestion":"body"}' } }),
+  );
+  privateFile(f.log(), decision + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'unverified');
+  assert.equal(f.row(req).result, null);
+});
+
+test('unknown, duplicate, truncated, and non-exact safety structures never approve', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req);
+  const line = f.decision(req),
+    path = f.log();
+  const invalid = [
+    line.replace(' info ', ' warn '),
+    line.replace('[cumberbatch]', '[other]'),
+    line + ` sourceThreadId=${req.params.threadId}`,
+    line + ` sourceTurnId=${req.params.expectedTurnId}`,
+    line + ' suppressed=false',
+    line.replace('suppressed=false', 'suppressed=unknown'),
+    line.replace('suppressed=false', 'suppressed=False'),
+    line + ' extra=value',
+    'prefix ' + line,
+    line.replace('sourceThreadId=', 'sourceThreadId=invalid-'),
+    line.replace('2026-10-30', '2026-02-30'),
+    line.replace('sourceTurnId', 'sourceTurnID'),
+    line.slice(0, -1),
+  ];
+  privateFile(path, invalid.join('\n') + '\n' + line.slice(0, 70));
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(path, '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(path, line + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('partial UTF-8 log data waits for a complete newline; CRLF hashes the complete record', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req);
+  const line = f.decision(req),
+    path = f.log();
+  privateFile(
+    path,
+    Buffer.concat([Buffer.from([0xff]), Buffer.from(line + '\n' + line.slice(0, 30))]),
+  );
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  append(path, line.slice(30) + '\r\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+  assert.equal(f.row(req).result.safety.evidenceSha256, hash(line + '\r'));
+});
+
+test('line and partial-tail capacity discards the complete overlong record', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req);
+  const path = f.log(),
+    line = f.decision(req);
+  privateFile(path, 'x'.repeat(testing.limits.lineBytes));
+  f.tick();
+  append(path, line + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  assert.ok(f.codes.includes('native_bridge_log_line_limit'));
+  append(path, f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('same-inode truncation disables the producer without using an old cursor', (t) => {
+  const f = fixture(t),
+    path = f.log();
+  privateFile(path, 'x'.repeat(8192) + '\n');
+  f.start();
+  const req = request();
+  f.send(req);
+  truncateSync(path, 0);
+  append(path, f.decision(req) + '\n');
+  f.tick();
+  assert.notEqual(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.ok(f.codes.includes('native_bridge_log_truncated'));
+  assert.equal(existsSync(f.ownerPath), false);
+});
+
+test('truncate-and-regrow cannot reuse a previously saved prefix guard', (t) => {
+  const f = fixture(t),
+    path = f.log();
+  privateFile(path, 'original prefix\n');
+  f.start();
+  const req = request();
+  f.send(req);
+  truncateSync(path, 0);
+  append(path, 'replaced prefix\n' + f.decision(req) + '\n');
+  f.tick();
+  assert.notEqual(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+});
+
+test('log hard links and current-PID symlink aliases fail closed', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req);
+  const external = privateFile(join(f.root, 'synthetic.log'), f.decision(req) + '\n');
+  linkSync(external, f.log());
+  f.tick();
+  assert.notEqual(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  const g = fixture(t);
+  g.start();
+  const b = request();
+  g.send(b);
+  const other = privateFile(join(g.root, 'other.log'), g.decision(b) + '\n');
+  try {
+    symlinkSync(other, g.log(), 'file');
+  } catch (error) {
+    if (windows && error.code === 'EPERM') return;
+    throw error;
+  }
+  g.tick();
+  assert.notEqual(g.row(b).state, 'completed');
+  assert.equal(g.store.readProducer().phase, 'unavailable');
+});
+
+test('replacing a dated directory with a symlink/junction never exposes its log', (t) => {
+  const f = fixture(t),
+    path = f.log();
+  privateFile(path, 'initial\n');
+  f.start();
+  const req = request();
+  f.send(req);
+  const day = dirname(path),
+    moved = join(f.root, 'moved-date');
+  renameSync(day, moved);
+  append(join(moved, path.slice(day.length + 1)), f.decision(req) + '\n');
+  symlinkSync(moved, day, windows ? 'junction' : 'dir');
+  f.tick();
+  assert.notEqual(f.row(req).state, 'completed');
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+});
+
+test('config is strict, small, duplicate-free, machine-target bound and private', (t) => {
+  for (const modify of [
+    (f) => f.saveConfig({ ...f.config, version: 2 }),
+    (f) => f.saveConfig({ ...f.config, extra: 'not accepted' }),
+    (f) => f.saveConfig({ ...f.config, target: { ...f.target, runtimeId: '' } }),
+    (f) => f.saveConfig({ ...f.config, targetKey: 'account-dependent-key' }),
+    (f) => privateFile(f.configPath, '{"version":1,"vers\\u0069on":1}'),
+    (f) => privateFile(f.configPath, ' '.repeat(testing.limits.configBytes + 1)),
+    (f) => f.saveConfig({ ...f.config, shimPath: f.config.entry }),
+    (f) => f.saveConfig({ ...f.config, logDirectory: f.root }),
+  ]) {
+    const f = fixture(t);
+    modify(f);
+    assert.equal(f.start(), undefined);
+    assert.equal(existsSync(f.ownerPath), false);
+    assert.equal(existsSync(join(f.store.directory, 'producer.json')), false);
+    assert.ok(f.codes.length > 0);
+    assert.ok(f.codes.every((code) => /^native_bridge_[a-z_]+$/.test(code)));
+  }
+});
+
+test('config symlinks, hardlinks and directory aliases are refused before listening', (t) => {
+  const f = fixture(t),
+    saved = join(f.root, 'saved-config.json');
+  renameSync(f.configPath, saved);
+  linkSync(saved, f.configPath);
+  assert.equal(f.start(), undefined);
+  unlinkSync(f.configPath);
+  try {
+    symlinkSync(saved, f.configPath, 'file');
+  } catch (error) {
+    if (windows && error.code === 'EPERM') return;
+    throw error;
+  }
+  assert.equal(f.start(), undefined);
+  const g = fixture(t),
+    alias = join(g.root, 'trace-alias');
+  symlinkSync(g.traceRoot, alias, windows ? 'junction' : 'dir');
+  g.saveConfig({ ...g.config, traceRoot: alias });
+  assert.equal(g.start(), undefined);
+});
+
+test('optional shim identity is canonical, bounded and hash-verified', (t) => {
+  const f = fixture(t),
+    shimPath = privateFile(join(f.root, 'shim.mjs'), '// synthetic shim');
+  f.saveConfig({ ...f.config, shimPath, shimSha256: hash(readFileSync(shimPath)) });
+  assert.ok(f.start());
+  const g = fixture(t),
+    other = privateFile(join(g.root, 'shim.mjs'), '// different shim');
+  g.saveConfig({ ...g.config, shimPath: other, shimSha256: '0'.repeat(64) });
+  assert.equal(g.start(), undefined);
+  assert.equal(existsSync(g.ownerPath), false);
+});
+
+test('POSIX 0600 config and 0700 trace root are exact requirements', { skip: windows }, (t) => {
+  const f = fixture(t);
+  chmodSync(f.configPath, 0o644);
+  assert.equal(f.start(), undefined);
+  const g = fixture(t);
+  chmodSync(g.traceRoot, 0o750);
+  assert.equal(g.start(), undefined);
+  const h = fixture(t);
+  chmodSync(h.configPath, 0o400);
+  assert.equal(h.start(), undefined);
+});
+
+test(
+  'Windows config DACL is verified natively instead of POSIX permission emulation',
+  { skip: !windows },
+  (t) => {
+    const f = fixture(t);
+    execFileSync('icacls.exe', [f.configPath, '/grant', '*S-1-1-0:(R)'], {
+      stdio: 'pipe',
+      windowsHide: true,
+    });
+    assert.equal(f.start(), undefined);
+    assert.equal(existsSync(f.ownerPath), false);
+  },
+);
+
+test('historical account changes leave the machine target key unchanged', (t) => {
+  const f = fixture(t);
+  f.saveConfig({
+    ...f.config,
+    target: { ...f.target, account: { authority: 'other', subject: 'other' } },
+  });
+  assert.ok(f.start());
+  assert.equal(f.store.readProducer().targetKey, machineRuntimeTargetKey(f.target));
+});
+
+test('implementation fingerprint is captured once and remains fixed across heartbeats', (t) => {
+  const f = fixture(t);
+  let reads = 0,
+    current = implementationSha256;
+  const bridge = testing.create(f.configPath, {
+    identity: () => ({ ...f.identity }),
+    clock: f.now,
+    loggerPaths: { root: f.logDirectory },
+    status: (code) => f.codes.push(code),
+    manual: true,
+    get implementationSha256() {
+      reads++;
+      return current;
+    },
+  });
+  assert.ok(bridge);
+  t.after(() => bridge.close());
+  assert.equal(reads, 1);
+  current = 'b'.repeat(64);
+  f.tick(2000, bridge);
+  assert.equal(reads, 1);
+  assert.equal(f.store.readProducer().implementationSha256, implementationSha256);
+  bridge.close();
+  assert.equal(f.store.readProducer().implementationSha256, implementationSha256);
+});
+
+test('invalid implementation digests fail construction; a different live digest is never overwritten', (t) => {
+  const f = fixture(t);
+  assert.equal(f.start({ implementationSha256: 'SECRET invalid digest' }), undefined);
+  assert.equal(existsSync(f.ownerPath), false);
+  assert.ok(f.codes.every((code) => !code.includes('SECRET')));
+  const g = fixture(t);
+  g.start();
+  const replacement = { ...g.store.readProducer(), implementationSha256: 'b'.repeat(64) };
+  g.store.saveProducer(replacement);
+  g.tick(2000);
+  assert.deepEqual(g.store.readProducer(), replacement);
+  assert.ok(g.codes.includes('native_bridge_owner_changed'));
+});
+
+test('a live owner blocks contention without touching the existing epoch or lock', (t) => {
+  const f = fixture(t),
+    first = f.start(),
+    before = readFileSync(f.ownerPath),
+    state = f.store.readProducer();
+  assert.ok(first);
+  assert.equal(f.start(), undefined);
+  assert.deepEqual(readFileSync(f.ownerPath), before);
+  assert.deepEqual(f.store.readProducer(), state);
+  assert.ok(f.codes.includes('native_bridge_owner_busy'));
+  first.close();
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+});
+
+test('unknown old PID state is preserved; helper failure and ESRCH are not positive exit evidence', (t) => {
+  for (const code of ['EPERM', 'ESRCH', undefined]) {
+    const f = fixture(t),
+      owner = f.owner();
+    privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+    const before = readFileSync(f.ownerPath);
+    assert.equal(
+      f.start({
+        identity: (pid) => {
+          if (pid === process.pid) return { ...f.identity };
+          throw Object.assign(new Error('Unclassified native failure'), { code });
+        },
+      }),
+      undefined,
+    );
+    assert.deepEqual(readFileSync(f.ownerPath), before);
+    assert.ok(f.codes.includes('native_bridge_owner_unknown'));
+    assert.equal(existsSync(join(f.store.directory, 'producer.json')), false);
+  }
+});
+
+test('a proven different PID start identity reclaims an old owner', (t) => {
+  const f = fixture(t),
+    owner = f.owner();
+  privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+  assert.ok(
+    f.start({
+      identity: (pid) => {
+        if (pid === process.pid) return { ...f.identity };
+        assert.equal(pid, owner.producer.pid);
+        return { ...f.identity, pid, wrapperStartedAt: owner.wrapperStartedAt + 1 };
+      },
+    }),
+  );
+  assert.notEqual(f.store.readProducer().producer.epoch, owner.producer.epoch);
+  assert.equal(f.store.readProducer().phase, 'listening');
+});
+
+test('invalid or changed owner identities are retained instead of guessed away', (t) => {
+  const f = fixture(t),
+    owner = f.owner();
+  privateFile(f.ownerPath, JSON.stringify({ ...owner, extra: true }));
+  assert.equal(f.start(), undefined);
+  assert.equal(existsSync(f.ownerPath), true);
+  const g = fixture(t),
+    other = g.owner();
+  privateFile(g.ownerPath, JSON.stringify(other));
+  assert.equal(
+    g.start({
+      identity: (pid) =>
+        pid === process.pid
+          ? { ...g.identity }
+          : {
+              ...g.identity,
+              pid: other.producer.pid,
+              wrapperStartedAt: other.wrapperStartedAt,
+              desktopPid: other.producer.desktopPid + 1,
+            },
+    }),
+    undefined,
+  );
+  assert.equal(existsSync(g.ownerPath), true);
+});
+
+test('close and stale callbacks cannot overwrite or unlink a replacement epoch', (t) => {
+  const f = fixture(t),
+    first = f.start(),
+    req = request();
+  f.send(req);
+  const pending = f.row(req),
+    old = f.store.readProducer();
+  const producer = { ...old.producer, epoch: randomUUID() };
+  const owner = {
+    version: 1,
+    kind: 'native-sample-owner',
+    targetKey: old.targetKey,
+    producer,
+    wrapperStartedAt: old.wrapperStartedAt,
+    rootIdentity: old.rootIdentity,
+  };
+  privateFile(f.ownerPath, JSON.stringify(owner) + '\n');
+  f.store.saveProducer({ ...old, producer });
+  const nextState = f.store.readProducer(),
+    nextLock = readFileSync(f.ownerPath);
+  assert.doesNotThrow(() => first.close());
+  assert.deepEqual(f.store.readProducer(), nextState);
+  assert.deepEqual(readFileSync(f.ownerPath), nextLock);
+  assert.deepEqual(f.row(req), pending);
+  assert.doesNotThrow(() => first.observeInbound('{"not":"replayed"}'));
+  assert.deepEqual(f.store.readProducer(), nextState);
+});
+
+test('heartbeat refreshes every two seconds and never revives an expired six-second lease', (t) => {
+  const f = fixture(t);
+  f.start();
+  const initial = f.store.readProducer();
+  f.tick(1999);
+  assert.equal(f.store.readProducer().checkedAt, initial.checkedAt);
+  f.tick(1);
+  assert.equal(f.store.readProducer().checkedAt, f.now());
+  f.tick(6000);
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.ok(f.codes.includes('native_bridge_lease_expired'));
+  assert.equal(existsSync(f.ownerPath), false);
+});
+
+test('heartbeat checks capture.available before renewing listening', (t) => {
+  const f = fixture(t);
+  f.start();
+  const descriptor = Object.getOwnPropertyDescriptor(
+    DesktopNativeSampleCapture.prototype,
+    'available',
+  );
+  assert.equal(typeof descriptor.get, 'function');
+  try {
+    Object.defineProperty(DesktopNativeSampleCapture.prototype, 'available', {
+      ...descriptor,
+      get: () => false,
+    });
+    f.tick(2000);
+    assert.equal(f.store.readProducer().phase, 'unavailable');
+    assert.ok(f.codes.includes('native_bridge_capture_unavailable'));
+  } finally {
+    Object.defineProperty(DesktopNativeSampleCapture.prototype, 'available', descriptor);
+  }
+});
+
+test('fatal storage failure stops listening; exceptions and paths do not reach logging', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  directory(join(f.store.directory, req.params.threadId + '.json'));
+  assert.doesNotThrow(() => f.bridge.observeOutbound(JSON.stringify(req)));
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.ok(f.codes.includes('native_bridge_capture_unavailable'));
+  assert.ok(
+    f.codes.every((code) => /^native_bridge_[a-z_]+$/.test(code) && !code.includes(f.root)),
+  );
+});
+
+test('unknown and oversized frames are nonfatal; normal later work still completes', (t) => {
+  const f = fixture(t);
+  f.start();
+  f.bridge.observeInbound(
+    JSON.stringify({ id: `thread/sample:${randomUUID()}`, result: { text: 'unknown' } }),
+  );
+  f.bridge.observeOutbound('x'.repeat(128 * 1024 + 1));
+  f.tick(2000);
+  assert.equal(f.store.readProducer().phase, 'listening');
+  const req = request();
+  f.send(req);
+  privateFile(f.log(), f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+});
+
+test('260 sequential requests retain availability and one body slot per source', (t) => {
+  const f = fixture(t);
+  f.start();
+  const threadId = randomUUID(),
+    path = f.log();
+  for (let i = 0; i < 260; i++) {
+    const req = request({ threadId });
+    f.send(req, `Synthetic body ${i}`);
+    append(path, f.decision(req) + '\n');
+    f.tick(5);
+    assert.equal(f.row(req).state, 'completed', `request ${i}`);
+    assert.equal(f.row(req).result.text, `Synthetic body ${i}`);
+  }
+  assert.equal(f.store.readProducer().phase, 'listening');
+  assert.deepEqual(
+    readdirSync(f.store.directory).sort(),
+    [threadId + '.json', 'producer-owner.json', 'producer.json'].sort(),
+  );
+});
+
+test('16000 Unicode characters are supported without a second body cache', (t) => {
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req, '界'.repeat(16000));
+  privateFile(f.log(), f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+  assert.equal(f.row(req).result.text.length, 16000);
+  assert.equal(f.row(req).latestExtracted, undefined);
+});
+
+test('clock regression and config replacement revoke availability without throwing', (t) => {
+  const f = fixture(t);
+  f.start();
+  f.tick(-1);
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.ok(f.codes.includes('native_bridge_clock_invalid'));
+  const g = fixture(t);
+  g.start();
+  g.saveConfig({
+    ...g.config,
+    target: { ...g.target, hostId: 'different-host' },
+    targetKey: undefined,
+  });
+  g.tick(2000);
+  assert.equal(g.store.readProducer().phase, 'unavailable');
+  assert.ok(g.codes.includes('native_bridge_config_changed'));
+});
+
+test('identity change stops heartbeat; exception payloads never become status codes', (t) => {
+  const f = fixture(t);
+  let initial = true;
+  f.start({
+    identity: () => {
+      if (initial) {
+        initial = false;
+        return { ...f.identity };
+      }
+      throw Object.assign(new Error('SECRET synthetic exception'), {
+        bridgeCode: 'SECRET payload',
+        env: { secret: 'SECRET environment' },
+      });
+    },
+  });
+  f.tick(2000);
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.ok(
+    f.codes.every((code) => !code.includes('SECRET') && /^native_bridge_[a-z_]+$/.test(code)),
+  );
+});
+
+test('fixed capacity is eight files per tick, sixteen selected files and 1 MiB bytes', (t) => {
+  assert.equal(testing.limits.filesPerTick, 8);
+  assert.equal(testing.limits.files, 16);
+  assert.equal(testing.limits.bytesPerTick, 1024 * 1024);
+  assert.equal(testing.limits.lineBytes, 8192);
+  assert.equal(testing.limits.directories, 4);
+  const f = fixture(t);
+  f.start();
+  const req = request();
+  f.send(req);
+  for (let i = 0; i < 8; i++) privateFile(f.log(String(i).padStart(2, '0')), 'not a decision\n');
+  privateFile(f.log('99'), f.decision(req) + '\n');
+  f.tick();
+  assert.equal(f.row(req).state, 'pending');
+  f.tick();
+  assert.equal(f.row(req).state, 'completed');
+  const g = fixture(t);
+  for (let i = 0; i < 17; i++) privateFile(g.log(String(i)), '');
+  assert.equal(g.start(), undefined);
+  assert.ok(g.codes.includes('native_bridge_log_file_limit'));
+});
+
+test(
+  'POSIX tick never reads past its byte budget and resumes safely next tick',
+  { skip: windows },
+  (t) => {
+    const f = fixture(t);
+    f.start();
+    const req = request();
+    f.send(req);
+    const filler = ('x'.repeat(8192) + '\n').repeat(128);
+    privateFile(f.log(), filler + f.decision(req) + '\n');
+    f.tick();
+    assert.equal(f.row(req).state, 'pending');
+    f.tick();
+    assert.equal(f.row(req).state, 'completed');
+  },
+);
+
+test(
+  'Windows cannot bypass the native prefix-only helper with unchecked large-file reads',
+  { skip: !windows },
+  (t) => {
+    const f = fixture(t),
+      path = f.log();
+    privateFile(path, Buffer.alloc(testing.limits.bytesPerTick + 1, 120));
+    assert.equal(f.start(), undefined);
+    assert.ok(f.codes.includes('native_bridge_windows_log_range_unavailable'));
+    assert.equal(existsSync(f.ownerPath), false);
+  },
+);
+
+test('directory enumeration and logger failures stay bounded and nonthrowing', (t) => {
+  const f = fixture(t);
+  f.start();
+  const path = f.log(),
+    parent = dirname(path);
+  for (let i = 0; i <= testing.limits.directoryEntries; i++)
+    privateFile(join(parent, `unselected-${i}`), '');
+  f.tick();
+  assert.equal(f.store.readProducer().phase, 'unavailable');
+  assert.ok(f.codes.includes('native_bridge_log_entry_limit'));
+  const g = fixture(t);
+  assert.equal(
+    g.start({
+      status: () => {
+        throw new Error('Synthetic logger failure');
+      },
+      identity: () => {
+        throw new Error('SECRET body and error');
+      },
+    }),
+    undefined,
+  );
+});

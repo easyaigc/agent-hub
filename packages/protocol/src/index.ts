@@ -9,6 +9,7 @@ export * from './codex-private-connection.js';
 export * from './codex-connection-routes.js';
 export * from './workspace-sidebar.js';
 export * from './usage.js';
+export * from './project-git.js';
 
 export type ServiceName = 'host-agent' | 'relay';
 

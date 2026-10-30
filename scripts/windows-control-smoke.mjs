@@ -302,6 +302,8 @@ syncBuiltinESMExports();
     HOST_AGENT_PORT: '8822',
     CODEX_DESKTOP_SUGGESTION_OBSERVER: '1',
     CODEX_DESKTOP_SUGGESTION_TRACE_ROOT: join(directory, 'private-trace-fixture'),
+    CODEX_DESKTOP_TRACE_RETENTION: '1',
+    CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG: join(directory, 'native-suggestions.json'),
   });
   const savedPath = join(directory, '.local/desktop-runtime/windows-desktop.json');
   const saved = JSON.parse(await readFile(savedPath, 'utf8'));
@@ -332,6 +334,11 @@ syncBuiltinESMExports();
   assert.equal(after.environment.HOST_AGENT_NAME, 'Preserved PC');
   assert.equal(after.environment.HOST_AGENT_PORT, '8822');
   assert.equal(after.environment.CODEX_DESKTOP_SUGGESTION_OBSERVER, '1');
+  assert.equal(after.environment.CODEX_DESKTOP_TRACE_RETENTION, '1');
+  assert.equal(
+    after.environment.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG,
+    join(directory, 'native-suggestions.json'),
+  );
   assert.equal(
     after.environment.CODEX_DESKTOP_SUGGESTION_TRACE_ROOT,
     join(directory, 'private-trace-fixture'),
@@ -384,6 +391,8 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
   relayURL: process.env.HOST_NOTIFICATION_RELAY_URL,
   tokenFile: process.env.HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE,
   httpsEndpoints: process.env.HOST_AGENT_HTTPS_ENDPOINTS,
+  traceRetention: process.env.CODEX_DESKTOP_TRACE_RETENTION,
+  nativeSuggestionsConfig: process.env.CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG,
 }));
 `,
   );
@@ -416,6 +425,8 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
     relayURL,
     tokenFile: join(directory, tokenFile),
     httpsEndpoints,
+    traceRetention: '1',
+    nativeSuggestionsConfig: join(directory, 'native-suggestions.json'),
   });
   const invalidWorkerConfig = join(directory, 'invalid-worker.json');
   for (const invalid of [
@@ -424,6 +435,8 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
     { HOST_NOTIFICATION_RELAY_URL: 42 },
     { HOST_NOTIFICATION_PUBLISHER_TOKEN_FILE: 42 },
     { HOST_AGENT_HTTPS_ENDPOINTS: 42 },
+    { CODEX_DESKTOP_TRACE_RETENTION: 42 },
+    { CODEX_DESKTOP_NATIVE_SUGGESTIONS_CONFIG: 42 },
   ]) {
     await rm(workerSnapshot, { force: true });
     await writeFile(
@@ -465,6 +478,8 @@ writeFileSync(${JSON.stringify(workerSnapshot)}, JSON.stringify({
     relayURL: '',
     tokenFile: '',
     httpsEndpoints,
+    traceRetention: '1',
+    nativeSuggestionsConfig: join(directory, 'native-suggestions.json'),
   });
   console.log(
     'Windows notification configuration: persistence, worker forwarding and input rejection passed. Native calls and runtime entry mocked.',

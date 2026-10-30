@@ -259,6 +259,23 @@ export interface RenderItem {
   replyPhase?: 'commentary' | 'final_answer';
 }
 
+export function subagentStatus(value: string): string {
+  if (['running', 'active', 'inProgress'].includes(value)) return 'inProgress';
+  if (['pendingInit', 'pending'].includes(value)) return 'pending';
+  if (['errored', 'failed', 'systemError'].includes(value)) return 'failed';
+  if (['interrupted', 'shutdown'].includes(value)) return 'interrupted';
+  if (['completed', 'idle'].includes(value)) return 'completed';
+  return 'unknown';
+}
+
+export function combinedSubagentStatus(statuses: string[]): string {
+  return (
+    ['inProgress', 'pending', 'failed', 'unknown', 'interrupted', 'completed'].find((value) =>
+      statuses.includes(value),
+    ) ?? 'unknown'
+  );
+}
+
 export function renderItem(value: unknown, detailLimit = 200_000): RenderItem {
   const item = object(value);
   const kind = string(item.type);
@@ -271,7 +288,12 @@ export function renderItem(value: unknown, detailLimit = 200_000): RenderItem {
       .map((entry) => string(entry.text))
       .filter(Boolean)
       .join('\n');
-  if (kind === 'commandExecution') {
+  if (kind === 'collabAgentToolCall' || kind === 'subAgent') {
+    text = string(item.tool) || text || '子 Agent';
+    detail =
+      string(item.detail) ||
+      [string(item.prompt), JSON.stringify(item.agentsStates ?? {})].filter(Boolean).join('\n\n');
+  } else if (kind === 'commandExecution') {
     text = string(item.command);
     detail = string(item.aggregatedOutput);
     if (item.exitCode !== null && item.exitCode !== undefined) detail += `\nExit ${item.exitCode}`;
@@ -326,10 +348,16 @@ export function renderItem(value: unknown, detailLimit = 200_000): RenderItem {
           : 'tool',
     text,
     files: [],
-    kind,
+    kind: kind === 'collabAgentToolCall' ? 'subAgent' : kind,
     status:
-      string(item.status) ||
-      (kind === 'contextCompaction' && item.completed === false ? 'inProgress' : 'completed'),
+      kind === 'collabAgentToolCall'
+        ? combinedSubagentStatus(
+            Object.values(object(item.agentsStates)).map((value) =>
+              subagentStatus(string(object(value).status)),
+            ),
+          )
+        : string(item.status) ||
+          (kind === 'contextCompaction' && item.completed === false ? 'inProgress' : 'completed'),
     detail: detail.slice(-detailLimit),
     paths,
     ...(string(item.runId) ? { runId: string(item.runId) } : {}),

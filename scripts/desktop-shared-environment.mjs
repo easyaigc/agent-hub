@@ -124,7 +124,7 @@ export function sharedDesktopEnvironment({
       desktopProcessesStarted: 0,
     };
   };
-  const install = ({ program, executable, url }) => {
+  const install = ({ program, executable, url, nativeSuggestionsConfig }) => {
     program = realpathSync(resolve(program));
     executable = realpathSync(resolve(executable));
     node = realpathSync(node);
@@ -144,6 +144,11 @@ export function sharedDesktopEnvironment({
     const entry = join(program, 'packages/codex-adapter/dist/desktop-shared-launcher.js');
     if (!lstatSync(entry).isFile()) throw Error('Compiled shared launcher required');
     const previous = existsSync(manifestPath) ? manifest() : undefined;
+    nativeSuggestionsConfig ??= previous?.nativeSuggestionsConfig;
+    if (nativeSuggestionsConfig) {
+      nativeSuggestionsConfig = realpathSync(resolve(nativeSuggestionsConfig));
+      privatePath(nativeSuggestionsConfig);
+    }
     // A global force flag also redirects the official durable/cloud backend.
     // The original local CLI override is sufficient; preserve all native routes.
     const environment = { CODEX_CLI_PATH: wrapper, CODEX_APP_SERVER_FORCE_CLI: '' };
@@ -184,6 +189,11 @@ export function sharedDesktopEnvironment({
       'process.env.AGENT_HUB_SHARED_APP_SERVER_DIRECTORY = ' +
       JSON.stringify(ownerDirectory) +
       ';\n' +
+      (nativeSuggestionsConfig
+        ? 'process.env.AGENT_HUB_NATIVE_SUGGESTIONS_CONFIG = ' +
+          JSON.stringify(nativeSuggestionsConfig) +
+          ';\n'
+        : '') +
       'const { runDesktopSharedLauncher } = await import(' +
       JSON.stringify(pathToFileURL(entry).href) +
       ');\n' +
@@ -227,6 +237,7 @@ export function sharedDesktopEnvironment({
           executable,
           url: endpoint.origin,
           environment,
+          ...(nativeSuggestionsConfig ? { nativeSuggestionsConfig } : {}),
           previousEnvironment:
             previous?.previousEnvironment ??
             Object.fromEntries(keys.map((key) => [key, getenv(key)])),
@@ -277,11 +288,18 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       program: { type: 'string' },
       executable: { type: 'string' },
       url: { type: 'string' },
+      'native-suggestions-config': { type: 'string' },
     },
   });
   const [action] = positionals;
   if (positionals.length !== 1 || !['install', 'status', 'apply', 'disable'].includes(action))
     throw Error('Use install/status/apply/disable');
   const api = sharedDesktopEnvironment({ ...(values.state ? { state: values.state } : {}) });
-  console.log(JSON.stringify(action === 'install' ? api.install(values) : api[action]()));
+  console.log(
+    JSON.stringify(
+      action === 'install'
+        ? api.install({ ...values, nativeSuggestionsConfig: values['native-suggestions-config'] })
+        : api[action](),
+    ),
+  );
 }

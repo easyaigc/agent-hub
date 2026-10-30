@@ -38,6 +38,16 @@ export async function preparedTraceFixture(run) {
   write('package.json', '{"type":"module"}');
   write('reader.mjs', compiled + '\nexport {TraceSnapshot};\n');
   write(
+    'desktop-suggestion-store.js',
+    ts.transpileModule(
+      fs.readFileSync(
+        new URL('../../packages/codex-adapter/src/desktop-suggestion-store.ts', import.meta.url),
+        'utf8',
+      ),
+      { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } },
+    ).outputText,
+  );
+  write(
     'windows-trace-diagnostics.js',
     ts.transpileModule(
       fs.readFileSync(
@@ -69,6 +79,10 @@ export const opendirSync=p=>{hooks.catalog?.(p);return fs.opendirSync(local(p))}
     'desktop-platform.js',
     `let backend;
 export const install=value=>backend=value;
+export const assertPrivateFile=()=>{throw Error('fixture has no persistent-store backend')};
+export const makePrivateDirectorySync=()=>{throw Error('fixture has no persistent-store backend')};
+export const openPrivateFileSync=()=>{throw Error('fixture has no persistent-store backend')};
+export const renamePrivateFileSync=()=>{throw Error('fixture has no persistent-store backend')};
 export const windowsTraceSnapshot=(...args)=>backend.snapshot(...args);
 export const windowsTraceSnapshotMany=(...args)=>backend.snapshotMany(...args);
 export const windowsTraceSnapshotBatchAvailable=()=>backend.batch;

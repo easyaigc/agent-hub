@@ -80,6 +80,8 @@ macOS 的实际同步等待、owning Worker 经 Main 转发、缺失原生程序
 
 ## 既有 Windows 布局、创建租约与 R2 部署门禁
 
+后续人类明确要求继续实际集成冻结 R2，已建立以 `3ff706b0` 和 PR73 合并主线为输入的独立集成现场；R4/R5 原任务保持归属。此前门禁继续有效直至实际合并和 Windows 验收，不能停留在清单。进展和当前原生端范围见[运行集成记录](codex-update-r2-integration-20261030.md)。
+
 来源已部署 R2：规范提交 `3ff706b0d29d26a92dd0a14d8c09b8f452377e06`，公开 tag `host-connect-20261030-native-results-r2`，`native-result-worker-fix.zip` SHA-256 `8c8e46f5da5979d6e0b3772aa6cd38dcc79e658c28b6665011600413848ccfd8`。其五个实际运行组件与来源部署相符。该提交和 PR #72 合并主线 `1f58e204d68c6f68f0642004457085f7b195bd0e` 不互为祖先；普通试合并的 48 个冲突已撤回，没有宣称 R2 已合入 main。此前 `host-connect-native-owner-20261030` 包缺少 R2 的 Native 建议存储及 Trace 保留组件，不能覆盖当前部署。相邻任务仍有活跃开发，不能把它的工作区或后续 R4/R5 候选当成本任务冻结输入。
 
 安全兼容使用新的 Windows `runtime-history-v2` 可重建缓存目录。已有 v1 目录、内容和 owner 原样保留，不读取、接管或修改其权限；主状态、命令账本、草稿和未知回执位置不变。缺少的阅读缓存由原有只读读取重建；离线期间旧 v1 缓存不会自动导入。macOS 继续使用 v1。此处不将任意 Administrators 对象纳入可信私有状态。

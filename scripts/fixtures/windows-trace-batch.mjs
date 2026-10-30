@@ -440,6 +440,7 @@ export async function frozenBatchFixture() {
     'diagnostic-events',
     'windows-process',
     'desktop-prediction-trace',
+    'desktop-suggestion-store',
   ]) {
     const path = join(source, name + '.ts'),
       input = fs.readFileSync(path, 'utf8');
@@ -464,6 +465,12 @@ export async function frozenBatchFixture() {
     join(directory, 'desktop-platform.js'),
     `import {fileURLToPath} from 'node:url';
 let backend;
+export const assertPrivateFile=()=>{throw new Error('Compact store requires real private filesystem proof')};
+export const makePrivateDirectorySync=()=>{throw new Error('Compact store writes are outside this read-only fixture')};
+export const openPrivateFileSync=()=>{throw new Error('Compact store writes are outside this read-only fixture')};
+export const renamePrivateFileSync=()=>{throw new Error('Compact store writes are outside this read-only fixture')};
+export const protectWindowsStateDirectory=()=>{throw new Error('Compact store writes are outside this read-only fixture')};
+export const protectWindowsStateFile=()=>{throw new Error('Compact store writes are outside this read-only fixture')};
 export const installWindowsTraceBackend=value=>{backend=value};
 export const windowsTraceSnapshot=(...args)=>backend.snapshot(...args);
 export const windowsTraceSnapshotBatchAvailable=()=>backend?.snapshotMany!==undefined;

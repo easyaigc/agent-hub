@@ -1,4 +1,4 @@
-import { CodexHistoryReader } from './history-reader.js';
+import { CodexHistoryReader, type HistoryExecutableResolver } from './history-reader.js';
 import { RuntimeError, RuntimeSession } from './runtime-session.js';
 import type { WorkspaceSidebar } from '@codex-manage/protocol';
 
@@ -37,8 +37,15 @@ export class DesktopWorkspaceView {
     name: string,
     executable: string | undefined,
     statePath: string,
+    executableResolver?: HistoryExecutableResolver,
   ) {
-    this.reader = new CodexHistoryReader(session.hostId, name, executable, statePath);
+    this.reader = new CodexHistoryReader(
+      session.hostId,
+      name,
+      executable,
+      statePath,
+      executableResolver,
+    );
     this.reader.onDisconnect = () => {
       if (this.closed) return;
       this.readFailure ??= new RuntimeError(

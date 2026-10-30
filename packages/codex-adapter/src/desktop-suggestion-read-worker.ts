@@ -15,6 +15,7 @@ type DiagnosticReason = Parameters<ReturnType<typeof createWindowsTraceDiagnosti
 export type SuggestionWorkerScope = {
   directory: string;
   traceRoot?: string | undefined;
+  nativeSuggestionsConfig?: string;
   target: RuntimeTarget;
 };
 /** Fixture callers can replace only instance evidence in a separate test entry. */

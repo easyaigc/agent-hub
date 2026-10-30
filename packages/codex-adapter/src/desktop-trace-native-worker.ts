@@ -9,6 +9,7 @@ import {
   decodeTraceSnapshotBatch,
   parseTraceSnapshotBatchJSON,
   traceSnapshotBatchLimits,
+  encodeTraceProducerRequest,
   type TraceSnapshotBatch,
 } from './desktop-trace-native.js';
 
@@ -147,6 +148,13 @@ ownerPort.on('message', (input: unknown) => {
       batch = request as unknown as TraceSnapshotBatch;
       if (batch.id <= lastBatch) throw new Error('Stale native batch');
       lastBatch = batch.id;
+    } catch {
+      close();
+      return;
+    }
+  } else if (request.kind === 'producer') {
+    try {
+      command = encodeTraceProducerRequest(request);
     } catch {
       close();
       return;

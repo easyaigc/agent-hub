@@ -1,0 +1,500 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:agent-hub:project-git:v1",
+  "$ref": "#/definitions/response",
+  "definitions": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[^\\x00-\\x1f\\x7f]+$"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "unconfigured",
+        "missing-ref",
+        "shallow-history",
+        "unborn",
+        "unrelated-history",
+        "timeout",
+        "output-limit",
+        "git-unavailable",
+        "git-failed",
+        "directory-unavailable",
+        "outside-project",
+        "scan-limit",
+        "changed-during-read",
+        "unsupported"
+      ]
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "$ref": "#/definitions/id"
+        },
+        "hostId": {
+          "$ref": "#/definitions/id"
+        },
+        "workspaceId": {
+          "$ref": "#/definitions/id"
+        },
+        "runtimeId": {
+          "$ref": "#/definitions/id"
+        }
+      },
+      "required": ["agentId", "hostId", "workspaceId", "runtimeId"],
+      "additionalProperties": false
+    },
+    "comparison": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "state": {
+          "enum": ["ready", "unknown"]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/reason"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "ahead": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "behind": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "const": null
+            }
+          ]
+        }
+      },
+      "required": ["ref", "state", "reason", "ahead", "behind"],
+      "additionalProperties": false
+    },
+    "baseline": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "state": {
+          "enum": ["ready", "unknown"]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/reason"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "ahead": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "behind": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "source": {
+          "enum": ["configured", "remote-head", "unknown"]
+        }
+      },
+      "required": ["ref", "state", "reason", "ahead", "behind", "source"],
+      "additionalProperties": false
+    },
+    "changes": {
+      "type": "object",
+      "properties": {
+        "changed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "staged": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "unstaged": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "untracked": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "conflicts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "submodules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      },
+      "required": ["changed", "staged", "unstaged", "untracked", "conflicts", "submodules"],
+      "additionalProperties": false
+    },
+    "worktree": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "displayPath": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "state": {
+          "enum": ["ready", "unavailable"]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/reason"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "branch": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "head": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "unborn": {
+          "type": "boolean"
+        },
+        "shallow": {
+          "type": "boolean"
+        },
+        "changes": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/changes"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "upstream": {
+          "$ref": "#/definitions/comparison"
+        },
+        "publish": {
+          "$ref": "#/definitions/comparison"
+        },
+        "baseline": {
+          "$ref": "#/definitions/baseline"
+        },
+        "operation": {
+          "oneOf": [
+            {
+              "enum": ["merge", "rebase", "cherry-pick"]
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "consistency": {
+          "enum": ["best-effort", "changed-during-read"]
+        }
+      },
+      "required": [
+        "id",
+        "displayPath",
+        "state",
+        "reason",
+        "branch",
+        "head",
+        "unborn",
+        "shallow",
+        "changes",
+        "upstream",
+        "publish",
+        "baseline",
+        "operation",
+        "consistency"
+      ],
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "name": {
+          "$ref": "#/definitions/id"
+        },
+        "worktrees": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/definitions/worktree"
+          }
+        }
+      },
+      "required": ["id", "name", "worktrees"],
+      "additionalProperties": false
+    },
+    "response": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "projectId": {
+          "$ref": "#/definitions/id"
+        },
+        "snapshotId": {
+          "$ref": "#/definitions/id"
+        },
+        "observedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,3})?Z$"
+        },
+        "kind": {
+          "enum": ["git", "non-git", "unknown"]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "$ref": "#/definitions/reason"
+              },
+              "displayPath": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "const": null
+                  }
+                ]
+              }
+            },
+            "required": ["reason", "displayPath"],
+            "additionalProperties": false
+          }
+        },
+        "remoteKnowledge": {
+          "const": "local-refs"
+        },
+        "repositories": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/definitions/repository"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "target",
+        "projectId",
+        "snapshotId",
+        "observedAt",
+        "kind",
+        "complete",
+        "issues",
+        "remoteKnowledge",
+        "repositories"
+      ],
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "oldPath": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "staged": {
+          "type": "boolean"
+        },
+        "unstaged": {
+          "type": "boolean"
+        },
+        "untracked": {
+          "type": "boolean"
+        },
+        "conflict": {
+          "type": "boolean"
+        },
+        "submodule": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "oldPath",
+        "staged",
+        "unstaged",
+        "untracked",
+        "conflict",
+        "submodule"
+      ],
+      "additionalProperties": false
+    },
+    "filesResponse": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "projectId": {
+          "$ref": "#/definitions/id"
+        },
+        "snapshotId": {
+          "$ref": "#/definitions/id"
+        },
+        "worktreeId": {
+          "$ref": "#/definitions/id"
+        },
+        "files": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/definitions/file"
+          }
+        },
+        "nextCursor": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,5})$"
+            },
+            {
+              "const": null
+            }
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "target",
+        "projectId",
+        "snapshotId",
+        "worktreeId",
+        "files",
+        "nextCursor",
+        "truncated"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

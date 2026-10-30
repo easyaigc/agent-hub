@@ -23,10 +23,12 @@ import {
   type TraceSnapshotValue,
 } from './desktop-trace-native.js';
 import { createWindowsTraceDiagnostics } from './windows-trace-diagnostics.js';
+import { DesktopSuggestionStore } from './desktop-suggestion-store.js';
 
 const traceSummaries = channel('agent-hub.windows-trace.summary');
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+const supportedTraceSchema = (value: unknown): boolean => value === 1 || value === 2;
 const bundleName = /^trace-([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})-(.+)$/i;
 const limits = {
   directoryEntries: 20_000,
@@ -99,6 +101,7 @@ class PreparedTraceLog {
   private readonly completions: TraceEvent[] = [];
   private readonly terminals: TraceEvent[] = [];
   private validated = false;
+  private schema: unknown;
 
   constructor(
     private readonly bytes: Buffer,
@@ -129,8 +132,12 @@ class PreparedTraceLog {
     return value;
   }
 
-  forTurn(turnId: string) {
-    return this.decode(() => this.turn(turnId));
+  forTurn(turnId: string, schema?: unknown) {
+    return this.decode(() => {
+      const result = this.turn(turnId);
+      if (schema !== undefined) requireValue(this.schema === schema);
+      return result;
+    });
   }
 
   private turn(turnId: string) {
@@ -146,8 +153,10 @@ class PreparedTraceLog {
         requireValue(Buffer.byteLength(this.lines[index]!) <= limits.eventLine);
         const value = this.eventAt(index, true),
           { event, payload } = value;
+        if (index === 0) this.schema = event.schema_version;
         requireValue(
-          event.schema_version === 1 &&
+          supportedTraceSchema(this.schema) &&
+            event.schema_version === this.schema &&
             event.rollout_id === this.threadId &&
             event.seq === index + 1 &&
             Number.isSafeInteger(event.wall_time_unix_ms),
@@ -1094,6 +1103,7 @@ function predictionText(
   response: JsonObject,
   predictionTurnId: string,
   snapshot: TraceSnapshot,
+  allowEmpty = false,
 ): string {
   requireValue(Array.isArray(response.output_items) && response.output_items.length > 0);
   let text: string | null = null;
@@ -1125,7 +1135,9 @@ function predictionText(
     );
     const suggestion = snapshot.json(content.text).suggestion;
     requireValue(
-      typeof suggestion === 'string' && suggestion.trim().length > 0 && suggestion.length <= 16_000,
+      typeof suggestion === 'string' &&
+        (allowEmpty || suggestion.trim().length > 0) &&
+        suggestion.length <= 16_000,
     );
     text = suggestion;
   }
@@ -1139,6 +1151,7 @@ function completedPrediction(
   requests: TraceRequest[],
   completions: TraceEvent[],
   endings: TraceEvent[],
+  allowEmpty = false,
 ): Omit<DesktopPredictionTracePrediction, 'binding'> {
   // The observed native shape has one inference. Until retry selection is verified,
   // never guess which of several requests or terminal records supplies the result.
@@ -1190,7 +1203,7 @@ function completedPrediction(
       response.upstream_request_id === completion.payload.upstream_request_id,
   );
   return {
-    text: predictionText(response, binding.predictionTurnId, snapshot),
+    text: predictionText(response, binding.predictionTurnId, snapshot, allowEmpty),
     completedAt: new Date(Number(ending.event.wall_time_unix_ms)).toISOString(),
     responsePayloadSha256: createHash('sha256').update(bytes).digest('hex'),
   };
@@ -1204,7 +1217,10 @@ function completedPrediction(
  * Filesystem safety is delegated to native Windows handles/DACLs or POSIX guards.
  */
 export class DesktopPredictionTraceReader {
-  constructor(private readonly root: string) {}
+  constructor(
+    private readonly root: string,
+    private readonly targetKey?: () => string,
+  ) {}
 
   isAvailable(): boolean {
     if (process.platform !== 'win32' && !process.getuid) return false;
@@ -1233,6 +1249,22 @@ export class DesktopPredictionTraceReader {
     predictionTurnId: string,
   ): DesktopPredictionTracePrediction | null {
     const result = this.readSnapshot(predictionThreadId, predictionTurnId, true);
+    return result?.prediction ? { binding: result.binding, ...result.prediction } : null;
+  }
+
+  /** Compaction requires the canonical terminal too; an empty result is a tombstone. */
+  readCompletedPredictionForRetention(
+    predictionThreadId: string,
+    predictionTurnId: string,
+  ): DesktopPredictionTracePrediction | null {
+    const result = this.readSnapshot(
+      predictionThreadId,
+      predictionTurnId,
+      true,
+      true,
+      undefined,
+      true,
+    );
     return result?.prediction ? { binding: result.binding, ...result.prediction } : null;
   }
 
@@ -1338,7 +1370,8 @@ export class DesktopPredictionTraceReader {
         group = group.filter((_item, offset) => {
           const manifest = snapshot.json(manifests[offset]!);
           requireValue(
-            manifest.schema_version === 1 && Number.isSafeInteger(manifest.started_at_unix_ms),
+            supportedTraceSchema(manifest.schema_version) &&
+              Number.isSafeInteger(manifest.started_at_unix_ms),
           );
           return Number(manifest.started_at_unix_ms) >= notBeforeUnixMs;
         });
@@ -1470,13 +1503,31 @@ export class DesktopPredictionTraceReader {
         string,
         { threadId: string; turnId: string; requestedAt: number }
       >();
+      const compact = this.targetKey
+        ? new DesktopSuggestionStore(this.root, this.targetKey()).read(snapshot, sourceThreadId)
+        : undefined;
+      const cached = new Map<string, DesktopPredictionTracePrediction | null>();
+      if (
+        compact &&
+        compact.sourceTurnId === sourceTurnId &&
+        compact.requestedAt >= notBeforeUnixMs
+      ) {
+        const key = JSON.stringify([compact.predictionThreadId, compact.predictionTurnId]);
+        executions.set(key, {
+          threadId: compact.predictionThreadId,
+          turnId: compact.predictionTurnId,
+          requestedAt: compact.requestedAt,
+        });
+        cached.set(key, compact.prediction);
+      }
       for (const { name, directory, configured } of this.discoverCandidates(
         snapshot,
         names,
         notBeforeUnixMs,
       )) {
         if (
-          configured?.thread_source !== 'composer_predictions' ||
+          !configured ||
+          !['composer_predictions', 'thread_sample'].includes(String(configured?.thread_source)) ||
           configured.forked_from_id !== sourceThreadId
         )
           continue;
@@ -1500,6 +1551,30 @@ export class DesktopPredictionTraceReader {
           const event = indexed ? indexed.eventAt(lineIndex++).event : snapshot.json(line);
           const payload = object(event.payload);
           if (payload.type !== 'inference_started') continue;
+          if (configured.thread_source === 'thread_sample') {
+            const request = snapshot.json(
+              payloadBytes(
+                snapshot,
+                directory,
+                payload.request_payload,
+                'inference_request',
+                limits.request,
+              ),
+            );
+            const metadata = object(request.client_metadata)['x-codex-turn-metadata'];
+            requireValue(typeof metadata === 'string' && metadata.length <= limits.eventLine);
+            const sample = snapshot.json(metadata);
+            // thread/sample also serves non-prediction callers. Its name alone
+            // never authorizes exposing their output as a next-user suggestion.
+            if (sample.turn_trigger !== 'composer_predictions') {
+              requireValue(
+                sample.prediction_source_thread_id === undefined &&
+                  sample.prediction_source_turn_id === undefined,
+              );
+              continue;
+            }
+            requireValue(sample.thread_source === 'thread_sample');
+          }
           const turnId = event.codex_turn_id;
           requireValue(validUuid(turnId));
           const binding =
@@ -1514,6 +1589,9 @@ export class DesktopPredictionTraceReader {
           if (binding.sourceThreadId !== sourceThreadId || binding.sourceTurnId !== sourceTurnId)
             continue;
           const key = JSON.stringify([predictionThreadId, turnId]);
+          // Existing native evidence always supersedes a compacted copy. A
+          // changed or unfinished live record must never fall back to a cache.
+          cached.delete(key);
           const requestedAt = Number(event.wall_time_unix_ms);
           requireValue(Number.isSafeInteger(requestedAt) && requestedAt >= 0);
           executions.set(key, {
@@ -1534,6 +1612,13 @@ export class DesktopPredictionTraceReader {
       }
       const results: DesktopPredictionTracePrediction[] = [];
       for (const execution of selected) {
+        const key = JSON.stringify([execution.threadId, execution.turnId]);
+        if (cached.has(key)) {
+          const prediction = cached.get(key);
+          requireValue(prediction);
+          results.push(prediction);
+          continue;
+        }
         const read = () =>
           this.readSnapshot(
             execution.threadId,
@@ -1564,6 +1649,7 @@ export class DesktopPredictionTraceReader {
     includePrediction: boolean,
     recovery = false,
     sharedSnapshot?: TraceSnapshot,
+    allowEmpty = false,
   ): {
     binding: DesktopPredictionTraceBinding;
     prediction: Omit<DesktopPredictionTracePrediction, 'binding'> | null;
@@ -1591,7 +1677,7 @@ export class DesktopPredictionTraceReader {
         const manifestBytes = snapshot.file(join(directory, 'manifest.json'), limits.manifest);
         const manifest = snapshot.json(manifestBytes);
         requireValue(
-          manifest.schema_version === 1 &&
+          supportedTraceSchema(manifest.schema_version) &&
             validUuid(manifest.trace_id) &&
             name === `trace-${manifest.trace_id}-${predictionThreadId}` &&
             manifest.rollout_id === predictionThreadId &&
@@ -1606,7 +1692,7 @@ export class DesktopPredictionTraceReader {
         if (includePrediction) requireValue(log.length === 0 || log.at(-1) === 10);
         const indexed = snapshot
           .preparedLog(join(directory, 'trace.jsonl'), log, directory, predictionThreadId)
-          ?.forTurn(predictionTurnId);
+          ?.forTurn(predictionTurnId, manifest.schema_version);
         if (indexed) {
           if (recovery) terminalMessages.push(...indexed.terminals);
           if (includePrediction) {
@@ -1628,7 +1714,7 @@ export class DesktopPredictionTraceReader {
             event = snapshot.json(log.subarray(offset, end));
             offset = end + 1;
             requireValue(
-              event.schema_version === 1 &&
+              event.schema_version === manifest.schema_version &&
                 event.rollout_id === predictionThreadId &&
                 event.seq === expectedSequence++ &&
                 Number.isSafeInteger(event.wall_time_unix_ms),
@@ -1684,9 +1770,9 @@ export class DesktopPredictionTraceReader {
               clientMetadata['x-codex-turn-metadata'].length <= limits.eventLine,
           );
           const metadata = snapshot.json(clientMetadata['x-codex-turn-metadata']);
-          if (recovery) {
+          if (recovery || metadata.thread_source === 'thread_sample') {
             requireValue(
-              metadata.thread_source === 'composer_predictions' &&
+              ['composer_predictions', 'thread_sample'].includes(String(metadata.thread_source)) &&
                 metadata.turn_trigger === 'composer_predictions' &&
                 Array.isArray(request.input),
             );
@@ -1750,7 +1836,7 @@ export class DesktopPredictionTraceReader {
       }
       const prediction =
         includePrediction && binding
-          ? completedPrediction(snapshot, binding, requests, completions, endings)
+          ? completedPrediction(snapshot, binding, requests, completions, endings, allowEmpty)
           : null;
       if (recovery) {
         requireValue(prediction && terminalMessages.length === 1 && endings.length === 1);

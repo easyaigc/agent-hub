@@ -407,6 +407,23 @@ export async function packageHostConnect({
   // Validate every runtime before staging or creating an archive/fingerprint.
   for (const component of components)
     compiledByComponent.set(component, await compiledRuntimeFiles(repository, component));
+  const runtimeHelpers = ['desktop-completion-notify-observer.py', 'desktop-trace-retire.py'];
+  // A checked-in development resource and the bundled helper must describe the
+  // same program. Refuse stale copies instead of silently replacing source bytes.
+  for (const helper of runtimeHelpers) {
+    const copy = join(repository, 'packages/codex-adapter/resources', helper);
+    const info = await lstat(copy).catch((error) => {
+      if (error.code === 'ENOENT') return undefined;
+      throw error;
+    });
+    if (
+      info &&
+      (!info.isFile() ||
+        info.isSymbolicLink() ||
+        !(await readFile(copy)).equals(await readFile(join(repository, 'scripts', helper))))
+    )
+      throw new Error('Runtime helper source copy differs: ' + helper);
+  }
   const stagingRoot = join(repository, '.local');
   await mkdir(stagingRoot, { recursive: true });
   const staging = await mkdtemp(join(stagingRoot, 'connect-package-'));
@@ -461,9 +478,9 @@ export async function packageHostConnect({
             deployed,
             await sourceFiles(join(repository, component, 'windows'), 'windows'),
           );
-          const helper = 'desktop-completion-notify-observer.py';
+          const helpers = runtimeHelpers;
           for (const adapter of [join(program, component), deployed])
-            await copyFiles(join(repository, 'scripts'), join(adapter, 'resources'), [helper]);
+            await copyFiles(join(repository, 'scripts'), join(adapter, 'resources'), helpers);
         }
       }
     }

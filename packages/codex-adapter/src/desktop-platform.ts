@@ -563,6 +563,61 @@ export function windowsTraceSnapshot(
   };
 }
 
+/** Original-desktop log observer only: bounded shared append reads, never a Host command. */
+export function windowsDesktopLogRangeSnapshot(
+  root: string,
+  path: string,
+  offset: number,
+  count: number,
+  desktopPid: number,
+): {
+  identity: string;
+  chain: string[];
+  bytes: Buffer;
+  size: number;
+} {
+  if (
+    process.platform !== 'win32' ||
+    !isMainThread ||
+    !Number.isSafeInteger(desktopPid) ||
+    desktopPid <= 1 ||
+    !Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    !Number.isSafeInteger(count) ||
+    count < 0 ||
+    count > 1048576
+  )
+    throw new Error('Invalid desktop log range');
+  const executable = windowsPrivateStateExecutable('trace-state');
+  const raw = withWindowsProcessCreation(3000, (timeout) =>
+    execFileSync(
+      executable,
+      ['log-snapshot', root, path, String(offset), String(count), String(desktopPid)],
+      {
+        encoding: 'utf8',
+        timeout,
+        windowsHide: true,
+        maxBuffer: 2 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    ),
+  );
+  const v = JSON.parse(raw) as { identity: string; chain: string[]; bytes: string; size: number };
+  if (
+    typeof v.identity !== 'string' ||
+    !Array.isArray(v.chain) ||
+    !v.chain.every((x) => typeof x === 'string') ||
+    typeof v.bytes !== 'string' ||
+    !Number.isSafeInteger(v.size) ||
+    v.size < offset
+  )
+    throw new Error('Invalid desktop log snapshot');
+  const bytes = Buffer.from(v.bytes, 'base64');
+  if (bytes.length > count || bytes.toString('base64') !== v.bytes)
+    throw new Error('Invalid desktop log bytes');
+  return { ...v, bytes };
+}
+
 export interface WindowsDesktopIdentity {
   pid: number;
   startedAtUnixMs: number;
@@ -649,7 +704,32 @@ export type WindowsTraceBackend = {
   snapshot: typeof windowsTraceSnapshot;
   snapshotMany?: (root: string, items: readonly TraceSnapshotItem[]) => TraceSnapshotValue[];
   inspect: () => WindowsTraceInstance;
+  inspectProducer?: (
+    pid: number,
+    configPath: string,
+  ) => {
+    pid: number;
+    desktopPid: number;
+    desktopStartedAt: number;
+    wrapperStartedAt: number;
+  };
 };
+/** Reader-only identity probe, owned by the existing registered native transport. */
+export function windowsSuggestionProducerIdentity(
+  pid: number,
+  configPath: string,
+): {
+  pid: number;
+  desktopPid: number;
+  desktopStartedAt: number;
+  wrapperStartedAt: number;
+} {
+  if (process.platform !== 'win32' || isMainThread || !traceBackend?.inspectProducer)
+    throw new Error('Windows native producer identity unavailable');
+  if (!Number.isSafeInteger(pid) || pid < 1 || pid > 2147483647 || typeof configPath !== 'string')
+    throw new Error('Invalid Windows native producer');
+  return traceBackend.inspectProducer(pid, configPath);
+}
 let traceBackend: WindowsTraceBackend | undefined;
 export function windowsTraceSnapshotBatchAvailable(): boolean {
   return process.platform === 'win32' && traceBackend?.snapshotMany !== undefined;
@@ -919,7 +999,7 @@ export function loadWindowsDesktop(
 
 export function windowsAdapterDigest(): string {
   const hash = createHash('sha256');
-  for (const name of [
+  for (const name of new Set([
     'desktop-platform.js',
     'windows-process.js',
     'desktop-private-state-native.js',
@@ -927,6 +1007,16 @@ export function windowsAdapterDigest(): string {
     'desktop-trace-native.js',
     'desktop-trace-native-worker.js',
     'desktop-suggestion-read-worker.js',
+    'desktop-suggestion-store.js',
+    'desktop-trace-retention.js',
+    'desktop-trace-retention-worker.js',
+    'desktop-suggestion-store.js',
+    'desktop-trace-retention.js',
+    'desktop-trace-retention-worker.js',
+    'desktop-native-sample-platform.js',
+    'desktop-native-sample-capture.js',
+    'desktop-native-sample-bridge.js',
+    'desktop-native-suggestion-channel.js',
     'desktop-suggestion-worker-client.js',
     'desktop-suggestion-worker-limits.js',
     'windows-trace-diagnostics.js',
@@ -941,17 +1031,22 @@ export function windowsAdapterDigest(): string {
     'runtime-diagnostic-writer.js',
     'attachment-files.js',
     'desktop-questions.js',
-  ])
+  ]))
     hash.update(readFileSync(new URL(name, import.meta.url)));
-  for (const name of [
+  for (const name of new Set([
     'desktop-pipe.ps1',
     'desktop-cli.ps1',
     'private-state.ps1',
     'private-state.cs',
+    'private-state-compilation.cs',
     'trace-state.cs',
     'trace-process.cs',
     'desktop-trace.ps1',
-  ])
+    'desktop-trace-retire.ps1',
+    'desktop-native-sample-process.ps1',
+    'desktop-native-sample-launcher.cs',
+    'desktop-trace-retire.ps1',
+  ]))
     hash.update(readFileSync(windowsHelper(name)));
   return hash.digest('hex');
 }

@@ -5,6 +5,7 @@ import { rmSync, mkdirSync, readFileSync, lstatSync, existsSync, writeFileSync }
 import { join, resolve } from 'node:path';
 import {
   assertPrivateFile,
+  windowsPowerShellEnvironment,
   closeWindowsPrivateStateBackend,
   makePrivateDirectorySync,
   writePrivateFileSync,
@@ -51,7 +52,13 @@ try {
               "';" +
               '@{sddl=$a.Sddl;ownerIsUser=$a.GetOwner([Security.Principal.SecurityIdentifier]).Equals($i.User)}|ConvertTo-Json -Compress',
           ],
-          { encoding: 'utf8', stdio: 'pipe', timeout, windowsHide: true },
+          {
+            encoding: 'utf8',
+            stdio: 'pipe',
+            timeout,
+            windowsHide: true,
+            env: windowsPowerShellEnvironment(),
+          },
         ),
       ),
     );
@@ -97,7 +104,13 @@ try {
               "$trusted=@($i.User.Value,'S-1-5-18','S-1-5-32-544');" +
               "@{sddl=$a.Sddl;ownerIsUser=$o.Equals($i.User);ownerIsAdministrators=($o.Value -eq 'S-1-5-32-544');ownerMatchesDefaultOwner=$o.Equals($i.Owner);defaultOwnerIsAdministrators=($i.Owner.Value -eq 'S-1-5-32-544');protected=$a.AreAccessRulesProtected;inheritedAllowOnly=($r.Count -gt 0 -and @($r|Where-Object {!$_.IsInherited}).Count -eq 0);trustedAllowOnly=(@($r|Where-Object {$trusted -notcontains $_.IdentityReference.Value}).Count -eq 0)}|ConvertTo-Json -Compress",
           ],
-          { encoding: 'utf8', stdio: 'pipe', timeout, windowsHide: true },
+          {
+            encoding: 'utf8',
+            stdio: 'pipe',
+            timeout,
+            windowsHide: true,
+            env: windowsPowerShellEnvironment(),
+          },
         ),
       ),
     );

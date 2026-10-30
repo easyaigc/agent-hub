@@ -18220,6 +18220,15 @@
         "scripts/windows-private-state-native.test.mjs": "946317fe35d11c929660e25b9f9ca1fb4149f8819ea3af2bdd9cc7d63c7d9c22",
         "scripts/fixtures/windows-private-state-child.mjs": "a5a3547a9b594c2a87d0df839114725940e4407580f72b5713cbba6c91768403"
       }
+    },
+    {
+      "id": "windows-private-state-acceptance-ps5-environment-20261031",
+      "baseCommit": "2816d7b3589f59958cec66ae646aac994bb78d4b",
+      "features": ["F03", "F31", "F32"],
+      "summary": "Acceptance-only PS5 child environment fix through existing windowsPowerShellEnvironment at both Get-Acl calls. Preserve original runtime.json, legacy Admin history/attachment, actual16MiB resolve/download, owner/DACL/ctime/bytes/references and all budgets. No Host/Adapter/Native runtime bytes, configuration, mobile UI or capability change. Source PR79 Native/absent-root/warmed-BCL successes remain scoped matching evidence; full official legacy stopped at module autoload and must rerun with this script. Script-only official supplement, no target dev dependencies or source patch.",
+      "files": {
+        "scripts/windows-private-state-acceptance.mjs": "f886e021c348feb1d7f7aca4ea0424ec483dba67b0876be1b31c3fc3578ee244"
+      }
     }
   ]
 }

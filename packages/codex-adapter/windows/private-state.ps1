@@ -62,6 +62,16 @@ try {
     $knownTypes = @('Win32Exception', 'UnauthorizedAccessException', 'PrivateStateAlreadyExistsException', 'IOException', 'ArgumentException', 'TypeInitializationException', 'InvalidOperationException', 'PSInvalidOperationException', 'PSInvalidCastException', 'PathTooLongException', 'FileNotFoundException', 'DirectoryNotFoundException', 'DllNotFoundException', 'EntryPointNotFoundException', 'BadImageFormatException', 'SecurityException', 'NotSupportedException', 'Exception')
     if ($detail.GetType().Name -in $knownTypes) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_NATIVE_TYPE:' + $detail.GetType().Name) }
     if ($detail -is [System.ComponentModel.Win32Exception]) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_WIN32:' + $detail.NativeErrorCode) }
+    # Native assigns only fixed step labels. Node accepts an explicit enum;
+    # these diagnostics never grant an operation or renew its budget.
+    foreach ($key in @('CodexManage.NativeStep', 'CodexManage.NativeCleanupStep')) {
+        $step = $detail.Data[$key]
+        $prefix = if ($key -eq 'CodexManage.NativeStep') { 'WINDOWS_PRIVATE_STATE_NATIVE_STEP:' } else { 'WINDOWS_PRIVATE_STATE_CLEANUP_STEP:' }
+        if ($step -is [string] -and $step -cmatch '^[a-z][a-z0-9-]{0,39}$') { [Console]::Error.WriteLine($prefix + $step) }
+    }
+    $cleanupCode = $detail.Data['CodexManage.NativeCleanupWin32']
+    if ($cleanupCode -is [int] -and $cleanupCode -gt 0) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_CLEANUP_WIN32:' + $cleanupCode) }
+
     if ($detail.Message -in @('WRONG_FILE_OWNER', 'NULL_PRIVATE_DACL', 'UNKNOWN_PRIVATE_ACE', 'SHARED_PRIVATE_FILE', 'UNPROTECTED_PRIVATE_DACL')) { [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_REJECTED:' + $detail.Message) }
     exit 1
 }

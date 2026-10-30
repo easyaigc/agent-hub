@@ -19,11 +19,20 @@ import {
 const stderrRecent = new Map<string, number>();
 /** Fixed labels only; never publish raw errors or stderr. */
 export function runtimeFailure(scope: string, error: unknown, attempt?: number): void {
-  const value = error as { code?: unknown; stage?: unknown; cause?: { code?: unknown } };
+  const value = error as {
+    code?: unknown;
+    stage?: unknown;
+    rpcMethod?: unknown;
+    rpcClassification?: unknown;
+    cause?: { code?: unknown };
+  };
   const row = safeDiagnostic({
     scope,
     stage: value?.stage,
     code: value?.code ?? value?.cause?.code,
+    nativeCode: value?.code ?? value?.cause?.code,
+    rpcMethod: value?.rpcMethod,
+    rpcClassification: value?.rpcClassification,
     attempt,
   });
   diagnosticEvent(row);
@@ -62,11 +71,20 @@ export function appendRuntimeDiagnostic(
   },
   error: unknown,
 ): void {
-  const value = error as { code?: unknown; stage?: unknown; cause?: { code?: unknown } };
+  const value = error as {
+    code?: unknown;
+    stage?: unknown;
+    rpcMethod?: unknown;
+    rpcClassification?: unknown;
+    cause?: { code?: unknown };
+  };
   diagnosticEvent({
     ...context,
     stage: context.stage ?? value?.stage,
     code: context.code ?? value?.code ?? value?.cause?.code,
+    nativeCode: value?.code ?? value?.cause?.code,
+    rpcMethod: value?.rpcMethod,
+    rpcClassification: value?.rpcClassification,
   });
 }
 

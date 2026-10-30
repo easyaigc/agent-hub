@@ -49,7 +49,12 @@ internal static class LogRangeFixture {
   else{var acl=File.GetAccessControl(path);acl.SetOwner(owner);File.SetAccessControl(path,acl);}
  }
  static void Private(string path,bool directory){
-  var rule=new FileSystemAccessRule(Sid,FileSystemRights.FullControl,AccessControlType.Allow);
+  // Owned fixture descendants must inherit the user's control before adding
+  // the vendor-style Everyone read grant. Otherwise elevated default owners
+  // leave children with only Everyone read, failing setup before any case.
+  var rule=directory
+   ? new FileSystemAccessRule(Sid,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow)
+   : new FileSystemAccessRule(Sid,FileSystemRights.FullControl,AccessControlType.Allow);
   if(directory){var acl=new DirectorySecurity();acl.SetOwner(Sid);acl.SetAccessRuleProtection(true,false);acl.AddAccessRule(rule);Directory.SetAccessControl(path,acl);}
   else{var acl=new FileSecurity();acl.SetOwner(Sid);acl.SetAccessRuleProtection(true,false);acl.AddAccessRule(rule);File.SetAccessControl(path,acl);}
  }

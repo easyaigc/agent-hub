@@ -4,7 +4,6 @@ import { readCodexUsage } from './usage.js';
 import { diagnosticEvent } from './diagnostic-events.js';
 import { isDeepStrictEqual } from 'node:util';
 import { randomUUID, createHash } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
 import { setImmediate } from 'node:timers/promises';
 import { AttachmentFiles, AttachmentFileError, attachmentFileError } from './attachment-files.js';
 import { realpath } from 'node:fs/promises';
@@ -23,7 +22,7 @@ import {
   modelSpeedTiers,
   speeds,
 } from './generation-settings.js';
-import { mkdirSync, readFileSync, writeFileSync, realpathSync, statSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { basename, resolve, relative, isAbsolute, extname, join } from 'node:path';
 import {
   CodexRuntime,
@@ -89,7 +88,17 @@ import { RuntimePersistence } from './runtime-persistence.js';
 import { DesktopNativeQueue, type NativeQueuedInput } from './desktop-native-queue.js';
 import { MetadataRejection } from './desktop-thread-preparer.js';
 import { runtimeFailure } from './runtime-diagnostics.js';
-import { closeWindowsPrivateStateBackend } from './desktop-platform.js';
+import {
+  closeWindowsPrivateStateBackend,
+  makePrivateDirectorySync,
+  openPrivateFile,
+  writePrivateFileSync,
+} from './desktop-platform.js';
+import {
+  desktopHistoryCursor,
+  isDesktopHistoryCursor,
+  parseDesktopHistoryCursor,
+} from './desktop-history-cursor.js';
 import {
   desktopQuestions,
   desktopQuestionAnswers,
@@ -484,6 +493,7 @@ export class RuntimeSession {
   private desktopKnownOwners = new Set<string>();
   private desktopRefreshOffset = 0;
   private desktopOwnerDiscovery: Promise<void> | undefined;
+  private readonly attachmentDirectory: string;
 
   constructor(
     private readonly options: RuntimeOptions & {
@@ -493,8 +503,15 @@ export class RuntimeSession {
       replyCheckpointFile?: string;
     },
   ) {
-    mkdirSync(options.directory, { recursive: true, mode: 0o700 });
-    mkdirSync(join(options.directory, 'attachments'), { recursive: true, mode: 0o700 });
+    makePrivateDirectorySync(options.directory);
+    // Legacy Windows uploads can have an inherited Administrators owner. Do
+    // not adopt that directory or rewrite saved attachment paths. New files
+    // use a private User-owned namespace, including the first-ever startup.
+    this.attachmentDirectory = join(
+      options.directory,
+      process.platform === 'win32' ? 'attachments-v2' : 'attachments',
+    );
+    makePrivateDirectorySync(this.attachmentDirectory);
     this.file = join(options.directory, 'runtime.json');
     this.persistence = new RuntimePersistence(this.file, options.directory);
     const restored = this.persistence.load();
@@ -1413,26 +1430,46 @@ export class RuntimeSession {
     }
     return { hostId: this.hostId, threadId, target: this.readingTarget(), readerId, read: latest };
   }
+  private desktopCursorAnchor(threadId: string, cursor: string): string {
+    const value = parseDesktopHistoryCursor(cursor);
+    if (!value) throw new RuntimeError(400, '无效的 Host 历史游标', 'HOST_HISTORY_CURSOR_INVALID');
+    if (value[0] !== this.hostId || value[1] !== threadId)
+      throw new RuntimeError(
+        409,
+        '历史游标不属于当前电脑或对话',
+        'HOST_HISTORY_CURSOR_TARGET_MISMATCH',
+      );
+    return value[2];
+  }
+  private hostHistoryPage(threadId: string, cursor: string) {
+    this.desktopCursorAnchor(threadId, cursor);
+    if (!(this.runtime instanceof DesktopRuntime))
+      throw new RuntimeError(
+        400,
+        '当前运行时不接受 Host 历史游标',
+        'HOST_HISTORY_CURSOR_UNSUPPORTED',
+      );
+    if (!this.state.threads.some((thread) => thread.id === threadId))
+      throw new RuntimeError(
+        409,
+        '历史分页缓存已失效，请重新读取此对话',
+        'HOST_HISTORY_CURSOR_EXPIRED',
+      );
+    // A Host cursor identifies its own window contract. A missing HTTP window
+    // flag must neither broaden the read nor send the token to Codex.
+    return this.history(threadId, true, cursor);
+  }
   private desktopWindow(thread: Thread, before?: string) {
     let end = thread.messages.length;
     if (before) {
-      try {
-        const value = JSON.parse(
-          Buffer.from(before.slice('desktop-page-v1:'.length), 'base64url').toString(),
+      const anchor = this.desktopCursorAnchor(thread.id, before);
+      end = thread.messages.findIndex((message) => message.id === anchor);
+      if (end < 0)
+        throw new RuntimeError(
+          409,
+          '历史分页已变化，请重新读取此对话',
+          'HOST_HISTORY_CURSOR_EXPIRED',
         );
-        if (
-          !Array.isArray(value) ||
-          value.length !== 3 ||
-          value[0] !== this.hostId ||
-          value[1] !== thread.id ||
-          typeof value[2] !== 'string'
-        )
-          throw new Error();
-        end = thread.messages.findIndex((message) => message.id === value[2]);
-        if (end < 0) throw new Error();
-      } catch {
-        throw new RuntimeError(409, '历史分页已变化，请重新读取此对话');
-      }
     }
     let start = end,
       bytes = 0;
@@ -1446,10 +1483,7 @@ export class RuntimeSession {
       messages: thread.messages.slice(start, end),
       nextCursor:
         start > 0
-          ? 'desktop-page-v1:' +
-            Buffer.from(
-              JSON.stringify([this.hostId, thread.id, thread.messages[start]!.id]),
-            ).toString('base64url')
+          ? desktopHistoryCursor(this.hostId, thread.id, thread.messages[start]!.id)
           : (thread.historyCursor ?? null),
       historyWindow: { version: 1, kind: before ? 'earlier' : 'latest' },
       synchronization: {
@@ -1869,6 +1903,7 @@ export class RuntimeSession {
     return { ...page, readTarget: this.readingTarget() };
   }
   async refreshHistory(threadId: string, cursor?: string, windowed = false) {
+    if (isDesktopHistoryCursor(cursor)) return this.hostHistoryPage(threadId, cursor);
     if (
       this.mode === 'shared-runtime' &&
       !cursor &&
@@ -1876,12 +1911,6 @@ export class RuntimeSession {
     )
       return this.open(threadId, cursor, undefined, windowed);
     const thread = this.thread(threadId);
-    if (
-      windowed &&
-      this.runtime instanceof DesktopRuntime &&
-      cursor?.startsWith('desktop-page-v1:')
-    )
-      return this.history(threadId, true, cursor);
     const previousFirst =
       cursor && windowed && this.runtime instanceof DesktopRuntime
         ? thread.messages[0]?.id
@@ -1891,8 +1920,7 @@ export class RuntimeSession {
     const result = await this.open(threadId, cursor, undefined, windowed);
     if (!windowed || !(this.runtime instanceof DesktopRuntime)) return result;
     const before = previousFirst
-      ? 'desktop-page-v1:' +
-        Buffer.from(JSON.stringify([this.hostId, threadId, previousFirst])).toString('base64url')
+      ? desktopHistoryCursor(this.hostId, threadId, previousFirst)
       : undefined;
     return this.history(threadId, true, before);
   }
@@ -1903,6 +1931,10 @@ export class RuntimeSession {
     windowed = false,
     admitUnknown?: () => boolean,
   ) {
+    if (isDesktopHistoryCursor(cursor)) {
+      if (target) this.assertReplyOpen(target);
+      return this.hostHistoryPage(threadId, cursor);
+    }
     const pending = this.restoring.get(threadId);
     if (pending) {
       await this.readWithReplyFence(target, () => pending);
@@ -3209,12 +3241,8 @@ export class RuntimeSession {
     const sha256 = createHash('sha256').update(data).digest('hex');
     if (sha256 !== expectedHash) throw new RuntimeError(400, '文件完整性校验失败');
     const id = randomUUID();
-    const path = join(
-      this.options.directory,
-      'attachments',
-      id + extname(basename(name)).slice(0, 12),
-    );
-    writeFileSync(path, data, { mode: 0o600 });
+    const path = join(this.attachmentDirectory, id + extname(basename(name)).slice(0, 12));
+    writePrivateFileSync(path, data, { flag: 'wx' });
     const attachment = {
       id,
       hostId: this.hostId,
@@ -3627,8 +3655,13 @@ export class RuntimeSession {
       if (!attachment) {
         const id = randomUUID();
         const name = `image-${message.id.replace(/[^a-z0-9-]/gi, '').slice(0, 48)}.${mediaType === 'image/jpeg' ? 'jpg' : mediaType.split('/')[1]}`;
-        const path = join(this.options.directory, 'attachments', id + extname(name));
-        await writeFile(path, bytes, { mode: 0o600 });
+        const path = join(this.attachmentDirectory, id + extname(name));
+        const file = await openPrivateFile(path, 'wx');
+        try {
+          await file.writeFile(bytes);
+        } finally {
+          await file.close();
+        }
         attachment = {
           id,
           hostId: this.hostId,

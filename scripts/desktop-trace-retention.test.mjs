@@ -13,7 +13,10 @@ import { machineRuntimeTargetKey } from '../packages/protocol/dist/index.js';
 import { recoverableFixture, execution, bundle } from './fixtures/desktop-trace.mjs';
 import { DesktopTraceRetention } from '../packages/codex-adapter/dist/desktop-trace-retention.js';
 import { DesktopPredictionTraceReader } from '../packages/codex-adapter/dist/desktop-prediction-trace.js';
-import { protectWindowsStateDirectory } from '../packages/codex-adapter/dist/desktop-platform.js';
+import {
+  protectWindowsStateDirectory,
+  windowsPowerShellEnvironment,
+} from '../packages/codex-adapter/dist/desktop-platform.js';
 
 async function withRoot(run) {
   const root = fs.realpathSync(fs.mkdtempSync(join(tmpdir(), 'agent-hub-retention-test-')));
@@ -231,6 +234,83 @@ test(
         (await processTrace(new DesktopTraceRetention(root, 'host-a'), f)).state,
         'retired',
       );
+    }),
+);
+
+test(
+  'Windows accepts an Administrators-owned original trace child and durably retains one suggestion',
+  { skip: process.platform !== 'win32', timeout: 120000 },
+  () =>
+    withRoot(async (root) => {
+      const f = fixture(root);
+      const child = join(f.directory, 'manifest.json');
+      // Only this synthetic trace is changed; its DACL grants the current user.
+      const ps = join(
+        process.env.SystemRoot,
+        'System32',
+        'WindowsPowerShell',
+        'v1.0',
+        'powershell.exe',
+      );
+      const setup = String.raw`$s=[Security.Principal.WindowsIdentity]::GetCurrent().User
+$a=[Security.AccessControl.FileSecurity]::new();$a.SetOwner($s);$a.SetAccessRuleProtection($true,$false)
+$a.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($s,'FullControl','Allow'))
+Set-Acl -LiteralPath $env:AH_OWNER_TEST_PATH -AclObject $a`;
+      execFileSync(
+        ps,
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-EncodedCommand',
+          Buffer.from(setup, 'utf16le').toString('base64'),
+        ],
+        { env: { ...windowsPowerShellEnvironment(), AH_OWNER_TEST_PATH: child }, stdio: 'pipe' },
+      );
+      execFileSync('icacls', [child, '/setowner', '*S-1-5-32-544'], { stdio: 'pipe' });
+      const verify = String.raw`$a=Get-Acl -LiteralPath $env:AH_OWNER_TEST_PATH
+$s=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+if($a.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne 'S-1-5-32-544'){exit 1}
+foreach($r in $a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+ if($r.AccessControlType -eq 'Allow' -and @($s,'S-1-5-18','S-1-5-32-544') -notcontains $r.IdentityReference.Value){exit 2}
+}`;
+      execFileSync(
+        ps,
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-EncodedCommand',
+          Buffer.from(verify, 'utf16le').toString('base64'),
+        ],
+        {
+          env: { ...windowsPowerShellEnvironment(), AH_OWNER_TEST_PATH: child },
+          stdio: 'pipe',
+        },
+      );
+      const retention = new DesktopTraceRetention(root, 'host-a');
+      assert.equal((await processTrace(retention, f)).state, 'retired');
+      assert.equal(fs.existsSync(f.directory), false);
+      assert.equal(read(root, f).length, 1);
+      assert.equal(read(root, f)[0].text, 'Synthetic follow-up suggestion.');
+      assert.equal(
+        fs
+          .readdirSync(retention.store.directory)
+          .filter((name) => /^[a-f0-9-]{36}\.json$/.test(name)).length,
+        1,
+      );
+    }),
+);
+
+test(
+  'Windows rejects an original trace child granting an untrusted principal',
+  { skip: process.platform !== 'win32', timeout: 120000 },
+  () =>
+    withRoot(async (root) => {
+      const f = fixture(root);
+      execFileSync('icacls', [join(f.directory, 'manifest.json'), '/grant', '*S-1-1-0:R'], {
+        stdio: 'pipe',
+      });
+      await assert.rejects(processTrace(new DesktopTraceRetention(root, 'host-a'), f));
+      assert(fs.existsSync(f.directory));
     }),
 );
 
@@ -896,4 +976,39 @@ test(
           assert.equal(store.readRuntime(f.sourceThreadId).result.text, text);
         });
   },
+);
+
+test(
+  'Windows retirement ignores an inherited incompatible PowerShell module path without changing its parent',
+  { skip: process.platform !== 'win32' },
+  () =>
+    withRoot(async (root) => {
+      const poison = join(root, 'incompatible-ps7-modules');
+      const module = join(poison, 'Microsoft.PowerShell.Security');
+      fs.mkdirSync(module, { recursive: true, mode: 0o700 });
+      protectWindowsStateDirectory(poison);
+      protectWindowsStateDirectory(module);
+      fs.writeFileSync(
+        join(module, 'Microsoft.PowerShell.Security.psd1'),
+        "@{ RootModule='Fixture.psm1'; ModuleVersion='99.0'; PowerShellVersion='99.0'; GUID='fb5ebba4-13c8-432a-91d5-e03f10ba87ad'; FunctionsToExport=@('Get-Acl'); CmdletsToExport=@(); AliasesToExport=@() }",
+        { mode: 0o600 },
+      );
+      fs.writeFileSync(
+        join(module, 'Fixture.psm1'),
+        "throw 'SYNTHETIC_INCOMPATIBLE_MODULE_MUST_NOT_LOAD'",
+        { mode: 0o600 },
+      );
+      const previous = process.env.PSModulePath;
+      process.env.PSModulePath = poison;
+      try {
+        const f = fixture(root);
+        const result = await processTrace(new DesktopTraceRetention(root, 'host-a'), f);
+        assert.equal(result.state, 'retired');
+        assert.equal(fs.existsSync(f.directory), false);
+        assert.equal(process.env.PSModulePath, poison, 'Only the helper environment is normalized');
+      } finally {
+        if (previous === undefined) delete process.env.PSModulePath;
+        else process.env.PSModulePath = previous;
+      }
+    }),
 );

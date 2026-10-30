@@ -2,12 +2,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { windowsPowerShellEnvironment } from '../packages/codex-adapter/dist/desktop-platform.js';
 import {
   nativeSuggestionsSource,
+  windowsNativeSuggestionsNativeOperation,
   validateNativeSuggestionsConfig,
   windowsNativeSuggestionsEnvironment,
 } from './windows-native-suggestions-environment.mjs';
@@ -631,5 +642,105 @@ Set-Acl -LiteralPath $env:AH_TEST_CONFIG -AclObject $acl
         ),
       (error) => error.stdout === '' && error.stderr.trim() === 'WINDOWS_NATIVE_CONFIG_INVALID',
     );
+  },
+);
+
+test(
+  'Windows fixed filesystem operations protect newly created objects and refuse existing foreign state',
+  { skip: process.platform !== 'win32', timeout: 120000 },
+  () => {
+    const root = mkdtempSync(join(tmpdir(), 'agent-hub-owner-regression-'));
+    const ps = join(
+      process.env.SystemRoot,
+      'System32',
+      'WindowsPowerShell',
+      'v1.0',
+      'powershell.exe',
+    );
+    const runScript = (script, path) =>
+      execFileSync(
+        ps,
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-EncodedCommand',
+          Buffer.from(script, 'utf16le').toString('base64'),
+        ],
+        {
+          env: { ...windowsPowerShellEnvironment(), AH_OWNER_TEST_PATH: path },
+          encoding: 'utf8',
+          stdio: 'pipe',
+        },
+      ).trim();
+    const protect = String.raw`$s=[Security.Principal.WindowsIdentity]::GetCurrent().User
+$a=[Security.AccessControl.DirectorySecurity]::new();$a.SetOwner($s);$a.SetAccessRuleProtection($true,$false)
+$a.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($s,'FullControl','ContainerInherit,ObjectInherit','None','Allow'))
+Set-Acl -LiteralPath $env:AH_OWNER_TEST_PATH -AclObject $a`;
+    const inspect = String.raw`$a=Get-Acl -LiteralPath $env:AH_OWNER_TEST_PATH
+$s=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$r=@($a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]) | Where-Object {$_.AccessControlType -eq 'Allow'})
+[Console]::Out.WriteLine((@{owner=$a.GetOwner([Security.Principal.SecurityIdentifier]).Value;current=$s;protected=$a.AreAccessRulesProtected;allows=@($r | ForEach-Object {$_.IdentityReference.Value})} | ConvertTo-Json -Compress))`;
+    const privateObject = (path) => {
+      const a = JSON.parse(runScript(inspect, path));
+      assert.equal(a.owner, a.current);
+      assert.equal(a.protected, true);
+      assert(a.allows.length > 0);
+      assert(a.allows.every((sid) => sid === a.current));
+    };
+    const call = (action, state, extra = {}) =>
+      windowsNativeSuggestionsNativeOperation(action, { state, ...extra });
+    try {
+      runScript(protect, root);
+      // This regression must exercise the elevated token whose default owner is Administrators.
+      assert.equal(
+        runScript(
+          String.raw`[Console]::Out.WriteLine([Security.Principal.WindowsIdentity]::GetCurrent().Owner.Value)`,
+          root,
+        ),
+        'S-1-5-32-544',
+      );
+      const state = join(root, 'created', 'state');
+      assert.deepEqual(call('prepare', state), { ok: true });
+      privateObject(join(root, 'created'));
+      privateObject(state);
+      assert.deepEqual(
+        call('publish', state, { name: 'environment.json', value: { fixture: 1 } }),
+        { ok: true },
+      );
+      assert.deepEqual(call('publish', state, { name: 'config.json', value: { fixture: 2 } }), {
+        ok: true,
+      });
+      assert.deepEqual(call('read', state), { manifest: { fixture: 1 }, config: { fixture: 2 } });
+      privateObject(join(state, 'environment.json'));
+      privateObject(join(state, 'config.json'));
+      const sourceSha256 = createHash('sha256')
+        .update(readFileSync(nativeSuggestionsSource))
+        .digest('hex');
+      const compiled = call('compile', state, { source: nativeSuggestionsSource, sourceSha256 });
+      assert.equal(compiled.sourceSha256, sourceSha256);
+      assert.match(compiled.shimSha256, /^[a-f0-9]{64}$/);
+      privateObject(join(state, 'launcher.exe'));
+      const existing = join(root, 'existing');
+      mkdirSync(existing);
+      execFileSync('icacls', [existing, '/setowner', '*S-1-5-32-544'], { stdio: 'pipe' });
+      const before = runScript(inspect, existing);
+      assert.equal(JSON.parse(before).owner, 'S-1-5-32-544');
+      assert.throws(() => call('prepare', existing), {
+        code: 'WINDOWS_NATIVE_PRIVATE_STATE_REJECTED',
+      });
+      assert.equal(runScript(inspect, existing), before);
+      const foreign = join(state, 'config.json');
+      execFileSync('icacls', [foreign, '/grant', '*S-1-1-0:R'], { stdio: 'pipe' });
+      const foreignBefore = readFileSync(foreign);
+      const foreignAcl = runScript(inspect, foreign);
+      assert.throws(
+        () => call('publish', state, { name: 'config.json', value: { replaced: true } }),
+        { code: 'WINDOWS_NATIVE_PRIVATE_STATE_REJECTED' },
+      );
+      assert.deepEqual(readFileSync(foreign), foreignBefore);
+      assert.equal(runScript(inspect, foreign), foreignAcl);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   },
 );

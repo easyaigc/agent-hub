@@ -19,6 +19,38 @@ public static partial class CodexManagePrivateStateSecurity
 {
     private const uint MaxCompilationOutputBytes = 64 * 1024 * 1024;
 
+    // Fixed diagnostic labels only. The first failure survives later cleanup;
+    // no exception message, pathname, command line or source content is emitted.
+    private const string CompilationStepKey = "CodexManage.NativeStep";
+    private const string CompilationCleanupStepKey = "CodexManage.NativeCleanupStep";
+    private const string CompilationCleanupCodeKey = "CodexManage.NativeCleanupWin32";
+    private static Exception CompilationAt(Exception failure, string step)
+    {
+        if (!failure.Data.Contains(CompilationStepKey)) failure.Data[CompilationStepKey] = step;
+        return failure;
+    }
+    private static Win32Exception CompilationFailure(string step, int code)
+    {
+        var failure = new Win32Exception(code);
+        CompilationAt(failure, step);
+        return failure;
+    }
+    private static Win32Exception CompilationLastError(string step)
+    {
+        return CompilationFailure(step, Marshal.GetLastWin32Error());
+    }
+    private static string CompilationFailureStep(Exception failure)
+    {
+        return failure.Data[CompilationStepKey] as string;
+    }
+    private static void CompilationCleanupFailure(Exception primary, Exception cleanup)
+    {
+        if (primary.Data.Contains(CompilationCleanupStepKey)) return;
+        primary.Data[CompilationCleanupStepKey] = CompilationFailureStep(cleanup) ?? "cleanup";
+        var native = cleanup as Win32Exception;
+        if (native != null) primary.Data[CompilationCleanupCodeKey] = native.NativeErrorCode;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct CompilationStartupInfo
     {
@@ -149,7 +181,7 @@ public static partial class CodexManagePrivateStateSecurity
     private static FileInformation CompilationInspect(SafeFileHandle file, bool directory)
     {
         FileInformation info;
-        if (!GetFileInformationByHandle(file, out info)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if (!GetFileInformationByHandle(file, out info)) throw CompilationLastError("inspect-file");
         if ((info.Attributes & (uint)FileAttributes.ReparsePoint) != 0 ||
             ((info.Attributes & (uint)FileAttributes.Directory) != 0) != directory ||
             (!directory && info.Links != 1)) throw new IOException();
@@ -184,7 +216,7 @@ public static partial class CodexManagePrivateStateSecurity
             last = CreateFile(FullPath(component), ReadControl | 0x80u, 3, IntPtr.Zero,
                 3, 0x02200000u, IntPtr.Zero);
             leases.Add(last);
-            if (last.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (last.IsInvalid) throw CompilationLastError("pin-directory");
             CompilationInspect(last, true);
         }
         return last;
@@ -201,7 +233,7 @@ public static partial class CodexManagePrivateStateSecurity
             int error = Marshal.GetLastWin32Error();
             file.Dispose();
             if (error == 2 || error == 3) return null;
-            throw new Win32Exception(error);
+            throw CompilationFailure("open-winner", error);
         }
         try
         {
@@ -268,18 +300,18 @@ public static partial class CodexManagePrivateStateSecurity
         try
         {
             job = CompilationCreateJob(IntPtr.Zero, null); // Unnamed, non-inheritable, owned by this PS.
-            if (job == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (job == IntPtr.Zero) throw CompilationLastError("create-job");
             var limits = new CompilationExtendedLimits();
             limits.Basic.Flags = 0x2000; // JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
             if (!CompilationSetJobLimits(job, 9, ref limits,
                 (uint)Marshal.SizeOf(typeof(CompilationExtendedLimits))))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw CompilationLastError("set-job-limits");
             UIntPtr size = UIntPtr.Zero;
             CompilationInitializeAttributes(IntPtr.Zero, 2, 0, ref size);
-            if (size == UIntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (size == UIntPtr.Zero) throw CompilationLastError("initialize-attributes-size");
             attributes = Marshal.AllocHGlobal(checked((int)size.ToUInt64()));
             if (!CompilationInitializeAttributes(attributes, 2, 0, ref size))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw CompilationLastError("initialize-attributes");
             initialized = true;
             jobValue = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(jobValue, job);
@@ -288,20 +320,20 @@ public static partial class CodexManagePrivateStateSecurity
             // orphan a suspended compiler outside the job. No weaker fallback.
             if (!CompilationUpdateAttribute(attributes, 0, new UIntPtr(0x0002000du),
                 jobValue, new UIntPtr((uint)IntPtr.Size), IntPtr.Zero, IntPtr.Zero))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw CompilationLastError("set-job-list");
             var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
                 Descriptor = IntPtr.Zero, Inherit = true };
             using (SafeFileHandle sink = CreateOwnedFile("NUL", 0xc0000000u, 3,
                 ref security, 3, 0, IntPtr.Zero))
             {
-                if (sink.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+                if (sink.IsInvalid) throw CompilationLastError("open-nul");
                 handlesValue = Marshal.AllocHGlobal(IntPtr.Size);
                 Marshal.WriteIntPtr(handlesValue, sink.DangerousGetHandle());
                 // Only the NUL stream is inherited. Neither the output lease
                 // nor the job handle can escape into csc or its descendants.
                 if (!CompilationUpdateAttribute(attributes, 0, new UIntPtr(0x00020002u),
                     handlesValue, new UIntPtr((uint)IntPtr.Size), IntPtr.Zero, IntPtr.Zero))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    throw CompilationLastError("set-handle-list");
                 var startup = new CompilationStartupInfoEx();
                 startup.Startup.Size = (uint)Marshal.SizeOf(typeof(CompilationStartupInfoEx));
                 startup.Startup.Flags = 0x100; // STARTF_USESTDHANDLES: suppress all compiler content.
@@ -313,15 +345,15 @@ public static partial class CodexManagePrivateStateSecurity
                 // and sources only; no shell and no second compile attempt.
                 if (!CompilationCreateProcess(compiler, command, IntPtr.Zero, IntPtr.Zero, true,
                     0x08080000u, IntPtr.Zero, sourceDirectory, ref startup, out child))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    throw CompilationLastError("create-compiler");
                 started = true;
                 compilerExited = false;
                 int waitMs = Math.Max(0, CompilationRemaining(elapsed, budgetMs) - cleanupReserve);
                 uint waited = CompilationWait(child.Process, (uint)waitMs);
-                if (waited == 0xffffffffu) throw new Win32Exception(Marshal.GetLastWin32Error());
+                if (waited == 0xffffffffu) throw CompilationLastError("wait-compiler");
                 if (waited != 0) throw new InvalidOperationException();
                 uint code;
-                if (!CompilationExitCode(child.Process, out code)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                if (!CompilationExitCode(child.Process, out code)) throw CompilationLastError("compiler-exit-code");
                 if (code != 0) throw new InvalidOperationException();
             }
         }
@@ -351,35 +383,42 @@ public static partial class CodexManagePrivateStateSecurity
         if (!compilerExited) throw new InvalidOperationException();
         CheckCompilationBudget(elapsed, budgetMs);
     }
-    private static bool PublishCompilation(SafeFileHandle reservation, SafeFileHandle directory, string name,
+    private static bool PublishCompilation(SafeFileHandle reservation, SafeFileHandle directory, string cacheDirectory, string name,
         out int error)
     {
-        byte[] bytes = Encoding.Unicode.GetBytes(name);
+        CheckCompilationPrivate(directory, true);
+        // The Win32 rename wrapper resolves relative names before issuing the
+        // native request. A non-NULL RootDirectory can therefore reach the FS
+        // together with an absolute name and fail with ERROR_INVALID_PARAMETER.
+        // Use its documented absolute-name form. Every namespace component is
+        // still pinned non-reparse without DELETE sharing until this completes;
+        // the source remains B's original creation handle, never a path reopen.
+        byte[] bytes = Encoding.Unicode.GetBytes(FullPath(Path.Combine(cacheDirectory, name)));
         int offset = Marshal.OffsetOf(typeof(CompilationRenameInfo), "FileName").ToInt32();
         int size = checked(Math.Max(Marshal.SizeOf(typeof(CompilationRenameInfo)), offset + bytes.Length + 2));
         IntPtr info = Marshal.AllocHGlobal(size);
         try
         {
             for (int i = 0; i < size; i++) Marshal.WriteByte(info, i, 0);
-            Marshal.WriteIntPtr(info, Marshal.OffsetOf(typeof(CompilationRenameInfo), "RootDirectory").ToInt32(), directory.DangerousGetHandle());
+            // RootDirectory stays NULL; ReplaceIfExists stays FALSE.
             Marshal.WriteInt32(info, Marshal.OffsetOf(typeof(CompilationRenameInfo), "FileNameLength").ToInt32(), bytes.Length);
             Marshal.Copy(bytes, 0, IntPtr.Add(info, offset), bytes.Length);
             // FileRenameInfo (3), ReplaceIfExists=false. The SAME retained
-            // creation handle is renamed relative to the pinned cache directory.
+            // creation handle is renamed into the pinned cache directory.
             if (CompilationSetFileInfo(reservation, 3, info, (uint)size)) { error = 0; return true; }
             error = Marshal.GetLastWin32Error();
             return false;
         }
         finally { Marshal.FreeHGlobal(info); }
     }
-    private static void DiscardCompilation(SafeFileHandle reservation)
+    private static void DiscardCompilation(SafeFileHandle reservation, string step)
     {
         IntPtr disposition = Marshal.AllocHGlobal(1);
         try
         {
             Marshal.WriteByte(disposition, 1); // FILE_DISPOSITION_INFO.DeleteFile (BOOLEAN).
             if (!CompilationSetFileInfo(reservation, 4, disposition, 1))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw CompilationLastError(step);
         }
         finally { Marshal.FreeHGlobal(disposition); }
     }
@@ -393,7 +432,7 @@ public static partial class CodexManagePrivateStateSecurity
             7, IntPtr.Zero, 3, 0x00200000u, IntPtr.Zero);
         try
         {
-            if (read.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (read.IsInvalid) throw CompilationLastError("open-compiler-read");
             CheckCompilationPrivate(read, false);
             if (FileIdentity(read) != identity || FileIdentity(metadata) != identity) throw new IOException();
             return read;
@@ -413,7 +452,7 @@ public static partial class CodexManagePrivateStateSecurity
                 uint written;
                 if (!CompilationWrite(file, IntPtr.Add(pinned.AddrOfPinnedObject(), offset),
                     (uint)(count - offset), out written, IntPtr.Zero))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    throw CompilationLastError("write-compiled");
                 if (written == 0 || written > (uint)(count - offset)) throw new IOException();
                 offset += (int)written;
             }
@@ -443,7 +482,7 @@ public static partial class CodexManagePrivateStateSecurity
             CheckCompilationBudget(elapsed, budgetMs);
             uint read, requested = Math.Min((uint)buffer.Length, size - copied);
             if (!CompilationRead(source, buffer, requested, out read, IntPtr.Zero))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw CompilationLastError("read-compiled");
             if (read == 0 || read > requested) throw new IOException();
             WriteCompilationBytes(publication, buffer, (int)read, elapsed, budgetMs);
             copied += read;
@@ -451,14 +490,14 @@ public static partial class CodexManagePrivateStateSecurity
         CheckCompilationBudget(elapsed, budgetMs);
         uint extra;
         if (!CompilationRead(source, buffer, 1, out extra, IntPtr.Zero))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+            throw CompilationLastError("read-compiled-end");
         if (extra != 0 || CompilationOutputSize(source) != size || CompilationOutputSize(publication) != size ||
             FileIdentity(source) != sourceIdentity || FileIdentity(publication) != publicationIdentity)
             throw new IOException();
         CheckCompilationPrivate(source, false);
         CheckCompilationPrivate(publication, false);
         CheckCompilationBudget(elapsed, budgetMs);
-        if (!CompilationFlush(publication)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if (!CompilationFlush(publication)) throw CompilationLastError("flush-compiled");
         CheckCompilationBudget(elapsed, budgetMs);
     }
     private static void RecordCompilation(SafeFileHandle record, string entry, Stopwatch elapsed, int budgetMs)
@@ -469,12 +508,13 @@ public static partial class CodexManagePrivateStateSecurity
         byte[] bytes = Encoding.UTF8.GetBytes(entry + "\n");
         WriteCompilationBytes(record, bytes, bytes.Length, elapsed, budgetMs);
         CheckCompilationBudget(elapsed, budgetMs);
-        if (!CompilationFlush(record)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if (!CompilationFlush(record)) throw CompilationLastError("flush-journal");
     }
     private static bool CleanupCompilerOutput(string path, string identity, ref SafeFileHandle metadata,
-        ref SafeFileHandle read, bool compilerExited, Stopwatch elapsed, int budgetMs, out int error)
+        ref SafeFileHandle read, bool compilerExited, Stopwatch elapsed, int budgetMs, out int error, out string failureStep)
     {
         error = 0;
+        failureStep = null;
         if (metadata == null) return true;
         if (!compilerExited || CompilationRemaining(elapsed, budgetMs) == 0) return false;
         try
@@ -487,9 +527,9 @@ public static partial class CodexManagePrivateStateSecurity
             using (SafeFileHandle deletion = CompilationReOpen(read, 0x00010000u | ReadControl,
                 7, 0x00200000u))
             {
-                if (deletion.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+                if (deletion.IsInvalid) throw CompilationLastError("reopen-compiler");
                 CheckCompilationPrivate(deletion, false);
-                DiscardCompilation(deletion);
+                DiscardCompilation(deletion, "discard-compiler");
             }
             return true;
         }
@@ -497,6 +537,7 @@ public static partial class CodexManagePrivateStateSecurity
         {
             var native = failure as Win32Exception;
             if (native != null) error = native.NativeErrorCode;
+            failureStep = CompilationFailureStep(failure) ?? "cleanup-compiler";
             // Leave A plus its pre-existing journal. No pathname fallback,
             // owner/ACL change, sharing downgrade or uncertain deletion retry.
             return false;
@@ -515,6 +556,8 @@ public static partial class CodexManagePrivateStateSecurity
         SafeFileHandle compilerMetadata = null, compilerRead = null, publication = null, record = null;
         string compilerTemporary = null, compilerIdentity = null;
         bool published = false, compilerExited = true;
+        Exception preparationFailure = null;
+        string preparationStep = "pin-source-directory";
         try
         {
             PinCompilationDirectory(sourceDirectory, directories);
@@ -523,6 +566,7 @@ public static partial class CodexManagePrivateStateSecurity
             // Exactly the Node Set insertion order; raw bytes, no separators.
             if (name != "private-state") sourceNames.Add("private-state.cs");
             sourceNames.Add("private-state-compilation.cs");
+            preparationStep = "hash-source";
             string digest;
             using (var hash = SHA256.Create())
             {
@@ -555,7 +599,9 @@ public static partial class CodexManagePrivateStateSecurity
             string expected = Path.Combine(local, "CodexManage", "native-helpers", digest);
             if (!String.Equals(cacheDirectory, expected, StringComparison.OrdinalIgnoreCase)) throw new ArgumentException();
             CheckCompilationBudget(elapsed, budgetMs);
+            preparationStep = "create-cache";
             Execute("create-directory", cacheDirectory);
+            preparationStep = "pin-cache";
             SafeFileHandle directory = PinCompilationDirectory(cacheDirectory, directories);
             CheckCompilationPrivate(directory, true);
             string executable = Path.Combine(cacheDirectory, name + ".exe");
@@ -574,9 +620,11 @@ public static partial class CodexManagePrivateStateSecurity
             // Persist precise intended paths before A can exist. Created events
             // below distinguish owned objects from intentions. No journal ID
             // authorizes a future pathname deletion, even on ID-reusing FSes.
+            preparationStep = "create-journal";
             record = CreatePrivateFileHandle(compilerTemporary + ".lease.jsonl", true);
             RecordCompilation(record, "{\"version\":1,\"compiler\":\"" + compilerName +
                 "\",\"publication\":\"" + publicationName + "\",\"cleanupByPath\":false}", elapsed, budgetMs);
+            preparationStep = "create-compiler-output";
             compilerMetadata = CreatePrivateFileHandle(compilerTemporary, false);
             compilerIdentity = FileIdentity(compilerMetadata);
             RecordCompilation(record, "{\"created\":\"compiler\",\"identity\":\"" + compilerIdentity + "\"}", elapsed, budgetMs);
@@ -585,21 +633,29 @@ public static partial class CodexManagePrivateStateSecurity
             if (name == "private-state") compileSources.Add(Path.Combine(sourceDirectory, "private-state-compilation.cs"));
             // A's original handle grants only READ_CONTROL | READ_ATTRIBUTES,
             // so csc need not share another handle's WRITE or DELETE access.
+            preparationStep = "compile";
             CompileNative(name, sourceDirectory, compilerTemporary, compileSources, elapsed, budgetMs, ref compilerExited);
+            preparationStep = "check-compiler-output";
             CheckCompilationPrivate(compilerMetadata, false);
             CompilationOutputSize(compilerMetadata);
+            preparationStep = "open-compiler-read";
             compilerRead = OpenCompilerRead(compilerTemporary, compilerMetadata, compilerIdentity);
+            preparationStep = "create-publication";
             publication = CreatePrivateFileHandle(Path.Combine(cacheDirectory, publicationName), true);
             string identity = FileIdentity(publication);
             RecordCompilation(record, "{\"created\":\"publication\",\"identity\":\"" + identity + "\"}", elapsed, budgetMs);
+            preparationStep = "copy-compiled";
             CopyCompilation(compilerRead, compilerIdentity, publication, identity, elapsed, budgetMs);
             CheckCompilationBudget(elapsed, budgetMs);
             int publicationError;
-            published = PublishCompilation(publication, directory, name + ".exe", out publicationError);
+            preparationStep = "publish";
+            published = PublishCompilation(publication, directory, cacheDirectory, name + ".exe", out publicationError);
             if (published)
             {
                 CheckCompilationPrivate(publication, false);
                 if (FileIdentity(publication) != identity) throw new IOException();
+                using (SafeFileHandle receipt = OpenCompilationWinner(executable))
+                    if (receipt == null || FileIdentity(receipt) != identity) throw new IOException();
                 CheckCompilationBudget(elapsed, budgetMs);
                 return "PRIVATE_STATE_NATIVE_READY:" + identity;
             }
@@ -609,18 +665,31 @@ public static partial class CodexManagePrivateStateSecurity
                 // sharing errors while its publisher still holds the lease.
                 // Accept only a freshly checked target; otherwise retain the
                 // actual failed rename code. Never retry or replace anything.
-                if (winner == null) throw new Win32Exception(publicationError);
+                if (winner == null) throw CompilationFailure("publish", publicationError);
                 CheckCompilationBudget(elapsed, budgetMs);
                 return "PRIVATE_STATE_NATIVE_READY:" + FileIdentity(winner);
             }
+        }
+        catch (Exception failure)
+        {
+            preparationFailure = CompilationAt(failure, preparationStep);
+            throw;
         }
         finally
         {
             try
             {
                 int compilerCleanupError;
+                string compilerCleanupStep;
                 bool compilerCleaned = CleanupCompilerOutput(compilerTemporary, compilerIdentity, ref compilerMetadata,
-                    ref compilerRead, compilerExited, elapsed, budgetMs, out compilerCleanupError);
+                    ref compilerRead, compilerExited, elapsed, budgetMs, out compilerCleanupError, out compilerCleanupStep);
+                if (!compilerCleaned && preparationFailure != null)
+                {
+                    Exception cleanup = compilerCleanupError != 0
+                        ? (Exception)CompilationFailure(compilerCleanupStep ?? "cleanup-compiler", compilerCleanupError)
+                        : CompilationAt(new IOException(), compilerCleanupStep ?? "cleanup-compiler");
+                    CompilationCleanupFailure(preparationFailure, cleanup);
+                }
                 bool publicationCleaned = publication == null || published;
                 Exception publicationCleanupFailure = null;
                 if (!publicationCleaned)
@@ -629,14 +698,14 @@ public static partial class CodexManagePrivateStateSecurity
                     {
                         // csc never opens B. Its failed/losing copy can always
                         // be deleted through the original WRITE/DELETE handle.
-                        DiscardCompilation(publication);
+                        DiscardCompilation(publication, "discard-publication");
                         publicationCleaned = true;
                     }
                     catch (Exception failure) { publicationCleanupFailure = failure; }
                 }
                 if (record != null)
                 {
-                    if (compilerCleaned && publicationCleaned) DiscardCompilation(record);
+                    if (compilerCleaned && publicationCleaned) DiscardCompilation(record, "discard-journal");
                     else
                     {
                         try
@@ -654,6 +723,11 @@ public static partial class CodexManagePrivateStateSecurity
                     }
                 }
                 if (publicationCleanupFailure != null) throw publicationCleanupFailure;
+            }
+            catch (Exception cleanup)
+            {
+                if (preparationFailure == null) throw;
+                CompilationCleanupFailure(preparationFailure, cleanup);
             }
             finally
             {

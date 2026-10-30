@@ -207,6 +207,57 @@ try {
   assert.equal(latest.messages.at(-1).text, '进度 239');
   assert.equal(JSON.stringify(unknown), unknownBefore);
   assert(Buffer.byteLength(JSON.stringify(latest)) < 100_000);
+  const originalOpenNow = session.openNow;
+  let nativePageCalls = 0;
+  session.openNow = async (...args) => {
+    nativePageCalls++;
+    return originalOpenNow.apply(session, args);
+  };
+  const flagged = await session.refreshHistory('large', latest.nextCursor, true);
+  const unflagged = await session.refreshHistory('large', latest.nextCursor);
+  assert.deepEqual(
+    unflagged.messages,
+    flagged.messages,
+    'Host cursor carries the same bounded window without the HTTP flag',
+  );
+  assert.equal(unflagged.nextCursor, flagged.nextCursor);
+  assert.deepEqual(unflagged.historyWindow, flagged.historyWindow);
+  assert.deepEqual((await session.open('large', latest.nextCursor)).messages, flagged.messages);
+  assert.equal(nativePageCalls, 0, 'A Host cursor never reaches native history opening');
+  const token = (host, thread, anchor) =>
+    'desktop-page-v1:' + Buffer.from(JSON.stringify([host, thread, anchor])).toString('base64url');
+  const invalidCases = [
+    ['large', 'desktop-page-v1:!bad', 400, 'HOST_HISTORY_CURSOR_INVALID'],
+    ['large', 'desktop-page-v1:' + 'a'.repeat(8193), 400, 'HOST_HISTORY_CURSOR_INVALID'],
+    ['large', token('other-host', 'large', 'anchor'), 409, 'HOST_HISTORY_CURSOR_TARGET_MISMATCH'],
+    ['protected', latest.nextCursor, 409, 'HOST_HISTORY_CURSOR_TARGET_MISMATCH'],
+    ['large', token(session.hostId, 'large', 'removed-anchor'), 409, 'HOST_HISTORY_CURSOR_EXPIRED'],
+    [
+      'cold-unloaded',
+      token(session.hostId, 'cold-unloaded', 'anchor'),
+      409,
+      'HOST_HISTORY_CURSOR_EXPIRED',
+    ],
+  ];
+  for (const [thread, before, status, code] of invalidCases) {
+    await assert.rejects(
+      session.refreshHistory(thread, before),
+      (e) => e.status === status && e.code === code,
+    );
+    await assert.rejects(
+      session.open(thread, before),
+      (e) => e.status === status && e.code === code,
+    );
+  }
+  const storedMessages = session.thread('large').messages;
+  session.thread('large').messages = [];
+  await assert.rejects(
+    session.refreshHistory('large', latest.nextCursor),
+    (e) => e.code === 'HOST_HISTORY_CURSOR_EXPIRED',
+  );
+  session.thread('large').messages = storedMessages;
+  assert.equal(nativePageCalls, 0, 'Invalid/cold Host cursors also never touch Codex RPC');
+  session.openNow = originalOpenNow;
   const collected = [...latest.messages];
   let cursor = latest.nextCursor;
   while (cursor) {

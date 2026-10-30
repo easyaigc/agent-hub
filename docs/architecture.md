@@ -1431,3 +1431,11 @@ Source64r2 的同一 Session IO/fence 已在 API33 完成 11 个受控方法；�
 macOS 继续使用原显式 CLI 或固定应用 bundle 路径；应用在相同路径更新时复用原退出屏障恢复，不引入任意安装搜索。上述是已实现的候选恢复策略，真实 Windows 更新和手机验收按当前产物逐机记录，不能以辅助夹具通过代替。
 
 目录 reader 失效或刷新失败后有单个后台只读恢复定时器，失败按既定退避继续；完整刷新成功后停止，关闭后清除且不能发布晚到目录。恢复不依赖手机或协调工具发起下一次读取，也不放宽其 health 校验。
+
+### Windows 冷编译与 Host 分页游标（2026-10-30）
+
+Native 编译的发布仍通过 B 的原 WRITE/DELETE 创建句柄且禁止覆盖。Win32 `SetFileInformationByHandle(FileRenameInfo)` 使用 `RootDirectory=NULL` 和固定 cache 绝对目标；源目录、cache 及每级祖先均保持非 reparse、无 DELETE 共享的句柄租约，直到退出确认、发布与清理完成。发布后通过同一固定目标的只读 receipt 比较 B 的文件身份。没有路径删除、未知 owner 接管、作业约束降级或追加预算。有限诊断保留首次失败 API 阶段和独立清理阶段／数字错误码，不输出原始异常、源码、命令行或路径。旧仅有 Win32 87 的记录不能证明准确 API；本次修正相对目标的 Win32 wrapper 兼容问题，Windows 冷编译预检仍须独立实测。
+
+RuntimeSession 首次直接调用私有创建边界建立 state 根，Windows 新附件统一写入 `attachments-v2`，同步上传和异步 inline 图像都用排他私有创建。旧 `attachments` 的 owner、DACL、字节、绝对登记路径及 ID 保留，既有 `runtime-history-v1` 继续保留；不把已有 Administrators-owned 私有对象当作当前用户对象放行。macOS 仍使用原附件命名空间。此变化不建立 reader 或执行权限。
+
+`desktop-page-v1:` 属于 Host 的有界消息窗口，无论是否重复 `window=latest-v1` 都由 Host 解析并核对 Host/thread/anchor；不能成为 Codex opaque cursor。缓存存在时只按既定 100 条／2 MiB 窗口读取；格式错误返回 400，跨目标或锚点／缓存失效返回 409，不启动模型或兜底全量读取。底层只读 reader 再次拒绝该保留前缀。其他 native opaque 游标保持原协议。诊断只记录数字 native 错误码、白名单元数据方法及固定失败分类；单个 -32600 不证明所有历史失败具有相同根因。

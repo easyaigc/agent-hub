@@ -55,10 +55,12 @@ const safeFailure = (error) => {
     helperStage: diagnostics?.helperStages ?? [],
     nativeType: diagnostics?.nativeTypes ?? [],
     nativeRejection: diagnostics?.rejections ?? [],
+    nativeStep: diagnostics?.steps ?? [],
+    nativeCleanupStep: diagnostics?.steps ?? [],
   };
   for (const [key, values] of Object.entries(enums))
     if (values.includes(error?.[key])) result[key] = error[key];
-  for (const key of ['nativeStatus', 'nativeWin32', 'waitMs'])
+  for (const key of ['nativeStatus', 'nativeWin32', 'nativeCleanupWin32', 'waitMs'])
     if (typeof error?.[key] === 'number' && Number.isFinite(error[key])) result[key] = error[key];
   return result;
 };

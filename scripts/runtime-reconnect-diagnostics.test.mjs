@@ -323,6 +323,102 @@ test('real HTTP distinguishes persistence, disconnected and owner 503; live 200 
     assert.equal(state.runtime.ready, false);
     assert.equal(state.runtime.bridge, false);
     assert.equal(state.runtime.reader, false);
+    const threadId = 'cursor-thread';
+    service.session.state.threads.push({
+      id: threadId,
+      hostId: service.session.hostId,
+      projectId: null,
+      title: 'synthetic',
+      state: 'unknown',
+      turnId: null,
+      plan: [],
+      error: null,
+      messages: Array.from({ length: 240 }, (_, n) => ({
+        id: 'item-' + n,
+        role: 'assistant',
+        kind: 'message',
+        text: 'synthetic ' + n,
+        status: 'completed',
+        attachments: [],
+      })),
+    });
+    const firstPage = service.session.history(threadId, true);
+    assert(firstPage.nextCursor.startsWith('desktop-page-v1:'));
+    let nativeCalls = 0;
+    service.session.openNow = async () => {
+      nativeCalls++;
+      throw Object.assign(new Error('Codex rejected the read request'), {
+        code: -32600,
+        rpcMethod: 'thread/items/list',
+        rpcClassification: 'metadata-read-rejected',
+        params: { secret: 'NEVER_LOG_RPC_PAYLOAD' },
+      });
+    };
+    const history = (thread, cursor, window) =>
+      '/v1/history?' +
+      new URLSearchParams({
+        hostId: service.session.hostId,
+        threadId: thread,
+        cursor,
+        ...(window ? { window: 'latest-v1' } : {}),
+      });
+    const withFlagResponse = await request(history(threadId, firstPage.nextCursor, true));
+    const noFlagResponse = await request(history(threadId, firstPage.nextCursor, false));
+    assert.equal(withFlagResponse.status, 200);
+    assert.equal(noFlagResponse.status, 200);
+    const withFlag = await withFlagResponse.json(),
+      noFlag = await noFlagResponse.json();
+    assert.deepEqual(noFlag.messages, withFlag.messages);
+    assert.equal(noFlag.nextCursor, withFlag.nextCursor);
+    assert.equal(noFlag.historyWindow.kind, 'earlier');
+    assert.equal(noFlag.messages.length, 100);
+    const cursorFor = (host, thread, anchor) =>
+      'desktop-page-v1:' +
+      Buffer.from(JSON.stringify([host, thread, anchor])).toString('base64url');
+    for (const [thread, cursor, status, code] of [
+      [threadId, 'desktop-page-v1:!invalid', 400, 'HOST_HISTORY_CURSOR_INVALID'],
+      [
+        threadId,
+        cursorFor('other-host', threadId, 'item-140'),
+        409,
+        'HOST_HISTORY_CURSOR_TARGET_MISMATCH',
+      ],
+      ['other-thread', firstPage.nextCursor, 409, 'HOST_HISTORY_CURSOR_TARGET_MISMATCH'],
+      [
+        'cold-thread',
+        cursorFor(service.session.hostId, 'cold-thread', 'item-140'),
+        409,
+        'HOST_HISTORY_CURSOR_EXPIRED',
+      ],
+      [
+        threadId,
+        cursorFor(service.session.hostId, threadId, 'evicted-anchor'),
+        409,
+        'HOST_HISTORY_CURSOR_EXPIRED',
+      ],
+    ]) {
+      const response = await request(history(thread, cursor, false));
+      assert.equal(response.status, status);
+      assert.equal((await response.json()).code, code);
+    }
+    assert.equal(nativeCalls, 0, 'Reserved Host cursors never enter native opening over HTTP');
+    const nativeRejected = await request(history(threadId, 'opaque-native-cursor', false));
+    assert.equal(nativeRejected.status, 502);
+    const nativeBody = await nativeRejected.json();
+    const nativeLog = await until(
+      () => readFile(join(directory, 'diagnostics/errors.jsonl'), 'utf8'),
+      (v) => v?.includes(nativeBody.requestId),
+    );
+    const nativeRow = nativeLog
+      .trim()
+      .split('\n')
+      .map(JSON.parse)
+      .find((v) => v.requestId === nativeBody.requestId);
+    assert.equal(nativeRow.nativeCode, -32600);
+    assert.equal(nativeRow.rpcMethod, 'thread/items/list');
+    assert.equal(nativeRow.rpcClassification, 'metadata-read-rejected');
+    assert(!nativeLog.includes('NEVER_LOG_RPC_PAYLOAD'));
+    assert(!nativeLog.includes(firstPage.nextCursor));
     const cases = [
       ['HOST_STATE_SAVE_FAILED', 'Host 状态保存失败'],
       ['CODEX_RUNTIME_DISCONNECTED', 'Codex 运行时未连接'],

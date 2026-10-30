@@ -125,10 +125,14 @@ try {
   }
   if(!$allow){throw 'WINDOWS_NATIVE_PRIVATE_STATE_REJECTED'}
  }
- function Protect([string]$Path,[bool]$Directory) {
+ function Protect([string]$Path,[bool]$Directory,[bool]$Created=$false) {
   Canonical $Path $Directory
   $old=Get-Acl -LiteralPath $Path
-  if($old.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -ne $sid.Value){throw 'WINDOWS_NATIVE_PRIVATE_STATE_REJECTED'}
+  $owner=$old.GetOwner([System.Security.Principal.SecurityIdentifier]).Value
+  # Only an object just created by this operation may have the elevated token's
+  # default Administrators owner assigned to the user. Existing objects retain
+  # the strict owner check; foreign/System owners are never taken over.
+  if($owner -ne $sid.Value -and !($Created -and $owner -eq 'S-1-5-32-544')){throw 'WINDOWS_NATIVE_PRIVATE_STATE_REJECTED'}
   $acl=if($Directory){[System.Security.AccessControl.DirectorySecurity]::new()}else{[System.Security.AccessControl.FileSecurity]::new()}
   $acl.SetOwner($sid);$acl.SetAccessRuleProtection($true,$false)
   $rule=if($Directory){[System.Security.AccessControl.FileSystemAccessRule]::new($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow')}else{[System.Security.AccessControl.FileSystemAccessRule]::new($sid,'FullControl','Allow')}
@@ -152,7 +156,7 @@ try {
   $temp=$Path+'.'+[Guid]::NewGuid().ToString('N')+'.tmp'
   $stream=$null
   try {
-   $stream=[IO.File]::Open($temp,'CreateNew','Write','None');Protect $temp $false
+   $stream=[IO.File]::Open($temp,'CreateNew','Write','None');Protect $temp $false $true
    $stream.Write($bytes,0,$bytes.Length);$stream.Flush($true);$stream.Dispose();$stream=$null
    if(Test-Path -LiteralPath $Path){[IO.File]::Replace($temp,$Path,$null)}else{[IO.File]::Move($temp,$Path)}
    Private $Path $false
@@ -189,7 +193,11 @@ try {
    $missing=[Collections.Generic.List[string]]::new();$at=$state
    while(!(Test-Path -LiteralPath $at)){$missing.Add($at);$at=[IO.Path]::GetDirectoryName($at)}
    Canonical $at $true
-   for($i=$missing.Count-1;$i -ge 0;$i--){[void][IO.Directory]::CreateDirectory($missing[$i]);Protect $missing[$i] $true}
+   for($i=$missing.Count-1;$i -ge 0;$i--){
+    # No -Force: an object appearing after the missing-path check is rejected.
+    [void](New-Item -ItemType Directory -Path $missing[$i] -ErrorAction Stop)
+    Protect $missing[$i] $true $true
+   }
    Private $state $true;@{ok=$true};break
   }
   'publish' {
@@ -214,7 +222,7 @@ try {
     try {
      Add-Type -Path $source -OutputAssembly $temp -OutputType ConsoleApplication -ReferencedAssemblies @('System.dll','System.Core.dll','System.Web.Extensions.dll')
     } catch {throw 'WINDOWS_NATIVE_LAUNCHER_COMPILE_FAILED'}
-    Protect $temp $false
+    Protect $temp $false $true
     if((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant() -cne $request.sourceSha256){throw 'WINDOWS_NATIVE_SOURCE_CHANGED'}
     [IO.File]::Move($temp,$exe);Private $exe $false
     @{sourceSha256=$request.sourceSha256;shimSha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()}
@@ -268,7 +276,9 @@ public static class AgentHubNativeEnvironmentBroadcast {
 }
 `;
 
-function nativeOperation(action, data) {
+// Fixed local operations are also used by native boundary acceptance. The
+// PowerShell switch rejects unknown names; callers never supply script text.
+export function windowsNativeSuggestionsNativeOperation(action, data) {
   try {
     const root = process.env.SystemRoot;
     if (!root || !win32.isAbsolute(root)) throw failure('WINDOWS_NATIVE_PLATFORM_UNAVAILABLE');
@@ -305,7 +315,7 @@ function nativeOperation(action, data) {
 export function windowsNativeSuggestionsEnvironment({
   state = process.env.USERPROFILE &&
     win32.join(process.env.USERPROFILE, '.config', 'agent-hub', 'native-suggestions'),
-  run = nativeOperation,
+  run = windowsNativeSuggestionsNativeOperation,
   platform = process.platform,
   entry = nativeSuggestionsEntry,
   node = process.execPath,

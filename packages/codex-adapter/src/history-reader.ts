@@ -8,6 +8,7 @@ import type { ClientType, WorkspaceSidebar } from '@codex-manage/protocol';
 import { renderItem, type RenderItem } from './runtime.js';
 import { DesktopSidebar, desktopPinnedSection } from './desktop-sidebar.js';
 import { historyIdentity } from './desktop-history-identity.js';
+import { isDesktopHistoryCursor } from './desktop-history-cursor.js';
 
 export const codexClientType: ClientType = { id: 'codex', name: 'Codex' };
 
@@ -120,7 +121,12 @@ export class CodexHistoryReader {
   private closeGeneration = 0;
   private pending = new Map<
     number,
-    { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
+    {
+      resolve: (value: unknown) => void;
+      reject: (error: Error) => void;
+      timer: NodeJS.Timeout;
+      method: string;
+    }
   >();
   private knownThreads = new Set<string>();
   private knownProjects = new Map<string, ReadProject>();
@@ -259,6 +265,8 @@ export class CodexHistoryReader {
           request.reject(
             Object.assign(new Error('Codex rejected the read request'), {
               ...(typeof code === 'number' && Number.isSafeInteger(code) ? { code } : {}),
+              rpcMethod: request.method,
+              rpcClassification: 'metadata-read-rejected',
             }),
           );
         } else request.resolve(message.result);
@@ -311,6 +319,13 @@ export class CodexHistoryReader {
   }
 
   private rpc(method: string, params: RecordValue): Promise<unknown> {
+    if (isDesktopHistoryCursor(params.cursor))
+      return Promise.reject(
+        Object.assign(new Error('Host history cursor cannot enter Codex RPC'), {
+          code: 'CODEX_READER_HOST_CURSOR',
+          status: 400,
+        }),
+      );
     if (
       ![
         'initialize',
@@ -335,6 +350,8 @@ export class CodexHistoryReader {
         () => {
           const error = Object.assign(new Error('Codex read timed out'), {
             code: 'CODEX_READER_TIMEOUT',
+            rpcMethod: method,
+            rpcClassification: 'metadata-read-timeout',
           });
           this.pending.delete(id);
           reject(error);
@@ -347,7 +364,7 @@ export class CodexHistoryReader {
         },
         method === 'initialize' ? this.startupTimeout : 15000,
       );
-      this.pending.set(id, { resolve, reject, timer });
+      this.pending.set(id, { resolve, reject, timer, method });
       child.stdin.write(JSON.stringify({ id, method, params }) + '\n', (error) => {
         if (error) {
           clearTimeout(timer);
@@ -600,6 +617,11 @@ export class CodexHistoryReader {
     directory?: string;
     historyMode?: string;
   }> {
+    if (isDesktopHistoryCursor(pageCursor))
+      throw Object.assign(new Error('Host history cursor cannot enter Codex RPC'), {
+        code: 'CODEX_READER_HOST_CURSOR',
+        status: 400,
+      });
     if (!this.knownThreads.has(threadId)) throw new Error('Thread not in this host workspace');
     const metadata = object(await this.rpc('thread/read', { threadId, includeTurns: false }));
     const thread = object(metadata.thread);

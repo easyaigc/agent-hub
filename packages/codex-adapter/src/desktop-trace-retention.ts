@@ -13,7 +13,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { open as openAsync } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -29,6 +29,7 @@ import {
   protectWindowsStateFile,
   openPrivateFileSync,
   windowsTraceSnapshot,
+  windowsPowerShellEnvironment,
 } from './desktop-platform.js';
 
 const execute = promisify(execFile);
@@ -139,9 +140,20 @@ interface FileProof {
   sha256?: string;
   id: string;
   mode: number;
+  windowsIdentity?: string;
+}
+function originalWindowsTrace(path: string, root?: string): root is string {
+  return (
+    process.platform === 'win32' &&
+    !!root &&
+    bundleName.test(relative(root, path).split(sep)[0] ?? '')
+  );
 }
 function regular(path: string, root?: string): FileProof {
-  assertPrivateFile(path);
+  // R5 upstream Trace objects retain their separate trusted-owner boundary.
+  // A positive budget selects the file operation; zero selects a directory.
+  const native = originalWindowsTrace(path, root) ? windowsTraceSnapshot(root, path, 1) : undefined;
+  if (!native) assertPrivateFile(path);
   const s = lstatSync(path, { bigint: true });
   if (!s.isFile() || s.isSymbolicLink() || s.nlink !== 1n) throw new Error('UNSAFE_TRACE_FILE');
   if (process.platform !== 'win32' && (s.mode & 0o7000n) !== 0n)
@@ -156,12 +168,15 @@ function regular(path: string, root?: string): FileProof {
     ino: Number(s.ino),
     id: `${s.dev}:${s.ino}`,
     mode: Number(s.mode),
+    ...(native ? { windowsIdentity: native.identity } : {}),
   };
 }
 function bounded(path: string, maximum: number, root?: string): Buffer {
   const before = regular(path, root);
   if (before.size > maximum) throw new Error('TRACE_READ_BUDGET');
-  const bytes = readFileSync(path),
+  const bytes = originalWindowsTrace(path, root)
+      ? windowsTraceSnapshot(root, path, maximum).bytes
+      : readFileSync(path),
     after = regular(path, root);
   if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error('TRACE_CHANGED');
   return bytes;
@@ -182,6 +197,10 @@ function privateDirectory(path: string, root = path): void {
   if (process.platform === 'win32') windowsTraceSnapshot(root, path, 0);
 }
 function tail(path: string, maximum: number, root: string): Buffer {
+  if (originalWindowsTrace(path, root)) {
+    const bytes = bounded(path, 8 * 1024 * 1024, root);
+    return bytes.subarray(Math.max(0, bytes.length - maximum));
+  }
   const proof = regular(path, root),
     fd = openSync(path, 'r');
   try {
@@ -767,6 +786,7 @@ export class DesktopTraceRetention {
                 timeout: 120000,
                 maxBuffer: 65536,
                 windowsHide: true,
+                env: windowsPowerShellEnvironment(),
                 ...(this.signal ? { signal: this.signal } : {}),
               },
             ),

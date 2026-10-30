@@ -43,6 +43,20 @@ try {
   reader = new CodexHistoryReader('test-host', 'test', old);
   await reader.configureExecutable(old, 'generation-1');
   await reader.connect();
+  // Reserved Host cursors must never reach a native metadata method, even
+  // before the target is registered in the reader's catalog.
+  const beforeCursor = await readFile(calls, 'utf8');
+  for (const cursor of ['desktop-page-v1:invalid', 'desktop-page-v1:' + 'x'.repeat(9000)]) {
+    await assert.rejects(
+      reader.history('cold-thread', cursor),
+      (e) => e.code === 'CODEX_READER_HOST_CURSOR',
+    );
+    await assert.rejects(
+      reader.read('thread/items/list', { threadId: 'cold-thread', cursor }),
+      (e) => e.code === 'CODEX_READER_HOST_CURSOR',
+    );
+  }
+  assert.equal(await readFile(calls, 'utf8'), beforeCursor, 'Host cursor rejection writes no RPC');
   const sameGeneration = reader.process;
   await reader.configureExecutable(old, 'generation-1');
   assert.strictEqual(reader.process, sameGeneration, 'unchanged generation keeps reader');

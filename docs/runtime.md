@@ -255,6 +255,12 @@ pnpm dev:runtime
 
 ## 验证
 
+Windows Trace 回收器与其他固定 PowerShell 工具复用同一子进程环境规范，移除继承的 `PSModulePath`，避免从其他入口启动时误载不兼容的 PowerShell 模块。父进程和全局环境不修改；回收前的身份、独占句柄、摘要及未开始删除回执规则保持原约束。
+
+原桌面提权运行时，新建的原 Trace 文件可由 Administrators 持有。回收器只对准确 Trace bundle 使用现有的 Win32 句柄、根目录当前用户 owner、受信任子项 owner、DACL、命名空间和文件身份检查，不把仅适用于 Host 私有配置的当前用户 owner 检查套在原 Trace 上，也不修改原 Trace ACL。Native 安装器仅能将本次排他新建对象的提权默认 Administrators owner 设置为当前用户；既有文件和目录仍须严格归当前用户，未知或既有外来 owner 不接管。该兼容代码与 Windows 原生验收分别记录，macOS 检查不代表 Windows 通过。
+
+该原生快照接口的零字节预算选择目录操作；文件身份检查使用正的一字节预算，完整载荷仍由各自有界预算读取。不能把文件元数据检查当作零预算目录探测。Windows owner／retention 原生用例必须实际验证此边界，macOS 跳过不构成通过。
+
 ```bash
 pnpm check
 pnpm build:ios

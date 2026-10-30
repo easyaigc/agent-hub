@@ -376,3 +376,7 @@ UM04 客户端迁移补充：`codex-host-discovery-v1.schema.json` 新增具名 
 `attachments:resolve-current`、原消息解析和下载继续使用现有路径／来源授权与 SHA-256 契约，不添加新写操作。仅 ctime 改变导致的快照失配允许 Host 最多三次重新授权并完整读取，重试固定首次文件身份；同大小改写并恢复 mtime 仍须重新哈希，不得复用旧缓存或放行旧摘要。持续元数据漂移返回 HTTP 409、`FILE_METADATA_UNSTABLE` 和现有 requestId；它表示未取得稳定快照，不宣称文件内容已变化。实际摘要不符仍返回 `FILE_CHANGED`，目标替换、越权、删除及系统读取错误保持原拒绝。私有日志可核对 `fileChange` 的固定 stat 字段与重试阶段，公共错误不输出这些内部字段。
 
 2026-10-26 阅读版本补充：`contentVersion`校验的是手机实际收到的最终正文，包含`codex-attachment://`链接改写后的内容。原桌面原文与传输正文不同时，Adapter在完整投影原子发布时更新最新版本，以内部持久原文摘要防止后续同一摘要将版本回退。协议字段不变；同ID新内容、旧版本冲突和按阅读者隔离保持。
+
+### Host 历史窗口游标的归属
+
+`desktop-page-v1:` 是 Host 生成的 presentation cursor，包含 Host、thread 与消息锚点的 base64url 编码，长度最多 8192 字符。该前缀在历史读取和已有对话打开的读取分支中具有固定归属，即使下一页省略 `window=latest-v1` 也不能透传到 native RPC。有效匹配的缓存页仍返回原 `historyWindow` 结构标注的早期页及有界消息；格式错误为 HTTP 400 / `HOST_HISTORY_CURSOR_INVALID`，Host/thread 不同为 409 / `HOST_HISTORY_CURSOR_TARGET_MISMATCH`，未知缓存或锚点已失效为 409 / `HOST_HISTORY_CURSOR_EXPIRED`，不支持该窗口的运行时为 400 / `HOST_HISTORY_CURSOR_UNSUPPORTED`。调用方重新取得首页后使用新游标，不重放写操作。Host 身份与设备鉴权仍先由原路由校验。读缓存不表示 IPC 已就绪，也不授予原 owner 控制。

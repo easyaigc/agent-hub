@@ -38,7 +38,46 @@ export type WindowsPrivateStateAction =
   'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file' | 'release-file';
 // Separate from the permission response: diagnostic data never authorizes a call.
 export const privateStateNativeDiagnostics = Object.freeze({
-  words: 8,
+  words: 11,
+  steps: [
+    'prepare',
+    'pin-source-directory',
+    'hash-source',
+    'create-cache',
+    'pin-cache',
+    'open-winner',
+    'create-journal',
+    'create-compiler-output',
+    'compile',
+    'check-compiler-output',
+    'open-compiler-read',
+    'create-publication',
+    'copy-compiled',
+    'publish',
+    'inspect-file',
+    'pin-directory',
+    'create-job',
+    'set-job-limits',
+    'initialize-attributes-size',
+    'initialize-attributes',
+    'set-job-list',
+    'open-nul',
+    'set-handle-list',
+    'create-compiler',
+    'wait-compiler',
+    'compiler-exit-code',
+    'read-compiled',
+    'read-compiled-end',
+    'write-compiled',
+    'flush-compiled',
+    'flush-journal',
+    'reopen-compiler',
+    'discard-compiler',
+    'discard-publication',
+    'discard-journal',
+    'cleanup',
+    'cleanup-compiler',
+  ] as const,
   stages: [
     'environment',
     'source',
@@ -150,6 +189,9 @@ export function privateStateNativeFailure(
           nativeType?: unknown;
           nativeWin32?: unknown;
           nativeRejection?: unknown;
+          nativeStep?: unknown;
+          nativeCleanupStep?: unknown;
+          nativeCleanupWin32?: unknown;
         }
       | undefined;
     Atomics.store(
@@ -190,6 +232,23 @@ export function privateStateNativeFailure(
       7,
       privateStateNativeDiagnostics.rejections.findIndex((v) => v === value?.nativeRejection) + 1,
     );
+    Atomics.store(
+      shared,
+      8,
+      privateStateNativeDiagnostics.steps.findIndex((v) => v === value?.nativeStep) + 1,
+    );
+    Atomics.store(
+      shared,
+      9,
+      privateStateNativeDiagnostics.steps.findIndex((v) => v === value?.nativeCleanupStep) + 1,
+    );
+    if (
+      typeof value?.nativeCleanupWin32 === 'number' &&
+      Number.isInteger(value.nativeCleanupWin32) &&
+      value.nativeCleanupWin32 > 0 &&
+      value.nativeCleanupWin32 <= 0x7fffffff
+    )
+      Atomics.store(shared, 10, value.nativeCleanupWin32);
   } catch {
     // A diagnostic-only property must never interrupt channel retirement.
   }
@@ -703,6 +762,9 @@ export function createWindowsPrivateStateBackend(
       helperStage: privateStateNativeDiagnostics.helperStages[Atomics.load(native, 4) - 1],
       nativeType: privateStateNativeDiagnostics.nativeTypes[Atomics.load(native, 5) - 1],
       nativeWin32: Atomics.load(native, 6) || undefined,
+      nativeStep: privateStateNativeDiagnostics.steps[Atomics.load(native, 8) - 1],
+      nativeCleanupStep: privateStateNativeDiagnostics.steps[Atomics.load(native, 9) - 1],
+      nativeCleanupWin32: Atomics.load(native, 10) || undefined,
       nativeRejection: privateStateNativeDiagnostics.rejections[Atomics.load(native, 7) - 1],
     });
   }

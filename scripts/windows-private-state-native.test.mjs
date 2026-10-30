@@ -1130,6 +1130,7 @@ export const windowsPrivateStateNativeExecutable=(_active,stage)=>{
  throw Object.assign(new Error('secret-path-and-stderr'), {
   code:'UNSAFE_WINDOWS_PRIVATE_STATE',cause:{status:${status}},helperStage:'execute',
   nativeType:'UnauthorizedAccessException',nativeWin32:5,nativeRejection:'WRONG_FILE_OWNER',
+  nativeStep:'create-compiler',nativeCleanupStep:'discard-compiler',nativeCleanupWin32:87,
   stderr:'secret-path-and-stderr'
  });
 };`,
@@ -1148,6 +1149,9 @@ export const windowsPrivateStateNativeExecutable=(_active,stage)=>{
         assert.equal(error.nativeType, 'UnauthorizedAccessException');
         assert.equal(error.nativeWin32, 5);
         assert.equal(error.nativeRejection, 'WRONG_FILE_OWNER');
+        assert.equal(error.nativeStep, 'create-compiler');
+        assert.equal(error.nativeCleanupStep, 'discard-compiler');
+        assert.equal(error.nativeCleanupWin32, 87);
         assert(!JSON.stringify(error).includes('secret-path-and-stderr'));
         return true;
       },

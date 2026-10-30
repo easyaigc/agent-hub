@@ -98,6 +98,15 @@ function windowsPowerShellSync(args: string[], active?: () => boolean): string {
         Number(stderr.match(/^WINDOWS_PRIVATE_STATE_WIN32:([1-9][0-9]{0,9})\s*$/m)?.[1]) ||
         undefined,
       nativeRejection: stderr.match(/^WINDOWS_PRIVATE_STATE_REJECTED:([A-Z_]{1,64})\s*$/m)?.[1],
+      nativeStep: stderr.match(
+        /^WINDOWS_PRIVATE_STATE_NATIVE_STEP:([a-z][a-z0-9-]{0,39})\s*$/m,
+      )?.[1],
+      nativeCleanupStep: stderr.match(
+        /^WINDOWS_PRIVATE_STATE_CLEANUP_STEP:([a-z][a-z0-9-]{0,39})\s*$/m,
+      )?.[1],
+      nativeCleanupWin32:
+        Number(stderr.match(/^WINDOWS_PRIVATE_STATE_CLEANUP_WIN32:([1-9][0-9]{0,9})\s*$/m)?.[1]) ||
+        undefined,
     });
   }
 }

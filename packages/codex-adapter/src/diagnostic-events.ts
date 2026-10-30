@@ -106,6 +106,18 @@ const numbers = new Set([
   'historyStalled',
 ]);
 const booleans = new Set(['ready', 'bridge', 'reader', 'closed', 'gone', 'commandCommitPending']);
+const metadataRpcMethods = new Set([
+  'initialize',
+  'project/list',
+  'thread/list',
+  'thread/read',
+  'thread/items/list',
+  'thread/turns/list',
+  'model/list',
+  'config/read',
+  'account/read',
+  'account/rateLimits/read',
+]);
 /** Copy only schema fields; never stringify an error, path, header, body or stderr. */
 export function safeDiagnostic(input: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
@@ -121,6 +133,22 @@ export function safeDiagnostic(input: Record<string, unknown>): Record<string, u
     else if (numbers.has(key) && typeof value === 'number' && Number.isFinite(value))
       out[key] = Math.round(value * 100) / 100;
     else if (booleans.has(key) && typeof value === 'boolean') out[key] = value;
+    else if (
+      key === 'nativeCode' &&
+      typeof value === 'number' &&
+      Number.isInteger(value) &&
+      value >= -0x80000000 &&
+      value <= 0x7fffffff
+    )
+      out[key] = value;
+    else if (key === 'rpcMethod' && typeof value === 'string' && metadataRpcMethods.has(value))
+      out[key] = value;
+    else if (
+      key === 'rpcClassification' &&
+      typeof value === 'string' &&
+      ['metadata-read-rejected', 'metadata-read-timeout'].includes(value)
+    )
+      out[key] = value;
     else if (key === 'route' && typeof value === 'string') {
       // Current API uses fixed pathnames. IDs, encoded input and unknown routes are redacted.
       out.route = routes.has(value) ? value : '/other';

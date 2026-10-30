@@ -561,3 +561,5 @@ Android P7活动EasyWork业务图与实际owner退出已形成待原生候选：
 已在 PR74 将冻结 R2 的 Node Host／Adapter／Protocol 及 Native 观察、精简存储、锚定退役和必要脚本集成到主线，保留原 main 业务、私有对象创建租约及 Windows 旧缓存边界。Host 只读 Git/v1 与子任务观察代码保留；iOS／Android 页面及 R4/R5 活动 WIP 不导入。
 
 同一运行指纹的本机真实桌面 IPC／CLI 目录读取及辅助 reader 退出后后台恢复已通过，主 reader、IPC 和原桌面连续；仅证明 macOS 只读集成。Windows Native、旧布局、真实旧路径发现与 reader 恢复以及实际安装更新分别待来源独立验收，不能由 Mac、语义编译或 fixture 替代。
+
+2026-10-31 F03／F31／F32：增加正式 Windows 启动的具名只读预检与独占 scheduled envelope，保留原 Worker 环境白名单；有界日志分类不输出 stderr／凭据。PR81 五组件和核心 Native 输入保持；来源完整 legacy／reader 辅助已通过，正式启动两处拒绝仍需按真实上下文诊断，不计正式升级通过。iOS／Android UI 和未知操作不重放规则不变，A6保持暂停。见[入口与证据边界](acceptance/windows-formal-startup-preflight-20261031.md)。

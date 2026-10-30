@@ -1441,3 +1441,5 @@ Native 编译的发布仍通过 B 的原 WRITE/DELETE 创建句柄且禁止覆�
 RuntimeSession 首次直接调用私有创建边界建立 state 根，Windows 新附件统一写入 `attachments-v2`，同步上传和异步 inline 图像都用排他私有创建。旧 `attachments` 的 owner、DACL、字节、绝对登记路径及 ID 保留，既有 `runtime-history-v1` 继续保留；不把已有 Administrators-owned 私有对象当作当前用户对象放行。macOS 仍使用原附件命名空间。此变化不建立 reader 或执行权限。
 
 `desktop-page-v1:` 属于 Host 的有界消息窗口，无论是否重复 `window=latest-v1` 都由 Host 解析并核对 Host/thread/anchor；不能成为 Codex opaque cursor。缓存存在时只按既定 100 条／2 MiB 窗口读取；格式错误返回 400，跨目标或锚点／缓存失效返回 409，不启动模型或兜底全量读取。底层只读 reader 再次拒绝该保留前缀。其他 native opaque 游标保持原协议。诊断只记录数字 native 错误码、白名单元数据方法及固定失败分类；单个 -32600 不证明所有历史失败具有相同根因。
+
+2026-10-31 F03／F31／F32：增加正式 Windows 启动的具名只读预检与独占 scheduled envelope，保留原 Worker 环境白名单；有界日志分类不输出 stderr／凭据。PR81 五组件和核心 Native 输入保持；来源完整 legacy／reader 辅助已通过，正式启动两处拒绝仍需按真实上下文诊断，不计正式升级通过。iOS／Android UI 和未知操作不重放规则不变，A6保持暂停。见[入口与证据边界](acceptance/windows-formal-startup-preflight-20261031.md)。

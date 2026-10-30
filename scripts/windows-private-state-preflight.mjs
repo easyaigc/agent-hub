@@ -67,85 +67,103 @@ const safeFailure = (error) => {
 const fail = (code) => {
   throw Object.assign(new Error(code), { code });
 };
-try {
-  const args = process.argv.slice(2);
-  if (args.length === 1 && args[0] === '--help') {
-    help = true;
+if (['--host-config', '--prepare-startup-probe'].includes(process.argv[2])) {
+  let startupFailure;
+  try {
+    const startup = await import('./windows-startup-preflight.mjs');
+    startupFailure = startup.startupFailure;
+    await startup.windowsStartupPreflightMain(process.argv.slice(2));
+  } catch (error) {
     console.log(
-      'node scripts/windows-private-state-preflight.mjs --file <existing-private-config> [--bundle <same-skill/bundle.json>]',
+      JSON.stringify({
+        kind: 'windows-host-startup-readonly-preflight',
+        passed: false,
+        failure: startupFailure ? startupFailure(error) : safeFailure(error),
+      }),
     );
-  } else {
-    if (
-      ![2, 4].includes(args.length) ||
-      args[0] !== '--file' ||
-      !args[1] ||
-      (args.length === 4 && (args[2] !== '--bundle' || !args[3]))
-    )
-      fail('INVALID_PREFLIGHT_INPUT');
-    if (process.platform !== 'win32' || !isMainThread) fail('WINDOWS_REQUIRED');
-    file = resolve(args[1]);
-    const target = await lstat(file, { bigint: true });
-    if (!target.isFile() || target.isSymbolicLink()) fail('INVALID_PREFLIGHT_INPUT');
-    before = stamp(target);
-    const repository = fileURLToPath(new URL('../', import.meta.url));
-    const bundle = args[3]
-      ? resolve(args[3])
-      : fileURLToPath(new URL('../../../bundle.json', import.meta.url));
-    const closure = await verifyHostRuntime({
-      entry: join(repository, 'apps/host-agent/dist/runtime-entry.js'),
-      bundle,
-    });
-    if (!closure.ok) fail('RUNTIME_CLOSURE_MISMATCH');
-    report.runtimeFingerprints = Object.fromEntries(
-      closure.packages.map((v) => [v.component, v.fingerprint]),
-    );
-    const adapter = closure.packages.find((v) => v.name === '@codex-manage/codex-adapter');
-    report.resources = {};
-    for (const resource of resources) {
+    process.exitCode = 1;
+  }
+} else {
+  try {
+    const args = process.argv.slice(2);
+    if (args.length === 1 && args[0] === '--help') {
+      help = true;
+      console.log(
+        'node scripts/windows-private-state-preflight.mjs --file <existing-private-config> [--bundle <same-skill/bundle.json>]',
+      );
+    } else {
+      if (
+        ![2, 4].includes(args.length) ||
+        args[0] !== '--file' ||
+        !args[1] ||
+        (args.length === 4 && (args[2] !== '--bundle' || !args[3]))
+      )
+        fail('INVALID_PREFLIGHT_INPUT');
+      if (process.platform !== 'win32' || !isMainThread) fail('WINDOWS_REQUIRED');
+      file = resolve(args[1]);
+      const target = await lstat(file, { bigint: true });
+      if (!target.isFile() || target.isSymbolicLink()) fail('INVALID_PREFLIGHT_INPUT');
+      before = stamp(target);
+      const repository = fileURLToPath(new URL('../', import.meta.url));
+      const bundle = args[3]
+        ? resolve(args[3])
+        : fileURLToPath(new URL('../../../bundle.json', import.meta.url));
+      const closure = await verifyHostRuntime({
+        entry: join(repository, 'apps/host-agent/dist/runtime-entry.js'),
+        bundle,
+      });
+      if (!closure.ok) fail('RUNTIME_CLOSURE_MISMATCH');
+      report.runtimeFingerprints = Object.fromEntries(
+        closure.packages.map((v) => [v.component, v.fingerprint]),
+      );
+      const adapter = closure.packages.find((v) => v.name === '@codex-manage/codex-adapter');
+      report.resources = {};
+      for (const resource of resources) {
+        try {
+          report.resources[resource] = hash(await readFile(join(adapter.root, resource)));
+        } catch {
+          report.missingResource = resource;
+          fail('PREFLIGHT_RESOURCE_UNAVAILABLE');
+        }
+      }
+      diagnostics = (
+        await import(pathToFileURL(join(adapter.root, 'dist/desktop-private-state-native.js')).href)
+      ).privateStateNativeDiagnostics;
+      platform = await import(pathToFileURL(join(adapter.root, 'dist/desktop-platform.js')).href);
+      platform.assertPrivateFile(file);
+      report.passed = true;
+    }
+  } catch (error) {
+    report.failure = safeFailure(error);
+  } finally {
+    if (platform) {
       try {
-        report.resources[resource] = hash(await readFile(join(adapter.root, resource)));
-      } catch {
-        report.missingResource = resource;
-        fail('PREFLIGHT_RESOURCE_UNAVAILABLE');
+        platform.closeWindowsPrivateStateBackend();
+        report.backendClosed = true;
+      } catch (error) {
+        report.cleanupFailure = safeFailure(error);
+        report.passed = false;
       }
     }
-    diagnostics = (
-      await import(pathToFileURL(join(adapter.root, 'dist/desktop-private-state-native.js')).href)
-    ).privateStateNativeDiagnostics;
-    platform = await import(pathToFileURL(join(adapter.root, 'dist/desktop-platform.js')).href);
-    platform.assertPrivateFile(file);
-    report.passed = true;
-  }
-} catch (error) {
-  report.failure = safeFailure(error);
-} finally {
-  if (platform) {
-    try {
-      platform.closeWindowsPrivateStateBackend();
-      report.backendClosed = true;
-    } catch (error) {
-      report.cleanupFailure = safeFailure(error);
+    if (before) {
+      try {
+        report.targetMetadataUnchanged = before === stamp(await lstat(file, { bigint: true }));
+      } catch {
+        report.targetMetadataUnchanged = false;
+      }
+      if (!report.targetMetadataUnchanged) {
+        report.failure = { code: 'PREFLIGHT_TARGET_CHANGED' };
+        report.passed = false;
+      }
+    }
+    report.callerBootstrapUnchanged = beforeCaller === callerState();
+    if (!report.callerBootstrapUnchanged) {
+      report.failure = { code: 'PREFLIGHT_CALLER_CHANGED' };
       report.passed = false;
     }
   }
-  if (before) {
-    try {
-      report.targetMetadataUnchanged = before === stamp(await lstat(file, { bigint: true }));
-    } catch {
-      report.targetMetadataUnchanged = false;
-    }
-    if (!report.targetMetadataUnchanged) {
-      report.failure = { code: 'PREFLIGHT_TARGET_CHANGED' };
-      report.passed = false;
-    }
+  if (!help) {
+    console.log(JSON.stringify(report));
+    if (!report.passed) process.exitCode = 1;
   }
-  report.callerBootstrapUnchanged = beforeCaller === callerState();
-  if (!report.callerBootstrapUnchanged) {
-    report.failure = { code: 'PREFLIGHT_CALLER_CHANGED' };
-    report.passed = false;
-  }
-}
-if (!help) {
-  console.log(JSON.stringify(report));
-  if (!report.passed) process.exitCode = 1;
 }

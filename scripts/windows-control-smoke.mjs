@@ -133,6 +133,7 @@ try {
     ['./windows-desktop-service.mjs', 'scripts/windows-desktop-service.mjs'],
     ['./windows-desktop-recovery.mjs', 'scripts/windows-desktop-recovery.mjs'],
     ['./windows-desktop-worker.mjs', 'scripts/windows-desktop-worker.mjs'],
+    ['./windows-host-environment.mjs', 'scripts/windows-host-environment.mjs'],
     ['./host-worker-supervisor.mjs', 'scripts/host-worker-supervisor.mjs'],
     [
       './fixtures/windows-private-state-boundary.mjs',

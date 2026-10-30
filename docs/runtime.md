@@ -349,3 +349,5 @@ Windows 旧附件兼容按真实登记引用、目标和稳定文件快照验证
 ### Windows 首次私有创建的路径处理
 
 私有目录创建使用有界 Unicode Win32 路径与属性 API，避免 Framework 宿主在初始化之前缓存旧 BCL 路径开关。仅缺失路径可递归创建，拒绝访问、reparse、非目录及既有非 User-owner 对象继续拒绝；创建时设置 owner/DACL，预算、租约及退出屏障不变。拒绝保留固定 nativeStep，不含路径或原消息。新 Native 输入须重新做 Windows 普通 Main 预检和全缺失 Session 根／旧布局验收，见[专项入口与证据范围](acceptance/windows-native-first-directory-20261031.md)。
+
+2026-10-31 F03／F31／F32：增加正式 Windows 启动的具名只读预检与独占 scheduled envelope，保留原 Worker 环境白名单；有界日志分类不输出 stderr／凭据。PR81 五组件和核心 Native 输入保持；来源完整 legacy／reader 辅助已通过，正式启动两处拒绝仍需按真实上下文诊断，不计正式升级通过。iOS／Android UI 和未知操作不重放规则不变，A6保持暂停。见[入口与证据边界](acceptance/windows-formal-startup-preflight-20261031.md)。

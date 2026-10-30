@@ -25,7 +25,7 @@ export function safeWorkerFailure(error) {
     'windows-desktop-recovery.mjs',
     'host-worker-supervisor.mjs',
   ]);
-  return {
+  const result = {
     code: identifier(error?.code),
     syscall: identifier(error?.syscall),
     stage: identifier(error?.stage),
@@ -47,6 +47,80 @@ export function safeWorkerFailure(error) {
       })
       .slice(0, 8),
   };
+  const failures = [
+    'ETIMEDOUT',
+    'ENOENT',
+    'EACCES',
+    'EPERM',
+    'EINVAL',
+    'ENOTDIR',
+    'ERR_CHILD_PROCESS_STDIO_MAXBUFFER',
+    'WINDOWS_PROCESS_GATE_UNAVAILABLE',
+  ];
+  let cause = error;
+  for (let depth = 0; cause && depth < 4; depth++, cause = cause.cause) {
+    const childFailure =
+      cause.code === 'WINDOWS_PROCESS_GATE_UNAVAILABLE' ||
+      (typeof cause.syscall === 'string' && /^spawn(?:Sync)?\b/.test(cause.syscall)) ||
+      Object.hasOwn(cause, 'status') ||
+      Object.hasOwn(cause, 'signal') ||
+      typeof cause.stderr === 'string' ||
+      Buffer.isBuffer(cause.stderr) ||
+      typeof cause.killed === 'boolean' ||
+      cause.spawnStarted === false ||
+      cause.spawnStarted === 'unknown';
+    if (!childFailure) continue;
+    if (failures.includes(cause.code)) result.helperCauseCode = cause.code;
+    if (Number.isSafeInteger(cause.status) && cause.status >= 0 && cause.status <= 0xffffffff)
+      result.helperStatus = cause.status;
+    if (['SIGTERM', 'SIGKILL', 'SIGINT', 'SIGABRT'].includes(cause.signal))
+      result.helperSignal = cause.signal;
+    if (typeof cause.killed === 'boolean') result.helperKilled = cause.killed;
+    if (cause.spawnStarted === false || cause.spawnStarted === 'unknown')
+      result.helperSpawnStarted = cause.spawnStarted;
+    if (typeof cause.stderr === 'string' || Buffer.isBuffer(cause.stderr)) {
+      const text = String(cause.stderr);
+      result.helperStderrBytes = Buffer.byteLength(text);
+      const marker =
+        /^(WINDOWS_POWERSHELL_MODULE_UNAVAILABLE|WINDOWS_CLI_REJECTED|WINDOWS_DESKTOP_NOT_RUNNING|WINDOWS_DESKTOP_PIPE_REJECTED|WRONG_DESKTOP_USER|WRONG_DESKTOP_SESSION|UNSAFE_WINDOWS_PRIVATE_STATE)\s*$/m.exec(
+          text,
+        )?.[1];
+      result.helperStderrMarker = marker ?? (text.length ? 'unclassified' : 'empty');
+    }
+  }
+  for (const [key, values] of Object.entries({
+    nativeRejection: [
+      'WRONG_FILE_OWNER',
+      'NULL_PRIVATE_DACL',
+      'UNKNOWN_PRIVATE_ACE',
+      'SHARED_PRIVATE_FILE',
+      'UNPROTECTED_PRIVATE_DACL',
+    ],
+    helperStage: ['add-type', 'execute'],
+    nativeStage: [
+      'environment',
+      'source',
+      'directory',
+      'protect-directory',
+      'compiler',
+      'compile',
+      'protect-binary',
+      'publish-binary',
+      'resolve-binary',
+      'bootstrap-native',
+      'recheck-binary',
+      'prepare',
+      'spawn-gate',
+      'spawn',
+      'handshake',
+      'operation',
+    ],
+  }))
+    if (values.includes(error?.[key])) result[key] = error[key];
+  for (const key of ['nativeWin32', 'nativeCleanupWin32'])
+    if (Number.isSafeInteger(error?.[key]) && error[key] >= 0 && error[key] <= 0xffffffff)
+      result[key] = error[key];
+  return result;
 }
 
 export function workerRecoveryState(scope, code) {

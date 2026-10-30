@@ -151,6 +151,14 @@ try {
       'packages/codex-adapter/dist/windows-process.js',
     ],
     [
+      '../packages/codex-adapter/dist/desktop-private-state-native.js',
+      'packages/codex-adapter/dist/desktop-private-state-native.js',
+    ],
+    [
+      '../packages/codex-adapter/windows/private-state-compilation.cs',
+      'packages/codex-adapter/windows/private-state-compilation.cs',
+    ],
+    [
       '../packages/codex-adapter/windows/private-state.cs',
       'packages/codex-adapter/windows/private-state.cs',
     ],
@@ -191,7 +199,7 @@ const native=fs.realpathSync.native;
 if(process.env.FIXTURE_MSIX_REDIRECT==='1')fs.realpathSync.native=(path,...options)=>{
   if(typeof path==='string'&&path.startsWith(logicalRoot+sep)){
     const physical=join(physicalRoot,relative(logicalRoot,path));
-    fs.mkdirSync(dirname(physical),{recursive:true});fs.copyFileSync(path,physical);
+    fs.mkdirSync(dirname(physical),{recursive:true});if(!fs.existsSync(physical))fs.linkSync(path,physical);
     return native(physical,...options);
   }
   return native(path,...options);
@@ -199,14 +207,12 @@ if(process.env.FIXTURE_MSIX_REDIRECT==='1')fs.realpathSync.native=(path,...optio
 childProcess.execFileSync = (file, args, options) => {
   assert.equal(options.windowsHide, true, 'Native background helper allocated a console');
   if (file.endsWith('csc.exe')) {
-    writeFileSync(args.find(arg => arg.startsWith('/out:')).slice(5), 'synthetic launcher');
-    assert(args.includes('/target:winexe'));
-    return '';
+    assert.fail('Compiler must stay inside the Native preparation lease');
   }
   if (file.endsWith('private-state.exe')) return 'PRIVATE_STATE_OK';
   if (args.some(arg => arg.endsWith('private-state.ps1'))) {
     const action=args[args.indexOf('-Action')+1],path=args[args.indexOf('-Path')+1];
-    assert(['protect','protect-file','check','create-directory','create-file','publish-native','bootstrap-native'].includes(action));
+    assert(['protect','protect-file','check','create-directory','create-file','prepare-native','bootstrap-native'].includes(action));
     if(action==='bootstrap-native')for(const flag of ['-BinaryPath','-PhysicalPath']){
       const binary=args[args.indexOf(flag)+1],inside=relative(${JSON.stringify(directory)},binary);
       assert(binary&&inside!=='..'&&!inside.startsWith('..'+sep),'Binary bootstrap escaped fixture root');
@@ -214,14 +220,18 @@ childProcess.execFileSync = (file, args, options) => {
     }
     const contained=relative(${JSON.stringify(directory)},path);
     assert(contained!=='..'&&!contained.startsWith('..'+sep),'Bootstrap escaped fixture root');
+    if(action==='prepare-native'){
+      const name=args[args.indexOf('-NativeName')+1],budget=Number(args[args.indexOf('-BudgetMs')+1]);
+      assert(['private-state','trace-state','host-launcher'].includes(name));
+      assert(budget>0&&budget<=options.timeout&&budget<=30000);
+      fs.mkdirSync(path,{recursive:true,mode:0o700});
+      const target=join(path,name+'.exe');
+      fs.writeFileSync(target,'synthetic launcher',{flag:'wx',mode:0o600});
+      const created=fs.lstatSync(target,{bigint:true});
+      return 'PRIVATE_STATE_NATIVE_READY:'+created.dev.toString(16).padStart(8,'0')+':'+created.ino.toString(16).padStart(16,'0');
+    }
     if(action==='create-directory')fs.mkdirSync(path,{recursive:true,mode:0o700});
     if(action==='create-file')fs.closeSync(fs.openSync(path,'wx',0o600));
-    if(action==='publish-native'){
-      const target=args[args.indexOf('-BinaryPath')+1],inside=relative(${JSON.stringify(directory)},target);
-      assert(target&&inside!=='..'&&!inside.startsWith('..'+sep),'Publication escaped fixture root');
-      assert(!fs.existsSync(target),'Publication cannot replace another helper');
-      fs.renameSync(path,target);
-    }
     return 'PRIVATE_STATE_OK';
   }
   if (args.includes('inspect')) return ${JSON.stringify(JSON.stringify(identity))};

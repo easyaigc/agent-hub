@@ -46,7 +46,7 @@ try {
     if (packaged && typeof path === 'string' && path.startsWith(logicalRoot + sep)) {
       const physical = join(physicalRoot, relative(logicalRoot, path));
       fs.mkdirSync(dirname(physical), { recursive: true });
-      fs.copyFileSync(path, physical);
+      if (!fs.existsSync(physical)) fs.linkSync(path, physical);
       return native(physical, ...options);
     }
     return native(path, ...options);
@@ -54,29 +54,38 @@ try {
   childProcess.execFileSync = (file, args, options) => {
     assert.equal(options.windowsHide, true);
     if (file.endsWith('csc.exe')) {
-      assert(args.includes('/target:winexe'), 'Only the launcher is compiled in this fixture');
-      assert(args.at(-1).endsWith('host-launcher.cs'));
-      compilerOutput = args.find((a) => a.startsWith('/out:')).slice(5);
-      assert(fs.existsSync(compilerOutput), 'Compiler output must be reserved first');
-      if (compilerFailure === 'replace')
-        fs.renameSync(compilerOutput, compilerOutput + '.original');
-      fs.writeFileSync(compilerOutput, 'synthetic helper');
-      if (compilerFailure === 'throw')
-        throw Object.assign(Error('synthetic compiler failure'), { status: 1 });
-      return '';
+      assert.fail('Compiler must stay inside the Native preparation lease');
     }
     assert(file.endsWith('powershell.exe'), 'Unexpected native executable in synthetic fixture');
     assert(args[args.indexOf('-File') + 1].endsWith('private-state.ps1'));
     const action = args[args.indexOf('-Action') + 1];
     const path = args[args.indexOf('-Path') + 1];
     bootstrapProcesses++;
+    if (action === 'prepare-native') {
+      assert.equal(args[args.indexOf('-NativeName') + 1], 'host-launcher');
+      const budget = Number(args[args.indexOf('-BudgetMs') + 1]);
+      assert(budget > 0 && budget <= options.timeout && budget <= 30000);
+      fs.mkdirSync(path, { recursive: true, mode: 0o700 });
+      compilerOutput = join(path, 'host-launcher.exe');
+      fs.writeFileSync(compilerOutput, 'synthetic helper', { flag: 'wx', mode: 0o600 });
+      const created = fs.lstatSync(compilerOutput, { bigint: true });
+      if (compilerFailure === 'throw') {
+        fs.unlinkSync(compilerOutput);
+        throw Object.assign(Error('synthetic compiler failure'), { status: 1 });
+      }
+      if (compilerFailure === 'replace') {
+        fs.renameSync(compilerOutput, compilerOutput + '.original');
+        fs.writeFileSync(compilerOutput, 'synthetic helper');
+      }
+      return (
+        'PRIVATE_STATE_NATIVE_READY:' +
+        created.dev.toString(16).padStart(8, '0') +
+        ':' +
+        created.ino.toString(16).padStart(16, '0')
+      );
+    }
     if (action === 'create-directory') fs.mkdirSync(path, { recursive: true, mode: 0o700 });
     if (action === 'create-file') fs.closeSync(fs.openSync(path, 'wx', 0o600));
-    if (action === 'publish-native') {
-      const target = args[args.indexOf('-BinaryPath') + 1];
-      assert(!fs.existsSync(target), 'Synthetic publication must not replace an existing helper');
-      fs.renameSync(path, target);
-    }
     if (action === 'check') bootstrapChecks.push(path);
     if (action === 'bootstrap-native') {
       if (rejectBootstrap)
@@ -198,7 +207,9 @@ try {
     assert.throws(
       () => candidate.windowsHostLauncherExecutable(),
       (error) =>
-        failure === 'throw' ? error.status === 1 : error.code === 'WINDOWS_NATIVE_OUTPUT_CHANGED',
+        failure === 'throw'
+          ? error.code === 'WINDOWS_HELPER_FAILED' && error.cause?.status === 1
+          : error.code === 'WINDOWS_NATIVE_OUTPUT_CHANGED',
     );
     assert.equal(
       fs.existsSync(compilerOutput),

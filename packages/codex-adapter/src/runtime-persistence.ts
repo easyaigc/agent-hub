@@ -140,7 +140,14 @@ export class RuntimePersistence<State extends RuntimeState> {
       (!Number.isFinite(options.cooldownMs) || options.cooldownMs < 1)
     )
       throw new Error('Invalid persistence cooldown');
-    this.historyDirectory = join(directory, 'runtime-history-v1');
+    // Windows v1 caches may have the token's Administrators default owner.
+    // Keep their bytes/owner untouched; rebuild replaceable history only through
+    // the ordinary read-only source into a new User-owned namespace. Command
+    // receipts/writer leases remain at their original paths.
+    this.historyDirectory = join(
+      directory,
+      process.platform === 'win32' ? 'runtime-history-v2' : 'runtime-history-v1',
+    );
     this.writerFile = join(directory, 'reply-writer-v2.json');
     makePrivateDirectorySync(this.historyDirectory);
   }

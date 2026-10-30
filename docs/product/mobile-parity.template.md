@@ -1,5 +1,7 @@
 # iOS / Android 功能与一致性清单
 
+2026-10-30 F03／F69：既有 Windows v1 阅读缓存保留 owner 与内容，启用可重建 v2；Native 创建租约衔接 Node FD，释放确认未知不截断。编译产物由保留句柄发布。R2 与 main 尚未统一，旧 owner 包禁止覆盖已部署 R2；本机辅助不替代 Windows Native／真实更新。双端 UI 不变，A6 暂停。见[专项记录](../acceptance/codex-update-resilience-20261030.md)。
+
 2026-10-30 F02／F03／F69：Windows 私有 helper 初始化已定位为高权限 token 默认 Owner 与 User 不同。创建时显式指定 User 与受保护 DACL，既有 owner 严格拒绝，编译和私有原子写同源处理，退出状态保留 DWORD／0／未知。双端共用 Host，原生页面不变，Windows Native、reader 与真实更新待来源独立验收，macOS 辅助不代验，A6 保持暂停。见[专项记录](../acceptance/codex-update-resilience-20261030.md)。
 
 2026-10-29 F64／UI06／UI21 重试样式修订：iOS 失败态右侧仅显示 arrow.clockwise 图标，使用与左侧 × 一致的 17pt 图标、44pt 触控区和浅色圆形底；不显示“重试转写”文字，保留同名无障碍标签与原操作重试。主输入与问题回复共用，Android 现有图标操作不受影响；本次验收单列于[专项记录](../acceptance/voice-interaction-20261029.md)。

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -75,7 +76,7 @@ internal static class PrivateState
             if (parts.Length != 4 || !Int32.TryParse(parts[0], out id) || id <= 0 ||
                 previous == Int32.MaxValue || id != previous + 1 || parts[0] != id.ToString() ||
                 (parts[1] != "protect" && parts[1] != "protect-file" && parts[1] != "check" &&
-                 parts[1] != "create-directory" && parts[1] != "create-file"))
+                 parts[1] != "create-directory" && parts[1] != "create-file" && parts[1] != "release-file"))
                 throw new ArgumentException();
             lock (Gate)
             {
@@ -91,8 +92,8 @@ internal static class PrivateState
                     string path = DecodePath(parts[2]), cwd = DecodePath(parts[3]);
                     // Relative paths retain the caller's current working directory.
                     Environment.CurrentDirectory = cwd;
-                    Execute(parts[1], path);
-                    response = "PRIVATE_STATE_OK";
+                    if (parts[1] == "create-file") response = CodexManagePrivateStateSecurity.CreatePrivateFileReceipt(path);
+                    else { Execute(parts[1], path); response = "PRIVATE_STATE_OK"; }
                 }
                 catch (Exception error)
                 {
@@ -118,8 +119,8 @@ internal static class PrivateState
         {
             if (args.Length == 1 && args[0] == "serve") return Serve();
             if (args.Length != 2) throw new ArgumentException();
-            Execute(args[0], args[1]);
-            Console.Out.WriteLine("PRIVATE_STATE_OK");
+            if (args[0] == "create-file") Console.Out.WriteLine(CodexManagePrivateStateSecurity.CreatePrivateFileReceipt(args[1]));
+            else { Execute(args[0], args[1]); Console.Out.WriteLine("PRIVATE_STATE_OK"); }
             return 0;
         }
         catch (Exception error)
@@ -132,7 +133,7 @@ internal static class PrivateState
 
 // Loaded by the bootstrap PowerShell script and compiled into the native worker.
 // No privilege adjustment, owner takeover or SACL read/write is performed.
-public static class CodexManagePrivateStateSecurity
+public static partial class CodexManagePrivateStateSecurity
 {
     private const uint ReadControl = 0x00020000, WriteDac = 0x00040000;
     private const uint OwnerInformation = 1, DaclInformation = 4;
@@ -217,38 +218,78 @@ public static class CodexManagePrivateStateSecurity
     }
     private sealed class PrivateStateAlreadyExistsException : IOException { }
 
-    private static void CreatePrivateFile(string path)
+    private static string FileIdentity(SafeFileHandle file)
     {
-        // Content is created only inside an already checked private directory.
-        // Never make a namespace supplied by a caller permission authority.
+        FileInformation info;
+        if (!GetFileInformationByHandle(file, out info)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if ((info.Attributes & (uint)(FileAttributes.ReparsePoint | FileAttributes.Directory)) != 0)
+            throw new IOException();
+        ulong index = ((ulong)info.IndexHigh << 32) | info.IndexLow;
+        return info.Volume.ToString("x8", System.Globalization.CultureInfo.InvariantCulture) + ":" +
+            index.ToString("x16", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static SafeFileHandle CreatePrivateFileHandle(string path, bool rename = false)
+    {
+        path = FullPath(path);
         Execute("check", Path.GetDirectoryName(path));
         GCHandle pinned = GCHandle.Alloc(NewDescriptor(false), GCHandleType.Pinned);
+        SafeFileHandle file = null;
         try
         {
             var security = new SecurityAttributes { Length = Marshal.SizeOf(typeof(SecurityAttributes)),
                 Descriptor = pinned.AddrOfPinnedObject(), Inherit = false };
-            // CREATE_NEW: an existing file (including an Administrator-owned one)
-            // is never adopted, truncated, or given a different owner.
-            using (SafeFileHandle file = CreateOwnedFile(path, 0x40000000u | ReadControl | 0x80u,
-                7, ref security, 1, 0x00200000u, IntPtr.Zero))
-            {
-                if (file.IsInvalid) {
-                    int error = Marshal.GetLastWin32Error();
-                    if (error == 80 || error == 183) throw new PrivateStateAlreadyExistsException();
-                    throw new Win32Exception(error);
-                }
-                RawSecurityDescriptor created = ReadSecurity(file);
-                SecurityIdentifier user;
-                using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) user = identity.User;
-                CheckOwner(created, user);
-                CheckAccess(created, new[] { user.Value, "S-1-5-18", "S-1-5-32-544" });
-                if ((created.ControlFlags & ControlFlags.DiscretionaryAclProtected) == 0)
-                    throw new UnauthorizedAccessException("UNPROTECTED_PRIVATE_DACL");
+            // Retain a no-delete-share handle whenever the caller needs a lease.
+            file = CreateOwnedFile(path, ReadControl | 0x80u | (rename ? 0x40000000u | 0x00010000u : 0u),
+                3, ref security, 1, 0x00200000u, IntPtr.Zero);
+            if (file.IsInvalid) {
+                int error = Marshal.GetLastWin32Error();
+                if (error == 80 || error == 183) throw new PrivateStateAlreadyExistsException();
+                throw new Win32Exception(error);
             }
-            Execute("check", path);
+            RawSecurityDescriptor created = ReadSecurity(file);
+            SecurityIdentifier user;
+            using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) user = identity.User;
+            CheckOwner(created, user);
+            CheckAccess(created, new[] { user.Value, "S-1-5-18", "S-1-5-32-544" });
+            if ((created.ControlFlags & ControlFlags.DiscretionaryAclProtected) == 0)
+                throw new UnauthorizedAccessException("UNPROTECTED_PRIVATE_DACL");
+            FileIdentity(file); // Prove type and identity through this very handle.
+            return file;
         }
+        catch { if (file != null) file.Dispose(); throw; }
         finally { pinned.Free(); }
     }
+
+    private static readonly Dictionary<string, SafeFileHandle> CreationLeases = new Dictionary<string, SafeFileHandle>();
+    public static string CreatePrivateFileReceipt(string path)
+    {
+        // Keep A alive and prohibit delete/rename until Node has opened its FD.
+        // Bounded leases are channel-local and disappear with native EOF/exit.
+        lock (CreationLeases)
+        {
+            if (CreationLeases.Count >= 64) throw new IOException();
+            SafeFileHandle file = CreatePrivateFileHandle(path);
+            try {
+                string identity = FileIdentity(file), token = Guid.NewGuid().ToString("N");
+                CreationLeases.Add(token, file);
+                return "PRIVATE_STATE_CREATED:" + token + ":" + identity;
+            }
+            catch { file.Dispose(); throw; }
+        }
+    }
+    private static void ReleasePrivateFile(string token)
+    {
+        Guid parsed;
+        if (token == null || token.Length != 32 || !Guid.TryParseExact(token, "N", out parsed)) throw new ArgumentException();
+        lock (CreationLeases) {
+            SafeFileHandle file;
+            if (!CreationLeases.TryGetValue(token, out file)) throw new UnauthorizedAccessException();
+            CreationLeases.Remove(token);
+            file.Dispose();
+        }
+    }
+    private static void CreatePrivateFile(string path) { CreatePrivateFileReceipt(path); }
 
     static CodexManagePrivateStateSecurity()
     {
@@ -321,6 +362,7 @@ public static class CodexManagePrivateStateSecurity
 
     public static void Execute(string action, string requestedPath)
     {
+        if (action == "release-file") { ReleasePrivateFile(requestedPath); return; }
         if (action == "create-directory") { EnsureDirectory(FullPath(requestedPath), true); return; }
         if (action == "create-file") { CreatePrivateFile(FullPath(requestedPath)); return; }
         if (action != "protect" && action != "protect-file" && action != "check")

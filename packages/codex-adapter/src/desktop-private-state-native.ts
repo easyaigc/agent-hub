@@ -17,8 +17,25 @@ import {
   registerWindowsProcessWorker,
 } from './windows-process.js';
 
+export interface WindowsPrivateFileIdentity {
+  volume: string;
+  fileId: string;
+  reservation?: string;
+}
+export function parseWindowsPrivateFileIdentity(
+  value: string,
+  prefix: 'PRIVATE_STATE_CREATED' | 'PRIVATE_STATE_NATIVE_READY' = 'PRIVATE_STATE_CREATED',
+): WindowsPrivateFileIdentity | undefined {
+  if (prefix === 'PRIVATE_STATE_CREATED') {
+    const match = /^PRIVATE_STATE_CREATED:([a-f0-9]{32}):([a-f0-9]{8}):([a-f0-9]{16})$/.exec(value);
+    return match ? { reservation: match[1]!, volume: match[2]!, fileId: match[3]! } : undefined;
+  }
+  const match = /^PRIVATE_STATE_NATIVE_READY:([a-f0-9]{8}):([a-f0-9]{16})$/.exec(value);
+  return match ? { volume: match[1]!, fileId: match[2]! } : undefined;
+}
+
 export type WindowsPrivateStateAction =
-  'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file';
+  'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file' | 'release-file';
 // Separate from the permission response: diagnostic data never authorizes a call.
 export const privateStateNativeDiagnostics = Object.freeze({
   words: 8,
@@ -745,11 +762,22 @@ export function createWindowsPrivateStateBackend(
   function* operation(
     action: WindowsPrivateStateAction,
     path: string,
-  ): Generator<{ index: number; expected: number; timeout: number }, void, void> {
+  ): Generator<
+    { index: number; expected: number; timeout: number },
+    WindowsPrivateFileIdentity | undefined,
+    void
+  > {
     if (
       closed ||
       busy ||
-      !['protect', 'protect-file', 'check', 'create-directory', 'create-file'].includes(action) ||
+      ![
+        'protect',
+        'protect-file',
+        'check',
+        'create-directory',
+        'create-file',
+        'release-file',
+      ].includes(action) ||
       !privateStatePath(path) ||
       !privateStatePath(process.cwd())
     )
@@ -810,7 +838,12 @@ export function createWindowsPrivateStateBackend(
       )
         throw unavailable();
       const response = Buffer.from(bytes.subarray(0, length)).toString('utf8');
-      if (Atomics.load(control, p.result) === p.ok && response === 'PRIVATE_STATE_OK') return;
+      if (Atomics.load(control, p.result) === p.ok) {
+        if (action === 'create-file') {
+          const identity = parseWindowsPrivateFileIdentity(response);
+          if (identity) return identity;
+        } else if (response === 'PRIVATE_STATE_OK') return;
+      }
       if (
         Atomics.load(control, p.result) === p.rejected &&
         /^UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127}$/.exec(response)?.[0] === response
@@ -838,19 +871,27 @@ export function createWindowsPrivateStateBackend(
         pid: Atomics.load(control, p.pid),
       };
     },
-    call(action: WindowsPrivateStateAction, path: string): void {
+    call(action: WindowsPrivateStateAction, path: string): WindowsPrivateFileIdentity | undefined {
       waitKind = 'sync';
-      for (const wait of operation(action, path)) {
+      const iterator = operation(action, path);
+      let next = iterator.next();
+      while (!next.done) {
+        const wait = next.value;
         const before = performance.now();
         Atomics.wait(control, wait.index, wait.expected, wait.timeout);
         waitMs += performance.now() - before;
+        next = iterator.next();
       }
+      return next.value;
     },
-    async callAsync(action: WindowsPrivateStateAction, path: string): Promise<void> {
+    async callAsync(
+      action: WindowsPrivateStateAction,
+      path: string,
+    ): Promise<WindowsPrivateFileIdentity | undefined> {
       waitKind = 'async';
       const iterator = operation(action, path);
       let next = iterator.next();
-      if (next.done) return;
+      if (next.done) return next.value;
       worker.ref();
       try {
         while (!next.done) {
@@ -864,8 +905,9 @@ export function createWindowsPrivateStateBackend(
           waitMs += performance.now() - before;
           next = iterator.next();
         }
+        return next.value;
       } finally {
-        iterator.return();
+        iterator.return(undefined);
         worker.unref();
       }
     },

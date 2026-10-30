@@ -1,6 +1,6 @@
 import { diagnosticEvent } from './diagnostic-events.js';
 import { execFileSync, spawn } from 'node:child_process';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import {
   closeSync,
   constants,
@@ -16,7 +16,6 @@ import {
   readdirSync,
   realpathSync,
   renameSync,
-  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -24,10 +23,12 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { lstat, open as openFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { Duplex } from 'node:stream';
-import { isMainThread, threadId } from 'node:worker_threads';
+import { isMainThread } from 'node:worker_threads';
 import {
   createWindowsPrivateStateBackend,
   type PrivateStateNativeStage,
+  type WindowsPrivateFileIdentity,
+  parseWindowsPrivateFileIdentity,
 } from './desktop-private-state-native.js';
 import { withWindowsProcessCreation } from './windows-process.js';
 import type { TraceSnapshotItem, TraceSnapshotValue } from './desktop-trace-native.js';
@@ -69,13 +70,17 @@ function windowsPowerShellSync(args: string[], active?: () => boolean): string {
       30_000,
       (timeout) => {
         if (active && !active()) throw new Error('Native owner closed before bootstrap');
-        return execFileSync(powershell(), args, {
-          encoding: 'utf8',
-          stdio: 'pipe',
-          timeout,
-          windowsHide: true,
-          env: windowsPowerShellEnvironment(),
-        });
+        return execFileSync(
+          powershell(),
+          args.includes('prepare-native') ? [...args, '-BudgetMs', String(timeout)] : args,
+          {
+            encoding: 'utf8',
+            stdio: 'pipe',
+            timeout,
+            windowsHide: true,
+            env: windowsPowerShellEnvironment(),
+          },
+        );
       },
       active,
     );
@@ -129,97 +134,45 @@ function windowsPrivateStateExecutable(
   const source = windowsHelper(name + '.cs');
   const sources = name === 'trace-state' ? [source, windowsHelper('trace-process.cs')] : [source];
   const hash = createHash('sha256');
-  for (const path of sources) hash.update(readFileSync(path));
-  // Cache identity includes the creation policy for every native helper.
-  if (name !== 'private-state') hash.update(readFileSync(windowsHelper('private-state.cs')));
+  for (const path of new Set([
+    ...sources,
+    windowsHelper('private-state.cs'),
+    windowsHelper('private-state-compilation.cs'),
+  ]))
+    hash.update(readFileSync(path));
   const digest = hash.digest('hex');
   const directory = join(process.env.LOCALAPPDATA, 'CodexManage/native-helpers', digest);
   observeStage?.('directory');
   // Bootstrap is performed once per helper isolate. Per-snapshot writes then
   // use the same fixed native ACL implementation without starting PowerShell.
-  const bootstrap = (action: string, path: string, binaryPath?: string) =>
-    windowsPowerShellSync(
+  const executable = join(directory, name + '.exe');
+  let compiledIdentity: WindowsPrivateFileIdentity | undefined;
+  if (!existsSync(executable)) {
+    observeStage?.('compile');
+    // Creation, csc and publication retain the same Native handle lease.
+    // Parent timeout and owned compiler-job exit remain inside the original gate.
+    const ready = windowsPowerShellSync(
       [
         '-NoProfile',
         '-NonInteractive',
         '-File',
         windowsHelper('private-state.ps1'),
         '-Action',
-        action,
+        'prepare-native',
+        '-NativeName',
+        name,
         '-Path',
-        path,
-        ...(binaryPath ? ['-BinaryPath', binaryPath] : []),
+        directory,
       ],
       active,
+    ).trim();
+    compiledIdentity = parseWindowsPrivateFileIdentity(ready, 'PRIVATE_STATE_NATIVE_READY');
+    if (!compiledIdentity) throw new Error('Native compiler identity receipt missing');
+    assertCreatedIdentity(
+      lstatSync(executable, { bigint: true }),
+      compiledIdentity,
+      'WINDOWS_NATIVE_OUTPUT_CHANGED',
     );
-  const executable = join(directory, name + '.exe');
-  if (!existsSync(executable)) {
-    observeStage?.('protect-directory');
-    bootstrap('create-directory', directory);
-    observeStage?.('compiler');
-    const system = process.env.SystemRoot ?? 'C:\\Windows';
-    const compiler = ['Framework64', 'Framework']
-      .map((name) => join(system, 'Microsoft.NET', name, 'v4.0.30319/csc.exe'))
-      .find((path) => existsSync(path));
-    if (!compiler) throw new Error('Installed Windows .NET Framework compiler missing');
-    const temporary =
-      executable + '.' + process.pid + '.' + threadId + '.' + randomUUID() + '.tmp.exe';
-    bootstrap('create-file', temporary);
-    const reserved = lstatSync(temporary, { bigint: true });
-    try {
-      observeStage?.('compile');
-      withWindowsProcessCreation(
-        30_000,
-        (timeout) => {
-          if (active && !active()) throw new Error('Native owner closed before compilation');
-          return execFileSync(
-            compiler,
-            [
-              '/nologo',
-              '/target:' + (name === 'host-launcher' ? 'winexe' : 'exe'),
-              '/optimize+',
-              ...(name === 'host-launcher' ? [] : ['/r:System.Web.Extensions.dll']),
-              '/out:' + temporary,
-              ...sources,
-            ],
-            {
-              stdio: 'pipe',
-              timeout,
-              windowsHide: true,
-            },
-          );
-        },
-        active,
-      );
-      const compiled = lstatSync(temporary, { bigint: true });
-      if (
-        !compiled.isFile() ||
-        compiled.isSymbolicLink() ||
-        compiled.size <= 0n ||
-        compiled.dev !== reserved.dev ||
-        compiled.ino !== reserved.ino
-      )
-        throw Object.assign(new Error('Native compiler replaced its reserved output'), {
-          code: 'WINDOWS_NATIVE_OUTPUT_CHANGED',
-        });
-      observeStage?.('protect-binary');
-      bootstrap('protect-file', temporary);
-      observeStage?.('publish-binary');
-      bootstrap('publish-native', temporary, executable);
-    } finally {
-      // Remove only this attempt's original reservation, including a failed
-      // compiler. Replaced/unknown outputs remain untouched for diagnosis.
-      if (existsSync(temporary)) {
-        const unused = lstatSync(temporary, { bigint: true });
-        if (
-          unused.isFile() &&
-          !unused.isSymbolicLink() &&
-          unused.dev === reserved.dev &&
-          unused.ino === reserved.ino
-        )
-          rmSync(temporary);
-      }
-    }
   }
   // Resolve the actual executable for callers outside an MSIX virtual view.
   // The logical and physical files both retain the original private ACL check.
@@ -227,6 +180,12 @@ function windowsPrivateStateExecutable(
   const physical = realpathSync.native(executable);
   if (basename(physical).toLowerCase() !== name + '.exe' || basename(dirname(physical)) !== digest)
     throw new Error('Unsafe Windows native helper path');
+  if (compiledIdentity)
+    assertCreatedIdentity(
+      lstatSync(physical, { bigint: true }),
+      compiledIdentity,
+      'WINDOWS_NATIVE_OUTPUT_CHANGED',
+    );
   // Every isolate still protects/checks the directory, logical binary and
   // physical binary freshly. Batch the fixed operations to avoid paying three
   // PowerShell process startups for a previously compiled native helper.
@@ -272,14 +231,15 @@ let privateStateAsyncQueue: Promise<void> = Promise.resolve();
 let privateStateAsyncGeneration = 0;
 let privateStateQueued = 0;
 function privateState(
-  action: 'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file',
+  action:
+    'protect' | 'protect-file' | 'check' | 'create-directory' | 'create-file' | 'release-file',
   path: string,
-): void {
+): WindowsPrivateFileIdentity | undefined {
   // A later independent call may create a new channel only after confirmed child exit.
   // Never retry this call, including when its operation may already have executed.
   if (privateStateBackend?.status.gone) privateStateBackend = undefined;
   privateStateBackend ??= createWindowsPrivateStateBackend();
-  privateStateBackend.call(action, path);
+  return privateStateBackend.call(action, path);
 }
 export function closeWindowsPrivateStateBackend(): void {
   privateStateAsyncGeneration++;
@@ -344,6 +304,25 @@ export function makePrivateDirectorySync(path: string): void {
   else mkdirSync(path, { recursive: true, mode: 0o700 });
 }
 
+function assertCreatedIdentity(
+  stat: { dev: bigint; ino: bigint; isFile(): boolean },
+  created: WindowsPrivateFileIdentity,
+  code?: string,
+): void {
+  if (
+    !stat.isFile() ||
+    stat.dev !== BigInt('0x' + created.volume) ||
+    stat.ino !== BigInt('0x' + created.fileId)
+  )
+    throw Object.assign(new Error('Native-created private output identity changed'), { code });
+}
+function requireCreatedIdentity(
+  value: WindowsPrivateFileIdentity | undefined,
+): WindowsPrivateFileIdentity {
+  if (!value?.reservation) throw new Error('Native creation identity receipt missing');
+  return value;
+}
+
 function privateWriteFlags(flag: string): { exclusive: boolean; open: number } {
   if (!['w', 'wx', 'a', 'ax'].includes(flag)) throw new Error('Unsupported private write flag');
   return {
@@ -376,29 +355,46 @@ export function openPrivateFileSync(
 ): number {
   if (process.platform !== 'win32') return openSync(path, flag, mode);
   const flags = privateWriteFlags(flag);
+  let created: WindowsPrivateFileIdentity | undefined;
   if (!existingPrivateOutput(path, flags.exclusive)) {
     try {
-      privateState('create-file', path);
+      created = requireCreatedIdentity(privateState('create-file', path));
     } catch (error) {
       privateCreationFailure(error);
     }
   }
   // No O_CREAT: deletion after the native reservation must fail, not create an
   // Administrator-owned replacement. Existing objects were checked before write.
-  const expected = lstatSync(path, { bigint: true });
-  const file = openSync(path, flags.open, mode);
+  const expected = created ? undefined : lstatSync(path, { bigint: true });
+  let file: number | undefined;
   try {
+    file = openSync(path, flags.open, mode);
     const actual = fstatSync(file, { bigint: true });
-    if (!actual.isFile() || actual.dev !== expected.dev || actual.ino !== expected.ino)
+    if (created) assertCreatedIdentity(actual, created);
+    else if (!actual.isFile() || actual.dev !== expected!.dev || actual.ino !== expected!.ino)
       throw new Error('Private output identity changed before open');
     assertPrivateFile(path);
     const current = lstatSync(path, { bigint: true });
     if (current.dev !== actual.dev || current.ino !== actual.ino)
       throw new Error('Private output identity changed during check');
+    // A release ACK proves the same native channel retained A until this FD
+    // was opened/verified. Lost/unknown lease never permits truncation.
+    if (created) {
+      const lease = created;
+      created = undefined;
+      privateState('release-file', lease.reservation!);
+    }
     if (!flag.startsWith('a')) ftruncateSync(file, 0);
     return file;
   } catch (error) {
-    closeSync(file);
+    if (file !== undefined) closeSync(file);
+    if (created) {
+      try {
+        privateState('release-file', created.reservation!);
+      } catch {
+        /* close/EOF retires the lease */
+      }
+    }
     throw error;
   }
 }
@@ -410,31 +406,46 @@ export async function openPrivateFile(
   if (process.platform !== 'win32') return openFile(path, flag, mode ?? undefined);
   const flags = privateWriteFlags(flag);
   // Keep the asynchronous private channel; do not block the Host event loop.
+  let created: WindowsPrivateFileIdentity | undefined;
   if (existsSync(path)) {
     if (flags.exclusive)
       throw Object.assign(new Error('Private output already exists'), { code: 'EEXIST' });
     await assertPrivateFileAsync(path);
   } else {
     try {
-      await privateStateAsync('create-file', path);
+      created = requireCreatedIdentity(await privateStateAsync('create-file', path));
     } catch (error) {
       privateCreationFailure(error);
     }
   }
-  const expected = await lstat(path, { bigint: true });
-  const file = await openFile(path, flags.open, mode ?? undefined);
+  const expected = created ? undefined : await lstat(path, { bigint: true });
+  let file: Awaited<ReturnType<typeof openFile>> | undefined;
   try {
+    file = await openFile(path, flags.open, mode ?? undefined);
     const actual = await file.stat({ bigint: true });
-    if (!actual.isFile() || actual.dev !== expected.dev || actual.ino !== expected.ino)
+    if (created) assertCreatedIdentity(actual, created);
+    else if (!actual.isFile() || actual.dev !== expected!.dev || actual.ino !== expected!.ino)
       throw new Error('Private output identity changed before open');
     await assertPrivateFileAsync(path);
     const current = await lstat(path, { bigint: true });
     if (current.dev !== actual.dev || current.ino !== actual.ino)
       throw new Error('Private output identity changed during check');
+    if (created) {
+      const lease = created;
+      created = undefined;
+      await privateStateAsync('release-file', lease.reservation!);
+    }
     if (!flag.startsWith('a')) await file.truncate(0);
     return file;
   } catch (error) {
-    await file.close();
+    await file?.close();
+    if (created) {
+      try {
+        await privateStateAsync('release-file', created.reservation!);
+      } catch {
+        /* close/EOF retires the lease */
+      }
+    }
     throw error;
   }
 }
@@ -466,14 +477,14 @@ export function renamePrivateFileSync(source: string, target: string): void {
 
 /** Independent channel: explicit synchronous barriers never share its in-flight slot. */
 export function protectWindowsStateFileAsync(path: string): Promise<void> {
-  return privateStateAsync('protect-file', path);
+  return privateStateAsync('protect-file', path).then(() => undefined);
 }
 
 function privateStateAsync(
-  action: 'protect-file' | 'check' | 'create-file',
+  action: 'protect-file' | 'check' | 'create-file' | 'release-file',
   path: string,
-): Promise<void> {
-  if (process.platform !== 'win32') return Promise.resolve();
+): Promise<WindowsPrivateFileIdentity | undefined> {
+  if (process.platform !== 'win32') return Promise.resolve(undefined);
   const generation = privateStateAsyncGeneration;
   const queuedAt = performance.now();
   privateStateQueued++;
@@ -490,15 +501,18 @@ function privateStateAsync(
       });
     if (privateStateAsyncBackend?.status.gone) privateStateAsyncBackend = undefined;
     privateStateAsyncBackend ??= createWindowsPrivateStateBackend();
-    await privateStateAsyncBackend.callAsync(action, path);
+    return await privateStateAsyncBackend.callAsync(action, path);
   });
   privateStateAsyncQueue = call
     .finally(() => {
       privateStateQueued--;
     })
-    .catch(() => {
-      // A later independent operation may proceed; this caller still receives its rejection.
-    });
+    .then(
+      () => undefined,
+      () => {
+        // A later independent operation may proceed; this caller still receives its rejection.
+      },
+    );
   return call;
 }
 

@@ -77,3 +77,15 @@ macOS 的实际同步等待、owning Worker 经 Main 转发、缺失原生程序
 受影响回归结果与统一制品摘要登记在交付清单。macOS 的传输、合成权限和 HTTP 夹具均为辅助，Windows Native 分支跳过不计通过。来源机已确认上一环境修复夹具一次通过；本轮改动只在输入完全匹配时复用证据。正式 Windows Host 尚未替换，真实 Native 初始化、原桌面不变的独立 reader 恢复和实际更新窗口仍由来源机分别验收。iOS／Android 共用 Host，原生页面和协议不变，Android 未新增通过；A6 保持暂停。
 
 本轮准备提交时主线已合入 PR #70（`c99684ba916aaf9e766904cb15165de28a46551b`）。它仅增加 Android 迁移/验收源码、共享文档及 Trace 夹具观测，Host/Adapter/Protocol 和锁文件未变。按功能 ID、变更 ID 保留双方 manifest 与文档；完整分发仅精确登记已合并的三项 Java 源码，增加逐项字节保留断言，未知 Java 继续拒绝。没有实现或验收新的 Android 功能。先前未发布候选包保留为中间证据，正式包必须绑定集成后的实际提交树重新冻结。
+
+## 既有 Windows 布局、创建租约与 R2 部署门禁
+
+来源已部署 R2：规范提交 `3ff706b0d29d26a92dd0a14d8c09b8f452377e06`，公开 tag `host-connect-20261030-native-results-r2`，`native-result-worker-fix.zip` SHA-256 `8c8e46f5da5979d6e0b3772aa6cd38dcc79e658c28b6665011600413848ccfd8`。其五个实际运行组件与来源部署相符。该提交和 PR #72 合并主线 `1f58e204d68c6f68f0642004457085f7b195bd0e` 不互为祖先；普通试合并的 48 个冲突已撤回，没有宣称 R2 已合入 main。此前 `host-connect-native-owner-20261030` 包缺少 R2 的 Native 建议存储及 Trace 保留组件，不能覆盖当前部署。相邻任务仍有活跃开发，不能把它的工作区或后续 R4/R5 候选当成本任务冻结输入。
+
+安全兼容使用新的 Windows `runtime-history-v2` 可重建缓存目录。已有 v1 目录、内容和 owner 原样保留，不读取、接管或修改其权限；主状态、命令账本、草稿和未知回执位置不变。缺少的阅读缓存由原有只读读取重建；离线期间旧 v1 缓存不会自动导入。macOS 继续使用 v1。此处不将任意 Administrators 对象纳入可信私有状态。
+
+`create-file` 的 Native 响应包含实际 CREATE_NEW 句柄的 volume/file ID 和单通道租约。该 metadata 句柄拒绝 DELETE sharing，在 Node 打开并核对 FD 后，必须由原通道确认释放租约，才能截断。首次 Node stat 不再建立新建对象的身份；丢失或未知的释放确认会关闭 Node FD 并失败，不能继续截断或重试。编译也移入固定 Native 准备动作：A 的 metadata 租约持续覆盖 csc，确认自有 job 退出后，从保留的 A READ 句柄复制到独立 CREATE_NEW 的 B，再由 B 的创建句柄发布，不按路径重新认领产物。临时文件清理只使用保留／ReOpenFile 的同对象句柄；未知退出或清理失败保留准确私有记录，不据历史 ID 删除路径。30 秒外层预算、严格既有 owner/DACL、不可覆盖发布和退出屏障保持。
+
+本机回归分别记录创建后替换 B、释放确认未知、旧布局启动及合成 MSIX/服务启动；其中权限传输和 Windows 身份为夹具。Windows 专属 Native 分支未执行不能算通过。固定只读 preflight 现核对八项资源，包含 `private-state-compilation.cs`。现有 `node scripts/windows-private-state-acceptance.mjs` 新增真实旧布局检查：仅在自身隔离目录中复现 Node 默认 owner，比较 v1 的原 SDDL/字节，确认 v2 创建及主状态、草稿、未知回执保持；输出是否实际覆盖了 owner 不同场景。它会修改自己的可丢弃 fixture 与产品自身 helper 缓存，不操作正式配置，不证明 reader 或真实更新恢复。
+
+统一部署的门槛是：R2 已交付运行功能与本次修复在规范仓库完成可审查的集成，核对 Native 建议／Trace／GC／Task Hub 功能及配置保留，再冻结同源新 tag 与实际 ESM 闭包。此前 main-only 包和当前辅助检查都不能解除门禁。来源先隔离执行 Native 前置、上述旧布局验收及原 reader 恢复，再单独决定正式部署；没有真实更新窗口时明确保留未验项。回滚限于同源程序与 Skill，保留身份、证书、授权、主状态、两代缓存和回执，不能用旧包覆盖 R2 功能。

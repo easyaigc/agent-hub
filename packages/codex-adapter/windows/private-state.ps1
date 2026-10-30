@@ -1,5 +1,13 @@
-param([ValidateSet('protect', 'protect-file', 'check', 'create-directory', 'create-file', 'publish-native', 'bootstrap-native')][string]$Action, [Parameter(Mandatory)][string]$Path, [string]$BinaryPath, [string]$PhysicalPath)
+param(
+    [ValidateSet('protect', 'protect-file', 'check', 'create-directory', 'create-file', 'prepare-native', 'bootstrap-native')][string]$Action,
+    [Parameter(Mandatory)][string]$Path,
+    [string]$BinaryPath,
+    [string]$PhysicalPath,
+    [ValidateSet('private-state', 'trace-state', 'host-launcher')][string]$NativeName,
+    [ValidateRange(1, 30000)][int]$BudgetMs = 30000
+)
 $ErrorActionPreference = 'Stop'
+$privateStateElapsed = [Diagnostics.Stopwatch]::StartNew()
 try {
     foreach ($name in @('Microsoft.PowerShell.Security', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.Management')) {
         Import-Module (Join-Path $PSHOME ('Modules\' + $name)) -ErrorAction Stop
@@ -10,29 +18,26 @@ try {
 }
 try {
     $privateStateStage = 'add-type'
-    Add-Type -Path (Join-Path $PSScriptRoot 'private-state.cs')
+    $privateStateSources = @((Join-Path $PSScriptRoot 'private-state.cs'))
+    if ($Action -eq 'prepare-native') {
+        $privateStateSources += (Join-Path $PSScriptRoot 'private-state-compilation.cs')
+    }
+    Add-Type -Path $privateStateSources
     $privateStateStage = 'execute'
+    $privateStateResponse = 'PRIVATE_STATE_OK'
     function Invoke-PrivateState([string]$Operation, [string]$TargetPath) {
         # Share the current-owner private DACL implementation; never request a SACL.
         [CodexManagePrivateStateSecurity]::Execute($Operation, $TargetPath)
     }
-    if ($Action -eq 'publish-native') {
-        if (-not $BinaryPath -or $PhysicalPath) { throw 'BINARY_PATH_REQUIRED' }
-        $source = [IO.Path]::GetFullPath($Path)
-        $target = [IO.Path]::GetFullPath($BinaryPath)
-        $name = [IO.Path]::GetFileName($target)
-        if ($name -notin @('private-state.exe', 'trace-state.exe', 'host-launcher.exe') -or
-            -not [string]::Equals([IO.Path]::GetDirectoryName($source), [IO.Path]::GetDirectoryName($target), [StringComparison]::OrdinalIgnoreCase) -or
-            [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($target)) -notmatch '^[a-f0-9]{64}$' -or
-            [IO.Path]::GetFileName($source) -notmatch ('^' + [regex]::Escape($name) + '\.[0-9]+\.[0-9]+\.[a-f0-9-]{36}\.tmp\.exe$')) { throw 'INVALID_NATIVE_PUBLICATION' }
-        Invoke-PrivateState 'check' $source
-        # File.Move on Framework does not replace an existing destination.
-        try { [IO.File]::Move($source, $target) }
-        catch [IO.IOException] {
-            if (-not [IO.File]::Exists($target)) { throw }
-            Invoke-PrivateState 'check' $target
-        }
-        Invoke-PrivateState 'check' $target
+    if ($Action -ne 'prepare-native' -and ($PSBoundParameters.ContainsKey('NativeName') -or $PSBoundParameters.ContainsKey('BudgetMs'))) { throw 'UNEXPECTED_BINARY_PATH' }
+    if ($Action -eq 'prepare-native') {
+        if ([string]::IsNullOrWhiteSpace($NativeName) -or $BinaryPath -or $PhysicalPath) { throw 'UNEXPECTED_BINARY_PATH' }
+        # Add-Type and imports spend the same outer budget as compilation.
+        # The Node owner still enforces its original, non-renewable deadline.
+        $remaining = [long]$BudgetMs - [long][Math]::Ceiling($privateStateElapsed.Elapsed.TotalMilliseconds)
+        if ($remaining -le 0) { throw [InvalidOperationException]::new() }
+        # Native owns A's metadata lease, the handle-only copy to B and B's publication.
+        $privateStateResponse = [CodexManagePrivateStateSecurity]::PrepareNative($NativeName, $PSScriptRoot, $Path, [int]$remaining)
     } elseif ($Action -eq 'bootstrap-native') {
         if ([string]::IsNullOrWhiteSpace($BinaryPath) -or [string]::IsNullOrWhiteSpace($PhysicalPath)) { throw 'BINARY_PATH_REQUIRED' }
         # Identical checks in one PowerShell process, not cached permission authority.
@@ -41,9 +46,13 @@ try {
         Invoke-PrivateState 'check' $PhysicalPath
     } else {
         if ($BinaryPath -or $PhysicalPath) { throw 'UNEXPECTED_BINARY_PATH' }
-        Invoke-PrivateState $Action $Path
+        if ($Action -eq 'create-file') {
+            $privateStateResponse = [CodexManagePrivateStateSecurity]::CreatePrivateFileReceipt($Path)
+        } else {
+            Invoke-PrivateState $Action $Path
+        }
     }
-    [Console]::Out.WriteLine('PRIVATE_STATE_OK')
+    [Console]::Out.WriteLine($privateStateResponse)
 } catch {
     [Console]::Error.WriteLine('UNSAFE_WINDOWS_PRIVATE_STATE')
     [Console]::Error.WriteLine('WINDOWS_PRIVATE_STATE_BOOTSTRAP:' + $privateStateStage)

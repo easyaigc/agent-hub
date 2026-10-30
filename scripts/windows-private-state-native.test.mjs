@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile, execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
+import { closeSync, existsSync, lstatSync, openSync, readFileSync, renameSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { Agent, createServer, get, globalAgent } from 'node:http';
@@ -194,15 +194,37 @@ syncBuiltinESMExports();\n`,
     options,
     actors,
     activeWorkers: monitor.active,
+    controls: monitor.controls,
     gate,
     gateURL,
     events,
     useNative: configureNative,
-    async platform() {
+    async platform({ replaceAfterCreate = false } = {}) {
       const input = await readFile(join(source, 'desktop-platform.ts'), 'utf8');
-      const output = ts.transpileModule(input, {
+      let output = ts.transpileModule(input, {
         compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
       }).outputText;
+      if (replaceAfterCreate) {
+        await writeFile(
+          join(directory, 'creation-receipt-hook.js'),
+          `
+export * from './desktop-private-state-native.js';
+import {createWindowsPrivateStateBackend as actual} from './desktop-private-state-native.js';
+import {renameSync,writeFileSync} from 'node:fs';
+const replace=(action,path)=>{if(action==='create-file'){renameSync(path,path+'.native-created-A');writeFileSync(path,'preserve-private-B',{flag:'wx',mode:0o600});}};
+export function createWindowsPrivateStateBackend(...args){
+ const backend=actual(...args);
+ return {get status(){return backend.status;},close:()=>backend.close(),
+ call(action,path){const receipt=backend.call(action,path);replace(action,path);return receipt;},
+ async callAsync(action,path){const receipt=await backend.callAsync(action,path);replace(action,path);return receipt;}};
+}
+`,
+        );
+        output = output.replace(
+          "'./desktop-private-state-native.js'",
+          "'./creation-receipt-hook.js'",
+        );
+      }
       const path = join(directory, 'desktop-platform-actual.js');
       await writeFile(path, output);
       const platform = await import(pathToFileURL(path).href);
@@ -1218,6 +1240,49 @@ test('native spawn and handshake failures retain their first cause without a ret
   }
 });
 
+test('async hot channel returns the creation receipt when response precedes the first yield', async (t) => {
+  const f = await fixture(t),
+    backend = f.open();
+  backend.call('check', 'warm-channel');
+  const [worker] = f.activeWorkers;
+  const control = f.controls.get(worker),
+    post = worker.postMessage;
+  let observed = false;
+  worker.postMessage = function (message, ...rest) {
+    const result = Reflect.apply(post, this, [message, ...rest]);
+    if (message.kind === 'call' && message.action === 'create-file') {
+      const deadline = performance.now() + f.p.operationMs;
+      while (Atomics.load(control, f.p.result) === f.p.waiting) {
+        const remaining = deadline - performance.now();
+        assert(
+          remaining > 0,
+          'Real Native fixture response must arrive within its original budget',
+        );
+        Atomics.wait(control, f.p.result, f.p.waiting, remaining);
+      }
+      assert.equal(Atomics.load(control, f.p.result), f.p.ok);
+      observed = true;
+    }
+    return result;
+  };
+  try {
+    const path = join(f.directory, 'fast-created.json');
+    const created = await backend.callAsync('create-file', path);
+    assert(observed);
+    assert.match(created.reservation, /^[a-f0-9]{32}$/);
+    const actual = lstatSync(path, { bigint: true });
+    assert.equal(actual.dev, BigInt('0x' + created.volume));
+    assert.equal(actual.ino, BigInt('0x' + created.fileId));
+    await backend.callAsync('release-file', created.reservation);
+    assert.equal(
+      f.events().filter((v) => v.event === 'request' && v.action === 'release-file').length,
+      1,
+    );
+  } finally {
+    worker.postMessage = post;
+  }
+});
+
 test('private creation APIs reserve before sync/async writes and preserve exclusive outputs', async (t) => {
   const f = await fixture(t),
     platform = await f.platform();
@@ -1272,6 +1337,113 @@ for (const async of [false, true])
       'No creation retry/adoption',
     );
   });
+
+for (const asynchronous of [false, true])
+  test(`wx ${asynchronous ? 'async' : 'sync'} rejects B substituted after Native creation returns before Node stat`, async (t) => {
+    const f = await fixture(t),
+      platform = await f.platform({ replaceAfterCreate: true });
+    const original = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const path = join(f.directory, 'identity-handoff.json');
+    try {
+      if (asynchronous)
+        await assert.rejects(
+          platform.openPrivateFile(path, 'wx'),
+          /Native-created private output identity changed/,
+        );
+      else
+        assert.throws(
+          () => platform.openPrivateFileSync(path, 'wx'),
+          /Native-created private output identity changed/,
+        );
+      assert.equal(readFileSync(path, 'utf8'), 'preserve-private-B');
+      assert.equal(readFileSync(path + '.native-created-A', 'utf8'), '');
+    } finally {
+      Object.defineProperty(process, 'platform', original);
+      platform.closeWindowsPrivateStateBackend();
+    }
+    assert.equal(
+      f.events().filter((v) => v.event === 'request' && v.action === 'create-file').length,
+      1,
+      'No retry or adoption',
+    );
+  });
+
+for (const asynchronous of [false, true])
+  test(`unknown Native release ACK prevents ${asynchronous ? 'async' : 'sync'} truncation`, async (t) => {
+    const f = await fixture(t, 'unknown-release');
+    const platform = await f.platform();
+    const path = join(f.directory, 'unreleased-A.json');
+    const original = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    try {
+      if (asynchronous) await assert.rejects(platform.openPrivateFile(path, 'wx'), unavailable);
+      else assert.throws(() => platform.openPrivateFileSync(path, 'wx'), unavailable);
+      assert.equal(readFileSync(path, 'utf8'), 'preserve-unreleased-A');
+      assert.equal(
+        f.events().filter((v) => v.event === 'request' && v.action === 'release-file').length,
+        1,
+      );
+    } finally {
+      Object.defineProperty(process, 'platform', original);
+      platform.closeWindowsPrivateStateBackend();
+    }
+  });
+
+test('legacy wrong-owner v1 history is retained and never protected or adopted at startup', async (t) => {
+  const f = await fixture(t, 'legacy-owner');
+  const platform = await f.platform();
+  for (const name of ['runtime-persistence', 'runtime-diagnostics']) {
+    const input = await readFile(join(source, name + '.ts'), 'utf8');
+    let output = ts.transpileModule(input, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    if (name === 'runtime-persistence')
+      output = output
+        .replace("'./desktop-platform.js'", "'./desktop-platform-actual.js'")
+        .replace(
+          "'@codex-manage/protocol'",
+          JSON.stringify(pathToFileURL(join(repository, 'packages/protocol/dist/index.js')).href),
+        );
+    await writeFile(join(f.directory, name + '.js'), output);
+  }
+  const { RuntimePersistence } = await import(
+    pathToFileURL(join(f.directory, 'runtime-persistence.js')).href
+  );
+  const legacy = join(f.directory, 'runtime-history-v1');
+  await mkdir(legacy);
+  const kept = join(legacy, 'original-history.json');
+  await writeFile(kept, 'original-history');
+  const before = lstatSync(kept, { bigint: true });
+  const main = join(f.directory, 'runtime-state.json');
+  const state = {
+    hostId: 'host-fixture',
+    threads: [],
+    receipts: { original: 'unknown-query-only' },
+    draft: 'retained',
+  };
+  await writeFile(main, JSON.stringify(state));
+  const original = Object.getOwnPropertyDescriptor(process, 'platform');
+  Object.defineProperty(process, 'platform', { value: 'win32' });
+  let persistence;
+  try {
+    persistence = new RuntimePersistence(main, f.directory);
+    assert.deepEqual(persistence.load(), state);
+    assert(existsSync(join(f.directory, 'runtime-history-v2')));
+    assert.equal(readFileSync(kept, 'utf8'), 'original-history');
+    const after = lstatSync(kept, { bigint: true });
+    for (const key of ['uid', 'gid', 'mode', 'size', 'mtimeNs', 'ctimeNs'])
+      assert.equal(after[key], before[key]);
+    assert(
+      !f.events().some((v) => v.event === 'request' && v.path.includes('runtime-history-v1')),
+      'Legacy owner boundary must not be queried for repair or mutated',
+    );
+  } finally {
+    persistence?.close();
+    Object.defineProperty(process, 'platform', original);
+    platform.closeWindowsPrivateStateBackend();
+  }
+});
 
 test('fixed preflight rejects custom entries and advertises only its real command', async () => {
   const entry = join(repository, 'scripts/windows-private-state-preflight.mjs');
@@ -1362,7 +1534,9 @@ test(
           : completedRejection
             ? 'rejected'
             : 'failed'
-        : stdout.trim() === 'PRIVATE_STATE_OK'
+        : stdout.trim() === 'PRIVATE_STATE_OK' ||
+            (action === 'create-file' &&
+              /^PRIVATE_STATE_CREATED:[a-f0-9]{32}:[a-f0-9]{8}:[a-f0-9]{16}$/.test(stdout.trim()))
           ? 'accepted'
           : 'invalid-output';
       return {
@@ -1409,8 +1583,24 @@ test(
     await writeFile(file, '{}');
     compare('protect-file', file);
     const peerFile = join(privateRoot, 'serve-created.json');
-    backend.call('create-file', peerFile);
+    const reservation = backend.call('create-file', peerFile);
     compare('check', peerFile);
+    assert.throws(
+      () => renameSync(peerFile, peerFile + '.replaced'),
+      (error) => ['EACCES', 'EPERM', 'EBUSY'].includes(error.code),
+      'Native creation lease must prevent path replacement until Node owns its FD',
+    );
+    const peerFd = openSync(peerFile, 'r+');
+    try {
+      const opened = (await import('node:fs')).fstatSync(peerFd, { bigint: true });
+      assert.equal(opened.dev, BigInt('0x' + reservation.volume));
+      assert.equal(opened.ino, BigInt('0x' + reservation.fileId));
+      backend.call('release-file', reservation.reservation);
+      renameSync(peerFile, peerFile + '.replaced');
+      assert.equal((await import('node:fs')).fstatSync(peerFd, { bigint: true }).ino, opened.ino);
+    } finally {
+      closeSync(peerFd);
+    }
     assert.equal(cli('create-file', file).outcome, 'rejected', 'CREATE_NEW must not adopt a file');
     assert.equal(readFileSync(file, 'utf8'), '{}');
     // Under an elevated token Node can default to the Administrators owner.

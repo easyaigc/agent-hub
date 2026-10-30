@@ -8,7 +8,8 @@ let original, wrapper;
 // Observe the actual, fixed transport Workers without owning or stopping them.
 export function monitorPrivateStateWorkers(entryURL, log, { onEvent } = {}) {
   const active = new Set();
-  watched.set(entryURL.href, { log, active, onEvent });
+  const controls = new WeakMap();
+  watched.set(entryURL.href, { log, active, controls, onEvent });
   if (!wrapper) {
     original = workerThreads.Worker;
     wrapper = new Proxy(original, {
@@ -18,6 +19,7 @@ export function monitorPrivateStateWorkers(entryURL, log, { onEvent } = {}) {
         if (scope) {
           const id = worker.threadId;
           scope.active.add(worker);
+          scope.controls.set(worker, new Int32Array(args[1].workerData.shared));
           scope.onEvent?.({ event: 'transport-start', id });
           worker.on('message', (message) => {
             if (message?.kind === 'fixture-lifecycle') {
@@ -39,6 +41,7 @@ export function monitorPrivateStateWorkers(entryURL, log, { onEvent } = {}) {
   }
   return {
     active,
+    controls,
     restore() {
       watched.delete(entryURL.href);
       if (!watched.size) {

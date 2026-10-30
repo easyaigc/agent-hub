@@ -107,9 +107,14 @@ ownerPort?.on('message', (request: Record<string, unknown>) => {
     !Number.isSafeInteger(request.id) ||
     request.id !== Atomics.load(control, p.request) ||
     (request.id as number) <= 0 ||
-    !['protect', 'protect-file', 'check', 'create-directory', 'create-file'].includes(
-      request.action as string,
-    ) ||
+    ![
+      'protect',
+      'protect-file',
+      'check',
+      'create-directory',
+      'create-file',
+      'release-file',
+    ].includes(request.action as string) ||
     !privateStatePath(request.path) ||
     !privateStatePath(request.cwd) ||
     typeof request.deadline !== 'number' ||
@@ -268,7 +273,7 @@ try {
         return;
       }
       const match =
-        /^([1-9][0-9]*)\t(PRIVATE_STATE_OK|UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127})$/.exec(
+        /^([1-9][0-9]*)\t(PRIVATE_STATE_OK|PRIVATE_STATE_CREATED:[a-f0-9]{32}:[a-f0-9]{8}:[a-f0-9]{16}|UNSAFE_WINDOWS_PRIVATE_STATE:[A-Za-z][A-Za-z0-9]{0,127})$/.exec(
           line,
         );
       if (
@@ -292,11 +297,13 @@ try {
       Atomics.store(control, p.response, pending);
       record('native-response', {
         elapsedMs: performance.now() - dispatchedAt,
-        code: match[2] === 'PRIVATE_STATE_OK' ? 'OK' : 'UNSAFE_WINDOWS_PRIVATE_STATE',
-        nativeType: match[2]?.split(':')[1],
+        code: match[2]?.startsWith('PRIVATE_STATE_') ? 'OK' : 'UNSAFE_WINDOWS_PRIVATE_STATE',
+        nativeType: match[2]?.startsWith('UNSAFE_WINDOWS_PRIVATE_STATE:')
+          ? match[2].split(':')[1]
+          : undefined,
       });
       pending = 0;
-      Atomics.store(control, p.result, match[2] === 'PRIVATE_STATE_OK' ? p.ok : p.rejected);
+      Atomics.store(control, p.result, match[2]?.startsWith('PRIVATE_STATE_') ? p.ok : p.rejected);
       Atomics.notify(control, p.result);
     });
   }

@@ -15,6 +15,7 @@ const resources = [
   'dist/diagnostic-events.js',
   'windows/private-state.ps1',
   'windows/private-state.cs',
+  'windows/private-state-compilation.cs',
 ];
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const callerState = () =>

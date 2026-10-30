@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import {
   appendFileSync,
   closeSync,
   existsSync,
+  fstatSync,
   mkdirSync,
   openSync,
   readFileSync,
@@ -32,6 +34,7 @@ else if (config.mode === 'startup-timeout') {
   setTimeout(() => process.stdout.write(ready.slice(5)), 15);
 } else process.stdout.write(ready);
 
+const leases = new Set();
 let count = 0;
 const lines = createInterface({ input: process.stdin });
 lines.on('line', (line) => {
@@ -44,12 +47,36 @@ lines.on('line', (line) => {
   assert.equal(parts.length, 4);
   const [id, action, encoded, cwdEncoded] = parts;
   assert.equal(id, String(++count));
-  assert(['protect', 'protect-file', 'check', 'create-directory', 'create-file'].includes(action));
+  assert(
+    [
+      'protect',
+      'protect-file',
+      'check',
+      'create-directory',
+      'create-file',
+      'release-file',
+    ].includes(action),
+  );
   const path = Buffer.from(encoded, 'base64').toString('utf8');
   const cwd = Buffer.from(cwdEncoded, 'base64').toString('utf8');
   assert.equal(Buffer.from(path).toString('base64'), encoded);
   assert.equal(Buffer.from(cwd).toString('base64'), cwdEncoded);
   record({ event: 'request', id: count, action, path, cwd });
+  if (action === 'release-file') {
+    if (config.mode === 'unknown-release') {
+      process.stdout.write(`${id}\tPRIVATE_STATE_UNKNOWN\n`);
+      return;
+    }
+    if (!leases.delete(path))
+      process.stdout.write(`${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException\n`);
+    else process.stdout.write(`${id}\tPRIVATE_STATE_OK\n`);
+    return;
+  }
+  let createdIdentity;
+  if (config.mode === 'legacy-owner' && path.includes('runtime-history-v1')) {
+    process.stdout.write(`${id}\tUNSAFE_WINDOWS_PRIVATE_STATE:UnauthorizedAccessException\n`);
+    return;
+  }
   if (action.startsWith('create-') && !(config.mode === 'reject-second' && count === 2)) {
     const contained = relative(dirname(config.log), resolve(cwd, path));
     assert(contained !== '..' && !contained.startsWith('..' + sep) && !isAbsolute(contained));
@@ -61,9 +88,22 @@ lines.on('line', (line) => {
       return;
     }
     if (action === 'create-directory') mkdirSync(path, { recursive: true, mode: 0o700 });
-    else closeSync(openSync(path, 'wx', 0o600));
+    else {
+      const file = openSync(path, 'wx', 0o600);
+      if (config.mode === 'unknown-release') writeFileSync(file, 'preserve-unreleased-A');
+      const info = fstatSync(file, { bigint: true });
+      const reservation = randomUUID().replaceAll('-', '');
+      leases.add(reservation);
+      createdIdentity =
+        reservation +
+        ':' +
+        info.dev.toString(16).padStart(8, '0') +
+        ':' +
+        info.ino.toString(16).padStart(16, '0');
+      closeSync(file);
+    }
   }
-  const ok = `${id}\tPRIVATE_STATE_OK\n`;
+  const ok = `${id}\t${createdIdentity ? 'PRIVATE_STATE_CREATED:' + createdIdentity : 'PRIVATE_STATE_OK'}\n`;
   if (config.mode === 'wrong-id') process.stdout.write(`${count + 1}\tPRIVATE_STATE_OK\n`);
   else if (config.mode === 'stale-id' && count > 1)
     process.stdout.write(`${count - 1}\tPRIVATE_STATE_OK\n`);

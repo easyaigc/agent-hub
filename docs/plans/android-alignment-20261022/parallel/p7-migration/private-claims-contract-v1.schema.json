@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Android closed inert private-claim audit v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "archives"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "archives": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/original"
+      }
+    }
+  },
+  "$defs": {
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim", "endpoint", "fingerprint"],
+      "properties": {
+        "claim": {
+          "$ref": "../../../../../packages/protocol/schemas/codex-host-discovery-v1.schema.json#/definitions/privateClaim"
+        },
+        "endpoint": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "original": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "entries"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "size", "sha256"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^codex-private-claim:[a-f0-9]{64}$"
+        },
+        "kind": {
+          "const": "text"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  },
+  "$comment": "Semantic checks additionally require exact UTF-8/name hash, strict duplicate-free JSON, canonical producer endpoint, existing named privateClaim schema, original byte total <=512KiB, sorted unique entries/originals, complete aliases, no binaries, existing engine domain identity and global migration limits. Raw text is never reserialized. Version one intent is not a network receipt."
+}

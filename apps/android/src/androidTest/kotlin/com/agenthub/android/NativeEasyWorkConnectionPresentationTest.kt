@@ -81,6 +81,23 @@ internal class P8BoundedPng(private val maxBytes: Int,private val withinBudget: 
  */
 class NativeEasyWorkConnectionPresentationTest {
     private val i get()=InstrumentationRegistry.getInstrumentation()
+    private var compositeDiagnosticMethod: String?=null
+    private var compositeProducer: P8Api26CompositeProducer?=null
+    private var compositeEpisodeView: android.view.View?=null
+    private var compositeEpisodeToken: android.os.IBinder?=null
+    @get:Rule(order=-1) val compositeAdmission=org.junit.rules.TestRule {statement,description->
+        object: org.junit.runners.model.Statement(){override fun evaluate(){
+            P8Api26CompositeProducer.requireNoUnresolvedScreenshot()
+            P8WindowPixelCopyDestination.requireNoPending()
+            if(description.methodName in P8Api26CompositeProducer.METHODS){
+                org.junit.Assume.assumeTrue("API26 composite diagnostic is explicitly disabled by default",
+                    InstrumentationRegistry.getArguments().getString(P8Api26CompositeProducer.OPT_IN)=="true")
+                check(android.os.Build.VERSION.SDK_INT==26)
+                compositeDiagnosticMethod=description.methodName
+            }
+            statement.evaluate()
+        }}
+    }
     private val id=UUID.randomUUID().toString()
     private lateinit var build: JSONObject
     private var defaults=emptyMap<String,String>()
@@ -130,14 +147,17 @@ class NativeEasyWorkConnectionPresentationTest {
         assertEquals(defaults,EasyWorkPresentationFixture.defaults(i.targetContext))
     }
     private fun record(d: Description,result: String,error: String?=null){if(!::folder.isInitialized)return
-        val preferenceOnly=d.methodName in setOf("chineseLightPreferenceOptionsStayNativeExclusiveAndPersist","englishDarkPreferenceOptionsStayNativeExclusiveAndPersist")
+        val preferenceOnly=compositeDiagnosticMethod!=null||d.methodName in setOf("chineseLightPreferenceOptionsStayNativeExclusiveAndPersist","englishDarkPreferenceOptionsStayNativeExclusiveAndPersist")
         File(folder,"result.json").writeText(JSONObject().put("caseId",id).put("method",d.methodName).put("junitResult",result).put("failureClass",error).put("build",build)
             .put("pid",android.os.Process.myPid()).put("deviceFingerprint",android.os.Build.FINGERPRINT).put("touchTags",JSONArray(touches)).put("measurements",probes)
             .put("protectedOriginals",protectedEvidence).put("host","ComponentActivity with actual AgentHubApp; not MainActivity lifecycle proof")
             .put("controlledDialogBounds",controlledBounds).put("busyCoverage",if(preferenceOnly)"not exercised by this preference-only method" else "injected global close guard only; actual connection action busy/error not exercised")
             .put("appLanguage",presentationLanguage).put("resolvedProductLanguage",if(::text.isInitialized)text.language else JSONObject.NULL)
             .put("accessibilityCoverage",if(preferenceOnly)"native preference owners/labels/selection/actions/bounds; no new field-editability, IME or TalkBack coverage" else "rendered Compose and Android node labels/selection/editability; not TalkBack speech or traversal")
-            .put("forbiddenTouchActionsRejected",true).put("networkOrModelAcceptance",false).toString())
+            .put("forbiddenTouchActionsRejected",true).put("networkOrModelAcceptance",false).apply {
+                if(compositeDiagnosticMethod!=null)put("evidenceClass",P8Api26CompositeProducer.KIND).put("nativeAcceptanceEligible",false)
+                    .put("sameSurfaceProof",false).put("screenshotUnresolved",P8Api26CompositeProducer.screenshotUnresolved())
+            }.toString())
     }
     private fun launch(language: String,dark: Boolean,landscape: Boolean,fontOverride: Float?=null,imported: Boolean=false){
         val config=ui.activity.resources.configuration;val decor=ui.activity.window.decorView
@@ -161,6 +181,8 @@ class NativeEasyWorkConnectionPresentationTest {
         fixture.noActivation();capture("edit-open")
     }
     private fun touch(tag: String,scroll: Boolean=true){
+        P8Api26CompositeProducer.requireNoUnresolvedScreenshot()
+        P8WindowPixelCopyDestination.requireNoPending()
         require(tag in listOf("client-selector","cancel-client-form","connection-preference","easywork-connection-method","easywork-name","easywork-relay-url","easywork-relay-code")||tag.startsWith("edit-client-")||tag.startsWith("connection-preference-")||tag.startsWith("easywork-method-")) {"Forbidden action in presentation-only test: $tag"}
         require(tag!="cancel-client-form"||!scroll) {"Footer has no scroll ancestor"}
         val n=ui.onNodeWithTag(tag);if(scroll)n.performScrollTo();if(tag=="cancel-client-form")recordGeometry("footer-before-hit",window())
@@ -182,16 +204,53 @@ class NativeEasyWorkConnectionPresentationTest {
         .put("displayRotation",@Suppress("DEPRECATION") ui.activity.windowManager.defaultDisplay.rotation).put("osFontScale",ui.activity.resources.configuration.fontScale)
         .put("renderedFontScale",renderedFont).put("appDarkCallback",darkObserved).put("controlledBounds",controlledBounds)
     private fun capture(label: String){
+        check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper()){"Capture and its exit barrier must run outside Main Looper"}
+        P8WindowPixelCopyDestination.requireNoPending()
         val w=window();val view=w.decorView;val b=ui.onNodeWithTag("sheet-add").fetchSemanticsNode().boundsInWindow
         val crop=android.graphics.Rect(kotlin.math.floor(b.left).toInt(),kotlin.math.floor(b.top).toInt(),kotlin.math.ceil(b.right).toInt(),kotlin.math.ceil(b.bottom).toInt())
         check(crop.left>=0&&crop.top>=0&&crop.right<=view.width&&crop.bottom<=view.height&&crop.width() in 1..4096&&crop.height() in 1..4096)
-        val image=Bitmap.createBitmap(crop.width(),crop.height(),Bitmap.Config.ARGB_8888);val done=java.util.concurrent.CountDownLatch(1);var status=-1
+        val image=Bitmap.createBitmap(crop.width(),crop.height(),Bitmap.Config.ARGB_8888);val done=java.util.concurrent.CountDownLatch(1)
+        val destination=P8WindowPixelCopyDestination(image,w){bitmap: Bitmap->if(!bitmap.isRecycled)bitmap.recycle()}
+        var failure: Throwable?=null
         try {
-            ui.runOnIdle {android.view.PixelCopy.request(w,crop,image,{code->status=code;done.countDown()},android.os.Handler(android.os.Looper.getMainLooper()))}
-            assertTrue(done.await(3,java.util.concurrent.TimeUnit.SECONDS));assertEquals(android.view.PixelCopy.SUCCESS,status)
+            val callbackHandler=android.os.Handler(android.os.Looper.getMainLooper())
+            val callback=android.view.PixelCopy.OnPixelCopyFinishedListener {code->try{destination.onCompletion(code)}finally{done.countDown()}}
+            ui.runOnIdle {
+                destination.enterDispatch()
+                android.view.PixelCopy.request(w,crop,image,callback,callbackHandler)
+            }
+            assertTrue(done.await(3,java.util.concurrent.TimeUnit.SECONDS));val status=destination.completedStatus();assertEquals(android.view.PixelCopy.SUCCESS,status)
+            assertSame("Caller borrows only its actual completed destination",image,destination.completedResource())
             File(folder,"$label.png").outputStream().use {check(image.compress(Bitmap.CompressFormat.PNG,100,it))}
             probes.put(windowObservation(w).put("kind","actual-owned-dialog-PixelCopy").put("file","$label.png").put("cropInWindow",crop.toShortString()))
-        }finally {image.recycle()}
+        }catch(cause: Throwable){failure=cause;throw cause}
+        finally {
+            var releaseFailure: Throwable?=null
+            try{destination.closeCaller();destination.throwIfReleaseFailed()}catch(cause: Throwable){
+                releaseFailure=cause;failure?.let {original->if(original!==cause)try{original.addSuppressed(cause)}catch(_: Throwable){}}
+            }
+            if(failure!=null||releaseFailure!=null){
+                val original=failure?:checkNotNull(releaseFailure)
+                fun suppress(secondary: Throwable){if(original!==secondary)try{original.addSuppressed(secondary)}catch(_: Throwable){}}
+                fun lifetimeProbe(stage: String,wait: P8WindowPixelCopyDestination.ExitWait?=null){
+                    try{val lifetime=destination.snapshot();saveProbe(JSONObject().put("kind","dialog-PixelCopy-destination-lifetime").put("label",label)
+                        .put("stage",stage).put("dispatchEntered",lifetime.dispatchEntered).put("completionCallbackSeen",lifetime.callbackSeen)
+                        .put("destinationReleased",lifetime.released).put("destinationPhase",lifetime.phase)
+                        .put("retainedDestinations",lifetime.retainedDestinations).put("failureClass",original.javaClass.name)
+                        .put("exitBarrierDispatched",wait?.dispatched?:JSONObject.NULL).put("exitBarrierWaited",wait?.waited?:JSONObject.NULL)
+                        .put("initialInterruptFlag",wait?.initialInterruptFlag?:JSONObject.NULL).put("laterInterruptions",wait?.laterInterruptions?:JSONObject.NULL)
+                        .put("interruptStatusRestored",wait?.interruptStatusRestored?:JSONObject.NULL).put("retryDispatched",false).put("requestCancelled",false))}
+                    catch(recordFailure: Throwable){suppress(recordFailure)}
+                }
+                lifetimeProbe("before-inline-exit-barrier-not-a-junit-terminal")
+                // The exact original capture stack/Window/Bitmap/owner/first error stays live here.
+                // No @After or Activity-rule exit can run until this returns; Main remains unblocked.
+                val waited=destination.awaitCaptureExit(done,original,android.os.Looper.getMainLooper().thread)
+                try{destination.throwIfReleaseFailed()}catch(cause: Throwable){if(releaseFailure==null)releaseFailure=cause;suppress(cause)}
+                lifetimeProbe(if(waited.dispatched)"original-request-settled-before-failure-exit" else "proven-no-request-before-failure-exit",waited)
+            }
+            if(failure==null)releaseFailure?.let {throw it}
+        }
     }
     private fun rectJson(r: androidx.compose.ui.geometry.Rect)=JSONObject().put("left",r.left).put("top",r.top).put("right",r.right).put("bottom",r.bottom)
     private fun saveProbe(value: JSONObject){probes.put(value);flushProbes()}
@@ -421,6 +480,7 @@ class NativeEasyWorkConnectionPresentationTest {
         finally {handler.removeCallbacks(task);task.cancel(false)}
     }
     private fun preferencePopupView(deadline: Long): android.view.View {
+        if(compositeDiagnosticMethod!=null)return compositePopupView(deadline)
         check(android.os.Build.VERSION.SDK_INT>=29){"Exact menu Popup inspection requires API29+"}
         return menuMainRead(deadline){
             val roots=android.view.inspector.WindowInspector.getGlobalWindowViews();check(roots.size<=64)
@@ -457,7 +517,7 @@ class NativeEasyWorkConnectionPresentationTest {
         val start=android.os.SystemClock.uptimeMillis();val deadline=sharedDeadline?:start+5000
         val evidence=JSONObject().put("kind","exact-selected-menu-before-guards").put("tag",tag).put("valueHash",easyHash(value.toByteArray())).put("totalBudgetMs",5000)
             .put("expectedSelected",expectedSelected).put("sharedStateDeadline",sharedDeadline!=null).put("remainingAtEntryMs",deadline-start)
-            .put("popupInspectionMinApi",29).put("sdkInt",android.os.Build.VERSION.SDK_INT).put("phase","before-owned-popup-read")
+            .put("popupInspectionMinApi",if(compositeDiagnosticMethod==null)29 else 26).put("sdkInt",android.os.Build.VERSION.SDK_INT).put("phase","before-owned-popup-read")
         var firstRoot: android.view.accessibility.AccessibilityNodeInfo?=null;var finalOwner: android.view.accessibility.AccessibilityNodeInfo?=null;var finalText: android.view.accessibility.AccessibilityNodeInfo?=null
         var ownerCount=0;var textCount=0;var textAssociated=false;var ownerTagMatches=false;var finalPopup: JSONObject?=null;var finalAnchor: JSONObject?=null
         val recent=mutableListOf<JSONObject>();var first: JSONObject?=null;var previous="";var sameSince=0L;var sameCount=0;var samples=0
@@ -577,8 +637,42 @@ class NativeEasyWorkConnectionPresentationTest {
             check(android.os.SystemClock.uptimeMillis()<=deadline);evidence.put("phase",phase+"-passed");flushProbes()
         }catch(failure: Throwable){evidence.put("phase",phase+"-failed").put("failureClass",failure.javaClass.name);flushProbes();throw failure}
     }
+    private fun compositePopupView(deadline: Long): android.view.View {
+        check(compositeDiagnosticMethod!=null&&android.os.Build.VERSION.SDK_INT==26)
+        val tags=listOf("automatic","lan-only","relay-only").map {"connection-preference-$it"}
+        val views=tags.map {tag->
+            check(android.os.SystemClock.uptimeMillis()<deadline)
+            val node=ui.onNodeWithTag(tag,useUnmergedTree=true).fetchSemanticsNode()
+            val root=checkNotNull(node.root as? androidx.compose.ui.platform.ViewRootForTest){"Actual semantics backing View unavailable"}
+            root.view
+        }
+        return menuMainRead(deadline){
+            assertTrue("All actual menu semantics roots use the same backing View",views.all {it===views.first()})
+            val view=views.first().rootView
+            assertTrue(view.isAttachedToWindow);assertSame(view,view.rootView)
+            assertEquals("androidx.compose.ui.window.PopupLayout",view.javaClass.name)
+            assertEquals(i.targetContext.packageName,view.context.packageName)
+            assertEquals(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL,(view.layoutParams as android.view.WindowManager.LayoutParams).type)
+            checkNotNull(view.windowToken)
+            compositeEpisodeView?.let {assertSame("Same Popup through original triplet and capture",it,view)}
+            compositeEpisodeToken?.let {assertSame("Same retained token through original triplet and capture",it,view.windowToken)}
+            view
+        }
+    }
+    private fun compositePreferenceCapture(expected: String,labels: Map<String,String>,rows: List<P8PreferenceOptionAx>,phase: String){
+        val method=checkNotNull(compositeDiagnosticMethod)
+        val producer=compositeProducer?:P8Api26CompositeProducer(i,folder,method,presentationLanguage,expectedDark,build,
+            {deadline->compositePopupView(deadline)},{fixture.live().agentConnection?.preference},{touches.size},{evidence->saveProbe(evidence)})
+            .also {compositeProducer=it}
+        producer.capture(expected,labels,rows,phase)
+    }
     private fun preferenceTriplet(expected: String,labels: Map<String,String>,phase: String){
         val start=android.os.SystemClock.uptimeMillis();val deadline=start+5000;val rows=mutableListOf<P8PreferenceOptionAx>()
+        if(compositeDiagnosticMethod!=null){
+            compositeEpisodeView=null;compositeEpisodeToken=null
+            val view=compositePopupView(deadline)
+            menuMainRead(deadline){compositeEpisodeView=view;compositeEpisodeToken=checkNotNull(view.windowToken)}
+        }
         val evidence=JSONObject().put("kind","native-exclusive-preference-triplet").put("phase",phase).put("expected",expected)
             .put("expectedSource","independent scripted choice; never Compose selection").put("totalBudgetMs",5000)
         fun rowJson(row: P8PreferenceOptionAx)=JSONObject().put("value",row.value).put("ownerId",row.ownerId).put("textId",row.textId).put("windowId",row.windowId)
@@ -597,7 +691,8 @@ class NativeEasyWorkConnectionPresentationTest {
             assertTrue("Exact three native options expose one known active and two inactive choices",matches);check(android.os.SystemClock.uptimeMillis()<=deadline)
             evidence.put("phase",phase+"-all-native-and-persisted-guards-passed");flushProbes()
         }catch(failure: Throwable){evidence.put("phase",phase+"-failed").put("failureClass",failure.javaClass.name).put("elapsedMs",android.os.SystemClock.uptimeMillis()-start);flushProbes();throw failure}
-        capturePreferencePopup(expected,labels,rows,phase)
+        if(compositeDiagnosticMethod!=null)compositePreferenceCapture(expected,labels,rows,phase)
+        else capturePreferencePopup(expected,labels,rows,phase)
     }
     private fun capturePreferencePopup(expected: String,labels: Map<String,String>,rows: List<P8PreferenceOptionAx>,phase: String){
         check(android.os.Build.VERSION.SDK_INT>=34){"Exact Popup View PixelCopy requires API34+; lower API remains pending"}
@@ -803,6 +898,12 @@ class NativeEasyWorkConnectionPresentationTest {
         probes.put(windowObservation(w).put("kind","actual-IME").put("imeBottomPx",imeBottom).put("emptyCodeSubmitDisabled",true).put("doneDelivery","Compose IME action callback + observed real IME hide; not physical keyboard-button hit"))
         capture("en-dark-landscape-ime");field.performImeAction();ui.waitUntil(8000){ViewCompat.getRootWindowInsets(w.decorView)?.isVisible(WindowInsetsCompat.Type.ime())!=true};field.assertIsNotFocused()
         field.performScrollTo();nativeFieldAx(text.tr("中继服务地址"),"easywork-relay-url");capture("en-dark-landscape-done")
+    }
+    @Test fun api26ChineseLightCompositePreferenceDiagnostic(){
+        try{preferenceExclusiveScenario("zh-Hans",false)}finally{P8Api26CompositeProducer.awaitScreenshotReleaseBeforeTeardown()}
+    }
+    @Test fun api26EnglishDarkCompositePreferenceDiagnostic(){
+        try{preferenceExclusiveScenario("en",true)}finally{P8Api26CompositeProducer.awaitScreenshotReleaseBeforeTeardown()}
     }
     @Test fun chineseLightPreferenceOptionsStayNativeExclusiveAndPersist(){preferenceExclusiveScenario("zh-Hans",false)}
     @Test fun englishDarkPreferenceOptionsStayNativeExclusiveAndPersist(){preferenceExclusiveScenario("en",true)}

@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-owner-final-coordinator-source-20261030-1",
+  "baseCommit": "815997a494cffd740f012a0d366fc0402beaa1a3",
+  "review": {
+    "bytes": 12216,
+    "sha256": "9f4516f5eeca92baf086792aaa7bd371c2111858c83b826fb152a3d1cfaa1a7c",
+    "operationId": "parent-p7-owner-final-coordinator-source-20261030-1",
+    "name": "retirement-final-review.json"
+  },
+  "scope": "Test-only coordinator + fake-resource vectors. No production codec/four hooks/Native fixture selector change.",
+  "sourceChanges": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwner.kt",
+      "beforeBytes": 15688,
+      "beforeSha256": "e1e258c43c3d1ce61220bd5efc24fb72888299c9248d85d03fd2e60a916d16a7",
+      "afterBytes": 17061,
+      "afterSha256": "b785e5be53ee5c489a297ff03c7140d81794792c8dec69df65cab41eae004f65"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt",
+      "beforeBytes": 13741,
+      "beforeSha256": "ffeb02c14335d68ac1bcde18bdde210da873d670f0d64f63a4cb75f3edbd5226",
+      "afterBytes": 20182,
+      "afterSha256": "d3f1940d1e3beb37a3a9d78dac883344c7581f9b15e4639a6f657444f6c5a612"
+    }
+  ],
+  "unchangedPins": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaims.kt",
+      "bytes": 4661,
+      "sha256": "58f7c48727ed90b3ec08b22ee765385a0719d262b25b5c60e2334239c23698d4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaimBoundary.kt",
+      "bytes": 771,
+      "sha256": "9af4ad31cc3bd30248fff9bd6f496ed7ccac8e10bca3d7d840898048629fd3e1"
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/private-claim-production-root-hooks.json",
+      "bytes": 8462,
+      "sha256": "911a2caf68d500cbcf1ff6d8b94cc3ff4a2b7cb7387b4f933e7f7268b1bbdaa7"
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/private-claim-production-root.patch",
+      "bytes": 7592,
+      "sha256": "b5624750d6cb7cfbc98cce68e8af612e8422f6ba32b986e6693aa0ccf6a8fddc"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt",
+      "sha256": "7c6a5aad60217e3d5e596d8193efedf54fb66e8f61b619bf897f041d11e4e612",
+      "bytes": 9381
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimStorageTest.kt",
+      "sha256": "37eeab23a2a784e3f336981544d69dd48d366580e35c458711ec4beb111eea6c",
+      "bytes": 9985
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt",
+      "sha256": "28351201e7c4d26e51d1f3881229a1ead6596fd9620ea81c1d29d914981f7039",
+      "bytes": 5338
+    }
+  ],
+  "findings": {
+    "PC-OWNER-ORDER-01": "On first guard interrupt search records with outcomeDelivered=false, including cleanup-confirmed records; then observed body failure. Previously delivered/handled failure is not promoted.",
+    "PC-OWNER-EXIT-02": "Exact LAZY coordinator is attached before start. Completion callback verifies exact Job.isCompleted, confirms worker completion only after actual body/child/synchronous IO exit. Static registry keeps record until ownership cleanup and worker completion. Real JUnit guard waits body Thread, owner confirmation and every exact coordinator, without timeout."
+  },
+  "deterministicVectors": [
+    "Actual final synchronous signal blocked by latch after cleanupConfirmed/releaseConfirmed=true and outcomeDelivered=false; body original AssertionError already recorded. Guard interrupted twice, exact body joined, coordinator-wait entry signaled, actual Job still incomplete, record statically retained and JUnit live. Allow original signal once; actual Job completes, registry releases record, guard returns original AssertionError.",
+    "A prior record whose original AssertionError was delivered and explicitly handled is excluded; subsequent guard interruption remains primary."
+  ],
+  "oldEvidencePreserved": "private-claim-owner-fix/ JVM14 and earlier failed attempts remain immutable as original proof or lossless gzip; not promoted to this revision.",
+  "validation": {
+    "status": "Portable JVM16 and PSI5 passed for exact current inputs; fake resources only",
+    "AndroidTypeBinding": false,
+    "SDK": false,
+    "Native": false,
+    "OS": false,
+    "DEV": false,
+    "actualPortableJUnit": 16,
+    "PSISyntaxFiles": 5,
+    "seconds": 4.378038665999999,
+    "manifestSha256": "d50aa916573613af8298939f995838b5270f5b0e064b7e5ef03588df7ea4b1b8",
+    "checkProofSha256": "162f2c581b55990c41bf6b9f2e80d3e5b69d9f54e911682d69823165973c806b",
+    "inputDrift": [],
+    "uncaughtRuntimeException": false,
+    "compileWarnings": "3 unchanged unused expressions in old fake lambdas",
+    "actualModel": "gpt-6.1-terra",
+    "actualEffort": "medium",
+    "actualServiceTier": null
+  },
+  "RootEdited": false,
+  "centralTablesEdited": false,
+  "runtimeUUIDAllocated": false,
+  "fullP7Complete": false,
+  "deterministicArrangement": "A latch-controlled real Statement exits on the actual guard interrupt. It starts the real Lifecycle from a dedicated actual caller Job/supervisorScope, which is joined and scope cancelled at fake-test exit. This guarantees an exited body while the exact coordinator remains in its original held synchronous IO; no assumption about runBlocking interruption timing.",
+  "checkHistory": "First16 attempt compiled but original runBlocking Statement did not exit in the intended window; assertion failure retained. Second16/PSI5 passed with an uncaught synthetic launch-parent exception; retained. Supervisor-isolated synthetic caller corrects handling; final current-source JVM16/PSI5 passed without uncaught exceptions. No assertions weakened and no owner logic changed after first check."
+}

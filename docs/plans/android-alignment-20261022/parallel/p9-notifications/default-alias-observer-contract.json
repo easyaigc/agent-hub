@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-default-alias-observer-source-20261030-1",
+  "kind": "native-test-source-contract-not-device-proof",
+  "source": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeDefaultAliasObservationTest.kt",
+  "sourceSha256": "f2a37ecc8ae3a93ceb5014297d58a80f12cf9499c29441c01abbcb8e26d64aaf",
+  "selector": "com.agenthub.android.NativeDefaultAliasObservationTest#observesOnlyDefaultAliasPresenceWithoutInitializingStorage",
+  "targetComposition": "Root future Source67 Test-only delta; do not mutate frozen Source66",
+  "runner": "com.easyai.agenthub.android.acceptance.test/androidx.test.runner.AndroidJUnitRunner",
+  "packageGuard": {
+    "packageName": "com.easyai.agenthub.android.acceptance",
+    "debugBuildRequired": true,
+    "processUidEqualsTargetApplicationUid": true
+  },
+  "argument": {
+    "name": "observationRun",
+    "source": "exact immutable parent Call argument",
+    "required": true,
+    "canonicalUuidPattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    "missingOrMalformed": "require failure before context, Keystore and nonce access; never skip, normalize or generate a run fallback",
+    "aliasOrPathParameterSupported": false
+  },
+  "fixedAlias": {
+    "value": "agent-hub-mobile-v1",
+    "sourceOfTruth": "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt constructor default keyAlias",
+    "binding": "literal fixed metadata name, not a key value or user-controlled selector"
+  },
+  "algorithm": [
+    "Validate exact parent observationRun canonical UUID before context/Keystore access",
+    "Check exact debug acceptance target and actual target-process UID/PID/SDK/package",
+    "Create one actual nonce only in the admitted Native invocation",
+    "Fresh AndroidKeyStore instance: load(null), containsAlias(fixed alias)",
+    "Second fresh AndroidKeyStore instance: load(null), containsAlias(the same fixed alias)",
+    "Recheck process UID/PID/SDK/package identity",
+    "Emit one closed metadata JSON in Instrumentation status Bundle, preserving both booleans even on a known mismatch",
+    "After status emission, fail the method if presence endpoints differ; never retry/poll or synthesize false"
+  ],
+  "output": {
+    "statusCode": 2,
+    "bundleKey": "p9DefaultAliasObservation",
+    "encoding": "single JSONObject.toString payload in putString, no app file/stdout print helper",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "kind",
+        "observationRun",
+        "nonce",
+        "packageName",
+        "appUid",
+        "pid",
+        "sdk",
+        "alias",
+        "presentBefore",
+        "presentAfter",
+        "consistent"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "p9-default-alias-presence-v1"
+        },
+        "observationRun": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "packageName": {
+          "const": "com.easyai.agenthub.android.acceptance"
+        },
+        "appUid": {
+          "type": "integer",
+          "minimum": 10000,
+          "maximum": 2147483647
+        },
+        "pid": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "sdk": {
+          "type": "integer",
+          "minimum": 26,
+          "maximum": 2147483647
+        },
+        "alias": {
+          "const": "agent-hub-mobile-v1"
+        },
+        "presentBefore": {
+          "type": "boolean"
+        },
+        "presentAfter": {
+          "type": "boolean"
+        },
+        "consistent": {
+          "type": "boolean"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "presentBefore": {
+              "const": false
+            },
+            "presentAfter": {
+              "const": false
+            },
+            "consistent": {
+              "const": true
+            }
+          }
+        },
+        {
+          "properties": {
+            "presentBefore": {
+              "const": true
+            },
+            "presentAfter": {
+              "const": true
+            },
+            "consistent": {
+              "const": true
+            }
+          }
+        },
+        {
+          "properties": {
+            "presentBefore": {
+              "const": false
+            },
+            "presentAfter": {
+              "const": true
+            },
+            "consistent": {
+              "const": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "presentBefore": {
+              "const": true
+            },
+            "presentAfter": {
+              "const": false
+            },
+            "consistent": {
+              "const": false
+            }
+          }
+        }
+      ]
+    }
+  },
+  "noAppDataSideEffects": {
+    "allowedKeystoreMethods": [
+      "KeyStore.getInstance(AndroidKeyStore)",
+      "load(null)",
+      "containsAlias(fixed alias)"
+    ],
+    "forbidden": [
+      "NativeSessionStorage construction or other storage initialization",
+      "context.noBackupFilesDir/filesDir/cacheDir/dataDir getters or namespace reads",
+      "getKey/getEntry/decrypt/encrypt/key generation/alias enumeration/deletion",
+      "Activity or UI/Discovery/HTTP/Host/device calls",
+      "local file/directory creation or evidence writes",
+      "key bytes/certificates/private original output",
+      "future observationRun/lease/serial allocation in source preparation"
+    ]
+  },
+  "hostAcceptance": [
+    "Bind the exact original SDK/device/Call/flock/once/source/APK/signer target outside the test; this method creates no Root lease",
+    "Require exactly one matching status payload from the original invocation and normal matching JUnit terminal; duplicate/missing/malformed output is not a successful observation",
+    "Require schema, exact submitted observationRun and package/UID/PID/SDK target metadata match; nonce is actual invocation output, not host-invented input",
+    "For accepted metadata observation require consistent=true; present=false is a valid absence observation, not key usability or initialization permission",
+    "consistent=false reports a known changed-presence refusal; preserve actual before/after values and original receipt, do not replay",
+    "No status on a Keystore error means no completed observation; never map the exception to alias absence",
+    "Two matching endpoint booleans do not prove no intervening ABA/replacement or unchanged key material. Root must retain its existing exclusive operation/writer constraints",
+    "Root owns its existing bounded Call deadline; no timeout/retry/deadline enlargement or global device success is manufactured"
+  ],
+  "limits": [
+    "Only presence of one fixed alias in this actual app UID at two points",
+    "Not complete alias-set enumeration or secret-key identity proof",
+    "Not proof old ciphertext decrypts or any default namespace exists",
+    "Not notification/sound delivery, channel/permission/read/unread/lifecycle/UI or full DEV acceptance",
+    "No iOS/A6 result and no F49/F50/F52 pass promotion"
+  ],
+  "parity": {
+    "relatedFeatures": ["F51", "F52", "F53", "F54"],
+    "F49F50": "guard only",
+    "productImplementationChanged": false,
+    "centralTablesChanged": false,
+    "matrix21Changed": false,
+    "iosA6": "paused"
+  },
+  "runtimeBindings": {
+    "observationRun": null,
+    "nonce": null,
+    "deviceSerial": null,
+    "lease": null,
+    "appUid": null,
+    "pid": null,
+    "sdk": null
+  },
+  "implementationStatus": {
+    "testSourceImplemented": true,
+    "compiledThisStage": false,
+    "installedOrNativeRunThisStage": false,
+    "globalDeviceAcceptance": false
+  }
+}

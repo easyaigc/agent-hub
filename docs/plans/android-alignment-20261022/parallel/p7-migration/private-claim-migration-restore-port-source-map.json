@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-source65-native-restoration-failure-fix-20261030-1",
+  "baseCommit": "0b6724e06452f4f5c000019ff34f9223a1af8b63",
+  "RootReportedAdoption": "Source65 /stage32 794c9851, SDK/threeAPK independent review passed per Root; not child runtime proof",
+  "source65Failure": {
+    "name": "0034-native-one-stdout.bin",
+    "bytes": 42392,
+    "sha256": "6cfe12fa75734355c0f96d9b05892d9c3175b60201683382719a7f564ff0979c",
+    "firstFailure": "NativeMigrationReferences.kt:73 strict vault client / metadata client equality",
+    "suppressedFailure": "remoteCalls expected0 actual1",
+    "result": "definite Native failure per terminal evidence, not unknown",
+    "source65EvidenceReadOnly": true,
+    "noFixtureAliasOrOperationTouched": true
+  },
+  "diagnosis": "Ordinary restore used null preparedGeneration and can run post-restore cached history/refresh/history/operations even with foreground=false. Actual Source65 terminal reports strict vault/metadata mismatch and remoteCalls1. Exact causal mutation details not inferred beyond these observed facts. Followup confirms prepared restore also forces requiresReadTarget in memory; quiesce persists it without corresponding vault change. Static whole-client mismatch remains even after remote tail is removed.",
+  "sourceChanges": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt",
+      "beforeBytes": 9381,
+      "beforeSha256": "7c6a5aad60217e3d5e596d8193efedf54fb66e8f61b619bf897f041d11e4e612",
+      "afterBytes": 9748,
+      "afterSha256": "ed0ef23586051aaed63e082632ba4539b8bae265c2b415d307f65eee714d4935",
+      "RootBeforeMatchesBase": true
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt",
+      "beforeBytes": 20182,
+      "beforeSha256": "d3f1940d1e3beb37a3a9d78dac883344c7581f9b15e4639a6f657444f6c5a612",
+      "afterBytes": 22390,
+      "afterSha256": "47ba7eace4601e6305262aa4de4e4c54fb815090dce623100f0ac66dc039218c",
+      "RootBeforeMatchesBase": true
+    }
+  ],
+  "unchangedPins": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "bytes": 244749,
+      "sha256": "f6d8394572b14f459aa50e5fb29296783dd98b2f6a50756cb515722e8c8098f5"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "bytes": 87175,
+      "sha256": "a0bdfbe4992ec65700f2632d2806ffc6b90d43b887f21e38f09eb1397bb70c72"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt",
+      "bytes": 5749,
+      "sha256": "667d947166b9b20bc3f522521290895cbc3597f4d3d89fd0c641bee2a2ed3523"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaims.kt",
+      "bytes": 4661,
+      "sha256": "58f7c48727ed90b3ec08b22ee765385a0719d262b25b5c60e2334239c23698d4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaimBoundary.kt",
+      "bytes": 771,
+      "sha256": "9af4ad31cc3bd30248fff9bd6f496ed7ccac8e10bca3d7d840898048629fd3e1"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwner.kt",
+      "bytes": 17061,
+      "sha256": "b785e5be53ee5c489a297ff03c7140d81794792c8dec69df65cab41eae004f65"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimStorageTest.kt",
+      "bytes": 9985,
+      "sha256": "37eeab23a2a784e3f336981544d69dd48d366580e35c458711ec4beb111eea6c"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt",
+      "bytes": 5338,
+      "sha256": "28351201e7c4d26e51d1f3881229a1ead6596fd9620ea81c1d29d914981f7039"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationActivationTest.kt",
+      "bytes": 13117,
+      "sha256": "b840ac5c48011b4414c483c4ebb76010060959a5276eaa6066b8b4140a9a67a8"
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/private-claim-production-root-hooks.json",
+      "bytes": 8462,
+      "sha256": "911a2caf68d500cbcf1ff6d8b94cc3ff4a2b7cb7387b4f933e7f7268b1bbdaa7"
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/private-claim-production-root.patch",
+      "bytes": 7592,
+      "sha256": "b5624750d6cb7cfbc98cce68e8af612e8422f6ba32b986e6693aa0ccf6a8fddc"
+    }
+  ],
+  "restorePort": {
+    "regionMatchesRoot": true,
+    "regionSha256": "9453fe3367032b9b1e97936e7e46e49161da65ef9ea4c623e9af3aa39a9299ef",
+    "sessionRegisteredBeforeSuspension": true,
+    "syncRestore": "empty; no ordinary restore/leaveForeground path",
+    "suspendRestore": "existing restoreForMigration sets foreground=false, obtains beginRestore in IO, calls prepared-generation restore and awaits restore/reconciliation",
+    "metadataVaultAssertion": "Inside same supervised coordinator, on IO capture original logical metadata and vault texts before restore, compare exact texts immediately after restore, before acquire. Both source and destination use owned(). No expected metadata/client is fabricated and failure diagnostics never print original values.",
+    "publication": "Existing finishPreparedRestore only publishes memory under actual generation/permit fence; raw original text remains subject to the new Native assertions and unchanged strict References check.",
+    "ordinaryRemoteTailSkipped": "preparedGeneration is non-null; Root extra localInspectionOnly gate remains unchanged"
+  },
+  "ownerLifecycleUnchanged": "Exact Session registered before awaitRestore; coordinator LAZY/real completion barrier and first-error/unknown holds unchanged. Cancellation before acquire abandons same original Session only via existing confirmed path.",
+  "portableVectors": [
+    "Suspend actual coordinator awaitRestore after Session registration; no acquire before explicit completion; actual coordinator completed on normal exit.",
+    "Cancel while awaitRestore suspended; exact Session abandoned, acquisition never entered, no lease release, exact coordinator actually completes."
+  ],
+  "platformImpact": "Android fixture-only wiring/safety; no iOS product change. Shared parity/Root tables not edited under authorized source lane.",
+  "validation": {
+    "status": "Current portable JVM18 and PSI5 passed once; fake resources only",
+    "AndroidBinding": false,
+    "SDK": false,
+    "Native": false,
+    "OS": false,
+    "DEV": false,
+    "actualPortableJUnit": 18,
+    "PSISyntaxFiles": 5,
+    "manifestSha256": "f1dde0f033426b9795a12310435866e5b6ff7fde66b42b1e57cb9256a64ff4b1",
+    "checksSha256": "ac096be463fa23bf8bec726a7927e01ffe49a5b606518e48197bc0f810e15001",
+    "seconds": 7.8195218749999995,
+    "inputDrift": [],
+    "uncaughtRuntimeException": false,
+    "compileWarnings": "3 existing unused expressions",
+    "actualModel": "gpt-6.1-terra",
+    "actualEffort": "medium",
+    "actualServiceTier": null
+  },
+  "originalRunState": "Definite failed Source65 preserved; child did not modify/query/replay original operation/fixture/aliases or claim lock release. Root owns independent exit/lock review.",
+  "runtimeUUIDAllocated": false,
+  "centralTablesEdited": false,
+  "RootEdited": false,
+  "fullP7Complete": false,
+  "followupOperationId": "parent-p7-source65-native-restoration-failure-fix-20261030-2",
+  "postQuiesceReview": "private-claim-migration-restore-port-quiesce-review.json",
+  "remainingBlocker": "Static production contract discrepancy; requires Root semantic disposition. Restore-port fix is necessary but not sufficient for C01 Native admission.",
+  "nativeAdmissionReady": false
+}

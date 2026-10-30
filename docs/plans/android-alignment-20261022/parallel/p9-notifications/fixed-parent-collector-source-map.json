@@ -1,0 +1,312 @@
+{
+  "version": 1,
+  "baseHead": "7330ee97001d433499f9dc9619a7e748fdf39f4f",
+  "operationId": "parent-p9-fixed-collector-resume-rule-update-20261030-1",
+  "scope": "Source subset only; no complete Root/environment/native fingerprint",
+  "sourceFiles": {
+    "scripts/mobile/fixtures/parent-collector-v1/fixed_parent_collector.py": "0febc8199e75df562fddbfd0ad238c934cb30676390be68f70cbfd90fce2aea7",
+    "scripts/mobile/fixtures/parent-collector-v1/test_fixed_parent_collector.py": "537462e0b533e298bf6823836af6fa8dcfe2cfa07380123f6ce22a032443d3a1",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/fixed-parent-collector-v1.json": "0ed764e9c27f2a3ea13a4ac35ee1a7f0f2c40b2bc7eadb112048bd24fc823f1c",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/fixed-parent-collector-parity-delta.json": "1f5a911b9f288c848d71176995cffeb7b812193f9fa31c0f649832343e2fb7b7",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/fixed-parent-collector-review.md": "2113eda021d139f11968e65183fabf7b08f31cc193b8327ae75e41382c50af5f"
+  },
+  "rootHeadObserved": "4a5bb90f5a4fcd1c06e8a9512b429eff972d5bff",
+  "rootSubset": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MainActivity.kt",
+      "previousSha256": "7d5c595d3c3d0cf71bb667b9fc4b6e04d0cd681aaeaf5c125986bf89d595ab50",
+      "currentSha256": "7d5c595d3c3d0cf71bb667b9fc4b6e04d0cd681aaeaf5c125986bf89d595ab50",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "previousSha256": "44e7ab3c8bc147065f886414fcbc81c6516abf9f2b327db15b825789aa8500c6",
+      "currentSha256": "44e7ab3c8bc147065f886414fcbc81c6516abf9f2b327db15b825789aa8500c6",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "previousSha256": "c62749593ac907a43149b37e4cc4d7a8d2a18cad7d79ef740afb06a17a4074ed",
+      "currentSha256": "c62749593ac907a43149b37e4cc4d7a8d2a18cad7d79ef740afb06a17a4074ed",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSessionPort.kt",
+      "previousSha256": "ccddaa9d2a66a1d8b2152c0675a74047291e0a6fe5a8ceb9cc230443b1297c29",
+      "currentSha256": "ccddaa9d2a66a1d8b2152c0675a74047291e0a6fe5a8ceb9cc230443b1297c29",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationCoordinator.kt",
+      "previousSha256": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+      "currentSha256": "aa07dc1029e1ad1300fe608fc8898ec0c3304bd26b57500b1152d2ae25a10134",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundDelivery.kt",
+      "previousSha256": "190f6cc74a55b905354b354f2c393775b5a7556aa1c160877eaf6e78c6cc2deb",
+      "currentSha256": "190f6cc74a55b905354b354f2c393775b5a7556aa1c160877eaf6e78c6cc2deb",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundMonitor.kt",
+      "previousSha256": "e8941c44c80af7fa8eb6e4235d2eec765904f709ff425d3e362e5c0b9eb03794",
+      "currentSha256": "e8941c44c80af7fa8eb6e4235d2eec765904f709ff425d3e362e5c0b9eb03794",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationForegroundStore.kt",
+      "previousSha256": "0624cab48fe7c227e65461cbf8fbe4e270c8fc553520795a7eeee544d10d27eb",
+      "currentSha256": "0624cab48fe7c227e65461cbf8fbe4e270c8fc553520795a7eeee544d10d27eb",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRuntime.kt",
+      "previousSha256": "024890eefb8673cb240e6de90df8179b654cb6d673e39c73f220ff1de6885685",
+      "currentSha256": "024890eefb8673cb240e6de90df8179b654cb6d673e39c73f220ff1de6885685",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationPlatform.kt",
+      "previousSha256": "eeb55e8ff726b8b7f25f5789291b10c1ec01fc78427f64041d458a3744ea17f0",
+      "currentSha256": "eeb55e8ff726b8b7f25f5789291b10c1ec01fc78427f64041d458a3744ea17f0",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSystem.kt",
+      "previousSha256": "835c2765c0f2011ff1b54a25805e10e34afc4633e1766dd2c2cac3f4fad23b8a",
+      "currentSha256": "835c2765c0f2011ff1b54a25805e10e34afc4633e1766dd2c2cac3f4fad23b8a",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationStore.kt",
+      "previousSha256": "8c0b90a3a625afa3810c0b3c6a5295e4aed61939ade138fec817979cfcfa4ec9",
+      "currentSha256": "8c0b90a3a625afa3810c0b3c6a5295e4aed61939ade138fec817979cfcfa4ec9",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryController.kt",
+      "previousSha256": "f0c0fd913a0ab8c14b7322731f939f03d2a05b7d8d7cf2209fa42a0bb10a0206",
+      "currentSha256": "f0c0fd913a0ab8c14b7322731f939f03d2a05b7d8d7cf2209fa42a0bb10a0206",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryCommands.kt",
+      "previousSha256": "f201d241634a039d7d5ad06fac94139bb4e18840d6c536c9a3611d0da6647b66",
+      "currentSha256": "f201d241634a039d7d5ad06fac94139bb4e18840d6c536c9a3611d0da6647b66",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStore.kt",
+      "previousSha256": "27c55bb993a4b7e5ab8499126afbccbea7e1027ea4c4f1b5c9be83139474f309",
+      "currentSha256": "27c55bb993a4b7e5ab8499126afbccbea7e1027ea4c4f1b5c9be83139474f309",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt",
+      "previousSha256": "ab6a85ae4cf5dd15a1bd1590a34daee3854c3f145a789d650467809cc05ad46e",
+      "currentSha256": "ab6a85ae4cf5dd15a1bd1590a34daee3854c3f145a789d650467809cc05ad46e",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationsPage.kt",
+      "previousSha256": "3cf9ee2a50fd1b08270c2a8afa80197620b9fc90d31947e28113a64a4ce9df1b",
+      "currentSha256": "3cf9ee2a50fd1b08270c2a8afa80197620b9fc90d31947e28113a64a4ce9df1b",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt",
+      "previousSha256": "a939b70dd8b65a45de682cdac0dd023bd3258da61389360adce2c787392ae31b",
+      "currentSha256": "a939b70dd8b65a45de682cdac0dd023bd3258da61389360adce2c787392ae31b",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundLibrary.kt",
+      "previousSha256": "45c32f934d01137fc7c1b9f50b9cefac2587282e847ac51d61b0a268d18d57b0",
+      "currentSha256": "45c32f934d01137fc7c1b9f50b9cefac2587282e847ac51d61b0a268d18d57b0",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundPreview.kt",
+      "previousSha256": "561e13b60f421fa97004840b1cefeea49820ca4971532abbde39eaea9be15a56",
+      "currentSha256": "561e13b60f421fa97004840b1cefeea49820ca4971532abbde39eaea9be15a56",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundProvider.kt",
+      "previousSha256": "3630254f8d3a3ce018fda43f36c9224d734d6ea85d37cdec24508f3d34728c3d",
+      "currentSha256": "3630254f8d3a3ce018fda43f36c9224d734d6ea85d37cdec24508f3d34728c3d",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationColdStart.kt",
+      "previousSha256": "5b8fd750375b50661ceb3c0a89667ec37786e6b053c9c311dcd1eb39f29d1f15",
+      "currentSha256": "5b8fd750375b50661ceb3c0a89667ec37786e6b053c9c311dcd1eb39f29d1f15",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeReadingLedger.kt",
+      "previousSha256": "480cd4fcd0658091310cbd1f621abf0f08b1ece5e0f77b7a7889b3274058ffa4",
+      "currentSha256": "1bfc01e3ff33fc21e3ac4a0b590bfd5a007b6390d09b8dc5920918b4b2480e09",
+      "matchedPrior": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativePhoneReadingStore.kt",
+      "previousSha256": "c834410762e31e775fac7c8d0c3faaf6919836a9078a977b987a6e882b0c5db6",
+      "currentSha256": "4fae0b8e626eef9917e51114207068d8614c4ee068b66e076773ae189feb1d84",
+      "matchedPrior": false
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/ThreadReading.kt",
+      "previousSha256": "08269bf48dea76f82d209ff251aa1ea3f1304893ed350c881ee94babfe99f280",
+      "currentSha256": "08269bf48dea76f82d209ff251aa1ea3f1304893ed350c881ee94babfe99f280",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeNoticeReadCoverage.kt",
+      "previousSha256": "06dd12c7e66dfadaa8cd40da5be394e125edbeb81124724748c6ce2a34b2f107",
+      "currentSha256": "06dd12c7e66dfadaa8cd40da5be394e125edbeb81124724748c6ce2a34b2f107",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativePanelNoticeSession.kt",
+      "previousSha256": "43338376846f9b72a19b9c0ea04f4855667d2abbcee6fa05027ec784d687c6db",
+      "currentSha256": "43338376846f9b72a19b9c0ea04f4855667d2abbcee6fa05027ec784d687c6db",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativePublicProcessCapture.java",
+      "previousSha256": "ecf5b707c6195a00ddb947e26ccb259dfaa803b36ed6f6661ebbf0cb7b198fe8",
+      "currentSha256": "ecf5b707c6195a00ddb947e26ccb259dfaa803b36ed6f6661ebbf0cb7b198fe8",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NativeFixedProcessCapture.java",
+      "previousSha256": "ce27d9228cf07d7c0d3fdb4e69fda11e2aa31cf75b9c09e5e246e27e31832cf4",
+      "currentSha256": "ce27d9228cf07d7c0d3fdb4e69fda11e2aa31cf75b9c09e5e246e27e31832cf4",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android-inbox-examiner/src/main/java/com/agenthub/android/NaturalProcessVisibility.java",
+      "previousSha256": "e2349c7850ba9dfca3229dec48f1f0e61cdf51caef28dcdbff5a0b80deb0aaa6",
+      "currentSha256": "e2349c7850ba9dfca3229dec48f1f0e61cdf51caef28dcdbff5a0b80deb0aaa6",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessDiagnosticObserver.java",
+      "previousSha256": "0bc8ff0871ae8f36140d84281802938de418fcf545214f58099ede8b2845c7fa",
+      "currentSha256": "0bc8ff0871ae8f36140d84281802938de418fcf545214f58099ede8b2845c7fa",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedPublicProcessNaturalObserver.java",
+      "previousSha256": "6124f770385b0af2dc367face15f1494d1b78ed215509e33c6d762fd83df0651",
+      "currentSha256": "6124f770385b0af2dc367face15f1494d1b78ed215509e33c6d762fd83df0651",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android-inbox-examiner/src/main/java/com/agenthub/android/OwnedNaturalNoticeObserver.java",
+      "previousSha256": "f4e555c2a35e7a87632c5ad98f7ccba6dc796052e3391fd7910d10746163aa8e",
+      "currentSha256": "f4e555c2a35e7a87632c5ad98f7ccba6dc796052e3391fd7910d10746163aa8e",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeNaturalPostConsumerInspectionV2Test.kt",
+      "previousSha256": "93a46ed0b830610ea9fa33273ab3d7c29a5c876bd3f45f6b594f4103bca7f5f0",
+      "currentSha256": "93a46ed0b830610ea9fa33273ab3d7c29a5c876bd3f45f6b594f4103bca7f5f0",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsState.kt",
+      "previousSha256": "f9a371bae96954acc8965449a62756aef95795c5959855d107245d0008bd06e1",
+      "currentSha256": "f9a371bae96954acc8965449a62756aef95795c5959855d107245d0008bd06e1",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationEnrollment.kt",
+      "previousSha256": "4db80a0c9a5d0afcc60ee47103f3e274196c9db809d37bef73b619e47f3b184e",
+      "currentSha256": "4db80a0c9a5d0afcc60ee47103f3e274196c9db809d37bef73b619e47f3b184e",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationNotificationArchives.kt",
+      "previousSha256": "dbe1a3278a337368089c6d9ba8a50f2d8090c98c6589cc42afa31ae1a4253c7f",
+      "currentSha256": "dbe1a3278a337368089c6d9ba8a50f2d8090c98c6589cc42afa31ae1a4253c7f",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundDecoder.kt",
+      "previousSha256": "d3b6ec51e38d4a39f21dac18d766811812b69b854d83ad3ffd0482a26c65c8a5",
+      "currentSha256": "d3b6ec51e38d4a39f21dac18d766811812b69b854d83ad3ffd0482a26c65c8a5",
+      "matchedPrior": true
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationRecoveryStatus.kt",
+      "previousSha256": "b7473264138dba410629f02b4edeacb7d632f738d538fbe58e0487a582205d0a",
+      "currentSha256": "b7473264138dba410629f02b4edeacb7d632f738d538fbe58e0487a582205d0a",
+      "matchedPrior": true
+    }
+  ],
+  "rootSubsetMatchedPrior": 37,
+  "officialSources": {
+    "shell_service_protocol.cpp": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/shell_service_protocol.cpp",
+      "sha256": "6a041fee27de1052b26751fb2beb891fab36ff65feaba6fa652d709dbdf37486"
+    },
+    "shell_protocol.h": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/shell_protocol.h",
+      "sha256": "31152fc050e8eed83fe90b1ad99ec13bc36e2d5ae049a273fa8a860b30434943"
+    },
+    "shell_service.cpp": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/daemon/shell_service.cpp",
+      "sha256": "a542db283ec55fe4dd1b6a5c9633ed1eb44d226c5faf1b689bc638e671aee2e7"
+    },
+    "services.cpp": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/daemon/services.cpp",
+      "sha256": "544fe4636f1c6c27be88a7f5875418cc98885a36e6c6629b019974d1a4055581"
+    },
+    "services.txt": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/SERVICES.TXT",
+      "sha256": "65cb6d3c9ff90b347fb03d2fe28ec508e1e0ca15b6fb28bcd2c3a317051d4dc3"
+    },
+    "client.cpp": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/client/adb_client.cpp",
+      "sha256": "49338f10503ea57859c83b8f9b3dc4bd9e71bca7fe7dd82b89418c3ae542cc53"
+    },
+    "host_service.cpp": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/adb.cpp",
+      "sha256": "2dd45db21e5db6f1ed1b2a7f010e725e046b0d9263b2541fc51fa7e0f74e85ab"
+    },
+    "adb_io.cpp": {
+      "url": "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-13.0.0_r1/adb_io.cpp",
+      "sha256": "dd7653dff085e5c211b27a3ad873497cc32c8e50fc89e2824c89d10d76bba18f"
+    },
+    "ProcessRecord.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-13.0.0_r1/services/core/java/com/android/server/am/ProcessRecord.java",
+      "sha256": "65e07c92f9015774dac3dc36a5fe628f023bdeb4e5cc6f4635300474b7cd905e"
+    },
+    "ActiveInstrumentation.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-13.0.0_r1/services/core/java/com/android/server/am/ActiveInstrumentation.java",
+      "sha256": "10144f6e83caf1e1427788526dbf20865dc71cdf5608ceb84da1efe97ca04cdf"
+    },
+    "ProcessList.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-13.0.0_r1/services/core/java/com/android/server/am/ProcessList.java",
+      "sha256": "91a4dc49a47615f403617df204e8d4f274407d77973b422885c50ffd10762882"
+    },
+    "ActivityManagerService.java": {
+      "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-13.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+      "sha256": "054108d24ce9dd1c0aa11534d849cb825c1d1309da3ddb727f0aace1f4c156b5"
+    }
+  },
+  "officialReports": {
+    "research/report.md": "6a73ce8a56b4c9a24ed259447170c4b99ec675a351b1c5f7f82f0b8e4ef2c094",
+    "research/framing.json": "154e0f18ea87d2167eeead02dc8c99b50a0cadc4f778042b7e4a233ab82b43c4"
+  },
+  "runtimeBindings": null,
+  "nativeExecuted": false,
+  "adbInvoked": false,
+  "matrixRows": 21,
+  "matrixSha256": "03d6559df28972e2347abeec2c636b235d064594ea5c9e3f9f2f2d4ad87884f1",
+  "sdkRuntimeImageRead": false,
+  "sourceDiffBase": "7330ee97001d433499f9dc9619a7e748fdf39f4f"
+}

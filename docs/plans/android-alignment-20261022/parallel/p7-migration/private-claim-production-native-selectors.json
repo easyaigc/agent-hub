@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "executed": false,
+  "rootBase": "144cce4adb7d009ba27c1bcbf70f3aade866e444",
+  "instrumentationArgument": {
+    "name": "privateClaimMigrationRun",
+    "value": "<fresh-parent-owned-UUID>",
+    "assignedHere": false
+  },
+  "fixtureRoot": "<acceptance-files>/acceptance/P7-private-claims-<run>",
+  "installationStorage": "isolated ContextWrapper noBackup source/destination folders; role-specific Keystore aliases; actual MobileSession quiesce, IO/raw frozen lease; no actual discovery actor started",
+  "selectors": [
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#streamRoundTripKeepsSourceDestinationAndUnknownOperationsReadOnly",
+      "mode": "one warm selector per fresh parent-supplied run",
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#ownerlessAndStaleLeaseRefuseWithoutPublishing",
+      "mode": "one warm selector per fresh parent-supplied run",
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#badEncryptedClaimRecordKeepsOriginalAndPublishedFile",
+      "mode": "one warm selector per fresh parent-supplied run",
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#malformedOrOrphanClaimsRejectAndKeepPriorCandidate",
+      "mode": "one warm selector per fresh parent-supplied run",
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#legacyUnidentifiedClaimAndUnknownRootScopeStayUntouched",
+      "mode": "one warm selector per fresh parent-supplied run",
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#publicationFaultAndMissingDestinationOwnerPreserveOriginalGeneration",
+      "mode": "one warm selector per fresh parent-supplied run",
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimColdTest#stageFreshClaimCandidateForIndependentReader",
+      "mode": "ordered cold chain, same run, independently verified distinct instrumentation PIDs",
+      "order": 1,
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimColdTest#readSameClaimCandidateAndActivateWithoutPairingUnderDifferentPid",
+      "mode": "ordered cold chain, same run, independently verified distinct instrumentation PIDs",
+      "order": 2,
+      "status": "unexecuted"
+    },
+    {
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimColdTest#readActivatedClaimAuditAgainWithoutRestagingOrReplaying",
+      "mode": "ordered cold chain, same run, independently verified distinct instrumentation PIDs",
+      "order": 3,
+      "status": "unexecuted"
+    }
+  ],
+  "evidence": [
+    "Source/target/candidate ciphertext hashes and candidate receipt are saved/read back, source fence captured only after normal Session quiesce metadata flush.",
+    "Original claim raw strings and names are compared exactly; incoming active claim names/device identity absent; unrelated paired client baseline is not a new claim credential.",
+    "Malformed candidate vectors start from an actually accepted full graph, preventing invalid metadata from masking an alias-validation gap.",
+    "Old encrypted tag1 unknown-name and unknown root scope refuse with original ciphertext/previous published file preserved.",
+    "Unknown existing operation IDs/raw intent/hash/phase/result stay exact; no remote operation inspected or replayed.",
+    "Publication faults, missing/stale/wrong owner and future target claim namespace preserve destination and prior candidate.",
+    "No UI or real remote endpoint opened: HostReads and all CodexCommands ports reject and count calls; require zero.",
+    "Cold writer is non-repeatable when folder/proof exists; readers require original receipt/hash, changed PID and unchanged original candidate; no restage/replay."
+  ],
+  "limits": [
+    "Fixture source has not been Android type-bound, SDK compiled or executed; PSI is syntax only.",
+    "Actual CommonIO/NSD lifecycle source prerequisite is reused; fixture does not start real NSD, HTTP, microphone or real model and is not DEV evidence.",
+    "Root owns device lease, actual run UUID, build/APK/input fingerprint, selector order, failure followup and exclusive fixture cleanup after evidence retention.",
+    "Unknown prior Native/5566 state stays untouched.",
+    "No automatic cleanup in test source erases originals; Root must remove only precisely owned run directories and aliases after evidence is verified."
+  ],
+  "fullP7Complete": false
+}

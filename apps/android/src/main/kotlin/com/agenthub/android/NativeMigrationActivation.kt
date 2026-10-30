@@ -21,7 +21,7 @@ internal class NativeMigrationActivation(private val context: Context,private va
         val easyWorkBusinessDestination=NativeMigrationEasyWorkBusiness.captureDestination(storage)
         fun guarded(original: Map<String,String>): (Int)->Unit {
             val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()||NativeMigrationEasyWorkBusiness.RECORD in original||easyWorkBusinessDestination.isNotEmpty()
-            fun checkBoundary(){originalsUnchanged();if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
+            fun checkBoundary(){originalsUnchanged();NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.keys,owner);if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
             checkBoundary()
             return {point->if(point==0)checkBoundary();checkpoint(point);if(point==0)checkBoundary()}
         }

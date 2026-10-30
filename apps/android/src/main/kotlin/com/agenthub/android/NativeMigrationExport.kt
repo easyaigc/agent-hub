@@ -44,6 +44,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
     internal fun capture(): ByteArray {
         val original=storage.migrationTypedArchiveSnapshot(::legacyNames,resolveModernAliases=NativeMigrationEasyWorkArchives::legacyNames)
         requireSupportedScopes(original.text)
+        NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.text.keys+original.binary.keys,null)
         val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(original.text)),original.text))
         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
         try {
@@ -66,6 +67,7 @@ internal class NativeMigrationExport(private val context: Context,private val st
         add(NativeMigrationProvisionalVoice.RECORD)
         NativeMigrationSelections.legacyNames(read).forEach(::add)
         NativeMigrationPhotoLocals.legacyNames(read).forEach(::add)
+        NativeMigrationPrivateClaims.legacyNames(read).forEach(::add)
         add(NativeSelectionReturnAudit.RECORD)
         add(NativeMigrationInbox.RECORD)
         read(NativeMigrationInbox.RECORD)?.let {NativeMigrationInbox.legacyNames(it).forEach(::add)}

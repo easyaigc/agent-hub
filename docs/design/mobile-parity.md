@@ -1513,4 +1513,12 @@ F06/F08/F10 的原发现错误文案、表单等待与取消交互保持，Sessi
 
 Source64r2/API33 的 11 项受控 owner 验证未操作产品 UI，不能关闭菜单、短视口、主题/语言、系统栏或 AX 矩阵。页面/token/文案及 iOS 本轮不变；[原生档案](../plans/android-alignment-20261022/records/source64-api33-owner-native.md)限定到三项阅读代次和八项 IO 生命周期。
 
+### Source65 设计影响
+
+P7 的连接原意图迁移采用现有迁移页，无新增执行入口；P8 API26 中浅/英深菜单诊断保持四次选择、原点、token、AX、像素与输入边界，合成截图不满足原 Surface 验收。P9 首批偏好、声音、隐私路由对照 UI11，结构/DTO 结果与实际交互、完整像素分开；系统栏/48 MiB/物理端继续待验。iOS UI 不变。 详见[检查点](../plans/android-alignment-20261022/records/source65-composed-source-sdk.md)。
+
+### Source66 迁移恢复增量
+
+Source66 使用既有迁移页面，无新增交互。历史读取目标标志仅单向加强；其余客户端差异仍拒绝，不静默改变界面权限。新增16图断言随首项实际Native通过，六warm为非UI边界；完整视觉/系统交互待验。 详见[检查点](../plans/android-alignment-20261022/records/source66-migration-client-restore.md)。
+
 2026-10-30 F03：本轮仅修复 Host 的 Codex 更新恢复，不新增页面、设计 token 或端侧文案；iOS／Android 保持既有连接／目录读取失败与重试状态。Host 返回 503 和准确目录状态，原目标／缓存／草稿不变，不能将后台恢复显示为新电脑或重新登录。两端原生本轮未新增验收，A6 暂停。

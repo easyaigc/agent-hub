@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "checkpoint": "Source66 migration restore and monotonic read-target guard",
+  "baseHead": "794c985148e14ee4c97700d1e98a87af456fcd88",
+  "source65KnownFailure": {
+    "nativeCase": "streamRoundTripKeepsSourceDestinationAndUnknownOperationsReadOnly",
+    "actualCalls": 74,
+    "passed": false,
+    "originalBStrictlyPreserved": true,
+    "lockReleased": true,
+    "rootReviewSha256": "f6d0196f10cf963941f68fcf23d3b1710a0fee8f8ceb00c2b33c78bf2750d140",
+    "originalFixtureMembers": 14,
+    "originalFixtureBytes": 21519
+  },
+  "canonicalInputCount": 841,
+  "canonicalSourceSha256": "aebeffdfca492cd2d56de3627e97636b1f62cb625df0e673d1d9ac782ad6ac44",
+  "expandedInputCount": 854,
+  "expandedSourceSha256": "e8bf6fbf097c3775b8f239074e5f874b2f7d20516dc569bebf56a41480f69e85",
+  "build": {
+    "exitCode": 0,
+    "seconds": 6.156968832015991,
+    "resultSha256": "81bad9d91512198e1faa96305c23fd1577ca1520b1adb8e25e6c5f3ef1fcd988"
+  },
+  "candidateSha256": "feedad6eb58548ea4f41b0ff7d658be0b6d833dcce6a3fe24ec0f2bc50cd4dea",
+  "identitySha256": "e9b77b4fc7d7a5ad50d4f5b69d87696755c6dcc9675fbf30acf4bfd97ce6e42a",
+  "rootSdkReviewSha256": "82569d01bd20e06b3a4033e82a21d0b20451e89fc00bb9f6856bbc6fea31cc77",
+  "apks": {
+    "app": "9aaaf5a9126a3d0fb5ffaf75be00d6030c249dc56b0b0cb58bcfe435d2fa8b83",
+    "test": "c78a1cff89dd958c5d0e400a29d553d6acd2653451c1fde0a9055e70544fb325",
+    "examiner": "f6c813b5a10329ec1b97e7cbf009c71502837f794adf831b2a79cb4ec15c256a"
+  },
+  "newGraphAssertions": 16,
+  "assertionsNativePassed": true,
+  "sixWarmNativePassed": 6,
+  "coldNativePassed": 0,
+  "fullP7Passed": false,
+  "iosProductChanged": false,
+  "tasksProjects": "paused",
+  "iosA6": "paused",
+  "record": "records/source66-migration-client-restore.md",
+  "rootReviewedActualWarmCalls": 540,
+  "rootReviewedUpgradeCalls": 122,
+  "originalBAndSource65FailureFixturePreserved": true,
+  "nativeCases": [
+    {
+      "index": 1,
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#streamRoundTripKeepsSourceDestinationAndUnknownOperationsReadOnly",
+      "reviewSha256": "2dc427a8e5be6adec8a8dbe6a304d4cde551257f87c87de56fa84cce8f0d710c",
+      "resultSha256": "ed031af04ca75267d8515e71b0d2910f1da8ab832557ed6b55f7a57151024aff",
+      "calls": 90,
+      "rawBytes": 1825312,
+      "archives": [
+        {
+          "kind": "after-native-fixture",
+          "sha256": "eade70fc69c4ec9742e883dbb5d27117002d508322cda62b64d232f2d2e62c41",
+          "bytes": 102400,
+          "memberBytes": 32168,
+          "members": 45
+        },
+        {
+          "kind": "before-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        },
+        {
+          "kind": "after-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#ownerlessAndStaleLeaseRefuseWithoutPublishing",
+      "reviewSha256": "7a9a0a16d3cb308c28cc3501cf9f16b6cb3597e7cf8bb7d471322165a8b526d0",
+      "resultSha256": "ac8b32b56686c23c1218307d9c5070665c7402b291d6e58f2d2aa014caf387da",
+      "calls": 90,
+      "rawBytes": 1740953,
+      "archives": [
+        {
+          "kind": "after-native-fixture",
+          "sha256": "fc4a5586ef348974c3d52dac0c42600807266d57dd6fbec003e621199df355f0",
+          "bytes": 34816,
+          "memberBytes": 14055,
+          "members": 16
+        },
+        {
+          "kind": "before-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        },
+        {
+          "kind": "after-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#badEncryptedClaimRecordKeepsOriginalAndPublishedFile",
+      "reviewSha256": "2f73e55d2029d4cbd2398cc786269dc6e6ca7d6c20ba2d0af1f4b808cd2c3ae8",
+      "resultSha256": "c435aa7fa6ec3190e02fdac7f2b4f6fcad40898697ba02b112703f769608ac9d",
+      "calls": 90,
+      "rawBytes": 1729792,
+      "archives": [
+        {
+          "kind": "after-native-fixture",
+          "sha256": "6b817423f20a9ce059b175fb022c02f1bc6aa938def4ee1b07b7bcd3aac3a195",
+          "bytes": 25600,
+          "memberBytes": 6459,
+          "members": 14
+        },
+        {
+          "kind": "before-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        },
+        {
+          "kind": "after-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#malformedOrOrphanClaimsRejectAndKeepPriorCandidate",
+      "reviewSha256": "ecbcdd50550a87bc15dcf979bcdca0f19c7fe441289d885d5179230e33c9776e",
+      "resultSha256": "de28b98470e7fde4b221ae88bf0a4c305116e14e98b1bb0792ffb356a62f9ca9",
+      "calls": 90,
+      "rawBytes": 1771119,
+      "archives": [
+        {
+          "kind": "after-native-fixture",
+          "sha256": "f4e8569bb49ad1205d447b0d0264bbfd1a0a811230d0acd027094071f3a68675",
+          "bytes": 61440,
+          "memberBytes": 22865,
+          "members": 26
+        },
+        {
+          "kind": "before-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        },
+        {
+          "kind": "after-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#legacyUnidentifiedClaimAndUnknownRootScopeStayUntouched",
+      "reviewSha256": "f82d69be8df393c16e3f7f1e06f2679eecd2c6cea0b340189519874ef1755bf3",
+      "resultSha256": "c92d12a50872106fbab9e86f95e286d14ae52f41b6c08c5202f8f322eb97ea27",
+      "calls": 90,
+      "rawBytes": 1741165,
+      "archives": [
+        {
+          "kind": "after-native-fixture",
+          "sha256": "eefbc01d6ca75044028dfff14faac308245d371d11854d2eab4aea8c8b8729f1",
+          "bytes": 34816,
+          "memberBytes": 7260,
+          "members": 20
+        },
+        {
+          "kind": "before-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        },
+        {
+          "kind": "after-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "selector": "com.agenthub.android.NativeMigrationPrivateClaimStorageTest#publicationFaultAndMissingDestinationOwnerPreserveOriginalGeneration",
+      "reviewSha256": "e403c8cf9a52b3e367b07ce2ebdb2a4ef5eea342f85a783f2dedc71d3182f7fb",
+      "resultSha256": "dacd505d3a2ce39c881faea2ff3138e0a4494f78192aca4dd030ce2501a63165",
+      "calls": 90,
+      "rawBytes": 1782144,
+      "archives": [
+        {
+          "kind": "after-native-fixture",
+          "sha256": "6e4691bb7859c1148cb3db473d855b01cc9861eafaed594b6bf2c8c6782aa27b",
+          "bytes": 70656,
+          "memberBytes": 24319,
+          "members": 31
+        },
+        {
+          "kind": "before-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        },
+        {
+          "kind": "after-native-retained-c01",
+          "sha256": "fd12f59ecf1ebb526b1cfed7e243134e4c1716849654ffdb9e6528c8883e3362",
+          "bytes": 41472,
+          "memberBytes": 21519,
+          "members": 14
+        }
+      ]
+    }
+  ]
+}

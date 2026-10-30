@@ -2,6 +2,9 @@
 
 当前总计划、优先级与完成状态只维护在[计划与进度总表](../progress.md)。本目录保存过程和历史依据，不用旧记录的“下一步”“当前分支”替代最新计划。
 
+- [Source67 默认密钥存在性观察](source67-default-alias-observation.md)：独立 Test 入口、842/855 输入与三 APK；设备及产品结果待验。
+- [PR70 整批超时计时观察](ci-batch-timeout-observation.md)：保留原失败断言，增加真实 Worker 计时证据；Linux 根因待核对。
+
 ## 按主题查阅
 
 | 档案                                                                | 内容边界                                        |
@@ -185,3 +188,7 @@ I4-2：[Markdown受控阅读](p6-markdown-reader.md)，原生与失败/待验依
 - [Source64：发现、连接与阅读归属](source64-discovery-reading-ownership.md)：同一 Session IO/NSD 真实退出、九处共享接线和阅读夹具收尾修正；Source64r2 SDK/三 APK 通过，Native 待验。
 
 - [Source64r2：API33 阅读与 IO 归属](source64-api33-owner-native.md)：11 方法限定通过，715 份实际调用及原 B 严格保护；外层工具错误、完整网络/UI/DEV 待验分别保留。
+
+- [Source65 组合源码与 SDK](source65-composed-source-sdk.md)：惰性连接意图迁移、准确夹具退出、API26 菜单诊断和 P9 方法分组；原生/系统/DEV 继续待验。
+
+- [Source66 迁移恢复与读取标志](source66-migration-client-restore.md)：Source65实际失败、原件保持、迁移专用恢复/单调Boolean兼容和新候选真实验收。

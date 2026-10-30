@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "Test fixture ownership lifecycle; no production protocol, IO ledger or command change",
+  "states": {
+    "REGISTERED": "Static exact-root record exists before scheduling coordinator. No session execution if admission closes.",
+    "CREATING/CREATED/RESTORING": "Creation entered and exact session captured in Main before starting restore/crossing a cancellable return.",
+    "ACQUIRING/ACQUIRED": "Acquisition entered in Main; exact returned lease captured before context/timeout return. Throw without lease is unconfirmed, no abandonment/retry.",
+    "RETIRE_QUEUED/RETIRING/RETIRED": "One retire attempt; retirementConfirmed is set only after actual synchronous call normally returns inside Main.",
+    "RELEASE_QUEUED/RELEASING/RELEASED": "One release attempt only after retirementConfirmed. releaseConfirmed only after actual normal return inside IO. Failure is partial/unknown, never retried.",
+    "ABANDON_QUEUED/ABANDONING/ABANDONED": "Only before acquisition ever entered; actual abandon normal return inside Main confirms session stop.",
+    "NO_SESSION": "Coordinator/creation never entered, so there is no created Session/lease to stop. Constructor entered but failed to return an object is not declared clean."
+  },
+  "rules": [
+    "Never release raw/child frozen handles in an unconditional finally after retirement failure or unknown return.",
+    "On cleanup unknown, keep exact actual objects strongly and remain inside real untimed instrumentation/JUnit wait. No recreated session/lease, guessed outcome, JSON-only substitute or process exit.",
+    "A pending cleanup can wake waits only when actual confirmation is recorded. A failed retire/release has no retry/unblock/clear API; Root must preserve the process and original objects for explicit followup.",
+    "First action/assertion failure remains primary; verification/retire/release/diagnostic/interrupt failures are added as suppressed, not replacements.",
+    "Counter/phase, cancelled Job and signal file are not proof of actor exit. JUnit rule checks actual worker exit and cleanup facts.",
+    "Every Native fixture uses default untimed wait and owner rule. Fake-resource JVM tests alone inject a throwing observation wait; even that cannot bypass the Native JUnit outer guard for unresolved real records.",
+    "No new production owner ledger. Test registry key is exact canonical coordination directory, preventing a new test Session replacing an unresolved owner. No runtime test UUID is assigned by this source work.",
+    "Actual JUnit guard and exact body Thread are both retained. Guard requests local body cancellation once on first interrupt, closes new enrollment, and records later interrupts; no forced JUnit completion while owner remains unconfirmed."
+  ],
+  "NativeExpectations": [
+    "Normal execution retires once then releases once, preserving existing success or original body failure semantics.",
+    "Cancel at Main create/acquire return preserves exact original session/lease; no original object is lost at withContext/withTimeout return.",
+    "Retire throw/partial retirement leaves release call count0 and original raw gate held; source/root/candidate/key unchanged; JUnit stays live.",
+    "Release throw records partial/unknown close with call count1, keeps exact owner/objects/context and does not retry or mark released.",
+    "Interrupt during pending retire/release does not end instrumentation/JUnit; further interrupts are recorded, no duplicate cleanup or replacement Session.",
+    "If actual in-flight cleanup later confirms, guard/body thread complete and original assertion/cancellation propagates; no forced success.",
+    "If no confirmation can arrive after failure, keep original process/context. Do not force-stop instrumentation as automatic timeout cleanup or replay a selector; Parent owns explicit safe followup."
+  ],
+  "currentEvidence": "Portable JVM14 plus PSI5 only; actual Android Session/raw locks/Keystore and prior9 Native selectors still unexecuted."
+}

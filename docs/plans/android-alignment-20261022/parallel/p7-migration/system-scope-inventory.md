@@ -40,3 +40,9 @@ F33/F42/F56/F58/F64 shared assertions: every original included or the whole arch
 ### Root intake boundary
 
 Root adopts this 926f9cc2 inventory as a source index, not a full migration or native acceptance claim. Of its44 original source pins, current Storage changed to the reviewed strict reader91107 and iOS SessionStore gained the separate main F73 entry; migration scope definitions remain explicit. The e0fb provisional delivery remains rejected historical source. Source-only review of a795ee67 finds its two owner-pause/seal and writer-freeze blockers closed on the production path; exact Root strictStorage/F73 composition and all nine native scenarios remain pending. External inbox has only a planned contract and nonempty inputs remain refused. The separate Source52 existing-default authentication chain and full system-scope implementation proceed separately; task/project business and physical iOS A6 remain paused.
+
+## Source65 当前增量
+
+`root-claims` 原基线行保留用于追溯。当前已实现闭合集合的惰性原意图归档，来源和目标原件合并；原 Session、相同 storage 与冻结 writer 共同守卫。未知记录继续拒绝，不恢复配对授权、发送或重放。Source65 组合 SDK 与三 APK 校验通过；六项 warm、三项跨进程链及实际系统/DEV 尚未通过。其余 23 行原范围及任务/项目暂停项保留，完整 P7 未完成。
+
+Source66补充：prepared restore与可选Boolean单调兼容已集成，六项API33 warm/首项16图边界限定通过；原Source65失败不覆盖。三个冷方法的existing-key准入、新代次和完整UI/OS/DEV继续待验，不能关闭root-claims完整验收或其余23组。

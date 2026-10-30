@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-collector-fix-and-api33-cases-source-20261030-1",
+  "baseHead": "9ca7c3300407c3f6f8e387c4d9c85c06fcacab26",
+  "rootCaseSourceCommit": "144cce4adb7d009ba27c1bcbf70f3aade866e444",
+  "sourceFiles": {
+    "scripts/mobile/fixtures/parent-collector-v1/fixed_parent_collector.py": "a03203db7cca3f8bff5fd7f1c7c71f0d2d0c9e7ac90d3a5ec1454b62af6a6fb4",
+    "scripts/mobile/fixtures/parent-collector-v1/fixed_parent_ownership.py": "b2272f40b0b090dafd3bae3d5bc242032ef3efaf5d124b853c3690763784877d",
+    "scripts/mobile/fixtures/parent-collector-v1/test_fixed_parent_collector.py": "44f24f7e4d2fbecaa4aa7ad7a694c7955fa0503f39ecf7d1f283644dc60cfcb8",
+    "scripts/mobile/fixtures/parent-collector-v1/test_fixed_parent_ownership.py": "22acf27ae0079e2f6c1f0547242919e44a70f335bf70c0061ea4e00039408981",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/fixed-parent-collector-v1.json": "077381761784f28db6b7b78dda94b70048d9d7255d06bb8b7a6e6fbef6094c98",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/api33-independent-native-cases.json": "7dd9358bb708bd4e8aa068a4142da8f79513496630cc9cf7a8db29cbca5044f4",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/api33-independent-native-cases.md": "79aca5d0d3ef7e0c6c250e43ab3f01ee185d3ade1982ca964deffd2a2fb08a58",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/collector-once-review.md": "0b2e02a5bfeae2b5e4c538f74e8ce490833d0ec79f92ec7d9b09743759a0a8e6",
+    "docs/plans/android-alignment-20261022/parallel/p9-notifications/collector-once-parity-delta.json": "dd6fce6811860881b3f816a05e7a8d8342e68ddff46ba821e730353feb0e4210"
+  },
+  "sourceFileHashScope": "Nine stage files excluding this source map; Root case source pins are a reviewed subset, not complete implementation fingerprint",
+  "rootReviewSha256": "2770dc32b319528ba4069ae11c77e54a9ad79c3dfcd4774434d94469696d8084",
+  "addressedFindings": {
+    "P9-S65-01": "O_NONBLOCK final component and bounded real FIFO refusal",
+    "P9-S65-02": "Source inherits actual common Root flock; durable once/pending and in-process original owner; Root supervisor/live lifecycle integration still required",
+    "P9-S65-03": "Unimplemented official server/device authority remains closed"
+  },
+  "rootCompiledSourceEvidence": {
+    "sourceMapSha256": "080a845753680e3f44ae9eeb321c24534495d97199eda021c2f24934645eaafe",
+    "canonicalSourceSha256": "41777c46429fc5713b3d69c3f403065a698c69033dff0b1261cdadebf801db86",
+    "sourceMapEntries": 843,
+    "buildExitCodeReported": 0,
+    "buildPassedReported": true,
+    "apkMetadataFromRootAttestation": {
+      "app": {
+        "package": "com.easyai.agenthub.android.acceptance",
+        "sha256": "3329b85d68aa69662b404000e05db4003e5174eff5412c0e1186473d86b0aa7c",
+        "bytes": 70251620,
+        "nativeSignerSetSha256": "4f719bb23e1366a472b42507d73147e69b005aaf84f8d12ae020208dc1618965"
+      },
+      "examiner": {
+        "package": "com.easyai.agenthub.android.acceptance.coldexaminer",
+        "sha256": "f6c813b5a10329ec1b97e7cbf009c71502837f794adf831b2a79cb4ec15c256a",
+        "bytes": 1017598,
+        "nativeSignerSetSha256": "4f719bb23e1366a472b42507d73147e69b005aaf84f8d12ae020208dc1618965"
+      },
+      "runner": {
+        "package": "com.easyai.agenthub.android.acceptance.test",
+        "sha256": "9288a36cc554182904ffbefa30a2743262c4fb583ae320a0461391233ac3afaf",
+        "bytes": 12531135,
+        "nativeSignerSetSha256": "4f719bb23e1366a472b42507d73147e69b005aaf84f8d12ae020208dc1618965"
+      }
+    },
+    "independentApkRehashOrDexEnumerationThisStage": false,
+    "selectorExecutionThisStage": false
+  },
+  "rootNativeCaseSourcePins": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt": "af09b8c863472942059d26f96d230ac3972a11b8125817ff8f97ac82ed6004d2",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt": "9f4d5056ed396a9c5f92092ec6e7f5c4aabe51b9b6310a843261f9cc83d123db",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationAppIntegrationTest.kt": "0adcbeae0736c2f62949cab3f7352ff604815a8cff83e9e7d160d776ff9309ea",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationProviderIntegrationTest.kt": "fe690a9aa151ba857280a17ecc682c97d91974065e2b50bb69ce3b851dad1af1",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsCycleInspectionTest.kt": "452735b7b405e557f5e79678554a7679e78108dcfc0af59341b09c02db73453d",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt": "d6a2ec22abe32139c160c7c8f2e514b14b67c5f4f3c3d8c583f11c9dcaf82089",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdWriterTest.kt": "ab0b3b60273457304c32769d12879204f5c213734a52bdd7bb5c733b77e6d5c3",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdReaderTest.kt": "373aed792800c48a0fc2ac54c48695b9130701e615815224f0e0999487a4be72",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsFixture.kt": "62d56e8489eff26d138b6627da8bfcdccc31f96a4b447b3ea71a43f4da888912",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCycleFiles.kt": "43c75b95d3873bc449441844929aadbaa145328d13d38b22cdfcda09d1a2a398",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCycleEvidence.kt": "cc7b42e542f3be84edc6710031625fdb9edc2f6b3508d756fa76266f29ff9173",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "9dfe2693d5b21924cb294616c7071f9a73995c3bcbc512b370acb84155df68c2",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTestForeground.kt": "462ca074a11008c11ee860ec363ef87d2ca15cd7c4f8377cd41565a5f4ac9533",
+    "apps/android/build.gradle.kts": "b062096955ff20e5c6f0bb525ba88a74fdcadf2cfc062febaea6de9086591eb7",
+    "apps/android/src/androidTest/AndroidManifest.xml": "5bb2bb5411272cc79828ab2bc2c2d2c9e493c9b1646ab53285fd5dad433dab2c",
+    "apps/android/src/androidTest/java/com/agenthub/android/NativeSoundForeignWitnessProvider.java": "60161dc8dfef7bc51df8794db3a4e60a0beecdc94ec4d7b0efafa762fc0a737d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAcceptanceScope.kt": "aa430306afb43202544d67cecbbb57679c103ca6b8456c7d62332f7f5a237d9b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "ab6a85ae4cf5dd15a1bd1590a34daee3854c3f145a789d650467809cc05ad46e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt": "a939b70dd8b65a45de682cdac0dd023bd3258da61389360adce2c787392ae31b"
+  },
+  "historicalMap": {
+    "path": "docs/plans/android-alignment-20261022/parallel/p9-notifications/fixed-parent-collector-source-map.json",
+    "sha256": "bd3d9dc9dcb78ffe9e19b1e0240e1addc6039ee284687eabcc2e35c7b0a882ac",
+    "scope": "Immutable 9ca7-era source/Root4a5bb90f subset. Its old stage source hashes do not describe this amendment."
+  },
+  "matrixSha256": "03d6559df28972e2347abeec2c636b235d064594ea5c9e3f9f2f2d4ad87884f1",
+  "caseCount": 53,
+  "independentCaseCount": 42,
+  "runtimeBindings": null,
+  "adbOrNativeExecuted": false,
+  "rootWritten": false,
+  "offlineChecks": "23 passing boundary vectors on final source; offline unittest only",
+  "previousFailureRetained": "Private tests-root-fence.json; later tests-after-fence-fix.json does not rewrite it",
+  "nativeOrAbsencePromotion": false
+}

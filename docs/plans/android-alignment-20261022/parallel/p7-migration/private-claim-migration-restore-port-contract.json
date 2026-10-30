@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "Test fixture official migration restore port; no production API/rule change",
+  "preconditions": [
+    "Existing fresh isolated source/destination roots only; original failed run is never reopened/replayed by this source work.",
+    "Exact Session is constructed and registered in Main before suspended restore work.",
+    "Sync restore hook does not call ordinary restore; awaitRestore calls official restoreForMigration once."
+  ],
+  "postconditions": [
+    "Same root logical metadata and codex-private-connections-v1 texts compare exactly before/after restore; no original values printed in assertion failures. This Native assertion is pending real execution.",
+    "Quiesce/acquire only after restoreForMigration and exact-original checks complete.",
+    "References vault-client/metadata-client strict equality and remoteCalls==0 remain unchanged. Source65 failure remains failure.",
+    "All existing first-error/actual-job-exit/unknown-retention gates remain, including interruption during suspended restore."
+  ],
+  "validation": "Current portable fake-resource18 and PSI5 passed once; no uncaught runtime exception. None proves actual MobileSession/metadata/vault/Keystore/raw locks or Native result.",
+  "nextGate": "Root semantic disposition of the production whole-client equality discrepancy first; only then Source66 combination/SDK/new Test-only upgrade and independently admitted fresh Native. No original-run change.",
+  "postQuiesceContract": "Quiesce persists runtime client snapshot; requiresReadTarget differs from unchanged seed vault. Existing exact References validation remains, so this necessary wiring repair does not establish Native readiness."
+}

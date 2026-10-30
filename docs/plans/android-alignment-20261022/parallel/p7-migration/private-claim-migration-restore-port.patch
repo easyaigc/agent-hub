@@ -1,0 +1,60 @@
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt
+@@ -88,8 +88,14 @@
+             android.system.Os.chmod(file.path,0x180)
+         }
+         return PrivateClaimFixtureLifecycle(record,Dispatchers.Main.immediate,
+-            create={MobileSession(root,reads(),commands())},restore={it.leaveForeground();it.restore()},
+-            awaitRestore={it.awaitMigrationRestore()},acquire={it.quiesceForMigration(UUID.randomUUID().toString())},
++            create={MobileSession(root,reads(),commands())},restore={},
++            awaitRestore={session->
++                val names=listOf("metadata","codex-private-connections-v1")
++                val originals=withContext(Dispatchers.IO){names.associateWith {root.read(it)}}
++                session.restoreForMigration()
++                withContext(Dispatchers.IO){assertTrue("Migration restore must preserve original metadata and vault",
++                    originals==names.associateWith {root.read(it)})}
++            },acquire={it.quiesceForMigration(UUID.randomUUID().toString())},
+             retire={session,lease->session.retireForMigration(lease.operationId)},
+             abandon={it.abandonMigrationRestore()},release={it.releaseRawWriters()},
+             verify={assertEquals("No remote lookup/authorization/POST/replay is admissible",0,remoteCalls.get())}
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt
+@@ -74,6 +74,36 @@
+             assertEquals(1,f.retires.get());assertEquals(1,f.releases.get());assertEquals(0,f.abandons.get())
+         }finally {dispatcher.close();assertTrue(executor.awaitTermination(5,TimeUnit.SECONDS))}
+     }
++    @Test fun suspendedMigrationRestoreHasExactSessionBeforeWorkAndCompletesBeforeAcquire()=runBlocking {
++        val f=Fixture();val entered=CompletableDeferred<Unit>();val resume=CompletableDeferred<Unit>()
++        val restored=AtomicBoolean();val acquisitions=AtomicInteger()
++        f.awaitRestore={
++            assertSame(f.session,it);assertSame(it,f.record.session)
++            entered.complete(Unit);resume.await();restored.set(true)
++        }
++        f.acquire={assertTrue(restored.get());acquisitions.incrementAndGet();f.lease}
++        val task=async{f.lifecycle().run {"migration restored"}}
++        try {
++            withTimeout(5000){entered.await()}
++            assertSame(f.session,f.record.session);assertFalse(f.record.acquisitionEntered)
++            assertEquals(0,acquisitions.get());assertNull(f.record.lease)
++            resume.complete(Unit);assertEquals("migration restored",withTimeout(5000){task.await()})
++            assertEquals(1,acquisitions.get());assertTrue(f.record.cleanupConfirmed)
++            assertTrue(f.record.coordinator!!.isCompleted&&f.record.coordinatorCompletionConfirmed)
++        }finally{resume.complete(Unit);task.cancelAndJoin()}
++    }
++    @Test fun cancellationDuringSuspendedMigrationRestoreAbandonsExactSessionBeforeAcquire()=runBlocking {
++        val f=Fixture();val entered=CompletableDeferred<Unit>();val blocked=CompletableDeferred<Unit>();val acquisitions=AtomicInteger()
++        f.awaitRestore={assertSame(f.session,f.record.session);entered.complete(Unit);blocked.await()}
++        f.acquire={acquisitions.incrementAndGet();f.lease}
++        val task=launch{f.lifecycle().run<Unit>{error("unexpected body")}}
++        try {
++            withTimeout(5000){entered.await()};task.cancel();withTimeout(5000){task.join()}
++            assertSame(f.session,f.record.session);assertFalse(f.record.acquisitionEntered);assertNull(f.record.lease)
++            assertEquals(0,acquisitions.get());assertEquals(1,f.abandons.get());assertEquals(0,f.releases.get())
++            assertTrue(f.record.cleanupConfirmed);assertTrue(f.record.coordinator!!.isCompleted&&f.record.coordinatorCompletionConfirmed)
++        }finally{blocked.complete(Unit);task.cancelAndJoin()}
++    }
+     @Test fun failedRetirementRetainsRealReferencesAndFrozenFakeWithoutRelease()=runBlocking {
+         val f=Fixture();val body=AssertionError("first body failure");val retire=IllegalStateException("partial retirement")
+         f.retire={_,_->f.retires.incrementAndGet();throw retire}

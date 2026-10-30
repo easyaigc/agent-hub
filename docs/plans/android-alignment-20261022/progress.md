@@ -4,11 +4,11 @@
 
 **整体状态：P0 已完成；P1–P4 已交付多批能力，整阶段验收未关闭；P5 真实源等待补验；P6 开发中，P8/P10 仍有后续工作；Android P7/P8/P9 四线并行开发，通知送达依赖仍待齐。** 不用提交数量或局部通过计算产品完成率。
 
-Android 主线交付为 [PR64](https://git.51easyai.com/BCAI/agent-hub-app/pulls/64)；仓库 main 已至 `c7a6f95e`（PR65，仅 Host 协调工具，移动端无新增）；已合并分支已清理。Source60的owner夹具修正与5项补验已提交 `d0eb53e3`；Source62组合源码/一致性/SDK与38个方法已有分组限定证据；当前owner两项失败、一项相机未验；Source63/64 阅读与 IO 接线的组合 SDK/DEX 通过，Source64r2 的 API33 11 方法限定通过；完整系统/UI/DEV 继续，尚未提PR。历史提交和运行过程见[分阶段档案](records/README.md)。
+Android 已交付主线为 [PR64](https://git.51easyai.com/BCAI/agent-hub-app/pulls/64)；已验收增量 [PR67](https://git.51easyai.com/BCAI/agent-hub-app/pulls/67) 已合入 main `622c30f4`，19 个已合并分支及临时集成树已回收。Source60的owner夹具修正与5项补验已提交 `d0eb53e3`；Source62组合源码/一致性/SDK与38个方法已有分组限定证据；当前owner两项失败、一项相机未验；Source63/64 阅读与 IO 接线的组合 SDK/DEX 通过，Source64r2 的 API33 11 方法限定通过；完整系统/UI/DEV 继续。Source65 已提交；首项真实迁移失败且原件保持。Source66 已修复恢复入口/单调读取标志并通过 SDK/三 APK，API33六项warm与首项16图边界限定通过，三项冷链/完整系统和UI继续。历史提交和运行过程见[分阶段档案](records/README.md)。
 
 主线新增 [F73额度与用量](upstream-20261029-usage.json)：双端代码已纳入Source51/52候选，F73原生/真实源及完整界面继续待验，列入P6/P8/P10增量。F74为独立、默认关闭的Host模型代理，双端移动UI不适用；冻结F01–F72范围和任务/项目暂停项保持。
 
-当前优先项：选择/照片原件完整迁移及语音原声补证 → 未读和生命周期。P8菜单原点、P9低API通知并行推进；新API33环境已准备，通知验收未开始。待验不阻塞独立工作。
+当前优先项：P7 三段冷迁移及原语音补证 → 未读和生命周期；Source66 六项 warm 已限定通过。P8 菜单与 P9 通知继续并行，固定默认密钥存在性观察入口已通过新候选 SDK，设备结果单列；API26 当前 384 MiB，48 MiB 待验。待验不阻塞独立工作。
 
 ## 阶段总表
 
@@ -23,7 +23,7 @@ Android 主线交付为 [PR64](https://git.51easyai.com/BCAI/agent-hub-app/pulls
 | P4 输入、队列与控制       | 草稿/附件、生成设置、原客户端队列、停止/继续、计划、审批/问题、原记录恢复                    | **部分完成；剩余项单列补验**：真实队列故障恢复、32 Turn 原回执核对、首次/纯文件及冷回复、冲突/替换/迟到回调、冷 Host、标题/锚点/键盘、问题主操作、选项状态、异步横屏/键盘、原回执双冷保持局部通过                                                                   | 自然故障与回执终态核对、全部原 owner/审批/问题组合、完整原生界面矩阵；20 功能/27 来源节点均未整项关闭            | **优先 1–3**，见下表                                                                |
 | P5 桌面建议               | 来源/实例/版本/租期、并行读取、灰字/详情、采用/追加/替换确认/忽略/撤销                       | **部分完成**：会话/灰字/全文/本地草稿已接通，旧节点、预读、文件设置及长文组合76项本次通过、52项匹配复用                                                                                                                                                             | 真实源正文/采用、实际源长文/计时和完整系统矩阵待验；不自动发送                                                   | **优先 4**；P2/P4 后                                                                |
 | P6 展示、设置与视觉       | 语言/外观/隐私/支持、Markdown/代码/表格/Diff/工具/压缩、长正文、链接/资源、全部页面状态      | **部分完成**：双语资源与词条校验已接通；设置/外观、生成/权限、工具栏和执行/恢复/发送/展开/计划/分支/聊天归档/连接文案及读屏有界通过；共享工具格式、原代码复制、图片输入冷读身份及链接/资源当前版本与目标隔离、直接卡片预览/受控分享、浮动入口触达已修复并限定验收。 | 按来源区分的错误前缀、94 token及完整格式/主题/AX矩阵；浏览器、系统复制/分享/冷恢复随P7补验。                     | **优先 5**；P2/P3/P4 后                                                             |
-| P7 系统、语音、存储与阅读 | 系统附件/URI/互传、权限、完整迁移、双语音、未读与生命周期                                    | **部分完成；当前执行**：流式附件/SAF、原件只读及Main owner已有有界结果；原件保护、冷读、owner与恢复已有有界结果；Source62共有38方法限定通过；Source64r2 阅读/IO 11方法限定通过；owner两项失败/相机一项未验，原后置缺口已只读补证                                    | 24组完整迁移；原声/UI补证，选择原件及其余子存储；48MiB/完整UI/物理DEV                                            | 按[24组库存](parallel/p7-migration/system-scope-inventory.md)逐项推进；设备统一排期 |
+| P7 系统、语音、存储与阅读 | 系统附件/URI/互传、权限、完整迁移、双语音、未读与生命周期                                    | **部分完成；当前执行**：流式附件/SAF、原件只读及Main owner已有有界结果；原件保护、冷读、owner与恢复已有有界结果；Source62共有38方法限定通过；Source64r2 阅读/IO 11方法、Source66迁移6warm/16图边界限定通过；owner两项失败/相机一项未验，原后置缺口已只读补证        | 24组完整迁移；原声/UI补证，选择原件及其余子存储；48MiB/完整UI/物理DEV                                            | 按[24组库存](parallel/p7-migration/system-scope-inventory.md)逐项推进；设备统一排期 |
 | P8 EasyWork A5 封存       | Provider、配对、LAN/Relay、历史事件、控制、EWDAP、原生/Codex回归七组                         | **七组未封存**：协议/传输/授权及分候选Provider配对40项、原字节4和正向表单/Session4有界通过；API37孤立candidate不同PID恢复、地址迟到写回双SDK10次已验；中浅/英深菜单互斥、保存及重开2项通过，两组共8张四态Popup截图逐张查看通过                                      | 截图原点独立绑定及API26菜单捕获、手机完整默认清单；真实issuer/桌面DEV、LAN/Relay系统信任、完整界面和七组整体封存 | 与P7/P9并行；保护原EasyWork任务现场                                                 |
 | P9 普通聊天通知           | PushProvider、有/无GMS、权限/渠道/声音/隐私/去重/路由/角标/漏推恢复                          | **部分完成**：前台/v2/冷开/原回执及worker退出有界通过，已有key跨启动认证、API37本地SDK自然首击及原/新草稿关联通过                                                                                                                                                   | 消费进程退出后冷读、低API强观察、真实Host/供应商/OEM与完整通知生命周期                                           | 与P7共用阅读和迁移；业务通知暂缓                                                    |
 | P10 全量冻结与交付        | 全部适用 F/UI/S/X、双 Provider、双端原生、API26/37/新手机、macOS/Windows、签名升级与安装文档 | **待全量验收与发布准备**                                                                                                                                                                                                                                            | 冻结源码/包/Host/runner；逐行收口，明确未验和暂停项；真实交付核对                                                | **优先 9**；适用依赖关闭后                                                          |
@@ -121,8 +121,9 @@ Linux CI：指定MacBook128已交付最小测试夹具修复，真实Linux/iOS C
 
 ## 当前代码交付状态
 
-- 主线：Android PR64；仓库 `c7a6f95e`（PR65 无移动变更）；Linux/iOS CI通过，已合并stage12本地/远端分支已清理。
-- 开发分支：`codex/android-parallel-stage31-20261030`；23方法库存按各自候选为**22限定通过、1硬链接夹具待验**，其中本轮Source60实际owner5项通过。逐项结果见[owner补验档案](records/source60-inbox-owner-fixture.md)；旧Source55失败保持。当前Source62组合选择/照片迁移、P9只读恢复与P8截图工具，SDK与38项分组限定通过，owner两项失败及相机一项未验；原指针只读补证且旧失败保留，系统/完整界面继续。Source63 已接入阅读旧写入隔离、实际 Store 夹具、owner 原因诊断与 P8 类型隔离，组合SDK/三APK与新DEX审计通过；Native未执行，Source64 已修 Ledger worker/清理收尾并接入发现/HTTP 同一归属与九处 Session 钩子，Source64r2 组合 SDK/三 APK 通过，API33 阅读 fence 3 项和 IO owner 8 项限定通过，715 份原调用及原 B 前后保护已独立核对；实际 NSD/HTTP、Store/Ledger、完整系统/UI/DEV 继续。
+- 主线：[PR67](https://git.51easyai.com/BCAI/agent-hub-app/pulls/67) 已合入 `622c30f4`；iOS/workspace CI通过，19个已合并分支及集成树已回收；活跃并行分支保留。
+- 开发分支：`codex/android-parallel-stage36-20261030`；Source65/66 增量已提 [PR70](https://git.51easyai.com/BCAI/agent-hub-app/pulls/70)，iOS CI 通过、workspace CI 失败，已补[真实计时观察](records/ci-batch-timeout-observation.md)等待准确提交复验，尚未合并；23方法库存按各自候选为**22限定通过、1硬链接夹具待验**，其中本轮Source60实际owner5项通过。逐项结果见[owner补验档案](records/source60-inbox-owner-fixture.md)；旧Source55失败保持。当前Source62组合选择/照片迁移、P9只读恢复与P8截图工具，SDK与38项分组限定通过，owner两项失败及相机一项未验；原指针只读补证且旧失败保留，系统/完整界面继续。Source63 已接入阅读旧写入隔离、实际 Store 夹具、owner 原因诊断与 P8 类型隔离，组合SDK/三APK与新DEX审计通过；Native未执行，Source64 已修 Ledger worker/清理收尾并接入发现/HTTP 同一归属与九处 Session 钩子，Source64r2 组合 SDK/三 APK 通过，API33 阅读 fence 3 项和 IO owner 8 项限定通过，715 份原调用及原 B 前后保护已独立核对；实际 NSD/HTTP、Store/Ledger、完整系统/UI/DEV 继续。
+- 新候选：[Source67 默认密钥观察](records/source67-default-alias-observation.md) 842/855 输入及三 APK 的 SDK/签名通过，新增入口尚未设备执行；产品代码与 Source66 相同。此前 [Source66](records/source66-migration-client-restore.md) 841/854 输入与三 APK 校验通过；Source65首项迁移失败原样保留，六项warm及首项16图边界限定通过，后续先验3冷链，P8菜单与P9首批独立推进。
 - iOS PR60的圆形重试、F73及最新交互仍纳入逐项对照；当前物理iOS无新增验收。任务/项目、iOS A6继续暂停。
 - 远端业务/模型输入仍221、P4 205，另1个未知原操作封存；本轮仅本地Native，无新增Host输入。未知操作不查询或重放。
 

@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "kind": "unbound-executable-source-not-runtime-config",
+  "operationId": "parent-p9-collector-fix-and-api33-cases-source-20261030-1",
+  "taskId": "android-parallel-p9-notifications-20261028",
+  "baseHead": "9ca7c3300407c3f6f8e387c4d9c85c06fcacab26",
+  "source": "scripts/mobile/fixtures/parent-collector-v1/fixed_parent_collector.py",
+  "tests": "scripts/mobile/fixtures/parent-collector-v1/test_fixed_parent_collector.py",
+  "productionIntegrated": false,
+  "nativeExecuted": false,
+  "adbInvoked": false,
+  "runtimeBindings": null,
+  "bindings": {
+    "sdkAdbAbsolutePath": null,
+    "sdkAdbSha256": null,
+    "serverAddress": null,
+    "serverPid": null,
+    "serverStarttime": null,
+    "serverLease": null,
+    "wireByteOrder": null,
+    "serial": null,
+    "device": null,
+    "sourceApkSignerTuple": null,
+    "roleUids": null,
+    "cfgUuid": null,
+    "nativeNonce": null,
+    "immutableIntent": null,
+    "lease": null,
+    "protectionBaseline": null,
+    "captureInvocationIds": null,
+    "positiveWitness": null,
+    "rootCommonTargetFence": null,
+    "rootSharedPrivateOnceDirectory": null
+  },
+  "fixedServices": {
+    "PS": {
+      "literal": "/system/bin/ps -A -n -o UID,PID,NAME",
+      "combinedCap": 262144
+    },
+    "AM": {
+      "literal": "/system/bin/dumpsys activity processes",
+      "combinedCap": 1048576
+    }
+  },
+  "maximumCaptureSeconds": 5,
+  "transport": "Root-only direct smart socket to attested existing official SDK adb server; fixed serial, shell_v2 required, raw only, close-stdin packet, no CLI child/server startup",
+  "whyNotCli": "CLI consumes exit frames and may return its default zero after transport closes without an exit frame",
+  "packetByteOrder": "This implementation is little-endian only; AOSP uses native uint32 memcpy. Future Root lease must independently attest matching SDK/adbd endianness; no default device binding",
+  "streamSemantics": {
+    "stdout": "exact independent bytes/SHA; no inserted markers",
+    "stderr": "exact independent bytes/SHA, genuinely empty remains empty",
+    "eof": "Per-stream transport-completeness recorded; remote clean pipe EOF is unavailable/null in shell-v2, never inferred",
+    "exit": "actual one-byte shell service exit frame, including 126 launch failure; separate host socket settlement; not proof command itself ran"
+  },
+  "outcomes": [
+    "capture-complete-unverified",
+    "known-shell-service-failure",
+    "known-diagnostic-failure",
+    "unknown-incomplete"
+  ],
+  "unknownOwnership": "Actual socket, decoder, OnceAdmission, duplicated common Root flock FD and process-local lock retained in the original worker. Pending/once records are durable before network. Root must retain its original FD and worker; no reset/retry/replacement API.",
+  "implemented": [
+    "bounded smart socket fixed-service handshake and shell-v2 frame decoder",
+    "exact separate output bytes and transport EOF semantics",
+    "one-shot process-local ownership and unresolved sealing",
+    "conservative full PS rows and positive init/system_server/specified naturally existing UID witness",
+    "strict instrumentation records, current witness, malformed/missing/title-only failure",
+    "remote proc raw sample parsing with PID/starttime reuse check; never diagnostic caller authority",
+    "closed readonly structural native join of full tuple, original intent/argv, actual capture receipts and full inventory digest/counts",
+    "bounded no-symlink single-link readonly pinned-file and duplicate-key JSON checks",
+    "nonblocking final component open rejects FIFO before regular-file read",
+    "Root common target-fence FD duplication, inode/path check and nonblocking flock; no parallel lock creation",
+    "durable immutable pending/once/settled records and same-process reentrant-FD exclusion; original worker retained on storage failure"
+  ],
+  "requiredUnimplementedAuthorities": [
+    "Root live official server endpoint/PID/starttime/executable/transport/device lease attestor",
+    "Root supervisor integration retaining original worker/common target lease for unknown results; never use a copied/parallel lock directory",
+    "actual diagnostic remote PID/starttime/UID/GID/groups/SELinux/mount-namespace/proc acquisition correlated to each invocation",
+    "full AM nested-property grammar; present parser never asserts globalStructureVerified/absence",
+    "independently observed clean remote per-stream EOF unavailable from shell-v2 alone",
+    "authenticated original native evidence acquisition and native proof carrying complete binding and capture receipts",
+    "real capability/natural-exit/protection acceptance under Root scheduling"
+  ],
+  "nativeProofPolicy": "Structural agreement always remains consistent-unverified/nativePassed=false; imported JSON and HTTP success cannot grant native acceptance",
+  "scope": "Root review source only. No App/Host/Relay endpoint, runtime command loader, automatic fallback, Native parser modification or production notification change",
+  "previousMatrix": "p9-current-gap-matrix.json",
+  "matrixRowsPreserved": 21,
+  "p7Boundary": "Same phoneReading.ledger and existing unread source; no F49/F50 implementation changes",
+  "protectedScope": [
+    "API33 5574 environment retained without scheduling",
+    "5570 original consumer untouched",
+    "5566 unknown operation untouched",
+    "5568 untouched",
+    "phone busy; A6 and task/project/business notification scenarios remain paused"
+  ],
+  "readonlyNativeContract": {
+    "source": "native-postconsumer-readonly-v2-full-parent-binding",
+    "embeddedBindingRequired": true,
+    "exactCaptureReceiptsRequired": true,
+    "fullProtectionBaselineBeforeAfterRequired": true,
+    "implementedByExistingNativeV2": false,
+    "structuralJoinNeverGrantsNativePass": true
+  },
+  "ownershipSource": "scripts/mobile/fixtures/parent-collector-v1/fixed_parent_ownership.py",
+  "ownershipAmendment": "collector-once-review.md",
+  "previousOperationId": "parent-p9-fixed-collector-resume-rule-update-20261030-1",
+  "currentSourceMap": "collector-once-source-map.json",
+  "historicalSourceMap": "fixed-parent-collector-source-map.json"
+}

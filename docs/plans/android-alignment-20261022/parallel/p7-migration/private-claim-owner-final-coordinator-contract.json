@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "kind": "Test-only final worker exit boundary; supplements prior owner contract without changing raw release gate",
+  "gates": [
+    "Actual cleanup normal-return facts remain required. No release after unknown retirement, no retry or forced terminal.",
+    "cleanupConfirmed alone cannot remove static retention while the attached coordinator has not actually completed. Same resourceKey cannot admit replacement until both facts hold.",
+    "Exact Job is attached before LAZY start and its real completion callback checks Job.isCompleted. Cancellation request, phase, entry latch or signal text is never completion evidence.",
+    "Original JUnit guard remains outside Main, waits exact body Thread termination and every exact coordinator completion with untimed latches. Later interrupts are recorded through existing token without recreating work.",
+    "Final synchronous IO is awaited through the Job that executes it. No timeout, retry, duplicate final signal or replacement Session unblocks the gate.",
+    "First guard interrupt chooses primary of an undelivered record even after cleanup confirmation. Errors already delivered/handled are excluded.",
+    "If original worker/IO exit remains unknown, preserve original context/process and strong objects; Native harness must not force-stop/restart/replay."
+  ],
+  "platformImpact": "Only Android instrumentation test fixture safety; no iOS product behavior change. Shared parity/Root tables intentionally untouched under Root source-lane scope.",
+  "validation": "Exact current portable JVM16 and PSI5 passed; fake resources only. Real Android/locks/nine Native/OS/DEV remain Root-owned and unexecuted here."
+}

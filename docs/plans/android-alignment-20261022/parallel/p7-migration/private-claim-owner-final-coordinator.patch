@@ -1,0 +1,191 @@
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwner.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwner.kt
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwner.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwner.kt
+@@ -31,6 +31,7 @@
+     @Volatile var retirementConfirmed=false;private set
+     @Volatile var releaseConfirmed=false;private set
+     @Volatile var cleanupConfirmed=false;private set
++    @Volatile var coordinatorCompletionConfirmed=false;private set
+     @Volatile var outcomeDelivered=false;private set
+     @Volatile var primary: Throwable?=null;private set
+     @Volatile var interruptions=0L;private set
+@@ -41,9 +42,17 @@
+     private var releaseEntered=false
+     private val failures=mutableListOf<Pair<String,Throwable>>()
+     private val completed=CountDownLatch(1)
++    private val coordinatorCompleted=CountDownLatch(1)
++    val coordinatorWaitEntered=CountDownLatch(1)
+     companion object {private val next=AtomicLong()}
+
+     fun attach(job: Job){check(coordinator==null);coordinator=job}
++    fun coordinatorFinished() {
++        check(coordinator?.isCompleted==true)
++        coordinatorCompletionConfirmed=true
++        if(cleanupConfirmed)PrivateClaimFixtureOwners.confirmed(this)
++        coordinatorCompleted.countDown()
++    }
+     fun entered(){coordinatorEntered=true}
+     fun creating(){creationEntered=true;phase=PrivateClaimFixturePhase.CREATING}
+     fun created(value: S){check(session==null);session=value;phase=PrivateClaimFixturePhase.CREATED}
+@@ -81,11 +90,18 @@
+         while(!cleanupConfirmed)try{completed.await()}catch(error: InterruptedException){interrupted(error);signal()}
+         signal()
+     }
++    /** Wait on the exact attached Job's completion, including its last synchronous IO. */
++    fun awaitCoordinatorCompletion(onInterrupt: (InterruptedException)->Unit) {
++        val job=coordinator?:return
++        coordinatorWaitEntered.countDown()
++        while(!coordinatorCompletionConfirmed||!job.isCompleted)
++            try{coordinatorCompleted.await()}catch(error: InterruptedException){onInterrupt(error)}
++    }
+     @Synchronized fun diagnostic(): String=buildString {
+         appendLine("private-claim-fixture-owner-v1 label=$label sequence=$sequence")
+         appendLine("phase=$phase cleanupConfirmed=$cleanupConfirmed retirementConfirmed=$retirementConfirmed releaseConfirmed=$releaseConfirmed")
+         appendLine("storageIdentity=${System.identityHashCode(storage)} sessionIdentity=${session?.let(System::identityHashCode)} leaseIdentity=${lease?.let(System::identityHashCode)}")
+-        appendLine("coordinatorEntered=$coordinatorEntered coordinatorCompleted=${coordinator?.isCompleted} outcomeDelivered=$outcomeDelivered ignoredInterruptions=$interruptions")
++        appendLine("coordinatorEntered=$coordinatorEntered coordinatorCompleted=${coordinator?.isCompleted} coordinatorCompletionConfirmed=$coordinatorCompletionConfirmed outcomeDelivered=$outcomeDelivered ignoredInterruptions=$interruptions")
+         appendLine("junitThreadAlive=${token.junitThread.isAlive} bodyThreadAlive=${token.bodyThread?.isAlive} guardInterruptions=${token.interruptions}")
+         failures.forEach {(origin,error)->appendLine("origin=$origin");appendLine(error.stackTraceToString())}
+         latestInterrupt?.takeIf {it!==firstInterrupt}?.let {appendLine("latestIgnoredInterruption");appendLine(it.stackTraceToString())}
+@@ -105,7 +121,7 @@
+     fun interrupted(error: InterruptedException,alreadyObservedBodyFailure: Throwable?=null) {
+         val first=synchronized(this){
+             closing=true;interruptions++
+-            if(firstInterruption==null){failureBeforeInterruption=pending().firstNotNullOfOrNull {it.primary}?:alreadyObservedBodyFailure;firstInterruption=error;true}else false
++            if(firstInterruption==null){failureBeforeInterruption=records.filter {!it.outcomeDelivered}.firstNotNullOfOrNull {it.primary}?:alreadyObservedBodyFailure;firstInterruption=error;true}else false
+         }
+         records.forEach {it.interrupted(error);it.signal()}
+         // Request local cancellation only once; no repeat retire/release or new test body.
+@@ -123,10 +139,13 @@
+     fun install(token: PrivateClaimFixtureToken): PrivateClaimFixtureToken?=current.get().also {current.set(token)}
+     fun restore(previous: PrivateClaimFixtureToken?){if(previous==null)current.remove()else current.set(previous)}
+     @Synchronized fun retain(record: PrivateClaimFixtureRecord<*,*,*>) {
+-        check(record.resourceKey==null||retained.none {!it.cleanupConfirmed&&it.resourceKey==record.resourceKey}) {"The original fixture storage owner is still retained"}
++        check(record.resourceKey==null||retained.none {it.resourceKey==record.resourceKey}) {"The original fixture storage owner is still retained"}
+         retained.add(record)
+     }
+-    @Synchronized fun confirmed(record: PrivateClaimFixtureRecord<*,*,*>){check(record.cleanupConfirmed);retained.remove(record)}
++    @Synchronized fun confirmed(record: PrivateClaimFixtureRecord<*,*,*>) {
++        check(record.cleanupConfirmed)
++        if(record.coordinator==null||record.coordinatorCompletionConfirmed)retained.remove(record)
++    }
+     fun retainedRecords()=retained.toList()
+ }
+
+@@ -155,6 +174,9 @@
+             }
+             // Existing coordinators use Default/NonCancellable, not either blocked event loop.
+             token.pending().forEach {it.awaitConfirmed()}
++            // A released owner can still be doing its final synchronous diagnostic IO.
++            // Keep this real JUnit boundary outside Main until every exact Job actually completes.
++            token.records.forEach {it.awaitCoordinatorCompletion {error->token.interrupted(error,bodyFailure.get())}}
+             val undelivered=token.records.firstOrNull {!it.outcomeDelivered&&it.primary!=null}
+             failure=token.failureBeforeInterruption?:token.firstInterruption?:undelivered?.primary?:failure
+             // A body failure remains primary even if an interrupt also reached this boundary.
+@@ -186,8 +208,10 @@
+         }}catch(error: Throwable){record.failure("coordinator creation",error);record.noSession();record.delivered();throw error}
+         record.attach(running)
+         running.invokeOnCompletion {error->
+-            if(error!=null)record.failure("coordinator completion",error)
+-            if(!record.creationEntered&&record.session==null&&!record.cleanupConfirmed)record.noSession()
++            try {
++                if(error!=null)record.failure("coordinator completion",error)
++                if(!record.creationEntered&&record.session==null&&!record.cleanupConfirmed)record.noSession()
++            }finally{record.coordinatorFinished()}
+         }
+         running.start()
+         return try {running.await().also {record.delivered()}}
+diff --git a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt
+@@ -171,6 +171,90 @@
+             assertTrue(original.suppressed.any {it is InterruptedException})
+         }finally {allowRetire.countDown();if(junit.isAlive)junit.join(5000);dispatcher.close();assertTrue(executor.awaitTermination(5,TimeUnit.SECONDS))}
+     }
++    @Test fun confirmedCleanupStillRetainsOriginalFailureAndJUnitUntilActualCoordinatorExits() {
++        val signalEntered=CountDownLatch(1);val allowSignal=CountDownLatch(1);val signalExited=CountDownLatch(1)
++        val guardInterrupted=CountDownLatch(1);val guardInterruptedAgain=CountDownLatch(1);val signalHeld=AtomicBoolean();val signalCalls=AtomicInteger()
++        val holder=AtomicReference<PrivateClaimFixtureRecord<Session,Lease,Root>>()
++        val original=AssertionError("body failed before final signal");val thrown=AtomicReference<Throwable>()
++        val retires=AtomicInteger();val releases=AtomicInteger()
++        val bodyBlocked=CountDownLatch(1);val callerScope=CoroutineScope(SupervisorJob()+Dispatchers.Default)
++        val caller=AtomicReference<Job>();val callerFailure=AtomicReference<Throwable>()
++        val statement=NativePrivateClaimFixtureOwnerRule().apply(object: Statement(){override fun evaluate() {
++            val record=PrivateClaimFixtureRecord<Session,Lease,Root>(PrivateClaimFixtureOwners.current(),Root(),"confirmed-cleanup-pending-signal") {
++                if(it.cleanupConfirmed&&Thread.currentThread()!==it.token.junitThread) {
++                    signalCalls.incrementAndGet()
++                    if(signalHeld.compareAndSet(false,true)) {
++                        signalEntered.countDown()
++                        try{allowSignal.await()}finally{signalExited.countDown()}
++                    }
++                }
++                if(it.interruptions>0)guardInterrupted.countDown()
++                if(it.interruptions>1)guardInterruptedAgain.countDown()
++            }
++            holder.set(record)
++            // The exact real coordinator can outlive this explicitly interruptible Statement.
++            // Do not depend on when a particular runBlocking implementation returns on interrupt.
++            caller.set(callerScope.launch {
++                supervisorScope {
++                    try{PrivateClaimFixtureLifecycle(record,Dispatchers.Unconfined,create={Session()},restore={},awaitRestore={},acquire={Lease()},
++                        retire={_,_->retires.incrementAndGet()},abandon={},release={releases.incrementAndGet();it.frozen.set(false)}
++                    ).run<String>{throw original}}catch(error: Throwable){callerFailure.set(error)}
++                }
++            })
++            bodyBlocked.await()
++        }},Description.createTestDescription(javaClass,"confirmed-cleanup-pending-coordinator"))
++        val junit=Thread {try{statement.evaluate()}catch(error: Throwable){thrown.set(error)}}
++        try {
++            junit.start();assertTrue(signalEntered.await(5,TimeUnit.SECONDS))
++            val record=holder.get();val job=requireNotNull(record.coordinator)
++            assertTrue(record.cleanupConfirmed&&record.releaseConfirmed);assertFalse(record.outcomeDelivered)
++            assertFalse(job.isCompleted);assertSame(original,record.primary)
++            assertTrue(PrivateClaimFixtureOwners.retainedRecords().any {it===record})
++            junit.interrupt();assertTrue(guardInterrupted.await(5,TimeUnit.SECONDS))
++            val body=requireNotNull(record.token.bodyThread);body.join(5000);assertFalse(body.isAlive)
++            assertTrue(record.coordinatorWaitEntered.await(5,TimeUnit.SECONDS))
++            junit.interrupt();assertTrue(guardInterruptedAgain.await(5,TimeUnit.SECONDS))
++            assertTrue(junit.isAlive);assertFalse(job.isCompleted);assertFalse(record.coordinatorCompletionConfirmed)
++            assertSame(original,record.token.failureBeforeInterruption);assertSame(original,record.primary)
++            assertTrue(PrivateClaimFixtureOwners.retainedRecords().any {it===record})
++            assertEquals(1,retires.get());assertEquals(1,releases.get());assertEquals(1,signalCalls.get())
++            assertEquals(1L,signalExited.count)
++            allowSignal.countDown();junit.join(5000)
++            assertFalse(junit.isAlive);assertSame(original,thrown.get())
++            assertEquals(0L,signalExited.count);assertTrue(job.isCompleted&&record.coordinatorCompletionConfirmed)
++            assertFalse(PrivateClaimFixtureOwners.retainedRecords().any {it===record})
++            assertTrue(original.suppressed.any {it is InterruptedException})
++            assertEquals(1,retires.get());assertEquals(1,releases.get());assertEquals(1,signalCalls.get())
++            runBlocking{withTimeout(5000){caller.get().join()}};assertSame(original,callerFailure.get())
++        }finally{
++            bodyBlocked.countDown();allowSignal.countDown();if(junit.isAlive)junit.join(5000)
++            caller.get()?.let {runBlocking{withTimeout(5000){it.join()}}};callerScope.cancel()
++        }
++    }
++    @Test fun alreadyDeliveredAndHandledFailureIsNotPromotedByLaterGuardInterruption() {
++        val handled=CountDownLatch(1);val block=CountDownLatch(1);val token=AtomicReference<PrivateClaimFixtureToken>()
++        val original=AssertionError("already delivered and handled");val thrown=AtomicReference<Throwable>()
++        val statement=NativePrivateClaimFixtureOwnerRule().apply(object: Statement(){override fun evaluate() {
++            val owner=PrivateClaimFixtureOwners.current();token.set(owner)
++            runBlocking {
++                val record=PrivateClaimFixtureRecord<Session,Lease,Root>(owner,Root(),"handled-old-failure")
++                supervisorScope {
++                    val result=runCatching {PrivateClaimFixtureLifecycle(record,Dispatchers.Unconfined,
++                        create={Session()},restore={},awaitRestore={},acquire={Lease()},retire={_,_->},abandon={},release={it.frozen.set(false)}
++                    ).run<String>{throw original}}
++                    assertSame(original,result.exceptionOrNull())
++                }
++                assertTrue(record.outcomeDelivered&&record.cleanupConfirmed)
++            }
++            handled.countDown();block.await()
++        }},Description.createTestDescription(javaClass,"handled-failure-before-later-interruption"))
++        val junit=Thread {try{statement.evaluate()}catch(error: Throwable){thrown.set(error)}}
++        try {
++            junit.start();assertTrue(handled.await(5,TimeUnit.SECONDS));junit.interrupt();junit.join(5000)
++            assertFalse(junit.isAlive);assertSame(token.get().firstInterruption,thrown.get())
++            assertNull(token.get().failureBeforeInterruption);assertFalse(thrown.get()===original)
++        }finally{block.countDown();if(junit.isAlive)junit.join(5000)}
++    }
+     @Test fun firstGuardInterruptionPrecedesLaterBodyFailureBeforeAnySessionExists() {
+         val entered=CountDownLatch(1);val blocked=CountDownLatch(1);val token=AtomicReference<PrivateClaimFixtureToken>()
+         val secondary=IllegalStateException("body observed cancellation later");val thrown=AtomicReference<Throwable>()

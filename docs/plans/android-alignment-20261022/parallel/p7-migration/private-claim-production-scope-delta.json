@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "rootHead": "144cce4adb7d009ba27c1bcbf70f3aade866e444",
+  "inventoryPins": [
+    {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/system-scope-inventory.json",
+      "bytes": 22569,
+      "sha256": "de7b7c794a4ca41196858807d742ab7a6408c6b5b6cb20ad4f9e60abf999bc51"
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022/P7-migration-storage-inventory.json",
+      "bytes": 7792,
+      "sha256": "6d289404e3e0afc66dcf5a49203037f09df04dd2ad8b95421c59db091eb52b7e"
+    }
+  ],
+  "rows": [
+    {
+      "id": "root-session",
+      "root144Baseline": {
+        "id": "root-session",
+        "location": "root",
+        "logicalInventory": "metadata; token:<client>; codex-private-connections-v1",
+        "producers": "NativeMigrationMetadata.kt, CodexConnectionVault.kt",
+        "baselineStatus": "supported closed graph",
+        "iosActualPath": "SavedSession + CredentialVault tokens",
+        "exitGate": "Full clients/target/cache/draft identity; new reader IDs; no new command authority"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-operations",
+      "root144Baseline": {
+        "id": "root-operations",
+        "location": "root",
+        "logicalInventory": "operations:<target>; submission:<id>; history:<target>; history pages",
+        "producers": "NativeMigrationReferences.kt, NativeMigrationHistory.kt",
+        "baselineStatus": "supported closed graph",
+        "iosActualPath": "SavedSession outbox/detached replies/creation/history",
+        "exitGate": "Exact immutable intent/result/attachment graph; imported read-only; no unknown replay"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-claims",
+      "root144Baseline": {
+        "id": "root-claims",
+        "location": "root",
+        "logicalInventory": "codex-private-claim:<intentId>; arbitrary orphan modern/legacy record",
+        "producers": "CodexPrivateConnection.kt",
+        "baselineStatus": "unsupported: candidate rejects unknown/orphan",
+        "iosActualPath": "No blanket arbitrary-key export in iOS payload",
+        "exitGate": "Define closed pending-claim audit semantics before supporting; never execute pairing"
+      },
+      "thisSliceStatus": "production graph patch candidate; Root apply/SDK/Native pending",
+      "note": "Complete encrypted pre-POST intent becomes inert text alias with original name/hash; actual Session and raw-writer lease required at source/destination and publication. Unknown claim family rejected, target originals unioned. No authorize/POST/replay authority.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-attachments",
+      "root144Baseline": {
+        "id": "root-attachments",
+        "location": "root",
+        "logicalInventory": "draft-file:<id>; draft-payload-v1:<id>; draft-thumbnail-v1:<id>; photoSources",
+        "producers": "NativeCodexFlow.kt, DraftAttachmentThumbnails.kt, NativeMigrationAttachments.kt",
+        "baselineStatus": "supported bounded text/binary graph",
+        "iosActualPath": "Referenced Attachments files in migrationPayload",
+        "exitGate": "All manifest/payload/thumb references exact; imported photoSources removed; no URI grant"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-sealed-voice",
+      "root144Baseline": {
+        "id": "root-sealed-voice",
+        "location": "root",
+        "logicalInventory": "voice-index-v1; voice-recording:<id>; voice-audio:<id> or inline audio",
+        "producers": "NativeMigrationVoice.kt, VoiceRecordingStore.kt",
+        "baselineStatus": "supported sealed original",
+        "iosActualPath": "PendingVoiceStore voice-transcriptions outside migrationPayload",
+        "exitGate": "Full manifest/WAV/id/attempt guards; migrated observe-only, no prepare/upload"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-voice-terminals",
+      "root144Baseline": {
+        "id": "root-voice-terminals",
+        "location": "root",
+        "logicalInventory": "voice-discard-catalog-v1; discard original/raw; voice-local-results-v1",
+        "producers": "NativeVoiceDiscardStorage.kt, NativeVoiceLocalResult.kt",
+        "baselineStatus": "supported closed terminal/result graph",
+        "iosActualPath": "PendingVoiceStore local terminal fields; not enumerated by iOS export",
+        "exitGate": "Original audit+full bytes; no invented terminal or reapply"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-voice-preference",
+      "root144Baseline": {
+        "id": "root-voice-preference",
+        "location": "root",
+        "logicalInventory": "native-voice-preference-v1",
+        "producers": "NativeVoicePreferenceStorage.kt",
+        "baselineStatus": "supported with destination preference policy",
+        "iosActualPath": "VoiceTranscriptionPreference UserDefaults outside iOS payload",
+        "exitGate": "Keep destination-local preference; no installed-model authority"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-reading-notifications",
+      "root144Baseline": {
+        "id": "root-reading-notifications",
+        "location": "root",
+        "logicalInventory": "mobile-reading-ledger-v1; native-chat-notifications-v1; migration-device-audit-v1; migration-notification-tombstones-v1",
+        "producers": "NativeMigrationDeviceState.kt",
+        "baselineStatus": "supported with inert source audit and reset",
+        "iosActualPath": "SavedSession reading + TaskNotificationShared",
+        "exitGate": "New reader identity, no old ticket/reader registration; notifications disabled"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-notification-owner",
+      "root144Baseline": {
+        "id": "root-notification-owner",
+        "location": "root",
+        "logicalInventory": "native-chat-notification-identity-v1; authorizations-v1; foreground-v1; recovery-v2; migration-notification-archives-v1 and original aliases",
+        "producers": "NativeMigrationForeground.kt, NativeMigrationNotificationArchives.kt",
+        "baselineStatus": "supported bounded archive; requires actual owner lease",
+        "iosActualPath": "TaskNotificationShared identity/bindings/seen/notices/revocations",
+        "exitGate": "Retain source originals, fresh destination enrollment; no old callback/router lease authority"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-sounds",
+      "root144Baseline": {
+        "id": "root-sounds",
+        "location": "root",
+        "logicalInventory": "native-chat-notification-sounds-v1; native-chat-notification-sound-v1:<id>",
+        "producers": "NativeMigrationSounds.kt",
+        "baselineStatus": "supported catalog + authenticated bytes",
+        "iosActualPath": "notificationSounds + soundFiles in iOS payload",
+        "exitGate": "Exact format/size/digest; no notification registration"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-consent",
+      "root144Baseline": {
+        "id": "root-consent",
+        "location": "root",
+        "logicalInventory": "ai-sharing-v1",
+        "producers": "NativeMigrationAncillary.kt",
+        "baselineStatus": "supported archive; active grants cleared",
+        "iosActualPath": "SavedSession aiSharingGrants cleared on restore",
+        "exitGate": "Audit is not consent on new install"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "root-easywork",
+      "root144Baseline": {
+        "id": "root-easywork",
+        "location": "root",
+        "logicalInventory": "EasyWork originals, migration-easywork-archives-v1, migration-easywork-business-v1",
+        "producers": "NativeMigrationEasyWorkArchives.kt, NativeMigrationEasyWorkBusiness.kt",
+        "baselineStatus": "supported previously scoped reply/creation/open only",
+        "iosActualPath": "SavedSession/credentials; platform authority distinct",
+        "exitGate": "Retain exact target/account semantics; task/project management outside current work"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "external-inbox",
+      "root144Baseline": {
+        "id": "external-inbox",
+        "location": "child",
+        "logicalInventory": "external-inbox: external-inbox-index-v1; draft-file/payload/thumb graph",
+        "producers": "NativeAttachmentInboxStore.kt",
+        "baselineStatus": "nonempty explicitly rejected",
+        "iosActualPath": "ExternalAttachmentIntake and prepared attachment files are not exhaustively in migrationPayload",
+        "exitGate": "Preserve receiving/failed/pending/consumed and old binding audit; no auto bind/retry/upload; full orphan inventory",
+        "currentStatus": "Implemented;bounded storage4/cold3/actualMainowner3 pass,2 fixturefailures remain;notfullscope closure",
+        "contract": "external-inbox-migration-contract.md"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "selection-journals",
+      "root144Baseline": {
+        "id": "selection-journals",
+        "location": "child",
+        "logicalInventory": "document-results/photo-results/camera-results: document-requests-v1",
+        "producers": "NativeDocumentJournal.kt, NativeDocumentRecovery.kt",
+        "baselineStatus": "all three nonempty explicitly rejected",
+        "iosActualPath": "File/photo/camera picker callbacks are process/device owned",
+        "exitGate": "Archive full revision/phase/source/grant/binding identities; new install must not register old callbacks or revive URI grants"
+      },
+      "thisSliceStatus": "Root Source64 composed SDK context only; Native remains separately pending",
+      "note": "Do not reimplement already adopted source. Camera/selection fixture failures and unverified cases remain distinct; this slice does not borrow prior pass.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "selection-payloads",
+      "root144Baseline": {
+        "id": "selection-payloads",
+        "location": "nested child",
+        "logicalInventory": "document-results-payloads; photo-results-payloads; camera-results-payloads: inbox + file payload graph",
+        "producers": "NativeDocumentRecovery.kt",
+        "baselineStatus": "nonempty nested children explicitly rejected by parent scope",
+        "iosActualPath": "Prepared attachments may be outside referenced draft payload",
+        "exitGate": "Join exact journal and all payloads; no old destination automatic import"
+      },
+      "thisSliceStatus": "Root Source64 composed SDK context only; Native remains separately pending",
+      "note": "Do not reimplement already adopted source. Camera/selection fixture failures and unverified cases remain distinct; this slice does not borrow prior pass.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "camera-outputs",
+      "root144Baseline": {
+        "id": "camera-outputs",
+        "location": "nested child + raw",
+        "logicalInventory": "camera-results-outputs: output-v1-<id>; files/camera-output-v1/<scope>/photo-<id>.jpg",
+        "producers": "NativeCameraOutputs.kt",
+        "baselineStatus": "nonempty child rejected; independent raw file coverage not implemented",
+        "iosActualPath": "Temporary camera output lifecycle separate from iOS backup",
+        "exitGate": "Exact encrypted ownership + raw JPEG inventory; no restored FileProvider URI/write grant"
+      },
+      "thisSliceStatus": "Root Source64 composed SDK context only; Native remains separately pending",
+      "note": "Do not reimplement already adopted source. Camera/selection fixture failures and unverified cases remain distinct; this slice does not borrow prior pass.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "recent-photos",
+      "root144Baseline": {
+        "id": "recent-photos",
+        "location": "child",
+        "logicalInventory": "recent-photos/preferences v1 ignored content MediaStore IDs",
+        "producers": "NativeRecentPhotoLibrary.kt",
+        "baselineStatus": "nonempty explicitly rejected",
+        "iosActualPath": "RecentAttachmentPhotos UserDefaults outside iOS payload",
+        "exitGate": "Retain old ignored-id audit; do not apply device-local MediaStore IDs to another library or start observer"
+      },
+      "thisSliceStatus": "Root Source64 composed SDK context only; Native remains separately pending",
+      "note": "Do not reimplement already adopted source. Camera/selection fixture failures and unverified cases remain distinct; this slice does not borrow prior pass.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "photo-permission",
+      "root144Baseline": {
+        "id": "photo-permission",
+        "location": "child",
+        "logicalInventory": "photo-permission/attempt-selected, attempt-images, attempt-external",
+        "producers": "NativePhotoAuthorization.kt",
+        "baselineStatus": "nonempty explicitly rejected",
+        "iosActualPath": "Photo authorization is OS-owned; attempt state outside iOS payload",
+        "exitGate": "Attempt history is not grant; explicit new installation permission path and fresh callback"
+      },
+      "thisSliceStatus": "Root Source64 composed SDK context only; Native remains separately pending",
+      "note": "Do not reimplement already adopted source. Camera/selection fixture failures and unverified cases remain distinct; this slice does not borrow prior pass.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "provisional-voice",
+      "root144Baseline": {
+        "id": "provisional-voice",
+        "location": "raw + root",
+        "logicalInventory": "no-backup/voice-recordings-v1/<id>.wav + indexed manifest-null original",
+        "producers": "VoiceRecordingStore.kt",
+        "baselineStatus": "stream export explicitly rejected; legacy capture also fails voice validation",
+        "iosActualPath": "VoiceInput temporary voice-recordings + PendingVoiceStore; outside iOS payload",
+        "exitGate": "Root exact source composition and native9 scenarios; no seal/header repair/recorder/query/transcribe/replay",
+        "currentStatus": "a795ee67 source owner/writer closure reviewed; Root combination/native pending"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "local-models",
+      "root144Baseline": {
+        "id": "local-models",
+        "location": "raw",
+        "logicalInventory": "no-backup/saved-voice-models-v1",
+        "producers": "NativeSavedVoiceSpeech.kt",
+        "baselineStatus": "not inventoried by migration",
+        "iosActualPath": "On-device model files not in iOS migration payload",
+        "exitGate": "Redistributable model install policy separate; do not claim device install availability from archived path"
+      },
+      "thisSliceStatus": "existing device-local/recovery/rebuildable classification remains open",
+      "note": "No model/cache copy/download/delete; candidate IDs remain local recovery only. Unknown or unique data cannot be silently excluded.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "runtime-candidates",
+      "root144Baseline": {
+        "id": "runtime-candidates",
+        "location": "child",
+        "logicalInventory": "migration-candidates/candidate-v1 and immutable encrypted text/binary chunks",
+        "producers": "NativeMigrationCandidate.kt, NativeMigrationStreamCandidate.kt",
+        "baselineStatus": "local recovery workflow, not portable source state",
+        "iosActualPath": "Migration exporter temporary FileDocument",
+        "exitGate": "Exact old receipt reconciliation; do not treat stale candidate as active archive or replay it"
+      },
+      "thisSliceStatus": "existing device-local/recovery/rebuildable classification remains open",
+      "note": "No model/cache copy/download/delete; candidate IDs remain local recovery only. Unknown or unique data cannot be silently excluded.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "cache-and-scratch",
+      "root144Baseline": {
+        "id": "cache-and-scratch",
+        "location": "raw",
+        "logicalInventory": "cache/resources; migration-ui-v1; camera-capture; sound temp; downloaded message resources",
+        "producers": "NativeMigrationDocuments.kt, NativeResourcePreview.kt, NativeCameraCapture.kt",
+        "baselineStatus": "not durable portable original graph",
+        "iosActualPath": "Temporary/file preview caches outside payload",
+        "exitGate": "Only proven-rebuildable scratch excluded; unknown durable original must fail scope inventory"
+      },
+      "thisSliceStatus": "existing device-local/recovery/rebuildable classification remains open",
+      "note": "No model/cache copy/download/delete; candidate IDs remain local recovery only. Unknown or unique data cannot be silently excluded.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "task-project-business",
+      "root144Baseline": {
+        "id": "task-project-business",
+        "location": "independent root/db",
+        "logicalInventory": "TaskHub SQLite/encrypted upload roots, device DPoP/identity",
+        "producers": "TaskHubSQLitePersistence.kt, TaskHubUploadCoordinator.kt, EasyWorkDPoP.kt",
+        "baselineStatus": "outside authorized task/project scope; no work here",
+        "iosActualPath": "TaskHubStore/SQLite separate",
+        "exitGate": "Explicit future scope and grant rules; no business execution or adoption"
+      },
+      "thisSliceStatus": "paused",
+      "note": "Task/project business and F65-F67 remain human-paused; no new reads/writes/operation replay.",
+      "thisSliceNativePass": false
+    },
+    {
+      "id": "independent-notification-router",
+      "root144Baseline": {
+        "id": "independent-notification-router",
+        "location": "independent root",
+        "logicalInventory": "P9-notification-cold-router-v1 and P9 diagnostic scopes",
+        "producers": "NativeChatNotificationColdRouterFiles.kt",
+        "baselineStatus": "runtime/acceptance ownership separate; Root P9 work",
+        "iosActualPath": "Notification service/runtime ownership separate",
+        "exitGate": "No helper expansion or old router activation; Root owns default-auth/native chain"
+      },
+      "thisSliceStatus": "Root existing candidate/history; this slice adds no Native pass",
+      "note": "Original scope, unknown records and missing references remain listed; no new exclusion or implementation claim.",
+      "thisSliceNativePass": false
+    }
+  ],
+  "all24Preserved": true,
+  "sourceInventoryOnly": true,
+  "actualDeviceInventoryPending": true,
+  "productAndDesignUIChanged": false,
+  "centralTablesEdited": false,
+  "fullP7Complete": false,
+  "iosChanged": false,
+  "A6": "paused"
+}

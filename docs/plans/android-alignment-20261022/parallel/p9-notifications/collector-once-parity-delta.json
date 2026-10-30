@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-collector-fix-and-api33-cases-source-20261030-1",
+  "featureIds": ["F49", "F50", "F51", "F52", "F53", "F54"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "androidProductionChanged": false,
+  "iosProductionChanged": false,
+  "nativeRun": false,
+  "guiRun": false,
+  "deviceLease": null,
+  "runtimeBindings": null,
+  "androidSourceDelta": [
+    "Bounded nonblocking final file open and Root inherited-fence/persistent-once source patch",
+    "53 exact API33 Native selectors/source profiles, 42 independent of cold consumer; no new native result"
+  ],
+  "iosSourceDelta": "Static counterparts mapped; no iOS test or behavior change. A6 paused.",
+  "sharedAssertions": [
+    "One P7 reading/unread ledger; constant7 fixture not unread acceptance",
+    "Unknown retains original operation, handles and owner; no automatic replay",
+    "Exact Root-owned permission/state restoration and full original/key baseline; scope-only cleanup is not full protection proof"
+  ],
+  "matrixIdsPreserved": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "N07",
+    "N08",
+    "N09",
+    "N10",
+    "N11",
+    "N12",
+    "N13",
+    "N14",
+    "N15",
+    "N16",
+    "N17",
+    "N18",
+    "N19",
+    "N20",
+    "N21"
+  ],
+  "matrixSha256": "03d6559df28972e2347abeec2c636b235d064594ea5c9e3f9f2f2d4ad87884f1",
+  "caseInventory": "api33-independent-native-cases.json",
+  "sourceReview": "collector-once-review.md",
+  "centralLedgersRootOwned": [
+    "docs/product/mobile-parity.md",
+    "docs/design/mobile-parity.md",
+    "docs/acceptance/mobile-parity.md"
+  ],
+  "rootCoverageLimits": {
+    "F49/F50": "Boundary guards only",
+    "F52": "Remote/background delivery pending",
+    "F51/F53/F54": "Source assertions mapped; Native/UI pending"
+  }
+}

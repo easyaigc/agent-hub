@@ -913,7 +913,7 @@ for (const mode of [
   'clock-forward',
   'clock-backward',
 ])
-  test(`actual Worker batch transport: ${mode}`, async () => {
+  test(`actual Worker batch transport: ${mode}`, async (t) => {
     const result = await batchTransportFixture(mode);
     assert(result.allRetired, 'The actual owner/native Worker and its child must retire');
     if (mode === 'owner-close') assert.equal(result.answer, undefined);
@@ -926,8 +926,24 @@ for (const mode of [
     if (mode === 'duplicate-late' || mode === 'stale-while-next')
       assert.equal(result.answer.firstPassed, true);
     if (mode === 'batch-timeout') {
+      let observation = JSON.stringify({
+        elapsed: result.answer.elapsed,
+        owner: result.answer.timing,
+        native: result.nativeTimers,
+        incomplete: result.diagnosticIncomplete,
+      });
+      if (Buffer.byteLength(observation) > 1900)
+        observation = JSON.stringify({
+          elapsed: result.answer.elapsed,
+          incomplete: true,
+          detail: 'Original fixture result contains oversized diagnostics',
+        });
+      t.diagnostic('batch-timeout observation: ' + observation);
       assert(result.partialExecuted);
-      assert(result.answer.elapsed < 1000, '750ms is for the entire batch, not each item');
+      assert(
+        result.answer.elapsed < 1000,
+        '750ms is for the entire batch, not each item; ' + observation,
+      );
     }
     if (mode === 'budget')
       assert(result.answer.elapsed < 2200, 'Batch consumes the existing whole-read deadline');

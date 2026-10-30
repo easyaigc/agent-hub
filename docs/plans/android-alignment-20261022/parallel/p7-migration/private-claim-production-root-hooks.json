@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-private-claim-production-audit-source-20261030-1",
+  "rootHead": "144cce4adb7d009ba27c1bcbf70f3aade866e444",
+  "rootSharedFilesEdited": false,
+  "productionIntegratedInRoot": false,
+  "files": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": {
+      "beforeSha256": "5840886fda3a6df3ae301a475942de208f854440fae9810f4ba482d8ca6aca8a",
+      "afterSha256": "353d7250203b8c908c0c3d3b11158efb3693e8c274ecc4a6bf3b454bd4b99536",
+      "beforeBytes": 9297,
+      "afterBytes": 9480
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt": {
+      "beforeSha256": "bcad9423ebe8d0faacbd70eb2121a0c64cf9196fb9688573a251e0e297ec9072",
+      "afterSha256": "e51b94da6a9f1361f74ecc6785159140e5805214584a0dea8499a308e938efb8",
+      "beforeBytes": 4832,
+      "afterBytes": 5157
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": {
+      "beforeSha256": "ea9ffa9a88f176be1803fb2d570a704e498972d6a7825698fbc86cd7f6cf4400",
+      "afterSha256": "e5e5e404d73621d144f6b78157dc8c765d04dd7c2e4d674753414c723582f459",
+      "beforeBytes": 23838,
+      "afterBytes": 24068
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": {
+      "beforeSha256": "3ad8cccedcbd35e566ebfc4a06e2c39668662a4820fc21b2d5a597eee710dca0",
+      "afterSha256": "70e7d8083e0d4aac004022b21b4dbb708bb2f4f39729ef3b0b361ca088473463",
+      "beforeBytes": 7485,
+      "afterBytes": 7565
+    }
+  },
+  "hooks": [
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt",
+      "rootSha256": "5840886fda3a6df3ae301a475942de208f854440fae9810f4ba482d8ca6aca8a",
+      "before": "        NativeMigrationPhotoLocals.legacyNames(read).forEach(::add)",
+      "after": "        NativeMigrationPhotoLocals.legacyNames(read).forEach(::add)\n        NativeMigrationPrivateClaims.legacyNames(read).forEach(::add)",
+      "purpose": "Known catalog and exact alias discovery; unidentified historical tag1 claim remains refused, no guessed hashes.",
+      "applied": false
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt",
+      "rootSha256": "5840886fda3a6df3ae301a475942de208f854440fae9810f4ba482d8ca6aca8a",
+      "before": "        requireSupportedScopes(original.text)\n        val records=original.copy",
+      "after": "        requireSupportedScopes(original.text)\n        NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.text.keys+original.binary.keys,null)\n        val records=original.copy",
+      "purpose": "Ownerless bounded capture/seal must refuse both active and already inert claim families. Production file pipeline requires actual Session owner; no legacy bypass.",
+      "applied": false
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt",
+      "rootSha256": "bcad9423ebe8d0faacbd70eb2121a0c64cf9196fb9688573a251e0e297ec9072",
+      "before": "            for(photo in localPhotos)if(photo.present)requireNotNull(owner).requireLocalPhotoWriters(photo.kind,photo.key)",
+      "after": "            for(photo in localPhotos)if(photo.present)requireNotNull(owner).requireLocalPhotoWriters(photo.kind,photo.key)\n            NativeMigrationPrivateClaimBoundary.requireCurrent(storage,source.text.keys+source.binary.keys,owner)",
+      "purpose": "Source and destination original snapshots require same actual Session/frozen installation lease. Existing requireOwners is also called by unchanged closure at final publication.",
+      "applied": false
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt",
+      "rootSha256": "bcad9423ebe8d0faacbd70eb2121a0c64cf9196fb9688573a251e0e297ec9072",
+      "before": "            var records=if(inbox.present)NativeMigrationInbox.append(source,inbox.records)else source",
+      "after": "            val claims=NativeMigrationPrivateClaims.projectSource(source)\n            var records=if(inbox.present)NativeMigrationInbox.append(claims,inbox.records)else claims",
+      "purpose": "Only validated exact root pre-POST intents project to inert aliases; all other originals remain for root graph validation.",
+      "applied": false
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt",
+      "rootSha256": "bcad9423ebe8d0faacbd70eb2121a0c64cf9196fb9688573a251e0e297ec9072",
+      "before": "        addAll(NativeMigrationSelections.legacyNames(read));addAll(NativeMigrationPhotoLocals.legacyNames(read))",
+      "after": "        addAll(NativeMigrationSelections.legacyNames(read));addAll(NativeMigrationPhotoLocals.legacyNames(read))\n        addAll(NativeMigrationPrivateClaims.legacyNames(read))",
+      "purpose": "Destination catalogs and alias originals are discoverable without widening unknown legacy scope.",
+      "applied": false
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt",
+      "rootSha256": "bcad9423ebe8d0faacbd70eb2121a0c64cf9196fb9688573a251e0e297ec9072",
+      "before": "        val archives=NativeMigrationPhotoLocals.merge(NativeMigrationSelections.merge(NativeMigrationInbox.merge(source,destination),destination),destination)",
+      "after": "        val claims=NativeMigrationPrivateClaims.merge(source,destination)\n        val archives=NativeMigrationPhotoLocals.merge(NativeMigrationSelections.merge(NativeMigrationInbox.merge(claims,destination),destination),destination)",
+      "purpose": "Union exact destination intents/prior audits with incoming history, never materialize incoming active claim keys or replace local originals silently.",
+      "applied": false
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt",
+      "rootSha256": "ea9ffa9a88f176be1803fb2d570a704e498972d6a7825698fbc86cd7f6cf4400",
+      "before": "+NativeSelectionReturnAudit.validate(records)",
+      "after": "+NativeSelectionReturnAudit.validate(records)+NativeMigrationPrivateClaims.validatePortable(records,streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationPrivateClaims.BINARY)||it.startsWith(NativeMigrationPrivateClaims.ACTIVE_PREFIX)}))",
+      "purpose": "Same closed validation applies during stage, old bounded read, stream cold read/currentReceipt, preactivation validation. Active claim text/binary keys reject; alias closure enters recognized foreground set, global unknown/binary graph remains strict.",
+      "applied": false
+    },
+    {
+      "file": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt",
+      "rootSha256": "3ad8cccedcbd35e566ebfc4a06e2c39668662a4820fc21b2d5a597eee710dca0",
+      "before": "fun checkBoundary(){originalsUnchanged();if(required)",
+      "after": "fun checkBoundary(){originalsUnchanged();NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.keys,owner);if(required)",
+      "purpose": "Incoming inert claims require actual destination Session owner too, including empty target. Existing guard runs before publication and on both sides of checkpoint0. Destination original withChildren closure verifies its own claim boundary; no second owner ledger.",
+      "applied": false
+    }
+  ],
+  "readOnlyApplyCheck": true,
+  "dependencyFiles": [
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaims.kt (updated from prior301a8f42; include this stage complete codec)",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaimBoundary.kt (new)",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationInertArchive.kt (alreadyRoot)"
+  ],
+  "requiredPreexistingOwner": "Root144cce4a actual commonIO/NSD Session quiescence and frozen raw writer lease. Check existing original/owner closures through final export/activation publication.",
+  "notChanged": [
+    "No Host/Adapter/wire/account/TLS policy change",
+    "No direct change to claim producer or immutable claim intent/POST behavior",
+    "No new reader/command authority from aliases",
+    "No new runtime UUID assigned or SDK/device test run",
+    "No blanket inventory exclusion, scope deletion, task/project change or root-file replacement"
+  ]
+}

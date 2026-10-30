@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "checkpoint": "Source65 composed source and SDK",
+  "sourceOnlyNativePending": true,
+  "canonicalInputCount": 840,
+  "canonicalSourceSha256": "dd205a0cb733826a51c4dd611841806dee6e2d246957489410a7e14c8bac3fe0",
+  "expandedInputCount": 853,
+  "expandedSourceSha256": "97f65662fffd9388e1c1e4f56a5af8b90778e419036009e42e747f711be86f16",
+  "build": {
+    "exitCode": 0,
+    "seconds": 7.810834884643555,
+    "resultSha256": "9f79142926c491e985e09209d77332aede11d405f3ebe4def9e642face40b5de",
+    "bothEof": true,
+    "overflow": false
+  },
+  "candidateSha256": "0720e86f9dc97a8b46e7d7c2323ceb5d8977019e6ff3ca0d19ce18530d2467dc",
+  "identitySha256": "015c1017e033198cf8569fb3642655e76193ab74dc3cf21f34ca271eaaf04241",
+  "rootSdkReviewSha256": "1ea07bda5a71b8ac871a9c8f044282dc2c8b77e20c6558e521be94e9ec624b5f",
+  "apks": {
+    "app": {
+      "bytes": 70255958,
+      "certificateDerSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1",
+      "package": "com.easyai.agenthub.android.acceptance",
+      "sha256": "1f99b9c5eb44b651fc1440de47179330bd8d9c75d607e46d194a39dc5bb6ff87"
+    },
+    "examiner": {
+      "bytes": 1017598,
+      "certificateDerSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1",
+      "package": "com.easyai.agenthub.android.acceptance.coldexaminer",
+      "sha256": "f6c813b5a10329ec1b97e7cbf009c71502837f794adf831b2a79cb4ec15c256a"
+    },
+    "runner": {
+      "bytes": 12655070,
+      "certificateDerSha256": "fc12e68fdbe401e9dbea6c0ae9bb45e59f9d59517f9f19ac01663c04f737adf1",
+      "package": "com.easyai.agenthub.android.acceptance.test",
+      "sha256": "d50bf3d62e29831ff0666fb05ca4352fe46b64e74edecc34be208ea614b6f809"
+    }
+  },
+  "sourceDeliveries": {
+    "P7": "0b6724e06452f4f5c000019ff34f9223a1af8b63",
+    "P8": "4f73b811696ba897e3928cad7c72c4d83b59d2f2",
+    "P9": "e82ff233c23e3782b1fd39a6b0391dc49c2bb551"
+  },
+  "claims": {
+    "actualNativePassed": false,
+    "completeMigrationPassed": false,
+    "api26Heap48MiBPassed": false,
+    "api26CurrentActualHeapMiB": 384,
+    "p8CompositeNativeEligible": false,
+    "p9CollectorActive": false,
+    "newHostInputs": 0,
+    "taskProjectBusiness": "paused",
+    "iosA6": "paused"
+  },
+  "record": "records/source65-composed-source-sdk.md"
+}

@@ -1,0 +1,78 @@
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt
+@@ -44,6 +44,7 @@
+     internal fun capture(): ByteArray {
+         val original=storage.migrationTypedArchiveSnapshot(::legacyNames,resolveModernAliases=NativeMigrationEasyWorkArchives::legacyNames)
+         requireSupportedScopes(original.text)
++        NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.text.keys+original.binary.keys,null)
+         val records=original.copy(text=NativeMigrationEasyWorkBusiness.projectSource(NativeMigrationEasyWorkArchives.projectSource(NativeMigrationForeground.projectSource(original.text)),original.text))
+         val clear=records.json(context.packageName).toString().toByteArray(Charsets.UTF_8)
+         try {
+@@ -66,6 +67,7 @@
+         add(NativeMigrationProvisionalVoice.RECORD)
+         NativeMigrationSelections.legacyNames(read).forEach(::add)
+         NativeMigrationPhotoLocals.legacyNames(read).forEach(::add)
++        NativeMigrationPrivateClaims.legacyNames(read).forEach(::add)
+         add(NativeSelectionReturnAudit.RECORD)
+         add(NativeMigrationInbox.RECORD)
+         read(NativeMigrationInbox.RECORD)?.let {NativeMigrationInbox.legacyNames(it).forEach(::add)}
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt
+@@ -25,6 +25,7 @@
+             if(inbox.present)requireNotNull(owner).requireInboxWriters(inbox.key)
+             for(selection in selections)if(present(selection))requireNotNull(owner).requireSelectionWriters(selection.kind)
+             for(photo in localPhotos)if(photo.present)requireNotNull(owner).requireLocalPhotoWriters(photo.kind,photo.key)
++            NativeMigrationPrivateClaimBoundary.requireCurrent(storage,source.text.keys+source.binary.keys,owner)
+         }
+         fun capture(index: Int): T {
+             if(index<kinds.size)return storage.migrationSelectionSnapshot(context,kinds[index],publication) {selection->
+@@ -35,7 +36,8 @@
+                 localPhotos.add(photo);try{capture(index+1)}finally{localPhotos.removeAt(localPhotos.lastIndex)}
+             }
+             requireOwners()
+-            var records=if(inbox.present)NativeMigrationInbox.append(source,inbox.records)else source
++            val claims=NativeMigrationPrivateClaims.projectSource(source)
++            var records=if(inbox.present)NativeMigrationInbox.append(claims,inbox.records)else claims
+             for(selection in selections)if(present(selection))records=NativeMigrationSelections.append(records,selection)
+             for(photo in localPhotos)if(photo.present)records=NativeMigrationPhotoLocals.append(records,photo)
+             val unchanged={inbox.unchanged();selections.forEach {it.unchanged()};localPhotos.forEach {it.unchanged()};requireOwners();Unit}
+@@ -48,6 +50,7 @@
+         add("metadata");add(NativeVoicePreferenceRecord.RECORD);add(NativeSelectionReturnAudit.RECORD)
+         add(NativeMigrationInbox.RECORD);read(NativeMigrationInbox.RECORD)?.let {addAll(NativeMigrationInbox.legacyNames(it))}
+         addAll(NativeMigrationSelections.legacyNames(read));addAll(NativeMigrationPhotoLocals.legacyNames(read))
++        addAll(NativeMigrationPrivateClaims.legacyNames(read))
+     }
+     fun <T> withDestination(context: Context,storage: NativeSessionStorage,owner: NativeMigrationOwnerLease?,publication: Publication,consume: (NativeMigrationStreamRecords,()->Unit)->T): T =
+         storage.migrationOptionalStreamSnapshot(::legacyNames,NativeMigrationEasyWorkArchives::legacyNames) {root->
+@@ -55,7 +58,8 @@
+             withChildren(context,storage,root?:NativeMigrationStreamRecords(mapOf("metadata" to "{}"),emptyMap(),4),owner,publication,consume)
+         }
+     fun merge(source: NativeMigrationStreamRecords,destination: NativeMigrationStreamRecords): NativeMigrationStreamRecords {
+-        val archives=NativeMigrationPhotoLocals.merge(NativeMigrationSelections.merge(NativeMigrationInbox.merge(source,destination),destination),destination)
++        val claims=NativeMigrationPrivateClaims.merge(source,destination)
++        val archives=NativeMigrationPhotoLocals.merge(NativeMigrationSelections.merge(NativeMigrationInbox.merge(claims,destination),destination),destination)
+         return archives.copy(text=NativeSelectionReturnAudit.merge(archives.text,destination.text))
+     }
+ }
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt
+@@ -180,7 +180,7 @@
+         val inbox=NativeMigrationInbox.validate(records,streams?.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}))
+         val selectionBinaries=streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {name->NativeMigrationSelectionJournal.Kind.values().any {name.startsWith(NativeMigrationSelections.binaryPrefix(it))}})
+         val selections=NativeMigrationSelections.validate(records,selectionBinaries)
+-        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)+inbox.textNames+selections.first+NativeMigrationPhotoLocals.validate(records,selectionBinaries)+NativeSelectionReturnAudit.validate(records)
++        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)+inbox.textNames+selections.first+NativeMigrationPhotoLocals.validate(records,selectionBinaries)+NativeSelectionReturnAudit.validate(records)+NativeMigrationPrivateClaims.validatePortable(records,streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationPrivateClaims.BINARY)||it.startsWith(NativeMigrationPrivateClaims.ACTIVE_PREFIX)}))
+         require("metadata" in records)
+         // Frozen archive readers already checked their claimed records. Parse each other value once
+         // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.
+--- a/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
++++ b/apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt
+@@ -21,7 +21,7 @@
+         val easyWorkBusinessDestination=NativeMigrationEasyWorkBusiness.captureDestination(storage)
+         fun guarded(original: Map<String,String>): (Int)->Unit {
+             val required=NativeMigrationNotificationArchives.requiresBoundary(original,destination)||NativeMigrationEasyWorkArchives.RECORD in original||easyWorkDestination.isNotEmpty()||NativeMigrationEasyWorkBusiness.RECORD in original||easyWorkBusinessDestination.isNotEmpty()
+-            fun checkBoundary(){originalsUnchanged();if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
++            fun checkBoundary(){originalsUnchanged();NativeMigrationPrivateClaimBoundary.requireCurrent(storage,original.keys,owner);if(required)requireNotNull(notificationLease){"Notification owner activation lease required"}.requireCurrent(storage,receipt)}
+             checkBoundary()
+             return {point->if(point==0)checkBoundary();checkpoint(point);if(point==0)checkBoundary()}
+         }

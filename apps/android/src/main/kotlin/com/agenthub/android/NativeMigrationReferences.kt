@@ -14,6 +14,17 @@ internal object NativeMigrationReferences {
         a is JSONArray&&b is JSONArray -> a.length()==b.length()&&(0 until a.length()).all{equal(a.get(it),b.get(it))}
         else -> a==b
     }
+    /** Restore strengthens this local guard before quiesce saves metadata; absent means false.
+     * Keep both original records; all other client fields must still match exactly.
+     */
+    private fun sameRestoredClient(saved: JSONObject,restored: JSONObject): Boolean {
+        val flag="requiresReadTarget"
+        for(client in listOf(saved,restored))if(client.has(flag)&&client.get(flag) !is Boolean)return false
+        if(saved.optBoolean(flag)&&!restored.optBoolean(flag))return false
+        val original=JSONObject(saved.toString()).apply {remove(flag)}
+        val current=JSONObject(restored.toString()).apply {remove(flag)}
+        return equal(original,current)
+    }
     fun validate(records: Map<String,JSONObject>,clients: List<MobileClient>,operations: Sequence<SavedOperation>) {
         val metadata=records.getValue("metadata")
         val references=mutableMapOf<String,JSONObject>()
@@ -70,7 +81,7 @@ internal object NativeMigrationReferences {
                 val saved=decodeClient(row.getJSONObject("client"))
                 val client=clients.single {it.id==saved.id}
                 val original=metadata.getJSONArray("clients").objects().single {it.getString("id")==client.id}
-                require(equal(row.getJSONObject("client"),original))
+                require(sameRestoredClient(row.getJSONObject("client"),original))
             }
         }
     }

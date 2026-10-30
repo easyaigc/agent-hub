@@ -180,7 +180,7 @@ internal class NativeMigrationCandidateStore(private val context: Context, priva
         val inbox=NativeMigrationInbox.validate(records,streams?.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationInbox.BINARY)}))
         val selectionBinaries=streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {name->NativeMigrationSelectionJournal.Kind.values().any {name.startsWith(NativeMigrationSelections.binaryPrefix(it))}})
         val selections=NativeMigrationSelections.validate(records,selectionBinaries)
-        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)+inbox.textNames+selections.first+NativeMigrationPhotoLocals.validate(records,selectionBinaries)+NativeSelectionReturnAudit.validate(records)
+        val foregroundNames=NativeMigrationNotificationArchives.validatePortable(records)+NativeMigrationEasyWorkArchives.validatePortable(records)+NativeMigrationEasyWorkBusiness.validatePortable(records)+inbox.textNames+selections.first+NativeMigrationPhotoLocals.validate(records,selectionBinaries)+NativeSelectionReturnAudit.validate(records)+NativeMigrationPrivateClaims.validatePortable(records,streams?:NativeMigrationInbox.descriptors(binaries.filterKeys {it.startsWith(NativeMigrationPrivateClaims.BINARY)||it.startsWith(NativeMigrationPrivateClaims.ACTIVE_PREFIX)}))
         require("metadata" in records)
         // Frozen archive readers already checked their claimed records. Parse each other value once
         // for shape, then expose lazy views instead of retaining all JSON/raw text concurrently.

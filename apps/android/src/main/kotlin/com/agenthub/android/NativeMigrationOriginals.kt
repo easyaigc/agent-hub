@@ -25,6 +25,7 @@ internal object NativeMigrationOriginals {
             if(inbox.present)requireNotNull(owner).requireInboxWriters(inbox.key)
             for(selection in selections)if(present(selection))requireNotNull(owner).requireSelectionWriters(selection.kind)
             for(photo in localPhotos)if(photo.present)requireNotNull(owner).requireLocalPhotoWriters(photo.kind,photo.key)
+            NativeMigrationPrivateClaimBoundary.requireCurrent(storage,source.text.keys+source.binary.keys,owner)
         }
         fun capture(index: Int): T {
             if(index<kinds.size)return storage.migrationSelectionSnapshot(context,kinds[index],publication) {selection->
@@ -35,7 +36,8 @@ internal object NativeMigrationOriginals {
                 localPhotos.add(photo);try{capture(index+1)}finally{localPhotos.removeAt(localPhotos.lastIndex)}
             }
             requireOwners()
-            var records=if(inbox.present)NativeMigrationInbox.append(source,inbox.records)else source
+            val claims=NativeMigrationPrivateClaims.projectSource(source)
+            var records=if(inbox.present)NativeMigrationInbox.append(claims,inbox.records)else claims
             for(selection in selections)if(present(selection))records=NativeMigrationSelections.append(records,selection)
             for(photo in localPhotos)if(photo.present)records=NativeMigrationPhotoLocals.append(records,photo)
             val unchanged={inbox.unchanged();selections.forEach {it.unchanged()};localPhotos.forEach {it.unchanged()};requireOwners();Unit}
@@ -48,6 +50,7 @@ internal object NativeMigrationOriginals {
         add("metadata");add(NativeVoicePreferenceRecord.RECORD);add(NativeSelectionReturnAudit.RECORD)
         add(NativeMigrationInbox.RECORD);read(NativeMigrationInbox.RECORD)?.let {addAll(NativeMigrationInbox.legacyNames(it))}
         addAll(NativeMigrationSelections.legacyNames(read));addAll(NativeMigrationPhotoLocals.legacyNames(read))
+        addAll(NativeMigrationPrivateClaims.legacyNames(read))
     }
     fun <T> withDestination(context: Context,storage: NativeSessionStorage,owner: NativeMigrationOwnerLease?,publication: Publication,consume: (NativeMigrationStreamRecords,()->Unit)->T): T =
         storage.migrationOptionalStreamSnapshot(::legacyNames,NativeMigrationEasyWorkArchives::legacyNames) {root->
@@ -55,7 +58,8 @@ internal object NativeMigrationOriginals {
             withChildren(context,storage,root?:NativeMigrationStreamRecords(mapOf("metadata" to "{}"),emptyMap(),4),owner,publication,consume)
         }
     fun merge(source: NativeMigrationStreamRecords,destination: NativeMigrationStreamRecords): NativeMigrationStreamRecords {
-        val archives=NativeMigrationPhotoLocals.merge(NativeMigrationSelections.merge(NativeMigrationInbox.merge(source,destination),destination),destination)
+        val claims=NativeMigrationPrivateClaims.merge(source,destination)
+        val archives=NativeMigrationPhotoLocals.merge(NativeMigrationSelections.merge(NativeMigrationInbox.merge(claims,destination),destination),destination)
         return archives.copy(text=NativeSelectionReturnAudit.merge(archives.text,destination.text))
     }
 }

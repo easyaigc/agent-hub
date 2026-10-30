@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-private-claim-production-audit-source-20261030-1",
+  "ownBaseHead": "e00e18b2184f2e348cc1006120cdf2ac1f28439c",
+  "rootHead": "144cce4adb7d009ba27c1bcbf70f3aade866e444",
+  "rootModifiedFileProjections": {
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationExport.kt": {
+      "beforeSha256": "5840886fda3a6df3ae301a475942de208f854440fae9810f4ba482d8ca6aca8a",
+      "afterSha256": "353d7250203b8c908c0c3d3b11158efb3693e8c274ecc4a6bf3b454bd4b99536",
+      "beforeBytes": 9297,
+      "afterBytes": 9480
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationOriginals.kt": {
+      "beforeSha256": "bcad9423ebe8d0faacbd70eb2121a0c64cf9196fb9688573a251e0e297ec9072",
+      "afterSha256": "e51b94da6a9f1361f74ecc6785159140e5805214584a0dea8499a308e938efb8",
+      "beforeBytes": 4832,
+      "afterBytes": 5157
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationCandidate.kt": {
+      "beforeSha256": "ea9ffa9a88f176be1803fb2d570a704e498972d6a7825698fbc86cd7f6cf4400",
+      "afterSha256": "e5e5e404d73621d144f6b78157dc8c765d04dd7c2e4d674753414c723582f459",
+      "beforeBytes": 23838,
+      "afterBytes": 24068
+    },
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationActivation.kt": {
+      "beforeSha256": "3ad8cccedcbd35e566ebfc4a06e2c39668662a4820fc21b2d5a597eee710dca0",
+      "afterSha256": "70e7d8083e0d4aac004022b21b4dbb708bb2f4f39729ef3b0b361ca088473463",
+      "beforeBytes": 7485,
+      "afterBytes": 7565
+    }
+  },
+  "rootReadOnlyPins": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationInertArchive.kt",
+      "bytes": 9602,
+      "sha256": "03a8c1abbd193be69efd88dc3be86097d91b3f2fc12207f962313d240aec4f6b"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationLifecycle.kt",
+      "bytes": 3876,
+      "sha256": "9f050ecb0d848657cf18457e752f0b9dbeb4349f81bc66db2594141a4f051526"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "bytes": 248359,
+      "sha256": "69dfd3c269480280e2bf449c5cec3964bce665f36f06ef70e1938fc22793aa5c"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeSessionStorage.kt",
+      "bytes": 89267,
+      "sha256": "c62749593ac907a43149b37e4cc4d7a8d2a18cad7d79ef740afb06a17a4074ed"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCandidate.kt",
+      "bytes": 6866,
+      "sha256": "d551830a6b095ff8bf55c345dfd46c7e0cc146f19dccdac74849b464486b9b96"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamArchive.kt",
+      "bytes": 3717,
+      "sha256": "84368c9bea5987f2eede870db3c69b3944daec9897fbd05668c9e102ca2d8a1e"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationStreamCrypto.kt",
+      "bytes": 5510,
+      "sha256": "48124b87233dc16ff5d48e775e39ce6f5a87c38b75f00041e0724d6dd9c38add"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationRecords.kt",
+      "bytes": 1638,
+      "sha256": "9715a1748a1f9fad3eacc6a6e255035e62489a7f40d755ec534d63164dd20fe9"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/CodexPrivateConnection.kt",
+      "bytes": 14408,
+      "sha256": "44877f9484d46b7712f6f0914d1566bb527da2d4354c55679f658f516dd6d491"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/CodexDiscovery.kt",
+      "bytes": 20620,
+      "sha256": "2b201d001db6f638fe3e4a527be69e87c99d81e3d9e1bb1d7de0760764881e22"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationIoWork.kt",
+      "bytes": 5232,
+      "sha256": "c1c8f7c8f9644a8355706c8eb38bbbb32bfa5eebd63c5331e1836d518e31c537"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeNsdLifetime.kt",
+      "bytes": 7058,
+      "sha256": "41ad1bbe19b919324a9644fbefaf7a9f048f1617dab8bfb2ba224182ef174cbb"
+    },
+    {
+      "path": "apps/ios/Sources/CodexDiscovery.swift",
+      "bytes": 43179,
+      "sha256": "3b56db06c0835f277ed712a74892eb2e507e4d2902728c85346ac434b17faf6b"
+    },
+    {
+      "path": "apps/ios/Sources/EncryptedMigration.swift",
+      "bytes": 8131,
+      "sha256": "e11791f76b82982daff58795635bd6f88ab6853541d2c5185f0f7dd773d3d45b"
+    },
+    {
+      "path": "apps/ios/Sources/SessionStore.swift",
+      "bytes": 266244,
+      "sha256": "af875be4eaae0f7c08be2d7dd15de0b94ee82c704c95565bc58bfd86325f32c9"
+    }
+  ],
+  "ownedCandidatePins": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaims.kt",
+      "bytes": 4661,
+      "sha256": "58f7c48727ed90b3ec08b22ee765385a0719d262b25b5c60e2334239c23698d4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaimBoundary.kt",
+      "bytes": 771,
+      "sha256": "9af4ad31cc3bd30248fff9bd6f496ed7ccac8e10bca3d7d840898048629fd3e1"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimsContractTest.kt",
+      "bytes": 9065,
+      "sha256": "b7fba2f51d11451ac380c8e15ac59365d5ba7442770672f8165cd7997be8e4ef"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt",
+      "bytes": 9354,
+      "sha256": "08a2c959c9f5adc6bb8d6ec3f20b3c8efdd4b20354701ec786cb227f89df8311"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimStorageTest.kt",
+      "bytes": 9888,
+      "sha256": "55f553d8d3b6dda19ccfe5b4bceb3aefe28444fe43742ccd639ac385e2903dc7"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt",
+      "bytes": 5241,
+      "sha256": "99d3e87605dc707f2bd3a60eec26bfd1fe39bd43973f07ab4f2ec816f1ad63a8"
+    }
+  ],
+  "integration": {
+    "patch": "private-claim-production-root.patch",
+    "hooks": "private-claim-production-root-hooks.json",
+    "hookCount": 8,
+    "sharedRootFilesEdited": false,
+    "rootPatchReadOnlyApplyCheck": true,
+    "rootProductionIntegrated": false,
+    "rootSDKNativePending": true,
+    "codec": "Prior301a codec must be added to Root using this stage updated full source. Existing commonIO e00/Root144 is prerequisite, not repeated.",
+    "delta": "New boundary reuses actual NativeMigrationOwnerLease and raw writer lock; no new ledger, kernel, executor, or arbitrary command API.",
+    "inventoryPatch": {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/system-scope-inventory.json",
+      "beforeSha256": "de7b7c794a4ca41196858807d742ab7a6408c6b5b6cb20ad4f9e60abf999bc51",
+      "afterSha256": "36782788521539f1cd87263cee30df1b28da55c15797d72e17771e0a47d7187f",
+      "patch": "private-claim-production-inventory.patch",
+      "readOnlyApplyCheck": true,
+      "rootNotEdited": true,
+      "onlyAddedRootClaimsCurrentFields": [
+        "currentStatus",
+        "contract",
+        "nativeStatus",
+        "unknownPolicy"
+      ],
+      "all24RowsPreserved": true,
+      "otherFieldsAndRowsUnchanged": true
+    }
+  },
+  "paths": [
+    {
+      "entry": "production stream export",
+      "chain": [
+        "NativeMigrationExport.sealFile",
+        "NativeMigrationOriginals.withChildren",
+        "same actual owner + frozen writer check",
+        "NativeMigrationPrivateClaims.projectSource",
+        "existing foreground/business/provisional projections",
+        "same candidate validator + encrypted stream",
+        "originalsUnchanged + requireOwners + existing final publication fence"
+      ],
+      "assert": "Source text/name/hash stays exact; active names only removed from the portable projection. Original ciphertext is not rewritten by export after normal Session quiesce flush."
+    },
+    {
+      "entry": "bounded capture/seal",
+      "change": "Explicitly refuse any active/inert/future claim family without owner. Do not offer legacy export bypass; ownerless old path remains available only for its existing scopes."
+    },
+    {
+      "entry": "known scope + reference closure",
+      "change": "Known catalog and exact aliases added to existing source/destination legacy discovery. Candidate subtracts only strictly validated private audit names from generic graph. Global unknown record/binary/reference checks remain; raw active claim keys in imported candidate refuse."
+    },
+    {
+      "entry": "stage/recovery/cold read",
+      "chain": [
+        "NativeMigrationCandidateStore.stageFile/currentReceipt/readArchive",
+        "NativeMigrationStreamCandidate.stage/read",
+        "NativeMigrationCandidateStore.validateStreamRecords/validateRecordGraph"
+      ],
+      "assert": "Same closed graph runs on initial stage, existing candidate read and cold receipt recovery; no special acceptance shortcut or network lookup."
+    },
+    {
+      "entry": "activation",
+      "chain": [
+        "NativeMigrationOriginals.withDestination captures current root",
+        "private projection + merge exact originals",
+        "NativeMigrationCandidateStore.validateStreamRecords(merged)",
+        "NativeMigrationActivation.guard",
+        "original destination fence + incoming claim same actual owner/raw writer check",
+        "existing atomic generation publication"
+      ],
+      "assert": "Existing destination claim name and exact intent survive as inert audit entries, never discarded or restored into an executable namespace. Known published receipt can return idempotently without a new publication/owner; it does not authorize a remote operation."
+    }
+  ],
+  "strictness": {
+    "format": "Catalog v1 / same existing inert engine identity domain; no wire/credential format change.",
+    "unknownClaimFamily": "Future/misspelled codex-private-claim* and migration-private-claim* now explicitly refuse in source, portable validate and destination union; no silent skip.",
+    "unidentifiedLegacy": "Existing tag1 hashed claim without a closed name index remains a whole-inventory refusal; preserve ciphertext, never guess original name or infer pairing outcome.",
+    "independentHistoricalIntent": "A structurally complete pre-POST claim can outlive a paired client. It need not resolve to a current client or matching phone key. Missing catalog/alias/body references still reject.",
+    "rawTargetAndID": "Producer wrapper has no operationId field; original claim logical name contains exact raw UTF-8 SHA256 intent ID. Preserve original target/account metadata/body/hash; existing operation journal IDs, intents, phases/results separately preserved by main migration graph.",
+    "unknownOtherScopes": "Root existing global source/candidate checks and 24-group inventory remain. This slice does not declare unrelated destination stores, models, cache or paused business supported."
+  },
+  "iosComparison": {
+    "producer": "CodexDiscovery.connectDiscovered sends Claim through ephemeral URLSession and has no same Android durable pending ledger in that function.",
+    "migration": "EncryptedMigration.Payload and SessionStore.migrationPayload/restoreMigration enumerate closed SavedSession/credentials/attachments/notification fields, no generic claim sweep or claim POST on restore.",
+    "common": "No imported audit creates pairing/device key/URI/OS permission/execution/replay authority.",
+    "impact": "Android-only storage graph wiring candidate; iOS format/UI/code unchanged, no iOS pass claimed."
+  },
+  "checks": {
+    "jvmCodecTestsPassed": 11,
+    "jvmScope": "Narrow source JVM auxiliary only; no Gradle/SDK/Android/native/OS/DEV execution",
+    "jvmBindings": "Android JsonReader rebound to cached Gson; exact endpoint and baseAddress bodies extracted; unreachable storage/constants/real-owner stubs. DomainContract and repository schemas are actual source.",
+    "manifestSha256": "1316f6656196fec8bcf4d6fbab109e7a414193944ebef7fe237965a05c74ff22",
+    "PSIParsedFiles": 9,
+    "PSITypeBinding": false,
+    "seconds": {
+      "jvmCodec": 7.763342042,
+      "PSIParser": 0.7545950419999999
+    },
+    "firstAttempt": "JVM10 passed; parser environment lacked ExtensionStorage, failed before PSI parsing. Error kept. Helper init repaired from actual cached compiler API, PSI then passed.",
+    "rerunReason": "Reserved future/misspelled claim namespace guard + one new JUnit and stronger Native bad-record/future-target assertions; latest JVM11 and PSI9 passed.",
+    "sdk": false,
+    "native": false,
+    "os": false,
+    "dev": false
+  },
+  "fullP7Complete": false
+}

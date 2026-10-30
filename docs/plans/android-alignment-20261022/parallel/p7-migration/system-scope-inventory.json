@@ -32,7 +32,11 @@
       "producers": "CodexPrivateConnection.kt",
       "baselineStatus": "unsupported: candidate rejects unknown/orphan",
       "iosActualPath": "No blanket arbitrary-key export in iOS payload",
-      "exitGate": "Define closed pending-claim audit semantics before supporting; never execute pairing"
+      "exitGate": "Define closed pending-claim audit semantics before supporting; never execute pairing",
+      "currentStatus": "Source66 composed SDK and6 actual API33 warm methods (first includes16 graph vectors) passed;3 cold chain, full UI/OS/DEV and other metadata alias compatibility pending",
+      "contract": "private-claim-production.md",
+      "nativeStatus": "not run; fixture retirement/cancellation correction required before Native admission",
+      "unknownPolicy": "Malformed, missing alias, unknown future family and unidentified tag1 originals remain refused/retained; no pairing outcome query, authorize/POST or replay"
     },
     {
       "id": "root-attachments",

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": 1,
+  "catalogVersion": 1,
+  "previousContract": "private-claims-contract-v1.schema.json",
+  "domain": "agent-hub/inert-private-claims/v1",
+  "newAuthority": false,
+  "assertions": [
+    {
+      "id": "PCP01",
+      "assert": "Production stream source and destination use existing NativeMigrationOriginals graph, exact family closure and aliases; no duplicate archive engine."
+    },
+    {
+      "id": "PCP02",
+      "assert": "Same actual Session lease + storage identity + frozen raw writer required for any claim family; initial and final publication fences recheck. No ownerless bounded export bypass."
+    },
+    {
+      "id": "PCP03",
+      "assert": "Only portable projections remove active names; source ciphertext remains and destination original name/body is retained in union. Incoming audits never restore active claim keys."
+    },
+    {
+      "id": "PCP04",
+      "assert": "Future/misspelled family, malformed wrapper/version/hash/target/publicKey/cert, secret/unknown fields, missing/extra/changed alias or unidentified legacy ciphertext rejects whole graph."
+    },
+    {
+      "id": "PCP05",
+      "assert": "All stage/read/currentReceipt/cold-read/activation paths share candidate graph validation and existing limits; corruption cannot replace prior candidate/root publication."
+    },
+    {
+      "id": "PCP06",
+      "assert": "Unknown pairing outcome stays unproven; no authorize/POST/replay/query, fresh device private key, URI or permission is created. Original account is only historical metadata."
+    },
+    {
+      "id": "PCP07",
+      "assert": "Actual current local originals and incoming audit union without lost immutable intent/name/hash; historical claim may outlive active client and is not missing a required catalog reference."
+    },
+    {
+      "id": "PCP08",
+      "assert": "Operation journal original ID/intent/hash/result/phase remain exact and read-only via existing main graph, separate from claim intent SHA name."
+    },
+    {
+      "id": "PCP09",
+      "assert": "Published candidate receipt idempotence preserves later local draft; querying known local published receipt neither repeats a migration publication nor a remote operation."
+    },
+    {
+      "id": "PCP10",
+      "assert": "Complete 24-group inventory and paused business entries remain; no model/cache/global exclusion or unsupported scope is removed to pass."
+    }
+  ],
+  "implemented": "Standalone codec namespace refusal + real owner boundary + exact four-file Root production patch + actual encrypted-storage/Session/cold fixture source",
+  "verifiedAuxiliary": "JVM11 and PSI9 only; actual leases/storage unreachable in JVM",
+  "notVerified": [
+    "Root patch applied",
+    "Root composed SDK/type binding",
+    "Native selectors",
+    "actual NSD/HTTP/OS",
+    "real DEV",
+    "complete P7"
+  ],
+  "formatChange": "No envelope/catalog version change; existing v1 semantic strictness extended to reject unknown reserved family names."
+}

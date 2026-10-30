@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-source65-native-restoration-failure-fix-20261030-2",
+  "sourceBase": "0b6724e06452f4f5c000019ff34f9223a1af8b63",
+  "RootReadOnlyHead": "794c985148e14ee4c97700d1e98a87af456fcd88",
+  "classification": "Static production contract discrepancy; requires Root semantic disposition. Restore-port fix is necessary but not sufficient for C01 Native admission.",
+  "staticChecks": {
+    "seedOmitsRequiresReadTarget": true,
+    "seedDefaultEncoded": true,
+    "restoreForcesRequiresReadTarget": true,
+    "quiescePersistsSnapshot": true,
+    "snapshotEncodesClients": true,
+    "encoderIncludesReadTarget": true
+  },
+  "fieldDelta": {
+    "field": "requiresReadTarget",
+    "seedScalarSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+    "restoredMemoryScalarSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+    "quiescedMetadataScalarSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+    "unchangedVaultScalarSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+    "seedOrigin": "Synthetic client omits argument and uses production default; ActivationFixtures stores same encodeClient in metadata and vault. No seeded client or vault altered.",
+    "transition": "Prepared restore also copies this field into realClients; quiesce serializes that memory snapshot into metadata and awaits write. This path does not update vault client.",
+    "runtimeVerification": false
+  },
+  "storageIdentity": {
+    "seed": "explicit JSON null from default null; withKeys safe call does not apply to this seed",
+    "generalNonNullCase": "restore extends storageIdentity.keys from metadata namespace keys; encodeClient serializes storageIdentity. This can also differ from vault in other valid installations; no actual old-run field values inspected."
+  },
+  "nonSerializedMemoryChanges": ["online"],
+  "sameForThisSeedByStaticPath": [
+    "id",
+    "name",
+    "scope",
+    "endpoint",
+    "mode",
+    "readerId",
+    "codexDirect",
+    "agentConnection",
+    "migrationEasyWork",
+    "storageIdentity"
+  ],
+  "existingGate": "NativeMigrationReferences recursively requires whole JSON client equality after quiesce/export. It includes requiresReadTarget even though its comment emphasizes pairing/routes/storage/runtime. Gate unchanged; expected scalar mismatch remains a static blocker without any remote refresh.",
+  "threeBoundaries": {
+    "beforeRestore": "metadata/vault seeded from same encodeClient",
+    "afterRestore": "new Native assertion compares original logical texts exactly before/after prepared restore; not executed here. In-memory client already has forced read-target flag.",
+    "afterQuiesce": "existing exact whole-client References gate applies to captured metadata/vault; static seed mismatch identified, no false Native pass claimed."
+  },
+  "evidence": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileSession.kt",
+      "sha256": "f6d8394572b14f459aa50e5fb29296783dd98b2f6a50756cb515722e8c8098f5",
+      "lineMatches": {
+        "val requiresReadTarget: Boolean = false": [19],
+        "realClients.clear(); realClients.addAll": [2771],
+        "requiresReadTarget=true": [2490, 2605, 2798],
+        "val metadata=metadataSnapshot()": [809],
+        "store.enqueue(\"metadata\",metadata)": [810],
+        "realClients.map(::encodeClient)": [2701],
+        "internal fun encodeClient": [2861]
+      }
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/MobileStorageIdentity.kt",
+      "sha256": "33a6d0787fbae4e658cb0411dc8794e501c37c95b273f3165125bd41b79714c1",
+      "lineMatches": {
+        "fun withKeys": [63]
+      }
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationCandidateTest.kt",
+      "sha256": "114fa084593fc0f62da6863d1b3788fd8a102ae837848d2a30e154039dee0fdf",
+      "lineMatches": {
+        "private val client = MobileClient": [22],
+        "put(\"clients\", JSONArray().put(encodeClient(client)))": [52]
+      }
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationActivationTest.kt",
+      "sha256": "b840ac5c48011b4414c483c4ebb76010060959a5276eaa6066b8b4140a9a67a8",
+      "lineMatches": {
+        "meta.put(\"clients\",JSONArray().put(encodeClient(client)))": [17],
+        "entries.put(\"codex-private-connections-v1\"": [20]
+      }
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationReferences.kt",
+      "sha256": "667d947166b9b20bc3f522521290895cbc3597f4d3d89fd0c641bee2a2ed3523",
+      "lineMatches": {
+        "Pairing, routes, storage identity": [69],
+        "require(equal(row.getJSONObject(\"client\"),original))": [73]
+      }
+    }
+  ],
+  "RootSourceRelevantChecksMatch": true,
+  "RootMobileSessionSha256": "69dfd3c269480280e2bf449c5cec3964bce665f36f06ef70e1938fc22793aa5c",
+  "noOriginalRunDataRead": "Only original stdout error evidence read; no old fixture/vault/key/alias data or operations accessed.",
+  "prohibitedWorkaroundsNotApplied": [
+    "No References relaxation",
+    "No initial fixture client change",
+    "No vault client/token rewrite",
+    "No quiesce metadata write bypass",
+    "No new native retry or UUID"
+  ],
+  "requiredRootDecision": "Choose intended production relationship of runtime/UI read-target/alias fields vs credential verified-client record; authorize a coherent production contract repair before claiming C01 readiness. This child does not choose or implement that production change."
+}

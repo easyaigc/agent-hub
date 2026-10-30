@@ -1,0 +1,15 @@
+--- a/docs/plans/android-alignment-20261022/parallel/p7-migration/system-scope-inventory.json
++++ b/docs/plans/android-alignment-20261022/parallel/p7-migration/system-scope-inventory.json
+@@ -32,7 +32,11 @@
+       "producers": "CodexPrivateConnection.kt",
+       "baselineStatus": "unsupported: candidate rejects unknown/orphan",
+       "iosActualPath": "No blanket arbitrary-key export in iOS payload",
+-      "exitGate": "Define closed pending-claim audit semantics before supporting; never execute pairing"
++      "exitGate": "Define closed pending-claim audit semantics before supporting; never execute pairing",
++      "currentStatus": "closed inert private-claim production graph source candidate; Root patch and SDK/Native still pending",
++      "contract": "private-claim-production.md",
++      "nativeStatus": "not run for this candidate; exact9 selectors in private-claim-production-native-selectors.json",
++      "unknownPolicy": "Malformed, missing alias, unknown future family and unidentified tag1 originals remain refused/retained; no pairing outcome query, authorize/POST or replay"
+     },
+     {
+       "id": "root-attachments",

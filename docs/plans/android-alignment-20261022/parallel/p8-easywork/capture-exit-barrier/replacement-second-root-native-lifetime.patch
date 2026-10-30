@@ -1,0 +1,76 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeEasyWorkConnectionPresentationTest.kt
+@@ -88,6 +88,7 @@
+     @get:Rule(order=-1) val compositeAdmission=org.junit.rules.TestRule {statement,description->
+         object: org.junit.runners.model.Statement(){override fun evaluate(){
+             P8Api26CompositeProducer.requireNoUnresolvedScreenshot()
++            P8WindowPixelCopyDestination.requireNoPending()
+             if(description.methodName in P8Api26CompositeProducer.METHODS){
+                 org.junit.Assume.assumeTrue("API26 composite diagnostic is explicitly disabled by default",
+                     InstrumentationRegistry.getArguments().getString(P8Api26CompositeProducer.OPT_IN)=="true")
+@@ -181,6 +182,7 @@
+     }
+     private fun touch(tag: String,scroll: Boolean=true){
+         P8Api26CompositeProducer.requireNoUnresolvedScreenshot()
++        P8WindowPixelCopyDestination.requireNoPending()
+         require(tag in listOf("client-selector","cancel-client-form","connection-preference","easywork-connection-method","easywork-name","easywork-relay-url","easywork-relay-code")||tag.startsWith("edit-client-")||tag.startsWith("connection-preference-")||tag.startsWith("easywork-method-")) {"Forbidden action in presentation-only test: $tag"}
+         require(tag!="cancel-client-form"||!scroll) {"Footer has no scroll ancestor"}
+         val n=ui.onNodeWithTag(tag);if(scroll)n.performScrollTo();if(tag=="cancel-client-form")recordGeometry("footer-before-hit",window())
+@@ -202,16 +204,53 @@
+         .put("displayRotation",@Suppress("DEPRECATION") ui.activity.windowManager.defaultDisplay.rotation).put("osFontScale",ui.activity.resources.configuration.fontScale)
+         .put("renderedFontScale",renderedFont).put("appDarkCallback",darkObserved).put("controlledBounds",controlledBounds)
+     private fun capture(label: String){
++        check(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper()){"Capture and its exit barrier must run outside Main Looper"}
++        P8WindowPixelCopyDestination.requireNoPending()
+         val w=window();val view=w.decorView;val b=ui.onNodeWithTag("sheet-add").fetchSemanticsNode().boundsInWindow
+         val crop=android.graphics.Rect(kotlin.math.floor(b.left).toInt(),kotlin.math.floor(b.top).toInt(),kotlin.math.ceil(b.right).toInt(),kotlin.math.ceil(b.bottom).toInt())
+         check(crop.left>=0&&crop.top>=0&&crop.right<=view.width&&crop.bottom<=view.height&&crop.width() in 1..4096&&crop.height() in 1..4096)
+-        val image=Bitmap.createBitmap(crop.width(),crop.height(),Bitmap.Config.ARGB_8888);val done=java.util.concurrent.CountDownLatch(1);var status=-1
++        val image=Bitmap.createBitmap(crop.width(),crop.height(),Bitmap.Config.ARGB_8888);val done=java.util.concurrent.CountDownLatch(1)
++        val destination=P8WindowPixelCopyDestination(image,w){bitmap: Bitmap->if(!bitmap.isRecycled)bitmap.recycle()}
++        var failure: Throwable?=null
+         try {
+-            ui.runOnIdle {android.view.PixelCopy.request(w,crop,image,{code->status=code;done.countDown()},android.os.Handler(android.os.Looper.getMainLooper()))}
+-            assertTrue(done.await(3,java.util.concurrent.TimeUnit.SECONDS));assertEquals(android.view.PixelCopy.SUCCESS,status)
++            val callbackHandler=android.os.Handler(android.os.Looper.getMainLooper())
++            val callback=android.view.PixelCopy.OnPixelCopyFinishedListener {code->try{destination.onCompletion(code)}finally{done.countDown()}}
++            ui.runOnIdle {
++                destination.enterDispatch()
++                android.view.PixelCopy.request(w,crop,image,callback,callbackHandler)
++            }
++            assertTrue(done.await(3,java.util.concurrent.TimeUnit.SECONDS));val status=destination.completedStatus();assertEquals(android.view.PixelCopy.SUCCESS,status)
++            assertSame("Caller borrows only its actual completed destination",image,destination.completedResource())
+             File(folder,"$label.png").outputStream().use {check(image.compress(Bitmap.CompressFormat.PNG,100,it))}
+             probes.put(windowObservation(w).put("kind","actual-owned-dialog-PixelCopy").put("file","$label.png").put("cropInWindow",crop.toShortString()))
+-        }finally {image.recycle()}
++        }catch(cause: Throwable){failure=cause;throw cause}
++        finally {
++            var releaseFailure: Throwable?=null
++            try{destination.closeCaller();destination.throwIfReleaseFailed()}catch(cause: Throwable){
++                releaseFailure=cause;failure?.let {original->if(original!==cause)try{original.addSuppressed(cause)}catch(_: Throwable){}}
++            }
++            if(failure!=null||releaseFailure!=null){
++                val original=failure?:checkNotNull(releaseFailure)
++                fun suppress(secondary: Throwable){if(original!==secondary)try{original.addSuppressed(secondary)}catch(_: Throwable){}}
++                fun lifetimeProbe(stage: String,wait: P8WindowPixelCopyDestination.ExitWait?=null){
++                    try{val lifetime=destination.snapshot();saveProbe(JSONObject().put("kind","dialog-PixelCopy-destination-lifetime").put("label",label)
++                        .put("stage",stage).put("dispatchEntered",lifetime.dispatchEntered).put("completionCallbackSeen",lifetime.callbackSeen)
++                        .put("destinationReleased",lifetime.released).put("destinationPhase",lifetime.phase)
++                        .put("retainedDestinations",lifetime.retainedDestinations).put("failureClass",original.javaClass.name)
++                        .put("exitBarrierDispatched",wait?.dispatched?:JSONObject.NULL).put("exitBarrierWaited",wait?.waited?:JSONObject.NULL)
++                        .put("initialInterruptFlag",wait?.initialInterruptFlag?:JSONObject.NULL).put("laterInterruptions",wait?.laterInterruptions?:JSONObject.NULL)
++                        .put("interruptStatusRestored",wait?.interruptStatusRestored?:JSONObject.NULL).put("retryDispatched",false).put("requestCancelled",false))}
++                    catch(recordFailure: Throwable){suppress(recordFailure)}
++                }
++                lifetimeProbe("before-inline-exit-barrier-not-a-junit-terminal")
++                // The exact original capture stack/Window/Bitmap/owner/first error stays live here.
++                // No @After or Activity-rule exit can run until this returns; Main remains unblocked.
++                val waited=destination.awaitCaptureExit(done,original,android.os.Looper.getMainLooper().thread)
++                try{destination.throwIfReleaseFailed()}catch(cause: Throwable){if(releaseFailure==null)releaseFailure=cause;suppress(cause)}
++                lifetimeProbe(if(waited.dispatched)"original-request-settled-before-failure-exit" else "proven-no-request-before-failure-exit",waited)
++            }
++            if(failure==null)releaseFailure?.let {throw it}
++        }
+     }
+     private fun rectJson(r: androidx.compose.ui.geometry.Rect)=JSONObject().put("left",r.left).put("top",r.top).put("right",r.right).put("bottom",r.bottom)
+     private fun saveProbe(value: JSONObject){probes.put(value);flushProbes()}

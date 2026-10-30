@@ -1526,4 +1526,12 @@ Source64r2 检查更新：首次 O_DIRECTORY 编译失败保留，公开 FD 目�
 
 Source64r2/API33：独立首次 App/Test 安装后，三项 reading fence、八项受控 IO owner 原生方法均本次通过。主统筹独立核715份完整调用/17,553,359 bytes、选中 start/terminal、严格原 B 前后默认家族/权限/包/boot 相等及 own-lock 释放；未豁免 no_backup 变化。实际网络/NSD、Store/Ledger、系统/UI/物理及真实 DEV 待验，严格全局 AM 缺席未声明。[精确方法/指纹](../plans/android-alignment-20261022/parallel/sixty-fourth-stage-api33-owner-native.json)。
 
+### Source65 组合候选
+
+组合源码与 SDK/三 APK 校验通过；不是 Native、界面或完整迁移通过。P7 六项 warm/三项冷链、P8 两诊断/API37 原 Surface、P9 首批10项和原声补证继续单列。新 API26 实际384 MiB，48 MiB仍待验；旧11项只按原指纹限定保留。 详见[检查点](../plans/android-alignment-20261022/records/source65-composed-source-sdk.md)。
+
+### Source66 迁移恢复增量
+
+Source65首项实际失败及原件保持已独立核74调用；Source66组合SDK通过，API33首项16图断言与6warm实际限定通过，Root核540调用/18tar及严格原件保护；3冷链/完整系统/UI/DEV仍待验。 详见[检查点](../plans/android-alignment-20261022/records/source66-migration-client-restore.md)。
+
 2026-10-30 F02／F03 Host Codex 更新恢复：共享安装快照与独立目录 reader 恢复已实现候选，端侧和 KMP 不变；本轮辅助检查、macOS 只读、Windows 原机与手机分别记录于 [专项记录](codex-update-resilience-20261030.md)。未验项保持未验，A6 暂停。

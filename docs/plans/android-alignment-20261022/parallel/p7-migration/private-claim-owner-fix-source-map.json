@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "taskId": "android-parallel-p7-migration-20261028",
+  "operationId": "parent-p7-private-claim-fixture-owner-fix-source-20261030-1",
+  "baseCommit": "8ce8de859115beffee34145c3e9eeae5d0e67efa",
+  "rootContext": "Parent stage31 716c5ed7; Source64r2 reading/commonIO results remain separate and do not validate claim fixture or graph.",
+  "reviewPins": [
+    {
+      "name": "review.json",
+      "sha256": "345a30ec2e64d0388e687bf81e8a3fc9c50b22b49e3caca20c9260708ebb363d",
+      "bytes": 12455
+    },
+    {
+      "name": "retirement-addendum.json",
+      "sha256": "8f54f46a5e2f84490fd93661382824e7087db9de8da4ba7712c224ec81f59973",
+      "bytes": 7096
+    }
+  ],
+  "existingFixtureChanges": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt": {
+      "beforeSha256": "08a2c959c9f5adc6bb8d6ec3f20b3c8efdd4b20354701ec786cb227f89df8311",
+      "afterSha256": "7c6a5aad60217e3d5e596d8193efedf54fb66e8f61b619bf897f041d11e4e612",
+      "beforeBytes": 9354,
+      "afterBytes": 9381
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimStorageTest.kt": {
+      "beforeSha256": "55f553d8d3b6dda19ccfe5b4bceb3aefe28444fe43742ccd639ac385e2903dc7",
+      "afterSha256": "37eeab23a2a784e3f336981544d69dd48d366580e35c458711ec4beb111eea6c",
+      "beforeBytes": 9888,
+      "afterBytes": 9985
+    },
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt": {
+      "beforeSha256": "99d3e87605dc707f2bd3a60eec26bfd1fe39bd43973f07ab4f2ec816f1ad63a8",
+      "afterSha256": "28351201e7c4d26e51d1f3881229a1ead6596fd9620ea81c1d29d914981f7039",
+      "beforeBytes": 5241,
+      "afterBytes": 5338
+    }
+  },
+  "newPortableTestOnlySources": [
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwner.kt",
+      "bytes": 15688,
+      "sha256": "e1e258c43c3d1ce61220bd5efc24fb72888299c9248d85d03fd2e60a916d16a7"
+    },
+    {
+      "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativePrivateClaimFixtureOwnerTest.kt",
+      "bytes": 13741,
+      "sha256": "ffeb02c14335d68ac1bcde18bdde210da873d670f0d64f63a4cb75f3edbd5226"
+    }
+  ],
+  "productionAndCodecUnchanged": [
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaims.kt",
+      "bytes": 4661,
+      "sha256": "58f7c48727ed90b3ec08b22ee765385a0719d262b25b5c60e2334239c23698d4"
+    },
+    {
+      "path": "apps/android/src/main/kotlin/com/agenthub/android/NativeMigrationPrivateClaimBoundary.kt",
+      "bytes": 771,
+      "sha256": "9af4ad31cc3bd30248fff9bd6f496ed7ccac8e10bca3d7d840898048629fd3e1"
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/private-claim-production-root-hooks.json",
+      "bytes": 8462,
+      "sha256": "911a2caf68d500cbcf1ff6d8b94cc3ff4a2b7cb7387b4f933e7f7268b1bbdaa7"
+    },
+    {
+      "path": "docs/plans/android-alignment-20261022/parallel/p7-migration/private-claim-production-root.patch",
+      "bytes": 7592,
+      "sha256": "b5624750d6cb7cfbc98cce68e8af612e8422f6ba32b986e6693aa0ccf6a8fddc"
+    }
+  ],
+  "sharedRootEdited": false,
+  "centralTablesEdited": false,
+  "newRunUUIDAssigned": false,
+  "nativeSelectors": "Same six warm and three ordered cold selectors; both classes now require NativePrivateClaimFixtureOwnerRule. All remain unexecuted.",
+  "strongOwnership": {
+    "actualReferences": [
+      "original storage object + canonical coordination key",
+      "exact session assigned inside Main immediately after constructor normal return, before restore",
+      "exact lease assigned inside same Main immediately after quiesce normal return",
+      "original coordinator Job, actual JUnit guard Thread and one actual body Thread",
+      "original first Throwable plus suppressed failures/stacks; phase/confirmation facts"
+    ],
+    "retention": "Static strong registry retains unresolved exact objects by canonical coordination directory. No replacement Session under another token; only actual confirmed cleanup removes active ownership. Text signal is supplementary.",
+    "nativeExit": "Actual JUnit thread supervises one exact body Thread. It waits untimed for that Thread to terminate and all real records to confirm cleanup; first guard interrupt closes new admission and requests local cancellation once, later interrupts are recorded/ignored without duplicate cleanup. No timeout/network/device poll.",
+    "cleanupProgress": "Coordinator and NonCancellable cleanup use Default, with Main for lifecycle calls and IO for release, so a lost runBlocking return does not own the cleanup event loop.",
+    "firstError": "First already-observed body/cleanup failure remains primary; otherwise first guard interruption precedes later body cancellation. Actual Throwable references and suppressed stacks retained."
+  },
+  "validation": {
+    "actualPortableJUnit": 14,
+    "PSISyntaxFiles": 5,
+    "seconds": 5.932519458,
+    "manifestSha256": "75811c92369e784738f75ade16c4e5a581ee2334dc3ef6721f5aecb1556715ad",
+    "fakeResourcesOnly": true,
+    "firstAttempt": "Compiled; JUnit12 had one assumption failure about when runBlocking delivers interruption. Original failure retained. Rule changed to supervise exact body Thread, added unresolved-resource replacement refusal:13 passed. First guard-interruption ordering strengthened with no-Session case:14 passed; PSI5 passed.",
+    "AndroidTypeBinding": false,
+    "SDK": false,
+    "Native": false,
+    "OS": false,
+    "DEV": false,
+    "finalNativeRuleDeclaration": "Public Native rule properties explicitly type TestRule. Final current-source JVM14 and PSI5 cover the portable outer try/finally update; Native Android binding remains pending.",
+    "finalPSISeconds": 0.3372444999999997,
+    "finalPSIProofSha256": "9f3bef24739906a9d3e0a59794dc051403a65ec8447c91d4959e43095242d6cf",
+    "finalCheckProofSha256": "9f3bef24739906a9d3e0a59794dc051403a65ec8447c91d4959e43095242d6cf",
+    "actualModel": "gpt-6.1-terra",
+    "actualEffort": "medium",
+    "actualServiceTier": null
+  },
+  "fullP7Complete": false
+}

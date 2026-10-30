@@ -1,0 +1,62 @@
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimFixtures.kt
+@@ -22,6 +22,7 @@
+     }.also {require(UUID.fromString(it).toString()==it)}
+     val folder=File(app.filesDir,"acceptance/P7-private-claims-$run")
+     val password="owned private claim inert migration password"
++    private val ownerToken=PrivateClaimFixtureOwners.current()
+     val remoteCalls=AtomicInteger()
+     var exportCiphertext: Map<String,String>?=null;private set
+     init {NativeChatNotificationNaturalStore.guard(app)}
+@@ -81,20 +82,18 @@
+     }
+     /** Uses actual Main-owned quiesce, not a truthy test lease. No discovery/voice actor is started. */
+     suspend fun <T> owned(root: NativeSessionStorage,consume: suspend (NativeMigrationOwnerLease)->T): T {
+-        val session=withContext(Dispatchers.Main.immediate) {MobileSession(root,reads(),commands()).also {it.leaveForeground();it.restore()}}
+-        var lease: NativeMigrationOwnerLease?=null
+-        try {
+-            withTimeout(30_000){withContext(Dispatchers.Main.immediate){session.awaitMigrationRestore()}}
+-            val acquired=withTimeout(30_000){withContext(Dispatchers.Main.immediate){session.quiesceForMigration(UUID.randomUUID().toString())}}
+-            lease=acquired
+-            return withContext(Dispatchers.IO){consume(acquired)}
+-        }finally {
+-            val held=lease
+-            if(held==null)withContext(NonCancellable+Dispatchers.Main.immediate){session.abandonMigrationRestore()}
+-            else try {withContext(NonCancellable+Dispatchers.Main.immediate){session.retireForMigration(held.operationId)}}
+-                finally {withContext(NonCancellable+Dispatchers.IO){held.releaseRawWriters()}}
+-            assertEquals("No remote lookup/authorization/POST/replay is admissible",0,remoteCalls.get())
++        val record=PrivateClaimFixtureRecord<MobileSession,NativeMigrationOwnerLease,NativeSessionStorage>(ownerToken,root,run,root.coordinationKey) {state->
++            val file=File(folder,"owner-${state.sequence}.txt")
++            java.io.FileOutputStream(file).use {it.write(state.diagnostic().toByteArray(Charsets.UTF_8));it.fd.sync()}
++            android.system.Os.chmod(file.path,0x180)
+         }
++        return PrivateClaimFixtureLifecycle(record,Dispatchers.Main.immediate,
++            create={MobileSession(root,reads(),commands())},restore={it.leaveForeground();it.restore()},
++            awaitRestore={it.awaitMigrationRestore()},acquire={it.quiesceForMigration(UUID.randomUUID().toString())},
++            retire={session,lease->session.retireForMigration(lease.operationId)},
++            abandon={it.abandonMigrationRestore()},release={it.releaseRawWriters()},
++            verify={assertEquals("No remote lookup/authorization/POST/replay is admissible",0,remoteCalls.get())}
++        ).run(consume)
+     }
+     suspend fun export(root: NativeSessionStorage): File=File(folder,"claims.encrypted").also {file->
+         owned(root){lease->exportCiphertext=tree(root);NativeMigrationExport(context("source"),root).sealFile(file,password,lease)}
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimStorageTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimStorageTest.kt
+@@ -9,6 +9,7 @@
+
+ /** Select one method per fresh parent-supplied privateClaimMigrationRun. Unexecuted source fixture. */
+ class NativeMigrationPrivateClaimStorageTest {
++    @get:org.junit.Rule val owner: org.junit.rules.TestRule=NativePrivateClaimFixtureOwnerRule()
+     @Test fun streamRoundTripKeepsSourceDestinationAndUnknownOperationsReadOnly()=runBlocking {
+         val f=NativeMigrationPrivateClaimFixtures();f.fresh();val source=f.seedSource()
+         val sourceRaw=f.intent();val sourceName=f.seedClaim(source,sourceRaw);val operations=f.operations(source)
+--- a/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt
++++ b/apps/android/src/androidTest/kotlin/com/agenthub/android/NativeMigrationPrivateClaimColdTest.kt
+@@ -10,6 +10,7 @@
+
+ /** Ordered independent instrumentation processes under one parent-supplied run. No UI/Host action. */
+ class NativeMigrationPrivateClaimColdTest {
++    @get:org.junit.Rule val owner: org.junit.rules.TestRule=NativePrivateClaimFixtureOwnerRule()
+     @Test fun stageFreshClaimCandidateForIndependentReader()=runBlocking {
+         val f=NativeMigrationPrivateClaimFixtures();f.fresh();val source=f.seedSource()
+         val raw=f.intent();val name=f.seedClaim(source,raw);val local=f.intent("local-original-claim-host",null)

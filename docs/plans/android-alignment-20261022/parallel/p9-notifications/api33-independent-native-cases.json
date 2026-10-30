@@ -1,0 +1,2343 @@
+{
+  "version": 1,
+  "operationId": "parent-p9-collector-fix-and-api33-cases-source-20261030-1",
+  "kind": "readonly-source-scheduling-inventory-not-execution-plan",
+  "rootSourceCommit": "144cce4adb7d009ba27c1bcbf70f3aade866e444",
+  "candidate": "Source64r2 existing-default-readonly",
+  "compiledEvidence": {
+    "sourceMapSha256": "080a845753680e3f44ae9eeb321c24534495d97199eda021c2f24934645eaafe",
+    "canonicalSourceSha256": "41777c46429fc5713b3d69c3f403065a698c69033dff0b1261cdadebf801db86",
+    "sourceMapEntries": 843,
+    "buildExitCodeReported": 0,
+    "buildPassedReported": true,
+    "apkMetadataFromRootAttestation": {
+      "app": {
+        "package": "com.easyai.agenthub.android.acceptance",
+        "sha256": "3329b85d68aa69662b404000e05db4003e5174eff5412c0e1186473d86b0aa7c",
+        "bytes": 70251620,
+        "nativeSignerSetSha256": "4f719bb23e1366a472b42507d73147e69b005aaf84f8d12ae020208dc1618965"
+      },
+      "examiner": {
+        "package": "com.easyai.agenthub.android.acceptance.coldexaminer",
+        "sha256": "f6c813b5a10329ec1b97e7cbf009c71502837f794adf831b2a79cb4ec15c256a",
+        "bytes": 1017598,
+        "nativeSignerSetSha256": "4f719bb23e1366a472b42507d73147e69b005aaf84f8d12ae020208dc1618965"
+      },
+      "runner": {
+        "package": "com.easyai.agenthub.android.acceptance.test",
+        "sha256": "9288a36cc554182904ffbefa30a2743262c4fb583ae320a0461391233ac3afaf",
+        "bytes": 12531135,
+        "nativeSignerSetSha256": "4f719bb23e1366a472b42507d73147e69b005aaf84f8d12ae020208dc1618965"
+      }
+    },
+    "independentApkRehashOrDexEnumerationThisStage": false,
+    "selectorExecutionThisStage": false
+  },
+  "runner": "com.easyai.agenthub.android.acceptance.test/androidx.test.runner.AndroidJUnitRunner",
+  "targetPackage": "com.easyai.agenthub.android.acceptance",
+  "deviceSerial": null,
+  "lease": null,
+  "executionUuid": null,
+  "runtimeBindings": null,
+  "sourcePins": {
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt": "af09b8c863472942059d26f96d230ac3972a11b8125817ff8f97ac82ed6004d2",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt": "9f4d5056ed396a9c5f92092ec6e7f5c4aabe51b9b6310a843261f9cc83d123db",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationAppIntegrationTest.kt": "0adcbeae0736c2f62949cab3f7352ff604815a8cff83e9e7d160d776ff9309ea",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationProviderIntegrationTest.kt": "fe690a9aa151ba857280a17ecc682c97d91974065e2b50bb69ce3b851dad1af1",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsCycleInspectionTest.kt": "452735b7b405e557f5e79678554a7679e78108dcfc0af59341b09c02db73453d",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt": "d6a2ec22abe32139c160c7c8f2e514b14b67c5f4f3c3d8c583f11c9dcaf82089",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdWriterTest.kt": "ab0b3b60273457304c32769d12879204f5c213734a52bdd7bb5c733b77e6d5c3",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdReaderTest.kt": "373aed792800c48a0fc2ac54c48695b9130701e615815224f0e0999487a4be72",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsFixture.kt": "62d56e8489eff26d138b6627da8bfcdccc31f96a4b447b3ea71a43f4da888912",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCycleFiles.kt": "43c75b95d3873bc449441844929aadbaa145328d13d38b22cdfcda09d1a2a398",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationCycleEvidence.kt": "cc7b42e542f3be84edc6710031625fdb9edc2f6b3508d756fa76266f29ff9173",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/OwnedControlAcceptance.kt": "9dfe2693d5b21924cb294616c7071f9a73995c3bcbc512b370acb84155df68c2",
+    "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeTestForeground.kt": "462ca074a11008c11ee860ec363ef87d2ca15cd7c4f8377cd41565a5f4ac9533",
+    "apps/android/build.gradle.kts": "b062096955ff20e5c6f0bb525ba88a74fdcadf2cfc062febaea6de9086591eb7",
+    "apps/android/src/androidTest/AndroidManifest.xml": "5bb2bb5411272cc79828ab2bc2c2d2c9e493c9b1646ab53285fd5dad433dab2c",
+    "apps/android/src/androidTest/java/com/agenthub/android/NativeSoundForeignWitnessProvider.java": "60161dc8dfef7bc51df8794db3a4e60a0beecdc94ec4d7b0efafa762fc0a737d",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationAcceptanceScope.kt": "aa430306afb43202544d67cecbbb57679c103ca6b8456c7d62332f7f5a237d9b",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSettingsPage.kt": "ab6a85ae4cf5dd15a1bd1590a34daee3854c3f145a789d650467809cc05ad46e",
+    "apps/android/src/main/kotlin/com/agenthub/android/NativeChatNotificationSoundSettingsPage.kt": "a939b70dd8b65a45de682cdac0dd023bd3258da61389360adce2c787392ae31b"
+  },
+  "assets": {
+    "apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.m4a": {
+      "bytes": 4019,
+      "sha256": "231cfa219204bfa34a3768c092c5e6b19c73eb48af3405e933da535eb694e850",
+      "matchedCompiledMap": true
+    },
+    "apps/android/src/androidTest/assets/chat-notification-sounds/synthetic-tone.mp3": {
+      "bytes": 3805,
+      "sha256": "db476aba2e89eff735bbf4434d915b8ce22ec501d83ea4c6c307cc66db4d207a",
+      "matchedCompiledMap": true
+    }
+  },
+  "profiles": {
+    "os-denied": {
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "denied"
+      },
+      "apiMinimum": 33,
+      "nativeTimeoutSeconds": 120,
+      "activity": false,
+      "permissions": "Root must record prior POST_NOTIFICATIONS/app notification/app-op state, deny only exact acceptance package, independently verify actual denied state, restore prior state afterward even on failure. Test itself never changes permission.",
+      "data": "Fresh P9-native-system-<test-internal-runId>, shared existing Keystore key may be used; no old consumer input.",
+      "cleanup": "OsBase watcher cancels only this run prefix, observed owned PendingIntents and channels; passed non-preserveData case removes known owned records/imports and empty root. Failure/unrecognized data retained. Evidence written under acceptance/P9-native-system/<lease>. No OS permission restoration in fixture.",
+      "protection": "Root full default/mobile-v1/keys/original lease baseline before/after; scope cleanup is not a full default-family proof."
+    },
+    "os-granted": {
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted"
+      },
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": 120,
+      "activity": false,
+      "permissions": "Root grants only exact acceptance package after prior state capture; test requires actual canPost. Root restores exact prior permission/app-op state.",
+      "data": "Fresh scoped synthetic events, fixed reading port returns 7, no real Host/P7 ledger; existing app key preserved.",
+      "cleanup": "Same OsBase owned-prefix notification/PendingIntent/channel/known-record cleanup; failure and preserveData retain private material; parent restores permissions.",
+      "protection": "No global cancel, key deletion, app clear, uninstall or old UUID reuse. Full Root originals baseline required."
+    },
+    "os-provider": {
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "unchanged"
+      },
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": 120,
+      "activity": false,
+      "permissions": "No permission grant/revoke; installed acceptance provider is required.",
+      "data": "Fresh P9-native-system scoped imports/URIs, no post/playback; existing key preserved.",
+      "cleanup": "OsBase watcher cleanup of exact fresh scopes; retain unrecognized/failure data and lease proof.",
+      "protection": "Only own provider URI/FD/namespace. Cannot prove system UID URI grants or audio audibility."
+    },
+    "sound": {
+      "arguments": {},
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": null,
+      "parentDeadlineRequired": true,
+      "activity": false,
+      "permissions": "No notification permission change, player, recording, grant or post.",
+      "data": "Test-internal fresh P9-sound-UUID encrypted namespace; existing shared key can be accessed/created by storage. Some cases intentionally persist corrupt/pending bytes.",
+      "cleanup": "No @After namespace cleanup. Decoder temp files and provider descriptors close/delete in finally/use. Root must inventory exact generated namespace and remove only verified owned leftovers after evidence; never delete shared key or defaults.",
+      "protection": "Root needs full default/key baseline and bounded parent method deadline; native source has no class Timeout."
+    },
+    "ui": {
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": 90,
+      "activity": true,
+      "permissions": "Never clicks enable, permission, system picker, preview or test-notification controls. Optional nativeForeground=1 itself invokes fixed am start via NativeTestForeground and needs Root UI/Activity scheduling.",
+      "data": "OwnedControlAcceptance P4-owned-control-UUID plus test-specific P9 settings replacement namespace; helper reads selected default records and stops current Activity network/discovery/foreground monitor, sets owned content.",
+      "cleanup": "@After leaves owned Session foreground, verifies helper selected defaults and no commands. Does not delete owned private data or prove full family inventory. Root must close/reconcile Activity and collect exact roots before own-only cleanup.",
+      "protection": "Exclusive target Activity/UID lease required; default helper verification is a subset, not full P7/default/original protection.",
+      "activityLaunch": "createAndroidComposeRule<MainActivity> launches the target Activity automatically; nativeForeground=1 additionally uses fixed UiAutomation am start. Both require Root UI/UID lease."
+    },
+    "app-ui": {
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "nativeForeground": null
+      },
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": 120,
+      "activity": true,
+      "permissions": "No notification permission mutation/post; foreground helper activation is optional but resumed Activity is required.",
+      "data": "Recreates real MainActivity, adopts fresh OwnedControlAcceptance Session, sets fixed local draft; reads five original default notification records.",
+      "cleanup": "@After leaves owned foreground, verifies helper defaults/draft/no commands, restores prior adopted Session and compares five default records. Does not delete owned namespace.",
+      "protection": "Exclusive Activity/target UID lease; no current task/unknown instrument operation. These are warm invalid-ticket routes, not SystemUI/cold valid-ticket proof.",
+      "activityLaunch": "createEmptyComposeRule does not launch. setup requires a RESUMED exact MainActivity, then recreates it; Root must already have it active or explicitly authorize nativeForeground=1."
+    },
+    "provider-default": {
+      "arguments": {},
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": 30,
+      "activity": false,
+      "permissions": "No OS permission mutation or URI grant. Separate runner-APK witness provider checks ungranted access with its real runner UID, not shell UID.",
+      "data": "Reads default NativeSessionStorage sounds/notices and built-in soft.caf; opens private read-only descriptor and runner provider. May initialize ordinary storage/key paths: Root originals gate required.",
+      "cleanup": "Descriptors/cursors closed; scratch names, original sound and notice records compared; no namespace removal or full default/key proof.",
+      "protection": "App+test matching APK installed, runner separate package UID/witness manifest present. No old consumer dependency; do not replace protected default originals."
+    },
+    "legacy-inspection": {
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemCycle": null
+      },
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": 60,
+      "activity": false,
+      "permissions": "No grant/revoke or OS notification call.",
+      "data": "Requires exact preexisting legacy cycle root/marker/identity/recovery records and existing AndroidKeyStore key. Pure legacy parser; do not seed missing original material.",
+      "cleanup": "Compares bounded exact physical encrypted files before/after and writes separate evidence. Retains original root/key.",
+      "protection": "Root explicit original-material inspection authority required. Missing/partial/unknown sidecars refuse; no controller/query replay."
+    },
+    "cold-os": {
+      "arguments": {
+        "p9OsColdLease": null
+      },
+      "apiMinimum": 31,
+      "nativeTimeoutSeconds": 150,
+      "activity": "role-dependent",
+      "permissions": "Root-owned granted+enabled notification permission; test never mutates it.",
+      "data": "Explicit fresh cold plan, durable original receipt/notification/PendingIntent; separate writer/reader/observer roles and prior lease proofs.",
+      "cleanup": "Role-dependent original material intentionally persists; never treat class-wide run as independent cleanup.",
+      "protection": "Deferred multi-process/cold lifecycle gate. Do not reuse/cancel/force-stop old5570 consumer or turn its evidence into shell-v2 frames."
+    },
+    "cold-router": {
+      "arguments": {
+        "p9ColdLease": null,
+        "p9ColdCase": null
+      },
+      "apiMinimum": 26,
+      "nativeTimeoutSeconds": 120,
+      "activity": "role-dependent",
+      "permissions": "No OS post/grant in writer/router cases.",
+      "data": "Explicit cold hook lease/case, seeded original records and fresh reader proof; later maintenance relies on completed original lease.",
+      "cleanup": "Original cold records intentionally persist until separate verified release role.",
+      "protection": "Deferred multi-process flow, not standalone permission/sound/settings readiness. Source comment asking parent to stop reader is not authorization to touch old consumers."
+    }
+  },
+  "iosSources": {
+    "permission": [
+      {
+        "path": "apps/ios/Sources/TaskNotifications.swift",
+        "symbol": "TaskNotificationController.enable / refreshPermission",
+        "lines": [100, 117],
+        "sha256": "0725e6ff305f2e5a4bc6d62fef995fc28f0431ea4d32103ec6764ce0cce2785a",
+        "nativeAcceptanceThisStage": false
+      },
+      {
+        "path": "apps/ios/Sources/NotificationSettings.swift",
+        "symbol": "TaskNotificationSettingsView notification switch/status",
+        "lines": [27, 28],
+        "sha256": "261779b928ad01b0c3ce452dcd3e766dde9d3ee2bc963122fe2645eb74d16e08",
+        "nativeAcceptanceThisStage": false
+      }
+    ],
+    "notification": [
+      {
+        "path": "apps/ios/Sources/TaskNotifications.swift",
+        "symbol": "present / sound / badge / willPresent",
+        "lines": [242, 259, 369, 409],
+        "sha256": "0725e6ff305f2e5a4bc6d62fef995fc28f0431ea4d32103ec6764ce0cce2785a",
+        "nativeAcceptanceThisStage": false
+      },
+      {
+        "path": "apps/ios/Sources/NotificationSettings.swift",
+        "symbol": "content preview, badge and foreground banner controls",
+        "lines": [69, 74],
+        "sha256": "261779b928ad01b0c3ce452dcd3e766dde9d3ee2bc963122fe2645eb74d16e08",
+        "nativeAcceptanceThisStage": false
+      }
+    ],
+    "sound": [
+      {
+        "path": "apps/ios/Sources/NotificationSounds.swift",
+        "symbol": "prepare / importFile / validateArchiveSound / removeImported",
+        "lines": [17, 34, 77, 87],
+        "sha256": "58af41ffdb2e254ffec98831de3e72a7487d0c200a1b38b44a893e9860881801",
+        "nativeAcceptanceThisStage": false
+      },
+      {
+        "path": "apps/ios/Sources/TaskNotifications.swift",
+        "symbol": "importSound / deleteSound",
+        "lines": [281, 290],
+        "sha256": "0725e6ff305f2e5a4bc6d62fef995fc28f0431ea4d32103ec6764ce0cce2785a",
+        "nativeAcceptanceThisStage": false
+      }
+    ],
+    "sound-ui": [
+      {
+        "path": "apps/ios/Sources/NotificationSettings.swift",
+        "symbol": "sound picker/import/delete/category inheritance",
+        "lines": [55, 68, 100, 127],
+        "sha256": "261779b928ad01b0c3ce452dcd3e766dde9d3ee2bc963122fe2645eb74d16e08",
+        "nativeAcceptanceThisStage": false
+      }
+    ],
+    "settings": [
+      {
+        "path": "apps/ios/Sources/NotificationSettings.swift",
+        "symbol": "TaskNotificationSettingsView; iOS malformed-store UI parity not newly verified",
+        "lines": [16, 80],
+        "sha256": "261779b928ad01b0c3ce452dcd3e766dde9d3ee2bc963122fe2645eb74d16e08",
+        "nativeAcceptanceThisStage": false
+      }
+    ],
+    "route": [
+      {
+        "path": "apps/ios/Sources/TaskNotifications.swift",
+        "symbol": "route / didReceive response",
+        "lines": [364, 438],
+        "sha256": "0725e6ff305f2e5a4bc6d62fef995fc28f0431ea4d32103ec6764ce0cce2785a",
+        "nativeAcceptanceThisStage": false
+      }
+    ]
+  },
+  "caseCount": 53,
+  "cases": [
+    {
+      "id": "P9A33-01",
+      "selector": "com.agenthub.android.NativeChatNotificationOsDeniedTest#deniedPermissionReconcilesRequiredReadingWithoutChannelClaimOrPost",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt",
+        "line": 15,
+        "sha256": "af09b8c863472942059d26f96d230ac3972a11b8125817ff8f97ac82ed6004d2",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-denied",
+      "apiAtReview": 33,
+      "minimumApi": 33,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "denied"
+      },
+      "expected": "Denied => reading called once, zero channels, receipts and active notifications.",
+      "fixtureMutationsAndRestoration": "Fresh preferences/record writes; no permission mutation; normal scoped cleanup.",
+      "scheduling": "independent",
+      "priority": 10,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "permission",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N06"]
+    },
+    {
+      "id": "P9A33-02",
+      "selector": "com.agenthub.android.NativeChatNotificationOsDeniedTest#permissionCycleDenialPersistsTerminalOldEventForExplicitGrantPhase",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt",
+        "line": 21,
+        "sha256": "af09b8c863472942059d26f96d230ac3972a11b8125817ff8f97ac82ed6004d2",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-denied",
+      "apiAtReview": 33,
+      "minimumApi": 33,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "denied",
+        "p9SystemCycle": null
+      },
+      "expected": "Legacy denial writes v1 original/identity marker and cursor/outcome.",
+      "fixtureMutationsAndRestoration": "preserveData=true; creates legacy cycle identity/recovery/marker. Never reseed a failed/unknown cycle.",
+      "scheduling": "legacy-do-not-seed",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "permission",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission", "p9SystemCycle"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N06"]
+    },
+    {
+      "id": "P9A33-03",
+      "selector": "com.agenthub.android.NativeChatNotificationOsDeniedTest#durableFixtureCycleDenialRecordsActualSyntheticResponseForNewGrantCase",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsDeniedTest.kt",
+        "line": 37,
+        "sha256": "af09b8c863472942059d26f96d230ac3972a11b8125817ff8f97ac82ed6004d2",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-denied",
+      "apiAtReview": 33,
+      "minimumApi": 33,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "denied",
+        "p9SystemCycle": null
+      },
+      "expected": "Fresh v2 denial captures exact synthetic response, epoch, writer PID/nonce and original hash.",
+      "fixtureMutationsAndRestoration": "requireFresh; preserveData=true; must retain encrypted four-record cycle and current key for matching grant method. No real Host confirmation.",
+      "scheduling": "fresh-paired-v2",
+      "priority": 70,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "permission",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "pairOnlySameExactCycleAndLease": true,
+      "retainOwnPrivateDataAfterPass": true,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission", "p9SystemCycle"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N06"]
+    },
+    {
+      "id": "P9A33-04",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#realSilentPostHasPrivatePublicVersionAndOriginalImmutablePendingIntent",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 20,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted"
+      },
+      "expected": "Silent real post, PRIVATE/public redaction, number=7, exact original immutable Activity PendingIntent and independent channel policy control.",
+      "fixtureMutationsAndRestoration": "Fresh silent notification + low-importance visibility control channel + original unconsumed ticket; own cleanup cancels all observed PIs/channels.",
+      "scheduling": "independent",
+      "priority": 20,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-05",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#previewOffAndBadgeOffReachActualPostedNotificationFields",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 61,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted"
+      },
+      "expected": "Real silent notification contains no Private content, number=0 and channel badge disabled.",
+      "fixtureMutationsAndRestoration": "Preferences preview/badge off, scoped silent post and cleanup; no launcher/lockscreen rendering proof.",
+      "scheduling": "independent",
+      "priority": 20,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-06",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#cancelEventsAndTargetNeverCancelAnotherOwnedRunOrTarget",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 68,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted"
+      },
+      "expected": "Four synthetic scoped posts; event/target/global-owned cancellation preserves another owned target/run and original ticket.",
+      "fixtureMutationsAndRestoration": "Creates two fresh fixture scopes. cancelOwned is scoped, never NotificationManager.cancelAll; both cleaned afterward.",
+      "scheduling": "independent",
+      "priority": 20,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-07",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#ownedBlockedCategoryCannotBeBypassedWithAnotherSoundVariant",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 81,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted"
+      },
+      "expected": "Pre-created own IMPORTANCE_NONE category cannot be bypassed; another category can prepare.",
+      "fixtureMutationsAndRestoration": "Creates own blocked approval and question channels, no post; not a user/SystemUI channel-block interaction.",
+      "scheduling": "independent",
+      "priority": 20,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-08",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#ordinaryClipChannelUsesRegisteredProviderUriWithoutPlayingIt",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 90,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted"
+      },
+      "expected": "Real channel stores exact provider URI/audio USAGE_NOTIFICATION, badge and bytes; separate visibility control.",
+      "fixtureMutationsAndRestoration": "Imports distinct synthetic PCM and creates channel/control, but never plays/posts ordinary-sound notification.",
+      "scheduling": "independent",
+      "priority": 20,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-09",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#requiredReadingGuardStillPreventsClaimAfterRealChannelPreparation",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 99,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted"
+      },
+      "expected": "mayPresent=false after real channel prep => no receipt/post and one reading call.",
+      "fixtureMutationsAndRestoration": "Creates real silent channel; AtomicBoolean reading guard is fixture, not P7 actual ledger/race proof.",
+      "scheduling": "independent",
+      "priority": 20,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-10",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#permissionCycleRecoveryShowsOnlyNewEventWithoutAnotherOriginalSubmit",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 106,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted",
+        "p9SystemCycle": null
+      },
+      "expected": "Legacy grant consumes v1 cycle marker and original operation; expects only fresh event posted.",
+      "fixtureMutationsAndRestoration": "Requires existing legacy denial material; reconstructed synthetic response limitations mean do not schedule/reseed as new proof.",
+      "scheduling": "legacy-dependent-not-preferred",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission", "p9SystemCycle"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-11",
+      "selector": "com.agenthub.android.NativeChatNotificationOsGrantedTest#durableFixtureCycleRecoveryUsesRecordedResponseWithoutOriginalResubmit",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsGrantedTest.kt",
+        "line": 124,
+        "sha256": "6a4d5cc0a2e9c9bc812247162147fceb8d6671caeff0ff3d431495f93bb0ea74",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-granted",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "granted",
+        "p9SystemCycle": null
+      },
+      "expected": "New process restores exact writer-captured synthetic response; queries only original ID, no resubmit, only fresh notice.",
+      "fixtureMutationsAndRestoration": "Requires same fresh-v2 cycle/lease/key and different PID+nonce, exact existing four physical records. preserveData=true even after success; Root collects before own-only cleanup.",
+      "scheduling": "fresh-paired-v2",
+      "priority": 70,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "notification",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "pairOnlySameExactCycleAndLease": true,
+      "retainOwnPrivateDataAfterPass": true,
+      "requiredArguments": ["p9SystemLease", "p9SystemPermission", "p9SystemCycle"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N05", "N06", "N07", "N15"]
+    },
+    {
+      "id": "P9A33-12",
+      "selector": "com.agenthub.android.NativeChatNotificationOsProviderTest#installedScopedProviderReturnsExactReadOnlyNormalizedBytes",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt",
+        "line": 19,
+        "sha256": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-provider",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "unchanged"
+      },
+      "expected": "Actual non-exported/grantable provider MIME/name/size/read-only seekable FD and exact bytes.",
+      "fixtureMutationsAndRestoration": "Fresh synthetic PCM import; no cross-UID grant or audibility proof; scoped cleanup.",
+      "scheduling": "independent",
+      "priority": 10,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease"],
+      "optionalArguments": {
+        "p9SystemPermission": "unchanged"
+      },
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-13",
+      "selector": "com.agenthub.android.NativeChatNotificationOsProviderTest#silentAndOrdinaryOwnedClipsHaveDifferentRealUriBytes",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt",
+        "line": 35,
+        "sha256": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-provider",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "unchanged"
+      },
+      "expected": "Silent vs ordinary normalized PCM have different scoped URIs/hash/content.",
+      "fixtureMutationsAndRestoration": "Two imports; no playback.",
+      "scheduling": "independent",
+      "priority": 10,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease"],
+      "optionalArguments": {
+        "p9SystemPermission": "unchanged"
+      },
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-14",
+      "selector": "com.agenthub.android.NativeChatNotificationOsProviderTest#malformedScopedUriAndWriteModeCannotReadOrMutateSound",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt",
+        "line": 44,
+        "sha256": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-provider",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "unchanged"
+      },
+      "expected": "Query/fragment/missing .wav and w/rw/rwt descriptor opens fail; original sound hash unchanged.",
+      "fixtureMutationsAndRestoration": "Fresh import; malformed read/write attempts only against its scoped URI.",
+      "scheduling": "independent",
+      "priority": 10,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease"],
+      "optionalArguments": {
+        "p9SystemPermission": "unchanged"
+      },
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-15",
+      "selector": "com.agenthub.android.NativeChatNotificationOsProviderTest#oneOwnedScopeDeletionCannotExposeOrDeleteAnotherScope",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt",
+        "line": 51,
+        "sha256": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-provider",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "unchanged"
+      },
+      "expected": "Delete one scope import; prior opened FD stays readable and separate scope retains bytes.",
+      "fixtureMutationsAndRestoration": "Two fresh scopes/imports; delete only first own import then standard scoped cleanup.",
+      "scheduling": "independent",
+      "priority": 10,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease"],
+      "optionalArguments": {
+        "p9SystemPermission": "unchanged"
+      },
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-16",
+      "selector": "com.agenthub.android.NativeChatNotificationOsProviderTest#acceptanceScopeRejectsProtectedSiblingBeforeCreatingStorage",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsProviderTest.kt",
+        "line": 62,
+        "sha256": "61f3c76df88025866f40357f5b82abcea96d6d7ce6df489b9215a07298b4efd9",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "os-provider",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemPermission": "unchanged"
+      },
+      "expected": "Sibling acceptance.easywork package wrapper rejected before P9 root creation.",
+      "fixtureMutationsAndRestoration": "Generates only test-internal run ID, no valid fixture/scope root; no other package operation.",
+      "scheduling": "independent",
+      "priority": 10,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease"],
+      "optionalArguments": {
+        "p9SystemPermission": "unchanged"
+      },
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-17",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#builtinsAreLocalDistinctAndCannotBeDeleted",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 28,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Three local distinct normalized builtins; deletion rejected and records unchanged.",
+      "fixtureMutationsAndRestoration": "Fresh namespace; catalog read only, no player/post.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-18",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#encryptedImportAndColdRoundtripKeepIdAndBytes",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 37,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Encrypted import survives new library/store and plaintext title absent from physical encrypted files.",
+      "fixtureMutationsAndRestoration": "Writes import/catalog/binary in new namespace; no automatic namespace teardown.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-19",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#deleteResetsDefaultAndMatchingCategoriesPreservingOriginalReceipt",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 46,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Delete import resets matching default/category, preserves other category/preview and original receipt.",
+      "fixtureMutationsAndRestoration": "Creates synthetic original claim and import, deletes own item; retains test records.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-20",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#sameContentHasStableUriAcrossDifferentIdsAndOneDeletion",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 60,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Same PCM distinct IDs share content URI; deleting one leaves second readable.",
+      "fixtureMutationsAndRestoration": "Two imports and one delete in fresh namespace.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-21",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#corruptMetadataIsPreservedWithoutReset",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 66,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Future v2 catalog rejected for read/import; raw bytes unchanged.",
+      "fixtureMutationsAndRestoration": "Writes malformed/future catalog intentionally; retain evidence, no reset.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-22",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#corruptBinaryNeverBecomesDefaultOrGetsDeleted",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 72,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Wrong binary rejects read while catalog/item remain unchanged.",
+      "fixtureMutationsAndRestoration": "Overwrites only fresh owned import binary with other builtin PCM; retains corrupt bytes.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-23",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#cancelledStageBeforeBinaryIsIndexedButNeverSelectedAndCanSettle",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 80,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Injected stage2 cancellation leaves pending descriptor, never selected; settle removes pending inventory.",
+      "fixtureMutationsAndRestoration": "Mutates fresh catalog via controlled thrown callback; no command or import replay.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-24",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#cancelledStageAfterBinaryIsNotPublishedOrReplayedOnColdRead",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 89,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Injected stage3 cancellation not published; cold library sees builtins and settles own pending stage.",
+      "fixtureMutationsAndRestoration": "Fresh pending binary/catalog writes and local settle only.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-25",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#failedRetirementPreservesUnknownBytesAndPendingDescriptor",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 96,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Failed deletion resets selected preference but preserves unknown binary/pending descriptor; later settle refuses.",
+      "fixtureMutationsAndRestoration": "Intentionally corrupts fresh binary and leaves retained recovery material.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-26",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#productionMigrationValidatorEnforcesClosedCatalogAndMatchingAudio",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 104,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Valid catalog/binary passes; extra catalog field and wrong audio rejected.",
+      "fixtureMutationsAndRestoration": "Imports own item then pure validator checks; no migration applied.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-27",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#lateImportCannotOverwriteNewerChoiceAndSelectionChecksLiveBytes",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 112,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Stale preference revision cannot select import; fresh revision can, deleted item cannot reselect.",
+      "fixtureMutationsAndRestoration": "Writes own import/preferences, select and deletion; no OS operations.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-28",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#providerUriIsCanonicalAndCannotSelectOtherPrivateFiles",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 122,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Canonical authority/hash accepted; query/path/traversal/foreign authority rejected.",
+      "fixtureMutationsAndRestoration": "Fresh import and URI parser calls; no external private-file access.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-29",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#providerDescriptorIsSeekableReadOnlyAndDoesNotKeepPlaintextFile",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 130,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Descriptor exact PCM, rewind and reread work; write fails; cache scratch names unchanged.",
+      "fixtureMutationsAndRestoration": "Creates and closes owned descriptor; no persistent plaintext output expected.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-30",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#actualM4aUsesInstalledCodecWithoutPlaying",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 151,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Installed MediaCodec converts synthetic-tone.m4a; nonzero normalized duration 0.2–0.5s.",
+      "fixtureMutationsAndRestoration": "Reads test asset, creates own cache temp and deletes in finally; no playback. Asset SHA separately pinned.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-31",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#actualMp3UsesInstalledCodecWithoutPlaying",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 152,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Installed MediaCodec converts synthetic-tone.mp3 with same normalized assertions.",
+      "fixtureMutationsAndRestoration": "Reads pinned test asset; own cache temp deleted in finally; no playback.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-32",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundTest#decodedContentCannotBeSelectedByMisleadingExtension",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundTest.kt",
+        "line": 153,
+        "sha256": "8573df0efbce32dd909104ce3f61bc54c5abd37b7cb5dda0ac8874b0db51ff0f",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "sound",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "WAV bytes declared mp3 rejected by decoder.",
+      "fixtureMutationsAndRestoration": "Own mismatch cache temp deleted in finally.",
+      "scheduling": "independent",
+      "priority": 15,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N14", "N15"]
+    },
+    {
+      "id": "P9A33-33",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundUiTest#rootPageOpensDefaultSoundAndBackRetainsChoice",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt",
+        "line": 57,
+        "sha256": "9f4d5056ed396a9c5f92092ec6e7f5c4aabe51b9b6310a843261f9cc83d123db",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Settings -> sound page -> soft.caf -> back preserves saved choice.",
+      "fixtureMutationsAndRestoration": "Owned settings record choices only; no preview/test notice.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "Clicks actual page navigation/back and sound row tags.",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound-ui",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-34",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundUiTest#defaultAndSilentAreRealDistinctSavedChoices",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt",
+        "line": 67,
+        "sha256": "9f4d5056ed396a9c5f92092ec6e7f5c4aabe51b9b6310a843261f9cc83d123db",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "none then default saved as distinct choices.",
+      "fixtureMutationsAndRestoration": "Owned preferences writes only.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "Actual radio choice tags and saved preferences; no audio.",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound-ui",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-35",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundUiTest#categoryOverrideAndInheritDoNotChangeGlobalSound",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt",
+        "line": 74,
+        "sha256": "9f4d5056ed396a9c5f92092ec6e7f5c4aabe51b9b6310a843261f9cc83d123db",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Approval override none then inherit leaves global chime.caf intact.",
+      "fixtureMutationsAndRestoration": "Owned category/global preferences writes.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "Actual category sound radio choices.",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound-ui",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-36",
+      "selector": "com.agenthub.android.NativeChatNotificationSoundUiTest#deletingActiveImportThroughPageResetsAllMatchingReferences",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSoundUiTest.kt",
+        "line": 82,
+        "sha256": "9f4d5056ed396a9c5f92092ec6e7f5c4aabe51b9b6310a843261f9cc83d123db",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Delete row removes import and resets matching global/category selections.",
+      "fixtureMutationsAndRestoration": "Own synthetic import then delete via page; no picker/player.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "Actual delete-button and saved-state checks, no visual/AX completeness.",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound-ui",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-37",
+      "selector": "com.agenthub.android.NativeChatNotificationSettingsUiTest#malformedRecordIsUnavailableAndRetryPreservesBytesThenRecovers",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt",
+        "line": 77,
+        "sha256": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Malformed preferences hides writable controls, retry preserves bytes; restoring exact original makes enabled controls return.",
+      "fixtureMutationsAndRestoration": "Writes bad own record then restores original bytes; clicks retry only.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "settings",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-38",
+      "selector": "com.agenthub.android.NativeChatNotificationSettingsUiTest#futureRecordIsUnavailableWithoutWritableDefault",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt",
+        "line": 78,
+        "sha256": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Future v99 preferences stays unavailable without default overwrite, then exact original recovery.",
+      "fixtureMutationsAndRestoration": "Own record corruption/restoration only.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "settings",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-39",
+      "selector": "com.agenthub.android.NativeChatNotificationSettingsUiTest#resumeFailureDisablesLastSuccessfulControlsAndRetryRecovers",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt",
+        "line": 79,
+        "sha256": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "CREATED->RESUMED with bad v7 record hides stale successful controls; retry after restore recovers.",
+      "fixtureMutationsAndRestoration": "Test-owned PageLifecycle and own bad/original preference writes.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "settings",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-40",
+      "selector": "com.agenthub.android.NativeChatNotificationSettingsUiTest#replacedPageRejectsLateEncryptedReadFromOldStore",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt",
+        "line": 90,
+        "sha256": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Blocked old encrypted transaction cannot override replacement page/store; replacement remains default-off with null record.",
+      "fixtureMutationsAndRestoration": "Creates additional P9-settings-replacement-UUID; blocker released/joined in finally; old source bytes retained.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "settings",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-41",
+      "selector": "com.agenthub.android.NativeChatNotificationSettingsUiTest#futureSoundCatalogShowsUnavailableWithoutWritableChoicesAndRetryRecovers",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt",
+        "line": 105,
+        "sha256": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Future v99 catalog hides sound choices; remove own bad catalog/retry shows selected none; prefs unchanged.",
+      "fixtureMutationsAndRestoration": "Writes/removes own sound catalog and reads original preferences.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "settings",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-42",
+      "selector": "com.agenthub.android.NativeChatNotificationSettingsUiTest#malformedPreferencesOnSoundPagePreserveOriginalBytesAndRetry",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationSettingsUiTest.kt",
+        "line": 115,
+        "sha256": "c371ad7e974800ec80e51dc6ec73d49c5dcca55d964637ed1661e8385f6acc75",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "expected": "Malformed prefs hides writable sound choices; restore exact original and retry preserves silent choice.",
+      "fixtureMutationsAndRestoration": "Own bad/original record writes; no OS permission/player.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "settings",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "viewportLanguage": "en",
+        "viewportTheme": "light",
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N14", "N16", "N17"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation",
+        "viewportLanguage": "en",
+        "viewportTheme": "non-dark => light"
+      }
+    },
+    {
+      "id": "P9A33-43",
+      "selector": "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualSettingsEntryKeepsDefaultOffWithoutMakingIdentityJournalOrAuthority",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationAppIntegrationTest.kt",
+        "line": 65,
+        "sha256": "0adcbeae0736c2f62949cab3f7352ff604815a8cff83e9e7d160d776ff9309ea",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "app-ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "nativeForeground": null
+      },
+      "expected": "Actual chat menu -> settings -> notifications default-off; five owned records remain absent and original draft/no commands remain.",
+      "fixtureMutationsAndRestoration": "Activity recreate/adopt owned Session; no enable/register/authority creation.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "Clicks real app navigation tags and toggle-off semantics.",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N08", "N16"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation"
+      }
+    },
+    {
+      "id": "P9A33-44",
+      "selector": "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualWarmDispatcherConsumesInvalidNotificationBeforeAnyPairingOrAttachmentRoute",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationAppIntegrationTest.kt",
+        "line": 72,
+        "sha256": "0adcbeae0736c2f62949cab3f7352ff604815a8cff83e9e7d160d776ff9309ea",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "app-ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "nativeForeground": null
+      },
+      "expected": "Notification ACTION with pairing-shaped malformed URI becomes unavailable before other route; draft/operation state untouched.",
+      "fixtureMutationsAndRestoration": "Starts warm exact MainActivity CLEAR_TOP|SINGLE_TOP invalid Intent; no original ticket replay.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "Actual status view displayed; does not prove valid notification route.",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N08", "N16"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation"
+      }
+    },
+    {
+      "id": "P9A33-45",
+      "selector": "com.agenthub.android.NativeChatNotificationAppIntegrationTest#actualUnknownOpaqueTicketAndActivityRecreationKeepTheSameCoordinatorAndDraft",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationAppIntegrationTest.kt",
+        "line": 82,
+        "sha256": "0adcbeae0736c2f62949cab3f7352ff604815a8cff83e9e7d160d776ff9309ea",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "app-ui",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "ownerCallbacksRun": null,
+        "nativeForeground": null
+      },
+      "expected": "Unknown opaque ticket stays unavailable across real Activity recreate, same coordinator and owned draft retained.",
+      "fixtureMutationsAndRestoration": "Test-internal unknown ticket, warm openIntent and recreate; prior Session restored in @After.",
+      "scheduling": "independent",
+      "priority": 30,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": false,
+      "ui": {
+        "activity": true,
+        "coverage": "Actual lifecycle/coordinator assertions, not OS cold start/SystemUI click.",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {
+        "ownerCallbacksRun": null,
+        "nativeForeground": null
+      },
+      "gapMatrixIds": ["N08", "N16"],
+      "optionalArgumentDefaults": {
+        "ownerCallbacksRun": "owned-model",
+        "nativeForeground": "absent => no shell activation"
+      }
+    },
+    {
+      "id": "P9A33-46",
+      "selector": "com.agenthub.android.NativeChatNotificationProviderIntegrationTest#installedProviderServesOnlyReadOnlyCanonicalSoundAndDeniesUngrant",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationProviderIntegrationTest.kt",
+        "line": 15,
+        "sha256": "fe690a9aa151ba857280a17ecc682c97d91974065e2b50bb69ce3b851dad1af1",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "provider-default",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {},
+      "expected": "Default builtin provider read/hash/seek/write refusal and separate ungranted runner UID SecurityException; original default records/cache unchanged.",
+      "fixtureMutationsAndRestoration": "Reads default storage and starts runner witness provider; all FDs/cursors use/close. No grant/post/play.",
+      "scheduling": "independent",
+      "priority": 25,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "sound",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": [],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N15"]
+    },
+    {
+      "id": "P9A33-47",
+      "selector": "com.agenthub.android.NativeChatNotificationOsCycleInspectionTest#inspectLegacyOriginalBytesWithoutQueryReplayOrJournalWrite",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsCycleInspectionTest.kt",
+        "line": 17,
+        "sha256": "452735b7b405e557f5e79678554a7679e78108dcfc0af59341b09c02db73453d",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "legacy-inspection",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9SystemLease": null,
+        "p9SystemCycle": null
+      },
+      "expected": "Existing exact legacy marker/identity/recovery content inspected with physical file hashes unchanged and no controller calls.",
+      "fixtureMutationsAndRestoration": "Existing key/root required; writes separate inspection evidence only.",
+      "scheduling": "legacy-readonly-explicit-original-only",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": false,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": false,
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "permission",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9SystemLease", "p9SystemCycle"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N06", "N12"]
+    },
+    {
+      "id": "P9A33-48",
+      "selector": "com.agenthub.android.NativeChatNotificationOsColdTest#writerPostsOriginalWithProductionPlatformWithoutActivity",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt",
+        "line": 67,
+        "sha256": "d6a2ec22abe32139c160c7c8f2e514b14b67c5f4f3c3d8c583f11c9dcaf82089",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "cold-os",
+      "apiAtReview": 33,
+      "minimumApi": 31,
+      "arguments": {
+        "p9OsColdLease": null
+      },
+      "expected": "Fresh writer seeds original, posts once with production platform and persists post-unknown/published proof.",
+      "fixtureMutationsAndRestoration": "Writes fresh cold plan, channel, original durable receipt and real notification/PendingIntent intentionally retained.",
+      "scheduling": "defer-cold-multiprocess",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": true,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": "role-dependent",
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9OsColdLease"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N08", "N10"]
+    },
+    {
+      "id": "P9A33-49",
+      "selector": "com.agenthub.android.NativeChatNotificationOsColdTest#systemUiClickCreatesFirstActivityAndOriginalPendingIntentRedeliveryKeepsNewDraft",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt",
+        "line": 107,
+        "sha256": "d6a2ec22abe32139c160c7c8f2e514b14b67c5f4f3c3d8c583f11c9dcaf82089",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "cold-os",
+      "apiAtReview": 33,
+      "minimumApi": 31,
+      "arguments": {
+        "p9OsColdLease": null
+      },
+      "expected": "Requires original published notification and fresh reader; clicks SystemUI and redelivers original PendingIntent, preserving new draft.",
+      "fixtureMutationsAndRestoration": "Actual SystemUI/Activity/ticket consumption and original proof dependencies; not independently runnable.",
+      "scheduling": "defer-cold-multiprocess",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": true,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": "role-dependent",
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9OsColdLease"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N08", "N10"]
+    },
+    {
+      "id": "P9A33-50",
+      "selector": "com.agenthub.android.NativeChatNotificationOsColdTest#observerReleasesOnlyCompletedOsColdLeaseAfterReaderExit",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationOsColdTest.kt",
+        "line": 209,
+        "sha256": "d6a2ec22abe32139c160c7c8f2e514b14b67c5f4f3c3d8c583f11c9dcaf82089",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "cold-os",
+      "apiAtReview": 33,
+      "minimumApi": 31,
+      "arguments": {
+        "p9OsColdLease": null
+      },
+      "expected": "Requires completed original cold lease plus separately established reader exit before release.",
+      "fixtureMutationsAndRestoration": "Maintenance release of exact original scope/notice only; never authorize force-stop/kill old consumer.",
+      "scheduling": "defer-cold-multiprocess",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": true,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": "role-dependent",
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9OsColdLease"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N08", "N10"]
+    },
+    {
+      "id": "P9A33-51",
+      "selector": "com.agenthub.android.NativeChatNotificationColdWriterTest#armOriginalInFreshOwnedStorageWithoutLaunchingActivity",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdWriterTest.kt",
+        "line": 17,
+        "sha256": "ab0b3b60273457304c32769d12879204f5c213734a52bdd7bb5c733b77e6d5c3",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "cold-router",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9ColdLease": null,
+        "p9ColdCase": null
+      },
+      "expected": "Fresh cold hook writer seeds exact plan and checks strict original ticket without Activity/OS post.",
+      "fixtureMutationsAndRestoration": "Creates own original cold lease; requires explicit p9ColdCase.",
+      "scheduling": "defer-cold-multiprocess",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": true,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": "role-dependent",
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9ColdLease", "p9ColdCase"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N08", "N10"]
+    },
+    {
+      "id": "P9A33-52",
+      "selector": "com.agenthub.android.NativeChatNotificationColdReaderTest#firstActivityRoutesOnlyTheOriginalAndDuplicateIntentKeepsNewDraft",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdReaderTest.kt",
+        "line": 34,
+        "sha256": "373aed792800c48a0fc2ac54c48695b9130701e615815224f0e0999487a4be72",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "cold-router",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9ColdLease": null
+      },
+      "expected": "Explicit fresh reader prepares original lease, launches first Activity and checks route/duplicate-intent/new draft per case.",
+      "fixtureMutationsAndRestoration": "Consumes seeded original/ticket, writes reader completion; not standalone readiness.",
+      "scheduling": "defer-cold-multiprocess",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": true,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": "role-dependent",
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9ColdLease"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N08", "N10"]
+    },
+    {
+      "id": "P9A33-53",
+      "selector": "com.agenthub.android.NativeChatNotificationColdReaderTest#disarmCompletedLeaseFromAnotherProcessWithoutOpeningDefaultApp",
+      "source": {
+        "path": "apps/android/src/androidTest/kotlin/com/agenthub/android/NativeChatNotificationColdReaderTest.kt",
+        "line": 104,
+        "sha256": "373aed792800c48a0fc2ac54c48695b9130701e615815224f0e0999487a4be72",
+        "matchedCompiledSource64r2Map": true
+      },
+      "profile": "cold-router",
+      "apiAtReview": 33,
+      "minimumApi": 26,
+      "arguments": {
+        "p9ColdLease": null
+      },
+      "expected": "Maintenance only: exact completed lease disarm with no Activity/default selection.",
+      "fixtureMutationsAndRestoration": "Requires previously completed lease and independently safe reader/process state. Do not use old comment as authorization to stop protected reader.",
+      "scheduling": "defer-cold-multiprocess",
+      "priority": 90,
+      "dependsOnOld5570Consumer": false,
+      "naturalExitProofRequired": true,
+      "existingKeyOriginalMaterialRequired": true,
+      "ui": {
+        "activity": "role-dependent",
+        "coverage": "no GUI assertion; native state/bytes only",
+        "visualOrAxComplete": false
+      },
+      "iosSourceGroup": "route",
+      "nativeStatus": "not-run-by-P9; Root single-method scheduling only",
+      "runtimeExecutionId": null,
+      "deviceSerial": null,
+      "requiredArguments": ["p9ColdLease"],
+      "optionalArguments": {},
+      "gapMatrixIds": ["N08", "N10"]
+    }
+  ],
+  "globalSchedulingGuards": [
+    "Root owns device5574 exclusively; this child has no device lease or scheduling rights",
+    "Before each method reconcile actual app/instrumentation task state and preserve all unknowns; no class-wide run",
+    "Pin installed App/Test/signer/build to Root attested candidate; source map equality is not native pass",
+    "Capture full originals/mobile-v1/key/default baseline and actual permission/app-op state before relevant methods; restore exact prior permissions outside fixture",
+    "Never use clear-data/uninstall/key regeneration/global cancel/old scope cleanup; do not touch5570/5566/5572/busy phone",
+    "A6/task/project/business notification scenarios paused; these are synthetic notification fixture methods only",
+    "A failed or unknown method result keeps its original operation/fixture proof; no newUUID/replay to manufacture pass",
+    "Current API33 reading/IO passes cannot become notification consumer or shell-v2 evidence",
+    "F49/F50 ownership remains P7 single reading ledger; OS fixture constant7 and AtomicBoolean guard are limited boundary evidence"
+  ],
+  "parityFeatureIds": ["F49", "F50", "F51", "F52", "F53", "F54"],
+  "designIds": ["UI11"],
+  "scenarioIds": ["S15", "S16"],
+  "matrix21RowsPreserved": true,
+  "androidProductionChanged": false,
+  "iosProductionChanged": false,
+  "iosA6": "paused",
+  "excludedOtherP9Classes": "Recovery/foreground/domain/migration suites remain in existing 21-row matrix; this inventory prioritizes permission/channel/sound/settings/route selectors, not full P9 acceptance.",
+  "rootAdoptionReview": {
+    "stage": "Source65 source-only; no live collector binding",
+    "sourceCommit": "e82ff233c23e3782b1fd39a6b0391dc49c2bb551",
+    "compiledEvidenceScope": "Historical Source64r2 only; does not attest Source65 APK",
+    "corrections": [
+      "10/11 require exact existing cycle/key/original records",
+      "F51 preference/permission and F54 privacy/route associations retained"
+    ],
+    "coverageLimits": {
+      "F49/F50": "Boundary guards only; no actual unread acceptance",
+      "F52": "Remote/background delivery pending"
+    },
+    "allNativePending": true
+  }
+}

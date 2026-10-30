@@ -228,6 +228,26 @@ async function transportOwner() {
     firstPassed;
   const started = performance.now();
   const originalNow = Date.now;
+  const originalWait = Atomics.wait;
+  const timing =
+    workerData.mode === 'batch-timeout'
+      ? { timeOrigin: performance.timeOrigin, waits: [] }
+      : undefined;
+  if (timing)
+    Atomics.wait = function (view, index, expected, timeout) {
+      const sample = { entered: performance.now(), timeout, before: Atomics.load(view, index) };
+      timing.waits.push(sample);
+      try {
+        const status = Reflect.apply(originalWait, this, [view, index, expected, timeout]);
+        sample.returned = performance.now();
+        sample.status = status;
+        sample.after = Atomics.load(view, index);
+        return status;
+      } catch (error) {
+        sample.threwAt = performance.now();
+        throw error;
+      }
+    };
   try {
     backend.budget(1800);
     if (workerData.mode === 'cold-shared-budget') backend.budget(300);
@@ -243,7 +263,9 @@ async function transportOwner() {
     const items = Array.from({ length: workerData.itemCount }, (_, index) =>
       index % 2 === 0 ? { path: root, maximum: 0 } : { path: root + '\\one.txt', maximum: 4 },
     );
+    if (timing) timing.readEntered = performance.now();
     const values = backend.backend.snapshotMany(root, items);
+    if (timing) timing.readReturned = performance.now();
     passed = values.length === items.length && values[1].bytes.toString() === 'AAAA';
     firstPassed = passed;
     identities = values.map((value) => value.identity);
@@ -254,10 +276,17 @@ async function transportOwner() {
       passed = true;
     }
   } catch (failure) {
+    if (timing) timing.readThrew = performance.now();
     error = failure.message;
   } finally {
+    Atomics.wait = originalWait;
     Date.now = originalNow;
-    backend.close();
+    if (timing) timing.closeEntered = performance.now();
+    try {
+      backend.close();
+    } finally {
+      if (timing) timing.closeReturned = performance.now();
+    }
   }
   parentPort.postMessage({
     passed,
@@ -265,6 +294,7 @@ async function transportOwner() {
     identities,
     firstPassed,
     elapsed: performance.now() - started,
+    timing,
   });
   parentPort.close();
 }
@@ -350,6 +380,47 @@ async function transportMain() {
       partialExecuted: rows().some((row) => row.event === 'first-item'),
       allRetired: true,
     };
+    if (mode === 'batch-timeout') {
+      result.nativeTimers = [];
+      result.diagnosticIncomplete = false;
+      try {
+        const files = fs
+          .readdirSync(directory)
+          .filter((name) => /^native-timer-[0-9]+\.json$/.test(name));
+        if (files.length !== 1) result.diagnosticIncomplete = true;
+        for (const name of files.slice(0, 2)) {
+          const path = join(directory, name);
+          if (fs.statSync(path).size > 8192) throw new Error('Bounded timer diagnostics exceeded');
+          const value = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const finite = (number) =>
+            typeof number === 'number' && Number.isFinite(number) && number >= 0;
+          if (
+            value.version !== 1 ||
+            !finite(value.timeOrigin) ||
+            !Number.isInteger(value.threadId) ||
+            value.threadId <= 0 ||
+            value.omitted !== 0 ||
+            !Array.isArray(value.rows) ||
+            value.rows.length < 1 ||
+            value.rows.length > 32 ||
+            !value.rows.every(
+              (row) =>
+                row &&
+                row.delay === 750 &&
+                finite(row.created) &&
+                ['fired', 'cleared'].every(
+                  (field) =>
+                    row[field] === undefined || (finite(row[field]) && row[field] >= row.created),
+                ),
+            )
+          )
+            result.diagnosticIncomplete = true;
+          result.nativeTimers.push(value);
+        }
+      } catch {
+        result.diagnosticIncomplete = true;
+      }
+    }
     fs.writeFileSync(join(directory, 'result.json'), JSON.stringify(result));
   } finally {
     await owner.terminate();
@@ -405,6 +476,21 @@ export const windowsTraceNativeExecutable=()=>process.env.TRACE_BATCH_EXE??fileU
     `import assert from 'node:assert/strict';
 import child from 'node:child_process';import {fileURLToPath} from 'node:url';
 import {syncBuiltinESMExports} from 'node:module';
+import {writeFileSync} from 'node:fs';import {dirname,join} from 'node:path';
+import {threadId} from 'node:worker_threads';
+if(process.env.TRACE_BATCH_MODE==='batch-timeout'){
+ const originalSet=globalThis.setTimeout,originalClear=globalThis.clearTimeout,rows=[],handles=new Map();
+ let omitted=0;
+ globalThis.setTimeout=function(callback,delay,...args){
+  if(delay!==750||typeof callback!=='function')return Reflect.apply(originalSet,this,[callback,delay,...args]);
+  const row={created:performance.now(),delay};
+  if(rows.length<32)rows.push(row);else omitted++;
+  const handle=Reflect.apply(originalSet,this,[function(...passed){row.fired=performance.now();return Reflect.apply(callback,this,passed)},delay,...args]);
+  handles.set(handle,row);return handle;
+ };
+ globalThis.clearTimeout=function(handle){const row=handles.get(handle);if(row)row.cleared=performance.now();return Reflect.apply(originalClear,this,[handle])};
+ process.once('exit',()=>{try{writeFileSync(join(dirname(process.env.TRACE_BATCH_LOG),'native-timer-'+threadId+'.json'),JSON.stringify({version:1,timeOrigin:performance.timeOrigin,threadId,rows,omitted}),{flag:'wx',mode:0o600})}catch{}});
+}
 Object.defineProperty(process,'platform',{value:'win32'});
 const entry=fileURLToPath(new URL('./child.mjs',import.meta.url)),original=child.spawn;
 child.spawn=function(command,args,options){
